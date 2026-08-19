@@ -143,6 +143,20 @@ Use Conventional Commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`
 
 See: [.claude/commands/commit.md](.claude/commands/commit.md)
 
+## Issue & PR triage
+
+Checklist for triaging incoming issues and PRs on the public repo. Labels: `gh label list -R LowCarbCheck/openplate`.
+
+**Every issue gets exactly one `area:` label + one type label** (`bug`, `enhancement`, `question`, `documentation`). Pick the `area:` from the component actually implicated (`local-store`, `scan`, `tracker`, `food-search`, `sync-client`, `pwa`, `i18n`, `legal`, `settings`) — read the code before guessing which module owns the behavior. Add a `platform:` label (`ios`, `android`) only when the report is specific to an installed-PWA platform quirk.
+
+- **Security report opened as a public issue** → do not triage it in public. Close/redirect immediately to [private vulnerability reporting](https://github.com/LowCarbCheck/openplate/security/advisories/new) per [SECURITY.md](SECURITY.md), and say so in one comment. Never discuss exploit details in the public thread.
+- **Missing version, logs, or repro steps** → label `needs info` and ask for exactly what's missing (openplate version/commit, browser + OS, whether it's the hosted image or a self-build, console/network errors, minimal repro). Don't guess at root cause without it.
+- **Regression** ("this used to work") → label `regression` and get the last-good version named in the issue before triaging further; if the reporter can't name one, that's a `needs info` case first.
+- **Root cause outside this repo** (a dependency, or `openplate-sync`/`openplate-inference`) → label `upstream` and link the external issue/repo. Cross-cutting protocol issues (see `app/lib/sync/engine/protocol.ts`) still belong here even if `upstream`-tagged.
+- **Already fixed in a shipped version** → label `fixed in release`, comment naming the version that contains the fix, and close.
+
+**PRs:** apply the same `area:` labels as the code touched. A small fix without a DCO sign-off is fine — don't block on it. Before spending review effort, confirm CI is green in this order: lint → typecheck → unit → build (`.github/workflows` / the pre-push gate mirrors this). A PR with a red build gets a comment pointing at the failure, not a substantive review.
+
 ## Claude Code Integration
 
 ```
