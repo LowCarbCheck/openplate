@@ -1,0 +1,48 @@
+{
+  "name": "runpod-gpu-v3",
+  "description": "Pipeline v3 single_v3 against a REMOTE llama-server on a Runpod GPU pod, at the recommended 896 px client-side downscale (V3-DESIGN.md §3). This config exists to answer one question the CPU host cannot: what does the v3 terse pipeline cost in wall clock when prefill and decode are not the bottleneck? It is NOT a comparison row against local-cpu-v3.json — different hardware, different quantisation possibly, and the network round-trip is inside the measured latency. The base URL comes from ${RUNPOD_QWEN_URL} (see _env_note), so the pod id is never committed. Cost fields are 0 because the pod bills per hour, not per token: read PERFORMANCE.md-style latency, not cost, out of this run. Pair with runpod-gpu-v3-fullres.json to price the downscale on GPU.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "out_dir": "runs/runpod-gpu-v3",
+  "image_max_long_edge": 896,
+  "_image_max_long_edge_note": "Client-side downscale in providers.image_to_data_url (needs Pillow; without it the harness warns once and sends full resolution, which silently turns this run into the fullres run — check the stderr warning before trusting the numbers). 896 px is a multiple of 112 = lcm(16, 28), an exact patch boundary for both LFM2.5-VL (16 px) and Qwen3-VL (14 px, 2x2 merged => 28). Also shrinks the base64 request body, which matters more here than locally: every image crosses the public internet.",
+  "_env_note": "${RUNPOD_QWEN_URL} is expanded by harness.runner.expand_env at config-load time. An unset variable is a hard error, not an empty string. Set it to the pod's OpenAI-compatible root INCLUDING /v1, e.g. export RUNPOD_QWEN_URL=https://<pod-id>-8000.proxy.runpod.net/v1 (Runpod HTTP proxy) or http://<tailscale-ip>:8000/v1 if the pod is on the tailnet. If llama-server was started with --api-key, also export RUNPOD_QWEN_API_KEY; it is optional here (api_key_required false) because an unauthenticated pod is the common case.",
+  "providers": {
+    "runpod_qwen_vl": {
+      "base_url": "${RUNPOD_QWEN_URL}",
+      "api_key_env": "RUNPOD_QWEN_API_KEY",
+      "headers": {"User-Agent": "openplate-eval/3"},
+      "_headers_note": "Runpod's HTTP proxy (*.proxy.runpod.net) 403s any request whose User-Agent starts with 'Python-urllib' -- the harness's default, since providers.py posts via urllib. Verified 2026-08-12: identical POST bodies, UA 'Python-urllib/3.14' -> 403, 'openplate-eval/3' -> 200. Without this override every record in the run errors instantly with ProviderHttpError(403) (403 is not retried -- only 429/5xx are). Any non-urllib UA works; keep it honest rather than spoofing a browser.",
+      "api_key_required": false,
+      "timeout_seconds": 300,
+      "max_retries": 3,
+      "retry_backoff_base_seconds": 2.0,
+      "_timeout_note": "300 s, not the local 900 s: on GPU a request that takes minutes is a hung pod or a dead proxy, and failing fast is more useful than waiting. Proxy handling is left at the default so https_proxy is honoured (the Claude Code sandbox needs it); do NOT set no_proxy true unless the pod is reached over the tailnet."
+    }
+  },
+  "models": {
+    "qwen_vl": {
+      "id": "qwen-vl",
+      "provider": "runpod_qwen_vl",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "max_tokens_v3": 256,
+      "_id_note": "llama-server ignores the request's model field and serves whatever -m loaded, so 'qwen-vl' is a label for the results file, matching eval/serve/models.json. If the pod runs vLLM or any server that validates the model id, change this to the id that /v1/models reports.",
+      "_max_tokens_note": "256 is headroom, not a target (V3-DESIGN.md §2): the terse grammar bounds output at ~155 completion tokens, and a cap set AT the budget truncates mid-JSON and returns HTTP 200 with an unparseable body. use_json_schema true requires the server to honour response_format json_schema -- llama-server compiles it to GBNF; verify on the pod build before a full run."
+    }
+  },
+  "approach_order": ["single_qwen_vl_v3"],
+  "approaches": {
+    "single_qwen_vl_v3": {
+      "type": "single_v3",
+      "model": "qwen_vl",
+      "label": "v3 terse single-shot Qwen3-VL, remote Runpod GPU, 896 px"
+    }
+  },
+  "_run_notes": [
+    "Pre-flight the endpoint before burning pod hours: python3 -m harness.runner --config configs/runpod-gpu-v3.json --dry-run prints the resolved URL, then run a single image with --only 03 and read the reported prompt_tokens to confirm the downscale took.",
+    "No ensemble row. The v3 ensemble depends on llama.cpp's per-KV-slot prompt-prefix cache for the shared image prefix (local-cpu-v3.json's max_parallel 1), and a remote pod's cache state is not observable from here -- an ensemble timing measured through the Runpod proxy would not be attributable. Add one only after confirming the pod's cache behaviour.",
+    "Latency recorded here includes the network round-trip and the Runpod proxy. That is the honest number for a hosted-inference product, and the wrong number for a per-token throughput fit."
+  ]
+}

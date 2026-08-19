@@ -1,0 +1,732 @@
+{
+  "01": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "scrambled eggs",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 1.1,
+            "fiber": 0.4,
+            "sugars": 0.6,
+            "polyols": null,
+            "protein": 13.0,
+            "fat": 11.0,
+            "kcal": 155
+          }
+        },
+        {
+          "name": "baked beans",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 20.2,
+            "fiber": 7.7,
+            "sugars": 9.7,
+            "polyols": null,
+            "protein": 4.7,
+            "fat": 0.8,
+            "kcal": 172
+          }
+        },
+        {
+          "name": "ham",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 0.1,
+            "fiber": 0.0,
+            "sugars": 0.0,
+            "polyols": null,
+            "protein": 26.0,
+            "fat": 15.0,
+            "kcal": 276
+          }
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "two sausages",
+          "macrosPer100g": {
+            "carbs": 0.1,
+            "fiber": 0.0,
+            "sugars": 0.0,
+            "polyols": null,
+            "protein": 26.0,
+            "fat": 15.0,
+            "kcal": 276
+          }
+        },
+        {
+          "name": "whole grain bread",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "one slice",
+          "macrosPer100g": {
+            "carbs": 49.0,
+            "fiber": 6.0,
+            "sugars": 1.2,
+            "polyols": null,
+            "protein": 9.0,
+            "fat": 1.3,
+            "kcal": 246
+          }
+        },
+        {
+          "name": "cucumber slices",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 2.6,
+            "fiber": 0.8,
+            "sugars": 1.1,
+            "polyols": null,
+            "protein": 0.8,
+            "fat": 0.1,
+            "kcal": 15
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 155880.1116499817,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 726,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 15231
+    }
+  },
+  "02": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "Yorkshire pudding",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large piece",
+          "macrosPer100g": {
+            "carbs": 24,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 7,
+            "fat": 12,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "roast beef",
+          "estimatedGrams": 180,
+          "confidence": "high",
+          "portionHint": "a large portion",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 26,
+            "fat": 27,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "roast vegetables",
+          "estimatedGrams": 120,
+          "confidence": "medium",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 50
+          }
+        },
+        {
+          "name": "gravy",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small spoonful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 2,
+            "fat": 13,
+            "kcal": 120
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 101922.92627110146,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1907,
+      "completion_tokens": 451,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 14755
+    }
+  },
+  "03": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled salmon",
+          "estimatedGrams": 220,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 13,
+            "kcal": 206
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 2,
+            "kcal": 25
+          }
+        },
+        {
+          "name": "feta cheese",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 23,
+            "fat": 27,
+            "kcal": 264
+          }
+        },
+        {
+          "name": "avocado",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small slice",
+          "macrosPer100g": {
+            "carbs": 1.5,
+            "fiber": 6,
+            "sugars": 0.7,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 15,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "black olives",
+          "estimatedGrams": 20,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1,
+            "sugars": 0.3,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 70
+          }
+        },
+        {
+          "name": "red onion",
+          "estimatedGrams": 15,
+          "confidence": "high",
+          "portionHint": "a small slice",
+          "macrosPer100g": {
+            "carbs": 9,
+            "fiber": 1.5,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 0.2,
+            "fat": 0,
+            "kcal": 35
+          }
+        },
+        {
+          "name": "tomato",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3.9,
+            "fiber": 1.2,
+            "sugars": 3.9,
+            "polyols": 0,
+            "protein": 0.9,
+            "fat": 0.2,
+            "kcal": 22
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 124904.31469702162,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1287,
+      "completion_tokens": 794,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 14439
+    }
+  },
+  "04": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "cheeseburger",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "one burger",
+          "macrosPer100g": {
+            "carbs": 20,
+            "fiber": 1,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 20,
+            "fat": 25,
+            "kcal": 350
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 96,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 2,
+            "fat": 4,
+            "kcal": 360
+          }
+        },
+        {
+          "name": "pickles",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a couple of pickles",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 10
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 72929.49584603775,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1547,
+      "completion_tokens": 342,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 14107
+    }
+  },
+  "05": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "white rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 78,
+            "fiber": 0.4,
+            "sugars": 0.2,
+            "polyols": null,
+            "protein": 7.6,
+            "fat": 0.3,
+            "kcal": 365
+          }
+        },
+        {
+          "name": "chicken curry",
+          "estimatedGrams": 180,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 23,
+            "fat": 14,
+            "kcal": 214
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 70750.11430401355,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 243,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 13823
+    }
+  },
+  "06": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "sushi roll",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 26,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 6,
+            "fat": 3,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "sashimi",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 18,
+            "fat": 4,
+            "kcal": 130
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 108041.38909897301,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2747,
+      "completion_tokens": 232,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 13088
+    }
+  },
+  "07": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "spaghetti with meat sauce",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 75,
+            "fiber": 3,
+            "sugars": 5,
+            "polyols": null,
+            "protein": 15,
+            "fat": 5,
+            "kcal": 250
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 92404.73370894324,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2747,
+      "completion_tokens": 129,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 12800
+    }
+  },
+  "08": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "yogurt",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 4.7,
+            "fiber": 0.4,
+            "sugars": 4.7,
+            "polyols": null,
+            "protein": 3.5,
+            "fat": 0.2,
+            "kcal": 47
+          }
+        },
+        {
+          "name": "granola",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 66.3,
+            "fiber": 7.6,
+            "sugars": 14.7,
+            "polyols": null,
+            "protein": 6.3,
+            "fat": 16.4,
+            "kcal": 327
+          }
+        },
+        {
+          "name": "apple slices",
+          "estimatedGrams": 70,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 13.8,
+            "fiber": 2.4,
+            "sugars": 11.5,
+            "polyols": null,
+            "protein": 0.3,
+            "fat": 0.2,
+            "kcal": 52
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 87405.59730201494,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 369,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 12382
+    }
+  },
+  "09": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "pizza",
+          "estimatedGrams": 1000,
+          "confidence": "high",
+          "portionHint": "entire large pizza",
+          "macrosPer100g": {
+            "carbs": 48,
+            "fiber": 2,
+            "sugars": 5,
+            "polyols": null,
+            "protein": 15,
+            "fat": 30,
+            "kcal": 270
+          }
+        },
+        {
+          "name": "cola",
+          "estimatedGrams": 355,
+          "confidence": "high",
+          "portionHint": "one 12-oz can",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 0,
+            "sugars": 10,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 42
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 108912.74399694521,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2747,
+      "completion_tokens": 238,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 11795
+    }
+  },
+  "10": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled chicken sandwich",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "a large sandwich",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 20,
+            "fat": 15,
+            "kcal": 320
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 75,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 20
+          }
+        },
+        {
+          "name": "pepsi max",
+          "estimatedGrams": 500,
+          "confidence": "high",
+          "portionHint": "a bottle",
+          "macrosPer100g": {
+            "carbs": 39,
+            "fiber": 0,
+            "sugars": 39,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 150
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 153910.07963602897,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 3507,
+      "completion_tokens": 342,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 11288
+    }
+  },
+  "_summary": {
+    "total_cost_usd": 0.0,
+    "per_approach_cost_usd": {
+      "single_qwen_vl": 0.0
+    },
+    "failures": [],
+    "config_name": "local-cpu-v2",
+    "config_path": "configs/local-cpu-v2.json",
+    "approaches": [
+      "single_qwen_vl"
+    ],
+    "approach_configs": {
+      "single_qwen_vl": {
+        "type": "single",
+        "model": "qwen_vl",
+        "label": "Qwen3-VL-8B single-shot (production prompt), CPU"
+      }
+    },
+    "models": {
+      "lfm_vl": {
+        "id": "lfm-vl",
+        "provider": "local_lfm_vl",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "LFM2.5-VL-1.6B Q8_0 via llama-server --jinja --mmproj. Held constant across every ensemble in this config so the judge is the only variable."
+      },
+      "lfm_judge": {
+        "id": "lfm-judge",
+        "provider": "local_lfm_judge",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "LFM2.5-2.6B Q8_0, text-only, reasoning OFF. Same server as local-cpu.json \u2014 what changes vs the 2026-08-11 run is the harness side: hardened judge prompt + bounded judge schema (maxItems 6), which llama-server compiles into the GBNF."
+      },
+      "qwen_vl": {
+        "id": "qwen-vl",
+        "provider": "local_qwen_vl",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Qwen3-VL-8B, single-shot only. The cloud pilot's best single-shot row (92.9% recall) was this model \u2014 this measures what it costs on CPU locally."
+      },
+      "qwen_judge": {
+        "id": "qwen-judge",
+        "provider": "local_qwen_judge",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Qwen3-4B, text-only judge \u2014 the 'try a stronger judge' lever from runs/2026-08-11-local-lfm/SCORING.md finding 2."
+      },
+      "lfm_judge_think": {
+        "id": "lfm-judge-think",
+        "provider": "local_lfm_judge_think",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Same LFM2.5-2.6B weights as lfm_judge but served with bounded reasoning ENABLED \u2014 the 'judge is only 1 call, spend the ~60s there' lever. Longer timeout because the reasoning trace precedes the JSON."
+      }
+    },
+    "fan_out_override": null,
+    "images": [
+      "01.jpg",
+      "02.jpg",
+      "03.jpg",
+      "04.jpg",
+      "05.jpg",
+      "06.jpg",
+      "07.jpg",
+      "08.jpg",
+      "09.jpg",
+      "10.jpg"
+    ],
+    "started_at": "2026-08-11T18:05:17.545922+00:00",
+    "wall_seconds": 1077.1,
+    "host": {
+      "hostname": "bluefin",
+      "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "python": "3.14.6",
+      "cpu_model": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+      "cpu_count": 16,
+      "mem_total_mb": 62053,
+      "mem_available_mb_at_start": 11424
+    }
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "01": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "scrambled eggs",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small scoop",
+          "macrosPer100g": {
+            "carbs": 1.2,
+            "fiber": 0,
+            "sugars": 1.1,
+            "polyols": 0,
+            "protein": 10,
+            "fat": 10,
+            "kcal": 140
+          }
+        },
+        {
+          "name": "baked beans",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small ladle",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 5,
+            "sugars": 4.5,
+            "polyols": 0,
+            "protein": 5,
+            "fat": 0.5,
+            "kcal": 95
+          }
+        },
+        {
+          "name": "back bacon",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 0.5,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 22,
+            "fat": 6,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "breakfast sausages",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "three small sausages",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0.5,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 13,
+            "fat": 20,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "rye bread",
+          "estimatedGrams": 50,
+          "confidence": "medium",
+          "portionHint": "one slice",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 6,
+            "sugars": 1.5,
+            "polyols": 0,
+            "protein": 8,
+            "fat": 1.5,
+            "kcal": 230
+          }
+        },
+        {
+          "name": "cucumber slices",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "three slices",
+          "macrosPer100g": {
+            "carbs": 3.5,
+            "fiber": 0.5,
+            "sugars": 1.5,
+            "polyols": 0,
+            "protein": 0.5,
+            "fat": 0.1,
+            "kcal": 15
+          }
+        }
+      ],
+      "notes": "Includes butter portion shown in background.",
+      "latency_ms": 5401.408963021822,
+      "cost_usd": 0.00170825,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 779,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14622
+    }
+  },
+  "_summary": {
+    "total_cost_usd": 0.00170825,
+    "per_approach_cost_usd": {
+      "baseline": 0.00170825
+    },
+    "failures": [],
+    "config_name": "openrouter-pilot",
+    "config_path": "configs/openrouter-pilot.json",
+    "approaches": [
+      "baseline"
+    ],
+    "approach_configs": {
+      "baseline": {
+        "type": "single",
+        "model": "gemini_flash_lite",
+        "label": "google/gemini-3.1-flash-lite single-shot (frontier reference row)"
+      }
+    },
+    "models": {
+      "gemini_flash_lite": {
+        "id": "google/gemini-3.1-flash-lite",
+        "provider": "openrouter",
+        "price_per_mtok_in": 0.25,
+        "price_per_mtok_out": 1.5,
+        "use_json_schema": true
+      },
+      "qwen3_vl_8b": {
+        "id": "qwen/qwen3-vl-8b-instruct",
+        "provider": "openrouter",
+        "price_per_mtok_in": 0.117,
+        "price_per_mtok_out": 0.455,
+        "use_json_schema": true
+      },
+      "gemma4_26b_a4b": {
+        "id": "google/gemma-4-26b-a4b-it",
+        "provider": "openrouter",
+        "price_per_mtok_in": 0.12,
+        "price_per_mtok_out": 0.4,
+        "use_json_schema": true
+      }
+    },
+    "fan_out_override": null,
+    "images": [
+      "01.jpg"
+    ],
+    "started_at": "2026-08-11T11:11:25.857427+00:00",
+    "wall_seconds": 5.4,
+    "host": {
+      "hostname": "bluefin",
+      "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "python": "3.14.6",
+      "cpu_model": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+      "cpu_count": 16,
+      "mem_total_mb": 62053,
+      "mem_available_mb_at_start": 14622
+    }
+  }
+}

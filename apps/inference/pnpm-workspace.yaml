@@ -1,0 +1,26 @@
+# pnpm settings live HERE, not in package.json's `pnpm` field — pnpm 11 no
+# longer reads that field at all and only warns about it, so a setting left
+# there is silently inert.
+
+# Postinstall scripts are blocked by default. Only these two need one:
+#  - esbuild downloads/links its platform binary
+#  - sharp links libvips (a prebuilt binary is fetched as an optional dep, but
+#    the install script is what wires it up on some platforms)
+allowBuilds:
+  esbuild: true
+  sharp: true
+
+# Supply-chain hardening: a published version must be at least 7 days old before
+# pnpm will resolve it. Only affects RESOLUTION (adding/updating deps);
+# `--frozen-lockfile` installs (CI, Docker builds) are unaffected.
+minimumReleaseAge: 10080
+
+# `vite` (via `vitest`) pins `esbuild ^0.28.x`, and at the time this repo was
+# scaffolded the only release in that range was younger than the cutoff, so the
+# policy rejected the whole lockfile. esbuild is a build-time-only dependency
+# whose range we do not control, so it is excluded rather than the policy being
+# weakened for every runtime package. Revisit if esbuild ever becomes a runtime
+# dependency.
+minimumReleaseAgeExclude:
+  - esbuild
+  - '@esbuild/*'

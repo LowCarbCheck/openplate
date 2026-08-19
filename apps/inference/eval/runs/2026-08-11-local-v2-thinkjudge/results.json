@@ -1,0 +1,3620 @@
+{
+  "01": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "ham",
+            "estimatedGrams": 100,
+            "confidence": "high",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 10,
+              "fiber": 1,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 0,
+              "fat": 0,
+              "kcal": 150
+            }
+          },
+          {
+            "name": "sausages",
+            "estimatedGrams": 90,
+            "confidence": "medium",
+            "portionHint": "about a third of the plate",
+            "macrosPer100g": {
+              "carbs": 2,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 7,
+              "fat": 0,
+              "kcal": 180
+            }
+          },
+          {
+            "name": "eggs",
+            "estimatedGrams": 20,
+            "confidence": "high",
+            "portionHint": "about a third of the plate",
+            "macrosPer100g": {
+              "carbs": 2,
+              "fiber": 0,
+              "sugars": 1,
+              "polyols": 1,
+              "protein": 6,
+              "fat": 5,
+              "kcal": 140
+            }
+          },
+          {
+            "name": "cucumber",
+            "estimatedGrams": 30,
+            "confidence": "high",
+            "portionHint": "right side of the plate",
+            "macrosPer100g": {
+              "carbs": 7,
+              "fiber": 2,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 0,
+              "fat": 0,
+              "kcal": 20
+            }
+          },
+          {
+            "name": "bread",
+            "estimatedGrams": 50,
+            "confidence": "medium",
+            "portionHint": "a slice",
+            "macrosPer100g": {
+              "carbs": 25,
+              "fiber": 2,
+              "sugars": 5,
+              "polyols": 1,
+              "protein": 2,
+              "fat": 1,
+              "kcal": 70
+            }
+          },
+          {
+            "name": "beans",
+            "estimatedGrams": 50,
+            "confidence": "high",
+            "portionHint": "about a quarter of the plate",
+            "macrosPer100g": {
+              "carbs": 15,
+              "fiber": 10,
+              "sugars": 5,
+              "polyols": 2,
+              "protein": 3,
+              "fat": 1,
+              "kcal": 150
+            }
+          }
+        ],
+        "notes": "Merged three candidate lists. Ham, sausages, eggs, cucumber, bread, and beans are consistently present across candidates. Sourdough bread was noted in candidate 2 but not in others; since it's not in the majority and appears to be a specific variant not confirmed by all candidates, it was excluded. The final list contains 6 items, the maximum allowed.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "ham",
+              "estimatedGrams": 60,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 2,
+                "sugars": 4,
+                "polyols": 1,
+                "protein": 3,
+                "fat": 2,
+                "kcal": 40
+              }
+            },
+            {
+              "name": "ham",
+              "estimatedGrams": 40,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 2,
+                "sugars": 4,
+                "polyols": 1,
+                "protein": 3,
+                "fat": 2,
+                "kcal": 40
+              }
+            },
+            {
+              "name": "sausages",
+              "estimatedGrams": 50,
+              "confidence": "medium",
+              "portionHint": "about a third of the plate",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 0,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 3,
+                "fat": 4,
+                "kcal": 70
+              }
+            },
+            {
+              "name": "eggs",
+              "estimatedGrams": 20,
+              "confidence": "high",
+              "portionHint": "about a third of the plate",
+              "macrosPer100g": {
+                "carbs": 2,
+                "fiber": 0,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 6,
+                "fat": 5,
+                "kcal": 140
+              }
+            },
+            {
+              "name": "cucumber",
+              "estimatedGrams": 10,
+              "confidence": "high",
+              "portionHint": "3 slices",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 10
+              }
+            },
+            {
+              "name": "cucumber",
+              "estimatedGrams": 10,
+              "confidence": "high",
+              "portionHint": "3 slices",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 10
+              }
+            },
+            {
+              "name": "cucumber",
+              "estimatedGrams": 10,
+              "confidence": "high",
+              "portionHint": "3 slices",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 10
+              }
+            },
+            {
+              "name": "bread",
+              "estimatedGrams": 50,
+              "confidence": "medium",
+              "portionHint": "a slice",
+              "macrosPer100g": {
+                "carbs": 25,
+                "fiber": 2,
+                "sugars": 5,
+                "polyols": 1,
+                "protein": 2,
+                "fat": 1,
+                "kcal": 70
+              }
+            },
+            {
+              "name": "beans",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": "about a quarter of the plate",
+              "macrosPer100g": {
+                "carbs": 15,
+                "fiber": 10,
+                "sugars": 5,
+                "polyols": 2,
+                "protein": 3,
+                "fat": 1,
+                "kcal": 150
+              }
+            },
+            {
+              "name": "eggs",
+              "estimatedGrams": 20,
+              "confidence": "high",
+              "portionHint": "about a third of the plate",
+              "macrosPer100g": {
+                "carbs": 2,
+                "fiber": 0,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 6,
+                "fat": 5,
+                "kcal": 140
+              }
+            },
+            {
+              "name": "sausages",
+              "estimatedGrams": 40,
+              "confidence": "medium",
+              "portionHint": "about a third of the plate",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 0,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 3,
+                "fat": 4,
+                "kcal": 70
+              }
+            },
+            {
+              "name": "ham",
+              "estimatedGrams": 40,
+              "confidence": "high",
+              "portionHint": "about a third of the plate",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 2,
+                "sugars": 4,
+                "polyols": 1,
+                "protein": 3,
+                "fat": 2,
+                "kcal": 40
+              }
+            }
+          ],
+          "notes": null,
+          "latency_ms": 63107.38408798352,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2433,
+          "completion_tokens": 1332,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Sourdough bread",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "Top of the plate",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 150
+              }
+            },
+            {
+              "name": "Ham",
+              "estimatedGrams": 60,
+              "confidence": "medium",
+              "portionHint": "Left side of the plate",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 6,
+                "fat": 3,
+                "kcal": 115
+              }
+            },
+            {
+              "name": "Sausages",
+              "estimatedGrams": 40,
+              "confidence": "medium",
+              "portionHint": "Center of the plate",
+              "macrosPer100g": {
+                "carbs": 2,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 7,
+                "fat": 0,
+                "kcal": 180
+              }
+            },
+            {
+              "name": "Scrambled Eggs",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "Right side of the plate",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 11,
+                "fat": 5,
+                "kcal": 180
+              }
+            },
+            {
+              "name": "Baked beans",
+              "estimatedGrams": 60,
+              "confidence": "medium",
+              "portionHint": "Bottom of the plate",
+              "macrosPer100g": {
+                "carbs": 15,
+                "fiber": 2,
+                "sugars": 2,
+                "polyols": 0,
+                "protein": 3,
+                "fat": 0,
+                "kcal": 140
+              }
+            },
+            {
+              "name": "Cucumber slices",
+              "estimatedGrams": 30,
+              "confidence": "high",
+              "portionHint": "Right side of the plate",
+              "macrosPer100g": {
+                "carbs": 7,
+                "fiber": 2,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 20
+              }
+            }
+          ],
+          "notes": "This meal provides a balanced mix of proteins, carbohydrates, and fats. The sourdough bread offers complex carbohydrates, while the ham and sausages provide protein. The scrambled eggs are a good source of protein and vitamins, and the baked beans and cucumbers contribute fiber and vitamins. Overall, it is a hearty and nutritious breakfast.",
+          "latency_ms": 26878.873563953675,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2092,
+          "completion_tokens": 755,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "sandwich",
+              "estimatedGrams": 0,
+              "confidence": "medium",
+              "portionHint": "a piece",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "ham",
+              "estimatedGrams": 0.2,
+              "confidence": "medium",
+              "portionHint": "a few slices",
+              "macrosPer100g": {
+                "carbs": 0.2,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0.2,
+                "fat": 0,
+                "kcal": 2.4
+              }
+            },
+            {
+              "name": "ham",
+              "estimatedGrams": 0.2,
+              "confidence": "medium",
+              "portionHint": "a few slices",
+              "macrosPer100g": {
+                "carbs": 0.2,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0.2,
+                "fat": 0,
+                "kcal": 2.4
+              }
+            },
+            {
+              "name": "ham",
+              "estimatedGrams": 0.2,
+              "confidence": "medium",
+              "portionHint": "a few slices",
+              "macrosPer100g": {
+                "carbs": 0.2,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0.2,
+                "fat": 0,
+                "kcal": 2.4
+              }
+            },
+            {
+              "name": "eggs",
+              "estimatedGrams": 0.8,
+              "confidence": "medium",
+              "portionHint": "a small portion",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 6,
+                "fat": 5,
+                "kcal": 160
+              }
+            },
+            {
+              "name": "beans",
+              "estimatedGrams": 0.6,
+              "confidence": "medium",
+              "portionHint": "a small portion",
+              "macrosPer100g": {
+                "carbs": 9,
+                "fiber": 4,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 2.4,
+                "fat": 0,
+                "kcal": 80
+              }
+            },
+            {
+              "name": "beans",
+              "estimatedGrams": 0.6,
+              "confidence": "medium",
+              "portionHint": "a small portion",
+              "macrosPer100g": {
+                "carbs": 9,
+                "fiber": 4,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 2.4,
+                "fat": 0,
+                "kcal": 80
+              }
+            },
+            {
+              "name": "cucumber",
+              "estimatedGrams": 0.6,
+              "confidence": "high",
+              "portionHint": "a few slices",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 1,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0.5,
+                "fat": 0,
+                "kcal": 10
+              }
+            }
+          ],
+          "notes": "The plate contains various types of ham and beans. It is a hearty meal with a combination of protein and carbohydrates. The bread is likely whole grain or whole wheat, and the eggs are scrambled, adding additional protein. The presence of cucumbers suggests an attempt to balance the meal with low-calorie vegetables. No specific dietary restrictions are evident from the meal components.",
+          "latency_ms": 50772.713121026754,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2090,
+          "completion_tokens": 996,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 102761.6146550281,
+      "total_latency_ms": 180417.876255,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 10128,
+      "completion_tokens": 4082,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 14669
+    }
+  },
+  "02": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "Roast chicken",
+            "estimatedGrams": 250,
+            "confidence": "high",
+            "portionHint": "a large portion",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 35,
+              "fat": 22,
+              "kcal": 800
+            }
+          },
+          {
+            "name": "Braised pork belly",
+            "estimatedGrams": 150,
+            "confidence": "high",
+            "portionHint": "a medium portion",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 15,
+              "fat": 25,
+              "kcal": 400
+            }
+          },
+          {
+            "name": "Roasted broccoli",
+            "estimatedGrams": 150,
+            "confidence": "high",
+            "portionHint": "a generous portion",
+            "macrosPer100g": {
+              "carbs": 7,
+              "fiber": 3,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 0.5,
+              "kcal": 25
+            }
+          },
+          {
+            "name": "Cabbage",
+            "estimatedGrams": 100,
+            "confidence": "high",
+            "portionHint": "a small portion",
+            "macrosPer100g": {
+              "carbs": 12,
+              "fiber": 2,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 0.5,
+              "kcal": 25
+            }
+          },
+          {
+            "name": "Potato croquettes",
+            "estimatedGrams": 100,
+            "confidence": "medium",
+            "portionHint": "a small portion",
+            "macrosPer100g": {
+              "carbs": 20,
+              "fiber": 2,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 1,
+              "kcal": 100
+            }
+          },
+          {
+            "name": "Pork Belly",
+            "estimatedGrams": 150,
+            "confidence": "high",
+            "portionHint": "1 piece",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 0,
+              "fat": 0,
+              "kcal": 0
+            }
+          }
+        ],
+        "notes": "The plate contains roast chicken, braised pork belly, roasted broccoli, cabbage, potato croquettes, and pork belly. All identified foods appear across multiple candidates with high confidence. Cabbage and potato croquettes are minor components but are physically present on the plate.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "Roast chicken",
+              "estimatedGrams": 250,
+              "confidence": "high",
+              "portionHint": "a large portion",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 35,
+                "fat": 22,
+                "kcal": 800
+              }
+            },
+            {
+              "name": "Braised pork belly",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "a medium portion",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 15,
+                "fat": 25,
+                "kcal": 400
+              }
+            },
+            {
+              "name": "Roasted broccoli",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "a generous portion",
+              "macrosPer100g": {
+                "carbs": 7,
+                "fiber": 3,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0.5,
+                "kcal": 25
+              }
+            },
+            {
+              "name": "Cabbage",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "a small portion",
+              "macrosPer100g": {
+                "carbs": 12,
+                "fiber": 2,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0.5,
+                "kcal": 25
+              }
+            },
+            {
+              "name": "Potato croquettes",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "a small portion",
+              "macrosPer100g": {
+                "carbs": 20,
+                "fiber": 2,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 1,
+                "kcal": 100
+              }
+            }
+          ],
+          "notes": "The roasted broccoli and cabbage appear to be cooked in a light sauce. The pork belly has a crispy skin. The braised pork belly seems to be well-seasoned. The potatoes are golden brown and crispy on the outside. The cabbage has a slight wilt but retains some crunch.",
+          "latency_ms": 65834.67177802231,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 3208,
+          "completion_tokens": 630,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Roast Chicken",
+              "estimatedGrams": 300,
+              "confidence": "high",
+              "portionHint": "1 piece",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "Pork Belly",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "1 piece",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "Potatoes",
+              "estimatedGrams": 200,
+              "confidence": "medium",
+              "portionHint": "2 medium",
+              "macrosPer100g": {
+                "carbs": 44,
+                "fiber": 3.6,
+                "sugars": 1.7,
+                "polyols": 0,
+                "protein": 0.9,
+                "fat": 0.1,
+                "kcal": 172
+              }
+            },
+            {
+              "name": "Broccoli",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "1 small bunch",
+              "macrosPer100g": {
+                "carbs": 12.2,
+                "fiber": 3.8,
+                "sugars": 2.4,
+                "polyols": 0,
+                "protein": 1.8,
+                "fat": 0.3,
+                "kcal": 34
+              }
+            }
+          ],
+          "notes": "The plate is well-balanced, with protein from the chicken and pork, carbohydrates from the potatoes and broccoli, and some fats from the gravy.",
+          "latency_ms": 40007.687040022574,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2867,
+          "completion_tokens": 499,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "chicken",
+              "estimatedGrams": 300,
+              "confidence": "high",
+              "portionHint": "serves 1",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 60,
+                "fat": 15,
+                "kcal": 300
+              }
+            },
+            {
+              "name": "pork",
+              "estimatedGrams": 400,
+              "confidence": "high",
+              "portionHint": "serves 1",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 25,
+                "fat": 12,
+                "kcal": 400
+              }
+            },
+            {
+              "name": "potatoes",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "serves 1",
+              "macrosPer100g": {
+                "carbs": 20,
+                "fiber": 3,
+                "sugars": 0,
+                "polyols": 3,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 100
+              }
+            },
+            {
+              "name": "broccoli",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "serves 1",
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 2,
+                "sugars": 1,
+                "polyols": 2,
+                "protein": 2,
+                "fat": 0,
+                "kcal": 55
+              }
+            }
+          ],
+          "notes": "No additional condiments or sauces are visible on the plate.",
+          "latency_ms": 38183.34727000911,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2865,
+          "completion_tokens": 466,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 87832.65679504257,
+      "total_latency_ms": 166026.37879899703,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 11247,
+      "completion_tokens": 2576,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 14430
+    }
+  },
+  "03": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "grilled salmon",
+            "estimatedGrams": 150,
+            "confidence": "high",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 50,
+              "fat": 6,
+              "kcal": 350
+            }
+          },
+          {
+            "name": "lettuce",
+            "estimatedGrams": 50,
+            "confidence": "high",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 8,
+              "fiber": 1,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 0.8,
+              "fat": 0.3,
+              "kcal": 7
+            }
+          },
+          {
+            "name": "cucumber",
+            "estimatedGrams": 30,
+            "confidence": "medium",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 1,
+              "fiber": 0.1,
+              "sugars": 0.6,
+              "polyols": 0,
+              "protein": 0.4,
+              "fat": 0.1,
+              "kcal": 16
+            }
+          },
+          {
+            "name": "avocado",
+            "estimatedGrams": 25,
+            "confidence": "medium",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 2,
+              "fiber": 2,
+              "sugars": 0.4,
+              "polyols": 0,
+              "protein": 2.2,
+              "fat": 14,
+              "kcal": 160
+            }
+          },
+          {
+            "name": "red onion",
+            "estimatedGrams": 10,
+            "confidence": "medium",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 2,
+              "fiber": 1,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 0.2,
+              "fat": 0.1,
+              "kcal": 10
+            }
+          },
+          {
+            "name": "cherry tomatoes",
+            "estimatedGrams": 20,
+            "confidence": "high",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 2.5,
+              "fiber": 0.6,
+              "sugars": 0.7,
+              "polyols": 0,
+              "protein": 0.8,
+              "fat": 0.1,
+              "kcal": 15
+            }
+          }
+        ],
+        "notes": "Merged three candidate lists. Salmon, lettuce, cucumber, avocado, red onion, and cherry tomatoes are consistently present across all candidates. Olive oil, olives, and lemon appear only in candidate 2. Tomato (candidate 2) is distinct from cherry tomatoes (candidates 1 and 3). The final list contains 6 items, all physically on the plate.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "grilled salmon",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 50,
+                "fat": 6,
+                "kcal": 350
+              }
+            },
+            {
+              "name": "lettuce",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 8,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0.8,
+                "fat": 0.3,
+                "kcal": 7
+              }
+            },
+            {
+              "name": "cucumber",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 0.1,
+                "sugars": 0.6,
+                "polyols": 0,
+                "protein": 0.4,
+                "fat": 0.1,
+                "kcal": 16
+              }
+            },
+            {
+              "name": "avocado",
+              "estimatedGrams": 25,
+              "confidence": "medium",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 2,
+                "fiber": 2,
+                "sugars": 0.4,
+                "polyols": 0,
+                "protein": 2.2,
+                "fat": 14,
+                "kcal": 160
+              }
+            },
+            {
+              "name": "red onion",
+              "estimatedGrams": 10,
+              "confidence": "medium",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 2,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0.2,
+                "fat": 0.1,
+                "kcal": 10
+              }
+            },
+            {
+              "name": "cherry tomatoes",
+              "estimatedGrams": 20,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 2.5,
+                "fiber": 0.6,
+                "sugars": 0.7,
+                "polyols": 0,
+                "protein": 0.8,
+                "fat": 0.1,
+                "kcal": 15
+              }
+            },
+            {
+              "name": "feta cheese",
+              "estimatedGrams": 30,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 15,
+                "fat": 0.8,
+                "kcal": 120
+              }
+            }
+          ],
+          "notes": null,
+          "latency_ms": 31539.452692028135,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 891,
+          "completion_tokens": 820,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Salmon",
+              "estimatedGrams": 400,
+              "confidence": "high",
+              "portionHint": "Grilled salmon fillets",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 40,
+                "fat": 20,
+                "kcal": 450
+              }
+            },
+            {
+              "name": "Lettuce",
+              "estimatedGrams": 300,
+              "confidence": "high",
+              "portionHint": "Romaine lettuce used",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0.4,
+                "fat": 0,
+                "kcal": 7
+              }
+            },
+            {
+              "name": "Cucumber",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "Thinly sliced cucumber",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 0.5,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0.3,
+                "fat": 0,
+                "kcal": 7
+              }
+            },
+            {
+              "name": "Avocado",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": "Sliced avocado",
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 1.5,
+                "sugars": 0.5,
+                "polyols": 0,
+                "protein": 2,
+                "fat": 15,
+                "kcal": 240
+              }
+            },
+            {
+              "name": "Tomato",
+              "estimatedGrams": 80,
+              "confidence": "high",
+              "portionHint": "Cherry tomatoes",
+              "macrosPer100g": {
+                "carbs": 9,
+                "fiber": 3,
+                "sugars": 8,
+                "polyols": 1,
+                "protein": 0.9,
+                "fat": 0.2,
+                "kcal": 18
+              }
+            },
+            {
+              "name": "Red Onion",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "Thinly sliced red onion",
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0.4,
+                "fat": 0,
+                "kcal": 40
+              }
+            },
+            {
+              "name": "Feta Cheese",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "Crumbled feta cheese",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 10,
+                "fat": 11,
+                "kcal": 100
+              }
+            },
+            {
+              "name": "Olive Oil",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "Drizzled olive oil",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 14,
+                "kcal": 884
+              }
+            },
+            {
+              "name": "Olives",
+              "estimatedGrams": 20,
+              "confidence": "medium",
+              "portionHint": "Black olives",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 1.5,
+                "sugars": 0.5,
+                "polyols": 0,
+                "protein": 0.2,
+                "fat": 11,
+                "kcal": 120
+              }
+            },
+            {
+              "name": "Lemon",
+              "estimatedGrams": 20,
+              "confidence": "high",
+              "portionHint": "Sliced lemon",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0.1,
+                "fat": 0,
+                "kcal": 2
+              }
+            }
+          ],
+          "notes": "Salmon is the main protein source; other items provide a mix of vitamins, minerals, and healthy fats. Lemon adds flavor and vitamin C.",
+          "latency_ms": 42661.351166898385,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 550,
+          "completion_tokens": 1177,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "Salad",
+              "estimatedGrams": 450,
+              "confidence": "high",
+              "portionHint": "Entire plate",
+              "macrosPer100g": {
+                "carbs": 45,
+                "fiber": 12,
+                "sugars": 3,
+                "polyols": 1,
+                "protein": 8,
+                "fat": 8,
+                "kcal": 800
+              }
+            },
+            {
+              "name": "Salmon",
+              "estimatedGrams": 300,
+              "confidence": "high",
+              "portionHint": "Two fillets",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 36,
+                "fat": 20,
+                "kcal": 360
+              }
+            },
+            {
+              "name": "Avocado",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "Chopped",
+              "macrosPer100g": {
+                "carbs": 7,
+                "fiber": 3,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 14,
+                "kcal": 240
+              }
+            },
+            {
+              "name": "Tomatoes",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "Chopped",
+              "macrosPer100g": {
+                "carbs": 18,
+                "fiber": 2,
+                "sugars": 5,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0.5,
+                "kcal": 18
+              }
+            },
+            {
+              "name": "Olives",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": "Sliced",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 2,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 13,
+                "kcal": 120
+              }
+            },
+            {
+              "name": "Lemon",
+              "estimatedGrams": 2,
+              "confidence": "medium",
+              "portionHint": "Sliced",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "Olive Oil",
+              "estimatedGrams": 15,
+              "confidence": "high",
+              "portionHint": "Smeared",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 13,
+                "kcal": 240
+              }
+            }
+          ],
+          "notes": null,
+          "latency_ms": 24330.629554926418,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 548,
+          "completion_tokens": 777,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 102865.32104900107,
+      "total_latency_ms": 158737.10177093744,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 5240,
+      "completion_tokens": 3809,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 14218
+    }
+  },
+  "04": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "Beef Burger",
+            "estimatedGrams": 450,
+            "confidence": "high",
+            "portionHint": "a fist-sized portion",
+            "macrosPer100g": {
+              "carbs": 15,
+              "fiber": 3,
+              "sugars": 2,
+              "polyols": 5,
+              "protein": 25,
+              "fat": 18,
+              "kcal": 400
+            }
+          },
+          {
+            "name": "French Fries",
+            "estimatedGrams": 250,
+            "confidence": "medium",
+            "portionHint": "two portions",
+            "macrosPer100g": {
+              "carbs": 30,
+              "fiber": 1,
+              "sugars": 5,
+              "polyols": 10,
+              "protein": 2,
+              "fat": 5,
+              "kcal": 250
+            }
+          },
+          {
+            "name": "Ketchup",
+            "estimatedGrams": 60,
+            "confidence": "high",
+            "portionHint": "a small bowl",
+            "macrosPer100g": {
+              "carbs": 4,
+              "fiber": 1,
+              "sugars": 3,
+              "polyols": 2,
+              "protein": 0,
+              "fat": 0,
+              "kcal": 10
+            }
+          },
+          {
+            "name": "Pickle",
+            "estimatedGrams": 10,
+            "confidence": "medium",
+            "portionHint": "a small pickle slice",
+            "macrosPer100g": {
+              "carbs": 3,
+              "fiber": 1,
+              "sugars": 1,
+              "polyols": 2,
+              "protein": 0,
+              "fat": 0,
+              "kcal": 5
+            }
+          }
+        ],
+        "notes": "Burger and French Fries are consistent across candidates. Ketchup appears in all three. Pickle is mentioned by two candidates (medium confidence in C1, low in C2, low in C3). Bread and Glass are excluded as they are not on the plate (bread is not visible, glass is a beverage container).",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "Beef Burger",
+              "estimatedGrams": 200,
+              "confidence": "high",
+              "portionHint": "a fist-sized portion",
+              "macrosPer100g": {
+                "carbs": 15,
+                "fiber": 3,
+                "sugars": 2,
+                "polyols": 5,
+                "protein": 25,
+                "fat": 18,
+                "kcal": 400
+              }
+            },
+            {
+              "name": "French Fries",
+              "estimatedGrams": 150,
+              "confidence": "medium",
+              "portionHint": "two portions",
+              "macrosPer100g": {
+                "carbs": 30,
+                "fiber": 1,
+                "sugars": 5,
+                "polyols": 10,
+                "protein": 2,
+                "fat": 5,
+                "kcal": 250
+              }
+            },
+            {
+              "name": "Ketchup",
+              "estimatedGrams": 10,
+              "confidence": "high",
+              "portionHint": "a small bowl",
+              "macrosPer100g": {
+                "carbs": 4,
+                "fiber": 1,
+                "sugars": 3,
+                "polyols": 2,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 10
+              }
+            },
+            {
+              "name": "Pickle",
+              "estimatedGrams": 5,
+              "confidence": "medium",
+              "portionHint": "a small pickle slice",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 2,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 5
+              }
+            }
+          ],
+          "notes": "",
+          "latency_ms": 22510.97098190803,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 1423,
+          "completion_tokens": 458,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Hamburger",
+              "estimatedGrams": 250,
+              "confidence": "high",
+              "portionHint": "full",
+              "macrosPer100g": {
+                "carbs": 30,
+                "fiber": 5,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 25,
+                "fat": 18,
+                "kcal": 700
+              }
+            },
+            {
+              "name": "French Fries",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "generous serving",
+              "macrosPer100g": {
+                "carbs": 28,
+                "fiber": 1,
+                "sugars": 3,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 3,
+                "kcal": 230
+              }
+            },
+            {
+              "name": "Pickles",
+              "estimatedGrams": 15,
+              "confidence": "low",
+              "portionHint": "small pickle slices",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 2
+              }
+            },
+            {
+              "name": "Ketchup",
+              "estimatedGrams": 10,
+              "confidence": "high",
+              "portionHint": "small container",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 0,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 5
+              }
+            },
+            {
+              "name": "Bread",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "toasted bread",
+              "macrosPer100g": {
+                "carbs": 25,
+                "fiber": 2,
+                "sugars": 5,
+                "polyols": 0,
+                "protein": 2,
+                "fat": 1,
+                "kcal": 250
+              }
+            },
+            {
+              "name": "Glass",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "beer",
+              "macrosPer100g": {
+                "carbs": 4,
+                "fiber": 0,
+                "sugars": 4,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 50
+              }
+            }
+          ],
+          "notes": "No beverages were detected.",
+          "latency_ms": 29207.41239201743,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 1082,
+          "completion_tokens": 671,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "Burger",
+              "estimatedGrams": 400,
+              "confidence": "high",
+              "portionHint": "meat patty and bun",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 30,
+                "fat": 25,
+                "kcal": 250
+              }
+            },
+            {
+              "name": "French Fries",
+              "estimatedGrams": 300,
+              "confidence": "medium",
+              "portionHint": "baked fries",
+              "macrosPer100g": {
+                "carbs": 35,
+                "fiber": 2.5,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 2,
+                "fat": 3,
+                "kcal": 110
+              }
+            },
+            {
+              "name": "Ketchup",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": "small jar",
+              "macrosPer100g": {
+                "carbs": 9,
+                "fiber": 0,
+                "sugars": 4.5,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 15
+              }
+            },
+            {
+              "name": "Pickles",
+              "estimatedGrams": 25,
+              "confidence": "low",
+              "portionHint": "small slices",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 7
+              }
+            }
+          ],
+          "notes": "No drinks visible in the image.",
+          "latency_ms": 15150.817033019848,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 1080,
+          "completion_tokens": 464,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 73540.91834102292,
+      "total_latency_ms": 111203.5315129906,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 5865,
+      "completion_tokens": 2366,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 14134
+    }
+  },
+  "05": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "Rice",
+            "estimatedGrams": 300,
+            "confidence": "high",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 25,
+              "fiber": 2,
+              "sugars": 3,
+              "polyols": 4,
+              "protein": 3,
+              "fat": 2,
+              "kcal": 240
+            }
+          },
+          {
+            "name": "Chicken",
+            "estimatedGrams": 600,
+            "confidence": "medium",
+            "portionHint": "about three quarters of the plate",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 31,
+              "fat": 13,
+              "kcal": 450
+            }
+          },
+          {
+            "name": "Spinach",
+            "estimatedGrams": 300,
+            "confidence": "medium",
+            "portionHint": "scattered throughout the plate",
+            "macrosPer100g": {
+              "carbs": 2,
+              "fiber": 1,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 0,
+              "kcal": 10
+            }
+          },
+          {
+            "name": "Green leafy vegetable",
+            "estimatedGrams": 80,
+            "confidence": "high",
+            "portionHint": "Cooked and mixed with chicken and rice",
+            "macrosPer100g": {
+              "carbs": 5,
+              "fiber": 2,
+              "sugars": 0.5,
+              "polyols": 0.5,
+              "protein": 1,
+              "fat": 0.2,
+              "kcal": 20
+            }
+          },
+          {
+            "name": "Carrot",
+            "estimatedGrams": 30,
+            "confidence": "medium",
+            "portionHint": "Diced and scattered on the plate",
+            "macrosPer100g": {
+              "carbs": 6,
+              "fiber": 1,
+              "sugars": 2,
+              "polyols": 1,
+              "protein": 0.3,
+              "fat": 0.1,
+              "kcal": 25
+            }
+          },
+          {
+            "name": "Onion",
+            "estimatedGrams": 20,
+            "confidence": "low",
+            "portionHint": "Chopped and mixed with other ingredients",
+            "macrosPer100g": {
+              "carbs": 6,
+              "fiber": 1,
+              "sugars": 2,
+              "polyols": 1,
+              "protein": 0.2,
+              "fat": 0.1,
+              "kcal": 30
+            }
+          }
+        ],
+        "notes": "The plate contains rice (300g), chicken (600g), spinach (300g), green leafy vegetables (80g), carrot (30g), and onion (20g). The rice appears to be cooked with a light sauce, the chicken is well-cooked, and the spinach is fresh. The green leafy vegetable is likely saut\u00e9ed vegetables, and the carrot and onion are added as garnish.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "Rice",
+              "estimatedGrams": 180,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 25,
+                "fiber": 2,
+                "sugars": 3,
+                "polyols": 4,
+                "protein": 3,
+                "fat": 2,
+                "kcal": 240
+              }
+            },
+            {
+              "name": "Chicken",
+              "estimatedGrams": 450,
+              "confidence": "medium",
+              "portionHint": "about three quarters of the plate",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 31,
+                "fat": 13,
+                "kcal": 450
+              }
+            },
+            {
+              "name": "Spinach",
+              "estimatedGrams": 300,
+              "confidence": "medium",
+              "portionHint": "scattered throughout the plate",
+              "macrosPer100g": {
+                "carbs": 2,
+                "fiber": 1,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 10
+              }
+            }
+          ],
+          "notes": "The rice appears to be cooked with a light sauce, possibly curry or a similar flavorful broth. The chicken pieces are lightly colored and seem to be well-cooked, while the spinach is vibrant green, indicating it is fresh and properly wilted. The portion sizes seem appropriate, with a generous amount of rice and chicken but a moderate amount of spinach. Overall, the dish looks balanced and nutritious.",
+          "latency_ms": 14856.938477954827,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2433,
+          "completion_tokens": 431,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "White rice",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "Served in a ring",
+              "macrosPer100g": {
+                "carbs": 25,
+                "fiber": 0.5,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 2,
+                "fat": 0,
+                "kcal": 100
+              }
+            },
+            {
+              "name": "Chicken",
+              "estimatedGrams": 150,
+              "confidence": "medium",
+              "portionHint": "Chunks distributed around the rice",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 30,
+                "fat": 3,
+                "kcal": 180
+              }
+            },
+            {
+              "name": "Green leafy vegetable",
+              "estimatedGrams": 80,
+              "confidence": "high",
+              "portionHint": "Cooked and mixed with chicken and rice",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 2,
+                "sugars": 0.5,
+                "polyols": 0.5,
+                "protein": 1,
+                "fat": 0.2,
+                "kcal": 20
+              }
+            },
+            {
+              "name": "Carrot",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "Diced and scattered on the plate",
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 1,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 0.3,
+                "fat": 0.1,
+                "kcal": 25
+              }
+            },
+            {
+              "name": "Onion",
+              "estimatedGrams": 20,
+              "confidence": "low",
+              "portionHint": "Chopped and mixed with other ingredients",
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 1,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 0.2,
+                "fat": 0.1,
+                "kcal": 30
+              }
+            }
+          ],
+          "notes": "The image shows a plate with white rice in the shape of a ring, chicken pieces around the rice, green leafy vegetables, diced carrots, and chopped onions. The rice has an interesting donut-shaped hole in the center. The chicken pieces appear to be lightly browned and mixed with the vegetables and rice, suggesting a savory curry or stew dish.",
+          "latency_ms": 23369.403123972006,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2092,
+          "completion_tokens": 666,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "Rice",
+              "estimatedGrams": 200,
+              "confidence": "high",
+              "portionHint": "Cooked and served in a central mound",
+              "macrosPer100g": {
+                "carbs": 45,
+                "fiber": 2,
+                "sugars": 5,
+                "polyols": 0,
+                "protein": 2,
+                "fat": 1,
+                "kcal": 80
+              }
+            },
+            {
+              "name": "Chicken",
+              "estimatedGrams": 400,
+              "confidence": "medium",
+              "portionHint": "Chunks of cooked chicken scattered around",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 30,
+                "fat": 2,
+                "kcal": 165
+              }
+            },
+            {
+              "name": "Green Vegetables",
+              "estimatedGrams": 300,
+              "confidence": "medium",
+              "portionHint": "Cooked and mixed around the dish",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 2,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 20
+              }
+            },
+            {
+              "name": "Tomato Slices",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "Sliced tomato added as garnish",
+              "macrosPer100g": {
+                "carbs": 18,
+                "fiber": 1,
+                "sugars": 7,
+                "polyols": 0,
+                "protein": 0.9,
+                "fat": 0,
+                "kcal": 17
+              }
+            }
+          ],
+          "notes": "The rice has a unique donut shape, possibly formed by covering it with a wet mixture before cooking. The chicken is light in color, suggesting it might be skinless. The green vegetables are likely saut\u00e9ed or steamed, and the tomato slices are likely added for flavor and visual appeal.",
+          "latency_ms": 19395.66844399087,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2090,
+          "completion_tokens": 535,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 92043.63733809441,
+      "total_latency_ms": 126297.18877398409,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 8982,
+      "completion_tokens": 2661,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 14109
+    }
+  },
+  "06": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "Sushi",
+            "estimatedGrams": 175,
+            "confidence": "high",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 12,
+              "fiber": 2,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 4,
+              "fat": 10,
+              "kcal": 280
+            }
+          },
+          {
+            "name": "Miso Soup",
+            "estimatedGrams": 50,
+            "confidence": "medium",
+            "portionHint": "small bowl",
+            "macrosPer100g": {
+              "carbs": 3,
+              "fiber": 1,
+              "sugars": 0,
+              "polyols": 1,
+              "protein": 1,
+              "fat": 0.5,
+              "kcal": 30
+            }
+          },
+          {
+            "name": "Garlic",
+            "estimatedGrams": 10,
+            "confidence": "high",
+            "portionHint": "small pile",
+            "macrosPer100g": {
+              "carbs": 1,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 0,
+              "kcal": 0
+            }
+          },
+          {
+            "name": "Rice",
+            "estimatedGrams": 30,
+            "confidence": "medium",
+            "portionHint": "1 cup",
+            "macrosPer100g": {
+              "carbs": 45,
+              "fiber": 3,
+              "sugars": 2,
+              "polyols": 1,
+              "protein": 1,
+              "fat": 0.5,
+              "kcal": 180
+            }
+          },
+          {
+            "name": "Avocado",
+            "estimatedGrams": 20,
+            "confidence": "high",
+            "portionHint": "1 small piece",
+            "macrosPer100g": {
+              "carbs": 6,
+              "fiber": 3,
+              "sugars": 1,
+              "polyols": 1,
+              "protein": 1,
+              "fat": 1,
+              "kcal": 160
+            }
+          },
+          {
+            "name": "Salmon",
+            "estimatedGrams": 20,
+            "confidence": "high",
+            "portionHint": "3 small pieces",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 20,
+              "fat": 25,
+              "kcal": 250
+            }
+          }
+        ],
+        "notes": "Merged sushi (175g total from candidates), miso soup, garlic, rice, avocado, and salmon. Wasabi and ginger were not included as they were minor condiments not present on the plate in the main photo.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "sushi",
+              "estimatedGrams": 200,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 1,
+                "sugars": 0,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0.5,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "miso soup",
+              "estimatedGrams": 50,
+              "confidence": "medium",
+              "portionHint": "small bowl",
+              "macrosPer100g": {
+                "carbs": 3,
+                "fiber": 1,
+                "sugars": 0,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0.5,
+                "kcal": 30
+              }
+            },
+            {
+              "name": "garlic",
+              "estimatedGrams": 10,
+              "confidence": "high",
+              "portionHint": "small pile",
+              "macrosPer100g": {
+                "carbs": 1,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 0
+              }
+            }
+          ],
+          "notes": "None",
+          "latency_ms": 28196.090723969974,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2433,
+          "completion_tokens": 347,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Sushi",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "3 pieces",
+              "macrosPer100g": {
+                "carbs": 30,
+                "fiber": 5,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 20,
+                "fat": 8,
+                "kcal": 600
+              }
+            },
+            {
+              "name": "Rice",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "1 cup",
+              "macrosPer100g": {
+                "carbs": 45,
+                "fiber": 3,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0.5,
+                "kcal": 180
+              }
+            },
+            {
+              "name": "Avocado",
+              "estimatedGrams": 20,
+              "confidence": "high",
+              "portionHint": "1 small piece",
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 3,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 1,
+                "kcal": 160
+              }
+            },
+            {
+              "name": "Salmon",
+              "estimatedGrams": 20,
+              "confidence": "high",
+              "portionHint": "3 small pieces",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 20,
+                "fat": 25,
+                "kcal": 250
+              }
+            },
+            {
+              "name": "Tuna",
+              "estimatedGrams": 20,
+              "confidence": "high",
+              "portionHint": "3 small pieces",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 20,
+                "fat": 15,
+                "kcal": 150
+              }
+            },
+            {
+              "name": "Eggplant",
+              "estimatedGrams": 10,
+              "confidence": "medium",
+              "portionHint": "1 small piece",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 3,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0.5,
+                "kcal": 50
+              }
+            },
+            {
+              "name": "Cucumber",
+              "estimatedGrams": 10,
+              "confidence": "medium",
+              "portionHint": "1 small piece",
+              "macrosPer100g": {
+                "carbs": 7,
+                "fiber": 4,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 0.3,
+                "fat": 0.2,
+                "kcal": 15
+              }
+            },
+            {
+              "name": "Wasabi",
+              "estimatedGrams": 2,
+              "confidence": "high",
+              "portionHint": "a small dollop",
+              "macrosPer100g": {
+                "carbs": 4,
+                "fiber": 0.5,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 0.5,
+                "fat": 0.1,
+                "kcal": 5
+              }
+            },
+            {
+              "name": "Wasabi",
+              "estimatedGrams": 2,
+              "confidence": "high",
+              "portionHint": "a small dollop",
+              "macrosPer100g": {
+                "carbs": 4,
+                "fiber": 0.5,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 0.5,
+                "fat": 0.1,
+                "kcal": 5
+              }
+            },
+            {
+              "name": "Ginger",
+              "estimatedGrams": 2,
+              "confidence": "high",
+              "portionHint": "a small dollop",
+              "macrosPer100g": {
+                "carbs": 4,
+                "fiber": 0.5,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 0.5,
+                "fat": 0.1,
+                "kcal": 5
+              }
+            },
+            {
+              "name": "Soy Sauce",
+              "estimatedGrams": 1,
+              "confidence": "high",
+              "portionHint": "1 teaspoon",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 2
+              }
+            },
+            {
+              "name": "Sesame Oil",
+              "estimatedGrams": 1,
+              "confidence": "high",
+              "portionHint": "a small drizzle",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 14,
+                "kcal": 120
+              }
+            }
+          ],
+          "notes": "The meal appears to be a balanced sushi platter with a variety of fish types, rice, avocado, and vegetables. The dish is served with soy sauce, wasabi, and ginger, which are common condiments in Japanese cuisine.",
+          "latency_ms": 65283.96541404072,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2092,
+          "completion_tokens": 1399,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "Sushi",
+              "estimatedGrams": 150,
+              "confidence": "high",
+              "portionHint": "Multiple pieces neatly arranged on a plate",
+              "macrosPer100g": {
+                "carbs": 12,
+                "fiber": 2,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 4,
+                "fat": 10,
+                "kcal": 280
+              }
+            },
+            {
+              "name": "Wasabi",
+              "estimatedGrams": 5,
+              "confidence": "medium",
+              "portionHint": "Small mound on the plate",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "Ginger",
+              "estimatedGrams": 3,
+              "confidence": "high",
+              "portionHint": "Thinly sliced and placed on the plate",
+              "macrosPer100g": {
+                "carbs": 2,
+                "fiber": 1,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 4
+              }
+            },
+            {
+              "name": "Chili Oil",
+              "estimatedGrams": 10,
+              "confidence": "low",
+              "portionHint": "Small dish on the side",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            }
+          ],
+          "notes": "Sushi is the main dish, accompanied by a small amount of wasabi, ginger, and chili oil.",
+          "latency_ms": 17323.69636092335,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2090,
+          "completion_tokens": 488,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 92832.96495408285,
+      "total_latency_ms": 158121.25612294767,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 9437,
+      "completion_tokens": 3200,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 14050
+    }
+  },
+  "07": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "spaghetti",
+            "estimatedGrams": 250,
+            "confidence": "high",
+            "portionHint": "about half the plate",
+            "macrosPer100g": {
+              "carbs": 35,
+              "fiber": 2,
+              "sugars": 1,
+              "polyols": 1,
+              "protein": 4,
+              "fat": 2,
+              "kcal": 250
+            }
+          },
+          {
+            "name": "ground beef",
+            "estimatedGrams": 100,
+            "confidence": "high",
+            "portionHint": "about a fist-sized portion",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 20,
+              "fat": 6,
+              "kcal": 100
+            }
+          },
+          {
+            "name": "corn kernels",
+            "estimatedGrams": 50,
+            "confidence": "high",
+            "portionHint": "a small portion",
+            "macrosPer100g": {
+              "carbs": 9,
+              "fiber": 0,
+              "sugars": 2,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 0,
+              "kcal": 90
+            }
+          },
+          {
+            "name": "green beans",
+            "estimatedGrams": 50,
+            "confidence": "high",
+            "portionHint": "a small portion",
+            "macrosPer100g": {
+              "carbs": 8,
+              "fiber": 3,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 0,
+              "kcal": 80
+            }
+          },
+          {
+            "name": "bell pepper",
+            "estimatedGrams": 30,
+            "confidence": "high",
+            "portionHint": "a few thin slices scattered throughout the dish",
+            "macrosPer100g": {
+              "carbs": 6,
+              "fiber": 1,
+              "sugars": 1,
+              "polyols": 0,
+              "protein": 0.4,
+              "fat": 0.1,
+              "kcal": 15
+            }
+          },
+          {
+            "name": "tomatoes",
+            "estimatedGrams": 40,
+            "confidence": "medium",
+            "portionHint": "Chopped into small pieces mixed with the other ingredients",
+            "macrosPer100g": {
+              "carbs": 9,
+              "fiber": 2,
+              "sugars": 4,
+              "polyols": 0,
+              "protein": 1,
+              "fat": 0.2,
+              "kcal": 18
+            }
+          }
+        ],
+        "notes": "The plate contains spaghetti, ground beef, corn kernels, green beans, bell pepper, and tomatoes. All items are present across the three candidate identifications with high confidence for the main components (spaghetti, ground beef, corn, green beans). Bell pepper and tomatoes are also confirmed by one candidate each.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "spaghetti",
+              "estimatedGrams": 250,
+              "confidence": "high",
+              "portionHint": "about half the plate",
+              "macrosPer100g": {
+                "carbs": 35,
+                "fiber": 2,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 4,
+                "fat": 2,
+                "kcal": 250
+              }
+            },
+            {
+              "name": "ground beef",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "about a fist-sized portion",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 20,
+                "fat": 6,
+                "kcal": 100
+              }
+            },
+            {
+              "name": "corn kernels",
+              "estimatedGrams": 50,
+              "confidence": "medium",
+              "portionHint": "a small portion",
+              "macrosPer100g": {
+                "carbs": 9,
+                "fiber": 0,
+                "sugars": 2,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 90
+              }
+            },
+            {
+              "name": "green beans",
+              "estimatedGrams": 50,
+              "confidence": "medium",
+              "portionHint": "a small portion",
+              "macrosPer100g": {
+                "carbs": 8,
+                "fiber": 3,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 80
+              }
+            }
+          ],
+          "notes": "No additional garnishes or sides were observed.",
+          "latency_ms": 33339.61190993432,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2433,
+          "completion_tokens": 465,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Spaghetti",
+              "estimatedGrams": 250,
+              "confidence": "high",
+              "portionHint": "A generous portion covering the entire plate",
+              "macrosPer100g": {
+                "carbs": 45,
+                "fiber": 6,
+                "sugars": 3,
+                "polyols": 0,
+                "protein": 4,
+                "fat": 3,
+                "kcal": 450
+              }
+            },
+            {
+              "name": "Ground Beef",
+              "estimatedGrams": 150,
+              "confidence": "medium",
+              "portionHint": "A small amount mixed with the other ingredients",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 18,
+                "fat": 5,
+                "kcal": 200
+              }
+            },
+            {
+              "name": "Corn",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": "A few kernels scattered throughout the dish",
+              "macrosPer100g": {
+                "carbs": 11,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0.2,
+                "kcal": 86
+              }
+            },
+            {
+              "name": "Green Beans",
+              "estimatedGrams": 60,
+              "confidence": "medium",
+              "portionHint": "A small portion mixed with the other ingredients",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 0.8,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0.2,
+                "kcal": 19
+              }
+            },
+            {
+              "name": "Bell Pepper",
+              "estimatedGrams": 30,
+              "confidence": "high",
+              "portionHint": "A few thin slices scattered throughout the dish",
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 0,
+                "protein": 0.4,
+                "fat": 0.1,
+                "kcal": 15
+              }
+            },
+            {
+              "name": "Tomatoes",
+              "estimatedGrams": 40,
+              "confidence": "medium",
+              "portionHint": "Chopped into small pieces mixed with the other ingredients",
+              "macrosPer100g": {
+                "carbs": 9,
+                "fiber": 2,
+                "sugars": 4,
+                "polyols": 0,
+                "protein": 1,
+                "fat": 0.2,
+                "kcal": 18
+              }
+            }
+          ],
+          "notes": "The dish appears to be a hearty and balanced meal with a good mix of carbohydrates, proteins, and vegetables. The spaghetti serves as the main carbohydrate source, while the ground beef provides protein. Corn adds a bit of sweetness and fiber, green beans contribute additional fiber and vitamins, bell peppers offer a crunchy texture and vitamin C, and tomatoes provide moisture, acidity, and antioxidants. The overall portion size appears to be generous, suitable for a meal serving one person. The meal looks flavorful and well-seasoned, with a slightly saucy consistency from the sauce used in the preparation. The dish is visually appealing with a variety of colors from the vegetables, making it an attractive and appetizing meal.",
+          "latency_ms": 62457.70379691385,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2092,
+          "completion_tokens": 862,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "spaghetti",
+              "estimatedGrams": 200,
+              "confidence": "high",
+              "portionHint": "generous serving",
+              "macrosPer100g": {
+                "carbs": 33,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 2,
+                "fat": 1,
+                "kcal": 380
+              }
+            },
+            {
+              "name": "ground beef",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "not enough to determine exact quantity",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 20,
+                "fat": 14,
+                "kcal": 200
+              }
+            },
+            {
+              "name": "corn kernels",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": "small portion",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 1,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 33
+              }
+            },
+            {
+              "name": "carrots",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "small portion",
+              "macrosPer100g": {
+                "carbs": 8,
+                "fiber": 2,
+                "sugars": 2,
+                "polyols": 1,
+                "protein": 0.9,
+                "fat": 0.1,
+                "kcal": 41
+              }
+            },
+            {
+              "name": "green beans",
+              "estimatedGrams": 60,
+              "confidence": "high",
+              "portionHint": "generous serving",
+              "macrosPer100g": {
+                "carbs": 8,
+                "fiber": 2,
+                "sugars": 1,
+                "polyols": 1,
+                "protein": 1,
+                "fat": 0,
+                "kcal": 23
+              }
+            }
+          ],
+          "notes": "The dish appears to be a hearty and protein-rich meal. The ground beef provides a good amount of protein and iron, while the corn, carrots, and green beans add essential vitamins and fiber. The spaghetti serves as the main carbohydrate source, making this a well-balanced and satisfying meal.",
+          "latency_ms": 37778.52753805928,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2090,
+          "completion_tokens": 629,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 93268.14160996582,
+      "total_latency_ms": 164388.62256798893,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 9239,
+      "completion_tokens": 2959,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 13945
+    }
+  },
+  "08": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "Apple slices",
+            "estimatedGrams": 90,
+            "confidence": "high",
+            "portionHint": "thin slices, approximately 6-8 slices",
+            "macrosPer100g": {
+              "carbs": 14.5,
+              "fiber": 3.5,
+              "sugars": 3,
+              "polyols": 1,
+              "protein": 0.35,
+              "fat": 0.15,
+              "kcal": 2.5
+            }
+          },
+          {
+            "name": "Granola",
+            "estimatedGrams": 90,
+            "confidence": "high",
+            "portionHint": "sprinkled on top",
+            "macrosPer100g": {
+              "carbs": 25,
+              "fiber": 5,
+              "sugars": 3,
+              "polyols": 0,
+              "protein": 3,
+              "fat": 4,
+              "kcal": 70
+            }
+          },
+          {
+            "name": "Yogurt",
+            "estimatedGrams": 200,
+            "confidence": "high",
+            "portionHint": "white creamy texture",
+            "macrosPer100g": {
+              "carbs": 12,
+              "fiber": 0,
+              "sugars": 4,
+              "polyols": 0,
+              "protein": 5,
+              "fat": 5,
+              "kcal": 100
+            }
+          }
+        ],
+        "notes": "All three candidates agree on apple slices, granola, and yogurt. Apple slices total ~90g (60g + 30g), granola total ~90g (100g + 50g), and yogurt total 200g. Confidence is high for all items as they are consistently identified across multiple candidates.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "Apple slices",
+              "estimatedGrams": 60,
+              "confidence": "high",
+              "portionHint": "thin slices, approximately 6-8 slices",
+              "macrosPer100g": {
+                "carbs": 15,
+                "fiber": 4,
+                "sugars": 3,
+                "polyols": 2,
+                "protein": 0.5,
+                "fat": 0.1,
+                "kcal": 2.5
+              }
+            },
+            {
+              "name": "Granola",
+              "estimatedGrams": 100,
+              "confidence": "medium",
+              "portionHint": "mixed, approximately 5-10 servings",
+              "macrosPer100g": {
+                "carbs": 25,
+                "fiber": 5,
+                "sugars": 10,
+                "polyols": 2,
+                "protein": 3,
+                "fat": 5,
+                "kcal": 50
+              }
+            }
+          ],
+          "notes": "The apple slices and granola are the primary sources of carbohydrates and fiber in the meal.",
+          "latency_ms": 9612.426912994124,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2433,
+          "completion_tokens": 270,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Granola",
+              "estimatedGrams": 50,
+              "confidence": "high",
+              "portionHint": null,
+              "macrosPer100g": {
+                "carbs": 25,
+                "fiber": 5,
+                "sugars": 3,
+                "polyols": 2,
+                "protein": 2,
+                "fat": 6,
+                "kcal": 200
+              }
+            },
+            {
+              "name": "Yogurt",
+              "estimatedGrams": 200,
+              "confidence": "medium",
+              "portionHint": null,
+              "macrosPer100g": {
+                "carbs": 6,
+                "fiber": 0,
+                "sugars": 2,
+                "polyols": 0,
+                "protein": 12,
+                "fat": 10,
+                "kcal": 100
+              }
+            },
+            {
+              "name": "Apple Slices",
+              "estimatedGrams": 30,
+              "confidence": "high",
+              "portionHint": ", ",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 3,
+                "sugars": 6,
+                "polyols": 1,
+                "protein": 0.2,
+                "fat": 0.2,
+                "kcal": 60
+              }
+            }
+          ],
+          "notes": "The granola appears to be a mixture of oats, nuts, and seeds. The yogurt is plain and unsweetened. The apple slices are fresh and have a pale red and white coloration.",
+          "latency_ms": 13432.463441044092,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2092,
+          "completion_tokens": 381,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "granola",
+              "estimatedGrams": 60,
+              "confidence": "high",
+              "portionHint": "sprinkled on top",
+              "macrosPer100g": {
+                "carbs": 25,
+                "fiber": 5,
+                "sugars": 3,
+                "polyols": 0,
+                "protein": 3,
+                "fat": 4,
+                "kcal": 70
+              }
+            },
+            {
+              "name": "yogurt",
+              "estimatedGrams": 200,
+              "confidence": "high",
+              "portionHint": "white creamy texture",
+              "macrosPer100g": {
+                "carbs": 12,
+                "fiber": 0,
+                "sugars": 4,
+                "polyols": 0,
+                "protein": 5,
+                "fat": 5,
+                "kcal": 100
+              }
+            },
+            {
+              "name": "apple slices",
+              "estimatedGrams": 30,
+              "confidence": "medium",
+              "portionHint": "thinly sliced, decorative placement",
+              "macrosPer100g": {
+                "carbs": 12,
+                "fiber": 4,
+                "sugars": 2,
+                "polyols": 0,
+                "protein": 0.5,
+                "fat": 0.5,
+                "kcal": 80
+              }
+            }
+          ],
+          "notes": "Served on a light-colored plate over a wooden surface. The granola appears to be mixed with nuts and seeds, while the yogurt looks creamy and white. The apple slices are thinly sliced and placed around the bowl for garnish.",
+          "latency_ms": 14331.948420032859,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2090,
+          "completion_tokens": 403,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 62809.35820995364,
+      "total_latency_ms": 86754.4886150863,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 8486,
+      "completion_tokens": 1734,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 13786
+    }
+  },
+  "09": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "Pizza",
+            "estimatedGrams": 400,
+            "confidence": "high",
+            "portionHint": "a large slice",
+            "macrosPer100g": {
+              "carbs": 20,
+              "fiber": 3,
+              "sugars": 6,
+              "polyols": 0,
+              "protein": 15,
+              "fat": 18,
+              "kcal": 300
+            }
+          },
+          {
+            "name": "Soda",
+            "estimatedGrams": 500,
+            "confidence": "high",
+            "portionHint": "Cup of soda",
+            "macrosPer100g": {
+              "carbs": 70,
+              "fiber": 0,
+              "sugars": 50,
+              "polyols": 0,
+              "protein": 0,
+              "fat": 0,
+              "kcal": 150
+            }
+          }
+        ],
+        "notes": "The plate contains a pizza (cheese and chicken) and a soda. The pizza is the main food item, with a soda also present.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "Pizza",
+              "estimatedGrams": 400,
+              "confidence": "high",
+              "portionHint": "a large slice",
+              "macrosPer100g": {
+                "carbs": 20,
+                "fiber": 3,
+                "sugars": 6,
+                "polyols": 0,
+                "protein": 15,
+                "fat": 18,
+                "kcal": 300
+              }
+            }
+          ],
+          "notes": "The pizza is covered with melted cheese and what appears to be chicken. A person is in the process of wiping their hands with a napkin, indicating they may have just finished eating.",
+          "latency_ms": 21009.599466924556,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2433,
+          "completion_tokens": 162,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Pizza",
+              "estimatedGrams": 2500,
+              "confidence": "high",
+              "portionHint": "Entire pizza",
+              "macrosPer100g": {
+                "carbs": 300,
+                "fiber": 10,
+                "sugars": 20,
+                "polyols": 5,
+                "protein": 50,
+                "fat": 30,
+                "kcal": 2000
+              }
+            },
+            {
+              "name": "Soda",
+              "estimatedGrams": 500,
+              "confidence": "high",
+              "portionHint": "Cup of soda",
+              "macrosPer100g": {
+                "carbs": 70,
+                "fiber": 0,
+                "sugars": 50,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 150
+              }
+            }
+          ],
+          "notes": "Pizza and soda are the main components of this meal.",
+          "latency_ms": 23694.62654099334,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2092,
+          "completion_tokens": 247,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "Pizza",
+              "estimatedGrams": 700,
+              "confidence": "high",
+              "portionHint": "8 slices",
+              "macrosPer100g": {
+                "carbs": 30,
+                "fiber": 5,
+                "sugars": 5,
+                "polyols": 0,
+                "protein": 15,
+                "fat": 10,
+                "kcal": 400
+              }
+            }
+          ],
+          "notes": "The pizza appears to be a cheese and chicken pizza with no visible vegetables or additional toppings. The crust is thin and the cheese is melted evenly across the surface.",
+          "latency_ms": 5524.968415964395,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2090,
+          "completion_tokens": 156,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 47665.94844893552,
+      "total_latency_ms": 74201.40903699212,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 8088,
+      "completion_tokens": 1083,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 13613
+    }
+  },
+  "10": {
+    "ensemble_lfm_thinkjudge": {
+      "final": {
+        "foods": [
+          {
+            "name": "Pepsi",
+            "estimatedGrams": 0,
+            "confidence": "high",
+            "portionHint": "bottle",
+            "macrosPer100g": {
+              "carbs": 0,
+              "fiber": 0,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 0,
+              "fat": 0,
+              "kcal": 0
+            }
+          },
+          {
+            "name": "sandwich",
+            "estimatedGrams": 250,
+            "confidence": "high",
+            "portionHint": "two slices of bread",
+            "macrosPer100g": {
+              "carbs": 45,
+              "fiber": 2,
+              "sugars": 3,
+              "polyols": 0,
+              "protein": 6,
+              "fat": 8,
+              "kcal": 550
+            }
+          },
+          {
+            "name": "salad",
+            "estimatedGrams": 100,
+            "confidence": "high",
+            "portionHint": "a small cup",
+            "macrosPer100g": {
+              "carbs": 5,
+              "fiber": 1,
+              "sugars": 0,
+              "polyols": 0,
+              "protein": 2,
+              "fat": 1,
+              "kcal": 50
+            }
+          }
+        ],
+        "notes": "All three candidates agree on Pepsi, sandwich, and salad. Pepsi is a bottle, sandwich is two slices of bread, and salad is a small cup. No other food items were identified across the candidates.",
+        "raw_ok": true
+      },
+      "candidates": [
+        {
+          "foods": [
+            {
+              "name": "Pepsi",
+              "estimatedGrams": 0,
+              "confidence": "high",
+              "portionHint": "a small bottle",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "sandwich",
+              "estimatedGrams": 250,
+              "confidence": "high",
+              "portionHint": "two slices of bread",
+              "macrosPer100g": {
+                "carbs": 45,
+                "fiber": 2,
+                "sugars": 3,
+                "polyols": 0,
+                "protein": 6,
+                "fat": 8,
+                "kcal": 550
+              }
+            },
+            {
+              "name": "salad",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "a small cup",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 1,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 2,
+                "fat": 1,
+                "kcal": 50
+              }
+            }
+          ],
+          "notes": "No specific notes available.",
+          "latency_ms": 12878.697948995978,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2944,
+          "completion_tokens": 348,
+          "raw_text": null,
+          "variant_id": "a_production"
+        },
+        {
+          "foods": [
+            {
+              "name": "Pepsi",
+              "estimatedGrams": 0,
+              "confidence": "high",
+              "portionHint": "bottle",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "Sandwich",
+              "estimatedGrams": 200,
+              "confidence": "medium",
+              "portionHint": "plate",
+              "macrosPer100g": {
+                "carbs": 20,
+                "fiber": 2,
+                "sugars": 3,
+                "polyols": 5,
+                "protein": 5,
+                "fat": 10,
+                "kcal": 250
+              }
+            },
+            {
+              "name": "Salad",
+              "estimatedGrams": 100,
+              "confidence": "high",
+              "portionHint": "plate",
+              "macrosPer100g": {
+                "carbs": 5,
+                "fiber": 1,
+                "sugars": 2,
+                "polyols": 4,
+                "protein": 1,
+                "fat": 1,
+                "kcal": 100
+              }
+            },
+            {
+              "name": "Coffee",
+              "estimatedGrams": 0,
+              "confidence": "low",
+              "portionHint": "cup",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "Pepsi",
+              "estimatedGrams": 250,
+              "confidence": "high",
+              "portionHint": "bottle",
+              "macrosPer100g": {
+                "carbs": 40,
+                "fiber": 0,
+                "sugars": 40,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 250
+              }
+            }
+          ],
+          "notes": "The coffee in the image is a Pepsi, not Jamaica Blue Coffee. The sandwiches and salad appear to be simple and basic, without any additional toppings or dressings. The Pepsi bottle on the table is full, and there are no condiments or sauces visible.",
+          "latency_ms": 42336.23600099236,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2603,
+          "completion_tokens": 614,
+          "raw_text": null,
+          "variant_id": "c_detection"
+        },
+        {
+          "foods": [
+            {
+              "name": "Pepsi",
+              "estimatedGrams": 0,
+              "confidence": "high",
+              "portionHint": "bottle",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            },
+            {
+              "name": "sandwich",
+              "estimatedGrams": 200,
+              "confidence": "medium",
+              "portionHint": "plate",
+              "macrosPer100g": {
+                "carbs": 15,
+                "fiber": 2,
+                "sugars": 3,
+                "polyols": 0,
+                "protein": 8,
+                "fat": 5,
+                "kcal": 350
+              }
+            },
+            {
+              "name": "salad",
+              "estimatedGrams": 120,
+              "confidence": "low",
+              "portionHint": "plate",
+              "macrosPer100g": {
+                "carbs": 10,
+                "fiber": 3,
+                "sugars": 2,
+                "polyols": 0,
+                "protein": 4,
+                "fat": 1,
+                "kcal": 150
+              }
+            },
+            {
+              "name": "Pepsi",
+              "estimatedGrams": 0,
+              "confidence": "high",
+              "portionHint": "bottle",
+              "macrosPer100g": {
+                "carbs": 0,
+                "fiber": 0,
+                "sugars": 0,
+                "polyols": 0,
+                "protein": 0,
+                "fat": 0,
+                "kcal": 0
+              }
+            }
+          ],
+          "notes": "The sandwich and salad portion sizes seem to be larger than usual. The sandwich contains a substantial amount of carbohydrates and protein, while the salad contains fewer carbohydrates but still provides some protein.",
+          "latency_ms": 37322.89457891602,
+          "cost_usd": 0.0,
+          "raw_ok": true,
+          "prompt_tokens": 2601,
+          "completion_tokens": 484,
+          "raw_text": null,
+          "variant_id": "d_taxonomy_first"
+        }
+      ],
+      "judge_latency_ms": 54916.29337798804,
+      "total_latency_ms": 105118.72010107618,
+      "total_cost_usd": 0.0,
+      "prompt_tokens": 10330,
+      "completion_tokens": 2088,
+      "fan_out": 3,
+      "max_parallel": 2,
+      "vision_model": "lfm-vl",
+      "judge_model": "lfm-judge-think",
+      "judge_temperature": 0,
+      "judge_max_tokens": null,
+      "mem_available_mb_after": 13604
+    }
+  },
+  "_summary": {
+    "total_cost_usd": 0.0,
+    "per_approach_cost_usd": {
+      "ensemble_lfm_thinkjudge": 0.0
+    },
+    "failures": [],
+    "config_name": "local-cpu-v2",
+    "config_path": "configs/local-cpu-v2.json",
+    "approaches": [
+      "ensemble_lfm_thinkjudge"
+    ],
+    "approach_configs": {
+      "ensemble_lfm_thinkjudge": {
+        "type": "ensemble_judge",
+        "vision_model": "lfm_vl",
+        "judge_model": "lfm_judge_think",
+        "variants": [
+          "a_production",
+          "c_detection",
+          "d_taxonomy_first"
+        ],
+        "max_parallel": 2,
+        "judge_temperature": 0,
+        "label": "LFM2.5-VL x3 (a/c/d) + LFM2.5-2.6B judge with reasoning ON, hardened prompt + bounded schema, CPU"
+      }
+    },
+    "models": {
+      "lfm_vl": {
+        "id": "lfm-vl",
+        "provider": "local_lfm_vl",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "LFM2.5-VL-1.6B Q8_0 via llama-server --jinja --mmproj. Held constant across every ensemble in this config so the judge is the only variable."
+      },
+      "lfm_judge": {
+        "id": "lfm-judge",
+        "provider": "local_lfm_judge",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "LFM2.5-2.6B Q8_0, text-only, reasoning OFF. Same server as local-cpu.json \u2014 what changes vs the 2026-08-11 run is the harness side: hardened judge prompt + bounded judge schema (maxItems 6), which llama-server compiles into the GBNF."
+      },
+      "qwen_vl": {
+        "id": "qwen-vl",
+        "provider": "local_qwen_vl",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Qwen3-VL-8B, single-shot only. The cloud pilot's best single-shot row (92.9% recall) was this model \u2014 this measures what it costs on CPU locally."
+      },
+      "qwen_judge": {
+        "id": "qwen-judge",
+        "provider": "local_qwen_judge",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Qwen3-4B, text-only judge \u2014 the 'try a stronger judge' lever from runs/2026-08-11-local-lfm/SCORING.md finding 2."
+      },
+      "lfm_judge_think": {
+        "id": "lfm-judge-think",
+        "provider": "local_lfm_judge_think",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Same LFM2.5-2.6B weights as lfm_judge but served with bounded reasoning ENABLED \u2014 the 'judge is only 1 call, spend the ~60s there' lever. Longer timeout because the reasoning trace precedes the JSON."
+      }
+    },
+    "fan_out_override": null,
+    "images": [
+      "01.jpg",
+      "02.jpg",
+      "03.jpg",
+      "04.jpg",
+      "05.jpg",
+      "06.jpg",
+      "07.jpg",
+      "08.jpg",
+      "09.jpg",
+      "10.jpg"
+    ],
+    "started_at": "2026-08-11T19:09:26.587340+00:00",
+    "wall_seconds": 1331.3,
+    "host": {
+      "hostname": "bluefin",
+      "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "python": "3.14.6",
+      "cpu_model": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+      "cpu_count": 16,
+      "mem_total_mb": 62053,
+      "mem_available_mb_at_start": 13605
+    }
+  }
+}

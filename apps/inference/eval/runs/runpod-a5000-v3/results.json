@@ -1,0 +1,3465 @@
+{
+  "01": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "scrambled eggs",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "baked beans",
+          "estimatedGrams": 180.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "cucumber slices",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "ham",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "whole wheat bread",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2252.058637001028,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 98,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "scrambled eggs",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "baked beans",
+            "g": 180,
+            "bg": 0
+          },
+          {
+            "n": "cucumber slices",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "ham",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "sausage",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "whole wheat bread",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 6,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45413
+    }
+  },
+  "02": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "roast beef",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "Yorkshire pudding",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "potato",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "broccoli",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "onion",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "gravy",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2530.9089820002555,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 96,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "roast beef",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "Yorkshire pudding",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "potato",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "broccoli",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "onion",
+            "g": 50,
+            "bg": 0
+          },
+          {
+            "n": "gravy",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 6,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45418
+    }
+  },
+  "03": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "grilled salmon",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "greek salad",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1234.1817889973754,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 37,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "grilled salmon",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "greek salad",
+            "g": 300,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45429
+    }
+  },
+  "04": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "burger",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fries",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pickles",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "ketchup",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1264.6136799958185,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 705,
+      "completion_tokens": 62,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "burger",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "fries",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "pickles",
+            "g": 30,
+            "bg": 0
+          },
+          {
+            "n": "ketchup",
+            "g": 30,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45416
+    }
+  },
+  "05": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "rice",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "chicken curry",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1433.4471260008286,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 35,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "rice",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "chicken curry",
+            "g": 200,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45419
+    }
+  },
+  "06": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "sushi rolls",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sashimi",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "wasabi",
+          "estimatedGrams": 5.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pickled ginger",
+          "estimatedGrams": 10.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "soy sauce",
+          "estimatedGrams": 15.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1830.847930003074,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 80,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "sushi rolls",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "sashimi",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "wasabi",
+            "g": 5,
+            "bg": 0
+          },
+          {
+            "n": "pickled ginger",
+            "g": 10,
+            "bg": 0
+          },
+          {
+            "n": "soy sauce",
+            "g": 15,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 5,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45389
+    }
+  },
+  "07": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "spaghetti with meat sauce",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1345.5828540027142,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 23,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "spaghetti with meat sauce",
+            "g": 300,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 1,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45379
+    }
+  },
+  "08": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "yogurt",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "granola",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "apple slices",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1961.0324970053625,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 50,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "yogurt",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "granola",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "apple slices",
+            "g": 80,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45368
+    }
+  },
+  "09": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "pizza",
+          "estimatedGrams": 1000.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1230.2753170006326,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 20,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "pizza",
+            "g": 1000,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 1,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45379
+    }
+  },
+  "10": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "sandwich",
+          "estimatedGrams": 350.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "lettuce",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1227.8001430022414,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 705,
+      "completion_tokens": 34,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "sandwich",
+            "g": 350,
+            "bg": 0
+          },
+          {
+            "n": "lettuce",
+            "g": 30,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45352
+    }
+  },
+  "11": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "fried fish",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fries",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1456.9649059994845,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 50,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "fried fish",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "fries",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "side salad",
+            "g": 150,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45359
+    }
+  },
+  "12": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "grilled sausages",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "mashed potatoes",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sauerkraut",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1840.6105660033063,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 57,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "grilled sausages",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "mashed potatoes",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "sauerkraut",
+            "g": 150,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45340
+    }
+  },
+  "13": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "macaroni and cheese",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "caramelized onions",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1550.9773239973583,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 39,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "macaroni and cheese",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "caramelized onions",
+            "g": 80,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45346
+    }
+  },
+  "14": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "beef stew with potatoes",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1276.079082999786,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 38,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "beef stew with potatoes",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "side salad",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45381
+    }
+  },
+  "15": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "boiled sausages",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pretzel",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "beer",
+          "estimatedGrams": 350.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1502.2962420043768,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 52,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "boiled sausages",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "pretzel",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "beer",
+            "g": 350,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45343
+    }
+  },
+  "16": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "shredded meat with sauce",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fries",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1552.2692939994158,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 54,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "shredded meat with sauce",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "fries",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "side salad",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45349
+    }
+  },
+  "17": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "sausage",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1341.7182749981293,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 36,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "sausage",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "french fries",
+            "g": 250,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45352
+    }
+  },
+  "18": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "filled dumplings",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "potato salad",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1403.9433200014173,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 37,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "filled dumplings",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "potato salad",
+            "g": 150,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45353
+    }
+  },
+  "19": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "fries",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pork",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sour cream",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1562.9306100017857,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 66,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "fries",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "sausage",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "pork",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "sour cream",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45135
+    }
+  },
+  "20": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "ramen",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "chicken",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "herbs",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2038.1432310023229,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1013,
+      "completion_tokens": 49,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "ramen",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "chicken",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "herbs",
+            "g": 30,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45062
+    }
+  },
+  "21": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "pho",
+          "estimatedGrams": 600.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "bean sprouts",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fresh herbs",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "rice noodles",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1741.7250050057191,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 64,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "pho",
+            "g": 600,
+            "bg": 0
+          },
+          {
+            "n": "bean sprouts",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "fresh herbs",
+            "g": 50,
+            "bg": 0
+          },
+          {
+            "n": "rice noodles",
+            "g": 50,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45405
+    }
+  },
+  "22": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "taco",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "grilled corn",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1420.3425040032016,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 36,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "taco",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "grilled corn",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45311
+    }
+  },
+  "23": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "enchilada",
+          "estimatedGrams": 450.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "cheese",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "lettuce",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "tomato",
+          "estimatedGrams": 20.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1392.3567279998679,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 705,
+      "completion_tokens": 63,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "enchilada",
+            "g": 450,
+            "bg": 0
+          },
+          {
+            "n": "cheese",
+            "g": 60,
+            "bg": 0
+          },
+          {
+            "n": "lettuce",
+            "g": 30,
+            "bg": 0
+          },
+          {
+            "n": "tomato",
+            "g": 20,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45161
+    }
+  },
+  "24": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "fried fish",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "green peas",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "lemon wedge",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "tartar sauce",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1866.5152979956474,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 81,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "fried fish",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "french fries",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "green peas",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "lemon wedge",
+            "g": 30,
+            "bg": 0
+          },
+          {
+            "n": "tartar sauce",
+            "g": 50,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 5,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45045
+    }
+  },
+  "25": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "pancakes",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "egg",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "bacon",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "toast",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "hash browns",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "maple syrup",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2149.6082800003933,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 109,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "pancakes",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "egg",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "bacon",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "sausage",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "toast",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "hash browns",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "maple syrup",
+            "g": 30,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 7,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45399
+    }
+  },
+  "26": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "rice",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "roti",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "dal",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "curry",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "curry",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "curry",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "yogurt",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "salad",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2333.626337000169,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 118,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "rice",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "roti",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "dal",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "curry",
+            "g": 60,
+            "bg": 0
+          },
+          {
+            "n": "curry",
+            "g": 60,
+            "bg": 0
+          },
+          {
+            "n": "curry",
+            "g": 60,
+            "bg": 0
+          },
+          {
+            "n": "yogurt",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "salad",
+            "g": 60,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 8,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45259
+    }
+  },
+  "27": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "chicken with sauce",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "rice",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1333.85544000339,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 36,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "chicken with sauce",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "rice",
+            "g": 200,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45057
+    }
+  },
+  "28": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "falafel",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "rice",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "chickpeas",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "vegetables",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pita bread",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "herbs",
+          "estimatedGrams": 20.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2045.480808999855,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 96,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "falafel",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "rice",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "chickpeas",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "vegetables",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "pita bread",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "herbs",
+            "g": 20,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 6,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45020
+    }
+  },
+  "29": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "pickles",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "salami",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "cheese",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "olives",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1905.2405920010642,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 61,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "pickles",
+            "g": 60,
+            "bg": 0
+          },
+          {
+            "n": "salami",
+            "g": 60,
+            "bg": 0
+          },
+          {
+            "n": "cheese",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "olives",
+            "g": 60,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45373
+    }
+  },
+  "30": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "grilled pork ribs",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "grilled steak",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "grilled chicken",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "potato",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1985.0303439961863,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 98,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "grilled pork ribs",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "grilled steak",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "grilled chicken",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "potato",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "side salad",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "sausage",
+            "g": 80,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 6,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45367
+    }
+  },
+  "31": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "beef stew",
+          "estimatedGrams": 350.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "buttered toast",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1402.2396159998607,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 705,
+      "completion_tokens": 38,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "beef stew",
+            "g": 350,
+            "bg": 0
+          },
+          {
+            "n": "buttered toast",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45367
+    }
+  },
+  "32": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "olives",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "cucumber",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "carrot",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pepper",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "meat",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "cheese",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "crackers",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "dip",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2030.2701060063555,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 705,
+      "completion_tokens": 118,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "olives",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "cucumber",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "carrot",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "pepper",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "meat",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "cheese",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "crackers",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "dip",
+            "g": 60,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 8,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45415
+    }
+  },
+  "33": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "oatmeal",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "peanut butter",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "raisins",
+          "estimatedGrams": 20.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "cinnamon",
+          "estimatedGrams": 5.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1759.5160329947248,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 63,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "oatmeal",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "peanut butter",
+            "g": 30,
+            "bg": 0
+          },
+          {
+            "n": "raisins",
+            "g": 20,
+            "bg": 0
+          },
+          {
+            "n": "cinnamon",
+            "g": 5,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45384
+    }
+  },
+  "34": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "waffles",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "strawberry sauce",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "whipped cream",
+          "estimatedGrams": 90.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1522.782410000218,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 52,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "waffles",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "strawberry sauce",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "whipped cream",
+            "g": 90,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45380
+    }
+  },
+  "35": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "gyro meat",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fries",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "salad",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "yogurt sauce",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1888.1404170024325,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 67,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "gyro meat",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "fries",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "salad",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "yogurt sauce",
+            "g": 50,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45355
+    }
+  },
+  "36": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "paella",
+          "estimatedGrams": 800.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1463.745253997331,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 20,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "paella",
+            "g": 800,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 1,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45366
+    }
+  },
+  "37": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "dumplings",
+          "estimatedGrams": 450.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "coleslaw",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1465.071533995797,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 36,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "dumplings",
+            "g": 450,
+            "bg": 0
+          },
+          {
+            "n": "coleslaw",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45364
+    }
+  },
+  "38": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "hamburger",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fries",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1297.0397690005484,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 817,
+      "completion_tokens": 35,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "hamburger",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "fries",
+            "g": 150,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 2,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45358
+    }
+  },
+  "39": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "baked beans",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "bacon",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1990.8321269977023,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 49,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "baked beans",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "sausage",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "bacon",
+            "g": 60,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45355
+    }
+  },
+  "40": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "beef with gravy",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fries",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "ham",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "egg",
+          "estimatedGrams": 70.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1926.8908909944003,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 78,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "beef with gravy",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "fries",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "ham",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "egg",
+            "g": 70,
+            "bg": 0
+          },
+          {
+            "n": "sausage",
+            "g": 50,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 5,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45375
+    }
+  },
+  "41": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "fish",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "potatoes",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "tartar sauce",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1566.4732639997965,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 50,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "fish",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "potatoes",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "tartar sauce",
+            "g": 50,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45373
+    }
+  },
+  "42": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "fried chicken",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "white rice",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "curry",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "corn",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "onion",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2167.6211269950727,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 91,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "fried chicken",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "white rice",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "curry",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "corn",
+            "g": 50,
+            "bg": 0
+          },
+          {
+            "n": "onion",
+            "g": 30,
+            "bg": 0
+          },
+          {
+            "n": "sausage",
+            "g": 80,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 6,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45391
+    }
+  },
+  "43": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "fried fish",
+          "estimatedGrams": 200.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "rice",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "green beans",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "lemon wedge",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "buttered bread",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "soup",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1885.0882960032322,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 94,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "fried fish",
+            "g": 200,
+            "bg": 0
+          },
+          {
+            "n": "rice",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "green beans",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "lemon wedge",
+            "g": 30,
+            "bg": 0
+          },
+          {
+            "n": "buttered bread",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "soup",
+            "g": 150,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 6,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45404
+    }
+  },
+  "44": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "rice",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "beans",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "salad",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "meat",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1806.9485599990003,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 62,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "rice",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "beans",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "salad",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "meat",
+            "g": 120,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45405
+    }
+  },
+  "45": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "rice",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "steamed fish",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "kimchi",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "soybean paste",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "tofu",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "meat stew",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pickled radish",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2490.018066993798,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 127,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "rice",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "steamed fish",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "kimchi",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "soybean paste",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "tofu",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "meat stew",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "side salad",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "pickled radish",
+            "g": 60,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 8,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45410
+    }
+  },
+  "46": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "fried dough",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "braised beef offal",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "braised tofu skin",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1764.9468160016113,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 54,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "fried dough",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "braised beef offal",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "braised tofu skin",
+            "g": 80,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45423
+    }
+  },
+  "47": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "kiwi fruit",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "avocado toast",
+          "estimatedGrams": 180.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "bowl of soup",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "chocolate donut",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2333.859966005548,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1097,
+      "completion_tokens": 85,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "kiwi fruit",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "avocado toast",
+            "g": 180,
+            "bg": 0
+          },
+          {
+            "n": "bowl of soup",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "chocolate donut",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "side salad",
+            "g": 100,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 5,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45407
+    }
+  },
+  "48": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "cake",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "potato chips",
+          "estimatedGrams": 80.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sandwich",
+          "estimatedGrams": 120.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "pastries",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1676.3682899982086,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 63,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "cake",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "potato chips",
+            "g": 80,
+            "bg": 0
+          },
+          {
+            "n": "sandwich",
+            "g": 120,
+            "bg": 0
+          },
+          {
+            "n": "pastries",
+            "g": 60,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 4,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45402
+    }
+  },
+  "49": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "steak with spaghetti",
+          "estimatedGrams": 300.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "butter bread",
+          "estimatedGrams": 100.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "soup",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 1697.0341010019183,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 52,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "steak with spaghetti",
+            "g": 300,
+            "bg": 0
+          },
+          {
+            "n": "butter bread",
+            "g": 100,
+            "bg": 0
+          },
+          {
+            "n": "soup",
+            "g": 150,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 3,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45408
+    }
+  },
+  "50": {
+    "single_qwen_vl_v3": {
+      "foods": [
+        {
+          "name": "grilled lamb meat",
+          "estimatedGrams": 250.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "fries",
+          "estimatedGrams": 150.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "cucumber slice",
+          "estimatedGrams": 50.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "onion slice",
+          "estimatedGrams": 30.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "lettuce",
+          "estimatedGrams": 40.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        },
+        {
+          "name": "sauce",
+          "estimatedGrams": 60.0,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": null
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2027.563616000407,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 901,
+      "completion_tokens": 95,
+      "raw_text": null,
+      "terse": {
+        "f": [
+          {
+            "n": "grilled lamb meat",
+            "g": 250,
+            "bg": 0
+          },
+          {
+            "n": "fries",
+            "g": 150,
+            "bg": 0
+          },
+          {
+            "n": "cucumber slice",
+            "g": 50,
+            "bg": 0
+          },
+          {
+            "n": "onion slice",
+            "g": 30,
+            "bg": 0
+          },
+          {
+            "n": "lettuce",
+            "g": 40,
+            "bg": 0
+          },
+          {
+            "n": "sauce",
+            "g": 60,
+            "bg": 0
+          }
+        ]
+      },
+      "terse_items": 6,
+      "background_items_dropped": 0,
+      "model": "qwen-vl",
+      "pipeline": "v3",
+      "mem_available_mb_after": 45403
+    }
+  },
+  "_summary": {
+    "total_cost_usd": 0.0,
+    "per_approach_cost_usd": {
+      "single_qwen_vl_v3": 0.0
+    },
+    "failures": [],
+    "config_name": "runpod-gpu-v3",
+    "config_path": "configs/runpod-gpu-v3.json",
+    "approaches": [
+      "single_qwen_vl_v3"
+    ],
+    "approach_configs": {
+      "single_qwen_vl_v3": {
+        "type": "single_v3",
+        "model": "qwen_vl",
+        "label": "v3 terse single-shot Qwen3-VL, remote Runpod GPU, 896 px"
+      }
+    },
+    "models": {
+      "qwen_vl": {
+        "id": "qwen-vl",
+        "provider": "runpod_qwen_vl",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "max_tokens_v3": 256,
+        "_id_note": "llama-server ignores the request's model field and serves whatever -m loaded, so 'qwen-vl' is a label for the results file, matching eval/serve/models.json. If the pod runs vLLM or any server that validates the model id, change this to the id that /v1/models reports.",
+        "_max_tokens_note": "256 is headroom, not a target (V3-DESIGN.md \u00a72): the terse grammar bounds output at ~155 completion tokens, and a cap set AT the budget truncates mid-JSON and returns HTTP 200 with an unparseable body. use_json_schema true requires the server to honour response_format json_schema -- llama-server compiles it to GBNF; verify on the pod build before a full run."
+      }
+    },
+    "fan_out_override": null,
+    "images": [
+      "01.jpg",
+      "02.jpg",
+      "03.jpg",
+      "04.jpg",
+      "05.jpg",
+      "06.jpg",
+      "07.jpg",
+      "08.jpg",
+      "09.jpg",
+      "10.jpg",
+      "11.jpg",
+      "12.jpg",
+      "13.jpg",
+      "14.jpg",
+      "15.jpg",
+      "16.jpg",
+      "17.jpg",
+      "18.jpg",
+      "19.jpg",
+      "20.jpg",
+      "21.jpg",
+      "22.jpg",
+      "23.jpg",
+      "24.jpg",
+      "25.jpg",
+      "26.jpg",
+      "27.jpg",
+      "28.jpg",
+      "29.jpg",
+      "30.jpg",
+      "31.jpg",
+      "32.jpg",
+      "33.jpg",
+      "34.jpg",
+      "35.jpg",
+      "36.jpg",
+      "37.jpg",
+      "38.jpg",
+      "39.jpg",
+      "40.jpg",
+      "41.jpg",
+      "42.jpg",
+      "43.jpg",
+      "44.jpg",
+      "45.jpg",
+      "46.jpg",
+      "47.jpg",
+      "48.jpg",
+      "49.jpg",
+      "50.jpg"
+    ],
+    "started_at": "2026-08-12T22:49:24.824945+00:00",
+    "wall_seconds": 87.3,
+    "host": {
+      "hostname": "bluefin",
+      "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "python": "3.14.6",
+      "cpu_model": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+      "cpu_count": 16,
+      "mem_total_mb": 62053,
+      "mem_available_mb_at_start": 45403
+    }
+  }
+}

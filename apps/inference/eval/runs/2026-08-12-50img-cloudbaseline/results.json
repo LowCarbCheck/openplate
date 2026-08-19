@@ -1,0 +1,3228 @@
+{
+  "01": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "whole grain bread",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "one large slice",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 6,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 10,
+            "fat": 3,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "mini sausages",
+          "estimatedGrams": 75,
+          "confidence": "high",
+          "portionHint": "three small sausages",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 12,
+            "fat": 20,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "scrambled eggs",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small scoop",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 10,
+            "fat": 10,
+            "kcal": 140
+          }
+        },
+        {
+          "name": "baked beans",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small serving",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 5,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 5,
+            "fat": 0,
+            "kcal": 90
+          }
+        },
+        {
+          "name": "back bacon",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "two thin slices",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 22,
+            "fat": 8,
+            "kcal": 170
+          }
+        },
+        {
+          "name": "cucumber slices",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "three slices",
+          "macrosPer100g": {
+            "carbs": 3.6,
+            "fiber": 0.5,
+            "sugars": 1.7,
+            "polyols": null,
+            "protein": 0.7,
+            "fat": 0.1,
+            "kcal": 15
+          }
+        }
+      ],
+      "notes": "There is a small pack of margarine on the side, but it is not opened, so it has been excluded from the log.",
+      "latency_ms": 3314.00457106065,
+      "cost_usd": 0.00151375,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 725,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13903
+    }
+  },
+  "02": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "roast beef with gravy",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "palm-sized portion",
+          "macrosPer100g": {
+            "carbs": 2.5,
+            "fiber": 0,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 22,
+            "fat": 8,
+            "kcal": 175
+          }
+        },
+        {
+          "name": "roasted potatoes",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "two medium potatoes",
+          "macrosPer100g": {
+            "carbs": 22,
+            "fiber": 2.5,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 2.5,
+            "fat": 6,
+            "kcal": 155
+          }
+        },
+        {
+          "name": "yorkshire pudding",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "one large pudding",
+          "macrosPer100g": {
+            "carbs": 35,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 7,
+            "fat": 12,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "steamed broccoli and cabbage",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 2.5,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 2,
+            "fat": 0.2,
+            "kcal": 30
+          }
+        }
+      ],
+      "notes": "A classic Sunday roast consisting of roast beef, roast potatoes, yorkshire pudding, and green vegetables, all served with gravy.",
+      "latency_ms": 3832.5531180016696,
+      "cost_usd": 0.001364,
+      "raw_ok": true,
+      "prompt_tokens": 2168,
+      "completion_tokens": 548,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13952
+    }
+  },
+  "03": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "grilled salmon",
+          "estimatedGrams": 170,
+          "confidence": "high",
+          "portionHint": "two salmon fillets",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 13,
+            "kcal": 208
+          }
+        },
+        {
+          "name": "Greek salad with avocado and feta",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "a large plateful",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 3,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 4,
+            "fat": 9,
+            "kcal": 120
+          }
+        },
+        {
+          "name": "Kalamata olives",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 3,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 11,
+            "kcal": 115
+          }
+        }
+      ],
+      "notes": "Lemon wedges were ignored as garnish.",
+      "latency_ms": 2397.245883010328,
+      "cost_usd": 0.00094925,
+      "raw_ok": true,
+      "prompt_tokens": 1733,
+      "completion_tokens": 344,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13976
+    }
+  },
+  "04": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "cheeseburger",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "one burger",
+          "macrosPer100g": {
+            "carbs": 22,
+            "fiber": 1.5,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 14,
+            "fat": 15,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "small bowl",
+          "macrosPer100g": {
+            "carbs": 35,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 3,
+            "fat": 14,
+            "kcal": 290
+          }
+        },
+        {
+          "name": "ketchup",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "small ramekin",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1,
+            "sugars": 22,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.1,
+            "kcal": 105
+          }
+        },
+        {
+          "name": "pickles",
+          "estimatedGrams": 20,
+          "confidence": "high",
+          "portionHint": "two pickle slices",
+          "macrosPer100g": {
+            "carbs": 2.3,
+            "fiber": 1,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 0.5,
+            "fat": 0.2,
+            "kcal": 12
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 2484.634847030975,
+      "cost_usd": 0.00112825,
+      "raw_ok": true,
+      "prompt_tokens": 1741,
+      "completion_tokens": 462,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13935
+    }
+  },
+  "05": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "chicken and greens curry",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about 1 cup",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 15,
+            "fat": 8,
+            "kcal": 140
+          }
+        },
+        {
+          "name": "steamed white rice",
+          "estimatedGrams": 180,
+          "confidence": "high",
+          "portionHint": "about 1 cup",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 0.5,
+            "sugars": 0.1,
+            "polyols": 0,
+            "protein": 2.5,
+            "fat": 0.2,
+            "kcal": 130
+          }
+        }
+      ],
+      "notes": "The rice appears to have small bits of diced vegetables mixed in, but the impact on overall macros is likely negligible.",
+      "latency_ms": 2279.4433960225433,
+      "cost_usd": 0.00079675,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 247,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13959
+    }
+  },
+  "06": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "sushi platter",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "one rectangular plate",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 12,
+            "fat": 4,
+            "kcal": 180
+          }
+        }
+      ],
+      "notes": "Includes salmon avocado maki rolls, assorted nigiri, ginger, wasabi, and soy sauce. The portion estimate covers all items on the main rectangular plate.",
+      "latency_ms": 2366.484500002116,
+      "cost_usd": 0.00060475,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 119,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13983
+    }
+  },
+  "07": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "spaghetti with meat sauce and mixed vegetables",
+          "estimatedGrams": 450,
+          "confidence": "high",
+          "portionHint": "a large bowl-sized serving",
+          "macrosPer100g": {
+            "carbs": 22,
+            "fiber": 2.5,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 7,
+            "fat": 5,
+            "kcal": 160
+          }
+        }
+      ],
+      "notes": "The dish is spaghetti served with a meat-based red sauce containing corn, green beans, and carrots.",
+      "latency_ms": 2195.8619279321283,
+      "cost_usd": 0.00064375,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 145,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13989
+    }
+  },
+  "08": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "greek yogurt",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half a cup",
+          "macrosPer100g": {
+            "carbs": 3.6,
+            "fiber": 0,
+            "sugars": 2.7,
+            "polyols": 0,
+            "protein": 10,
+            "fat": 0.4,
+            "kcal": 59
+          }
+        },
+        {
+          "name": "granola",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 60,
+            "fiber": 7,
+            "sugars": 20,
+            "polyols": 0,
+            "protein": 10,
+            "fat": 15,
+            "kcal": 450
+          }
+        },
+        {
+          "name": "sliced apple",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "about half an apple",
+          "macrosPer100g": {
+            "carbs": 14,
+            "fiber": 2.4,
+            "sugars": 10,
+            "polyols": 0,
+            "protein": 0.3,
+            "fat": 0.2,
+            "kcal": 52
+          }
+        }
+      ],
+      "notes": "There appears to be a small amount of honey drizzled over the yogurt and granola.",
+      "latency_ms": 2678.634532028809,
+      "cost_usd": 0.00116225,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 415,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14004
+    }
+  },
+  "09": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "chicken pizza",
+          "estimatedGrams": 850,
+          "confidence": "high",
+          "portionHint": "entire large pizza",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1.5,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 12,
+            "fat": 10,
+            "kcal": 250
+          }
+        }
+      ],
+      "notes": "Estimated the weight for a standard large 14-inch thin-to-medium crust chicken pizza.",
+      "latency_ms": 2106.819416047074,
+      "cost_usd": 0.00059425,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 112,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14010
+    }
+  },
+  "10": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "chicken sandwich",
+          "estimatedGrams": 280,
+          "confidence": "high",
+          "portionHint": "two large sandwich halves",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 12,
+            "fat": 9,
+            "kcal": 230
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1.5,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.2,
+            "kcal": 20
+          }
+        },
+        {
+          "name": "Pepsi Max",
+          "estimatedGrams": 600,
+          "confidence": "high",
+          "portionHint": "one 600ml bottle",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 1
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 3536.021569976583,
+      "cost_usd": 0.00093875,
+      "raw_ok": true,
+      "prompt_tokens": 1721,
+      "completion_tokens": 339,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14024
+    }
+  },
+  "11": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "breaded schnitzel with capers",
+          "estimatedGrams": 180,
+          "confidence": "high",
+          "portionHint": "a large palm-sized piece",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 0.5,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 22,
+            "fat": 14,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "thick-cut chips",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about a cupful",
+          "macrosPer100g": {
+            "carbs": 30,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 2.5,
+            "fat": 12,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "side salad with dressing",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small side portion",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 1.5,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 1,
+            "fat": 6,
+            "kcal": 80
+          }
+        },
+        {
+          "name": "ketchup",
+          "estimatedGrams": 20,
+          "confidence": "high",
+          "portionHint": "a small ramekin",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1,
+            "sugars": 20,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.1,
+            "kcal": 100
+          }
+        }
+      ],
+      "notes": "The schnitzel is topped with capers and a lemon wedge, which are included in its nutrition estimate.",
+      "latency_ms": 2812.4088830081746,
+      "cost_usd": 0.00117175,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 497,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13911
+    }
+  },
+  "12": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "bratwurst sausages",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "three sausages",
+          "macrosPer100g": {
+            "carbs": 1.5,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 14,
+            "fat": 25,
+            "kcal": 300
+          }
+        },
+        {
+          "name": "mashed potatoes",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "two scoops",
+          "macrosPer100g": {
+            "carbs": 15,
+            "fiber": 1.5,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 2,
+            "fat": 4,
+            "kcal": 110
+          }
+        },
+        {
+          "name": "sauerkraut",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small pile",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 3,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.2,
+            "kcal": 20
+          }
+        }
+      ],
+      "notes": "There is a small amount of mustard on the sausages, but it is negligible.",
+      "latency_ms": 3019.954813993536,
+      "cost_usd": 0.00115025,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 407,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13895
+    }
+  },
+  "13": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "k\u00e4sesp\u00e4tzle with caramelized onions",
+          "estimatedGrams": 400,
+          "confidence": "high",
+          "portionHint": "large main dish serving",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1.5,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 8,
+            "fat": 12,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "side salad with creamy dressing",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "small side plate",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 6,
+            "kcal": 80
+          }
+        }
+      ],
+      "notes": "The main dish is a traditional German cheese noodle (sp\u00e4tzle) dish topped with caramelized onions. The side is a small green salad.",
+      "latency_ms": 4412.152440985665,
+      "cost_usd": 0.00099125,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 301,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13904
+    }
+  },
+  "14": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "beef stew with potatoes and mushrooms",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "one bowl",
+          "macrosPer100g": {
+            "carbs": 9,
+            "fiber": 1.5,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 12,
+            "fat": 6,
+            "kcal": 130
+          }
+        },
+        {
+          "name": "lettuce side salad",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a side plate",
+          "macrosPer100g": {
+            "carbs": 2.8,
+            "fiber": 1,
+            "sugars": 1.2,
+            "polyols": 0,
+            "protein": 1.3,
+            "fat": 0.2,
+            "kcal": 15
+          }
+        }
+      ],
+      "notes": "The stew contains beef, potato chunks, and sliced mushrooms in a savory gravy.",
+      "latency_ms": 3120.8700449205935,
+      "cost_usd": 0.00078625,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 240,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13921
+    }
+  },
+  "15": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "Weisswurst",
+          "estimatedGrams": 160,
+          "confidence": "high",
+          "portionHint": "two sausages",
+          "macrosPer100g": {
+            "carbs": 1.5,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 14,
+            "fat": 20,
+            "kcal": 245
+          }
+        },
+        {
+          "name": "Soft pretzel",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "one large pretzel",
+          "macrosPer100g": {
+            "carbs": 50,
+            "fiber": 2,
+            "sugars": 2.5,
+            "polyols": 0,
+            "protein": 8,
+            "fat": 3,
+            "kcal": 260
+          }
+        },
+        {
+          "name": "Sweet mustard",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a small dipping portion",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1.5,
+            "sugars": 20,
+            "polyols": 0,
+            "protein": 4,
+            "fat": 2,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "Beer",
+          "estimatedGrams": 300,
+          "confidence": "medium",
+          "portionHint": "small glass",
+          "macrosPer100g": {
+            "carbs": 3.5,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 0.5,
+            "fat": 0,
+            "kcal": 43
+          }
+        }
+      ],
+      "notes": "The sausages are served in hot water; the parsley is treated as a garnish. The beer is estimated as a standard wheat beer or lager.",
+      "latency_ms": 3105.2005499368533,
+      "cost_usd": 0.00116975,
+      "raw_ok": true,
+      "prompt_tokens": 1733,
+      "completion_tokens": 491,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13947
+    }
+  },
+  "16": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "doner kebab meat with tomato sauce",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a generous portion",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 1,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 18,
+            "fat": 15,
+            "kcal": 230
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "a large pile",
+          "macrosPer100g": {
+            "carbs": 30,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 3,
+            "fat": 15,
+            "kcal": 270
+          }
+        },
+        {
+          "name": "side salad with dressing",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a side plate portion",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 1.5,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 1,
+            "fat": 6,
+            "kcal": 80
+          }
+        },
+        {
+          "name": "beer",
+          "estimatedGrams": 330,
+          "confidence": "high",
+          "portionHint": "a standard glass",
+          "macrosPer100g": {
+            "carbs": 3.5,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 0.5,
+            "fat": 0,
+            "kcal": 43
+          }
+        }
+      ],
+      "notes": "The meal consists of an Iskender-style doner kebab plate with fries and a side salad, paired with a glass of beer.",
+      "latency_ms": 4812.493433011696,
+      "cost_usd": 0.00135275,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 542,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13967
+    }
+  },
+  "17": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "currywurst",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "one standard sausage with curry ketchup sauce",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 0.5,
+            "sugars": 10,
+            "polyols": 0,
+            "protein": 14,
+            "fat": 22,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large side portion",
+          "macrosPer100g": {
+            "carbs": 35,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 15,
+            "kcal": 290
+          }
+        }
+      ],
+      "notes": "Classic German currywurst with a side of french fries.",
+      "latency_ms": 2948.1827879790217,
+      "cost_usd": 0.00097575,
+      "raw_ok": true,
+      "prompt_tokens": 2175,
+      "completion_tokens": 288,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13973
+    }
+  },
+  "18": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "meat-filled dumplings",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "three pieces",
+          "macrosPer100g": {
+            "carbs": 30,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 12,
+            "fat": 8,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "potato salad with bacon",
+          "estimatedGrams": 180,
+          "confidence": "high",
+          "portionHint": "about 1 cup",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 4,
+            "fat": 6,
+            "kcal": 140
+          }
+        }
+      ],
+      "notes": "The dish appears to be Schlipfkrapfen or similar meat-filled pasta served over a creamy potato salad with bacon bits.",
+      "latency_ms": 2742.4218939850107,
+      "cost_usd": 0.00078325,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 238,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13982
+    }
+  },
+  "19": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "gyros meat",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a small pile",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 22,
+            "fat": 15,
+            "kcal": 230
+          }
+        },
+        {
+          "name": "currywurst",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "several sliced pieces",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 0,
+            "sugars": 6,
+            "polyols": null,
+            "protein": 12,
+            "fat": 20,
+            "kcal": 260
+          }
+        },
+        {
+          "name": "french fries with mayonnaise",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large pile covering half the plate",
+          "macrosPer100g": {
+            "carbs": 32,
+            "fiber": 3,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 3,
+            "fat": 18,
+            "kcal": 300
+          }
+        },
+        {
+          "name": "tzatziki",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a large dollop",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 0,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 4,
+            "fat": 8,
+            "kcal": 100
+          }
+        }
+      ],
+      "notes": "The french fries and mayonnaise were combined into one item for simplicity as the portion of mayonnaise is substantial. The currywurst includes the sauce.",
+      "latency_ms": 2469.3494531093165,
+      "cost_usd": 0.00116525,
+      "raw_ok": true,
+      "prompt_tokens": 1733,
+      "completion_tokens": 488,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13987
+    }
+  },
+  "20": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "shio ramen",
+          "estimatedGrams": 450,
+          "confidence": "high",
+          "portionHint": "one bowl",
+          "macrosPer100g": {
+            "carbs": 9,
+            "fiber": 0.5,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 5,
+            "fat": 4,
+            "kcal": 90
+          }
+        }
+      ],
+      "notes": "The bowl contains ramen noodles, chashu pork slices, broth, and some fresh greens.",
+      "latency_ms": 3682.7553160255775,
+      "cost_usd": 0.000785,
+      "raw_ok": true,
+      "prompt_tokens": 2180,
+      "completion_tokens": 160,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14041
+    }
+  },
+  "21": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "beef pho",
+          "estimatedGrams": 800,
+          "confidence": "high",
+          "portionHint": "large bowl",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 0.5,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 5,
+            "fat": 3,
+            "kcal": 60
+          }
+        },
+        {
+          "name": "fresh bean sprouts and thai basil",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "side plate",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 0.2,
+            "kcal": 25
+          }
+        },
+        {
+          "name": "extra rice noodles",
+          "estimatedGrams": 150,
+          "confidence": "medium",
+          "portionHint": "small bowl",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 0.5,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 0.1,
+            "kcal": 130
+          }
+        }
+      ],
+      "notes": "The bowl contains broth, beef slices, and rice noodles. A separate bowl has additional rice noodles and a plate contains the bean sprouts and basil.",
+      "latency_ms": 2458.3896250696853,
+      "cost_usd": 0.00094525,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 346,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14037
+    }
+  },
+  "22": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "ground beef tacos with cheese and salsa",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "three tacos",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 12,
+            "fat": 10,
+            "kcal": 210
+          }
+        },
+        {
+          "name": "corn on the cob",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "about a third of a cob",
+          "macrosPer100g": {
+            "carbs": 21,
+            "fiber": 2.4,
+            "sugars": 4.5,
+            "polyols": null,
+            "protein": 3.2,
+            "fat": 1.2,
+            "kcal": 96
+          }
+        },
+        {
+          "name": "soda",
+          "estimatedGrams": 250,
+          "confidence": "medium",
+          "portionHint": "one glass",
+          "macrosPer100g": {
+            "carbs": 11,
+            "fiber": 0,
+            "sugars": 11,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 42
+          }
+        }
+      ],
+      "notes": "The drink appears to be a dark-colored soda, likely cola.",
+      "latency_ms": 2451.1585190193728,
+      "cost_usd": 0.00100675,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 387,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14074
+    }
+  },
+  "23": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "wet burrito",
+          "estimatedGrams": 450,
+          "confidence": "high",
+          "portionHint": "a large main meal",
+          "macrosPer100g": {
+            "carbs": 18.5,
+            "fiber": 2.5,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 8.5,
+            "fat": 9,
+            "kcal": 185
+          }
+        }
+      ],
+      "notes": "The burrito is smothered in a savory sauce, likely green chile or ranchero sauce, and topped with shredded cheese, lettuce, and tomatoes. The macros reflect the approximate average for a meat-filled restaurant burrito with sauce and toppings.",
+      "latency_ms": 2334.2421440174803,
+      "cost_usd": 0.00082875,
+      "raw_ok": true,
+      "prompt_tokens": 2151,
+      "completion_tokens": 194,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14081
+    }
+  },
+  "24": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "battered fish",
+          "estimatedGrams": 180,
+          "confidence": "high",
+          "portionHint": "one large fillet",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 0.5,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 15,
+            "fat": 13,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a small side portion",
+          "macrosPer100g": {
+            "carbs": 30,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 15,
+            "kcal": 270
+          }
+        },
+        {
+          "name": "green peas",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "about a third of a cup",
+          "macrosPer100g": {
+            "carbs": 14,
+            "fiber": 5,
+            "sugars": 4,
+            "polyols": 0,
+            "protein": 5,
+            "fat": 0.4,
+            "kcal": 80
+          }
+        },
+        {
+          "name": "tartar sauce",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "one small ramekin",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 45,
+            "kcal": 430
+          }
+        }
+      ],
+      "notes": "The lemon wedge garnish was omitted as instructed.",
+      "latency_ms": 2690.545453107916,
+      "cost_usd": 0.00114175,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 477,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14077
+    }
+  },
+  "25": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "pancakes with powdered sugar",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "three small pancakes",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 1.5,
+            "sugars": 10,
+            "polyols": null,
+            "protein": 6,
+            "fat": 3,
+            "kcal": 230
+          }
+        },
+        {
+          "name": "bacon rashers",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "three slices",
+          "macrosPer100g": {
+            "carbs": 0.5,
+            "fiber": 0,
+            "sugars": 0.2,
+            "polyols": null,
+            "protein": 25,
+            "fat": 20,
+            "kcal": 300
+          }
+        },
+        {
+          "name": "fried egg",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "one large egg",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 12,
+            "fat": 10,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "pork sausages",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "two sausages",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 0.5,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 14,
+            "fat": 22,
+            "kcal": 260
+          }
+        },
+        {
+          "name": "hash browns",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "two pieces",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 2,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 2,
+            "fat": 12,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "toast with butter",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 3,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 8,
+            "fat": 10,
+            "kcal": 300
+          }
+        }
+      ],
+      "notes": "Includes a small side of syrup. I have omitted the individual butter packet as it is accounted for in the toast estimation.",
+      "latency_ms": 3299.9353819759563,
+      "cost_usd": 0.00157275,
+      "raw_ok": true,
+      "prompt_tokens": 1743,
+      "completion_tokens": 758,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14066
+    }
+  },
+  "26": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "vegetable fried rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small mound",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1.5,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 3,
+            "fat": 5,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "flatbread and papadum",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "several pieces",
+          "macrosPer100g": {
+            "carbs": 50,
+            "fiber": 4,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 10,
+            "fat": 6,
+            "kcal": 290
+          }
+        },
+        {
+          "name": "various Indian curries",
+          "estimatedGrams": 300,
+          "confidence": "medium",
+          "portionHint": "several small bowls",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 5,
+            "fat": 9,
+            "kcal": 130
+          }
+        },
+        {
+          "name": "plain yogurt (raita)",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small side bowl",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 3,
+            "fat": 3,
+            "kcal": 60
+          }
+        },
+        {
+          "name": "vegetable soup",
+          "estimatedGrams": 100,
+          "confidence": "medium",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.5,
+            "kcal": 35
+          }
+        }
+      ],
+      "notes": "Indian Thali meal consisting of multiple small portions of curries, grains, bread, and condiments.",
+      "latency_ms": 2765.8324950607494,
+      "cost_usd": 0.00134075,
+      "raw_ok": true,
+      "prompt_tokens": 1721,
+      "completion_tokens": 607,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14016
+    }
+  },
+  "27": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "chicken cashew stir-fry",
+          "estimatedGrams": 220,
+          "confidence": "high",
+          "portionHint": "a large serving",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 1.5,
+            "sugars": 5,
+            "polyols": null,
+            "protein": 18,
+            "fat": 10,
+            "kcal": 200
+          }
+        },
+        {
+          "name": "steamed jasmine rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about a cup",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 0.5,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 2.5,
+            "fat": 0.2,
+            "kcal": 130
+          }
+        }
+      ],
+      "notes": "Classic Thai-style chicken and cashew stir-fry served with white rice.",
+      "latency_ms": 2408.327501034364,
+      "cost_usd": 0.00078875,
+      "raw_ok": true,
+      "prompt_tokens": 1721,
+      "completion_tokens": 239,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14045
+    }
+  },
+  "28": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "mezze platter bowl",
+          "estimatedGrams": 400,
+          "confidence": "high",
+          "portionHint": "one full bowl",
+          "macrosPer100g": {
+            "carbs": 22,
+            "fiber": 6,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 7,
+            "fat": 10,
+            "kcal": 210
+          }
+        },
+        {
+          "name": "pita bread",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "one piece",
+          "macrosPer100g": {
+            "carbs": 48,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 8,
+            "fat": 1,
+            "kcal": 240
+          }
+        }
+      ],
+      "notes": "The image shows multiple identical mezze-style bowls featuring falafel, hummus, lentils, tabbouleh/bulgur, various pickled vegetables, and olives. A side of pita bread is provided. Macros are estimated for the composite bowl and plain pita bread.",
+      "latency_ms": 4112.122252001427,
+      "cost_usd": 0.00100925,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 313,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14035
+    }
+  },
+  "29": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "Weizenbier",
+          "estimatedGrams": 500,
+          "confidence": "high",
+          "portionHint": "one pint glass",
+          "macrosPer100g": {
+            "carbs": 3.5,
+            "fiber": 0,
+            "sugars": 0.1,
+            "polyols": 0,
+            "protein": 0.5,
+            "fat": 0,
+            "kcal": 45
+          }
+        },
+        {
+          "name": "Salami slices",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 1.5,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 22,
+            "fat": 35,
+            "kcal": 415
+          }
+        },
+        {
+          "name": "Cubed cheese",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 33,
+            "kcal": 400
+          }
+        },
+        {
+          "name": "Green olives",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 3,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 15,
+            "kcal": 145
+          }
+        },
+        {
+          "name": "Pickled gherkins",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a few slices",
+          "macrosPer100g": {
+            "carbs": 2.5,
+            "fiber": 1.5,
+            "sugars": 1.5,
+            "polyols": 0,
+            "protein": 0.5,
+            "fat": 0,
+            "kcal": 15
+          }
+        }
+      ],
+      "notes": "The plate contains a charcuterie-style snack board with pickles, salami, cubed hard cheese, and green olives, served with a wheat beer.",
+      "latency_ms": 2787.0438609970734,
+      "cost_usd": 0.00135925,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 622,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14068
+    }
+  },
+  "30": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "mixed grill platter (ribs, steak, skewers, sausage)",
+          "estimatedGrams": 400,
+          "confidence": "high",
+          "portionHint": "substantial main course",
+          "macrosPer100g": {
+            "carbs": 1.5,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 22,
+            "fat": 15,
+            "kcal": 230
+          }
+        },
+        {
+          "name": "stuffed baked potato",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "one medium potato",
+          "macrosPer100g": {
+            "carbs": 22,
+            "fiber": 2,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 4,
+            "fat": 6,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "small handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1.5,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.2,
+            "kcal": 18
+          }
+        }
+      ],
+      "notes": "The platter includes grilled meats: pork ribs, a beef steak, and various skewers containing meats like chicken, sausage, and bacon. The potato appears to have a cheesy or herb-based crust.",
+      "latency_ms": 3840.4722270788625,
+      "cost_usd": 0.00120225,
+      "raw_ok": true,
+      "prompt_tokens": 2175,
+      "completion_tokens": 439,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14014
+    }
+  },
+  "31": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "beef goulash soup",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "a standard bowl",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 8,
+            "fat": 6,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "bread with butter",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 3,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 8,
+            "fat": 12,
+            "kcal": 310
+          }
+        }
+      ],
+      "notes": "The parsley garnish was omitted as instructed.",
+      "latency_ms": 3137.40515592508,
+      "cost_usd": 0.00095375,
+      "raw_ok": true,
+      "prompt_tokens": 2195,
+      "completion_tokens": 270,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13979
+    }
+  },
+  "32": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "deviled eggs",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "8 halves",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 11,
+            "fat": 12,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "hummus",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "small bowl",
+          "macrosPer100g": {
+            "carbs": 14,
+            "fiber": 6,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 8,
+            "fat": 10,
+            "kcal": 177
+          }
+        },
+        {
+          "name": "assorted sliced cheese",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small stack",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 25,
+            "fat": 30,
+            "kcal": 380
+          }
+        },
+        {
+          "name": "salami slices",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small stack",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 20,
+            "fat": 35,
+            "kcal": 400
+          }
+        },
+        {
+          "name": "crackers",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "about 25 crackers",
+          "macrosPer100g": {
+            "carbs": 65,
+            "fiber": 3,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 8,
+            "fat": 15,
+            "kcal": 440
+          }
+        },
+        {
+          "name": "vegetables and olives",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "large portion of cut veg and olives",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 1,
+            "fat": 3,
+            "kcal": 60
+          }
+        }
+      ],
+      "notes": "The platter includes a variety of raw vegetable sticks (peppers, carrots, cucumber), olives, hummus, crackers, hard cheeses (likely herb-crusted and plain cheddar), salami, and deviled eggs.",
+      "latency_ms": 6858.578411047347,
+      "cost_usd": 0.00174275,
+      "raw_ok": true,
+      "prompt_tokens": 2195,
+      "completion_tokens": 796,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13790
+    }
+  },
+  "33": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "oatmeal with toppings",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "a large bowl",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 2.5,
+            "sugars": 6,
+            "polyols": null,
+            "protein": 3.5,
+            "fat": 4,
+            "kcal": 130
+          }
+        }
+      ],
+      "notes": "Bowl contains oatmeal, peanut butter, raisins, cinnamon, and what appears to be honey or maple syrup.",
+      "latency_ms": 1825.1760760322213,
+      "cost_usd": 0.00060475,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 119,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13852
+    }
+  },
+  "34": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "waffle with strawberry sauce and fresh strawberries",
+          "estimatedGrams": 220,
+          "confidence": "high",
+          "portionHint": "two large waffles",
+          "macrosPer100g": {
+            "carbs": 42,
+            "fiber": 1.5,
+            "sugars": 15,
+            "polyols": null,
+            "protein": 5,
+            "fat": 12,
+            "kcal": 305
+          }
+        },
+        {
+          "name": "whipped cream",
+          "estimatedGrams": 45,
+          "confidence": "high",
+          "portionHint": "three large dollops",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 0,
+            "sugars": 6,
+            "polyols": null,
+            "protein": 2,
+            "fat": 25,
+            "kcal": 260
+          }
+        }
+      ],
+      "notes": "The strawberry topping is treated as part of the waffle portion for easier logging.",
+      "latency_ms": 2354.509477969259,
+      "cost_usd": 0.00077725,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 234,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13873
+    }
+  },
+  "35": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "doner kebab meat",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a palm-sized portion",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 18,
+            "fat": 15,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 180,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 30,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 3,
+            "fat": 15,
+            "kcal": 270
+          }
+        },
+        {
+          "name": "tzatziki sauce",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "two tablespoons",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0.5,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 3,
+            "fat": 8,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.2,
+            "kcal": 35
+          }
+        }
+      ],
+      "notes": "Includes items like lettuce, tomato, cucumber, corn, and olive in the salad portion. The pita bread in the background bowl was not included as it is separate from the main plate contents.",
+      "latency_ms": 2775.994132971391,
+      "cost_usd": 0.00117275,
+      "raw_ok": true,
+      "prompt_tokens": 1733,
+      "completion_tokens": 493,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13928
+    }
+  },
+  "36": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "seafood paella with artichokes",
+          "estimatedGrams": 800,
+          "confidence": "high",
+          "portionHint": "large pan serving",
+          "macrosPer100g": {
+            "carbs": 22,
+            "fiber": 1.5,
+            "sugars": 1.2,
+            "polyols": null,
+            "protein": 7,
+            "fat": 5,
+            "kcal": 160
+          }
+        }
+      ],
+      "notes": "The paella contains rice, artichoke hearts, shrimp, and mantis shrimp. The estimate is for the entire pan contents.",
+      "latency_ms": 3361.7245700443164,
+      "cost_usd": 0.00080075,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 174,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13969
+    }
+  },
+  "37": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "pierogi with sauteed onions",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "6 pieces",
+          "macrosPer100g": {
+            "carbs": 32,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 7,
+            "fat": 5,
+            "kcal": 210
+          }
+        },
+        {
+          "name": "coleslaw",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small mound",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 2,
+            "sugars": 5,
+            "polyols": null,
+            "protein": 1,
+            "fat": 6,
+            "kcal": 90
+          }
+        }
+      ],
+      "notes": "The sprouts are negligible and integrated into the dish log.",
+      "latency_ms": 5219.753586919978,
+      "cost_usd": 0.00094625,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 271,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13971
+    }
+  },
+  "38": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "cheeseburger",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about two thirds of a standard restaurant burger",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1.5,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 15,
+            "fat": 16,
+            "kcal": 300
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small side serving",
+          "macrosPer100g": {
+            "carbs": 40,
+            "fiber": 3.5,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 3,
+            "fat": 15,
+            "kcal": 310
+          }
+        }
+      ],
+      "notes": "The burger is partially eaten.",
+      "latency_ms": 9033.656319021247,
+      "cost_usd": 0.00096525,
+      "raw_ok": true,
+      "prompt_tokens": 2175,
+      "completion_tokens": 281,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14012
+    }
+  },
+  "39": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "baked beans",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small spoonful",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 4,
+            "sugars": 5,
+            "polyols": 0,
+            "protein": 5,
+            "fat": 0.5,
+            "kcal": 90
+          }
+        },
+        {
+          "name": "pork sausages",
+          "estimatedGrams": 90,
+          "confidence": "high",
+          "portionHint": "three small sausages",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 13,
+            "fat": 20,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "back bacon",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "one slice",
+          "macrosPer100g": {
+            "carbs": 0.5,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 22,
+            "fat": 6,
+            "kcal": 150
+          }
+        }
+      ],
+      "notes": "The plate contains a partially consumed English breakfast.",
+      "latency_ms": 2359.639193979092,
+      "cost_usd": 0.00095525,
+      "raw_ok": true,
+      "prompt_tokens": 1733,
+      "completion_tokens": 348,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14012
+    }
+  },
+  "40": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "Mixed meats in gravy",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about a cup",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 22,
+            "fat": 12,
+            "kcal": 210
+          }
+        },
+        {
+          "name": "French fries",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a small side serving",
+          "macrosPer100g": {
+            "carbs": 35,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 15,
+            "kcal": 290
+          }
+        },
+        {
+          "name": "Grilled bacon and egg",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "two strips of bacon and one egg",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 15,
+            "fat": 12,
+            "kcal": 180
+          }
+        }
+      ],
+      "notes": "The meal appears to be a breakfast or mixed grill plate containing various meats in gravy, French fries, bacon, and a fried egg.",
+      "latency_ms": 2643.0756900226697,
+      "cost_usd": 0.00102475,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 399,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14054
+    }
+  },
+  "41": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "battered fish",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "one piece",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 0.5,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 15,
+            "fat": 11,
+            "kcal": 200
+          }
+        },
+        {
+          "name": "potato wedges",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about a small handful",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 2.5,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 2.5,
+            "fat": 8,
+            "kcal": 180
+          }
+        },
+        {
+          "name": "mayonnaise",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "about two tablespoons",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 0.5,
+            "fat": 75,
+            "kcal": 680
+          }
+        }
+      ],
+      "notes": "The fish appears to be fried. The black pepper packets are considered seasoning and are omitted.",
+      "latency_ms": 4071.723753004335,
+      "cost_usd": 0.001169,
+      "raw_ok": true,
+      "prompt_tokens": 2168,
+      "completion_tokens": 418,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13922
+    }
+  },
+  "42": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "breaded fish fillet with sauce",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about 4-5 inches wide",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 0.5,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 18,
+            "fat": 10,
+            "kcal": 200
+          }
+        },
+        {
+          "name": "lentil dal with rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half a cup",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 4,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 6,
+            "fat": 2,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "meatballs in gravy",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "two medium meatballs",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": null,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 15,
+            "fat": 12,
+            "kcal": 200
+          }
+        },
+        {
+          "name": "mixed vegetable salad",
+          "estimatedGrams": 50,
+          "confidence": "medium",
+          "portionHint": "a small side portion",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 2,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.5,
+            "kcal": 45
+          }
+        }
+      ],
+      "notes": "The plate contains a variety of foods including breaded white fish, rice topped with a yellow lentil dal, meatballs in a brown gravy, and a small side of corn and cabbage slaw.",
+      "latency_ms": 2746.711058076471,
+      "cost_usd": 0.00118825,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 508,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13932
+    }
+  },
+  "43": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "cheesy grits with bacon",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "small bowl",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 6,
+            "fat": 10,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "bread with butter",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "one slice",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 8,
+            "fat": 8,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "fried crab cakes with sauce",
+          "estimatedGrams": 150,
+          "confidence": "medium",
+          "portionHint": "two round patties",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 14,
+            "fat": 15,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "green beans and rice",
+          "estimatedGrams": 120,
+          "confidence": "medium",
+          "portionHint": "side portion",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 3,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 3,
+            "fat": 2,
+            "kcal": 130
+          }
+        },
+        {
+          "name": "savory vegetable quiche slice",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "square piece",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 8,
+            "fat": 12,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "scrambled egg with ham",
+          "estimatedGrams": 70,
+          "confidence": "medium",
+          "portionHint": "small side portion",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 13,
+            "fat": 10,
+            "kcal": 150
+          }
+        }
+      ],
+      "notes": "The lemon wedge garnish was excluded from the calculations.",
+      "latency_ms": 5800.836312933825,
+      "cost_usd": 0.00169175,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 768,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14015
+    }
+  },
+  "44": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "mixed green salad with carrots",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "about a large handful",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0.2,
+            "kcal": 25
+          }
+        },
+        {
+          "name": "stewed brown beans",
+          "estimatedGrams": 70,
+          "confidence": "high",
+          "portionHint": "about 1/4 cup",
+          "macrosPer100g": {
+            "carbs": 20,
+            "fiber": 7,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 7,
+            "fat": 0.5,
+            "kcal": 115
+          }
+        },
+        {
+          "name": "yellow rice",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "about 1/4 cup",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 1,
+            "sugars": 0.1,
+            "polyols": null,
+            "protein": 2.5,
+            "fat": 2,
+            "kcal": 140
+          }
+        },
+        {
+          "name": "mashed potatoes with cooked cabbage",
+          "estimatedGrams": 120,
+          "confidence": "medium",
+          "portionHint": "a small mound",
+          "macrosPer100g": {
+            "carbs": 15,
+            "fiber": 2,
+            "sugars": 1.5,
+            "polyols": null,
+            "protein": 1.5,
+            "fat": 3,
+            "kcal": 95
+          }
+        },
+        {
+          "name": "braised pork or beef stew",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "a few small chunks",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 0.5,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 18,
+            "fat": 10,
+            "kcal": 180
+          }
+        }
+      ],
+      "notes": "The portion sizes are estimated based on a standard dinner plate. The mash/cabbage and meat stew components are partially overlapping.",
+      "latency_ms": 3326.5547989867628,
+      "cost_usd": 0.00136225,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 624,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14022
+    }
+  },
+  "45": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "bulgogi",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 1,
+            "sugars": 8,
+            "polyols": null,
+            "protein": 18,
+            "fat": 10,
+            "kcal": 210
+          }
+        },
+        {
+          "name": "grilled mackerel",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "two small pieces",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 20,
+            "fat": 15,
+            "kcal": 215
+          }
+        },
+        {
+          "name": "tofu with kimchi",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a few blocks",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 8,
+            "fat": 4,
+            "kcal": 85
+          }
+        },
+        {
+          "name": "steamed egg",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 9,
+            "fat": 7,
+            "kcal": 110
+          }
+        },
+        {
+          "name": "mixed banchan",
+          "estimatedGrams": 200,
+          "confidence": "medium",
+          "portionHint": "assorted small portions",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 3,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 3,
+            "fat": 2,
+            "kcal": 65
+          }
+        }
+      ],
+      "notes": "Represented as a shared meal with common Korean banchan side dishes consolidated.",
+      "latency_ms": 3435.4372149100527,
+      "cost_usd": 0.00130825,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 588,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 14027
+    }
+  },
+  "46": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "steamed bean curd skin rolls",
+          "estimatedGrams": 400,
+          "confidence": "high",
+          "portionHint": "5 servings",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 15,
+            "fat": 12,
+            "kcal": 180
+          }
+        },
+        {
+          "name": "steamed beef tripe",
+          "estimatedGrams": 600,
+          "confidence": "high",
+          "portionHint": "10 small bowls",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 16,
+            "fat": 5,
+            "kcal": 120
+          }
+        }
+      ],
+      "notes": "The steamed dim sum items include bean curd skin rolls (fuzhu juan) and several small bowls of steamed beef tripe with some vegetables/aromatics mixed in.",
+      "latency_ms": 2443.808092037216,
+      "cost_usd": 0.00079525,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 246,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13944
+    }
+  },
+  "47": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "avocado toast with poached eggs and tomatoes",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "one plate with two pieces",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 4,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 6,
+            "fat": 10,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "fruit yogurt bowl with kiwi and granola",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "small bowl",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 2,
+            "sugars": 12,
+            "polyols": null,
+            "protein": 5,
+            "fat": 4,
+            "kcal": 130
+          }
+        },
+        {
+          "name": "sesame bagel with tomato salad",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "one bagel",
+          "macrosPer100g": {
+            "carbs": 40,
+            "fiber": 3,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 8,
+            "fat": 3,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "iced latte",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "one glass",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 2,
+            "fat": 2,
+            "kcal": 45
+          }
+        },
+        {
+          "name": "beetroot latte",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "one cup",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 1,
+            "sugars": 8,
+            "polyols": null,
+            "protein": 3,
+            "fat": 2,
+            "kcal": 70
+          }
+        },
+        {
+          "name": "tropical passionfruit juice",
+          "estimatedGrams": 250,
+          "confidence": "medium",
+          "portionHint": "one glass",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 0,
+            "sugars": 11,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 50
+          }
+        }
+      ],
+      "notes": "There are multiple plates of food on the table, likely for a group. I have cataloged the primary items visible across the table.",
+      "latency_ms": 3614.181559998542,
+      "cost_usd": 0.0015695,
+      "raw_ok": true,
+      "prompt_tokens": 1730,
+      "completion_tokens": 758,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13953
+    }
+  },
+  "48": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "potato chips",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "about a handful",
+          "macrosPer100g": {
+            "carbs": 55,
+            "fiber": 4,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 6,
+            "fat": 35,
+            "kcal": 540
+          }
+        },
+        {
+          "name": "vanilla cake with frosting",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "one large slice",
+          "macrosPer100g": {
+            "carbs": 60,
+            "fiber": 1,
+            "sugars": 45,
+            "polyols": null,
+            "protein": 3,
+            "fat": 18,
+            "kcal": 410
+          }
+        },
+        {
+          "name": "triangle sandwich",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "one quarter of a sandwich",
+          "macrosPer100g": {
+            "carbs": 30,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 10,
+            "fat": 8,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "samosas",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "two small pieces",
+          "macrosPer100g": {
+            "carbs": 35,
+            "fiber": 4,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 6,
+            "fat": 15,
+            "kcal": 300
+          }
+        }
+      ],
+      "notes": "The sandwich filling is obscured but estimated as a typical deli-style sandwich.",
+      "latency_ms": 2786.4225290250033,
+      "cost_usd": 0.00114475,
+      "raw_ok": true,
+      "prompt_tokens": 1705,
+      "completion_tokens": 479,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13805
+    }
+  },
+  "49": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "pork chop with sauce and spaghetti",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "most of the main plate",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 15,
+            "fat": 12,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "one link",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 13,
+            "fat": 25,
+            "kcal": 300
+          }
+        },
+        {
+          "name": "vegetable soup",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "small bowl",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 1,
+            "fat": 2,
+            "kcal": 40
+          }
+        },
+        {
+          "name": "dinner roll",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "one piece",
+          "macrosPer100g": {
+            "carbs": 50,
+            "fiber": 2,
+            "sugars": 5,
+            "polyols": null,
+            "protein": 8,
+            "fat": 4,
+            "kcal": 280
+          }
+        }
+      ],
+      "notes": "The main dish includes spaghetti, pork chop, cherry tomatoes, and sauce served together on a sizzling plate.",
+      "latency_ms": 4564.24142094329,
+      "cost_usd": 0.00133025,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 527,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13811
+    }
+  },
+  "50": {
+    "baseline": {
+      "foods": [
+        {
+          "name": "kebab meat with tomato sauce",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about a cup of sliced meat",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0.5,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 22,
+            "fat": 18,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "large handful",
+          "macrosPer100g": {
+            "carbs": 35,
+            "fiber": 3,
+            "sugars": 0.5,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 15,
+            "kcal": 290
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small side bowl",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 1.5,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0.2,
+            "kcal": 25
+          }
+        }
+      ],
+      "notes": "The kebab includes meat and sauce. The side salad includes lettuce, red onion, cucumber, and pickled chili peppers.",
+      "latency_ms": 4034.0609799604863,
+      "cost_usd": 0.00117125,
+      "raw_ok": true,
+      "prompt_tokens": 2159,
+      "completion_tokens": 421,
+      "raw_text": null,
+      "model": "google/gemini-3.1-flash-lite",
+      "mem_available_mb_after": 13886
+    }
+  },
+  "_summary": {
+    "total_cost_usd": 0.05389650000000001,
+    "per_approach_cost_usd": {
+      "baseline": 0.05389650000000001
+    },
+    "failures": [],
+    "config_name": "openrouter-pilot",
+    "config_path": "configs/openrouter-pilot.json",
+    "approaches": [
+      "baseline"
+    ],
+    "approach_configs": {
+      "baseline": {
+        "type": "single",
+        "model": "gemini_flash_lite",
+        "label": "google/gemini-3.1-flash-lite single-shot (frontier reference row)"
+      }
+    },
+    "models": {
+      "gemini_flash_lite": {
+        "id": "google/gemini-3.1-flash-lite",
+        "provider": "openrouter",
+        "price_per_mtok_in": 0.25,
+        "price_per_mtok_out": 1.5,
+        "use_json_schema": true
+      },
+      "qwen3_vl_8b": {
+        "id": "qwen/qwen3-vl-8b-instruct",
+        "provider": "openrouter",
+        "price_per_mtok_in": 0.117,
+        "price_per_mtok_out": 0.455,
+        "use_json_schema": true
+      },
+      "gemma4_26b_a4b": {
+        "id": "google/gemma-4-26b-a4b-it",
+        "provider": "openrouter",
+        "price_per_mtok_in": 0.12,
+        "price_per_mtok_out": 0.4,
+        "use_json_schema": true
+      }
+    },
+    "fan_out_override": null,
+    "images": [
+      "01.jpg",
+      "02.jpg",
+      "03.jpg",
+      "04.jpg",
+      "05.jpg",
+      "06.jpg",
+      "07.jpg",
+      "08.jpg",
+      "09.jpg",
+      "10.jpg",
+      "11.jpg",
+      "12.jpg",
+      "13.jpg",
+      "14.jpg",
+      "15.jpg",
+      "16.jpg",
+      "17.jpg",
+      "18.jpg",
+      "19.jpg",
+      "20.jpg",
+      "21.jpg",
+      "22.jpg",
+      "23.jpg",
+      "24.jpg",
+      "25.jpg",
+      "26.jpg",
+      "27.jpg",
+      "28.jpg",
+      "29.jpg",
+      "30.jpg",
+      "31.jpg",
+      "32.jpg",
+      "33.jpg",
+      "34.jpg",
+      "35.jpg",
+      "36.jpg",
+      "37.jpg",
+      "38.jpg",
+      "39.jpg",
+      "40.jpg",
+      "41.jpg",
+      "42.jpg",
+      "43.jpg",
+      "44.jpg",
+      "45.jpg",
+      "46.jpg",
+      "47.jpg",
+      "48.jpg",
+      "49.jpg",
+      "50.jpg"
+    ],
+    "started_at": "2026-08-12T07:45:57.163628+00:00",
+    "wall_seconds": 166.0,
+    "host": {
+      "hostname": "bluefin",
+      "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "python": "3.14.6",
+      "cpu_model": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+      "cpu_count": 16,
+      "mem_total_mb": 62053,
+      "mem_available_mb_at_start": 13886
+    }
+  }
+}

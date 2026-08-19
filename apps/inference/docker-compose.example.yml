@@ -1,0 +1,125 @@
+# openplate + openplate-inference, wired together.
+#
+# Copy to docker-compose.yml, edit the four marked values, `docker compose up -d`.
+# What you get: an openplate instance whose users tap ONE button to use this
+# instance's own AI — no provider account, no API key of their own, no photo
+# leaving your network.
+#
+#   docker compose logs -f inference   # weight download + model load + ready
+#   docker compose logs -f openplate
+#
+# ── THE ONE THING PEOPLE GET WRONG ─────────────────────────────────────────
+# `DEFAULT_INFERENCE_BASE_URL` must be a URL a BROWSER on the user's phone or
+# laptop can open. The photo goes from the device straight to the inference
+# endpoint — openplate's server is never in the loop, which is what keeps the
+# scan private. So `http://inference:8300/v1` (the container hostname) does NOT
+# work, even though the two containers can talk to each other that way. Use the
+# LAN address of this host, or a hostname on your reverse proxy / tailnet.
+
+services:
+  inference:
+    image: ghcr.io/lowcarbcheck/openplate-inference:latest
+    # Or build it yourself:
+    #   build: { context: ., args: { BASE_IMAGE: ghcr.io/ggml-org/llama.cpp:server } }
+    restart: unless-stopped
+    ports:
+      # Published because the browser calls it directly. Bind to 0.0.0.0 (as
+      # here) for LAN access; use "127.0.0.1:8300:8300" if a reverse proxy on
+      # this host is the only thing that should reach it.
+      - "8300:8300"
+    volumes:
+      # Weights land here on first boot (~2.0 GiB for lite, ~5.8 GiB for
+      # quality) and are verified by sha256 on every start. Named, so
+      # `docker compose down` does not throw the download away.
+      - inference-models:/models
+    environment:
+      # lite | lite-apache | quality — see README "Hardware & measured latency".
+      MODEL_PROFILE: lite
+      # ── EDIT ME (1/4) ── A stable key. Without it a new key is generated on
+      # every restart and every browser has to reconnect. Any random string:
+      #   openssl rand -base64 24
+      API_KEYS: "opk_CHANGE_ME"
+      # Self-host has no latency ceiling. 0 = never shed load for being slow.
+      LATENCY_CEILING_MS: "0"
+      CONCURRENCY: "2"
+      # Where macros come from. fdc = the bundled offline USDA-derived dataset.
+      # See README "Food data" before switching to `off` (ODbL) or `lcc`.
+      FOOD_SOURCE: fdc
+    # ── GPU (the `quality` profile) ── uncomment BOTH of these and switch the
+    # image/build to the -cuda base. The entrypoint detects the GPU and offloads
+    # every layer automatically; there is no flag to set.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+    # ── ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ─────────────────────────
+    # Replace the `environment:` block above with the one below and this
+    # container downloads no weights and starts no second model — it just turns
+    # your runtime into a plate scanner. You can drop the `volumes:` block and
+    # the `inference-models` volume entirely.
+    #
+    # Read README "Bring your own runtime" FIRST: your runtime must enforce
+    # grammar-constrained decoding, and there is a one-line curl there that
+    # tells you whether yours does. vLLM's CPU build does NOT (it crashes).
+    #
+    # environment:
+    #   MODEL_PROFILE: external
+    #   # Must resolve from INSIDE this container, and no trailing /v1.
+    #   # `localhost` here means this container, not your host — use the LAN
+    #   # address, or host.docker.internal on Docker Desktop.
+    #   MODEL_RUNTIME_URL: "http://your-runtime.lan:8000"
+    #   # vLLM requires an EXACT match with its served model name.
+    #   MODEL_ID: "your-served-model-name"
+    #   # Only if your runtime is behind auth (`vllm serve --api-key …`).
+    #   # Separate from API_KEYS, which is what callers present to THIS service.
+    #   MODEL_RUNTIME_API_KEY: "sk_your_runtime_key"
+    #   API_KEYS: "opk_CHANGE_ME"
+    #   LATENCY_CEILING_MS: "0"
+    #   # Match your runtime's real slot count:
+    #   #   llama.cpp --parallel N | vLLM --max-num-seqs N | OLLAMA_NUM_PARALLEL
+    #   CONCURRENCY: "2"
+    #   FOOD_SOURCE: fdc
+    #
+    # REQUIRED with the block above. The image bakes in a 60-minute health
+    # start_period, sized for a first-boot weight download. External mode has no
+    # download, so without this override a wrong MODEL_RUNTIME_URL stays hidden
+    # for an hour instead of surfacing in seconds.
+    # healthcheck:
+    #   start_period: 30s
+
+  openplate:
+    image: ghcr.io/lowcarbcheck/openplate:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - inference
+    environment:
+      # ── EDIT ME (2/4) ── your openplate instance's own settings. See
+      # openplate's .env.example for the full list (database, session secret…).
+      APP_URL: "http://openplate.example.lan:3000"
+
+      # ── The instance preset: this is what turns into openplate's one-tap
+      #    "This openplate provides its own AI" card, on the AI settings page
+      #    and on the scan screen. Leave these unset and nothing renders —
+      #    bring-your-own-key stays the only path.
+      #
+      # ── EDIT ME (3/4) ── a BROWSER-reachable address for the inference
+      #    container. NOT http://inference:8300. Note the /v1 suffix.
+      DEFAULT_INFERENCE_BASE_URL: "http://openplate.example.lan:8300/v1"
+      # ── EDIT ME (4/4) ── must match API_KEYS above.
+      #
+      # ⚠ THIS KEY IS PUBLIC. It is embedded in the HTML every browser loads, so
+      #   anyone who can open your openplate can read it with view-source. That
+      #   is fine for a household or a tailnet. It is NOT fine on an instance
+      #   open to the internet without a VPN or auth proxy in front of it — in
+      #   that case leave this unset and let people paste the key themselves.
+      DEFAULT_INFERENCE_API_KEY: "opk_CHANGE_ME"
+      DEFAULT_INFERENCE_MODEL: "openplate-plate-1"
+
+volumes:
+  inference-models:

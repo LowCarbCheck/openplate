@@ -1,0 +1,73 @@
+{
+  "endpoint": "http://127.0.0.1:8091/v1",
+  "model": "local",
+  "max_tokens": 64,
+  "max_long_edge": 448,
+  "images": [
+    "21.jpg",
+    "22.jpg",
+    "23.jpg",
+    "24.jpg",
+    "25.jpg",
+    "26.jpg",
+    "27.jpg",
+    "28.jpg"
+  ],
+  "host": {
+    "hostname": "bluefin",
+    "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "python": "3.14.6",
+    "cpu_model": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+    "cpu_count": 16,
+    "mem_total_mb": 62053,
+    "mem_available_mb_at_start": 42802
+  },
+  "scenarios": [
+    {
+      "label": "single",
+      "requests": 1,
+      "parallel": false,
+      "wall_seconds": 2.616,
+      "latencies_seconds": [
+        2.615
+      ],
+      "errors": []
+    },
+    {
+      "label": "sequential-2",
+      "requests": 2,
+      "parallel": false,
+      "wall_seconds": 4.824,
+      "latencies_seconds": [
+        2.444,
+        2.379
+      ],
+      "errors": []
+    },
+    {
+      "label": "parallel-2",
+      "requests": 2,
+      "parallel": true,
+      "wall_seconds": 5.481,
+      "latencies_seconds": [
+        2.761,
+        5.478
+      ],
+      "errors": []
+    },
+    {
+      "label": "parallel-3",
+      "requests": 3,
+      "parallel": true,
+      "wall_seconds": 7.033,
+      "latencies_seconds": [
+        2.515,
+        4.961,
+        7.032
+      ],
+      "errors": []
+    }
+  ],
+  "parallel2_over_sequential2": 1.136,
+  "parallel3_over_3x_single": 0.896
+}

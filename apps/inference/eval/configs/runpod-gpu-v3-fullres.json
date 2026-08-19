@@ -1,0 +1,44 @@
+{
+  "name": "runpod-gpu-v3-fullres",
+  "description": "runpod-gpu-v3.json with the client-side downscale OFF -- the full-resolution control that prices what image_max_long_edge 896 costs (or buys) on GPU. Identical in every other field, and it writes to its own out_dir so the two runs can never merge into one results.json. Run this one FIRST if the question is accuracy (V3-DESIGN.md §3 protocol: the downscale is a recall risk, not a free win), or second if the question is latency. A separate config rather than a CLI flag because the harness has no --image-max-long-edge override and a run's resolution belongs in the artifact that describes the run.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "out_dir": "runs/runpod-gpu-v3-fullres",
+  "image_max_long_edge": null,
+  "_image_max_long_edge_note": "null == send the corpus bytes as-is (mostly 1280 px long edge). Compare prompt_tokens against runpod-gpu-v3's to confirm the 896 run actually halved image tokens; ~(896/1280)^2 = 0.49x is the expectation.",
+  "_env_note": "Same ${RUNPOD_QWEN_URL} contract as runpod-gpu-v3.json -- expanded by harness.runner.expand_env, unset is a hard error. Point BOTH runs at the same pod and the same loaded weights, or the resolution comparison is confounded.",
+  "providers": {
+    "runpod_qwen_vl": {
+      "base_url": "${RUNPOD_QWEN_URL}",
+      "api_key_env": "RUNPOD_QWEN_API_KEY",
+      "headers": {"User-Agent": "openplate-eval/3"},
+      "_headers_note": "Runpod's HTTP proxy (*.proxy.runpod.net) 403s any request whose User-Agent starts with 'Python-urllib' -- the harness's default, since providers.py posts via urllib. Verified 2026-08-12: identical POST bodies, UA 'Python-urllib/3.14' -> 403, 'openplate-eval/3' -> 200. Without this override every record in the run errors instantly with ProviderHttpError(403) (403 is not retried -- only 429/5xx are). Any non-urllib UA works; keep it honest rather than spoofing a browser.",
+      "api_key_required": false,
+      "timeout_seconds": 300,
+      "max_retries": 3,
+      "retry_backoff_base_seconds": 2.0
+    }
+  },
+  "models": {
+    "qwen_vl": {
+      "id": "qwen-vl",
+      "provider": "runpod_qwen_vl",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "max_tokens_v3": 256
+    }
+  },
+  "approach_order": ["single_qwen_vl_v3"],
+  "approaches": {
+    "single_qwen_vl_v3": {
+      "type": "single_v3",
+      "model": "qwen_vl",
+      "label": "v3 terse single-shot Qwen3-VL, remote Runpod GPU, full resolution"
+    }
+  },
+  "_run_notes": [
+    "Do not run this back-to-back over the same images as the 896 run without accounting for the server's prompt-prefix cache: a warm cache flatters the second run's prefill (PERFORMANCE.md §6). Different image bytes means different prefix, so cross-run contamination is unlikely here, but a re-run of the SAME config is cache-warm.",
+    "If Pillow is missing on the client, runpod-gpu-v3.json degrades into this config while still labelling itself 896 px. The harness prints one WARN to stderr -- that warning is the only difference between a valid comparison and two identical runs."
+  ]
+}

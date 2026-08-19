@@ -1,0 +1,104 @@
+{
+  "name": "local-cpu-v3",
+  "description": "Pipeline v3 — the output-token diet + vision-stage background trap fix, aimed at the p95 <= 10 s product SLO. Three changes vs local-cpu-v2.json, all of them token-budget changes rather than model changes: (1) vision calls emit the TERSE candidate format {\"f\":[{\"n\",\"g\",\"bg\"}]} bounded to 8 items by the GBNF, so completion tokens go from a measured p50 of 549 to a designed ~110; (2) background/poster food is excluded in the VISION prompt and flagged per item with bg, then dropped in code before the judge sees it (runs/2026-08-11-local-v2-SCORING.md finding 2: the text-only judge is blind and cannot enforce this); (3) one SHARED vision system prompt with the variant instruction moved after the image part, so system+image is a byte-identical prefix across the fan-out — which is why max_parallel is 1, not 2: llama.cpp's prompt cache is per KV slot, so sequential requests reuse the cached image and concurrent ones re-prefill it. Ports MUST match eval/serve/models.json and are unchanged from local-cpu-v2.json: lfm-vl 8081, lfm-judge 8082, qwen-vl 8084. Start servers with eval/serve/serve.sh (see eval/SERVING.md). The registration diff (eval/V3-DESIGN.md §6, touching harness/approaches.py + harness/runner.py + harness/providers.py) was applied 2026-08-13, so single_v3 / ensemble_judge_v3 and image_max_long_edge are live; the downscale additionally needs Pillow or it warns once and sends full resolution. Cost fields are 0 by construction; latency and RAM are the currency.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "out_dir": "runs/local-cpu-v3",
+  "image_max_long_edge": 896,
+  "_image_max_long_edge_note": "Client-side downscale (providers.image_to_data_url, needs Pillow). 896 px is a multiple of 112 = lcm(16, 28), an exact patch boundary for both LFM2.5-VL (16 px patches) and Qwen3-VL (14 px, 2x2 merged => 28). Corpus images are mostly 1280 px on the long edge, so this is ~0.49x the image tokens and ~0.49x the image prefill. IT IS A RECALL RISK, not a free win — the run that uses it cannot also be the run that proves the terse format is accuracy-neutral. Set to null for a clean single-variable comparison against v2, then re-enable.",
+  "providers": {
+    "local_lfm_vl": {
+      "base_url": "http://127.0.0.1:8081/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_lfm_judge": {
+      "base_url": "http://127.0.0.1:8082/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_qwen_vl": {
+      "base_url": "http://127.0.0.1:8084/v1",
+      "timeout_seconds": 900,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    }
+  },
+  "models": {
+    "lfm_vl": {
+      "id": "lfm-vl",
+      "provider": "local_lfm_vl",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "max_tokens_v3": 256,
+      "_note": "LFM2.5-VL-1.6B Q8_0. max_tokens_v3 256 is headroom, not a target: the terse grammar bounds output at ~155 tokens, and a cap AT the budget truncates mid-JSON and returns HTTP 200 with an unparseable body."
+    },
+    "lfm_judge": {
+      "id": "lfm-judge",
+      "provider": "local_lfm_judge",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "LFM2.5-2.6B Q8_0, text-only, reasoning OFF (--reasoning-budget 0). Judge max_tokens comes from schema_v3.v3_judge_max_tokens() — 512 with macros null, 768 with macros on. NEVER point a v3 approach at lfm-judge-think with these caps: on a model served with --reasoning-budget N > 0 a token ceiling truncates mid-thought and returns content '' (serve/models.json reasoning_budget_curve)."
+    },
+    "qwen_vl": {
+      "id": "qwen-vl",
+      "provider": "local_qwen_vl",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "max_tokens_v3": 256,
+      "_note": "Qwen3-VL-8B Q4_K_M, single-shot. Dynamic-resolution tower, so it also honours the server-side cap: serving it with --image-max-tokens 1024 bounds image prefill independently of the client-side downscale. Measured prompt tokens 1287-3507 at full resolution, of which ~620 was the v2 system prompt."
+    }
+  },
+  "approach_order": [
+    "single_lfm_vl_v3",
+    "ensemble_lfm_v3",
+    "ensemble_lfm_v3_macros",
+    "single_qwen_vl_v3"
+  ],
+  "approaches": {
+    "single_lfm_vl_v3": {
+      "type": "single_v3",
+      "model": "lfm_vl",
+      "label": "v3 terse single-shot LFM2.5-VL-1.6B, background flag, CPU"
+    },
+    "ensemble_lfm_v3": {
+      "type": "ensemble_judge_v3",
+      "vision_model": "lfm_vl",
+      "judge_model": "lfm_judge",
+      "variants": ["a3_production", "c3_detection", "d3_taxonomy_first"],
+      "max_parallel": 1,
+      "judge_temperature": 0,
+      "judge_macros": false,
+      "label": "v3 terse LFM2.5-VL x3 (a3/c3/d3, shared image prefix) + LFM2.5-2.6B judge, macros null, CPU"
+    },
+    "ensemble_lfm_v3_macros": {
+      "type": "ensemble_judge_v3",
+      "vision_model": "lfm_vl",
+      "judge_model": "lfm_judge",
+      "variants": ["a3_production", "c3_detection", "d3_taxonomy_first"],
+      "max_parallel": 1,
+      "judge_temperature": 0,
+      "judge_macros": true,
+      "label": "v3 terse LFM2.5-VL x3 + LFM2.5-2.6B judge WITH macro estimation, CPU (prices the macros option)"
+    },
+    "single_qwen_vl_v3": {
+      "type": "single_v3",
+      "model": "qwen_vl",
+      "label": "v3 terse single-shot Qwen3-VL-8B Q4, CPU"
+    }
+  },
+  "_run_notes": [
+    "Comparison protocol: ensemble_lfm_v3 is the row to hold against local-cpu-v2's ensemble_lfm_hardjudge (same models, same a/c/d variant intent, same judge). If recall moves, the causes are confounded unless image_max_long_edge is null — run it null FIRST for the clean terse-vs-verbose read, then again at 896 to price the downscale.",
+    "ensemble_lfm_v3_macros exists only to measure what judge-side macro estimation costs in wall clock (projected ~+9 s/plate on lfm-judge). If openplate resolves nutrition from its own food database, delete this row and keep macros null.",
+    "single_qwen_vl_v3 and the ensembles cannot be co-resident inside ~8 GB free RAM (qwen-vl 6.31 GB + lfm-vl 1.55 + lfm-judge 3.03). Run the ensembles first with --approach, stop lfm-*, start qwen-vl, then run --approach single_qwen_vl_v3 into the same out dir with --out on a separate directory, or accept swap (a measured 1.7x slowdown, see PERFORMANCE.md §3).",
+    "prompt-prefix caching is deliberately load-bearing in v3 (shared image prefix), which is the same mechanism PERFORMANCE.md warns silently flatters timing runs. Do not re-run the same image twice in a timing run and average the two: the second is cache-warm on the full prompt, not just the shared prefix."
+  ]
+}

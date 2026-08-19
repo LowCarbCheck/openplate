@@ -1,0 +1,889 @@
+{
+ "summary": {
+  "records": 50,
+  "ok": 50,
+  "errors": 0,
+  "p50_ms": 5511,
+  "p95_ms": 6752,
+  "mean_ms": 5420,
+  "min_ms": 4194,
+  "max_ms": 7156,
+  "items_mean": 4.22
+ },
+ "records": [
+  {
+   "image": "01.jpg",
+   "latency_ms": 5904,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 61,
+    "total_tokens": 603,
+    "latency_ms": 5892
+   },
+   "names": [
+    "ham",
+    "sausage",
+    "eggs",
+    "beans",
+    "cucumber"
+   ]
+  },
+  {
+   "image": "02.jpg",
+   "latency_ms": 5128,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 52,
+    "total_tokens": 594,
+    "latency_ms": 5125
+   },
+   "names": [
+    "roast pork",
+    "roast beef",
+    "potatoes",
+    "broccoli"
+   ]
+  },
+  {
+   "image": "03.jpg",
+   "latency_ms": 6752,
+   "items": 8,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 98,
+    "total_tokens": 640,
+    "latency_ms": 6749
+   },
+   "names": [
+    "salmon",
+    "lettuce",
+    "cucumber",
+    "avocado",
+    "tomato",
+    "olive",
+    "onion",
+    "feta cheese"
+   ]
+  },
+  {
+   "image": "04.jpg",
+   "latency_ms": 4363,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 550,
+    "completion_tokens": 27,
+    "total_tokens": 577,
+    "latency_ms": 4361
+   },
+   "names": [
+    "burger",
+    "fries"
+   ]
+  },
+  {
+   "image": "05.jpg",
+   "latency_ms": 4603,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 35,
+    "total_tokens": 577,
+    "latency_ms": 4600
+   },
+   "names": [
+    "rice",
+    "chicken",
+    "spinach"
+   ]
+  },
+  {
+   "image": "06.jpg",
+   "latency_ms": 5676,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 62,
+    "total_tokens": 604,
+    "latency_ms": 5670
+   },
+   "names": [
+    "sushi rolls",
+    "tuna fish",
+    "salmon fish",
+    "pickled ginger",
+    "soy sauce"
+   ]
+  },
+  {
+   "image": "07.jpg",
+   "latency_ms": 5246,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 57,
+    "total_tokens": 599,
+    "latency_ms": 5243
+   },
+   "names": [
+    "spaghetti",
+    "ground beef",
+    "corn",
+    "green beans",
+    "carrots"
+   ]
+  },
+  {
+   "image": "08.jpg",
+   "latency_ms": 4644,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 37,
+    "total_tokens": 579,
+    "latency_ms": 4642
+   },
+   "names": [
+    "granola",
+    "yogurt",
+    "apple slices"
+   ]
+  },
+  {
+   "image": "09.jpg",
+   "latency_ms": 4194,
+   "items": 1,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 16,
+    "total_tokens": 558,
+    "latency_ms": 4192
+   },
+   "names": [
+    "pizza"
+   ]
+  },
+  {
+   "image": "10.jpg",
+   "latency_ms": 5639,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 550,
+    "completion_tokens": 58,
+    "total_tokens": 608,
+    "latency_ms": 5635
+   },
+   "names": [
+    "sandwich",
+    "lettuce",
+    "tomato"
+   ]
+  },
+  {
+   "image": "11.jpg",
+   "latency_ms": 6488,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 66,
+    "total_tokens": 608,
+    "latency_ms": 6486
+   },
+   "names": [
+    "Fried fish fillet",
+    "French fries",
+    "Lemon wedge",
+    "Capers",
+    "Salad"
+   ]
+  },
+  {
+   "image": "12.jpg",
+   "latency_ms": 4841,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 40,
+    "total_tokens": 582,
+    "latency_ms": 4840
+   },
+   "names": [
+    "sausages",
+    "mashed potatoes",
+    "sauerkraut"
+   ]
+  },
+  {
+   "image": "13.jpg",
+   "latency_ms": 4479,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 26,
+    "total_tokens": 568,
+    "latency_ms": 4476
+   },
+   "names": [
+    "pasta",
+    "onion"
+   ]
+  },
+  {
+   "image": "14.jpg",
+   "latency_ms": 4451,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 27,
+    "total_tokens": 569,
+    "latency_ms": 4449
+   },
+   "names": [
+    "potatoes",
+    "beef stew"
+   ]
+  },
+  {
+   "image": "15.jpg",
+   "latency_ms": 4751,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 37,
+    "total_tokens": 585,
+    "latency_ms": 4749
+   },
+   "names": [
+    "sausage",
+    "pretzel",
+    "mustard"
+   ]
+  },
+  {
+   "image": "16.jpg",
+   "latency_ms": 5644,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 64,
+    "total_tokens": 606,
+    "latency_ms": 5643
+   },
+   "names": [
+    "french fries",
+    "meat with red sauce",
+    "lettuce",
+    "tomato slices",
+    "red onion slices"
+   ]
+  },
+  {
+   "image": "17.jpg",
+   "latency_ms": 4697,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 29,
+    "total_tokens": 577,
+    "latency_ms": 4694
+   },
+   "names": [
+    "french fries",
+    "sausage"
+   ]
+  },
+  {
+   "image": "18.jpg",
+   "latency_ms": 5692,
+   "items": 1,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 66,
+    "total_tokens": 608,
+    "latency_ms": 5690
+   },
+   "names": [
+    "pasta"
+   ]
+  },
+  {
+   "image": "19.jpg",
+   "latency_ms": 5057,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 40,
+    "total_tokens": 588,
+    "latency_ms": 5055
+   },
+   "names": [
+    "French fries",
+    "Sauerkraut",
+    "Meat strips"
+   ]
+  },
+  {
+   "image": "20.jpg",
+   "latency_ms": 5030,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 546,
+    "completion_tokens": 49,
+    "total_tokens": 595,
+    "latency_ms": 5028
+   },
+   "names": [
+    "noodles",
+    "pork belly",
+    "green onions",
+    "cilantro"
+   ]
+  },
+  {
+   "image": "21.jpg",
+   "latency_ms": 4383,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 28,
+    "total_tokens": 570,
+    "latency_ms": 4381
+   },
+   "names": [
+    "bean sprouts",
+    "basil leaves"
+   ]
+  },
+  {
+   "image": "22.jpg",
+   "latency_ms": 5058,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 25,
+    "total_tokens": 567,
+    "latency_ms": 5055
+   },
+   "names": [
+    "tacos",
+    "corn"
+   ]
+  },
+  {
+   "image": "23.jpg",
+   "latency_ms": 5089,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 550,
+    "completion_tokens": 49,
+    "total_tokens": 599,
+    "latency_ms": 5087
+   },
+   "names": [
+    "burrito",
+    "shredded cheese",
+    "lettuce",
+    "tomato"
+   ]
+  },
+  {
+   "image": "24.jpg",
+   "latency_ms": 4697,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 37,
+    "total_tokens": 579,
+    "latency_ms": 4696
+   },
+   "names": [
+    "fish and chips",
+    "peas",
+    "lemon"
+   ]
+  },
+  {
+   "image": "25.jpg",
+   "latency_ms": 5782,
+   "items": 6,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 68,
+    "total_tokens": 610,
+    "latency_ms": 5779
+   },
+   "names": [
+    "pancakes",
+    "eggs",
+    "bacon",
+    "sausages",
+    "toast",
+    "syrup"
+   ]
+  },
+  {
+   "image": "26.jpg",
+   "latency_ms": 5852,
+   "items": 6,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 71,
+    "total_tokens": 619,
+    "latency_ms": 5850
+   },
+   "names": [
+    "Rice",
+    "Lentil dish",
+    "Vegetable salad",
+    "Pita bread",
+    "Curry",
+    "Soup"
+   ]
+  },
+  {
+   "image": "27.jpg",
+   "latency_ms": 5712,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 65,
+    "total_tokens": 613,
+    "latency_ms": 5710
+   },
+   "names": [
+    "chicken breast",
+    "red bell pepper",
+    "green bell pepper",
+    "onion",
+    "sauce"
+   ]
+  },
+  {
+   "image": "28.jpg",
+   "latency_ms": 7006,
+   "items": 8,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 88,
+    "total_tokens": 630,
+    "latency_ms": 7003
+   },
+   "names": [
+    "falafel",
+    "rice",
+    "carrots",
+    "olives",
+    "cucumber",
+    "beets",
+    "yogurt",
+    "parsley"
+   ]
+  },
+  {
+   "image": "29.jpg",
+   "latency_ms": 5157,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 47,
+    "total_tokens": 589,
+    "latency_ms": 5155
+   },
+   "names": [
+    "pickles",
+    "salami",
+    "cheese",
+    "olives"
+   ]
+  },
+  {
+   "image": "30.jpg",
+   "latency_ms": 6321,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 89,
+    "total_tokens": 637,
+    "latency_ms": 6319
+   },
+   "names": [
+    "grilled chicken breast",
+    "sausage",
+    "steak",
+    "potato",
+    "lettuce"
+   ]
+  },
+  {
+   "image": "31.jpg",
+   "latency_ms": 4658,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 550,
+    "completion_tokens": 26,
+    "total_tokens": 576,
+    "latency_ms": 4656
+   },
+   "names": [
+    "beef stew",
+    "bread"
+   ]
+  },
+  {
+   "image": "32.jpg",
+   "latency_ms": 7156,
+   "items": 8,
+   "usage": {
+    "prompt_tokens": 550,
+    "completion_tokens": 106,
+    "total_tokens": 656,
+    "latency_ms": 7152
+   },
+   "names": [
+    "green olives",
+    "carrots",
+    "red bell peppers",
+    "cucumber sticks",
+    "sliced yellow bell peppers",
+    "sliced red bell peppers",
+    "sliced green bell peppers",
+    "sliced cucumber sticks"
+   ]
+  },
+  {
+   "image": "33.jpg",
+   "latency_ms": 5232,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 48,
+    "total_tokens": 590,
+    "latency_ms": 5230
+   },
+   "names": [
+    "oatmeal",
+    "raisins",
+    "cinnamon",
+    "maple syrup"
+   ]
+  },
+  {
+   "image": "34.jpg",
+   "latency_ms": 4807,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 39,
+    "total_tokens": 581,
+    "latency_ms": 4804
+   },
+   "names": [
+    "waffles",
+    "strawberries",
+    "whipped cream"
+   ]
+  },
+  {
+   "image": "35.jpg",
+   "latency_ms": 7010,
+   "items": 8,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 91,
+    "total_tokens": 639,
+    "latency_ms": 7009
+   },
+   "names": [
+    "grilled chicken breast",
+    "french fries",
+    "lettuce",
+    "tomato",
+    "corn",
+    "carrot",
+    "black olive",
+    "cucumber"
+   ]
+  },
+  {
+   "image": "36.jpg",
+   "latency_ms": 5511,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 48,
+    "total_tokens": 590,
+    "latency_ms": 5507
+   },
+   "names": [
+    "rice",
+    "shrimp",
+    "artichoke",
+    "mushroom"
+   ]
+  },
+  {
+   "image": "37.jpg",
+   "latency_ms": 4949,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 40,
+    "total_tokens": 582,
+    "latency_ms": 4946
+   },
+   "names": [
+    "dumplings",
+    "carrot salad",
+    "onion topping"
+   ]
+  },
+  {
+   "image": "38.jpg",
+   "latency_ms": 4546,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 27,
+    "total_tokens": 575,
+    "latency_ms": 4544
+   },
+   "names": [
+    "burger",
+    "fries"
+   ]
+  },
+  {
+   "image": "39.jpg",
+   "latency_ms": 5773,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 38,
+    "total_tokens": 580,
+    "latency_ms": 5771
+   },
+   "names": [
+    "baked beans",
+    "sausages",
+    "bacon"
+   ]
+  },
+  {
+   "image": "40.jpg",
+   "latency_ms": 5523,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 50,
+    "total_tokens": 592,
+    "latency_ms": 5520
+   },
+   "names": [
+    "beef stew",
+    "french fries",
+    "ham slice",
+    "egg yolk"
+   ]
+  },
+  {
+   "image": "41.jpg",
+   "latency_ms": 4545,
+   "items": 2,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 26,
+    "total_tokens": 568,
+    "latency_ms": 4542
+   },
+   "names": [
+    "fried potatoes",
+    "fried fish"
+   ]
+  },
+  {
+   "image": "42.jpg",
+   "latency_ms": 6148,
+   "items": 7,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 83,
+    "total_tokens": 625,
+    "latency_ms": 6147
+   },
+   "names": [
+    "fried fish",
+    "corn",
+    "cucumber",
+    "lettuce",
+    "potato",
+    "sauce",
+    "rice"
+   ]
+  },
+  {
+   "image": "43.jpg",
+   "latency_ms": 4877,
+   "items": 4,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 49,
+    "total_tokens": 591,
+    "latency_ms": 4876
+   },
+   "names": [
+    "fried chicken",
+    "green beans",
+    "rice",
+    "lemon"
+   ]
+  },
+  {
+   "image": "44.jpg",
+   "latency_ms": 5819,
+   "items": 6,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 72,
+    "total_tokens": 614,
+    "latency_ms": 5816
+   },
+   "names": [
+    "lettuce",
+    "carrot",
+    "potato",
+    "beans",
+    "rice",
+    "sauerkraut"
+   ]
+  },
+  {
+   "image": "45.jpg",
+   "latency_ms": 6709,
+   "items": 8,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 90,
+    "total_tokens": 632,
+    "latency_ms": 6706
+   },
+   "names": [
+    "grilled chicken breast",
+    "tofu",
+    "egg",
+    "noodles",
+    "soup",
+    "sauce",
+    "green vegetables",
+    "red sauce"
+   ]
+  },
+  {
+   "image": "46.jpg",
+   "latency_ms": 6444,
+   "items": 8,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 93,
+    "total_tokens": 635,
+    "latency_ms": 6442
+   },
+   "names": [
+    "fried dough balls",
+    "sliced vegetables",
+    "dumplings",
+    "cabbage",
+    "potatoes",
+    "meat sticks",
+    "tofu",
+    "rice noodles"
+   ]
+  },
+  {
+   "image": "47.jpg",
+   "latency_ms": 5521,
+   "items": 5,
+   "usage": {
+    "prompt_tokens": 564,
+    "completion_tokens": 64,
+    "total_tokens": 628,
+    "latency_ms": 5518
+   },
+   "names": [
+    "avocado toast",
+    "egg",
+    "strawberries",
+    "bacon",
+    "donut"
+   ]
+  },
+  {
+   "image": "48.jpg",
+   "latency_ms": 5749,
+   "items": 3,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 70,
+    "total_tokens": 612,
+    "latency_ms": 5747
+   },
+   "names": [
+    "Chips",
+    "Sandwich",
+    "Potato chips"
+   ]
+  },
+  {
+   "image": "49.jpg",
+   "latency_ms": 5617,
+   "items": 6,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 70,
+    "total_tokens": 612,
+    "latency_ms": 5614
+   },
+   "names": [
+    "spaghetti",
+    "steak",
+    "tomato",
+    "onion",
+    "sauce",
+    "bun"
+   ]
+  },
+  {
+   "image": "50.jpg",
+   "latency_ms": 6094,
+   "items": 7,
+   "usage": {
+    "prompt_tokens": 542,
+    "completion_tokens": 82,
+    "total_tokens": 624,
+    "latency_ms": 6092
+   },
+   "names": [
+    "grilled chicken breast",
+    "french fries",
+    "red sauce",
+    "cucumber",
+    "lettuce",
+    "red onion",
+    "pickle"
+   ]
+  }
+ ],
+ "run_meta": {
+  "date": "2026-08-13",
+  "what": "lite profile (LFM2.5-VL-1.6B Q8_0 + F16 mmproj) through the FULL spec-02 service at commit fc6c3c3 \u2014 v3 terse format, 896px/112-aligned downscale, json_schema grammar, PlateIdentification mapping. Wall times are client-observed HTTP round trips on loopback, sequential requests.",
+  "service_commit": "fc6c3c3",
+  "llama_server": "eval/serve/serve.sh lfm-vl defaults: -t 14 -c 8192 -ngl 0 --jinja",
+  "host": {
+   "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+   "threads_used": 14,
+   "mem_total_kb": 63542392,
+   "os": "7.0.11-200.fc44.x86_64"
+  },
+  "note": "Latency run only \u2014 responses recorded but NOT recall-scored (no worksheet). The lite recall baseline remains the 2026-08-12 v2 run (62.1%). items_mean 4.22 vs gold 4.7."
+ }
+}

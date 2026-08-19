@@ -1,0 +1,14 @@
+eval/models/
+*.gguf
+__pycache__/
+.env
+
+# Node service
+node_modules/
+dist/
+
+# Scratch dir for scripts/food-data/build-fdc-dataset.ts (USDA zips + extracted CSVs)
+.fdc-work/
+
+# llama-server runtime artifacts from eval/serve/serve.sh
+eval/serve/logs/
