@@ -10,6 +10,15 @@ Your diary lives in your browser's own IndexedDB on the device you use, and the 
 no database at all — one stateless container, no secrets, nothing to provision. Optional
 end-to-end-encrypted sync between devices is a separate service you can ignore forever.
 
+## Try it without installing anything
+
+**<https://openplate.lowcarbcheck.org>** runs this code. There is nothing to sign up for —
+open it and start logging, the same as a local install.
+
+It is a demo instance, so treat it as one: no uptime promise, no support, and nothing there
+is backed up for you. Your diary lives in that browser's storage, and clearing the browser
+clears it. Self-hosting is the equally supported option, and it is the one below.
+
 ## Quickstart
 
 ```bash
