@@ -1,0 +1,165 @@
+# openplate — the full experience, self-hosted end to end.
+#
+# Three containers: the stateless app, the optional account + E2EE sync
+# service (openplate-sync), and the Postgres that sync — and only sync — needs.
+# The app itself keeps no database at all. Both images are open source under
+# the MIT License and are published to GHCR — nothing here builds from source.
+#
+# If you do not want sync, you do not want this file. Use `docker-compose.yml`
+# instead: the app alone needs no secrets and no accounts.
+#
+#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.full.yml
+#
+#   # The sync service needs exactly one secret. Generate it once and keep it
+#   # with your database backups — see the SERVER_SECRET note below.
+#   echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
+#
+#   # The two URLs a BROWSER will use to reach each service. Defaults below
+#   # work for a local trial; set these for anything else.
+#   echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
+#   echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
+#
+#   docker compose -f docker-compose.full.yml up -d
+#
+# Then open PUBLIC_APP_URL. A "Sync" section appears in the app because
+# SYNC_SERVER_URL is set below; create an account there and the two devices
+# you sign in on converge. The service still cannot read a single entry —
+# see openplate-sync's PROTOCOL.md.
+#
+services:
+  # ── Postgres ──────────────────────────────────────────────────────────────
+  # Belongs to the sync service alone — it holds sync's accounts and the
+  # opaque ciphertext blobs. The app never connects to it and has no database
+  # of its own (.adr/0006-the-app-server-holds-no-accounts.md).
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-openplate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openplate}
+      POSTGRES_DB: ${SYNC_DB_NAME:-openplate_sync}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-openplate} -d ${SYNC_DB_NAME:-openplate_sync}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Deliberately not published to the host: both services reach Postgres
+    # over the compose network. Add a `ports:` mapping only if you need psql
+    # from outside, and bind it to 127.0.0.1 if you do.
+    expose:
+      - '5432'
+
+  # ── The app ───────────────────────────────────────────────────────────────
+  # Stateless. No accounts, no personal data, no database: your diary lives in
+  # the browser. There is no secret to configure here — that is the design,
+  # not an omission (see .adr/0006-the-app-server-holds-no-accounts.md).
+  app:
+    image: ghcr.io/lowcarbcheck/openplate:latest
+    restart: unless-stopped
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+
+      # The URL a browser uses to reach THIS app. Behind a reverse proxy, that
+      # is the public https:// address, not the container port.
+      APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+
+      # The URL a BROWSER uses to reach the sync service — not `http://sync:3000`.
+      # The sync client runs in the page, so this address has to resolve from
+      # your users' devices. Setting it is what makes the sync interface exist
+      # at all; remove this line and the app is a pure local tracker again.
+      # The origin is added to the app's Content-Security-Policy automatically.
+      SYNC_SERVER_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
+
+      # Number of reverse proxies in front of this container (1 behind a single
+      # nginx/Traefik/Caddy). Required behind a proxy: React Router's CSRF check
+      # compares the browser Origin against the host it thinks it is serving.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+
+      # ON by default — queries the public LowCarbCheck food database for
+      # curated nutrition data (food NAMES only, never photos; fails open on
+      # outages). An EMPTY string disables it entirely so no food names ever
+      # leave your machine.
+      FOOD_DB_API_URL: ${FOOD_DB_API_URL:-https://lowcarbcheck.org}
+
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  # ── The sync service ──────────────────────────────────────────────────────
+  # An account service that stores an email address and opaque ciphertext. It
+  # holds no key for that ciphertext and cannot be made to decrypt it. Its
+  # image ships its own HEALTHCHECK against the unauthenticated /health
+  # endpoint, so none is repeated here.
+  sync:
+    image: ghcr.io/lowcarbcheck/openplate-sync:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '${SYNC_PORT:-3001}:3000'
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-openplate}:${POSTGRES_PASSWORD:-openplate}@postgres:5432/${SYNC_DB_NAME:-openplate_sync}
+
+      # THE one secret in this file. Two subkeys are derived from it: the
+      # pepper mixed into every stored authentication verifier, and the key
+      # behind the anti-enumeration KDF responses.
+      #
+      # Back it up WITH the database. A restored database with a lost secret
+      # is a database nobody can log into, and every account would need a
+      # passphrase reset. Changing it has the same effect as losing it.
+      SERVER_SECRET: ${SERVER_SECRET:?generate one with `openssl rand -hex 32` and put it in .env}
+
+      # Where your openplate client is served. Verification and reset emails
+      # link here; this service has no interface of its own.
+      CLIENT_BASE_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+
+      # `false` closes registration on a personal or family instance while
+      # leaving existing accounts working. Consider it once your household
+      # has signed up.
+      SIGNUPS_OPEN: ${SIGNUPS_OPEN:-true}
+
+      # Off by default on purpose: with no mail configured, turning this on
+      # locks everyone out. Turn it on together with SMTP below.
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+
+      # GET THIS RIGHT — it is the other setting that can hurt you. Set it to
+      # the number of reverse proxies in front of this service. Left at 0
+      # behind a proxy, every request looks like it comes from the proxy and
+      # the per-IP throttle becomes one global bucket a single attacker can
+      # lock for all your users. Set above 0 with nothing in front, anyone can
+      # spoof X-Forwarded-For and skip the throttle entirely.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # ── Mail (optional) ──
+      # With nothing set here, verification and reset links are printed to the
+      # service log — a supported way to run a family instance, not a degraded
+      # one:  docker compose -f docker-compose.full.yml logs -f sync
+      EMAIL_FROM: ${EMAIL_FROM:-openplate <noreply@localhost>}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+
+volumes:
+  pg-data:
+    driver: local

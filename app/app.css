@@ -1,0 +1,541 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+@plugin "@tailwindcss/typography";
+
+@source "../app/**/*.{js,jsx,ts,tsx}";
+
+@variant dark (&:where(.dark, .dark *));
+
+/*
+ * Fraunces — self-hosted display serif (M129/01). Used sparingly: the
+ * wordmark and page titles, never body copy (Inter stays the prose/UI voice —
+ * see root.tsx's own note by the `font-sans` body class). Deliberately NOT
+ * applied to the diary hero stat number or any other live-updating figure:
+ * this subset has no `tnum` (tabular figures) GSUB feature (verified via
+ * fontTools against the woff2 in `public/fonts/`), so digits would jitter in
+ * width as they change — those stay in the existing sans with `tabular-nums`,
+ * which Inter supports. The variable woff2 lives in `public/fonts/` (latin
+ * subset, wght 300..700, opsz 9..144) — no external font host, no new npm
+ * dependency, unlike Inter/Victor Mono above which load via
+ * `@fontsource-variable/*` packages.
+ */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-latin-var.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@theme {
+  --radius: 0.5rem;
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --font-sans: 'Inter Variable', sans-serif;
+  --font-mono: 'Victor Mono Variable', monospace;
+  /* Display serif for the wordmark/page titles/hero stat numbers — see the
+     `@font-face` block above. Exposed as the `font-display` Tailwind utility. */
+  --font-display: 'Fraunces', serif;
+
+  --color-accent-amber: hsl(var(--accent-amber));
+  --color-accent-amber-surface: hsl(var(--accent-amber-surface));
+  --color-accent-amber-border: hsl(var(--accent-amber-border));
+  --color-macro-carbs: hsl(var(--macro-carbs));
+  --color-macro-protein: hsl(var(--macro-protein));
+  --color-macro-fat: hsl(var(--macro-fat));
+  --color-macro-fiber: hsl(var(--macro-fiber));
+  --color-adherence-empty: hsl(var(--adherence-empty));
+  --color-adherence-unrated: hsl(var(--adherence-unrated));
+  --color-adherence-1: hsl(var(--adherence-1));
+  --color-adherence-2: hsl(var(--adherence-2));
+  --color-adherence-3: hsl(var(--adherence-3));
+  --color-adherence-4: hsl(var(--adherence-4));
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-indeterminate: indeterminate 1s ease-in-out infinite;
+  /*
+   * One-time celebration pulse (M129/03) — a brand-colored ring that expands
+   * out of the card's own edge and fades. Two beats, then it's done: this
+   * fires ONCE per genuine first (first food logged, first plate scanned, a
+   * seven-day run), tracked in localStorage so it can never become wallpaper.
+   * Deliberately a box-shadow rather than a transform, so nothing on the card
+   * moves or reflows, and always applied through the `motion-safe:` variant.
+   */
+  --animate-celebrate: celebrate-pulse 1.4s ease-out 2;
+
+  @keyframes celebrate-pulse {
+    from {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45);
+    }
+    to {
+      box-shadow: 0 0 0 14px hsl(var(--primary) / 0);
+    }
+  }
+
+  @keyframes indeterminate {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(400%);
+    }
+  }
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* Teal-tinted light surface family (M129/01, strengthened in the soul
+       pass). Hue 192 is the brand teal's own hue; the first pass kept chroma
+       so low (10% sat, 98% L) that the tint was invisible against plain
+       white and the redesign didn't register at all. The page now sits at a
+       readable pale-teal (`--background`), `--card` stays pure white so cards
+       still lift off it, and the neutral greys (`--muted`, `--secondary`,
+       `--accent`, `--border`) carry the same hue so nothing on the page reads
+       as a cold, unrelated grey next to a warm-teal one.
+
+       Contrast: `--foreground` is a near-black at 4% L, so body text clears
+       15:1 on both the card and the tinted page; `--muted-foreground` was
+       LIGHTENED nowhere — it moved from 46% L neutral to 38% L teal-grey,
+       i.e. strictly more contrast than before (~7.6:1 on white). */
+    --background: 192 34% 96%;
+    --foreground: 200 18% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 200 18% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 18% 8%;
+    --primary: 179 92% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 192 26% 93%;
+    --secondary-foreground: 200 20% 14%;
+    --muted: 192 26% 93%;
+    --muted-foreground: 197 14% 38%;
+    --accent: 192 30% 91%;
+    --accent-foreground: 200 20% 14%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 192 22% 85%;
+    --input: 192 22% 85%;
+    --ring: 179 92% 25%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 192 30% 97%;
+    --sidebar-foreground: 197 14% 30%;
+    --sidebar-primary: 179 92% 25%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 192 30% 91%;
+    --sidebar-accent-foreground: 200 20% 14%;
+    --sidebar-border: 192 22% 86%;
+    --sidebar-ring: 179 92% 25%;
+
+    /* Brand/macro accent tokens (M129/01). Each is its OWN token even where
+       hues coincide — a future accent retune must never silently recolor a
+       macro, and vice versa. That separation now earns its keep: they carry
+       genuinely DIFFERENT values, because they do different jobs.
+
+       `--accent-amber` is a TEXT/STROKE color (the "over goal" ring arc, the
+       over-by line, the habit strip's over dots). A 59%-lightness amber is
+       ~2.4:1 on a white card — nowhere near AA — so the light theme uses a
+       dark ochre instead, and only the dark theme gets the bright value.
+
+       `--macro-fat` is a FILL color for a ratio-bar segment and a 2px legend
+       rule — it never carries text, so it only has to clear the 3:1 that
+       non-text graphics need, and it's free to keep a brighter, warmer amber
+       than `--accent-amber` can afford. That's the whole reason the two are
+       separate tokens rather than one: same family, different jobs, different
+       contrast floors. `--macro-carbs` is likewise independent of
+       `--primary`.
+
+       WARNING SURFACES — the offline banner, the backup nudge, the scan
+       double-check note, `Badge`/`Alert` variant="warning" — need a WASH and a
+       HAIRLINE behind that text, and for exactly the reason above they cannot
+       be `--accent-amber` at low alpha. In the light theme that token is a 31%
+       ochre; at 10% over a white card it mixes to a warm GREY, which reads as
+       "disabled", not "check this". A warning that has lost its hue has lost
+       its whole job. So the wash and the border are their own tokens, holding
+       the values the Tailwind literals they replaced actually rendered
+       (`amber-50`/`amber-100` and `amber-500/40` in light, `amber-900/20` and
+       the same border over the dark surface). Same family, three jobs, three
+       contrast floors — the identical argument that already separates
+       `--accent-amber` from `--macro-fat`.
+
+       Only `--accent-amber` ever carries text or a stroke that must be read;
+       the other two are decorative and only have to stay distinguishable from
+       the surrounding surface. Use them as flat colors
+       (`bg-accent-amber-surface`, `border-accent-amber-border`), not with an
+       alpha modifier — they are already the blended result.
+
+       `day-drill-down.tsx`'s gap-severity chips used to be the one exception
+       — they washed with `bg-accent-amber/12` + `border-accent-amber/35` and
+       went muddy grey in light mode for exactly the reason above. Converted
+       2026-08-04 to the surface/border pair; no known opacity-wash holdouts
+       remain. */
+    --accent-amber: 32 94% 31%; /* dark ochre — AA text on white/tinted light surfaces */
+    --accent-amber-surface: 48 96% 92%; /* pale warm wash behind that text */
+    --accent-amber-border: 38 92% 78%; /* golden hairline around it */
+    --macro-carbs: 181 93% 32%; /* brand teal, #069A9D */
+    --macro-protein: 349 66% 50%; /* coral, darkened for AA as light-theme text */
+    --macro-fat: 36 95% 38%; /* amber, darkened for a legible 2px rule on white */
+    --macro-fiber: 125 34% 38%; /* sage */
+
+    /* Goal-adherence grid ramp (Progress page). A SEQUENTIAL ramp: one hue,
+       monotone lightness, light→dark = fewer→more goals met. It is its OWN
+       token family even though step 4 currently sits close to `--primary` —
+       the same argument that keeps `--macro-carbs` independent of `--primary`:
+       a brand retune must never silently re-scale a data ramp, and a ramp
+       re-step must never move the CTA colour.
+
+       Validated with the dataviz ordinal validator against `--card` (#ffffff),
+       ALL CHECKS PASS: monotone L, adjacent ΔL >= 0.06 (0.072 / 0.082 /
+       0.077), light-end contrast 2.11:1, hue spread 3°. Do not nudge a step
+       without re-running that check — the light end is only 0.11 above the
+       2.0:1 floor.
+
+       The ramp never carries amber or destructive. A missed goal is a lighter
+       step, never a warning colour (DESIGN.md §10.1). */
+    --adherence-empty: 192 26% 93%; /* no entry — neutral, off the ramp */
+    --adherence-unrated: 192 20% 80%; /* logged, nothing assessable — second neutral */
+    --adherence-1: 180 42% 58%; /* logged, none of the checkable goals met */
+    --adherence-2: 180 62% 42%;
+    --adherence-3: 180 80% 32%;
+    --adherence-4: 179 92% 25%; /* every checkable goal met */
+  }
+  .dark {
+    /* Teal-tinted near-black (M129/01, strengthened in the soul pass). The
+       first pass at 195/10%/4% was indistinguishable from the neutral black
+       it replaced. Hue 192 and a real chroma make the dark theme read as
+       "deep teal-black" rather than "grey-black", and — critically — the
+       greys that surround it (`--muted`, `--secondary`, `--accent`,
+       `--border`) now share the hue instead of staying on the old neutral
+       240° blue-grey, which is what made the previous tint cancel out.
+
+       `--card` sits ~3.5 lightness points above `--background` so cards keep
+       reading as elevated; `--popover` mirrors `--card`. `--foreground` at
+       98% L clears 17:1 on both. `--muted-foreground` at 68% L clears 7:1. */
+    --background: 192 24% 4.5%;
+    --foreground: 180 12% 97%;
+    --card: 192 20% 8%;
+    --card-foreground: 180 12% 97%;
+    --popover: 192 20% 8%;
+    --popover-foreground: 180 12% 97%;
+    --primary: 172 70% 52%;
+    --primary-foreground: 187 90% 8%;
+    --secondary: 192 16% 15%;
+    --secondary-foreground: 180 12% 97%;
+    --muted: 192 16% 15%;
+    --muted-foreground: 190 12% 68%;
+    --accent: 192 18% 17%;
+    --accent-foreground: 180 12% 97%;
+    /* Dark-theme values for the accent/macro tokens. `--accent-amber` flips
+       to the bright amber here — it's a text/stroke color, and on a 4.5%-L
+       surface the bright value is the ACCESSIBLE one (~10:1) while the light
+       theme's dark ochre would be unreadable. The macro fills lift a little
+       for the same reason the surfaces darkened. */
+    --accent-amber: 38 94% 62%;
+    --accent-amber-surface: 24 30% 10%; /* deep warm wash — the dark-theme counterpart */
+    --accent-amber-border: 38 70% 26%;
+    --macro-carbs: 172 70% 52%;
+    --macro-protein: 349 82% 70%;
+    --macro-fat: 38 94% 62%;
+    --macro-fiber: 125 34% 62%;
+    /* Dark ramp — SELECTED, not flipped. Steps were re-chosen against the dark
+       `--card` (#101718) and re-validated there: monotone L, adjacent ΔL
+       0.110 / 0.133 / 0.141, dark-end contrast 2.17:1, hue spread 5°. */
+    --adherence-empty: 192 16% 15%;
+    --adherence-unrated: 192 12% 22%;
+    --adherence-1: 172 34% 25%;
+    --adherence-2: 172 44% 33%;
+    --adherence-3: 172 56% 42%;
+    --adherence-4: 172 70% 52%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 192 16% 17%;
+    --input: 192 16% 17%;
+    --ring: 172 70% 52%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 192 22% 7%;
+    --sidebar-foreground: 190 12% 88%;
+    --sidebar-primary: 172 70% 52%;
+    --sidebar-primary-foreground: 187 90% 8%;
+    --sidebar-accent: 192 18% 15%;
+    --sidebar-accent-foreground: 180 12% 97%;
+    --sidebar-border: 192 16% 15%;
+    --sidebar-ring: 172 70% 52%;
+  }
+}
+
+@layer base {
+  .dark {
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/*
+ * These `hsl()`-wrapped sidebar variables are the ones the shadcn sidebar
+ * actually renders from (`@theme inline` below maps `--color-sidebar-*` to
+ * them, overriding the `hsl(var(--sidebar-background))` mapping in the first
+ * `@theme` block). Both sets are kept in sync deliberately — the values here
+ * mirror the `--sidebar-*` triples in the `@layer base` blocks above, so
+ * whichever mapping wins, the chrome stays on the same teal-tinted family as
+ * the page. (M129 soul pass: the sidebar was the single largest neutral-grey
+ * surface left on screen and was the main reason the brand tint "didn't
+ * register" — a 240°-hue rail next to a 192°-hue page reads as a bug.)
+ */
+:root {
+  --sidebar: hsl(192 30% 97%);
+  --sidebar-foreground: hsl(197 14% 30%);
+  --sidebar-primary: hsl(179 92% 25%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(192 30% 91%);
+  --sidebar-accent-foreground: hsl(200 20% 14%);
+  --sidebar-border: hsl(192 22% 86%);
+  --sidebar-ring: hsl(179 92% 25%);
+}
+
+.dark {
+  --sidebar: hsl(192 22% 7%);
+  --sidebar-foreground: hsl(190 12% 88%);
+  --sidebar-primary: hsl(172 70% 52%);
+  --sidebar-primary-foreground: hsl(187 90% 8%);
+  --sidebar-accent: hsl(192 18% 15%);
+  --sidebar-accent-foreground: hsl(180 12% 97%);
+  --sidebar-border: hsl(192 16% 15%);
+  --sidebar-ring: hsl(172 70% 52%);
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    /* Inter (font-sans, see root.tsx) reads crisper anti-aliased than the mono
+       stack did — this is a no-op for Victor Mono contexts, so it's safe to apply
+       globally. */
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  /*
+   * M129 soul pass — the two branded surface treatments. Both are pure
+   * gradients over whatever background the element already has, expressed
+   * entirely in terms of the `--primary` token (no color literals): swapping
+   * the brand hue in the token block above re-tints them for free, and both
+   * themes get the same treatment because `--primary` itself is themed.
+   */
+
+  /* Hero card wash: brightest at the top-left corner, where the ring sits,
+     fading out across the card. A flat `bg-primary/10` (the first pass) reads
+     as a uniformly muddy panel; a directional wash gives the card a light
+     source and makes the ring feel like the thing the card is built around. */
+  .surface-brand {
+    background-image: linear-gradient(
+      140deg,
+      hsl(var(--primary) / 0.18) 0%,
+      hsl(var(--primary) / 0.07) 45%,
+      hsl(var(--primary) / 0.02) 100%
+    );
+  }
+
+  /* Quieter sibling for secondary branded panels (landing preview card, empty
+     states) — same direction, roughly a third of the strength. */
+  .surface-brand-soft {
+    background-image: linear-gradient(140deg, hsl(var(--primary) / 0.09) 0%, hsl(var(--primary) / 0.015) 70%);
+  }
+
+  /* Landing hero backdrop: a soft elliptical brand glow behind the whole
+     composition, so the page has depth behind the wordmark instead of being
+     flat black/flat white with a card dropped on it. */
+  .brand-glow {
+    background-image: radial-gradient(60% 55% at 50% 38%, hsl(var(--primary) / 0.2) 0%, transparent 72%);
+  }
+}
+
+/*
+ * ===========================================================================
+ * View transitions (React Router `viewTransition` prop)
+ * ===========================================================================
+ * Every in-app link goes through `app/components/link.tsx`, which defaults
+ * react-router's `viewTransition` to `true` and therefore wraps each
+ * navigation in `document.startViewTransition()`.
+ *
+ * The whole document is captured in the `root` snapshot and cross-faded. That
+ * is the entire effect on purpose: the chrome (sidebar, header, bottom nav) is
+ * near-identical between routes, so only the page body visibly changes, and an
+ * opacity-only fade keeps the fixed/sticky elements from jumping. There are no
+ * shared-element morphs — nothing here has a stable counterpart across two
+ * routes yet, and half a morph is worse than none.
+ *
+ * 200ms is deliberately at the short end: openplate is a tool people open
+ * several times a day, and a transition you notice twice is a transition you
+ * resent by the tenth time.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease;
+}
+
+/* Honor reduced motion: swap pages instantly, no cross-fade, no exceptions.
+   The app has no in-app motion toggle, so this media query is the ONLY switch
+   — hence the wildcard, which also neutralizes any future named transition
+   that forgets to add its own reduced-motion rule. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Toasts settle instantly for anyone who asked for less motion. The library
+   animates enter/exit with its own transitions rather than a named keyframe,
+   so this has to reach both. Same wildcard discipline as the view-transition
+   block above: the media query is the only switch this app has. */
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toast],
+  [data-sonner-toast] * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/*
+ * ===========================================================================
+ * Waiting vocabulary
+ * ===========================================================================
+ * Two classes, used only where the app is genuinely waiting on something —
+ * never as decoration on static content (DESIGN.md §7, §11).
+ *
+ * Motion is OPT-IN, not opt-out: the base rule carries no animation at all, so
+ * the SSR/reduced-motion rendering settles static, and the animation is added
+ * only under `prefers-reduced-motion: no-preference`. That is the inverse of
+ * Tailwind's `motion-safe:` variant in mechanism but identical in outcome, and
+ * it means a caller can't accidentally ship the animated form by forgetting a
+ * variant prefix.
+ */
+@keyframes pulse-soft {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Soft opacity breath — for a single mark that is standing in for content
+     that hasn't arrived (the boot logo, an inline "still working" glyph).
+     Keyframe and timing mirror Tailwind's own `animate-pulse` so it reads as
+     the same idiom, just quieter. */
+  .pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Three dots breathing in sequence. The children share `pulse-soft`'s
+     keyframe and timing and differ only by phase, so the row reads as one
+     travelling wave rather than three independent blinks. */
+  .loading-dots > * {
+    animation: pulse-soft 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .loading-dots > *:nth-child(2) {
+    animation-delay: 0.16s;
+  }
+
+  .loading-dots > *:nth-child(3) {
+    animation-delay: 0.32s;
+  }
+}

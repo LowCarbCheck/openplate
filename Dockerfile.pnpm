@@ -1,0 +1,39 @@
+# This Dockerfile builds the app from tracked source and nothing else — no
+# build secret, no private npmrc, no extra clone stage. Every dependency
+# resolves from public npm, which is the invariant
+# `argo-sprqvntrs/group_vars/all/services.yml` relies on.
+#
+# M117/06 briefly complicated that: the E2EE sync engine lived in a separate
+# private repo and had to be copied into a gitignored `app/lib/sync/engine/`
+# by an infra-side step before `docker build` ran (an Argo pre-build hook
+# that never existed, so it stayed manual). M128 spec 01 deleted that seam —
+# the engine is ordinary tracked source now, and the sync SERVER is a
+# separate deployable with its own image. There is deliberately nothing
+# sync-specific left in this file.
+FROM node:22-alpine AS dependencies-env
+RUN npm i -g pnpm
+COPY . /app
+
+FROM dependencies-env AS development-dependencies-env
+COPY ./package.json pnpm-lock.yaml /app/
+WORKDIR /app
+RUN pnpm i --frozen-lockfile
+
+FROM dependencies-env AS production-dependencies-env
+COPY ./package.json pnpm-lock.yaml /app/
+WORKDIR /app
+RUN pnpm i --prod --frozen-lockfile
+
+FROM dependencies-env AS build-env
+COPY ./package.json pnpm-lock.yaml /app/
+COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+WORKDIR /app
+RUN pnpm build
+
+FROM dependencies-env
+ENV NODE_ENV=production
+COPY ./package.json pnpm-lock.yaml /app/
+COPY --from=production-dependencies-env /app/node_modules /app/node_modules
+COPY --from=build-env /app/build /app/build
+WORKDIR /app
+CMD ["sh", "scripts/start.sh"]

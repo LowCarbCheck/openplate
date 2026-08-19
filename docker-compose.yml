@@ -1,0 +1,50 @@
+# openplate, self-hosted: one stateless container and nothing else.
+#
+#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.yml
+#   docker compose up -d
+#
+# There is no database and no secret to configure. The server stores nothing:
+# your diary lives in your browser's own IndexedDB on the device you use it
+# from (see .adr/0006-the-app-server-holds-no-accounts.md). Back up with the
+# in-app JSON export, not with a database dump.
+#
+# If you also want the optional end-to-end-encrypted sync service, use
+# docker-compose.full.yml instead -- THAT one needs a database, because the
+# sync service keeps accounts and ciphertext.
+services:
+  # Pulls the published multi-arch image from GHCR by default -- no source
+  # checkout required for a self-host. To build from source instead (e.g.
+  # developing against this repo), comment out `image:` below and uncomment
+  # `build:`, then run:
+  #   docker compose build && docker compose up -d
+  app:
+    image: ghcr.io/lowcarbcheck/openplate:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.pnpm
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Public URL this instance is reachable at. Update this if you put a
+      # reverse proxy in front (see README "Self-hosting" -> HTTPS).
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      # ON by default -- queries the public LowCarbCheck food database for
+      # curated nutrition data (food NAMES only, never photos; fails open on
+      # outages). An EMPTY string disables it entirely so no food names ever
+      # leave your machine.
+      FOOD_DB_API_URL: ${FOOD_DB_API_URL:-https://lowcarbcheck.org}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3

@@ -1,0 +1,34 @@
+allowBuilds:
+  '@openrouter/sdk': true
+  esbuild: true
+
+# Restrict optional native deps to the platforms we actually build for, so an
+# install doesn't drag in darwin/windows binaries. Migrated here from the
+# package.json `pnpm` field, which pnpm 11 no longer reads at all — it warned on
+# every install while silently applying none of this, so the repo was resolving
+# optional deps for every platform.
+#
+# BOTH cpus are required: the release image is multi-arch
+# (`linux/amd64,linux/arm64`, see `.github/workflows/release-image.yml`) and the
+# arm64 leg builds under QEMU, where a plain `pnpm i` is an arm64 install. When
+# this list was x64-only, that leg installed no arm64 bindings and `pnpm build`
+# died with `Cannot find module '@rolldown/binding-linux-arm64-musl'`, which
+# blocked every publish between 2026-08-06 and 2026-08-18. Do not narrow this
+# without dropping a platform from the workflow first.
+supportedArchitectures:
+  os:
+    - linux
+  cpu:
+    - x64
+    - arm64
+
+# Supply-chain hardening: a published version must be at least 7 days old before
+# pnpm will resolve it. pnpm 11's own default is 1440 minutes (24h); this widens
+# that to a week, which is the window in which a compromised release is normally
+# spotted and yanked — the point is that this repo never resolves it at all.
+#
+# Only affects RESOLUTION (adding/updating deps). `--frozen-lockfile` installs,
+# which is what CI and every Docker build runs, are unaffected. To take an urgent
+# patch sooner, lower this temporarily or add the package to
+# `minimumReleaseAgeExclude`.
+minimumReleaseAge: 10080

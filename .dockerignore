@@ -1,0 +1,15 @@
+.react-router
+build
+node_modules
+README.md
+
+# Never ship local secrets into image layers — the Dockerfile's `COPY . /app`
+# would otherwise include them, extractable from any distributed image.
+.env
+.env.*
+!.env.example
+
+# Repo/tooling noise that has no business in an image.
+.git
+.claude
+.adr

@@ -1,0 +1,1446 @@
+{
+  "generatedAt": "2026-08-03T20:12:00.404Z",
+  "source": "lowcarbcheck.org /api/v1/foods/search (locale en)",
+  "foods": [
+    {
+      "slug": "almonds",
+      "name": "Almonds",
+      "category": "nuts-seeds",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 610,
+        "protein": 19,
+        "fat": 54,
+        "carbs": 5,
+        "fiber": 13.5,
+        "netCarbs": 5
+      },
+      "url": "https://lowcarbcheck.org/en/foods/almonds",
+      "attribution": null
+    },
+    {
+      "slug": "artichoke",
+      "name": "Artichoke",
+      "category": "vegetables",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 44,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 3,
+        "fiber": 10.8,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/artichoke",
+      "attribution": null
+    },
+    {
+      "slug": "asparagus",
+      "name": "Asparagus",
+      "category": "vegetables",
+      "servingGrams": 250,
+      "per100g": {
+        "kcal": 21,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 2,
+        "fiber": 1.3,
+        "netCarbs": 2
+      },
+      "url": "https://lowcarbcheck.org/en/foods/asparagus",
+      "attribution": null
+    },
+    {
+      "slug": "avocado",
+      "name": "Avocado",
+      "category": "vegetables",
+      "servingGrams": 175,
+      "per100g": {
+        "kcal": 234,
+        "protein": 2,
+        "fat": 24,
+        "carbs": 1,
+        "fiber": 6.3,
+        "netCarbs": 1
+      },
+      "url": "https://lowcarbcheck.org/en/foods/avocado",
+      "attribution": null
+    },
+    {
+      "slug": "beans-black-mature-seeds-cooked-boiled-without-salt",
+      "name": "Beans (black, mature seeds, cooked, boiled, without salt)",
+      "category": "legumes",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 132,
+        "protein": 8.86,
+        "fat": 0.54,
+        "carbs": 23.71,
+        "fiber": 8.7,
+        "netCarbs": 15.01
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "beef-mince-raw",
+      "name": "Beef mince, raw",
+      "category": "meat-fish",
+      "servingGrams": 120,
+      "per100g": {
+        "kcal": 224,
+        "protein": 19.1,
+        "fat": 16.39,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": null,
+      "attribution": "Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)"
+    },
+    {
+      "slug": "blackberry",
+      "name": "Blackberry",
+      "category": "fruit",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 50,
+        "protein": 1,
+        "fat": 1,
+        "carbs": 6,
+        "fiber": 3.2,
+        "netCarbs": 6
+      },
+      "url": "https://lowcarbcheck.org/en/foods/blackberry",
+      "attribution": null
+    },
+    {
+      "slug": "blueberries-wild-raw-alaska-native",
+      "name": "Blueberries (wild, raw (Alaska Native))",
+      "category": "fruit",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 61,
+        "protein": 1.22,
+        "fat": 0.76,
+        "carbs": 12.31,
+        "fiber": 2.6,
+        "netCarbs": 9.71
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "brazil-nuts",
+      "name": "Brazil nuts",
+      "category": "nuts-seeds",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 683,
+        "protein": 14,
+        "fat": 67,
+        "carbs": 4,
+        "fiber": 6.7,
+        "netCarbs": 4
+      },
+      "url": "https://lowcarbcheck.org/en/foods/brazil-nuts",
+      "attribution": null
+    },
+    {
+      "slug": "brie-cheese-40-fdm",
+      "name": "Brie cheese (40% fdm)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 257,
+        "protein": 24,
+        "fat": 18,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/brie-cheese-40-fdm",
+      "attribution": null
+    },
+    {
+      "slug": "broccoli",
+      "name": "Broccoli",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 34,
+        "protein": 4,
+        "fat": 0,
+        "carbs": 3,
+        "fiber": 3,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/broccoli",
+      "attribution": null
+    },
+    {
+      "slug": "broccoli-leaves-raw",
+      "name": "Broccoli (leaves, raw)",
+      "category": "vegetables",
+      "servingGrams": 90,
+      "per100g": {
+        "kcal": 28,
+        "protein": 2.98,
+        "fat": 0.35,
+        "carbs": 5.06,
+        "fiber": 2.3,
+        "netCarbs": 2.76
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "brussels-sprouts",
+      "name": "Brussels sprouts",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 45,
+        "protein": 4,
+        "fat": 0,
+        "carbs": 4,
+        "fiber": 4.4,
+        "netCarbs": 4
+      },
+      "url": "https://lowcarbcheck.org/en/foods/brussels-sprouts",
+      "attribution": null
+    },
+    {
+      "slug": "cabbage-raw",
+      "name": "Cabbage (raw)",
+      "category": "vegetables",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 25,
+        "protein": 1.28,
+        "fat": 0.1,
+        "carbs": 5.8,
+        "fiber": 2.5,
+        "netCarbs": 3.3
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "cauliflower",
+      "name": "Cauliflower",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 28,
+        "protein": 3,
+        "fat": 0,
+        "carbs": 2,
+        "fiber": 2.9,
+        "netCarbs": 2
+      },
+      "url": "https://lowcarbcheck.org/en/foods/cauliflower",
+      "attribution": null
+    },
+    {
+      "slug": "celery",
+      "name": "Celery",
+      "category": "vegetables",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 20,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 2,
+        "fiber": 2.6,
+        "netCarbs": 2
+      },
+      "url": "https://lowcarbcheck.org/en/foods/celery",
+      "attribution": null
+    },
+    {
+      "slug": "cheddar-cheese",
+      "name": "Cheddar (cheese)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 393,
+        "protein": 25,
+        "fat": 32,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/cheddar-cheese",
+      "attribution": null
+    },
+    {
+      "slug": "cherimoya",
+      "name": "Cherimoya",
+      "category": "fruit",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 66,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 13,
+        "fiber": 2.2,
+        "netCarbs": 13
+      },
+      "url": "https://lowcarbcheck.org/en/foods/cherimoya",
+      "attribution": null
+    },
+    {
+      "slug": "chia-seed",
+      "name": "Chia seeds",
+      "category": "nuts-seeds",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 439,
+        "protein": 19,
+        "fat": 31,
+        "carbs": 4,
+        "fiber": 34,
+        "netCarbs": 4
+      },
+      "url": "https://lowcarbcheck.org/en/foods/chia-seed",
+      "attribution": null
+    },
+    {
+      "slug": "chicken-breast",
+      "name": "Chicken breast",
+      "category": "meat-fish",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 102,
+        "protein": 20,
+        "fat": 1.6,
+        "carbs": 1.3,
+        "fiber": 0,
+        "netCarbs": 1.3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/chicken-breast",
+      "attribution": null
+    },
+    {
+      "slug": "chicken-liver",
+      "name": "Chicken liver",
+      "category": "meat-fish",
+      "servingGrams": 50,
+      "per100g": {
+        "kcal": 136,
+        "protein": 22,
+        "fat": 5,
+        "carbs": 1,
+        "fiber": 0,
+        "netCarbs": 1
+      },
+      "url": "https://lowcarbcheck.org/en/foods/chicken-liver",
+      "attribution": null
+    },
+    {
+      "slug": "coconut",
+      "name": "Coconut",
+      "category": "fruit",
+      "servingGrams": 50,
+      "per100g": {
+        "kcal": 381,
+        "protein": 4,
+        "fat": 36,
+        "carbs": 5,
+        "fiber": 9,
+        "netCarbs": 5
+      },
+      "url": "https://lowcarbcheck.org/en/foods/coconut",
+      "attribution": null
+    },
+    {
+      "slug": "cod",
+      "name": "Cod",
+      "category": "meat-fish",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 76,
+        "protein": 18,
+        "fat": 1,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/cod",
+      "attribution": null
+    },
+    {
+      "slug": "common-shrimp-raw",
+      "name": "Common shrimp raw",
+      "category": "meat-fish",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 87,
+        "protein": 18.6,
+        "fat": 1.44,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": null,
+      "attribution": "Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)"
+    },
+    {
+      "slug": "cottage-cheese-below-10-fdm",
+      "name": "Cottage cheese (below 10% fdm)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 81,
+        "protein": 13,
+        "fat": 1,
+        "carbs": 3,
+        "fiber": 0,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/cottage-cheese-below-10-fdm",
+      "attribution": null
+    },
+    {
+      "slug": "cowpeablack-eyed-pea-mature-boiled",
+      "name": "Cowpea/black-eyed pea, mature, boiled",
+      "category": "legumes",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 114,
+        "protein": 8.6,
+        "fat": 0.47,
+        "carbs": 16.16,
+        "fiber": 3.9,
+        "netCarbs": 16.16
+      },
+      "url": null,
+      "attribution": "Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)"
+    },
+    {
+      "slug": "cranberry-2",
+      "name": "Cranberry",
+      "category": "fruit",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 44,
+        "protein": 0,
+        "fat": 1,
+        "carbs": 4,
+        "fiber": 4.6,
+        "netCarbs": 4
+      },
+      "url": "https://lowcarbcheck.org/en/foods/cranberry-2",
+      "attribution": null
+    },
+    {
+      "slug": "cucumber",
+      "name": "Cucumber",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 13,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 2,
+        "fiber": 0.5,
+        "netCarbs": 2
+      },
+      "url": "https://lowcarbcheck.org/en/foods/cucumber",
+      "attribution": null
+    },
+    {
+      "slug": "deepwater-prawns-canned",
+      "name": "Deepwater prawns (canned)",
+      "category": "meat-fish",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 94,
+        "protein": 21,
+        "fat": 1,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/deepwater-prawns-canned",
+      "attribution": null
+    },
+    {
+      "slug": "duck-breast",
+      "name": "Duck breast",
+      "category": "meat-fish",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 121,
+        "protein": 20,
+        "fat": 5,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/duck-breast",
+      "attribution": null
+    },
+    {
+      "slug": "edamame-frozen-prepared",
+      "name": "Edamame (frozen, prepared)",
+      "category": "legumes",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 121,
+        "protein": 11.91,
+        "fat": 5.2,
+        "carbs": 8.91,
+        "fiber": 5.2,
+        "netCarbs": 3.71
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "egg-white-raw",
+      "name": "Egg white (raw)",
+      "category": "eggs-dairy",
+      "servingGrams": 40,
+      "per100g": {
+        "kcal": 49,
+        "protein": 11,
+        "fat": 0,
+        "carbs": 1,
+        "fiber": 0,
+        "netCarbs": 1
+      },
+      "url": "https://lowcarbcheck.org/en/foods/egg-white-raw",
+      "attribution": null
+    },
+    {
+      "slug": "egg-yolk-raw",
+      "name": "Egg yolk (raw)",
+      "category": "eggs-dairy",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 353,
+        "protein": 16,
+        "fat": 32,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/egg-yolk-raw",
+      "attribution": null
+    },
+    {
+      "slug": "eggplant",
+      "name": "Eggplant",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 23,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 3,
+        "fiber": 2.8,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/eggplant",
+      "attribution": null
+    },
+    {
+      "slug": "fennel-leaf",
+      "name": "Fennel (leaf)",
+      "category": "vegetables",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 31,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 3,
+        "fiber": 3.3,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/fennel-leaf",
+      "attribution": null
+    },
+    {
+      "slug": "feta-cheese",
+      "name": "Feta (cheese)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 284,
+        "protein": 16,
+        "fat": 24,
+        "carbs": 1,
+        "fiber": 0,
+        "netCarbs": 1
+      },
+      "url": "https://lowcarbcheck.org/en/foods/feta-cheese",
+      "attribution": null
+    },
+    {
+      "slug": "fish-tuna-light-canned-in-water-without-salt-drained-solids",
+      "name": "Fish (tuna, light, canned in water, without salt, drained solids)",
+      "category": "meat-fish",
+      "servingGrams": 90,
+      "per100g": {
+        "kcal": 116,
+        "protein": 25.51,
+        "fat": 0.82,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "flaxseed",
+      "name": "Flaxseed",
+      "category": "nuts-seeds",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 453,
+        "protein": 24,
+        "fat": 31,
+        "carbs": 0,
+        "fiber": 38.6,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/flaxseed",
+      "attribution": null
+    },
+    {
+      "slug": "frankfurter-beef-sausage",
+      "name": "Frankfurter beef sausage",
+      "category": "meat-fish",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 249,
+        "protein": 19,
+        "fat": 19,
+        "carbs": 0,
+        "fiber": 0.1,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/frankfurter-beef-sausage",
+      "attribution": null
+    },
+    {
+      "slug": "goat-cheese-45-fdm",
+      "name": "Goat cheese (45% fdm)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 344,
+        "protein": 25,
+        "fat": 27,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/goat-cheese-45-fdm",
+      "attribution": null
+    },
+    {
+      "slug": "gouda-cheese-40-fdm",
+      "name": "Gouda cheese (40% fdm)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 300,
+        "protein": 25,
+        "fat": 22,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/gouda-cheese-40-fdm",
+      "attribution": null
+    },
+    {
+      "slug": "grapefruit",
+      "name": "Grapefruit",
+      "category": "fruit",
+      "servingGrams": 200,
+      "per100g": {
+        "kcal": 41,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 7,
+        "fiber": 1.6,
+        "netCarbs": 7
+      },
+      "url": "https://lowcarbcheck.org/en/foods/grapefruit",
+      "attribution": null
+    },
+    {
+      "slug": "green-beans",
+      "name": "Green beans",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 37,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 5,
+        "fiber": 1.9,
+        "netCarbs": 5
+      },
+      "url": "https://lowcarbcheck.org/en/foods/green-beans",
+      "attribution": null
+    },
+    {
+      "slug": "guava-raw",
+      "name": "Guava raw",
+      "category": "fruit",
+      "servingGrams": 90,
+      "per100g": {
+        "kcal": 45,
+        "protein": 0.9,
+        "fat": 0.5,
+        "carbs": 6,
+        "fiber": 5.2,
+        "netCarbs": 6
+      },
+      "url": null,
+      "attribution": "Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)"
+    },
+    {
+      "slug": "ham-sausage",
+      "name": "Ham sausage",
+      "category": "meat-fish",
+      "servingGrams": 25,
+      "per100g": {
+        "kcal": 260,
+        "protein": 13,
+        "fat": 23,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/ham-sausage",
+      "attribution": null
+    },
+    {
+      "slug": "hot-pepper-red",
+      "name": "Hot pepper (red)",
+      "category": "vegetables",
+      "servingGrams": 5,
+      "per100g": {
+        "kcal": 35,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 4,
+        "fiber": 3.6,
+        "netCarbs": 4
+      },
+      "url": "https://lowcarbcheck.org/en/foods/hot-pepper-red",
+      "attribution": null
+    },
+    {
+      "slug": "kale",
+      "name": "Kale",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 45,
+        "protein": 4,
+        "fat": 1,
+        "carbs": 3,
+        "fiber": 4.2,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/kale",
+      "attribution": null
+    },
+    {
+      "slug": "kiwi",
+      "name": "Kiwi",
+      "category": "fruit",
+      "servingGrams": 50,
+      "per100g": {
+        "kcal": 55,
+        "protein": 1,
+        "fat": 1,
+        "carbs": 9,
+        "fiber": 2.1,
+        "netCarbs": 9
+      },
+      "url": "https://lowcarbcheck.org/en/foods/kiwi",
+      "attribution": null
+    },
+    {
+      "slug": "lamb-chop-loin-raw",
+      "name": "Lamb chop (loin) raw",
+      "category": "meat-fish",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 217,
+        "protein": 18.5,
+        "fat": 15.9,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": null,
+      "attribution": "Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)"
+    },
+    {
+      "slug": "leek",
+      "name": "Leek",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 29,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 3,
+        "fiber": 2.3,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/leek",
+      "attribution": null
+    },
+    {
+      "slug": "lentils-mature-seeds-cooked-boiled-without-salt",
+      "name": "Lentils (mature seeds, cooked, boiled, without salt)",
+      "category": "legumes",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 116,
+        "protein": 9.02,
+        "fat": 0.38,
+        "carbs": 20.13,
+        "fiber": 7.9,
+        "netCarbs": 12.23
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "lettuce",
+      "name": "Lettuce",
+      "category": "vegetables",
+      "servingGrams": 50,
+      "per100g": {
+        "kcal": 14,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 1,
+        "fiber": 1.5,
+        "netCarbs": 1
+      },
+      "url": "https://lowcarbcheck.org/en/foods/lettuce",
+      "attribution": null
+    },
+    {
+      "slug": "lima-beans-immature-seeds-cooked-boiled-drained-without-salt",
+      "name": "Lima beans (immature seeds, cooked, boiled, drained, without salt)",
+      "category": "legumes",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 123,
+        "protein": 6.81,
+        "fat": 0.32,
+        "carbs": 23.64,
+        "fiber": 5.4,
+        "netCarbs": 18.24
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "mackerel",
+      "name": "Mackerel",
+      "category": "meat-fish",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 148,
+        "protein": 19,
+        "fat": 8,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/mackerel",
+      "attribution": null
+    },
+    {
+      "slug": "mozzarella",
+      "name": "Mozzarella",
+      "category": "eggs-dairy",
+      "servingGrams": 50,
+      "per100g": {
+        "kcal": 263,
+        "protein": 17,
+        "fat": 21,
+        "carbs": 1,
+        "fiber": 0,
+        "netCarbs": 1
+      },
+      "url": "https://lowcarbcheck.org/en/foods/mozzarella",
+      "attribution": null
+    },
+    {
+      "slug": "mushrooms-shiitake",
+      "name": "Mushrooms (shiitake)",
+      "category": "vegetables",
+      "servingGrams": 80,
+      "per100g": {
+        "kcal": 44.1,
+        "protein": 2.41,
+        "fat": 0.2,
+        "carbs": 8.17,
+        "fiber": 4.17,
+        "netCarbs": 4
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "natto",
+      "name": "Natto",
+      "category": "legumes",
+      "servingGrams": 50,
+      "per100g": {
+        "kcal": 211,
+        "protein": 19.4,
+        "fat": 11,
+        "carbs": 12.68,
+        "fiber": 5.4,
+        "netCarbs": 7.28
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "nuts-almond-butter-plain-without-salt-added",
+      "name": "Nuts (almond butter, plain, without salt added)",
+      "category": "nuts-seeds",
+      "servingGrams": 32,
+      "per100g": {
+        "kcal": 614,
+        "protein": 20.96,
+        "fat": 55.5,
+        "carbs": 18.82,
+        "fiber": 10.3,
+        "netCarbs": 8.52
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "nuts-macadamia-nuts-raw",
+      "name": "Nuts (macadamia nuts, raw)",
+      "category": "nuts-seeds",
+      "servingGrams": 28,
+      "per100g": {
+        "kcal": 711.89,
+        "protein": 7.79,
+        "fat": 64.93,
+        "carbs": 24.09,
+        "fiber": 7.56,
+        "netCarbs": 16.53
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "nuts-pecans",
+      "name": "Nuts (pecans)",
+      "category": "nuts-seeds",
+      "servingGrams": 28,
+      "per100g": {
+        "kcal": 691,
+        "protein": 9.17,
+        "fat": 71.97,
+        "carbs": 13.86,
+        "fiber": 9.6,
+        "netCarbs": 4.26
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "olives-ripe-canned-small-extra-large",
+      "name": "Olives (ripe, canned (small-extra large))",
+      "category": "fruit",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 116,
+        "protein": 0.84,
+        "fat": 10.9,
+        "carbs": 6.04,
+        "fiber": 1.6,
+        "netCarbs": 4.44
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "onion-raw",
+      "name": "Onion raw",
+      "category": "vegetables",
+      "servingGrams": 60,
+      "per100g": {
+        "kcal": 34,
+        "protein": 1.16,
+        "fat": 0.15,
+        "carbs": 6.01,
+        "fiber": 1.4,
+        "netCarbs": 6.01
+      },
+      "url": null,
+      "attribution": "Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)"
+    },
+    {
+      "slug": "parmesan-cheese",
+      "name": "Parmesan cheese",
+      "category": "eggs-dairy",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 396,
+        "protein": 31,
+        "fat": 31,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/parmesan-cheese",
+      "attribution": null
+    },
+    {
+      "slug": "passion-fruit",
+      "name": "Passion fruit",
+      "category": "fruit",
+      "servingGrams": 40,
+      "per100g": {
+        "kcal": 66,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 10,
+        "fiber": 1.5,
+        "netCarbs": 10
+      },
+      "url": "https://lowcarbcheck.org/en/foods/passion-fruit",
+      "attribution": null
+    },
+    {
+      "slug": "peach",
+      "name": "Peach",
+      "category": "fruit",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 45,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 9,
+        "fiber": 1.9,
+        "netCarbs": 9
+      },
+      "url": "https://lowcarbcheck.org/en/foods/peach",
+      "attribution": null
+    },
+    {
+      "slug": "peanut-butter",
+      "name": "Peanut butter",
+      "category": "nuts-seeds",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 634,
+        "protein": 22,
+        "fat": 54,
+        "carbs": 13,
+        "fiber": 5.4,
+        "netCarbs": 13
+      },
+      "url": "https://lowcarbcheck.org/en/foods/peanut-butter",
+      "attribution": null
+    },
+    {
+      "slug": "peas-split-mature-seeds-cooked-boiled-without-salt",
+      "name": "Peas (split, mature seeds, cooked, boiled, without salt)",
+      "category": "legumes",
+      "servingGrams": 80,
+      "per100g": {
+        "kcal": 118,
+        "protein": 8.34,
+        "fat": 0.39,
+        "carbs": 21.1,
+        "fiber": 8.3,
+        "netCarbs": 12.8
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "pistachios-shelled",
+      "name": "Pistachios (shelled)",
+      "category": "nuts-seeds",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 602,
+        "protein": 18,
+        "fat": 52,
+        "carbs": 12,
+        "fiber": 10.6,
+        "netCarbs": 12
+      },
+      "url": "https://lowcarbcheck.org/en/foods/pistachios-shelled",
+      "attribution": null
+    },
+    {
+      "slug": "plum",
+      "name": "Plum",
+      "category": "fruit",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 51,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 10,
+        "fiber": 1.6,
+        "netCarbs": 10
+      },
+      "url": "https://lowcarbcheck.org/en/foods/plum",
+      "attribution": null
+    },
+    {
+      "slug": "pomegranate",
+      "name": "Pomegranate",
+      "category": "fruit",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 78,
+        "protein": 1,
+        "fat": 1,
+        "carbs": 16,
+        "fiber": 2.2,
+        "netCarbs": 16
+      },
+      "url": "https://lowcarbcheck.org/en/foods/pomegranate",
+      "attribution": null
+    },
+    {
+      "slug": "pork-chop-chop",
+      "name": "Pork chop (chop)",
+      "category": "meat-fish",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 133,
+        "protein": 22,
+        "fat": 5,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/pork-chop-chop",
+      "attribution": null
+    },
+    {
+      "slug": "quark-10-fdm",
+      "name": "Quark (10% fdm)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 83,
+        "protein": 12,
+        "fat": 2,
+        "carbs": 4,
+        "fiber": 0,
+        "netCarbs": 4
+      },
+      "url": "https://lowcarbcheck.org/en/foods/quark-10-fdm",
+      "attribution": null
+    },
+    {
+      "slug": "radish",
+      "name": "Radish",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 20,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 2,
+        "fiber": 2.5,
+        "netCarbs": 2
+      },
+      "url": "https://lowcarbcheck.org/en/foods/radish",
+      "attribution": null
+    },
+    {
+      "slug": "ricotta-cheese",
+      "name": "Ricotta (cheese)",
+      "category": "eggs-dairy",
+      "servingGrams": 30,
+      "per100g": {
+        "kcal": 174,
+        "protein": 9,
+        "fat": 15,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/ricotta-cheese",
+      "attribution": null
+    },
+    {
+      "slug": "salami",
+      "name": "Salami",
+      "category": "meat-fish",
+      "servingGrams": 25,
+      "per100g": {
+        "kcal": 398,
+        "protein": 20,
+        "fat": 36,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/salami",
+      "attribution": null
+    },
+    {
+      "slug": "salmon",
+      "name": "Salmon",
+      "category": "meat-fish",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 188,
+        "protein": 20,
+        "fat": 12,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/salmon",
+      "attribution": null
+    },
+    {
+      "slug": "sardine",
+      "name": "Sardine",
+      "category": "meat-fish",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 148,
+        "protein": 19,
+        "fat": 8,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/sardine",
+      "attribution": null
+    },
+    {
+      "slug": "seeds-hemp-seed-hulled",
+      "name": "Seeds (hemp seed, hulled)",
+      "category": "nuts-seeds",
+      "servingGrams": 15,
+      "per100g": {
+        "kcal": 553,
+        "protein": 31.56,
+        "fat": 48.75,
+        "carbs": 8.67,
+        "fiber": 4,
+        "netCarbs": 4.67
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "sirloin-steak-roasted",
+      "name": "Sirloin steak (roasted)",
+      "category": "meat-fish",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 214,
+        "protein": 29,
+        "fat": 11,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/sirloin-steak-roasted",
+      "attribution": null
+    },
+    {
+      "slug": "soybeans-mature-seeds-sprouted-cooked-steamed",
+      "name": "Soybeans (mature seeds, sprouted, cooked, steamed)",
+      "category": "legumes",
+      "servingGrams": 90,
+      "per100g": {
+        "kcal": 81,
+        "protein": 8.47,
+        "fat": 4.45,
+        "carbs": 6.53,
+        "fiber": 0.8,
+        "netCarbs": 5.73
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "spinach",
+      "name": "Spinach",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 20,
+        "protein": 3,
+        "fat": 0,
+        "carbs": 1,
+        "fiber": 1.8,
+        "netCarbs": 1
+      },
+      "url": "https://lowcarbcheck.org/en/foods/spinach",
+      "attribution": null
+    },
+    {
+      "slug": "spinach-raw",
+      "name": "Spinach raw",
+      "category": "vegetables",
+      "servingGrams": 60,
+      "per100g": {
+        "kcal": 18,
+        "protein": 2.07,
+        "fat": 0.3,
+        "carbs": 0.93,
+        "fiber": 1.8,
+        "netCarbs": 0.93
+      },
+      "url": null,
+      "attribution": "Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)"
+    },
+    {
+      "slug": "sunflower-seeds",
+      "name": "Sunflower seeds",
+      "category": "nuts-seeds",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 593,
+        "protein": 22,
+        "fat": 49,
+        "carbs": 12,
+        "fiber": 6.3,
+        "netCarbs": 12
+      },
+      "url": "https://lowcarbcheck.org/en/foods/sunflower-seeds",
+      "attribution": null
+    },
+    {
+      "slug": "tofu",
+      "name": "Tofu",
+      "category": "legumes",
+      "servingGrams": 100,
+      "per100g": {
+        "kcal": 84,
+        "protein": 8,
+        "fat": 5,
+        "carbs": 2,
+        "fiber": 0.3,
+        "netCarbs": 2
+      },
+      "url": "https://lowcarbcheck.org/en/foods/tofu",
+      "attribution": null
+    },
+    {
+      "slug": "tomato",
+      "name": "Tomato",
+      "category": "vegetables",
+      "servingGrams": 80,
+      "per100g": {
+        "kcal": 19,
+        "protein": 1,
+        "fat": 0,
+        "carbs": 3,
+        "fiber": 1,
+        "netCarbs": 3
+      },
+      "url": "https://lowcarbcheck.org/en/foods/tomato",
+      "attribution": null
+    },
+    {
+      "slug": "tuna-fish",
+      "name": "Tuna fish",
+      "category": "meat-fish",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 142,
+        "protein": 22,
+        "fat": 6,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/tuna-fish",
+      "attribution": null
+    },
+    {
+      "slug": "turkey-breast",
+      "name": "Turkey breast",
+      "category": "meat-fish",
+      "servingGrams": 125,
+      "per100g": {
+        "kcal": 105,
+        "protein": 24,
+        "fat": 1,
+        "carbs": 0,
+        "fiber": 0,
+        "netCarbs": 0
+      },
+      "url": "https://lowcarbcheck.org/en/foods/turkey-breast",
+      "attribution": null
+    },
+    {
+      "slug": "walnuts",
+      "name": "Walnuts",
+      "category": "nuts-seeds",
+      "servingGrams": 20,
+      "per100g": {
+        "kcal": 674,
+        "protein": 14,
+        "fat": 62,
+        "carbs": 11,
+        "fiber": 6.1,
+        "netCarbs": 11
+      },
+      "url": "https://lowcarbcheck.org/en/foods/walnuts",
+      "attribution": null
+    },
+    {
+      "slug": "yogurt-greek-plain-lowfat",
+      "name": "Yogurt (Greek, plain, lowfat)",
+      "category": "eggs-dairy",
+      "servingGrams": 170,
+      "per100g": {
+        "kcal": 73,
+        "protein": 9.95,
+        "fat": 1.92,
+        "carbs": 3.94,
+        "fiber": 0,
+        "netCarbs": 3.94
+      },
+      "url": null,
+      "attribution": null
+    },
+    {
+      "slug": "zucchini",
+      "name": "Zucchini",
+      "category": "vegetables",
+      "servingGrams": 150,
+      "per100g": {
+        "kcal": 20,
+        "protein": 2,
+        "fat": 0,
+        "carbs": 2,
+        "fiber": 1.1,
+        "netCarbs": 2
+      },
+      "url": "https://lowcarbcheck.org/en/foods/zucchini",
+      "attribution": null
+    }
+  ]
+}
