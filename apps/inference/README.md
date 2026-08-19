@@ -73,8 +73,8 @@ docker run -d --name openplate-inference \
   ghcr.io/lowcarbcheck/openplate-inference:cuda
 ```
 
-Building from source — **use this until the published image lands**, and any time
-you want to see exactly what you are running:
+Building from source is always an option, and the one to take any time you want
+to see exactly what you are running:
 
 ```bash
 git clone https://github.com/LowCarbCheck/openplate-inference && cd openplate-inference
@@ -82,9 +82,9 @@ docker build -t openplate-inference .                                           
 docker build -t openplate-inference --build-arg BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda .   # GPU
 ```
 
-The build is a couple of minutes and about 1 GB of image — the heavy half
-(llama.cpp and its BLAS/CUDA stack) is the official upstream `llama.cpp:server`
-image, not something we compile. Then substitute `openplate-inference` for
+The build is a couple of minutes and roughly 400 MB of image (compressed) — the
+heavy half (llama.cpp and its BLAS/CUDA stack) is the official upstream
+`llama.cpp:server` image, not something we compile. Then substitute `openplate-inference` for
 `ghcr.io/lowcarbcheck/openplate-inference:latest` in the commands above.
 
 **First boot downloads the weights** — about **2.0 GiB** for `lite`, **5.8 GiB**
