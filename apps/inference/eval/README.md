@@ -1,7 +1,7 @@
 # openplate-inference eval harness
 
 A gold-labeled plate-photo benchmark with a config-driven runner. Every model and ensemble
-decision in M138 is meant to be settled here by measurement, not impression.
+decision for this service is settled here by measurement, not impression.
 
 Python 3 **standard library only** — no pip installs, no virtualenv, no yaml (configs are JSON).
 Run everything from this `eval/` directory. One *optional* exception: a config that sets
@@ -86,8 +86,8 @@ python3 -m harness.runner --config configs/openrouter-pilot.json --only 01 --app
 python3 -m harness.runner --config configs/local-cpu.json --out runs/2026-08-12-local-cpu
 ```
 
-Pipeline v3 rows (`single_v3` / `ensemble_judge_v3`, see [V3-DESIGN.md](V3-DESIGN.md)) run through
-the same CLI — they are ordinary approach types in a config, e.g. `configs/local-cpu-v3.json`.
+Pipeline v3 rows (`single_v3` / `ensemble_judge_v3` — the terse candidate contract the shipped
+service uses) run through the same CLI — they are ordinary approach types in a config, e.g. `configs/local-cpu-v3.json`.
 
 #### Remote endpoints and `${VAR}` in configs
 
@@ -103,7 +103,7 @@ export RUNPOD_QWEN_URL=https://<pod-id>-8000.proxy.runpod.net/v1   # must includ
 # confirm the URL resolves before spending pod hours
 python3 -m harness.runner --config configs/runpod-gpu-v3.json --dry-run
 
-# one image first, then the corpus (896 px downscale, V3-DESIGN.md §3)
+# one image first, then the corpus (896 px client-side downscale)
 python3 -m harness.runner --config configs/runpod-gpu-v3.json --only 03
 python3 -m harness.runner --config configs/runpod-gpu-v3.json
 
@@ -293,8 +293,8 @@ The judge prompt is generated for the actual candidate count, so an n=3 ensemble
 agreement buckets (`3/3` high, `2/3` medium, `1/3` low) rather than hardcoded fifths.
 
 `max_parallel` matters on CPU: llama.cpp effectively serialises concurrent generations against one
-model instance, so a 5-way fan-out can cost 5× wall clock instead of hiding behind concurrency
-(M138 counsel). Cloud configs use 5; local uses 1–2. Combine with `--fan-out N` to measure the
+model instance, so a 5-way fan-out can cost 5× wall clock instead of hiding behind concurrency.
+Cloud configs use 5; local uses 1–2. Combine with `--fan-out N` to measure the
 recall/latency trade of ensemble size on the same served model.
 
 An approach type beyond `single` / `ensemble_judge` means adding a branch to
@@ -315,7 +315,7 @@ composite dishes (a stew is not five foods), sauces and condiments, a sushi plat
 nigiri-vs-sashimi (a rice miss changes the carbs), a partially generic vegetable medley, and one
 adversarial image (10) with a background menu poster showing dishes that are not on the table.
 
-M138 spec 01 targets ~50 images; these 10 are the pilot slice.
+The full gold set targets ~50 images; these 10 are the pilot slice.
 
 ## Gold-labeling protocol
 

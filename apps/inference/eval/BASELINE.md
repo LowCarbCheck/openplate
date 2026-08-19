@@ -1,6 +1,6 @@
 # BASELINE — the reference rows every later change is measured against
 
-This is the durable row. Specs 02–05 compare against **this file**, not against a per-run
+This is the durable row. Later changes are compared against **this file**, not against a per-run
 worksheet, and not against prose in a chat log. Every number below cites the committed file it
 comes from; nothing here is estimated, projected or remembered. Where a figure is a *raw*
 worksheet total versus an *adjudicated* one, both are shown — they differ by 1–3 points and the
@@ -22,9 +22,9 @@ difference is smaller than the confidence interval.
 ## 1. The control row
 
 > **Single-shot Qwen3-VL-8B-Instruct (Q4_K_M + F16 mmproj) with pipeline v3 at 896 px is the
-> control row for the service.** Every spec-02 service change, spec-03 pipeline change and spec-04
-> retrieval change is measured against it. It is a *single-shot* row on purpose: the ensemble's
-> kill criterion tripped on 2026-08-13 (see §4).
+> control row for the service.** Every later service, pipeline and retrieval change is measured
+> against it. It is a *single-shot* row on purpose: the ensemble was ruled out on 2026-08-13
+> (see §4).
 
 Its two measured faces, same model, same 50 images, same prompts — differing only in hardware:
 
@@ -67,8 +67,8 @@ Run directories: [`2026-08-12-50img-cloudbaseline`](runs/2026-08-12-50img-cloudb
 row (commit `0c2c82b`).
 
 **The frontier-baseline row is `google/gemini-3.1-flash-lite`** at $0.25/$1.50 per M tokens
-(`_summary.models` in the cloud run) — the current openplate default, and the frontier proxy the
-milestone's kill criteria compare against. Its measured cost per plate is **$0.00108**.
+(`_summary.models` in the cloud run) — the current openplate default, and the frontier reference
+these rows are compared against. Its measured cost per plate is **$0.00108**.
 
 **Headline that survives everything else in this file:** local single-shot Qwen3-VL-8B **ties the
 cloud frontier baseline** (74.5 % vs 75.3 %, both with **zero hallucinations** across 50 plates).
@@ -117,16 +117,16 @@ Read those two UNDECIDED rows carefully, because they are the whole reason the C
 
 ---
 
-## 4. What is closed, and must not be re-litigated
+## 4. Settled questions
 
 | decision | verdict | evidence |
 |---|---|---|
-| Ensemble-of-small as the product architecture | **DEAD** — kill criterion tripped 2026-08-13 | +3.9 pts item-F1 (62.1 → 66.0) against a ≥ +5 pt bar, 38 hallucinations vs 0, 4.8× wall time (`runs/2026-08-12-50img-SCORING.md` finding 2; owner ruling in the M138 README) |
-| CPU for the **hosted** tier | **DEAD** — p95 ≤ 10 s unreachable | best CPU single-shot p50 30 s, qwen 94 s ([PERFORMANCE.md](PERFORMANCE.md) §1, §5) |
+| Ensemble-of-small as the product architecture | **rejected** 2026-08-13 | +3.9 pts item-F1 (62.1 → 66.0) against a ≥ +5 pt bar, 38 hallucinations vs 0, 4.8× wall time (`runs/2026-08-12-50img-SCORING.md` finding 2) |
+| CPU for a **hosted** tier | **rejected** — p95 ≤ 10 s unreachable | best CPU single-shot p50 30 s, qwen 94 s ([PERFORMANCE.md](PERFORMANCE.md) §1, §5) |
 | GPU for the hosted tier | **PASS, measured** | 0.94 s / 1.47 s (4090), 1.72 s / 2.33 s (3090) — 4–10× inside the SLO (§1) |
-| Qwen3-VL-8B at Q8 to buy accuracy | **DEAD** — no gain, 2.2× slower | [PERFORMANCE.md](PERFORMANCE.md) §6 |
+| Qwen3-VL-8B at Q8 to buy accuracy | **rejected** — no gain, 2.2× slower | [PERFORMANCE.md](PERFORMANCE.md) §6 |
 | Moondream 3 as a local model | **NOT SERVABLE** | [SERVING.md](SERVING.md), [PERFORMANCE.md](PERFORMANCE.md) §6 |
-| Concurrency as a throughput lever on CPU | **DEAD** — 1.20–1.33× on a 2× fan-out | [PERFORMANCE.md](PERFORMANCE.md) §7 (measured 2026-08-13, `runs/2026-08-13-concurrency-probe/`) |
+| Concurrency as a throughput lever on CPU | **rejected** — 1.20–1.33× on a 2× fan-out | [PERFORMANCE.md](PERFORMANCE.md) §7 (measured 2026-08-13, `runs/2026-08-13-concurrency-probe/`) |
 
 **The self-host floor profile is single-shot LFM2.5-VL-1.6B**: 62.1 % recall at 30 s p50 on CPU,
 $0, 1.5 GB RSS. Documented as the constrained-self-hoster floor, not as the flagship path.
@@ -142,40 +142,35 @@ $0, 1.5 GB RSS. Documented as the constrained-self-hoster floor, not as the flag
 - **Composite over-decomposition** is now a counted error class in the worksheet protocol
   ([README](README.md#gold-labeling-protocol)), but the four 2026-08-12 worksheets predate the row,
   so its committed count is 0 across every row above — absence of data, not absence of the failure.
-- **Retrieval.** Nothing to ablate until spec 04 exists (`--no-retrieval` is unimplemented for that
-  reason).
+- **Retrieval.** `--no-retrieval` is unimplemented, so the ablation in §6 cannot be run.
 - **GPU concurrency.** §7 of PERFORMANCE.md measured CPU; the GPU rows are single-request.
 - **Sustained load / thermals.** All CPU numbers are ~10-plate bursts
   ([PERFORMANCE.md](PERFORMANCE.md) §3, "honest haircuts").
 
 ---
 
-## 6. Retrieval ablation (spec 04)
+## 6. Retrieval ablation
 
-Spec 04 asks for a **macro-error ablation** — resolver on versus `--no-retrieval` — as the evidence
-that corpus-backed resolution is earned. **That ablation is UNMEASURABLE today, and saying so is the
+A **macro-error ablation** — resolver on versus `--no-retrieval` — would be the evidence that
+corpus-backed resolution is earned. **That ablation is unmeasurable today, and saying so is the
 finding.**
 
 **Why it cannot be run.** §5 above: gold carries gram ranges on **0/50** images, so macro error is
 already reported as *unscorable* for every existing row. A macro-error delta between two arms whose
 absolute macro error is unscorable is not a small number — it is not a number. Weighed ground truth
-(a kitchen scale, not a labeller's guess off a photo) is the missing input, and it is spec 01's open
-item. Nothing in spec 04 can manufacture it.
+(a kitchen scale, not a labeller's guess off a photo) is the missing input, and no ablation can
+manufacture it.
 
-**Why the ablation is also no longer the decision it was written to be.** The spec's framing —
-"a small delta is grounds to simplify or drop it" — assumed the vision model emitted its own macros
-and retrieval merely improved on them. **Locked decision 13 removed that fallback**: the v3 grammar
-cannot express a macro field, so the arms of the ablation are now *macros* versus *no macros at all*,
-not *better macros* versus *worse macros*. Retrieval is the only path by which a macro reaches a
-client. The question the ablation was meant to answer (is this machinery earned?) is settled by
-construction; the question it can still answer once gold exists (how ACCURATE are the resolved
-macros?) is a different and better question, and it stays open.
+**The ablation also no longer answers the question it was written for.** It assumed the vision
+model emitted its own macros and retrieval merely improved on them. The v3 grammar cannot express a
+macro field, so the two arms are now *macros* versus *no macros at all*, not *better macros* versus
+*worse macros*. Retrieval is the only path by which a macro reaches a client, so "is this machinery
+earned?" is answered by construction. The question the ablation can still answer once weighed gold
+exists — how accurate are the resolved macros? — stays open.
 
-**Ship/simplify/drop call: SHIP, with the loop shape simplified.** The model-in-the-loop
-`search_foods` tool and its two model refinement turns were dropped — there is no model turn left to
-hand a tool to — and replaced by a deterministic server-side stage with a bounded query plan. That is
-this spec's own sanctioned simplification path applied to the loop rather than to retrieval's
-existence.
+**Outcome: retrieval ships, with the loop shape simplified.** The model-in-the-loop `search_foods`
+tool and its two model refinement turns were dropped — there is no model turn left to hand a tool
+to — and replaced by a deterministic server-side stage with a bounded query plan.
 
 ### What IS measured
 

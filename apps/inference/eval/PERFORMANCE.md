@@ -101,8 +101,7 @@ Core-item recall over the 42 gold core items in the 10-image corpus. Sources:
 > the four judge variants measured in `2026-08-11-local-v2-SCORING.md` span 78.6 – 88.1 %, which
 > is **four items** — the eval cannot rank them. Treat this table as an order-of-magnitude map
 > (single-shot < ensemble; 1.6B ensemble ≈ cloud single-shot), never as a leaderboard. The
-> 50-image harness (M138 spec 01) exists precisely to buy the discriminating power that judge-level
-> decisions need.
+> 50-image harness exists to buy the discriminating power that judge-level decisions need.
 
 Two facts that survive the noise band, because they are large or structural:
 
@@ -255,18 +254,18 @@ plausible mechanism and no data.
 
 ---
 
-## 6. Dead ends — do not re-litigate
+## 6. Dead ends — measured negatives
 
-Each of these cost real session time on 2026-08-11 and produced a definitive negative. The
+Each of these was investigated on 2026-08-11 and produced a definitive negative result. The
 evidence trail is in `SERVING.md` and the `SCORING.md` files; this is the index.
 
-| Dead end | Verdict | Why it is closed |
+| Dead end | Verdict | Evidence |
 |---|---|---|
 | **Moondream 3** as a local vision model | **Not servable** | Three independent checks: (a) no GGUF exists for v3 — `moondream3-preview` ships safetensors + custom Python, and a HF sweep returns GGUFs for moondream2 only; (b) llama.cpp does not implement the arch — no `moondream` entry in `llama-arch.cpp`/`clip.cpp`, no strings in the binary, and no converter path (moondream2 worked by mapping onto `phi2`; v3's MoE does not); (c) ollama has no v3 — `library/moondream3` 404s. Revisit only if a `moondream3` GGUF or an upstream arch lands. |
 | **Qwen3-VL-8B at Q8_0** to recover the lost 12 points | **Zero accuracy gain, 2.2× slower** | Clean single-variable A/B: `qwen-vl` and `qwen-vl-q8` use the **byte-identical F16 mmproj**, so only LM quant differs. On the 4 overlapping plates: 2 identical, 1 identical modulo plural, and 1 where **Q8 returned one item fewer** (dropped a lemon wedge Q4 caught). Cost: 2.2× slower generation, ~1.3× slower prefill, +3.4 GB RAM, +8.11 GB disk. |
 | **"Maybe the vision tower quant is hurting accuracy"** | **Impossible — it was never quantized** | The official repo publishes exactly two mmproj files, F16 (1159029824 B) and Q8_0 (752289728 B); there is no BF16. Both Qwen runs used the F16. **Combined with the row above, quantization is ruled out on both axes** (LM *and* vision tower) as the explanation for the Q4 accuracy ceiling. Look at prompt, image resolution/patching, or model scale. |
 | **Judge prompt-hardening on the 2.6B LFM judge** | **Capability-bound, not prompt-bound** | Hardened prompt + `maxItems: 6` GBNF constraint scored **85.7 %, below the 88.1 % original**, with *more* case-dupes ("Salmon"/"salmon") and more hallucinated merges. Grammar can bound item *count* but not semantic discipline. Related: the poster-trap leak **cannot** be fixed in the judge at all — the judge is text-only and blind, so when 2 of 3 candidates report a wall-poster burrito it sees only agreement. That fix belongs in the vision variant prompts or a candidate-level `background: bool`. Judge hardening that raises agreement strictness can make it *worse*. |
-| **Ranking judge variants on the n=10 eval** | **Instrument too coarse** | 42 core items ⇒ 1 item = 2.4 points. The entire measured judge spread (78.6 – 88.1 %) is four items. No judge-level decision can be made at n=10, regardless of how many variants get run. Scale the gold set first (M138 spec 01, ~50 images); ~4× the discriminating power is the prerequisite, not an optimization. |
+| **Ranking judge variants on the n=10 eval** | **Instrument too coarse** | 42 core items ⇒ 1 item = 2.4 points. The entire measured judge spread (78.6 – 88.1 %) is four items. No judge-level decision can be made at n=10, regardless of how many variants get run. Scaling the gold set to ~50 images comes first; ~4× the discriminating power is the prerequisite, not an optimization. |
 | Bounded-reasoning judge (256 tok) as the fix | Inside the noise band | 83.3 % — cleans up the judge's already-clean cases, does not fix the messy ones, +14 s/plate. Same n=10 verdict applies: not distinguishable. |
 
 Non-obvious operational traps also worth not rediscovering (full detail in `SERVING.md`):
@@ -280,8 +279,8 @@ with `content: ""` when the think block never closes.
 ## 7. Concurrency probe — two simultaneous requests (measured 2026-08-13)
 
 §1 and §3 inferred llama.cpp's concurrency behaviour from ensemble wall clock. This section
-**measures it directly**, which is what spec 01 asked for: wall clock for one request, two
-sequential, two *simultaneous*, and a three-way fan-out.
+**measures it directly**: wall clock for one request, two sequential, two *simultaneous*, and a
+three-way fan-out.
 
 **Instrument:** `eval/concurrency-probe.py` (stdlib). **Host:** `bluefin`, AMD Ryzen 9 7940HS,
 16 threads, `-t 14`, `-ngl 0`, CPU only, 62 GB RAM with ~45 GB available at start, load average

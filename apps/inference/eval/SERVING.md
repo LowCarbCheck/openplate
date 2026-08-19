@@ -194,7 +194,7 @@ PASS, and **noticeably sharper than `lfm-vl`** — it distinguishes scrambled fr
 and names Yorkshire pudding, feta, and avocado rather than generic categories.
 
 **The headline number: ~37 s per fresh image** (mean of 4; 29.0 / 34.4 / 40.3 / 46.4 s). That
-is well inside the 90 s "brutally slow" bar, so the M138 quality profile **is** CPU-viable —
+is well inside the 90 s "brutally slow" bar, so the `quality` profile **is** CPU-viable —
 roughly 2.3x the cost of `lfm-vl`'s ~16 s for a real accuracy gain. A 10-image run is ~6 min.
 
 Quirks:
