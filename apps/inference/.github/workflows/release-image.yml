@@ -1,0 +1,128 @@
+name: Release Image
+
+# Builds and publishes the self-host image to GHCR.
+#
+# Two variants come out of ONE Dockerfile, selected by the BASE_IMAGE build-arg
+# (the only variant knob there is — GPU offload itself is detected at runtime by
+# scripts/docker-entrypoint.sh, there is no build-time GPU flag):
+#
+#   cpu   ghcr.io/ggml-org/llama.cpp:server        -> :latest, :<semver>, :sha-<short>
+#   cuda  ghcr.io/ggml-org/llama.cpp:server-cuda   -> :cuda,   :<semver>-cuda, :sha-<short>-cuda
+#
+# Both tag sets are what README "Quickstart" and docker-compose.example.yml tell
+# people to pull, so neither may be dropped without editing those first.
+#
+# Publishing semver WITHOUT moving a tag: run this workflow manually with the
+# `version` input set (e.g. 0.1.0). The semver tags are then applied to whatever
+# the current ref already points at. Pushing a `v*` tag does the same thing
+# automatically for future releases.
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional semver to tag this build with (e.g. 0.1.0). Leave empty for latest/cuda + sha tags only.'
+        required: false
+        default: ''
+
+# One release build at a time per ref. The sibling repos omit this and hit a
+# buildx gha-cache race when two runs export cache concurrently. Because the
+# semver path here is a workflow_dispatch on `main` rather than a tag push, the
+# collision case (main push vs. semver run) shares a ref and is serialised by
+# this group. Queued runs wait rather than cancel — a release build must not be
+# killed by the next merge.
+concurrency:
+  group: release-image-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Platforms are limited to what the BASE image actually publishes —
+          # never QEMU-build onto a base that has no such manifest.
+          #
+          # llama.cpp:server      -> amd64, arm64, s390x
+          # llama.cpp:server-cuda -> amd64, arm64
+          #
+          # s390x is skipped (no plausible self-host audience, and sharp has no
+          # prebuilt binary for it). CUDA arm64 exists upstream (Jetson / GH200)
+          # but is left off for now: it would be a QEMU-emulated build on a
+          # multi-GB CUDA base, and every GPU instruction we ship is x86. Add
+          # `linux/arm64` to the cuda row when someone actually needs it.
+          - variant: cpu
+            base_image: ghcr.io/ggml-org/llama.cpp:server
+            platforms: linux/amd64,linux/arm64
+            tags: |
+              type=raw,value=latest,enable={{is_default_branch}}
+              type=semver,pattern={{version}}
+              type=raw,value=${{ inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
+              type=sha,prefix=sha-,format=short
+          - variant: cuda
+            base_image: ghcr.io/ggml-org/llama.cpp:server-cuda
+            platforms: linux/amd64
+            tags: |
+              type=raw,value=cuda,enable={{is_default_branch}}
+              type=semver,pattern={{version}},suffix=-cuda
+              type=raw,value=${{ inputs.version }}-cuda,enable=${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
+              type=sha,prefix=sha-,format=short,suffix=-cuda
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (multi-arch emulation)
+        if: contains(matrix.platforms, 'arm64')
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derived, never hardcoded: the org has already moved once
+      # (SPRQVNTRS -> LowCarbCheck) and GHCR rejects uppercase paths.
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Derive image tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ matrix.tags }}
+
+      - name: Build and push (${{ matrix.variant }})
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platforms }}
+          build-args: |
+            BASE_IMAGE=${{ matrix.base_image }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Per-variant cache scope: the two variants share no layers below the
+          # build stage, and one gha scope for both just evicts the other.
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.variant }}
