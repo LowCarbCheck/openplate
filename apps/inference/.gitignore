@@ -3,6 +3,9 @@ eval/models/
 __pycache__/
 .env
 
+# tracker (implementation tracking lives in the workspace root, not here)
+.tracker/
+
 # Node service
 node_modules/
 dist/
