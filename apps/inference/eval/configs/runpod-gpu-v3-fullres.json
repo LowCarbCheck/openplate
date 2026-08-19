@@ -1,6 +1,6 @@
 {
   "name": "runpod-gpu-v3-fullres",
-  "description": "runpod-gpu-v3.json with the client-side downscale OFF -- the full-resolution control that prices what image_max_long_edge 896 costs (or buys) on GPU. Identical in every other field, and it writes to its own out_dir so the two runs can never merge into one results.json. Run this one FIRST if the question is accuracy (V3-DESIGN.md §3 protocol: the downscale is a recall risk, not a free win), or second if the question is latency. A separate config rather than a CLI flag because the harness has no --image-max-long-edge override and a run's resolution belongs in the artifact that describes the run.",
+  "description": "runpod-gpu-v3.json with the client-side downscale OFF -- the full-resolution control that prices what image_max_long_edge 896 costs (or buys) on GPU. Identical in every other field, and it writes to its own out_dir so the two runs can never merge into one results.json. Run this one FIRST if the question is accuracy (the downscale is a recall risk, not a free win), or second if the question is latency. A separate config rather than a CLI flag because the harness has no --image-max-long-edge override and a run's resolution belongs in the artifact that describes the run.",
   "images_dir": "images",
   "gold": "gold/gold_labels.json",
   "out_dir": "runs/runpod-gpu-v3-fullres",

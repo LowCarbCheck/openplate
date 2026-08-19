@@ -10,7 +10,8 @@
  * costs ~18. Measured p50 completion fell 549 → ~110 tokens, and the benchmarked
  * v3 configuration (single Qwen3-VL-8B, 896 px) scores **72.8 % recall
  * (171/235 core items) with 0 hallucinations** on the 50-image gold set
- * (eval, 2026-08-13). See `eval/V3-DESIGN.md`.
+ * (eval, 2026-08-13). See [`eval/README.md`](../../eval/README.md) for the
+ * harness and the runs behind those numbers.
  *
  * TWO DELIBERATE DIFFERENCES FROM `eval/harness/schema_v3.py`:
  *

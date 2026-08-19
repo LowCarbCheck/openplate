@@ -1,7 +1,7 @@
 """Pipeline v3 approaches: `single_v3` and `ensemble_judge_v3`.
 
-NOT REACHABLE YET. `approaches.run_approach` gains a five-line dispatch branch to
-this module via the diff in `eval/V3-DESIGN.md`; until then nothing imports it.
+`approaches.run_approach` dispatches the `single_v3` / `ensemble_judge_v3` kinds
+to this module; nothing else imports it.
 
 Why a separate module rather than edits to `approaches.py`: v3 changes the
 *candidate* contract (terse JSON, background flag, image-first message order),
@@ -236,7 +236,7 @@ def ensemble_judge_v3(
     concession, it is the point: v3 shares the `system + image` prefix across the
     fan-out, and llama.cpp's prompt cache is per KV slot, so sequential requests
     reuse the cached image while concurrent ones land in different slots and
-    re-prefill it. Sequential is *faster* here (see V3-DESIGN.md §4).
+    re-prefill it. Sequential is *faster* here.
     """
     if not variants:
         raise ValueError("ensemble_judge_v3 needs at least one variant")

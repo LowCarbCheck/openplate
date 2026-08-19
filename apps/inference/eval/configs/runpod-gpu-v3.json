@@ -1,6 +1,6 @@
 {
   "name": "runpod-gpu-v3",
-  "description": "Pipeline v3 single_v3 against a REMOTE llama-server on a Runpod GPU pod, at the recommended 896 px client-side downscale (V3-DESIGN.md §3). This config exists to answer one question the CPU host cannot: what does the v3 terse pipeline cost in wall clock when prefill and decode are not the bottleneck? It is NOT a comparison row against local-cpu-v3.json — different hardware, different quantisation possibly, and the network round-trip is inside the measured latency. The base URL comes from ${RUNPOD_QWEN_URL} (see _env_note), so the pod id is never committed. Cost fields are 0 because the pod bills per hour, not per token: read PERFORMANCE.md-style latency, not cost, out of this run. Pair with runpod-gpu-v3-fullres.json to price the downscale on GPU.",
+  "description": "Pipeline v3 single_v3 against a REMOTE llama-server on a Runpod GPU pod, at the recommended 896 px client-side downscale. This config exists to answer one question the CPU host cannot: what does the v3 terse pipeline cost in wall clock when prefill and decode are not the bottleneck? It is NOT a comparison row against local-cpu-v3.json — different hardware, different quantisation possibly, and the network round-trip is inside the measured latency. The base URL comes from ${RUNPOD_QWEN_URL} (see _env_note), so the pod id is never committed. Cost fields are 0 because the pod bills per hour, not per token: read PERFORMANCE.md-style latency, not cost, out of this run. Pair with runpod-gpu-v3-fullres.json to price the downscale on GPU.",
   "images_dir": "images",
   "gold": "gold/gold_labels.json",
   "out_dir": "runs/runpod-gpu-v3",
@@ -29,7 +29,7 @@
       "use_json_schema": true,
       "max_tokens_v3": 256,
       "_id_note": "llama-server ignores the request's model field and serves whatever -m loaded, so 'qwen-vl' is a label for the results file, matching eval/serve/models.json. If the pod runs vLLM or any server that validates the model id, change this to the id that /v1/models reports.",
-      "_max_tokens_note": "256 is headroom, not a target (V3-DESIGN.md §2): the terse grammar bounds output at ~155 completion tokens, and a cap set AT the budget truncates mid-JSON and returns HTTP 200 with an unparseable body. use_json_schema true requires the server to honour response_format json_schema -- llama-server compiles it to GBNF; verify on the pod build before a full run."
+      "_max_tokens_note": "256 is headroom, not a target: the terse grammar bounds output at ~155 completion tokens, and a cap set AT the budget truncates mid-JSON and returns HTTP 200 with an unparseable body. use_json_schema true requires the server to honour response_format json_schema -- llama-server compiles it to GBNF; verify on the pod build before a full run."
     }
   },
   "approach_order": ["single_qwen_vl_v3"],

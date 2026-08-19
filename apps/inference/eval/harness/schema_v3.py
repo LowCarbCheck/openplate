@@ -1,8 +1,8 @@
 """Pipeline v3 — terse vision candidates, background-aware, wire-contract judge.
 
-NOT IMPORTED BY ANYTHING YET. `harness/approaches_v3.py` consumes it, and
-`approaches.py` only reaches that after the registration diff in
-`eval/V3-DESIGN.md` is applied. Importing this module has no side effects.
+`harness/approaches_v3.py` consumes it, and `approaches.py` reaches that module
+through its `single_v3` / `ensemble_judge_v3` dispatch. Importing this module has
+no side effects.
 
 Why v3 exists
 -------------
@@ -138,8 +138,8 @@ V3_JUDGE_MAX_TOKENS_WITH_MACROS = 768
 #: 112 == lcm(16, 28), so it lands on an exact patch boundary for both LFM2.5-VL
 #: (16 px patches) and Qwen3-VL (14 px patches, 2x2 merge => 28). Measured image
 #: tokens scale with pixel count, so 1280 -> 896 is ~0.49x prefill on the image.
-#: See V3-DESIGN.md for the server-side alternative (`--image-max-tokens`, which
-#: only applies to dynamic-resolution towers).
+#: The server-side alternative is `--image-max-tokens`, which only applies to
+#: dynamic-resolution towers; the client-side downscale here works on both.
 V3_IMAGE_MAX_LONG_EDGE = 896
 
 #: Whether the judge estimates `macrosPer100g` or emits null and lets openplate
@@ -539,7 +539,7 @@ def build_v3_judge_user_text(candidates: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 6. Token budget (design targets — the numbers V3-DESIGN.md projects from)
+# 6. Token budget (design targets for the terse v3 contract)
 # ---------------------------------------------------------------------------
 
 V3_TOKEN_BUDGET = {

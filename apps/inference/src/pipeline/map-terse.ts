@@ -13,8 +13,8 @@
  *    The grammar cannot even express a macro field, so `null` here is not a
  *    fallback, it is the contract.
  *
- * 2. **`confidence` is a flat `'medium'`.** The high/medium/low ladder in
- *    `V3-DESIGN.md` is derived from ENSEMBLE AGREEMENT — how many independent
+ * 2. **`confidence` is a flat `'medium'`.** The high/medium/low ladder in the
+ *    v3 terse pipeline is derived from ENSEMBLE AGREEMENT — how many independent
  *    candidates named the item. This spec runs ONE call, so there is no
  *    agreement signal to derive from, and emitting `'high'` would be a
  *    confidence claim nothing measured supports. Spec 03 (fan-out + merge) is
