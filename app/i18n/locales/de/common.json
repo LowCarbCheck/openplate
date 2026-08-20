@@ -704,7 +704,7 @@
     },
     "features": {
       "byok": {
-        "body": "Du verbindest den KI-Anbieter selbst — OpenRouter, Mistral, Anthropic oder einen beliebigen OpenAI-kompatiblen Endpunkt. Der Schlüssel bleibt auf diesem Gerät, und das Foto geht direkt von deinem Browser dorthin. Ein Scan kostet in der Regel deutlich weniger als einen Cent, und die Rechnung stellt dir der Anbieter, nicht wir.",
+        "body": "Du verbindest den KI-Anbieter selbst — OpenRouter, Mistral, Anthropic oder einen beliebigen OpenAI-kompatiblen Endpunkt. Der Schlüssel bleibt auf diesem Gerät, und das Foto geht direkt von deinem Browser dorthin. Die Rechnung stellt dir der Anbieter, nicht wir.",
         "title": "Fotos werden zu Nährwerten, mit deinem eigenen Schlüssel"
       },
       "eyebrow": "Das bekommst du",
@@ -733,7 +733,6 @@
     },
     "goals": {
       "body": "Wähl eine tägliche Netto-KH-Obergrenze, ein Eiweiß-Minimum, ein Kalorienziel — oder gar keins. openplate erfindet kein Ziel, das du nicht gesetzt hast.",
-      "eyebrow": "Ziele und Fortschritt",
       "points": {
         "grid": "Der Fortschritt hält 13 Wochen fest — die Tage, an denen du deine Ziele erreicht hast, Lücken inklusive.",
         "ring": "Ein Ring im Tagebuch zeigt, was von heute übrig ist.",
@@ -743,11 +742,10 @@
       "title": "Setz dir ein Ziel und sieh, wie der Verlauf wächst"
     },
     "hero": {
-      "install": "Es lässt sich auf den Startbildschirm legen und öffnet wie jede andere App — auch ohne Verbindung.",
-      "privacy": "Kein Konto, keine Anmeldung, und kein Server, der dein Tagebuch aufbewahrt. Die Fotoerkennung ist optional und läuft über einen KI-Anbieter, den du selbst verbindest — mit deinem eigenen Schlüssel.",
       "shotAlt": "Das openplate-Tagebuch auf einem Laptop: ein Tagesring, darunter Frühstück, Mittag- und Abendessen, und neben jeder Mahlzeit ihre Kohlenhydrate, ihr Eiweiß, ihr Fett und ihre Kalorien.",
       "shotCaption": "Ein Beispieltag, nicht deine Daten.",
-      "tagline": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das auf deinem Gerät bleibt: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht."
+      "tagline": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das auf deinem Gerät bleibt: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht.",
+      "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline"
     },
     "how": {
       "eyebrow": "Jeden Tag",
@@ -775,7 +773,6 @@
       "consent": "Ja, schickt mir den openplate-Newsletter. Ich kann mich jederzeit abmelden.",
       "emailLabel": "E-Mail-Adresse",
       "emailPlaceholder": "du@beispiel.de",
-      "eyebrow": "In Kontakt bleiben",
       "pending": "Anmeldung läuft…",
       "privacy": "Was mit deiner Adresse passiert, steht in der <privacy>Datenschutzerklärung</privacy>.",
       "status": {
@@ -802,7 +799,7 @@
           "title": "Anbieter verbinden — oder überspringen"
         },
         "open": {
-          "body": "Das Tagebuch entsteht auf diesem Gerät, sobald du das erste Lebensmittel einträgst. Vorher ist nichts auszufüllen.",
+          "body": "Das Tagebuch entsteht auf diesem Gerät, sobald du das erste Lebensmittel einträgst.",
           "title": "Tagebuch öffnen"
         },
         "scan": {
@@ -814,8 +811,7 @@
       "title": "In etwa einer Minute einsatzbereit"
     },
     "sync": {
-      "body": "Trag das Mittagessen am Telefon ein und sieh dir die Woche am Laptop an. Die Synchronisierung ist freiwillig und Ende-zu-Ende-verschlüsselt: Der Dienst speichert Chiffretext, zu dem er keinen Schlüssel hat — denn den Schlüssel ergibt eine Passphrase, die er nie zu sehen bekommt.",
-      "eyebrow": "Behalten",
+      "body": "Trag das Mittagessen am Telefon ein und sieh dir die Woche am Laptop an. Die Synchronisierung ist freiwillig und Ende-zu-Ende-verschlüsselt: Der Chiffretext liegt auf einem openplate-sync-Server — unserem oder einem, den du selbst betreibst — und dieser Server hat keinen Schlüssel dazu, denn den ergibt eine Passphrase, die er nie zu sehen bekommt.",
       "link": "Synchronisierung einrichten",
       "photos": "Teller-Fotos bleiben, wo sie sind — sie sind nie Teil eines Sync-Pakets.",
       "title": "Zwei Geräte, ein Tagebuch"

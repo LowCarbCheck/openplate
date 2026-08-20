@@ -704,7 +704,7 @@
     },
     "features": {
       "byok": {
-        "body": "Connect an AI provider yourself — OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key stays on this device and the photo goes straight from your browser to them. A scan typically costs well under a cent, and they bill you for it rather than us.",
+        "body": "Connect an AI provider yourself — OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key stays on this device and the photo goes straight from your browser to them. They bill you for it rather than us.",
         "title": "Photos become macros with your own key"
       },
       "eyebrow": "What you get",
@@ -733,7 +733,6 @@
     },
     "goals": {
       "body": "Choose a daily net-carb ceiling, a protein floor, a calorie target — or none at all. openplate never invents a target you didn't set.",
-      "eyebrow": "Goals and progress",
       "points": {
         "grid": "Progress keeps a 13-week record of the days you hit your goals — gaps included.",
         "ring": "A ring on your diary shows what's left of today.",
@@ -743,11 +742,10 @@
       "title": "Set a target, then watch the record build"
     },
     "hero": {
-      "install": "It installs to your home screen and opens like any other app — including when you have no connection.",
-      "privacy": "No account, no sign-up, and no server holding your diary. Photo scanning is optional and runs through an AI provider you connect yourself, with your own key.",
       "shotAlt": "The openplate diary on a laptop: a progress ring for the day, with breakfast, lunch and dinner listed beneath it and each meal's carbs, protein, fat and calories alongside.",
       "shotCaption": "A sample day, not your data.",
-      "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands."
+      "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands.",
+      "ticks": "No account · Installs like an app · Works offline"
     },
     "how": {
       "eyebrow": "Every day",
@@ -775,7 +773,6 @@
       "consent": "Yes, send me the openplate newsletter. I can unsubscribe at any time.",
       "emailLabel": "Email address",
       "emailPlaceholder": "you@example.com",
-      "eyebrow": "Stay in touch",
       "pending": "Signing you up…",
       "privacy": "What happens to your address is described in the <privacy>privacy policy</privacy>.",
       "status": {
@@ -802,7 +799,7 @@
           "title": "Connect a provider, or skip it"
         },
         "open": {
-          "body": "The diary is created on this device the moment you log the first food. There is nothing to fill in before that.",
+          "body": "The diary is created on this device the moment you log the first food.",
           "title": "Open the tracker"
         },
         "scan": {
@@ -814,8 +811,7 @@
       "title": "Working in about a minute"
     },
     "sync": {
-      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the service stores ciphertext it has no key to, because the key is made from a passphrase it never sees.",
-      "eyebrow": "Keep it",
+      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server — ours, or one you run yourself — and that server has no key to it, because the key is made from a passphrase it never sees.",
       "link": "Set up sync",
       "photos": "Plate photos stay where they are — they are never part of a sync blob.",
       "title": "Two devices, one diary"

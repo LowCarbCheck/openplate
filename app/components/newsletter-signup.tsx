@@ -63,6 +63,13 @@ function useTurnstile(siteKey: string, language: string) {
           turnstile.render(container, {
             sitekey: siteKey,
             language,
+            // Calm by default: invisible unless this visitor is actually
+            // challenged, following the OS theme when it isn't (the widget is
+            // a cross-origin iframe, so the app's `.dark` class cannot style
+            // it), and taking the form's width rather than a fixed 300px box.
+            theme: 'auto',
+            appearance: 'interaction-only',
+            size: 'flexible',
             callback: (issued) => setToken(issued),
             'error-callback': () => setToken(null),
             'expired-callback': () => setToken(null),
@@ -179,8 +186,16 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
       </p>
 
       {/* The challenge itself. It is the reason this section can exist at all
-          on a service whose data-protection paperwork is still open. */}
-      <div ref={containerRef} className="min-h-[65px]" />
+          on a service whose data-protection paperwork is still open.
+
+          NO reserved height. It used to be `min-h-[65px]`, which was correct
+          for a widget that always draws itself — and `appearance:
+          'interaction-only'` means it usually draws nothing, so the reservation
+          became a 65px hole between the privacy line and the submit button on
+          almost every visit. An empty container collapses; a real challenge
+          pushes the button down, which is a challenge appearing, not a layout
+          shift the visitor has to interpret. */}
+      <div ref={containerRef} />
 
       <div className="flex flex-wrap items-center gap-3">
         {/* The DEFAULT (filled) variant. M146 spec 02's rule is about competing

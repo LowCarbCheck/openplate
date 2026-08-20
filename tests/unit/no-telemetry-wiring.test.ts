@@ -63,26 +63,56 @@ function stripComments(source: string): string {
     .join('\n');
 }
 
+/** The module that DEFINES the allowlist, relative to `app/`. It is allowed to name it. */
+const TELEMETRY_MODULE = 'lib/sync/telemetry.ts';
+
 /**
  * Analytics wiring, by the shapes it actually takes. Names only — a bare
  * `analytics` or `plausible` word-match would fire on prose like "a plausible
  * height", which is in `app/models/body-metrics.ts` today.
+ *
+ * `exceptIn` exempts the one file a pattern is expected in. Only the allowlist
+ * module itself may mention its own export; every other file naming it is a
+ * file that has started using it.
  */
-const TRACKING_PATTERNS: readonly { name: string; pattern: RegExp }[] = [
+const TRACKING_PATTERNS: readonly { name: string; pattern: RegExp; exceptIn?: string }[] = [
   { name: 'Matomo global queue (_paq)', pattern: /_paq\b/ },
+  // A conventional name for a hand-rolled tracker. Nothing in this repository
+  // is called this today — see the note below on why that is not enough on its
+  // own, but it costs nothing and catches the obvious version of the mistake.
   { name: 'a trackEvent call', pattern: /\btrackEvent\s*\(/ },
   { name: 'Google gtag', pattern: /\bgtag\s*\(/ },
   { name: 'Google Tag Manager dataLayer', pattern: /\bdataLayer\b/ },
   { name: 'a matomo.js / piwik.js script', pattern: /(matomo|piwik)\.js/ },
   { name: 'a plausible.io beacon', pattern: /plausible\.io/ },
+  /*
+   * The two that name the ACTUAL unwired module, rather than a function that
+   * would have to be invented first.
+   *
+   * `trackEvent(` used to be the ONLY guard aimed at this repository's own
+   * telemetry, and as a guard it was aimed at nothing: no function of that
+   * name exists here, in the allowlist module or out of it. The wiring, when
+   * it comes, will import `SYNC_TELEMETRY_EVENTS` from
+   * `app/lib/sync/telemetry.ts` — that is the module that exists, and its own
+   * header says M128 spec 04 decides where each event fires. So these two
+   * watch the real seam: the allowlist escaping its module, and anyone
+   * importing a telemetry module at all.
+   */
+  {
+    name: 'the sync telemetry allowlist, used outside its own module',
+    pattern: /\bSYNC_TELEMETRY_EVENTS\b/,
+    exceptIn: TELEMETRY_MODULE,
+  },
+  { name: 'an import of a telemetry module', pattern: /from\s+['"][^'"]*\/telemetry(\.js)?['"]/ },
 ];
 
 describe('the landing page\'s "no analytics, no tracking pixel" claim', () => {
   it('has no analytics wiring anywhere in app/', () => {
     const offences = sourceFiles(APP_DIR).flatMap((path) => {
+      const relative = path.slice(APP_DIR.length);
       const code = stripComments(readFileSync(path, 'utf8'));
-      return TRACKING_PATTERNS.filter(({ pattern }) => pattern.test(code)).map(
-        ({ name }) => `${path.slice(APP_DIR.length)}: ${name}`,
+      return TRACKING_PATTERNS.filter(({ pattern, exceptIn }) => exceptIn !== relative && pattern.test(code)).map(
+        ({ name }) => `${relative}: ${name}`,
       );
     });
 

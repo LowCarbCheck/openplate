@@ -18,3 +18,6 @@ node_modules
 
 # Claude Code agent session/memory notes (local, not for public repo)
 .claude/agent-memory/
+
+# screenshot-tool artifact from a mistyped --full-page flag
+/--full-page

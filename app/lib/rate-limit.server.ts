@@ -8,6 +8,18 @@
 interface RateLimitBucket {
   count: number;
   windowStartedAt: number;
+  /**
+   * The window this bucket was opened under, carried on the bucket itself.
+   *
+   * WHY IT IS STORED RATHER THAN PASSED: the sweep below runs on whichever
+   * caller happens to trip the threshold, and different callers can use very
+   * different windows. Judging every bucket by the SWEEPING caller's window
+   * meant a one-minute limiter could evict a one-hour limiter's live buckets
+   * — silently resetting a limit that had not elapsed, i.e. handing an
+   * over-limit client a fresh allowance. A bucket is only ever compared
+   * against its own window now.
+   */
+  windowMs: number;
 }
 
 const buckets = new Map<string, RateLimitBucket>();
@@ -25,8 +37,8 @@ export class RateLimitExceededError extends Error {
 }
 
 /**
- * Bucket count above which a hit also drops every window that has already
- * expired.
+ * Bucket count above which a hit may also drop every window that has already
+ * expired — "may", because `lastSweptAt` below caps that to once per window.
  *
  * WHY A SWEEP AT ALL: the map is keyed by client IP and nothing ever removed
  * an entry, so a process that has been up for a month held one small object
@@ -42,11 +54,37 @@ export class RateLimitExceededError extends Error {
  */
 const SWEEP_THRESHOLD = 1000;
 
-/** Drops every bucket whose window has already elapsed. */
-function sweepExpired(now: number, windowMs: number): void {
+/**
+ * When the last sweep ran, so a map that stays above the threshold is walked
+ * once per window rather than once per request.
+ *
+ * WHY: the threshold is a size, not a rate. Once the map is genuinely large —
+ * which is exactly the flood the sweep exists for — EVERY subsequent hit paid
+ * a full O(n) walk of a map that the previous hit had just cleaned, turning a
+ * memory guard into a per-request cost under precisely the load that must stay
+ * cheap. Nothing expires in the microseconds between two requests anyway.
+ *
+ * `0` means "never swept", and `now - 0` clears any real window, so the first
+ * hit past the threshold sweeps immediately.
+ */
+let lastSweptAt = 0;
+
+/** Drops every bucket whose OWN window has already elapsed. */
+function sweepExpired(now: number): void {
   for (const [key, bucket] of buckets) {
-    if (now - bucket.windowStartedAt >= windowMs) buckets.delete(key);
+    if (now - bucket.windowStartedAt >= bucket.windowMs) buckets.delete(key);
   }
+}
+
+/**
+ * Sweeps at most once per `windowMs`, and only while the map is large enough
+ * to be worth walking.
+ */
+function maybeSweep(now: number, windowMs: number): void {
+  if (buckets.size <= SWEEP_THRESHOLD) return;
+  if (now - lastSweptAt < windowMs) return;
+  lastSweptAt = now;
+  sweepExpired(now);
 }
 
 /**
@@ -55,11 +93,11 @@ function sweepExpired(now: number, windowMs: number): void {
  */
 export function checkRateLimit(key: string, options: RateLimitOptions): void {
   const now = Date.now();
-  if (buckets.size > SWEEP_THRESHOLD) sweepExpired(now, options.windowMs);
+  maybeSweep(now, options.windowMs);
   const existing = buckets.get(key);
 
   if (!existing || now - existing.windowStartedAt >= options.windowMs) {
-    buckets.set(key, { count: 1, windowStartedAt: now });
+    buckets.set(key, { count: 1, windowStartedAt: now, windowMs: options.windowMs });
     return;
   }
 
@@ -84,4 +122,18 @@ export function checkRateLimit(key: string, options: RateLimitOptions): void {
  */
 export function clearRateLimit(key: string): void {
   buckets.delete(key);
+}
+
+/**
+ * How many buckets are currently held. TEST SEAM, and nothing in the app calls
+ * it.
+ *
+ * Both properties worth asserting about the sweep — that it drops what has
+ * expired, and that it does NOT run again inside the same window — are
+ * properties of the map's SIZE, which is otherwise module-private. The
+ * alternative was to assert them indirectly through limit outcomes, which
+ * cannot distinguish "swept and rebuilt" from "never swept".
+ */
+export function rateLimitBucketCount(): number {
+  return buckets.size;
 }

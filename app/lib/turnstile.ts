@@ -26,6 +26,24 @@ export interface TurnstileApi {
     options: {
       sitekey: string;
       language?: string;
+      /**
+       * `auto` follows `prefers-color-scheme`. This is the ONE place a media
+       * query is the right answer for theme: the widget is Cloudflare's own
+       * iframe, so the app's `.dark` class cannot reach inside it, and an OS
+       * guess is closer than hardcoding one theme for everybody.
+       */
+      theme?: 'auto' | 'light' | 'dark';
+      /**
+       * `interaction-only` renders nothing at all unless the visitor is
+       * actually challenged — which, for the overwhelming majority, is never.
+       * The alternative (`always`) parks a branded Cloudflare box in the
+       * middle of a form on a page whose whole argument is that nothing here
+       * phones anyone. See the container in `newsletter-signup.tsx` for why
+       * this also removes a reserved hole.
+       */
+      appearance?: 'always' | 'execute' | 'interaction-only';
+      /** `flexible` takes the container's width instead of a fixed 300px. */
+      size?: 'normal' | 'flexible' | 'compact';
       callback?: (token: string) => void;
       'error-callback'?: () => void;
       'expired-callback'?: () => void;
@@ -94,6 +112,13 @@ export function loadTurnstile(): Promise<TurnstileApi> {
     script.defer = true;
     script.addEventListener('load', resolveApi);
     script.addEventListener('error', () => {
+      // Take the dead tag back out of the head. A failed load is RETRIED (see
+      // the cache note below), and each retry appends another `<script>`; the
+      // one that failed can never load or be replaced, so leaving it behind
+      // grows the document by one permanently-broken third-party tag per
+      // attempt — visible in devtools, and misleading about what this page
+      // actually loaded.
+      script.remove();
       reject(new Error('Turnstile script failed to load'));
     });
     document.head.appendChild(script);

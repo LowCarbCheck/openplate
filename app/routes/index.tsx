@@ -33,7 +33,7 @@ import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.serv
 import { createComponentLogger } from '#app/lib/logger';
 import { SectionEyebrow } from '#app/components/typography';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
+import { Card, CardContent, CardHeader } from '#app/components/ui/card';
 import { cn } from '#app/lib/utils';
 import { getLocalProfileGoals, listLocalFoodLogs } from '#app/lib/local-store';
 import {
@@ -83,9 +83,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   // `Vary: Cookie` on BOTH branches: this response now differs by cookie, and
   // an intermediary that cached the 302 for a cookie-less visitor would trap
   // every new visitor in an app they haven't set up yet.
-  const headers = { Vary: 'Cookie' };
-  if (target !== null) throw redirect(target, { headers });
-  return data(landingSections(), { headers });
+  // Named `varyCookie` rather than `headers`: this route also exports a
+  // `headers` function (below), and the two are different things.
+  const varyCookie = { Vary: 'Cookie' };
+  if (target !== null) throw redirect(target, { headers: varyCookie });
+  return data(landingSections(), { headers: varyCookie });
 }
 
 /**
@@ -145,8 +147,21 @@ const subscriptionSchema = z.object({
  *
  * Nothing about the submission is logged — the email address is the whole
  * personal-data payload, and it has no business in a log line.
+ *
+ * ── One branch answers with a status code, the rest with 200 ─────────────
+ *
+ * Every outcome here is a `NewsletterOutcome` the form renders as a sentence,
+ * so the visitor's experience does not depend on the status. The rate-limited
+ * branch additionally answers `429` with `Retry-After`, because that one is
+ * not addressed only to the visitor: an over-eager script, a proxy or a
+ * monitor reads the status line, and a refusal dressed as `200 OK` tells them
+ * to keep going at the same rate. `data()` (rather than a thrown `Response`)
+ * keeps the payload intact on `fetcher.data`, so the form still shows its
+ * friendly line and still resets the challenge.
  */
-export async function action({ request }: Route.ActionArgs): Promise<NewsletterOutcome> {
+export async function action({
+  request,
+}: Route.ActionArgs): Promise<NewsletterOutcome | ReturnType<typeof data<NewsletterOutcome>>> {
   const newsletter = CONFIG.newsletter;
   // Same shape as `/settings/sync`'s gate — a plain 404 Response, not a
   // rendered "not enabled here".
@@ -161,7 +176,13 @@ export async function action({ request }: Route.ActionArgs): Promise<NewsletterO
     checkRateLimit(newsletterRateLimitKey(request), NEWSLETTER_RATE_LIMIT);
   } catch (error) {
     if (!(error instanceof RateLimitExceededError)) throw error;
-    return { ok: false, reason: 'tooManyAttempts' };
+    // `Retry-After` is whole seconds (RFC 9110 §10.2.3), rounded UP so the
+    // advertised moment is never earlier than the window actually reopens —
+    // a client that obeys a rounded-down value gets refused a second time.
+    return data<NewsletterOutcome>(
+      { ok: false, reason: 'tooManyAttempts' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(error.retryAfterMs / 1000)) } },
+    );
   }
 
   const form = await request.formData();
@@ -194,6 +215,33 @@ export async function action({ request }: Route.ActionArgs): Promise<NewsletterO
     logger.warn('Newsletter subscribe request failed', { error: error instanceof Error ? error.message : 'unknown' });
     return { ok: false, reason: 'unavailable' };
   }
+}
+
+/**
+ * The route's response headers — the ONE place they actually reach the wire.
+ *
+ * ── Why this export has to exist ─────────────────────────────────────────
+ *
+ * `data(payload, { headers })` in a loader or an action sets the response
+ * STATUS but not the headers: under single fetch the framework composes one
+ * response for the whole route match, and it asks this export what its headers
+ * should be. Without it the `429`'s `Retry-After` was constructed, discarded,
+ * and never seen by anything — verified on the wire, not assumed.
+ *
+ * Both directions are carried on purpose:
+ *
+ * - `loaderHeaders` brings `Vary: Cookie`, which is not optional. The loader
+ *   answers a 302 or a page depending on a cookie, and an intermediary that
+ *   cached either one for the wrong visitor would trap every new visitor in an
+ *   app they have not set up. Returning only `actionHeaders` here would have
+ *   dropped it silently on every GET.
+ * - `actionHeaders` brings `Retry-After` on the rate-limited POST, and nothing
+ *   at all otherwise.
+ */
+export function headers({ actionHeaders, loaderHeaders }: Route.HeadersArgs): Headers {
+  const merged = new Headers(loaderHeaders);
+  for (const [name, value] of actionHeaders) merged.set(name, value);
+  return merged;
 }
 
 /**
@@ -280,25 +328,26 @@ function useHomeHintRepair(): void {
  * looking at the product or at a drawing of it. These are screenshots of the
  * running app with a sample day logged, and the caption underneath says so.
  *
- * FOUR images, in two pairs, because two things vary independently:
+ * Four captures, and the two axes they vary on are handled by DIFFERENT
+ * mechanisms — deliberately, because only one of the two is knowable to CSS:
  *
- * - THEME. The theme is a `.dark` CLASS on `<html>` (DESIGN.md §9) rather
- *   than a media query, so a `<picture>` with `prefers-color-scheme` would
- *   show the OS's theme to a visitor who chose the other one in Preferences.
- *   Both themes are therefore in the markup, one of them hidden by CSS.
- * - FORM FACTOR. A 2160×1440 laptop capture shown on a 390px phone renders
- *   the app's own text at about four pixels — a picture of a screen, not a
- *   screenshot. The phone capture of the same screen is shown instead below
- *   `sm`, and the laptop pair from `sm` up.
+ * - FORM FACTOR is a media query, so `<picture>` decides it and the browser
+ *   fetches ONE capture. A 2160×1440 laptop capture shown on a 390px phone
+ *   renders the app's own text at about four pixels — a picture of a screen,
+ *   not a screenshot — so the phone capture is used below `sm` and the laptop
+ *   one from `sm` up. This is the fix for the version that shipped all four:
+ *   a phone downloaded the desktop pair (~122 KB) in order to hide it.
+ * - THEME is NOT a media query. It is a `.dark` CLASS on `<html>`
+ *   (DESIGN.md §9) that the visitor can override in Preferences, so
+ *   `prefers-color-scheme` in a `<source>` would show the OS's theme to
+ *   someone who chose the other one. Both themes therefore stay in the
+ *   document, one hidden by CSS — and a hidden `<img>` is still fetched, so
+ *   this pair genuinely costs two files. That is the price of a class-based
+ *   theme, and it is why every one of these is a small WebP.
  *
- * ── The weight, stated honestly ──────────────────────────────────────────
- *
- * This comment used to claim the pair was "well under a hundred kilobytes".
- * It never was: BOTH themes are `<img>` elements in the document, so a browser
- * downloads both regardless of which one it paints, and the desktop pair alone
- * is ~122 KB. What actually bounds the transfer is `srcset` — a phone takes
- * the 780px-wide mobile capture and never fetches a 2160px one at all, and a
- * laptop under 1080 CSS pixels takes the 1080w variant.
+ * Net: two files fetched at any viewport, not four. `srcset` narrows it
+ * further on the laptop branch — a display under 1080 CSS pixels takes the
+ * 1080w variant rather than the 2160w one.
  *
  * Eager (no `loading="lazy"`), because whichever of these paints IS the
  * largest contentful paint on this page.
@@ -324,39 +373,19 @@ function HeroShot(): ReactElement {
         black so the lift belongs to the page. See DESIGN.md §5 — this is the
         one sanctioned resting shadow heavier than `shadow-sm`.
       */}
-      <div className="surface-brand overflow-hidden rounded-2xl border border-primary/40 bg-card p-1.5 shadow-2xl shadow-primary/10 ring-1 ring-inset ring-black/5 dark:border-primary/30 dark:ring-white/5 sm:p-2">
-        {/* Phones: the app as a phone actually draws it. The breakpoint lives
-            on the WRAPPER and the theme on the images, so the two conditions
-            never have to be spelled as one compound Tailwind variant
-            (`dark:sm:hidden` and friends), which is where this kind of markup
-            usually goes wrong. */}
-        <div className="sm:hidden">
-          <ThemedShot
-            srcDark="/landing/diary-mobile-dark.webp"
-            srcLight="/landing/diary-mobile-light.webp"
-            alt={alt}
-            width={780}
-            height={1688}
-            className="mx-auto w-full max-w-[20rem] rounded-xl"
-          />
-        </div>
-        {/* `sm` and up: the laptop capture, at whichever of the two widths the
-            viewport can actually use. `sizes` is the container's real cap —
-            `max-w-5xl` minus the page and frame padding — not `100vw`, which
-            would make every laptop fetch the 2160w file. */}
-        <div className="hidden sm:block">
-          <ThemedShot
-            srcDark="/landing/diary-desktop-dark.webp"
-            srcLight="/landing/diary-desktop-light.webp"
-            srcSetDark="/landing/diary-desktop-dark-1080.webp 1080w, /landing/diary-desktop-dark.webp 2160w"
-            srcSetLight="/landing/diary-desktop-light-1080.webp 1080w, /landing/diary-desktop-light.webp 2160w"
-            sizes="(min-width: 64rem) 61rem, 100vw"
-            alt={alt}
-            width={2160}
-            height={1440}
-            className="w-full rounded-xl"
-          />
-        </div>
+      <div className="surface-brand overflow-hidden rounded-2xl border border-primary/55 bg-card p-1.5 shadow-2xl shadow-primary/20 ring-1 ring-inset ring-black/5 dark:border-primary/40 dark:shadow-primary/10 dark:ring-white/5 sm:p-2">
+        <HeroPicture
+          themeClassName="hidden dark:block"
+          mobileSrc="/landing/diary-mobile-dark.webp"
+          desktopSrcSet="/landing/diary-desktop-dark-1080.webp 1080w, /landing/diary-desktop-dark.webp 2160w"
+          alt={alt}
+        />
+        <HeroPicture
+          themeClassName="block dark:hidden"
+          mobileSrc="/landing/diary-mobile-light.webp"
+          desktopSrcSet="/landing/diary-desktop-light-1080.webp 1080w, /landing/diary-desktop-light.webp 2160w"
+          alt={alt}
+        />
       </div>
       {/* The licence for the numbers above it. The old preview card carried the
           same disclosure as a card subtitle; it belongs to the image now. */}
@@ -364,6 +393,86 @@ function HeroShot(): ReactElement {
         {t('landing.hero.shotCaption')}
       </figcaption>
     </figure>
+  );
+}
+
+/**
+ * The bottom-edge fade every cropped phone capture carries.
+ *
+ * These are 780×1688 captures of a scrolling screen, so each one ends
+ * wherever the viewport did — mid-row, through a food name and half a number.
+ * A hard edge there reads as a broken image; a fade reads as a list that
+ * continues past the frame, which is what it is. 84% keeps the fade clear of
+ * everything legible and spends the last sixth of the image on it.
+ */
+const CROP_FADE = '[mask-image:linear-gradient(to_bottom,black_84%,transparent_100%)]';
+
+/**
+ * The ONE frame recipe for every non-hero screenshot on this page.
+ *
+ * The hero's frame is heavier on purpose (`.surface-brand`, `shadow-2xl`, an
+ * inset ring) because it is the page's one hero card. Everything else was
+ * `border bg-card shadow-sm` — a neutral hairline that disappeared into the
+ * light theme's pale-teal page, so half the product shots on the page had no
+ * visible frame at all in the theme most visitors arrive in. One brand-tinted
+ * recipe, stated once, used everywhere below the hero.
+ */
+const SHOT_FRAME = 'rounded-xl border border-primary/25 bg-card p-1 shadow-md shadow-primary/5';
+
+/**
+ * ONE theme of the hero capture, with the form-factor choice delegated to the
+ * browser.
+ *
+ * The `<source>` is the whole point: a `media` query on it means only ONE of
+ * the two captures inside this element is ever fetched. The theme, which no
+ * media query can know (see `HeroShot`'s header), stays a CSS toggle on the
+ * `<picture>` itself.
+ *
+ * `sizes` is the container's real cap — `max-w-5xl` minus the page and frame
+ * padding — rather than `100vw`, which would make every laptop take the 2160w
+ * file.
+ *
+ * The `40rem` breakpoint is Tailwind's `sm` written out, because a media query
+ * cannot read a Tailwind token: it MUST stay in step with the `sm:` classes on
+ * the `<img>` below, which undo the phone-sized cap and the crop fade.
+ */
+function HeroPicture({
+  themeClassName,
+  mobileSrc,
+  desktopSrcSet,
+  alt,
+}: {
+  themeClassName: string;
+  mobileSrc: string;
+  desktopSrcSet: string;
+  alt: string;
+}): ReactElement {
+  return (
+    <picture className={themeClassName}>
+      <source
+        media="(min-width: 40rem)"
+        srcSet={desktopSrcSet}
+        sizes="(min-width: 64rem) 61rem, 100vw"
+        width={2160}
+        height={1440}
+      />
+      <img
+        src={mobileSrc}
+        alt={alt}
+        width={780}
+        height={1688}
+        decoding="async"
+        className={cn(
+          'mx-auto w-full max-w-[20rem] rounded-xl',
+          // The phone capture is 2.16 screens tall and is cropped mid-diary,
+          // so its bottom edge cuts a row of food in half. The fade turns that
+          // slice into "the list continues" instead of a rendering fault. The
+          // laptop capture is a whole screen and needs neither.
+          CROP_FADE,
+          'sm:max-w-none sm:[mask-image:none]',
+        )}
+      />
+    </picture>
   );
 }
 
@@ -386,9 +495,6 @@ function HeroShot(): ReactElement {
 function ThemedShot({
   srcDark,
   srcLight,
-  srcSetDark,
-  srcSetLight,
-  sizes,
   alt,
   width,
   height,
@@ -397,9 +503,6 @@ function ThemedShot({
 }: {
   srcDark: string;
   srcLight: string;
-  srcSetDark?: string;
-  srcSetLight?: string;
-  sizes?: string;
   alt: string;
   width: number;
   height: number;
@@ -409,11 +512,11 @@ function ThemedShot({
   // `alt` is spelled out on each element rather than folded into the spread:
   // the a11y lint rule cannot see an `alt` that arrives through `{...shared}`,
   // and a rule that can't see the attribute is a rule that can't protect it.
-  const shared = { width, height, sizes, loading, decoding: 'async' } as const;
+  const shared = { width, height, loading, decoding: 'async' } as const;
   return (
     <>
-      <img {...shared} alt={alt} src={srcDark} srcSet={srcSetDark} className={cn('hidden dark:block', className)} />
-      <img {...shared} alt={alt} src={srcLight} srcSet={srcSetLight} className={cn('block dark:hidden', className)} />
+      <img {...shared} alt={alt} src={srcDark} className={cn('hidden dark:block', className)} />
+      <img {...shared} alt={alt} src={srcLight} className={cn('block dark:hidden', className)} />
     </>
   );
 }
@@ -427,6 +530,10 @@ function ThemedShot({
  *
  * Below the fold in every use, so `loading="lazy"`; the intrinsic size is on
  * the element so nothing reflows when it arrives.
+ *
+ * Carries `SHOT_FRAME` and `CROP_FADE` for every caller, because both are
+ * properties of what these files ARE — cropped phone captures below the hero —
+ * rather than choices a call site should be making one at a time.
  */
 function PhoneShot({
   srcDark,
@@ -447,7 +554,7 @@ function PhoneShot({
       width={780}
       height={1688}
       loading="lazy"
-      className={cn('rounded-xl border bg-card shadow-sm', className)}
+      className={cn(SHOT_FRAME, CROP_FADE, className)}
     />
   );
 }
@@ -477,25 +584,36 @@ function HowStep({
   shotAlt: string;
 }): ReactElement {
   return (
-    <div>
+    <div className="flex flex-col">
       {/*
-        NO screenshot on a phone. These used to render beside the copy at
-        `w-24` — 96 CSS pixels wide for a capture of a 390px screen, which
-        scales the app's own 14px body text down to about three pixels. That
-        is not a small screenshot, it is a texture, and it was taking a third
-        of the row's width to be one. The icon chip below carries the step on
-        a phone, which is what an icon is for; the picture returns from `sm`
-        up, where there is room to read it.
+        The screenshot is BACK on phones, at a readable size and in the right
+        place. It first sat beside the copy at `w-24` — 96 CSS pixels for a
+        capture of a 390px screen, which renders the app's own 14px text at
+        about three pixels; that is a texture, not a screenshot, and the fix
+        for it was to drop the picture below `sm` entirely. Which left the one
+        section that shows what using openplate LOOKS like showing nothing at
+        all to the visitors who will use it on a phone.
+
+        So: full width of the step, under the copy it illustrates, capped at
+        `11rem` where the app's own body text lands at a legible size — and
+        centred, because on a phone each step is a single centred column with
+        nothing to align a left edge to.
+
+        From `sm` the order flips (picture above copy, as a row of three
+        parallel steps) and the cap goes to the page's one step-shot width.
+        `mx-0` at that breakpoint is the point of the flip: `mx-auto` there
+        floated each shot ~38px away from the left edge of its own caption, so
+        three pictures and three captions made six different left edges.
       */}
-      <div className="hidden sm:block">
+      <div className="order-2 mt-6 sm:order-1 sm:mt-0">
         <PhoneShot
           srcDark={shotDark}
           srcLight={shotLight}
           alt={shotAlt}
-          className="mx-auto w-full max-w-[15rem]"
+          className="mx-auto w-full max-w-[11rem] sm:mx-0 sm:max-w-[15rem]"
         />
       </div>
-      <div className="min-w-0 space-y-2 sm:mt-4 sm:space-y-3">
+      <div className="order-1 min-w-0 space-y-2 sm:order-2 sm:mt-4 sm:space-y-3">
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
@@ -509,13 +627,15 @@ function HowStep({
 /**
  * One card of the feature grid.
  *
- * Muted on purpose: six of these sit together, and six teal icon chips would
- * turn the page's one accent into wallpaper (DESIGN.md §1, "teal appears only
- * where attention belongs"). So the icon gets the SHAPE of the ladder cards'
- * chip and none of its colour — a neutral `bg-muted` square with a
- * `text-foreground/70` glyph. A bare floating icon (what this was) read as a
- * stray glyph rather than as part of the same system; a teal one would have
- * been six accents. This is the third option.
+ * The icon chip is the SAME recipe as every other chip on this page —
+ * `bg-primary/10 text-primary` — and that is a reversal. The previous pass
+ * made these six neutral (`bg-muted` + `text-foreground/70`) on the argument
+ * that six teal chips would turn the page's one accent into wallpaper. In
+ * dark mode that argument held; in light mode `--muted` is a pale teal at 93%
+ * lightness sitting on a `bg-card` white, so the chips simply vanished and
+ * six of the page's icons had no container at all. One recipe, both themes,
+ * everywhere: a 10%-alpha brand tint is quiet enough at six repetitions and
+ * is the only version that is visible in both.
  *
  * No `foot` slot any more. The source card used to carry a "read the source"
  * link, which put a second GitHub destination three sections above the closing
@@ -525,7 +645,7 @@ function HowStep({
 function FeatureCard({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }): ReactElement {
   return (
     <div className="rounded-2xl border bg-card p-5 shadow-sm">
-      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground/70">
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
       <h3 className="mt-3 font-display text-base font-semibold tracking-tight">{title}</h3>
@@ -569,15 +689,26 @@ function SetupStep({ step, title, body }: { step: number; title: string; body: s
  * page's ONE `.surface-brand` (DESIGN.md §2, "one hero per screen"), so every
  * section added here stays neutral no matter how much it would like the
  * attention.
+ *
+ * ── A real `<h2>`, and no eyebrow ────────────────────────────────────────
+ *
+ * The title used to be `CardTitle`, which is a `<div>`. Three of these cards
+ * carry the page's last three arguments — goals, sync, the newsletter — and a
+ * screen-reader user moving by heading skipped every one of them, landing on
+ * the closing CTA from the feature grid. They are sections of the document,
+ * so they are headings, at the same size as the four `<h2>`s above them.
+ *
+ * The eyebrow went with the div. `SectionEyebrow` marks a SECTION, and these
+ * three now live inside one shared section (see the page below); an eyebrow
+ * per card meant three "section labels" stacked six inches apart, each one
+ * announcing a section that was really a card.
  */
 function LadderCard({
   icon: Icon,
-  eyebrow,
   title,
   children,
 }: {
   icon: LucideIcon;
-  eyebrow: string;
   title: string;
   children: ReactNode;
 }): ReactElement {
@@ -587,10 +718,17 @@ function LadderCard({
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
-        <SectionEyebrow>{eyebrow}</SectionEyebrow>
-        <CardTitle className="font-display text-2xl">{title}</CardTitle>
+        <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>
       </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
+      {/*
+        The CARD is full width; its PROSE is not. A `max-w-5xl` container is
+        for screenshots and grids — a paragraph running the whole way across
+        one is 130-odd characters per line, roughly double the measure at
+        which an eye reliably finds the start of the next line. The cap is on
+        the content rather than on the card so the card keeps its place in the
+        page's rhythm.
+      */}
+      <CardContent className="max-w-[65ch] space-y-4">{children}</CardContent>
     </Card>
   );
 }
@@ -646,22 +784,33 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           Hero backdrop, two layers, both decorative and both out of the
           reading order (`pointer-events-none`, `aria-hidden`, `-z-10`).
 
-          The watermark is CENTERED on the masthead rather than hung off the
+          The watermark is CENTERED horizontally rather than hung off the
           top-right corner. The corner placement cropped the mark into an
           unreadable arc and, on mobile, drove that arc straight through the
           headline — a circle sliced diagonally at the edge of the viewport
-          reads as a rendering bug, not as brand texture. Because the glyph is
-          line art rather than a filled shape, it survives the low opacity it
-          needs in order to sit behind text without touching its contrast.
+          reads as a rendering bug, not as brand texture.
+
+          Vertically it now starts BELOW the copy instead of being centred on
+          it. Line art at 3.5% alpha is texture, but it is texture with edges,
+          and two of those edges were crossing the tagline: a faint stroke
+          through a sentence is something a reader notices without being able
+          to say what it is. Behind the CTA row and the top of the screenshot
+          it has nothing to interfere with.
+
+          The two opacities are NOT the same value in both themes, and neither
+          is a compromise between them. On the dark page the mark sits on a
+          near-black field where 7% is already barely there; on the light page
+          the same 7% teal on a pale-teal ground drew a visible grey ring, so
+          light gets 3.5%.
 
           Under it, `brand-glow` (app.css) puts a soft elliptical teal light
           behind the wordmark, so the page has depth instead of being a flat
-          field with a screenshot dropped on it. Both are anchored to the TOP
-          of the composition now: the hero is copy-then-image rather than
-          copy-beside-image, so its optical centre is the headline.
+          field with a screenshot dropped on it. That one IS anchored to the
+          top: the hero is copy-then-image, so its optical centre is the
+          headline.
         */}
         <div className="brand-glow pointer-events-none absolute inset-x-0 -top-32 -z-10 h-[34rem]" aria-hidden="true" />
-        <PlateGlyph className="pointer-events-none absolute left-1/2 top-[9rem] -z-10 h-[22rem] w-[22rem] -translate-x-1/2 -translate-y-1/2 text-primary/[0.07] sm:h-[30rem] sm:w-[30rem]" />
+        <PlateGlyph className="pointer-events-none absolute left-1/2 top-[16rem] -z-10 h-[22rem] w-[22rem] -translate-x-1/2 text-primary/[0.035] dark:text-primary/[0.07] sm:top-[15rem] sm:h-[30rem] sm:w-[30rem]" />
         {/* The hero's COPY keeps a reading measure even though the page
             container is now `max-w-5xl` (M146 round-1 fix 1): a wide container
             is for the screenshot and the grids, never for a 1024px-long
@@ -675,13 +824,13 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-foreground sm:text-xl">
             {t('landing.hero.tagline')}
           </p>
-          {/* One line, and a modest one: the manifest and the service worker
-              are both in the repository, so "installs and opens offline" is a
-              statement about shipped code rather than a plan. It says nothing
-              about syncing or background updates, which is the part that is
-              easy to over-claim. */}
-          <p className="mt-4 max-w-xl leading-relaxed text-muted-foreground">{t('landing.hero.install')}</p>
-          <p className="mt-4 max-w-xl leading-relaxed text-muted-foreground">{t('landing.hero.privacy')}</p>
+          {/* Two full paragraphs used to stand here — one on installing, one
+              on privacy and BYOK — and both were the feature grid's own cards
+              said first, almost word for word. A hero that says everything
+              leaves the rest of the page repeating it, and a visitor who has
+              already read the argument has no reason to keep scrolling to the
+              button. The tagline states what the thing IS; the ticks below
+              state what it costs; the grid makes the case. */}
           {/* One CTA, one label, one destination (M128 spec 03: there is no
               account to have, so a returning visitor and a brand-new one want
               exactly the same thing from this page — the tracker). The
@@ -699,6 +848,16 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               {t('landing.cta.howItWorks')}
             </a>
           </div>
+          {/* The three deleted paragraphs, compressed into the part a visitor
+              was actually reading them for. It sits UNDER the CTA rather than
+              above it because it is reassurance about pressing the button, not
+              an argument for pressing it — and it is the smallest type on the
+              page for the same reason.
+
+              No `whitespace-nowrap`: at 320px this wraps to two lines, and a
+              wrapped line is better than the horizontal scroll that forcing it
+              onto one would produce on the narrowest phones. */}
+          <p className="mt-4 text-xs text-muted-foreground">{t('landing.hero.ticks')}</p>
         </div>
         <HeroShot />
       </div>
@@ -758,7 +917,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             now lives in the left column directly under the `<ol>` (where the
             reader's eye already is), and the two columns are centred against
             each other so neither one dangles. */}
-        <div className="mt-8 gap-10 sm:grid sm:grid-cols-[1fr_13rem] sm:items-center">
+        <div className="mt-8 gap-10 sm:grid sm:grid-cols-[1fr_15rem] sm:items-center">
           <div>
             <ol className="space-y-6">
               <SetupStep
@@ -787,7 +946,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             srcDark="/landing/overview-mobile-dark.webp"
             srcLight="/landing/overview-mobile-light.webp"
             alt={t('landing.setup.shotAlt')}
-            className="mx-auto mt-8 w-full max-w-[13rem] sm:mt-0"
+            className="mx-auto mt-8 w-full max-w-[15rem] sm:mt-0"
           />
         </div>
       </section>
@@ -834,17 +993,27 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         </div>
       </section>
 
-      {/* The goals capability, on a plain `bg-card` surface — the hero
-          screenshot's frame is this page's one `.surface-brand`
-          (DESIGN.md §2).
+      {/*
+        ONE chapter, three cards — goals, sync, the newsletter.
 
-          It is a `LadderCard` now rather than a hand-built `Card`. It was
-          already the same three parts in the same order (eyebrow, display
-          title, body) but assembled separately and so missing the icon chip
-          that sync and the newsletter both carry — three cards on one page
-          built to two different recipes, for no reason anyone could name. */}
-      <section className="py-12 sm:py-16">
-        <LadderCard icon={Target} eyebrow={t('landing.goals.eyebrow')} title={t('landing.goals.title')}>
+        These were three separate `<section>`s, each with its own `py-12
+        sm:py-16`, which put a 128px break between three cards that are the
+        same kind of thing on the same kind of surface. Three cards separated
+        by a screen-third of empty page do not read as three points; they read
+        as the page having ended twice and started again. One section, one
+        break before it and one after, and `space-y-6` between the cards —
+        the gap a card grid uses, because that is what this is.
+
+        All three sit on a plain `bg-card` surface: the hero screenshot's
+        frame is this page's one `.surface-brand` (DESIGN.md §2).
+
+        Two of the three are conditional and the section is not. That is
+        deliberate — the goals card always renders, so the chapter always has
+        at least one card in it, and an instance with neither sync nor a
+        newsletter simply has a one-card chapter rather than an empty section.
+      */}
+      <section className="space-y-6 py-12 sm:py-16">
+        <LadderCard icon={Target} title={t('landing.goals.title')}>
           <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.goals.body')}</p>
           <ul className="grid gap-3 sm:grid-cols-2">
             <GoalPoint>{t('landing.goals.points.ring')}</GoalPoint>
@@ -853,33 +1022,29 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             <GoalPoint>{t('landing.goals.points.tone')}</GoalPoint>
           </ul>
         </LadderCard>
-      </section>
 
-      {/* Rung 3 — keep it. Renders ONLY where the loader said sync exists; on
-          every other instance there is no card, no heading and no mention. */}
-      {syncEnabled && (
-        <section className="py-12 sm:py-16">
-          <LadderCard icon={RefreshCw} eyebrow={t('landing.sync.eyebrow')} title={t('landing.sync.title')}>
+        {/* Rung 3 — keep it. Renders ONLY where the loader said sync exists; on
+            every other instance there is no card, no heading and no mention. */}
+        {syncEnabled && (
+          <LadderCard icon={RefreshCw} title={t('landing.sync.title')}>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.body')}</p>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.photos')}</p>
             <Link to="/settings/sync" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
               {t('landing.sync.link')}
             </Link>
           </LadderCard>
-        </section>
-      )}
+        )}
 
-      {/* Rung 4 — stay in touch. Same rule as sync above, and the stricter one
-          from M146/00: an instance that configured no list renders no form, no
-          consent copy and no third-party script. */}
-      {newsletter !== null && (
-        <section className="py-12 sm:py-16">
-          <LadderCard icon={Mail} eyebrow={t('landing.newsletter.eyebrow')} title={t('landing.newsletter.title')}>
+        {/* Rung 4 — stay in touch. Same rule as sync above, and the stricter one
+            from M146/00: an instance that configured no list renders no form, no
+            consent copy and no third-party script. */}
+        {newsletter !== null && (
+          <LadderCard icon={Mail} title={t('landing.newsletter.title')}>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.newsletter.body')}</p>
             <NewsletterSignup turnstileSiteKey={newsletter.turnstileSiteKey} />
           </LadderCard>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* The close. The button repeats the hero — same label, same
           destination — for a reader who has finished scrolling, and stays the
@@ -893,7 +1058,11 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             argument look like a footnote to the newsletter card. */}
         <SectionEyebrow>{t('landing.close.eyebrow')}</SectionEyebrow>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.close.title')}</h2>
-        <p className="mt-3 text-muted-foreground">{t('landing.close.body')}</p>
+        {/* `mx-auto max-w-[65ch]`: a centred line running the full width of a
+            `max-w-5xl` container is the same over-long measure the cards had,
+            and centring makes it worse — every line starts in a different
+            place, so the eye has nothing to return to. */}
+        <p className="mx-auto mt-3 max-w-[65ch] text-muted-foreground">{t('landing.close.body')}</p>
         {/* `shadow-md`, where the hero's CTA has `shadow-lg`. Both are the same
             label and the same destination, so the two cannot compete on colour
             or on wording — the only thing left to rank them by is weight, and
