@@ -157,8 +157,10 @@ DEFAULT_INFERENCE_MODEL=openplate-plate-1
 > instance exposed to the open internet with no VPN or auth proxy in front of it
 > — there, leave it unset and use Path B.
 
-A ready-to-edit two-service compose file is in
-[`docker-compose.example.yml`](docker-compose.example.yml).
+A ready-to-edit two-service compose file — openplate and this service wired
+together — lives in the openplate repo at
+[`docker/topologies/compose.inference.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.inference.yml).
+To run this service on its own, use [`docker/compose.yml`](docker/compose.yml).
 
 #### Path B — bring your own key (per person, nothing on the server)
 
@@ -227,6 +229,12 @@ real photo, asserts the response shape:
 
 ```bash
 ./scripts/smoke-lite.sh          # first run downloads ~2.0 GiB
+```
+
+A Nix flake provides the toolchain if you would rather not install Node yourself:
+
+```bash
+nix develop
 ```
 
 A `pre-push` gate (lint → typecheck → unit → build) is committed in `.githooks/`.

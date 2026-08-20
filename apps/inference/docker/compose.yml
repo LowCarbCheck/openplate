@@ -1,20 +1,20 @@
-# openplate + openplate-inference, wired together.
+# openplate-inference, on its own.
 #
-# Copy to docker-compose.yml, edit the four marked values, `docker compose up -d`.
-# What you get: an openplate instance whose users tap ONE button to use this
-# instance's own AI — no provider account, no API key of their own, no photo
-# leaving your network.
+# A single-service compose file for running the inference endpoint by itself —
+# a plate scanner any OpenAI-compatible client can call. Copy it, edit the one
+# marked value, `docker compose up -d`.
 #
-#   docker compose logs -f inference   # weight download + model load + ready
-#   docker compose logs -f openplate
+#   docker compose -f docker/compose.yml up -d
+#   docker compose -f docker/compose.yml logs -f inference   # weight download + model load + ready
 #
-# ── THE ONE THING PEOPLE GET WRONG ─────────────────────────────────────────
-# `DEFAULT_INFERENCE_BASE_URL` must be a URL a BROWSER on the user's phone or
-# laptop can open. The photo goes from the device straight to the inference
-# endpoint — openplate's server is never in the loop, which is what keeps the
-# scan private. So `http://inference:8300/v1` (the container hostname) does NOT
-# work, even though the two containers can talk to each other that way. Use the
-# LAN address of this host, or a hostname on your reverse proxy / tailnet.
+# Want to run this TOGETHER with the openplate app? That two-service topology
+# lives in the openplate repo, not here:
+#   https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.inference.yml
+
+# Pins the Compose project name. Without it, `-f docker/compose.yml` makes
+# Compose derive the project from the containing directory, so the stack and
+# the multi-GB models volume both get named "docker".
+name: openplate-inference
 
 services:
   inference:
@@ -35,8 +35,8 @@ services:
     environment:
       # lite | lite-apache | quality — see README "Hardware & measured latency".
       MODEL_PROFILE: lite
-      # ── EDIT ME (1/4) ── A stable key. Without it a new key is generated on
-      # every restart and every browser has to reconnect. Any random string:
+      # ── EDIT ME ── A stable key. Without it a new key is generated on every
+      # restart and every browser has to reconnect. Any random string:
       #   openssl rand -base64 24
       API_KEYS: "opk_CHANGE_ME"
       # Self-host has no latency ceiling. 0 = never shed load for being slow.
@@ -90,36 +90,6 @@ services:
     # for an hour instead of surfacing in seconds.
     # healthcheck:
     #   start_period: 30s
-
-  openplate:
-    image: ghcr.io/lowcarbcheck/openplate:latest
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    depends_on:
-      - inference
-    environment:
-      # ── EDIT ME (2/4) ── your openplate instance's own settings. See
-      # openplate's .env.example for the full list (database, session secret…).
-      APP_URL: "http://openplate.example.lan:3000"
-
-      # ── The instance preset: this is what turns into openplate's one-tap
-      #    "This openplate provides its own AI" card, on the AI settings page
-      #    and on the scan screen. Leave these unset and nothing renders —
-      #    bring-your-own-key stays the only path.
-      #
-      # ── EDIT ME (3/4) ── a BROWSER-reachable address for the inference
-      #    container. NOT http://inference:8300. Note the /v1 suffix.
-      DEFAULT_INFERENCE_BASE_URL: "http://openplate.example.lan:8300/v1"
-      # ── EDIT ME (4/4) ── must match API_KEYS above.
-      #
-      # ⚠ THIS KEY IS PUBLIC. It is embedded in the HTML every browser loads, so
-      #   anyone who can open your openplate can read it with view-source. That
-      #   is fine for a household or a tailnet. It is NOT fine on an instance
-      #   open to the internet without a VPN or auth proxy in front of it — in
-      #   that case leave this unset and let people paste the key themselves.
-      DEFAULT_INFERENCE_API_KEY: "opk_CHANGE_ME"
-      DEFAULT_INFERENCE_MODEL: "openplate-plate-1"
 
 volumes:
   inference-models:

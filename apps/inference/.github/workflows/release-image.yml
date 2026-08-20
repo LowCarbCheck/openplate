@@ -9,7 +9,7 @@ name: Release Image
 #   cpu   ghcr.io/ggml-org/llama.cpp:server        -> :latest, :<semver>, :sha-<short>
 #   cuda  ghcr.io/ggml-org/llama.cpp:server-cuda   -> :cuda,   :<semver>-cuda, :sha-<short>-cuda
 #
-# Both tag sets are what README "Quickstart" and docker-compose.example.yml tell
+# Both tag sets are what README "Quickstart" and docker/compose.yml tell
 # people to pull, so neither may be dropped without editing those first.
 #
 # Publishing semver WITHOUT moving a tag: run this workflow manually with the

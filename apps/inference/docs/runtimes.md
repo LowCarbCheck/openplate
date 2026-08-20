@@ -164,7 +164,7 @@ for a first-boot weight download on a home connection. In external mode there is
 no download, so a wrong `MODEL_RUNTIME_URL` stays hidden for an hour instead of
 failing in seconds. `start_period` is baked in at build time, so **override it** —
 see the commented block in
-[`docker-compose.example.yml`](../docker-compose.example.yml).
+[`docker/compose.yml`](../docker/compose.yml).
 
 ## Readiness, and what it does not tell you
 
