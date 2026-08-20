@@ -428,6 +428,15 @@ const CROP_FADE = '[mask-image:linear-gradient(to_bottom,black_84%,transparent_1
 const SHOT_FRAME = 'rounded-xl border border-primary/25 bg-card p-1 shadow-md shadow-primary/5';
 
 /**
+ * The one rendered shape every "how it works" step shot is drawn into.
+ *
+ * `13/24` is 780×1440 reduced — the exact aspect ratio of the SHORTEST of the
+ * three captures. See `StepShot` for why the box owns the height instead of
+ * the image.
+ */
+const STEP_SHOT_ASPECT = 'aspect-[13/24]';
+
+/**
  * The page's TWO secondary actions — "See how it works" and "Set up sync" —
  * written once.
  *
@@ -442,6 +451,31 @@ const SHOT_FRAME = 'rounded-xl border border-primary/25 bg-card p-1 shadow-md sh
  */
 const SECONDARY_ACTION =
   'text-base text-foreground/80 underline decoration-primary/30 underline-offset-4 transition-colors hover:text-foreground hover:decoration-primary';
+
+/**
+ * The page's recurring SECOND action: "read the source".
+ *
+ * Three places now carry the same pair — a way into the app, and a way into
+ * the repository — because those are the two things a visitor can do with an
+ * open-source tracker and the page should not make them hunt for the second
+ * one. Written once so the three cannot drift apart in wording, styling or
+ * `rel`.
+ *
+ * It is deliberately the `SECONDARY_ACTION` underline and never a button: the
+ * repository is not a competing offer, it is the evidence for the offer. The
+ * label states the licence because "read the source" without one is an
+ * invitation to look, not permission to use.
+ *
+ * `target="_blank"` with `rel="noopener"` — the repository is another site,
+ * and leaving the page mid-read is not what the visitor asked for.
+ */
+function SourceLink({ label, className }: { label: string; className?: string }): ReactElement {
+  return (
+    <a href={REPO_URL} target="_blank" rel="noopener" className={cn(SECONDARY_ACTION, className)}>
+      {label}
+    </a>
+  );
+}
 
 /**
  * ONE theme of the hero capture, with the form-factor choice delegated to the
@@ -607,6 +641,73 @@ function PhoneShot({
   );
 }
 
+/**
+ * The step shot of "Log a meal in a few seconds" — the ONE place on this page
+ * where three screenshots stand side by side, and therefore the one place
+ * where their intrinsic heights are a layout problem rather than a detail.
+ *
+ * ── Why this is not three `PhoneShot`s ───────────────────────────────────
+ *
+ * `PhoneShot` renders a capture at its own aspect ratio. The three steps are
+ * captured at two different ones — the scan screen fits in a viewport
+ * (780×1440), the add and diary screens scroll and are cropped at 780×1688 —
+ * so at one column width the first picture came out ~76px shorter than the
+ * other two. Everything under a picture starts where that picture ends, so
+ * the icon chips, the titles and the paragraphs of the three steps each began
+ * at a different height: three ragged columns of what is meant to read as one
+ * row of parallel steps.
+ *
+ * ── The box, not the image, decides the height ───────────────────────────
+ *
+ * Every step gets the same aspect-ratio box and the image fills it with
+ * `object-cover object-top`. The ratio is the SHORTEST capture's — 780×1440,
+ * i.e. exactly `13/24` — so the scan shot is shown whole and untouched, and
+ * the two taller ones are cropped at the bottom, which is the end they were
+ * already cropped at. The columns of the grid are equal width, so one ratio
+ * is one rendered height, and the three captions share a baseline at every
+ * viewport rather than only at the one that was checked.
+ *
+ * A ratio rather than a literal `h-[…]`: the column is ~187px wide at `sm`
+ * and ~240px on a laptop, and a fixed height would have `object-cover` crop
+ * the SIDES off the narrow one to fill it. The ratio tracks the width, and
+ * uniform width plus uniform ratio is uniform height by construction.
+ *
+ * The fade stays per-step for the reason it always was (see `PhoneShot`): the
+ * cropped captures continue past the frame and say so, the scan capture ends
+ * where its content ends and has nothing to soften.
+ */
+function StepShot({
+  srcDark,
+  srcLight,
+  alt,
+  height = 1688,
+  cropped = true,
+}: {
+  srcDark: string;
+  srcLight: string;
+  alt: string;
+  /** Intrinsic pixel height of the capture. Width is 780 for every phone shot. */
+  height?: number;
+  /** `false` for a capture of a whole screen — see the component doc. */
+  cropped?: boolean;
+}): ReactElement {
+  return (
+    <div className={cn(SHOT_FRAME, 'mx-auto w-full max-w-[11rem] sm:mx-0 sm:max-w-[15rem]')}>
+      <div className={cn('relative overflow-hidden rounded-lg', STEP_SHOT_ASPECT, cropped && CROP_FADE)}>
+        <ThemedShot
+          srcDark={srcDark}
+          srcLight={srcLight}
+          alt={alt}
+          width={780}
+          height={height}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+      </div>
+    </div>
+  );
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Section furniture
 ////////////////////////////////////////////////////////////////////////////////
@@ -632,7 +733,7 @@ function HowStep({
   shotDark: string;
   shotLight: string;
   shotAlt: string;
-  /** Forwarded to `PhoneShot` — see its doc for when these stop being defaults. */
+  /** Forwarded to `StepShot` — see its doc for when these stop being defaults. */
   shotHeight?: number;
   shotCropped?: boolean;
 }): ReactElement {
@@ -666,14 +767,7 @@ function HowStep({
         that says which caption a picture illustrates.
       */}
       <div className="order-2 mt-4 sm:order-1 sm:mt-0">
-        <PhoneShot
-          srcDark={shotDark}
-          srcLight={shotLight}
-          alt={shotAlt}
-          height={shotHeight}
-          cropped={shotCropped}
-          className="mx-auto w-full max-w-[11rem] sm:mx-0 sm:max-w-[15rem]"
-        />
+        <StepShot srcDark={shotDark} srcLight={shotLight} alt={shotAlt} height={shotHeight} cropped={shotCropped} />
       </div>
       <div className="order-1 min-w-0 space-y-2 sm:order-2 sm:mt-4 sm:space-y-3">
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -977,6 +1071,17 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               {t('landing.cta.howItWorks')}
             </a>
           </div>
+          {/* The second half of the pair, on its own line rather than in the
+              row above it. Three things side by side read as three offers of
+              equal weight; a filled button with one link beside it and one
+              beneath it reads as one offer with two ways to hesitate. The
+              repository is the page's other real destination and it is stated
+              here, at the top, instead of only in the close — a visitor who
+              came to audit the code should not have to scroll the whole
+              marketing page to find it. */}
+          <p className="mt-4">
+            <SourceLink label={t('landing.cta.readSource')} />
+          </p>
           {/* The three deleted paragraphs, compressed into the part a visitor
               was actually reading them for. It sits UNDER the CTA rather than
               above it because it is reassurance about pressing the button, not
@@ -1152,6 +1257,21 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             body={t('landing.features.noTracking.body')}
           />
         </div>
+        {/* The pair, restated where the six claims end. This is the one point
+            on the page where a reader has just been told six checkable things
+            and has exactly two reasonable next moves: use it, or go and check
+            them. Both are offered, in that order.
+
+            The button is `variant="outline"`, not filled. The hero's is the
+            page's one filled primary above `#how` and the close's is its
+            restatement; a third filled button in the middle would make the
+            page look like it is asking three times. */}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
+          <Button asChild variant="outline" size="lg">
+            <Link to="/dashboard">{t('landing.cta.tryItFree')}</Link>
+          </Button>
+          <SourceLink label={t('landing.cta.readSourcePlain')} />
+        </div>
       </section>
 
       {/*
@@ -1254,9 +1374,10 @@ export default function Index({ loaderData }: Route.ComponentProps) {
 
       {/* The close. The button repeats the hero — same label, same
           destination — for a reader who has finished scrolling, and stays the
-          page's only other filled primary. Rung 5 sits under it as a plain
-          muted link: starring the repository is a favour, not a call to
-          action, and teal is reserved for the way in (DESIGN.md §1). */}
+          page's only other filled primary. Rung 5 sits under it as the same
+          `SourceLink` second action the hero and the feature grid carry:
+          subordinate to the button, never a second filled primary, and teal
+          stays reserved for the way in (DESIGN.md §1). */}
       <section className="scroll-mt-20 border-t py-12 text-center sm:py-16">
         {/* Eyebrow → h2 → muted line, at the same sizes as every other section
             on the page. This heading used to be one step smaller than the four
@@ -1276,16 +1397,14 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         <Button asChild size="lg" className="mt-7 h-12 px-7 text-base shadow-md shadow-primary/20">
           <Link to="/dashboard">{t('landing.cta.tryIt')}</Link>
         </Button>
+        {/* Rung 5, now written as the same "or read the source" second action
+            the hero and the feature grid carry, rather than as a small muted
+            aside in a style used nowhere else on the page. It still asks for
+            the star — that ask belongs here and only here — and it still names
+            the licence, which is the part that makes the sentence an offer
+            instead of a favour. */}
         <p className="mt-6">
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noopener"
-            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-          >
-            <Github className="h-4 w-4" aria-hidden="true" />
-            {t('landing.close.star')}
-          </a>
+          <SourceLink label={t('landing.close.star')} />
         </p>
       </section>
     </PublicWrapper>

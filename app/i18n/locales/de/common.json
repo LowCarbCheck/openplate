@@ -695,12 +695,15 @@
     "close": {
       "body": "Nichts anzumelden, nichts einzurichten. Trag ein Lebensmittel ein — mehr braucht openplate nicht.",
       "eyebrow": "Jetzt anfangen",
-      "star": "openplate auf GitHub einen Stern geben",
+      "star": "Oder gib dem Quellcode auf GitHub einen Stern — MIT-Lizenz",
       "title": "Fang mit der ersten Mahlzeit von heute an"
     },
     "cta": {
       "howItWorks": "So funktioniert es",
-      "tryIt": "Jetzt ausprobieren — ohne Konto"
+      "readSource": "Oder lies den Quellcode — MIT-Lizenz",
+      "readSourcePlain": "Den Quellcode lesen — MIT-Lizenz",
+      "tryIt": "Jetzt ausprobieren — komplett kostenlos",
+      "tryItFree": "Ausprobieren — kostenlos, ohne Konto"
     },
     "features": {
       "byok": {
@@ -746,7 +749,7 @@
       "shotAlt": "Das openplate-Tagebuch auf einem Laptop: ein Tagesring, darunter Frühstück, Mittag- und Abendessen, und neben jeder Mahlzeit ihre Kohlenhydrate, ihr Eiweiß, ihr Fett und ihre Kalorien.",
       "shotCaption": "Ein Beispieltag, nicht deine Daten.",
       "tagline": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das auf deinem Gerät bleibt: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht.",
-      "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline"
+      "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline · Foto-Scans laufen über deinen eigenen KI-Schlüssel"
     },
     "how": {
       "eyebrow": "Jeden Tag",

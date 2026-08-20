@@ -695,12 +695,15 @@
     "close": {
       "body": "Nothing to sign up for, nothing to configure. Log one food and openplate has everything it needs.",
       "eyebrow": "Start now",
-      "star": "Star openplate on GitHub",
+      "star": "Or star the source on GitHub — MIT licensed",
       "title": "Start with today's first meal"
     },
     "cta": {
       "howItWorks": "See how it works",
-      "tryIt": "Try it now — no account needed"
+      "readSource": "Or read the source — MIT licensed",
+      "readSourcePlain": "Read the source — MIT licensed",
+      "tryIt": "Try it now — it's completely free",
+      "tryItFree": "Try it — free, no account"
     },
     "features": {
       "byok": {
@@ -746,7 +749,7 @@
       "shotAlt": "The openplate diary on a laptop: a progress ring for the day, with breakfast, lunch and dinner listed beneath it and each meal's carbs, protein, fat and calories alongside.",
       "shotCaption": "A sample day, not your data.",
       "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands.",
-      "ticks": "No account · Installs like an app · Works offline"
+      "ticks": "No account · Installs like an app · Works offline · Photo scans use your own AI key"
     },
     "how": {
       "eyebrow": "Every day",
