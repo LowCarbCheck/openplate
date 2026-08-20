@@ -33,7 +33,7 @@ import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.serv
 import { createComponentLogger } from '#app/lib/logger';
 import { SectionEyebrow } from '#app/components/typography';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardHeader } from '#app/components/ui/card';
+import { Card, CardContent } from '#app/components/ui/card';
 import { cn } from '#app/lib/utils';
 import { getLocalProfileGoals, listLocalFoodLogs } from '#app/lib/local-store';
 import {
@@ -238,8 +238,16 @@ export async function action({
  * - `actionHeaders` brings `Retry-After` on the rate-limited POST, and nothing
  *   at all otherwise.
  */
-export function headers({ actionHeaders, loaderHeaders }: Route.HeadersArgs): Headers {
-  const merged = new Headers(loaderHeaders);
+export function headers({ actionHeaders, loaderHeaders, parentHeaders }: Route.HeadersArgs): Headers {
+  // The base is the PARENT's headers, not this route's loader headers. A
+  // `headers` export replaces whatever the parent match contributed rather
+  // than adding to it, so seeding from `loaderHeaders` silently dropped every
+  // header the public layout or the root sets on this one route — a class of
+  // bug that shows up as "the policy is on every page except the landing
+  // page". The route's own headers are layered on top, so a name this route
+  // sets still wins.
+  const merged = new Headers(parentHeaders);
+  for (const [name, value] of loaderHeaders) merged.set(name, value);
   for (const [name, value] of actionHeaders) merged.set(name, value);
   return merged;
 }
@@ -420,6 +428,22 @@ const CROP_FADE = '[mask-image:linear-gradient(to_bottom,black_84%,transparent_1
 const SHOT_FRAME = 'rounded-xl border border-primary/25 bg-card p-1 shadow-md shadow-primary/5';
 
 /**
+ * The page's TWO secondary actions — "See how it works" and "Set up sync" —
+ * written once.
+ *
+ * They were a `text-sm` muted anchor and a `text-sm` teal one, neither of which
+ * looked like something to press: at that size, next to a 48px filled button,
+ * both read as captions on the thing above them. The recipe here keeps them
+ * subordinate (never a second filled primary, DESIGN.md §1) while still
+ * announcing themselves as links — body size, near-full-strength text, and a
+ * permanent brand-tinted underline rather than one that appears on hover.
+ * `decoration-primary/30` is the only brand in it; the text stays neutral, so
+ * teal keeps meaning "the way in".
+ */
+const SECONDARY_ACTION =
+  'text-base text-foreground/80 underline decoration-primary/30 underline-offset-4 transition-colors hover:text-foreground hover:decoration-primary';
+
+/**
  * ONE theme of the hero capture, with the form-factor choice delegated to the
  * browser.
  *
@@ -469,7 +493,15 @@ function HeroPicture({
           // slice into "the list continues" instead of a rendering fault. The
           // laptop capture is a whole screen and needs neither.
           CROP_FADE,
-          'sm:max-w-none sm:[mask-image:none]',
+          // `sm:aspect-[3/2]` is a CLS fix, not decoration. `width`/`height`
+          // on this element describe the PHONE capture (780×1688); from `sm`
+          // up the `<source>` above serves the 2160×1440 laptop one. A browser
+          // that maps a `<source>`'s dimensions onto the rendered box reserves
+          // the right space by itself — but Safari before 16.4 does not, and
+          // it laid out a 3:2 image in a 0.46:1 box, so the whole page jumped
+          // when the hero decoded. The ratio is stated in CSS at exactly the
+          // breakpoint where the source swaps.
+          'sm:aspect-[3/2] sm:max-w-none sm:[mask-image:none]',
         )}
       />
     </picture>
@@ -531,20 +563,36 @@ function ThemedShot({
  * Below the fold in every use, so `loading="lazy"`; the intrinsic size is on
  * the element so nothing reflows when it arrives.
  *
- * Carries `SHOT_FRAME` and `CROP_FADE` for every caller, because both are
- * properties of what these files ARE — cropped phone captures below the hero —
- * rather than choices a call site should be making one at a time.
+ * Carries `SHOT_FRAME` for every caller, and `CROP_FADE` for every caller whose
+ * capture is CROPPED — the common case below the hero.
+ *
+ * ── Why `height` and `cropped` are parameters ────────────────────────────
+ *
+ * They started as the constants 780×1688 and "always fade", which is right for
+ * a capture of a screen that scrolls: the frame ends mid-list and the fade says
+ * "this continues". It is exactly wrong for a screen whose content ENDS — the
+ * scan screen and the sync screen both fit inside one phone viewport, so a
+ * 1688-tall capture of either spent its last third on empty page and then faded
+ * that emptiness out, which reads as a picture that failed to load. Those two
+ * are captured at the height their content actually occupies and rendered with
+ * no fade at all; nothing is cut, so there is nothing to soften.
  */
 function PhoneShot({
   srcDark,
   srcLight,
   alt,
   className,
+  height = 1688,
+  cropped = true,
 }: {
   srcDark: string;
   srcLight: string;
   alt: string;
   className?: string;
+  /** Intrinsic pixel height of the capture. Width is 780 for every phone shot. */
+  height?: number;
+  /** `false` for a capture of a whole screen — see the component doc. */
+  cropped?: boolean;
 }): ReactElement {
   return (
     <ThemedShot
@@ -552,9 +600,9 @@ function PhoneShot({
       srcLight={srcLight}
       alt={alt}
       width={780}
-      height={1688}
+      height={height}
       loading="lazy"
-      className={cn(SHOT_FRAME, CROP_FADE, className)}
+      className={cn(SHOT_FRAME, cropped && CROP_FADE, className)}
     />
   );
 }
@@ -575,6 +623,8 @@ function HowStep({
   shotDark,
   shotLight,
   shotAlt,
+  shotHeight,
+  shotCropped,
 }: {
   icon: LucideIcon;
   title: string;
@@ -582,6 +632,9 @@ function HowStep({
   shotDark: string;
   shotLight: string;
   shotAlt: string;
+  /** Forwarded to `PhoneShot` — see its doc for when these stop being defaults. */
+  shotHeight?: number;
+  shotCropped?: boolean;
 }): ReactElement {
   return (
     <div className="flex flex-col">
@@ -604,12 +657,21 @@ function HowStep({
         `mx-0` at that breakpoint is the point of the flip: `mx-auto` there
         floated each shot ~38px away from the left edge of its own caption, so
         three pictures and three captions made six different left edges.
+
+        `mt-4`, not `mt-6`. On a phone these three steps are one column, and a
+        shot used to sit 24px under its own caption inside a 32px grid gap —
+        two almost equal gaps, so each picture floated BETWEEN two steps rather
+        than belonging to either. The pair is now tight (`mt-4`) and the gap to
+        the next step is wide (`gap-14` on the grid), which is the only thing
+        that says which caption a picture illustrates.
       */}
-      <div className="order-2 mt-6 sm:order-1 sm:mt-0">
+      <div className="order-2 mt-4 sm:order-1 sm:mt-0">
         <PhoneShot
           srcDark={shotDark}
           srcLight={shotLight}
           alt={shotAlt}
+          height={shotHeight}
+          cropped={shotCropped}
           className="mx-auto w-full max-w-[11rem] sm:mx-0 sm:max-w-[15rem]"
         />
       </div>
@@ -648,7 +710,13 @@ function FeatureCard({ icon: Icon, title, body }: { icon: LucideIcon; title: str
       <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
-      <h3 className="mt-3 font-display text-base font-semibold tracking-tight">{title}</h3>
+      {/* `text-lg`, one step up from the body it sits on. At `text-base` these
+          six titles were the same size as nothing else on the page and only a
+          weight apart from their own paragraphs, so the grid read as six
+          undifferentiated blocks of text. They stay well under the chapter
+          card titles (`text-2xl`/28px) and further under the section `<h2>`s,
+          which is the ranking the page is supposed to have. */}
+      <h3 className="mt-3 font-display text-lg font-semibold tracking-tight">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>
   );
@@ -664,15 +732,24 @@ function GoalPoint({ children }: { children: ReactNode }): ReactElement {
   );
 }
 
-/** One numbered step of the setup ladder. An ordered list, because the order is the point. */
+/**
+ * One numbered step of the setup ladder. An ordered list, because the order is
+ * the point.
+ *
+ * The number sits on an OPAQUE `bg-background` disc with the brand tint painted
+ * over it, rather than being a single translucent `bg-primary/10` chip. That is
+ * what lets `SetupSpine` (below) run a hairline straight down the column
+ * without it showing through the middle of each number.
+ */
 function SetupStep({ step, title, body }: { step: number; title: string; body: string }): ReactElement {
   return (
     <li className="flex gap-4">
       <span
         aria-hidden="true"
-        className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold tabular-nums text-primary"
+        className="relative mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background"
       >
-        {step}
+        <span className="absolute inset-0 rounded-full bg-primary/10" />
+        <span className="relative text-sm font-semibold tabular-nums text-primary">{step}</span>
       </span>
       <div className="space-y-1.5">
         <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
@@ -702,33 +779,70 @@ function SetupStep({ step, title, body }: { step: number; title: string; body: s
  * three now live inside one shared section (see the page below); an eyebrow
  * per card meant three "section labels" stacked six inches apart, each one
  * announcing a section that was really a card.
+ *
+ * ── TWO columns, and why the card stopped being one ──────────────────────
+ *
+ * These were 992px-wide frames wrapped around a 65ch column of text, so each
+ * one carried roughly 380px of empty right half. Three of them, stacked. A
+ * card that wide with nothing in half of it does not read as generous, it
+ * reads as unfinished — as though the picture failed to load. So every card
+ * now has a `media` column with something real in it: a screenshot for two of
+ * them, the sign-up form itself for the third.
+ *
+ * The grid template is `65ch` for the text column rather than `1fr`, and the
+ * cap on the inner `<div>` is the same value: that makes the `<h2>` and the
+ * paragraphs under it end on ONE right edge, which is the whole point of a
+ * measure. A `1fr` text column with a `max-w-[65ch]` child would leave the
+ * title short of its own column's edge by whatever the leftover happened to
+ * be, which is a different ragged edge on every card.
+ *
+ * ── Size, and the ranking it buys ────────────────────────────────────────
+ *
+ * The title is `text-2xl`/28px, NOT the 30/36px the section `<h2>`s carry. It
+ * is still an `<h2>` in the document — these are real sections of the page and
+ * a screen-reader user must be able to reach them — but a card title that
+ * renders LARGER than the heading of the section containing it inverts the
+ * visible hierarchy against the semantic one. Rank on the page now matches
+ * rank in the outline: h1 (60px) → section h2 (36px) → card h2 (28px) → card
+ * h3 (18px).
  */
 function LadderCard({
   icon: Icon,
   title,
+  media,
+  mediaWide = false,
   children,
 }: {
   icon: LucideIcon;
   title: string;
+  /** The right-hand column. A screenshot, or a form — never decoration. */
+  media: ReactNode;
+  /**
+   * A wider media column, for the one card whose media is INTERACTIVE. A
+   * screenshot is happy in the ~230px left over beside a 65ch measure; a form
+   * with a label, a field, a consent sentence and a button is not — at that
+   * width its checkbox line wrapped to three.
+   */
+  mediaWide?: boolean;
   children: ReactNode;
 }): ReactElement {
   return (
     <Card className="rounded-2xl">
-      <CardHeader className="space-y-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>
-      </CardHeader>
-      {/*
-        The CARD is full width; its PROSE is not. A `max-w-5xl` container is
-        for screenshots and grids — a paragraph running the whole way across
-        one is 130-odd characters per line, roughly double the measure at
-        which an eye reliably finds the start of the next line. The cap is on
-        the content rather than on the card so the card keeps its place in the
-        page's rhythm.
-      */}
-      <CardContent className="max-w-[65ch] space-y-4">{children}</CardContent>
+      <CardContent
+        className={cn(
+          'grid gap-8 p-6 sm:items-center sm:gap-10 sm:p-8',
+          mediaWide ? 'sm:grid-cols-[minmax(0,1fr)_20rem]' : 'sm:grid-cols-[minmax(0,65ch)_minmax(0,1fr)]',
+        )}
+      >
+        <div className="min-w-0 max-w-[65ch] space-y-4">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <h2 className="font-display text-2xl font-bold tracking-tight sm:text-[28px]">{title}</h2>
+          {children}
+        </div>
+        {media}
+      </CardContent>
     </Card>
   );
 }
@@ -810,7 +924,25 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           headline.
         */}
         <div className="brand-glow pointer-events-none absolute inset-x-0 -top-32 -z-10 h-[34rem]" aria-hidden="true" />
-        <PlateGlyph className="pointer-events-none absolute left-1/2 top-[16rem] -z-10 h-[22rem] w-[22rem] -translate-x-1/2 text-primary/[0.035] dark:text-primary/[0.07] sm:top-[15rem] sm:h-[30rem] sm:w-[30rem]" />
+        {/*
+          The glyph sits behind the WORDMARK, and only behind the wordmark.
+
+          It used to be a 22–30rem mark hung at `top-[15rem]`, which put its
+          lower two thirds behind the CTA row, the "See how it works" link and
+          the top of the hero screenshot — and the screenshot's frame then cut
+          the arc off with a hard edge, so the mark read as a stray circle
+          someone had failed to delete rather than as brand texture. Line art
+          at 3.5–7% alpha can only be texture where there is nothing to
+          interfere with; behind a button it is interference.
+
+          17rem at `-top-6` spans roughly -24px to 248px of the hero, which
+          ends about 14px above the CTA row at every breakpoint the page is
+          checked at. It is also narrower than a 320px viewport, so the
+          decorative overhang that made this element a horizontal-scroll risk
+          is gone as well — the `overflow-x-clip` guards above stay, because
+          they are cheap and this is not the only thing that could overhang.
+        */}
+        <PlateGlyph className="pointer-events-none absolute -top-6 left-1/2 -z-10 h-[17rem] w-[17rem] -translate-x-1/2 text-primary/[0.035] dark:text-primary/[0.07]" />
         {/* The hero's COPY keeps a reading measure even though the page
             container is now `max-w-5xl` (M146 round-1 fix 1): a wide container
             is for the screenshot and the grids, never for a 1024px-long
@@ -841,10 +973,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             <Button asChild size="lg" className="h-12 px-7 text-base shadow-lg shadow-primary/20">
               <Link to="/dashboard">{t('landing.cta.tryIt')}</Link>
             </Button>
-            <a
-              href="#how"
-              className="text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-            >
+            <a href="#how" className={SECONDARY_ACTION}>
               {t('landing.cta.howItWorks')}
             </a>
           </div>
@@ -862,11 +991,28 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         <HeroShot />
       </div>
 
-      <section id="how" className="py-12 sm:py-16">
+      {/* `scroll-mt-20` on every section, not just this one. The chrome header
+          is `fixed` and 64px tall, so an anchored jump used to land the target
+          heading UNDER it — the visitor arrived at a section whose title was
+          hidden behind the bar they had just scrolled past. 80px is the header
+          plus a hairline of air. This section is the only current anchor
+          target, but a heading is a link target the moment someone copies its
+          URL, so the whole page carries it. */}
+      <section id="how" className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.how.eyebrow')}</SectionEyebrow>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.how.title')}</h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.how.subtitle')}</p>
-        <div className="mt-8 grid gap-8 sm:grid-cols-3 sm:gap-6">
+        {/* `gap-14` below `sm`, `gap-6` from `sm`. The wide mobile gap is not
+            breathing room, it is the grouping cue: each shot is `mt-4` under
+            its own caption, so the gap to the NEXT step has to be visibly
+            larger than that or a picture belongs to neither. From `sm` the
+            three steps are side by side and the vertical gap stops mattering. */}
+        <div className="mt-8 grid gap-14 sm:grid-cols-3 sm:gap-6">
+          {/* The scan capture is a WHOLE screen (780×1440), not a crop. The
+              previous one was a 1688-tall frame of a screen whose content ends
+              at about 1290, so its last quarter was empty page — and then the
+              crop fade dissolved that emptiness, which made the picture look
+              like it had failed to load rather than like it continued. */}
           <HowStep
             icon={Camera}
             title={t('landing.how.scan.title')}
@@ -874,6 +1020,8 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             shotDark="/landing/scan-mobile-dark.webp"
             shotLight="/landing/scan-mobile-light.webp"
             shotAlt={t('landing.how.scan.shotAlt')}
+            shotHeight={1440}
+            shotCropped={false}
           />
           <HowStep
             icon={Search}
@@ -905,37 +1053,50 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           you do first. Their eyebrows and subtitles now say which is which,
           in both locales — that is the fix, rather than deleting one of
           them. */}
-      <section className="py-12 sm:py-16">
+      <section className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.setup.eyebrow')}</SectionEyebrow>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.setup.title')}</h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.setup.subtitle')}</p>
-        {/* `sm:items-center`, not `sm:items-start`. The phone shot is roughly
-            twice the height of the three-step list, so top-aligning them left
-            a ~147px hole under the list — and the CTA, which used to sit
-            OUTSIDE this grid, was pushed below that hole and read as belonging
-            to the next section rather than to the steps it closes. The button
-            now lives in the left column directly under the `<ol>` (where the
-            reader's eye already is), and the two columns are centred against
-            each other so neither one dangles. */}
-        <div className="mt-8 gap-10 sm:grid sm:grid-cols-[1fr_15rem] sm:items-center">
+        {/* `sm:items-start`, and the shot's top now sits on the `<ol>`'s top.
+            The previous pass centred the two columns against each other, which
+            is what a picture and a paragraph want — but this left column is a
+            NUMBERED LIST, and centring pushed the picture 67px down so that
+            its top edge lined up with nothing at all: not step 1, not the
+            list, not the heading. Two columns that start together read as two
+            columns. The CTA stays inside the left column, directly under the
+            list it closes. */}
+        <div className="mt-8 gap-10 sm:grid sm:grid-cols-[1fr_15rem] sm:items-start">
           <div>
-            <ol className="space-y-6">
-              <SetupStep
-                step={1}
-                title={t('landing.setup.steps.open.title')}
-                body={t('landing.setup.steps.open.body')}
+            {/* The spine. A hairline down the centre of the number column,
+                behind the numbers, which is what turns three chips into one
+                sequence — the thing the `<ol>` already says to a screen reader
+                and said to nobody else. It stops 16px short at each end so it
+                begins and ends ON a number rather than dangling past the
+                first and last. `aria-hidden`: the ordered list is the
+                semantics; this is a drawing of them. */}
+            <div className="relative">
+              <div
+                aria-hidden="true"
+                className="absolute bottom-4 left-4 top-4 border-l border-primary/15"
               />
-              <SetupStep
-                step={2}
-                title={t('landing.setup.steps.connect.title')}
-                body={t('landing.setup.steps.connect.body')}
-              />
-              <SetupStep
-                step={3}
-                title={t('landing.setup.steps.scan.title')}
-                body={t('landing.setup.steps.scan.body')}
-              />
-            </ol>
+              <ol className="relative space-y-6">
+                <SetupStep
+                  step={1}
+                  title={t('landing.setup.steps.open.title')}
+                  body={t('landing.setup.steps.open.body')}
+                />
+                <SetupStep
+                  step={2}
+                  title={t('landing.setup.steps.connect.title')}
+                  body={t('landing.setup.steps.connect.body')}
+                />
+                <SetupStep
+                  step={3}
+                  title={t('landing.setup.steps.scan.title')}
+                  body={t('landing.setup.steps.scan.body')}
+                />
+              </ol>
+            </div>
             <Button asChild variant="outline" size="lg" className="mt-6">
               <Link to="/dashboard">{t('landing.setup.cta')}</Link>
             </Button>
@@ -946,7 +1107,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             srcDark="/landing/overview-mobile-dark.webp"
             srcLight="/landing/overview-mobile-light.webp"
             alt={t('landing.setup.shotAlt')}
-            className="mx-auto mt-8 w-full max-w-[15rem] sm:mt-0"
+            className="mx-auto mt-10 w-full max-w-[15rem] sm:mt-0"
           />
         </div>
       </section>
@@ -957,7 +1118,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           ("our server has one table") no longer even accurate after the
           database was removed entirely. Everything here is checkable in the
           repository; nothing here is a roadmap item. */}
-      <section className="py-12 sm:py-16">
+      <section className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.features.eyebrow')}</SectionEyebrow>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           {t('landing.features.title')}
@@ -1012,8 +1173,24 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         at least one card in it, and an instance with neither sync nor a
         newsletter simply has a one-card chapter rather than an empty section.
       */}
-      <section className="space-y-6 py-12 sm:py-16">
-        <LadderCard icon={Target} title={t('landing.goals.title')}>
+      <section className="scroll-mt-20 space-y-6 py-12 sm:py-16">
+        {/* The goal-setting screen itself, which is where every claim in this
+            card is kept: the carb ceiling, the protein floor, the calorie
+            target, and the fact that all three are optional. It is NOT the
+            overview shot the setup section uses — the same picture twice on
+            one page is the reader noticing the page repeat itself. */}
+        <LadderCard
+          icon={Target}
+          title={t('landing.goals.title')}
+          media={
+            <PhoneShot
+              srcDark="/landing/goals-mobile-dark.webp"
+              srcLight="/landing/goals-mobile-light.webp"
+              alt={t('landing.goals.shotAlt')}
+              className="mx-auto w-full max-w-[16rem]"
+            />
+          }
+        >
           <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.goals.body')}</p>
           <ul className="grid gap-3 sm:grid-cols-2">
             <GoalPoint>{t('landing.goals.points.ring')}</GoalPoint>
@@ -1024,12 +1201,30 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         </LadderCard>
 
         {/* Rung 3 — keep it. Renders ONLY where the loader said sync exists; on
-            every other instance there is no card, no heading and no mention. */}
+            every other instance there is no card, no heading and no mention.
+
+            The shot is `/settings/sync` as this instance actually draws it —
+            the one screen on which the claim in this card is either true or
+            not. It is a WHOLE screen (780×1320), so it carries no crop fade;
+            see `PhoneShot`. */}
         {syncEnabled && (
-          <LadderCard icon={RefreshCw} title={t('landing.sync.title')}>
+          <LadderCard
+            icon={RefreshCw}
+            title={t('landing.sync.title')}
+            media={
+              <PhoneShot
+                srcDark="/landing/sync-mobile-dark.webp"
+                srcLight="/landing/sync-mobile-light.webp"
+                alt={t('landing.sync.shotAlt')}
+                height={1320}
+                cropped={false}
+                className="mx-auto w-full max-w-[16rem]"
+              />
+            }
+          >
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.body')}</p>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.photos')}</p>
-            <Link to="/settings/sync" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+            <Link to="/settings/sync" className={SECONDARY_ACTION}>
               {t('landing.sync.link')}
             </Link>
           </LadderCard>
@@ -1037,11 +1232,22 @@ export default function Index({ loaderData }: Route.ComponentProps) {
 
         {/* Rung 4 — stay in touch. Same rule as sync above, and the stricter one
             from M146/00: an instance that configured no list renders no form, no
-            consent copy and no third-party script. */}
+            consent copy and no third-party script.
+
+            This card's right column is the FORM. There is no screenshot that
+            would say more than the thing itself, and a sign-up card whose
+            sign-up sits under a paragraph rather than beside it is the one
+            layout where the empty half was doing real damage. Below `sm` the
+            grid collapses and the form goes back under the copy, which is the
+            only order that fits a phone. */}
         {newsletter !== null && (
-          <LadderCard icon={Mail} title={t('landing.newsletter.title')}>
+          <LadderCard
+            icon={Mail}
+            title={t('landing.newsletter.title')}
+            media={<NewsletterSignup turnstileSiteKey={newsletter.turnstileSiteKey} />}
+            mediaWide
+          >
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.newsletter.body')}</p>
-            <NewsletterSignup turnstileSiteKey={newsletter.turnstileSiteKey} />
           </LadderCard>
         )}
       </section>
@@ -1051,7 +1257,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           page's only other filled primary. Rung 5 sits under it as a plain
           muted link: starring the repository is a favour, not a call to
           action, and teal is reserved for the way in (DESIGN.md §1). */}
-      <section className="border-t py-12 text-center sm:py-16">
+      <section className="scroll-mt-20 border-t py-12 text-center sm:py-16">
         {/* Eyebrow → h2 → muted line, at the same sizes as every other section
             on the page. This heading used to be one step smaller than the four
             above it and had no eyebrow at all, which made the page's closing

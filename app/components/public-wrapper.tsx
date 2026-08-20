@@ -52,7 +52,15 @@ export default function PublicWrapper({
     // forgetting one of them.
     <div className="flex min-h-screen flex-col overflow-x-clip pt-16">
       <ProgressBar />
-      <header className="fixed left-0 right-0 top-0 z-50 h-16 border-b bg-background/80 backdrop-blur-sm">
+      {/* `bg-background/98 backdrop-blur-md`, up from `/80 backdrop-blur-sm`.
+          At 80% a 36px section heading scrolling under this bar stayed legible
+          THROUGH it — two overlapping texts, the page's and the header's, for
+          the length of the scroll. The blur is kept (it is what makes the bar
+          feel like glass rather than a slab) and only the veil is thickened,
+          which is the part that was doing the hiding. Pages also carry
+          `scroll-mt-*` on their sections so an anchored heading lands below
+          this 64px band rather than under it. */}
+      <header className="fixed left-0 right-0 top-0 z-50 h-16 border-b bg-background/98 backdrop-blur-md">
         <div className={cn(container, 'flex h-full items-center justify-between')}>
           <div>
             {showLogo && (

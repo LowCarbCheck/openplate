@@ -739,6 +739,7 @@
         "tone": "Über dem Ziel ist eine Zahl in Bernstein. Nie ein Vorwurf.",
         "weight": "Wieg dich, wann du magst; das Diagramm glättet die täglichen Schwankungen."
       },
+      "shotAlt": "Der Ziele-Bildschirm auf einem Telefon: eine tägliche KH-Obergrenze mit den Vorgaben Keto, Low-Carb und Moderat, darunter freiwillige Eiweiß- und Kalorienziele.",
       "title": "Setz dir ein Ziel und sieh, wie der Verlauf wächst"
     },
     "hero": {
@@ -814,6 +815,7 @@
       "body": "Trag das Mittagessen am Telefon ein und sieh dir die Woche am Laptop an. Die Synchronisierung ist freiwillig und Ende-zu-Ende-verschlüsselt: Der Chiffretext liegt auf einem openplate-sync-Server — unserem oder einem, den du selbst betreibst — und dieser Server hat keinen Schlüssel dazu, denn den ergibt eine Passphrase, die er nie zu sehen bekommt.",
       "link": "Synchronisierung einrichten",
       "photos": "Teller-Fotos bleiben, wo sie sind — sie sind nie Teil eines Sync-Pakets.",
+      "shotAlt": "Der Sync-Bildschirm auf einem Telefon: Anmelden oder ein Sync-Konto anlegen, mit dem Hinweis, dass Teller-Fotos nie hochgeladen werden.",
       "title": "Zwei Geräte, ein Tagebuch"
     }
   },

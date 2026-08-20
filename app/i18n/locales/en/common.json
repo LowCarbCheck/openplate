@@ -739,6 +739,7 @@
         "tone": "Going over a goal is a number in amber. It is never a mark against you.",
         "weight": "Weigh in whenever you like; the chart smooths the day-to-day noise."
       },
+      "shotAlt": "The goals screen on a phone: a daily carb limit with keto, low-carb and moderate presets, and optional protein and calorie targets under it.",
       "title": "Set a target, then watch the record build"
     },
     "hero": {
@@ -814,6 +815,7 @@
       "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server — ours, or one you run yourself — and that server has no key to it, because the key is made from a passphrase it never sees.",
       "link": "Set up sync",
       "photos": "Plate photos stay where they are — they are never part of a sync blob.",
+      "shotAlt": "The sync screen on a phone, offering to sign in to sync or create a sync account, with a note that plate photos are never uploaded.",
       "title": "Two devices, one diary"
     }
   },

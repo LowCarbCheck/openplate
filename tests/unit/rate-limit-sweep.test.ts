@@ -29,7 +29,7 @@
  * Keys are prefixed per case — the bucket map is module state shared with the
  * rest of the suite, so overlapping keys would make these cases order-dependent.
  */
-import { describe, it, mock } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
@@ -55,7 +55,7 @@ function flood(prefix: string, windowMs: number): string[] {
 describe('rate-limit bucket sweep', () => {
   it('never evicts a bucket whose own window is still running', (t) => {
     t.mock.timers.enable({ apis: ['Date'], now: CONTAMINATION_START });
-    t.after(() => mock.timers.reset());
+    t.after(() => t.mock.timers.reset());
 
     const longKey = 'sweep-window:long';
     const longWindow = { windowMs: 60_000, max: 1 };
@@ -84,7 +84,7 @@ describe('rate-limit bucket sweep', () => {
 
   it('sweeps at most once per window while the map stays large', (t) => {
     t.mock.timers.enable({ apis: ['Date'], now: THROTTLE_START });
-    t.after(() => mock.timers.reset());
+    t.after(() => t.mock.timers.reset());
 
     // A long window keeps these buckets alive for the whole case, so the map
     // stays above the threshold and the sweep stays eligible throughout. The
