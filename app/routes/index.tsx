@@ -7,13 +7,16 @@ import { useTranslation } from 'react-i18next';
 import {
   Camera,
   Check,
-  Code,
+  EyeOff,
+  Gauge,
   Github,
+  HardDrive,
   Key,
   Mail,
   RefreshCw,
   Search,
-  ShieldCheck,
+  Server,
+  Smartphone,
   Target,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,13 +28,13 @@ import { REPO_URL } from '#app/lib/brand';
 import { CONFIG } from '#app/config';
 import { NEWSLETTER_SOURCE, toNewsletterPublicConfig } from '#app/config/newsletter';
 import { readNewsletterResponse, type NewsletterOutcome } from '#app/lib/newsletter-outcome';
+import { NEWSLETTER_RATE_LIMIT, newsletterRateLimitKey } from '#app/lib/newsletter-rate-limit.server';
+import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.server';
 import { createComponentLogger } from '#app/lib/logger';
-import { RingProgress } from '#app/components/ring-progress';
-import { HeroStat, formatHeroStat } from '#app/components/hero-stat';
 import { SectionEyebrow } from '#app/components/typography';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
-import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
+import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
+import { cn } from '#app/lib/utils';
 import { getLocalProfileGoals, listLocalFoodLogs } from '#app/lib/local-store';
 import {
   clearHomeHint,
@@ -149,6 +152,18 @@ export async function action({ request }: Route.ActionArgs): Promise<NewsletterO
   // rendered "not enabled here".
   if (newsletter === null) throw new Response('Not Found', { status: 404 });
 
+  // BEFORE the body is read and long before anything is forwarded: the point
+  // is to spend as little as possible on a caller that is over its limit, and
+  // to make sure a flood can never reach the operator's internal subscribe
+  // endpoint through this hop. See `newsletter-rate-limit.server.ts` for the
+  // rule and why it is keyed on IP alone.
+  try {
+    checkRateLimit(newsletterRateLimitKey(request), NEWSLETTER_RATE_LIMIT);
+  } catch (error) {
+    if (!(error instanceof RateLimitExceededError)) throw error;
+    return { ok: false, reason: 'tooManyAttempts' };
+  }
+
   const form = await request.formData();
   const submission = subscriptionSchema.safeParse({
     email: form.get('email'),
@@ -253,99 +268,187 @@ function useHomeHintRepair(): void {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// The sample day — the only mock on the page
+// Product imagery — real screenshots, captured from the running app
 ////////////////////////////////////////////////////////////////////////////////
 
-/** The illustrative day the preview card draws. Not real data, never fetched. */
-const SAMPLE_DAY = { netCarbs: 38, ceiling: 50 } as const;
-
 /**
- * One illustrative logged-meal row. Reuses the app's actual carb-status
- * coloring (`#app/utils/carb-status`) so it isn't just a mockup that lies about
- * the real product.
+ * The hero image: the diary, as the app actually draws it.
+ *
+ * It REPLACES the hand-built "What you'll see" card that stood here before.
+ * That card was assembled out of the app's own primitives, which made it
+ * honest but not convincing — a visitor could not tell whether they were
+ * looking at the product or at a drawing of it. These are screenshots of the
+ * running app with a sample day logged, and the caption underneath says so.
+ *
+ * FOUR images, in two pairs, because two things vary independently:
+ *
+ * - THEME. The theme is a `.dark` CLASS on `<html>` (DESIGN.md §9) rather
+ *   than a media query, so a `<picture>` with `prefers-color-scheme` would
+ *   show the OS's theme to a visitor who chose the other one in Preferences.
+ *   Both themes are therefore in the markup, one of them hidden by CSS.
+ * - FORM FACTOR. A 2160×1440 laptop capture shown on a 390px phone renders
+ *   the app's own text at about four pixels — a picture of a screen, not a
+ *   screenshot. The phone capture of the same screen is shown instead below
+ *   `sm`, and the laptop pair from `sm` up.
+ *
+ * ── The weight, stated honestly ──────────────────────────────────────────
+ *
+ * This comment used to claim the pair was "well under a hundred kilobytes".
+ * It never was: BOTH themes are `<img>` elements in the document, so a browser
+ * downloads both regardless of which one it paints, and the desktop pair alone
+ * is ~122 KB. What actually bounds the transfer is `srcset` — a phone takes
+ * the 780px-wide mobile capture and never fetches a 2160px one at all, and a
+ * laptop under 1080 CSS pixels takes the 1080w variant.
+ *
+ * Eager (no `loading="lazy"`), because whichever of these paints IS the
+ * largest contentful paint on this page.
+ *
+ * The frame carries `.surface-brand`, so this figure is the page's ONE hero
+ * card (DESIGN.md §2, "one hero per screen") — the role the preview card used
+ * to hold. Adding a second brand fill anywhere on this page is a bug.
  */
-function PreviewRow({ name, method, netCarbs }: { name: string; method: string; netCarbs: number }) {
+function HeroShot(): ReactElement {
   const { t } = useTranslation();
-  const carbStatus = getCarbStatus(netCarbs);
+  const alt = t('landing.hero.shotAlt');
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{name}</p>
-        <p className="text-xs text-muted-foreground">{method}</p>
+    <figure className="mt-10 sm:mt-12">
+      {/*
+        The frame reads as a frame in BOTH themes now. It used to be
+        `border-primary/30` with a plain `shadow-xl`, which on the light
+        theme's pale-teal page put a faint teal hairline around a white
+        screenshot and vanished. The border is stronger in light (`/40`) than
+        in dark (`/30`) because a dark screenshot already separates itself
+        from a dark page, and a light one does not; the inset ring adds the
+        hairline that stops the screenshot's own white bleeding into the
+        card's; and the shadow is tinted with the brand rather than neutral
+        black so the lift belongs to the page. See DESIGN.md §5 — this is the
+        one sanctioned resting shadow heavier than `shadow-sm`.
+      */}
+      <div className="surface-brand overflow-hidden rounded-2xl border border-primary/40 bg-card p-1.5 shadow-2xl shadow-primary/10 ring-1 ring-inset ring-black/5 dark:border-primary/30 dark:ring-white/5 sm:p-2">
+        {/* Phones: the app as a phone actually draws it. The breakpoint lives
+            on the WRAPPER and the theme on the images, so the two conditions
+            never have to be spelled as one compound Tailwind variant
+            (`dark:sm:hidden` and friends), which is where this kind of markup
+            usually goes wrong. */}
+        <div className="sm:hidden">
+          <ThemedShot
+            srcDark="/landing/diary-mobile-dark.webp"
+            srcLight="/landing/diary-mobile-light.webp"
+            alt={alt}
+            width={780}
+            height={1688}
+            className="mx-auto w-full max-w-[20rem] rounded-xl"
+          />
+        </div>
+        {/* `sm` and up: the laptop capture, at whichever of the two widths the
+            viewport can actually use. `sizes` is the container's real cap —
+            `max-w-5xl` minus the page and frame padding — not `100vw`, which
+            would make every laptop fetch the 2160w file. */}
+        <div className="hidden sm:block">
+          <ThemedShot
+            srcDark="/landing/diary-desktop-dark.webp"
+            srcLight="/landing/diary-desktop-light.webp"
+            srcSetDark="/landing/diary-desktop-dark-1080.webp 1080w, /landing/diary-desktop-dark.webp 2160w"
+            srcSetLight="/landing/diary-desktop-light-1080.webp 1080w, /landing/diary-desktop-light.webp 2160w"
+            sizes="(min-width: 64rem) 61rem, 100vw"
+            alt={alt}
+            width={2160}
+            height={1440}
+            className="w-full rounded-xl"
+          />
+        </div>
       </div>
-      <span
-        className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${carbStatusBadgeClass[carbStatus]}`}
-      >
-        {t('landing.preview.carbs', { grams: netCarbs })}
-      </span>
-    </div>
+      {/* The licence for the numbers above it. The old preview card carried the
+          same disclosure as a card subtitle; it belongs to the image now. */}
+      <figcaption className="mt-3 text-center text-xs text-muted-foreground">
+        {t('landing.hero.shotCaption')}
+      </figcaption>
+    </figure>
   );
 }
 
 /**
- * A static, illustrative "sample day" — a first-time visitor should be able to
- * SEE what the app produces before committing to trying it, in place of a real
- * screenshot (built in markup, not a fabricated image).
+ * A screenshot that exists in both themes, rendered as the `dark:`/`dark:hidden`
+ * PAIR that a `.dark`-class theme requires.
  *
- * M129/02: the preview reads as "the product, behind glass" rather than another
- * neutral card next to the pitch copy — the directional brand wash
- * (`surface-brand`, app.css) over an opaque card, a brand-tinted border and a
- * real shadow so it sits ABOVE the hero backdrop instead of dissolving into it.
+ * ── Why this is a component and not two `<img>` tags at each call site ───
  *
- * M134: it leads with a REAL `RingProgress` driven by the app's own
- * `formatHeroStat`, rather than describing the goals feature in prose — this is
- * the component the diary actually renders, with sample numbers. The
- * "A sample day — not your real data" subtitle above it is what licenses those
- * numbers, and it is the ONLY fabricated dataset on the page: every other
- * section below is text and an icon.
+ * Because a call site can forget one. Every screenshot on this page was
+ * captured in dark only at first, so the light theme showed a black phone on
+ * a pale-teal page four times over — and nothing failed, because a missing
+ * light variant is not an error, it is just the dark one showing through.
+ * Making the pair the ONLY way to render a screenshot means the type checker
+ * asks for `srcLight` and the omission cannot recur.
+ *
+ * Both images are in the document and both are downloaded; that is the cost of
+ * a class-based theme and it is why every one of these files is a small WebP.
  */
-function AppPreview() {
-  const { t, i18n } = useTranslation();
-  const stat = formatHeroStat({
-    netCarbs: SAMPLE_DAY.netCarbs,
-    netCarbsCeiling: SAMPLE_DAY.ceiling,
-    kcal: 0,
-    kcalTarget: null,
-    hasEstimates: false,
-    t,
-    language: i18n.language,
-  });
-
+function ThemedShot({
+  srcDark,
+  srcLight,
+  srcSetDark,
+  srcSetLight,
+  sizes,
+  alt,
+  width,
+  height,
+  className,
+  loading,
+}: {
+  srcDark: string;
+  srcLight: string;
+  srcSetDark?: string;
+  srcSetLight?: string;
+  sizes?: string;
+  alt: string;
+  width: number;
+  height: number;
+  className?: string;
+  loading?: 'lazy' | 'eager';
+}): ReactElement {
+  // `alt` is spelled out on each element rather than folded into the spread:
+  // the a11y lint rule cannot see an `alt` that arrives through `{...shared}`,
+  // and a rule that can't see the attribute is a rule that can't protect it.
+  const shared = { width, height, sizes, loading, decoding: 'async' } as const;
   return (
-    <Card className="surface-brand w-full overflow-hidden border-primary/30 bg-card text-left shadow-xl lg:max-w-md">
-      <CardHeader className="border-b border-primary/20 pb-4">
-        <CardTitle className="font-display text-lg">{t('landing.preview.title')}</CardTitle>
-        <CardDescription>{t('landing.preview.subtitle')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-5">
-        <div className="flex items-center gap-4">
-          <RingProgress
-            value={SAMPLE_DAY.netCarbs}
-            max={SAMPLE_DAY.ceiling}
-            size={96}
-            strokeWidth={9}
-            className="[--ring-box:96px]"
-            trackClassName="text-primary/20"
-            progressClassName="text-primary"
-            label={stat.srLabel}
-          >
-            <HeroStat stat={stat} value={stat.value} />
-          </RingProgress>
-          <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.preview.ringCaption')}</p>
-        </div>
-        <PreviewRow
-          name={t('landing.preview.rows.salad.name')}
-          method={t('landing.preview.rows.salad.method')}
-          netCarbs={4}
-        />
-        <PreviewRow
-          name={t('landing.preview.rows.yogurt.name')}
-          method={t('landing.preview.rows.yogurt.method')}
-          netCarbs={9}
-        />
-        <p className="text-xs leading-relaxed text-muted-foreground">{t('landing.preview.caption')}</p>
-      </CardContent>
-    </Card>
+    <>
+      <img {...shared} alt={alt} src={srcDark} srcSet={srcSetDark} className={cn('hidden dark:block', className)} />
+      <img {...shared} alt={alt} src={srcLight} srcSet={srcSetLight} className={cn('block dark:hidden', className)} />
+    </>
+  );
+}
+
+/**
+ * One phone screenshot, framed, in both themes. The CALLER sizes it, because a
+ * 390×844 capture is 2.16 screens tall at its own aspect ratio — left to fill a
+ * one-column mobile layout it would push every word of the step it illustrates
+ * off the bottom of the viewport, which is the opposite of what a screenshot is
+ * for.
+ *
+ * Below the fold in every use, so `loading="lazy"`; the intrinsic size is on
+ * the element so nothing reflows when it arrives.
+ */
+function PhoneShot({
+  srcDark,
+  srcLight,
+  alt,
+  className,
+}: {
+  srcDark: string;
+  srcLight: string;
+  alt: string;
+  className?: string;
+}): ReactElement {
+  return (
+    <ThemedShot
+      srcDark={srcDark}
+      srcLight={srcLight}
+      alt={alt}
+      width={780}
+      height={1688}
+      loading="lazy"
+      className={cn('rounded-xl border bg-card shadow-sm', className)}
+    />
   );
 }
 
@@ -354,48 +457,80 @@ function AppPreview() {
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * One step of "how it works" — an icon, a title, a paragraph. Deliberately NOT
- * a `Card`: three boxes in a row would read as three separate offers, and this
- * is one sequence.
+ * One step of "how it works" — a screenshot, an icon, a title, a paragraph.
+ * Deliberately NOT a `Card`: three boxes in a row would read as three separate
+ * offers, and this is one sequence.
  */
-function HowStep({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }): ReactElement {
-  return (
-    <div className="space-y-2">
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <Icon className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
-      <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-    </div>
-  );
-}
-
-/** One of the three promises the app is actually built on: privacy, BYOK, source. */
-function TrustCard({
+function HowStep({
   icon: Icon,
   title,
   body,
-  foot,
+  shotDark,
+  shotLight,
+  shotAlt,
 }: {
   icon: LucideIcon;
   title: string;
   body: string;
-  /** An optional closing line — a caveat, or the link out to the repository. */
-  foot?: ReactNode;
+  shotDark: string;
+  shotLight: string;
+  shotAlt: string;
 }): ReactElement {
   return (
-    <Card className="rounded-2xl">
-      <CardHeader className="space-y-3 pb-3">
+    <div>
+      {/*
+        NO screenshot on a phone. These used to render beside the copy at
+        `w-24` — 96 CSS pixels wide for a capture of a 390px screen, which
+        scales the app's own 14px body text down to about three pixels. That
+        is not a small screenshot, it is a texture, and it was taking a third
+        of the row's width to be one. The icon chip below carries the step on
+        a phone, which is what an icon is for; the picture returns from `sm`
+        up, where there is room to read it.
+      */}
+      <div className="hidden sm:block">
+        <PhoneShot
+          srcDark={shotDark}
+          srcLight={shotLight}
+          alt={shotAlt}
+          className="mx-auto w-full max-w-[15rem]"
+        />
+      </div>
+      <div className="min-w-0 space-y-2 sm:mt-4 sm:space-y-3">
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
-        <CardTitle className="font-display text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+        <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
         <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-        {foot}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One card of the feature grid.
+ *
+ * Muted on purpose: six of these sit together, and six teal icon chips would
+ * turn the page's one accent into wallpaper (DESIGN.md §1, "teal appears only
+ * where attention belongs"). So the icon gets the SHAPE of the ladder cards'
+ * chip and none of its colour — a neutral `bg-muted` square with a
+ * `text-foreground/70` glyph. A bare floating icon (what this was) read as a
+ * stray glyph rather than as part of the same system; a teal one would have
+ * been six accents. This is the third option.
+ *
+ * No `foot` slot any more. The source card used to carry a "read the source"
+ * link, which put a second GitHub destination three sections above the closing
+ * one — the close carries that ask, and one card in a six-card grid growing an
+ * extra line also made the grid's rows uneven for no gain.
+ */
+function FeatureCard({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }): ReactElement {
+  return (
+    <div className="rounded-2xl border bg-card p-5 shadow-sm">
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground/70">
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <h3 className="mt-3 font-display text-base font-semibold tracking-tight">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
+    </div>
   );
 }
 
@@ -430,7 +565,7 @@ function SetupStep({ step, title, body }: { step: number; title: string; body: s
 /**
  * One rung of the ladder below the hero, on a plain `bg-card` surface.
  *
- * `bg-card` is not a style preference: the preview card in the hero is this
+ * `bg-card` is not a style preference: the hero screenshot's frame is this
  * page's ONE `.surface-brand` (DESIGN.md §2, "one hero per screen"), so every
  * section added here stays neutral no matter how much it would like the
  * attention.
@@ -482,6 +617,13 @@ function LadderCard({
  * the same destination and the same label as the hero's — a restatement for a
  * reader who has finished scrolling, not a competing offer. Sync, the
  * newsletter and GitHub are outline buttons or plain links, always.
+ *
+ * ── Rhythm (this pass) ───────────────────────────────────────────────────
+ *
+ * Sections are `py-12 sm:py-16`, and the hero has no minimum height at all.
+ * It used to be `min-h-[70vh]` with the copy and a card centred inside it,
+ * which on a laptop produced a screen and a half of teal-black nothing before
+ * the first word of substance. What fills a hero is the product, not padding.
  */
 export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
@@ -489,34 +631,43 @@ export default function Index({ loaderData }: Route.ComponentProps) {
   const { syncEnabled, newsletter } = loaderData;
 
   return (
-    <PublicWrapper>
-      <div className="relative isolate flex min-h-[70vh] flex-col items-center justify-center gap-10 overflow-hidden py-10 sm:py-16 lg:grid lg:grid-cols-[1fr_minmax(0,26rem)] lg:items-center lg:gap-16 lg:py-20">
+    <PublicWrapper wide>
+      {/* `overflow-x-clip`, not just `overflow-hidden`: the decorative glyph
+          below is a fixed 22rem wide and centred, so on a 320–390px viewport it
+          hangs ~20px past each edge. Unclipped, that extra width became a real
+          horizontal scroll on the smallest phones — the page slid sideways
+          against a backdrop nobody can even see. Clipping horizontally only
+          leaves vertical overflow alone. `PublicWrapper` carries the same guard
+          at the layout level; both are deliberate, because either one alone is
+          a single point of failure for a bug with no visible symptom until you
+          try to scroll. */}
+      <div className="relative isolate overflow-x-clip pb-12 pt-2 sm:pb-16 sm:pt-6">
         {/*
           Hero backdrop, two layers, both decorative and both out of the
           reading order (`pointer-events-none`, `aria-hidden`, `-z-10`).
 
-          The watermark is CENTERED on the composition rather than hung off the
+          The watermark is CENTERED on the masthead rather than hung off the
           top-right corner. The corner placement cropped the mark into an
           unreadable arc and, on mobile, drove that arc straight through the
           headline — a circle sliced diagonally at the edge of the viewport
-          reads as a rendering bug, not as brand texture. Centered, the same
-          circle is cropped symmetrically top and bottom, which reads as
-          deliberate; and because the glyph is line art rather than a filled
-          shape, it survives the low opacity it needs in order to sit behind
-          text without touching its contrast.
+          reads as a rendering bug, not as brand texture. Because the glyph is
+          line art rather than a filled shape, it survives the low opacity it
+          needs in order to sit behind text without touching its contrast.
 
           Under it, `brand-glow` (app.css) puts a soft elliptical teal light
           behind the wordmark, so the page has depth instead of being a flat
-          field with a card dropped on it.
+          field with a screenshot dropped on it. Both are anchored to the TOP
+          of the composition now: the hero is copy-then-image rather than
+          copy-beside-image, so its optical centre is the headline.
         */}
-        <div className="brand-glow pointer-events-none absolute inset-x-0 -top-24 -z-10 h-[46rem]" aria-hidden="true" />
-        {/* Anchored to the masthead (30% down) on narrow screens, where the
-            hero is a tall single column and a mark centered on the whole
-            column would sit squarely on top of the body copy; re-centered on
-            the composition from `sm` up, where the hero is short and wide. */}
-        <PlateGlyph className="pointer-events-none absolute left-1/2 top-[26%] -z-10 h-[23rem] w-[23rem] -translate-x-1/2 -translate-y-1/2 text-primary/[0.07] sm:top-1/2 sm:h-[36rem] sm:w-[36rem] lg:h-[42rem] lg:w-[42rem]" />
-        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
-          <h1 className="font-display text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">openplate</h1>
+        <div className="brand-glow pointer-events-none absolute inset-x-0 -top-32 -z-10 h-[34rem]" aria-hidden="true" />
+        <PlateGlyph className="pointer-events-none absolute left-1/2 top-[9rem] -z-10 h-[22rem] w-[22rem] -translate-x-1/2 -translate-y-1/2 text-primary/[0.07] sm:h-[30rem] sm:w-[30rem]" />
+        {/* The hero's COPY keeps a reading measure even though the page
+            container is now `max-w-5xl` (M146 round-1 fix 1): a wide container
+            is for the screenshot and the grids, never for a 1024px-long
+            sentence. */}
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+          <h1 className="font-display text-5xl font-bold tracking-tight sm:text-6xl">openplate</h1>
           {/* A short brand rule under the wordmark — the smallest possible
               piece of furniture that turns "a heading with paragraphs under
               it" into a composed masthead. */}
@@ -524,6 +675,12 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-foreground sm:text-xl">
             {t('landing.hero.tagline')}
           </p>
+          {/* One line, and a modest one: the manifest and the service worker
+              are both in the repository, so "installs and opens offline" is a
+              statement about shipped code rather than a plan. It says nothing
+              about syncing or background updates, which is the part that is
+              easy to over-claim. */}
+          <p className="mt-4 max-w-xl leading-relaxed text-muted-foreground">{t('landing.hero.install')}</p>
           <p className="mt-4 max-w-xl leading-relaxed text-muted-foreground">{t('landing.hero.privacy')}</p>
           {/* One CTA, one label, one destination (M128 spec 03: there is no
               account to have, so a returning visitor and a brand-new one want
@@ -531,7 +688,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               secondary is an in-page anchor, not a second destination: a fresh
               visitor either wants to try it or wants to read more, and there is
               no third thing to sell. */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" className="h-12 px-7 text-base shadow-lg shadow-primary/20">
               <Link to="/dashboard">{t('landing.cta.tryIt')}</Link>
             </Button>
@@ -543,66 +700,165 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             </a>
           </div>
         </div>
-        <AppPreview />
+        <HeroShot />
       </div>
 
-      <section id="how" className="py-16 sm:py-20">
+      <section id="how" className="py-12 sm:py-16">
         <SectionEyebrow>{t('landing.how.eyebrow')}</SectionEyebrow>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.how.title')}</h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.how.subtitle')}</p>
-        <div className="mt-10 grid gap-6 sm:grid-cols-3">
-          <HowStep icon={Camera} title={t('landing.how.scan.title')} body={t('landing.how.scan.body')} />
-          <HowStep icon={Search} title={t('landing.how.search.title')} body={t('landing.how.search.body')} />
-          <HowStep icon={Target} title={t('landing.how.see.title')} body={t('landing.how.see.body')} />
+        <div className="mt-8 grid gap-8 sm:grid-cols-3 sm:gap-6">
+          <HowStep
+            icon={Camera}
+            title={t('landing.how.scan.title')}
+            body={t('landing.how.scan.body')}
+            shotDark="/landing/scan-mobile-dark.webp"
+            shotLight="/landing/scan-mobile-light.webp"
+            shotAlt={t('landing.how.scan.shotAlt')}
+          />
+          <HowStep
+            icon={Search}
+            title={t('landing.how.search.title')}
+            body={t('landing.how.search.body')}
+            shotDark="/landing/add-mobile-dark.webp"
+            shotLight="/landing/add-mobile-light.webp"
+            shotAlt={t('landing.how.search.shotAlt')}
+          />
+          <HowStep
+            icon={Gauge}
+            title={t('landing.how.see.title')}
+            body={t('landing.how.see.body')}
+            shotDark="/landing/diary-mobile-dark.webp"
+            shotLight="/landing/diary-mobile-light.webp"
+            shotAlt={t('landing.how.see.shotAlt')}
+          />
         </div>
       </section>
 
       {/* Rung 2 — set it up. The one section that answers "what does the first
           minute actually cost me?", which is the question the hero cannot
           answer without becoming a manual. The CTA is an OUTLINE button: same
-          destination as the hero, deliberately not a second filled primary. */}
-      <section className="py-16 sm:py-20">
+          destination as the hero, deliberately not a second filled primary.
+
+          NOT a duplicate of `#how` above it, and the two were nearly merged
+          for looking like one. They answer different questions: `#how` is
+          what EVERY day looks like once you are using it, this is the ONCE
+          you do first. Their eyebrows and subtitles now say which is which,
+          in both locales — that is the fix, rather than deleting one of
+          them. */}
+      <section className="py-12 sm:py-16">
         <SectionEyebrow>{t('landing.setup.eyebrow')}</SectionEyebrow>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.setup.title')}</h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.setup.subtitle')}</p>
-        <ol className="mt-10 space-y-7">
-          <SetupStep step={1} title={t('landing.setup.steps.open.title')} body={t('landing.setup.steps.open.body')} />
-          <SetupStep
-            step={2}
-            title={t('landing.setup.steps.connect.title')}
-            body={t('landing.setup.steps.connect.body')}
+        {/* `sm:items-center`, not `sm:items-start`. The phone shot is roughly
+            twice the height of the three-step list, so top-aligning them left
+            a ~147px hole under the list — and the CTA, which used to sit
+            OUTSIDE this grid, was pushed below that hole and read as belonging
+            to the next section rather than to the steps it closes. The button
+            now lives in the left column directly under the `<ol>` (where the
+            reader's eye already is), and the two columns are centred against
+            each other so neither one dangles. */}
+        <div className="mt-8 gap-10 sm:grid sm:grid-cols-[1fr_13rem] sm:items-center">
+          <div>
+            <ol className="space-y-6">
+              <SetupStep
+                step={1}
+                title={t('landing.setup.steps.open.title')}
+                body={t('landing.setup.steps.open.body')}
+              />
+              <SetupStep
+                step={2}
+                title={t('landing.setup.steps.connect.title')}
+                body={t('landing.setup.steps.connect.body')}
+              />
+              <SetupStep
+                step={3}
+                title={t('landing.setup.steps.scan.title')}
+                body={t('landing.setup.steps.scan.body')}
+              />
+            </ol>
+            <Button asChild variant="outline" size="lg" className="mt-6">
+              <Link to="/dashboard">{t('landing.setup.cta')}</Link>
+            </Button>
+          </div>
+          {/* What step 3 ends in, so the list finishes on a picture of the
+              result rather than on a promise about it. */}
+          <PhoneShot
+            srcDark="/landing/overview-mobile-dark.webp"
+            srcLight="/landing/overview-mobile-light.webp"
+            alt={t('landing.setup.shotAlt')}
+            className="mx-auto mt-8 w-full max-w-[13rem] sm:mt-0"
           />
-          <SetupStep step={3} title={t('landing.setup.steps.scan.title')} body={t('landing.setup.steps.scan.body')} />
-        </ol>
-        <Button asChild variant="outline" size="lg" className="mt-8">
-          <Link to="/dashboard">{t('landing.setup.cta')}</Link>
-        </Button>
+        </div>
       </section>
 
-      {/* The goals capability, on a plain `bg-card` surface — the preview card
-          above is this page's one `.surface-brand` (DESIGN.md §2). */}
-      <section className="py-16 sm:py-20">
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <SectionEyebrow>{t('landing.goals.eyebrow')}</SectionEyebrow>
-            <CardTitle className="font-display text-2xl">{t('landing.goals.title')}</CardTitle>
-            <CardDescription>{t('landing.goals.body')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              <GoalPoint>{t('landing.goals.points.ring')}</GoalPoint>
-              <GoalPoint>{t('landing.goals.points.grid')}</GoalPoint>
-              <GoalPoint>{t('landing.goals.points.weight')}</GoalPoint>
-              <GoalPoint>{t('landing.goals.points.tone')}</GoalPoint>
-            </ul>
-          </CardContent>
-        </Card>
+      {/* The feature grid. It REPLACES the three trust cards that stood at the
+          bottom of the page — privacy, BYOK and self-hosting — which said
+          three true things and left the other three unsaid, one of them
+          ("our server has one table") no longer even accurate after the
+          database was removed entirely. Everything here is checkable in the
+          repository; nothing here is a roadmap item. */}
+      <section className="py-12 sm:py-16">
+        <SectionEyebrow>{t('landing.features.eyebrow')}</SectionEyebrow>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          {t('landing.features.title')}
+        </h2>
+        <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.features.subtitle')}</p>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
+          <FeatureCard
+            icon={HardDrive}
+            title={t('landing.features.local.title')}
+            body={t('landing.features.local.body')}
+          />
+          <FeatureCard icon={Key} title={t('landing.features.byok.title')} body={t('landing.features.byok.body')} />
+          <FeatureCard
+            icon={Smartphone}
+            title={t('landing.features.install.title')}
+            body={t('landing.features.install.body')}
+          />
+          <FeatureCard
+            icon={Github}
+            title={t('landing.features.source.title')}
+            body={t('landing.features.source.body')}
+          />
+          <FeatureCard
+            icon={Server}
+            title={t('landing.features.selfHost.title')}
+            body={t('landing.features.selfHost.body')}
+          />
+          <FeatureCard
+            icon={EyeOff}
+            title={t('landing.features.noTracking.title')}
+            body={t('landing.features.noTracking.body')}
+          />
+        </div>
+      </section>
+
+      {/* The goals capability, on a plain `bg-card` surface — the hero
+          screenshot's frame is this page's one `.surface-brand`
+          (DESIGN.md §2).
+
+          It is a `LadderCard` now rather than a hand-built `Card`. It was
+          already the same three parts in the same order (eyebrow, display
+          title, body) but assembled separately and so missing the icon chip
+          that sync and the newsletter both carry — three cards on one page
+          built to two different recipes, for no reason anyone could name. */}
+      <section className="py-12 sm:py-16">
+        <LadderCard icon={Target} eyebrow={t('landing.goals.eyebrow')} title={t('landing.goals.title')}>
+          <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.goals.body')}</p>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            <GoalPoint>{t('landing.goals.points.ring')}</GoalPoint>
+            <GoalPoint>{t('landing.goals.points.grid')}</GoalPoint>
+            <GoalPoint>{t('landing.goals.points.weight')}</GoalPoint>
+            <GoalPoint>{t('landing.goals.points.tone')}</GoalPoint>
+          </ul>
+        </LadderCard>
       </section>
 
       {/* Rung 3 — keep it. Renders ONLY where the loader said sync exists; on
           every other instance there is no card, no heading and no mention. */}
       {syncEnabled && (
-        <section className="py-16 sm:py-20">
+        <section className="py-12 sm:py-16">
           <LadderCard icon={RefreshCw} eyebrow={t('landing.sync.eyebrow')} title={t('landing.sync.title')}>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.body')}</p>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.photos')}</p>
@@ -617,7 +873,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           from M146/00: an instance that configured no list renders no form, no
           consent copy and no third-party script. */}
       {newsletter !== null && (
-        <section className="py-16 sm:py-20">
+        <section className="py-12 sm:py-16">
           <LadderCard icon={Mail} eyebrow={t('landing.newsletter.eyebrow')} title={t('landing.newsletter.title')}>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.newsletter.body')}</p>
             <NewsletterSignup turnstileSiteKey={newsletter.turnstileSiteKey} />
@@ -625,48 +881,24 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         </section>
       )}
 
-      <section className="py-16 sm:py-20">
-        <div className="grid gap-6 md:grid-cols-3">
-          <TrustCard
-            icon={ShieldCheck}
-            title={t('landing.privacy.title')}
-            body={t('landing.privacy.body')}
-            foot={<p className="text-sm leading-relaxed text-muted-foreground">{t('landing.privacy.sync')}</p>}
-          />
-          <TrustCard
-            icon={Key}
-            title={t('landing.byok.title')}
-            body={t('landing.byok.body')}
-            foot={<p className="text-sm leading-relaxed text-muted-foreground">{t('landing.byok.optional')}</p>}
-          />
-          <TrustCard
-            icon={Code}
-            title={t('landing.selfHost.title')}
-            body={t('landing.selfHost.body')}
-            foot={
-              // A plain external anchor, not the in-app `Link`.
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noopener"
-                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-              >
-                {t('landing.selfHost.link')}
-              </a>
-            }
-          />
-        </div>
-      </section>
-
       {/* The close. The button repeats the hero — same label, same
           destination — for a reader who has finished scrolling, and stays the
           page's only other filled primary. Rung 5 sits under it as a plain
           muted link: starring the repository is a favour, not a call to
           action, and teal is reserved for the way in (DESIGN.md §1). */}
-      <section className="border-t py-16 text-center sm:py-20">
-        <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('landing.close.title')}</h2>
+      <section className="border-t py-12 text-center sm:py-16">
+        {/* Eyebrow → h2 → muted line, at the same sizes as every other section
+            on the page. This heading used to be one step smaller than the four
+            above it and had no eyebrow at all, which made the page's closing
+            argument look like a footnote to the newsletter card. */}
+        <SectionEyebrow>{t('landing.close.eyebrow')}</SectionEyebrow>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.close.title')}</h2>
         <p className="mt-3 text-muted-foreground">{t('landing.close.body')}</p>
-        <Button asChild size="lg" className="mt-7 h-12 px-7 text-base shadow-lg shadow-primary/20">
+        {/* `shadow-md`, where the hero's CTA has `shadow-lg`. Both are the same
+            label and the same destination, so the two cannot compete on colour
+            or on wording — the only thing left to rank them by is weight, and
+            the one above the fold has to win it. */}
+        <Button asChild size="lg" className="mt-7 h-12 px-7 text-base shadow-md shadow-primary/20">
           <Link to="/dashboard">{t('landing.cta.tryIt')}</Link>
         </Button>
         <p className="mt-6">

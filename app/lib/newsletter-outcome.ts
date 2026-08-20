@@ -17,7 +17,15 @@ import { z } from 'zod';
 /** A finished attempt. `ok` decides whether the form is replaced or kept for a retry. */
 export type NewsletterOutcome =
   | { ok: true; status: 'subscribed' | 'checkInbox' | 'alreadySubscribed' }
-  | { ok: false; reason: 'invalidEmail' | 'noConsent' | 'invalidToken' | 'unavailable' };
+  | {
+      ok: false;
+      /**
+       * `tooManyAttempts` is produced by the ROUTE's rate limit, never by the
+       * endpoint — it is the one failure this server decides on its own, and
+       * it is in this union so the form has exactly one shape to render.
+       */
+      reason: 'invalidEmail' | 'noConsent' | 'invalidToken' | 'unavailable' | 'tooManyAttempts';
+    };
 
 /** The shapes the endpoint is known to answer with. Anything else falls through to `unavailable`. */
 const responseBodySchema = z.object({

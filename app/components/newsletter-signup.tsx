@@ -35,6 +35,8 @@ import { loadTurnstile } from '#app/lib/turnstile';
 import type { NewsletterOutcome } from '#app/lib/newsletter-outcome';
 
 const CONSENT_FIELD_ID = 'newsletter-consent';
+/** Ties the "waiting for the check" line to the disabled submit button. */
+const CHALLENGE_HINT_ID = 'newsletter-challenge-hint';
 
 /**
  * Renders the challenge and reports its token, or `null` while there isn't one
@@ -99,6 +101,10 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
 
   const outcome = fetcher.data ?? null;
   const isPending = fetcher.state !== 'idle';
+  // The one disabled-button state the visitor cannot act on: the challenge has
+  // neither passed nor failed yet. Not shown when it FAILED (that has its own
+  // error line below) and not while submitting (the button says so itself).
+  const awaitingChallenge = token === null && !failed && !isPending;
 
   // A spent token cannot be replayed, so every completed attempt that did NOT
   // succeed needs a fresh challenge before the visitor can try again.
@@ -124,7 +130,12 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
       <input type="hidden" name="turnstileToken" value={token ?? ''} />
 
       <div className="space-y-2">
-        <Label htmlFor="newsletter-email">{t('landing.newsletter.emailLabel')}</Label>
+        {/* `block`: shadcn's `Label` is an inline-flex row, so without it the
+            label box shrink-wrapped the word and the `space-y-2` gap to the
+            input was measured off an inline box rather than a block one. */}
+        <Label htmlFor="newsletter-email" className="block">
+          {t('landing.newsletter.emailLabel')}
+        </Label>
         <Input
           id="newsletter-email"
           type="email"
@@ -172,12 +183,35 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
       <div ref={containerRef} className="min-h-[65px]" />
 
       <div className="flex flex-wrap items-center gap-3">
-        {/* Outline, never a filled primary: `/dashboard` is this page's ONE
-            primary destination (M146 spec 02). */}
-        <Button type="submit" variant="outline" disabled={!consented || token === null || isPending}>
+        {/* The DEFAULT (filled) variant. M146 spec 02's rule is about competing
+            CTA DESTINATIONS — "exactly one CTA destination may be a filled
+            primary button, and `/dashboard` is it" — and it is checked as
+            such: the spec's grep counts `to="/dashboard"` links above the fold.
+            This is a form's submit button, not a link to anywhere; it commits
+            the form the reader has already chosen to fill in. Outline made it
+            look like a third way to opt out of something, sitting under a
+            ticked consent box.
+
+            It is still disabled until consent is given AND the challenge has
+            passed, so it cannot post before either exists. */}
+        <Button
+          type="submit"
+          disabled={!consented || token === null || isPending}
+          aria-describedby={awaitingChallenge ? CHALLENGE_HINT_ID : undefined}
+        >
           {isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {isPending ? t('landing.newsletter.pending') : t('landing.newsletter.submit')}
         </Button>
+        {/* A disabled control with no stated reason is a dead end — the visitor
+            ticks the box, the button stays grey, and nothing on screen says
+            that a bot check is still running. `<output>` (an implicit live region) announces it to a
+            screen reader when it appears, and `aria-describedby` ties it to the
+            button for anyone who lands on the button first. */}
+        {awaitingChallenge && (
+          <output id={CHALLENGE_HINT_ID} className="text-sm text-muted-foreground">
+            {t('landing.newsletter.awaitingChallenge')}
+          </output>
+        )}
         {outcome !== null && !outcome.ok && (
           <output className="text-sm text-red-600 dark:text-red-400">
             {t(`landing.newsletter.status.${outcome.reason}`)}

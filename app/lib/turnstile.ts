@@ -52,7 +52,17 @@ declare global {
  */
 const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
-/** In-flight or settled load, so two mounted forms share one `<script>`. */
+/**
+ * In-flight or SUCCESSFULLY settled load, so two mounted forms share one
+ * `<script>`.
+ *
+ * Cleared again on rejection (see below). It used to keep the rejected promise
+ * forever, which cached one transient failure — a dropped connection, a
+ * blocker that was switched off a second later — for the lifetime of the tab:
+ * every later mount got the same stale rejection back without so much as
+ * attempting a fetch, so "reload the page" was the only recovery from a
+ * network blip.
+ */
 let scriptPromise: Promise<TurnstileApi> | null = null;
 
 /**
@@ -68,7 +78,7 @@ let scriptPromise: Promise<TurnstileApi> | null = null;
 export function loadTurnstile(): Promise<TurnstileApi> {
   if (scriptPromise !== null) return scriptPromise;
 
-  scriptPromise = new Promise<TurnstileApi>((resolve, reject) => {
+  const pending = new Promise<TurnstileApi>((resolve, reject) => {
     const resolveApi = () => {
       const api = window.turnstile;
       if (api === undefined) {
@@ -89,5 +99,18 @@ export function loadTurnstile(): Promise<TurnstileApi> {
     document.head.appendChild(script);
   });
 
-  return scriptPromise;
+  // Only a SUCCESSFUL load is cached. On rejection the module goes back to
+  // "never loaded", so the next mount — a visitor who scrolled away and back,
+  // or who disabled the thing that blocked it — gets a real second attempt.
+  //
+  // The `catch` below is a side-effecting OBSERVER on a separate branch of the
+  // chain, not error handling: every caller is handed `pending` itself, so
+  // `pending` still rejects and the form still shows its error. `void` marks
+  // the observer branch's own (resolved) promise as deliberately unused.
+  void pending.catch(() => {
+    scriptPromise = null;
+  });
+  scriptPromise = pending;
+
+  return pending;
 }

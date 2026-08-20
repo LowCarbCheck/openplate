@@ -206,6 +206,7 @@
     "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc> — a food tracker that stays on your device",
     "installApp": "Install app",
     "licence": "MIT licence",
+    "licenceShort": "Licence",
     "loading": "Loading…",
     "logoMenuLabel": "openplate menu",
     "navDrawerDescription": "Everywhere you can go in openplate",
@@ -214,6 +215,7 @@
     "privacy": "Privacy",
     "source": "Source code",
     "sourceLabel": "openplate on GitHub — opens in a new tab",
+    "sourceShort": "Source",
     "terms": "Terms",
     "thisDevice": "This device"
   },
@@ -690,19 +692,44 @@
     "title": "Install {{appName}}"
   },
   "landing": {
-    "byok": {
-      "body": "Photo scanning uses an AI provider you connect yourself — OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key is stored on your device and the request goes straight from your browser to them, so we never see the key, the photo, or the bill.",
-      "optional": "Skip it entirely and logging by search still works.",
-      "title": "Your key, your provider"
-    },
     "close": {
       "body": "Nothing to sign up for, nothing to configure. Log one food and openplate has everything it needs.",
+      "eyebrow": "Start now",
       "star": "Star openplate on GitHub",
       "title": "Start with today's first meal"
     },
     "cta": {
       "howItWorks": "See how it works",
       "tryIt": "Try it now — no account needed"
+    },
+    "features": {
+      "byok": {
+        "body": "Connect an AI provider yourself — OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key stays on this device and the photo goes straight from your browser to them. A scan typically costs well under a cent, and they bill you for it rather than us.",
+        "title": "Photos become macros with your own key"
+      },
+      "eyebrow": "What you get",
+      "install": {
+        "body": "Add openplate to your home screen and it opens like any other app, full screen and without the browser chrome. It still opens when you have no connection.",
+        "title": "It installs on your phone"
+      },
+      "local": {
+        "body": "Every food you log is written to this browser’s own storage. The server keeps no copy — it has no database at all — so there is nothing of yours on it to leak. Export the lot as a file whenever you like.",
+        "title": "The diary lives on this device"
+      },
+      "noTracking": {
+        "body": "There is no analytics, no advertising and no tracking pixel in openplate. Nothing you do in the app is counted, and nothing about it is sent anywhere.",
+        "title": "No ads, no tracking"
+      },
+      "selfHost": {
+        "body": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",
+        "title": "Self-host it in one container"
+      },
+      "source": {
+        "body": "Read every line before you trust it with a day of your eating. Fork it, change it, ship it in something of your own — the licence asks for the copyright notice and nothing else.",
+        "title": "Open source, under the MIT License"
+      },
+      "subtitle": "None of these is a roadmap item. Every one of them is in the repository today.",
+      "title": "Six claims you can check in the source"
     },
     "goals": {
       "body": "Choose a daily net-carb ceiling, a protein floor, a calorie target — or none at all. openplate never invents a target you didn't set.",
@@ -716,27 +743,34 @@
       "title": "Set a target, then watch the record build"
     },
     "hero": {
+      "install": "It installs to your home screen and opens like any other app — including when you have no connection.",
       "privacy": "No account, no sign-up, and no server holding your diary. Photo scanning is optional and runs through an AI provider you connect yourself, with your own key.",
+      "shotAlt": "The openplate diary on a laptop: a progress ring for the day, with breakfast, lunch and dinner listed beneath it and each meal's carbs, protein, fat and calories alongside.",
+      "shotCaption": "A sample day, not your data.",
       "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands."
     },
     "how": {
-      "eyebrow": "How it works",
+      "eyebrow": "Every day",
       "scan": {
-        "body": "Your own AI provider reads the photo and estimates what's on it. You check the numbers before anything is saved, and the photo never touches our server.",
+        "body": "Your own AI provider reads the photo and estimates what's on it. You check the numbers before anything is saved.",
+        "shotAlt": "The scan screen on a phone, offering a one-click connect to OpenRouter.",
         "title": "Photograph your plate"
       },
       "search": {
         "body": "Type what you ate. Foods come from the curated lowcarbcheck.org database, and anything you log often becomes a one-tap chip.",
+        "shotAlt": "The add-food screen on a phone, listing recent foods with their net carbs.",
         "title": "Or just search"
       },
       "see": {
         "body": "Your diary leads with what's left of the day, not with a wall of numbers. Anything estimated says so.",
+        "shotAlt": "The diary on a phone: the day ring, then the meals logged under it.",
         "title": "See where the day stands"
       },
-      "subtitle": "There is nothing to set up first, and nothing you have to keep paying attention to.",
+      "subtitle": "This is what using openplate looks like once it is yours — the same handful of taps, every day.",
       "title": "Log a meal in a few seconds"
     },
     "newsletter": {
+      "awaitingChallenge": "Waiting for the bot check to finish…",
       "body": "A short email when a release is worth your time. Nothing else, and you can unsubscribe from any of them.",
       "consent": "Yes, send me the openplate newsletter. I can unsubscribe at any time.",
       "emailLabel": "Email address",
@@ -752,48 +786,23 @@
         "invalidToken": "The check expired. Try once more.",
         "noConsent": "Tick the box above and we can send it.",
         "subscribed": "Almost there. Open the link in the email we just sent, and you are on the list.",
+        "tooManyAttempts": "That is a lot of attempts in a short time. Wait a minute, then try again.",
         "unavailable": "Sign-up is not answering right now. Please try again later."
       },
       "submit": "Sign me up",
       "title": "Hear when something ships"
     },
-    "preview": {
-      "caption": "Green means a food is low-carb, yellow means moderate — openplate colours every food this way at a glance, and keeps the day's running total against the goal you set.",
-      "carbs": "{{grams}} g carbs",
-      "ringCaption": "The ring shows what's left of your daily goal, not just what you've eaten.",
-      "rows": {
-        "salad": {
-          "method": "Added from a photo",
-          "name": "Grilled chicken salad"
-        },
-        "yogurt": {
-          "method": "Found by search",
-          "name": "Greek yogurt with berries"
-        }
-      },
-      "subtitle": "A sample day — not your real data",
-      "title": "What you'll see"
-    },
-    "privacy": {
-      "body": "Your diary is written to this browser's own storage. Our server has one table and it holds no personal data at all — nothing to breach, nothing to sell, nothing to hand over. Export the lot as a file whenever you want.",
-      "sync": "Need it on two devices? Optional sync moves an encrypted blob through a separate service that holds no key to it.",
-      "title": "Your data stays on your device"
-    },
-    "selfHost": {
-      "body": "The whole app is published under the MIT License: read it, audit it, run your own copy from one container. It's fully open source, full stop.",
-      "link": "openplate on GitHub",
-      "title": "Read the code, run your own"
-    },
     "setup": {
       "cta": "Start with step one",
-      "eyebrow": "Set it up",
+      "eyebrow": "One-time setup",
+      "shotAlt": "The overview screen on a phone, with the day ring, the last seven days and the latest weigh-in.",
       "steps": {
         "connect": {
-          "body": "One click connects OpenRouter: you approve it there, and the key comes back to this device and stays on it. Any OpenAI-compatible endpoint works too. Skip this entirely and searching for what you ate still works — a key is only needed to read a photo.",
+          "body": "One click connects OpenRouter: you approve it there, and the key comes back to this device and stays on it. Any OpenAI-compatible endpoint works too. Reading a plate typically costs well under a cent per photo, and your provider bills you directly. Skip this and search still works — a key is only needed to read a photo.",
           "title": "Connect a provider, or skip it"
         },
         "open": {
-          "body": "No account and no sign-up. The diary is created on this device the moment you log the first food.",
+          "body": "The diary is created on this device the moment you log the first food. There is nothing to fill in before that.",
           "title": "Open the tracker"
         },
         "scan": {
@@ -801,11 +810,11 @@
           "title": "Photograph your first plate"
         }
       },
-      "subtitle": "Three steps, and only the middle one asks anything of you.",
+      "subtitle": "You do this once, and then never again. Three steps, and only the middle one asks anything of you.",
       "title": "Working in about a minute"
     },
     "sync": {
-      "body": "Sync is optional and end-to-end encrypted. Your passphrase never leaves the device, and the sync service only ever holds ciphertext it has no key to.",
+      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the service stores ciphertext it has no key to, because the key is made from a passphrase it never sees.",
       "eyebrow": "Keep it",
       "link": "Set up sync",
       "photos": "Plate photos stay where they are — they are never part of a sync blob.",

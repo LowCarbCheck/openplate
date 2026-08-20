@@ -158,7 +158,11 @@ renders: curated match cards, per-food draft cards, food-log entries. Dot indica
   (dominant) · `rounded-xl` feature/stat tiles · `rounded-full` pills, badges, status dots.
   `--radius: 0.5rem` stays.
 - Shadows: `shadow-sm` resting cards → `hover:shadow-md` (list cards) or `hover:shadow-lg`
-  (feature cards); `shadow-lg` for overlays. Never heavier at rest.
+  (feature cards); `shadow-lg` for overlays. Never heavier at rest — with ONE sanctioned
+  exception: the landing hero's screenshot frame, which carries `shadow-2xl shadow-primary/10`
+  at rest because it is a product photograph that has to lift off the page rather than a card
+  the user can act on (M146; it is the same element as §2's single landing `.surface-brand`,
+  so this exception cannot spread without breaking that rule first).
 - Interactive-card hover recipe: `transition-all duration-200 hover:shadow-md
   hover:border-primary/40`. No `dark:` variant is needed — `primary` is already per-theme, which
   the literal `teal-300`/`teal-600` pair this replaces was only ever emulating. (That pair is

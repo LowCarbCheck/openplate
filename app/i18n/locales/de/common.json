@@ -206,6 +206,7 @@
     "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc> — ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "installApp": "App installieren",
     "licence": "MIT-Lizenz",
+    "licenceShort": "Lizenz",
     "loading": "Wird geladen…",
     "logoMenuLabel": "openplate-Menü",
     "navDrawerDescription": "Alle Bereiche von openplate",
@@ -214,6 +215,7 @@
     "privacy": "Datenschutz",
     "source": "Quellcode",
     "sourceLabel": "openplate auf GitHub — öffnet in einem neuen Tab",
+    "sourceShort": "Quellcode",
     "terms": "AGB",
     "thisDevice": "Dieses Gerät"
   },
@@ -690,19 +692,44 @@
     "title": "{{appName}} installieren"
   },
   "landing": {
-    "byok": {
-      "body": "Die Fotoerkennung nutzt einen KI-Anbieter, den du selbst verbindest — OpenRouter, Mistral, Anthropic oder einen beliebigen OpenAI-kompatiblen Endpunkt. Der Schlüssel liegt auf deinem Gerät, und die Anfrage geht direkt von deinem Browser dorthin: Wir sehen weder den Schlüssel noch das Foto noch die Rechnung.",
-      "optional": "Lass sie ganz weg — das Eintragen über die Suche funktioniert trotzdem.",
-      "title": "Dein Schlüssel, dein Anbieter"
-    },
     "close": {
       "body": "Nichts anzumelden, nichts einzurichten. Trag ein Lebensmittel ein — mehr braucht openplate nicht.",
+      "eyebrow": "Jetzt anfangen",
       "star": "openplate auf GitHub einen Stern geben",
       "title": "Fang mit der ersten Mahlzeit von heute an"
     },
     "cta": {
       "howItWorks": "So funktioniert es",
       "tryIt": "Jetzt ausprobieren — ohne Konto"
+    },
+    "features": {
+      "byok": {
+        "body": "Du verbindest den KI-Anbieter selbst — OpenRouter, Mistral, Anthropic oder einen beliebigen OpenAI-kompatiblen Endpunkt. Der Schlüssel bleibt auf diesem Gerät, und das Foto geht direkt von deinem Browser dorthin. Ein Scan kostet in der Regel deutlich weniger als einen Cent, und die Rechnung stellt dir der Anbieter, nicht wir.",
+        "title": "Fotos werden zu Nährwerten, mit deinem eigenen Schlüssel"
+      },
+      "eyebrow": "Das bekommst du",
+      "install": {
+        "body": "Leg openplate auf deinen Startbildschirm, dann öffnet es wie jede andere App — bildschirmfüllend und ohne Browserleiste. Es öffnet auch ohne Verbindung.",
+        "title": "Es lässt sich aufs Telefon installieren"
+      },
+      "local": {
+        "body": "Jedes eingetragene Lebensmittel landet im Speicher dieses Browsers. Der Server behält keine Kopie — er hat überhaupt keine Datenbank — es liegt dort also nichts von dir, das abfließen könnte. Exportier alles als Datei, wann immer du magst.",
+        "title": "Das Tagebuch bleibt auf diesem Gerät"
+      },
+      "noTracking": {
+        "body": "In openplate steckt keine Analyse, keine Werbung und kein Zählpixel. Was du in der App tust, wird nicht gezählt, und es wird nichts darüber verschickt.",
+        "title": "Keine Werbung, kein Tracking"
+      },
+      "selfHost": {
+        "body": "Ein zustandsloser Container, keine Datenbank zu betreiben und kein Geheimnis einzurichten. Die Compose-Datei liegt im Repository: ein Download und ein Befehl.",
+        "title": "Selbst betreiben, in einem Container"
+      },
+      "source": {
+        "body": "Lies jede Zeile, bevor du ihr einen Esstag anvertraust. Fork es, änder es, bau es in etwas Eigenes ein — die Lizenz verlangt den Urheberrechtsvermerk und sonst nichts.",
+        "title": "Quelloffen, unter der MIT-Lizenz"
+      },
+      "subtitle": "Nichts davon ist ein Vorhaben. Jedes davon steht heute schon im Repository.",
+      "title": "Sechs Aussagen, die du im Quelltext nachprüfen kannst"
     },
     "goals": {
       "body": "Wähl eine tägliche Netto-KH-Obergrenze, ein Eiweiß-Minimum, ein Kalorienziel — oder gar keins. openplate erfindet kein Ziel, das du nicht gesetzt hast.",
@@ -716,27 +743,34 @@
       "title": "Setz dir ein Ziel und sieh, wie der Verlauf wächst"
     },
     "hero": {
+      "install": "Es lässt sich auf den Startbildschirm legen und öffnet wie jede andere App — auch ohne Verbindung.",
       "privacy": "Kein Konto, keine Anmeldung, und kein Server, der dein Tagebuch aufbewahrt. Die Fotoerkennung ist optional und läuft über einen KI-Anbieter, den du selbst verbindest — mit deinem eigenen Schlüssel.",
+      "shotAlt": "Das openplate-Tagebuch auf einem Laptop: ein Tagesring, darunter Frühstück, Mittag- und Abendessen, und neben jeder Mahlzeit ihre Kohlenhydrate, ihr Eiweiß, ihr Fett und ihre Kalorien.",
+      "shotCaption": "Ein Beispieltag, nicht deine Daten.",
       "tagline": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das auf deinem Gerät bleibt: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht."
     },
     "how": {
-      "eyebrow": "So funktioniert es",
+      "eyebrow": "Jeden Tag",
       "scan": {
-        "body": "Dein eigener KI-Anbieter liest das Foto und schätzt, was darauf ist. Du prüfst die Werte, bevor etwas gespeichert wird — und das Foto erreicht unseren Server nie.",
+        "body": "Dein eigener KI-Anbieter liest das Foto und schätzt, was darauf ist. Du prüfst die Werte, bevor etwas gespeichert wird.",
+        "shotAlt": "Der Scan-Bildschirm auf einem Telefon, mit der Ein-Klick-Verbindung zu OpenRouter.",
         "title": "Fotografier deinen Teller"
       },
       "search": {
         "body": "Tipp ein, was du gegessen hast. Die Lebensmittel kommen aus der kuratierten Datenbank von lowcarbcheck.org, und was du oft einträgst, wird zum Chip für einen Tipp.",
+        "shotAlt": "Der Bildschirm zum Eintragen auf einem Telefon, mit den zuletzt genutzten Lebensmitteln und ihren Netto-Kohlenhydraten.",
         "title": "Oder einfach suchen"
       },
       "see": {
         "body": "Dein Tagebuch beginnt mit dem, was vom Tag übrig ist — nicht mit einer Wand aus Zahlen. Und was geschätzt ist, sagt es dazu.",
+        "shotAlt": "Das Tagebuch auf einem Telefon: der Tagesring und darunter die eingetragenen Mahlzeiten.",
         "title": "Sieh, wo der Tag steht"
       },
-      "subtitle": "Vorher ist nichts einzurichten, und danach musst du nichts im Blick behalten.",
+      "subtitle": "So sieht es aus, wenn openplate erst einmal deins ist — jeden Tag dieselben paar Handgriffe.",
       "title": "Eine Mahlzeit in ein paar Sekunden eintragen"
     },
     "newsletter": {
+      "awaitingChallenge": "Warten auf die Bot-Prüfung…",
       "body": "Eine kurze E-Mail, wenn eine Version deine Zeit wert ist. Sonst nichts, und du kannst dich jederzeit wieder abmelden.",
       "consent": "Ja, schickt mir den openplate-Newsletter. Ich kann mich jederzeit abmelden.",
       "emailLabel": "E-Mail-Adresse",
@@ -752,48 +786,23 @@
         "invalidToken": "Die Prüfung ist abgelaufen. Versuch es bitte noch einmal.",
         "noConsent": "Setz oben den Haken, dann können wir sie schicken.",
         "subscribed": "Fast geschafft. Öffne den Link in der E-Mail, die wir dir gerade geschickt haben, dann bist du dabei.",
+        "tooManyAttempts": "Das sind viele Versuche in kurzer Zeit. Warte eine Minute und probier es dann noch einmal.",
         "unavailable": "Die Anmeldung antwortet gerade nicht. Bitte versuch es später noch einmal."
       },
       "submit": "Anmelden",
       "title": "Erfahren, wenn es Neues gibt"
     },
-    "preview": {
-      "caption": "Grün heißt: wenig Kohlenhydrate, Gelb heißt: mittel — openplate färbt jedes Lebensmittel so ein, auf einen Blick, und lässt die Tagessumme gegen dein Ziel mitlaufen.",
-      "carbs": "{{grams}} g Kohlenhydrate",
-      "ringCaption": "Der Ring zeigt, was von deinem Tagesziel übrig ist — nicht nur, was du gegessen hast.",
-      "rows": {
-        "salad": {
-          "method": "Aus einem Foto hinzugefügt",
-          "name": "Gegrillter Hähnchensalat"
-        },
-        "yogurt": {
-          "method": "Über die Suche gefunden",
-          "name": "Griechischer Joghurt mit Beeren"
-        }
-      },
-      "subtitle": "Ein Beispieltag — nicht deine echten Daten",
-      "title": "Das siehst du"
-    },
-    "privacy": {
-      "body": "Dein Tagebuch wird in den Speicher dieses Browsers geschrieben. Unser Server hat genau eine Tabelle, und darin stehen überhaupt keine persönlichen Daten — nichts zu erbeuten, nichts zu verkaufen, nichts herauszugeben. Du kannst jederzeit alles als Datei exportieren.",
-      "sync": "Du brauchst es auf zwei Geräten? Die optionale Synchronisierung schiebt einen verschlüsselten Block durch einen separaten Dienst, der keinen Schlüssel dafür hat.",
-      "title": "Deine Daten bleiben auf deinem Gerät"
-    },
-    "selfHost": {
-      "body": "Die komplette App ist unter der MIT-Lizenz veröffentlicht: lies sie, prüf sie, betreib deine eigene Kopie aus einem Container. Sie ist vollständig quelloffen — ohne Wenn und Aber.",
-      "link": "openplate auf GitHub",
-      "title": "Code lesen, selbst betreiben"
-    },
     "setup": {
       "cta": "Mit Schritt eins beginnen",
-      "eyebrow": "Einrichten",
+      "eyebrow": "Einmalige Einrichtung",
+      "shotAlt": "Der Übersichtsbildschirm auf einem Telefon, mit dem Tagesring, den letzten sieben Tagen und dem jüngsten Wiegen.",
       "steps": {
         "connect": {
-          "body": "Ein Klick verbindet OpenRouter: Du bestätigst dort, und der Schlüssel kommt zurück auf dieses Gerät und bleibt dort. Jeder OpenAI-kompatible Endpunkt funktioniert genauso. Du kannst das auch ganz überspringen — die Suche nach Lebensmitteln braucht keinen Schlüssel, nur das Foto braucht einen.",
+          "body": "Ein Klick verbindet OpenRouter: Du bestätigst dort, und der Schlüssel kommt zurück auf dieses Gerät und bleibt dort. Jeder OpenAI-kompatible Endpunkt funktioniert genauso. Einen Teller auszulesen kostet in der Regel deutlich weniger als einen Cent pro Foto, und abgerechnet wird direkt bei deinem Anbieter. Überspring es, und die Suche funktioniert trotzdem — einen Schlüssel braucht nur das Foto.",
           "title": "Anbieter verbinden — oder überspringen"
         },
         "open": {
-          "body": "Kein Konto, keine Anmeldung. Das Tagebuch entsteht auf diesem Gerät, sobald du das erste Lebensmittel einträgst.",
+          "body": "Das Tagebuch entsteht auf diesem Gerät, sobald du das erste Lebensmittel einträgst. Vorher ist nichts auszufüllen.",
           "title": "Tagebuch öffnen"
         },
         "scan": {
@@ -801,11 +810,11 @@
           "title": "Ersten Teller fotografieren"
         }
       },
-      "subtitle": "Drei Schritte, und nur der mittlere verlangt etwas von dir.",
+      "subtitle": "Das machst du einmal und danach nie wieder. Drei Schritte, und nur der mittlere verlangt etwas von dir.",
       "title": "In etwa einer Minute einsatzbereit"
     },
     "sync": {
-      "body": "Die Synchronisierung ist optional und Ende-zu-Ende-verschlüsselt. Deine Passphrase verlässt das Gerät nie, und der Dienst hält nur Chiffretext, zu dem er keinen Schlüssel hat.",
+      "body": "Trag das Mittagessen am Telefon ein und sieh dir die Woche am Laptop an. Die Synchronisierung ist freiwillig und Ende-zu-Ende-verschlüsselt: Der Dienst speichert Chiffretext, zu dem er keinen Schlüssel hat — denn den Schlüssel ergibt eine Passphrase, die er nie zu sehen bekommt.",
       "eyebrow": "Behalten",
       "link": "Synchronisierung einrichten",
       "photos": "Teller-Fotos bleiben, wo sie sind — sie sind nie Teil eines Sync-Pakets.",
