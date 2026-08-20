@@ -73,6 +73,10 @@ const CONTENT_SECURITY_POLICY = buildContentSecurityPolicy({
   // and must be allowlisted; otherwise the one-click connect ships a button
   // whose first scan is blocked by CSP in production only.
   presetOrigin: inferenceConnectSrcOrigin(CONFIG.inference.instancePreset),
+  // The optional newsletter's Turnstile widget (M146 spec 02). `false` on
+  // every instance that didn't configure NEWSLETTER_SUBSCRIBE_URL, which
+  // leaves this header exactly as it was before the feature existed.
+  newsletterEnabled: CONFIG.newsletter !== null,
 });
 
 function createContentSecurityPolicyMiddleware() {

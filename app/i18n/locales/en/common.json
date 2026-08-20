@@ -1,4 +1,14 @@
 {
+  "about": {
+    "description": "openplate is open source. Here is the build you are running, and where its code lives.",
+    "eyebrow": "About",
+    "licence": "Licence",
+    "licenceValue": "MIT",
+    "source": "Source code",
+    "sourceValue": "{{appName}} on GitHub",
+    "title": "About openplate",
+    "version": "Version"
+  },
   "add": {
     "custom": {
       "caloriesSummary": "{{value}} calories",
@@ -195,12 +205,15 @@
     "deviceMenuLabel": "This device — open menu",
     "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc> — a food tracker that stays on your device",
     "installApp": "Install app",
+    "licence": "MIT licence",
     "loading": "Loading…",
     "logoMenuLabel": "openplate menu",
     "navDrawerDescription": "Everywhere you can go in openplate",
     "openTracker": "Open the tracker",
     "preferences": "Preferences",
     "privacy": "Privacy",
+    "source": "Source code",
+    "sourceLabel": "openplate on GitHub — opens in a new tab",
     "terms": "Terms",
     "thisDevice": "This device"
   },
@@ -684,6 +697,7 @@
     },
     "close": {
       "body": "Nothing to sign up for, nothing to configure. Log one food and openplate has everything it needs.",
+      "star": "Star openplate on GitHub",
       "title": "Start with today's first meal"
     },
     "cta": {
@@ -722,6 +736,27 @@
       "subtitle": "There is nothing to set up first, and nothing you have to keep paying attention to.",
       "title": "Log a meal in a few seconds"
     },
+    "newsletter": {
+      "body": "A short email when a release is worth your time. Nothing else, and you can unsubscribe from any of them.",
+      "consent": "Yes, send me the openplate newsletter. I can unsubscribe at any time.",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "eyebrow": "Stay in touch",
+      "pending": "Signing you up…",
+      "privacy": "What happens to your address is described in the <privacy>privacy policy</privacy>.",
+      "status": {
+        "alreadySubscribed": "You are already on the list. Nothing more to do.",
+        "challengeUnavailable": "The bot check could not load, so sign-up is unavailable right now.",
+        "checkInbox": "There is already a confirmation email waiting for you. Open the link in it to finish.",
+        "invalidEmail": "That address did not go through. Check it and try again.",
+        "invalidToken": "The check expired. Try once more.",
+        "noConsent": "Tick the box above and we can send it.",
+        "subscribed": "Almost there. Open the link in the email we just sent, and you are on the list.",
+        "unavailable": "Sign-up is not answering right now. Please try again later."
+      },
+      "submit": "Sign me up",
+      "title": "Hear when something ships"
+    },
     "preview": {
       "caption": "Green means a food is low-carb, yellow means moderate — openplate colours every food this way at a glance, and keeps the day's running total against the goal you set.",
       "carbs": "{{grams}} g carbs",
@@ -748,9 +783,37 @@
       "body": "The whole app is published under the MIT License: read it, audit it, run your own copy from one container. It's fully open source, full stop.",
       "link": "openplate on GitHub",
       "title": "Read the code, run your own"
+    },
+    "setup": {
+      "cta": "Start with step one",
+      "eyebrow": "Set it up",
+      "steps": {
+        "connect": {
+          "body": "One click connects OpenRouter: you approve it there, and the key comes back to this device and stays on it. Any OpenAI-compatible endpoint works too. Skip this entirely and searching for what you ate still works — a key is only needed to read a photo.",
+          "title": "Connect a provider, or skip it"
+        },
+        "open": {
+          "body": "No account and no sign-up. The diary is created on this device the moment you log the first food.",
+          "title": "Open the tracker"
+        },
+        "scan": {
+          "body": "Your provider reads the photo and proposes the foods. You check the numbers, save, and the day’s total moves.",
+          "title": "Photograph your first plate"
+        }
+      },
+      "subtitle": "Three steps, and only the middle one asks anything of you.",
+      "title": "Working in about a minute"
+    },
+    "sync": {
+      "body": "Sync is optional and end-to-end encrypted. Your passphrase never leaves the device, and the sync service only ever holds ciphertext it has no key to.",
+      "eyebrow": "Keep it",
+      "link": "Set up sync",
+      "photos": "Plate photos stay where they are — they are never part of a sync blob.",
+      "title": "Two devices, one diary"
     }
   },
   "meta": {
+    "about": "About · openplate",
     "add": "Add food · openplate",
     "ai": "AI settings · openplate",
     "dashboard": "Overview · openplate",
@@ -1183,6 +1246,7 @@
       "title": "Data & backup"
     },
     "groups": {
+      "about": "About",
       "scanning": "Scanning",
       "you": "You",
       "yourData": "Your data"
@@ -1200,6 +1264,10 @@
       "usage_other": "{{count}} photos · {{size}}"
     },
     "rows": {
+      "about": {
+        "status": "Version {{version}} · MIT licence",
+        "title": "About openplate"
+      },
       "ai": {
         "connected": "{{provider}} · {{model}}",
         "notConnected": "Not connected",

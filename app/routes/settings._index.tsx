@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ChevronRight,
   Database,
+  Info,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -31,6 +32,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+import { APP_VERSION } from '#app/lib/brand';
 import { getLocalProfileGoals } from '#app/lib/local-store';
 import type { LocalProfileGoals } from '#app/lib/local-store';
 // Shared with the header avatar menu's AI shortcut — one derivation of "which
@@ -199,6 +201,19 @@ export default function SettingsIndex() {
           icon={Database}
           title={t('settings.rows.data.title')}
           status={t('settings.rows.data.status')}
+        />
+      </SettingsGroup>
+
+      {/* Provenance (M146 spec 01): version, licence, source. Ungated — the
+          repository link is true on every instance, so unlike the sync row
+          above there is nothing to switch off for a self-hoster. The status
+          line is a constant, so it never renders `null` first. */}
+      <SettingsGroup label={t('settings.groups.about')}>
+        <SettingsRow
+          to="/settings/about"
+          icon={Info}
+          title={t('settings.rows.about.title')}
+          status={t('settings.rows.about.status', { version: APP_VERSION })}
         />
       </SettingsGroup>
 

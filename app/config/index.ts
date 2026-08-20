@@ -21,6 +21,7 @@
 
 import { optionalEnv, optionalBoolEnv, optionalIntEnv } from '#app/lib/env';
 import { parseInstanceInferencePreset, parseSyncServerUrl } from './public-config';
+import { parseNewsletterConfig } from './newsletter';
 
 /**
  * Parses the `TRUST_PROXY` env var into a value suitable for Express's
@@ -207,6 +208,23 @@ export const CONFIG = {
       model: process.env.DEFAULT_INFERENCE_MODEL,
     }),
   },
+
+  /**
+   * Optional newsletter capture on the landing page (M146 spec 02)
+   *
+   * `null` (both variables unset) is the DEFAULT and the self-host default: no
+   * section renders, the landing action 404s, no Turnstile script loads and
+   * the production CSP is byte-for-byte what it was before this existed. The
+   * mailing list belongs to whoever runs the instance, so the software ships
+   * with none — the same contract `sync` above has.
+   *
+   * `subscribeUrl` is SERVER-ONLY (operator topology); only the Turnstile site
+   * key reaches the browser. See `app/config/newsletter.ts`.
+   */
+  newsletter: parseNewsletterConfig({
+    subscribeUrl: process.env.NEWSLETTER_SUBSCRIBE_URL,
+    turnstileSiteKey: process.env.NEWSLETTER_TURNSTILE_SITE_KEY,
+  }),
 
   /**
    * Feature Flags

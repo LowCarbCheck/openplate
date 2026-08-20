@@ -1,0 +1,93 @@
+/**
+ * Cloudflare Turnstile — the app's ONLY third-party script, and it is loaded
+ * on demand, never from the document head (M146 spec 02).
+ *
+ * ── Read this before importing it anywhere else ──────────────────────────
+ *
+ * openplate ships with zero third-party scripts. That is a product claim (see
+ * DESIGN.md §11: no CDN assets; AGENTS.md: nothing about a visitor leaves this
+ * server), so the exception below is narrow on purpose:
+ *
+ * - It is fetched only from the newsletter form, which itself renders only
+ *   when `NEWSLETTER_SUBSCRIBE_URL` is configured. A self-hoster who set
+ *   nothing never has this module's code path executed and never contacts
+ *   Cloudflare.
+ * - The production CSP widens for this origin under the same condition —
+ *   `newsletterEnabled` in `app/config/content-security-policy.ts`.
+ *
+ * Loading it in the head, or unconditionally, would give the claim up for
+ * every instance in exchange for a feature most of them do not run.
+ */
+
+/** The slice of Cloudflare's widget API this app uses. */
+export interface TurnstileApi {
+  render: (
+    container: HTMLElement,
+    options: {
+      sitekey: string;
+      language?: string;
+      callback?: (token: string) => void;
+      'error-callback'?: () => void;
+      'expired-callback'?: () => void;
+    },
+  ) => string | undefined;
+  reset: (widgetId: string) => void;
+  remove: (widgetId: string) => void;
+}
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi;
+  }
+}
+
+/**
+ * Explicit rendering (`?render=explicit`) rather than the implicit `cf-turnstile`
+ * class scan: the form needs the token in React state so the submit button can
+ * stay disabled until the challenge passes, and needs `reset()` after a failed
+ * submit because a token is single-use.
+ *
+ * Reached only while `NEWSLETTER_SUBSCRIBE_URL` is configured — see the module
+ * doc above.
+ */
+const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+
+/** In-flight or settled load, so two mounted forms share one `<script>`. */
+let scriptPromise: Promise<TurnstileApi> | null = null;
+
+/**
+ * Injects the widget script (once) and resolves with its API.
+ *
+ * Rejects if the script fails to load or does not publish `window.turnstile` —
+ * the caller renders a plain error rather than a permanently-pending form.
+ *
+ * CLIENT-ONLY. It touches `document` directly and carries no server guard,
+ * because its one caller is a `useEffect` in the newsletter form and effects
+ * do not run during SSR. Do not call it from a loader.
+ */
+export function loadTurnstile(): Promise<TurnstileApi> {
+  if (scriptPromise !== null) return scriptPromise;
+
+  scriptPromise = new Promise<TurnstileApi>((resolve, reject) => {
+    const resolveApi = () => {
+      const api = window.turnstile;
+      if (api === undefined) {
+        reject(new Error('Turnstile loaded without publishing its API'));
+        return;
+      }
+      resolve(api);
+    };
+
+    const script = document.createElement('script');
+    script.src = TURNSTILE_SCRIPT_URL;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener('load', resolveApi);
+    script.addEventListener('error', () => {
+      reject(new Error('Turnstile script failed to load'));
+    });
+    document.head.appendChild(script);
+  });
+
+  return scriptPromise;
+}

@@ -95,6 +95,9 @@ export default [
     route('/settings/data', 'routes/settings.data.tsx'),
     // Optional E2EE sync (M128 spec 04). 404s unless `SYNC_SERVER_URL` is set.
     route('/settings/sync', 'routes/settings.sync.tsx'),
+    // Provenance: version, licence and the source repository (M146 spec 01).
+    // Ungated — it is true on every instance, including a self-hoster's.
+    route('/settings/about', 'routes/settings.about.tsx'),
     // Resource route: server-proxied LCC food-name lookup for the client-side
     // scan flow (M117/02) — see app/routes/api.food-matches.ts.
     route('/api/food-matches', 'routes/api.food-matches.ts'),

@@ -38,6 +38,13 @@
  */
 const LOOPBACK_ORIGINS = ['http://localhost:*', 'http://127.0.0.1:*'];
 
+/**
+ * Cloudflare Turnstile's origin — the ONE third-party script origin this app
+ * can ever name, and only while `NEWSLETTER_SUBSCRIBE_URL` is set. The loader
+ * that actually fetches it is `app/lib/turnstile.ts`.
+ */
+const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+
 export interface ContentSecurityPolicyInput {
   /** The sync service's ORIGIN (`syncConnectSrcOrigin`), or `null` when sync is off. */
   syncOrigin: string | null;
@@ -67,6 +74,18 @@ export interface ContentSecurityPolicyInput {
    * server-side symptom to debug from.
    */
   presetOrigin: string | null;
+  /**
+   * Whether the optional newsletter capture is configured
+   * (`NEWSLETTER_SUBSCRIBE_URL` + `NEWSLETTER_TURNSTILE_SITE_KEY` — see
+   * `app/config/newsletter.ts`).
+   *
+   * `false` is the default and the self-host default, and it MUST leave this
+   * header byte-for-byte what it was before the newsletter existed. openplate
+   * loads no third-party script at all on an unconfigured instance, and that
+   * is a product claim rather than an accident: widening `script-src` for a
+   * feature nobody turned on would quietly give up the claim for everyone.
+   */
+  newsletterEnabled: boolean;
 }
 
 /**
@@ -80,6 +99,7 @@ export function buildContentSecurityPolicy({
   connectExtra,
   providerOrigins,
   presetOrigin,
+  newsletterEnabled,
 }: ContentSecurityPolicyInput): string {
   const connectSrc = [
     "'self'",
@@ -100,11 +120,23 @@ export function buildContentSecurityPolicy({
     // notices. Nothing is appended when no preset is configured. Origin only.
     ...(presetOrigin === null ? [] : [presetOrigin]),
     ...connectExtra,
+    // Cloudflare Turnstile, ONLY when the newsletter is configured
+    // (NEWSLETTER_SUBSCRIBE_URL). The widget's own callbacks fetch from this
+    // origin; nothing is appended when the feature is off.
+    ...(newsletterEnabled ? [TURNSTILE_ORIGIN] : []),
   ];
+
+  // Turnstile draws itself in an iframe from the same origin, so the widget
+  // needs `frame-src` as well as `script-src`. Both are appended ONLY when
+  // NEWSLETTER_SUBSCRIBE_URL is configured; with the feature off there is no
+  // `frame-src` directive at all and `default-src 'self'` governs, exactly as
+  // before.
+  const scriptSrc = newsletterEnabled ? [...SCRIPT_SRC, TURNSTILE_ORIGIN] : SCRIPT_SRC;
+  const frameSrc = newsletterEnabled ? [`frame-src 'self' ${TURNSTILE_ORIGIN}`] : [];
 
   return [
     "default-src 'self'",
-    `script-src ${SCRIPT_SRC.join(' ')}`,
+    `script-src ${scriptSrc.join(' ')}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self'",
@@ -114,6 +146,7 @@ export function buildContentSecurityPolicy({
     // then DO is governed by `script-src` — see `WASM_UNSAFE_EVAL`.
     "worker-src 'self'",
     "manifest-src 'self'",
+    ...frameSrc,
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'self'",

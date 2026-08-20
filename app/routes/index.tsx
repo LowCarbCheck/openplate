@@ -4,9 +4,28 @@ import type { Route } from './+types/index';
 import { data, redirect, useNavigate } from 'react-router';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { Camera, Check, Code, Key, Search, ShieldCheck, Target, type LucideIcon } from 'lucide-react';
+import {
+  Camera,
+  Check,
+  Code,
+  Github,
+  Key,
+  Mail,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Target,
+  type LucideIcon,
+} from 'lucide-react';
+import { z } from 'zod';
 import PublicWrapper from '#app/components/public-wrapper';
 import { PlateGlyph } from '#app/components/plate-glyph';
+import { NewsletterSignup } from '#app/components/newsletter-signup';
+import { REPO_URL } from '#app/lib/brand';
+import { CONFIG } from '#app/config';
+import { NEWSLETTER_SOURCE, toNewsletterPublicConfig } from '#app/config/newsletter';
+import { readNewsletterResponse, type NewsletterOutcome } from '#app/lib/newsletter-outcome';
+import { createComponentLogger } from '#app/lib/logger';
 import { RingProgress } from '#app/components/ring-progress';
 import { HeroStat, formatHeroStat } from '#app/components/hero-stat';
 import { SectionEyebrow } from '#app/components/typography';
@@ -63,7 +82,103 @@ export async function loader({ request }: Route.LoaderArgs) {
   // every new visitor in an app they haven't set up yet.
   const headers = { Vary: 'Cookie' };
   if (target !== null) throw redirect(target, { headers });
-  return data(null, { headers });
+  return data(landingSections(), { headers });
+}
+
+/**
+ * Which of the ladder's optional rungs this instance actually has (M146 spec
+ * 02).
+ *
+ * ── Gated HERE, in the loader, not in the component ──────────────────────
+ *
+ * Both flags are decided on the server from `SYNC_SERVER_URL` and
+ * `NEWSLETTER_SUBSCRIBE_URL`, so an instance that configured neither renders
+ * no markup for either section — not a hidden element, not an empty wrapper.
+ * A component-side check would still ship the section's strings and its
+ * component code to every browser, and "the self-hoster sees nothing" would
+ * then depend on a `&&` rather than on the payload. This is the same contract
+ * `/settings/sync` implements by 404ing (see that route's header).
+ *
+ * The newsletter's subscribe URL is deliberately NOT part of this: only the
+ * Turnstile site key crosses (`toNewsletterPublicConfig`).
+ */
+function landingSections() {
+  return {
+    /** `SYNC_SERVER_URL` — off by default, including on every self-host. */
+    syncEnabled: CONFIG.sync.syncServerUrl !== null,
+    /** `NEWSLETTER_SUBSCRIBE_URL` + `NEWSLETTER_TURNSTILE_SITE_KEY` — off by default. */
+    newsletter: toNewsletterPublicConfig(CONFIG.newsletter),
+  };
+}
+
+const logger = createComponentLogger('landing');
+
+/** What the newsletter form submits. Parsed, never trusted — it arrives from a public page. */
+const subscriptionSchema = z.object({
+  email: z.email().max(320),
+  locale: z.string().max(16),
+  consent: z.literal(true),
+  turnstileToken: z.string().min(1).max(4096),
+});
+
+/**
+ * The newsletter subscribe proxy (M146 spec 02).
+ *
+ * ── Why the POST comes here instead of going straight to the endpoint ────
+ *
+ * Posting from the browser to the subscribe endpoint would publish that
+ * endpoint's address to every visitor — it is normally an operator's internal
+ * hostname — and would hand a bot the same address without a challenge in
+ * front of it. So the browser posts here, this server forwards, and the
+ * endpoint stays server-side.
+ *
+ * ── And why it 404s by default ───────────────────────────────────────────
+ *
+ * With no `NEWSLETTER_SUBSCRIBE_URL` this address is not a POST target at
+ * all. An "it isn't enabled here" response would still be newsletter
+ * behaviour on an instance whose operator chose to have none.
+ *
+ * @throws a 404 Response on an instance with no newsletter configured.
+ *
+ * Nothing about the submission is logged — the email address is the whole
+ * personal-data payload, and it has no business in a log line.
+ */
+export async function action({ request }: Route.ActionArgs): Promise<NewsletterOutcome> {
+  const newsletter = CONFIG.newsletter;
+  // Same shape as `/settings/sync`'s gate — a plain 404 Response, not a
+  // rendered "not enabled here".
+  if (newsletter === null) throw new Response('Not Found', { status: 404 });
+
+  const form = await request.formData();
+  const submission = subscriptionSchema.safeParse({
+    email: form.get('email'),
+    locale: form.get('locale'),
+    // An unchecked box submits nothing at all, so a missing field IS the
+    // absence of consent — never a default.
+    consent: form.get('consent') === 'true',
+    turnstileToken: form.get('turnstileToken'),
+  });
+
+  if (!submission.success) {
+    const fields = new Set(submission.error.issues.map((issue) => issue.path[0]));
+    if (fields.has('consent')) return { ok: false, reason: 'noConsent' };
+    if (fields.has('turnstileToken')) return { ok: false, reason: 'invalidToken' };
+    return { ok: false, reason: 'invalidEmail' };
+  }
+
+  try {
+    const response = await fetch(newsletter.subscribeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...submission.data, source: NEWSLETTER_SOURCE }),
+    });
+    return await readNewsletterResponse(response);
+  } catch (error) {
+    // The endpoint's address is operator topology and the payload is personal
+    // data: neither is logged. Only that the hop failed.
+    logger.warn('Newsletter subscribe request failed', { error: error instanceof Error ? error.message : 'unknown' });
+    return { ok: false, reason: 'unavailable' };
+  }
 }
 
 /**
@@ -80,8 +195,12 @@ export async function loader({ request }: Route.LoaderArgs) {
  *
  * @throws a redirect to `/dashboard` when the local store says this device is in the app.
  */
-export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  if (wantsLandingPage(new URL(request.url).search)) return null;
+export async function clientLoader({ request, serverLoader }: Route.ClientLoaderArgs) {
+  // `serverLoader()` rather than `null`: the section gates above are decided
+  // on the server, so a client-side navigation to `/` has to fetch them or the
+  // page would render its optional sections differently depending on how the
+  // visitor arrived.
+  if (wantsLandingPage(new URL(request.url).search)) return await serverLoader();
 
   const [profile, logs] = await Promise.all([getLocalProfileGoals(), listLocalFoodLogs()]);
   const entered = hasEnteredApp({
@@ -91,7 +210,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   if (!entered) {
     clearHomeHint(); // stale hint on a wiped device — repair downward
-    return null;
+    return await serverLoader();
   }
   writeHomeHint(); // repair upward (evicted cookie)
   throw redirect('/dashboard');
@@ -290,13 +409,84 @@ function GoalPoint({ children }: { children: ReactNode }): ReactElement {
   );
 }
 
+/** One numbered step of the setup ladder. An ordered list, because the order is the point. */
+function SetupStep({ step, title, body }: { step: number; title: string; body: string }): ReactElement {
+  return (
+    <li className="flex gap-4">
+      <span
+        aria-hidden="true"
+        className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold tabular-nums text-primary"
+      >
+        {step}
+      </span>
+      <div className="space-y-1.5">
+        <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
+        <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * One rung of the ladder below the hero, on a plain `bg-card` surface.
+ *
+ * `bg-card` is not a style preference: the preview card in the hero is this
+ * page's ONE `.surface-brand` (DESIGN.md §2, "one hero per screen"), so every
+ * section added here stays neutral no matter how much it would like the
+ * attention.
+ */
+function LadderCard({
+  icon: Icon,
+  eyebrow,
+  title,
+  children,
+}: {
+  icon: LucideIcon;
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}): ReactElement {
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="space-y-3">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <SectionEyebrow>{eyebrow}</SectionEyebrow>
+        <CardTitle className="font-display text-2xl">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">{children}</CardContent>
+    </Card>
+  );
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Page
 ////////////////////////////////////////////////////////////////////////////////
 
-export default function Index() {
+/**
+ * The page is a CONVERSION LADDER, ordered by what the visitor gets rather
+ * than by what we get (M146 spec 02):
+ *
+ *   1. try it        — the hero. One primary CTA, one destination, `/dashboard`.
+ *   2. set it up     — what the first minute actually looks like.
+ *   3. keep it       — sync across devices. Only on an instance that has sync.
+ *   4. stay in touch — the newsletter. Only on an instance that has one.
+ *   5. own it        — read the source, run your own, star it.
+ *
+ * Rungs 3-5 descend in commitment on purpose: a visitor who bounced off rung 2
+ * can still convert on rung 5.
+ *
+ * THE RULE THIS PAGE IS IMPLEMENTED AGAINST: exactly one CTA destination may
+ * be a filled primary button, and `/dashboard` is it. The closing button is
+ * the same destination and the same label as the hero's — a restatement for a
+ * reader who has finished scrolling, not a competing offer. Sync, the
+ * newsletter and GitHub are outline buttons or plain links, always.
+ */
+export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   useHomeHintRepair();
+  const { syncEnabled, newsletter } = loaderData;
 
   return (
     <PublicWrapper>
@@ -367,6 +557,28 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Rung 2 — set it up. The one section that answers "what does the first
+          minute actually cost me?", which is the question the hero cannot
+          answer without becoming a manual. The CTA is an OUTLINE button: same
+          destination as the hero, deliberately not a second filled primary. */}
+      <section className="py-16 sm:py-20">
+        <SectionEyebrow>{t('landing.setup.eyebrow')}</SectionEyebrow>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.setup.title')}</h2>
+        <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.setup.subtitle')}</p>
+        <ol className="mt-10 space-y-7">
+          <SetupStep step={1} title={t('landing.setup.steps.open.title')} body={t('landing.setup.steps.open.body')} />
+          <SetupStep
+            step={2}
+            title={t('landing.setup.steps.connect.title')}
+            body={t('landing.setup.steps.connect.body')}
+          />
+          <SetupStep step={3} title={t('landing.setup.steps.scan.title')} body={t('landing.setup.steps.scan.body')} />
+        </ol>
+        <Button asChild variant="outline" size="lg" className="mt-8">
+          <Link to="/dashboard">{t('landing.setup.cta')}</Link>
+        </Button>
+      </section>
+
       {/* The goals capability, on a plain `bg-card` surface — the preview card
           above is this page's one `.surface-brand` (DESIGN.md §2). */}
       <section className="py-16 sm:py-20">
@@ -386,6 +598,32 @@ export default function Index() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Rung 3 — keep it. Renders ONLY where the loader said sync exists; on
+          every other instance there is no card, no heading and no mention. */}
+      {syncEnabled && (
+        <section className="py-16 sm:py-20">
+          <LadderCard icon={RefreshCw} eyebrow={t('landing.sync.eyebrow')} title={t('landing.sync.title')}>
+            <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.body')}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.photos')}</p>
+            <Link to="/settings/sync" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+              {t('landing.sync.link')}
+            </Link>
+          </LadderCard>
+        </section>
+      )}
+
+      {/* Rung 4 — stay in touch. Same rule as sync above, and the stricter one
+          from M146/00: an instance that configured no list renders no form, no
+          consent copy and no third-party script. */}
+      {newsletter !== null && (
+        <section className="py-16 sm:py-20">
+          <LadderCard icon={Mail} eyebrow={t('landing.newsletter.eyebrow')} title={t('landing.newsletter.title')}>
+            <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.newsletter.body')}</p>
+            <NewsletterSignup turnstileSiteKey={newsletter.turnstileSiteKey} />
+          </LadderCard>
+        </section>
+      )}
 
       <section className="py-16 sm:py-20">
         <div className="grid gap-6 md:grid-cols-3">
@@ -408,7 +646,7 @@ export default function Index() {
             foot={
               // A plain external anchor, not the in-app `Link`.
               <a
-                href="https://github.com/LowCarbCheck/openplate"
+                href={REPO_URL}
                 target="_blank"
                 rel="noopener"
                 className="text-sm font-medium text-primary underline-offset-4 hover:underline"
@@ -420,12 +658,28 @@ export default function Index() {
         </div>
       </section>
 
+      {/* The close. The button repeats the hero — same label, same
+          destination — for a reader who has finished scrolling, and stays the
+          page's only other filled primary. Rung 5 sits under it as a plain
+          muted link: starring the repository is a favour, not a call to
+          action, and teal is reserved for the way in (DESIGN.md §1). */}
       <section className="border-t py-16 text-center sm:py-20">
         <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('landing.close.title')}</h2>
         <p className="mt-3 text-muted-foreground">{t('landing.close.body')}</p>
         <Button asChild size="lg" className="mt-7 h-12 px-7 text-base shadow-lg shadow-primary/20">
           <Link to="/dashboard">{t('landing.cta.tryIt')}</Link>
         </Button>
+        <p className="mt-6">
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            <Github className="h-4 w-4" aria-hidden="true" />
+            {t('landing.close.star')}
+          </a>
+        </p>
       </section>
     </PublicWrapper>
   );

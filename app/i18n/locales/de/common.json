@@ -1,4 +1,14 @@
 {
+  "about": {
+    "description": "openplate ist Open Source. Hier siehst du, welche Version du nutzt und wo der Code liegt.",
+    "eyebrow": "Über",
+    "licence": "Lizenz",
+    "licenceValue": "MIT",
+    "source": "Quellcode",
+    "sourceValue": "{{appName}} auf GitHub",
+    "title": "Über openplate",
+    "version": "Version"
+  },
   "add": {
     "custom": {
       "caloriesSummary": "{{value}} Kalorien",
@@ -195,12 +205,15 @@
     "deviceMenuLabel": "Dieses Gerät — Menü öffnen",
     "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc> — ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "installApp": "App installieren",
+    "licence": "MIT-Lizenz",
     "loading": "Wird geladen…",
     "logoMenuLabel": "openplate-Menü",
     "navDrawerDescription": "Alle Bereiche von openplate",
     "openTracker": "Zum Tagebuch",
     "preferences": "Einstellungen",
     "privacy": "Datenschutz",
+    "source": "Quellcode",
+    "sourceLabel": "openplate auf GitHub — öffnet in einem neuen Tab",
     "terms": "AGB",
     "thisDevice": "Dieses Gerät"
   },
@@ -684,6 +697,7 @@
     },
     "close": {
       "body": "Nichts anzumelden, nichts einzurichten. Trag ein Lebensmittel ein — mehr braucht openplate nicht.",
+      "star": "openplate auf GitHub einen Stern geben",
       "title": "Fang mit der ersten Mahlzeit von heute an"
     },
     "cta": {
@@ -722,6 +736,27 @@
       "subtitle": "Vorher ist nichts einzurichten, und danach musst du nichts im Blick behalten.",
       "title": "Eine Mahlzeit in ein paar Sekunden eintragen"
     },
+    "newsletter": {
+      "body": "Eine kurze E-Mail, wenn eine Version deine Zeit wert ist. Sonst nichts, und du kannst dich jederzeit wieder abmelden.",
+      "consent": "Ja, schickt mir den openplate-Newsletter. Ich kann mich jederzeit abmelden.",
+      "emailLabel": "E-Mail-Adresse",
+      "emailPlaceholder": "du@beispiel.de",
+      "eyebrow": "In Kontakt bleiben",
+      "pending": "Anmeldung läuft…",
+      "privacy": "Was mit deiner Adresse passiert, steht in der <privacy>Datenschutzerklärung</privacy>.",
+      "status": {
+        "alreadySubscribed": "Du bist bereits angemeldet. Mehr ist nicht zu tun.",
+        "challengeUnavailable": "Die Bot-Prüfung konnte nicht geladen werden, deshalb ist die Anmeldung gerade nicht möglich.",
+        "checkInbox": "Es wartet schon eine Bestätigungs-E-Mail auf dich. Öffne den Link darin, um es abzuschließen.",
+        "invalidEmail": "Diese Adresse hat nicht funktioniert. Bitte prüfe sie und versuch es noch einmal.",
+        "invalidToken": "Die Prüfung ist abgelaufen. Versuch es bitte noch einmal.",
+        "noConsent": "Setz oben den Haken, dann können wir sie schicken.",
+        "subscribed": "Fast geschafft. Öffne den Link in der E-Mail, die wir dir gerade geschickt haben, dann bist du dabei.",
+        "unavailable": "Die Anmeldung antwortet gerade nicht. Bitte versuch es später noch einmal."
+      },
+      "submit": "Anmelden",
+      "title": "Erfahren, wenn es Neues gibt"
+    },
     "preview": {
       "caption": "Grün heißt: wenig Kohlenhydrate, Gelb heißt: mittel — openplate färbt jedes Lebensmittel so ein, auf einen Blick, und lässt die Tagessumme gegen dein Ziel mitlaufen.",
       "carbs": "{{grams}} g Kohlenhydrate",
@@ -748,9 +783,37 @@
       "body": "Die komplette App ist unter der MIT-Lizenz veröffentlicht: lies sie, prüf sie, betreib deine eigene Kopie aus einem Container. Sie ist vollständig quelloffen — ohne Wenn und Aber.",
       "link": "openplate auf GitHub",
       "title": "Code lesen, selbst betreiben"
+    },
+    "setup": {
+      "cta": "Mit Schritt eins beginnen",
+      "eyebrow": "Einrichten",
+      "steps": {
+        "connect": {
+          "body": "Ein Klick verbindet OpenRouter: Du bestätigst dort, und der Schlüssel kommt zurück auf dieses Gerät und bleibt dort. Jeder OpenAI-kompatible Endpunkt funktioniert genauso. Du kannst das auch ganz überspringen — die Suche nach Lebensmitteln braucht keinen Schlüssel, nur das Foto braucht einen.",
+          "title": "Anbieter verbinden — oder überspringen"
+        },
+        "open": {
+          "body": "Kein Konto, keine Anmeldung. Das Tagebuch entsteht auf diesem Gerät, sobald du das erste Lebensmittel einträgst.",
+          "title": "Tagebuch öffnen"
+        },
+        "scan": {
+          "body": "Dein Anbieter liest das Foto und schlägt die Lebensmittel vor. Du prüfst die Zahlen, speicherst, und die Tagessumme bewegt sich.",
+          "title": "Ersten Teller fotografieren"
+        }
+      },
+      "subtitle": "Drei Schritte, und nur der mittlere verlangt etwas von dir.",
+      "title": "In etwa einer Minute einsatzbereit"
+    },
+    "sync": {
+      "body": "Die Synchronisierung ist optional und Ende-zu-Ende-verschlüsselt. Deine Passphrase verlässt das Gerät nie, und der Dienst hält nur Chiffretext, zu dem er keinen Schlüssel hat.",
+      "eyebrow": "Behalten",
+      "link": "Synchronisierung einrichten",
+      "photos": "Teller-Fotos bleiben, wo sie sind — sie sind nie Teil eines Sync-Pakets.",
+      "title": "Zwei Geräte, ein Tagebuch"
     }
   },
   "meta": {
+    "about": "Über openplate",
     "add": "Essen eintragen · openplate",
     "ai": "KI-Einstellungen · openplate",
     "dashboard": "Übersicht · openplate",
@@ -1183,6 +1246,7 @@
       "title": "Daten & Sicherung"
     },
     "groups": {
+      "about": "Über",
       "scanning": "Scannen",
       "you": "Du",
       "yourData": "Deine Daten"
@@ -1200,6 +1264,10 @@
       "usage_other": "{{count}} Fotos · {{size}}"
     },
     "rows": {
+      "about": {
+        "status": "Version {{version}} · MIT-Lizenz",
+        "title": "Über openplate"
+      },
       "ai": {
         "connected": "{{provider}} · {{model}}",
         "notConnected": "Nicht verbunden",

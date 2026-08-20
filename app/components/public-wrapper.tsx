@@ -2,7 +2,8 @@ import { ProgressBar } from './progress-bar';
 import * as React from 'react';
 import { Link } from '#app/components/link';
 import { Trans, useTranslation } from 'react-i18next';
-import { APP_NAME } from '#app/lib/brand';
+import { Github } from 'lucide-react';
+import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { Button } from './ui/button';
 
 export default function PublicWrapper({
@@ -30,6 +31,22 @@ export default function PublicWrapper({
             accounts). The one thing a visitor on a public page actually wants
             from this corner is the way INTO the tracker, so that's what it is. */}
         <div className="flex items-center gap-3">
+          {/* The source link, icon-only and muted (M146 spec 01). Additive to
+              the button beside it, never competitive with it: teal carries
+              CTAs (DESIGN.md §1) and reading the code is not one, so this is
+              `text-muted-foreground` with a hover, never `--primary` and never
+              a filled button. Icon-only because the header is one 16px row —
+              the label lives in `aria-label` and in the footer. */}
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener"
+            aria-label={t('chrome.sourceLabel')}
+            title={t('chrome.source')}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Github className="h-5 w-5" aria-hidden="true" />
+          </a>
           <Button asChild variant="outline" size="sm">
             <Link to="/dashboard">{t('chrome.openTracker')}</Link>
           </Button>
@@ -69,7 +86,22 @@ export default function PublicWrapper({
               }}
             />
           </span>
-          <nav className="flex items-center gap-4">
+          <nav className="flex flex-wrap items-center justify-center gap-4">
+            {/* Provenance, where a reader looks for it: the repository as a
+                real labelled link, and the licence next to it. Both are plain
+                external anchors (not the in-app `Link`) and both stay muted
+                like the rest of this row. */}
+            <a href={REPO_URL} target="_blank" rel="noopener" className="transition-colors hover:text-foreground">
+              {t('chrome.source')}
+            </a>
+            <a
+              href={REPO_LICENSE_URL}
+              target="_blank"
+              rel="noopener"
+              className="transition-colors hover:text-foreground"
+            >
+              {t('chrome.licence')}
+            </a>
             {/* The theme and language controls left the header (M129/05) and
                 now live in Preferences — this is how a visitor who never
                 signs in still reaches them. */}
