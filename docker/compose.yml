@@ -1,7 +1,11 @@
 # openplate, self-hosted: one stateless container and nothing else.
 #
-#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.yml
-#   docker compose up -d
+#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
+#   docker compose -f compose.yml up -d
+#
+# Run that from whatever directory you downloaded the file into. Compose treats
+# the compose file's OWN directory as the project directory, so a `.env` beside
+# this file is the one it reads -- not one somewhere further up.
 #
 # There is no database and no secret to configure. The server stores nothing:
 # your diary lives in your browser's own IndexedDB on the device you use it
@@ -9,18 +13,30 @@
 # in-app JSON export, not with a database dump.
 #
 # If you also want the optional end-to-end-encrypted sync service, use
-# docker-compose.full.yml instead -- THAT one needs a database, because the
-# sync service keeps accounts and ciphertext.
+# docker/topologies/compose.sync.yml instead -- THAT one needs a database,
+# because the sync service keeps accounts and ciphertext. The other shapes
+# (self-hosted AI, or everything at once) sit beside it; docker/topologies/
+# README.md is the one-page map.
+# Fixes the project name. Without it Compose names the stack after the
+# directory the file sits in -- "docker" for anyone running from a checkout --
+# and every container and volume inherits that name.
+name: openplate
+
 services:
   # Pulls the published multi-arch image from GHCR by default -- no source
   # checkout required for a self-host. To build from source instead (e.g.
   # developing against this repo), comment out `image:` below and uncomment
   # `build:`, then run:
-  #   docker compose build && docker compose up -d
+  #   docker compose --project-directory . -f docker/compose.yml build
+  #   docker compose --project-directory . -f docker/compose.yml up -d
+  # Run those two from the repo root. The build context below is written
+  # relative to THIS file, so it points one level up at the checkout, and
+  # `--project-directory .` is what makes Compose read the repo root's `.env`
+  # instead of the one it would look for in `docker/`.
   app:
     image: ghcr.io/lowcarbcheck/openplate:latest
     # build:
-    #   context: .
+    #   context: ..
     #   dockerfile: Dockerfile.pnpm
     restart: unless-stopped
     ports:

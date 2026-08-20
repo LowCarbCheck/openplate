@@ -5,10 +5,11 @@
 # The app itself keeps no database at all. Both images are open source under
 # the MIT License and are published to GHCR — nothing here builds from source.
 #
-# If you do not want sync, you do not want this file. Use `docker-compose.yml`
-# instead: the app alone needs no secrets and no accounts.
+# If you do not want sync, you do not want this file. Use `docker/compose.yml`
+# instead: the app alone needs no secrets and no accounts. The other shapes are
+# listed in `README.md` next to this file.
 #
-#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.full.yml
+#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 #
 #   # The sync service needs exactly one secret. Generate it once and keep it
 #   # with your database backups — see the SERVER_SECRET note below.
@@ -19,13 +20,21 @@
 #   echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 #   echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 #
-#   docker compose -f docker-compose.full.yml up -d
+#   docker compose -f compose.sync.yml up -d
+#
+# Run all of that from the directory you downloaded this file into. Compose
+# treats the compose file's OWN directory as the project directory, so the
+# `.env` you just wrote -- sitting beside this file -- is the one it reads.
 #
 # Then open PUBLIC_APP_URL. A "Sync" section appears in the app because
 # SYNC_SERVER_URL is set below; create an account there and the two devices
 # you sign in on converge. The service still cannot read a single entry —
 # see openplate-sync's PROTOCOL.md.
 #
+# Fixes the project name, so containers and the pg-data volume are named after
+# the stack rather than after whatever directory the file sits in.
+name: openplate-with-sync
+
 services:
   # ── Postgres ──────────────────────────────────────────────────────────────
   # Belongs to the sync service alone — it holds sync's accounts and the
@@ -152,7 +161,7 @@ services:
       # ── Mail (optional) ──
       # With nothing set here, verification and reset links are printed to the
       # service log — a supported way to run a family instance, not a degraded
-      # one:  docker compose -f docker-compose.full.yml logs -f sync
+      # one:  docker compose -f compose.sync.yml logs -f sync
       EMAIL_FROM: ${EMAIL_FROM:-openplate <noreply@localhost>}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
