@@ -13,24 +13,36 @@ service for you — and that is also open source, for you to run yourself.
 ## The app on its own
 
 ```bash
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.yml
-docker compose up -d
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
+docker compose -f compose.yml up -d
 ```
 
 One container, no database, no `.env` step, no secret to generate. The app is reachable at
 `http://localhost:3000`.
 
-To build from source instead of pulling the published image, comment out `image:` in the
-compose file, uncomment `build:`, and run `docker compose build && docker compose up -d`.
+To build from source instead of pulling the published image, comment out `image:` in
+[`docker/compose.yml`](../docker/compose.yml), uncomment `build:`, and run — from the repo
+root, because the build context is written relative to that file:
+
+```bash
+docker compose -f docker/compose.yml build
+docker compose -f docker/compose.yml up -d
+```
+
+Every other shape (sync, self-hosted inference, both) is a separate file under
+[`docker/topologies/`](../docker/topologies/). [topologies.md](topologies.md) is the map of
+which one you want.
 
 ## The app plus your own sync service
 
-[`docker-compose.full.yml`](../docker-compose.full.yml) is the reference deployment for the
-full experience: the app, the sync service, and the Postgres that **sync** needs. The app
-still connects to no database of its own.
+[`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml) is the
+reference deployment for the app, the sync service, and the Postgres that **sync** needs. The
+app still connects to no database of its own. (If you also want self-hosted inference, use
+[`docker/topologies/compose.full.yml`](../docker/topologies/compose.full.yml) instead — same
+sync setup, plus the model runtime.)
 
 ```bash
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.full.yml
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 
 # The sync service needs exactly one secret. Generate it and keep it with your backups.
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
@@ -39,7 +51,7 @@ echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
 
-docker compose -f docker-compose.full.yml up -d
+docker compose -f compose.sync.yml up -d
 ```
 
 The file is annotated line by line, including the two settings that will actually hurt you if
@@ -107,7 +119,7 @@ If you also run the sync service, its Postgres is worth a scheduled dump — tog
 `SERVER_SECRET`, which is useless without the database and vice versa:
 
 ```bash
-docker compose -f docker-compose.full.yml exec postgres \
+docker compose -f compose.sync.yml exec postgres \
   pg_dump -U openplate openplate_sync > sync-backup.sql
 ```
 

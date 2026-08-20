@@ -12,8 +12,9 @@ Sync is entirely optional. Unset, openplate loses no feature.
 
 - A running **openplate-sync** instance: either the hosted one, your own, or any third-party
   server implementing [the protocol](https://github.com/LowCarbCheck/openplate-sync/blob/main/PROTOCOL.md).
-  To run your own, use [`docker-compose.full.yml`](../docker-compose.full.yml) — see
-  [self-hosting.md](self-hosting.md).
+  To run your own, use
+  [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml) — see
+  [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).
 - `SYNC_SERVER_URL` set on the app, pointing at that service.
 
 ## Turning it on
