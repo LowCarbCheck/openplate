@@ -1,7 +1,8 @@
 # What should I run?
 
-Five rungs. Each one adds a capability and adds something you now have to operate. Start at
-the bottom and stop as soon as you have what you need — most people stop at rung 0 or 1.
+Five rungs and one variant. Each one adds a capability and adds something you now have to
+operate. Start at the bottom and stop as soon as you have what you need — most people stop at
+rung 0 or 1.
 
 | Rung | You get | You operate | Compose file |
 | --- | --- | --- | --- |
@@ -9,6 +10,7 @@ the bottom and stop as soon as you have what you need — most people stop at ru
 | 1 | The same, on your own box | One stateless container | `docker/compose.yml` |
 | 2 | Your diary on two devices | + a database and one secret | `docker/topologies/compose.sync.yml` |
 | 3 | Scans on your own hardware | + a model runtime | `docker/topologies/compose.inference.yml` |
+| 3b | One AI key shared across several people | + a small proxy | [openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway) |
 | 4 | All of it | All of it | `docker/topologies/compose.full.yml` |
 
 Every compose file is annotated line by line;
@@ -109,6 +111,48 @@ one-tap connect — with the caveat that `DEFAULT_INFERENCE_API_KEY` is embedded
 and readable by anyone who can open the app. See
 [configuration.md](configuration.md#instance-provided-ai).
 
+## Rung 3b — share one AI key, with a cap per person
+
+A variant rather than a step up: it does not change what a scan can do, it changes **who may
+pay for one**. openplate is bring-your-own-key, which is right for one person and awkward for
+a household where one person is willing to pay for everyone.
+
+[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway) is an
+OpenAI-compatible proxy that holds one upstream key and issues each member their own token
+with a hard daily request quota. Members paste a base URL and a token into **Settings → AI →
+OpenAI-compatible**, exactly as they would for any other endpoint. The payer sees usage per
+member and can revoke one member without disturbing the rest. It logs no request or response
+body, and there is a test that proves it.
+
+**Read its "Do you actually need this?" section before you run it.** If your provider is
+OpenRouter, you almost certainly do not: OpenRouter already mints sub-keys with their own
+credit limits, which is the same outcome with no server.
+[family-setup.md](family-setup.md) covers that path first.
+
+**You gain:** one upstream key spent on behalf of several people, a per-member daily cap, and
+per-member revocation. The same shape serves a hosted operator running a small tier for
+people who do not want to run anything.
+**You operate:** one small stateless-ish container — no model, no database, a members JSON
+file you edit and a quota counter file that must sit on durable storage.
+**Compose files:** in the gateway repo —
+[`docker/compose.yml`](https://github.com/LowCarbCheck/openplate-gateway/blob/main/docker/compose.yml)
+for the gateway alone, plus a household and a hosted topology.
+
+### Gateway and inference are different layers
+
+They are easy to confuse and they compose.
+
+- **openplate-inference is the compute layer.** It answers the question *what is on this
+  plate*. It carries a model runtime and weights, and it wants hardware.
+- **openplate-gateway is the tenancy layer.** It answers *who is allowed to spend, how much,
+  and how do I take it away*. It carries no model and forwards everything.
+
+Point the gateway's `UPSTREAM_BASE_URL` at your inference box and you get both: scans on your
+own hardware, with per-member tokens and quotas in front of them. Point it at a cloud
+provider instead and you get shared spend with no hardware. Neither one ever touches a diary
+— sync is a separate service on a separate path
+([architecture.md](architecture.md)).
+
 ## Rung 4 — everything
 
 **You gain:** rung 2 and rung 3 together — your diary on every device, scanned on your own
@@ -124,7 +168,8 @@ There is nothing new to learn at this rung. It is the union of the two above, wi
 
 ## Sharing a bill instead of a server
 
-If your reason for climbing this ladder was "my household needs more than one AI key", note
-that this is not what any rung above solves. It is solved at the provider, with per-person
-keys and per-person spend limits, and it needs no extra software.
-[family-setup.md](family-setup.md) has the steps.
+If your reason for climbing this ladder was "my household needs more than one AI key", the
+first answer is not a rung at all. It is solved at the provider, with per-person keys and
+per-person spend limits, and it needs no extra software.
+[family-setup.md](family-setup.md) has the steps — and, when your provider will not issue
+capped sub-keys, the rung-3b gateway as the fallback.

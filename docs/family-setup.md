@@ -6,7 +6,8 @@ and one shared key is worse — you cannot tell who spent what, and revoking one
 revokes everybody.
 
 **You do not need a server for this.** The fix lives at the provider: one account, one key
-per person, one spend limit per key.
+per person, one spend limit per key. Read that section first; the two server-shaped answers
+further down are for the cases it does not cover.
 
 **Nothing here shares a diary.** Each person's food log stays in their own browser's storage
 on their own device. What crosses the wire is a photo going out and an estimate coming back.
@@ -53,6 +54,43 @@ and top it up deliberately.
 **Automating it.** OpenRouter also exposes an API for creating and managing keys
 programmatically, which is worth knowing about if you are provisioning for more than a
 handful of people. For a family, the dashboard is faster than writing the script.
+
+## The other alternative: run openplate-gateway
+
+If your provider will not issue capped sub-keys — Mistral, most direct provider APIs — the
+sub-key recipe above has nothing to work with. That is what
+[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway) is for: a small
+OpenAI-compatible proxy that holds your one upstream key and issues each member their own
+`opk_…` token with a hard daily request quota.
+
+**Pick it over provider sub-keys when:**
+
+- Your provider has no per-key spend limit, so the cap has to live somewhere you control.
+- You want a **daily request** cap per person rather than a credit balance per person.
+- You are putting the household in front of your own
+  [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) box, where there
+  is no provider dashboard at all — the gateway adds the per-person quotas and usage the
+  `API_KEYS` allowlist below does not have.
+- You want revocation to be one line in a file rather than a shared key everyone re-pastes.
+
+**Stay with provider sub-keys when you can.** If you are on OpenRouter, you are already done
+five minutes ago and there is no container to keep alive. The gateway's own README opens by
+talking you out of running it, and it is right to.
+
+Setup is in the [gateway README quickstart](https://github.com/LowCarbCheck/openplate-gateway#quickstart):
+set `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY`, run `pnpm mint-token <member> <requests-per-day>`
+once per person, paste the printed entries into `config/members.json`, and bring up the
+compose file. Each member then does nothing special: **Settings → AI →
+OpenAI-compatible**, the gateway's base URL (for example `http://gateway.lan:3602/v1`) and
+their own token. Same two fields as any other endpoint.
+
+Two things worth knowing before you rely on it. The quota counts **requests, not currency**,
+so keep a hard spend cap on the upstream key at the provider as well — only the provider can
+stop the money. And a member with no `dailyLimit` gets zero rather than unlimited, which is
+the failure mode you want.
+
+Nothing about this shares a diary either. The gateway carries AI requests only; it has no
+sync route and no access to anyone's food log.
 
 ## The alternative: a shared inference box
 

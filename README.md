@@ -59,7 +59,7 @@ Full walkthrough: [docs/self-hosting.md](docs/self-hosting.md) and [docs/sync.md
    this device, so that file is how you move it and how you keep it safe. Plate photos stay on
    the device that took them — they are never exported or synced.
 
-## The three components
+## The components
 
 Run any subset. Only the first one is required.
 
@@ -68,6 +68,7 @@ Run any subset. Only the first one is required.
 | **openplate** (this repo)                                                     | The app. Accountless, local-first, stateless, boots with no secrets.                          | Yes — it is the product.                                         |
 | **[openplate-sync](https://github.com/LowCarbCheck/openplate-sync)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address and ciphertext it holds no key for. | No. Everything works without it.                                 |
 | **[openplate-inference](https://github.com/LowCarbCheck/openplate-inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint — open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
+| **[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway)**    | A small multi-tenant proxy: one upstream AI key shared across several people, with a per-member token and a daily quota. | No, and probably not — provider sub-keys solve most of this. |
 
 ## Documentation
 
@@ -76,6 +77,8 @@ Run any subset. Only the first one is required.
 - [docs/configuration.md](docs/configuration.md) — every environment variable, the
   Content-Security-Policy, custom and instance-provided AI endpoints, the OpenRouter flow.
 - [docs/sync.md](docs/sync.md) — enabling sync across devices and how the encryption works.
+- [docs/family-setup.md](docs/family-setup.md) — sharing one AI bill across a household, with
+  a spend limit and revocation per person.
 - [`.adr/`](.adr/) — architecture decision records. Start with
   [ADR-0006](.adr/0006-the-app-server-holds-no-accounts.md) for why this server has no
   accounts.
