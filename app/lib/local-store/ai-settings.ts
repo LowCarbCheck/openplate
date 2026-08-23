@@ -21,7 +21,9 @@ import { getAiStore } from './persist';
  * How the API key was provisioned — 'oauth' for the OpenRouter PKCE connect
  * flow (`routes/oauth.openrouter.callback.tsx`), 'manual' for a pasted key
  * (`routes/settings.ai.tsx`), 'preset' for this instance's own operator-provided
- * endpoint (`components/instance-preset-connect.tsx`, M138 spec 06). Read-only
+ * endpoint (`components/instance-preset-connect.tsx`, M138 spec 06), 'invite' for
+ * a gateway someone else runs, joined from an emailed invite link
+ * (`routes/connect-gateway.tsx`). Read-only
  * display detail (the AI settings page's connected summary) — never gates
  * behavior.
  *
@@ -32,7 +34,7 @@ import { getAiStore } from './persist';
  * is why the summary and the disconnect dialog both branch on it explicitly
  * rather than defaulting.
  */
-export type AiConnectionMethod = 'oauth' | 'manual' | 'preset';
+export type AiConnectionMethod = 'oauth' | 'manual' | 'preset' | 'invite';
 
 /** The device's BYOK configuration. `apiKey` never leaves this store. */
 export interface LocalAiSettings {
@@ -48,6 +50,17 @@ export interface LocalAiSettings {
    * simply parses with this field absent, not wrong.
    */
   connectedVia: AiConnectionMethod;
+  /**
+   * `true` when the endpoint's administrator can review what is submitted to it
+   * — today only a gateway joined by invite says so (`connectedVia: 'invite'`,
+   * `routes/connect-gateway.tsx`). ABSENT on every other row, which is why it is
+   * optional rather than defaulted: "we were never told" and "we were told no"
+   * are the same thing for display purposes, and both must render no notice.
+   *
+   * Persisted rather than re-fetched so the settings page can render the notice
+   * offline. It is a snapshot of what the gateway declared at join time.
+   */
+  auditEnabled?: boolean;
   /** Epoch-ms of the last save — display-only. */
   updatedAt: number;
 }

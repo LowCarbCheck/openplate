@@ -83,7 +83,8 @@ import { Label } from '#app/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '#app/components/ui/alert';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
-import { AlertTriangle, Camera, Check, ChevronDown, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Camera, Check, ChevronDown, Loader2, ShieldAlert, X } from 'lucide-react';
+import { isAuditDisclosureRequired } from '#app/lib/gateway-invite';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -943,6 +944,7 @@ function ScanFlow({
  */
 const FAILURE_TITLE_KEY_BY_CAUSE = {
   auth: 'scan.errors.titles.auth',
+  'reconsent-required': 'scan.errors.titles.reconsentRequired',
   credit: 'scan.errors.titles.credit',
   'rate-limit': 'scan.errors.titles.rateLimit',
   'model-not-found': 'scan.errors.titles.modelNotFound',
@@ -979,6 +981,8 @@ const OPENROUTER_RATE_LIMIT_KEY = 'scan.errors.openrouterRateLimit';
  */
 const FAILURE_BODY_KEY_BY_CAUSE = {
   auth: 'scan.errors.provider.auth',
+  // A single fixed sentence in `failure-cause.ts`, so it restates cleanly here.
+  'reconsent-required': 'scan.errors.provider.reconsentRequired',
   credit: 'scan.errors.provider.credit',
   'rate-limit': 'scan.errors.provider.rateLimit',
   'model-not-found': 'scan.errors.provider.modelNotFound',
@@ -2096,6 +2100,28 @@ export function ConfirmDraftForm({
   );
 }
 
+/**
+ * Standing "somebody else can read this" line on the capture screen.
+ *
+ * Deliberately HERE and not only in settings: the moment of risk is the moment
+ * a photo is about to be sent, and a disclosure read once during onboarding
+ * weeks ago is not consent at the point of submission. Subtle by design — one
+ * muted line, no colour alarm — because it describes the normal, agreed
+ * arrangement of a gateway, not an error.
+ *
+ * Renders for the connected row's `auditEnabled` only, which today is set
+ * exclusively by a gateway join (`app/lib/gateway-invite.ts`).
+ */
+function AuditReviewNotice() {
+  const { t } = useTranslation();
+  return (
+    <p className="mb-4 flex items-start gap-2 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+      <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      {t('scan.auditNotice')}
+    </p>
+  );
+}
+
 export default function ScanPlate({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useTranslation();
   // Scanning is inherently online (it calls the user's AI provider). Offline, an
@@ -2119,6 +2145,7 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
   return (
     <>
       {offlineNote}
+      {isAuditDisclosureRequired(loaderData.settings) && <AuditReviewNotice />}
       <ScanFlow
         monthlyUsage={loaderData.monthlyUsage}
         confirmResult={confirmResult}

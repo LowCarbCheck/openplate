@@ -223,6 +223,43 @@
     "cancel": "Abbrechen",
     "continue": "Weiter"
   },
+  "connectGateway": {
+    "audit": {
+      "body": "Dieses Gateway gibt an, dass seine Administration deine Einsendungen einsehen kann, auch die Fotos. Das ist die Auskunft des Gateways selbst — openplate kann sie nicht überprüfen.",
+      "title": "Dieses Gateway sagt, es kann mitlesen"
+    },
+    "backToAiSettings": "Zurück zu den KI-Einstellungen",
+    "blocked": {
+      "operatorBody": "Wer dieses openplate betreibt, muss {{origin}} in die Einstellung CSP_CONNECT_EXTRA eintragen und neu starten. Bis dahin blockiert der Browser jede Anfrage an dieses Gateway. (Wenn du es selbst betreibst: eine Zeile in deiner .env.)",
+      "operatorTitle": "Wer dieses openplate betreibt, muss es erlauben",
+      "title": "Diese App darf nicht mit diesem Gateway sprechen"
+    },
+    "checking": "Gateway wird geprüft…",
+    "confirm": {
+      "body": "Sonst ändert sich nichts: Dein Tagebuch bleibt auf diesem Gerät, und du kannst die Verbindung jederzeit in den KI-Einstellungen trennen.",
+      "button": "Diesem Gateway beitreten",
+      "join": "{{name}} beitreten",
+      "joining": "Verbinde…",
+      "replaces": "Das ersetzt deine aktuelle KI-Verbindung ({{current}}). Es wird nichts widerrufen — du kannst sie später wieder einrichten.",
+      "routing": "Deine Essensfotos werden zur Analyse über {{origin}} geschickt."
+    },
+    "description": "Jemand hat dieses Gerät eingeladen, die KI auf einem Gateway zu nutzen, das er betreibt.",
+    "invalidLink": {
+      "body": "Ein Teil des Links fehlt oder wurde vom E-Mail-Programm abgeschnitten. Bitte lass ihn dir noch einmal schicken.",
+      "title": "Dieser Einladungslink sieht nicht richtig aus"
+    },
+    "inviteInvalid": {
+      "body": "Bitte lass dir einen neuen Link schicken.",
+      "title": "Diese Einladung ist ungültig oder abgelaufen"
+    },
+    "joined": "Mit {{name}} verbunden.",
+    "saveFailed": "Die Verbindung ließ sich auf diesem Gerät nicht speichern. Versuch es nochmal.",
+    "title": "Einem Gateway beitreten",
+    "unreachable": {
+      "body": "Das Gateway hat nicht geantwortet. Prüf die Adresse, oder frag die Person, die dich eingeladen hat, ob es läuft.",
+      "title": "{{origin}} ist nicht erreichbar"
+    }
+  },
   "dashboard": {
     "loading": "Dein Tag wird geladen…",
     "title": "Übersicht",
@@ -1097,6 +1134,7 @@
       "stillWorking": "Noch dabei — volle Teller brauchen einen Moment…",
       "uploading": "Foto wird hochgeladen…"
     },
+    "auditNotice": "Die Administration des verbundenen Gateways gibt an, deine Einsendungen einsehen zu können, auch die Fotos.",
     "capture": {
       "addWithoutPhoto": "Essen ohne Foto eintragen",
       "analyze": "Analysieren",
@@ -1131,7 +1169,8 @@
         "auth": "Der Anbieter hat deinen API-Schlüssel abgelehnt — prüf ihn in den KI-Einstellungen und versuch es nochmal.",
         "credit": "Dein Konto beim Anbieter hat kein Guthaben mehr — lad dort Guthaben auf und versuch es nochmal.",
         "modelNotFound": "Der Anbieter kennt dieses Modell nicht — wähl in den KI-Einstellungen ein anderes und versuch es nochmal.",
-        "rateLimit": "Der Anbieter bremst gerade die Anfragen — warte einen Moment und versuch es nochmal."
+        "rateLimit": "Der Anbieter bremst gerade die Anfragen — warte einen Moment und versuch es nochmal.",
+        "reconsentRequired": "Die Datenschutz-Einstellungen dieses Gateways haben sich geändert, deshalb nimmt es dieses Gerät nicht mehr an — bitte lass dir einen neuen Einladungslink schicken."
       },
       "readPhoto": "Das Foto ließ sich nicht lesen — nimm ein anderes.",
       "titles": {
@@ -1141,6 +1180,7 @@
         "modelNotFound": "Dieses Modell ist nicht verfügbar",
         "noLuck": "Mit diesem Foto hat es nicht geklappt",
         "rateLimit": "Gerade zu viele Anfragen",
+        "reconsentRequired": "Dieses Gateway braucht eine neue Einladung",
         "transient": "Der Anbieter hatte Probleme mit der Antwort"
       }
     },
@@ -1361,6 +1401,11 @@
     "field": {
       "baseUrl": "Basis-URL",
       "model": "Modell"
+    },
+    "gateway": {
+      "auditNotice": "Dieses Gateway gibt an, dass seine Administration deine Einsendungen einsehen kann, auch die Fotos.",
+      "badge": "Gateway",
+      "disconnectNote": "Es wird nichts widerrufen — es ist kein Konto und kein Schlüssel von dir im Spiel. Um dieses Gateway wieder zu nutzen, brauchst du einen neuen Einladungslink von der Person, die es betreibt."
     },
     "loading": "Deine KI-Einstellungen werden geladen…",
     "manualEntry": {

@@ -23,6 +23,13 @@ import { VisionProviderError } from './types';
 /**
  * - `auth` — the key itself was rejected (401/403). Resending the same
  *   request can never succeed.
+ * - `reconsent-required` — a gateway (see `app/lib/gateway-invite.ts`) refused
+ *   the call because its privacy mode changed since this device joined: HTTP
+ *   403 with `{"error":"reconsent_required"}`. It is a 403, but emphatically
+ *   NOT `auth`: the member token is fine and there is nothing to fix in AI
+ *   settings — the person has to be re-invited, having been told what the new
+ *   terms are. Lumping it into `auth` would send them hunting for a key that
+ *   was never wrong.
  * - `credit` — the provider account is out of balance/quota (402, or a 429
  *   whose body carries a known quota/billing error code). Can never succeed
  *   until the user adds credit with their provider.
@@ -46,6 +53,7 @@ import { VisionProviderError } from './types';
  */
 export type VisionFailureCause =
   | 'auth'
+  | 'reconsent-required'
   | 'credit'
   | 'rate-limit'
   | 'model-not-found'
@@ -75,7 +83,21 @@ export class VisionProviderFailure extends VisionProviderError {
  * than failing the whole classification.
  */
 const KnownErrorBodySchema = z.object({
-  error: z.object({ code: z.string().optional(), type: z.string().optional() }).optional().catch(undefined),
+  // Two wire shapes carry the same domain value — the OpenAI-style
+  // `{error: {code}}` object every provider sends, and a gateway's flat
+  // `{"error":"reconsent_required"}` string. Both are normalized HERE, at the
+  // I/O boundary, into one `{ code }` domain value, so nothing downstream has
+  // to ask which representation arrived. The free-text `message` member is
+  // still never read (see above).
+  error: z
+    .union([
+      z.string().transform((code) => ({ code })),
+      z
+        .object({ code: z.string().optional(), type: z.string().optional() })
+        .transform((raw) => ({ code: raw.code ?? raw.type })),
+    ])
+    .optional()
+    .catch(undefined),
 });
 
 type KnownErrorBody = z.infer<typeof KnownErrorBodySchema>;
@@ -109,10 +131,20 @@ async function readErrorBody(response: Response): Promise<KnownErrorBody | null>
 
 async function is429CreditExhaustion(response: Response): Promise<boolean> {
   const body = await readErrorBody(response);
-  const code = body?.error?.code ?? body?.error?.type;
+  const code = body?.error?.code;
   return code !== undefined && CREDIT_ERROR_CODES.has(code);
 }
 
+/** The gateway's `{"error":"reconsent_required"}` marker on a 403 — see `VisionFailureCause`. */
+const RECONSENT_REQUIRED_CODE = 'reconsent_required';
+
+async function isReconsentRequired(response: Response): Promise<boolean> {
+  const body = await readErrorBody(response);
+  return body?.error?.code === RECONSENT_REQUIRED_CODE;
+}
+
+const RECONSENT_MESSAGE =
+  "This gateway's privacy settings changed, so it stopped accepting this device — ask whoever invited you for a new invite link.";
 const AUTH_MESSAGE = 'Your API key was rejected by the provider — check it in AI settings and try again.';
 const CREDIT_MESSAGE = 'Your provider account is out of credit — add credit with your provider and try again.';
 const RATE_LIMIT_MESSAGE = 'The provider is rate-limiting requests right now — wait a moment and try again.';
@@ -143,6 +175,11 @@ function buildInvalidRequestMessage(status: number): string {
  * status and, for 429s, a machine-readable error code.
  */
 export async function classifyVisionHttpFailure(response: Response): Promise<HttpFailureClassification> {
+  // Checked BEFORE the generic 401/403 branch: a gateway's reconsent refusal is
+  // a 403 whose fix has nothing to do with the key (see `VisionFailureCause`).
+  if (response.status === 403 && (await isReconsentRequired(response))) {
+    return { cause: 'reconsent-required', message: RECONSENT_MESSAGE };
+  }
   if (response.status === 401 || response.status === 403) {
     return { cause: 'auth', message: AUTH_MESSAGE };
   }

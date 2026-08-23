@@ -24,6 +24,13 @@ export default [
   // never depends on a layout loader that doesn't apply to it.
   route('/oauth/openrouter/callback', 'routes/oauth.openrouter.callback.tsx'),
 
+  // Gateway-mode onboarding: where an emailed invite link lands. CLIENT-ONLY
+  // for the same reason the OAuth callback is — the invite and member tokens
+  // must never reach this server — and top-level so it depends on no layout
+  // loader and no onboarding gate: someone arriving from an invite email may
+  // never have opened this app before.
+  route('/connect-gateway', 'routes/connect-gateway.tsx'),
+
   // Legacy path redirects (the /log → /diary and /log/plate → /scan rename,
   // and /profile → /settings once the profile card-hub became the settings hub).
   route('/log', 'routes/redirects/legacy-log.tsx'),

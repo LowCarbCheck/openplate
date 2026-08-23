@@ -22,6 +22,7 @@ import {
 } from '#app/lib/local-store';
 import type { LocalAiSettings } from '#app/lib/local-store';
 import { resolveSettingsReturnPath } from '#app/lib/settings-return';
+import { isAuditDisclosureRequired } from '#app/lib/gateway-invite';
 import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
 import { randomUuid } from '#app/lib/uuid';
 import { formatSettingsUsageLine } from '#app/models/ai-usage';
@@ -503,6 +504,23 @@ function DisconnectDialogDescription({ settings }: { settings: LocalAiSettings }
     );
   }
 
+  // A gateway joined by invite (`routes/connect-gateway.tsx`) is the same shape
+  // of connection as a preset — a base URL and a token somebody else issued —
+  // so the same reasoning applies: there is no provider account of the user's
+  // to revoke anything at. What differs is the remedy: an instance preset can be
+  // reconnected in one tap, while re-joining a gateway needs a fresh invite from
+  // whoever runs it.
+  if (settings.connectedVia === 'invite') {
+    return (
+      <span className="block space-y-2">
+        <span className="block">{t('settingsAi.disconnect.stops')}</span>
+        <span className="block rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-accent-amber">
+          {t('settingsAi.gateway.disconnectNote')}
+        </span>
+      </span>
+    );
+  }
+
   const showOauthKeyNote = supportsOauthPkce(provider) && definition.keyConsoleUrl !== null;
   return (
     <span className="block space-y-2">
@@ -547,35 +565,47 @@ function ConnectedPanel({ settings, onDisconnected }: { settings: LocalAiSetting
   const modelLabel = findCatalogModel(settings.provider, settings.model)?.label ?? settings.model;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
-        <span>
-          <Trans
-            i18nKey="settingsAi.connected.status"
-            values={{ provider: providerLabel({ provider: settings.provider, t }), model: modelLabel }}
-            components={{ strong: <span className="font-medium" /> }}
-          />
-        </span>
-        {/* Which of the three ways this connection came about only ever shows
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
+          <span>
+            <Trans
+              i18nKey="settingsAi.connected.status"
+              values={{ provider: providerLabel({ provider: settings.provider, t }), model: modelLabel }}
+              components={{ strong: <span className="font-medium" /> }}
+            />
+          </span>
+          {/* Which of the three ways this connection came about only ever shows
             up for the preset (M138 spec 06): "openai-compatible + a base URL
             you never typed" is otherwise indistinguishable from a manual
             self-hosted connect, and the disconnect dialog's copy differs. */}
-        {settings.connectedVia === 'preset' && <Badge variant="secondary">{t('settingsAi.preset.badge')}</Badge>}
+          {settings.connectedVia === 'preset' && <Badge variant="secondary">{t('settingsAi.preset.badge')}</Badge>}
+          {settings.connectedVia === 'invite' && <Badge variant="secondary">{t('settingsAi.gateway.badge')}</Badge>}
+        </div>
+        <ConfirmAction
+          trigger={
+            <Button type="button" variant="destructive" size="sm">
+              {t('settingsAi.disconnect.button')}
+            </Button>
+          }
+          title={t('settingsAi.disconnect.title')}
+          description={<DisconnectDialogDescription settings={settings} />}
+          confirmText={t('settingsAi.disconnect.button')}
+          confirmVariant="destructive"
+          formData={{ _intent: 'delete' }}
+          onSuccess={onDisconnected}
+        />
       </div>
-      <ConfirmAction
-        trigger={
-          <Button type="button" variant="destructive" size="sm">
-            {t('settingsAi.disconnect.button')}
-          </Button>
-        }
-        title={t('settingsAi.disconnect.title')}
-        description={<DisconnectDialogDescription settings={settings} />}
-        confirmText={t('settingsAi.disconnect.button')}
-        confirmVariant="destructive"
-        formData={{ _intent: 'delete' }}
-        onSuccess={onDisconnected}
-      />
+      {/* PERSISTENT, for as long as the connection lasts — the same predicate
+          the pre-join card and the scan screen use, so "an administrator can
+          read this" can never be true on one surface and absent on another.
+          Worded as the gateway's own declaration, not as a verified fact. */}
+      {isAuditDisclosureRequired(settings) && (
+        <p className="rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-xs text-accent-amber">
+          {t('settingsAi.gateway.auditNotice')}
+        </p>
+      )}
     </div>
   );
 }
