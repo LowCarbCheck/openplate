@@ -68,7 +68,7 @@ Run any subset. Only the first one is required.
 | **openplate** (this repo)                                                     | The app. Accountless, local-first, stateless, boots with no secrets.                          | Yes — it is the product.                                         |
 | **[openplate-sync](https://github.com/LowCarbCheck/openplate-sync)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address and ciphertext it holds no key for. | No. Everything works without it.                                 |
 | **[openplate-inference](https://github.com/LowCarbCheck/openplate-inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint — open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
-| **[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway)**    | A small multi-tenant proxy: one upstream AI key shared across several people, with a per-member token and a daily quota. | No, and probably not — provider sub-keys solve most of this. |
+| **[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway)**    | A small multi-tenant proxy: one upstream AI key shared across several people, with a per-member token and a daily quota, invite-based onboarding and an optional audited organization mode. | No, and probably not — provider sub-keys solve most of this. |
 
 ## Documentation
 

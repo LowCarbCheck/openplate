@@ -55,6 +55,12 @@ ships a strict Content-Security-Policy. Its `connect-src` allows:
 That allowlist is what stops an injected script from exfiltrating a key that lives in the
 page. Widen it deliberately.
 
+- A gateway joined via an invite link (`/connect-gateway`, see [family-setup.md](family-setup.md#the-other-alternative-run-openplate-gateway))
+  is a remote endpoint like any other and is subject to the same `connect-src` allowlist: on a
+  hosted/public instance, the operator must add the gateway's origin to `CSP_CONNECT_EXTRA`
+  before a member can join. Loopback origins are already allowed, so a gateway running on the
+  same box or tailnet needs nothing extra.
+
 ## Custom AI endpoints
 
 [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) is a self-hosted,
@@ -99,6 +105,12 @@ Two rules:
 
 A malformed `DEFAULT_INFERENCE_BASE_URL` fails the boot deliberately, so a typo cannot look
 like "the button just never appeared".
+
+This instance preset (`connectedVia: 'preset'`) and the gateway invite flow
+(`connectedVia: 'invite'`, see [family-setup.md](family-setup.md#the-other-alternative-run-openplate-gateway))
+are the two "someone else configured my provider row" paths — the difference is scope: a
+preset is set by this instance's own operator for every visitor, an invite is issued
+per-member by a gateway operator.
 
 ## Connecting with OpenRouter
 

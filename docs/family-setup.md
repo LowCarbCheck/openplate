@@ -78,11 +78,14 @@ five minutes ago and there is no container to keep alive. The gateway's own READ
 talking you out of running it, and it is right to.
 
 Setup is in the [gateway README quickstart](https://github.com/LowCarbCheck/openplate-gateway#quickstart):
-set `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY`, run `pnpm mint-token <member> <requests-per-day>`
-once per person, paste the printed entries into `config/members.json`, and bring up the
-compose file. Each member then does nothing special: **Settings → AI →
-OpenAI-compatible**, the gateway's base URL (for example `http://gateway.lan:3602/v1`) and
-their own token. Same two fields as any other endpoint.
+set `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY` and `GATEWAY_ADMIN_TOKEN`, and bring up the
+compose file. From there it's all in the browser at `/admin/ui`: sign in with the admin
+token, create an invite (with its daily quota), and send the member the link it gives you.
+The member opens it, taps to join, and openplate configures itself — no fields to type, no
+file to paste into. Revocation is one click in `/admin/ui` (or a `DELETE
+/admin/members/:id`), takes effect immediately, and needs no restart. See the gateway repo's
+own [docs/family-setup.md](https://github.com/LowCarbCheck/openplate-gateway/blob/main/docs/family-setup.md)
+for the full walkthrough, including what the invite link and the join screen actually show.
 
 Two things worth knowing before you rely on it. The quota counts **requests, not currency**,
 so keep a hard spend cap on the upstream key at the provider as well — only the provider can
@@ -91,6 +94,12 @@ the failure mode you want.
 
 Nothing about this shares a diary either. The gateway carries AI requests only; it has no
 sync route and no access to anyone's food log.
+
+A member who joins by invite gets a settings row marked `connectedVia: 'invite'` — the same
+"someone else configured this for me" shape as an instance preset (`connectedVia: 'preset'`),
+just scoped per-member instead of instance-wide. See
+[configuration.md#instance-provided-ai](configuration.md#instance-provided-ai) for that
+comparison.
 
 ## The alternative: a shared inference box
 
