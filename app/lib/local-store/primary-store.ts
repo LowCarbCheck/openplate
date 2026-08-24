@@ -33,6 +33,7 @@ import {
   WEIGHT_ENTRIES_TABLE,
 } from './store';
 import { getPrimaryStore, requestPersistentStorage } from './persist';
+import { markDeviceHasDataForTable } from './had-data';
 import { SCHEMA_VERSION } from './schema';
 import type {
   FastProtocolId,
@@ -67,10 +68,17 @@ async function resolveStore(store: Store | undefined): Promise<Store> {
  * storage — this is the "first tracker write" durability trigger. Stamps the
  * schema version the store was last written under, so a future migration can
  * detect the on-disk shape.
+ *
+ * Also stamps the durable "this device has had data before" marker on the
+ * first food-log/profile write (M123 spec 01). It belongs HERE, at the one
+ * chokepoint every entity write already passes through, so no future write
+ * path can be added that forgets it — `markDeviceHasDataForTable` owns the
+ * decision about which tables count, and is a no-op for the rest.
  */
 function writeEntity(store: Store, table: string, id: string, entity: PrimaryEntity): void {
   requestPersistentStorage();
   store.setValue(SCHEMA_VERSION_VALUE, SCHEMA_VERSION);
+  markDeviceHasDataForTable(store, table);
   store.setRow(table, id, { [PRIMARY_ENTITY_CELL]: JSON.stringify(entity) });
 }
 

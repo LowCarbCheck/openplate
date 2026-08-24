@@ -200,6 +200,21 @@ export const SCHEMA_VERSION_VALUE = 'schemaVersion';
 /** Store-level value: epoch-ms of the last successful backup export (drives the nudge). */
 export const LAST_EXPORT_VALUE = 'lastExportAt';
 /**
+ * Store-level value: epoch-ms the FIRST food log or profile write ever landed
+ * on this device — the durable "this device has had data before" marker
+ * (M123 spec 01).
+ *
+ * It lives in the store's VALUES partition (`v`) deliberately. The load/
+ * autosave race this spec exists to close empties the TABLES partition (`t`)
+ * while `v` is observed to survive, so a `t`-empty/`v`-populated store is not
+ * "a new device" — it is "a device that lost its tables". This value is the
+ * only thing that can tell those two states apart, and it is readable without
+ * consulting `t` at all.
+ *
+ * Write-once and never cleared: see `had-data.ts`.
+ */
+export const HAD_DATA_MARKER_VALUE = 'firstDataAt';
+/**
  * Store-level value: the userId the one-time server -> device migration gate
  * (`_personal.tsx`) was last confirmed clear for on THIS device (M117/03
  * follow-up fix). Session-scoped trust: written after a successful gate

@@ -151,6 +151,14 @@ export {
 } from './backup';
 export type { BackupEnvelope, RawBackupEnvelope } from './backup';
 
+// The durable "this device has had data before" marker (M123 spec 01). Lives
+// in the store's VALUES partition, which survives the tables wipe the
+// load/autosave race causes — so it is the only thing that can tell "never
+// onboarded" apart from "lost its tables". `_personal.tsx`'s onboarding gate
+// is its consumer: an empty-logs read must consult `hasEverHadData` before it
+// is allowed to treat the device as a fresh install.
+export { hasEverHadData, getFirstDataAt, marksDeviceHasData } from './had-data';
+
 // Versioned schema: the constant + the entity/snapshot types.
 export { SCHEMA_VERSION, ANONYMOUS_USER_ID } from './schema';
 export type {
