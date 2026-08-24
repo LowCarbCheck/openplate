@@ -1,0 +1,60 @@
+{
+  "name": "mistral-vs-qwen-control",
+  "description": "M147/02: mistral-medium-latest (vision) vs a same-session OpenRouter control re-run of qwen/qwen3-vl-8b-instruct, both single_v3 (terse pipeline v3, 896 px client-side downscale) -- the exact approach/prompt/schema the GPU control row in BASELINE.md uses. The Qwen row here is an OpenRouter re-run for harness-drift control, NOT a reproduction of the local Q4_K_M GGUF serving run; it will not hit the same GPU inference stack (see eval/BASELINE.md and the results file this run feeds).",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "out_dir": "runs/2026-08-24-mistral-vs-qwen-control",
+  "image_max_long_edge": 896,
+  "providers": {
+    "mistral": {
+      "base_url": "https://api.mistral.ai/v1",
+      "api_key_env": "MISTRAL_API_KEY",
+      "timeout_seconds": 120,
+      "max_retries": 3,
+      "retry_backoff_base_seconds": 2.0
+    },
+    "openrouter": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "headers": {
+        "HTTP-Referer": "https://sprqvntrs.com/openplate-bench",
+        "X-Title": "openplate plate-id bench"
+      },
+      "timeout_seconds": 120,
+      "max_retries": 3,
+      "retry_backoff_base_seconds": 2.0
+    }
+  },
+  "models": {
+    "mistral_medium": {
+      "id": "mistral-medium-latest",
+      "provider": "mistral",
+      "price_per_mtok_in": 1.5,
+      "price_per_mtok_out": 7.5,
+      "use_json_schema": true,
+      "max_tokens_v3": 256,
+      "_pricing_note": "USD/Mtok, Mistral standard-tier API pricing as of 2026-08-24 (mistral.ai/pricing/api, cross-checked against docs.mistral.ai/getting-started/models/models_overview -- mistral-medium-latest currently resolves to mistral-medium-3.5, the successor to the now-retired Pixtral line)."
+    },
+    "qwen3_vl_8b": {
+      "id": "qwen/qwen3-vl-8b-instruct",
+      "provider": "openrouter",
+      "price_per_mtok_in": 0.117,
+      "price_per_mtok_out": 0.455,
+      "use_json_schema": true,
+      "max_tokens_v3": 256
+    }
+  },
+  "approach_order": ["single_mistral_medium_v3", "single_qwen3_vl_8b_v3"],
+  "approaches": {
+    "single_mistral_medium_v3": {
+      "type": "single_v3",
+      "model": "mistral_medium",
+      "label": "v3 terse single-shot mistral-medium-latest (hosted), 896 px"
+    },
+    "single_qwen3_vl_8b_v3": {
+      "type": "single_v3",
+      "model": "qwen3_vl_8b",
+      "label": "v3 terse single-shot qwen/qwen3-vl-8b-instruct via OpenRouter (harness-drift control, NOT the local GGUF serving run)"
+    }
+  }
+}
