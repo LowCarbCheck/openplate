@@ -22,6 +22,7 @@ import { LAST_EXPORT_VALUE } from './store';
 import { SCHEMA_VERSION } from './schema';
 import type { LocalStoreSnapshot } from './schema';
 import { getPrimaryStore } from './persist';
+import { getFirstDataAt } from './had-data';
 import {
   getLocalProfileGoals,
   listLocalFasts,
@@ -481,4 +482,39 @@ export async function daysSinceExport({ store, now }: { store?: Store; now?: () 
 > {
   const clock = now ?? Date.now;
   return computeDaysSinceExport(await getLastExportAt({ store }), clock());
+}
+
+// ---------------------------------------------------------------------------
+// Backup nudge: "days since data first existed" (M123/01 item 4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whole days between the instant this device first held data and `now`; null
+ * when the device never has (or its marker is unreadable). Pure.
+ *
+ * Deliberately identical in shape to `computeDaysSinceExport` — same floor-to-
+ * whole-days rounding, same `Math.max(0, …)` clamp against a clock that has
+ * moved backwards, and the same null-means-"no instant to measure from"
+ * semantics. The two feed one comparison against
+ * `BACKUP_NUDGE_THRESHOLD_DAYS`, so they must not round differently.
+ */
+export function computeDaysSinceFirstData(firstDataMs: number | null, nowMs: number): number | null {
+  if (firstDataMs === null) return null;
+  return Math.max(0, Math.floor((nowMs - firstDataMs) / MS_PER_DAY));
+}
+
+/**
+ * Whole days since this device first held data, or null when it never has —
+ * the datum `shouldShowBackupNudge` measures a NEVER-EXPORTED device against,
+ * in place of the `daysSinceExport` it has no value for.
+ *
+ * Reads `getFirstDataAt`, which lives in the store's VALUES partition and so
+ * survives the tables wipe this spec exists to contain — meaning a device that
+ * just lost its tables still reports the true age of its data, not zero.
+ */
+export async function daysSinceFirstData({ store, now }: { store?: Store; now?: () => number } = {}): Promise<
+  number | null
+> {
+  const clock = now ?? Date.now;
+  return computeDaysSinceFirstData(await getFirstDataAt({ store }), clock());
 }

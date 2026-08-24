@@ -17,21 +17,26 @@ import { cn } from '#app/lib/utils';
  *
  * A `null` `daysSinceExport` (never exported) is NOT an early-out here: that's
  * the population most at risk, so `shouldShowBackupNudge` owns the whole
- * decision, gating on `hasData` so a brand-new empty device stays quiet.
+ * decision — measuring a never-exported device's `daysSinceFirstData` against
+ * the same threshold, and gating on `hasData` so a brand-new empty device
+ * stays quiet.
  */
 export function BackupNudgeBanner({
   daysSinceExport,
+  daysSinceFirstData,
   hasData,
   className,
 }: {
   daysSinceExport: number | null;
+  /** Whole days since this device first held data — see `shouldShowBackupNudge`. */
+  daysSinceFirstData: number | null;
   hasData: boolean;
   className?: string;
 }) {
   const [isDismissed, setIsDismissed] = useState(false);
   const { t } = useTranslation();
   if (isDismissed) return null;
-  if (!shouldShowBackupNudge({ daysSinceExport, hasData })) return null;
+  if (!shouldShowBackupNudge({ daysSinceExport, daysSinceFirstData, hasData })) return null;
   // The copy moved out of `formatBackupNudgeMessage` and into the catalog
   // (M129/05): the singular/plural split it hand-rolled is `count`'s job in
   // i18next, and German needs its own plural rules for the same sentence.

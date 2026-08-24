@@ -31,6 +31,12 @@ export default [
   // never have opened this app before.
   route('/connect-gateway', 'routes/connect-gateway.tsx'),
 
+  // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
+  // device whose store has been wiped but whose `firstDataAt` marker survives.
+  // TOP-LEVEL and client-only — it must sit outside `_personal`, whose gate is
+  // what redirects here, and the backup file it reads never leaves the browser.
+  route('/recover', 'routes/recover.tsx'),
+
   // Legacy path redirects (the /log → /diary and /log/plate → /scan rename,
   // and /profile → /settings once the profile card-hub became the settings hub).
   route('/log', 'routes/redirects/legacy-log.tsx'),

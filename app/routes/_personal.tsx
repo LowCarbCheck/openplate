@@ -9,7 +9,8 @@ import {
   redirect,
   type ShouldRevalidateFunctionArgs,
 } from 'react-router';
-import { getLocalProfileGoals, listLocalFoodLogs, patchLocalProfileGoals } from '#app/lib/local-store';
+import { getLocalProfileGoals, hasEverHadData, listLocalFoodLogs, patchLocalProfileGoals } from '#app/lib/local-store';
+import { resolveOnboardingGate } from '#app/lib/onboarding-gate';
 import { writeHomeHint } from '#app/lib/home-entry';
 import AppWrapper from '#app/components/app-wrapper';
 import { AppLoading } from '#app/components/app-loading';
@@ -29,6 +30,15 @@ import { ErrorFallback } from '#app/components/route-error-boundary';
  * `onboardingCompletedAt` stamp), in which case we self-heal by stamping local
  * completion so nobody is ever trapped in the flow.
  *
+ * The third branch is `/recover` (M123 spec 01). An empty local store is NOT
+ * proof of a fresh install: the load/autosave race documented in
+ * `local-store/persist.ts` empties the tables partition while the values
+ * partition survives, and the `firstDataAt` marker lives in that surviving
+ * partition. So before the wizard, this gate asks the marker whether this
+ * device has ever held data — and if it has, and the tables are now completely
+ * empty, it blocks on the recovery screen instead of presenting a wipe as a
+ * first run. The decision itself is pure and lives in `#app/lib/onboarding-gate`.
+ *
  * Both passing branches also refresh the home hint (`#app/lib/home-entry`) —
  * the device-local cookie `/` reads to send a returning visitor straight into
  * the app. Writing it HERE, on every app visit, is what keeps it inside
@@ -36,23 +46,31 @@ import { ErrorFallback } from '#app/components/route-error-boundary';
  * lets you through is by definition the moment "this device is in the app"
  * became true, which is why the two live in one place.
  *
- * @throws a redirect to `/onboarding` when onboarding is pending and there's no
- *   prior local food log to self-heal from.
+ * @throws a redirect to `/recover` when this device has held data before but
+ *   its tables are now empty, and to `/onboarding` when onboarding is simply
+ *   pending with no prior data to self-heal from.
  */
 export async function clientLoader() {
   const profile = await getLocalProfileGoals();
-  if (profile !== null && profile.onboardingCompletedAt !== null) {
-    writeHomeHint();
-    return null;
-  }
+  const hasProfile = profile !== null;
+  const hasCompletedOnboarding = profile?.onboardingCompletedAt != null;
+  // Listing the logs parses and sorts every row, and it is the only expensive
+  // input here — but it cannot change the outcome once onboarding is stamped,
+  // because the resolver's first branch returns before `logCount` is read. So
+  // the hot path (every app boot of an onboarded device) skips it entirely.
+  const logCount = hasProfile && hasCompletedOnboarding ? 0 : (await listLocalFoodLogs()).length;
+  const outcome = resolveOnboardingGate({
+    hasProfile,
+    hasCompletedOnboarding,
+    logCount,
+    hasEverHadData: await hasEverHadData(),
+  });
 
-  const logs = await listLocalFoodLogs();
-  if (logs.length > 0) {
-    await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
-    writeHomeHint();
-    return null;
-  }
-  throw redirect('/onboarding');
+  if (outcome.kind === 'recover') throw redirect('/recover');
+  if (outcome.kind === 'onboarding') throw redirect('/onboarding');
+  if (outcome.kind === 'self-heal') await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
+  writeHomeHint();
+  return null;
 }
 clientLoader.hydrate = true as const;
 

@@ -147,6 +147,11 @@ export {
   getLastExportAt,
   daysSinceExport,
   computeDaysSinceExport,
+  // "Days since data first existed" — what the backup nudge measures a
+  // never-exported device against (M123/01 item 4). Derived from the
+  // `firstDataAt` marker below, so it outlives a tables wipe.
+  daysSinceFirstData,
+  computeDaysSinceFirstData,
   hasAnyLocalData,
 } from './backup';
 export type { BackupEnvelope, RawBackupEnvelope } from './backup';

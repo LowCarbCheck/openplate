@@ -874,6 +874,7 @@
     "nutrients": "Nutrients · openplate",
     "onboarding": "Welcome to openplate",
     "preferences": "Preferences · openplate",
+    "recover": "Recover your diary · openplate",
     "scan": "Scan your plate · openplate",
     "settings": "Settings · openplate",
     "sync": "Sync",
@@ -1126,6 +1127,19 @@
       "title": "Theme"
     },
     "title": "Preferences"
+  },
+  "recover": {
+    "firstDataAt": "This device first stored data on {{date}}.",
+    "lead": "This device has stored openplate data before, but the copy in this browser is empty right now. openplate keeps everything on your device and sends nothing to a server, so there is no other copy for us to fetch.",
+    "noBackupBody": "Then there is nothing left to bring back, and we're sorry — that is the honest answer. You can start a fresh diary from here, and if a backup does turn up later you can still restore it on top.",
+    "noBackupHeading": "If you have no backup",
+    "restoreBody": "If you have downloaded an openplate backup (a .json file), open it here. Everything in it comes back onto this device.",
+    "restoreButton": "Choose a backup file",
+    "restoreError": "That file couldn't be read as an openplate backup. Check you picked the right file, then try again.",
+    "restoreHeading": "Restore from a backup file",
+    "restoring": "Restoring…",
+    "startFresh": "Start a fresh diary",
+    "title": "We can't find your diary on this device"
   },
   "scan": {
     "analyzing": {

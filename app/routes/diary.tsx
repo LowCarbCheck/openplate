@@ -52,6 +52,7 @@ import {
   computeLocalHabitStrip,
   computeLocalRecentFoods,
   daysSinceExport,
+  daysSinceFirstData,
   deleteLocalFoodLog,
   getLocalProfileGoals,
   listLocalFoodLogs,
@@ -893,11 +894,19 @@ export interface DiaryData {
   /** Whole days since the device last exported a backup, or null when never exported (M117/08 nudge). */
   daysSinceExportBackup: number | null;
   /**
+   * Whole days since this device first held data, or null when the
+   * `firstDataAt` marker is absent (M123/01 item 4). This is what a NEVER-
+   * exported device is judged on — it has no `daysSinceExportBackup` to
+   * measure, and firing the nudge the instant data appears would nag a user
+   * minutes after their first log. See `shouldShowBackupNudge`.
+   */
+  daysSinceFirstDataLocal: number | null;
+  /**
    * Whether the device holds anything irreplaceable enough to be worth
    * nudging about — logged foods, food-log entries, or weight entries (see
-   * `hasDataWorthBackingUp`). Pairs with `daysSinceExportBackup`: a never-
-   * exported device only gets nudged once it has something to lose (see
-   * `shouldShowBackupNudge`).
+   * `hasDataWorthBackingUp`). Pairs with the two day-counts above: a never-
+   * exported device only gets nudged once it has something to lose AND that
+   * something has aged past the threshold (see `shouldShowBackupNudge`).
    */
   hasLocalData: boolean;
   /** Every food-log entry on this device — the "first food ever logged" milestone reads this (M129/03). */
@@ -1002,6 +1011,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     totalLogCount: allLogs.length,
     aiEstimatedLogCount: allLogs.filter((log) => log.aiEstimated).length,
     daysSinceExportBackup: await daysSinceExport(),
+    // Read from the `firstDataAt` marker in the store's VALUES partition, so
+    // it still reports the true age of this device's data after a tables wipe.
+    daysSinceFirstDataLocal: await daysSinceFirstData(),
     hasLocalData: hasDataWorthBackingUp({
       logCount: allLogs.length,
       foodCount: personalFoods.length,
@@ -2030,6 +2042,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     canCopyYesterday,
     copyableMeals,
     daysSinceExportBackup,
+    daysSinceFirstDataLocal,
     hasLocalData,
     totalLogCount,
     aiEstimatedLogCount,
@@ -2069,7 +2082,11 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6" {...swipeHandlers}>
-      <BackupNudgeBanner daysSinceExport={daysSinceExportBackup} hasData={hasLocalData} />
+      <BackupNudgeBanner
+        daysSinceExport={daysSinceExportBackup}
+        daysSinceFirstData={daysSinceFirstDataLocal}
+        hasData={hasLocalData}
+      />
       <DateNav date={date} today={today} />
       <HabitStrip days={habitStrip} loggedCount={loggedDaysCount} hasCeiling={goals.netCarbsCeiling !== null} />
 

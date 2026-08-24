@@ -874,6 +874,7 @@
     "nutrients": "Nährstoffe · openplate",
     "onboarding": "Willkommen bei openplate",
     "preferences": "Einstellungen · openplate",
+    "recover": "Tagebuch wiederherstellen · openplate",
     "scan": "Teller scannen · openplate",
     "settings": "Einstellungen · openplate",
     "sync": "Sync",
@@ -1126,6 +1127,19 @@
       "title": "Erscheinungsbild"
     },
     "title": "Einstellungen"
+  },
+  "recover": {
+    "firstDataAt": "Dieses Gerät hat am {{date}} zum ersten Mal Daten gespeichert.",
+    "lead": "Auf diesem Gerät waren schon einmal openplate-Daten gespeichert, aber die Kopie in diesem Browser ist gerade leer. openplate behält alles auf deinem Gerät und schickt nichts an einen Server — es gibt also keine andere Kopie, die wir holen könnten.",
+    "noBackupBody": "Dann gibt es nichts mehr zurückzuholen, und das tut uns leid — das ist die ehrliche Antwort. Du kannst hier ein frisches Tagebuch beginnen; taucht später doch noch eine Sicherung auf, kannst du sie einfach darüber wiederherstellen.",
+    "noBackupHeading": "Wenn du keine Sicherung hast",
+    "restoreBody": "Wenn du eine openplate-Sicherung heruntergeladen hast (eine .json-Datei), öffne sie hier. Alles darin kommt zurück auf dieses Gerät.",
+    "restoreButton": "Sicherungsdatei auswählen",
+    "restoreError": "Diese Datei ließ sich nicht als openplate-Sicherung lesen. Prüfe, ob es die richtige Datei ist, und versuche es noch einmal.",
+    "restoreHeading": "Aus einer Sicherung wiederherstellen",
+    "restoring": "Wird wiederhergestellt…",
+    "startFresh": "Frisches Tagebuch beginnen",
+    "title": "Wir finden dein Tagebuch auf diesem Gerät nicht"
   },
   "scan": {
     "analyzing": {
