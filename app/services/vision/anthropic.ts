@@ -1,18 +1,18 @@
 /**
  * Anthropic Messages API adapter. Plain `fetch`, no SDK. Structured output is
- * enforced via forced tool-use: the model must call `record_plate_identification`
- * with input matching the shared JSON Schema, and that tool input is validated
- * with the same Zod schema as every other adapter (see `./schema`). If no
+ * enforced via forced tool-use: the model must call the scan task's tool (see
+ * `./task`) with input matching that task's JSON Schema, and the tool input is
+ * validated by the same task descriptor every other adapter uses. If no
  * tool_use block comes back (e.g. a proxy that drops tools), it falls back to
- * parsing a text block.
+ * parsing a text block. Nothing here knows which task it is running.
  */
 import { z } from 'zod';
 
-import type { PlateImageInput, PlateIdentification, ScanTokenUsage, VisionProvider } from './types';
+import type { PlateImageInput, PlateIdentification, ScanResultBase, ScanTokenUsage, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
-import { PLATE_IDENTIFICATION_SYSTEM_PROMPT, buildPlateIdentificationUserPrompt } from './prompt';
-import { PLATE_IDENTIFICATION_JSON_SCHEMA, parsePlateIdentificationJson, validatePlateIdentification } from './schema';
+import type { ScanTaskDescriptor } from './task';
+import { PLATE_SCAN_TASK, attachScanUsage } from './task';
 // The auth headers live in `./constants` (M130/01), not here: the live key
 // check in `./verify-key` sends byte-identical headers, and a second copy is
 // only ever a way for the two to drift apart.
@@ -20,7 +20,6 @@ import { getAnthropicAuthHeaders } from './constants';
 
 const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 const MAX_OUTPUT_TOKENS = 1536;
-const PLATE_TOOL_NAME = 'record_plate_identification';
 
 export interface AnthropicProviderOptions {
   apiKey: string;
@@ -82,27 +81,29 @@ function toMalformedOutputFailure(cause: unknown, usage: ScanTokenUsage | undefi
 export function buildAnthropicRequestBody({
   model,
   image,
+  task,
 }: {
   model: string;
   image: PlateImageInput;
+  task: ScanTaskDescriptor<ScanResultBase>;
 }) {
   return {
     model,
     max_tokens: MAX_OUTPUT_TOKENS,
-    system: PLATE_IDENTIFICATION_SYSTEM_PROMPT,
+    system: task.systemPrompt,
     tools: [
       {
-        name: PLATE_TOOL_NAME,
-        description: 'Record the foods identified on the plate.',
-        input_schema: PLATE_IDENTIFICATION_JSON_SCHEMA,
+        name: task.toolName,
+        description: task.toolDescription,
+        input_schema: task.jsonSchema,
       },
     ],
-    tool_choice: { type: 'tool', name: PLATE_TOOL_NAME },
+    tool_choice: { type: 'tool', name: task.toolName },
     messages: [
       {
         role: 'user',
         content: [
-          { type: 'text', text: buildPlateIdentificationUserPrompt() },
+          { type: 'text', text: task.userPrompt },
           {
             type: 'image',
             source: { type: 'base64', media_type: image.mimeType, data: image.base64 },
@@ -114,67 +115,76 @@ export function buildAnthropicRequestBody({
 }
 
 export function createAnthropicProvider(options: AnthropicProviderOptions): VisionProvider {
-  return {
-    async identifyPlate(image: PlateImageInput): Promise<PlateIdentification> {
-      let response: Response;
+  async function runScan<TResult extends ScanResultBase>({
+    task,
+    image,
+  }: {
+    task: ScanTaskDescriptor<TResult>;
+    image: PlateImageInput;
+  }): Promise<TResult> {
+    let response: Response;
+    try {
+      response = await fetch(ANTHROPIC_MESSAGES_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAnthropicAuthHeaders({ apiKey: options.apiKey }),
+        },
+        body: JSON.stringify(buildAnthropicRequestBody({ model: options.model, image, task })),
+      });
+    } catch (error) {
+      // Network-level failure — nothing was billed, and it may well
+      // succeed on a later attempt.
+      throw new VisionProviderFailure('transient', 'Failed to reach the vision provider', { cause: error });
+    }
+
+    if (!response.ok) {
+      const classification = await classifyVisionHttpFailure(response);
+      throw new VisionProviderFailure(classification.cause, classification.message);
+    }
+
+    const payload = await readAnthropicEnvelope(response);
+    // Read usage from the (2xx) envelope before parsing content, so a
+    // billed-but-unparseable response can still surface what it cost.
+    const usage =
+      payload.usage ?
+        { inputTokens: payload.usage.input_tokens, outputTokens: payload.usage.output_tokens }
+      : undefined;
+
+    // Primary path: forced tool-use — validate the tool input directly.
+    const toolUseBlock = payload.content?.find((block) => block.type === 'tool_use' && block.input !== undefined);
+    if (toolUseBlock && toolUseBlock.input !== undefined) {
+      let result: TResult;
       try {
-        response = await fetch(ANTHROPIC_MESSAGES_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAnthropicAuthHeaders({ apiKey: options.apiKey }),
-          },
-          body: JSON.stringify(buildAnthropicRequestBody({ model: options.model, image })),
-        });
-      } catch (error) {
-        // Network-level failure — nothing was billed, and it may well
-        // succeed on a later attempt.
-        throw new VisionProviderFailure('transient', 'Failed to reach the vision provider', { cause: error });
-      }
-
-      if (!response.ok) {
-        const classification = await classifyVisionHttpFailure(response);
-        throw new VisionProviderFailure(classification.cause, classification.message);
-      }
-
-      const payload = await readAnthropicEnvelope(response);
-      // Read usage from the (2xx) envelope before parsing content, so a
-      // billed-but-unparseable response can still surface what it cost.
-      const usage =
-        payload.usage ?
-          { inputTokens: payload.usage.input_tokens, outputTokens: payload.usage.output_tokens }
-        : undefined;
-
-      // Primary path: forced tool-use — validate the tool input directly.
-      const toolUseBlock = payload.content?.find((block) => block.type === 'tool_use' && block.input !== undefined);
-      if (toolUseBlock && toolUseBlock.input !== undefined) {
-        let identification: PlateIdentification;
-        try {
-          identification = validatePlateIdentification(toolUseBlock.input);
-        } catch (error) {
-          throw toMalformedOutputFailure(error, usage);
-        }
-        return usage ? { ...identification, usage } : identification;
-      }
-
-      // Fallback path: a text block of JSON (proxy dropped tools, etc.).
-      const textBlock = payload.content?.find((block) => block.type === 'text' && block.text);
-      if (!textBlock?.text) {
-        // The call succeeded but returned nothing usable — the one case
-        // where "try a different photo" is the accurate message.
-        throw new VisionProviderFailure('genuinely-no-food', 'Vision provider returned an empty response', {
-          usage,
-        });
-      }
-
-      let identification: PlateIdentification;
-      try {
-        identification = parsePlateIdentificationJson(textBlock.text);
+        result = task.validate(toolUseBlock.input);
       } catch (error) {
         throw toMalformedOutputFailure(error, usage);
       }
+      return attachScanUsage(result, usage);
+    }
 
-      return usage ? { ...identification, usage } : identification;
-    },
+    // Fallback path: a text block of JSON (proxy dropped tools, etc.).
+    const textBlock = payload.content?.find((block) => block.type === 'text' && block.text);
+    if (!textBlock?.text) {
+      // The call succeeded but returned nothing usable — the one case
+      // where "try a different photo" is the accurate message.
+      throw new VisionProviderFailure('genuinely-no-food', 'Vision provider returned an empty response', {
+        usage,
+      });
+    }
+
+    let result: TResult;
+    try {
+      result = task.parse(textBlock.text);
+    } catch (error) {
+      throw toMalformedOutputFailure(error, usage);
+    }
+
+    return attachScanUsage(result, usage);
+  }
+
+  return {
+    runScan,
+    identifyPlate: (image: PlateImageInput): Promise<PlateIdentification> => runScan({ task: PLATE_SCAN_TASK, image }),
   };
 }

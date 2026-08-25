@@ -9,6 +9,9 @@ import { findCatalogModel } from './catalog';
 
 export * from './types';
 export * from './failure-cause';
+// The scan tasks (`PLATE_SCAN_TASK`, `LABEL_SCAN_TASK`, `VisionMode`) — how a
+// caller says which job it wants without the service guessing from the image.
+export * from './task';
 
 export interface CreateVisionProviderOptions {
   provider: AiProviderType;

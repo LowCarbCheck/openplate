@@ -19,7 +19,13 @@
  * objects below rather than one.
  */
 import { z } from 'zod';
-import type { IdentifiedFood, IdentifiedFoodMacros, PlateIdentification } from './types';
+import type {
+  IdentifiedFood,
+  IdentifiedFoodMacros,
+  LabelReading,
+  LabelServingSize,
+  PlateIdentification,
+} from './types';
 import { MACRO_PROVENANCE_VALUES, VisionProviderError } from './types';
 
 const RawMacrosSchema = z.object({
@@ -198,7 +204,7 @@ export function parsePlateIdentificationJson(rawText: string): PlateIdentificati
  * untouched. Not a full JSON Schema type — just enough to walk objects safely
  * without `any`.
  */
-interface JsonSchemaNode {
+export interface JsonSchemaNode {
   $schema?: string;
   type?: string | string[];
   properties?: Record<string, JsonSchemaNode>;
@@ -257,3 +263,132 @@ function toStrictJsonSchema(schema: z.ZodType): JsonSchemaNode {
  * reasoning.
  */
 export const PLATE_IDENTIFICATION_JSON_SCHEMA: JsonSchemaNode = toStrictJsonSchema(PlateIdentificationSchema);
+
+////////////////////////////////////////////////////////////////////////////////
+// Label reading (M123/10)
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The serving size a panel prints. `asPrinted` is the authority; `grams` is
+ * filled only when the panel states a weight — the model is told never to
+ * derive it, because per-serving → per-100g conversion is M123/06's job.
+ */
+const RawLabelServingSizeSchema = z.object({
+  asPrinted: z.string().nullable(),
+  grams: z.number().nullable(),
+});
+
+/**
+ * THE LABEL WIRE CONTRACT — the only schema `LABEL_READING_JSON_SCHEMA` is
+ * derived from, and the same all-required-with-nullable discipline as
+ * `PlateIdentificationSchema` (see this module's header: strict-mode
+ * structured output demands every property be required, so "unknown" is
+ * expressed as `null`, never as an optional field).
+ *
+ * Deliberately NOT a plate shape: no `foods[]`, no `estimatedGrams`, no
+ * per-item confidence, no `portionHint`. The macro rows reuse
+ * `RawMacrosSchema` so the macro vocabulary stays single-sourced with the
+ * plate path — including `polyols`, which is the whole point of the feature.
+ *
+ * `unreadable` is a RESULT state, not a transport failure: the provider
+ * answered 2xx and the model declared the panel illegible. It exists so the
+ * model has somewhere honest to go instead of inventing numbers off a blurry
+ * photo; `VisionFailureCause` stays mode-agnostic and gains nothing here.
+ */
+export const LabelReadingSchema = z.object({
+  unreadable: z.boolean(),
+  unreadableReason: z.string().nullable(),
+  productName: z.string().nullable(),
+  brand: z.string().nullable(),
+  servingSize: RawLabelServingSizeSchema.nullable(),
+  servingsPerPackage: z.number().nullable(),
+  /** The per-serving column, exactly as printed. Null when the panel prints none. */
+  macrosPerServing: RawMacrosSchema.nullable(),
+  /** The per-100g column, exactly as printed. Null when the panel prints none. */
+  macrosPer100g: RawMacrosSchema.nullable(),
+  notes: z.string().nullable(),
+});
+
+type RawLabelReading = z.infer<typeof LabelReadingSchema>;
+
+/**
+ * One raw serving-size block → the app-facing shape. A null field becomes an
+ * absent one, the same convention the plate path uses for "the model doesn't
+ * know" — and the reason nothing downstream ever sees a fabricated 0.
+ */
+function normalizeServingSize(serving: z.infer<typeof RawLabelServingSizeSchema>): LabelServingSize {
+  const normalized: LabelServingSize = {};
+  if (serving.asPrinted !== null) normalized.asPrinted = serving.asPrinted;
+  if (serving.grams !== null) normalized.grams = serving.grams;
+  return normalized;
+}
+
+/**
+ * Raw label wire shape → the app-facing `LabelReading`.
+ *
+ * NULL STAYS NULL: `stripNullMacros` drops a null macro rather than coercing
+ * it, so an unprinted or unreadable value arrives downstream as absent —
+ * blank in the confirm form. A `?? 0` anywhere on this path would silently
+ * report zero sugar alcohols for a maltitol-sweetened product, which is
+ * precisely the bug this feature exists to kill.
+ */
+export function normalizeLabelReading(raw: RawLabelReading): LabelReading {
+  const normalized: LabelReading = { unreadable: raw.unreadable };
+  if (raw.unreadableReason !== null) normalized.unreadableReason = raw.unreadableReason;
+  if (raw.productName !== null) normalized.productName = raw.productName;
+  if (raw.brand !== null) normalized.brand = raw.brand;
+  if (raw.servingSize !== null) normalized.servingSize = normalizeServingSize(raw.servingSize);
+  if (raw.servingsPerPackage !== null) normalized.servingsPerPackage = raw.servingsPerPackage;
+  if (raw.macrosPerServing !== null) normalized.macrosPerServing = stripNullMacros(raw.macrosPerServing);
+  if (raw.macrosPer100g !== null) normalized.macrosPer100g = stripNullMacros(raw.macrosPer100g);
+  if (raw.notes !== null) normalized.notes = raw.notes;
+  return normalized;
+}
+
+/**
+ * Validates an already-parsed value (JSON text OR a provider's enforced
+ * structured-output block) against the label schema. Pure — the label twin of
+ * `validatePlateIdentification`, so both scan tasks funnel through one
+ * validation style.
+ *
+ * @throws {VisionProviderError} when `value` doesn't match the expected shape.
+ */
+export function validateLabelReading(value: UnvalidatedProviderJson): LabelReading {
+  const result = LabelReadingSchema.safeParse(value);
+  if (!result.success) {
+    throw new VisionProviderError('Vision provider response did not match the expected shape', {
+      cause: result.error,
+    });
+  }
+  return normalizeLabelReading(result.data);
+}
+
+/**
+ * Parses raw LLM output text into a validated `LabelReading`, tolerating
+ * markdown-fenced JSON. Pure — the universal fallback path for providers that
+ * return free text instead of enforced output.
+ *
+ * @throws {VisionProviderError} on non-JSON input or a shape mismatch.
+ */
+export function parseLabelReadingJson(rawText: string): LabelReading {
+  const jsonText = stripCodeFence(rawText);
+
+  let parsedJson: UnvalidatedProviderJson;
+  try {
+    parsedJson = JSON.parse(jsonText);
+  } catch (error) {
+    throw new VisionProviderError('Vision provider returned a response that was not valid JSON', {
+      cause: error,
+    });
+  }
+
+  return validateLabelReading(parsedJson);
+}
+
+/**
+ * JSON Schema (draft 2020-12) derived from `LabelReadingSchema` for
+ * provider-enforced structured output — the label twin of
+ * `PLATE_IDENTIFICATION_JSON_SCHEMA`, built by the same `toStrictJsonSchema`
+ * so both tasks obey identical strict-mode rules.
+ */
+export const LABEL_READING_JSON_SCHEMA: JsonSchemaNode = toStrictJsonSchema(LabelReadingSchema);

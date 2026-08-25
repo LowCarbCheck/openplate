@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { buildOpenAiCompatibleRequestBody } from '../../app/services/vision/openai-compatible';
 import { buildAnthropicRequestBody } from '../../app/services/vision/anthropic';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA } from '../../app/services/vision/schema';
+import { PLATE_SCAN_TASK } from '../../app/services/vision/task';
 
 /*
  * The builders return an untyped wire body (`Record<string, unknown>`), so the
@@ -49,6 +50,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
       dataUrl: 'data:image/png;base64,AAAA',
+      task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
     });
 
@@ -65,6 +67,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
       dataUrl: 'data:image/png;base64,AAAA',
+      task: PLATE_SCAN_TASK,
       useStructuredOutput: false,
     });
 
@@ -77,6 +80,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'openai/gpt-5.6-luna',
       dataUrl: 'data:image/png;base64,AAAA',
+      task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
       disableReasoning: true,
     });
@@ -90,6 +94,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     const withoutFlag = buildOpenAiCompatibleRequestBody({
       model: 'llama3',
       dataUrl: 'data:image/png;base64,AAAA',
+      task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
     });
     assert.ok(!('reasoning' in withoutFlag));
@@ -97,6 +102,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     const explicitlyFalse = buildOpenAiCompatibleRequestBody({
       model: 'llama3',
       dataUrl: 'data:image/png;base64,AAAA',
+      task: PLATE_SCAN_TASK,
       useStructuredOutput: false,
       disableReasoning: false,
     });
@@ -107,6 +113,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
       dataUrl: 'data:image/png;base64,AAAA',
+      task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
     });
 
@@ -123,6 +130,7 @@ describe('buildAnthropicRequestBody', () => {
     const body = buildAnthropicRequestBody({
       model: 'claude-sonnet-5',
       image: { base64: 'AAAA', mimeType: 'image/png' },
+      task: PLATE_SCAN_TASK,
     });
 
     assert.strictEqual(body.model, 'claude-sonnet-5');
@@ -138,6 +146,7 @@ describe('buildAnthropicRequestBody', () => {
     const body = buildAnthropicRequestBody({
       model: 'claude-sonnet-5',
       image: { base64: 'AAAA', mimeType: 'image/png' },
+      task: PLATE_SCAN_TASK,
     });
 
     const messages = listSchema.parse(body.messages);

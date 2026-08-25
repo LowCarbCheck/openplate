@@ -15,11 +15,12 @@
  */
 import { z } from 'zod';
 
-import type { PlateImageInput, PlateIdentification, VisionProvider } from './types';
+import type { PlateImageInput, PlateIdentification, ScanResultBase, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
-import { PLATE_IDENTIFICATION_SYSTEM_PROMPT, buildPlateIdentificationUserPrompt } from './prompt';
-import { PLATE_IDENTIFICATION_JSON_SCHEMA, parsePlateIdentificationJson } from './schema';
+import type { ScanTaskDescriptor } from './task';
+import { PLATE_SCAN_TASK, attachScanUsage } from './task';
+import type { JsonSchemaNode } from './schema';
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const HTTP_CLIENT_ERROR_START = 400;
@@ -60,7 +61,7 @@ export interface ChatCompletionsRequestBody {
   reasoning?: { effort: 'none' };
   response_format?: {
     type: 'json_schema';
-    json_schema: { name: string; strict: boolean; schema: typeof PLATE_IDENTIFICATION_JSON_SCHEMA };
+    json_schema: { name: string; strict: boolean; schema: JsonSchemaNode };
   };
 }
 
@@ -112,13 +113,16 @@ function isStructuredOutputRejection(status: number): boolean {
  * Builds the chat-completions request body. Pure — no `fetch` — so the enforced
  * and fallback shapes are unit-testable without mocking the network.
  *
+ * @param task - the scan-task descriptor (see `./task`) supplying the prompts,
+ *   the JSON Schema and its name. Everything else in this builder is identical
+ *   for every task, which is why no branch on the mode appears here.
  * @param useStructuredOutput - when true, attaches the `json_schema`
- *   response_format that enforces the plate-identification shape; when false,
- *   the body omits `response_format` entirely (for servers that reject it).
+ *   response_format that enforces the task's shape; when false, the body omits
+ *   `response_format` entirely (for servers that reject it).
  * @param disableReasoning - when true, asks the model not to reason
  *   (`reasoning: { effort: 'none' }`). Only for models the catalog marks with
  *   `disableReasoning` — models that reason by default and cost completion-rate
- *   tokens for it on a plate photo that needs none. Never sent otherwise: this
+ *   tokens for it on a photo that needs none. Never sent otherwise: this
  *   adapter also serves Mistral and self-hosted endpoints, and an unknown body
  *   field is exactly what some of those reject (see the `response_format`
  *   fallback above).
@@ -126,22 +130,24 @@ function isStructuredOutputRejection(status: number): boolean {
 export function buildOpenAiCompatibleRequestBody({
   model,
   dataUrl,
+  task,
   useStructuredOutput,
   disableReasoning = false,
 }: {
   model: string;
   dataUrl: string;
+  task: ScanTaskDescriptor<ScanResultBase>;
   useStructuredOutput: boolean;
   disableReasoning?: boolean;
 }): ChatCompletionsRequestBody {
   const body: ChatCompletionsRequestBody = {
     model,
     messages: [
-      { role: 'system', content: PLATE_IDENTIFICATION_SYSTEM_PROMPT },
+      { role: 'system', content: task.systemPrompt },
       {
         role: 'user',
         content: [
-          { type: 'text', text: buildPlateIdentificationUserPrompt() },
+          { type: 'text', text: task.userPrompt },
           { type: 'image_url', image_url: { url: dataUrl } },
         ],
       },
@@ -153,7 +159,7 @@ export function buildOpenAiCompatibleRequestBody({
   if (useStructuredOutput) {
     body.response_format = {
       type: 'json_schema',
-      json_schema: { name: 'plate_identification', strict: true, schema: PLATE_IDENTIFICATION_JSON_SCHEMA },
+      json_schema: { name: task.schemaName, strict: true, schema: task.jsonSchema },
     };
   }
   return body;
@@ -168,75 +174,85 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
     ...options.extraHeaders,
   };
 
-  return {
-    async identifyPlate(image: PlateImageInput): Promise<PlateIdentification> {
-      const dataUrl = `data:${image.mimeType};base64,${image.base64}`;
+  async function runScan<TResult extends ScanResultBase>({
+    task,
+    image,
+  }: {
+    task: ScanTaskDescriptor<TResult>;
+    image: PlateImageInput;
+  }): Promise<TResult> {
+    const dataUrl = `data:${image.mimeType};base64,${image.base64}`;
 
-      const sendRequest = async (useStructuredOutput: boolean): Promise<Response> => {
-        try {
-          return await fetch(url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(
-              buildOpenAiCompatibleRequestBody({
-                model: options.model,
-                dataUrl,
-                useStructuredOutput,
-                disableReasoning: options.disableReasoning,
-              }),
-            ),
-          });
-        } catch (error) {
-          // Network-level failure (unreachable host, CSP/CORS block, DNS) —
-          // nothing was billed, and it may well succeed on a later attempt.
-          throw new VisionProviderFailure('transient', 'Failed to reach the vision provider', { cause: error });
-        }
-      };
-
-      let response = await sendRequest(true);
-      // A custom server that rejects `response_format` answers with a 4xx —
-      // retry exactly once without it, then rely on the prompt + text parse.
-      // Only for the subset of 4xx that plausibly means that (see
-      // `isStructuredOutputRejection`) — never for a bad key, an empty
-      // balance, or a rate limit, where resending changes nothing.
-      if (isStructuredOutputRejection(response.status)) {
-        response = await sendRequest(false);
-      }
-
-      if (!response.ok) {
-        const classification = await classifyVisionHttpFailure(response);
-        throw new VisionProviderFailure(classification.cause, classification.message);
-      }
-
-      const payload = await readChatCompletionsEnvelope(response);
-      // Read usage from the (2xx) envelope before parsing content, so a
-      // billed-but-unparseable response can still surface what it cost.
-      const usage =
-        payload.usage ?
-          { inputTokens: payload.usage.prompt_tokens, outputTokens: payload.usage.completion_tokens }
-        : undefined;
-
-      const content = payload.choices?.[0]?.message?.content;
-      if (!content) {
-        // The call succeeded but returned nothing usable — the one case
-        // where "try a different photo" is the accurate message.
-        throw new VisionProviderFailure('genuinely-no-food', 'Vision provider returned an empty response', {
-          usage,
-        });
-      }
-
-      let identification: PlateIdentification;
+    const sendRequest = async (useStructuredOutput: boolean): Promise<Response> => {
       try {
-        identification = parsePlateIdentificationJson(content);
+        return await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(
+            buildOpenAiCompatibleRequestBody({
+              model: options.model,
+              dataUrl,
+              task,
+              useStructuredOutput,
+              disableReasoning: options.disableReasoning,
+            }),
+          ),
+        });
       } catch (error) {
-        throw new VisionProviderFailure(
-          'genuinely-no-food',
-          error instanceof VisionProviderError ? error.message : 'Vision provider returned malformed output',
-          { usage, cause: error },
-        );
+        // Network-level failure (unreachable host, CSP/CORS block, DNS) —
+        // nothing was billed, and it may well succeed on a later attempt.
+        throw new VisionProviderFailure('transient', 'Failed to reach the vision provider', { cause: error });
       }
+    };
 
-      return usage ? { ...identification, usage } : identification;
-    },
+    let response = await sendRequest(true);
+    // A custom server that rejects `response_format` answers with a 4xx —
+    // retry exactly once without it, then rely on the prompt + text parse.
+    // Only for the subset of 4xx that plausibly means that (see
+    // `isStructuredOutputRejection`) — never for a bad key, an empty
+    // balance, or a rate limit, where resending changes nothing.
+    if (isStructuredOutputRejection(response.status)) {
+      response = await sendRequest(false);
+    }
+
+    if (!response.ok) {
+      const classification = await classifyVisionHttpFailure(response);
+      throw new VisionProviderFailure(classification.cause, classification.message);
+    }
+
+    const payload = await readChatCompletionsEnvelope(response);
+    // Read usage from the (2xx) envelope before parsing content, so a
+    // billed-but-unparseable response can still surface what it cost.
+    const usage =
+      payload.usage ?
+        { inputTokens: payload.usage.prompt_tokens, outputTokens: payload.usage.completion_tokens }
+      : undefined;
+
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) {
+      // The call succeeded but returned nothing usable — the one case
+      // where "try a different photo" is the accurate message.
+      throw new VisionProviderFailure('genuinely-no-food', 'Vision provider returned an empty response', {
+        usage,
+      });
+    }
+
+    let result: TResult;
+    try {
+      result = task.parse(content);
+    } catch (error) {
+      throw new VisionProviderFailure(
+        'genuinely-no-food',
+        error instanceof VisionProviderError ? error.message : 'Vision provider returned malformed output',
+        { usage, cause: error },
+      );
+    }
+
+    return attachScanUsage(result, usage);
+  }
+
+  return {
+    runScan,
+    identifyPlate: (image: PlateImageInput): Promise<PlateIdentification> => runScan({ task: PLATE_SCAN_TASK, image }),
   };
 }

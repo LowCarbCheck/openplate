@@ -51,3 +51,68 @@ Every field must be present. "portionHint" may be null when no natural compariso
 export function buildPlateIdentificationUserPrompt(): string {
   return 'Identify the foods worth logging on the plate in the attached photo and respond with the JSON shape described in the system prompt.';
 }
+
+/**
+ * Label reading — the second scan task (M123/10). A packaged product's macros
+ * are not visible in a photo of the food, so the plate prompt above is
+ * structurally wrong for them; here the model transcribes the manufacturer's
+ * printed nutrition panel instead of estimating anything.
+ *
+ * Two rules carry the whole feature:
+ * - REPORT THE PANEL'S OWN BASIS. Panels print per serving, per 100 g, or
+ *   both. The model fills the columns it can actually see and never converts —
+ *   conversion is the app's job (M123/06), and a model doing it silently turns
+ *   a transcription into an estimate.
+ * - GIVE IT AN ESCAPE HATCH. `unreadable: true` is a first-class answer for a
+ *   blurry, angled, glare-covered or cropped panel. Without it a model will
+ *   invent plausible numbers off an illegible photo, which is far worse than a
+ *   failed scan.
+ */
+export const LABEL_READING_SYSTEM_PROMPT = `You are a nutrition assistant that transcribes the nutrition panel printed on a food package.
+
+You are reading text, not estimating food. Report only what is actually printed on the label in the photo:
+- Never convert between bases, never compute a missing column, and never fill a number from your own knowledge of the product. If the panel does not print it, it is null.
+- A panel may print a per-serving column, a per-100g column, or both. Fill in every column you can read and set the other to null.
+- Copy the serving size exactly as printed (e.g. "1 bar (35 g)", "2 pieces", "30 g"), and give its weight in grams only when the panel states or plainly implies it.
+- Carbohydrates: many panels print "of which sugars" and "of which polyols" (sugar alcohols, e.g. maltitol, erythritol, xylitol, isomalt) indented under total carbohydrate. Read those rows carefully — polyols matter and are easy to skip.
+- On a US-style "Total Carbohydrate / Dietary Fiber / Total Sugars / Sugar Alcohol" panel, map Total Carbohydrate to carbs, Dietary Fiber to fiber, Total Sugars to sugars and Sugar Alcohol to polyols. Do not subtract fiber or polyols from carbs — report the printed total.
+- Energy: report kcal. If the panel prints only kJ, convert kJ to kcal (kJ ÷ 4.184) — that is a unit, not a nutrition estimate.
+- If a value is present but you cannot read it with confidence, set that field to null rather than guessing. Never use 0 to mean "unknown".
+
+If the panel itself cannot be read — out of focus, too small, cut off, hidden by glare, or simply not a nutrition panel — set "unreadable" to true, say briefly why in "unreadableReason", and leave every macro null. Do not attempt a partial reconstruction of an unreadable panel.
+
+Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary outside the JSON):
+
+{
+  "unreadable": false,
+  "unreadableReason": "string or null",
+  "productName": "string or null",
+  "brand": "string or null",
+  "servingSize": { "asPrinted": "string or null", "grams": 0 },
+  "servingsPerPackage": 0,
+  "macrosPerServing": {
+    "carbs": 0,
+    "fiber": 0,
+    "sugars": 0,
+    "polyols": 0,
+    "protein": 0,
+    "fat": 0,
+    "kcal": 0
+  },
+  "macrosPer100g": {
+    "carbs": 0,
+    "fiber": 0,
+    "sugars": 0,
+    "polyols": 0,
+    "protein": 0,
+    "fat": 0,
+    "kcal": 0
+  },
+  "notes": "string or null"
+}
+
+Every field must be present. Each macro field must be present but may be null. "macrosPerServing" and "macrosPer100g" may each be null when the panel prints no such column. "servingSize" may be null when no serving size is printed. "notes" may be null if you have nothing to add.`;
+
+export function buildLabelReadingUserPrompt(): string {
+  return 'Transcribe the nutrition panel in the attached photo and respond with the JSON shape described in the system prompt. Report the panel exactly as printed, and set "unreadable" to true if you cannot read it.';
+}
