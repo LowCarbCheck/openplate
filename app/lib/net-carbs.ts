@@ -92,3 +92,32 @@ export function computeNetCarbsFromParts(parts: NetCarbsParts, basis?: CarbBasis
 export function parseCarbBasis(raw: string | null | undefined): CarbBasis | null {
   return CARB_BASES.find((value) => value === raw) ?? null;
 }
+
+/**
+ * Derives a `CarbBasis` from a curated `FoodMatch`'s `origin`, mirroring
+ * lowcarbcheck's own `carbBasisForOrigin` in
+ * `lowcarbcheck/apps/remix-lcc/app/lib/food-api/mappers.ts` (`bls`/`curated`
+ * → `available`, `fdc`/`user` → `total`) — same vocabulary, same mapping, so
+ * the two apps keep agreeing about which sources print a fibre-exclusive
+ * carbohydrate figure.
+ *
+ * The one deliberate divergence: LCC's version has a closed return type and
+ * falls through unrecognised origins to `total` as a default. `FoodMatch.origin`
+ * is an OPEN union (see its doc comment on `#app/services/food-resolution/types`)
+ * — LCC may ship a fifth origin tomorrow — so guessing `total` here would
+ * silently apply the wrong formula to a basis this function was never taught.
+ * An unrecognised or `null` origin therefore returns `undefined` (unknown),
+ * exactly like a food with no origin fact at all; `computeNetCarbsFromParts`
+ * already treats `undefined` as `total`, so a genuinely US-basis food that
+ * arrives under a new origin name still nets out correctly by default, while
+ * a genuinely EU-basis one under a new name is merely un-derived (safe: the
+ * person can still set the basis by hand on the edit form) rather than wrong.
+ *
+ * @param origin - the match's `FoodMatch.origin` (`"curated"`, `"bls"`, `"user"`, `"fdc"`, an unrecognised string, or `null`).
+ * @returns the basis that origin's printed panel uses, or `undefined` when the origin is absent or not one this function recognises.
+ */
+export function carbBasisForOrigin(origin: string | null): CarbBasis | undefined {
+  if (origin === 'bls' || origin === 'curated') return 'available';
+  if (origin === 'fdc' || origin === 'user') return 'total';
+  return undefined;
+}

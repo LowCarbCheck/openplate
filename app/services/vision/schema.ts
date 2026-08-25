@@ -311,8 +311,26 @@ export const LabelReadingSchema = z.object({
    * Which printed-panel convention the model saw — see
    * `LabelReading.carbBasis`'s doc comment. `null` when the layout doesn't
    * decide it, never a guess.
+   *
+   * `.catch(null)` (M123/13 second-review finding 4): every other field on
+   * this schema stays strict — a shape mismatch anywhere else correctly fails
+   * the WHOLE reading, because a plate/label response this schema can't parse
+   * at all is not safely usable. This one field is different: a provider that
+   * emits e.g. `"eu"` instead of `"available"` has clearly still read the
+   * panel and reported real macro numbers around it, and `null` already means
+   * exactly "the panel didn't decide it" — a pre-existing, harmless state the
+   * rest of the app already handles (see `LocalPersonalFood.carbBasis`'s
+   * UNKNOWN-means-`total` rule). Discarding tokens already spent and an
+   * otherwise-good reading over ONE enum mismatch on the one field with a
+   * built-in "don't know" escape hatch would be strictness with no payoff.
+   * `.catch()` only changes behaviour at PARSE time — `z.toJSONSchema` still
+   * emits the same `enum`-constrained schema for the provider's structured
+   * output (verified: `LABEL_READING_JSON_SCHEMA` is unchanged), so providers
+   * are still ASKED for exactly `"total" | "available" | null`; this is a
+   * client-side safety net for the ones that don't comply, not a loosening of
+   * the ask.
    */
-  carbBasis: z.enum(CARB_BASES).nullable(),
+  carbBasis: z.enum(CARB_BASES).nullable().catch(null),
   notes: z.string().nullable(),
 });
 

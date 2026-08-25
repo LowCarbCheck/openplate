@@ -13,6 +13,7 @@ import type { Macros } from '#app/lib/macros';
 import { toStoredAttribution } from '#app/lib/attribution';
 import { macrosDiffer, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
 import { cloneMicronutrients, type MicronutrientsPer100g } from '#app/lib/micronutrients';
+import { carbBasisForOrigin, type CarbBasis } from '#app/lib/net-carbs';
 import type { FoodMatch, FoodMatchMacros } from './types';
 
 /** String-valued macro fields as the confirm-draft form's macros fieldset expects them. */
@@ -61,6 +62,19 @@ export interface AppliedMatchSnapshot {
    * states — see `#app/lib/authoritative-net-carbs`.
    */
   netCarbsPer100g: number | null | undefined;
+  /**
+   * The match's printed-panel convention, derived from `FoodMatch.origin` via
+   * `carbBasisForOrigin`, or `undefined` when the origin is absent/unrecognised
+   * (never a guessed basis — see that function's doc). M123/13 second-review
+   * finding 1: this follows `attribution`'s rule below, NOT `netCarbsPer100g`'s
+   * — a macro edit does NOT withdraw it, because the basis describes which
+   * convention the ORIGINAL printed panel used, a fact about the source that
+   * a hand-edit to the numbers doesn't change. It is exactly what keeps the
+   * compute-from-parts fallback honest once a macro edit clears
+   * `netCarbsPer100g` above (see `LocalPersonalFood.carbBasis`'s doc in
+   * `#app/lib/local-store/schema`).
+   */
+  carbBasis: CarbBasis | undefined;
   /** The match's licence credit, or `null` when the source carries none. */
   attribution: string | null;
   /**
@@ -99,6 +113,16 @@ export interface AppliedMatchSnapshot {
  *    still claiming curated provenance for it, would be the actual licence
  *    violation rather than the cautious choice.
  *
+ *  - `carbBasis` follows `attribution`'s rule, not `netCarbsPer100g`'s (M123/13
+ *    second-review finding 1). It names which convention the ORIGINAL printed
+ *    panel used — a fact about the source, not about the numbers currently in
+ *    the form — so a hand-edit to those numbers doesn't make the panel's own
+ *    convention stop being true. Withdrawing it on edit would be actively
+ *    harmful here: it is precisely the fallback that runs the moment
+ *    `netCarbsPer100g` clears, so clearing both together would silently
+ *    re-introduce the double-subtraction spec 13 exists to prevent, for every
+ *    edited bls/curated-origin match.
+ *
  * @param options.appliedCuratedSource - the item's current `curatedSource` field value, if any.
  * @param options.matches - the curated matches offered for this item.
  * @param options.editedMacrosPer100g - the item's current per-100g macro field values.
@@ -114,10 +138,13 @@ export function resolveAppliedMatchSnapshot({
   editedMacrosPer100g: Macros;
 }): AppliedMatchSnapshot {
   const applied = matches.find((match) => toCuratedSource(match.slug) === appliedCuratedSource);
-  if (!applied) return { netCarbsPer100g: undefined, attribution: null, micronutrientsPer100g: undefined };
+  if (!applied) {
+    return { netCarbsPer100g: undefined, carbBasis: undefined, attribution: null, micronutrientsPer100g: undefined };
+  }
   const macrosChanged = macrosDiffer(applied.macrosPer100g, editedMacrosPer100g);
   return {
     netCarbsPer100g: resolveEditedNetCarbsPer100g({ macrosChanged, current: applied.netCarbsPer100g }),
+    carbBasis: carbBasisForOrigin(applied.origin),
     attribution: toStoredAttribution(applied.attribution),
     // Follows `attribution`'s rule, NOT `netCarbsPer100g`'s: net carbs are
     // derived from the very macros being edited, so a hand-edit makes the

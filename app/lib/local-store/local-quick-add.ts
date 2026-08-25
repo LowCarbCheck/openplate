@@ -28,7 +28,7 @@ import type { FoodMatch } from '#app/services/food-resolution';
 import { toCuratedSource } from '#app/services/food-resolution/apply-match';
 import { chipCarbStatus } from '#app/lib/frequent-chips';
 import type { CarbStatus } from '#app/utils/carb-status';
-import type { CarbBasis } from '#app/lib/net-carbs';
+import { carbBasisForOrigin, type CarbBasis } from '#app/lib/net-carbs';
 import { snapshotToPer100gAtGrams } from '#app/lib/quick-add-search';
 import { FALLBACK_PORTION_GRAMS, portionToGrams, resolveDefaultPortion, type DisplayPortion } from '#app/lib/portions';
 import type { LocalFoodLog, LocalPersonalFood } from './schema';
@@ -296,9 +296,13 @@ export interface LocalQuickAddCandidate {
    * value a factory could silently fall back to here — omitting the key
    * yields UNKNOWN, which `computeNetCarbsFromParts` (`#app/lib/net-carbs`)
    * already treats as `total`, the correct legacy behaviour. A `'curated'`
-   * candidate never sets this: LCC's `FoodMatch` has no basis field of its
-   * own and always carries an authoritative figure (number or explicit
-   * `null`), so its fallback branch is never reached.
+   * candidate DOES set this (M123/13 second-review finding 1 — an earlier
+   * version of this comment claimed otherwise, on the reasoning that a
+   * curated candidate always carries `authoritativeNetCarbsPer100g` so its
+   * fallback branch is "never reached"; that is only true UNTIL a macro edit
+   * clears that figure, which `resolveEditedNetCarbsPer100g` does by design.
+   * `localCuratedMatchToCandidate` derives this from `FoodMatch.origin` via
+   * `carbBasisForOrigin` so the fallback stays correct after that edit).
    */
   carbBasis?: CarbBasis;
   /**
@@ -465,11 +469,19 @@ export function localCuratedMatchToCandidate(match: FoodMatch): LocalQuickAddCan
     name: match.title,
     macrosPer100g: { ...match.macrosPer100g },
     authoritativeNetCarbsPer100g: match.netCarbsPer100g,
-    // `carbBasis` deliberately omitted (stays `undefined`): `FoodMatch` has no
-    // basis field of its own, and this candidate always carries an
-    // authoritative figure (a number or an explicit `null`), so the
-    // compute-from-parts fallback `carbBasis` governs is never reached for a
-    // curated candidate — see `LocalQuickAddCandidate.carbBasis`'s doc.
+    // M123/13 second-review finding 1: this WAS omitted on the claim that the
+    // compute-from-parts fallback `carbBasis` governs "is never reached for a
+    // curated candidate" — that claim is false. `authoritativeNetCarbsPer100g`
+    // above wins ONLY until a macro edit clears `netCarbsPer100g`
+    // (`resolveEditedNetCarbsPer100g`, used by both the diary edit form and
+    // `resolveAppliedMatchSnapshot`) — after which the fallback runs with
+    // whatever basis this candidate carried forward. Deriving it from
+    // `match.origin` here is what keeps the fallback honest once that happens:
+    // a BLS-origin food edited by 0.1 g no longer floors to a false 0 net
+    // carbs. `carbBasisForOrigin` returns `undefined` for a `null` or
+    // unrecognised origin — never a guessed basis — so a genuinely-unknown
+    // origin behaves exactly as it did before this fix.
+    carbBasis: carbBasisForOrigin(match.origin),
     defaultGrams: candidateDefaultGrams(defaultPortion),
     defaultPortion,
     curatedSource: toCuratedSource(match.slug),

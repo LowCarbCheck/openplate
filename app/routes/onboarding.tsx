@@ -816,7 +816,13 @@ function ChipRadioGroup({
           <label
             key={option.value}
             className={cn(
-              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors',
+              // `focus-within:ring-*` on the label, not the (visually hidden)
+              // input — this codebase's convention for a "chip wraps an
+              // sr-only radio" control, see `theme-selector.tsx`. Without it,
+              // tabbing through these chips gave a keyboard user no visible
+              // focus indicator (M123/13 second-review finding 3 — the same
+              // gap `carb-basis-field.tsx` copied this component's shape from).
+              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === option.value),
             )}
           >

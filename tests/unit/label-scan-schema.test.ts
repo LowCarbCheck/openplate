@@ -166,6 +166,48 @@ describe('validateLabelReading', () => {
     const reading = validateLabelReading(JSON.parse(labelResponse()));
     assert.strictEqual(reading.macrosPer100g?.polyols, 26);
   });
+
+  // M123/13 second-review finding 4: `carbBasis` used to be a strict enum, so
+  // a provider emitting anything other than "total"/"available"/null failed
+  // the WHOLE reading — tokens already spent, a perfectly good macro reading
+  // discarded over one field. `.catch(null)` degrades just that field; every
+  // other field must keep failing the whole parse on a real shape mismatch.
+  it('a junk carbBasis value degrades to null (unknown) instead of failing the whole reading', () => {
+    // `labelResponse`'s own override type is intentionally narrow
+    // (`'total' | 'available' | null`) so every OTHER test can't typo a basis
+    // value by accident; this one test deliberately routes around that typing
+    // to construct the wire shape a non-compliant provider would actually send.
+    const rawJson = labelResponse().replace('"carbBasis":"total"', '"carbBasis":"eu"');
+    const reading = validateLabelReading(JSON.parse(rawJson));
+
+    assert.strictEqual(reading.carbBasis, undefined, 'a junk basis must normalize to absent, never a guess');
+    // The rest of the reading must be untouched — this is the actual point of
+    // the fix: a real macro reading (with genuine token cost behind it) must
+    // survive one unrelated field's shape mismatch.
+    assert.strictEqual(reading.productName, 'Keto Bar, Chocolate');
+    assert.strictEqual(reading.macrosPer100g?.polyols, 26);
+    assert.strictEqual(reading.macrosPerServing?.polyols, 9.1);
+  });
+
+  it('every OTHER field still fails the whole reading on a genuine shape mismatch — this fix does not loosen anything else', () => {
+    const rawJson = labelResponse().replace('"unreadable":false', '"unreadable":"not-a-boolean"');
+    assert.throws(() => validateLabelReading(JSON.parse(rawJson)), VisionProviderError);
+  });
+});
+
+describe('LABEL_READING_JSON_SCHEMA — carbBasis stays enum-constrained for the provider despite `.catch()`', () => {
+  it('still asks providers for exactly "total" | "available" | null, not an open string', () => {
+    // SAFETY: `LABEL_READING_JSON_SCHEMA` is derived from `LabelReadingSchema`
+    // by this module's own `toStrictJsonSchema`, so `carbBasis` is always an
+    // object property with a `.catch()`-widened `anyOf` (the enum branch plus
+    // the `null` branch) — the shape this cast states, not an assumption about
+    // untrusted input.
+    const carbBasisSchema = LABEL_READING_JSON_SCHEMA.properties?.carbBasis as {
+      anyOf?: { type?: string; enum?: string[] }[];
+    };
+    const enumBranch = carbBasisSchema.anyOf?.find((branch) => branch.enum !== undefined);
+    assert.deepStrictEqual(enumBranch?.enum?.toSorted(), ['available', 'total']);
+  });
 });
 
 describe('LABEL_READING_JSON_SCHEMA', () => {

@@ -318,6 +318,16 @@ export interface LocalPersonalFood {
    * just nullable — same reasoning as `portion` (see the `SCHEMA_VERSION`
    * v2 → v3 note): there is no third "explicitly unknown" state to encode, an
    * absent key already means exactly that.
+   *
+   * SNAPSHOT, not a live lookup (M123/13 second-review finding 2): a chip
+   * (`LocalRecentFood.carbBasis`) or saved-meal item (`LocalSavedMealItem.carbBasis`)
+   * copies whatever basis THIS field held at the moment the underlying log was
+   * written, exactly as `attribution` and `netCarbsPer100g` already do. If the
+   * person later corrects this food's basis here, that correction heals only
+   * FUTURE `/add` logs of it — it does NOT retroactively fix an existing chip,
+   * saved-meal item, or already-logged entry frozen with the old value. This is
+   * intended snapshot semantics, matching the rest of this food's fields, not a
+   * bug to "fix" into a live lookup keyed by `foodId`.
    */
   carbBasis?: CarbBasis;
   /**

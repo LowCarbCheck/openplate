@@ -71,7 +71,13 @@ export function CarbBasisField({
           <label
             key={option.value}
             className={cn(
-              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors',
+              // `focus-within:ring-*` on the label, not the (visually hidden)
+              // input, is this codebase's convention for a "chip wraps an
+              // sr-only radio" control — see `theme-selector.tsx`'s identical
+              // pattern. Without it, a keyboard user tabbing through these
+              // three options gets no visible indicator of which one is
+              // focused (M123/13 second-review finding 3).
+              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === option.value),
             )}
           >

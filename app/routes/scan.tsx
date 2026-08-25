@@ -217,6 +217,17 @@ function makeConfirmItemSchema(t: Translate) {
      * source to credit. Normalized by `toStoredAttribution` on the way in.
      */
     attribution: z.string().optional(),
+    /**
+     * The applied match's printed-panel convention, derived from
+     * `FoodMatch.origin` (M123/13 second-review finding 1) and snapshotted at
+     * log time — same convention as `LocalPersonalFood.carbBasis`/
+     * `LocalFoodLog.carbBasis`. Blank for a plain AI plate estimate, which has
+     * no printed panel to report. Unlike `netCarbsPer100g` above, NOT withdrawn
+     * by a macro hand-edit — see `resolveAppliedMatchSnapshot`'s doc for why the
+     * two rules differ. Parsed with `parseCarbBasis` on the way in, so an
+     * unrecognised value decodes to "unknown" rather than throwing.
+     */
+    carbBasis: z.string().optional(),
     macros: makeConfirmMacrosSchema(t),
   });
 }
@@ -685,6 +696,11 @@ export function buildConfirmedEntry({
     // The applied match's licence credit, travelling with the data it credits
     // (CC BY). Null for an AI estimate — there is no source to credit.
     attribution: toStoredAttribution(item.attribution),
+    // The applied match's printed-panel convention (M123/13 second-review
+    // finding 1) — see `makeConfirmItemSchema`'s `carbBasis` doc for why this
+    // is NOT withdrawn by a macro edit the way `netCarbsPer100g` above is.
+    // Absent for a plain AI plate estimate, which has no printed panel.
+    carbBasis: parseCarbBasis(item.carbBasis) ?? undefined,
   };
 }
 
@@ -740,6 +756,10 @@ export function buildConfirmedFood({
     // cannot invent it). Cloned rather than aliased so the food's snapshot and
     // the log's never share object identity.
     micronutrientsPer100g: cloneMicronutrients(item.micronutrientsPer100g),
+    // The SAME basis the log gets, from the SAME upstream fact — see
+    // `buildConfirmedEntry` and the M123/13 second-review finding 1 comment
+    // there.
+    carbBasis: parseCarbBasis(item.carbBasis) ?? undefined,
   };
 }
 
@@ -2522,6 +2542,14 @@ export function ConfirmDraftForm({
                 type="hidden"
                 name={itemFieldset.attribution.name}
                 value={view.appliedSnapshot.attribution ?? ''}
+              />
+              {/* Same "derived every render from `curatedSource`, never withdrawn by an
+                  edit" treatment as `attribution` above, not `netCarbsPer100g`'s
+                  clear-on-edit treatment — see `resolveAppliedMatchSnapshot`'s doc. */}
+              <input
+                type="hidden"
+                name={itemFieldset.carbBasis.name}
+                value={view.appliedSnapshot.carbBasis ?? ''}
               />
 
               <div className="space-y-2">
