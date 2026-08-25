@@ -32,6 +32,9 @@ import { computeMacroPreview, type MacroPreview } from '#app/lib/portion-preview
 import { authoritativeNetCarbsField, encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
 import { encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrients';
 import { macrosDiffer, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
+import { parseCarbBasis } from '#app/lib/net-carbs';
+import type { CarbBasis } from '#app/lib/net-carbs';
+import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
 import { toStoredAttribution } from '#app/lib/attribution';
 import {
   derivePortionChoices,
@@ -355,6 +358,10 @@ export function createManualSchema(t: Translate) {
     protein: createOptionalNonNegativeNumberSchema(),
     fat: createOptionalNonNegativeNumberSchema(),
     kcal: createOptionalNonNegativeNumberSchema(),
+    // The three-state control's "not sure" chip submits '' — unrecognised, so
+    // it can't fail this schema; `parseCarbBasis` (applied in the handler, not
+    // here) turns it into the persisted absent state. Default "not sure".
+    carbBasis: z.string().optional(),
   });
 }
 
@@ -379,6 +386,8 @@ const EditFoodSchema = z.object({
   protein: createOptionalNonNegativeNumberSchema(),
   fat: createOptionalNonNegativeNumberSchema(),
   kcal: createOptionalNonNegativeNumberSchema(),
+  // Same convention as `createManualSchema.carbBasis` above.
+  carbBasis: z.string().optional(),
 });
 
 const DeleteFoodSchema = z.object({ foodId: z.string().min(1, 'Missing food') });
@@ -808,11 +817,14 @@ async function handleLog({
 export function buildManualFood({
   name,
   macrosPer100g,
+  carbBasis,
   id,
   createdAtMs,
 }: {
   name: string;
   macrosPer100g: Macros & { carbs: number };
+  /** The confirmed panel convention, or null for "not sure" — persists as absent. */
+  carbBasis: CarbBasis | null;
   id: string;
   createdAtMs: number;
 }): LocalPersonalFood {
@@ -823,6 +835,7 @@ export function buildManualFood({
     macrosPer100g,
     source: 'user',
     createdAt: createdAtMs,
+    carbBasis: carbBasis ?? undefined,
     // `netCarbsPer100g` is deliberately OMITTED, exactly as it is on the log
     // `handleManual` writes alongside this: on a manual entry the person typing
     // the label IS the source, so there is no upstream figure to snapshot.
@@ -873,6 +886,7 @@ async function handleManual({
   // Gated on the CONVERTED figure, not the raw typed value — for a per-serving
   // entry those can differ, and only the converted one is what actually gets stored.
   const carbsPer100g = macrosPer100g.carbs;
+  const carbBasis = parseCarbBasis(data.carbBasis);
   let foodId: string | null = null;
   if (carbsPer100g !== null) {
     foodId = randomUuid();
@@ -880,6 +894,7 @@ async function handleManual({
       buildManualFood({
         name: data.name,
         macrosPer100g: { ...macrosPer100g, carbs: carbsPer100g },
+        carbBasis,
         id: foodId,
         createdAtMs: Date.now(),
       }),
@@ -901,6 +916,7 @@ async function handleManual({
     loggedAt: loggedAtMs,
     createdAt: Date.now(),
     logBatchId: null,
+    carbBasis: carbBasis ?? undefined,
     // `netCarbsPer100g` and `attribution` are both deliberately OMITTED here:
     // on a manual entry the person typing the label IS the source, so there is
     // no upstream figure to snapshot and no third party to credit. Leaving the
@@ -963,11 +979,20 @@ async function handleEditFood({ formData }: { formData: FormData }): Promise<Edi
   // a vitamin C measurement is an independent fact about the matched food that
   // the person adjusting a carb value has neither measured nor invalidated.
   // Same split `resolveAppliedMatchSnapshot` draws on the scan side.
+  //
+  // `carbBasis` (spec 13, M123), by contrast, is NOT cleared by this edit —
+  // it is a property of the printed panel the person is looking at, not of
+  // the upstream snapshot the macro edit just invalidated. The edit form's
+  // three-state control DOES let the person correct it explicitly (this is
+  // the escape hatch spec 13 gives an already-UNKNOWN row), so the submitted
+  // value wins outright rather than falling back to `existing.carbBasis`.
+  const carbBasis = parseCarbBasis(data.carbBasis);
   await putLocalFood({
     ...existing,
     name: data.name,
     macrosPer100g: { ...macrosPer100g, carbs: macrosPer100g.carbs },
     netCarbsPer100g,
+    carbBasis: carbBasis ?? undefined,
   });
   return { intent: 'editFood', ok: true, name: data.name };
 }
@@ -1145,6 +1170,7 @@ export function PortionStep({
         macrosPer100g: candidate.macrosPer100g,
         grams: validGrams,
         authoritativeNetCarbsPer100g: candidate.authoritativeNetCarbsPer100g,
+        carbBasis: candidate.carbBasis,
       })
     : null;
   const carbStatus = preview ? getCarbStatus(preview.netCarbsPer100g) : null;
@@ -1365,6 +1391,9 @@ function ManualAddForm({
   const isSubmitting = navigation.state === 'submitting' && navigation.formData?.get('_intent') === 'manual';
   const [mealType, setMealType] = useState<string>('');
   const [macroBasis, setMacroBasis] = useState<MacroEntryBasis>('per100g');
+  // Default "not sure" (spec 13, M123) — this is a FRESH food, there is no
+  // existing basis to pre-fill from.
+  const [carbBasis, setCarbBasis] = useState<CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE>(CARB_BASIS_NOT_SURE_VALUE);
 
   const [form, fields] = useForm({
     id: 'quick-add-manual',
@@ -1473,6 +1502,16 @@ function ManualAddForm({
                   </div>
                 ))}
               </div>
+              <CarbBasisField
+                name={fields.carbBasis.name}
+                legend={t('add.custom.carbBasis.legend')}
+                hint={t('add.custom.carbBasis.hint')}
+                selected={carbBasis}
+                onSelect={setCarbBasis}
+                totalLabel={t('add.custom.carbBasis.total')}
+                availableLabel={t('add.custom.carbBasis.available')}
+                notSureLabel={t('add.custom.carbBasis.notSure')}
+              />
             </CollapsibleContent>
           </Collapsible>
 

@@ -8,6 +8,7 @@
 // here would close a runtime cycle. The descriptor shape belongs beside the
 // task definitions, not in the domain types.
 import type { ScanTaskDescriptor } from './task';
+import type { CarbBasis } from '#app/lib/net-carbs';
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
@@ -106,6 +107,17 @@ export interface LabelReading {
   macrosPerServing?: IdentifiedFoodMacros;
   /** Macros per 100 g as printed. Never computed from the per-serving column here. */
   macrosPer100g?: IdentifiedFoodMacros;
+  /**
+   * Which printed-panel convention this label's carbs figure uses — `total`
+   * (US "Total Carbohydrate", fibre-INCLUSIVE) or `available` (EU
+   * "Kohlenhydrate"/"carbohydrate", fibre-EXCLUSIVE, polyols still
+   * subtracted). The model reports the LAYOUT it sees; it never does the
+   * subtraction itself (`#app/lib/net-carbs` owns that). Absent when the
+   * panel's layout doesn't decide it — see spec 13 (M123) and
+   * `LocalFoodLog.carbBasis`'s doc comment for the UNKNOWN-means-`total` rule
+   * downstream.
+   */
+  carbBasis?: CarbBasis;
   notes?: string;
   /** Present only when the provider's response reported usage — never fabricated. */
   usage?: ScanTokenUsage;

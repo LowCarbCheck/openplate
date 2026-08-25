@@ -13,6 +13,13 @@
     "custom": {
       "caloriesSummary": "{{value}} calories",
       "cancel": "Cancel",
+      "carbBasis": {
+        "available": "EU style (carbs already exclude fibre)",
+        "hint": "US labels count fibre inside \"Total Carbohydrate\"; EU labels list fibre on its own row and already exclude it. Getting this right stops fibre being subtracted twice.",
+        "legend": "How this food's carbs are counted",
+        "notSure": "Not sure",
+        "total": "US style (carbs include fibre)"
+      },
       "carbsSummary": "{{value}}g carbs",
       "description": "Foods you've added yourself. Edit the numbers or remove one here.",
       "editAria": "Edit {{name}}",
@@ -670,7 +677,7 @@
     },
     "carbs": {
       "custom": "Custom",
-      "hint": "This counts net carbs — total carbs minus fiber, the same number your diary tracks. Pick a common starting point below, or type your own amount in grams.",
+      "hint": "This counts net carbs — fiber and sugar alcohols already taken out, the same number your diary tracks. Pick a common starting point below, or type your own amount in grams.",
       "label": "Daily carb limit",
       "placeholder": "e.g. 20",
       "presets": {
@@ -1255,6 +1262,13 @@
         "basisPer100g": "Taken from the label's per-100 g column.",
         "basisPerServing": "Worked out from the label's per-serving column ({{grams}} g per serving).",
         "brandLabel": "Brand (optional)",
+        "carbBasis": {
+          "available": "EU style (carbs already exclude fibre)",
+          "hint": "US panels count fibre inside \"Total Carbohydrate\"; EU panels list fibre on its own row and already exclude it. Getting this right stops fibre being subtracted twice.",
+          "legend": "How this label counts carbs",
+          "notSure": "Not sure",
+          "total": "US style (carbs include fibre)"
+        },
         "gramsLabel": "Amount to log (g)",
         "heading": "Here's what the label says — check it before you log it.",
         "macrosPer100gNote": "Values are per 100 g. A blank box means the label did not print that row — leave it blank rather than typing 0.",

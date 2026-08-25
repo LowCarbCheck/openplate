@@ -8,11 +8,13 @@
  * `number | null` by the shell); these builders shape them into a CSV string or
  * a JSON document. Unknown macros stay `null`/empty — they are never defaulted
  * to `0`. `net_carbs` is DERIVED the way the app derives its daily totals
- * (`carbs − fiber − polyols`, treating unknown fiber/polyols as 0) but only
- * when `carbs` itself is known; a null `carbs` yields a null net-carbs, not 0.
+ * (basis-aware — see `#app/lib/net-carbs` and spec 13, M123) but only when
+ * `carbs` itself is known; a null `carbs` yields a null net-carbs, not 0.
  */
 import { encodeCsv } from './csv';
 import type { CsvRow } from './csv';
+import { computeNetCarbsFromParts } from './net-carbs';
+import type { CarbBasis } from './net-carbs';
 
 ////////////////////////////////////////////////////////////////////////////////
 // Request shape (format + selection) with runtime guards
@@ -69,6 +71,13 @@ export interface ExportFoodInput {
   kcal: number | null;
   source: string;
   createdAt: Date;
+  /**
+   * Which printed-panel convention `carbs` was read from, governing
+   * `computeExportNetCarbs`'s fallback below. `undefined` (absent, the state
+   * of every food logged before spec 13) is treated as `total`, today's
+   * original formula — see `#app/lib/net-carbs`.
+   */
+  carbBasis?: CarbBasis;
 }
 
 /** A single food-log entry (per-serving macro snapshot; every macro nullable). */
@@ -99,6 +108,13 @@ export interface ExportLogInput {
    * `computeExportNetCarbs`. Absent/`null` falls back to the derivation.
    */
   netCarbs?: number | null;
+  /**
+   * Which printed-panel convention `carbs` was read from, governing
+   * `computeExportNetCarbs`'s fallback below when `netCarbs` is absent.
+   * `undefined` (absent, the state of every entry logged before spec 13) is
+   * treated as `total`, today's original formula — see `#app/lib/net-carbs`.
+   */
+  carbBasis?: CarbBasis;
 }
 
 /** A single weigh-in (one per calendar day). */
@@ -113,11 +129,11 @@ export interface ExportWeightInput {
 
 /**
  * Net carbs for one row: an AUTHORITATIVE figure when the row carries one,
- * else `carbs − fiber − polyols`, with unknown fiber/polyols counted as 0 (the
- * same preference order and convention as `summarizeDay`'s `_entryNetCarbs`).
- * Returns `null` when neither is available — net carbs can't exist without a
- * carb figure, and a 0 there would fabricate one. The derivation is not
- * clamped: a fiber-heavy entry can go negative.
+ * else the basis-aware `computeNetCarbsFromParts` (the same preference order
+ * and convention as `summarizeDay`'s `_entryNetCarbs`). Returns `null` when
+ * neither is available — net carbs can't exist without a carb figure, and a
+ * 0 there would fabricate one. The derivation is not clamped: a fiber-heavy
+ * entry can go negative.
  *
  * The authoritative branch is load-bearing for curated/bls foods, whose
  * `carbs` is already fibre-EXCLUSIVE: deriving from parts double-subtracts the
@@ -132,10 +148,10 @@ export function computeExportNetCarbs(row: {
   fiber: number | null;
   polyols: number | null;
   netCarbs?: number | null;
+  carbBasis?: CarbBasis;
 }): number | null {
   if (row.netCarbs !== undefined && row.netCarbs !== null) return row.netCarbs;
-  if (row.carbs === null) return null;
-  return row.carbs - (row.fiber ?? 0) - (row.polyols ?? 0);
+  return computeNetCarbsFromParts(row, row.carbBasis);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -241,6 +257,8 @@ export interface ExportFoodJson {
   fat: number | null;
   kcal: number | null;
   netCarbs: number | null;
+  /** See `ExportFoodInput.carbBasis`. Carried through so this JSON export round-trips losslessly. */
+  carbBasis?: CarbBasis;
   source: string;
   createdAt: string;
 }
@@ -259,6 +277,8 @@ export interface ExportLogJson {
   fat: number | null;
   kcal: number | null;
   netCarbs: number | null;
+  /** See `ExportLogInput.carbBasis`. Carried through so this JSON export round-trips losslessly. */
+  carbBasis?: CarbBasis;
   mealType: string | null;
   source: string;
   aiEstimated: boolean;
@@ -306,6 +326,7 @@ function _toFoodJson(food: ExportFoodInput): ExportFoodJson {
     fat: food.fat,
     kcal: food.kcal,
     netCarbs: computeExportNetCarbs(food),
+    carbBasis: food.carbBasis,
     source: food.source,
     createdAt: food.createdAt.toISOString(),
   };
@@ -326,6 +347,7 @@ function _toLogJson(log: ExportLogInput): ExportLogJson {
     fat: log.fat,
     kcal: log.kcal,
     netCarbs: computeExportNetCarbs(log),
+    carbBasis: log.carbBasis,
     mealType: log.mealType,
     source: log.source,
     aiEstimated: log.aiEstimated,

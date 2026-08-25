@@ -28,6 +28,7 @@ import type { FoodMatch } from '#app/services/food-resolution';
 import { toCuratedSource } from '#app/services/food-resolution/apply-match';
 import { chipCarbStatus } from '#app/lib/frequent-chips';
 import type { CarbStatus } from '#app/utils/carb-status';
+import type { CarbBasis } from '#app/lib/net-carbs';
 import { snapshotToPer100gAtGrams } from '#app/lib/quick-add-search';
 import { FALLBACK_PORTION_GRAMS, portionToGrams, resolveDefaultPortion, type DisplayPortion } from '#app/lib/portions';
 import type { LocalFoodLog, LocalPersonalFood } from './schema';
@@ -82,6 +83,15 @@ export interface LocalRecentFood {
    * AI-estimated log simply has none and the re-log correctly stores none.
    */
   netCarbsPer100g?: number | null;
+  /**
+   * The most recent log's printed-panel convention, passed through VERBATIM
+   * (see `LocalFoodLog.carbBasis`). Governs the compute-from-parts fallback
+   * `chipCarbStatus`/`computeMacroPreview` fall into when `netCarbsPer100g`
+   * above is absent — the exact gap a re-logged EU-basis manual food fell
+   * through before spec 13 (M123): its per-100g badge/chip double-subtracted
+   * fibre on the very list this row feeds.
+   */
+  carbBasis?: CarbBasis;
   /**
    * The most recent log's per-100 g vitamins/minerals snapshot, passed through
    * VERBATIM with every state intact (see `LocalFoodLog.micronutrientsPer100g`).
@@ -142,6 +152,7 @@ export function computeLocalRecentFoods(
       // Verbatim, NOT `?? null` — see the field's doc: absent and null mean
       // different things here.
       netCarbsPer100g: latest.netCarbsPer100g,
+      carbBasis: latest.carbBasis,
       // Verbatim for the same reason, one level deeper: an absent snapshot, an
       // absent block inside one, and a `null` figure inside a block are three
       // different facts, and only the third could ever be confused with a zero.
@@ -177,6 +188,8 @@ export interface LocalFrequentChip {
   attribution: string | null;
   /** The underlying log's authoritative per-100g net carbs, verbatim — see `LocalRecentFood.netCarbsPer100g`. */
   netCarbsPer100g?: number | null;
+  /** The underlying log's printed-panel convention, verbatim — see `LocalRecentFood.carbBasis`. */
+  carbBasis?: CarbBasis;
   /** The underlying log's per-100 g micronutrients, verbatim — see `LocalRecentFood.micronutrientsPer100g`. */
   micronutrientsPer100g?: MicronutrientsPer100g;
 }
@@ -211,10 +224,12 @@ export function selectLocalFrequentChips(
       // shows a green dot on the chip and a red badge everywhere else.
       carbStatus: chipCarbStatus(recent.macros, recent.lastQuantityGrams, {
         authoritativeNetCarbsPer100g: recent.netCarbsPer100g,
+        carbBasis: recent.carbBasis,
       }),
       portion: recent.portion,
       attribution: recent.attribution,
       netCarbsPer100g: recent.netCarbsPer100g,
+      carbBasis: recent.carbBasis,
       micronutrientsPer100g: recent.micronutrientsPer100g,
     }));
 }
@@ -272,6 +287,20 @@ export interface LocalQuickAddCandidate {
    * written before the field existed simply lacks the key.)
    */
   authoritativeNetCarbsPer100g: number | null | undefined;
+  /**
+   * This candidate's printed-panel convention, governing the compute-from-
+   * parts fallback `computeMacroPreview`/`chipCarbStatus` fall into whenever
+   * `authoritativeNetCarbsPer100g` above is `undefined` — i.e. exactly the
+   * candidates that reach the fallback at all. `?:`, NOT the required-but-
+   * undefined-able style the field above uses: there is no second, wrong
+   * value a factory could silently fall back to here — omitting the key
+   * yields UNKNOWN, which `computeNetCarbsFromParts` (`#app/lib/net-carbs`)
+   * already treats as `total`, the correct legacy behaviour. A `'curated'`
+   * candidate never sets this: LCC's `FoodMatch` has no basis field of its
+   * own and always carries an authoritative figure (number or explicit
+   * `null`), so its fallback branch is never reached.
+   */
+  carbBasis?: CarbBasis;
   /**
    * Grams to prefill when this candidate is selected. Derived from
    * `defaultPortion` when one resolves (see that field), otherwise
@@ -340,6 +369,7 @@ export function localRecentFoodToCandidate(recent: LocalRecentFood): LocalQuickA
     name: recent.name,
     macrosPer100g,
     authoritativeNetCarbsPer100g: recent.netCarbsPer100g,
+    carbBasis: recent.carbBasis,
     defaultGrams: recent.lastQuantityGrams,
     defaultPortion: recent.portion,
     curatedSource: recent.curatedSource,
@@ -386,6 +416,7 @@ export function localFoodToCandidate(food: LocalPersonalFood): LocalQuickAddCand
     name: food.name,
     macrosPer100g: food.macrosPer100g,
     authoritativeNetCarbsPer100g: food.netCarbsPer100g,
+    carbBasis: food.carbBasis,
     defaultGrams: candidateDefaultGrams(defaultPortion),
     defaultPortion,
     curatedSource: null,
@@ -434,6 +465,11 @@ export function localCuratedMatchToCandidate(match: FoodMatch): LocalQuickAddCan
     name: match.title,
     macrosPer100g: { ...match.macrosPer100g },
     authoritativeNetCarbsPer100g: match.netCarbsPer100g,
+    // `carbBasis` deliberately omitted (stays `undefined`): `FoodMatch` has no
+    // basis field of its own, and this candidate always carries an
+    // authoritative figure (a number or an explicit `null`), so the
+    // compute-from-parts fallback `carbBasis` governs is never reached for a
+    // curated candidate — see `LocalQuickAddCandidate.carbBasis`'s doc.
     defaultGrams: candidateDefaultGrams(defaultPortion),
     defaultPortion,
     curatedSource: toCuratedSource(match.slug),

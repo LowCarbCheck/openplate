@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { Macros } from '#app/lib/macros';
 import type { QuickAddSource } from '#app/lib/quick-add-search';
 import { computeMacroPreview } from '#app/lib/portion-preview';
+import type { CarbBasis } from '#app/lib/net-carbs';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { matchTierChipClass, type MatchTier } from '#app/lib/match-quality';
@@ -102,6 +103,16 @@ export interface SearchResultCandidate {
    * type that reaches this row already carries the field.
    */
   authoritativeNetCarbsPer100g: number | null | undefined;
+  /**
+   * This candidate's printed-panel convention, threaded into
+   * `computeMacroPreview` as `carbBasis` — see
+   * `LocalQuickAddCandidate.carbBasis`'s doc for the full contract. `?:`
+   * (unlike `authoritativeNetCarbsPer100g` above) because absence here is
+   * never ambiguous: it means UNKNOWN, which the compute-from-parts fallback
+   * already treats as `total` (today's original formula) by design — see
+   * `#app/lib/net-carbs`.
+   */
+  carbBasis?: CarbBasis;
   source: QuickAddSource;
   timesLogged: number;
   imageUrl: string | null;
@@ -130,6 +141,7 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
     macrosPer100g: candidate.macrosPer100g,
     grams: 100,
     authoritativeNetCarbsPer100g: candidate.authoritativeNetCarbsPer100g,
+    carbBasis: candidate.carbBasis,
   });
   const carbStatus = preview ? getCarbStatus(preview.netCarbsPer100g) : null;
   const summary = formatPer100gSummary(candidate.macrosPer100g, t, i18n.language);

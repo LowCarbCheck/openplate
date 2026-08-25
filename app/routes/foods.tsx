@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import type { Macros } from '#app/lib/macros';
 import { macrosDiffer, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
 import { resolveMacrosPer100gFromEntry } from '#app/lib/portions';
+import { parseCarbBasis } from '#app/lib/net-carbs';
 import { createOptionalNonNegativeNumberSchema } from '#app/lib/zod-numeric';
 import { deleteLocalFood, getLocalFood, listLocalFoods, putLocalFood } from '#app/lib/local-store';
 import type { DeleteFoodResult, EditFoodResult } from '#app/components/add/manage-custom-foods';
@@ -67,6 +68,8 @@ const EditFoodSchema = z.object({
   protein: createOptionalNonNegativeNumberSchema(),
   fat: createOptionalNonNegativeNumberSchema(),
   kcal: createOptionalNonNegativeNumberSchema(),
+  // Same convention as `/add`'s identical duplicate — see this module's header.
+  carbBasis: z.string().optional(),
 });
 
 const DeleteFoodSchema = z.object({ foodId: z.string().min(1, 'Missing food') });
@@ -122,8 +125,17 @@ async function handleEditFood({ formData }: { formData: FormData }): Promise<Edi
   });
   // `micronutrientsPer100g` rides the `...existing` spread — same rule as
   // `/add`'s handler: net carbs are derived from the very macros being
-  // edited, a vitamin measurement is not.
-  await putLocalFood({ ...existing, name: data.name, macrosPer100g: { ...macrosPer100g, carbs: macrosPer100g.carbs }, netCarbsPer100g });
+  // edited, a vitamin measurement is not. `carbBasis` (spec 13, M123) is NOT
+  // cleared by a macro edit either — same reasoning, and same "the submitted
+  // value wins outright" rule as `/add`'s duplicate handler.
+  const carbBasis = parseCarbBasis(data.carbBasis);
+  await putLocalFood({
+    ...existing,
+    name: data.name,
+    macrosPer100g: { ...macrosPer100g, carbs: macrosPer100g.carbs },
+    netCarbsPer100g,
+    carbBasis: carbBasis ?? undefined,
+  });
   return { intent: 'editFood', ok: true, name: data.name };
 }
 

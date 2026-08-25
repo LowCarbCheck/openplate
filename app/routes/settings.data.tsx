@@ -91,6 +91,11 @@ function toExportLogInput(log: Awaited<ReturnType<typeof listLocalFoodLogs>>[num
     // serving scaling here: this is the same figure the diary and trends read,
     // so the CSV can't disagree with the app about a curated entry's carbs.
     netCarbs: localFoodLogToSnapshot(log).netCarbs,
+    // Threaded through so `computeExportNetCarbs`'s compute-from-parts
+    // fallback (used when `netCarbs` above is absent, e.g. a hand-typed
+    // EU-panel entry) picks the right formula instead of double-subtracting
+    // fibre — see spec 13 (M123).
+    carbBasis: log.carbBasis,
   };
 }
 

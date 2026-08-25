@@ -17,6 +17,7 @@
 import { z } from 'zod';
 import type { Store } from 'tinybase';
 import { displayPortionSchema } from '#app/lib/portions';
+import { CARB_BASES } from '#app/lib/net-carbs';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
 import { LAST_EXPORT_VALUE } from './store';
 import { SCHEMA_VERSION } from './schema';
@@ -81,6 +82,16 @@ const personalFoodSchema = z.object({
   // step is needed for the v5 → v6 bump — a v5 envelope simply lacks the key,
   // which is already the correct "never captured" state.
   netCarbsPer100g: z.number().nonnegative().nullable().optional(),
+  // Added v12 (spec 13, EU/US carb basis) — the exact counterpart of
+  // `foodLogSchema.carbBasis` below: OPTIONAL, no `.nullable()`, because an
+  // absent key is the only "unknown" state this field has (see that field's
+  // doc comment in `schema.ts` for the UNKNOWN-means-`total` rule). Present
+  // for the usual reason: zod STRIPS unrecognized keys, so omitting this
+  // line would silently drop which panel convention a food's carbs were
+  // read from on every export/import round trip. No forward-migration step
+  // is needed for the v11 → v12 bump — a v11 envelope simply lacks the key,
+  // which is already the correct "unknown" state.
+  carbBasis: z.enum(CARB_BASES).optional(),
   // Added v10 — the exact counterpart of `foodLogSchema.micronutrientsPer100g`
   // below, sharing the same `micronutrientsPer100gSchema` so a food's stored
   // snapshot and a log's can never drift. Present for the identical reason the
@@ -146,6 +157,17 @@ const foodLogSchema = z.object({
   // needed for the v4 → v5 bump: a v4 envelope simply lacks the key, which is
   // already the correct "never captured" state.
   netCarbsPer100g: z.number().nonnegative().nullable().optional(),
+  // Added v12 (spec 13, EU/US carb basis) — which printed-panel convention
+  // (`total`/`available`) this entry's `macros.carbs` was read from, see
+  // `LocalFoodLog.carbBasis`'s doc comment in `schema.ts`. OPTIONAL WITHOUT
+  // `.nullable()`: unlike `netCarbsPer100g` above, there is no explicit-null
+  // "consulted and unknown" state here — absence alone means unknown, and
+  // unknown is treated exactly as `total`. Present for the usual reason: zod
+  // STRIPS unrecognized keys, so omitting this would silently drop the basis
+  // on every export/import, quietly reverting an EU-basis entry's fallback
+  // formula back to double-subtracting fibre. No forward-migration step is
+  // needed for the v11 → v12 bump — a v11 envelope simply lacks the key.
+  carbBasis: z.enum(CARB_BASES).optional(),
   // Added v9 (micronutrients, M135) — one OPTIONAL field on an EXISTING
   // entity, so this follows the `attribution`/`netCarbsPer100g` rules above and
   // not the `fasts` rule below: a v8 envelope simply lacks the key, which is
@@ -224,6 +246,12 @@ const savedMealItemSchema = z.object({
   portion: displayPortionSchema.nullable().optional(),
   attribution: z.string().nullable().optional(),
   netCarbsPer100g: z.number().nonnegative().nullable().optional(),
+  // Added v12 (spec 13) — mirrors `foodLogSchema.carbBasis`, for the same
+  // lossless-round-trip reason this item's whole field set mirrors
+  // `foodLogSchema`'s (see `LocalSavedMealItem`'s doc comment in schema.ts):
+  // without it, re-logging a saved EU-basis item would silently fall back to
+  // the `total` formula and double-subtract fibre every time.
+  carbBasis: z.enum(CARB_BASES).optional(),
   micronutrientsPer100g: micronutrientsPer100gSchema.optional(),
 });
 

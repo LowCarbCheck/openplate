@@ -29,6 +29,7 @@ function toSavedMealItem(log: LocalFoodLog): LocalSavedMealItem {
     portion: log.portion,
     attribution: log.attribution,
     netCarbsPer100g: log.netCarbsPer100g,
+    carbBasis: log.carbBasis,
     micronutrientsPer100g: log.micronutrientsPer100g,
   };
 }
@@ -109,6 +110,7 @@ export function buildLogsFromSavedMeal({
     portion: item.portion,
     attribution: item.attribution,
     netCarbsPer100g: item.netCarbsPer100g,
+    carbBasis: item.carbBasis,
     micronutrientsPer100g: item.micronutrientsPer100g,
   }));
 }

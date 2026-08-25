@@ -156,7 +156,18 @@
  * meals, because saved meals did not exist" — the exact `fasts` precedent, one
  * entity over. Any FUTURE change to `LocalSavedMeal`'s own fields is back under
  * the optional-field rules above.
+ *
+ * NOTE (spec 13, EU/US carb basis): `SCHEMA_VERSION` v11 → v12 is under the
+ * SAME optional-field rules as v2 → v6/v8/v9/v10: it adds ONE optional field,
+ * `carbBasis?: CarbBasis`, to BOTH `LocalPersonalFood` and `LocalFoodLog` (see
+ * that field's doc comment on each for the full precedence and UNKNOWN-means-
+ * `total` rule). A pre-v12 row simply lacks the key, which reads back as a
+ * perfectly valid v12 row with `carbBasis: undefined` — no forward-migration
+ * step required, the exact `portion` (v2 → v3) precedent, NOT the `savedMeals`
+ * (v10 → v11) one: no new entity, no new required field, nothing to default.
+ * `backup.ts`'s two entity schemas get the matching `.optional()` zod line.
  */
+import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { Macros } from '#app/lib/macros';
 import type { DisplayPortion } from '#app/lib/portions/types';
@@ -167,7 +178,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -285,6 +296,31 @@ export interface LocalPersonalFood {
    */
   netCarbsPer100g?: number | null;
   /**
+   * Which printed-panel convention this food's `macrosPer100g.carbs` was read
+   * from — `total` (US, fibre-INCLUSIVE) or `available` (EU, fibre-EXCLUSIVE,
+   * polyols still subtracted) — governing the compute-from-parts fallback
+   * `computeNetCarbsFromParts` (`#app/lib/net-carbs`) uses when
+   * `netCarbsPer100g` above is absent. See that module's doc for the formula
+   * per basis, and spec 13 (M123) for why one formula applied to both
+   * conventions understated net carbs on every EU-basis food.
+   *
+   * ABSENT/`undefined` means UNKNOWN, and UNKNOWN behaves EXACTLY as `total`
+   * — today's original formula, unchanged — for every food created before
+   * this field existed and every food whose basis was never set. This is a
+   * deliberate choice, not a gap: the true basis of an already-logged food is
+   * unknowable after the fact, and guessing `available` would silently RAISE
+   * every US-basis food and reintroduce the bug in the opposite, overstating
+   * direction across all legacy data. See `SCHEMA_VERSION` v11 → v12 above.
+   *
+   * A macro EDIT clears `netCarbsPer100g` back to absent but does NOT clear
+   * this field — the basis is a property of the printed panel the person is
+   * reading from, not of the (now-stale) upstream snapshot. OPTIONAL, not
+   * just nullable — same reasoning as `portion` (see the `SCHEMA_VERSION`
+   * v2 → v3 note): there is no third "explicitly unknown" state to encode, an
+   * absent key already means exactly that.
+   */
+  carbBasis?: CarbBasis;
+  /**
    * This food's vitamins and minerals PER 100 g, snapshotted from the upstream
    * source at the moment the food was created — the exact counterpart of
    * `LocalFoodLog.micronutrientsPer100g`, with the same nested three states and
@@ -401,6 +437,14 @@ export interface LocalFoodLog {
    * above (see the `SCHEMA_VERSION` v4 → v5 note).
    */
   netCarbsPer100g?: number | null;
+  /**
+   * Which printed-panel convention this entry's `macros.carbs` was read from
+   * — the exact counterpart of `LocalPersonalFood.carbBasis` above, same
+   * type, same UNKNOWN-means-`total` rule, same "edit clears
+   * `netCarbsPer100g`, not this" precedence. See that field's doc comment for
+   * the full reasoning and `#app/lib/net-carbs` for the formula per basis.
+   */
+  carbBasis?: CarbBasis;
   /**
    * The food's vitamins and minerals PER 100 g, snapshotted from the upstream
    * source (LCC's `FoodMatch.micronutrientsPer100g`) at the moment this entry
@@ -599,6 +643,8 @@ export interface LocalSavedMealItem {
   attribution?: string | null;
   /** Authoritative per-100g net carbs, same three-state convention as `LocalFoodLog.netCarbsPer100g`. */
   netCarbsPer100g?: number | null;
+  /** Which printed-panel convention was used, same convention as `LocalFoodLog.carbBasis`. */
+  carbBasis?: CarbBasis;
   /** Per-100g vitamins/minerals, same convention as `LocalFoodLog.micronutrientsPer100g`. */
   micronutrientsPer100g?: MicronutrientsPer100g;
 }

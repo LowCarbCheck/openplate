@@ -32,6 +32,9 @@ import {
   toLabelMacroFieldValues,
 } from '#app/lib/label-scan-confirm';
 import type { LabelConfirmView } from '#app/lib/label-scan-confirm';
+import { parseCarbBasis } from '#app/lib/net-carbs';
+import type { CarbBasis } from '#app/lib/net-carbs';
+import { CarbBasisField, CARB_BASIS_NOT_SURE_VALUE } from '#app/components/carb-basis-field';
 import { estimateScanCostUsd, formatScanCost, formatTokenCount } from '#app/services/vision/cost';
 import type { FoodMatch } from '#app/services/food-resolution';
 import {
@@ -294,6 +297,11 @@ export function makeLabelConfirmSchema(t: Translate) {
     brand: z.string().optional(),
     quantityGrams: z.coerce.number().positive(t('scan.review.errors.gramsPositive')),
     macros: makeConfirmMacrosSchema(t),
+    // The three-state control's "not sure" chip submits '' — an unrecognised
+    // value here, exactly like a blank/absent field, so it can't fail this
+    // schema. `parseCarbBasis` (applied when building the stored rows, not
+    // here) is what turns it into the persisted absent state.
+    carbBasis: z.string().optional(),
   });
 }
 
@@ -853,6 +861,8 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
   const dayKey = todayInTimezone(timezone, new Date(loggedAtMs));
   const now = Date.now();
 
+  const carbBasis = parseCarbBasis(data.carbBasis);
+
   const foodId = randomUuid();
   await putLocalFood(
     buildLabelScanFood({
@@ -861,6 +871,7 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
       // `carbs` is required by the schema above, which is exactly the
       // personal-food invariant — narrowed here rather than asserted.
       macrosPer100g: { ...macrosPer100g, carbs: data.macros.carbs },
+      carbBasis,
       id: foodId,
       createdAtMs: now,
     }),
@@ -870,6 +881,7 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
       name: data.name,
       quantityGrams: data.quantityGrams,
       macrosPer100g,
+      carbBasis,
       foodId,
       id: randomUuid(),
       loggedAtMs,
@@ -2048,6 +2060,12 @@ export function LabelConfirmForm({
       : undefined,
   });
   const macrosFieldset = fields.macros.getFieldset();
+  // Pre-filled from the model's own report (spec 13, M123) — `null` (the
+  // panel's layout didn't decide it, or the model wasn't asked before this
+  // spec) starts the control on "not sure" rather than guessing a basis.
+  const [carbBasisValue, setCarbBasisValue] = useState<CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE>(
+    panel?.carbBasis ?? CARB_BASIS_NOT_SURE_VALUE,
+  );
 
   // Re-read from the live fields every render so the notes describe what the
   // person is about to log, not what the model first returned.
@@ -2149,6 +2167,17 @@ export function LabelConfirmForm({
             ))}
           </div>
           <p className="text-xs text-muted-foreground">{t('scan.labelScan.review.macrosPer100gNote')}</p>
+
+          <CarbBasisField
+            name="carbBasis"
+            legend={t('scan.labelScan.review.carbBasis.legend')}
+            hint={t('scan.labelScan.review.carbBasis.hint')}
+            selected={carbBasisValue}
+            onSelect={setCarbBasisValue}
+            totalLabel={t('scan.labelScan.review.carbBasis.total')}
+            availableLabel={t('scan.labelScan.review.carbBasis.available')}
+            notSureLabel={t('scan.labelScan.review.carbBasis.notSure')}
+          />
 
           {sanityIssues.length > 0 && (
             <div className="space-y-1 rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-xs text-accent-amber">
@@ -2340,6 +2369,14 @@ export function ConfirmDraftForm({
     // fibre-exclusive carbs from being double-subtracted by the local
     // `carbs - fiber - polyols` formula: without it this card rendered a green
     // "0 g net carbs" while the match card directly below it read "21.7g".
+    //
+    // No `carbBasis` argument here, deliberately (spec 13, M123): a plate item
+    // is an AI ESTIMATE off a photo of food, never a transcribed printed
+    // panel, and `FoodMatch` (the only other fact this item can carry) has no
+    // basis field of its own — it always brings its own authoritative figure
+    // above instead, so the compute-from-parts fallback below is only ever
+    // reached for a plain, unmatched estimate with no basis to report. There
+    // is no "EU vs US" distinction to make on a plate of food.
     const preview = computeMacroPreview({
       macrosPer100g,
       grams: currentGrams,

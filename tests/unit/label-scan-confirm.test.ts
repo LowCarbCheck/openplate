@@ -210,6 +210,7 @@ describe('a confirmed label scan → the reusable custom food', () => {
       name: buildLabelFoodName(view),
       brand: view.brand,
       macrosPer100g: { ...per100g, carbs: 42 },
+      carbBasis: view.carbBasis,
       id: 'food-1',
       createdAtMs: 1_700_000_000_000,
     });
@@ -217,6 +218,7 @@ describe('a confirmed label scan → the reusable custom food', () => {
       name: food.name,
       quantityGrams: defaultLabelLogGrams(view),
       macrosPer100g: per100g,
+      carbBasis: view.carbBasis,
       foodId: food.id,
       id: 'log-1',
       loggedAtMs: 1_700_000_000_000,
@@ -245,6 +247,7 @@ describe('a confirmed label scan → the reusable custom food', () => {
       name: 'Bar',
       brand: null,
       macrosPer100g: { ...view.macrosPer100g, carbs: 42 },
+      carbBasis: view.carbBasis,
       id: 'food-2',
       createdAtMs: 0,
     });
@@ -253,6 +256,7 @@ describe('a confirmed label scan → the reusable custom food', () => {
       name: 'Bar',
       quantityGrams: 100,
       macrosPer100g: view.macrosPer100g,
+      carbBasis: view.carbBasis,
       foodId: 'food-2',
       id: 'log-2',
       loggedAtMs: 0,

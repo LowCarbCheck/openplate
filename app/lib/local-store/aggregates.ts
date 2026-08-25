@@ -72,6 +72,10 @@ export function localFoodLogToSnapshot(log: LocalFoodLog): FoodLogMacroSnapshot 
     fat: log.macros.fat,
     kcal: log.macros.kcal,
     netCarbs: scaledNetCarbs(log),
+    // Threaded through so `_entryNetCarbs`'s compute-from-parts fallback (used
+    // when `netCarbs` above is absent) picks the right formula — see spec 13
+    // and `LocalFoodLog.carbBasis`'s doc comment.
+    carbBasis: log.carbBasis,
     aiEstimated: log.aiEstimated,
   };
 }

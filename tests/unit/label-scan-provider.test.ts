@@ -33,6 +33,7 @@ const PANEL = {
   servingsPerPackage: 1,
   macrosPerServing: { carbs: 14.7, fiber: 3.5, sugars: 0.7, polyols: 9.1, protein: 7, fat: 12.6, kcal: 180 },
   macrosPer100g: { carbs: 42, fiber: 10, sugars: 2, polyols: 26, protein: 20, fat: 36, kcal: 514 },
+  carbBasis: 'total',
   notes: null,
 };
 

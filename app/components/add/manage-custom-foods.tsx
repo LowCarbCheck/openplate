@@ -30,6 +30,8 @@ import { toast } from 'sonner';
 import type { Macros } from '#app/lib/macros';
 import type { LocalPersonalFood } from '#app/lib/local-store';
 import type { MacroEntryBasis } from '#app/lib/portions';
+import type { CarbBasis } from '#app/lib/net-carbs';
+import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { cn } from '#app/lib/utils';
 import { Button } from '#app/components/ui/button';
@@ -142,6 +144,11 @@ function EditFoodForm({
   const fetcher = useFetcher();
   const [basis, setBasis] = useState<MacroEntryBasis>('per100g');
   const [servingGrams, setServingGrams] = useState('');
+  // Pre-filled from the food's own stored basis (spec 13, M123) — absent
+  // (UNKNOWN) starts the control on "not sure", never a guess.
+  const [carbBasis, setCarbBasis] = useState<CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE>(
+    food.carbBasis ?? CARB_BASIS_NOT_SURE_VALUE,
+  );
   const isSaving = fetcher.state !== 'idle';
   const shownResult = useRef<unknown>(null);
 
@@ -214,6 +221,16 @@ function EditFoodForm({
           </div>
         ))}
       </div>
+      <CarbBasisField
+        name="carbBasis"
+        legend={t('add.custom.carbBasis.legend')}
+        hint={t('add.custom.carbBasis.hint')}
+        selected={carbBasis}
+        onSelect={setCarbBasis}
+        totalLabel={t('add.custom.carbBasis.total')}
+        availableLabel={t('add.custom.carbBasis.available')}
+        notSureLabel={t('add.custom.carbBasis.notSure')}
+      />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={isSaving}>
           {t('add.custom.cancel')}

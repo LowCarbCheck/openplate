@@ -43,11 +43,12 @@ const V7_PROFILE = {
 describe('schema version', () => {
   // A deliberate pin, and it MOVES on every bump: body metrics landed at v8,
   // the micronutrient snapshot on the LOG at v9, the same snapshot on the
-  // PERSONAL FOOD at v10, saved meals at v11. What it guards is that a bump is
-  // never silent — the version the envelope stamps is the version an older
-  // build refuses, so a change here has to be a change someone chose.
-  it('is 11 — bumped past the v8 body-metrics bump by the two micronutrient ones and saved meals', () => {
-    assert.equal(SCHEMA_VERSION, 11);
+  // PERSONAL FOOD at v10, saved meals at v11, the carb-basis flag (spec 13)
+  // at v12. What it guards is that a bump is never silent — the version the
+  // envelope stamps is the version an older build refuses, so a change here
+  // has to be a change someone chose.
+  it('is 12 — bumped past the v8 body-metrics bump by the two micronutrient ones, saved meals, and carb basis', () => {
+    assert.equal(SCHEMA_VERSION, 12);
   });
 });
 

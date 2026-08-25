@@ -44,6 +44,7 @@ interface LabelResponseOverrides {
   servingsPerPackage?: number | null;
   macrosPerServing?: RawMacroRow | null;
   macrosPer100g?: RawMacroRow | null;
+  carbBasis?: 'total' | 'available' | null;
   notes?: string | null;
 }
 
@@ -74,6 +75,7 @@ function labelResponse(overrides: LabelResponseOverrides = {}): string {
       fat: 36,
       kcal: 514,
     },
+    carbBasis: 'total',
     notes: null,
     ...overrides,
   });
@@ -173,6 +175,7 @@ describe('LABEL_READING_JSON_SCHEMA', () => {
     assert.strictEqual(LABEL_READING_JSON_SCHEMA.additionalProperties, false);
     assert.deepStrictEqual((LABEL_READING_JSON_SCHEMA.required ?? []).toSorted(), [
       'brand',
+      'carbBasis',
       'macrosPer100g',
       'macrosPerServing',
       'notes',

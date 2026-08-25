@@ -868,10 +868,12 @@ function toFrequentChip(recent: LocalRecentFood): LocalFrequentChip {
     timesLogged: recent.timesLogged,
     carbStatus: chipCarbStatus(recent.macros, recent.lastQuantityGrams, {
       authoritativeNetCarbsPer100g: recent.netCarbsPer100g,
+      carbBasis: recent.carbBasis,
     }),
     portion: recent.portion,
     attribution: recent.attribution,
     netCarbsPer100g: recent.netCarbsPer100g,
+    carbBasis: recent.carbBasis,
   };
 }
 

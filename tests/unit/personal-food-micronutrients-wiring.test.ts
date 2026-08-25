@@ -356,6 +356,7 @@ describe('a personal food nobody measured claims nothing — the honest-absent r
     const food = buildManualFood({
       name: 'Grandma’s soup',
       macrosPer100g: { carbs: 4, fiber: 1, sugars: null, polyols: null, protein: 2, fat: 3, kcal: 60 },
+      carbBasis: null,
       id: 'manual-1',
       createdAtMs: AT_NOON,
     });
@@ -366,6 +367,7 @@ describe('a personal food nobody measured claims nothing — the honest-absent r
     for (const food of [scannedFood({ applyMatch: false }), buildManualFood({
       name: 'Grandma’s soup',
       macrosPer100g: { carbs: 4, fiber: 1, sugars: null, polyols: null, protein: 2, fat: 3, kcal: 60 },
+      carbBasis: null,
       id: 'manual-1',
       createdAtMs: AT_NOON,
     })]) {
@@ -545,6 +547,7 @@ describe('backup round trip', () => {
     const food = buildManualFood({
       name: 'Grandma’s soup',
       macrosPer100g: { carbs: 4, fiber: 1, sugars: null, polyols: null, protein: 2, fat: 3, kcal: 60 },
+      carbBasis: null,
       id: 'manual-1',
       createdAtMs: AT_NOON,
     });

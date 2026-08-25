@@ -16,6 +16,8 @@
  */
 import type { Macros } from '#app/lib/macros';
 import { getCarbStatus, type CarbStatus } from '#app/utils/carb-status';
+import { computeNetCarbsFromParts } from '#app/lib/net-carbs';
+import type { CarbBasis } from '#app/lib/net-carbs';
 
 /**
  * Net-carb traffic-light status for a per-serving snapshot, recovered to a
@@ -23,7 +25,8 @@ import { getCarbStatus, type CarbStatus } from '#app/utils/carb-status';
  * unknown or the serving size is non-positive — no dot rather than a fabricated
  * one. Unknown fiber/polyols are treated as 0 for the subtraction only (they
  * lower net carbs; their absence is the conservative reading), matching how the
- * day summary rolls net carbs up.
+ * day summary rolls net carbs up. The compute-from-parts fallback is
+ * basis-aware — see `#app/lib/net-carbs` and spec 13 (M123).
  *
  * @param macros - the per-serving macro snapshot.
  * @param grams - the serving size the snapshot was recorded at.
@@ -35,6 +38,7 @@ export function chipCarbStatus(
   grams: number,
   {
     authoritativeNetCarbsPer100g,
+    carbBasis,
   }: {
     /**
      * When supplied — including explicitly `null` — this upstream, origin-aware
@@ -51,6 +55,13 @@ export function chipCarbStatus(
      * figure ITSELF is unknown, which yields no dot rather than a fabricated one.
      */
     authoritativeNetCarbsPer100g?: number | null;
+    /**
+     * Which printed-panel convention `macros.carbs` was read from, governing
+     * the compute-from-parts fallback below when `authoritativeNetCarbsPer100g`
+     * is absent — see `#app/lib/net-carbs` and spec 13 (M123). `undefined`
+     * (the default) is treated as `total`, today's original formula.
+     */
+    carbBasis?: CarbBasis;
   } = {},
 ): CarbStatus | null {
   // Checked before the macro/grams guard on purpose: an authoritative figure is
@@ -59,8 +70,9 @@ export function chipCarbStatus(
   if (authoritativeNetCarbsPer100g !== undefined) {
     return authoritativeNetCarbsPer100g === null ? null : getCarbStatus(authoritativeNetCarbsPer100g);
   }
-  if (macros.carbs === null || grams <= 0) return null;
-  const netCarbsPerServing = macros.carbs - (macros.fiber ?? 0) - (macros.polyols ?? 0);
+  if (grams <= 0) return null;
+  const netCarbsPerServing = computeNetCarbsFromParts(macros, carbBasis);
+  if (netCarbsPerServing === null) return null;
   const netCarbsPer100g = (netCarbsPerServing * 100) / grams;
   return getCarbStatus(netCarbsPer100g);
 }

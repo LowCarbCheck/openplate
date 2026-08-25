@@ -875,7 +875,17 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
   // a fabricated 0.
   const heroPreview =
     basisPer100g ?
-      computeMacroPreview({ macrosPer100g: basisPer100g, grams, authoritativeNetCarbsPer100g: log.netCarbsPer100g })
+      computeMacroPreview({
+        macrosPer100g: basisPer100g,
+        grams,
+        authoritativeNetCarbsPer100g: log.netCarbsPer100g,
+        // The entry's OWN basis, not the linked food's — same "the log is the
+        // gate" precedent `authoritativeNetCarbsPer100g` just above follows.
+        // A macro edit clears `netCarbsPer100g` but never this (spec 13,
+        // M123's fixed precedence rule), so it stays valid here regardless of
+        // which of the two branches fed `basisPer100g`.
+        carbBasis: log.carbBasis,
+      })
     : null;
   const carbStatus = heroPreview ? getCarbStatus(heroPreview.netCarbsPer100g) : null;
 
@@ -1057,7 +1067,7 @@ function FactRow({ label, value }: { label: string; value: string }) {
 // Edit mode (?edit=1) — portion-first
 ////////////////////////////////////////////////////////////////////////////////
 
-function EditEntry({
+export function EditEntry({
   loaderData,
   actionData,
 }: {
@@ -1156,6 +1166,11 @@ function EditEntry({
     macrosPer100g: livePer100g,
     grams: currentGrams,
     authoritativeNetCarbsPer100g: previewNetCarbsPer100g,
+    // Same rule as the receipt hero above: the entry's basis survives a macro
+    // edit (only `netCarbsPer100g` clears), so the live preview stays
+    // consistent with what Save will actually persist and with the hero the
+    // person will land back on.
+    carbBasis: log.carbBasis,
   });
   const previewCarbStatus = preview ? getCarbStatus(preview.netCarbsPer100g) : null;
   const previewMuted = preview ? formatPreviewMuted({ preview, t, language: i18n.language }) : '';

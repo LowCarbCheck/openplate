@@ -2,6 +2,8 @@
  * Pure daily-totals arithmetic for the food log, kept in its own module
  * (no store or React imports) so it's directly unit-testable.
  */
+import { computeNetCarbsFromParts } from '#app/lib/net-carbs';
+import type { CarbBasis } from '#app/lib/net-carbs';
 
 /**
  * Atwater energy factors: 4 kcal/g carbohydrate, 4 kcal/g protein, 9 kcal/g fat.
@@ -32,6 +34,13 @@ export interface FoodLogMacroSnapshot {
    * every custom food and AI estimate still takes today.
    */
   netCarbs?: number | null;
+  /**
+   * Which printed-panel convention `carbs` was read from, governing the
+   * compute-from-parts fallback below when `netCarbs` is absent — see
+   * `#app/lib/net-carbs` and `LocalFoodLog.carbBasis`'s doc comment for the
+   * UNKNOWN-means-`total` rule (spec 13, M123).
+   */
+  carbBasis?: CarbBasis;
   /** True when these macros were AI-estimated (not manual and not curated). */
   aiEstimated: boolean;
 }
@@ -86,15 +95,16 @@ export const EMPTY_DAY_SUMMARY: DaySummary = {
 
 /**
  * One entry's net carbs: the upstream authoritative value when present, else
- * `carbs - fiber - polyols` from parts — either way clamped at zero. Clamping
- * PER ENTRY (not on the day's summed totals) is load-bearing: a fiber-heavy
- * food's negative net-carbs would otherwise cancel out other foods' carbs when
- * the day's totals are summed first and clamped once at the end.
+ * `computeNetCarbsFromParts` (basis-aware; see `#app/lib/net-carbs`) — either
+ * way clamped at zero. Clamping PER ENTRY (not on the day's summed totals) is
+ * load-bearing: a fiber-heavy food's negative net-carbs would otherwise
+ * cancel out other foods' carbs when the day's totals are summed first and
+ * clamped once at the end.
  */
 function _entryNetCarbs(log: FoodLogMacroSnapshot): number {
   if (log.netCarbs !== undefined && log.netCarbs !== null) return Math.max(0, log.netCarbs);
-  if (log.carbs === null) return 0;
-  return Math.max(0, log.carbs - (log.fiber ?? 0) - (log.polyols ?? 0));
+  const fromParts = computeNetCarbsFromParts(log, log.carbBasis);
+  return fromParts === null ? 0 : Math.max(0, fromParts);
 }
 
 /**

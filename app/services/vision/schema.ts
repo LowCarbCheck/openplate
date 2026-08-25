@@ -27,6 +27,7 @@ import type {
   PlateIdentification,
 } from './types';
 import { MACRO_PROVENANCE_VALUES, VisionProviderError } from './types';
+import { CARB_BASES } from '#app/lib/net-carbs';
 
 const RawMacrosSchema = z.object({
   carbs: z.number().nullable(),
@@ -306,6 +307,12 @@ export const LabelReadingSchema = z.object({
   macrosPerServing: RawMacrosSchema.nullable(),
   /** The per-100g column, exactly as printed. Null when the panel prints none. */
   macrosPer100g: RawMacrosSchema.nullable(),
+  /**
+   * Which printed-panel convention the model saw — see
+   * `LabelReading.carbBasis`'s doc comment. `null` when the layout doesn't
+   * decide it, never a guess.
+   */
+  carbBasis: z.enum(CARB_BASES).nullable(),
   notes: z.string().nullable(),
 });
 
@@ -341,6 +348,7 @@ export function normalizeLabelReading(raw: RawLabelReading): LabelReading {
   if (raw.servingsPerPackage !== null) normalized.servingsPerPackage = raw.servingsPerPackage;
   if (raw.macrosPerServing !== null) normalized.macrosPerServing = stripNullMacros(raw.macrosPerServing);
   if (raw.macrosPer100g !== null) normalized.macrosPer100g = stripNullMacros(raw.macrosPer100g);
+  if (raw.carbBasis !== null) normalized.carbBasis = raw.carbBasis;
   if (raw.notes !== null) normalized.notes = raw.notes;
   return normalized;
 }

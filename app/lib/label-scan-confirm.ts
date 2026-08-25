@@ -31,6 +31,7 @@ import { scaleMacrosPer100gToServing } from './macros';
 import { resolveMacrosPer100gFromEntry } from './portions/serving-macros';
 import { checkLabelColumnAgreement, checkMacroSanity } from './macro-sanity';
 import type { MacroSanityIssue, Translate } from './macro-sanity';
+import type { CarbBasis } from './net-carbs';
 
 /** Every macro key, in the order the confirm form renders them. */
 export const LABEL_MACRO_KEYS = ['carbs', 'fiber', 'sugars', 'polyols', 'protein', 'fat', 'kcal'] as const;
@@ -72,6 +73,13 @@ export type LabelConfirmView =
       printedPer100g: Macros | null;
       /** The per-serving column converted to per 100 g, when that was possible — kept for the cross-check. */
       convertedPer100g: Macros | null;
+      /**
+       * Which printed-panel convention `macrosPer100g.carbs` uses — the
+       * model's own report (spec 13, M123), pre-filling the confirm form's
+       * editable three-state control. `null` for "not sure"/undecided, which
+       * is also what the model answers when the layout doesn't decide it.
+       */
+      carbBasis: CarbBasis | null;
       /** The model's free-text note (drink printed per 100 ml, "as prepared" column also present, …). */
       notes: string | null;
     };
@@ -143,6 +151,7 @@ export function buildLabelConfirmView(reading: LabelReading): LabelConfirmView {
     basis,
     printedPer100g,
     convertedPer100g,
+    carbBasis: reading.carbBasis ?? null,
     notes: reading.notes ?? null,
   };
 }
@@ -251,9 +260,16 @@ export function defaultLabelLogGrams(view: Extract<LabelConfirmView, { kind: 're
  * absent is the honest answer and the readers correctly compute net carbs from
  * the very numbers on the label. Do not "fix" this by filling either.
  *
+ * `carbBasis` IS carried through (spec 13, M123) — unlike `netCarbsPer100g`,
+ * it is a property of the printed panel the person just reviewed, not an
+ * upstream figure that would go stale. `null` ("not sure") persists as
+ * absent, matching `LocalPersonalFood.carbBasis`'s own UNKNOWN-means-`total`
+ * convention.
+ *
  * @param options.name - the food's name as confirmed.
  * @param options.brand - the brand as confirmed, or null.
  * @param options.macrosPer100g - the per-100g macros, `carbs` already narrowed to a number (the personal-food invariant).
+ * @param options.carbBasis - the confirmed panel convention, or null for "not sure".
  * @param options.id - the client-generated food id.
  * @param options.createdAtMs - the instant the row was created on-device.
  * @returns the personal food to persist.
@@ -262,12 +278,14 @@ export function buildLabelScanFood({
   name,
   brand,
   macrosPer100g,
+  carbBasis,
   id,
   createdAtMs,
 }: {
   name: string;
   brand: string | null;
   macrosPer100g: Macros & { carbs: number };
+  carbBasis: CarbBasis | null;
   id: string;
   createdAtMs: number;
 }): LocalPersonalFood {
@@ -278,6 +296,7 @@ export function buildLabelScanFood({
     macrosPer100g,
     source: 'user',
     createdAt: createdAtMs,
+    carbBasis: carbBasis ?? undefined,
   };
 }
 
@@ -295,9 +314,13 @@ export function buildLabelScanFood({
  * the same reasons as on the food: a panel prints no net-carb figure of its
  * own, no vitamins, and credits no third-party source.
  *
+ * `carbBasis` IS carried through — see `buildLabelScanFood`'s doc for why it
+ * is unlike `netCarbsPer100g` here. `null` ("not sure") persists as absent.
+ *
  * @param options.name - the food's name as confirmed.
  * @param options.quantityGrams - the amount being logged.
  * @param options.macrosPer100g - the confirmed per-100g macros.
+ * @param options.carbBasis - the confirmed panel convention, or null for "not sure".
  * @param options.foodId - the custom food created for this panel, or null when it couldn't be (no carbs).
  * @param options.id - the client-generated entry id / idempotency key.
  * @param options.loggedAtMs - the instant the entry is logged against.
@@ -309,6 +332,7 @@ export function buildLabelScanEntry({
   name,
   quantityGrams,
   macrosPer100g,
+  carbBasis,
   foodId,
   id,
   loggedAtMs,
@@ -318,6 +342,7 @@ export function buildLabelScanEntry({
   name: string;
   quantityGrams: number;
   macrosPer100g: Macros;
+  carbBasis: CarbBasis | null;
   foodId: string | null;
   id: string;
   loggedAtMs: number;
@@ -338,5 +363,6 @@ export function buildLabelScanEntry({
     loggedAt: loggedAtMs,
     createdAt: createdAtMs,
     logBatchId: null,
+    carbBasis: carbBasis ?? undefined,
   };
 }

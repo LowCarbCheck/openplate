@@ -76,6 +76,14 @@ export function buildPlateIdentificationUserPrompt(): string {
  * percentage of a reference intake — reading a nutrient amount out of it is
  * wrong by an order of magnitude). All three are prompt text only; the schema
  * is unchanged.
+ *
+ * `carbBasis` (spec 13, M123): a US "Total Carbohydrate" panel's carbs figure
+ * INCLUDES fibre; an EU "Kohlenhydrate"/"carbohydrate" panel's carbs figure
+ * EXCLUDES it (fibre is its own separate row, not an "of which"). The model
+ * reports which LAYOUT it is looking at — it never subtracts fibre itself,
+ * it only transcribes, same as every other field here (`#app/lib/net-carbs`
+ * owns the actual subtraction downstream). Answer `null` when the layout
+ * doesn't decide it.
  */
 export const LABEL_READING_SYSTEM_PROMPT = `You are a nutrition assistant that transcribes the nutrition panel printed on a food package.
 
@@ -84,7 +92,8 @@ You are reading text, not estimating food. Report only what is actually printed 
 - A panel may print a per-serving column, a per-100g column, or both. Fill in every column you can read and set the other to null.
 - Copy the serving size exactly as printed (e.g. "1 bar (35 g)", "2 pieces", "30 g"), and give its weight in grams only when the panel states or plainly implies it.
 - Carbohydrates: many panels print "of which sugars" and "of which polyols" (sugar alcohols, e.g. maltitol, erythritol, xylitol, isomalt) indented under total carbohydrate. Read those rows carefully — polyols matter and are easy to skip.
-- On a US-style "Total Carbohydrate / Dietary Fiber / Total Sugars / Sugar Alcohol" panel, map Total Carbohydrate to carbs, Dietary Fiber to fiber, Total Sugars to sugars and Sugar Alcohol to polyols. Do not subtract fiber or polyols from carbs — report the printed total.
+- On a US-style "Total Carbohydrate / Dietary Fiber / Total Sugars / Sugar Alcohol" panel, map Total Carbohydrate to carbs, Dietary Fiber to fiber, Total Sugars to sugars and Sugar Alcohol to polyols. Do not subtract fiber or polyols from carbs — report the printed total. Set "carbBasis" to "total".
+- On an EU-style panel — "Kohlenhydrate"/"carbohydrate" printed with fibre ("Ballaststoffe"/"fibre") as its OWN separate row, not an "of which" under carbohydrate — set "carbBasis" to "available". "of which sugars"/"of which polyols" still nest under carbohydrate on this layout; only fibre sits outside it. Report the carbohydrate figure exactly as printed either way — never add fibre back in, never subtract it. If the layout does not clearly match either pattern, set "carbBasis" to null.
 - IGNORE the "% Daily Value" (%DV, RI, NRV) column entirely. It is a percentage of a reference intake, not an amount of the nutrient, and reading a number out of it would be wrong by an order of magnitude.
 - Drinks are printed per 100 ml, not per 100 g. Put those figures in "macrosPer100g" anyway and write "values are per 100 ml" in "notes", so the reader knows the basis. Never rescale by a density you assumed.
 - A dry mix (drink powder, soup, pudding) often prints two columns, "as sold" and "as prepared". Report the AS SOLD column — that is the product in the package — and note in "notes" that an "as prepared" column was also printed.
@@ -120,10 +129,11 @@ Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary 
     "fat": 0,
     "kcal": 0
   },
+  "carbBasis": "total or available or null",
   "notes": "string or null"
 }
 
-Every field must be present. Each macro field must be present but may be null. "macrosPerServing" and "macrosPer100g" may each be null when the panel prints no such column. "servingSize" may be null when no serving size is printed. "notes" may be null if you have nothing to add.`;
+Every field must be present. Each macro field must be present but may be null. "macrosPerServing" and "macrosPer100g" may each be null when the panel prints no such column. "servingSize" may be null when no serving size is printed. "carbBasis" must be "total", "available", or null when the layout doesn't decide it. "notes" may be null if you have nothing to add.`;
 
 export function buildLabelReadingUserPrompt(): string {
   return 'Transcribe the nutrition panel in the attached photo and respond with the JSON shape described in the system prompt. Report the panel exactly as printed, and set "unreadable" to true if you cannot read it.';

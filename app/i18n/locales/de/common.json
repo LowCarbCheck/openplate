@@ -13,6 +13,13 @@
     "custom": {
       "caloriesSummary": "{{value}} Kalorien",
       "cancel": "Abbrechen",
+      "carbBasis": {
+        "available": "EU-Stil (Kohlenhydrate ohne Ballaststoffe)",
+        "hint": "US-Etiketten zählen Ballaststoffe zu den „Total Carbohydrate“ dazu; EU-Etiketten weisen Ballaststoffe in einer eigenen Zeile aus und rechnen sie schon heraus. Die richtige Angabe verhindert, dass Ballaststoffe doppelt abgezogen werden.",
+        "legend": "Wie dieses Lebensmittel Kohlenhydrate zählt",
+        "notSure": "Nicht sicher",
+        "total": "US-Stil (Kohlenhydrate inkl. Ballaststoffe)"
+      },
       "carbsSummary": "{{value}} g Kohlenhydrate",
       "description": "Lebensmittel, die du selbst angelegt hast. Hier kannst du die Werte ändern oder eins löschen.",
       "editAria": "{{name}} bearbeiten",
@@ -670,7 +677,7 @@
     },
     "carbs": {
       "custom": "Eigener Wert",
-      "hint": "Gezählt werden Netto-Kohlenhydrate — Kohlenhydrate minus Ballaststoffe, also genau die Zahl aus deinem Tagebuch. Wähl unten einen gängigen Startwert oder trag deinen eigenen Wert in Gramm ein.",
+      "hint": "Gezählt werden Netto-Kohlenhydrate — schon ohne Ballaststoffe und Zuckeralkohole, also genau die Zahl aus deinem Tagebuch. Wähl unten einen gängigen Startwert oder trag deinen eigenen Wert in Gramm ein.",
       "label": "Tageslimit Kohlenhydrate",
       "placeholder": "z. B. 20",
       "presets": {
@@ -1255,6 +1262,13 @@
         "basisPer100g": "Aus der Spalte „pro 100 g“ des Etiketts übernommen.",
         "basisPerServing": "Aus der Spalte „pro Portion“ des Etiketts umgerechnet ({{grams}} g pro Portion).",
         "brandLabel": "Marke (optional)",
+        "carbBasis": {
+          "available": "EU-Stil (Kohlenhydrate ohne Ballaststoffe)",
+          "hint": "US-Etiketten zählen Ballaststoffe zu den „Total Carbohydrate“ dazu; EU-Etiketten weisen Ballaststoffe in einer eigenen Zeile aus und rechnen sie schon heraus. Die richtige Angabe verhindert, dass Ballaststoffe doppelt abgezogen werden.",
+          "legend": "Wie dieses Etikett Kohlenhydrate zählt",
+          "notSure": "Nicht sicher",
+          "total": "US-Stil (Kohlenhydrate inkl. Ballaststoffe)"
+        },
         "gramsLabel": "Menge zum Eintragen (g)",
         "heading": "Das steht auf dem Etikett — prüfe es, bevor du es einträgst.",
         "macrosPer100gNote": "Die Werte gelten pro 100 g. Ein leeres Feld heißt: Das Etikett hat diese Zeile nicht gedruckt — lass es leer, statt 0 einzutragen.",

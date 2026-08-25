@@ -23,6 +23,8 @@
  */
 import type { Macros } from './macros';
 import { scaleMacrosPer100gToServing } from './macros';
+import { computeNetCarbsFromParts } from './net-carbs';
+import type { CarbBasis } from './net-carbs';
 
 /**
  * Rounds grams/macros to one decimal — the confirm form's grams input step.
@@ -103,10 +105,10 @@ export interface MacroPreview {
 }
 
 /**
- * Computes the per-portion macro preview from per-100g values. Net carbs =
- * carbs − fiber − polyols (floored at 0), colored on the per-100g basis —
- * UNLESS `authoritativeNetCarbsPer100g` is supplied, in which case that
- * upstream figure wins outright (see its doc below).
+ * Computes the per-portion macro preview from per-100g values. Net carbs come
+ * from `computeNetCarbsFromParts` (basis-aware, floored at 0), colored on the
+ * per-100g basis — UNLESS `authoritativeNetCarbsPer100g` is supplied, in
+ * which case that upstream figure wins outright (see its doc below).
  *
  * @returns the preview, or `null` when net carbs are unknown (the UI then
  *   shows "Macros unknown — logged as name only" instead of numbers).
@@ -115,13 +117,14 @@ export function computeMacroPreview({
   macrosPer100g,
   grams,
   authoritativeNetCarbsPer100g,
+  carbBasis,
 }: {
   macrosPer100g: Macros;
   grams: number;
   /**
    * When supplied — including explicitly `null` — this value is authoritative
-   * and used INSTEAD of the local `carbs - fiber - polyols` formula below.
-   * LCC's own `FoodMatch.netCarbsPer100g` is origin-aware (bls/curated report
+   * and used INSTEAD of the local compute-from-parts formula below. LCC's own
+   * `FoodMatch.netCarbsPer100g` is origin-aware (bls/curated report
    * fiber-EXCLUSIVE carbs already; fdc/user report fiber-INCLUSIVE "total"
    * carbs) — recomputing the plain formula here for a bls/curated match would
    * double-subtract fiber it was never counting to begin with. Passing that
@@ -139,11 +142,20 @@ export function computeMacroPreview({
    * `carbs` field does.
    */
   authoritativeNetCarbsPer100g?: number | null;
+  /**
+   * Which printed-panel convention `macrosPer100g.carbs` was read from,
+   * governing the compute-from-parts fallback below when
+   * `authoritativeNetCarbsPer100g` is absent — see `#app/lib/net-carbs` and
+   * spec 13 (M123). `undefined` (the default) is treated as `total`, today's
+   * original formula.
+   */
+  carbBasis?: CarbBasis;
 }): MacroPreview | null {
+  const fromParts = computeNetCarbsFromParts(macrosPer100g, carbBasis);
   const netCarbsPer100g =
     authoritativeNetCarbsPer100g !== undefined ? authoritativeNetCarbsPer100g
-    : macrosPer100g.carbs === null ? null
-    : Math.max(0, macrosPer100g.carbs - (macrosPer100g.fiber ?? 0) - (macrosPer100g.polyols ?? 0));
+    : fromParts === null ? null
+    : Math.max(0, fromParts);
   if (netCarbsPer100g === null) return null;
   const perPortion = scaleMacrosPer100gToServing(macrosPer100g, grams);
   return {
