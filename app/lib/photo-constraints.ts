@@ -19,6 +19,18 @@ export const ALLOWED_MIME_TYPES: readonly string[] = ['image/jpeg', 'image/png',
 
 /** Longest edge (px) the client downscales to before upload — smaller = faster + cheaper. */
 export const MAX_IMAGE_DIMENSION = 1600;
+/**
+ * Longest edge (px) for a PACKAGE-LABEL capture (M123/10). A nutrition panel is
+ * small printed text, and 1600 px across a whole package routinely leaves the
+ * "of which polyols" row illegible — the one row the label feature exists for.
+ *
+ * Deliberately a SECOND constant rather than a raise of `MAX_IMAGE_DIMENSION`:
+ * a plate scan gains nothing from the extra pixels and would pay for them on
+ * every single scan, in the user's own provider credit. Which ceiling applies
+ * is a property of the scan TASK, not of the route — see
+ * `ScanTaskDescriptor.captureMaxDimension`, which is where the route reads it.
+ */
+export const LABEL_MAX_IMAGE_DIMENSION = 2400;
 /** JPEG quality for the client-side transcode (0..1). */
 export const JPEG_QUALITY = 0.85;
 

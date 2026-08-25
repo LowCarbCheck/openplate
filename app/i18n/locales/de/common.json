@@ -1169,6 +1169,13 @@
       "connectProvider": "Verbinde in den Einstellungen deinen KI-Anbieter, bevor du Fotos erkennen lässt.",
       "endpointUnreachable": "Der Endpunkt war vom Browser aus nicht erreichbar — vermutlich blockiert die Content-Security-Policy eine Basis-URL außerhalb von localhost, oder der Endpunkt lässt keine Browser-Anfragen (CORS) zu. Mehr dazu in den KI-Einstellungen.",
       "identifyFailed": "Die Lebensmittel auf dem Foto konnten nicht erkannt werden.",
+      "label": {
+        "noMacros": "Auf diesem Foto war keine Nährwerttabelle zu finden — fotografiere die gedruckte Wertetabelle, meist auf der Rückseite der Verpackung.",
+        "photoQualityBody": "Halte die Verpackung flach, fülle das Bild mit der Tabelle und halte das Licht von glänzenden Stellen fern.",
+        "title": "Diese Tabelle war nicht lesbar",
+        "unreadable": "Die Nährwerttabelle war nicht lesbar — versuche es gerade von vorn, näher dran und bildfüllend.",
+        "unreadableWithReason": "Die Nährwerttabelle war nicht lesbar ({{reason}}) — versuche es gerade von vorn, näher dran und bildfüllend."
+      },
       "missingBaseUrl": "Dieser Verbindung fehlt eine Basis-URL — trag in den KI-Einstellungen eine ein oder wechsel zu OpenRouter.",
       "noFoods": "Auf dem Foto war nichts zu erkennen — versuch es mit einer schärferen Aufnahme.",
       "openrouterRateLimit": "Du hast das Limit des Anbieters erreicht — im Gratis-Kontingent gibt es täglich wieder neue Scans, oder du lädst bei OpenRouter Guthaben auf. Das Guthaben geht direkt an OpenRouter (nicht an openplate), ist völlig freiwillig und wird einfach aufgebraucht — kein Abo.",
@@ -1196,6 +1203,37 @@
         "rateLimit": "Gerade zu viele Anfragen",
         "reconsentRequired": "Dieses Gateway braucht eine neue Einladung",
         "transient": "Der Anbieter hatte Probleme mit der Antwort"
+      }
+    },
+    "labelScan": {
+      "capture": {
+        "description": "Fotografiere die Nährwerttabelle auf der Verpackung. Dein Foto geht direkt an deinen eigenen KI-Anbieter, der die gedruckten Zahlen liest — es wird nichts geschätzt. Danach bleibt das Foto nur auf diesem Gerät.",
+        "emptyHint": "Halte die Verpackung flach und lass die Tabelle das Bild ausfüllen.",
+        "emptyTitle": "Fotografiere die Nährwerttabelle",
+        "photoLabel": "Etikettenfoto",
+        "previewAlt": "Ausgewähltes Verpackungsetikett",
+        "title": "Ein Verpackungsetikett lesen"
+      },
+      "mode": {
+        "label": "Ein Verpackungsetikett",
+        "labelHint": "Die Nährwerttabelle auf einer Verpackung — wir lesen die Zahlen genau so, wie sie gedruckt sind, inklusive Zuckeralkohole.",
+        "legend": "Was fotografierst du?",
+        "plate": "Einen Teller Essen",
+        "plateHint": "Eine Mahlzeit auf dem Teller — wir erkennen, welche Lebensmittel darauf sind."
+      },
+      "review": {
+        "basisPer100g": "Aus der Spalte „pro 100 g“ des Etiketts übernommen.",
+        "basisPerServing": "Aus der Spalte „pro Portion“ des Etiketts umgerechnet ({{grams}} g pro Portion).",
+        "brandLabel": "Marke (optional)",
+        "gramsLabel": "Menge zum Eintragen (g)",
+        "heading": "Das steht auf dem Etikett — prüfe es, bevor du es einträgst.",
+        "macrosPer100gNote": "Die Werte gelten pro 100 g. Ein leeres Feld heißt: Das Etikett hat diese Zeile nicht gedruckt — lass es leer, statt 0 einzutragen.",
+        "modelNote": "Hinweis aus der Auswertung: {{note}}",
+        "nameLabel": "Produkt",
+        "savedAsCustomFood": "Beim Speichern kommt das Produkt zu deinen Lebensmitteln. Beim nächsten Mal genügt ein Tippen, ganz ohne Foto.",
+        "servingPrinted": "Portion laut Etikett: {{serving}}",
+        "subheading": "Alle Zahlen stammen aus deinem Foto. Korrigiere alles, was nicht stimmt.",
+        "unverified": "Aus deinem Foto gelesen, nicht geprüft. Kleine Schrift auf gewölbten oder glänzenden Verpackungen kann falsch gelesen werden — bitte prüfe die Zahlen."
       }
     },
     "loading": "Scan wird geladen…",
@@ -1265,10 +1303,12 @@
       },
       "sanity": {
         "kcalMismatch": "Diese Zahlen passen nicht zusammen ({{stated}} kcal gegenüber ~{{computed}} aus den Nährwerten) — prüf das vor dem Eintragen.",
+        "labelColumnsDisagree": "Die beiden Spalten des Etiketts widersprechen sich bei {{label}} ({{printed}} pro 100 g gedruckt, {{converted}} aus der Portionsspalte berechnet) — eine davon wurde wahrscheinlich falsch gelesen.",
         "macro": {
           "carbs": "Kohlenhydrate",
           "fat": "Fett",
           "fiber": "Ballaststoffe",
+          "kcal": "Kalorien",
           "polyols": "Polyole",
           "protein": "Eiweiß",
           "sugars": "Zucker"

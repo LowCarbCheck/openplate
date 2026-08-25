@@ -139,8 +139,6 @@ export interface VisionProvider {
     task: ScanTaskDescriptor<TResult>;
     image: PlateImageInput;
   }): Promise<TResult>;
-  /** Shorthand for the plate task — the original call shape, unchanged. */
-  identifyPlate(image: PlateImageInput): Promise<PlateIdentification>;
 }
 
 /**

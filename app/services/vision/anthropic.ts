@@ -8,11 +8,11 @@
  */
 import { z } from 'zod';
 
-import type { PlateImageInput, PlateIdentification, ScanResultBase, ScanTokenUsage, VisionProvider } from './types';
+import type { PlateImageInput, ScanResultBase, ScanTokenUsage, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
 import type { ScanTaskDescriptor } from './task';
-import { PLATE_SCAN_TASK, attachScanUsage } from './task';
+import { attachScanUsage } from './task';
 // The auth headers live in `./constants` (M130/01), not here: the live key
 // check in `./verify-key` sends byte-identical headers, and a second copy is
 // only ever a way for the two to drift apart.
@@ -183,8 +183,5 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Visi
     return attachScanUsage(result, usage);
   }
 
-  return {
-    runScan,
-    identifyPlate: (image: PlateImageInput): Promise<PlateIdentification> => runScan({ task: PLATE_SCAN_TASK, image }),
-  };
+  return { runScan };
 }

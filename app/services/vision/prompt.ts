@@ -67,6 +67,15 @@ export function buildPlateIdentificationUserPrompt(): string {
  *   blurry, angled, glare-covered or cropped panel. Without it a model will
  *   invent plausible numbers off an illegible photo, which is far worse than a
  *   failed scan.
+ *
+ * Three real-panel cases are called out explicitly (M123/10 phase 2) because
+ * each has a wrong answer a model reaches for by default: a DRINK prints per
+ * 100 ml (fill the per-100g column and say so in `notes` rather than assuming a
+ * density), a DRY MIX prints "as sold" beside "as prepared" (the package holds
+ * the as-sold product), and a US panel prints a "% Daily Value" column (a
+ * percentage of a reference intake — reading a nutrient amount out of it is
+ * wrong by an order of magnitude). All three are prompt text only; the schema
+ * is unchanged.
  */
 export const LABEL_READING_SYSTEM_PROMPT = `You are a nutrition assistant that transcribes the nutrition panel printed on a food package.
 
@@ -76,6 +85,9 @@ You are reading text, not estimating food. Report only what is actually printed 
 - Copy the serving size exactly as printed (e.g. "1 bar (35 g)", "2 pieces", "30 g"), and give its weight in grams only when the panel states or plainly implies it.
 - Carbohydrates: many panels print "of which sugars" and "of which polyols" (sugar alcohols, e.g. maltitol, erythritol, xylitol, isomalt) indented under total carbohydrate. Read those rows carefully — polyols matter and are easy to skip.
 - On a US-style "Total Carbohydrate / Dietary Fiber / Total Sugars / Sugar Alcohol" panel, map Total Carbohydrate to carbs, Dietary Fiber to fiber, Total Sugars to sugars and Sugar Alcohol to polyols. Do not subtract fiber or polyols from carbs — report the printed total.
+- IGNORE the "% Daily Value" (%DV, RI, NRV) column entirely. It is a percentage of a reference intake, not an amount of the nutrient, and reading a number out of it would be wrong by an order of magnitude.
+- Drinks are printed per 100 ml, not per 100 g. Put those figures in "macrosPer100g" anyway and write "values are per 100 ml" in "notes", so the reader knows the basis. Never rescale by a density you assumed.
+- A dry mix (drink powder, soup, pudding) often prints two columns, "as sold" and "as prepared". Report the AS SOLD column — that is the product in the package — and note in "notes" that an "as prepared" column was also printed.
 - Energy: report kcal. If the panel prints only kJ, convert kJ to kcal (kJ ÷ 4.184) — that is a unit, not a nutrition estimate.
 - If a value is present but you cannot read it with confidence, set that field to null rather than guessing. Never use 0 to mean "unknown".
 

@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import { z } from 'zod';
 
 import { createVisionProvider } from '../../app/services/vision/index';
+import { PLATE_SCAN_TASK } from '../../app/services/vision/task';
 
 const originalFetch = globalThis.fetch;
 
@@ -58,7 +59,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
         apiKey: 'sk-or-test',
         model: 'google/gemini-3.1-flash-lite',
       });
-      await provider.identifyPlate({ base64: 'AAAA', mimeType: 'image/png' });
+      await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
 
       assert.strictEqual(capturedUrl, 'https://openrouter.ai/api/v1/chat/completions');
       assert.strictEqual(capturedHeaders?.get('authorization'), 'Bearer sk-or-test');
@@ -83,7 +84,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
         model: 'google/gemini-3.1-flash-lite',
         baseUrl: 'https://attacker.example/v1',
       });
-      await provider.identifyPlate({ base64: 'AAAA', mimeType: 'image/png' });
+      await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
 
       assert.strictEqual(capturedUrl, 'https://openrouter.ai/api/v1/chat/completions');
     } finally {
@@ -105,7 +106,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
         model: 'gpt-5o',
         baseUrl: 'http://localhost:11434/v1',
       });
-      await provider.identifyPlate({ base64: 'AAAA', mimeType: 'image/png' });
+      await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
 
       assert.strictEqual(capturedHeaders?.get('x-title'), null);
       assert.strictEqual(capturedHeaders?.get('http-referer'), null);
@@ -127,7 +128,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
         apiKey: 'sk-or-test',
         model: 'openai/gpt-5.6-luna',
       });
-      await provider.identifyPlate({ base64: 'AAAA', mimeType: 'image/png' });
+      await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
 
       assert.deepStrictEqual(capturedBody?.reasoning, { effort: 'none' });
     } finally {
@@ -151,7 +152,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
         model: 'llama3',
         baseUrl: 'http://localhost:11434/v1',
       });
-      await provider.identifyPlate({ base64: 'AAAA', mimeType: 'image/png' });
+      await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
 
       assert.ok(capturedBody !== undefined);
       assert.ok(!('reasoning' in capturedBody));

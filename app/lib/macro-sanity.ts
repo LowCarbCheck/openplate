@@ -25,7 +25,8 @@ const KCAL_PER_GRAM_PROTEIN = 4;
 const KCAL_PER_GRAM_FAT = 9;
 
 /** Discriminates which plausibility rule a given issue came from. */
-export type MacroSanityCode = 'single-macro-over-100' | 'macro-sum-over-100' | 'kcal-macro-mismatch';
+export type MacroSanityCode =
+  'single-macro-over-100' | 'macro-sum-over-100' | 'kcal-macro-mismatch' | 'label-columns-disagree';
 
 /** One plausibility problem found in a per-100g macro set, with display copy. */
 export interface MacroSanityIssue {
@@ -97,6 +98,77 @@ function _collectKcalMismatchIssue(per100g: Macros, t: Translate, language: stri
       computed: formatMacroNumberIn(language, computedKcal),
     }),
   };
+}
+
+/**
+ * A printed per-100g figure and the same figure derived from the printed
+ * per-serving column may differ this much (relative) before it counts as a
+ * disagreement. Panels round both columns independently — "35 g serving,
+ * 14.7 g carbs" and "42 g/100 g" don't reconcile exactly and shouldn't.
+ */
+const LABEL_COLUMN_RELATIVE_TOLERANCE = 0.15;
+/** …and a small absolute floor, so a 0.4 g vs 0.6 g rounding gap isn't a "misread". */
+const LABEL_COLUMN_ABSOLUTE_TOLERANCE = 1;
+/** kcal are a bigger number on the same basis, so they get their own absolute floor. */
+const LABEL_COLUMN_KCAL_ABSOLUTE_TOLERANCE = 25;
+
+/** Every macro compared by the two-column cross-check, with the label used to name a disagreement. */
+const CROSS_CHECKED_MACROS: ReadonlyArray<{ key: keyof Macros; labelKey: string }> = [
+  ...GRAM_MACROS,
+  { key: 'kcal', labelKey: 'scan.review.sanity.macro.kcal' },
+];
+
+/** Whether two figures for the SAME macro, on the same basis, are close enough to be the same reading. */
+function _isWithinLabelColumnTolerance(key: keyof Macros, printed: number, converted: number): boolean {
+  const deviation = Math.abs(printed - converted);
+  const absoluteFloor = key === 'kcal' ? LABEL_COLUMN_KCAL_ABSOLUTE_TOLERANCE : LABEL_COLUMN_ABSOLUTE_TOLERANCE;
+  if (deviation <= absoluteFloor) return true;
+  const reference = Math.max(Math.abs(printed), Math.abs(converted));
+  if (reference === 0) return true;
+  return deviation / reference <= LABEL_COLUMN_RELATIVE_TOLERANCE;
+}
+
+/**
+ * Cross-checks a nutrition panel's TWO printed columns against each other
+ * (M123/10): the per-100g column as printed, versus the per-serving column
+ * converted to the same basis. They describe the same product, so they must
+ * agree — a disagreement means one of them was misread, and a misread digit is
+ * the failure mode of reading small print off a curved, glossy package.
+ *
+ * It lives here, in the same module and the same `MacroSanityIssue`
+ * vocabulary as the kcal 4/4/9 rule, precisely so the confirm step has ONE set
+ * of plausibility notes rather than a second, label-only warning language.
+ *
+ * Returns null when the two columns agree, when only one column was printed
+ * (nothing to cross-check), or when no macro appears in both.
+ *
+ * @param columns.printedPer100g - the panel's own per-100g column.
+ * @param columns.convertedPer100g - the per-serving column converted to per 100 g.
+ * @param t - translator for the issue copy (see `Translate`).
+ * @param language - active UI language, for the figures inside the copy.
+ * @returns the disagreement, or null.
+ */
+export function checkLabelColumnAgreement(
+  columns: { printedPer100g: Macros; convertedPer100g: Macros },
+  t: Translate,
+  language: string | null | undefined,
+): MacroSanityIssue | null {
+  const { printedPer100g, convertedPer100g } = columns;
+  for (const { key, labelKey } of CROSS_CHECKED_MACROS) {
+    const printed = printedPer100g[key];
+    const converted = convertedPer100g[key];
+    if (printed === null || converted === null) continue;
+    if (_isWithinLabelColumnTolerance(key, printed, converted)) continue;
+    return {
+      code: 'label-columns-disagree',
+      message: t('scan.review.sanity.labelColumnsDisagree', {
+        label: t(labelKey),
+        printed: formatMacroNumberIn(language, printed),
+        converted: formatMacroNumberIn(language, converted),
+      }),
+    };
+  }
+  return null;
 }
 
 /**

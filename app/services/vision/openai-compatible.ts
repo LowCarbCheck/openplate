@@ -15,11 +15,11 @@
  */
 import { z } from 'zod';
 
-import type { PlateImageInput, PlateIdentification, ScanResultBase, VisionProvider } from './types';
+import type { PlateImageInput, ScanResultBase, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
 import type { ScanTaskDescriptor } from './task';
-import { PLATE_SCAN_TASK, attachScanUsage } from './task';
+import { attachScanUsage } from './task';
 import type { JsonSchemaNode } from './schema';
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
@@ -251,8 +251,5 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
     return attachScanUsage(result, usage);
   }
 
-  return {
-    runScan,
-    identifyPlate: (image: PlateImageInput): Promise<PlateIdentification> => runScan({ task: PLATE_SCAN_TASK, image }),
-  };
+  return { runScan };
 }

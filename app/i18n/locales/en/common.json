@@ -1169,6 +1169,13 @@
       "connectProvider": "Connect your AI provider in settings before using photo identification.",
       "endpointUnreachable": "Could not reach that endpoint from the browser — likely the content-security policy blocking a non-localhost base URL, or the endpoint not allowing browser (CORS) requests. See AI settings for details.",
       "identifyFailed": "Failed to identify foods from the photo.",
+      "label": {
+        "noMacros": "No nutrition panel was found in that photo — photograph the printed table of values, usually on the back of the package.",
+        "photoQualityBody": "Hold the package flat, fill the frame with the panel, and keep the light off the shiny parts.",
+        "title": "Couldn't read that panel",
+        "unreadable": "The nutrition panel could not be read — try again straight on, closer, with the panel filling the frame.",
+        "unreadableWithReason": "The nutrition panel could not be read ({{reason}}) — try again straight on, closer, with the panel filling the frame."
+      },
       "missingBaseUrl": "This connection is missing a base URL — open AI settings and set one, or switch to OpenRouter.",
       "noFoods": "Couldn't identify any foods in that photo — try a clearer shot.",
       "openrouterRateLimit": "You've hit the provider's rate limit — free-tier scans reset daily, or add credits on OpenRouter for more. Any credits you add go straight to OpenRouter (not openplate), are entirely optional, and are a spend-down balance, not a subscription.",
@@ -1196,6 +1203,37 @@
         "rateLimit": "Too many requests right now",
         "reconsentRequired": "That gateway needs a new invite",
         "transient": "The provider had trouble responding"
+      }
+    },
+    "labelScan": {
+      "capture": {
+        "description": "Photograph the nutrition panel on the package. Your photo goes straight to your own AI provider, which reads the printed numbers — nothing is estimated. Afterward the photo is kept only on this device.",
+        "emptyHint": "Hold the package flat and let the panel fill the frame.",
+        "emptyTitle": "Photograph the nutrition panel",
+        "photoLabel": "Label photo",
+        "previewAlt": "Selected package label",
+        "title": "Read a package label"
+      },
+      "mode": {
+        "label": "A package label",
+        "labelHint": "The nutrition panel printed on a package — we read the numbers exactly as printed, sugar alcohols included.",
+        "legend": "What are you photographing?",
+        "plate": "A plate of food",
+        "plateHint": "A meal on a plate — we work out which foods are on it."
+      },
+      "review": {
+        "basisPer100g": "Taken from the label's per-100 g column.",
+        "basisPerServing": "Worked out from the label's per-serving column ({{grams}} g per serving).",
+        "brandLabel": "Brand (optional)",
+        "gramsLabel": "Amount to log (g)",
+        "heading": "Here's what the label says — check it before you log it.",
+        "macrosPer100gNote": "Values are per 100 g. A blank box means the label did not print that row — leave it blank rather than typing 0.",
+        "modelNote": "Note from the reading: {{note}}",
+        "nameLabel": "Product",
+        "savedAsCustomFood": "Saving adds this product to your foods, so next time it is one tap and no photo.",
+        "servingPrinted": "Serving on the label: {{serving}}",
+        "subheading": "Every number was read from your photo. Fix anything that looks wrong.",
+        "unverified": "Read from your photo, not verified. Small print on a curved or shiny package can be misread — please check the numbers."
       }
     },
     "loading": "Loading scan…",
@@ -1265,10 +1303,12 @@
       },
       "sanity": {
         "kcalMismatch": "These numbers look inconsistent ({{stated}} kcal vs ~{{computed}} from the macros) — double-check before logging.",
+        "labelColumnsDisagree": "The label's two columns disagree on {{label}} ({{printed}} per 100 g printed vs {{converted}} worked out from the per-serving column) — one of them was probably misread.",
         "macro": {
           "carbs": "Carbs",
           "fat": "Fat",
           "fiber": "Fiber",
+          "kcal": "Calories",
           "polyols": "Polyols",
           "protein": "Protein",
           "sugars": "Sugars"
