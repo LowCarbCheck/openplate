@@ -11,6 +11,7 @@
  */
 import type { Macros } from './macros';
 import { formatMacroNumberIn } from './format-macro-number';
+import type { CarbBasis } from './net-carbs';
 
 /** A single macro (or their sum) above this many grams per 100 g is impossible. */
 const MAX_SINGLE_MACRO_PER_100G = 100;
@@ -112,10 +113,27 @@ function _collectKcalMismatchIssue(per100g: Macros, t: Translate, language: stri
  * rules can't see. Equality is legal (a pure-sugar product is all sugars);
  * only a strict excess is a note, and a null component or total is never
  * treated as 0 — it's simply skipped.
+ *
+ * The FIBRE comparisons only hold on a `total` (US) panel, where fibre is an
+ * indented "of which" row inside the printed carbohydrate figure. On an
+ * `available` (EU) panel fibre sits OUTSIDE the carbohydrate figure (see
+ * `#app/lib/net-carbs`'s module doc), so `fiber > carbs` is legal and common
+ * — crispbread, bran, chia — and flagging it there is a false positive one
+ * field away from the model correctly reporting `available` (M123/13 review
+ * finding). Sugars and polyols stay "of which" rows UNDER carbohydrate on
+ * BOTH conventions, so those two comparisons run regardless of basis. An
+ * absent/unknown `basis` keeps today's behaviour (both fibre comparisons
+ * run), same UNKNOWN-means-`total` rule as the rest of spec 13.
  */
-function _collectComponentOverTotalIssues(per100g: Macros, t: Translate, language: string | null | undefined): MacroSanityIssue[] {
+function _collectComponentOverTotalIssues(
+  per100g: Macros,
+  t: Translate,
+  language: string | null | undefined,
+  basis: CarbBasis | undefined,
+): MacroSanityIssue[] {
   const issues: MacroSanityIssue[] = [];
   const { carbs, sugars, fiber, polyols } = per100g;
+  const fibreComparisonsApply = basis !== 'available';
 
   if (carbs !== null && sugars !== null && sugars > carbs) {
     issues.push({
@@ -137,7 +155,7 @@ function _collectComponentOverTotalIssues(per100g: Macros, t: Translate, languag
   // every component present" — the latter disables the check on almost
   // every food, since a label is the first source that can ever populate
   // polyols at all.
-  if (carbs !== null && fiber !== null && polyols !== null) {
+  if (fibreComparisonsApply && carbs !== null && fiber !== null && polyols !== null) {
     const sum = fiber + polyols;
     if (sum > carbs) {
       issues.push({
@@ -151,7 +169,7 @@ function _collectComponentOverTotalIssues(per100g: Macros, t: Translate, languag
         }),
       });
     }
-  } else if (carbs !== null && fiber !== null && fiber > carbs) {
+  } else if (fibreComparisonsApply && carbs !== null && fiber !== null && fiber > carbs) {
     issues.push({
       code: 'component-over-total',
       message: t('scan.review.sanity.componentOverTotal', {
@@ -254,18 +272,24 @@ export function checkLabelColumnAgreement(
  * @param t - translator for the issue copy (see `Translate`).
  * @param language - active UI language, so the figures inside the copy carry
  *   that language's decimal separator (passed in for the same reason `t` is).
+ * @param carbBasis - which printed-panel convention `per100g.carbs` was read
+ *   from (M123/13 review finding); governs ONLY the fibre-vs-carbs component
+ *   checks — see `_collectComponentOverTotalIssues`'s doc. `undefined` (a
+ *   plate-photo AI estimate, which has no printed panel at all; a legacy
+ *   reading from before this parameter existed) keeps today's behaviour.
  * @returns the list of issues found; an empty array means the numbers look sane.
  */
 export function checkMacroSanity(
   per100g: Macros,
   t: Translate,
   language: string | null | undefined,
+  carbBasis?: CarbBasis,
 ): MacroSanityIssue[] {
   const issues = _collectSingleMacroIssues(per100g, t, language);
   const sumIssue = _collectMacroSumIssue(per100g, t, language);
   if (sumIssue) issues.push(sumIssue);
   const kcalIssue = _collectKcalMismatchIssue(per100g, t, language);
   if (kcalIssue) issues.push(kcalIssue);
-  issues.push(..._collectComponentOverTotalIssues(per100g, t, language));
+  issues.push(..._collectComponentOverTotalIssues(per100g, t, language, carbBasis));
   return issues;
 }

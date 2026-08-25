@@ -472,7 +472,10 @@ describe('the credit survives every other way an entry is created', () => {
     // food must be identical, which is the invariant that keeps getting broken.
     assert.deepEqual(
       { ...copy, id: 'log-1', dayKey: DAY_KEY, loggedAt: LOGGED_AT_MS, createdAt: LOGGED_AT_MS, logBatchId: null },
-      { ...creditedEntry(), portion: undefined, micronutrientsPer100g: undefined },
+      // M123/13 review finding 3 added `carbBasis` to `buildCopiedEntry`'s
+      // field list; `creditedEntry()` carries none, so the copy carries none
+      // either — asserted explicitly here so this deep-equal stays exhaustive.
+      { ...creditedEntry(), portion: undefined, micronutrientsPer100g: undefined, carbBasis: undefined },
     );
   });
 

@@ -44,6 +44,36 @@ describe('buildSavedMealFromLogs', () => {
       foodId: 'food-eggs',
       attribution: 'lowcarbcheck.org',
       netCarbsPer100g: 0.8,
+      // M123/13 review finding 6: `saved-meals.ts` already carries these
+      // three fields through (see `buildSavedMealFromLogs`), but nothing
+      // asserted it — so a future edit dropping any one of them, the exact
+      // class of bug findings 1-4 were, would pass this file silently.
+      portion: { unit: 'egg', quantity: 2, gramsPerUnit: 60 },
+      carbBasis: 'available',
+      micronutrientsPer100g: {
+        vitamins: {
+          betaCarotene: null,
+          vitaminA: 140,
+          vitaminC: null,
+          vitaminD: 1.8,
+          vitaminE: null,
+          vitaminB1: null,
+          vitaminB2: null,
+          vitaminB6: null,
+          vitaminB9: null,
+          vitaminB12: 0.9,
+        },
+        minerals: {
+          nacl: null,
+          potassium: null,
+          sodium: 124,
+          calcium: null,
+          magnesium: null,
+          zinc: null,
+          phosphorus: null,
+          iron: null,
+        },
+      },
     });
     const toast = log('toast', {
       name: 'Toast',
@@ -73,6 +103,9 @@ describe('buildSavedMealFromLogs', () => {
     assert.equal(eggsItem.foodId, 'food-eggs');
     assert.equal(eggsItem.attribution, 'lowcarbcheck.org');
     assert.equal(eggsItem.netCarbsPer100g, 0.8);
+    assert.deepEqual(eggsItem.portion, { unit: 'egg', quantity: 2, gramsPerUnit: 60 });
+    assert.equal(eggsItem.carbBasis, 'available');
+    assert.deepEqual(eggsItem.micronutrientsPer100g, eggs.micronutrientsPer100g);
   });
 
   it('carries no placement — an item has no dayKey/loggedAt/mealType/logBatchId of its own', () => {

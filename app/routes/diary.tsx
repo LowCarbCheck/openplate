@@ -41,6 +41,7 @@ import { chipCarbStatus } from '#app/lib/frequent-chips';
 import type { Macros } from '#app/lib/macros';
 import { createOptionalNonNegativeNumberSchema } from '#app/lib/zod-numeric';
 import { authoritativeNetCarbsField, encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
+import { parseCarbBasis } from '#app/lib/net-carbs';
 import { encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrients';
 import { toStoredAttribution } from '#app/lib/attribution';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
@@ -245,6 +246,14 @@ export const RestoreLogSchema = z.object({
    * silently became "180 g" the moment they used a button labelled Undo.
    */
   portion: portionField,
+  /**
+   * The deleted entry's printed-panel convention (M123/13 review finding):
+   * without it, an Undo of an `available`-basis entry came back UNKNOWN and
+   * silently reverted to the `total` fallback formula, double-subtracting
+   * fibre — the exact bug spec 13 fixes, reintroduced by delete-then-undo.
+   * Blank (the "not sure"/legacy wire value) decodes to absent, never a guess.
+   */
+  carbBasis: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
   carbs: createOptionalNonNegativeNumberSchema(),
   fiber: createOptionalNonNegativeNumberSchema(),
   sugars: createOptionalNonNegativeNumberSchema(),
@@ -294,6 +303,15 @@ export const LogRecentSchema = z.object({
   attribution: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
   /** The chip's display portion ("2 eggs"). Valid at the chip's `quantityGrams`, which a re-log reuses unchanged. */
   portion: portionField,
+  /**
+   * The chip's printed-panel convention (M123/13 review finding). Carried
+   * from the original log, same as `netCarbsPer100g` above — a re-log is a
+   * new use of the same data, not a fresh entry with an unknown basis. Its
+   * absence here meant `toFrequentChip`'s dot colour (already basis-aware)
+   * and the entry the tap created could disagree: a green dot next to a row
+   * that read a false, understated net-carbs figure.
+   */
+  carbBasis: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
   carbs: createOptionalNonNegativeNumberSchema(),
   fiber: createOptionalNonNegativeNumberSchema(),
   sugars: createOptionalNonNegativeNumberSchema(),
@@ -421,6 +439,10 @@ export function buildRestoredEntry({
     // unchanged, so the portion label that was valid for it is still valid —
     // dropping it here is what turned an undone "2 eggs" back into "180 g".
     portion: value.portion ?? null,
+    // The fourth field of the same class (M123/13 review finding): absent
+    // (never `'total'`) unless the deleted entry genuinely carried a basis —
+    // see `RestoreLogSchema.carbBasis`'s doc.
+    carbBasis: parseCarbBasis(value.carbBasis) ?? undefined,
   };
 }
 
@@ -496,6 +518,9 @@ export function buildRecentLogEntry({
     micronutrientsPer100g: value.micronutrientsPer100g,
     attribution: toStoredAttribution(value.attribution),
     portion: value.portion ?? null,
+    // The fourth field of the same class (M123/13 review finding) — see
+    // `LogRecentSchema.carbBasis`'s doc.
+    carbBasis: parseCarbBasis(value.carbBasis) ?? undefined,
   };
 }
 
@@ -618,6 +643,10 @@ export function buildCopiedEntry({
     // Same food, same per-100 g basis — the vitamins/minerals copy forward
     // verbatim too, or yesterday's covered day would come back uncovered.
     micronutrientsPer100g: log.micronutrientsPer100g,
+    // Same food, same printed panel — the basis copies forward verbatim too
+    // (M123/13 review finding), or a copied EU-basis entry silently reverted
+    // to the `total` fallback and understated its net carbs on the new day.
+    carbBasis: log.carbBasis,
   };
 }
 
@@ -1876,6 +1905,11 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
       <input type="hidden" name="micronutrientsPer100g" value={encodeMicronutrients(chip.micronutrientsPer100g)} />
       <input type="hidden" name="attribution" value={chip.attribution ?? ''} />
       <input type="hidden" name="portion" value={encodeDisplayPortion(chip.portion)} />
+      {/* M123/13 review finding: `chip.carbStatus` above is already
+          basis-aware (it reads `chip.carbBasis`), so without this field the
+          dot showed the right colour while the tap created a row that
+          silently reverted to the `total` fallback. */}
+      <input type="hidden" name="carbBasis" value={chip.carbBasis ?? ''} />
       {MACRO_KEYS.map((key) => (
         <input key={key} type="hidden" name={key} value={macroHidden(chip.macros[key])} />
       ))}

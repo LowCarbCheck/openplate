@@ -177,6 +177,56 @@ describe('checkMacroSanity — a component row must not exceed its total', () =>
   });
 });
 
+/**
+ * M123/13 review finding 5: the fibre-vs-carbs comparisons above hold ONLY
+ * on a `total` (US) panel, where fibre is an indented "of which" row inside
+ * the printed carbohydrate figure. On an `available` (EU) panel fibre sits
+ * OUTSIDE the carbohydrate figure, so `fiber > carbs` is legal and common —
+ * crispbread, bran, chia — and must NOT be flagged. Sugars and polyols stay
+ * "of which" rows under carbohydrate on both conventions, so those two keep
+ * running regardless of basis.
+ */
+describe('checkMacroSanity — basis-aware fibre comparisons (M123/13)', () => {
+  it('does NOT flag fiber alone over carbs on an `available` (EU) basis — legitimate for crispbread/bran', () => {
+    // Real-shape EU crispbread: 21.7 g carbs (already fibre-exclusive), 42.8 g fibre.
+    const issues = checkMacroSanity(makeMacros({ carbs: 21.7, fiber: 42.8 }), t, 'en', 'available');
+    assert.deepStrictEqual(issues, []);
+  });
+
+  it('does NOT flag fiber + polyols over carbs on an `available` basis either', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, fiber: 20, polyols: 5 }), t, 'en', 'available');
+    assert.deepStrictEqual(issues, []);
+  });
+
+  it('STILL flags sugars over carbs on an `available` basis — sugars stay "of which" on both conventions', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, sugars: 12 }), t, 'en', 'available');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+    assert.match(issues[0]?.message ?? '', /^scan\.review\.sanity\.componentOverTotal /);
+    assert.match(issues[0]?.message ?? '', /"component":"scan\.review\.sanity\.macro\.sugars"/);
+  });
+
+  it('STILL flags polyols alone over carbs on an `available` basis — polyols stay "of which" on both conventions', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, polyols: 12 }), t, 'en', 'available');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+    assert.match(issues[0]?.message ?? '', /"component":"scan\.review\.sanity\.macro\.polyols"/);
+  });
+
+  it('STILL flags fiber over carbs on a `total` (US) basis — unchanged behaviour', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, fiber: 12 }), t, 'en', 'total');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+    assert.match(issues[0]?.message ?? '', /"component":"scan\.review\.sanity\.macro\.fiber"/);
+  });
+
+  it('an UNKNOWN (absent) basis keeps today\'s behaviour — still flags fiber over carbs', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, fiber: 12 }), t, 'en');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+  });
+});
+
 describe('checkMacroSanity — multiple rules', () => {
   it('returns every applicable issue, single-macro first then sum', () => {
     const issues = checkMacroSanity(makeMacros({ fat: 120 }), t, 'en');

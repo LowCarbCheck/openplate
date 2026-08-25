@@ -322,6 +322,20 @@ export function createLogSchema(t: Translate) {
      * `toStoredAttribution` on the way in.
      */
     attribution: z.string().optional(),
+    /**
+     * The candidate's printed-panel convention, carried through so it survives
+     * into `LocalFoodLog.carbBasis` instead of dying at log time — the exact
+     * defect `netCarbsPer100g` above exists to document, one field over. Its
+     * absence here was the M123/13 review finding: the preview above already
+     * reads `candidate.carbBasis` (see `computeMacroPreview`'s call below),
+     * so the screen showed the right, basis-aware number while the row this
+     * form created reverted to the `total` fallback and silently understated
+     * an EU-basis food with fibre — a false green zero on a red preview. Same
+     * "the data is the gate" convention as `attribution`: blank submits as
+     * "unknown", never a guess. Parsed with `parseCarbBasis` in the builder,
+     * not here — same split as `createManualSchema`'s `carbBasis` field.
+     */
+    carbBasis: z.string().optional(),
     carbs: createOptionalNonNegativeNumberSchema(),
     fiber: createOptionalNonNegativeNumberSchema(),
     sugars: createOptionalNonNegativeNumberSchema(),
@@ -757,6 +771,12 @@ export function buildLoggedEntry({
     // logged instead of dying at the store boundary — see
     // `tests/unit/authoritative-net-carbs-wiring.test.ts`.
     netCarbsPer100g: data.netCarbsPer100g,
+    // The candidate's printed-panel convention, snapshotted alongside the
+    // figure above for the identical reason — see `LogSchema.carbBasis`'s
+    // doc comment. Absent (never `'total'`) for a candidate with no basis,
+    // exactly the UNKNOWN-means-`total`-in-computation-but-not-in-storage
+    // rule `#app/lib/net-carbs` documents.
+    carbBasis: parseCarbBasis(data.carbBasis) ?? undefined,
     // The upstream vitamins/minerals, snapshotted per-100 g at log time for
     // the same reason the figure above is — this is the line that lets a day's
     // micronutrient coverage reflect what was actually eaten.
@@ -1245,6 +1265,11 @@ export function PortionStep({
               name={fields.netCarbsPer100g.name}
               value={encodeAuthoritativeNetCarbs(candidate.authoritativeNetCarbsPer100g)}
             />
+            {/* Same rule, one field over: `candidate.carbBasis` is the same
+                value `computeMacroPreview` below already reads for the
+                on-screen figure. Without this hidden field the preview and
+                the stored row disagreed — see `LogSchema.carbBasis`'s doc. */}
+            <input type="hidden" name={fields.carbBasis.name} value={candidate.carbBasis ?? ''} />
             {/* Same "the data is the gate" rule, one dimension over: a
                 candidate with no micronutrient snapshot encodes to `''`, which
                 decodes back to `undefined` — nothing persisted, nothing

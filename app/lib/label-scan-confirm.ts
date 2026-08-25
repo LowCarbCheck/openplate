@@ -170,7 +170,13 @@ export function collectLabelSanityIssues(
   t: Translate,
   language: string | null | undefined,
 ): MacroSanityIssue[] {
-  const issues = checkMacroSanity(view.macrosPer100g, t, language);
+  // `view.carbBasis` is the ONLY panel this module reviews that can genuinely
+  // report `available` (EU) — a plate-photo estimate never reaches this
+  // function at all. Without threading it here, an EU crispbread/bran label
+  // (fibre legitimately > carbohydrate) drew a false "fibre exceeds
+  // carbohydrate" note one field away from the model correctly reporting
+  // `available` (M123/13 review finding).
+  const issues = checkMacroSanity(view.macrosPer100g, t, language, view.carbBasis ?? undefined);
   if (view.printedPer100g && view.convertedPer100g) {
     const disagreement = checkLabelColumnAgreement(
       { printedPer100g: view.printedPer100g, convertedPer100g: view.convertedPer100g },

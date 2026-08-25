@@ -23,6 +23,7 @@ import {
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
+  putLocalSavedMeal,
   putLocalWeightEntry,
 } from '../../app/lib/local-store/primary-store';
 import { SCHEMA_VERSION } from '../../app/lib/local-store/schema';
@@ -38,6 +39,13 @@ async function seedStore(store: Store): Promise<void> {
       macrosPer100g: { carbs: 11, fiber: 1, sugars: null, polyols: null, protein: 0.4, fat: 0.3, kcal: 32 },
       source: 'user',
       createdAt: 1_000,
+      // M123/13 review finding 6: seeded here (and on the log below) for the
+      // identical reason `portion`/`micronutrientsPer100g` are — zod STRIPS
+      // unrecognized keys, so if `personalFoodSchema` ever lost its
+      // `carbBasis` line the export -> import -> export cycle would quietly
+      // return a food/log with no basis and every future read of it would
+      // silently revert to the `total` fallback and double-subtract fibre.
+      carbBasis: 'available',
     },
     { store },
   );
@@ -64,6 +72,8 @@ async function seedStore(store: Store): Promise<void> {
       // cycle quietly returned an entry with no `portion` key at all and the
       // deep-equality assertion was the thing that would have caught it.
       portion: { unit: 'cup', quantity: 0.5, gramsPerUnit: 100 },
+      // Same reason as `food-1.carbBasis` above, one field over.
+      carbBasis: 'available',
       // The v9 micronutrient snapshot (M135), seeded for exactly the same
       // reason `portion` above is: zod STRIPS unrecognized keys, so if
       // `foodLogSchema` ever loses its `micronutrientsPer100g` line the export
@@ -139,6 +149,36 @@ async function seedStore(store: Store): Promise<void> {
       trackingFocus: 'net-carbs',
       onboardingCompletedAt: 5_000,
       updatedAt: 4_000,
+    },
+    { store },
+  );
+
+  // M123/13 review finding 6: a POPULATED saved meal, not just the empty-array
+  // shape every other test in this file exercises. `savedMealItemSchema`
+  // strips unrecognized keys exactly like every other entity schema here, so
+  // an empty-array-only fixture cannot catch a schema that lost a field —
+  // including `carbBasis`, seeded on the item below for the same reason as
+  // `food-1`/`log-1` above.
+  await putLocalSavedMeal(
+    {
+      id: 'saved-meal-1',
+      name: 'Sunday breakfast',
+      items: [
+        {
+          name: 'Acerola',
+          quantityGrams: 50,
+          macros: { carbs: 5.5, fiber: null, sugars: null, polyols: null, protein: 0.2, fat: 0.15, kcal: 16 },
+          source: 'manual',
+          aiEstimated: false,
+          curatedSource: 'lowcarbcheck:acerola',
+          foodId: 'food-1',
+          portion: { unit: 'cup', quantity: 0.5, gramsPerUnit: 100 },
+          attribution: 'LowCarbCheck, CC BY 4.0',
+          netCarbsPer100g: 4.5,
+          carbBasis: 'available',
+        },
+      ],
+      createdAt: 6_000,
     },
     { store },
   );

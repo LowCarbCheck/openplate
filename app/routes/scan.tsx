@@ -2078,8 +2078,19 @@ export function LabelConfirmForm({
     fat: parseNumericFieldValue(macrosFieldset.fat.value),
     kcal: parseNumericFieldValue(macrosFieldset.kcal.value),
   };
+  // The LIVE selector value, not `panel.carbBasis` (the model's original
+  // report): a person who corrects "not sure" to "EU available" — or the
+  // reverse — must see the sanity notes recompute against their own answer,
+  // not keep flagging the model's first guess (M123/13 review finding).
+  const liveCarbBasis = carbBasisValue === CARB_BASIS_NOT_SURE_VALUE ? undefined : carbBasisValue;
   const sanityIssues =
-    panel ? collectLabelSanityIssues({ ...panel, macrosPer100g: editedMacrosPer100g }, t, i18n.language) : [];
+    panel ?
+      collectLabelSanityIssues(
+        { ...panel, macrosPer100g: editedMacrosPer100g, carbBasis: liveCarbBasis ?? null },
+        t,
+        i18n.language,
+      )
+    : [];
 
   const usage = reading?.usage;
   const scanCostUsd = usage && modelId && provider ? estimateScanCostUsd(provider, modelId, usage) : undefined;
@@ -2392,6 +2403,11 @@ export function ConfirmDraftForm({
       currentGrams,
       preview,
       appliedSnapshot,
+      // No `carbBasis` argument, for the identical reason `computeMacroPreview`
+      // above gets none: a plate item never carries one (M123/13 review
+      // finding). `undefined` keeps `checkMacroSanity`'s fibre-vs-carbs
+      // comparisons running, which is correct here — a plate estimate has no
+      // EU/US panel to misclassify.
       sanityIssues: preview ? checkMacroSanity(macrosPer100g, t, i18n.language) : [],
       selectedMultiplier: hasChips ? derivePortionMultiplier({ baseGrams, currentGrams }) : null,
       // SAFETY: `confidence` is populated only by this route's own confirm-draft

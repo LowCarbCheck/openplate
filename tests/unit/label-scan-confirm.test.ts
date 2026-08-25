@@ -200,11 +200,52 @@ describe('collectLabelSanityIssues — the two printed columns cross-check each 
   });
 });
 
+/**
+ * M123/13 review finding 5: `collectLabelSanityIssues` reads `view.carbBasis`
+ * (from `buildLabelConfirmView`'s own `reading.carbBasis`) but did not pass it
+ * to `checkMacroSanity`, so an `available`-basis (EU) panel with fibre
+ * legitimately greater than its carbohydrate figure — crispbread, bran —
+ * drew a false "fibre exceeds carbohydrate" component-over-total note.
+ */
+describe('collectLabelSanityIssues — threads carbBasis into the component checks (M123/13)', () => {
+  it('does NOT flag fiber over carbs on an `available` (EU) panel — legitimate for a high-fibre product', () => {
+    const view = readingView(
+      panelReading({
+        carbBasis: 'available',
+        macrosPerServing: undefined,
+        // kcal chosen to match Atwater (4/4/9) so this fixture trips ONLY the
+        // fibre-vs-carbs component check under test, not the unrelated
+        // kcal-mismatch rule: 21.7·4 + 8·4 + 2·9 = 136.8.
+        macrosPer100g: { carbs: 21.7, fiber: 42.8, protein: 8, fat: 2, kcal: 136.8 },
+      }),
+    );
+    const issues = collectLabelSanityIssues(view, t, 'en');
+    assert.deepEqual(
+      issues.map((issue) => issue.code),
+      [],
+      `expected no notes on an EU-basis high-fibre panel, got ${JSON.stringify(issues.map((i) => i.code))}`,
+    );
+  });
+
+  it('STILL flags fiber over carbs on a `total` (US) panel — unchanged behaviour', () => {
+    const view = readingView(
+      panelReading({
+        carbBasis: 'total',
+        macrosPerServing: undefined,
+        macrosPer100g: { carbs: 10, fiber: 12, protein: 8, fat: 2, kcal: 100 },
+      }),
+    );
+    const issues = collectLabelSanityIssues(view, t, 'en');
+    assert.ok(issues.some((issue) => issue.code === 'component-over-total'));
+  });
+});
+
 describe('a confirmed label scan → the reusable custom food', () => {
-  it('carries polyols onto both the food and the entry, end to end', () => {
-    const view = readingView(panelReading({ macrosPer100g: undefined }));
+  it('carries polyols and carbBasis onto both the food and the entry, end to end', () => {
+    const view = readingView(panelReading({ macrosPer100g: undefined, carbBasis: 'available' }));
     const per100g = view.macrosPer100g;
     assert.equal(per100g.polyols, 26);
+    assert.equal(view.carbBasis, 'available');
 
     const food = buildLabelScanFood({
       name: buildLabelFoodName(view),
@@ -230,19 +271,25 @@ describe('a confirmed label scan → the reusable custom food', () => {
     assert.equal(food.brand, 'Testbrand');
     assert.equal(food.name, 'Testbrand Keto Bar, Chocolate');
     assert.equal(food.source, 'user');
+    // M123/13 review finding 6: `carbBasis` is passed to both builders above
+    // but was never asserted on the result — a test that could not have
+    // caught either builder silently dropping it.
+    assert.equal(food.carbBasis, 'available');
+    assert.equal(entry.carbBasis, 'available');
     // 35 g serving → the per-serving figure the panel printed, recovered.
     assert.equal(entry.quantityGrams, 35);
     assert.ok(Math.abs((entry.macros.polyols ?? 0) - 9.1) < 0.001);
     assert.equal(entry.foodId, 'food-1');
   });
 
-  it('keeps an unprinted macro absent on the stored rows too', () => {
+  it('keeps an unprinted macro absent on the stored rows too, and stores no basis for "not sure"', () => {
     const view = readingView(
       panelReading({
         macrosPerServing: undefined,
         macrosPer100g: { carbs: 42, fiber: 10, protein: 20, fat: 36, kcal: 514 },
       }),
     );
+    assert.equal(view.carbBasis, null, 'the panel default carries no carbBasis — "not sure"');
     const food = buildLabelScanFood({
       name: 'Bar',
       brand: null,
@@ -252,6 +299,8 @@ describe('a confirmed label scan → the reusable custom food', () => {
       createdAtMs: 0,
     });
     assert.equal(food.macrosPer100g.polyols, null);
+    // "not sure" persists as absent — never a fabricated `'total'`.
+    assert.equal(food.carbBasis, undefined);
     const entry = buildLabelScanEntry({
       name: 'Bar',
       quantityGrams: 100,
@@ -264,6 +313,7 @@ describe('a confirmed label scan → the reusable custom food', () => {
       createdAtMs: 0,
     });
     assert.equal(entry.macros.polyols, null);
+    assert.equal(entry.carbBasis, undefined);
   });
 
   it('defaults the logged amount to 100 g when the panel printed no serving weight', () => {

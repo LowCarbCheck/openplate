@@ -828,6 +828,13 @@ export function buildRestorePayload(log: LocalFoodLog) {
     // licence credit — the restored row would keep claiming a curated
     // source while no longer crediting it.
     attribution: log.attribution ?? '',
+    // M123/13 review finding: without this the Undo would restore an
+    // EU-basis entry as if it were UNKNOWN, silently reverting it to the
+    // `total` fallback formula and double-subtracting fibre — the exact
+    // false-green-zero bug spec 13 exists to fix, reintroduced by deleting
+    // and undoing the very entry the person set the basis on. Absent (never
+    // `'total'`) is still the honest wire value for a log with no basis.
+    carbBasis: log.carbBasis ?? '',
     // And the third: the grams are restored unchanged, so the portion label
     // that described them is still exactly as valid as it was — without this
     // the person's own "2 eggs" came back as "180 g".
