@@ -120,6 +120,21 @@ function wasBilled(event: LocalAiUsageEvent): boolean {
 }
 
 /**
+ * True for a billed event that ultimately errored — the provider took the
+ * tokens but the attempt still didn't produce a usable result (M123/09).
+ * `event.outcome` is typed as always-present (`AiUsageOutcomeType`), but a
+ * row written before outcome tracking existed, or a foreign/malformed row,
+ * could parse back with the field missing at runtime despite the type —
+ * `readEvent`'s `JSON.parse` cast has no schema validation on this field. A
+ * missing outcome is treated as NOT failed (a success): defaulting unknown
+ * history to "failed" would retroactively redraw a clean scan history as
+ * broken, which is worse than under-counting a handful of pre-tracking rows.
+ */
+function wasFailed(event: LocalAiUsageEvent): boolean {
+  return event.outcome === 'error';
+}
+
+/**
  * Pure aggregation — same shape/semantics as the old server-side
  * `getMonthlyAiUsage`. Only events the provider actually billed (`wasBilled`)
  * count toward `scanCount`/`totalCostUsd`/`unknownCostCount` — an attempt
@@ -130,17 +145,26 @@ function wasBilled(event: LocalAiUsageEvent): boolean {
  * summed every event in the window regardless of whether it was billed —
  * a user with a rejected key would see "1 scan · cost unknown for your
  * model" for a call that never ran and never cost them anything.
+ *
+ * `successCount`/`failedCount` (M123/09) split that same billed population
+ * by outcome, so a run of billed-but-errored attempts — e.g. the doubled
+ * response-format retries the vision adapters used to fire on every 4xx,
+ * including ones a retry can't fix — reads as "N scans, M failed" instead of
+ * silently inflating "N scans" into looking like N successful identifications.
  */
 export function computeLocalMonthlyAiUsage(events: LocalAiUsageEvent[], now: Date): MonthlyAiUsage {
   const { start, end } = getUtcMonthWindow(now);
   const inWindow = events.filter((event) => event.createdAt >= start.getTime() && event.createdAt < end.getTime());
   const billed = inWindow.filter(wasBilled);
+  const failedCount = billed.filter(wasFailed).length;
   return {
     scanCount: billed.length,
     totalCostUsd: billed.reduce((sum, event) => sum + (event.estimatedCostUsd ?? 0), 0),
     unknownCostCount: billed.filter((event) => event.estimatedCostUsd === null).length,
     inputTokens: billed.reduce((sum, event) => sum + (event.inputTokens ?? 0), 0),
     outputTokens: billed.reduce((sum, event) => sum + (event.outputTokens ?? 0), 0),
+    successCount: billed.length - failedCount,
+    failedCount,
   };
 }
 

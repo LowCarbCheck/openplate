@@ -480,7 +480,7 @@ describe('the credit survives every other way an entry is created', () => {
     const envelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-28T12:00:00.000Z',
-      data: { foods: [], foodLogs: [creditedEntry()], weightEntries: [], profile: null, fasts: [] },
+      data: { foods: [], foodLogs: [creditedEntry()], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
     assert.equal(restored.data.foodLogs[0]?.attribution, CREDIT);

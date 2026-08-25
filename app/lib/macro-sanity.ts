@@ -26,7 +26,11 @@ const KCAL_PER_GRAM_FAT = 9;
 
 /** Discriminates which plausibility rule a given issue came from. */
 export type MacroSanityCode =
-  'single-macro-over-100' | 'macro-sum-over-100' | 'kcal-macro-mismatch' | 'label-columns-disagree';
+  | 'single-macro-over-100'
+  | 'macro-sum-over-100'
+  | 'kcal-macro-mismatch'
+  | 'label-columns-disagree'
+  | 'component-over-total';
 
 /** One plausibility problem found in a per-100g macro set, with display copy. */
 export interface MacroSanityIssue {
@@ -98,6 +102,78 @@ function _collectKcalMismatchIssue(per100g: Macros, t: Translate, language: stri
       computed: formatMacroNumberIn(language, computedKcal),
     }),
   };
+}
+
+/**
+ * Nutrition panels declare sugars, polyols and fibre as "of which" rows
+ * beneath the carbohydrate total — a component genuinely cannot exceed the
+ * total it's declared under. Unlike the two-column cross-check, this fires
+ * even on a single-column panel, so it catches the one misread the other
+ * rules can't see. Equality is legal (a pure-sugar product is all sugars);
+ * only a strict excess is a note, and a null component or total is never
+ * treated as 0 — it's simply skipped.
+ */
+function _collectComponentOverTotalIssues(per100g: Macros, t: Translate, language: string | null | undefined): MacroSanityIssue[] {
+  const issues: MacroSanityIssue[] = [];
+  const { carbs, sugars, fiber, polyols } = per100g;
+
+  if (carbs !== null && sugars !== null && sugars > carbs) {
+    issues.push({
+      code: 'component-over-total',
+      message: t('scan.review.sanity.componentOverTotal', {
+        component: t('scan.review.sanity.macro.sugars'),
+        componentValue: formatMacroNumberIn(language, sugars),
+        total: t('scan.review.sanity.macro.carbs'),
+        totalValue: formatMacroNumberIn(language, carbs),
+      }),
+    });
+  }
+
+  // Sum only the "of which" components that were actually read. Every macro
+  // is non-negative, so an absent component can only push the true sum
+  // higher — omitting it never rescues an already-failing comparison, it
+  // just means there's one fewer component to be certain about. That's why
+  // the gate is "carbs and at least one component present", not "carbs and
+  // every component present" — the latter disables the check on almost
+  // every food, since a label is the first source that can ever populate
+  // polyols at all.
+  if (carbs !== null && fiber !== null && polyols !== null) {
+    const sum = fiber + polyols;
+    if (sum > carbs) {
+      issues.push({
+        code: 'component-over-total',
+        message: t('scan.review.sanity.componentSumOverTotal', {
+          firstComponent: t('scan.review.sanity.macro.fiber'),
+          secondComponent: t('scan.review.sanity.macro.polyols'),
+          componentValue: formatMacroNumberIn(language, sum),
+          total: t('scan.review.sanity.macro.carbs'),
+          totalValue: formatMacroNumberIn(language, carbs),
+        }),
+      });
+    }
+  } else if (carbs !== null && fiber !== null && fiber > carbs) {
+    issues.push({
+      code: 'component-over-total',
+      message: t('scan.review.sanity.componentOverTotal', {
+        component: t('scan.review.sanity.macro.fiber'),
+        componentValue: formatMacroNumberIn(language, fiber),
+        total: t('scan.review.sanity.macro.carbs'),
+        totalValue: formatMacroNumberIn(language, carbs),
+      }),
+    });
+  } else if (carbs !== null && polyols !== null && polyols > carbs) {
+    issues.push({
+      code: 'component-over-total',
+      message: t('scan.review.sanity.componentOverTotal', {
+        component: t('scan.review.sanity.macro.polyols'),
+        componentValue: formatMacroNumberIn(language, polyols),
+        total: t('scan.review.sanity.macro.carbs'),
+        totalValue: formatMacroNumberIn(language, carbs),
+      }),
+    });
+  }
+
+  return issues;
 }
 
 /**
@@ -190,5 +266,6 @@ export function checkMacroSanity(
   if (sumIssue) issues.push(sumIssue);
   const kcalIssue = _collectKcalMismatchIssue(per100g, t, language);
   if (kcalIssue) issues.push(kcalIssue);
+  issues.push(..._collectComponentOverTotalIssues(per100g, t, language));
   return issues;
 }

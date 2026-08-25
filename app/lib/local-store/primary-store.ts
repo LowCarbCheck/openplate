@@ -29,6 +29,7 @@ import {
   PRIMARY_ENTITY_CELL,
   PROFILE_GOALS_TABLE,
   PROFILE_ROW_ID,
+  SAVED_MEALS_TABLE,
   SCHEMA_VERSION_VALUE,
   WEIGHT_ENTRIES_TABLE,
 } from './store';
@@ -41,11 +42,12 @@ import type {
   LocalFoodLog,
   LocalPersonalFood,
   LocalProfileGoals,
+  LocalSavedMeal,
   LocalWeightEntry,
 } from './schema';
 
 /** Every entity kind this store persists as one JSON cell per row. */
-type PrimaryEntity = LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | LocalFast;
+type PrimaryEntity = LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | LocalFast | LocalSavedMeal;
 
 /** The entity cell as it comes back off the store — a TinyBase cell, not yet JSON text. */
 const entityCellSchema = z.string();
@@ -455,4 +457,29 @@ export async function setLocalFastPlannedStart(
 /** Removes one fast by id. */
 export async function deleteLocalFast(id: string, { store }: StoreOption = {}): Promise<void> {
   (await resolveStore(store)).delRow(FASTS_TABLE, id);
+}
+
+// ---------------------------------------------------------------------------
+// Saved meals (M123/07 item 1)
+// ---------------------------------------------------------------------------
+
+/** Upserts a saved meal (keyed by `id`). */
+export async function putLocalSavedMeal(meal: LocalSavedMeal, { store }: StoreOption = {}): Promise<LocalSavedMeal> {
+  writeEntity(await resolveStore(store), SAVED_MEALS_TABLE, meal.id, meal);
+  return meal;
+}
+
+/** Every saved meal, oldest first. */
+export async function listLocalSavedMeals({ store }: StoreOption = {}): Promise<LocalSavedMeal[]> {
+  return readEntities<LocalSavedMeal>(await resolveStore(store), SAVED_MEALS_TABLE).toSorted(byCreatedThenId);
+}
+
+/** One saved meal by id, or null. */
+export async function getLocalSavedMeal(id: string, { store }: StoreOption = {}): Promise<LocalSavedMeal | null> {
+  return readEntity<LocalSavedMeal>(await resolveStore(store), SAVED_MEALS_TABLE, id);
+}
+
+/** Removes one saved meal by id. Never touches any entry already re-logged from it (items were copied in, not referenced). */
+export async function deleteLocalSavedMeal(id: string, { store }: StoreOption = {}): Promise<void> {
+  (await resolveStore(store)).delRow(SAVED_MEALS_TABLE, id);
 }

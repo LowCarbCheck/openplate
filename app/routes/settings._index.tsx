@@ -22,6 +22,8 @@ import type { Route } from './+types/settings._index';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import {
+  Apple,
+  BookMarked,
   ChevronRight,
   Database,
   Info,
@@ -188,6 +190,13 @@ export default function SettingsIndex() {
       </SettingsGroup>
 
       <SettingsGroup label={t('settings.groups.yourData')}>
+        {/* Items 1 and 5 (M123/07): "Your foods" was write-only from `/add`'s
+            sheet and saved meals had no surface at all. Both get a settings
+            row rather than living only inside the add flow, so they're
+            discoverable the same way every other durable device-local list
+            already is. */}
+        <SettingsRow to="/foods" icon={Apple} title={t('settings.rows.foods.title')} status={null} />
+        <SettingsRow to="/meals" icon={BookMarked} title={t('settings.rows.meals.title')} status={null} />
         {syncServerUrl !== null && (
           <SettingsRow
             to="/settings/sync"

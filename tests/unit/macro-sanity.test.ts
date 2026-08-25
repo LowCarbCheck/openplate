@@ -102,6 +102,81 @@ describe('checkMacroSanity — kcal vs macro-derived energy', () => {
   });
 });
 
+describe('checkMacroSanity — a component row must not exceed its total', () => {
+  it('flags sugars greater than carbs on a single-column panel', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, sugars: 12 }), t, 'en');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+    assert.match(issues[0]?.message ?? '', /^scan\.review\.sanity\.componentOverTotal /);
+    assert.match(issues[0]?.message ?? '', /"component":"scan\.review\.sanity\.macro\.sugars"/);
+    assert.match(issues[0]?.message ?? '', /"componentValue":"12"/);
+    assert.match(issues[0]?.message ?? '', /"total":"scan\.review\.sanity\.macro\.carbs"/);
+    assert.match(issues[0]?.message ?? '', /"totalValue":"10"/);
+  });
+
+  it('flags fiber + polyols greater than carbs', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, fiber: 6, polyols: 5 }), t, 'en');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+    assert.match(issues[0]?.message ?? '', /^scan\.review\.sanity\.componentSumOverTotal /);
+    assert.match(issues[0]?.message ?? '', /"componentValue":"11"/);
+    assert.match(issues[0]?.message ?? '', /"totalValue":"10"/);
+  });
+
+  it('allows a component exactly equal to its total (e.g. a pure-sugar product)', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, sugars: 10 }), t, 'en');
+    assert.deepStrictEqual(issues, []);
+  });
+
+  it('allows fiber + polyols exactly equal to carbs', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, fiber: 4, polyols: 6 }), t, 'en');
+    assert.deepStrictEqual(issues, []);
+  });
+
+  it('does not treat a null component as 0 — a missing sugars row never counts as an excess', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10 }), t, 'en');
+    assert.deepStrictEqual(issues, []);
+  });
+
+  it('flags fiber alone over carbs when polyols was never read (the common case: polyols is null for most catalogue foods until a label populates it)', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, fiber: 12 }), t, 'en');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+    assert.match(issues[0]?.message ?? '', /^scan\.review\.sanity\.componentOverTotal /);
+    assert.match(issues[0]?.message ?? '', /"component":"scan\.review\.sanity\.macro\.fiber"/);
+    assert.match(issues[0]?.message ?? '', /"componentValue":"12"/);
+    assert.match(issues[0]?.message ?? '', /"totalValue":"10"/);
+  });
+
+  it('flags polyols alone over carbs when fiber was never read', () => {
+    const issues = checkMacroSanity(makeMacros({ carbs: 10, polyols: 12 }), t, 'en');
+    assert.strictEqual(issues.length, 1);
+    assert.strictEqual(issues[0]?.code, 'component-over-total');
+    assert.match(issues[0]?.message ?? '', /^scan\.review\.sanity\.componentOverTotal /);
+    assert.match(issues[0]?.message ?? '', /"component":"scan\.review\.sanity\.macro\.polyols"/);
+    assert.match(issues[0]?.message ?? '', /"componentValue":"12"/);
+    assert.match(issues[0]?.message ?? '', /"totalValue":"10"/);
+  });
+
+  it('does not flag fiber alone when it stays within carbs (an absent polyols can only push the true sum higher, never lower)', () => {
+    assert.deepStrictEqual(checkMacroSanity(makeMacros({ carbs: 10, fiber: 6 }), t, 'en'), []);
+  });
+
+  it('does not flag polyols alone when it stays within carbs', () => {
+    assert.deepStrictEqual(checkMacroSanity(makeMacros({ carbs: 10, polyols: 6 }), t, 'en'), []);
+  });
+
+  it('does not run the sum check when both fiber and polyols are null — nothing to compare', () => {
+    assert.deepStrictEqual(checkMacroSanity(makeMacros({ carbs: 10 }), t, 'en'), []);
+  });
+
+  it('does not run the check when the total (carbs) is null', () => {
+    assert.deepStrictEqual(checkMacroSanity(makeMacros({ sugars: 5 }), t, 'en'), []);
+    assert.deepStrictEqual(checkMacroSanity(makeMacros({ fiber: 5 }), t, 'en'), []);
+    assert.deepStrictEqual(checkMacroSanity(makeMacros({ polyols: 5 }), t, 'en'), []);
+  });
+});
+
 describe('checkMacroSanity — multiple rules', () => {
   it('returns every applicable issue, single-macro first then sum', () => {
     const issues = checkMacroSanity(makeMacros({ fat: 120 }), t, 'en');

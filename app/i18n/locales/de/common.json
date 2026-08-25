@@ -298,6 +298,9 @@
     },
     "copy": {
       "all": "Alle ({{total}})",
+      "cancel": "Abbrechen",
+      "chooseEntries": "Einträge auswählen…",
+      "copySelected": "Auswahl übernehmen ({{count}})",
       "copying": "Wird übernommen…",
       "meal": "{{meal}} ({{n}})",
       "title": "Von gestern übernehmen"
@@ -418,6 +421,14 @@
       "fat": "Fett",
       "fiber": "Ballaststoffe",
       "protein": "Eiweiß"
+    },
+    "saveMeal": {
+      "namePlaceholder": "Name der Mahlzeit",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "toast_one": "{{name}} gespeichert — {{count}} Lebensmittel.",
+      "toast_other": "{{name}} gespeichert — {{count}} Lebensmittel.",
+      "trigger": "Als Mahlzeit speichern"
     },
     "suggestions": {
       "attribution": "Nährwertdaten von lowcarbcheck.org.",
@@ -553,7 +564,8 @@
     "title": "Fehler",
     "tryAgain": "Nochmal versuchen",
     "unexpectedDetails": "Es ist ein unerwarteter Fehler aufgetreten.",
-    "unexpectedHeading": "Da ist etwas schiefgelaufen"
+    "unexpectedHeading": "Da ist etwas schiefgelaufen",
+    "notANumber": "Gib eine gültige Zahl ein"
   },
   "fasting": {
     "active": {
@@ -859,6 +871,22 @@
       "title": "Zwei Geräte, ein Tagebuch"
     }
   },
+  "meals": {
+    "description": "Mahlzeiten, die du als Bündel gespeichert hast. Mit einem Tap eintragen oder hier entfernen.",
+    "empty": "Du hast noch keine Mahlzeit gespeichert. Speicher eine aus dem Tagebuch — bündel die eingetragenen Lebensmittel und gib ihnen einen Namen.",
+    "itemCount_one": "{{count}} Lebensmittel",
+    "itemCount_other": "{{count}} Lebensmittel",
+    "logNow": "Jetzt eintragen",
+    "logging": "Wird eingetragen…",
+    "removeAria": "{{name}} entfernen",
+    "removeDescription": "Das entfernt die gespeicherte Mahlzeit. Was du damit schon eingetragen hast, bleibt in deinem Tagebuch.",
+    "removeTitle": "{{name}} entfernen?",
+    "toast": {
+      "deleted": "{{name}} entfernt.",
+      "logged_one": "{{name}} eingetragen — {{count}} Lebensmittel.",
+      "logged_other": "{{name}} eingetragen — {{count}} Lebensmittel."
+    }
+  },
   "meta": {
     "about": "Über openplate",
     "add": "Essen eintragen · openplate",
@@ -868,9 +896,11 @@
     "diary": "Tagebuch · openplate",
     "entry": "Eintrag bearbeiten · openplate",
     "fasting": "Fasten · openplate",
+    "foods": "Deine Lebensmittel · openplate",
     "goals": "Deine Ziele · openplate",
     "landing": "openplate — ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "landingDescription": "Fotografier deinen Teller oder such nach dem, was du gegessen hast — openplate zeigt dir in Sekunden die Kohlenhydrate und rechnet sie gegen dein Tagesziel. Kostenlos, ohne Konto, und alles, was du einträgst, bleibt auf deinem Gerät.",
+    "meals": "Gespeicherte Mahlzeiten · openplate",
     "nutrients": "Nährstoffe · openplate",
     "onboarding": "Willkommen bei openplate",
     "preferences": "Einstellungen · openplate",
@@ -1302,6 +1332,8 @@
         "protein": "Eiweiß {{value}} g"
       },
       "sanity": {
+        "componentOverTotal": "{{component}} liegt bei {{componentValue}} g je 100 g, mehr als die {{total}}-Gesamtmenge von {{totalValue}} g — prüf das vor dem Eintragen.",
+        "componentSumOverTotal": "{{firstComponent}} und {{secondComponent}} ergeben zusammen {{componentValue}} g je 100 g, mehr als die {{total}}-Gesamtmenge von {{totalValue}} g — prüf das vor dem Eintragen.",
         "kcalMismatch": "Diese Zahlen passen nicht zusammen ({{stated}} kcal gegenüber ~{{computed}} aus den Nährwerten) — prüf das vor dem Eintragen.",
         "labelColumnsDisagree": "Die beiden Spalten des Etiketts widersprechen sich bei {{label}} ({{printed}} pro 100 g gedruckt, {{converted}} aus der Portionsspalte berechnet) — eine davon wurde wahrscheinlich falsch gelesen.",
         "macro": {
@@ -1309,7 +1341,7 @@
           "fat": "Fett",
           "fiber": "Ballaststoffe",
           "kcal": "Kalorien",
-          "polyols": "Polyole",
+          "polyols": "Zuckeralkohole",
           "protein": "Eiweiß",
           "sugars": "Zucker"
         },
@@ -1381,11 +1413,17 @@
         "status": "Herunterladen, importieren, Fotos auf diesem Gerät",
         "title": "Daten & Sicherung"
       },
+      "foods": {
+        "title": "Deine Lebensmittel"
+      },
       "goals": {
         "calories": "{{kcal}} Kalorien pro Tag",
         "carbs": "{{grams}} g Netto-KH pro Tag",
         "none": "Noch keine Ziele gesetzt",
         "title": "Ziele"
+      },
+      "meals": {
+        "title": "Gespeicherte Mahlzeiten"
       },
       "preferences": {
         "title": "Darstellung & Sprache"
@@ -1556,7 +1594,9 @@
       "scanCount_one": "{{count}} Scan",
       "scanCount_other": "{{count}} Scans",
       "thisMonth": "Diesen Monat: {{cost}} · {{scans}}",
-      "thisMonthUnknown": "Diesen Monat: {{scans}} · Kosten unbekannt"
+      "thisMonthUnknown": "Diesen Monat: {{scans}} · Kosten unbekannt",
+      "failed_one": "{{count}} fehlgeschlagen",
+      "failed_other": "{{count}} fehlgeschlagen"
     }
   },
   "sync": {

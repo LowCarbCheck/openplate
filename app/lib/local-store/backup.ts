@@ -28,11 +28,13 @@ import {
   listLocalFasts,
   listLocalFoodLogs,
   listLocalFoods,
+  listLocalSavedMeals,
   listLocalWeightEntries,
   putLocalFast,
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
+  putLocalSavedMeal,
   putLocalWeightEntry,
 } from './primary-store';
 
@@ -208,6 +210,30 @@ const fastSchema = z.object({
   createdAt: z.number(),
 });
 
+// Added v11 (saved meals, M123/07) — one item's shape mirrors `foodLogSchema`
+// minus placement, for the same reason `schema.ts`'s `LocalSavedMealItem`
+// doc comment gives: a saved meal is a template, not a pinned-to-a-day log.
+const savedMealItemSchema = z.object({
+  name: z.string(),
+  quantityGrams: z.number(),
+  macros: macrosSchema,
+  source: z.enum(['manual', 'plate_ai']),
+  aiEstimated: z.boolean(),
+  curatedSource: z.string().nullable(),
+  foodId: z.string().nullable(),
+  portion: displayPortionSchema.nullable().optional(),
+  attribution: z.string().nullable().optional(),
+  netCarbsPer100g: z.number().nonnegative().nullable().optional(),
+  micronutrientsPer100g: micronutrientsPer100gSchema.optional(),
+});
+
+const savedMealSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  items: z.array(savedMealItemSchema),
+  createdAt: z.number(),
+});
+
 const snapshotSchema = z.object({
   foods: z.array(personalFoodSchema),
   foodLogs: z.array(foodLogSchema),
@@ -227,6 +253,14 @@ const snapshotSchema = z.object({
   // `migrateProfileToV2`. Any FUTURE change to `fastSchema`'s own fields is
   // back to the optional-field rules the comments above describe.
   fasts: z.array(fastSchema).default([]),
+  // Added v11 (saved meals, M123/07). Same rule as `fasts` above (a whole new
+  // entity, not an optional field on an existing one): a v10 envelope has no
+  // `savedMeals` key, and `.default([])` IS the complete v10 -> v11 forward
+  // migration — "this device had no saved meals, because saved meals did not
+  // exist". No `migrateSnapshotToV11` step, for the identical reason there is
+  // no `migrateSnapshotToV7` one. See the `NOTE (M123/07, saved meals)` block
+  // in `schema.ts`.
+  savedMeals: z.array(savedMealSchema).default([]),
 });
 
 /**
@@ -355,6 +389,14 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // was created from, which the envelope does not carry, and re-deriving one
   // from a live lookup would rewrite history for a food that has since been
   // edited. Absent means absent.
+  //
+  // Nor is there one for v10 → v11 (saved meals, M123/07) — that bump is back
+  // under the `fasts` rule, not the optional-field rule: `snapshotSchema`'s
+  // `savedMeals: z.array(savedMealSchema).default([])` IS the complete
+  // migration, exactly as it was for `fasts` at v6 → v7. A v10 envelope simply
+  // has no `savedMeals` key, and `.default([])` reads that as "this device had
+  // no saved meals, because saved meals did not exist" — there is nothing left
+  // for a per-version step to do.
 
   const result = snapshotSchema.safeParse(migratedData);
   if (!result.success) {
@@ -381,6 +423,7 @@ async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
     weightEntries: await listLocalWeightEntries({ store }),
     profile: await getLocalProfileGoals({ store }),
     fasts: await listLocalFasts({ store }),
+    savedMeals: await listLocalSavedMeals({ store }),
   };
 }
 
@@ -400,6 +443,10 @@ export async function hasAnyLocalData({ store }: { store?: Store } = {}): Promis
     snapshot.weightEntries.length > 0 ||
     // A device whose only data is a fast must not be told it has nothing to lose.
     snapshot.fasts.length > 0 ||
+    // Nor one whose only data is a saved meal — it took real effort to name
+    // and bundle, and losing it silently would be exactly the failure this
+    // nudge exists to prevent.
+    snapshot.savedMeals.length > 0 ||
     snapshot.profile !== null
   );
 }
@@ -415,6 +462,7 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   // the loser shows in history as "Still open" with a Remove action — nothing
   // is invented, nothing is silently dropped.
   for (const fast of snapshot.fasts) await putLocalFast(fast, { store });
+  for (const meal of snapshot.savedMeals) await putLocalSavedMeal(meal, { store });
   if (snapshot.profile) await putLocalProfileGoals(snapshot.profile, { store });
 }
 

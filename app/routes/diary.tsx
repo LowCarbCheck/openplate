@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import type { Route } from './+types/diary';
 import { Trans, useTranslation } from 'react-i18next';
 import i18next from '#app/i18n/i18n';
@@ -47,6 +48,7 @@ import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { carbStatusDotClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
 import {
+  buildSavedMealFromLogs,
   computeDailyTotals,
   computeDailyTotalsInRange,
   computeLocalHabitStrip,
@@ -60,6 +62,7 @@ import {
   listLocalWeightEntries,
   localFoodLogToSnapshot,
   putLocalFoodLog,
+  putLocalSavedMeal,
   resolveLocalTimezone,
   selectLocalFrequentChips,
 } from '#app/lib/local-store';
@@ -85,7 +88,8 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '#app/components/ui/popover';
 import { Calendar as CalendarPicker } from '#app/components/ui/calendar';
-import { ChevronDown, ChevronLeft, ChevronRight, Copy, Plus } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Copy, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -317,10 +321,31 @@ const CopyYesterdaySchema = z.object({
     },
     z.union([z.enum(MEAL_TYPES), z.null()]).optional(),
   ),
+  /**
+   * Item 3 (M123/07): explicit per-entry selection from the "choose entries"
+   * picker. When present and non-empty this is AUTHORITATIVE and `mealType`
+   * above is ignored — the person picked exact entries, which may span more
+   * than one meal, so a meal filter on top would silently drop some of their
+   * choices. Optional so the pre-existing whole-day/per-meal chips (which
+   * never send this field) keep working exactly as before.
+   */
+  entryIds: z.array(z.string().min(1)).optional(),
 });
 
 /** Undo of a copy-yesterday batch: delete the whole batch. */
 const DeleteBatchSchema = z.object({ batchId: z.string().min(1) });
+
+/**
+ * "Save as meal" (item 1, M123/07): bundles a set of currently-logged
+ * entries — typically a whole meal group — into a named, reusable
+ * `LocalSavedMeal`. `logIds` names the exact entries to snapshot, so the
+ * action never has to re-derive "which entries are in this meal" and can
+ * never disagree with what the person actually saw on screen.
+ */
+const SaveMealSchema = z.object({
+  name: z.string().min(1),
+  logIds: z.array(z.string().min(1)).min(1),
+});
 
 /** Builds a per-serving `Macros` from the optional numeric fields (blank → null, never 0). */
 function macrosFromOptionalFields(value: {
@@ -618,12 +643,17 @@ async function handleCopyYesterday(
   const submission = parseWithZod(formData, { schema: CopyYesterdaySchema });
   if (submission.status !== 'success') throw new Response('Invalid copy payload', { status: 400 });
 
-  const { date: targetDate, mealType } = submission.value;
+  const { date: targetDate, mealType, entryIds } = submission.value;
   const sourceDate = shiftDate(targetDate, -1);
   const allLogs = await listLocalFoodLogs();
-  const sourceLogs = allLogs.filter(
-    (log) => log.dayKey === sourceDate && (mealType === undefined || log.mealType === mealType),
-  );
+  const hasEntrySelection = entryIds !== undefined && entryIds.length > 0;
+  const sourceLogs = allLogs.filter((log) => {
+    if (log.dayKey !== sourceDate) return false;
+    // Explicit entry ids win outright over the meal filter — see the schema
+    // comment above.
+    if (hasEntrySelection) return entryIds.includes(log.id);
+    return mealType === undefined || log.mealType === mealType;
+  });
   if (sourceLogs.length === 0) {
     return {
       intent: 'copy-yesterday',
@@ -675,6 +705,26 @@ async function handleDeleteBatch(formData: FormData): Promise<{ intent: 'copy-un
   return { intent: 'copy-undo', ok: true };
 }
 
+/**
+ * "Save as meal" (item 1, M123/07): snapshots the named entries into a new
+ * `LocalSavedMeal`. A malformed/empty `logIds` is a bug in the caller (the
+ * button always submits at least one hidden `logIds` field per entry in the
+ * group it renders from) rather than user input to recover from — fail fast.
+ */
+async function handleSaveMeal(
+  formData: FormData,
+): Promise<{ intent: 'save-meal'; name: string; count: number }> {
+  const submission = parseWithZod(formData, { schema: SaveMealSchema });
+  if (submission.status !== 'success') throw new Response('Invalid save-meal payload', { status: 400 });
+  const { name, logIds } = submission.value;
+  const allLogs = await listLocalFoodLogs();
+  const logs = allLogs.filter((log) => logIds.includes(log.id));
+  if (logs.length === 0) throw new Response('No matching entries to save', { status: 400 });
+  const meal = buildSavedMealFromLogs({ logs, name, id: randomUuid(), createdAtMs: Date.now() });
+  await putLocalSavedMeal(meal);
+  return { intent: 'save-meal', name: meal.name, count: meal.items.length };
+}
+
 export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const intent = formData.get('_intent');
@@ -688,6 +738,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   if (intent === 'log-recent-undo') return handleDeleteLog(formData);
   if (intent === 'copy-yesterday') return handleCopyYesterday(formData, timezone);
   if (intent === 'copy-undo') return handleDeleteBatch(formData);
+  if (intent === 'save-meal') return handleSaveMeal(formData);
   throw new Response('Invalid intent', { status: 400 });
 }
 
@@ -891,6 +942,15 @@ export interface DiaryData {
   canCopyYesterday: boolean;
   /** Yesterday's meal groups, offered as copy targets — whole-day or per-meal (item 5). */
   copyableMeals: CopyableMeal[];
+  /**
+   * Yesterday's individual entries, chronological — the source list the
+   * per-entry copy picker (item 3, M123/07) renders as checkboxes, grouped by
+   * meal via the same `groupLogsByMeal` the day-level list already uses. Kept
+   * separate from `copyableMeals` (which only carries counts) because the
+   * picker needs each entry's own name/macros/id, not just how many there are
+   * per meal.
+   */
+  copyableEntries: LocalFoodLog[];
   /** Whole days since the device last exported a backup, or null when never exported (M117/08 nudge). */
   daysSinceExportBackup: number | null;
   /**
@@ -959,28 +1019,36 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
   const hasAnyLogs = recents.length > 0;
 
   // Favorites (item 6): an EXPLICIT choice, so they're surfaced regardless of
-  // the viewed day — unlike the algorithmic frequent-chip heuristic below,
-  // which stays today-only, unchanged from its existing behavior. A favorited
-  // name is excluded from the frequent row so the same food never appears in
-  // both (a favorite already says "I want this here").
+  // the viewed day. A favorited name is excluded from the frequent row so the
+  // same food never appears in both (a favorite already says "I want this
+  // here").
   const favoriteNames = readFavoriteNames();
   const favoriteChips = recents
     .filter((recent) => favoriteNames.has(normalizeFoodNameKey(recent.name)))
     .map(toFrequentChip);
   const favoriteNameKeys = new Set(favoriteChips.map((chip) => normalizeFoodNameKey(chip.name)));
-  const frequentChips =
-    isToday ?
-      selectLocalFrequentChips(recents, { limit: MAX_FREQUENT_CHIPS, minTimesLogged: MIN_CHIP_TIMES_LOGGED }).filter(
-        (chip) => !favoriteNameKeys.has(normalizeFoodNameKey(chip.name)),
-      )
-    : [];
+  // M123/07 item 2: frequent chips used to compute only `isToday ? … : []`,
+  // and the render below additionally hid BOTH chip rows on the
+  // "returning-after-gap" empty state. That combination hid the fastest
+  // re-log shortcut in the app on exactly the two occasions it matters most —
+  // a person checking a past day's log, and a person coming back after a
+  // break who is the most likely to reach for "the usual" rather than search
+  // from scratch. The heuristic (`minTimesLogged`/`MAX_FREQUENT_CHIPS`) is
+  // unchanged; only the day- and empty-state gates are gone. Computed for
+  // every viewed day now, not only today.
+  const frequentChips = selectLocalFrequentChips(recents, {
+    limit: MAX_FREQUENT_CHIPS,
+    minTimesLogged: MIN_CHIP_TIMES_LOGGED,
+  }).filter((chip) => !favoriteNameKeys.has(normalizeFoodNameKey(chip.name)));
   const daysSinceLastLog = resolveDaysSinceLastLog(totalsWindow, today, hasAnyLogs);
 
   // Copy-from-yesterday (item 5): offered whenever the previous day has
   // anything worth copying — no longer gated on the viewed day being empty —
   // broken down per meal so a single meal can be copied, not only the whole day.
   const previousDate = shiftDate(date, -1);
-  const previousDayLogs = allLogs.filter((log) => log.dayKey === previousDate);
+  const previousDayLogs = allLogs
+    .filter((log) => log.dayKey === previousDate)
+    .toSorted((a, b) => a.loggedAt - b.loggedAt);
   const copyableMeals: CopyableMeal[] = groupLogsByMeal(previousDayLogs).map((group) => ({
     mealType: group.mealType,
     count: group.logs.length,
@@ -1008,6 +1076,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     daysSinceLastLog,
     canCopyYesterday: copyableMeals.length > 0,
     copyableMeals,
+    copyableEntries: previousDayLogs,
     totalLogCount: allLogs.length,
     aiEstimatedLogCount: allLogs.filter((log) => log.aiEstimated).length,
     daysSinceExportBackup: await daysSinceExport(),
@@ -1654,6 +1723,7 @@ function MealGroupSection({
             value: formatNetCarbGrams(group.subtotal.netCarbs, group.subtotal.hasEstimates, i18n.language),
           })}
         </span>
+        <SaveMealButton group={group} />
       </div>
       <div className="space-y-2">
         {group.logs.map((log) => (
@@ -1666,6 +1736,75 @@ function MealGroupSection({
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * "Save as meal" (item 1, M123/07): a small button on the meal header that
+ * bundles every entry in THIS group into a named, reusable `LocalSavedMeal`
+ * (re-logged/deleted from `/meals`). Local UI state, own fetcher — the same
+ * inline-toggle-then-submit shape `CopyFromYesterday`'s "choose entries"
+ * picker already established, so a person familiar with one recognizes the
+ * other.
+ */
+function SaveMealButton({ group }: { group: MealGroup }) {
+  const { t } = useTranslation();
+  const fetcher = useFetcher<typeof clientAction>();
+  const shownRef = useRef(false);
+  const [isNaming, setIsNaming] = useState(false);
+  const [name, setName] = useState('');
+  const isSaving = fetcher.state !== 'idle';
+
+  useEffect(() => {
+    const data = fetcher.data;
+    if (!data || !('intent' in data) || data.intent !== 'save-meal' || shownRef.current) return;
+    shownRef.current = true;
+    toast.success(t('diary.saveMeal.toast', { name: data.name, count: data.count }));
+    setIsNaming(false);
+    setName('');
+  }, [fetcher.data, t]);
+
+  if (!isNaming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsNaming(true)}
+        aria-label={t('diary.saveMeal.trigger')}
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+      >
+        <BookMarked className="h-3.5 w-3.5" />
+      </button>
+    );
+  }
+
+  return (
+    <fetcher.Form
+      method="post"
+      className="flex shrink-0 items-center gap-1.5"
+      onSubmit={(event) => {
+        if (name.trim().length === 0) event.preventDefault();
+      }}
+    >
+      <input type="hidden" name="_intent" value="save-meal" />
+      {group.logs.map((log) => (
+        <input key={log.id} type="hidden" name="logIds" value={log.id} />
+      ))}
+      <input
+        type="text"
+        name="name"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        placeholder={t('diary.saveMeal.namePlaceholder')}
+        aria-label={t('diary.saveMeal.namePlaceholder')}
+        className="h-7 w-32 rounded-full border border-border bg-card px-2.5 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      />
+      <Button type="submit" size="sm" className="h-7 px-2 text-xs" disabled={isSaving || name.trim().length === 0}>
+        {isSaving ? t('diary.saveMeal.saving') : t('diary.saveMeal.save')}
+      </Button>
+      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setIsNaming(false)}>
+        {t('diary.copy.cancel')}
+      </Button>
+    </fetcher.Form>
   );
 }
 
@@ -1852,8 +1991,19 @@ function CopyFromYesterdayChip({
  * whenever yesterday has anything to copy, regardless of whether the viewed
  * day is empty (item 5).
  */
-function CopyFromYesterday({ date, copyableMeals }: { date: string; copyableMeals: CopyableMeal[] }) {
+function CopyFromYesterday({
+  date,
+  timezone,
+  copyableMeals,
+  copyableEntries,
+}: {
+  date: string;
+  timezone: string;
+  copyableMeals: CopyableMeal[];
+  copyableEntries: LocalFoodLog[];
+}) {
   const { t } = useTranslation();
+  const [isPicking, setIsPicking] = useState(false);
   const totalCount = copyableMeals.reduce((sum, group) => sum + group.count, 0);
   return (
     <div className="space-y-2">
@@ -1870,8 +2020,144 @@ function CopyFromYesterday({ date, copyableMeals }: { date: string; copyableMeal
             label={t('diary.copy.meal', { meal: mealGroupLabel(group.mealType, t), n: group.count })}
           />
         ))}
+        {/* Item 3 (M123/07): the whole-day and per-meal chips above stay
+            all-or-nothing WITHIN their own scope — copying "lunch" still means
+            every lunch entry. This toggle is the escape hatch for someone who
+            wants a handful of specific entries, possibly spanning more than
+            one meal, without either re-logging from scratch or copying
+            everything and deleting the rest. */}
+        {!isPicking && (
+          <button
+            type="button"
+            onClick={() => setIsPicking(true)}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+          >
+            {t('diary.copy.chooseEntries')}
+          </button>
+        )}
       </div>
+      {isPicking && (
+        <CopyEntryPicker date={date} timezone={timezone} entries={copyableEntries} onClose={() => setIsPicking(false)} />
+      )}
     </div>
+  );
+}
+
+/**
+ * The per-entry copy picker (item 3, M123/07): a checkbox list of yesterday's
+ * entries, grouped by meal via the same `groupLogsByMeal` the day view uses,
+ * so its sections read identically to the list the person is already used to.
+ * Selection is local UI state — nothing is copied until "Copy selected" is
+ * pressed, which posts every checked id as a repeated `entryIds` field (the
+ * schema reads them via `formData.getAll`, same as any other Conform array
+ * field).
+ */
+function CopyEntryPicker({
+  date,
+  timezone,
+  entries,
+  onClose,
+}: {
+  date: string;
+  timezone: string;
+  entries: LocalFoodLog[];
+  onClose: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const copyFetcher = useFetcher<typeof clientAction>();
+  const undoFetcher = useFetcher<typeof clientAction>();
+  const shownRef = useRef<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const isCopying = copyFetcher.state !== 'idle';
+  const groups = groupLogsByMeal(entries);
+
+  useEffect(() => {
+    const data = copyFetcher.data;
+    if (!data || !('intent' in data) || data.intent !== 'copy-yesterday') return;
+    if (data.copiedBatchId === null || data.copiedCount === 0) return;
+    if (shownRef.current.has(data.copiedBatchId)) return;
+    shownRef.current.add(data.copiedBatchId);
+    const batchId = data.copiedBatchId;
+    showFoodAddedToast({
+      name: data.firstName,
+      count: data.copiedCount,
+      verb: 'copied',
+      mealLabel: null,
+      netCarbsTotal: data.netCarbsTotal,
+      hasEstimates: data.hasEstimates,
+      dayLabel: data.dayLabel,
+      t,
+      language: i18n.language,
+      action: {
+        label: t('diary.actions.undo'),
+        onClick: () => undoFetcher.submit({ _intent: 'copy-undo', batchId }, { method: 'post' }),
+      },
+    });
+    onClose();
+  }, [copyFetcher.data, undoFetcher, t, i18n.language, onClose]);
+
+  function toggle(id: string): void {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    if (selectedIds.size === 0) return;
+    const formData = new FormData();
+    formData.set('_intent', 'copy-yesterday');
+    formData.set('date', date);
+    for (const id of selectedIds) formData.append('entryIds', id);
+    copyFetcher.submit(formData, { method: 'post' });
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="max-h-64 space-y-3 overflow-y-auto">
+            {groups.map((group) => (
+              <div key={group.mealType ?? NO_MEAL_VALUE} className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">{mealGroupLabel(group.mealType, t)}</p>
+                {group.logs.map((log) => (
+                  <label
+                    key={log.id}
+                    className="-m-1 flex cursor-pointer items-center justify-between gap-3 rounded-md p-1 transition-colors hover:bg-muted/50"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(log.id)}
+                        onChange={() => toggle(log.id)}
+                        className="h-4 w-4 shrink-0 accent-primary"
+                      />
+                      <span className="truncate text-sm">{log.name}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {formatEntryTime(log.loggedAt, timezone, i18n.language)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+              {t('diary.copy.cancel')}
+            </Button>
+            <Button type="submit" size="sm" disabled={selectedIds.size === 0 || isCopying}>
+              {isCopying ?
+                t('diary.copy.copying')
+              : t('diary.copy.copySelected', { count: selectedIds.size })}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -2041,6 +2327,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     daysSinceLastLog,
     canCopyYesterday,
     copyableMeals,
+    copyableEntries,
     daysSinceExportBackup,
     daysSinceFirstDataLocal,
     hasLocalData,
@@ -2072,12 +2359,13 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     gapThresholdDays: GAP_THRESHOLD_DAYS,
   });
 
-  // Chips are suppressed in the "welcome back" state to keep that fresh-start
-  // screen calm and uncluttered. Favorites, unlike the algorithmic frequent
-  // row, are surfaced on ANY day (item 6) — a user's explicit choice is
-  // useful wherever they're looking, not only today.
-  const showFavoriteChips = favoriteChips.length > 0 && emptyState !== 'returning-after-gap';
-  const showFrequentChips = isToday && frequentChips.length > 0 && emptyState !== 'returning-after-gap';
+  // Both chip rows are surfaced on every day AND on the "returning-after-gap"
+  // empty state (item 2) — that state used to suppress them on the theory
+  // that a fresh-start screen should stay calm, but "the person hasn't logged
+  // in a few days" is exactly when a one-tap re-log of what they usually eat
+  // is the most useful shortcut in the app, not a state that should hide it.
+  const showFavoriteChips = favoriteChips.length > 0;
+  const showFrequentChips = frequentChips.length > 0;
   const swipeHandlers = useDiaryDaySwipe({ date, today });
 
   return (
@@ -2103,7 +2391,14 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
       {showFavoriteChips && <QuickAddChips title={t('diary.chips.favorites')} chips={favoriteChips} date={date} />}
       {showFrequentChips && <QuickAddChips title={t('diary.chips.quickAdd')} chips={frequentChips} date={date} />}
 
-      {canCopyYesterday && <CopyFromYesterday date={date} copyableMeals={copyableMeals} />}
+      {canCopyYesterday && (
+        <CopyFromYesterday
+          date={date}
+          timezone={timezone}
+          copyableMeals={copyableMeals}
+          copyableEntries={copyableEntries}
+        />
+      )}
 
       {hasLogs && (
         <div className="space-y-5">

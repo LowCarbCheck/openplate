@@ -82,7 +82,16 @@ export {
   setLocalFastPlannedStart,
   deleteLocalFast,
   FastConflictError,
+  // Saved meals (M123/07 item 1) — a named, reusable bundle of foods.
+  putLocalSavedMeal,
+  listLocalSavedMeals,
+  getLocalSavedMeal,
+  deleteLocalSavedMeal,
 } from './primary-store';
+
+// Pure saved-meal builders (no store) — the "save as meal"/"re-log a saved
+// meal" arithmetic, kept testable without a store or a DOM.
+export { buildSavedMealFromLogs, buildLogsFromSavedMeal } from './saved-meals';
 
 // Local aggregates (daily totals / streak / trend / habit strip), no network read.
 export {
@@ -176,6 +185,8 @@ export type {
   FastProtocolId,
   BiologicalSex,
   ReproductiveStatus,
+  LocalSavedMeal,
+  LocalSavedMealItem,
 } from './schema';
 
 // BYOK AI settings + local-only usage log (M117/02) — device-only, never

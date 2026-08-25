@@ -41,7 +41,10 @@ function fast(id: string, overrides: Partial<LocalFast> = {}): LocalFast {
 }
 
 function snapshot(fasts: LocalFast[]): LocalStoreSnapshot {
-  return { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts };
+  // `savedMeals` rides through the same pass-through path as `fasts` (see
+  // `snapshot-sync.ts`) — an empty array here is enough, since this file's
+  // assertions are all about `fasts`, not saved meals.
+  return { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts, savedMeals: [] };
 }
 
 function payload(fasts: LocalFast[]): StampedSnapshot {

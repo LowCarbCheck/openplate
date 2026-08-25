@@ -11,7 +11,10 @@
 // v2 (M134): `/` now 302s to `/dashboard` for a device carrying the home hint,
 // so any `pages-v1` entry for `/` is marketing HTML that must not outlive the
 // change. Bumping the version is what evicts it.
-const CACHE_VERSION = 'v2';
+// v3 (M123/11): `/recover` and `/onboarding` joined APP_SHELL. Without the
+// bump, an install that already ran the old shell keeps its old pages-v2 cache
+// forever — nothing ever re-adds the two new entries to it.
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-${CACHE_VERSION}`;
 const IMAGE_CACHE = `images-${CACHE_VERSION}`;
@@ -24,7 +27,15 @@ const SHARED_PHOTO_KEY = '/share-target/photo';
 const MAX_IMAGE_ENTRIES = 60;
 
 // Pages to precache on install so the app boots and navigates offline.
-const APP_SHELL = ['/', '/dashboard', '/diary', '/add', '/offline'];
+//
+// `/recover` and `/onboarding` (M123/11) are here for the same reason: both
+// are destinations the `_personal` gate itself redirects to (never something
+// the user typed), so whichever device lands on one needs it already cached —
+// there is no earlier visit to that path to have populated it on demand.
+// Neither redirects when fetched directly (verified against the route source,
+// not assumed): `/recover` is a plain top-level page and `/onboarding`'s
+// server `loader` returns `{}` unconditionally, so both cache cleanly here.
+const APP_SHELL = ['/', '/dashboard', '/diary', '/add', '/offline', '/recover', '/onboarding'];
 
 // ---------------------------------------------------------------------------
 // Install — precache the app shell (resiliently)

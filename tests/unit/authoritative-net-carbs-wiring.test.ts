@@ -834,7 +834,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
     const envelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-28T12:00:00.000Z',
-      data: { foods: [food], foodLogs: [], weightEntries: [], profile: null, fasts: [] },
+      data: { foods: [food], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
     const [restoredFood] = restored.data.foods;
@@ -865,6 +865,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
         weightEntries: [],
         profile: null,
         fasts: [],
+        savedMeals: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
@@ -1347,7 +1348,7 @@ describe('authoritative net carbs survive serialization', () => {
     const envelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-28T12:00:00.000Z',
-      data: { foods: [], foodLogs: [entry], weightEntries: [], profile: null, fasts: [] },
+      data: { foods: [], foodLogs: [entry], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
     const [restoredLog] = restored.data.foodLogs;
@@ -1374,6 +1375,7 @@ describe('authoritative net carbs survive serialization', () => {
         weightEntries: [],
         profile: null,
         fasts: [],
+        savedMeals: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));

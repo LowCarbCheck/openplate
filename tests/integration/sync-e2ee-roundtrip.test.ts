@@ -79,9 +79,10 @@ function foodLog(id: string, name: string): LocalStoreSnapshot['foodLogs'][numbe
 }
 
 function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): LocalStoreSnapshot {
-  // `fasts` is required on the snapshot since v7 but is never merged by the
-  // sync engine (see `mergeSnapshots`) — an empty array is the whole fixture.
-  return { foods: [], foodLogs: logs, weightEntries: [], profile: null, fasts: [] };
+  // `fasts`/`savedMeals` are required on the snapshot since v7/v11 but are
+  // never merged by the sync engine (see `mergeSnapshots`) — an empty array is
+  // the whole fixture for both.
+  return { foods: [], foodLogs: logs, weightEntries: [], profile: null, fasts: [], savedMeals: [] };
 }
 
 /** Cycle dependencies for one simulated device, sharing the account's vault but keeping its own baseline. */

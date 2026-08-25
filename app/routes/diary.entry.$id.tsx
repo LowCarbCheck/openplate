@@ -194,13 +194,13 @@ function createEditEntrySchema(t: Translate) {
     // All per-100g macros optional here — an edit may leave a value unknown
     // (blank → null), never fabricating 0. Carbs isn't forced: the receipt just
     // shows "Macros unknown" when it's absent.
-    carbs: createOptionalNonNegativeNumberSchema(),
-    fiber: createOptionalNonNegativeNumberSchema(),
-    sugars: createOptionalNonNegativeNumberSchema(),
-    polyols: createOptionalNonNegativeNumberSchema(),
-    protein: createOptionalNonNegativeNumberSchema(),
-    fat: createOptionalNonNegativeNumberSchema(),
-    kcal: createOptionalNonNegativeNumberSchema(),
+    carbs: createOptionalNonNegativeNumberSchema(t),
+    fiber: createOptionalNonNegativeNumberSchema(t),
+    sugars: createOptionalNonNegativeNumberSchema(t),
+    polyols: createOptionalNonNegativeNumberSchema(t),
+    protein: createOptionalNonNegativeNumberSchema(t),
+    fat: createOptionalNonNegativeNumberSchema(t),
+    kcal: createOptionalNonNegativeNumberSchema(t),
   });
 }
 

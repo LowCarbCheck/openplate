@@ -145,6 +145,17 @@
  * fabricate), and a person typing a label has not measured them. Absent is the
  * honest answer; a block of zeros would be a lie the coverage model cannot see
  * through.
+ *
+ * NOTE (M123/07, saved meals): `SCHEMA_VERSION` v10 → v11 is under the SAME
+ * rules as v6 → v7 (fasting), NOT the optional-field rules v2 → v6/v8/v9/v10
+ * follow: it adds a WHOLE NEW ENTITY — `LocalSavedMeal`, plus `SAVED_MEALS_TABLE`
+ * — and a REQUIRED array, `savedMeals`, to `LocalStoreSnapshot` itself. A v10
+ * backup envelope has no `savedMeals` key at all, so the forward migration is
+ * not a `migrate*` step in `backup.ts`: it is `savedMeals: z.array(savedMealSchema).default([])`
+ * on `snapshotSchema`, which reads a v10 envelope as "this device had no saved
+ * meals, because saved meals did not exist" — the exact `fasts` precedent, one
+ * entity over. Any FUTURE change to `LocalSavedMeal`'s own fields is back under
+ * the optional-field rules above.
  */
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { Macros } from '#app/lib/macros';
@@ -156,7 +167,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -188,6 +199,8 @@ export const WEIGHT_ENTRIES_TABLE = 'weightEntries';
 export const PROFILE_GOALS_TABLE = 'profileGoals';
 /** Table: planned/active/completed fasts, keyed by a client-generated id. */
 export const FASTS_TABLE = 'fasts';
+/** Table: saved meals (M123/07 item 1), keyed by a client-generated id. */
+export const SAVED_MEALS_TABLE = 'savedMeals';
 
 /** The single JSON cell every primary-store row uses to hold its serialized entity. */
 export const PRIMARY_ENTITY_CELL = 'entity';
@@ -559,6 +572,56 @@ export interface LocalFast {
 }
 
 /**
+ * One food inside a saved meal (M123/07 item 1) — everything a fresh
+ * `LocalFoodLog` needs to be recreated from this snapshot at re-log time,
+ * EXCEPT placement (`dayKey`/`loggedAt`/`mealType`/`logBatchId`), which a
+ * re-log always sets fresh for the moment it's actually logged — a saved
+ * meal is not itself pinned to a day or a meal slot, only its re-logged
+ * instances are. Deliberately the same field set `LocalFoodLog` carries for
+ * "what was eaten" (name/quantity/macros/provenance/portion/attribution/
+ * authoritative figures), so `buildSavedMealFromLogs`/`buildLogsFromSavedMeal`
+ * (`saved-meals.ts`) are a straight field copy in each direction, not a lossy
+ * projection.
+ */
+export interface LocalSavedMealItem {
+  name: string;
+  quantityGrams: number;
+  /** Per-serving macros (already scaled from per-100g), exactly as `LocalFoodLog.macros`. */
+  macros: Macros;
+  source: FoodLogSourceType;
+  aiEstimated: boolean;
+  curatedSource: string | null;
+  /** The personal-food id this item was created from, when any — see `LocalFoodLog.foodId`. */
+  foodId: string | null;
+  /** The chosen display portion ("2 eggs"), same convention as `LocalFoodLog.portion`. */
+  portion?: DisplayPortion | null;
+  /** The source's licence credit, same convention as `LocalFoodLog.attribution`. */
+  attribution?: string | null;
+  /** Authoritative per-100g net carbs, same three-state convention as `LocalFoodLog.netCarbsPer100g`. */
+  netCarbsPer100g?: number | null;
+  /** Per-100g vitamins/minerals, same convention as `LocalFoodLog.micronutrientsPer100g`. */
+  micronutrientsPer100g?: MicronutrientsPer100g;
+}
+
+/**
+ * A named, reusable bundle of foods (M123/07 item 1) — "save as meal" bundles
+ * one or more currently-logged foods (typically a whole meal group) into this
+ * shape, and re-logging it creates one fresh `LocalFoodLog` per item, stamped
+ * with whatever day/time/meal the re-log names. A saved meal is a TEMPLATE,
+ * never a log itself: editing or deleting it never touches any entry already
+ * logged from it (the items were copied in, not referenced).
+ */
+export interface LocalSavedMeal {
+  /** Client-generated stable id (the TinyBase rowId). */
+  id: string;
+  /** The person's chosen name ("Sunday breakfast"). */
+  name: string;
+  items: LocalSavedMealItem[];
+  /** Epoch-ms the meal was saved on-device. */
+  createdAt: number;
+}
+
+/**
  * A full, lossless snapshot of the primary store's health data — the payload a
  * backup envelope carries (`backup.ts`). Device-only photos are deliberately
  * excluded (they never enter export, sync, or the server — see `photos.ts`).
@@ -579,4 +642,12 @@ export interface LocalStoreSnapshot {
    * Fasts round-trip through the JSON backup only.
    */
   fasts: LocalFast[];
+  /**
+   * Added v11 (saved meals, M123/07) — REQUIRED, under the same rule as
+   * `fasts` above (a whole new entity, not an optional field on an existing
+   * one). A v10 envelope has no `savedMeals` key; `backup.ts`'s
+   * `.default([])` is the complete v10 → v11 forward migration. See the
+   * `NOTE (M123/07, saved meals)` block at the top of this file.
+   */
+  savedMeals: LocalSavedMeal[];
 }

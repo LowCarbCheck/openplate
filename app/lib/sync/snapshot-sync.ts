@@ -339,8 +339,16 @@ export function mergeSnapshots({
   // `local` through keeps this device's own fasts intact through every sync
   // cycle instead of silently emptying them, which a bare `fasts: []` here
   // would do on the very first merge.
+  //
+  // SAVED MEALS RIDE THROUGH FROM THE LOCAL SIDE TOO, for the identical reason
+  // and the identical mechanism (M123/07): they are absent from
+  // `SYNC_ENTITY_TYPES`/`flattenSnapshot`/`toCandidateMap`, so `local` passes
+  // straight through rather than a bare `savedMeals: []` silently emptying a
+  // device's saved meals on its first merge. Unlike fasts there is no hard
+  // cross-device invariant blocking a real merge here — this is simply not
+  // built yet, and is a smaller, lower-risk follow-up than fasts' was.
   return {
-    snapshot: { foods, foodLogs, weightEntries, profile, fasts: local.snapshot.fasts },
+    snapshot: { foods, foodLogs, weightEntries, profile, fasts: local.snapshot.fasts, savedMeals: local.snapshot.savedMeals },
     meta: { perEntity, tombstones },
   };
 }

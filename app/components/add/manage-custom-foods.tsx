@@ -81,14 +81,20 @@ const MACRO_FIELD_LABEL_KEYS: readonly (readonly [keyof Macros, string])[] = [
   ['kcal', 'add.macros.kcal'],
 ];
 
-/** `/add`'s `_intent=deleteFood` reply, as this component needs to read it. */
+/**
+ * A host route's `_intent=deleteFood` reply, as this component needs to read
+ * it. Exported so `/foods` (the other host, see this file's header) can type
+ * its own `handleDeleteFood` result against the exact shape this component
+ * parses, rather than the two silently drifting apart.
+ */
 const deleteFoodResultSchema = z.object({
   intent: z.literal('deleteFood'),
   foodId: z.string(),
   name: z.string(),
 });
+export type DeleteFoodResult = z.infer<typeof deleteFoodResultSchema>;
 
-/** `/add`'s `_intent=editFood` reply, as this component needs to read it. */
+/** A host route's `_intent=editFood` reply — same exported-for-both-hosts reasoning as `DeleteFoodResult` above. */
 const editFoodResultSchema = z.object({
   intent: z.literal('editFood'),
   ok: z.boolean(),
@@ -96,7 +102,7 @@ const editFoodResultSchema = z.object({
   reason: z.enum(['invalid', 'carbs-required']).optional(),
 });
 
-type EditFoodResult = z.infer<typeof editFoodResultSchema>;
+export type EditFoodResult = z.infer<typeof editFoodResultSchema>;
 
 /** Compact per-100g carbs/calorie summary; null fields are skipped, never shown as 0. Exported for direct testability. */
 export function formatPer100gLine(macros: Macros, t: Translate, language: string): string {
@@ -293,6 +299,38 @@ function CustomFoodRow({
 }
 
 /**
+ * The reusable list body — every locally-saved food, each editable or
+ * removable in place. Split out (M123/07 item 5) so `/foods` can render the
+ * exact same list as a full page instead of duplicating `CustomFoodRow`/
+ * `EditFoodForm`: the only thing that differs between the `/add` sheet and
+ * the `/foods` page is the chrome wrapped around this list, and each fetcher
+ * inside a row posts to whichever ROUTE renders it (no `action` prop needed),
+ * so both hosts just need their own `editFood`/`deleteFood` clientAction —
+ * see `/foods`' route file for its (small, deliberate) duplicate of `/add`'s
+ * handlers, following this app's own "your foods" precedent below.
+ */
+export function CustomFoodsList({ foods }: { foods: LocalPersonalFood[] }) {
+  const { t } = useTranslation();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-3">
+      {foods.length === 0 && <p className="text-sm text-muted-foreground">{t('add.custom.empty')}</p>}
+      {foods.map((food) => (
+        <CustomFoodRow
+          key={food.id}
+          food={food}
+          isEditing={editingId === food.id}
+          onEdit={() => setEditingId(food.id)}
+          onCancelEdit={() => setEditingId(null)}
+          onSaved={() => setEditingId(null)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
  * Trigger + slide-over listing every locally-saved food, each editable or
  * removable in place. Always rendered (even with zero foods yet) so the
  * capability is discoverable from the first visit to `/add`, not just after
@@ -300,7 +338,6 @@ function CustomFoodRow({
  */
 export function ManageCustomFoodsSheet({ foods }: { foods: LocalPersonalFood[] }) {
   const { t } = useTranslation();
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
     <Sheet>
@@ -314,20 +351,8 @@ export function ManageCustomFoodsSheet({ foods }: { foods: LocalPersonalFood[] }
           <SheetTitle>{t('add.custom.title')}</SheetTitle>
           <SheetDescription>{t('add.custom.description')}</SheetDescription>
         </SheetHeader>
-        <div className="space-y-3 px-4 pb-4">
-          {foods.length === 0 && (
-            <p className="text-sm text-muted-foreground">{t('add.custom.empty')}</p>
-          )}
-          {foods.map((food) => (
-            <CustomFoodRow
-              key={food.id}
-              food={food}
-              isEditing={editingId === food.id}
-              onEdit={() => setEditingId(food.id)}
-              onCancelEdit={() => setEditingId(null)}
-              onSaved={() => setEditingId(null)}
-            />
-          ))}
+        <div className="px-4 pb-4">
+          <CustomFoodsList foods={foods} />
         </div>
       </SheetContent>
     </Sheet>

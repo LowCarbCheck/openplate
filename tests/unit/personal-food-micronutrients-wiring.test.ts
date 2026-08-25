@@ -526,7 +526,7 @@ describe('backup round trip', () => {
     const serialized = serializeBackup({
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-08-07T10:00:00.000Z',
-      data: { foods: [food], foodLogs: [], weightEntries: [], fasts: [], profile: null },
+      data: { foods: [food], foodLogs: [], weightEntries: [], fasts: [], savedMeals: [], profile: null },
     });
 
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serialized)).data.foods[0];
@@ -551,7 +551,7 @@ describe('backup round trip', () => {
     const serialized = serializeBackup({
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-08-07T10:00:00.000Z',
-      data: { foods: [food], foodLogs: [], weightEntries: [], fasts: [], profile: null },
+      data: { foods: [food], foodLogs: [], weightEntries: [], fasts: [], savedMeals: [], profile: null },
     });
 
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serialized)).data.foods[0];

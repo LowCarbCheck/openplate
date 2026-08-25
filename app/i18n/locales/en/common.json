@@ -298,6 +298,9 @@
     },
     "copy": {
       "all": "All ({{total}})",
+      "cancel": "Cancel",
+      "chooseEntries": "Choose entries…",
+      "copySelected": "Copy selected ({{count}})",
       "copying": "Copying…",
       "meal": "{{meal}} ({{n}})",
       "title": "Copy from yesterday"
@@ -418,6 +421,14 @@
       "fat": "fat",
       "fiber": "fiber",
       "protein": "protein"
+    },
+    "saveMeal": {
+      "namePlaceholder": "Meal name",
+      "save": "Save",
+      "saving": "Saving…",
+      "toast_one": "Saved {{name}} — {{count}} food.",
+      "toast_other": "Saved {{name}} — {{count}} foods.",
+      "trigger": "Save as meal"
     },
     "suggestions": {
       "attribution": "Nutrition data from lowcarbcheck.org.",
@@ -553,7 +564,8 @@
     "title": "Error",
     "tryAgain": "Try again",
     "unexpectedDetails": "An unexpected error occurred.",
-    "unexpectedHeading": "Something went wrong"
+    "unexpectedHeading": "Something went wrong",
+    "notANumber": "Enter a valid number"
   },
   "fasting": {
     "active": {
@@ -859,6 +871,22 @@
       "title": "Two devices, one diary"
     }
   },
+  "meals": {
+    "description": "Meals you've saved as a bundle. Log one in a single tap, or remove it here.",
+    "empty": "You haven't saved a meal yet. Save one from the diary — bundle the foods you logged and give them a name.",
+    "itemCount_one": "{{count}} food",
+    "itemCount_other": "{{count}} foods",
+    "logNow": "Log now",
+    "logging": "Logging…",
+    "removeAria": "Remove {{name}}",
+    "removeDescription": "This removes the saved meal. Anything you've already logged from it stays in your diary.",
+    "removeTitle": "Remove {{name}}?",
+    "toast": {
+      "deleted": "Removed {{name}}.",
+      "logged_one": "Logged {{name}} — {{count}} food.",
+      "logged_other": "Logged {{name}} — {{count}} foods."
+    }
+  },
   "meta": {
     "about": "About · openplate",
     "add": "Add food · openplate",
@@ -868,9 +896,11 @@
     "diary": "Diary · openplate",
     "entry": "Edit entry · openplate",
     "fasting": "Fasting · openplate",
+    "foods": "Your foods · openplate",
     "goals": "Your goals · openplate",
     "landing": "openplate — a food tracker that stays on your device",
     "landingDescription": "Photograph your plate or search for what you ate — openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
+    "meals": "Saved meals · openplate",
     "nutrients": "Nutrients · openplate",
     "onboarding": "Welcome to openplate",
     "preferences": "Preferences · openplate",
@@ -1302,6 +1332,8 @@
         "protein": "Protein {{value}} g"
       },
       "sanity": {
+        "componentOverTotal": "{{component}} is {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g — double-check before logging.",
+        "componentSumOverTotal": "{{firstComponent}} and {{secondComponent}} add up to {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g — double-check before logging.",
         "kcalMismatch": "These numbers look inconsistent ({{stated}} kcal vs ~{{computed}} from the macros) — double-check before logging.",
         "labelColumnsDisagree": "The label's two columns disagree on {{label}} ({{printed}} per 100 g printed vs {{converted}} worked out from the per-serving column) — one of them was probably misread.",
         "macro": {
@@ -1309,7 +1341,7 @@
           "fat": "Fat",
           "fiber": "Fiber",
           "kcal": "Calories",
-          "polyols": "Polyols",
+          "polyols": "Sugar alcohols",
           "protein": "Protein",
           "sugars": "Sugars"
         },
@@ -1381,11 +1413,17 @@
         "status": "Download, import, photos on this device",
         "title": "Data & backup"
       },
+      "foods": {
+        "title": "Your foods"
+      },
       "goals": {
         "calories": "{{kcal}} calories a day",
         "carbs": "{{grams}} g net carbs a day",
         "none": "No targets set yet",
         "title": "Goals"
+      },
+      "meals": {
+        "title": "Saved meals"
       },
       "preferences": {
         "title": "Preferences"
@@ -1556,7 +1594,9 @@
       "scanCount_one": "{{count}} scan",
       "scanCount_other": "{{count}} scans",
       "thisMonth": "This month: {{cost}} · {{scans}}",
-      "thisMonthUnknown": "This month: {{scans}} · cost unknown"
+      "thisMonthUnknown": "This month: {{scans}} · cost unknown",
+      "failed_one": "{{count}} failed",
+      "failed_other": "{{count}} failed"
     }
   },
   "sync": {

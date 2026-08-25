@@ -30,18 +30,25 @@ const t: Translate = (key, params = {}) => {
       return `This month: ${String(params.cost)} · ${String(params.scans)}`;
     case 'settingsAi.usage.thisMonthUnknown':
       return `This month: ${String(params.scans)} · cost unknown`;
+    case 'settingsAi.usage.failed':
+      return `${String(params.count)} failed`;
     default:
       throw new Error(`unexpected translation key: ${key}`);
   }
 };
 
 function makeUsage(overrides: Partial<MonthlyAiUsage> = {}): MonthlyAiUsage {
+  const scanCount = overrides.scanCount ?? 3;
   return {
-    scanCount: 3,
+    scanCount,
     totalCostUsd: 0.0042,
     unknownCostCount: 0,
     inputTokens: 600,
     outputTokens: 2400,
+    // Default to "all successful, none failed" — the pre-M123/09 shape every
+    // existing test below assumes, so those tests stay unchanged.
+    successCount: scanCount,
+    failedCount: 0,
     ...overrides,
   };
 }
@@ -129,6 +136,36 @@ describe('formatMonthlyUsageLine', () => {
       'AI usage this month: <$0.001 across 2 scans',
     );
   });
+
+  it('appends a failed-count suffix so a run of failures does not read as N successful scans', () => {
+    assert.strictEqual(
+      formatMonthlyUsageLine(makeUsage({ scanCount: 3, successCount: 2, failedCount: 1 })),
+      'AI usage this month: $0.0042 across 3 scans · 1 failed',
+    );
+  });
+
+  it('combines the unknown-cost and failed-count suffixes when both apply', () => {
+    assert.strictEqual(
+      formatMonthlyUsageLine(makeUsage({ scanCount: 5, unknownCostCount: 2, successCount: 3, failedCount: 2 })),
+      'AI usage this month: $0.0042 across 5 scans · 2 with unknown cost · 2 failed',
+    );
+  });
+
+  it('appends the failed-count suffix on the all-unknown-cost branch too', () => {
+    assert.strictEqual(
+      formatMonthlyUsageLine(
+        makeUsage({ scanCount: 2, totalCostUsd: 0, unknownCostCount: 2, successCount: 1, failedCount: 1 }),
+      ),
+      'AI usage this month: 2 scans · cost unknown for your model · 1 failed',
+    );
+  });
+
+  it('omits the failed-count suffix entirely when every billed scan succeeded', () => {
+    assert.strictEqual(
+      formatMonthlyUsageLine(makeUsage({ scanCount: 4, successCount: 4, failedCount: 0 })),
+      'AI usage this month: $0.0042 across 4 scans',
+    );
+  });
 });
 
 describe('formatSettingsUsageLine', () => {
@@ -147,6 +184,43 @@ describe('formatSettingsUsageLine', () => {
     assert.strictEqual(
       formatSettingsUsageLine({ usage: makeUsage({ scanCount: 3, totalCostUsd: 0, unknownCostCount: 3 }), t }),
       'This month: 3 scans · cost unknown',
+    );
+  });
+
+  it('omits the failed segment entirely when every billed scan succeeded', () => {
+    assert.strictEqual(
+      formatSettingsUsageLine({ usage: makeUsage({ scanCount: 3, successCount: 3, failedCount: 0 }), t }),
+      'This month: $0.0042 · 3 scans',
+    );
+  });
+
+  it('uses the singular failed key for exactly one failure', () => {
+    assert.strictEqual(
+      formatSettingsUsageLine({
+        usage: makeUsage({ scanCount: 3, totalCostUsd: 0.0042, successCount: 2, failedCount: 1 }),
+        t,
+      }),
+      'This month: $0.0042 · 3 scans · 1 failed',
+    );
+  });
+
+  it('uses the plural failed key for several failures', () => {
+    assert.strictEqual(
+      formatSettingsUsageLine({
+        usage: makeUsage({ scanCount: 5, totalCostUsd: 0.0042, successCount: 2, failedCount: 3 }),
+        t,
+      }),
+      'This month: $0.0042 · 5 scans · 3 failed',
+    );
+  });
+
+  it('appends the failed segment on the unknown-cost branch too', () => {
+    assert.strictEqual(
+      formatSettingsUsageLine({
+        usage: makeUsage({ scanCount: 2, totalCostUsd: 0, unknownCostCount: 2, successCount: 1, failedCount: 1 }),
+        t,
+      }),
+      'This month: 2 scans · cost unknown · 1 failed',
     );
   });
 });

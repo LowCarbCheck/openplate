@@ -178,7 +178,15 @@ describe('computeLocalMonthlyAiUsage', () => {
 
   it('returns a zeroed summary for an empty log', () => {
     const usage = computeLocalMonthlyAiUsage([], new Date('2026-07-20T00:00:00Z'));
-    assert.deepEqual(usage, { scanCount: 0, totalCostUsd: 0, unknownCostCount: 0, inputTokens: 0, outputTokens: 0 });
+    assert.deepEqual(usage, {
+      scanCount: 0,
+      totalCostUsd: 0,
+      unknownCostCount: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      successCount: 0,
+      failedCount: 0,
+    });
   });
 
   it('excludes a zero-token attempt (e.g. a rejected key or a network failure) from scanCount, cost, and unknownCostCount — nothing was billed', () => {
@@ -202,6 +210,58 @@ describe('computeLocalMonthlyAiUsage', () => {
     assert.equal(usage.unknownCostCount, 0);
     assert.equal(usage.inputTokens, billed.inputTokens);
     assert.equal(usage.outputTokens, billed.outputTokens);
+  });
+
+  it('splits billed scans into successCount/failedCount by outcome (M123/09)', () => {
+    const identified = { ...usageInput(), id: 'a', outcome: 'identified' as const };
+    const noFoods = { ...usageInput(), id: 'b', outcome: 'no_foods' as const };
+    const errored = { ...usageInput(), id: 'c', outcome: 'error' as const };
+
+    const usage = computeLocalMonthlyAiUsage([identified, noFoods, errored], new Date('2026-07-20T00:00:00Z'));
+
+    assert.equal(usage.scanCount, 3);
+    // A genuine "no food on this plate" result is a successful call, not a
+    // failure — only outcome 'error' counts as failed.
+    assert.equal(usage.successCount, 2);
+    assert.equal(usage.failedCount, 1);
+    assert.equal(usage.successCount + usage.failedCount, usage.scanCount);
+  });
+
+  it('counts an unbilled error attempt in neither successCount nor failedCount (it never ran a model)', () => {
+    const unbilled: LocalAiUsageEvent = {
+      ...usageInput(),
+      id: 'a',
+      inputTokens: null,
+      outputTokens: null,
+      estimatedCostUsd: null,
+      outcome: 'error',
+    };
+
+    const usage = computeLocalMonthlyAiUsage([unbilled], new Date('2026-07-20T00:00:00Z'));
+
+    assert.equal(usage.scanCount, 0);
+    assert.equal(usage.successCount, 0);
+    assert.equal(usage.failedCount, 0);
+  });
+
+  it('treats a billed row with a missing outcome (pre-tracking legacy data) as a success, not a failure', () => {
+    // Simulates a row written before outcome tracking existed, or any
+    // foreign/malformed row — `readEvent`'s JSON.parse has no runtime schema
+    // check on this field, so it can come back `undefined` at runtime despite
+    // the `LocalAiUsageEvent` type claiming `outcome` is always present.
+    // SAFETY: `legacyRow` is typed as `LocalAiUsageEvent` immediately below;
+    // deleting `outcome` off the underlying value (via `Reflect.deleteProperty`,
+    // never the `delete` operator, which TS would reject as removing a
+    // required field) reproduces exactly what a pre-outcome-tracking stored
+    // row looks like at runtime, despite what the type claims.
+    const legacyRow: LocalAiUsageEvent = { ...usageInput(), id: 'a' };
+    Reflect.deleteProperty(legacyRow, 'outcome');
+
+    const usage = computeLocalMonthlyAiUsage([legacyRow], new Date('2026-07-20T00:00:00Z'));
+
+    assert.equal(usage.scanCount, 1);
+    assert.equal(usage.successCount, 1);
+    assert.equal(usage.failedCount, 0);
   });
 });
 

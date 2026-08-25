@@ -87,6 +87,13 @@ export default [
     route('/scan', 'routes/scan.tsx'),
     route('/add', 'routes/add.tsx'),
     route('/trends', 'routes/trends.tsx'),
+    // "Your foods" (M123/07 item 5): lists/edits/deletes personal custom
+    // foods, hosting the same list `/add`'s "Your foods" sheet already used
+    // (see `foods.tsx`'s header for why it isn't a re-implementation).
+    route('/foods', 'routes/foods.tsx'),
+    // Saved meals (M123/07 item 1): a named, reusable bundle of foods, saved
+    // from the diary and re-logged from here.
+    route('/meals', 'routes/meals.tsx'),
     // The nutrient screen (M135/06). Client-only like every tracker surface:
     // the log and the body metrics are on-device, and the published reference
     // intakes come from the `/api/nutrients` resource route below.
