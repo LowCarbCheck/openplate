@@ -10,6 +10,7 @@ import { installServerErrorReporter } from '#app/lib/report-error.server';
 import { CONFIG } from '#app/config';
 import { inferenceConnectSrcOrigin, syncConnectSrcOrigin } from '#app/config/public-config';
 import { buildContentSecurityPolicy } from '#app/config/content-security-policy';
+import { createWwwRedirectMiddleware } from '#app/lib/www-redirect.server';
 import { PROVIDER_REGISTRY } from '#app/services/vision/registry';
 
 const logger = createComponentLogger('server');
@@ -147,6 +148,13 @@ app.disable('x-powered-by');
 if (CONFIG.app.isProduction) {
   app.use(createContentSecurityPolicyMiddleware());
 }
+
+// Canonicalise the host BEFORE anything serves content — the asset handlers,
+// the static handler and the React Router handler all sit below this line, so
+// a `www.` request never produces a cacheable body, and never touches the
+// local-first origin's storage. It sits AFTER the security headers on purpose:
+// the redirect response carries them too. See `createWwwRedirectMiddleware`.
+app.use(createWwwRedirectMiddleware());
 
 // handle asset requests
 if (viteDevServer) {
