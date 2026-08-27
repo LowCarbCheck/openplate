@@ -37,6 +37,7 @@ import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { base64ToBytes } from '#app/lib/sync/engine/crypto/base64';
+import type { ClinicianInvite } from '#app/lib/clinician-link';
 import { shareFingerprintMatchesTyped, shareKeyFingerprint } from '#app/lib/sync/engine/crypto/share-wrap';
 
 /** What the patient has to hand: the clinician's account id and public key, however they travelled. */
@@ -49,18 +50,46 @@ export interface ShareInviteDraft {
 
 const EMPTY_DRAFT: ShareInviteDraft = { granteeAccountId: '', publicKeyBase64: '', label: '', typedFingerprint: '' };
 
+/**
+ * The account number and key, seeded from a connect link when there is one.
+ *
+ * A link (M160/08) carries the same two values the person would otherwise read
+ * out and paste, so the fields it fills are shown rather than typed. What it
+ * CANNOT fill is the fingerprint — that one is heard, not transported, and the
+ * form below is identical either way from there down.
+ */
+function draftFor(invite: ClinicianInvite | null): ShareInviteDraft {
+  if (invite === null) return EMPTY_DRAFT;
+  return {
+    granteeAccountId: String(invite.accountId),
+    publicKeyBase64: invite.publicKeyBase64,
+    label: invite.claimedLabel ?? '',
+    typedFingerprint: '',
+  };
+}
+
 export function ShareVerifyStep({
   onSubmit,
   isSubmitting,
   message,
+  invite = null,
 }: {
   onSubmit: (draft: ShareInviteDraft) => Promise<void>;
   isSubmitting: boolean;
   /** The last outcome, already translated by the page that owns the action. */
   message: string | null;
+  /**
+   * A connect link's payload, when the person arrived from one. `null` is the
+   * hand-entered path, where they paste the key themselves.
+   *
+   * Read ONCE, as the initial draft: re-keying this component is how a caller
+   * starts a new ceremony (see `connect-clinician.tsx`), so a changed key never
+   * mutates a form somebody is halfway through typing into.
+   */
+  invite?: ClinicianInvite | null;
 }) {
   const { t } = useTranslation();
-  const [draft, setDraft] = useState<ShareInviteDraft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<ShareInviteDraft>(() => draftFor(invite));
   const isMatch = useTypedFingerprintMatch(draft);
 
   const handleSubmit = (event: FormEvent) => {
@@ -70,28 +99,32 @@ export function ShareVerifyStep({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <p className="text-sm text-muted-foreground">{t('sharing.grant.description')}</p>
+      {invite === null && <p className="text-sm text-muted-foreground">{t('sharing.grant.description')}</p>}
 
-      <div className="space-y-2">
-        <Label htmlFor="share-grantee-account">{t('sharing.grant.accountLabel')}</Label>
-        <Input
-          id="share-grantee-account"
-          inputMode="numeric"
-          value={draft.granteeAccountId}
-          onChange={(event) => setDraft({ ...draft, granteeAccountId: event.target.value })}
-        />
-        <p className="text-xs text-muted-foreground">{t('sharing.grant.accountHint')}</p>
-      </div>
+      {invite === null && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="share-grantee-account">{t('sharing.grant.accountLabel')}</Label>
+            <Input
+              id="share-grantee-account"
+              inputMode="numeric"
+              value={draft.granteeAccountId}
+              onChange={(event) => setDraft({ ...draft, granteeAccountId: event.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">{t('sharing.grant.accountHint')}</p>
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="share-public-key">{t('sharing.grant.keyLabel')}</Label>
-        <Input
-          id="share-public-key"
-          value={draft.publicKeyBase64}
-          onChange={(event) => setDraft({ ...draft, publicKeyBase64: event.target.value })}
-        />
-        <p className="text-xs text-muted-foreground">{t('sharing.grant.keyHint')}</p>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="share-public-key">{t('sharing.grant.keyLabel')}</Label>
+            <Input
+              id="share-public-key"
+              value={draft.publicKeyBase64}
+              onChange={(event) => setDraft({ ...draft, publicKeyBase64: event.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">{t('sharing.grant.keyHint')}</p>
+          </div>
+        </>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="share-label">{t('sharing.grant.labelLabel')}</Label>

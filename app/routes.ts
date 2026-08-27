@@ -31,6 +31,14 @@ export default [
   // never have opened this app before.
   route('/connect-gateway', 'routes/connect-gateway.tsx'),
 
+  // Clinician onboarding: where a clinician's connect link lands (M160/08).
+  // CLIENT-ONLY and top-level for the same two reasons as `/connect-gateway`,
+  // plus a third that is specific to it — the payload rides in the URL
+  // FRAGMENT, which no browser sends to any server, so there is nothing a
+  // loader here could read. `openplate-sync` ADR-0002 prohibition 1: the
+  // server never stores, serves or endorses a share public key.
+  route('/connect-clinician', 'routes/connect-clinician.tsx'),
+
   // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
   // device whose store has been wiped but whose `firstDataAt` marker survives.
   // TOP-LEVEL and client-only — it must sit outside `_personal`, whose gate is

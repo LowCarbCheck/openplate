@@ -131,15 +131,17 @@ export async function runShareCeremony(input: ShareCeremonyInput): Promise<Share
     };
   }
 
-  // Read the existing row FIRST, for its CAS token: a re-grant can race a
-  // rotation's re-wrap, and a blind write would clobber whichever landed last.
-  const existing = await input.transport.listShares();
-  if (existing.status === 'unavailable') return { status: 'unavailable' };
-  const previous = existing.value.find((grant) => grant.granteeAccountId === input.offered.accountId) ?? null;
-
-  // Pinned BEFORE the request, deliberately. A pin with no share row is a
-  // retry away from a grant; a share row with no pin would be a capability
-  // this device cannot describe, and the next rotation would silently drop it.
+  // Pinned BEFORE any request, deliberately — and that now includes before the
+  // read below. A pin with no share row is a retry away from a grant; a share
+  // row with no pin would be a capability this device cannot describe, and the
+  // next rotation would silently drop it.
+  //
+  // Pinning ahead of the read is also what makes a deployment with
+  // `SYNC_SHARING` off degrade honestly (M160/08): every share path there
+  // answers the ordinary 404, so `listShares` reports `unavailable` — but the
+  // two people in the room still DID the ceremony, and discarding a
+  // verification because the operator has not enabled the surface would make
+  // them repeat it for no reason. The verification is local and stands alone.
   await input.pinPeer({
     id: String(input.offered.accountId),
     accountId: input.offered.accountId,
@@ -147,6 +149,12 @@ export async function runShareCeremony(input: ShareCeremonyInput): Promise<Share
     label: input.offered.label,
     createdAt: input.now ?? Date.now(),
   });
+
+  // The existing row is read for its CAS token: a re-grant can race a
+  // rotation's re-wrap, and a blind write would clobber whichever landed last.
+  const existing = await input.transport.listShares();
+  if (existing.status === 'unavailable') return { status: 'unavailable' };
+  const previous = existing.value.find((grant) => grant.granteeAccountId === input.offered.accountId) ?? null;
 
   const result = await input.transport.putShare({
     granteeAccountId: input.offered.accountId,

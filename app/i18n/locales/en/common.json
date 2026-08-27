@@ -226,9 +226,63 @@
     "terms": "Terms",
     "thisDevice": "This device"
   },
+  "clinicianLink": {
+    "copied": "Copied",
+    "copy": "Copy link",
+    "copyFailed": "Could not copy",
+    "description": "Send this to someone who wants to share their diary with you, or let them scan it off your screen.",
+    "nameHint": "Optional. It travels in the link, so treat it as something you say about yourself, not as proof.",
+    "nameLabel": "The name they will see",
+    "notSecret": "The link is not a secret — it carries your public key, which can seal data to you and nothing else. It also never reaches any server: everything after the # stays in the browser.",
+    "qrTitle": "Your connect link as a scannable code",
+    "stillReadAloud": "After they open it, read these twelve characters out to them: {{fingerprint}}. Until they type those, nothing is shared.",
+    "title": "Your connect link"
+  },
   "confirm": {
     "cancel": "Cancel",
     "continue": "Continue"
+  },
+  "connectClinician": {
+    "backToSharing": "Back to sharing",
+    "claimed": {
+      "account": "Account number {{accountId}}",
+      "named": "The link says this is {{name}}.",
+      "unnamed": "The link does not say who this is.",
+      "unverified": "Anyone who can write the link can write that name. What proves it is them is the fingerprint below."
+    },
+    "description": "Someone sent you a link so you can share your diary with them.",
+    "granted": {
+      "body": "They can read your diary from now on. You can stop that at any time on the sharing page.",
+      "cta": "Go to sharing",
+      "title": "Shared. You verified:"
+    },
+    "invalidLink": {
+      "body": "Part of it is missing or was cut off. Ask them to send it again, or to show you the code on their screen.",
+      "title": "This link does not look right"
+    },
+    "keyChanged": {
+      "body": "You verified {{pinned}} before; this link carries {{offered}}. That happens when someone makes a new key, and it also happens when someone swaps one. Do the check again with them, out loud, before you go on.",
+      "title": "Their key has changed"
+    },
+    "noSync": {
+      "body": "Sharing a diary needs sync, and whoever runs this openplate has not set it up. Nothing here can be used.",
+      "title": "This openplate has no sync"
+    },
+    "queryString": {
+      "askAgain": "Ask them to send it again, or to show you the code on their screen instead.",
+      "body": "The key came in the part of the address that gets sent to servers, so it did not stay between the two of you. That usually means an email or chat app rewrote the link on the way.",
+      "parameters": "Sent in the address: {{parameters}}.",
+      "title": "This link is not safe to use"
+    },
+    "reading": "Reading the link…",
+    "sharingOff": {
+      "body": "Your sync server does not have sharing switched on. The key you checked is kept on this device, so when it is switched on you can share without doing the check again.",
+      "title": "Verified, but nothing was shared yet"
+    },
+    "signedOut": {
+      "body": "Open your sync session first. Sharing seals your diary with your key, and that key is only there once you are signed in."
+    },
+    "title": "Connect a clinician"
   },
   "connectGateway": {
     "audit": {
@@ -898,6 +952,7 @@
     "about": "About · openplate",
     "add": "Add food · openplate",
     "ai": "AI settings · openplate",
+    "connectClinician": "Connect a clinician · openplate",
     "dashboard": "Overview · openplate",
     "data": "Data & backup · openplate",
     "diary": "Diary · openplate",

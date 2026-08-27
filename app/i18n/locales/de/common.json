@@ -226,9 +226,63 @@
     "terms": "AGB",
     "thisDevice": "Dieses Gerät"
   },
+  "clinicianLink": {
+    "copied": "Kopiert",
+    "copy": "Link kopieren",
+    "copyFailed": "Kopieren ging nicht",
+    "description": "Schick ihn jemandem, der sein Tagebuch mit dir teilen möchte, oder lass ihn vom Bildschirm abscannen.",
+    "nameHint": "Optional. Er reist im Link mit — behandle ihn als etwas, das du über dich sagst, nicht als Nachweis.",
+    "nameLabel": "Der Name, den sie sehen",
+    "notSecret": "Der Link ist kein Geheimnis — er trägt deinen öffentlichen Schlüssel, der nur Daten für dich versiegeln kann. Und er erreicht keinen Server: alles hinter dem # bleibt im Browser.",
+    "qrTitle": "Dein Verbindungslink als scannbarer Code",
+    "stillReadAloud": "Wenn sie ihn geöffnet haben, lies ihnen diese zwölf Zeichen vor: {{fingerprint}}. Solange sie die nicht eintippen, wird nichts geteilt.",
+    "title": "Dein Verbindungslink"
+  },
   "confirm": {
     "cancel": "Abbrechen",
     "continue": "Weiter"
+  },
+  "connectClinician": {
+    "backToSharing": "Zurück zum Teilen",
+    "claimed": {
+      "account": "Kontonummer {{accountId}}",
+      "named": "Der Link sagt, das sei {{name}}.",
+      "unnamed": "Der Link sagt nicht, wer das ist.",
+      "unverified": "Wer den Link schreiben kann, kann auch diesen Namen schreiben. Was es beweist, ist der Fingerabdruck unten."
+    },
+    "description": "Jemand hat dir einen Link geschickt, damit du dein Tagebuch mit ihm teilen kannst.",
+    "granted": {
+      "body": "Diese Person kann dein Tagebuch ab jetzt lesen. Du kannst das jederzeit auf der Teilen-Seite beenden.",
+      "cta": "Zur Teilen-Seite",
+      "title": "Geteilt. Du hast bestätigt:"
+    },
+    "invalidLink": {
+      "body": "Ein Teil davon fehlt oder wurde abgeschnitten. Bitte um einen neuen Link, oder lass dir den Code auf dem Bildschirm zeigen.",
+      "title": "Dieser Link sieht nicht richtig aus"
+    },
+    "keyChanged": {
+      "body": "Du hattest {{pinned}} bestätigt; dieser Link trägt {{offered}}. Das passiert, wenn jemand einen neuen Schlüssel erstellt — und genauso, wenn jemand einen austauscht. Macht die Prüfung gemeinsam und laut noch einmal, bevor du weitermachst.",
+      "title": "Der Schlüssel hat sich geändert"
+    },
+    "noSync": {
+      "body": "Ein Tagebuch zu teilen braucht Sync, und wer dieses openplate betreibt, hat es nicht eingerichtet. Hier lässt sich nichts benutzen.",
+      "title": "Dieses openplate hat kein Sync"
+    },
+    "queryString": {
+      "askAgain": "Bitte um einen neuen Link, oder lass dir den Code direkt auf dem Bildschirm zeigen.",
+      "body": "Der Schlüssel kam in dem Teil der Adresse an, der an Server geschickt wird — er blieb also nicht zwischen euch beiden. Meist hat ein E-Mail- oder Chat-Programm den Link unterwegs umgeschrieben.",
+      "parameters": "In der Adresse mitgeschickt: {{parameters}}.",
+      "title": "Dieser Link ist nicht sicher zu benutzen"
+    },
+    "reading": "Link wird gelesen…",
+    "sharingOff": {
+      "body": "Auf deinem Sync-Server ist Teilen nicht eingeschaltet. Der geprüfte Schlüssel bleibt auf diesem Gerät — ist Teilen einmal eingeschaltet, kannst du ohne erneute Prüfung teilen.",
+      "title": "Geprüft, aber noch nichts geteilt"
+    },
+    "signedOut": {
+      "body": "Öffne zuerst deine Sync-Sitzung. Teilen versiegelt dein Tagebuch mit deinem Schlüssel, und den gibt es erst nach dem Anmelden."
+    },
+    "title": "Behandler verbinden"
   },
   "connectGateway": {
     "audit": {
@@ -898,6 +952,7 @@
     "about": "Über openplate",
     "add": "Essen eintragen · openplate",
     "ai": "KI-Einstellungen · openplate",
+    "connectClinician": "Behandler verbinden · openplate",
     "dashboard": "Übersicht · openplate",
     "data": "Daten & Sicherung · openplate",
     "diary": "Tagebuch · openplate",

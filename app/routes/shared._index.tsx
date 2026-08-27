@@ -24,6 +24,7 @@ import { Loader2, Stethoscope } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { ShareIdentityCard } from '#app/components/share-identity-card';
+import { ShareInviteLinkCard } from '#app/components/share-invite-link-card';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
@@ -103,6 +104,13 @@ export default function SharedIndex() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <ShareIdentityCard identity={identity} onGenerate={() => void handleGenerate()} isBusy={isBusy} />
+
+      {/* The connect link (M160/08), shown only once there is a key to put in
+          it and an account id to address it to. Built entirely on this device:
+          no loader fetches it and no server ever holds it. */}
+      {identity !== null && session.account !== null && (
+        <ShareInviteLinkCard identity={identity} accountId={session.account.id} />
+      )}
 
       <Card>
         <CardHeader>
