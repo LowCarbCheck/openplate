@@ -82,7 +82,16 @@ function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): LocalStoreSnapshot {
   // `fasts`/`savedMeals` are required on the snapshot since v7/v11 but are
   // never merged by the sync engine (see `mergeSnapshots`) — an empty array is
   // the whole fixture for both.
-  return { foods: [], foodLogs: logs, weightEntries: [], profile: null, fasts: [], savedMeals: [] };
+  return {
+    foods: [],
+    foodLogs: logs,
+    weightEntries: [],
+    profile: null,
+    fasts: [],
+    savedMeals: [],
+    shareIdentity: null,
+    sharePeers: [],
+  };
 }
 
 /** Cycle dependencies for one simulated device, sharing the account's vault but keeping its own baseline. */
@@ -473,7 +482,10 @@ test('REQUIRE_EMAIL_VERIFICATION: signup pends, verification unlocks, sign-in fi
     assert.equal(second.status, 'connected', 'once the keys exist, sign-in is ordinary again');
     const restored = { current: snapshotOf([]) };
     await runSyncCycleUnlocked(deviceDeps({ vault: requireVault(), deviceId: 'device-2', local: restored }));
-    assert.deepEqual(restored.current.foodLogs.map((log) => log.name), ['Baked aubergine']);
+    assert.deepEqual(
+      restored.current.foodLogs.map((log) => log.name),
+      ['Baked aubergine'],
+    );
 
     // 6. The recovery code minted by the repair really opens the account —
     //    otherwise the ceremony would have shown the user a useless string.

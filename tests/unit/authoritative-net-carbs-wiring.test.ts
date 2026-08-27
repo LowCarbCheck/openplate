@@ -384,8 +384,15 @@ describe('authoritative net carbs survive being logged', () => {
     // when fibre is genuinely unknown.
     const localCandidate: AddSearchCandidate = { ...localFoodToCandidate(wheatBranPersonalFood()), matchTier: null };
     const emitted = HIDDEN_NET_CARBS_FIELD.exec(renderPortionStep(localCandidate));
-    assert.ok(emitted, 'the portion step must emit the field for every candidate — the DATA is the gate, not the source tier');
-    assert.equal(emitted[1], '', 'a candidate with no upstream figure must submit the blank that decodes to `undefined`');
+    assert.ok(
+      emitted,
+      'the portion step must emit the field for every candidate — the DATA is the gate, not the source tier',
+    );
+    assert.equal(
+      emitted[1],
+      '',
+      'a candidate with no upstream figure must submit the blank that decodes to `undefined`',
+    );
     assert.equal(logEntryFromAddFlow(localCandidate, { grams: 100 }).netCarbsPer100g, undefined);
   });
 
@@ -621,7 +628,9 @@ describe('the scan confirm step carries an applied match’s authoritative net c
   const APPLIED = { curatedSource: toCuratedSource('wheat-bran') };
 
   it('FIXTURE CHECK: the AI’s own draft and the applied match really do disagree (else nothing below is discriminating)', () => {
-    const aiOnly = confirmBadges(renderConfirmStep(confirmFormData({ macros: matchMacrosToFormValues(wheatBranMatch().macrosPer100g) })));
+    const aiOnly = confirmBadges(
+      renderConfirmStep(confirmFormData({ macros: matchMacrosToFormValues(wheatBranMatch().macrosPer100g) })),
+    );
     assert.ok(aiOnly[0], 'expected an item badge');
     // With the match's macros in the fields but NO match applied, the local
     // formula floors this food to 0 — the exact wrong answer the fix removes.
@@ -651,12 +660,22 @@ describe('the scan confirm step carries an applied match’s authoritative net c
   it('colors the item traffic light from the authoritative figure — a 21.7 g food must never render green here either', () => {
     const badges = confirmBadges(renderConfirmStep(confirmFormData(APPLIED)));
     assert.ok(badges[0], 'expected an item badge');
-    assert.ok(badges[0].classes.includes(carbStatusBadgeClass.high), `expected the high-carb palette: ${badges[0].classes}`);
-    assert.equal(badges[0].classes.includes('green'), false, `a 21.7 g food rendered a low-carb badge: ${badges[0].classes}`);
+    assert.ok(
+      badges[0].classes.includes(carbStatusBadgeClass.high),
+      `expected the high-carb palette: ${badges[0].classes}`,
+    );
+    assert.equal(
+      badges[0].classes.includes('green'),
+      false,
+      `a 21.7 g food rendered a low-carb badge: ${badges[0].classes}`,
+    );
   });
 
   it('emits the figure into the form so it survives the log write', () => {
-    assert.equal(emittedConfirmNetCarbs(renderConfirmStep(confirmFormData(APPLIED))), String(AUTHORITATIVE_NET_CARBS_PER_100G));
+    assert.equal(
+      emittedConfirmNetCarbs(renderConfirmStep(confirmFormData(APPLIED))),
+      String(AUTHORITATIVE_NET_CARBS_PER_100G),
+    );
   });
 
   it('emits NO figure for a plain AI plate estimate — the scan’s own guess has no upstream authority to claim', () => {
@@ -834,7 +853,16 @@ describe('one scan confirm writes two rows — and both carry the same number', 
     const envelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-28T12:00:00.000Z',
-      data: { foods: [food], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
+      data: {
+        foods: [food],
+        foodLogs: [],
+        weightEntries: [],
+        profile: null,
+        fasts: [],
+        savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
+      },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
     const [restoredFood] = restored.data.foods;
@@ -866,6 +894,8 @@ describe('one scan confirm writes two rows — and both carry the same number', 
         profile: null,
         fasts: [],
         savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
@@ -1010,7 +1040,8 @@ describe('the entry receipt hero reads the entry’s figure, not the linked food
 ////////////////////////////////////////////////////////////////////////////////
 
 describe('editing a saved personal food keeps its authoritative figure honest', () => {
-  const savedFood = (): LocalPersonalFood => confirmedFoodFromScanFlow(confirmFormData({ curatedSource: toCuratedSource('wheat-bran') }));
+  const savedFood = (): LocalPersonalFood =>
+    confirmedFoodFromScanFlow(confirmFormData({ curatedSource: toCuratedSource('wheat-bran') }));
 
   it('a NAME-only edit preserves the figure — the numbers it describes are untouched', () => {
     const food = savedFood();
@@ -1305,7 +1336,9 @@ describe('editing an entry keeps the authoritative figure honest', () => {
 
     const edited = logEntryFromAddFlow(wheatBranCandidate(), { grams: 100 });
     assertGrams(
-      diaryNetCarbsFor([{ ...edited, quantityGrams: 250, macros: patch.snapshot, netCarbsPer100g: patch.netCarbsPer100g }]),
+      diaryNetCarbsFor([
+        { ...edited, quantityGrams: 250, macros: patch.snapshot, netCarbsPer100g: patch.netCarbsPer100g },
+      ]),
       (AUTHORITATIVE_NET_CARBS_PER_100G * 250) / 100,
     );
   });
@@ -1348,7 +1381,16 @@ describe('authoritative net carbs survive serialization', () => {
     const envelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-28T12:00:00.000Z',
-      data: { foods: [], foodLogs: [entry], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
+      data: {
+        foods: [],
+        foodLogs: [entry],
+        weightEntries: [],
+        profile: null,
+        fasts: [],
+        savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
+      },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
     const [restoredLog] = restored.data.foodLogs;
@@ -1376,6 +1418,8 @@ describe('authoritative net carbs survive serialization', () => {
         profile: null,
         fasts: [],
         savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));

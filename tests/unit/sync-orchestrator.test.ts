@@ -52,7 +52,16 @@ function log(id: string, name: string, grams: number): LocalStoreSnapshot['foodL
 function snapshot(logs: LocalStoreSnapshot['foodLogs']): LocalStoreSnapshot {
   // `fasts` is required on the snapshot since v7 but is never merged by the
   // sync engine (see `mergeSnapshots`) — an empty array is the whole fixture.
-  return { foods: [], foodLogs: logs, weightEntries: [], profile: null, fasts: [], savedMeals: [] };
+  return {
+    foods: [],
+    foodLogs: logs,
+    weightEntries: [],
+    profile: null,
+    fasts: [],
+    savedMeals: [],
+    shareIdentity: null,
+    sharePeers: [],
+  };
 }
 
 /**

@@ -26,16 +26,20 @@ import { getPrimaryStore } from './persist';
 import { getFirstDataAt } from './had-data';
 import {
   getLocalProfileGoals,
+  getLocalShareIdentity,
   listLocalFasts,
   listLocalFoodLogs,
   listLocalFoods,
   listLocalSavedMeals,
+  listLocalSharePeers,
   listLocalWeightEntries,
   putLocalFast,
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
   putLocalSavedMeal,
+  putLocalShareIdentity,
+  putLocalSharePeer,
   putLocalWeightEntry,
 } from './primary-store';
 
@@ -262,6 +266,27 @@ const savedMealSchema = z.object({
   createdAt: z.number(),
 });
 
+/**
+ * Added v13 (clinician sharing, M160/04). Base64 rather than bytes because a
+ * snapshot is JSON; the lengths are NOT asserted here on purpose — a wrong
+ * length fails loudly at `crypto.subtle.importKey`, and a zod refinement that
+ * merely rejected the whole envelope would make one malformed key un-importable
+ * ALONGSIDE somebody's entire diary.
+ */
+const shareIdentitySchema = z.object({
+  publicKeyRaw: z.string(),
+  privateKeyPkcs8: z.string(),
+  createdAt: z.number(),
+});
+
+const sharePeerSchema = z.object({
+  id: z.string(),
+  accountId: z.number().int(),
+  publicKeyRaw: z.string(),
+  label: z.string().nullable(),
+  createdAt: z.number(),
+});
+
 const snapshotSchema = z.object({
   foods: z.array(personalFoodSchema),
   foodLogs: z.array(foodLogSchema),
@@ -289,6 +314,20 @@ const snapshotSchema = z.object({
   // no `migrateSnapshotToV7` one. See the `NOTE (M123/07, saved meals)` block
   // in `schema.ts`.
   savedMeals: z.array(savedMealSchema).default([]),
+  // Added v13 (clinician sharing, M160/04). Same rule as `fasts` and
+  // `savedMeals` above (whole new entities, not optional fields): a v12
+  // envelope has neither key, and these two defaults ARE the complete v12 ->
+  // v13 forward migration — "this device had no share key, because sharing did
+  // not exist". No `migrateSnapshotToV13` step, for the identical reason there
+  // is no `migrateSnapshotToV11` one.
+  //
+  // Present here for the usual reason every field in this file is: zod STRIPS
+  // unrecognized keys. Omitting these two lines would silently drop a
+  // clinician's share PRIVATE KEY on every export/import and every sync
+  // round-trip — and the loss would be invisible until a patient's wrap
+  // stopped opening on a restored device.
+  shareIdentity: shareIdentitySchema.nullable().default(null),
+  sharePeers: z.array(sharePeerSchema).default([]),
 });
 
 /**
@@ -452,6 +491,8 @@ async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
     profile: await getLocalProfileGoals({ store }),
     fasts: await listLocalFasts({ store }),
     savedMeals: await listLocalSavedMeals({ store }),
+    shareIdentity: await getLocalShareIdentity({ store }),
+    sharePeers: await listLocalSharePeers({ store }),
   };
 }
 
@@ -475,6 +516,11 @@ export async function hasAnyLocalData({ store }: { store?: Store } = {}): Promis
     // and bundle, and losing it silently would be exactly the failure this
     // nudge exists to prevent.
     snapshot.savedMeals.length > 0 ||
+    // `shareIdentity` and `sharePeers` are deliberately NOT counted. This
+    // signal drives the backup nudge, and a key pair on its own is not
+    // "trackable data" a person would recognise as theirs to lose — nagging a
+    // device whose only content is a keypair would fire the nudge at someone
+    // with an empty diary.
     snapshot.profile !== null
   );
 }
@@ -491,7 +537,12 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   // is invented, nothing is silently dropped.
   for (const fast of snapshot.fasts) await putLocalFast(fast, { store });
   for (const meal of snapshot.savedMeals) await putLocalSavedMeal(meal, { store });
+  for (const peer of snapshot.sharePeers) await putLocalSharePeer(peer, { store });
   if (snapshot.profile) await putLocalProfileGoals(snapshot.profile, { store });
+  // The share identity restores like the profile row: present-or-absent, never
+  // merged. A restore that dropped it would leave a clinician holding shares
+  // she can no longer open, with nothing on screen to say why.
+  if (snapshot.shareIdentity) await putLocalShareIdentity(snapshot.shareIdentity, { store });
 }
 
 /** Builds a schema-versioned export envelope from the primary store's current data. */

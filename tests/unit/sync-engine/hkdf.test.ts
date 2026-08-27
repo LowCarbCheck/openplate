@@ -56,3 +56,20 @@ test('PASSPHRASE_KEK and RECOVERY_KEK derive DIFFERENT keys from the SAME (ikm, 
 test('HKDF_INFO.PASSPHRASE_KEK and HKDF_INFO.RECOVERY_KEK are distinct byte labels', () => {
   assert.notDeepEqual(HKDF_INFO.PASSPHRASE_KEK, HKDF_INFO.RECOVERY_KEK);
 });
+
+test('every HKDF label is DISTINCT — the domain-separation guard, in code rather than in a grep', () => {
+  // The spec's shell guard for this matches `'openplate-sync:<letters>:v1'`,
+  // which the share label (`...:share-kek:p256:v1`) does not fit — its curve
+  // segment carries digits. So the real check lives here, where it sees every
+  // label whatever its shape. Two labels sharing a value is the exact defect
+  // security review finding #7 recorded, and it fails SILENTLY: the wrong
+  // branch authenticates fine and produces a key that decrypts nothing.
+  const labels = Object.values(HKDF_INFO).map((info) => new TextDecoder().decode(info));
+  assert.equal(new Set(labels).size, labels.length);
+  assert.deepEqual(labels.toSorted(), [
+    'openplate-sync:auth:v1',
+    'openplate-sync:passphrase-kek:v1',
+    'openplate-sync:recovery-kek:v1',
+    'openplate-sync:share-kek:p256:v1',
+  ]);
+});

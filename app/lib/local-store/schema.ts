@@ -166,6 +166,32 @@
  * step required, the exact `portion` (v2 → v3) precedent, NOT the `savedMeals`
  * (v10 → v11) one: no new entity, no new required field, nothing to default.
  * `backup.ts`'s two entity schemas get the matching `.optional()` zod line.
+ *
+ * NOTE (M160/04, clinician sharing): `SCHEMA_VERSION` v12 -> v13 is under the
+ * `fasts`/`savedMeals` rules, NOT the optional-field rules: it adds TWO WHOLE
+ * NEW ENTITIES — `LocalShareIdentity` and `LocalSharePeer`, plus their two
+ * tables — and two new keys on `LocalStoreSnapshot` itself. A v12 envelope has
+ * neither key, so the complete forward migration is `backup.ts`'s
+ * `.default(null)` / `.default([])` on `snapshotSchema`: "this device had no
+ * share key, because sharing did not exist". No `migrateSnapshotToV13` step.
+ *
+ * THIS BUMP RE-OPENS A GATE, AND THAT IS DELIBERATE. `openplate-sync`'s
+ * ADR-0002 makes a full-DEK share creatable only while the synced snapshot
+ * carries NO CREDENTIAL, "because anything added to the synced snapshot that
+ * is not diary or preferences data re-opens this gate". These two entities are
+ * the first non-diary thing in the snapshot, so state the finding plainly:
+ *
+ *  - `LocalSharePeer` holds PUBLIC keys only. Nothing secret.
+ *  - `LocalShareIdentity` holds THIS account's OWN share PRIVATE key. It is a
+ *    key to the account's own data, not a credential for any third-party
+ *    service, and it is exactly what a second device or a recovery-code
+ *    restore must receive for a clinician's shares to survive losing a phone.
+ *    That is why it goes here rather than beside the BYOK provider key.
+ *
+ * The BYOK API key still lives in a SEPARATE IndexedDB database
+ * (`ai-settings.ts`) and must stay there: it is a credential for someone
+ * else's service, so an export or a share must never carry it. The asymmetry
+ * between these two secrets is the whole point, not an inconsistency.
  */
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
@@ -178,7 +204,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -212,6 +238,12 @@ export const PROFILE_GOALS_TABLE = 'profileGoals';
 export const FASTS_TABLE = 'fasts';
 /** Table: saved meals (M123/07 item 1), keyed by a client-generated id. */
 export const SAVED_MEALS_TABLE = 'savedMeals';
+/** Share identity table (M160/04) — a SINGLETON, keyed by {@link SHARE_IDENTITY_ROW_ID}, exactly like the profile row. */
+export const SHARE_IDENTITY_TABLE = 'shareIdentity';
+/** The one row id the share identity ever occupies — this device's account has exactly one share key pair. */
+export const SHARE_IDENTITY_ROW_ID = 'me';
+/** Pinned peer public keys (M160/04) — one row per counterpart account, keyed by that account id as a string. */
+export const SHARE_PEERS_TABLE = 'sharePeers';
 
 /** The single JSON cell every primary-store row uses to hold its serialized entity. */
 export const PRIMARY_ENTITY_CELL = 'entity';
@@ -678,6 +710,65 @@ export interface LocalSavedMeal {
 }
 
 /**
+ * This account's own share key pair (`openplate-sync` ADR-0002) — the identity
+ * a clinician is addressed BY, and a patient wraps their DEK TO.
+ *
+ * A SINGLETON: one key pair per account, not per device. It lives in the
+ * synced snapshot on purpose, so it inherits multi-device sync and
+ * recovery-code recovery from machinery that already exists — a clinician who
+ * replaces her phone keeps every share her patients granted. The cost is
+ * recorded and accepted: lose both passphrase and recovery code and every
+ * share dies, because any server-side softening would be a decryption
+ * capability parked on the server.
+ *
+ * Both halves are base64 rather than `Uint8Array` because a snapshot is JSON
+ * (`backup.ts` serializes it, and `contentHash` walks it) — a typed array
+ * would round-trip through JSON as an object of numeric keys.
+ */
+export interface LocalShareIdentity {
+  /** Uncompressed SEC1 raw public key (65 bytes), base64. Safe to publish — this is the half that travels in an invite. */
+  publicKeyRaw: string;
+  /**
+   * PKCS#8 private key, base64.
+   *
+   * NEVER send this anywhere, never log it, and never put it in a URL, a
+   * fetch body or an error message. It leaves the device only inside the
+   * DEK-encrypted sync blob, which the server cannot open.
+   */
+  privateKeyPkcs8: string;
+  /** Epoch-ms the pair was generated on-device. */
+  createdAt: number;
+}
+
+/**
+ * A peer's share public key, pinned after the typed fingerprint ceremony
+ * (ADR-0002 prohibition 6).
+ *
+ * The EXISTENCE of a row here IS the verification record: a row is only ever
+ * written by a ceremony that passed, which is why there is no `verified`
+ * boolean to get out of step with reality. Deliberately NO stored fingerprint
+ * either — it is `SHA-256(publicKeyRaw)` and recomputing it costs nothing,
+ * whereas a stored copy could drift from the key it claims to describe and
+ * would then be displayed as if it were still true.
+ *
+ * A key change — rotation, or substitution attack, indistinguishable and
+ * correctly so — voids the pin until a new ceremony. Nothing may overwrite
+ * this row automatically.
+ */
+export interface LocalSharePeer {
+  /** The peer's sync account id, as a string — the row id, and the identity both share endpoints address. */
+  id: string;
+  /** The peer's sync account id. `id` is its string form; this is the value that goes into the wrap's AAD. */
+  accountId: number;
+  /** The peer's uncompressed SEC1 raw public key (65 bytes), base64 — the key every later re-wrap uses. */
+  publicKeyRaw: string;
+  /** The person's own label for this peer ("Dr. Meier"). Local only; the server never sees it. */
+  label: string | null;
+  /** Epoch-ms the fingerprint ceremony passed and this key was pinned. */
+  createdAt: number;
+}
+
+/**
  * A full, lossless snapshot of the primary store's health data — the payload a
  * backup envelope carries (`backup.ts`). Device-only photos are deliberately
  * excluded (they never enter export, sync, or the server — see `photos.ts`).
@@ -706,4 +797,22 @@ export interface LocalStoreSnapshot {
    * `NOTE (M123/07, saved meals)` block at the top of this file.
    */
   savedMeals: LocalSavedMeal[];
+  /**
+   * Added v13 (clinician sharing, M160/04) — this account's own share key
+   * pair, or `null` on a device that has never generated one (the normal
+   * state: sharing is opt-in and most people never use it).
+   *
+   * The FIRST non-diary thing in this snapshot. See the `NOTE (M160/04,
+   * clinician sharing)` block at the top of this file for why a share private
+   * key belongs here while the BYOK provider key must not.
+   */
+  shareIdentity: LocalShareIdentity | null;
+  /**
+   * Added v13 (clinician sharing, M160/04) — peer public keys pinned by a
+   * passed fingerprint ceremony. Public material only.
+   *
+   * REQUIRED, under the `fasts`/`savedMeals` rule: a v12 envelope has no key
+   * at all, and `backup.ts`'s `.default([])` is the whole forward migration.
+   */
+  sharePeers: LocalSharePeer[];
 }

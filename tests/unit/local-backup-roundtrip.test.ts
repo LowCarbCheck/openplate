@@ -348,7 +348,16 @@ describe('backup round-trip', () => {
   it('an empty store exports an empty snapshot that re-imports to empty', async () => {
     const source = createPrimaryStore();
     const exported = await exportBackup({ store: source });
-    assert.deepEqual(exported.data, { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] });
+    assert.deepEqual(exported.data, {
+      foods: [],
+      foodLogs: [],
+      weightEntries: [],
+      profile: null,
+      fasts: [],
+      savedMeals: [],
+      shareIdentity: null,
+      sharePeers: [],
+    });
 
     const target = createPrimaryStore();
     await importBackup(exported, { store: target });
@@ -360,7 +369,16 @@ describe('backup round-trip', () => {
     const envelope: BackupEnvelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-15T00:00:00.000Z',
-      data: { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
+      data: {
+        foods: [],
+        foodLogs: [],
+        weightEntries: [],
+        profile: null,
+        fasts: [],
+        savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
+      },
     };
     assert.deepEqual(migrateEnvelopeForward(envelope), envelope);
   });
@@ -369,7 +387,16 @@ describe('backup round-trip', () => {
     const envelope: BackupEnvelope = {
       schemaVersion: SCHEMA_VERSION + 1,
       exportedAt: '2026-07-15T00:00:00.000Z',
-      data: { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
+      data: {
+        foods: [],
+        foodLogs: [],
+        weightEntries: [],
+        profile: null,
+        fasts: [],
+        savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
+      },
     };
     assert.throws(() => migrateEnvelopeForward(envelope), /newer than this app supports/);
   });
@@ -454,7 +481,16 @@ describe('parse-before-migrate ordering (review fix)', () => {
     // `fasts: []`/`savedMeals: []` are filled in by `snapshotSchema`'s two
     // `.default([])`s — the whole v6 -> v7 (M132) and v10 -> v11 (M123/07)
     // forward migrations, each in one line of schema.
-    assert.deepEqual(migrated.data, { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] });
+    assert.deepEqual(migrated.data, {
+      foods: [],
+      foodLogs: [],
+      weightEntries: [],
+      profile: null,
+      fasts: [],
+      savedMeals: [],
+      shareIdentity: null,
+      sharePeers: [],
+    });
   });
 });
 
@@ -513,6 +549,8 @@ describe('v1 -> v2 profile migration (M117/03: targetWeightKg/trackingFocus/onbo
         weightEntries: [],
         fasts: [],
         savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
         profile: {
           timezone: 'UTC',
           goalNetCarbsCeilingG: null,
@@ -615,7 +653,16 @@ describe('v8 -> v9 micronutrient snapshot (M135: an optional field, so the zod l
     const v8Json = JSON.stringify({
       schemaVersion: 8,
       exportedAt: '2026-08-06T00:00:00.000Z',
-      data: { foods: [], foodLogs: [V8_LOG], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
+      data: {
+        foods: [],
+        foodLogs: [V8_LOG],
+        weightEntries: [],
+        profile: null,
+        fasts: [],
+        savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
+      },
     });
 
     const migrated = migrateEnvelopeForward(parseBackupEnvelope(v8Json));

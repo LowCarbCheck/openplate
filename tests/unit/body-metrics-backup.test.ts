@@ -47,8 +47,8 @@ describe('schema version', () => {
   // at v12. What it guards is that a bump is never silent — the version the
   // envelope stamps is the version an older build refuses, so a change here
   // has to be a change someone chose.
-  it('is 12 — bumped past the v8 body-metrics bump by the two micronutrient ones, saved meals, and carb basis', () => {
-    assert.equal(SCHEMA_VERSION, 12);
+  it('is 13 — bumped past the v8 body-metrics bump by the two micronutrient ones, saved meals, carb basis and clinician sharing', () => {
+    assert.equal(SCHEMA_VERSION, 13);
   });
 });
 

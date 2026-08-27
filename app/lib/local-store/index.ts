@@ -87,6 +87,18 @@ export {
   listLocalSavedMeals,
   getLocalSavedMeal,
   deleteLocalSavedMeal,
+  // Clinician sharing (M160/04) — this account's own share key pair, and the
+  // peer public keys it has pinned through the typed fingerprint ceremony.
+  // The identity's PRIVATE half is the only secret the primary store holds;
+  // the BYOK provider key deliberately lives in a separate database
+  // (`ai-settings.ts`) and must never move here.
+  putLocalShareIdentity,
+  getLocalShareIdentity,
+  deleteLocalShareIdentity,
+  putLocalSharePeer,
+  listLocalSharePeers,
+  getLocalSharePeer,
+  deleteLocalSharePeer,
 } from './primary-store';
 
 // Pure saved-meal builders (no store) — the "save as meal"/"re-log a saved
@@ -187,6 +199,8 @@ export type {
   ReproductiveStatus,
   LocalSavedMeal,
   LocalSavedMealItem,
+  LocalShareIdentity,
+  LocalSharePeer,
 } from './schema';
 
 // BYOK AI settings + local-only usage log (M117/02) — device-only, never

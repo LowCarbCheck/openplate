@@ -46,7 +46,16 @@ function snapshot(savedMeals: LocalSavedMeal[]): LocalStoreSnapshot {
   // `fasts` rides through the same pass-through path as `savedMeals` (see
   // `snapshot-sync.ts`) — an empty array here is enough, since this file's
   // assertions are all about `savedMeals`, not fasts.
-  return { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals };
+  return {
+    foods: [],
+    foodLogs: [],
+    weightEntries: [],
+    profile: null,
+    fasts: [],
+    savedMeals,
+    shareIdentity: null,
+    sharePeers: [],
+  };
 }
 
 function payload(savedMeals: LocalSavedMeal[]): StampedSnapshot {
@@ -115,6 +124,13 @@ describe('mergeSnapshots and savedMeals', () => {
   });
 
   it('keeps saved meals out of the synced entity-type catalog', () => {
-    assert.deepEqual(Object.values(SYNC_ENTITY_TYPES), ['personalFood', 'foodLog', 'weightEntry', 'profile']);
+    assert.deepEqual(Object.values(SYNC_ENTITY_TYPES), [
+      'personalFood',
+      'foodLog',
+      'weightEntry',
+      'profile',
+      'shareIdentity',
+      'sharePeer',
+    ]);
   });
 });

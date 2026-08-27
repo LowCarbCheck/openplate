@@ -39,6 +39,8 @@ import type {
   LocalFoodLog,
   LocalPersonalFood,
   LocalProfileGoals,
+  LocalShareIdentity,
+  LocalSharePeer,
   LocalStoreSnapshot,
   LocalWeightEntry,
 } from '#app/lib/local-store';
@@ -49,10 +51,24 @@ export const SYNC_ENTITY_TYPES = {
   log: 'foodLog',
   weight: 'weightEntry',
   profile: 'profile',
+  /**
+   * The account's own share key pair (M160/04). It is MERGED rather than
+   * passed through from the local side like `fasts` and `savedMeals`, and the
+   * difference is the whole point of storing it here: a clinician's second
+   * device pulls the blob and must ADOPT the key pair, or every share her
+   * patients granted is unopenable on that device. A pass-through would keep
+   * `null` and look like it worked.
+   */
+  shareIdentity: 'shareIdentity',
+  /** A pinned peer public key (M160/04), one entity per counterpart account. Merged for the same reason. */
+  sharePeer: 'sharePeer',
 } as const;
 
 /** The fixed entity id of the singleton profile row — it has no id of its own. */
 export const PROFILE_ENTITY_ID = 'me';
+
+/** The fixed entity id of the singleton share identity — one key pair per account, so it has no id of its own either. */
+export const SHARE_IDENTITY_ENTITY_ID = 'me';
 
 /** One entity's ordering stamp plus the content hash that decides whether it changed. Device-local; the hash never goes on the wire. */
 export interface StampedEntity {
@@ -139,8 +155,9 @@ export function contentHash<T>(value: T): string {
 // Stamping: snapshot + baseline -> stamped payload
 // ---------------------------------------------------------------------------
 
-/** The four local-store records sync carries — everything `flattenSnapshot` can produce. */
-export type SyncEntityValue = LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals;
+/** The local-store records sync carries — everything `flattenSnapshot` can produce. */
+export type SyncEntityValue =
+  LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | LocalShareIdentity | LocalSharePeer;
 
 interface FlatEntity {
   key: string;
@@ -155,9 +172,13 @@ function flattenSnapshot(snapshot: LocalStoreSnapshot): FlatEntity[] {
     ...snapshot.foods.map((food) => toFlat(SYNC_ENTITY_TYPES.food, food.id, food)),
     ...snapshot.foodLogs.map((log) => toFlat(SYNC_ENTITY_TYPES.log, log.id, log)),
     ...snapshot.weightEntries.map((entry) => toFlat(SYNC_ENTITY_TYPES.weight, entry.id, entry)),
+    ...snapshot.sharePeers.map((peer) => toFlat(SYNC_ENTITY_TYPES.sharePeer, peer.id, peer)),
   ];
   if (snapshot.profile !== null) {
     flattened.push(toFlat(SYNC_ENTITY_TYPES.profile, PROFILE_ENTITY_ID, snapshot.profile));
+  }
+  if (snapshot.shareIdentity !== null) {
+    flattened.push(toFlat(SYNC_ENTITY_TYPES.shareIdentity, SHARE_IDENTITY_ENTITY_ID, snapshot.shareIdentity));
   }
   return flattened;
 }
@@ -279,7 +300,9 @@ export function mergeSnapshots({
   const foods: LocalPersonalFood[] = [];
   const foodLogs: LocalFoodLog[] = [];
   const weightEntries: LocalWeightEntry[] = [];
+  const sharePeers: LocalSharePeer[] = [];
   let profile: LocalProfileGoals | null = null;
+  let shareIdentity: LocalShareIdentity | null = null;
   const perEntity: SyncMetaPayload['perEntity'] = {};
   const tombstones: Tombstone[] = [];
 
@@ -320,6 +343,16 @@ export function mergeSnapshots({
     if (entity.entityType === SYNC_ENTITY_TYPES.profile) {
       // SAFETY: the `profile` tag is only ever attached to the singleton `LocalProfileGoals`.
       profile = entity.value as LocalProfileGoals;
+      continue;
+    }
+    if (entity.entityType === SYNC_ENTITY_TYPES.sharePeer) {
+      // SAFETY: the `sharePeer` tag is only ever attached to a `LocalSharePeer`.
+      sharePeers.push(entity.value as LocalSharePeer);
+      continue;
+    }
+    if (entity.entityType === SYNC_ENTITY_TYPES.shareIdentity) {
+      // SAFETY: the `shareIdentity` tag is only ever attached to the singleton `LocalShareIdentity`.
+      shareIdentity = entity.value as LocalShareIdentity;
     }
   }
 
@@ -348,7 +381,20 @@ export function mergeSnapshots({
   // cross-device invariant blocking a real merge here — this is simply not
   // built yet, and is a smaller, lower-risk follow-up than fasts' was.
   return {
-    snapshot: { foods, foodLogs, weightEntries, profile, fasts: local.snapshot.fasts, savedMeals: local.snapshot.savedMeals },
+    snapshot: {
+      foods,
+      foodLogs,
+      weightEntries,
+      profile,
+      fasts: local.snapshot.fasts,
+      savedMeals: local.snapshot.savedMeals,
+      // NOT passed through from `local` like the two above it (M160/04): the
+      // share key pair and the pinned peers are genuinely merged, so a second
+      // device adopts them instead of staying blank. See the comment on
+      // `SYNC_ENTITY_TYPES.shareIdentity`.
+      shareIdentity,
+      sharePeers,
+    },
     meta: { perEntity, tombstones },
   };
 }
@@ -394,6 +440,11 @@ function canonicalize(payload: StampedSnapshot) {
       foodLogs: byId(payload.snapshot.foodLogs),
       weightEntries: byId(payload.snapshot.weightEntries),
       profile: payload.snapshot.profile,
+      // `shareIdentity`/`sharePeers` ARE included, unlike `fasts` below:
+      // generating a key pair or pinning a peer is a real change that another
+      // device needs, so it must be allowed to make this device push.
+      shareIdentity: payload.snapshot.shareIdentity,
+      sharePeers: byId(payload.snapshot.sharePeers),
       // `fasts` is deliberately omitted, for the same reason `mergeSnapshots`
       // passes it straight through: it is not synced, so a fast starting or
       // ending must not be what makes this device burn a blob version.

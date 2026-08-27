@@ -54,6 +54,29 @@ export const HKDF_INFO = {
    * authenticates fine and produces a key that decrypts nothing.
    */
   AUTH: new TextEncoder().encode('openplate-sync:auth:v1'),
+  /**
+   * The SHARE KEK (`PROTOCOL.md` §3.4, ADR-0002) — the AES-256-GCM key that
+   * wraps the DEK for a clinician, derived from an ECDH P-256 shared secret
+   * rather than from anything the account owner knows.
+   *
+   * It is a FOURTH, fully independent branch, and it must stay that way for
+   * the same reason `PASSPHRASE_KEK` and `AUTH` must: every label above
+   * derives from material the OWNER holds, while this one derives from
+   * material a SECOND PERSON holds. Collapsing it into any of them — or
+   * reusing it for the researcher-summary construction ADR-0002 defers —
+   * would let a key intended for one principal open something belonging to
+   * another, and it would do so silently. Nothing throws when the wrong
+   * branch is derived; the tag check simply fails somewhere else, exactly the
+   * "fails SILENTLY in the most expensive way" failure the `AUTH` comment
+   * above describes.
+   *
+   * THE CURVE IS PART OF THE LABEL, not just the version. `:p256:v1` is
+   * deliberate: a future X25519 construction gets a NEW label rather than
+   * leaving `:v1` ambiguous about which curve's shared secret it was fed.
+   * Never "tidy" the curve out of it, and never bump `:v1` for a curve change
+   * — add a sibling.
+   */
+  SHARE_KEK: new TextEncoder().encode('openplate-sync:share-kek:p256:v1'),
 } as const;
 
 /**

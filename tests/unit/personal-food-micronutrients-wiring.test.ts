@@ -42,7 +42,13 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { parseWithZod } from '@conform-to/zod/v4';
 
 import i18next from '../../app/i18n/i18n';
-import { PortionStep, buildLoggedEntry, buildManualFood, createLogSchema, type AddSearchCandidate } from '../../app/routes/add';
+import {
+  PortionStep,
+  buildLoggedEntry,
+  buildManualFood,
+  createLogSchema,
+  type AddSearchCandidate,
+} from '../../app/routes/add';
 import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry, buildConfirmedFood } from '../../app/routes/scan';
 import { RestoreLogSchema, buildCopiedEntry, buildRestoredEntry } from '../../app/routes/diary';
 import { buildRestorePayload } from '../../app/routes/diary.entry.$id';
@@ -179,7 +185,9 @@ function unescapeAttribute(value: string): string {
 }
 
 function emittedHiddenValue(html: string, name: string): string {
-  const pattern = new RegExp(`<input[^>]*name="${name.replaceAll('[', '\\[').replaceAll(']', '\\]').replaceAll('.', '\\.')}"[^>]*value="([^"]*)"[^>]*>`);
+  const pattern = new RegExp(
+    `<input[^>]*name="${name.replaceAll('[', '\\[').replaceAll(']', '\\]').replaceAll('.', '\\.')}"[^>]*value="([^"]*)"[^>]*>`,
+  );
   const match = pattern.exec(html);
   assert.ok(match, `expected a hidden input named "${name}" in the rendered markup, found none`);
   return unescapeAttribute(match[1] ?? '');
@@ -364,13 +372,16 @@ describe('a personal food nobody measured claims nothing — the honest-absent r
   });
 
   it('never stands that absence in with an empty snapshot, null-filled blocks, or zeros', () => {
-    for (const food of [scannedFood({ applyMatch: false }), buildManualFood({
-      name: 'Grandma’s soup',
-      macrosPer100g: { carbs: 4, fiber: 1, sugars: null, polyols: null, protein: 2, fat: 3, kcal: 60 },
-      carbBasis: null,
-      id: 'manual-1',
-      createdAtMs: AT_NOON,
-    })]) {
+    for (const food of [
+      scannedFood({ applyMatch: false }),
+      buildManualFood({
+        name: 'Grandma’s soup',
+        macrosPer100g: { carbs: 4, fiber: 1, sugars: null, polyols: null, protein: 2, fat: 3, kcal: 60 },
+        carbBasis: null,
+        id: 'manual-1',
+        createdAtMs: AT_NOON,
+      }),
+    ]) {
       // Not `{}` — an empty snapshot is indistinguishable from a populated one
       // at the type level, and would read as "we have the dimension".
       assert.notDeepEqual(food.micronutrientsPer100g, {});
@@ -528,7 +539,16 @@ describe('backup round trip', () => {
     const serialized = serializeBackup({
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-08-07T10:00:00.000Z',
-      data: { foods: [food], foodLogs: [], weightEntries: [], fasts: [], savedMeals: [], profile: null },
+      data: {
+        foods: [food],
+        foodLogs: [],
+        weightEntries: [],
+        fasts: [],
+        savedMeals: [],
+        profile: null,
+        shareIdentity: null,
+        sharePeers: [],
+      },
     });
 
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serialized)).data.foods[0];
@@ -554,7 +574,16 @@ describe('backup round trip', () => {
     const serialized = serializeBackup({
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-08-07T10:00:00.000Z',
-      data: { foods: [food], foodLogs: [], weightEntries: [], fasts: [], savedMeals: [], profile: null },
+      data: {
+        foods: [food],
+        foodLogs: [],
+        weightEntries: [],
+        fasts: [],
+        savedMeals: [],
+        profile: null,
+        shareIdentity: null,
+        sharePeers: [],
+      },
     });
 
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serialized)).data.foods[0];

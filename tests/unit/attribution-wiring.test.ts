@@ -316,9 +316,17 @@ describe('a curated match applied on the scan confirm step keeps its credit', ()
       macros: { ...matchMacrosToFormValues(creditedMatch().macrosPer100g), carbs: '30' },
     });
     const entry = confirmedEntryFromScanFlow(edited);
-    assert.equal(entry.curatedSource, toCuratedSource('wheat-bran'), 'this flow keeps curated provenance through an edit');
+    assert.equal(
+      entry.curatedSource,
+      toCuratedSource('wheat-bran'),
+      'this flow keeps curated provenance through an edit',
+    );
     assert.equal(entry.attribution, CREDIT, 'the credit must not be dropped while the provenance claim remains');
-    assert.equal(entry.netCarbsPer100g, undefined, 'the net-carbs snapshot, by contrast, DOES withdraw on a macro edit');
+    assert.equal(
+      entry.netCarbsPer100g,
+      undefined,
+      'the net-carbs snapshot, by contrast, DOES withdraw on a macro edit',
+    );
   });
 });
 
@@ -483,7 +491,16 @@ describe('the credit survives every other way an entry is created', () => {
     const envelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-28T12:00:00.000Z',
-      data: { foods: [], foodLogs: [creditedEntry()], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
+      data: {
+        foods: [],
+        foodLogs: [creditedEntry()],
+        weightEntries: [],
+        profile: null,
+        fasts: [],
+        savedMeals: [],
+        shareIdentity: null,
+        sharePeers: [],
+      },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
     assert.equal(restored.data.foodLogs[0]?.attribution, CREDIT);

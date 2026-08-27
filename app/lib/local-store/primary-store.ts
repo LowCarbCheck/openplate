@@ -31,6 +31,9 @@ import {
   PROFILE_ROW_ID,
   SAVED_MEALS_TABLE,
   SCHEMA_VERSION_VALUE,
+  SHARE_IDENTITY_ROW_ID,
+  SHARE_IDENTITY_TABLE,
+  SHARE_PEERS_TABLE,
   WEIGHT_ENTRIES_TABLE,
 } from './store';
 import { getPrimaryStore, requestPersistentStorage } from './persist';
@@ -43,11 +46,21 @@ import type {
   LocalPersonalFood,
   LocalProfileGoals,
   LocalSavedMeal,
+  LocalShareIdentity,
+  LocalSharePeer,
   LocalWeightEntry,
 } from './schema';
 
 /** Every entity kind this store persists as one JSON cell per row. */
-type PrimaryEntity = LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | LocalFast | LocalSavedMeal;
+type PrimaryEntity =
+  | LocalPersonalFood
+  | LocalFoodLog
+  | LocalWeightEntry
+  | LocalProfileGoals
+  | LocalFast
+  | LocalSavedMeal
+  | LocalShareIdentity
+  | LocalSharePeer;
 
 /** The entity cell as it comes back off the store — a TinyBase cell, not yet JSON text. */
 const entityCellSchema = z.string();
@@ -482,4 +495,72 @@ export async function getLocalSavedMeal(id: string, { store }: StoreOption = {})
 /** Removes one saved meal by id. Never touches any entry already re-logged from it (items were copied in, not referenced). */
 export async function deleteLocalSavedMeal(id: string, { store }: StoreOption = {}): Promise<void> {
   (await resolveStore(store)).delRow(SAVED_MEALS_TABLE, id);
+}
+
+// ---------------------------------------------------------------------------
+// Clinician sharing: this account's own key pair, and the peers it has pinned
+// (M160/04, `openplate-sync` ADR-0002)
+// ---------------------------------------------------------------------------
+
+/**
+ * Stores this account's share key pair. A SINGLETON, like the profile row.
+ *
+ * The private key half is written here and nowhere else. It reaches another
+ * device only inside the DEK-encrypted sync blob; no caller may post it, log
+ * it, or put it in an error message.
+ */
+export async function putLocalShareIdentity(
+  identity: LocalShareIdentity,
+  { store }: StoreOption = {},
+): Promise<LocalShareIdentity> {
+  writeEntity(await resolveStore(store), SHARE_IDENTITY_TABLE, SHARE_IDENTITY_ROW_ID, identity);
+  return identity;
+}
+
+/** This account's share key pair, or null on a device that has never generated one (the normal state — sharing is opt-in). */
+export async function getLocalShareIdentity({ store }: StoreOption = {}): Promise<LocalShareIdentity | null> {
+  return readEntity<LocalShareIdentity>(await resolveStore(store), SHARE_IDENTITY_TABLE, SHARE_IDENTITY_ROW_ID);
+}
+
+/**
+ * Removes this account's share key pair.
+ *
+ * Deleting it makes every wrap ever addressed to it permanently unopenable —
+ * the same one-way act as deleting a key record. Nothing calls this
+ * automatically, and nothing may.
+ */
+export async function deleteLocalShareIdentity({ store }: StoreOption = {}): Promise<void> {
+  (await resolveStore(store)).delRow(SHARE_IDENTITY_TABLE, SHARE_IDENTITY_ROW_ID);
+}
+
+/**
+ * Pins a peer's share public key.
+ *
+ * CALL THIS ONLY FROM A PASSED FINGERPRINT CEREMONY (ADR-0002 prohibition 6).
+ * The existence of the row is what records that the ceremony happened, so a
+ * call from anywhere else — a server response, an invite payload taken on
+ * trust, an "accept the changed key?" prompt — writes a lie that every later
+ * re-wrap then believes.
+ */
+export async function putLocalSharePeer(peer: LocalSharePeer, { store }: StoreOption = {}): Promise<LocalSharePeer> {
+  writeEntity(await resolveStore(store), SHARE_PEERS_TABLE, peer.id, peer);
+  return peer;
+}
+
+/** Every pinned peer, oldest first. */
+export async function listLocalSharePeers({ store }: StoreOption = {}): Promise<LocalSharePeer[]> {
+  return readEntities<LocalSharePeer>(await resolveStore(store), SHARE_PEERS_TABLE).toSorted(byCreatedThenId);
+}
+
+/** One pinned peer by account id, or null when this device has never verified that account's key. */
+export async function getLocalSharePeer(
+  accountId: number,
+  { store }: StoreOption = {},
+): Promise<LocalSharePeer | null> {
+  return readEntity<LocalSharePeer>(await resolveStore(store), SHARE_PEERS_TABLE, String(accountId));
+}
+
+/** Un-pins a peer. Local only — it revokes nothing on the server, which is a separate, explicit act. */
+export async function deleteLocalSharePeer(accountId: number, { store }: StoreOption = {}): Promise<void> {
+  (await resolveStore(store)).delRow(SHARE_PEERS_TABLE, String(accountId));
 }
