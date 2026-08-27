@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Database,
   Info,
+  Share2,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -203,6 +204,20 @@ export default function SettingsIndex() {
             icon={ShieldCheck}
             title={t('settings.rows.sync.title')}
             status={session.account === null ? t('settings.rows.sync.notSetUp') : session.account.email}
+          />
+        )}
+        {/* Sharing rides the same gate as the sync row and for the same
+            reason: a share is a third wrap of the sync DEK, so an instance
+            with no sync has nothing to share. Whether the SERVER offers
+            sharing is a separate question the page itself answers — it cannot
+            be known here without asking, and asking on the hub would fire a
+            request on every settings visit. */}
+        {syncServerUrl !== null && (
+          <SettingsRow
+            to="/settings/sharing"
+            icon={Share2}
+            title={t('settings.rows.sharing.title')}
+            status={t('settings.rows.sharing.status')}
           />
         )}
         <SettingsRow

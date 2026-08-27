@@ -115,6 +115,19 @@ export default [
     route('/settings/data', 'routes/settings.data.tsx'),
     // Optional E2EE sync (M128 spec 04). 404s unless `SYNC_SERVER_URL` is set.
     route('/settings/sync', 'routes/settings.sync.tsx'),
+    // Clinician sharing, the patient's side (M160/05). 404s unless
+    // `SYNC_SERVER_URL` is set, for the same reason `/settings/sync` does — a
+    // share is a third wrap of the sync DEK, so with no sync there is nothing
+    // here to be a page about. When the SERVER has `SYNC_SHARING` off it
+    // renders one honest sentence instead: that tree answers the ordinary 404
+    // to everybody, and the client reads it as "absent", never as an error.
+    route('/settings/sharing', 'routes/settings.sharing.tsx'),
+    // Clinician sharing, the grantee's side (M160/05). NO LOADER on either
+    // route: the patient's blob is pulled and decrypted in the browser, and
+    // `settings.data.tsx`'s rule — the diary lives on the device — has to hold
+    // for somebody else's diary too, or it was never a rule.
+    route('/shared', 'routes/shared._index.tsx'),
+    route('/shared/:grantorAccountId', 'routes/shared.$grantorAccountId.tsx'),
     // Provenance: version, licence and the source repository (M146 spec 01).
     // Ungated — it is true on every instance, including a self-hoster's.
     route('/settings/about', 'routes/settings.about.tsx'),

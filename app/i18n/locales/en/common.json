@@ -914,6 +914,8 @@
     "recover": "Recover your diary · openplate",
     "scan": "Scan your plate · openplate",
     "settings": "Settings · openplate",
+    "shared": "Shared with you · openplate",
+    "sharing": "Sharing · openplate",
     "sync": "Sync",
     "trends": "Progress · openplate"
   },
@@ -1442,6 +1444,10 @@
       "preferences": {
         "title": "Preferences"
       },
+      "sharing": {
+        "title": "Sharing",
+        "status": "Share your diary with a dietician"
+      },
       "sync": {
         "notSetUp": "Not set up",
         "title": "Sync"
@@ -1611,6 +1617,100 @@
       "thisMonthUnknown": "This month: {{scans}} · cost unknown",
       "failed_one": "{{count}} failed",
       "failed_other": "{{count}} failed"
+    }
+  },
+  "sharing": {
+    "cancel": "Cancel",
+    "title": "Sharing",
+    "intro": "Let a dietician or doctor read your diary. It stays encrypted the whole way: they get a copy of your key sealed to theirs, and the server still cannot read a thing.",
+    "unavailable": "This sync server does not offer sharing. Nothing here is switched on, and nothing was sent.",
+    "needsSession": "Sharing needs your sync passphrase. Unlock sync on this device first.",
+    "needsSessionCta": "Go to sync",
+    "identity": {
+      "title": "Your sharing key",
+      "description": "The key other people seal their diary to. It is made on this device and travels with your account.",
+      "none": "This device has not made a sharing key yet.",
+      "generate": "Make my sharing key",
+      "failed": "Could not make a sharing key.",
+      "fingerprintLabel": "Your fingerprint",
+      "readAloud": "Read these twelve characters out to the person sharing with you, and they type them in. This app worked them out here, from your own key.",
+      "publicKeyLabel": "Your public key",
+      "publicKeyHint": "Safe to send by email or show as a code. On its own it can decrypt nothing.",
+      "recoveryNote": "Keep your recovery code safe. It protects your patients’ access as well as your own — lose it and your passphrase, and every diary shared with you stops opening."
+    },
+    "grant": {
+      "title": "Share with someone",
+      "description": "Do this with them — in the room, or on a call. You need their account number, their key, and the fingerprint they read out.",
+      "accountLabel": "Their account number",
+      "accountHint": "They can see it on their own sharing page.",
+      "keyLabel": "Their public key",
+      "keyHint": "Paste the key from their invitation. It is public: it can seal data to them, and nothing else.",
+      "labelLabel": "What to call them",
+      "labelHint": "Kept on your devices only. The server never sees it.",
+      "fingerprintLabel": "The fingerprint they read out",
+      "fingerprintHint": "Ask them to read the twelve characters from their screen. Type what you hear.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "Typing it is the check. If someone swapped their key on the way to you, what you hear will not match, and nothing is shared.",
+      "submit": "Share my diary",
+      "badAccount": "That account number does not look right.",
+      "mismatch": "That is not this key’s fingerprint. Nothing was shared. Check the characters with them and try again.",
+      "keyChanged": "This person’s key changed. You verified {{pinned}}; this invitation carries {{offered}}. Nothing was shared. Do the fingerprint check again, with them, before you continue.",
+      "unknownGrantee": "No account with that number on this server. Nothing was shared.",
+      "conflict": "Another of your devices changed this share a moment ago. Try again.",
+      "failed": "Could not share. Nothing was changed.",
+      "done": "Shared. You verified {{fingerprint}}."
+    },
+    "grants": {
+      "title": "People you share with",
+      "empty": "You are not sharing your diary with anyone.",
+      "unnamed": "Account {{accountId}}",
+      "verified": "Verified on this device · {{fingerprint}}",
+      "verifiedHelp": "You checked this fingerprint together. Every later update is sealed to that same key.",
+      "unpinned": "Not verified on this device",
+      "unpinnedHelp": "This device has no record of the key this share was made to, so it cannot show you a fingerprint. The share still works. Do the fingerprint check with them again to bring it back here.",
+      "keyChanged": "Their key changed",
+      "keyChangedHelp": "The key on file is not the one you verified. Nothing new is sealed to it until you do the fingerprint check again.",
+      "revoke": "Stop sharing",
+      "revokeConfirmTitle": "Stop sharing with {{name}}?",
+      "revokeConfirmCutoff": "{{name}} can no longer access your diary through openplate.",
+      "revokeConfirmResidue": "Anything they already viewed may remain on their device.",
+      "revokeConfirmCta": "Stop sharing",
+      "revokeFailed": "Could not stop sharing. Nothing was changed."
+    },
+    "rotate": {
+      "title": "Replace your data key",
+      "description": "Seals your diary again, from now on, with a brand new key.",
+      "future": "Everything from now on is sealed with a key that anyone you stopped sharing with never had.",
+      "notThePast": "It cannot undo the past. Anything already viewed may remain on their device.",
+      "willDrop": "{{shares}} of your shares cannot be re-sealed from this device and will end.",
+      "open": "Replace my data key",
+      "confirmTitle": "Replace your data key?",
+      "confirmBody": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working.",
+      "passphraseLabel": "Confirm with your passphrase",
+      "passphraseHint": "We ask because the new key has to be sealed to your passphrase, and a wrong one would lock you out of your own diary.",
+      "confirmCta": "Replace the key",
+      "failed": "Could not replace the key. Nothing was changed.",
+      "doneTitle": "Your data key was replaced.",
+      "doneBody": "{{kept}} share(s) kept, {{revoked}} ended.",
+      "recoveryTitle": "Your new recovery code — write it down now.",
+      "recoveryNote": "Shown once. The code you had before no longer works."
+    },
+    "clinician": {
+      "title": "Shared with you",
+      "description": "Diaries people have shared with you. Each one is decrypted here, on this device.",
+      "empty": "Nobody has shared a diary with you yet.",
+      "patientTitle": "Account {{accountId}}",
+      "sharedSince": "Shared since {{at}}",
+      "open": "Open",
+      "drop": "Remove",
+      "dropFailed": "Could not remove this share.",
+      "back": "Back to the list",
+      "readOnly": "Read only. You cannot change anything here.",
+      "lastUpdated": "Their last update: {{at}}",
+      "noEntries": "No entries in this diary yet.",
+      "dayNetCarbs": "{{grams}} g net carbs",
+      "entryGrams": "{{grams}} g",
+      "gone": "This diary is not available. The share may have been stopped, or nothing has been synced yet."
     }
   },
   "sync": {

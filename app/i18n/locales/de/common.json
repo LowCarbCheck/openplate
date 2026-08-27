@@ -914,6 +914,8 @@
     "recover": "Tagebuch wiederherstellen · openplate",
     "scan": "Teller scannen · openplate",
     "settings": "Einstellungen · openplate",
+    "shared": "Mit dir geteilt · openplate",
+    "sharing": "Teilen · openplate",
     "sync": "Sync",
     "trends": "Fortschritt · openplate"
   },
@@ -1442,6 +1444,10 @@
       "preferences": {
         "title": "Darstellung & Sprache"
       },
+      "sharing": {
+        "title": "Teilen",
+        "status": "Dein Tagebuch mit einer Beratung teilen"
+      },
       "sync": {
         "notSetUp": "Nicht eingerichtet",
         "title": "Sync"
@@ -1611,6 +1617,100 @@
       "thisMonthUnknown": "Diesen Monat: {{scans}} · Kosten unbekannt",
       "failed_one": "{{count}} fehlgeschlagen",
       "failed_other": "{{count}} fehlgeschlagen"
+    }
+  },
+  "sharing": {
+    "cancel": "Abbrechen",
+    "title": "Teilen",
+    "intro": "Lass eine Ernährungsberater:in oder Ärzt:in dein Tagebuch lesen. Es bleibt durchgehend verschlüsselt: sie bekommen eine Kopie deines Schlüssels, versiegelt für ihren — der Server kann weiterhin nichts lesen.",
+    "unavailable": "Dieser Sync-Server bietet kein Teilen an. Hier ist nichts eingeschaltet, und es wurde nichts gesendet.",
+    "needsSession": "Zum Teilen brauchst du deine Sync-Passphrase. Entsperre Sync zuerst auf diesem Gerät.",
+    "needsSessionCta": "Zu Sync",
+    "identity": {
+      "title": "Dein Teilen-Schlüssel",
+      "description": "Der Schlüssel, für den andere ihr Tagebuch versiegeln. Er entsteht auf diesem Gerät und wandert mit deinem Konto.",
+      "none": "Dieses Gerät hat noch keinen Teilen-Schlüssel erzeugt.",
+      "generate": "Teilen-Schlüssel erzeugen",
+      "failed": "Der Teilen-Schlüssel konnte nicht erzeugt werden.",
+      "fingerprintLabel": "Dein Fingerabdruck",
+      "readAloud": "Lies diese zwölf Zeichen der Person vor, die mit dir teilt — sie tippt sie ein. Diese App hat sie hier aus deinem eigenen Schlüssel berechnet.",
+      "publicKeyLabel": "Dein öffentlicher Schlüssel",
+      "publicKeyHint": "Kann gefahrlos per E-Mail oder als Code weitergegeben werden. Allein entschlüsselt er nichts.",
+      "recoveryNote": "Bewahre deinen Wiederherstellungscode gut auf. Er schützt auch den Zugang deiner Patient:innen — verlierst du ihn und deine Passphrase, lässt sich kein geteiltes Tagebuch mehr öffnen."
+    },
+    "grant": {
+      "title": "Mit jemandem teilen",
+      "description": "Macht das gemeinsam — im Raum oder am Telefon. Du brauchst ihre Kontonummer, ihren Schlüssel und den Fingerabdruck, den sie vorliest.",
+      "accountLabel": "Ihre Kontonummer",
+      "accountHint": "Sie sehen sie auf ihrer eigenen Teilen-Seite.",
+      "keyLabel": "Ihr öffentlicher Schlüssel",
+      "keyHint": "Füge den Schlüssel aus ihrer Einladung ein. Er ist öffentlich: er kann Daten für sie versiegeln, mehr nicht.",
+      "labelLabel": "Name für diese Person",
+      "labelHint": "Bleibt nur auf deinen Geräten. Der Server sieht ihn nie.",
+      "fingerprintLabel": "Der vorgelesene Fingerabdruck",
+      "fingerprintHint": "Bitte sie, die zwölf Zeichen von ihrem Bildschirm vorzulesen. Tippe ein, was du hörst.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "Das Eintippen ist die Prüfung. Hat jemand unterwegs ihren Schlüssel ausgetauscht, passt das Gehörte nicht — und es wird nichts geteilt.",
+      "submit": "Mein Tagebuch teilen",
+      "badAccount": "Diese Kontonummer sieht nicht richtig aus.",
+      "mismatch": "Das ist nicht der Fingerabdruck dieses Schlüssels. Es wurde nichts geteilt. Geht die Zeichen gemeinsam durch und versucht es erneut.",
+      "keyChanged": "Der Schlüssel dieser Person hat sich geändert. Du hast {{pinned}} bestätigt; diese Einladung trägt {{offered}}. Es wurde nichts geteilt. Macht die Fingerabdruck-Prüfung gemeinsam noch einmal, bevor du weitermachst.",
+      "unknownGrantee": "Kein Konto mit dieser Nummer auf diesem Server. Es wurde nichts geteilt.",
+      "conflict": "Ein anderes deiner Geräte hat diese Freigabe gerade geändert. Versuch es noch einmal.",
+      "failed": "Teilen hat nicht geklappt. Es wurde nichts geändert.",
+      "done": "Geteilt. Du hast {{fingerprint}} bestätigt."
+    },
+    "grants": {
+      "title": "Personen, mit denen du teilst",
+      "empty": "Du teilst dein Tagebuch mit niemandem.",
+      "unnamed": "Konto {{accountId}}",
+      "verified": "Auf diesem Gerät bestätigt · {{fingerprint}}",
+      "verifiedHelp": "Ihr habt diesen Fingerabdruck gemeinsam geprüft. Jede spätere Aktualisierung wird für genau diesen Schlüssel versiegelt.",
+      "unpinned": "Auf diesem Gerät nicht bestätigt",
+      "unpinnedHelp": "Dieses Gerät kennt den Schlüssel dieser Freigabe nicht und kann dir deshalb keinen Fingerabdruck zeigen. Die Freigabe läuft weiter. Macht die Fingerabdruck-Prüfung gemeinsam noch einmal, dann ist sie hier wieder da.",
+      "keyChanged": "Ihr Schlüssel hat sich geändert",
+      "keyChangedHelp": "Der hinterlegte Schlüssel ist nicht der, den du bestätigt hast. Es wird nichts Neues dafür versiegelt, bis ihr die Fingerabdruck-Prüfung wiederholt.",
+      "revoke": "Teilen beenden",
+      "revokeConfirmTitle": "Teilen mit {{name}} beenden?",
+      "revokeConfirmCutoff": "{{name}} kann über openplate nicht mehr auf dein Tagebuch zugreifen.",
+      "revokeConfirmResidue": "Was bereits angesehen wurde, kann auf dem Gerät der Person bleiben.",
+      "revokeConfirmCta": "Teilen beenden",
+      "revokeFailed": "Teilen konnte nicht beendet werden. Es wurde nichts geändert."
+    },
+    "rotate": {
+      "title": "Datenschlüssel ersetzen",
+      "description": "Versiegelt dein Tagebuch ab jetzt mit einem ganz neuen Schlüssel.",
+      "future": "Alles ab jetzt wird mit einem Schlüssel versiegelt, den niemand hatte, mit dem du das Teilen beendet hast.",
+      "notThePast": "Die Vergangenheit lässt sich damit nicht zurückholen. Was bereits angesehen wurde, kann auf dem Gerät der Person bleiben.",
+      "willDrop": "{{shares}} deiner Freigaben lassen sich von diesem Gerät nicht neu versiegeln und enden.",
+      "open": "Datenschlüssel ersetzen",
+      "confirmTitle": "Datenschlüssel ersetzen?",
+      "confirmBody": "Alles, was du eingetragen hast, wird mit einem neuen Schlüssel neu versiegelt, und alle, mit denen du weiter teilst, bekommen eine frische versiegelte Kopie. Du bekommst einen neuen Wiederherstellungscode, der alte gilt dann nicht mehr.",
+      "passphraseLabel": "Mit deiner Passphrase bestätigen",
+      "passphraseHint": "Wir fragen, weil der neue Schlüssel für deine Passphrase versiegelt wird — eine falsche würde dich aus deinem eigenen Tagebuch aussperren.",
+      "confirmCta": "Schlüssel ersetzen",
+      "failed": "Der Schlüssel konnte nicht ersetzt werden. Es wurde nichts geändert.",
+      "doneTitle": "Dein Datenschlüssel wurde ersetzt.",
+      "doneBody": "{{kept}} Freigabe(n) behalten, {{revoked}} beendet.",
+      "recoveryTitle": "Dein neuer Wiederherstellungscode — schreib ihn jetzt auf.",
+      "recoveryNote": "Wird einmal gezeigt. Der Code von vorher gilt nicht mehr."
+    },
+    "clinician": {
+      "title": "Mit dir geteilt",
+      "description": "Tagebücher, die andere mit dir teilen. Jedes wird hier auf diesem Gerät entschlüsselt.",
+      "empty": "Noch hat niemand ein Tagebuch mit dir geteilt.",
+      "patientTitle": "Konto {{accountId}}",
+      "sharedSince": "Geteilt seit {{at}}",
+      "open": "Öffnen",
+      "drop": "Entfernen",
+      "dropFailed": "Diese Freigabe konnte nicht entfernt werden.",
+      "back": "Zurück zur Liste",
+      "readOnly": "Nur lesen. Du kannst hier nichts ändern.",
+      "lastUpdated": "Letzte Aktualisierung: {{at}}",
+      "noEntries": "In diesem Tagebuch steht noch nichts.",
+      "dayNetCarbs": "{{grams}} g Netto-KH",
+      "entryGrams": "{{grams}} g",
+      "gone": "Dieses Tagebuch ist nicht verfügbar. Vielleicht wurde das Teilen beendet, oder es wurde noch nichts synchronisiert."
     }
   },
   "sync": {

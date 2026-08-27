@@ -22,6 +22,16 @@
 import {
   SYNC_API_PREFIX,
   type KdfDescriptor,
+  type ListSharedResponse,
+  type ListSharesResponse,
+  type PutShareConflictResponse,
+  type PutShareRequest,
+  type ReceivedShareWire,
+  type RotateDekAcceptedResponse,
+  type RotateDekConflictResponse,
+  type RotateDekRequest,
+  type ShareGrantWire,
+  type SharedBlobResponse,
   type KeyRecordWire,
   type ListKeyRecordsResponse,
   type PullBlobResponse,
@@ -70,6 +80,54 @@ export interface StoredKeyRecord {
 /** The two protocol-meaningful outcomes of a key-record PUT. */
 export type PutKeyRecordHttpResult =
   { status: 'accepted'; record: StoredKeyRecord } | { status: 'conflict'; currentUpdatedAt: string | null };
+
+/**
+ * A read of a surface that only exists on a deployment which enabled it.
+ *
+ * `unavailable` is the honest name for "every path in that tree answers the
+ * ordinary unknown-route 404" (ADR-0002 prohibition 10). It is NOT an error:
+ * the caller must render nothing rather than a broken screen, and must not
+ * retry.
+ */
+export type ShareSurfaceRead<TValue> = { status: 'available'; value: TValue } | { status: 'unavailable' };
+
+/** One of the caller's own grants. Never carries a wrap — it is addressed to somebody else's key. */
+export interface ShareGrant {
+  granteeAccountId: number;
+  recipientKeyFingerprint: string;
+  createdAt: string;
+  /** The CAS token for the next write to this row. */
+  updatedAt: string;
+}
+
+/** A share addressed to the caller, with the wrap only their private key opens. */
+export interface ReceivedShare {
+  grantorAccountId: number;
+  wrappedDek: Uint8Array;
+  recipientKeyFingerprint: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A grantor's current blob, as a grantee reads it. `grantorAccountId` is required to rebuild the envelope AAD. */
+export interface SharedBlob {
+  grantorAccountId: number;
+  blobVersion: number;
+  envelopeVersion: number;
+  ciphertext: Uint8Array;
+  createdAt: string;
+}
+
+/** The three protocol-meaningful outcomes of a share PUT. `not-found` covers both "no such account" and "sharing is off here" — the service answers one 404 for both, deliberately. */
+export type PutShareHttpResult =
+  | { status: 'accepted'; grant: ShareGrant }
+  | { status: 'conflict'; currentUpdatedAt: string | null }
+  | { status: 'not-found' };
+
+/** The two protocol-meaningful outcomes of a rotation. Everything else throws; nothing partial is ever written. */
+export type RotateDekHttpResult =
+  | { status: 'accepted'; newVersion: number; keptShares: number; revokedShares: number }
+  | { status: 'conflict'; currentVersion: number };
 
 export class SyncHttpClient {
   private readonly baseUrl: string;
@@ -201,6 +259,158 @@ export class SyncHttpClient {
   }
 
   // -------------------------------------------------------------------------
+  // Shares — grantor side (§5.16)
+  // -------------------------------------------------------------------------
+
+  /**
+   * The caller's own grants (§5.16). A `404` means this deployment has no
+   * sharing at all, which is reported as {@link ShareSurfaceRead} rather than
+   * thrown — the surface has to disappear, not break.
+   */
+  async listShares(): Promise<ShareSurfaceRead<ShareGrant[]>> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/shares`, method: 'GET' });
+    if (response.status === 404) return { status: 'unavailable' };
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.16 defines the 200 body of this endpoint as
+    // `ListSharesResponse`; the 404 and every other non-2xx are handled above.
+    const body = (await response.json()) as ListSharesResponse;
+    return { status: 'available', value: body.shares.map(decodeShareGrant) };
+  }
+
+  /**
+   * Creates or re-wraps one share (§5.16), CAS-gated on `expectedUpdatedAt`
+   * exactly as a key record is — a rotation re-wrap can race a re-grant.
+   *
+   * The key is always sent, never omitted: an absent `expectedUpdatedAt` is a
+   * `400` by design, so no caller can skip the concurrency check by forgetting
+   * a field.
+   */
+  async putShare(input: {
+    granteeAccountId: number;
+    wrappedDek: Uint8Array;
+    recipientKeyFingerprint: string;
+    expectedUpdatedAt: string | null;
+  }): Promise<PutShareHttpResult> {
+    const body: PutShareRequest = {
+      wrappedDek: bytesToBase64(input.wrappedDek),
+      recipientKeyFingerprint: input.recipientKeyFingerprint,
+      expectedUpdatedAt: input.expectedUpdatedAt,
+    };
+    const response = await this.send({
+      path: `${SYNC_API_PREFIX}/shares/${input.granteeAccountId}`,
+      method: 'PUT',
+      body,
+    });
+    if (response.status === 404) return { status: 'not-found' };
+    if (response.status === 409) {
+      // SAFETY: §5.16 defines the 409 body of this endpoint as
+      // `PutShareConflictResponse`.
+      const conflict = (await response.json()) as PutShareConflictResponse;
+      return { status: 'conflict', currentUpdatedAt: conflict.currentUpdatedAt };
+    }
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.16 defines the 200 body of this endpoint as the stored grant,
+    // without its wrap; every non-2xx has already been handled above.
+    return { status: 'accepted', grant: decodeShareGrant((await response.json()) as ShareGrantWire) };
+  }
+
+  /**
+   * Tier 1 revocation (§5.16): a HARD DELETE, effective on the very next
+   * request because the row is read every time and never cached. Idempotent.
+   *
+   * A `404` is accepted silently for one reason only: it means this deployment
+   * has no share table, so there is no row to remove and nothing to report.
+   */
+  async deleteShare(granteeAccountId: number): Promise<void> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/shares/${granteeAccountId}`, method: 'DELETE' });
+    if (response.status === 404) return;
+    if (!response.ok) throw await toRequestError(response);
+  }
+
+  // -------------------------------------------------------------------------
+  // Shares — grantee side (§5.16). READ ONLY, always.
+  // -------------------------------------------------------------------------
+
+  /** The shares addressed to this caller, each with the wrap only their key opens (§5.16). */
+  async listSharedWithMe(): Promise<ShareSurfaceRead<ReceivedShare[]>> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/shared`, method: 'GET' });
+    if (response.status === 404) return { status: 'unavailable' };
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.16 defines the 200 body of this endpoint as
+    // `ListSharedResponse`; the 404 and every other non-2xx are handled above.
+    const body = (await response.json()) as ListSharedResponse;
+    return { status: 'available', value: body.shares.map(decodeReceivedShare) };
+  }
+
+  /**
+   * A grantor's CURRENT blob (§5.16). `null` for every absence — the share was
+   * revoked, the grantor never pushed, the account does not exist, or this
+   * deployment has no sharing. The service answers ONE 404 for all of them on
+   * purpose, and this client must not invent a distinction it cannot make.
+   */
+  async pullSharedBlob(grantorAccountId: number): Promise<SharedBlob | null> {
+    const response = await this.send({
+      path: `${SYNC_API_PREFIX}/shared/${grantorAccountId}/blob`,
+      method: 'GET',
+    });
+    if (response.status === 404) return null;
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.16 defines the 200 body of this endpoint as
+    // `SharedBlobResponse`; the 404 and every other non-2xx are handled above.
+    const body = (await response.json()) as SharedBlobResponse;
+    return {
+      grantorAccountId: body.grantorAccountId,
+      blobVersion: body.blobVersion,
+      envelopeVersion: body.envelopeVersion,
+      ciphertext: base64ToBytes(body.ciphertext),
+      createdAt: body.createdAt,
+    };
+  }
+
+  /** Drops a share aimed at this caller (§5.16). Without it, anyone knowing an account id could park junk in a clinician's list forever. */
+  async deleteSharedWithMe(grantorAccountId: number): Promise<void> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/shared/${grantorAccountId}`, method: 'DELETE' });
+    if (response.status === 404) return;
+    if (!response.ok) throw await toRequestError(response);
+  }
+
+  // -------------------------------------------------------------------------
+  // Atomic DEK rotation (§5.17)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Tier 2 revocation (§5.17): one submission carrying the re-encrypted blob,
+   * BOTH re-wrapped key records, and a re-wrap for every share to keep. The
+   * service applies it all or none.
+   *
+   * `shares` is the KEEP list and every row it does not name is deleted in the
+   * same transaction — silence is revocation here, inverting §5.14, because
+   * these rows are somebody else's capability on the caller's diary.
+   *
+   * Present on every deployment: an owner who never shared anything still
+   * needs a way to retire a DEK they believe leaked.
+   */
+  async rotateDek(request: RotateDekRequest): Promise<RotateDekHttpResult> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/rotate-dek`, method: 'POST', body: request });
+    if (response.status === 409) {
+      // SAFETY: §5.17 defines the 409 body of this endpoint as
+      // `RotateDekConflictResponse`. Nothing was written.
+      const conflict = (await response.json()) as RotateDekConflictResponse;
+      return { status: 'conflict', currentVersion: conflict.currentVersion };
+    }
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.17 defines the 200 body of this endpoint as
+    // `RotateDekAcceptedResponse`; every non-2xx has already been handled.
+    const accepted = (await response.json()) as RotateDekAcceptedResponse;
+    return {
+      status: 'accepted',
+      newVersion: accepted.newVersion,
+      keptShares: accepted.keptShares,
+      revokedShares: accepted.revokedShares,
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // Transport
   // -------------------------------------------------------------------------
 
@@ -247,6 +457,25 @@ function decodeKeyRecord(wire: KeyRecordWire): StoredKeyRecord {
     kind: wire.kind,
     kdfDescriptor: wire.kdfDescriptor,
     wrappedDek: base64ToBytes(wire.wrappedDek),
+    updatedAt: wire.updatedAt,
+  };
+}
+
+function decodeShareGrant(wire: ShareGrantWire): ShareGrant {
+  return {
+    granteeAccountId: wire.granteeAccountId,
+    recipientKeyFingerprint: wire.recipientKeyFingerprint,
+    createdAt: wire.createdAt,
+    updatedAt: wire.updatedAt,
+  };
+}
+
+function decodeReceivedShare(wire: ReceivedShareWire): ReceivedShare {
+  return {
+    grantorAccountId: wire.grantorAccountId,
+    wrappedDek: base64ToBytes(wire.wrappedDek),
+    recipientKeyFingerprint: wire.recipientKeyFingerprint,
+    createdAt: wire.createdAt,
     updatedAt: wire.updatedAt,
   };
 }

@@ -321,3 +321,125 @@ export const PROTOCOL_STATUS = {
   conflict: 409,
   payloadTooLarge: 413,
 } as const;
+
+// ---------------------------------------------------------------------------
+// Wire shapes — shares (§5.16, `openplate-sync` ADR-0002)
+// ---------------------------------------------------------------------------
+
+/**
+ * These endpoints exist ONLY on a deployment that sets `SYNC_SHARING`.
+ * Everywhere else every path below answers the ordinary unknown-route `404`,
+ * to every caller, credentialed or not — the terminator is mounted ahead of
+ * authentication, so an unconfigured instance is indistinguishable from one
+ * where the feature was never written (ADR-0002 prohibition 10).
+ *
+ * A client must therefore treat a `404` from the LIST endpoints as "this
+ * server has no sharing", not as an error, and render nothing rather than a
+ * broken screen.
+ */
+export interface ShareGrantWire {
+  /** The clinician's account id. Both sides address a share by the counterpart's account id, never a synthetic share id. */
+  granteeAccountId: number;
+  /** Pinning metadata only — the server neither computes nor endorses it (ADR-0002 prohibition 1). */
+  recipientKeyFingerprint: string;
+  createdAt: IsoTimestamp;
+  /** The CAS token for the next `PUT`, exactly as a key record's is. */
+  updatedAt: IsoTimestamp;
+}
+
+/** `200` from `GET {prefix}/shares` — the grantor's own grants. NEVER carries `wrappedDek`. */
+export interface ListSharesResponse {
+  shares: ShareGrantWire[];
+}
+
+/** `PUT {prefix}/shares/:granteeAccountId` — CAS-gated exactly as §5.4. */
+export interface PutShareRequest {
+  /** The 125-byte share wrap, base64. See `crypto/share-wrap.ts` for the construction. */
+  wrappedDek: Base64Bytes;
+  recipientKeyFingerprint: string;
+  /** `null` asserts "no share for this grantee yet". An ABSENT key is a `400`, deliberately. */
+  expectedUpdatedAt: IsoTimestamp | null;
+}
+
+/** `409` from a share `PUT` whose `expectedUpdatedAt` no longer matches. */
+export interface PutShareConflictResponse {
+  currentUpdatedAt: IsoTimestamp | null;
+}
+
+/** One share addressed to the calling account — `GET {prefix}/shared`. The wrap DOES travel here; only this caller can open it. */
+export interface ReceivedShareWire {
+  grantorAccountId: number;
+  wrappedDek: Base64Bytes;
+  recipientKeyFingerprint: string;
+  createdAt: IsoTimestamp;
+  updatedAt: IsoTimestamp;
+}
+
+/** `200` from `GET {prefix}/shared`. */
+export interface ListSharedResponse {
+  shares: ReceivedShareWire[];
+}
+
+/**
+ * `200` from `GET {prefix}/shared/:grantorAccountId/blob` — the grantor's
+ * CURRENT blob and nothing else. No version history, no key records, no
+ * profile.
+ *
+ * `grantorAccountId` is part of the contract rather than a convenience echo:
+ * §3.2's AAD binds it, so a grantee who does not know it cannot decrypt this
+ * response at all.
+ */
+export interface SharedBlobResponse {
+  grantorAccountId: number;
+  blobVersion: number;
+  envelopeVersion: number;
+  ciphertext: Base64Bytes;
+  createdAt: IsoTimestamp;
+}
+
+// ---------------------------------------------------------------------------
+// Wire shapes — atomic DEK rotation (§5.17)
+// ---------------------------------------------------------------------------
+
+/** One re-wrapped key record inside a rotation. There is no per-record CAS token: the submission itself is the concurrency unit. */
+export interface RotateDekKeyRecordWire {
+  kind: SyncKeyRecordKind;
+  kdfDescriptor: KdfDescriptor | null;
+  wrappedDek: Base64Bytes;
+}
+
+/** One entry of the rotation's KEEP list. Every share row not named here is deleted in the same transaction. */
+export interface RotateDekShareWire {
+  granteeAccountId: number;
+  wrappedDek: Base64Bytes;
+  recipientKeyFingerprint: string;
+}
+
+/**
+ * `POST {prefix}/rotate-dek` — Tier 2 revocation, all of it, in one
+ * transaction (ADR-0002 prohibition 8: a rotation is atomic or it does not
+ * exist).
+ *
+ * PRESENT ON EVERY DEPLOYMENT, unlike §5.16: it rewrites the caller's own blob
+ * and own two key records, rows every account everywhere has. On an instance
+ * without `SYNC_SHARING` the keep list must be empty.
+ */
+export interface RotateDekRequest {
+  blob: { baseVersion: number; envelopeVersion: number; ciphertext: Base64Bytes };
+  /** BOTH kinds, always. A missing kind is a `400`, never a silent partial rotation. */
+  keyRecords: RotateDekKeyRecordWire[];
+  /** The keep list. `[]` is valid and revokes everything; an ABSENT key is a `400`. */
+  shares: RotateDekShareWire[];
+}
+
+/** `200` from a rotation. `revokedShares` counts the rows the keep list did not name. */
+export interface RotateDekAcceptedResponse {
+  newVersion: number;
+  keptShares: number;
+  revokedShares: number;
+}
+
+/** `409` — the blob CAS did not hold, and NOTHING was written. */
+export interface RotateDekConflictResponse {
+  currentVersion: number;
+}
