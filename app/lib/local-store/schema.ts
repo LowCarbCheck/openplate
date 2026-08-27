@@ -220,6 +220,30 @@
  * keep the plaintext. Only the blob partitions, because only a blob is ever
  * handed to a second person.
  */
+/**
+ * NOTE (M161/03, research contributions): `SCHEMA_VERSION` v14 -> v15 is under
+ * the `fasts`/`savedMeals`/`shareIdentity` rules, NOT the optional-field
+ * rules: it adds TWO WHOLE NEW ENTITIES — `LocalResearchIdentity` and
+ * `LocalStudyEnrolment`, plus their two tables — and two new keys on
+ * `LocalStoreSnapshot` itself. A v14 envelope has neither key, so
+ * `backup.ts`'s `.default(null)` / `.default([])` IS the complete forward
+ * migration ("this device had no research identity, because contributing did
+ * not exist"). No `migrateSnapshotToV15` step, for the identical reason there
+ * is no `migrateSnapshotToV13` one.
+ *
+ * BOTH KEYS ARE OWNER-PRIVATE, and that is the whole reason the compartment
+ * exists (`app/lib/sync/snapshot-partition.ts`, `openplate-sync` ADR-0003
+ * prohibition 3). The pseudonym root is the secret every study pseudonym
+ * derives from: a clinician grantee holding a full DEK must learn neither the
+ * root — which would let her recompute every pseudonym this person will ever
+ * present to any study — nor `studyEnrolments`, which is the list of studies
+ * this person joined and therefore health data in its own right.
+ *
+ * The compartment is also what makes the pseudonym STABLE: it survives a
+ * recovery-code restore and reaches a second device, which is why ADR-0003
+ * prohibition 4 refuses enrolment on an account that has no compartment
+ * rather than degrading to a per-device root.
+ */
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { Macros } from '#app/lib/macros';
@@ -231,7 +255,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -271,6 +295,12 @@ export const SHARE_IDENTITY_TABLE = 'shareIdentity';
 export const SHARE_IDENTITY_ROW_ID = 'me';
 /** Pinned peer public keys (M160/04) — one row per counterpart account, keyed by that account id as a string. */
 export const SHARE_PEERS_TABLE = 'sharePeers';
+/** Research identity table (M161/03) — a SINGLETON, keyed by {@link RESEARCH_IDENTITY_ROW_ID}, exactly like the share identity row. */
+export const RESEARCH_IDENTITY_TABLE = 'researchIdentity';
+/** The one row id the research identity ever occupies — an account has exactly one pseudonym root, and a second would break every pseudonym derived from the first. */
+export const RESEARCH_IDENTITY_ROW_ID = 'me';
+/** Study enrolments (M161/03) — one row per study this account contributes to, keyed by that study's account id as a string. */
+export const STUDY_ENROLMENTS_TABLE = 'studyEnrolments';
 
 /** The single JSON cell every primary-store row uses to hold its serialized entity. */
 export const PRIMARY_ENTITY_CELL = 'entity';
@@ -796,6 +826,61 @@ export interface LocalSharePeer {
 }
 
 /**
+ * The pseudonym ROOT (`openplate-sync` ADR-0003) — 256 random bits, generated
+ * once at first enrolment, and the only input a study pseudonym derives from
+ * that the server does not hold.
+ *
+ * A SINGLETON, like the share identity row. It lives in the owner-private
+ * compartment so it survives a recovery-code restore and reaches a second
+ * device: that is what makes a pseudonym STABLE across submissions, and it is
+ * why an account with no compartment cannot enrol at all (prohibition 4)
+ * rather than falling back to a per-device root.
+ *
+ * `pid = HMAC-SHA-256(root, "openplate-sync:study-pseudonym:v1" || studyAccountId)`
+ * — see `app/lib/sync/research/pseudonym.ts`, which owns the derivation.
+ * `H(accountId || studyId)` was rejected on exactly one point: with public
+ * inputs it reverses by enumeration over the account table.
+ *
+ * NEVER send this anywhere, never log it, and never put it in a contribution.
+ * A researcher who learned one contributor's root could recompute that
+ * person's pseudonym in every OTHER study, which is the unlinkability the
+ * whole design turns on.
+ */
+export interface LocalResearchIdentity {
+  /** The 256-bit root, base64 — bytes rather than a typed array for the reason `LocalShareIdentity`'s halves are: a snapshot is JSON. */
+  pseudonymRoot: string;
+  /** Epoch-ms the root was generated on-device. */
+  createdAt: number;
+}
+
+/**
+ * A study whose public key this account has PINNED, after typing the
+ * fingerprint printed in that study's ethics-approved consent materials
+ * (ADR-0003's second-ranked attack).
+ *
+ * The EXISTENCE of a row here IS the verification record, exactly as it is for
+ * `LocalSharePeer`: a row is only ever written by a ceremony that passed.
+ *
+ * Deliberately NO stored fingerprint and NO stored pseudonym, for the reason
+ * `LocalSharePeer` stores no fingerprint: both are recomputable — the
+ * fingerprint from `publicKeyRaw`, the pseudonym from the root and
+ * `studyAccountId` — and a stored copy can drift from the thing it claims to
+ * describe and then be displayed as if it were still true.
+ */
+export interface LocalStudyEnrolment {
+  /** The study's sync account id, as a string — the row id. */
+  id: string;
+  /** The study's sync account id. `id` is its string form; this is the value that goes into the contribution's AAD. */
+  studyAccountId: number;
+  /** The study's uncompressed SEC1 raw public key (65 bytes), base64 — the key every contribution is sealed to. */
+  publicKeyRaw: string;
+  /** The person's own name for this study ("Charité sleep trial"). Local only; the server never sees it. */
+  label: string | null;
+  /** Epoch-ms the fingerprint ceremony passed and this study key was pinned. */
+  createdAt: number;
+}
+
+/**
  * A full, lossless snapshot of the primary store's health data — the payload a
  * backup envelope carries (`backup.ts`). Device-only photos are deliberately
  * excluded (they never enter export, sync, or the server — see `photos.ts`).
@@ -842,4 +927,24 @@ export interface LocalStoreSnapshot {
    * at all, and `backup.ts`'s `.default([])` is the whole forward migration.
    */
   sharePeers: LocalSharePeer[];
+  /**
+   * Added v15 (research contributions, M161/03) — this account's pseudonym
+   * root, or `null` on a device that has never enrolled in a study (the
+   * normal state: contributing is opt-in and most people never do).
+   *
+   * OWNER-PRIVATE. A clinician grantee holding a full DEK must not learn it:
+   * the root recomputes every pseudonym this person will ever present, in
+   * every study (ADR-0003 prohibition 3).
+   */
+  researchIdentity: LocalResearchIdentity | null;
+  /**
+   * Added v15 (research contributions, M161/03) — the studies whose keys this
+   * device has pinned through the typed fingerprint ceremony.
+   *
+   * REQUIRED, under the `fasts`/`savedMeals`/`sharePeers` rule: a v14 envelope
+   * has no key at all, and `backup.ts`'s `.default([])` is the whole forward
+   * migration. OWNER-PRIVATE too, and for a reason the public keys themselves
+   * do not suggest: WHICH STUDIES a person joined is health data.
+   */
+  studyEnrolments: LocalStudyEnrolment[];
 }

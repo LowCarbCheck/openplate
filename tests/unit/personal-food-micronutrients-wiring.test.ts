@@ -548,6 +548,8 @@ describe('backup round trip', () => {
         profile: null,
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     });
 
@@ -583,6 +585,8 @@ describe('backup round trip', () => {
         profile: null,
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     });
 

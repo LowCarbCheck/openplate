@@ -500,6 +500,8 @@ describe('the credit survives every other way an entry is created', () => {
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));

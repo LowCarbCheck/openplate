@@ -72,6 +72,7 @@ test('every HKDF label is DISTINCT — the domain-separation guard, in code rath
     'openplate-sync:private-store-kek:v1',
     'openplate-sync:private-store-recovery-kek:v1',
     'openplate-sync:recovery-kek:v1',
+    'openplate-sync:research-kek:p256:v1',
     'openplate-sync:share-kek:p256:v1',
   ]);
 });

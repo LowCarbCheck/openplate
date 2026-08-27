@@ -36,29 +36,40 @@
  *   AAD       <- {"grantorAccountId":<int>,"recipientKeyFingerprint":"<base64>"}
  *   wrap      <- ephPub(65) || iv(12) || AES-256-GCM(KEK_share, DEK, aad=AAD)
  *
+ * The ECDH -> HKDF -> KEK step itself lives in `ecies.ts` and is shared with
+ * the research contribution wrap (ADR-0003), which is the SAME construction
+ * under a DIFFERENT frozen label. Only the label differs; the curve, the
+ * shared-secret length and the empty salt are frozen there for both callers.
+ *
  * Pure with respect to its inputs apart from the two documented randomness
  * sources (the ephemeral key pair and the GCM IV), and it touches no store, no
  * network and no clock. The ephemeral private key exists only inside
- * {@link wrapDekForRecipient}'s call frame and is never returned, logged or
+ * `deriveEciesSenderKek`'s call frame and is never returned, logged or
  * persisted — that is what makes a wrap unopenable by its own author.
  */
 import { bytesToBase64 } from './base64';
 import { encodeCrockfordBase32, groupCharacters } from './base32';
-import { deriveAesKeyViaHkdf, HKDF_INFO } from './hkdf';
+import { HKDF_INFO } from './hkdf';
 import { unwrapDek, wrapDek } from './dek-wrap';
 import { toBufferSource } from './buffer-source';
+import {
+  deriveEciesRecipientKek,
+  deriveEciesSenderKek,
+  ECIES_PUBLIC_KEY_BYTES,
+  generateEciesKeyPair,
+  importEciesPrivateKey,
+} from './ecies';
 
-/** The only curve. Not negotiable, not detected, not degraded — see this module's header. */
-const SHARE_CURVE = 'P-256';
-
-/** ECDH parameters for both key generation and key import. `P-256` appears once, here. */
-const SHARE_KEY_ALGORITHM: EcKeyGenParams & EcKeyImportParams = { name: 'ECDH', namedCurve: SHARE_CURVE };
-
-/** An uncompressed SEC1 P-256 public key: `0x04 || X(32) || Y(32)`. */
-export const SHARE_PUBLIC_KEY_BYTES = 65;
-
-/** The ECDH shared secret's length — P-256's field size, and exactly the HKDF input the construction specifies. */
-const SHARED_SECRET_BITS = 256;
+/**
+ * An uncompressed SEC1 P-256 public key: `0x04 || X(32) || Y(32)`.
+ *
+ * The curve, the algorithm and this length live in `ecies.ts` now — the share
+ * wrap and the research contribution (ADR-0003) are the same ECDH → HKDF →
+ * AES-GCM construction under different labels, and one implementation is the
+ * point. Re-exported here because `SHARE_WRAP_BYTES` below is stated in terms
+ * of it and every reader of this file needs the number in front of them.
+ */
+export const SHARE_PUBLIC_KEY_BYTES = ECIES_PUBLIC_KEY_BYTES;
 
 /**
  * The share wrap's total length: `ephPub(65) || iv(12) || ciphertext+tag(48)`.
@@ -94,10 +105,7 @@ export interface ShareKeyPair {
  * per-device wraps is the recorded future hardening — deferred, not built.
  */
 export async function generateShareKeyPair(): Promise<ShareKeyPair> {
-  const pair = await crypto.subtle.generateKey(SHARE_KEY_ALGORITHM, true, ['deriveBits']);
-  const publicKeyRaw = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey));
-  const privateKeyPkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
-  return { publicKeyRaw, privateKeyPkcs8 };
+  return generateEciesKeyPair();
 }
 
 /**
@@ -161,14 +169,16 @@ export async function wrapDekForRecipient({
   recipientPublicKeyRaw: Uint8Array;
   grantorAccountId: number;
 }): Promise<Uint8Array> {
-  const ephemeral = await crypto.subtle.generateKey(SHARE_KEY_ALGORITHM, true, ['deriveBits']);
-  const kek = await deriveShareKek({ privateKey: ephemeral.privateKey, peerPublicKeyRaw: recipientPublicKeyRaw });
+  const { kek, ephemeralPublicKeyRaw } = await deriveEciesSenderKek({
+    recipientPublicKeyRaw,
+    info: HKDF_INFO.SHARE_KEK,
+  });
   const additionalData = await buildShareAad({ grantorAccountId, recipientPublicKeyRaw });
 
   const packed = await wrapDek({ dek, kek, additionalData });
-  const ephemeralPublicKeyRaw = new Uint8Array(await crypto.subtle.exportKey('raw', ephemeral.publicKey));
-  // `ephemeral.privateKey` goes out of scope here and is never returned,
-  // stored or logged. Its whole lifetime is this function.
+  // The ephemeral PRIVATE key never left `deriveEciesSenderKek`'s frame — see
+  // that module's header. What comes back is the public half, which is not a
+  // secret and rides ahead of the ciphertext.
   return packShareWrap({ ephemeralPublicKeyRaw, packedDek: packed });
 }
 
@@ -196,14 +206,8 @@ export async function unwrapDekAsRecipient({
   ownPublicKeyRaw: Uint8Array;
 }): Promise<Uint8Array> {
   const { ephemeralPublicKeyRaw, packedDek } = splitShareWrap(wrap);
-  const privateKey = await crypto.subtle.importKey(
-    'pkcs8',
-    toBufferSource(privateKeyPkcs8),
-    SHARE_KEY_ALGORITHM,
-    false,
-    ['deriveBits'],
-  );
-  const kek = await deriveShareKek({ privateKey, peerPublicKeyRaw: ephemeralPublicKeyRaw });
+  const privateKey = await importEciesPrivateKey(privateKeyPkcs8);
+  const kek = await deriveEciesRecipientKek({ ephemeralPublicKeyRaw, privateKey, info: HKDF_INFO.SHARE_KEK });
   const additionalData = await buildShareAad({ grantorAccountId, recipientPublicKeyRaw: ownPublicKeyRaw });
   return unwrapDek({ wrappedDek: packedDek, kek, additionalData });
 }
@@ -245,43 +249,6 @@ function splitShareWrap(wrap: Uint8Array): ShareWrapParts {
     ephemeralPublicKeyRaw: wrap.slice(0, SHARE_PUBLIC_KEY_BYTES),
     packedDek: wrap.slice(SHARE_PUBLIC_KEY_BYTES),
   };
-}
-
-/**
- * ECDH -> HKDF -> the AES-256-GCM share KEK. Both directions of the wrap run
- * through this one function, which is why sender and recipient cannot derive
- * different keys from the same pair of points.
- *
- * The EMPTY HKDF SALT is correct here, on the same RFC 5869 §3.1 grounds
- * `PROTOCOL.md` already argues for the recovery code: the input key material
- * is a fresh, high-entropy ECDH output, not a human secret needing a
- * memory-hard stretch or a randomiser. Do not "fix" it by inventing a salt —
- * a salt would have to travel with the wrap and would change its length.
- */
-async function deriveShareKek({
-  privateKey,
-  peerPublicKeyRaw,
-}: {
-  privateKey: CryptoKey;
-  peerPublicKeyRaw: Uint8Array;
-}): Promise<CryptoKey> {
-  const peerPublicKey = await crypto.subtle.importKey(
-    'raw',
-    toBufferSource(peerPublicKeyRaw),
-    SHARE_KEY_ALGORITHM,
-    false,
-    [],
-  );
-  const sharedSecret = await crypto.subtle.deriveBits(
-    { name: 'ECDH', public: peerPublicKey },
-    privateKey,
-    SHARED_SECRET_BITS,
-  );
-  return deriveAesKeyViaHkdf({
-    inputKeyMaterial: new Uint8Array(sharedSecret),
-    salt: new Uint8Array(0),
-    info: HKDF_INFO.SHARE_KEK,
-  });
 }
 
 /**

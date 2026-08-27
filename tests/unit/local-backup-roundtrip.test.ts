@@ -357,6 +357,8 @@ describe('backup round-trip', () => {
       savedMeals: [],
       shareIdentity: null,
       sharePeers: [],
+      researchIdentity: null,
+      studyEnrolments: [],
     });
 
     const target = createPrimaryStore();
@@ -378,6 +380,8 @@ describe('backup round-trip', () => {
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     };
     assert.deepEqual(migrateEnvelopeForward(envelope), envelope);
@@ -396,6 +400,8 @@ describe('backup round-trip', () => {
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     };
     assert.throws(() => migrateEnvelopeForward(envelope), /newer than this app supports/);
@@ -490,6 +496,8 @@ describe('parse-before-migrate ordering (review fix)', () => {
       savedMeals: [],
       shareIdentity: null,
       sharePeers: [],
+      researchIdentity: null,
+      studyEnrolments: [],
     });
   });
 });
@@ -551,6 +559,8 @@ describe('v1 -> v2 profile migration (M117/03: targetWeightKg/trackingFocus/onbo
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
         profile: {
           timezone: 'UTC',
           goalNetCarbsCeilingG: null,
@@ -662,6 +672,8 @@ describe('v8 -> v9 micronutrient snapshot (M135: an optional field, so the zod l
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     });
 

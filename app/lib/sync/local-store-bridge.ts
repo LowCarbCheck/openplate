@@ -18,9 +18,11 @@ import {
   deleteLocalFoodLog,
   deleteLocalWeightEntry,
   exportBackup,
+  getLocalResearchIdentity,
   getLocalShareIdentity,
   importBackup,
   listLocalSharePeers,
+  listLocalStudyEnrolments,
   migrateEnvelopeForward,
   SCHEMA_VERSION,
   type LocalStoreSnapshot,
@@ -48,7 +50,12 @@ export async function readLocalSnapshot(): Promise<LocalStoreSnapshot> {
  * blanking a clinician's key pair to represent a failure.
  */
 export async function readLocalOwnerPrivateRegion(): Promise<OwnerPrivateRegion> {
-  return { shareIdentity: await getLocalShareIdentity(), sharePeers: await listLocalSharePeers() };
+  return {
+    shareIdentity: await getLocalShareIdentity(),
+    sharePeers: await listLocalSharePeers(),
+    researchIdentity: await getLocalResearchIdentity(),
+    studyEnrolments: await listLocalStudyEnrolments(),
+  };
 }
 
 /**

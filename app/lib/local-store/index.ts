@@ -99,6 +99,16 @@ export {
   listLocalSharePeers,
   getLocalSharePeer,
   deleteLocalSharePeer,
+  // Research contributions (M161/03) — the pseudonym root and the studies
+  // pinned by the typed ceremony. Both are OWNER-PRIVATE in the synced
+  // snapshot: the root recomputes every pseudonym this person will ever
+  // present, and the enrolment list is which studies they joined.
+  putLocalResearchIdentity,
+  getLocalResearchIdentity,
+  putLocalStudyEnrolment,
+  listLocalStudyEnrolments,
+  getLocalStudyEnrolment,
+  deleteLocalStudyEnrolment,
 } from './primary-store';
 
 // Pure saved-meal builders (no store) — the "save as meal"/"re-log a saved
@@ -201,6 +211,8 @@ export type {
   LocalSavedMealItem,
   LocalShareIdentity,
   LocalSharePeer,
+  LocalResearchIdentity,
+  LocalStudyEnrolment,
 } from './schema';
 
 // BYOK AI settings + local-only usage log (M117/02) — device-only, never

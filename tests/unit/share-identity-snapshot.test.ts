@@ -54,13 +54,15 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
     savedMeals: [],
     shareIdentity: null,
     sharePeers: [],
+    researchIdentity: null,
+    studyEnrolments: [],
     ...overrides,
   };
 }
 
 describe('the local schema version', () => {
-  it('is 14 — the snapshot-partition bump (M160/07)', () => {
-    assert.equal(SCHEMA_VERSION, 14);
+  it('is 15 — the research-contributions bump (M161/03)', () => {
+    assert.equal(SCHEMA_VERSION, 15);
   });
 });
 
@@ -72,9 +74,14 @@ describe('a v12 backup envelope', () => {
       data: { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
     });
 
-    assert.equal(migrated.schemaVersion, 14);
+    assert.equal(migrated.schemaVersion, 15);
     assert.equal(migrated.data.shareIdentity, null);
     assert.deepEqual(migrated.data.sharePeers, []);
+    // And the v15 keys default the same way, which is the whole of the v14 ->
+    // v15 forward migration: "this device had no research identity, because
+    // contributing did not exist".
+    assert.equal(migrated.data.researchIdentity, null);
+    assert.deepEqual(migrated.data.studyEnrolments, []);
   });
 });
 

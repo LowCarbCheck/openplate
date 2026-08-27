@@ -30,9 +30,11 @@ import {
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
+  putLocalResearchIdentity,
   putLocalSavedMeal,
   putLocalShareIdentity,
   putLocalSharePeer,
+  putLocalStudyEnrolment,
   putLocalWeightEntry,
 } from '../../app/lib/local-store/primary-store';
 import { SCHEMA_VERSION, type LocalStoreSnapshot } from '../../app/lib/local-store/schema';
@@ -85,6 +87,16 @@ const DEVICE_ID = 'laptop';
 const PRIVATE_KEY_MARKER = 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg';
 const PEER_LABEL_MARKER = 'Dr. Meier';
 const DIARY_MARKER = 'Acerola';
+
+/**
+ * ADR-0003's two markers (M161/03). The root is the secret every study
+ * pseudonym derives from, so a grantee learning it could recompute this
+ * person's identifier in every study they will ever join; the study label is
+ * WHICH studies they joined, which is health data even though the key beside
+ * it is public.
+ */
+const PSEUDONYM_ROOT_MARKER = 'cm9vdC10aGF0LW11c3Qtbm90LXJlYWNoLWEtZ3JhbnRlZQ==';
+const STUDY_LABEL_MARKER = 'Charite sleep trial';
 
 /** Argon2id stands in as a plain digest here. The LABELS are what this file tests, and they sit above the hash. */
 async function fakeArgon2id({ passphrase, salt }: { passphrase: string; salt: Uint8Array }): Promise<Uint8Array> {
@@ -201,6 +213,11 @@ async function buildPopulatedSnapshot(): Promise<LocalStoreSnapshot> {
     { id: '9', accountId: 9, publicKeyRaw: 'peer-public-key', label: PEER_LABEL_MARKER, createdAt: 8_000 },
     { store },
   );
+  await putLocalResearchIdentity({ pseudonymRoot: PSEUDONYM_ROOT_MARKER, createdAt: 9_000 }, { store });
+  await putLocalStudyEnrolment(
+    { id: '11', studyAccountId: 11, publicKeyRaw: 'study-public-key', label: STUDY_LABEL_MARKER, createdAt: 10_000 },
+    { store },
+  );
   return (await exportBackup({ store })).data;
 }
 
@@ -269,6 +286,8 @@ describe('the snapshot classification map', () => {
     assert.ok(snapshot.fasts.length > 0 && snapshot.savedMeals.length > 0 && snapshot.profile !== null);
     assert.equal(snapshot.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
     assert.equal(snapshot.sharePeers[0]?.label, PEER_LABEL_MARKER);
+    assert.equal(snapshot.researchIdentity?.pseudonymRoot, PSEUDONYM_ROOT_MARKER);
+    assert.equal(snapshot.studyEnrolments[0]?.label, STUDY_LABEL_MARKER);
 
     // The key set is DERIVED from that fixture. A new snapshot field arrives
     // here automatically, which is the whole point.
@@ -289,6 +308,8 @@ describe('the snapshot classification map', () => {
     assert.deepEqual(partitioned.ownerPrivate, {
       shareIdentity: snapshot.shareIdentity,
       sharePeers: snapshot.sharePeers,
+      researchIdentity: snapshot.researchIdentity,
+      studyEnrolments: snapshot.studyEnrolments,
     });
     assert.deepEqual(recomposeSnapshot(partitioned), snapshot);
   });
@@ -345,6 +366,8 @@ describe('a clinician grantee', () => {
     // And the markers themselves are nowhere in that view.
     assert.equal(granteeView.includes(PRIVATE_KEY_MARKER), false, 'the share private key reached a grantee');
     assert.equal(granteeView.includes(PEER_LABEL_MARKER), false, 'a pinned peer label reached a grantee');
+    assert.equal(granteeView.includes(PSEUDONYM_ROOT_MARKER), false, 'the pseudonym root reached a grantee');
+    assert.equal(granteeView.includes(STUDY_LABEL_MARKER), false, 'a study enrolment reached a grantee');
 
     // POSITIVE, the other half: the SAME markers ARE recoverable — through the
     // CDK path, which the grantee has no key for.
@@ -356,6 +379,8 @@ describe('a clinician grantee', () => {
     const opened = await openOwnerPrivateRegion({ session: owner, sealed: compartment });
     assert.equal(opened?.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
     assert.equal(opened?.sharePeers[0]?.label, PEER_LABEL_MARKER);
+    assert.equal(opened?.researchIdentity?.pseudonymRoot, PSEUDONYM_ROOT_MARKER);
+    assert.equal(opened?.studyEnrolments[0]?.label, STUDY_LABEL_MARKER);
 
     // The grantee holds the DEK and the compartment bytes, and still cannot
     // open it: the CDK is behind a key derived from the owner's passphrase.

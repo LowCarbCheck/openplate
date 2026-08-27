@@ -44,12 +44,12 @@ describe('schema version', () => {
   // A deliberate pin, and it MOVES on every bump: body metrics landed at v8,
   // the micronutrient snapshot on the LOG at v9, the same snapshot on the
   // PERSONAL FOOD at v10, saved meals at v11, the carb-basis flag (spec 13)
-  // at v12, clinician sharing at v13, and the snapshot partition (M160/07) at
-  // v14. What it guards is that a bump is never silent — the version the
+  // at v12, clinician sharing at v13, the snapshot partition (M160/07) at
+  // v14, and research contributions (M161/03) at v15. What it guards is that a bump is never silent — the version the
   // envelope stamps is the version an older build refuses, so a change here
   // has to be a change someone chose.
-  it('is 14 — bumped past the v8 body-metrics bump by everything through the M160/07 snapshot partition', () => {
-    assert.equal(SCHEMA_VERSION, 14);
+  it('is 15 — bumped past the v8 body-metrics bump by everything through the M161/03 research contributions', () => {
+    assert.equal(SCHEMA_VERSION, 15);
   });
 });
 

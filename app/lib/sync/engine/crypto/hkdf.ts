@@ -109,6 +109,25 @@ export const HKDF_INFO = {
    * once, with nothing on screen to say why.
    */
   PRIVATE_STORE_RECOVERY_KEK: new TextEncoder().encode('openplate-sync:private-store-recovery-kek:v1'),
+  /**
+   * The RESEARCH KEK (`PROTOCOL.md` §3.5, `openplate-sync` ADR-0003) — the
+   * AES-256-GCM key a research contribution is sealed under, derived from an
+   * ECDH P-256 shared secret against a STUDY's public key.
+   *
+   * A SIXTH independent branch. It is a new label rather than a version of
+   * `SHARE_KEK` even though the construction either side of it is identical,
+   * and that is the point the comment on `SHARE_KEK` already makes from the
+   * other direction: a clinician grant and a research contribution address
+   * different principals over different payloads, and one label opening both
+   * would let a study key open a share — silently, with nothing throwing,
+   * because a wrong branch never errors, it only fails a tag check somewhere
+   * else.
+   *
+   * THE CURVE IS PART OF THE LABEL for the same reason it is part of
+   * `SHARE_KEK`'s: a future X25519 research construction is a NEW label, never
+   * a re-reading of this `:v1`.
+   */
+  RESEARCH_KEK: new TextEncoder().encode('openplate-sync:research-kek:p256:v1'),
 } as const;
 
 /**

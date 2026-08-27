@@ -862,6 +862,8 @@ describe('one scan confirm writes two rows — and both carry the same number', 
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
@@ -896,6 +898,8 @@ describe('one scan confirm writes two rows — and both carry the same number', 
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
@@ -1390,6 +1394,8 @@ describe('authoritative net carbs survive serialization', () => {
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));
@@ -1420,6 +1426,8 @@ describe('authoritative net carbs survive serialization', () => {
         savedMeals: [],
         shareIdentity: null,
         sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
       },
     };
     const restored = migrateEnvelopeForward(parseBackupEnvelope(serializeBackup(envelope)));

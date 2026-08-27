@@ -29,11 +29,14 @@ import {
   PRIMARY_ENTITY_CELL,
   PROFILE_GOALS_TABLE,
   PROFILE_ROW_ID,
+  RESEARCH_IDENTITY_ROW_ID,
+  RESEARCH_IDENTITY_TABLE,
   SAVED_MEALS_TABLE,
   SCHEMA_VERSION_VALUE,
   SHARE_IDENTITY_ROW_ID,
   SHARE_IDENTITY_TABLE,
   SHARE_PEERS_TABLE,
+  STUDY_ENROLMENTS_TABLE,
   WEIGHT_ENTRIES_TABLE,
 } from './store';
 import { getPrimaryStore, requestPersistentStorage } from './persist';
@@ -45,9 +48,11 @@ import type {
   LocalFoodLog,
   LocalPersonalFood,
   LocalProfileGoals,
+  LocalResearchIdentity,
   LocalSavedMeal,
   LocalShareIdentity,
   LocalSharePeer,
+  LocalStudyEnrolment,
   LocalWeightEntry,
 } from './schema';
 
@@ -60,7 +65,9 @@ type PrimaryEntity =
   | LocalFast
   | LocalSavedMeal
   | LocalShareIdentity
-  | LocalSharePeer;
+  | LocalSharePeer
+  | LocalResearchIdentity
+  | LocalStudyEnrolment;
 
 /** The entity cell as it comes back off the store — a TinyBase cell, not yet JSON text. */
 const entityCellSchema = z.string();
@@ -563,4 +570,69 @@ export async function getLocalSharePeer(
 /** Un-pins a peer. Local only — it revokes nothing on the server, which is a separate, explicit act. */
 export async function deleteLocalSharePeer(accountId: number, { store }: StoreOption = {}): Promise<void> {
   (await resolveStore(store)).delRow(SHARE_PEERS_TABLE, String(accountId));
+}
+
+// ---------------------------------------------------------------------------
+// Research contributions: this account's pseudonym root, and the studies it
+// has pinned (M161/03, `openplate-sync` ADR-0003)
+// ---------------------------------------------------------------------------
+
+/**
+ * Stores this account's pseudonym root. A SINGLETON, like the share identity.
+ *
+ * WRITE IT ONCE. Overwriting an existing root re-pseudonymises this person in
+ * every study they already contribute to, and a researcher reads the new
+ * pseudonym as a second participant with no history — so the only callers are
+ * first enrolment (`runEnrolmentCeremony`, which reuses any existing root) and
+ * a backup restore, which is reproducing a root rather than minting one.
+ */
+export async function putLocalResearchIdentity(
+  identity: LocalResearchIdentity,
+  { store }: StoreOption = {},
+): Promise<LocalResearchIdentity> {
+  writeEntity(await resolveStore(store), RESEARCH_IDENTITY_TABLE, RESEARCH_IDENTITY_ROW_ID, identity);
+  return identity;
+}
+
+/** This account's pseudonym root, or null on a device that has never enrolled in a study (the normal state — contributing is opt-in). */
+export async function getLocalResearchIdentity({ store }: StoreOption = {}): Promise<LocalResearchIdentity | null> {
+  return readEntity<LocalResearchIdentity>(await resolveStore(store), RESEARCH_IDENTITY_TABLE, RESEARCH_IDENTITY_ROW_ID);
+}
+
+/**
+ * Pins a study's public key.
+ *
+ * CALL THIS ONLY FROM A PASSED FINGERPRINT CEREMONY (ADR-0003's second-ranked
+ * attack). The row's existence is what records that the fingerprint printed in
+ * the study's consent materials was typed and matched — a call from anywhere
+ * else writes a lie that every later contribution is then sealed to.
+ */
+export async function putLocalStudyEnrolment(
+  enrolment: LocalStudyEnrolment,
+  { store }: StoreOption = {},
+): Promise<LocalStudyEnrolment> {
+  writeEntity(await resolveStore(store), STUDY_ENROLMENTS_TABLE, enrolment.id, enrolment);
+  return enrolment;
+}
+
+/** Every study this account has enrolled in, oldest first. */
+export async function listLocalStudyEnrolments({ store }: StoreOption = {}): Promise<LocalStudyEnrolment[]> {
+  return readEntities<LocalStudyEnrolment>(await resolveStore(store), STUDY_ENROLMENTS_TABLE).toSorted(byCreatedThenId);
+}
+
+/** One enrolment by study account id, or null when this device has never joined that study. */
+export async function getLocalStudyEnrolment(
+  studyAccountId: number,
+  { store }: StoreOption = {},
+): Promise<LocalStudyEnrolment | null> {
+  return readEntity<LocalStudyEnrolment>(await resolveStore(store), STUDY_ENROLMENTS_TABLE, String(studyAccountId));
+}
+
+/**
+ * Removes an enrolment. LOCAL ONLY — it withdraws nothing on the server, which
+ * is a separate, explicit act (`DELETE /contributions/:studyAccountId`), and
+ * the server's copy is the one erasure has to reach.
+ */
+export async function deleteLocalStudyEnrolment(studyAccountId: number, { store }: StoreOption = {}): Promise<void> {
+  (await resolveStore(store)).delRow(STUDY_ENROLMENTS_TABLE, String(studyAccountId));
 }

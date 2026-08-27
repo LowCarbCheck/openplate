@@ -56,10 +56,17 @@ export type SnapshotRegion = 'shared' | 'owner-private';
  * deliberate: the decision "may a clinician read this?" is a human one, and
  * the cost of getting it wrong by omission is disclosure.
  *
- * `owner-private` today is exactly ADR-0002's two: the account's own share key
- * pair, and the peer keys pinned by a passed fingerprint ceremony. The pinned
- * list is the second half of the cascade — it hands every grantee a subset of
- * the care graph that §9.2 only admits the SERVER learns.
+ * `owner-private` today is ADR-0002's two — the account's own share key pair,
+ * and the peer keys pinned by a passed fingerprint ceremony — plus ADR-0003's
+ * two. The pinned peer list is the second half of the cascade: it hands every
+ * grantee a subset of the care graph that §9.2 only admits the SERVER learns.
+ *
+ * ADR-0003's two are here for the same shape of reason, one recipient class
+ * over. `researchIdentity` holds the PSEUDONYM ROOT, and a grantee who learned
+ * it could recompute this person's pseudonym in every study they will ever
+ * join — the unlinkability the research design turns on (prohibition 3).
+ * `studyEnrolments` is which studies they joined, which is health data even
+ * though the keys in it are public.
  */
 export const SNAPSHOT_KEY_REGIONS = {
   foods: 'shared',
@@ -70,6 +77,8 @@ export const SNAPSHOT_KEY_REGIONS = {
   savedMeals: 'shared',
   shareIdentity: 'owner-private',
   sharePeers: 'owner-private',
+  researchIdentity: 'owner-private',
+  studyEnrolments: 'owner-private',
 } as const satisfies Record<keyof LocalStoreSnapshot, SnapshotRegion>;
 
 /** The snapshot keys the map assigns to `region`. Derived from the map, so the map is what moves a key. */
@@ -84,7 +93,12 @@ export type ShareableSnapshot = Pick<LocalStoreSnapshot, KeysInRegion<'shared'>>
 export type OwnerPrivateRegion = Pick<LocalStoreSnapshot, KeysInRegion<'owner-private'>>;
 
 /** The compartment on a device that has generated no share key and pinned no peer. */
-export const EMPTY_OWNER_PRIVATE_REGION: OwnerPrivateRegion = { shareIdentity: null, sharePeers: [] };
+export const EMPTY_OWNER_PRIVATE_REGION: OwnerPrivateRegion = {
+  shareIdentity: null,
+  sharePeers: [],
+  researchIdentity: null,
+  studyEnrolments: [],
+};
 
 /**
  * The sealed compartment, as it rides inside the snapshot on the wire.
@@ -200,13 +214,14 @@ export function partitionSnapshot(snapshot: LocalStoreSnapshot): SnapshotPartiti
   // what a clinician can read by default.
   for (const key of Object.keys(snapshot)) classifySnapshotKey(key);
 
-  const { foods, foodLogs, weightEntries, profile, fasts, savedMeals, shareIdentity, sharePeers } = snapshot;
+  const { foods, foodLogs, weightEntries, profile, fasts, savedMeals } = snapshot;
+  const { shareIdentity, sharePeers, researchIdentity, studyEnrolments } = snapshot;
   // Written out name by name, and the two literals are the type-level half of
   // the same guard: move a key between regions in the map above, or add one,
   // and these stop compiling until a human has put it on a side.
   return {
     shareable: { foods, foodLogs, weightEntries, profile, fasts, savedMeals },
-    ownerPrivate: { shareIdentity, sharePeers },
+    ownerPrivate: { shareIdentity, sharePeers, researchIdentity, studyEnrolments },
   };
 }
 

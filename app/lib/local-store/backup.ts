@@ -26,20 +26,24 @@ import { getPrimaryStore } from './persist';
 import { getFirstDataAt } from './had-data';
 import {
   getLocalProfileGoals,
+  getLocalResearchIdentity,
   getLocalShareIdentity,
   listLocalFasts,
   listLocalFoodLogs,
   listLocalFoods,
   listLocalSavedMeals,
   listLocalSharePeers,
+  listLocalStudyEnrolments,
   listLocalWeightEntries,
   putLocalFast,
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
+  putLocalResearchIdentity,
   putLocalSavedMeal,
   putLocalShareIdentity,
   putLocalSharePeer,
+  putLocalStudyEnrolment,
   putLocalWeightEntry,
 } from './primary-store';
 
@@ -288,6 +292,26 @@ const sharePeerSchema = z.object({
 });
 
 /**
+ * Added v15 (research contributions, M161/03). Base64 for the same reason
+ * `shareIdentitySchema`'s halves are, and the length is unasserted for the
+ * same reason too: a wrong length fails loudly where the root is actually
+ * used (`deriveStudyPseudonym`), whereas a refinement here would make one
+ * malformed root reject somebody's entire diary.
+ */
+const researchIdentitySchema = z.object({
+  pseudonymRoot: z.string(),
+  createdAt: z.number(),
+});
+
+const studyEnrolmentSchema = z.object({
+  id: z.string(),
+  studyAccountId: z.number().int(),
+  publicKeyRaw: z.string(),
+  label: z.string().nullable(),
+  createdAt: z.number(),
+});
+
+/**
  * THE SHAREABLE REGION (`openplate-sync` ADR-0002, "The snapshot is
  * partitioned"): diary and preferences. This is what a clinician grant means,
  * and it is the ONLY part of the snapshot a full-DEK share may disclose.
@@ -353,6 +377,17 @@ export const ownerPrivateRegionFields = {
   // stopped opening on a restored device.
   shareIdentity: shareIdentitySchema.nullable().default(null),
   sharePeers: z.array(sharePeerSchema).default([]),
+  // Added v15 (research contributions, M161/03). Same rule again: a v14
+  // envelope has neither key, and these two defaults ARE the complete v14 ->
+  // v15 forward migration — "this device had no research identity, because
+  // contributing did not exist". No `migrateSnapshotToV15` step.
+  //
+  // They belong in THIS object rather than the shareable one for the reason
+  // ADR-0003 prohibition 3 gives: the root recomputes every pseudonym this
+  // person will ever present to any study, and the enrolment list is the set
+  // of studies they joined. Neither is anything a clinician grant may mean.
+  researchIdentity: researchIdentitySchema.nullable().default(null),
+  studyEnrolments: z.array(studyEnrolmentSchema).default([]),
 } as const;
 
 /** The shareable region as a schema — what a wire snapshot validates its diary half against. */
@@ -532,6 +567,8 @@ async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
     savedMeals: await listLocalSavedMeals({ store }),
     shareIdentity: await getLocalShareIdentity({ store }),
     sharePeers: await listLocalSharePeers({ store }),
+    researchIdentity: await getLocalResearchIdentity({ store }),
+    studyEnrolments: await listLocalStudyEnrolments({ store }),
   };
 }
 
@@ -577,11 +614,17 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   for (const fast of snapshot.fasts) await putLocalFast(fast, { store });
   for (const meal of snapshot.savedMeals) await putLocalSavedMeal(meal, { store });
   for (const peer of snapshot.sharePeers) await putLocalSharePeer(peer, { store });
+  for (const enrolment of snapshot.studyEnrolments) await putLocalStudyEnrolment(enrolment, { store });
   if (snapshot.profile) await putLocalProfileGoals(snapshot.profile, { store });
   // The share identity restores like the profile row: present-or-absent, never
   // merged. A restore that dropped it would leave a clinician holding shares
   // she can no longer open, with nothing on screen to say why.
   if (snapshot.shareIdentity) await putLocalShareIdentity(snapshot.shareIdentity, { store });
+  // The research identity restores like the share identity: present-or-absent,
+  // never merged. Dropping it would silently re-root this person — every study
+  // they already contribute to would start receiving a NEW pseudonym, which a
+  // researcher reads as a second participant.
+  if (snapshot.researchIdentity) await putLocalResearchIdentity(snapshot.researchIdentity, { store });
 }
 
 /** Builds a schema-versioned export envelope from the primary store's current data. */
