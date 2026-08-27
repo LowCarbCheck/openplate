@@ -17,6 +17,7 @@ import { buildEnvelope, parseEnvelope } from '../../app/lib/sync/engine/envelope
 import type { SyncPayload } from '../../app/lib/sync/engine/envelope/types';
 import { generateDek } from '../../app/lib/sync/engine/crypto/dek-wrap';
 import { SCHEMA_VERSION, type LocalStoreSnapshot } from '../../app/lib/local-store';
+import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
 import {
   baselineFromPayload,
   contentHash,
@@ -49,7 +50,7 @@ function log(id: string, name: string, grams: number): LocalStoreSnapshot['foodL
   };
 }
 
-function snapshot(logs: LocalStoreSnapshot['foodLogs']): LocalStoreSnapshot {
+function snapshot(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
   // `fasts` is required on the snapshot since v7 but is never merged by the
   // sync engine (see `mergeSnapshots`) — an empty array is the whole fixture.
   return {
@@ -59,8 +60,10 @@ function snapshot(logs: LocalStoreSnapshot['foodLogs']): LocalStoreSnapshot {
     profile: null,
     fasts: [],
     savedMeals: [],
-    shareIdentity: null,
-    sharePeers: [],
+    // The owner-private compartment (M160/07). `null` is a device that has
+    // never generated a share key — the ordinary case, and the one that must
+    // not make the cycle behave differently.
+    privateStore: null,
   };
 }
 
@@ -148,7 +151,7 @@ function deps({
 }: {
   dek: Uint8Array;
   http: SyncHttpClient;
-  local: { current: LocalStoreSnapshot };
+  local: { current: SyncedSnapshot };
   deviceId: string;
   storage?: ReturnType<typeof createMemoryStorage>;
 }) {
@@ -159,12 +162,12 @@ function deps({
     state: createSyncStateStore({ storage, accountId: ACCOUNT_ID }),
     deviceId,
     readSnapshot: async () => local.current,
-    applySnapshot: async ({ merged }: { merged: LocalStoreSnapshot }) => {
+    applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
     },
     // SAFETY: the only payload these cycles can pull back is one they pushed,
-    // built from `local.current` — a `LocalStoreSnapshot` by construction.
-    parseRemoteSnapshot: ({ snapshot: raw }: { snapshot: unknown }) => raw as LocalStoreSnapshot,
+    // built from `local.current` — a `SyncedSnapshot` by construction.
+    parseRemoteSnapshot: ({ snapshot: raw }: { snapshot: unknown }) => raw as SyncedSnapshot,
   };
 }
 
@@ -321,8 +324,8 @@ test('a first sync pushes the local store and records the new version', async ()
   assert.equal(result.blobVersion, 1);
   const stored = await service.read();
   // SAFETY: the payload was written by the cycle above from `local.current`,
-  // so its `snapshot` is the `LocalStoreSnapshot` that went in.
-  assert.equal((stored.snapshot as LocalStoreSnapshot).foodLogs[0]?.id, 'a');
+  // so its `snapshot` is the `SyncedSnapshot` that went in.
+  assert.equal((stored.snapshot as SyncedSnapshot).foodLogs[0]?.id, 'a');
   assert.equal(
     createSyncStateStore({ storage, accountId: ACCOUNT_ID }).load().lastBlobVersion,
     1,
@@ -406,7 +409,7 @@ test('a CAS race lost BETWEEN the pull and the push is retried, not surfaced', a
 
   const stored = await service.read();
   // SAFETY: as above — the stored payload is the one this cycle pushed.
-  assert.deepEqual((stored.snapshot as LocalStoreSnapshot).foodLogs.map((entry) => entry.id).toSorted(), ['a', 'b']);
+  assert.deepEqual((stored.snapshot as SyncedSnapshot).foodLogs.map((entry) => entry.id).toSorted(), ['a', 'b']);
 });
 
 test('a service that never stops changing fails loudly instead of spinning', async () => {

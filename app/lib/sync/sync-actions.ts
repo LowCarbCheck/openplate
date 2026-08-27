@@ -29,13 +29,34 @@ import { workerArgon2idDeriver } from './engine/client/argon2-worker';
 import { deriveCredentialsFromPassphrase } from './engine/client/derive-credentials';
 import { setupSyncKeys, type Argon2idDeriver, type SyncKeySetupRecord } from './engine/client/setup-keys';
 import { createPassphraseKdfDescriptor, type PassphraseKdfDescriptor } from './engine/client/passphrase-kek';
-import { deriveRecoveryKek, generateRecoveryCode, parseRecoveryCode } from './engine/client/recovery-kek';
+import {
+  derivePrivateStoreRecoveryKek,
+  deriveRecoveryKek,
+  generateRecoveryCode,
+  parseRecoveryCode,
+} from './engine/client/recovery-kek';
+import { establishPrivateStore } from './engine/crypto/private-store';
 import { ARGON2ID_DEFAULT_PARAMS, generateArgon2idSalt, type Argon2idParams } from './engine/crypto/argon2';
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
 import { bytesToBase64 } from './engine/crypto/base64';
 import type { KdfDescriptorWire, KeyRecordSubmissionWire } from './engine/client/auth-wire';
 import type { SyncSetupOutcome } from './setup-flow';
-import { applyMergedSnapshot, parseRemoteSnapshot, readLocalSnapshot } from './local-store-bridge';
+import {
+  applyMergedSnapshot,
+  parseRemoteSnapshot,
+  readLocalOwnerPrivateRegion,
+  readLocalSnapshot,
+} from './local-store-bridge';
+import { partitionSnapshot, recomposeSnapshot, type SyncedSnapshot } from './snapshot-partition';
+import {
+  adoptRewrappedSlots,
+  createPrivateStoreSession,
+  openOwnerPrivateRegion,
+  sealOwnerPrivateRegion,
+  type EstablishedPrivateStore,
+  type PrivateStoreSession,
+} from './private-store';
+import { rewrapPrivateStoreOnServer, type BlobTransport } from './private-store-rewrap';
 import { runSyncCycle } from './orchestrator';
 import { createSyncStateStore, deviceStorage, resolveDeviceId } from './sync-state';
 import {
@@ -165,6 +186,8 @@ export async function createSyncAccount({
     accountId: created.account.id,
     email: created.account.email,
     dek: keys.dek,
+    privateStoreKek: keys.privateStoreKek,
+    privateStore: keys.privateStore,
   });
   return { status: 'ready', recoveryCode: recovery.formatted };
 }
@@ -245,7 +268,11 @@ export async function signInToSync({
   // wrong is indistinguishable from a wrong passphrase.
   const wire = await authClient.fetchKdfDescriptor(email);
   const descriptor: PassphraseKdfDescriptor = { salt: wire.salt, params: wire.params };
-  const { authHash, passphraseKek } = await deriveCredentialsFromPassphrase({ passphrase, descriptor, deriveHash });
+  const { authHash, passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
+    passphrase,
+    descriptor,
+    deriveHash,
+  });
 
   const session = await authClient.login({ email, authHash });
 
@@ -282,7 +309,15 @@ export async function signInToSync({
     });
   }
 
-  openSession({ authClient, http, serverUrl, accountId: session.account.id, email: session.account.email, dek });
+  openSession({
+    authClient,
+    http,
+    serverUrl,
+    accountId: session.account.id,
+    email: session.account.email,
+    dek,
+    privateStoreKek,
+  });
   return { status: 'connected' };
 }
 
@@ -319,9 +354,20 @@ async function finishInterruptedSetup({
   descriptor: PassphraseKdfDescriptor;
   deriveHash: Argon2idDeriver;
 }): Promise<SyncSetupOutcome> {
-  const { passphraseKek } = await deriveCredentialsFromPassphrase({ passphrase, descriptor, deriveHash });
+  const { passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
+    passphrase,
+    descriptor,
+    deriveHash,
+  });
   const recovery = generateRecoveryCode();
   const dek = generateDek();
+  // Both compartment doors exist in this frame and nowhere else — the recovery
+  // code is shown once and never retained — so the compartment is established
+  // here or not at all. See `engine/crypto/private-store.ts`.
+  const privateStore = await establishPrivateStore({
+    passphraseKek: privateStoreKek,
+    recoveryKek: await derivePrivateStoreRecoveryKek(recovery.raw),
+  });
 
   await putFirstKeyRecord(http, {
     kind: 'passphrase',
@@ -334,7 +380,16 @@ async function finishInterruptedSetup({
     wrappedDek: await wrapDek({ dek, kek: await deriveRecoveryKek(recovery.raw) }),
   });
 
-  openSession({ authClient, http, serverUrl, accountId: account.id, email: account.email, dek });
+  openSession({
+    authClient,
+    http,
+    serverUrl,
+    accountId: account.id,
+    email: account.email,
+    dek,
+    privateStoreKek,
+    privateStore,
+  });
   return { status: 'ready', recoveryCode: recovery.formatted };
 }
 
@@ -345,6 +400,10 @@ function openSession(input: {
   accountId: number;
   email: string;
   dek: Uint8Array;
+  /** `K_pp` for the passphrase that just unlocked this session — the compartment's door. */
+  privateStoreKek: CryptoKey;
+  /** Present only when this call ESTABLISHED the compartment (setup); a sign-in adopts one on its first pull instead. */
+  privateStore?: EstablishedPrivateStore | null;
 }): void {
   const storage = deviceStorage();
   const state = createSyncStateStore({ storage, accountId: input.accountId });
@@ -352,6 +411,11 @@ function openSession(input: {
     authClient: input.authClient,
     http: input.http,
     dek: input.dek,
+    privateStore: createPrivateStoreSession({
+      accountId: input.accountId,
+      passphraseKek: input.privateStoreKek,
+      established: input.privateStore ?? null,
+    }),
     accountId: input.accountId,
     email: input.email,
     deviceId: resolveDeviceId(storage),
@@ -386,8 +450,8 @@ export async function syncNow(): Promise<void> {
       http: vault.http,
       state: vault.state,
       deviceId: vault.deviceId,
-      readSnapshot: readLocalSnapshot,
-      applySnapshot: applyMergedSnapshot,
+      readSnapshot: () => readSyncedSnapshot(vault.privateStore),
+      applySnapshot: (input) => applySyncedSnapshot({ session: vault.privateStore, ...input }),
       parseRemoteSnapshot,
     });
     updateSyncSession({
@@ -400,6 +464,42 @@ export async function syncNow(): Promise<void> {
     updateSyncSession({ phase: 'idle', error: describeSyncFailure(error) });
     throw error;
   }
+}
+
+/**
+ * The device snapshot AS SYNCED: the shareable region, plus the owner-private
+ * region SEALED into one opaque compartment (`snapshot-partition.ts`).
+ *
+ * This is the single point where the partition is applied to an outgoing
+ * payload. Nothing above it can push a snapshot that skipped it, because the
+ * orchestrator's `readSnapshot` is typed as `SyncedSnapshot` and only this
+ * function produces one from the device.
+ */
+async function readSyncedSnapshot(session: PrivateStoreSession): Promise<SyncedSnapshot> {
+  const { shareable, ownerPrivate } = partitionSnapshot(await readLocalSnapshot());
+  return { ...shareable, privateStore: await sealOwnerPrivateRegion({ session, region: ownerPrivate }) };
+}
+
+/**
+ * Writes a merged payload onto the device, opening the compartment on the way.
+ *
+ * A compartment that will not open falls back to what the device already
+ * holds. That is the safe direction: the states it covers are all "we learned
+ * nothing", and none of them justifies blanking a working share key pair to
+ * represent a decryption failure.
+ */
+async function applySyncedSnapshot({
+  session,
+  merged,
+  local,
+}: {
+  session: PrivateStoreSession;
+  merged: SyncedSnapshot;
+  local: SyncedSnapshot;
+}): Promise<void> {
+  const ownerPrivate =
+    (await openOwnerPrivateRegion({ session, sealed: merged.privateStore })) ?? (await readLocalOwnerPrivateRegion());
+  await applyMergedSnapshot({ merged: recomposeSnapshot({ shareable: merged, ownerPrivate }), local });
 }
 
 /** Why sync stopped, with the message the status surface shows — `SyncSessionSnapshot['error']`. */
@@ -501,6 +601,50 @@ export async function changeSyncPassphrase({
     kdfDescriptor: toWireDescriptor(nextDescriptor),
     keyRecords,
   });
+
+  // THE COMPARTMENT'S SLOT 1 MOVES IN THE SAME CLIENT MOMENT (ADR-0002's
+  // partition amendment). It cannot ride in the request above — it lives
+  // inside the blob, not in a key record — so it is a second write, and the
+  // ORDER is chosen so that the device which can repair a half-done change is
+  // the device that caused it: this session still holds the CDK, so its next
+  // cycle re-emits the new wrap even if this call fails. The old passphrase
+  // is gone by now, which is why the rewrap opens slot 1 with the CURRENT key
+  // BEFORE the session adopts the new one.
+  await rewrapCompartmentForNewPassphrase({ vault, current: current.privateStoreKek, next: next.privateStoreKek });
+}
+
+/**
+ * Moves the compartment onto a new `K_pp`.
+ *
+ * `unopenable` is not thrown for a reason: it means this account has a
+ * compartment slot 1 no longer matches — a passphrase change that landed on
+ * another device first — and the passphrase change itself has already
+ * succeeded. Failing here would report a change that DID happen as an error
+ * and invite the user to repeat it. The compartment stays openable by the
+ * recovery code and by the device that wrote it.
+ */
+async function rewrapCompartmentForNewPassphrase({
+  vault,
+  current,
+  next,
+}: {
+  vault: SyncVault;
+  current: CryptoKey;
+  next: CryptoKey;
+}): Promise<void> {
+  const result = await rewrapPrivateStoreOnServer({
+    http: vault.http,
+    accountId: vault.accountId,
+    dek: vault.dek,
+    deviceId: vault.deviceId,
+    currentKek: current,
+    currentSlot: 'passphrase',
+    nextPassphraseKek: next,
+    nextRecoveryKek: null,
+  });
+  vault.privateStore.passphraseKek = next;
+  if (result.status !== 'rewrapped') return;
+  adoptRewrappedSlots({ session: vault.privateStore, cdk: result.cdk, sealed: result.sealed });
 }
 
 // ---------------------------------------------------------------------------
@@ -561,7 +705,56 @@ export async function regenerateRecoveryCode(): Promise<{ recoveryCode: string }
     });
   }
 
+  // THE COMPARTMENT'S SLOT 2 MOVES WITH IT (ADR-0002's partition amendment).
+  // Forgetting this would leave the OLD code — the one the user is about to
+  // discard — as the only thing that opens their share keys, and the failure
+  // would surface months later on a recovery restore that recovered the diary
+  // and lost every patient's access.
+  await rotateCompartmentRecoverySlot({ vault, recoveryKek: await derivePrivateStoreRecoveryKek(recovery.raw) });
+
   return { recoveryCode: recovery.formatted };
+}
+
+/**
+ * Moves the compartment onto a new `K_pr`, or CREATES one when the account has
+ * none.
+ *
+ * The create branch is the upgrade path for an account whose compartment
+ * predates the partition: a compartment needs both doors at once, this is the
+ * only routine operation where a recovery code exists in the clear, and the
+ * session supplies the other door. Nothing is pushed here — clearing the seal
+ * cache is enough, because the next sync cycle seals and pushes it.
+ */
+async function rotateCompartmentRecoverySlot({
+  vault,
+  recoveryKek,
+}: {
+  vault: SyncVault;
+  recoveryKek: CryptoKey;
+}): Promise<void> {
+  const result = await rewrapPrivateStoreOnServer({
+    http: vault.http,
+    accountId: vault.accountId,
+    dek: vault.dek,
+    deviceId: vault.deviceId,
+    currentKek: vault.privateStore.passphraseKek,
+    currentSlot: 'passphrase',
+    nextPassphraseKek: null,
+    nextRecoveryKek: recoveryKek,
+  });
+  if (result.status === 'rewrapped') {
+    adoptRewrappedSlots({ session: vault.privateStore, cdk: result.cdk, sealed: result.sealed });
+    return;
+  }
+  if (result.status === 'unopenable') return;
+
+  const established = await establishPrivateStore({ passphraseKek: vault.privateStore.passphraseKek, recoveryKek });
+  vault.privateStore.cdk = established.cdk;
+  vault.privateStore.wraps = {
+    cdkWrapPassphrase: established.cdkWrapPassphrase,
+    cdkWrapRecovery: established.cdkWrapRecovery,
+  };
+  vault.privateStore.cache = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -673,7 +866,7 @@ export async function completeSyncReset({
     kdfDescriptor: toWireDescriptor(descriptor),
     keyRecords: [],
   });
-  await authClient.adoptTokens(tokens);
+  const adopted = await authClient.adoptTokens(tokens);
 
   // Phase 2: reopen the DEK with the recovery code and rotate the passphrase
   // record onto the new KEK.
@@ -703,7 +896,72 @@ export async function completeSyncReset({
     });
   }
 
+  // Phase 3: the compartment. It opens by `K_pr` here — the recovery code is
+  // the only door this person has — and BOTH slots are rewritten, because the
+  // passphrase behind slot 1 no longer exists. This must happen while the code
+  // is still in this call frame: a compartment whose slot 1 belongs to a
+  // forgotten passphrase and whose slot 2 belongs to a spent code is
+  // unopenable by anyone, forever.
+  const compartmentRecoveryKek = await derivePrivateStoreRecoveryKek(rawRecoveryCode);
+  await rewrapCompartmentAfterReset({
+    http,
+    accountId: adopted.account.id,
+    dek,
+    recoveryKek: compartmentRecoveryKek,
+    passphraseKek: credentials.privateStoreKek,
+  });
+
   return { dataPreserved: true, recoveryCode: null };
+}
+
+/**
+ * The reset's compartment step, with the ONE thing it must not do: report a
+ * completed reset as a failure.
+ *
+ * By the time this runs, login is restored and the passphrase key record is
+ * rotated — the reset SUCCEEDED. So a failure here is re-thrown with wording
+ * that says exactly that, rather than the generic conflict message that would
+ * invite the user to start a reset whose token is already spent.
+ *
+ * Slot 2 is rewrapped under the SAME `K_pr` it already had. That is not a
+ * no-op: it is what makes both slots products of one operation, so a future
+ * reader never has to reason about a compartment whose halves were written at
+ * different times under different assumptions.
+ */
+async function rewrapCompartmentAfterReset({
+  http,
+  accountId,
+  dek,
+  recoveryKek,
+  passphraseKek,
+}: {
+  http: BlobTransport;
+  accountId: number;
+  dek: Uint8Array;
+  recoveryKek: CryptoKey;
+  passphraseKek: CryptoKey;
+}): Promise<void> {
+  try {
+    await rewrapPrivateStoreOnServer({
+      http,
+      accountId,
+      dek,
+      deviceId: resolveDeviceId(deviceStorage()),
+      currentKek: recoveryKek,
+      currentSlot: 'recovery',
+      nextPassphraseKek: passphraseKek,
+      nextRecoveryKek: recoveryKek,
+    });
+  } catch {
+    // The cause is deliberately dropped rather than chained: every failure
+    // reaching here is already a `SyncRequestError` whose own message would
+    // read as "the reset failed", which is the one thing that is not true.
+    throw new SyncRequestError({
+      kind: 'conflict',
+      message:
+        'Your passphrase was reset and your diary is intact, but this device could not move your clinician share keys onto the new passphrase. Sign in and try sharing again.',
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

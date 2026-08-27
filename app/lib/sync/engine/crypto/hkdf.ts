@@ -77,6 +77,38 @@ export const HKDF_INFO = {
    * — add a sibling.
    */
   SHARE_KEK: new TextEncoder().encode('openplate-sync:share-kek:p256:v1'),
+  /**
+   * The OWNER-PRIVATE COMPARTMENT KEK (`openplate-sync` ADR-0002, "The
+   * snapshot is partitioned" amendment) — the AES-256-GCM key that wraps the
+   * compartment data key (CDK) under the account's passphrase.
+   *
+   * A FIFTH independent branch, and the reason it exists is a cascade rather
+   * than a leak. A share is full-DEK and the blob is the WHOLE snapshot, so
+   * every grantee decrypts everything the DEK covers. The owner's own share
+   * PRIVATE key and their pinned peers therefore cannot sit in that plaintext
+   * — a grantee holding the grantor's private key can open every wrap
+   * addressed to that grantor, reaching people who made no trust decision
+   * about them. The compartment is a second, smaller key hierarchy nested
+   * inside the snapshot, and this is its passphrase door.
+   *
+   * It is a SIBLING of `PASSPHRASE_KEK`, never the same key: both hang off the
+   * same Argon2id hash under the same salt, and only this label keeps the DEK
+   * door and the compartment door apart. Collapsing them would make the
+   * compartment openable by anything that could already open the DEK, which is
+   * precisely the property the partition exists to break.
+   */
+  PRIVATE_STORE_KEK: new TextEncoder().encode('openplate-sync:private-store-kek:v1'),
+  /**
+   * The compartment's RECOVERY door (ADR-0002's amendment) — HKDF over the raw
+   * recovery code, empty salt, exactly like `RECOVERY_KEK`.
+   *
+   * The CDK indirection exists for the same reason the DEK's does: two
+   * independent unlock paths must open ONE ciphertext. Without this slot a
+   * recovery-code restore would recover the diary and silently lose every
+   * share key the account owns — a clinician's patients would all break at
+   * once, with nothing on screen to say why.
+   */
+  PRIVATE_STORE_RECOVERY_KEK: new TextEncoder().encode('openplate-sync:private-store-recovery-kek:v1'),
 } as const;
 
 /**

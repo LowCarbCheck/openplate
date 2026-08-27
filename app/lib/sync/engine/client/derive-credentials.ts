@@ -3,9 +3,9 @@
  * needs — and the one place where getting the branches wrong would be silent.
  *
  * ```
- *                                  ┌─HKDF(info=PASSPHRASE_KEK)─► KEK_p  (stays here, unwraps the DEK)
- * passphrase ─Argon2id(salt, m,t,p)┤
- *                                  └─HKDF(info=AUTH)──────────► authHash (sent to the service)
+ *                                  ┌─HKDF(info=PASSPHRASE_KEK)───► KEK_p  (stays here, unwraps the DEK)
+ * passphrase ─Argon2id(salt, m,t,p)┼─HKDF(info=PRIVATE_STORE_KEK)► K_pp   (stays here, unwraps the compartment's CDK)
+ *                                  └─HKDF(info=AUTH)────────────► authHash (sent to the service)
  * ```
  *
  * Both branches hang off ONE Argon2id run (`PROTOCOL.md` §3.1). That matters
@@ -36,6 +36,18 @@ export interface DerivedCredentials {
   authHash: string;
   /** The passphrase KEK, non-extractable. Unwraps the account's DEK; never transmitted, never persisted. */
   passphraseKek: CryptoKey;
+  /**
+   * `K_pp` — the OWNER-PRIVATE COMPARTMENT's passphrase door (`openplate-sync`
+   * ADR-0002's partition amendment), a THIRD sibling off the same Argon2id run.
+   *
+   * It must never be the same key as `passphraseKek`: that one opens the DEK,
+   * whose whole domain is shared with a clinician, and this one opens the
+   * compartment that must survive such a share. Only the HKDF label keeps them
+   * apart, and collapsing them would make the compartment openable by anything
+   * that could already open the DEK — the exact property the partition exists
+   * to break.
+   */
+  privateStoreKek: CryptoKey;
 }
 
 /**
@@ -61,7 +73,7 @@ export async function deriveCredentialsFromPassphrase({
   const salt = base64ToBytes(descriptor.salt);
   const argon2idHash = await deriveHash({ passphrase, salt, params: descriptor.params });
 
-  const [authBits, passphraseKek] = await Promise.all([
+  const [authBits, passphraseKek, privateStoreKek] = await Promise.all([
     deriveHkdfBits({
       inputKeyMaterial: argon2idHash,
       salt,
@@ -69,7 +81,11 @@ export async function deriveCredentialsFromPassphrase({
       lengthBytes: AUTH_HASH_BYTES,
     }),
     deriveAesKeyViaHkdf({ inputKeyMaterial: argon2idHash, salt, info: HKDF_INFO.PASSPHRASE_KEK }),
+    // The third branch is HKDF only — cheap next to the Argon2id run all three
+    // share, which is why it is derived unconditionally rather than lazily on
+    // the paths that turn out to need it.
+    deriveAesKeyViaHkdf({ inputKeyMaterial: argon2idHash, salt, info: HKDF_INFO.PRIVATE_STORE_KEK }),
   ]);
 
-  return { authHash: bytesToBase64(authBits), passphraseKek };
+  return { authHash: bytesToBase64(authBits), passphraseKek, privateStoreKek };
 }

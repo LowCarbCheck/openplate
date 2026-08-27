@@ -37,6 +37,7 @@ import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engi
 import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { createMemoryStorage, createSyncStateStore } from '../../app/lib/sync/sync-state';
 import { SCHEMA_VERSION, type LocalStoreSnapshot } from '../../app/lib/local-store';
+import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
 
 const FAST_PARAMS: Argon2idParams = { memorySizeKib: 8, iterations: 1, parallelism: 1 };
 /** Tiny parameters, injected at the seam `setup-keys.ts` exposes for exactly this. */
@@ -78,7 +79,7 @@ function foodLog(id: string, name: string): LocalStoreSnapshot['foodLogs'][numbe
   };
 }
 
-function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): LocalStoreSnapshot {
+function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
   // `fasts`/`savedMeals` are required on the snapshot since v7/v11 but are
   // never merged by the sync engine (see `mergeSnapshots`) — an empty array is
   // the whole fixture for both.
@@ -89,8 +90,9 @@ function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): LocalStoreSnapshot {
     profile: null,
     fasts: [],
     savedMeals: [],
-    shareIdentity: null,
-    sharePeers: [],
+    // The owner-private compartment (M160/07); `null` is a device with no
+    // share key, which is what every fixture here is.
+    privateStore: null,
   };
 }
 
@@ -103,7 +105,7 @@ function deviceDeps({
 }: {
   vault: SyncVault;
   deviceId: string;
-  local: { current: LocalStoreSnapshot };
+  local: { current: SyncedSnapshot };
   storage?: ReturnType<typeof createMemoryStorage>;
 }) {
   return {
@@ -113,14 +115,14 @@ function deviceDeps({
     state: createSyncStateStore({ storage, accountId: vault.accountId }),
     deviceId,
     readSnapshot: async () => local.current,
-    applySnapshot: async ({ merged }: { merged: LocalStoreSnapshot }) => {
+    applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
     },
     // The real bridge validates through the backup schema; the substituted
     // snapshot here is already that exact shape.
     // SAFETY: the only snapshot the engine can hand back is the one `readSnapshot`
-    // above supplied — `local.current`, which is a `LocalStoreSnapshot` by construction.
-    parseRemoteSnapshot: ({ snapshot }: { snapshot: unknown }) => snapshot as LocalStoreSnapshot,
+    // above supplied — `local.current`, which is a `SyncedSnapshot` by construction.
+    parseRemoteSnapshot: ({ snapshot }: { snapshot: unknown }) => snapshot as SyncedSnapshot,
   };
 }
 

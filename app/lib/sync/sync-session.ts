@@ -28,6 +28,7 @@
  */
 import type { SyncAuthClient } from './engine/client/auth-client';
 import type { SyncHttpClient } from './engine/client/http-client';
+import type { PrivateStoreSession } from './private-store';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { browserStorage } from './sync-state';
 
@@ -64,6 +65,17 @@ export interface SyncVault {
   http: SyncHttpClient;
   /** The unwrapped data-encryption key for this session. */
   dek: Uint8Array;
+  /**
+   * The owner-private compartment's session state (`private-store.ts`) — the
+   * compartment data key, its two wraps, and `K_pp`.
+   *
+   * MUTABLE and shared by reference: a first pull adopts a CDK into it and a
+   * passphrase change rewrites its wraps, and every later push must see those
+   * writes or it re-emits a stale wrap. Belongs in the vault rather than the
+   * snapshot for the same reason the DEK does — key material must never reach
+   * React state, devtools or an error report.
+   */
+  privateStore: PrivateStoreSession;
   accountId: number;
   email: string;
   deviceId: string;

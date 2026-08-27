@@ -22,7 +22,8 @@ import assert from 'node:assert/strict';
 
 import { mergeSnapshots, SYNC_ENTITY_TYPES, stampSnapshot } from '../../app/lib/sync/snapshot-sync';
 import type { StampedSnapshot } from '../../app/lib/sync/snapshot-sync';
-import type { LocalFast, LocalStoreSnapshot } from '../../app/lib/local-store/schema';
+import type { LocalFast } from '../../app/lib/local-store/schema';
+import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
 
 const HOUR = 3_600_000;
 const T = Date.parse('2026-08-06T20:00:00Z');
@@ -40,7 +41,7 @@ function fast(id: string, overrides: Partial<LocalFast> = {}): LocalFast {
   };
 }
 
-function snapshot(fasts: LocalFast[]): LocalStoreSnapshot {
+function snapshot(fasts: LocalFast[]): SyncedSnapshot {
   // `savedMeals` rides through the same pass-through path as `fasts` (see
   // `snapshot-sync.ts`) — an empty array here is enough, since this file's
   // assertions are all about `fasts`, not saved meals.
@@ -51,8 +52,7 @@ function snapshot(fasts: LocalFast[]): LocalStoreSnapshot {
     profile: null,
     fasts,
     savedMeals: [],
-    shareIdentity: null,
-    sharePeers: [],
+    privateStore: null,
   };
 }
 
@@ -126,8 +126,7 @@ describe('mergeSnapshots and fasts', () => {
       'foodLog',
       'weightEntry',
       'profile',
-      'shareIdentity',
-      'sharePeer',
+      'privateStore',
     ]);
   });
 });

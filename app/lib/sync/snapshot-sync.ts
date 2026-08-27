@@ -35,15 +35,8 @@
 import { mergeEntityMaps } from './engine/merge/merge-entities';
 import type { MergeCandidate, Tombstone } from './engine/merge/types';
 import type { SyncMetaPayload } from './engine/envelope/types';
-import type {
-  LocalFoodLog,
-  LocalPersonalFood,
-  LocalProfileGoals,
-  LocalShareIdentity,
-  LocalSharePeer,
-  LocalStoreSnapshot,
-  LocalWeightEntry,
-} from '#app/lib/local-store';
+import type { LocalFoodLog, LocalPersonalFood, LocalProfileGoals, LocalWeightEntry } from '#app/lib/local-store';
+import type { SealedPrivateStore, SyncedSnapshot } from './snapshot-partition';
 
 /** The entity-type tags that appear in tombstones and in namespaced entity keys. */
 export const SYNC_ENTITY_TYPES = {
@@ -52,23 +45,36 @@ export const SYNC_ENTITY_TYPES = {
   weight: 'weightEntry',
   profile: 'profile',
   /**
-   * The account's own share key pair (M160/04). It is MERGED rather than
-   * passed through from the local side like `fasts` and `savedMeals`, and the
-   * difference is the whole point of storing it here: a clinician's second
-   * device pulls the blob and must ADOPT the key pair, or every share her
-   * patients granted is unopenable on that device. A pass-through would keep
+   * THE OWNER-PRIVATE COMPARTMENT (M160/07, `openplate-sync` ADR-0002's
+   * partition amendment) — one entity holding the sealed ciphertext and its
+   * two CDK wraps.
+   *
+   * It is MERGED rather than passed through from the local side like `fasts`
+   * and `savedMeals`, and the difference is the whole point: a clinician's
+   * second device pulls the blob and must ADOPT the key pair inside, or every
+   * share her patients granted is unopenable there. A pass-through would keep
    * `null` and look like it worked.
+   *
+   * WHOLE-COMPARTMENT GRANULARITY IS ACCEPTED, and it is a real trade-off: the
+   * key pair and every pinned peer move as ONE last-writer-wins entity, so two
+   * devices that each pin a different clinician while offline keep only the
+   * later one's list. Per-entity granularity is impossible without leaving the
+   * entity boundaries visible in the shareable region, which is the disclosure
+   * this partition exists to remove. Pinning is a rare, deliberate act
+   * performed with both people in one room; losing a race between two of them
+   * is recoverable by repeating the ceremony.
    */
-  shareIdentity: 'shareIdentity',
-  /** A pinned peer public key (M160/04), one entity per counterpart account. Merged for the same reason. */
-  sharePeer: 'sharePeer',
+  privateStore: 'privateStore',
 } as const;
 
 /** The fixed entity id of the singleton profile row — it has no id of its own. */
 export const PROFILE_ENTITY_ID = 'me';
 
-/** The fixed entity id of the singleton share identity — one key pair per account, so it has no id of its own either. */
-export const SHARE_IDENTITY_ENTITY_ID = 'me';
+/** The fixed entity id of the singleton compartment — one per account, so it has no id of its own either. */
+export const PRIVATE_STORE_ENTITY_ID = 'me';
+
+/** The namespaced key the compartment occupies in `perEntity`. One place, so the rewrap path and the merge cannot disagree. */
+export const PRIVATE_STORE_ENTITY_KEY = `${SYNC_ENTITY_TYPES.privateStore}:${PRIVATE_STORE_ENTITY_ID}`;
 
 /** One entity's ordering stamp plus the content hash that decides whether it changed. Device-local; the hash never goes on the wire. */
 export interface StampedEntity {
@@ -86,7 +92,7 @@ export interface SyncBaseline {
 
 /** A stamped payload, ready to encrypt (or just merged out of two others). */
 export interface StampedSnapshot {
-  snapshot: LocalStoreSnapshot;
+  snapshot: SyncedSnapshot;
   meta: SyncMetaPayload;
 }
 
@@ -157,7 +163,7 @@ export function contentHash<T>(value: T): string {
 
 /** The local-store records sync carries — everything `flattenSnapshot` can produce. */
 export type SyncEntityValue =
-  LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | LocalShareIdentity | LocalSharePeer;
+  LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | SealedPrivateStore;
 
 interface FlatEntity {
   key: string;
@@ -167,18 +173,17 @@ interface FlatEntity {
 }
 
 /** Flattens a snapshot into one addressable list, so stamping/merging is written once rather than four times. */
-function flattenSnapshot(snapshot: LocalStoreSnapshot): FlatEntity[] {
+function flattenSnapshot(snapshot: SyncedSnapshot): FlatEntity[] {
   const flattened: FlatEntity[] = [
     ...snapshot.foods.map((food) => toFlat(SYNC_ENTITY_TYPES.food, food.id, food)),
     ...snapshot.foodLogs.map((log) => toFlat(SYNC_ENTITY_TYPES.log, log.id, log)),
     ...snapshot.weightEntries.map((entry) => toFlat(SYNC_ENTITY_TYPES.weight, entry.id, entry)),
-    ...snapshot.sharePeers.map((peer) => toFlat(SYNC_ENTITY_TYPES.sharePeer, peer.id, peer)),
   ];
   if (snapshot.profile !== null) {
     flattened.push(toFlat(SYNC_ENTITY_TYPES.profile, PROFILE_ENTITY_ID, snapshot.profile));
   }
-  if (snapshot.shareIdentity !== null) {
-    flattened.push(toFlat(SYNC_ENTITY_TYPES.shareIdentity, SHARE_IDENTITY_ENTITY_ID, snapshot.shareIdentity));
+  if (snapshot.privateStore !== null) {
+    flattened.push(toFlat(SYNC_ENTITY_TYPES.privateStore, PRIVATE_STORE_ENTITY_ID, snapshot.privateStore));
   }
   return flattened;
 }
@@ -204,7 +209,7 @@ export function stampSnapshot({
   baseline,
   deviceId,
 }: {
-  snapshot: LocalStoreSnapshot;
+  snapshot: SyncedSnapshot;
   baseline: SyncBaseline;
   deviceId: string;
 }): StampSnapshotResult {
@@ -300,9 +305,8 @@ export function mergeSnapshots({
   const foods: LocalPersonalFood[] = [];
   const foodLogs: LocalFoodLog[] = [];
   const weightEntries: LocalWeightEntry[] = [];
-  const sharePeers: LocalSharePeer[] = [];
   let profile: LocalProfileGoals | null = null;
-  let shareIdentity: LocalShareIdentity | null = null;
+  let privateStore: SealedPrivateStore | null = null;
   const perEntity: SyncMetaPayload['perEntity'] = {};
   const tombstones: Tombstone[] = [];
 
@@ -345,14 +349,9 @@ export function mergeSnapshots({
       profile = entity.value as LocalProfileGoals;
       continue;
     }
-    if (entity.entityType === SYNC_ENTITY_TYPES.sharePeer) {
-      // SAFETY: the `sharePeer` tag is only ever attached to a `LocalSharePeer`.
-      sharePeers.push(entity.value as LocalSharePeer);
-      continue;
-    }
-    if (entity.entityType === SYNC_ENTITY_TYPES.shareIdentity) {
-      // SAFETY: the `shareIdentity` tag is only ever attached to the singleton `LocalShareIdentity`.
-      shareIdentity = entity.value as LocalShareIdentity;
+    if (entity.entityType === SYNC_ENTITY_TYPES.privateStore) {
+      // SAFETY: the `privateStore` tag is only ever attached to the singleton `SealedPrivateStore`.
+      privateStore = entity.value as SealedPrivateStore;
     }
   }
 
@@ -388,12 +387,13 @@ export function mergeSnapshots({
       profile,
       fasts: local.snapshot.fasts,
       savedMeals: local.snapshot.savedMeals,
-      // NOT passed through from `local` like the two above it (M160/04): the
-      // share key pair and the pinned peers are genuinely merged, so a second
-      // device adopts them instead of staying blank. See the comment on
-      // `SYNC_ENTITY_TYPES.shareIdentity`.
-      shareIdentity,
-      sharePeers,
+      // NOT passed through from `local` like the two above it (M160/04, moved
+      // into the compartment by M160/07): the share key pair and the pinned
+      // peers are genuinely merged, so a second device adopts them instead of
+      // staying blank. What is merged here is the SEALED compartment — this
+      // function never sees the key material inside it. See the comment on
+      // `SYNC_ENTITY_TYPES.privateStore`.
+      privateStore,
     },
     meta: { perEntity, tombstones },
   };
@@ -440,11 +440,14 @@ function canonicalize(payload: StampedSnapshot) {
       foodLogs: byId(payload.snapshot.foodLogs),
       weightEntries: byId(payload.snapshot.weightEntries),
       profile: payload.snapshot.profile,
-      // `shareIdentity`/`sharePeers` ARE included, unlike `fasts` below:
-      // generating a key pair or pinning a peer is a real change that another
-      // device needs, so it must be allowed to make this device push.
-      shareIdentity: payload.snapshot.shareIdentity,
-      sharePeers: byId(payload.snapshot.sharePeers),
+      // The compartment IS included, unlike `fasts` below: generating a key
+      // pair, pinning a peer, or rewrapping a slot after a passphrase change
+      // is a real change another device needs, so it must be allowed to make
+      // this device push. It is compared as sealed bytes, which is why
+      // `private-store.ts` caches a sealed compartment and re-emits it
+      // verbatim while its plaintext is unchanged — a fresh IV on every cycle
+      // would make every boot write a new blob version.
+      privateStore: payload.snapshot.privateStore,
       // `fasts` is deliberately omitted, for the same reason `mergeSnapshots`
       // passes it straight through: it is not synced, so a fast starting or
       // ending must not be what makes this device burn a blob version.

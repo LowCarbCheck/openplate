@@ -52,3 +52,20 @@ export async function deriveRecoveryKek(rawRecoveryCode: Uint8Array): Promise<Cr
     info: HKDF_INFO.RECOVERY_KEK,
   });
 }
+
+/**
+ * Derives the compartment's RECOVERY door (`K_pr`) from the same raw recovery
+ * code — `openplate-sync` ADR-0002's partition amendment.
+ *
+ * A SIBLING of {@link deriveRecoveryKek}, never the same key: that one opens
+ * the DEK, whose domain a clinician share discloses, and this one opens the
+ * compartment that must survive such a share. Empty salt for the identical
+ * RFC 5869 §3.1 reason — the input is already a ≥128-bit random code.
+ */
+export async function derivePrivateStoreRecoveryKek(rawRecoveryCode: Uint8Array): Promise<CryptoKey> {
+  return deriveAesKeyViaHkdf({
+    inputKeyMaterial: rawRecoveryCode,
+    salt: new Uint8Array(0),
+    info: HKDF_INFO.PRIVATE_STORE_RECOVERY_KEK,
+  });
+}

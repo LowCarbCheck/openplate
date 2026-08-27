@@ -193,6 +193,33 @@
  * else's service, so an export or a share must never carry it. The asymmetry
  * between these two secrets is the whole point, not an inconsistency.
  */
+/**
+ * NOTE (M160/07, the snapshot partition): `SCHEMA_VERSION` v13 -> v14 is
+ * UNLIKE every bump above it, because THE LOCAL SHAPE DOES NOT CHANGE AT ALL.
+ * `LocalStoreSnapshot` still carries `shareIdentity` and `sharePeers` in the
+ * clear, `backup.ts` still validates them, and a v13 backup file imports
+ * byte-for-byte as it always did — there is no forward-migration step for the
+ * same reason there is nothing to migrate.
+ *
+ * What changed is the SYNCED shape. `openplate-sync` ADR-0002's partition
+ * amendment moves those two entities out of the shareable region of the blob
+ * and into an encrypted compartment (`app/lib/sync/snapshot-partition.ts`),
+ * because a share is full-DEK and the blob is the whole snapshot — so a
+ * grantee was decrypting the grantor's own share PRIVATE key and their pinned
+ * peers.
+ *
+ * THE BUMP IS STILL REQUIRED, and it is required for a reason worth stating:
+ * `SCHEMA_VERSION` is bound into the sync envelope's AAD as
+ * `payloadSchemaVersion`. Without the bump, a v13 client would decrypt a
+ * partitioned blob, silently STRIP the compartment as an unrecognized key, and
+ * push the result back — destroying the account's share keys with nothing
+ * failing anywhere. With it, that client cannot decrypt the blob at all and
+ * says so, which is the correct refusal.
+ *
+ * The local store and the backup file are the OWNER's own copies, and both
+ * keep the plaintext. Only the blob partitions, because only a blob is ever
+ * handed to a second person.
+ */
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { Macros } from '#app/lib/macros';
@@ -204,7 +231,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that

@@ -20,7 +20,8 @@ import assert from 'node:assert/strict';
 
 import { mergeSnapshots, SYNC_ENTITY_TYPES, stampSnapshot } from '../../app/lib/sync/snapshot-sync';
 import type { StampedSnapshot } from '../../app/lib/sync/snapshot-sync';
-import type { LocalSavedMeal, LocalStoreSnapshot } from '../../app/lib/local-store/schema';
+import type { LocalSavedMeal } from '../../app/lib/local-store/schema';
+import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
 
 function savedMeal(id: string, overrides: Partial<LocalSavedMeal> = {}): LocalSavedMeal {
   return {
@@ -42,7 +43,7 @@ function savedMeal(id: string, overrides: Partial<LocalSavedMeal> = {}): LocalSa
   };
 }
 
-function snapshot(savedMeals: LocalSavedMeal[]): LocalStoreSnapshot {
+function snapshot(savedMeals: LocalSavedMeal[]): SyncedSnapshot {
   // `fasts` rides through the same pass-through path as `savedMeals` (see
   // `snapshot-sync.ts`) — an empty array here is enough, since this file's
   // assertions are all about `savedMeals`, not fasts.
@@ -53,8 +54,7 @@ function snapshot(savedMeals: LocalSavedMeal[]): LocalStoreSnapshot {
     profile: null,
     fasts: [],
     savedMeals,
-    shareIdentity: null,
-    sharePeers: [],
+    privateStore: null,
   };
 }
 
@@ -129,8 +129,7 @@ describe('mergeSnapshots and savedMeals', () => {
       'foodLog',
       'weightEntry',
       'profile',
-      'shareIdentity',
-      'sharePeer',
+      'privateStore',
     ]);
   });
 });

@@ -7,6 +7,12 @@
  *   passphrase --Argon2id--> hash --HKDF(PASSPHRASE_KEK)--> KEK_p --wraps--> DEK
  *   recovery code           ----------HKDF(RECOVERY_KEK)--> KEK_r --wraps--> DEK
  *
+ * and, nested one level down (ADR-0002's partition amendment), the same shape
+ * again for the owner-private compartment — one CDK, wrapped twice:
+ *
+ *   hash --HKDF(PRIVATE_STORE_KEK)----------> K_pp --wraps--> CDK
+ *   recovery code --HKDF(PRIVATE_STORE_RECOVERY_KEK)-> K_pr --wraps--> CDK
+ *
  * One DEK, wrapped twice. That indirection is what makes a passphrase change
  * (or the recovery path) re-wrap 32 bytes instead of re-encrypting the user's
  * entire history — and it is why losing BOTH the passphrase and the recovery
@@ -32,10 +38,11 @@ import {
   type Argon2idParams,
 } from '../crypto/argon2';
 import { generateDek, wrapDek } from '../crypto/dek-wrap';
+import { establishPrivateStore, type EstablishedPrivateStore } from '../crypto/private-store';
 import type { KdfDescriptor } from '../protocol';
 import { createPassphraseKdfDescriptor, type PassphraseKdfDescriptor } from './passphrase-kek';
 import { deriveCredentialsFromPassphrase } from './derive-credentials';
-import { deriveRecoveryKek } from './recovery-kek';
+import { derivePrivateStoreRecoveryKek, deriveRecoveryKek } from './recovery-kek';
 
 /** One wrapped-DEK record, ready to be base64-encoded onto the wire by the caller. */
 export interface SyncKeySetupRecord {
@@ -69,6 +76,27 @@ export interface SyncKeySetupResult {
    * Memory only — persisting this anywhere defeats the entire design.
    */
   dek: Uint8Array;
+  /**
+   * The OWNER-PRIVATE COMPARTMENT, established here (ADR-0002's partition
+   * amendment) because setup is the one moment BOTH its doors exist at once:
+   * the passphrase is in this call frame and the recovery code has not yet
+   * been shown-and-forgotten. Creating it later is impossible without one of
+   * them, and an account with no compartment cannot sync a share key at all.
+   */
+  privateStore: EstablishedPrivateStore;
+  /**
+   * `K_pp`, the compartment's passphrase door — THE ONE KEK THIS MODULE
+   * RETURNS, and the exception needs its reason stated.
+   *
+   * Neither the DEK's KEK nor the recovery KEK is returned, because nothing
+   * after setup needs them: the DEK itself is handed back instead. This one is
+   * different. A session must be able to open a compartment ANOTHER device
+   * wrote — a second device, or the same device after a passphrase change that
+   * landed elsewhere — and the only way to do that is slot 1 under `K_pp`.
+   * Re-deriving it would cost a second Argon2id run at 64 MiB, which the user
+   * feels as a frozen screen.
+   */
+  privateStoreKek: CryptoKey;
 }
 
 /** The Argon2id step, injected so the caller decides where it runs (main thread, Worker, or a fast test stub). */
@@ -102,8 +130,13 @@ export async function setupSyncKeys({
   // ONE Argon2id run, split into its two independent HKDF branches
   // (`derive-credentials.ts`). Deriving the auth branch separately would
   // double the most expensive step in the flow for no benefit.
-  const { authHash, passphraseKek } = await deriveCredentialsFromPassphrase({ passphrase, descriptor, deriveHash });
+  const { authHash, passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
+    passphrase,
+    descriptor,
+    deriveHash,
+  });
   const recoveryKek = await deriveRecoveryKek(recoveryCodeRaw);
+  const privateStoreRecoveryKek = await derivePrivateStoreRecoveryKek(recoveryCodeRaw);
 
   const dek = generateDek();
 
@@ -122,5 +155,10 @@ export async function setupSyncKeys({
     authHash,
     kdfDescriptor: descriptor,
     dek,
+    privateStore: await establishPrivateStore({
+      passphraseKek: privateStoreKek,
+      recoveryKek: privateStoreRecoveryKek,
+    }),
+    privateStoreKek,
   };
 }

@@ -42,7 +42,8 @@ import type { SyncPayload } from './engine/envelope/types';
 import { ENVELOPE_VERSION, MAX_BLOB_BYTES } from './engine/protocol';
 import type { SyncHttpClient } from './engine/client/http-client';
 import { SyncRequestError } from './engine/client/sync-error';
-import { SCHEMA_VERSION, type LocalStoreSnapshot } from '#app/lib/local-store';
+import { SCHEMA_VERSION } from '#app/lib/local-store';
+import type { SyncedSnapshot } from './snapshot-partition';
 import {
   baselineFromPayload,
   mergeSnapshots,
@@ -64,9 +65,10 @@ export interface SyncCycleDeps {
   http: SyncHttpClient;
   state: SyncStateStore;
   deviceId: string;
-  readSnapshot: () => Promise<LocalStoreSnapshot>;
-  applySnapshot: (input: { merged: LocalStoreSnapshot; local: LocalStoreSnapshot }) => Promise<void>;
-  parseRemoteSnapshot: (input: { snapshot: unknown; schemaVersion: number }) => LocalStoreSnapshot;
+  /** The device snapshot AS SYNCED: the shareable region plus a sealed compartment (`snapshot-partition.ts`). */
+  readSnapshot: () => Promise<SyncedSnapshot>;
+  applySnapshot: (input: { merged: SyncedSnapshot; local: SyncedSnapshot }) => Promise<void>;
+  parseRemoteSnapshot: (input: { snapshot: unknown; schemaVersion: number }) => SyncedSnapshot;
   now?: () => number;
   maxAttempts?: number;
 }
@@ -191,11 +193,15 @@ async function pullRemotePayload(deps: SyncCycleDeps): Promise<RemotePayload | n
  * build's current value until the GCM tag verifies (see the module header for
  * why the value cannot simply be read off the wire).
  *
+ * Exported for `private-store-rewrap.ts`, which has to open a blob outside a
+ * sync cycle. A second probe loop there would be a second place for the walk
+ * to go out of step with `SCHEMA_VERSION`.
+ *
  * Every attempt failing is reported as ONE clear error rather than the last
  * cipher exception: "wrong key or a newer app wrote this" is actionable;
  * "OperationError" is not.
  */
-async function decryptWithSchemaProbe({
+export async function decryptWithSchemaProbe({
   ciphertext,
   envelopeVersion,
   blobVersion,

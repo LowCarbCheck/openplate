@@ -69,6 +69,8 @@ test('every HKDF label is DISTINCT — the domain-separation guard, in code rath
   assert.deepEqual(labels.toSorted(), [
     'openplate-sync:auth:v1',
     'openplate-sync:passphrase-kek:v1',
+    'openplate-sync:private-store-kek:v1',
+    'openplate-sync:private-store-recovery-kek:v1',
     'openplate-sync:recovery-kek:v1',
     'openplate-sync:share-kek:p256:v1',
   ]);

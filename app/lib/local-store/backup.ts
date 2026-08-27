@@ -287,7 +287,17 @@ const sharePeerSchema = z.object({
   createdAt: z.number(),
 });
 
-const snapshotSchema = z.object({
+/**
+ * THE SHAREABLE REGION (`openplate-sync` ADR-0002, "The snapshot is
+ * partitioned"): diary and preferences. This is what a clinician grant means,
+ * and it is the ONLY part of the snapshot a full-DEK share may disclose.
+ *
+ * Exported as its own schema so `app/lib/sync/snapshot-partition.ts` can
+ * validate a WIRE snapshot — which carries this region plus one opaque
+ * compartment ciphertext — without a second copy of every entity schema
+ * above. Two copies would be a silent way for a backup and a blob to drift.
+ */
+export const shareableSnapshotFields = {
   foods: z.array(personalFoodSchema),
   foodLogs: z.array(foodLogSchema),
   weightEntries: z.array(weightEntrySchema),
@@ -314,6 +324,21 @@ const snapshotSchema = z.object({
   // no `migrateSnapshotToV7` one. See the `NOTE (M123/07, saved meals)` block
   // in `schema.ts`.
   savedMeals: z.array(savedMealSchema).default([]),
+} as const;
+
+/**
+ * THE OWNER-PRIVATE COMPARTMENT's plaintext: key material and trust pins.
+ * This is what a grant must NEVER mean — see ADR-0002's partition amendment
+ * for why a grantee holding the grantor's share private key is a cascade
+ * rather than a leak.
+ *
+ * It stays in the BACKUP file in the clear, and that is deliberate: a backup
+ * is the owner's own copy of their own device, and dropping the share key from
+ * it would leave a restored device unable to open a single patient's wrap. It
+ * is only the SYNCED blob that must partition, because only a blob is ever
+ * handed to a second person.
+ */
+export const ownerPrivateRegionFields = {
   // Added v13 (clinician sharing, M160/04). Same rule as `fasts` and
   // `savedMeals` above (whole new entities, not optional fields): a v12
   // envelope has neither key, and these two defaults ARE the complete v12 ->
@@ -328,7 +353,15 @@ const snapshotSchema = z.object({
   // stopped opening on a restored device.
   shareIdentity: shareIdentitySchema.nullable().default(null),
   sharePeers: z.array(sharePeerSchema).default([]),
-});
+} as const;
+
+/** The shareable region as a schema — what a wire snapshot validates its diary half against. */
+export const shareableSnapshotSchema = z.object(shareableSnapshotFields);
+
+/** The compartment's plaintext as a schema — what a just-decrypted compartment is validated against. */
+export const ownerPrivateRegionSchema = z.object(ownerPrivateRegionFields);
+
+const snapshotSchema = z.object({ ...shareableSnapshotFields, ...ownerPrivateRegionFields });
 
 /**
  * The WRAPPER shape shared by every envelope version — schema-agnostic about
@@ -464,6 +497,12 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // has no `savedMeals` key, and `.default([])` reads that as "this device had
   // no saved meals, because saved meals did not exist" — there is nothing left
   // for a per-version step to do.
+
+  // Nor is there one for v13 -> v14 (the snapshot partition, M160/07), and
+  // that one is worth a sentence because the version number moved without the
+  // shape moving: the bump exists to invalidate the sync envelope's AAD for
+  // pre-partition clients (`schema.ts`'s NOTE), and the BACKUP file's shape is
+  // byte-for-byte unchanged. A v13 envelope is already a valid v14 one.
 
   const result = snapshotSchema.safeParse(migratedData);
   if (!result.success) {

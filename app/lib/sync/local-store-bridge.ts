@@ -18,15 +18,37 @@ import {
   deleteLocalFoodLog,
   deleteLocalWeightEntry,
   exportBackup,
+  getLocalShareIdentity,
   importBackup,
+  listLocalSharePeers,
   migrateEnvelopeForward,
   SCHEMA_VERSION,
   type LocalStoreSnapshot,
 } from '#app/lib/local-store';
+import {
+  partitionSnapshot,
+  readSealedPrivateStore,
+  type OwnerPrivateRegion,
+  type ShareableSnapshot,
+  type SyncedSnapshot,
+} from './snapshot-partition';
 
 /** Reads the device's full health snapshot — the same lossless projection a backup export produces. */
 export async function readLocalSnapshot(): Promise<LocalStoreSnapshot> {
   return (await exportBackup()).data;
+}
+
+/**
+ * Reads ONLY the owner-private region straight from the store.
+ *
+ * Exists so the apply path has a fallback that costs nothing when a pulled
+ * compartment will not open (a slot rewrapped by another device mid-flight, a
+ * blob from before the partition). Falling back to what is already on the
+ * device means a compartment that cannot be read changes nothing, rather than
+ * blanking a clinician's key pair to represent a failure.
+ */
+export async function readLocalOwnerPrivateRegion(): Promise<OwnerPrivateRegion> {
+  return { shareIdentity: await getLocalShareIdentity(), sharePeers: await listLocalSharePeers() };
 }
 
 /**
@@ -50,8 +72,19 @@ export function parseRemoteSnapshot({
 }: {
   snapshot: unknown;
   schemaVersion: number;
-}): LocalStoreSnapshot {
-  return migrateEnvelopeForward({ schemaVersion, exportedAt: new Date(0).toISOString(), data: snapshot }).data;
+}): SyncedSnapshot {
+  const migrated = migrateEnvelopeForward({
+    schemaVersion,
+    exportedAt: new Date(0).toISOString(),
+    data: snapshot,
+  }).data;
+  // The backup chain knows nothing about the compartment, so the two regions
+  // are read separately and only the SHAREABLE half survives from it. A
+  // pre-partition blob's plaintext `shareIdentity`/`sharePeers` are dropped
+  // here rather than adopted: material written into the shareable region is
+  // material a grantee may already hold, and re-adopting it would launder a
+  // disclosure into the new format (`snapshot-partition.ts`).
+  return { ...partitionSnapshot(migrated).shareable, privateStore: readSealedPrivateStore({ snapshot }) };
 }
 
 /**
@@ -68,8 +101,10 @@ export async function applyMergedSnapshot({
   merged,
   local,
 }: {
+  /** The full device shape — the shareable region the merge produced, recomposed with an OPENED compartment. */
   merged: LocalStoreSnapshot;
-  local: LocalStoreSnapshot;
+  /** Only the shareable region is needed here: every delete set below is computed from an id-bearing diary collection. */
+  local: ShareableSnapshot;
 }): Promise<void> {
   const survivingFoods = new Set(merged.foods.map((food) => food.id));
   const survivingLogs = new Set(merged.foodLogs.map((log) => log.id));
