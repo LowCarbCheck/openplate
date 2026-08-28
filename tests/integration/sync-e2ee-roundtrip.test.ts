@@ -23,9 +23,33 @@
  * marker string is planted in the plaintext, the whole flow is driven, and the
  * marker is then searched for across every byte the service ever saw or
  * stored.
+ *
+ * ── THAT SEARCH READS BYTES, NOT TEXT (M163/05) ─────────────────────────
+ *
+ * A substring search over the JSON transcript is not the same claim, and the
+ * gap between the two is where an unencrypted blob would hide. Two ways it
+ * passes while leaking, both closed here and both proved by injection:
+ *
+ *  - EVERYTHING ON THIS WIRE IS BASE64. A blob pushed in the clear is not
+ *    readable in the JSON text at all. M163/04 found this on the research
+ *    lane by deleting the seal and watching a raw search stay green; the same
+ *    hole was latent here. Hence {@link base64DecodedView}.
+ *  - THE ENVELOPE IS GZIP-THEN-ENCRYPT (`build-envelope.ts`, `PROTOCOL.md`
+ *    §3.2), so a blob that is compressed but NOT encrypted is invisible
+ *    twice over: base64 on the outside, DEFLATE on the inside. Neither the
+ *    raw nor the base64 view can read it. Hence {@link gunzippedView}, which
+ *    is the view that actually fires when `buildEnvelope`'s encryption step
+ *    is removed — verified by doing exactly that.
+ *
+ * So each surface is searched in three views — raw, base64-decoded, and
+ * gunzipped — and a view that cannot be built for a surface is skipped with
+ * its reason ASSERTED rather than dropped. A silently-skipped view is how a
+ * surface becomes decoration; M163/04 found two of those in its own first
+ * version.
  */
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { constants as zlibConstants, gunzipSync } from 'node:zlib';
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
 import { createSyncAccount, completeSyncReset, requestSyncReset, signInToSync } from '../../app/lib/sync/sync-actions';
 import type { SyncSetupOutcome } from '../../app/lib/sync/setup-flow';
@@ -132,13 +156,98 @@ function requireVault(): SyncVault {
   return vault;
 }
 
+/**
+ * Every base64-looking run in a serialized surface, decoded back to BYTES.
+ *
+ * The payloads this file is about — a blob's `ciphertext`, a wrapped DEK —
+ * are base64 string values inside JSON, so each one is a single unbroken run
+ * of the base64 alphabet between two quotes. Sixteen characters is long
+ * enough that ordinary JSON words (`accountId`, `blobVersion`) are not picked
+ * up as candidates.
+ */
+function base64Runs(serialized: string): Buffer[] {
+  return [...serialized.matchAll(/[\d+/A-Za-z]{16,}={0,2}/g)].map((match) => Buffer.from(match[0], 'base64'));
+}
+
+/**
+ * View 2: every base64 run rendered as text.
+ *
+ * Without this the search has a hole exactly where the payloads live —
+ * a snapshot shipped unencrypted is unreadable in the JSON transcript, and a
+ * substring search over that transcript passes. This turns "the marker is not
+ * in the text" into "the marker is not in the bytes".
+ */
+function base64DecodedView(serialized: string): string {
+  return base64Runs(serialized)
+    .map((bytes) => bytes.toString('utf8'))
+    .join('\n');
+}
+
+/**
+ * Every offset in `bytes` carrying gzip's magic bytes and DEFLATE method.
+ *
+ * Detection is by FRAMING, never by a field name — a field called
+ * `ciphertext` is exactly the field a regression would leave uncompressed
+ * inside. Offsets other than zero matter because the envelope's ciphertext
+ * field is `iv || body` (`packIvAndCiphertext`): drop only the AES step and
+ * the gzip stream starts twelve bytes in, where a header check at offset zero
+ * would miss it entirely.
+ */
+function gzipOffsets(bytes: Buffer): number[] {
+  const offsets: number[] = [];
+  for (let index = 0; index + 2 < bytes.length; index += 1) {
+    if (bytes[index] === 0x1f && bytes[index + 1] === 0x8b && bytes[index + 2] === 0x08) offsets.push(index);
+  }
+  return offsets;
+}
+
+/**
+ * View 3: every base64 run that is a gzip stream, inflated.
+ *
+ * `buildEnvelope` compresses BEFORE it encrypts, so a blob that skipped only
+ * the encryption step still arrives gzipped — DEFLATE-encoded binary that
+ * neither of the other two views can read. This is the view that catches it.
+ *
+ * Returns `null` when the view does not exist for this surface, which is the
+ * HEALTHY state: the only gzip in this protocol lives inside the AES
+ * envelope, so correctly sealed ciphertext never carries the magic bytes. The
+ * caller asserts that reason instead of skipping quietly.
+ */
+function gunzippedView(serialized: string): string | null {
+  const inflated: string[] = [];
+  for (const bytes of base64Runs(serialized)) {
+    for (const offset of gzipOffsets(bytes)) {
+      try {
+        // `finishFlush` so a stream that runs into trailing frame bytes still
+        // yields what it did decode, rather than throwing the whole view away.
+        inflated.push(gunzipSync(bytes.subarray(offset), { finishFlush: zlibConstants.Z_SYNC_FLUSH }).toString('utf8'));
+      } catch {
+        // Magic bytes by coincidence, not an actual stream: not this view's.
+      }
+    }
+  }
+  return inflated.length === 0 ? null : inflated.join('\n');
+}
+
+/** The one permitted reason for a view to be missing. Anything else is a hole, not a skip. */
+const NO_GZIP_STREAM = 'no captured run on this surface is a gzip stream';
+
+/** The three views of one surface. `haystack === null` means the view could not be built. */
+function decodedViews(serialized: string): { name: string; haystack: string | null; absentBecause: string }[] {
+  return [
+    { name: 'raw', haystack: serialized, absentBecause: '' },
+    { name: 'base64-decoded', haystack: base64DecodedView(serialized), absentBecause: '' },
+    { name: 'gunzipped', haystack: gunzippedView(serialized), absentBecause: NO_GZIP_STREAM },
+  ];
+}
+
 /** Asserts the ordinary (no email verification) signup branch and hands back the recovery code. */
 function expectReady(outcome: SyncSetupOutcome): string {
   assert.equal(outcome.status, 'ready', 'expected setup to complete without an email-verification step');
   return outcome.status === 'ready' ? outcome.recoveryCode : '';
 }
 
-test('signup → key records → push: the plaintext never reaches the service', async () => {
+test("signup → key records → push: the service never sees the diary's plaintext", async () => {
   const email = `canary-${Date.now()}@example.test`;
   await createSyncAccount({
     serverUrl: service.url,
@@ -152,6 +261,18 @@ test('signup → key records → push: the plaintext never reaches the service',
   const local = { current: snapshotOf([foodLog('log-1', PLAINTEXT_MARKER)]) };
   const result = await runSyncCycleUnlocked(deviceDeps({ vault, deviceId: 'device-1', local }));
   assert.equal(result.pushed, true);
+
+  // NON-VACUITY FIRST, because everything below is an absence and an absence
+  // passes trivially against nothing. A fresh device pulls the blob back down
+  // and the marker comes out of it — so the marker really did travel inside
+  // the ciphertext the searches below are about, rather than never having been
+  // sent at all.
+  const roundTripped = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault, deviceId: 'device-readback', local: roundTripped }));
+  // Kept on ONE line deliberately: the spec's checklist greps for this
+  // assertion, and prettier would wrap a longer message across three.
+  const readBack = roundTripped.current.foodLogs.map((log) => log.name);
+  assert.ok(readBack.includes(PLAINTEXT_MARKER), 'the marker must return from the blob, or the searches prove nothing');
 
   const observedWire = JSON.stringify(service.observed);
   const storedAtRest = service.dump();
@@ -177,6 +298,36 @@ test('signup → key records → push: the plaintext never reaches the service',
     'expected a blob push to have happened',
   );
   assert.ok(storedAtRest.includes('"blobVersion":1'), 'expected the service to be holding a blob');
+
+  // THE SEARCH, in three views over the same bytes. The raw view repeats what
+  // the four assertions above already say — deliberately, because the loop is
+  // what the other two views hang off, and dropping the duplicate would make
+  // the raw case depend on the loop's shape.
+  const surfaces = {
+    'everything the service saw and everything it served': observedWire,
+    'everything the service stores': storedAtRest,
+  };
+  for (const [surface, serialized] of Object.entries(surfaces)) {
+    assert.ok(serialized.length > 0, `${surface} is empty, so searching it proves nothing`);
+    for (const view of decodedViews(serialized)) {
+      if (view.haystack === null) {
+        // AN EXPLICIT SKIP. The view is unbuildable only for the one stated
+        // reason; anything else would mean the search quietly lost a surface.
+        assert.equal(view.absentBecause, NO_GZIP_STREAM, `${surface}: the ${view.name} view went missing unexplained`);
+        continue;
+      }
+      assert.equal(
+        view.haystack.includes(PLAINTEXT_MARKER),
+        false,
+        `the diary's plaintext is readable in ${surface} (${view.name} view)`,
+      );
+      assert.equal(
+        view.haystack.includes(PASSPHRASE),
+        false,
+        `the passphrase is readable in ${surface} (${view.name} view)`,
+      );
+    }
+  }
 });
 
 test('a second device signs in with the passphrase alone and reads the first device’s data', async () => {
