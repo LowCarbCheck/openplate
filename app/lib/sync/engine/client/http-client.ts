@@ -32,6 +32,14 @@ import {
   type RotateDekRequest,
   type ShareGrantWire,
   type SharedBlobResponse,
+  type ContributionEnrolmentWire,
+  type ListContributionsResponse,
+  type ListStudyContributionsResponse,
+  type ListStudyWithdrawalsResponse,
+  type PutContributionConflictResponse,
+  type PutContributionRequest,
+  type StudyContributionWire,
+  type StudyWithdrawalWire,
   type KeyRecordWire,
   type ListKeyRecordsResponse,
   type PullBlobResponse,
@@ -85,11 +93,19 @@ export type PutKeyRecordHttpResult =
  * A read of a surface that only exists on a deployment which enabled it.
  *
  * `unavailable` is the honest name for "every path in that tree answers the
- * ordinary unknown-route 404" (ADR-0002 prohibition 10). It is NOT an error:
- * the caller must render nothing rather than a broken screen, and must not
- * retry.
+ * ordinary unknown-route 404" (ADR-0002 prohibition 10, and ADR-0003
+ * prohibition 9 word for word). It is NOT an error: the caller must render
+ * nothing rather than a broken screen, and must not retry.
+ *
+ * ONE type for both optional families, deliberately. Sharing and research are
+ * independent flags on independent subtrees, but the client's obligation is
+ * identical, and a second type would be a second place for "unavailable is not
+ * an error" to be forgotten.
  */
-export type ShareSurfaceRead<TValue> = { status: 'available'; value: TValue } | { status: 'unavailable' };
+export type SurfaceRead<TValue> = { status: 'available'; value: TValue } | { status: 'unavailable' };
+
+/** The share family's name for {@link SurfaceRead}, kept because `sharing.ts` and its tests read in ADR-0002's vocabulary. */
+export type ShareSurfaceRead<TValue> = SurfaceRead<TValue>;
 
 /** One of the caller's own grants. Never carries a wrap — it is addressed to somebody else's key. */
 export interface ShareGrant {
@@ -128,6 +144,68 @@ export type PutShareHttpResult =
 export type RotateDekHttpResult =
   | { status: 'accepted'; newVersion: number; keptShares: number; revokedShares: number }
   | { status: 'conflict'; currentVersion: number };
+
+// ---------------------------------------------------------------------------
+// Research contributions (§5.18, `openplate-sync` ADR-0003)
+// ---------------------------------------------------------------------------
+
+/** One of the caller's OWN enrolments. Never carries a sealed body — see {@link ContributionEnrolmentWire}. */
+export interface ContributionEnrolment {
+  studyAccountId: number;
+  pseudonym: string;
+  schemaTier: string;
+  contributionVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * The four protocol-meaningful outcomes of a contribution `PUT`.
+ *
+ * `not-found` covers "no such study account" AND "this deployment has no
+ * research lane" — the service answers one 404 for both, deliberately, and
+ * this client must not invent a distinction it cannot make.
+ *
+ * `too-large` is its own outcome rather than a thrown error because "your
+ * window is too wide" is ADVICE: the contributor can narrow the window and
+ * retry, and a study can be told its window does not fit. Collapsing it into a
+ * generic failure throws that away.
+ */
+export type PutContributionHttpResult =
+  | { status: 'accepted'; enrolment: ContributionEnrolment }
+  | { status: 'conflict'; currentVersion: number }
+  | { status: 'too-large' }
+  | { status: 'not-found' };
+
+/** One cohort row as it arrives, with `body` decoded from base64 and NOTHING opened yet. There is no account id here and there must never be one. */
+export interface StudyContribution {
+  pseudonym: string;
+  contributionVersion: number;
+  schemaTier: string;
+  /** `ephPub(65) ‖ iv(12) ‖ AES-256-GCM(...)`. Opaque until `research/study.ts` opens it with a key this device holds. */
+  body: Uint8Array;
+  createdAt: string;
+}
+
+/**
+ * The study-side envelope: the caller's OWN account id once, and the rows.
+ *
+ * The id is at the envelope's top level because it belongs there — it is the
+ * same value for every row, it is the value the caller authenticated as, and
+ * the researcher needs it to rebuild §3.5's AAD. Per row it would look like a
+ * participant identifier, which is precisely what it must never be mistaken
+ * for.
+ */
+export interface StudyContributionPage {
+  studyAccountId: number;
+  contributions: StudyContribution[];
+}
+
+/** A tombstone: a pseudonym that withdrew, and when. The purge instruction of ADR-0003 prohibition 8. */
+export interface StudyWithdrawal {
+  pseudonym: string;
+  withdrawnAt: string;
+}
 
 export class SyncHttpClient {
   private readonly baseUrl: string;
@@ -411,6 +489,129 @@ export class SyncHttpClient {
   }
 
   // -------------------------------------------------------------------------
+  // Research — contributor side (§5.18). ADR-0003.
+  // -------------------------------------------------------------------------
+
+  /**
+   * Pushes the cumulative contribution for a window (§5.18), CAS-gated on a
+   * monotonic `contributionVersion` that is ALSO an AAD field — so the value
+   * sent here must be the value the body was sealed under.
+   *
+   * A `409` is normal: another of the contributor's own devices recomputed and
+   * pushed first. The caller re-seals at the returned version and retries; it
+   * always still holds the source.
+   */
+  async putContribution(input: {
+    studyAccountId: number;
+    pseudonym: string;
+    schemaTier: string;
+    body: Uint8Array;
+    contributionVersion: number;
+  }): Promise<PutContributionHttpResult> {
+    const body: PutContributionRequest = {
+      pseudonym: input.pseudonym,
+      schemaTier: input.schemaTier,
+      body: bytesToBase64(input.body),
+      contributionVersion: input.contributionVersion,
+    };
+    const response = await this.send({
+      path: `${SYNC_API_PREFIX}/contributions/${input.studyAccountId}`,
+      method: 'PUT',
+      body,
+    });
+    if (response.status === 404) return { status: 'not-found' };
+    if (response.status === 413) return { status: 'too-large' };
+    if (response.status === 409) {
+      // SAFETY: §5.18 defines the 409 body of this endpoint as
+      // `PutContributionConflictResponse`, and its `currentVersion` is the
+      // integer to re-seal above.
+      const conflict = (await response.json()) as PutContributionConflictResponse;
+      return { status: 'conflict', currentVersion: conflict.currentVersion };
+    }
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.18 defines the 200 body of this endpoint as the stored
+    // enrolment without its body; every non-2xx has already been handled.
+    return {
+      status: 'accepted',
+      enrolment: decodeContributionEnrolment((await response.json()) as ContributionEnrolmentWire),
+    };
+  }
+
+  /** The caller's own enrolments (§5.18). Never carries a sealed body. A `404` means this deployment has no research lane. */
+  async listMyContributions(): Promise<SurfaceRead<ContributionEnrolment[]>> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/contributions`, method: 'GET' });
+    if (response.status === 404) return { status: 'unavailable' };
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.18 defines the 200 body of this endpoint as
+    // `ListContributionsResponse`; the 404 and every other non-2xx are handled above.
+    const body = (await response.json()) as ListContributionsResponse;
+    return { status: 'available', value: body.contributions.map(decodeContributionEnrolment) };
+  }
+
+  /**
+   * WITHDRAWAL (§5.18): one transaction on the service — hard-delete the row,
+   * insert the pseudonym-keyed tombstone. Idempotent.
+   *
+   * On this side it is genuine erasure: a contribution the study has not yet
+   * pulled reaches nobody. What a study has already pulled cannot be
+   * repossessed — the tombstone carries the instruction, `research/study.ts`
+   * honours it on every pull, and no wording anywhere may claim more than
+   * that.
+   *
+   * A `404` is accepted silently for one reason only: it means this deployment
+   * has no research lane, so there is no row to remove and nothing to report.
+   */
+  async withdrawContribution(studyAccountId: number): Promise<void> {
+    const response = await this.send({
+      path: `${SYNC_API_PREFIX}/contributions/${studyAccountId}`,
+      method: 'DELETE',
+    });
+    if (response.status === 404) return;
+    if (!response.ok) throw await toRequestError(response);
+  }
+
+  // -------------------------------------------------------------------------
+  // Research — study side (§5.18). READ ONLY, and carrying no contributor
+  // account id, ever.
+  // -------------------------------------------------------------------------
+
+  /**
+   * The cohort (§5.18): every contribution pointed at the calling study, still
+   * sealed.
+   *
+   * THIS IS NOT THE FUNCTION A RESEARCHER'S SCREEN CALLS. It returns rows
+   * before withdrawal tombstones are applied, which is why nothing above
+   * `research/study.ts`'s `pullStudyCohort` may call it — the purge is part of
+   * the pull, not a step a caller can forget (ADR-0003 prohibition 8).
+   */
+  async listStudyContributions(): Promise<SurfaceRead<StudyContributionPage>> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/study/contributions`, method: 'GET' });
+    if (response.status === 404) return { status: 'unavailable' };
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.18 defines the 200 body of this endpoint as
+    // `ListStudyContributionsResponse`; the 404 and every other non-2xx are handled above.
+    const body = (await response.json()) as ListStudyContributionsResponse;
+    return {
+      status: 'available',
+      value: {
+        studyAccountId: body.studyAccountId,
+        contributions: body.contributions.map(decodeStudyContribution),
+      },
+    };
+  }
+
+  /** The pseudonyms that withdrew (§5.18), with timestamps. Read on every pull, and applied before anything is decrypted. */
+  async listStudyWithdrawals(): Promise<SurfaceRead<StudyWithdrawal[]>> {
+    const response = await this.send({ path: `${SYNC_API_PREFIX}/study/withdrawals`, method: 'GET' });
+    if (response.status === 404) return { status: 'unavailable' };
+    if (!response.ok) throw await toRequestError(response);
+    // SAFETY: §5.18 defines the 200 body of this endpoint as
+    // `ListStudyWithdrawalsResponse`; the 404 and every other non-2xx are handled above.
+    const body = (await response.json()) as ListStudyWithdrawalsResponse;
+    return { status: 'available', value: body.withdrawals.map(decodeStudyWithdrawal) };
+  }
+
+  // -------------------------------------------------------------------------
   // Transport
   // -------------------------------------------------------------------------
 
@@ -450,6 +651,32 @@ export class SyncHttpClient {
     if (refreshed === null) return response;
     return attempt(refreshed);
   }
+}
+
+function decodeContributionEnrolment(wire: ContributionEnrolmentWire): ContributionEnrolment {
+  return {
+    studyAccountId: wire.studyAccountId,
+    pseudonym: wire.pseudonym,
+    schemaTier: wire.schemaTier,
+    contributionVersion: wire.contributionVersion,
+    createdAt: wire.createdAt,
+    updatedAt: wire.updatedAt,
+  };
+}
+
+/** Decodes one cohort row. The field list is exhaustive on purpose: an account id could only appear here by somebody adding it. */
+function decodeStudyContribution(wire: StudyContributionWire): StudyContribution {
+  return {
+    pseudonym: wire.pseudonym,
+    contributionVersion: wire.contributionVersion,
+    schemaTier: wire.schemaTier,
+    body: base64ToBytes(wire.body),
+    createdAt: wire.createdAt,
+  };
+}
+
+function decodeStudyWithdrawal(wire: StudyWithdrawalWire): StudyWithdrawal {
+  return { pseudonym: wire.pseudonym, withdrawnAt: wire.withdrawnAt };
 }
 
 function decodeKeyRecord(wire: KeyRecordWire): StoredKeyRecord {

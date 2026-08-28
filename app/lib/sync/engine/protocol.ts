@@ -443,3 +443,120 @@ export interface RotateDekAcceptedResponse {
 export interface RotateDekConflictResponse {
   currentVersion: number;
 }
+
+// ---------------------------------------------------------------------------
+// Wire shapes — research contributions (§5.18, `openplate-sync` ADR-0003)
+// ---------------------------------------------------------------------------
+
+/**
+ * These endpoints exist ONLY on a deployment that sets `SYNC_RESEARCH`, and
+ * the rule is `SYNC_SHARING`'s word for word: everywhere else every path below
+ * answers the ordinary unknown-route `404`, to every caller, credentialed or
+ * not, with the terminator mounted ahead of authentication (ADR-0003
+ * prohibition 9). A `404` from a list endpoint is therefore "this server has
+ * no research lane", never an error.
+ *
+ * The two flags are independent — neither implies the other — so a client must
+ * ask each surface separately and must not infer one from the other.
+ *
+ * WHAT IS NOT HERE IS THE POINT. There is no contributor account id on any
+ * study-side shape below, and there must never be one: §3.5's AAD was designed
+ * so the researcher never needs one, which is the deliberate inversion of
+ * §5.16's `SharedBlobResponse` (ADR-0003 prohibition 2). Anyone reusing that
+ * shape here imports a re-identification leak.
+ *
+ * The service builds these documents as literals in its own
+ * `server/research-routes.ts` rather than from a mirrored type — `PROTOCOL.md`
+ * §5.18 is the contract both sides answer to, and this file is the client's
+ * reading of it.
+ */
+export interface PutContributionRequest {
+  /** Computed on the contributor's device. The server stores it and cannot verify it — it never holds the root. */
+  pseudonym: string;
+  /** A tier name this protocol revision defines. An unknown name is a `400`, so prohibition 1 has teeth on both sides. */
+  schemaTier: string;
+  /** `ephPub(65) ‖ iv(12) ‖ AES-256-GCM(...)`, base64. Opaque to the service. */
+  body: Base64Bytes;
+  /**
+   * The NEW version, not a base. It binds into §3.5's AAD, so it must be the
+   * value the ciphertext was sealed under, and the server's rule is strictly
+   * greater than the stored one rather than exact-successor: a client
+   * recomputing and re-pushing the whole projection must never be wedged by a
+   * version that never left the device.
+   */
+  contributionVersion: number;
+}
+
+/**
+ * One of the CONTRIBUTOR's own enrolments — `GET {prefix}/contributions`, and
+ * the `200` body of a `PUT`.
+ *
+ * `studyAccountId` is the only account id in this family, and it is the
+ * counterpart the contributor named itself. **Never carries `body`**: the
+ * contributor's own client holds the source it was reduced from and has no
+ * use for its own ciphertext.
+ */
+export interface ContributionEnrolmentWire {
+  studyAccountId: number;
+  pseudonym: string;
+  schemaTier: string;
+  contributionVersion: number;
+  createdAt: IsoTimestamp;
+  updatedAt: IsoTimestamp;
+}
+
+/** `200` from `GET {prefix}/contributions`. */
+export interface ListContributionsResponse {
+  contributions: ContributionEnrolmentWire[];
+}
+
+/**
+ * `409` from a contribution `PUT`. Mirrors §5.1's blob conflict rather than
+ * §5.16's share conflict: the CAS token in this lane is a monotonic INTEGER,
+ * because that integer also rides in the AAD and the attack it refuses is a
+ * rollback to an older contribution.
+ */
+export interface PutContributionConflictResponse {
+  currentVersion: number;
+}
+
+/**
+ * One contribution AS THE STUDY SEES IT — `GET {prefix}/study/contributions`.
+ *
+ * Five fields, and the sixth that would matter is absent by construction. Four
+ * of §3.5's five AAD fields ride here; the fifth, `studyKeyFingerprint`, the
+ * researcher computes locally from her own key, which is what keeps the
+ * key-substitution defence out of the server's hands.
+ */
+export interface StudyContributionWire {
+  pseudonym: string;
+  contributionVersion: number;
+  schemaTier: string;
+  body: Base64Bytes;
+  createdAt: IsoTimestamp;
+}
+
+/**
+ * `200` from `GET {prefix}/study/contributions`.
+ *
+ * `studyAccountId` is echoed ONCE, at the top level, and never per row: it is
+ * the caller's own id, it authenticated as it, it is identical for every row,
+ * and it is not a contributor identifier. The researcher needs it to rebuild
+ * §3.5's AAD; per row it would be noise, and a per-row account id is exactly
+ * the shape prohibition 2 forbids.
+ */
+export interface ListStudyContributionsResponse {
+  studyAccountId: number;
+  contributions: StudyContributionWire[];
+}
+
+/** One tombstone — `GET {prefix}/study/withdrawals`. Pseudonym and time, and nothing else; prohibition 6 forbids an account id here. */
+export interface StudyWithdrawalWire {
+  pseudonym: string;
+  withdrawnAt: IsoTimestamp;
+}
+
+/** `200` from `GET {prefix}/study/withdrawals`. The purge instructions — see `research/study.ts`, where honouring them is not optional. */
+export interface ListStudyWithdrawalsResponse {
+  withdrawals: StudyWithdrawalWire[];
+}
