@@ -303,12 +303,28 @@ const researchIdentitySchema = z.object({
   createdAt: z.number(),
 });
 
+/**
+ * Added v16 (M163/01) — the window this device last SENT to a study. Named
+ * here for the reason every field in this file is named: zod STRIPS
+ * unrecognized keys, so omitting it would drop the window on every export,
+ * every import, and every compartment seal/open round-trip, leaving a screen
+ * that had days to name yesterday and none today.
+ */
+const submittedWindowSchema = z.object({
+  fromDayKey: z.string(),
+  toDayKey: z.string(),
+  at: z.number(),
+});
+
 const studyEnrolmentSchema = z.object({
   id: z.string(),
   studyAccountId: z.number().int(),
   publicKeyRaw: z.string(),
   label: z.string().nullable(),
   createdAt: z.number(),
+  // `.default(null)` IS the whole v15 -> v16 forward migration: a v15 row has
+  // no key at all, and "this device had sent nothing" is the honest reading.
+  lastSubmission: submittedWindowSchema.nullable().default(null),
 });
 
 /**

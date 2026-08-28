@@ -21,6 +21,7 @@ import {
   getLocalResearchIdentity,
   listLocalStudyEnrolments,
   type LocalStudyEnrolment,
+  type LocalSubmittedWindow,
 } from '#app/lib/local-store';
 import { base64ToBytes } from './engine/crypto/base64';
 import type { ContributionEnrolment } from './engine/client/http-client';
@@ -60,6 +61,16 @@ export interface StudyEnrolmentView {
   pseudonym: string | null;
   /** The tier and version the SERVER currently holds, or `null` when nothing has been sent yet — or when the lane is dark. */
   server: { schemaTier: string; contributionVersion: number; updatedAt: string } | null;
+  /**
+   * The window this device last SENT to this study, or `null` when it has sent
+   * nothing (M163/01).
+   *
+   * It comes off the LOCAL pin and could come from nowhere else: §5.18's
+   * contribution row carries no window, deliberately, so `server` above can
+   * say when and at which version but never which days. `null` renders as
+   * "nothing sent yet" — never as an empty range and never as today.
+   */
+  lastSubmission: LocalSubmittedWindow | null;
 }
 
 /**
@@ -106,6 +117,7 @@ async function describeEnrolment({
     label: enrolment.label,
     joinedAt: enrolment.createdAt,
     pseudonym: root === null ? null : await deriveStudyPseudonym({ root, studyAccountId: enrolment.studyAccountId }),
+    lastSubmission: enrolment.lastSubmission,
     server:
       row === null ? null : (
         { schemaTier: row.schemaTier, contributionVersion: row.contributionVersion, updatedAt: row.updatedAt }

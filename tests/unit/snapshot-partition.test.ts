@@ -98,6 +98,18 @@ const DIARY_MARKER = 'Acerola';
 const PSEUDONYM_ROOT_MARKER = 'cm9vdC10aGF0LW11c3Qtbm90LXJlYWNoLWEtZ3JhbnRlZQ==';
 const STUDY_LABEL_MARKER = 'Charite sleep trial';
 
+/**
+ * M163/01's marker: the first day of the window this device SENT to that
+ * study. It is nested inside `studyEnrolments`, so it needs no new
+ * classification — but a nested field is exactly the kind of thing zod strips
+ * silently on the way through the compartment, so it is asserted RECOVERABLE
+ * after a real seal and open, not merely present in the fixture.
+ *
+ * It is also the date range of a person's diary contribution, which is why it
+ * is checked absent from the grantee's view beside the other four.
+ */
+const SENT_WINDOW_MARKER = '2026-08-24';
+
 /** Argon2id stands in as a plain digest here. The LABELS are what this file tests, and they sit above the hash. */
 async function fakeArgon2id({ passphrase, salt }: { passphrase: string; salt: Uint8Array }): Promise<Uint8Array> {
   const material = new TextEncoder().encode(`${passphrase}::${bytesToBase64(salt)}`);
@@ -215,7 +227,14 @@ async function buildPopulatedSnapshot(): Promise<LocalStoreSnapshot> {
   );
   await putLocalResearchIdentity({ pseudonymRoot: PSEUDONYM_ROOT_MARKER, createdAt: 9_000 }, { store });
   await putLocalStudyEnrolment(
-    { id: '11', studyAccountId: 11, publicKeyRaw: 'study-public-key', label: STUDY_LABEL_MARKER, createdAt: 10_000 },
+    {
+      id: '11',
+      studyAccountId: 11,
+      publicKeyRaw: 'study-public-key',
+      label: STUDY_LABEL_MARKER,
+      createdAt: 10_000,
+      lastSubmission: { fromDayKey: SENT_WINDOW_MARKER, toDayKey: '2026-08-26', at: 10_500 },
+    },
     { store },
   );
   return (await exportBackup({ store })).data;
@@ -288,6 +307,7 @@ describe('the snapshot classification map', () => {
     assert.equal(snapshot.sharePeers[0]?.label, PEER_LABEL_MARKER);
     assert.equal(snapshot.researchIdentity?.pseudonymRoot, PSEUDONYM_ROOT_MARKER);
     assert.equal(snapshot.studyEnrolments[0]?.label, STUDY_LABEL_MARKER);
+    assert.equal(snapshot.studyEnrolments[0]?.lastSubmission?.fromDayKey, SENT_WINDOW_MARKER);
 
     // The key set is DERIVED from that fixture. A new snapshot field arrives
     // here automatically, which is the whole point.
@@ -368,6 +388,7 @@ describe('a clinician grantee', () => {
     assert.equal(granteeView.includes(PEER_LABEL_MARKER), false, 'a pinned peer label reached a grantee');
     assert.equal(granteeView.includes(PSEUDONYM_ROOT_MARKER), false, 'the pseudonym root reached a grantee');
     assert.equal(granteeView.includes(STUDY_LABEL_MARKER), false, 'a study enrolment reached a grantee');
+    assert.equal(granteeView.includes(SENT_WINDOW_MARKER), false, 'a sent research window reached a grantee');
 
     // POSITIVE, the other half: the SAME markers ARE recoverable — through the
     // CDK path, which the grantee has no key for.
@@ -381,6 +402,10 @@ describe('a clinician grantee', () => {
     assert.equal(opened?.sharePeers[0]?.label, PEER_LABEL_MARKER);
     assert.equal(opened?.researchIdentity?.pseudonymRoot, PSEUDONYM_ROOT_MARKER);
     assert.equal(opened?.studyEnrolments[0]?.label, STUDY_LABEL_MARKER);
+    // The nested window survives the seal and the open. Dropping it from
+    // `backup.ts`'s `studyEnrolmentSchema` would strip it here, silently, and
+    // every other assertion in this file would stay green.
+    assert.equal(opened?.studyEnrolments[0]?.lastSubmission?.fromDayKey, SENT_WINDOW_MARKER);
 
     // The grantee holds the DEK and the compartment bytes, and still cannot
     // open it: the CDK is behind a key derived from the owner's passphrase.

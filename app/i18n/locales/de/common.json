@@ -1254,6 +1254,7 @@
       "unnamed": "Studie {{studyAccountId}}",
       "tier": "Bekommt: {{tier}}",
       "window": "Ganze Kalendertage im Zeitraum, den du sendest — eine Zeile pro Tag, nie eine Uhrzeit, ein Lebensmittelname oder ein Foto.",
+      "sentWindow": "Gesendet {{from}} bis {{to}} — ganze Kalendertage, eine Zeile pro Tag, nie eine Uhrzeit, ein Lebensmittelname oder ein Foto.",
       "fields": "Jeder Tag trägt Energie, Eiweiß, Kohlenhydrate, Fett, Ballaststoffe und die Anzahl der Einträge dieses Tages.",
       "joined": "Dabei seit {{at}}",
       "lastSent": "Zuletzt gesendet {{at}} · Version {{version}}",

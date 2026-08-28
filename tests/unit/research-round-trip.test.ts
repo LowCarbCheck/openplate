@@ -18,11 +18,15 @@ import assert from 'node:assert/strict';
 import { createPrimaryStore } from '../../app/lib/local-store/store';
 import { exportBackup } from '../../app/lib/local-store/backup';
 import { putLocalFood, putLocalFoodLog } from '../../app/lib/local-store/primary-store';
-import type { LocalStoreSnapshot } from '../../app/lib/local-store/schema';
+import type { LocalStoreSnapshot, LocalStudyEnrolment } from '../../app/lib/local-store/schema';
 import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { generateEciesKeyPair } from '../../app/lib/sync/engine/crypto/ecies';
 import type { StudyContribution } from '../../app/lib/sync/engine/client/http-client';
-import { submitContribution, type ContributorTransport } from '../../app/lib/sync/research/contribute';
+import {
+  submitContribution,
+  type ContributionCompartment,
+  type ContributorTransport,
+} from '../../app/lib/sync/research/contribute';
 import { deriveStudyPseudonym, generatePseudonymRoot } from '../../app/lib/sync/research/pseudonym';
 import { reduceDailyIntakeV1 } from '../../app/lib/sync/research/reduce';
 import { pullStudyCohort, type StudyKeyPair, type StudyTransport } from '../../app/lib/sync/research/study';
@@ -48,6 +52,32 @@ const exportStrings = buildResearchExportStrings(echoT);
 const STUDY_ACCOUNT_ID = 7;
 const FROM_DAY = '2026-08-24';
 const TO_DAY = '2026-08-26';
+
+/** The pinned study, as this file's contributor holds it before sending anything. */
+function pinnedStudy(publicKeyRaw: Uint8Array): LocalStudyEnrolment {
+  return {
+    id: String(STUDY_ACCOUNT_ID),
+    studyAccountId: STUDY_ACCOUNT_ID,
+    publicKeyRaw: bytesToBase64(publicKeyRaw),
+    label: 'Charité sleep trial',
+    createdAt: 1_756_000_000_000,
+    lastSubmission: null,
+  };
+}
+
+/** The owner-private compartment, in memory. One pin, and whatever a submission writes back onto it. */
+function inMemoryCompartment(enrolment: LocalStudyEnrolment): ContributionCompartment & {
+  current: () => LocalStudyEnrolment;
+} {
+  let pinned = enrolment;
+  return {
+    getEnrolment: async () => pinned,
+    writeEnrolment: async (next) => {
+      pinned = next;
+    },
+    current: () => pinned,
+  };
+}
 
 async function buildSnapshot(): Promise<LocalStoreSnapshot> {
   const store = createPrimaryStore();
@@ -120,15 +150,11 @@ test('the lane round-trips a contribution end to end, from the diary to the expo
     },
   };
 
+  const compartment = inMemoryCompartment(pinnedStudy(studyPair.publicKeyRaw));
   const submitted = await submitContribution({
     transport: contributorTransport,
-    enrolment: {
-      id: String(STUDY_ACCOUNT_ID),
-      studyAccountId: STUDY_ACCOUNT_ID,
-      publicKeyRaw: bytesToBase64(studyPair.publicKeyRaw),
-      label: 'Charité sleep trial',
-      createdAt: 1_756_000_000_000,
-    },
+    compartment,
+    enrolment: compartment.current(),
     pseudonymRoot: root,
     snapshot,
     fromDayKey: FROM_DAY,
@@ -231,15 +257,11 @@ test('withdrawal removes the contributor from a later pull, end to end', async (
     listStudyWithdrawals: async () => ({ status: 'available', value: tombstones }),
   };
 
+  const compartment = inMemoryCompartment(pinnedStudy(studyPair.publicKeyRaw));
   const submitted = await submitContribution({
     transport: contributorTransport,
-    enrolment: {
-      id: String(STUDY_ACCOUNT_ID),
-      studyAccountId: STUDY_ACCOUNT_ID,
-      publicKeyRaw: bytesToBase64(studyPair.publicKeyRaw),
-      label: 'Charité sleep trial',
-      createdAt: 1_756_000_000_000,
-    },
+    compartment,
+    enrolment: compartment.current(),
     pseudonymRoot: root,
     snapshot,
     fromDayKey: FROM_DAY,

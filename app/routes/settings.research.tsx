@@ -36,6 +36,7 @@ import { FlaskConical, Loader2 } from 'lucide-react';
 import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { ResearchWindowLine } from '#app/components/research-window-line';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
@@ -212,12 +213,19 @@ function EnrolmentCard({
         </p>
       </div>
 
-      {/* What it receives: the tier by name, the day-level window, and the
-          seven fields a day carries. The tier is the frozen one — a study
-          never supplies a field list (ADR-0003 prohibition 1). */}
+      {/* What it receives: the tier by name, the window, and the seven fields
+          a day carries. The tier is the frozen one — a study never supplies a
+          field list (ADR-0003 prohibition 1).
+
+          The window NAMES DAYS once this device has sent some (M163/01), and
+          describes the granularity only while `lastSubmission` is `null`. That
+          `null` is "nothing sent yet" and must render as that: an empty range
+          or a defaulted today would be the screen claiming days that were
+          never sent, which is the failure `research/contribute.ts`'s ordering
+          rule exists to prevent. */}
       <div className="space-y-1 text-xs text-muted-foreground">
         <p>{t('research.enrolments.tier', { tier: enrolment.server?.schemaTier ?? DAILY_INTAKE_V1 })}</p>
-        <p>{t('research.enrolments.window')}</p>
+        <ResearchWindowLine lastSubmission={enrolment.lastSubmission} />
         <p>{t('research.enrolments.fields')}</p>
         <p>
           {enrolment.server === null ?

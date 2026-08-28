@@ -129,6 +129,9 @@ describe('the enrolment ceremony', () => {
         publicKeyRaw: bytesToBase64(study.publicKeyRaw),
         label: 'Charité sleep trial',
         createdAt: NOW,
+        // A fresh pin has sent nothing (M163/01). The ceremony never carries a
+        // window forward, for the reason it resets `createdAt`.
+        lastSubmission: null,
       },
     ]);
   });

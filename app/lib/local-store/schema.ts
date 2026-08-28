@@ -243,6 +243,35 @@
  * recovery-code restore and reaches a second device, which is why ADR-0003
  * prohibition 4 refuses enrolment on an account that has no compartment
  * rather than degrading to a per-device root.
+ *
+ * NOTE (M163/01, the window that was sent): `SCHEMA_VERSION` v15 -> v16 adds
+ * the REQUIRED-but-nullable `lastSubmission` field to `LocalStudyEnrolment` —
+ * a NESTED field on an entity that already exists, so it adds no key to
+ * `LocalStoreSnapshot` and no table. A v15 row simply lacks the key, and
+ * `backup.ts`'s `.default(null)` IS the complete v15 -> v16 forward migration
+ * ("this device had sent nothing, because there was nowhere to record it").
+ * No `migrateSnapshotToV16` step, for the identical reason there is no
+ * `migrateSnapshotToV15` one.
+ *
+ * Nullable rather than optional — the `label` convention on the same entity,
+ * not the `portion` one — because `null` here is a MEANING the enrolments
+ * screen states ("nothing has been sent to this study yet") rather than a
+ * field a caller may leave off. An optional field lets a future writer forget
+ * it and get the same rendering by accident.
+ *
+ * The bump still costs a version even though nothing top-level moved: the
+ * version is bound into the sync envelope's AAD, and a v15 client that opened
+ * a v16 blob would zod-strip the unknown nested key and push the stripped
+ * snapshot back, silently deleting the window on the device that recorded it.
+ * That is the M160/07 argument, one level down.
+ *
+ * IT STAYS LOCAL. `lastSubmission` rides inside `studyEnrolments`, which
+ * `snapshot-partition.ts` already classifies `owner-private`, so no clinician
+ * grantee and no study learns which days another study received. Nothing new
+ * crosses the wire either: `PROTOCOL.md` §5.18's contribution row carries no
+ * window, and putting one there would tell the SERVER the date range of a
+ * person's diary contribution — a new §9.2 disclosure for a convenience the
+ * client can serve locally.
  */
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
@@ -255,7 +284,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 16;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -867,6 +896,15 @@ export interface LocalResearchIdentity {
  * `studyAccountId` — and a stored copy can drift from the thing it claims to
  * describe and then be displayed as if it were still true.
  */
+export interface LocalSubmittedWindow {
+  /** First calendar day of the window that was sent, `YYYY-MM-DD`. */
+  fromDayKey: string;
+  /** Last calendar day of the window that was sent, inclusive, `YYYY-MM-DD`. */
+  toDayKey: string;
+  /** Epoch-ms the service ACCEPTED that submission. Not the moment it was attempted. */
+  at: number;
+}
+
 export interface LocalStudyEnrolment {
   /** The study's sync account id, as a string — the row id. */
   id: string;
@@ -878,6 +916,20 @@ export interface LocalStudyEnrolment {
   label: string | null;
   /** Epoch-ms the fingerprint ceremony passed and this study key was pinned. */
   createdAt: number;
+  /**
+   * The window this device last SENT to this study, or `null` when nothing has
+   * been sent yet (M163/01). Added v16.
+   *
+   * UNLIKE the fingerprint and the pseudonym above, this is NOT recomputable —
+   * which is why, alone among this entity's facts, it is stored. It is also
+   * the one thing on this row the server cannot tell the device: §5.18's
+   * contribution row deliberately carries no window.
+   *
+   * Written ONLY after the service accepted the submission
+   * (`sync/research/contribute.ts`). A screen that names days which were never
+   * sent is worse than one that names none.
+   */
+  lastSubmission: LocalSubmittedWindow | null;
 }
 
 /**

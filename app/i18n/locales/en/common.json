@@ -1254,6 +1254,7 @@
       "unnamed": "Study {{studyAccountId}}",
       "tier": "Receives: {{tier}}",
       "window": "Whole calendar days inside the window you send — one row per day, and never a time, a food name or a photo.",
+      "sentWindow": "Sent {{from}} to {{to}} — whole calendar days, one row per day, and never a time, a food name or a photo.",
       "fields": "Each day carries energy, protein, carbohydrate, fat, fibre, and how many entries that day held.",
       "joined": "Joined {{at}}",
       "lastSent": "Last sent {{at}} · version {{version}}",

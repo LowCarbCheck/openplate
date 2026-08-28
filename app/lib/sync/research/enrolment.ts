@@ -125,6 +125,12 @@ export async function runEnrolmentCeremony({
     publicKeyRaw: bytesToBase64(studyPublicKeyRaw),
     label: label ?? null,
     createdAt: at,
+    // A ceremony writes a FRESH pin, window included — the same reason it
+    // resets `createdAt`. Re-enrolling is a new consent (this function is
+    // reached only by typing the fingerprint again), and carrying a window
+    // sent under the previous pin into the new one would make the screen state
+    // days about an enrolment that did not exist when they were sent.
+    lastSubmission: null,
   });
   return { status: 'enrolled', pseudonym: await deriveStudyPseudonym({ root, studyAccountId }) };
 }

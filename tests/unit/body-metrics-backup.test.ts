@@ -45,11 +45,12 @@ describe('schema version', () => {
   // the micronutrient snapshot on the LOG at v9, the same snapshot on the
   // PERSONAL FOOD at v10, saved meals at v11, the carb-basis flag (spec 13)
   // at v12, clinician sharing at v13, the snapshot partition (M160/07) at
-  // v14, and research contributions (M161/03) at v15. What it guards is that a bump is never silent — the version the
-  // envelope stamps is the version an older build refuses, so a change here
-  // has to be a change someone chose.
-  it('is 15 — bumped past the v8 body-metrics bump by everything through the M161/03 research contributions', () => {
-    assert.equal(SCHEMA_VERSION, 15);
+  // v14, research contributions (M161/03) at v15, and the submitted research
+  // window (M163/01) at v16. What it guards is that a bump is never silent —
+  // the version the envelope stamps is the version an older build refuses, so
+  // a change here has to be a change someone chose.
+  it('is 16 — bumped past the v8 body-metrics bump by everything through the M163/01 submitted window', () => {
+    assert.equal(SCHEMA_VERSION, 16);
   });
 });
 

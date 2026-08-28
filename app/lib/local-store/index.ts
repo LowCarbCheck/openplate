@@ -213,6 +213,7 @@ export type {
   LocalSharePeer,
   LocalResearchIdentity,
   LocalStudyEnrolment,
+  LocalSubmittedWindow,
 } from './schema';
 
 // BYOK AI settings + local-only usage log (M117/02) — device-only, never
