@@ -14,6 +14,14 @@
  * identity from becoming a key on `LocalStoreSnapshot` — see
  * `study-keyring.ts`'s header.
  *
+ * ── A compartment this console cannot open is CARRIED, never dropped ─────
+ *
+ * The same M164/01 rule the diary's compartment carries, for the same reason:
+ * the seal is the hop that writes, and a `null` from it would replace a
+ * study's whole keyring with an empty one. So the session records the bytes it
+ * PULLED and the seal re-emits them verbatim. `pushStudyBlob`'s throw stays —
+ * it is the second line, not a substitute for having something true to emit.
+ *
  * ── No seal cache, because there is no periodic push ─────────────────────
  *
  * `private-store.ts` caches the sealed bytes so an unchanged compartment does
@@ -42,13 +50,27 @@ export interface StudyCompartmentSession {
   cdk: Uint8Array | null;
   /** The two wraps exactly as they must be re-emitted — never rebuilt, because slot 2's KEK is not in this session. */
   wraps: { cdkWrapPassphrase: string; cdkWrapRecovery: string } | null;
+  /**
+   * The compartment EXACTLY AS LAST PULLED, written on every pull that carried
+   * one — whether or not this console could open it. `null` means no pull has
+   * carried one, which is the fresh study account and the only state that may
+   * seal to `null`.
+   *
+   * There is no seal cache beside it to confuse this with, for the reason this
+   * module's header gives; the diary's twin says which is which.
+   */
+  pulled: SealedPrivateStore | null;
 }
 
 /**
  * Seals the study region for a push.
  *
- * Returns `null` when this session has no compartment — the same degraded but
- * safe state `sealOwnerPrivateRegion` describes: the key material stays in
+ * WITHOUT A CDK IT RE-EMITS THE PULLED BYTES, unchanged — this console could
+ * not open the compartment, so it holds no key to seal with, and a rebuilt
+ * one would carry a recovery slot under a KEK it does not have.
+ *
+ * Returns `null` ONLY when no pull carried a compartment — the same degraded
+ * but safe state `sealOwnerPrivateRegion` describes: the key material stays in
  * memory rather than being published in the clear.
  */
 export async function sealStudyRegion({
@@ -59,7 +81,7 @@ export async function sealStudyRegion({
   region: StudyPrivateRegion;
 }): Promise<SealedPrivateStore | null> {
   const { cdk, wraps } = session;
-  if (cdk === null || wraps === null) return null;
+  if (cdk === null || wraps === null) return session.pulled;
 
   const ciphertext = await sealPrivateStore({
     cdk,
@@ -75,8 +97,10 @@ export async function sealStudyRegion({
  * `null` for every failure, and the caller keeps what it already had — the
  * states this covers ("a compartment written under a passphrase this session
  * does not hold", "no compartment yet") are all "we learned nothing", and a
- * GCM tag check does not say which. What must NOT follow a `null` is a push:
- * that would overwrite a study's whole keyring with an empty one.
+ * GCM tag check does not say which. What must NOT follow a `null` is a push
+ * that RESEALS: that would overwrite a study's whole keyring with an empty
+ * one. The bytes are recorded on the session either way, so the seal has the
+ * pulled compartment to re-emit instead.
  */
 export async function openStudyRegion({
   session,
@@ -85,7 +109,11 @@ export async function openStudyRegion({
   session: StudyCompartmentSession;
   sealed: SealedPrivateStore | null;
 }): Promise<StudyPrivateRegion | null> {
+  // A pull carrying no compartment leaves the record alone — an absence on the
+  // server is not evidence that this console's memory of the bytes is wrong.
   if (sealed === null) return null;
+  // Recorded BEFORE the attempt, and for the failure as much as the success.
+  session.pulled = sealed;
 
   for (const cdk of await candidateCdks({ session, sealed })) {
     const region = await tryOpen({ cdk, sealed, accountId: session.accountId });

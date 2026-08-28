@@ -21,6 +21,17 @@
  * retention window and turning "open the app" into a write. The cache keys on
  * the region's content hash, the same hasher the sync baseline uses.
  *
+ * ── A compartment this session cannot open is CARRIED, never dropped ─────
+ *
+ * The seal is the hop that WRITES, so it is the hop that can destroy. A
+ * session that failed to adopt a pulled compartment holds no CDK, and a seal
+ * that answered `null` there made the next push replace live key material
+ * with nothing — the exact loss `readSealedPrivateStore` refuses at the read
+ * (M164/01). So the session remembers the bytes it PULLED, and the seal
+ * re-emits them verbatim. A client that cannot open a compartment goes on
+ * carrying it, unchanged, forever; `null` is pushed only when the pull
+ * carried none.
+ *
  * ── The CDK lives exactly as long as the DEK ─────────────────────────────
  *
  * In memory, in the vault, for the session. It is never persisted, never
@@ -51,6 +62,21 @@ export interface PrivateStoreSession {
   wraps: { cdkWrapPassphrase: string; cdkWrapRecovery: string } | null;
   /** The last sealed compartment and the region hash it corresponds to. See this module's header on why it exists. */
   cache: { regionHash: string; sealed: SealedPrivateStore } | null;
+  /**
+   * The compartment EXACTLY AS LAST PULLED, written on every pull that carried
+   * one — whether or not this session could open it.
+   *
+   * NOT the cache above, which answers a different question. That one is keyed
+   * on a region HASH and exists so an unchanged plaintext does not burn a blob
+   * version on a fresh IV; it is only ever populated by a session that holds
+   * the CDK. This one is the record a session with NO CDK has to seal from,
+   * and there is no region to hash for it — the bytes were never opened.
+   *
+   * `null` means no pull has carried a compartment yet, which is the
+   * genuinely compartment-less account and the only state that may seal to
+   * `null`.
+   */
+  pulled: SealedPrivateStore | null;
 }
 
 /** Opens a session view. `established` is present for a first-time setup and absent for a sign-in, which adopts on its first pull instead. */
@@ -72,17 +98,25 @@ export function createPrivateStoreSession({
         { cdkWrapPassphrase: established.cdkWrapPassphrase, cdkWrapRecovery: established.cdkWrapRecovery }
       : null,
     cache: null,
+    pulled: null,
   };
 }
 
 /**
  * Seals the owner-private region for a push.
  *
- * Returns `null` when this session has no compartment — an account created
- * before the partition, whose first device has not yet minted one. That is a
- * DEGRADED but SAFE state: the key material simply stays on this device
- * instead of being published in the clear. Regenerating the recovery code
- * establishes a compartment and ends it (see `sync-actions.ts`).
+ * WITHOUT A CDK IT RE-EMITS THE PULLED BYTES, unchanged. Not re-sealed and not
+ * rebuilt from the wraps: this session could not open the compartment, so it
+ * has no key to seal with, and a rebuilt {@link SealedPrivateStore} would
+ * carry a recovery slot under a KEK that was never in this session. The bytes
+ * are opaque, AAD-bound to the account and already the server's own — passing
+ * them through costs nothing and preserves everything.
+ *
+ * Returns `null` ONLY when no pull has carried a compartment — an account
+ * created before the partition, whose first device has not yet minted one.
+ * That is a DEGRADED but SAFE state: the key material simply stays on this
+ * device instead of being published in the clear. Regenerating the recovery
+ * code establishes a compartment and ends it (see `sync-actions.ts`).
  */
 export async function sealOwnerPrivateRegion({
   session,
@@ -92,7 +126,7 @@ export async function sealOwnerPrivateRegion({
   region: OwnerPrivateRegion;
 }): Promise<SealedPrivateStore | null> {
   const { cdk, wraps } = session;
-  if (cdk === null || wraps === null) return null;
+  if (cdk === null || wraps === null) return session.pulled;
 
   const regionHash = contentHash(region);
   if (session.cache !== null && session.cache.regionHash === regionHash) return session.cache.sealed;
@@ -116,6 +150,9 @@ export async function sealOwnerPrivateRegion({
  * a compartment belonging to a passphrase this session no longer has — are all
  * "we learned nothing", and none of them justifies blanking a share key pair
  * that is sitting in IndexedDB and working fine.
+ *
+ * The bytes are recorded on the session either way, so the next push re-emits
+ * this compartment rather than a `null` — see {@link sealOwnerPrivateRegion}.
  */
 export async function openOwnerPrivateRegion({
   session,
@@ -124,7 +161,14 @@ export async function openOwnerPrivateRegion({
   session: PrivateStoreSession;
   sealed: SealedPrivateStore | null;
 }): Promise<OwnerPrivateRegion | null> {
+  // A pull that carried NO compartment leaves the record alone rather than
+  // clearing it: this device's memory of the account's bytes is not evidence
+  // that the account has none, and dropping it here would hand the next push
+  // the `null` this whole path exists to prevent.
   if (sealed === null) return null;
+  // Recorded BEFORE the attempt, and for the failure as much as the success —
+  // the failure is the case that needs it.
+  session.pulled = sealed;
 
   for (const cdk of await candidateCdks({ session, sealed })) {
     const region = await tryOpen({ cdk, sealed, accountId: session.accountId });

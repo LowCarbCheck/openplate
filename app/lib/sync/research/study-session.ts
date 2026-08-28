@@ -185,6 +185,7 @@ export async function createStudyAccount({
         cdkWrapPassphrase: keys.privateStore.cdkWrapPassphrase,
         cdkWrapRecovery: keys.privateStore.cdkWrapRecovery,
       },
+      pulled: null,
     },
     region: EMPTY_STUDY_PRIVATE_REGION,
   };
@@ -270,7 +271,13 @@ export async function signInToStudy({
     email: session.account.email,
     serverUrl,
     deviceId: resolveDeviceId(deviceStorage()),
-    compartment: { accountId: session.account.id, passphraseKek: privateStoreKek, cdk: null, wraps: null },
+    compartment: {
+      accountId: session.account.id,
+      passphraseKek: privateStoreKek,
+      cdk: null,
+      wraps: null,
+      pulled: null,
+    },
     region: EMPTY_STUDY_PRIVATE_REGION,
   };
   return { status: 'connected' };
@@ -333,6 +340,7 @@ async function finishInterruptedStudySetup({
       passphraseKek: privateStoreKek,
       cdk: privateStore.cdk,
       wraps: { cdkWrapPassphrase: privateStore.cdkWrapPassphrase, cdkWrapRecovery: privateStore.cdkWrapRecovery },
+      pulled: null,
     },
     region: EMPTY_STUDY_PRIVATE_REGION,
   };
@@ -396,8 +404,21 @@ export async function generateStudyKey(): Promise<StudyConsoleIdentity> {
     deviceId: open.deviceId,
     pulled,
     reseal: async (current: PulledStudyBlob) => {
-      const server = (await openStudyRegion({ session: open.compartment, sealed: current.sealed })) ?? open.region;
-      open.region = withNewStudyKeyGeneration({ region: server, generation });
+      const server = await openStudyRegion({ session: open.compartment, sealed: current.sealed });
+      // A MINT ONTO A COMPARTMENT THIS CONSOLE CANNOT READ IS A REFUSAL.
+      //
+      // The seal no longer answers `null` there — it re-emits the pulled bytes
+      // (M164/01) — so `pushStudyBlob`'s throw would no longer fire, and this
+      // push would land the OLD keyring while reporting a new fingerprint the
+      // study does not hold. Losing the generation loudly is the only honest
+      // outcome: the keys it would be appended to are unreadable here.
+      if (server === null && current.sealed !== null) {
+        throw new SyncRequestError({
+          kind: 'invalid',
+          message: 'This console could not open the study’s existing keys, so a new key cannot be added to them.',
+        });
+      }
+      open.region = withNewStudyKeyGeneration({ region: server ?? open.region, generation });
       return sealStudyRegion({ session: open.compartment, region: open.region });
     },
   });

@@ -61,7 +61,17 @@ import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engi
 import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { createMemoryStorage, createSyncStateStore } from '../../app/lib/sync/sync-state';
 import { SCHEMA_VERSION, type LocalStoreSnapshot } from '../../app/lib/local-store';
-import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
+import {
+  EMPTY_OWNER_PRIVATE_REGION,
+  type OwnerPrivateRegion,
+  type SyncedSnapshot,
+} from '../../app/lib/sync/snapshot-partition';
+import {
+  createPrivateStoreSession,
+  openOwnerPrivateRegion,
+  sealOwnerPrivateRegion,
+} from '../../app/lib/sync/private-store';
+import { establishPrivateStore } from '../../app/lib/sync/engine/crypto/private-store';
 
 const FAST_PARAMS: Argon2idParams = { memorySizeKib: 8, iterations: 1, parallelism: 1 };
 /** Tiny parameters, injected at the seam `setup-keys.ts` exposes for exactly this. */
@@ -668,4 +678,120 @@ test('the payload schema version travels through the AAD, not the wire', async (
   assert.equal(observedBodies.includes('payloadSchemaVersion'), false);
   assert.equal(service.dump().includes('payloadSchemaVersion'), false);
   assert.ok(SCHEMA_VERSION > 0);
+});
+
+/**
+ * M164/01, over the whole cycle: a compartment this session could not adopt
+ * must still be on the blob after this session pushes.
+ *
+ * The loss is a TWO-CYCLE effect, which is why both are driven here. The first
+ * cycle pulls the compartment and writes it into this device's baseline; the
+ * second seals, gets nothing back, and `stampSnapshot` reads "the baseline had
+ * this entity and the snapshot does not" as a DELETE — a tombstone that the
+ * merge then applies to the server copy. Nothing throws anywhere along it.
+ *
+ * The compartment planted here is sealed under a key nobody in the signing-in
+ * session holds. That is the ordinary post-passphrase-change state, not a
+ * contrived one, and it is the shape `candidateCdks` documents as "the caller
+ * keeps what the device already has" — true of the device, and false of the
+ * blob until this spec.
+ */
+test('a compartment it could not adopt survives the next push', async () => {
+  const email = `compartment-${Date.now()}@example.test`;
+  await createSyncAccount({
+    serverUrl: service.url,
+    email,
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  const planterVault = requireVault();
+
+  // A REAL compartment, sealed to a key this account's passphrase cannot
+  // reach. Built through the production session so it is the same construction
+  // a second device would have written.
+  const strangerKek = await crypto.subtle.importKey('raw', new Uint8Array(32).fill(23), { name: 'AES-GCM' }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
+  const strangerSession = createPrivateStoreSession({
+    accountId: planterVault.accountId,
+    passphraseKek: strangerKek,
+    established: await establishPrivateStore({ passphraseKek: strangerKek, recoveryKek: strangerKek }),
+  });
+  const strangerRegion: OwnerPrivateRegion = {
+    ...EMPTY_OWNER_PRIVATE_REGION,
+    shareIdentity: { publicKeyRaw: 'public-key', privateKeyPkcs8: 'the-key-that-must-survive', createdAt: 7_000 },
+  };
+  const planted = await sealOwnerPrivateRegion({ session: strangerSession, region: strangerRegion });
+  assert.ok(planted !== null, 'the fixture must carry a real compartment, or nothing below is a statement');
+
+  const planter = { current: { ...snapshotOf([foodLog('log-p', 'Planted')]), privateStore: planted } };
+  const planted1 = await runSyncCycleUnlocked(
+    deviceDeps({ vault: planterVault, deviceId: 'device-planter', local: planter }),
+  );
+  assert.equal(planted1.pushed, true);
+
+  // NON-VACUITY: the compartment really is on the blob before the device under
+  // test touches it. Without this the assertion at the end could pass because
+  // nothing was ever there.
+  const beforeReadback = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: planterVault, deviceId: 'device-before', local: beforeReadback }));
+  assert.deepEqual(beforeReadback.current.privateStore, planted);
+
+  // A genuinely fresh sign-in: the account's passphrase, and no CDK. Its first
+  // pull will fail to adopt the planted compartment.
+  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  const victim = requireVault();
+
+  /**
+   * The device under test, wired the way `sync-actions.ts` wires production.
+   *
+   * `readSyncedSnapshot`/`applySyncedSnapshot` are module-private there and
+   * read the device store through IndexedDB, which this file deliberately does
+   * not have — so the two SEAM LINES are mirrored here and nothing else is.
+   * What is under test is `sealOwnerPrivateRegion` and `openOwnerPrivateRegion`
+   * against the real orchestrator, merge and stamping.
+   */
+  const local = { current: snapshotOf([]) };
+  const victimDeps = (deviceId: string, storage: ReturnType<typeof createMemoryStorage>) => ({
+    ...deviceDeps({ vault: victim, deviceId, local, storage }),
+    readSnapshot: async (): Promise<SyncedSnapshot> => ({
+      ...local.current,
+      privateStore: await sealOwnerPrivateRegion({
+        session: victim.privateStore,
+        region: EMPTY_OWNER_PRIVATE_REGION,
+      }),
+    }),
+    applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
+      await openOwnerPrivateRegion({ session: victim.privateStore, sealed: merged.privateStore });
+      local.current = merged;
+    },
+  });
+
+  // One storage for both cycles: the baseline the first cycle writes is what
+  // makes the second one emit a tombstone, and a fresh store per cycle would
+  // hide the defect entirely.
+  const storage = createMemoryStorage();
+  await runSyncCycleUnlocked(victimDeps('device-victim', storage));
+  assert.equal(victim.privateStore.cdk, null, 'the adopt must have failed, or this test proves nothing');
+
+  local.current = { ...local.current, foodLogs: [...local.current.foodLogs, foodLog('log-v', 'Victim')] };
+  await runSyncCycleUnlocked(victimDeps('device-victim', storage));
+
+  // THE ASSERTION THE SPEC EXISTS FOR, read back off the service through a
+  // third device rather than off any in-memory copy.
+  const afterReadback = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: planterVault, deviceId: 'device-after', local: afterReadback }));
+  assert.deepEqual(afterReadback.current.privateStore, planted, 'the failed adopt blanked the account’s compartment');
+
+  // POSITIVE: what came back still opens, and still holds the key material.
+  const opened = await openOwnerPrivateRegion({
+    session: createPrivateStoreSession({ accountId: victim.accountId, passphraseKek: strangerKek }),
+    sealed: afterReadback.current.privateStore,
+  });
+  assert.deepEqual(opened, strangerRegion);
+
+  // And the diary still converged, so the fix is not "stop syncing".
+  assert.deepEqual(afterReadback.current.foodLogs.map((log) => log.name).toSorted(), ['Planted', 'Victim']);
 });
