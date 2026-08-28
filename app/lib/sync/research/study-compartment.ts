@@ -22,6 +22,14 @@
  * PULLED and the seal re-emits them verbatim. `pushStudyBlob`'s throw stays —
  * it is the second line, not a substitute for having something true to emit.
  *
+ * ── A key this build does not know is CARRIED too (M164/03) ─────────────
+ *
+ * `studyPrivateRegionSchema` strips what it does not list, exactly as the
+ * diary's does, so the same preservation applies: the session remembers the
+ * leftover keys from the last successful open and the seal puts them back
+ * through `compartment-kind.ts`. A console one release behind must not delete
+ * the field the newer one added.
+ *
  * ── No seal cache, because there is no periodic push ─────────────────────
  *
  * `private-store.ts` caches the sealed bytes so an unchanged compartment does
@@ -36,6 +44,8 @@ import {
   parseCompartmentPlaintext,
   taggedCompartmentPlaintext,
   WrongCompartmentKindError,
+  type CompartmentExtras,
+  type ParsedCompartment,
 } from '../compartment-kind';
 import type { SealedPrivateStore } from '../snapshot-partition';
 import { studyPrivateRegionSchema, type StudyPrivateRegion } from './study-keyring';
@@ -56,6 +66,15 @@ export interface StudyCompartmentSession {
   cdk: Uint8Array | null;
   /** The two wraps exactly as they must be re-emitted — never rebuilt, because slot 2's KEK is not in this session. */
   wraps: { cdkWrapPassphrase: string; cdkWrapRecovery: string } | null;
+  /**
+   * The compartment keys THIS BUILD DOES NOT RECOGNISE, as the last successful
+   * open found them — a field a newer console added, carried verbatim
+   * (M164/03). `{}` until an open says otherwise.
+   *
+   * Opaque: never inspected, never validated, never merged. The only thing this
+   * build knows about an extra is that somebody else understands it.
+   */
+  extras: CompartmentExtras;
   /**
    * The compartment EXACTLY AS LAST PULLED, written on every pull that carried
    * one — whether or not this console could open it. `null` means no pull has
@@ -86,14 +105,16 @@ export async function sealStudyRegion({
   session: StudyCompartmentSession;
   region: StudyPrivateRegion;
 }): Promise<SealedPrivateStore | null> {
-  const { cdk, wraps } = session;
+  const { cdk, wraps, extras } = session;
   if (cdk === null || wraps === null) return session.pulled;
 
   const ciphertext = await sealPrivateStore({
     cdk,
     // TAGGED as a study compartment, so a diary client that pulls it refuses
-    // instead of reading it as an empty owner-private region.
-    plaintext: taggedCompartmentPlaintext({ region, kind: COMPARTMENT_KIND.study }),
+    // instead of reading it as an empty owner-private region — and carrying
+    // the EXTRAS, so a console one release behind does not delete the field a
+    // newer one added.
+    plaintext: taggedCompartmentPlaintext({ region, kind: COMPARTMENT_KIND.study, extras }),
     accountId: session.accountId,
   });
   return { ciphertext: bytesToBase64(ciphertext), ...wraps };
@@ -130,11 +151,14 @@ export async function openStudyRegion({
   session.pulled = sealed;
 
   for (const cdk of await candidateCdks({ session, sealed })) {
-    const region = await tryOpen({ cdk, sealed, accountId: session.accountId });
-    if (region === null) continue;
+    const opened = await tryOpen({ cdk, sealed, accountId: session.accountId });
+    if (opened === null) continue;
     session.cdk = cdk;
     session.wraps = { cdkWrapPassphrase: sealed.cdkWrapPassphrase, cdkWrapRecovery: sealed.cdkWrapRecovery };
-    return region;
+    // The keys a newer console added, remembered so the next seal puts them
+    // back. Only the region is returned, so they go no further than here.
+    session.extras = opened.extras;
+    return opened.region;
   }
   return null;
 }
@@ -178,7 +202,7 @@ async function tryOpen({
   cdk: Uint8Array;
   sealed: SealedPrivateStore;
   accountId: number;
-}): Promise<StudyPrivateRegion | null> {
+}): Promise<ParsedCompartment<StudyPrivateRegion> | null> {
   try {
     const plaintext = await openPrivateStore({ cdk, ciphertext: base64ToBytes(sealed.ciphertext), accountId });
     return parseCompartmentPlaintext({

@@ -24,7 +24,11 @@ import {
   wrapCdk,
 } from '../../app/lib/sync/engine/crypto/private-store';
 import { base64ToBytes, bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
-import { openStudyRegion, sealStudyRegion } from '../../app/lib/sync/research/study-compartment';
+import {
+  openStudyRegion,
+  sealStudyRegion,
+  type StudyCompartmentSession,
+} from '../../app/lib/sync/research/study-compartment';
 import { WrongCompartmentKindError } from '../../app/lib/sync/compartment-kind';
 import { openOwnerPrivateRegion, sealOwnerPrivateRegion } from '../../app/lib/sync/private-store';
 import { EMPTY_OWNER_PRIVATE_REGION } from '../../app/lib/sync/snapshot-partition';
@@ -56,6 +60,7 @@ async function establishedSession() {
       cdkWrapPassphrase: bytesToBase64(await wrapCdk({ cdk, kek })),
       cdkWrapRecovery: bytesToBase64(await wrapCdk({ cdk, kek })),
     },
+    extras: {},
     pulled: null,
   };
 }
@@ -102,6 +107,7 @@ test('the keyring survives a real compartment seal and open', async () => {
       passphraseKek: session.passphraseKek,
       cdk: null,
       wraps: null,
+      extras: {},
       pulled: null,
     },
     sealed,
@@ -137,6 +143,7 @@ test('a study compartment cannot be opened as another account', async () => {
       passphraseKek: session.passphraseKek,
       cdk: null,
       wraps: null,
+      extras: {},
       pulled: null,
     },
     sealed,
@@ -169,7 +176,14 @@ test('a study compartment this console could not open is re-emitted, never blank
     'encrypt',
     'decrypt',
   ]);
-  const stranger = { accountId: STUDY_ACCOUNT_ID, passphraseKek: strangerKek, cdk: null, wraps: null, pulled: null };
+  const stranger = {
+    accountId: STUDY_ACCOUNT_ID,
+    passphraseKek: strangerKek,
+    cdk: null,
+    wraps: null,
+    extras: {},
+    pulled: null,
+  };
   assert.equal(await openStudyRegion({ session: stranger, sealed: pulled }), null);
   assert.equal(stranger.cdk, null, 'the fixture must be a compartment this console CANNOT open');
 
@@ -188,7 +202,14 @@ test('a study compartment this console could not open is re-emitted, never blank
 
   // And a console that pulled NOTHING still seals to null — the fresh study
   // account, which is the degraded state that must keep working.
-  const fresh = { accountId: STUDY_ACCOUNT_ID, passphraseKek: strangerKek, cdk: null, wraps: null, pulled: null };
+  const fresh = {
+    accountId: STUDY_ACCOUNT_ID,
+    passphraseKek: strangerKek,
+    cdk: null,
+    wraps: null,
+    extras: {},
+    pulled: null,
+  };
   assert.equal(await openStudyRegion({ session: fresh, sealed: null }), null);
   assert.equal(await sealStudyRegion({ session: fresh, region: EMPTY_STUDY_PRIVATE_REGION }), null);
 });
@@ -220,6 +241,7 @@ test('a diary compartment is not an empty study, and is refused', async () => {
     passphraseKek: session.passphraseKek,
     cdk: null,
     wraps: null,
+    extras: {},
     pulled: null,
   };
   await assert.rejects(
@@ -244,6 +266,7 @@ test('a diary compartment is not an empty study, and is refused', async () => {
       cdk: null,
       wraps: null,
       cache: null,
+      extras: {},
       pulled: null,
     },
     sealed: diaryCompartment,
@@ -277,6 +300,7 @@ test('an untagged compartment carrying a keyring still opens as a study', async 
       passphraseKek: session.passphraseKek,
       cdk: null,
       wraps: null,
+      extras: {},
       pulled: null,
     },
     sealed: { ciphertext: bytesToBase64(ciphertext), ...session.wraps },
@@ -284,4 +308,78 @@ test('an untagged compartment carrying a keyring still opens as a study', async 
   // Not "did not throw": the generation itself is read back, because a lockout
   // and an empty keyring look identical from a truthy assertion.
   assert.deepEqual(opened?.studyKeyring, [generation]);
+});
+
+/**
+ * A KEY THIS BUILD DOES NOT KNOW SURVIVES A ROUND TRIP (M164/03) — the study
+ * side of the twin.
+ *
+ * `studyPrivateRegionSchema` strips what it does not list, exactly as the
+ * diary's does, and a field a NEWER console added is one this build cannot
+ * list. Two consoles on either side of a release is an ordinary state, and
+ * without preservation the older one deletes the newer one's field on its next
+ * mint.
+ *
+ * The assertion is on the RAW plaintext for the same reason the tag's is: no
+ * open in this repo can return a key no schema here mentions, so an open-based
+ * assertion could not tell survival from loss.
+ */
+test('an unknown key survives the study compartment round trip', async () => {
+  const session = await establishedSession();
+  const futureKey = 'studyRelayRoster';
+  const futureValue = { members: ['a', 'b'], rotatedAt: 12_000 };
+
+  // A compartment as a NEWER console wrote it: a keyring, the tag, and one key
+  // this build has never heard of.
+  const first = await generateStudyKeyGeneration({ now: () => 8_000 });
+  const ciphertext = await sealPrivateStore({
+    cdk: session.cdk,
+    plaintext: new TextEncoder().encode(
+      JSON.stringify({ studyKeyring: [first], kind: 'study', [futureKey]: futureValue }),
+    ),
+    accountId: STUDY_ACCOUNT_ID,
+  });
+  const fromNewerConsole = { ciphertext: bytesToBase64(ciphertext), ...session.wraps };
+
+  // A second researcher's console, with no CDK of its own — the ordinary
+  // second device.
+  const researcherConsole: StudyCompartmentSession = {
+    accountId: STUDY_ACCOUNT_ID,
+    passphraseKek: session.passphraseKek,
+    cdk: null,
+    wraps: null,
+    extras: {},
+    pulled: null,
+  };
+  const opened = await openStudyRegion({ session: researcherConsole, sealed: fromNewerConsole });
+  assert.ok(opened !== null, 'the fixture must open, or nothing below is a statement');
+  assert.equal(opened.studyKeyring.length, 1);
+  assert.ok(!Object.keys(opened).includes(futureKey), 'an extra must not ride out inside the region');
+
+  // NON-VACUITY: the unknown key was carried onto the session, ready for the
+  // seal. Without this the survival below could be an accident of the fixture.
+  assert.deepEqual(researcherConsole.extras[futureKey], futureValue);
+
+  // A MINT — a genuinely different region, so these are new bytes and not the
+  // ones that were pulled.
+  const second = await generateStudyKeyGeneration({ now: () => 9_000 });
+  const resealed = await sealStudyRegion({
+    session: researcherConsole,
+    region: withNewStudyKeyGeneration({ region: opened, generation: second }),
+  });
+  assert.ok(resealed !== null);
+  assert.notEqual(resealed.ciphertext, fromNewerConsole.ciphertext, 'the mint must produce new bytes');
+
+  // STILL THERE, STILL EQUAL — and beside it the keyring this console did
+  // understand, now two generations long.
+  const plaintext = await openPrivateStore({
+    cdk: session.cdk,
+    ciphertext: base64ToBytes(resealed.ciphertext),
+    accountId: STUDY_ACCOUNT_ID,
+  });
+  assert.deepEqual(JSON.parse(new TextDecoder().decode(plaintext)), {
+    [futureKey]: futureValue,
+    kind: 'study',
+    studyKeyring: [first, second],
+  });
 });

@@ -54,11 +54,27 @@
  * plaintext and can read what it is, so `null` — "we learned nothing" — would
  * be a lie about the one case where it learned exactly what it is holding.
  *
- * ── What this module deliberately does NOT do ────────────────────────────
+ * ── An unrecognised KEY is PRESERVED, not refused (M164/03) ──────────────
  *
- * It does not refuse an unrecognised KEY inside the right kind. That is a
- * different case (spec 03), and refusing on it would brick every older client
- * on every compartment schema bump — see `.adr/0009`.
+ * The opposite answer to the opposite question, and `.adr/0009` records the
+ * rejection deliberately: "is this mine?" is answered strictly, "do I
+ * understand all of it?" is answered generously. Refusing an unknown key would
+ * brick every older client on every compartment schema bump — the whole
+ * `.default()` convention in `backup.ts` exists so a schema addition is
+ * invisible to an older reader.
+ *
+ * But zod's `z.object` STRIPS what it does not list, so "invisible" was one
+ * step short of true: an older client opened the compartment, lost the newer
+ * client's field, and its next push wrote the loss back. `backup.ts:388-394`
+ * defends against exactly this by LISTING the fields it must keep — a defence
+ * that cannot work across versions, because a field a NEWER build added is one
+ * this build cannot list.
+ *
+ * So {@link parseCompartmentPlaintext} returns the recognised region and the
+ * leftover keys SEPARATELY, and {@link taggedCompartmentPlaintext} puts the
+ * leftovers back. The client never inspects one, never validates one and never
+ * merges one: an extra is opaque by definition, and the only thing this build
+ * knows about it is that somebody else understands it.
  */
 import { z } from 'zod';
 
@@ -85,6 +101,42 @@ export type CompartmentKind = (typeof COMPARTMENT_KIND)[keyof typeof COMPARTMENT
  *    is left to fail on it, so the caller's existing `null` path is unchanged.
  */
 export type CompartmentKindReading = CompartmentKind | 'unrecognised' | 'unreadable';
+
+/**
+ * A compartment plaintext seen as nothing but "an object with keys" — the one
+ * view that can see a key this build has never heard of.
+ *
+ * A schema rather than a hand-written type so the dictionary shape is derived
+ * from the parser that produces it, and so the narrowing is zod's rather than
+ * a cast.
+ */
+const compartmentExtrasSchema = z.record(z.string(), z.unknown());
+
+/**
+ * The keys of a compartment plaintext that this build does not recognise —
+ * everything a NEWER client put there, carried verbatim.
+ *
+ * Deliberately opaque. Nothing reads a value out of this, nothing validates
+ * one, and nothing merges one; the type says `unknown` because that is the
+ * whole truth about it.
+ */
+export type CompartmentExtras = z.infer<typeof compartmentExtrasSchema>;
+
+/**
+ * What a compartment plaintext splits into: the part this build understands,
+ * and the part it must give back untouched.
+ *
+ * Returned as two fields rather than one merged object on purpose. The region
+ * goes on to `recomposeSnapshot`, where an unclassified key is a hard error
+ * (`snapshot-partition.ts`) — so the extras must not be able to ride along
+ * with it, and a caller that wants them has to say so.
+ */
+export interface ParsedCompartment<TRegion> {
+  /** The region, exactly as the schema parsed it. */
+  region: TRegion;
+  /** Everything else in the plaintext, minus the kind tag. `{}` for a plaintext this build fully understands. */
+  extras: CompartmentExtras;
+}
 
 /**
  * The tag, read WITHOUT committing to either region's schema.
@@ -164,18 +216,20 @@ export function readCompartmentKind({ value }: { value: unknown }): CompartmentK
 
 /**
  * Validates a just-decrypted compartment plaintext AS the kind the caller can
- * use, and refuses the other one.
+ * use, refuses the other one, and hands back what it did not understand.
  *
- * The one place both sides share, so a refusal cannot exist on one side only.
- * The region schemas stay apart, and so do the two session types: nothing here
- * accepts either region, and no function above it does.
+ * The one place both sides share, so neither a refusal nor a preservation can
+ * exist on one side only. The region schemas stay apart, and so do the two
+ * session types: nothing here accepts either region, and no function above it
+ * does.
  *
  * @throws {WrongCompartmentKindError} when the plaintext is the other kind, or
  * a kind this build does not know. NOT when it is malformed — that stays the
  * schema's own error, which each caller already turns into the `null` that
- * means "we learned nothing".
+ * means "we learned nothing". And NOT when it merely carries a key this build
+ * has never seen: that one comes back in {@link ParsedCompartment.extras}.
  */
-export function parseCompartmentPlaintext<TRegion>({
+export function parseCompartmentPlaintext<TRegion extends object>({
   value,
   expected,
   schema,
@@ -183,27 +237,70 @@ export function parseCompartmentPlaintext<TRegion>({
   value: unknown;
   expected: CompartmentKind;
   schema: z.ZodType<TRegion>;
-}): TRegion {
+}): ParsedCompartment<TRegion> {
   const actual = readCompartmentKind({ value });
   // `unreadable` is not a claim about kind, so it is not refused here — the
   // schema below rejects it, and the caller's existing failure path applies.
   if (actual !== expected && actual !== 'unreadable') throw new WrongCompartmentKindError({ expected, actual });
-  return schema.parse(value);
+  const region = schema.parse(value);
+  return { region, extras: unrecognisedKeys({ value, region }) };
 }
 
 /**
- * The bytes a seal encrypts: the region, plus what it is.
+ * The keys the region schema did not take — computed by DIFFERENCE against the
+ * parsed region, never by reading the schema.
  *
- * Both seals go through here so that neither can write an untagged
- * compartment. The tag is spread LAST, so a region that somehow carried a
- * `kind` of its own cannot mislabel the compartment it is sealed into.
+ * The parsed region is the authority on what this build recognises because
+ * every field on both regions carries a `.default()`, so a successful parse
+ * always names all of them — including the ones the plaintext omitted. Asking
+ * the schema instead would mean reaching into its internals for a list the
+ * parse has already produced.
+ *
+ * The kind tag is excluded because it is not part of either region: it is
+ * written by {@link taggedCompartmentPlaintext} and re-written by it on every
+ * seal, so carrying it as an extra would mean spreading a stale tag back in.
+ */
+function unrecognisedKeys<TRegion extends object>({
+  value,
+  region,
+}: {
+  value: unknown;
+  region: TRegion;
+}): CompartmentExtras {
+  const plaintext = compartmentExtrasSchema.safeParse(value);
+  // Unreachable for a plaintext the schema above accepted, and not asserted:
+  // "no extras" is the answer that loses nothing, and a throw here would turn
+  // a preservation feature into a new way to fail an open.
+  if (!plaintext.success) return {};
+
+  const recognised = new Set<string>([...Object.keys(region), 'kind']);
+  return Object.fromEntries(Object.entries(plaintext.data).filter(([key]) => !recognised.has(key)));
+}
+
+/**
+ * The bytes a seal encrypts: the region, what it is, and everything the last
+ * open did not understand.
+ *
+ * Both seals go through here so that neither can write an untagged compartment
+ * or drop a newer client's field.
+ *
+ * ── The ORDER is the whole safety property ───────────────────────────────
+ *
+ * `extras` first, then the tag, then the REGION LAST. A recognised key can
+ * therefore never be shadowed by a stale extra: if a future build promotes an
+ * extra into the region, this build's own value for it wins the moment it
+ * becomes recognised. The tag sits between them, where a leftover key called
+ * `kind` cannot reach it — and neither region type has a `kind` field to
+ * overwrite it with, which is why the region may safely go last.
  */
 export function taggedCompartmentPlaintext<TRegion extends object>({
   region,
   kind,
+  extras,
 }: {
   region: TRegion;
   kind: CompartmentKind;
+  extras: CompartmentExtras;
 }): Uint8Array {
-  return new TextEncoder().encode(JSON.stringify({ ...region, kind }));
+  return new TextEncoder().encode(JSON.stringify({ ...extras, kind, ...region }));
 }

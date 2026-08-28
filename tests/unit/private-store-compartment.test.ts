@@ -38,17 +38,26 @@ import {
 import { EMPTY_OWNER_PRIVATE_REGION, type OwnerPrivateRegion } from '../../app/lib/sync/snapshot-partition';
 import {
   establishPrivateStore,
+  openPrivateStore,
   sealPrivateStore,
   type EstablishedPrivateStore,
 } from '../../app/lib/sync/engine/crypto/private-store';
-import { WrongCompartmentKindError } from '../../app/lib/sync/compartment-kind';
+import {
+  COMPARTMENT_KIND,
+  taggedCompartmentPlaintext,
+  WrongCompartmentKindError,
+} from '../../app/lib/sync/compartment-kind';
+import { classifySnapshotKey, partitionSnapshot, recomposeSnapshot } from '../../app/lib/sync/snapshot-partition';
+import { createPrimaryStore } from '../../app/lib/local-store/store';
+import { exportBackup } from '../../app/lib/local-store/backup';
 import { openStudyRegion, sealStudyRegion } from '../../app/lib/sync/research/study-compartment';
 import type { SealedPrivateStore } from '../../app/lib/sync/snapshot-partition';
 import { deriveCredentialsFromPassphrase } from '../../app/lib/sync/engine/client/derive-credentials';
 import { createPassphraseKdfDescriptor } from '../../app/lib/sync/engine/client/passphrase-kek';
 import { ARGON2ID_DEFAULT_PARAMS } from '../../app/lib/sync/engine/crypto/argon2';
 import { derivePrivateStoreRecoveryKek } from '../../app/lib/sync/engine/client/recovery-kek';
-import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
+import { base64ToBytes, bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
+import { z } from 'zod';
 
 const ACCOUNT_ID = 42;
 
@@ -230,6 +239,7 @@ describe('the compartment carries its kind', () => {
         passphraseKek,
         cdk: established.cdk,
         wraps: wrapsOf(established),
+        extras: {},
         pulled: null,
       },
       region: { studyKeyring: [{ publicKey: 'a-public-key', privateKey: STUDY_KEY_MARKER, createdAt: 1_000 }] },
@@ -257,7 +267,7 @@ describe('the compartment carries its kind', () => {
     // decrypt failure dressed up. The same bytes open perfectly on the side
     // they belong to, which is why nothing before this could see the mistake.
     const opened = await openStudyRegion({
-      session: { accountId: ACCOUNT_ID, passphraseKek, cdk: null, wraps: null, pulled: null },
+      session: { accountId: ACCOUNT_ID, passphraseKek, cdk: null, wraps: null, extras: {}, pulled: null },
       sealed: studyCompartment,
     });
     assert.equal(opened?.studyKeyring[0]?.privateKey, STUDY_KEY_MARKER);
@@ -315,5 +325,190 @@ describe('the compartment carries its kind', () => {
     // slot, so the null above is about the ciphertext and not about the door.
     const opened = await openOwnerPrivateRegion({ session: holder, sealed: pulled });
     assert.equal(opened?.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+  });
+});
+
+/**
+ * A KEY THIS BUILD DOES NOT KNOW SURVIVES A ROUND TRIP (M164/03).
+ *
+ * `ownerPrivateRegionSchema` is a `z.object`, so it STRIPS what it does not
+ * list — measured 2026-08-28: the key comes back missing and nothing throws.
+ * `backup.ts:388-394` defends against that by LISTING the fields it must keep,
+ * and that defence cannot work across versions: a field a NEWER build added is
+ * one this build cannot list. An older device then opens the compartment, loses
+ * it, and its next push writes the loss back.
+ *
+ * ── Why the assertions read the RAW plaintext ────────────────────────────
+ *
+ * The whole point of an extra is that no schema here mentions it, so no open in
+ * this repo can return one — a re-seal asserted through `openOwnerPrivateRegion`
+ * could not see the field whether it survived or not. So the re-sealed bytes are
+ * opened by hand, with the CDK, and the assertion is on what is actually inside
+ * the ciphertext.
+ */
+
+/** A field no schema in this repo mentions. It stands for whatever the NEXT release puts in the compartment. */
+const FUTURE_KEY = 'clinicianRelayIdentity';
+
+/** Nested and non-trivial on purpose: a shallow equality on a string would pass on a coincidence. */
+const FUTURE_VALUE = { publicKeyRaw: 'a-key-this-build-cannot-name', rotations: [1, 2, 3], createdAt: 12_000 };
+
+/**
+ * The compartment plaintext exactly as it sits inside the ciphertext.
+ *
+ * `looseObject` because the keys this build does not know are the entire
+ * subject — a `z.object` here would strip the very field under test and every
+ * assertion below would be about the schema instead of the seal.
+ */
+const rawCompartmentSchema = z.looseObject({
+  kind: z.string(),
+  shareIdentity: z.object({ privateKeyPkcs8: z.string() }).nullable(),
+});
+
+/** A compartment as a NEWER client wrote it: this build's region, the tag, and one key from the future. */
+async function compartmentFromANewerClient(established: EstablishedPrivateStore) {
+  return sealedJson({
+    established,
+    json: JSON.stringify({
+      ...regionWithShareKey(PRIVATE_KEY_MARKER),
+      kind: COMPARTMENT_KIND.diary,
+      [FUTURE_KEY]: FUTURE_VALUE,
+    }),
+  });
+}
+
+/** The plaintext inside a sealed compartment, read with the CDK and not through any region schema. */
+async function readRawPlaintext({
+  established,
+  sealed,
+}: {
+  established: EstablishedPrivateStore;
+  sealed: SealedPrivateStore;
+}) {
+  const plaintext = await openPrivateStore({
+    cdk: established.cdk,
+    ciphertext: base64ToBytes(sealed.ciphertext),
+    accountId: ACCOUNT_ID,
+  });
+  return rawCompartmentSchema.parse(JSON.parse(new TextDecoder().decode(plaintext)));
+}
+
+describe('a key this build does not know', () => {
+  it('an unknown compartment key survives a round trip', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const fromNewerClient = await compartmentFromANewerClient(established);
+
+    // NON-VACUITY, both halves. The fixture really carries the key, and this
+    // build really does not know it — `classifySnapshotKey` is the repo's own
+    // list of every key anybody here has ever classified.
+    assert.ok(fromNewerClient.plaintext.includes(FUTURE_KEY), 'the fixture must carry the unknown key');
+    assert.throws(() => classifySnapshotKey(FUTURE_KEY), 'the key must be one no schema in this repo mentions');
+
+    // OPEN, with the current schemas. The region comes back understood, and
+    // the extra is NOT in it — it never leaves the compartment.
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    const opened = await openOwnerPrivateRegion({ session, sealed: fromNewerClient.sealed });
+    assert.ok(opened !== null);
+    assert.equal(opened.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+    assert.ok(!Object.keys(opened).includes(FUTURE_KEY), 'an extra must not ride out inside the region');
+
+    // RE-SEAL, with a CHANGED region so the seal cache cannot answer and the
+    // bytes are genuinely rewritten. Re-emitting the pulled bytes would prove
+    // nothing about preservation.
+    const resealed = await sealOwnerPrivateRegion({
+      session,
+      region: {
+        ...opened,
+        sharePeers: [{ id: '9', accountId: 9, publicKeyRaw: 'peer-public-key', label: 'Dr. Meier', createdAt: 8_000 }],
+      },
+    });
+    assert.ok(resealed !== null);
+    assert.notEqual(
+      resealed.ciphertext,
+      fromNewerClient.sealed.ciphertext,
+      'the re-seal must produce new bytes, or nothing here is a round trip',
+    );
+
+    // STILL THERE, AND STILL EQUAL — read out of the ciphertext by hand,
+    // because no open in this repo can return a key no schema here mentions.
+    const raw = await readRawPlaintext({ established, sealed: resealed });
+    assert.deepEqual(raw[FUTURE_KEY], FUTURE_VALUE);
+
+    // And the recognised half of the same bytes still opens: the preservation
+    // did not come at the cost of the region.
+    const secondDevice = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    const reopened = await openOwnerPrivateRegion({ session: secondDevice, sealed: resealed });
+    assert.equal(reopened?.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+    assert.equal(reopened?.sharePeers.length, 1);
+  });
+
+  it('a recognized key is never shadowed by a stale extra', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const fromNewerClient = await compartmentFromANewerClient(established);
+
+    // FIRST: a recognised key can never BECOME an extra. The split is by
+    // difference against the parsed region, so everything this build
+    // understands is taken into the region and only the leftover is carried.
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    await openOwnerPrivateRegion({ session, sealed: fromNewerClient.sealed });
+    assert.deepEqual(Object.keys(session.extras), [FUTURE_KEY]);
+    assert.ok(
+      !Object.keys(session.extras).includes('shareIdentity'),
+      'a recognised key must never be carried as an extra',
+    );
+    assert.ok(!Object.keys(session.extras).includes('kind'), 'the tag is written by the seal, never carried across');
+
+    // SECOND: and even handed a hostile set of extras — one shadowing the
+    // account's own share key, one shadowing the kind tag — the seal writes the
+    // region LAST and the tag between, so neither can win.
+    const plaintext = rawCompartmentSchema.parse(
+      JSON.parse(
+        new TextDecoder().decode(
+          taggedCompartmentPlaintext({
+            region: regionWithShareKey(PRIVATE_KEY_MARKER),
+            kind: COMPARTMENT_KIND.diary,
+            extras: {
+              shareIdentity: { publicKeyRaw: 'stale', privateKeyPkcs8: 'a-key-that-was-replaced', createdAt: 1 },
+              kind: COMPARTMENT_KIND.study,
+              [FUTURE_KEY]: FUTURE_VALUE,
+            },
+          }),
+        ),
+      ),
+    );
+    assert.equal(plaintext.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+    assert.equal(plaintext.kind, COMPARTMENT_KIND.diary);
+
+    // NON-VACUITY: the harmless extra beside them did come through, so the two
+    // assertions above are about ORDER and not about extras being dropped.
+    assert.deepEqual(plaintext[FUTURE_KEY], FUTURE_VALUE);
+  });
+
+  it('no compartment extra reaches the device snapshot', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const fromNewerClient = await compartmentFromANewerClient(established);
+
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    const ownerPrivate = await openOwnerPrivateRegion({ session, sealed: fromNewerClient.sealed });
+    assert.ok(ownerPrivate !== null);
+
+    // NON-VACUITY: the extra WAS carried. Without this the absence below would
+    // pass on a compartment that never had one.
+    assert.deepEqual(session.extras[FUTURE_KEY], FUTURE_VALUE);
+
+    // The snapshot the device would write, built through the real recomposer.
+    const { shareable } = partitionSnapshot((await exportBackup({ store: createPrimaryStore() })).data);
+    const recomposed = recomposeSnapshot({ shareable, ownerPrivate });
+    assert.ok(!Object.keys(recomposed).includes(FUTURE_KEY), 'an extra must never become a snapshot key');
+    partitionSnapshot(recomposed);
+
+    // AND THE OTHER FAIL-CLOSED RULE IS UNTOUCHED. Had the extra ridden along,
+    // this is what would have happened: the snapshot guard stops the sync
+    // rather than letting an unclassified key default into the half a clinician
+    // can read. Both rules stand; they answer different questions.
+    assert.throws(
+      () => partitionSnapshot(Object.assign({}, recomposed, { [FUTURE_KEY]: FUTURE_VALUE })),
+      /not classified in SNAPSHOT_KEY_REGIONS/,
+    );
   });
 });

@@ -32,6 +32,20 @@
  * carrying it, unchanged, forever; `null` is pushed only when the pull
  * carried none.
  *
+ * ── A key this build does not know is CARRIED too (M164/03) ─────────────
+ *
+ * The same rule one level in. `ownerPrivateRegionSchema` is a `z.object`, so it
+ * STRIPS what it does not list — and a field a NEWER client added is one this
+ * build cannot list. Without care, an older device opens the compartment, loses
+ * that field, and its next push writes the loss back. Two devices on either
+ * side of a release is an ordinary state.
+ *
+ * So the session remembers the leftover keys from the last successful open and
+ * the seal puts them back (`compartment-kind.ts`). They never leave the
+ * compartment: only the region is returned to the sync cycle, because the
+ * snapshot's own fail-closed rule — `classifySnapshotKey` throws on a key
+ * nobody has classified — is a different rule and must stay strict.
+ *
  * ── The CDK lives exactly as long as the DEK ─────────────────────────────
  *
  * In memory, in the vault, for the session. It is never persisted, never
@@ -48,6 +62,8 @@ import {
   parseCompartmentPlaintext,
   taggedCompartmentPlaintext,
   WrongCompartmentKindError,
+  type CompartmentExtras,
+  type ParsedCompartment,
 } from './compartment-kind';
 import type { OwnerPrivateRegion, SealedPrivateStore } from './snapshot-partition';
 
@@ -67,8 +83,19 @@ export interface PrivateStoreSession {
   cdk: Uint8Array | null;
   /** The two wraps exactly as they must be re-emitted. Never rebuilt from the CDK on a push — a rebuild would rewrap slot 2 under a KEK this session does not have. */
   wraps: { cdkWrapPassphrase: string; cdkWrapRecovery: string } | null;
-  /** The last sealed compartment and the region hash it corresponds to. See this module's header on why it exists. */
-  cache: { regionHash: string; sealed: SealedPrivateStore } | null;
+  /** The last sealed compartment and the hash of the plaintext it corresponds to. See this module's header on why it exists. */
+  cache: { plaintextHash: string; sealed: SealedPrivateStore } | null;
+  /**
+   * The compartment keys THIS BUILD DOES NOT RECOGNISE, as the last successful
+   * open found them — a field a newer client added, carried verbatim (M164/03).
+   *
+   * `{}` until an open says otherwise, which is also the honest answer for a
+   * compartment this session established itself. Never inspected, never
+   * validated, and never allowed into a snapshot: `recomposeSnapshot` would
+   * have to classify it, and `classifySnapshotKey` is right to refuse a key
+   * nobody has put on a side of the partition.
+   */
+  extras: CompartmentExtras;
   /**
    * The compartment EXACTLY AS LAST PULLED, written on every pull that carried
    * one — whether or not this session could open it.
@@ -105,6 +132,7 @@ export function createPrivateStoreSession({
         { cdkWrapPassphrase: established.cdkWrapPassphrase, cdkWrapRecovery: established.cdkWrapRecovery }
       : null,
     cache: null,
+    extras: {},
     pulled: null,
   };
 }
@@ -146,23 +174,46 @@ export async function sealOwnerPrivateRegion({
   session: PrivateStoreSession;
   region: OwnerPrivateRegion;
 }): Promise<SealedPrivateStore | null> {
-  const { cdk, wraps } = session;
+  const { cdk, wraps, extras } = session;
   if (cdk === null || wraps === null) return session.pulled;
 
-  const regionHash = contentHash(region);
-  if (session.cache !== null && session.cache.regionHash === regionHash) return session.cache.sealed;
+  const plaintextHash = sealCacheKey({ region, extras });
+  if (session.cache !== null && session.cache.plaintextHash === plaintextHash) return session.cache.sealed;
 
   const ciphertext = await sealPrivateStore({
     cdk,
     // TAGGED, always. An untagged compartment is readable — it defaults to
     // `diary` — but it is the state the sniff exists to cover, and there is no
     // reason to keep writing one.
-    plaintext: taggedCompartmentPlaintext({ region, kind: COMPARTMENT_KIND.diary }),
+    //
+    // And carrying the EXTRAS, which is the other half of not destroying data:
+    // the region is what this build understands, `extras` is what a newer one
+    // added, and a seal that wrote only the first would delete the second.
+    plaintext: taggedCompartmentPlaintext({ region, kind: COMPARTMENT_KIND.diary, extras }),
     accountId: session.accountId,
   });
   const sealed: SealedPrivateStore = { ciphertext: bytesToBase64(ciphertext), ...wraps };
-  session.cache = { regionHash, sealed };
+  session.cache = { plaintextHash, sealed };
   return sealed;
+}
+
+/**
+ * The cache key: a hash of EVERYTHING the sealed bytes contain, not just the
+ * region.
+ *
+ * The extras are in the ciphertext, so they have to be in the key that says
+ * "these bytes are still current" — a key covering only the region would go on
+ * answering "unchanged" after they moved, and the cache would re-emit bytes
+ * carrying the old ones.
+ *
+ * Today that window cannot open: `openOwnerPrivateRegion` writes `extras` and
+ * `cache` in the same breath, from the same plaintext, so they cannot disagree.
+ * That is a fact about two adjacent lines, not a property of the design, and it
+ * is not what this cache should rest on — the hash makes the invariant
+ * structural instead, at the cost of hashing one more (usually empty) object.
+ */
+function sealCacheKey({ region, extras }: { region: OwnerPrivateRegion; extras: CompartmentExtras }): string {
+  return contentHash({ region, extras });
 }
 
 /**
@@ -214,20 +265,33 @@ export async function openOwnerPrivateRegion({
   session.pulled = sealed;
 
   for (const cdk of await candidateCdks({ session, sealed })) {
-    const region = await tryOpen({ cdk, sealed, accountId: session.accountId });
-    if (region === null) continue;
+    const opened = await tryOpen({ cdk, sealed, accountId: session.accountId });
+    if (opened === null) continue;
+    const { region, extras } = opened;
     session.cdk = cdk;
     session.wraps = { cdkWrapPassphrase: sealed.cdkWrapPassphrase, cdkWrapRecovery: sealed.cdkWrapRecovery };
+    // The keys a newer client added, remembered so the next seal can put them
+    // back. They stop here: only the region is returned, so nothing above this
+    // line can route an extra into a snapshot.
+    session.extras = extras;
     // Cache the bytes that were just pulled, so the next push re-emits this
     // compartment VERBATIM instead of re-sealing it under a fresh IV and
     // making every boot write a blob version.
-    session.cache = { regionHash: contentHash(region), sealed };
+    session.cache = { plaintextHash: sealCacheKey({ region, extras }), sealed };
     return region;
   }
   return null;
 }
 
-/** Replaces the session's wraps after a rewrap landed on the server, and drops the seal cache so the next push carries them. */
+/**
+ * Replaces the session's wraps after a rewrap landed on the server, and drops
+ * the seal cache so the next push carries them.
+ *
+ * `extras` is deliberately untouched. A rewrap replaces the two slots and
+ * leaves the ciphertext exactly as it was, so the newer client's keys are still
+ * inside it — and the next seal has to put them back, which it can only do from
+ * the session.
+ */
 export function adoptRewrappedSlots({
   session,
   cdk,
@@ -292,7 +356,7 @@ async function tryOpen({
   cdk: Uint8Array;
   sealed: SealedPrivateStore;
   accountId: number;
-}): Promise<OwnerPrivateRegion | null> {
+}): Promise<ParsedCompartment<OwnerPrivateRegion> | null> {
   try {
     const plaintext = await openPrivateStore({ cdk, ciphertext: base64ToBytes(sealed.ciphertext), accountId });
     return parseCompartmentPlaintext({
