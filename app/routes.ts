@@ -39,6 +39,13 @@ export default [
   // server never stores, serves or endorses a share public key.
   route('/connect-clinician', 'routes/connect-clinician.tsx'),
 
+  // Joining a study: where a study's join link lands (M163/02). Same shape as
+  // `/connect-clinician` and for the same reason — the study's contribution
+  // key rides in the URL FRAGMENT, so no loader could read it and no server
+  // ever sees it. `openplate-sync` ADR-0003: the fingerprint that authenticates
+  // that key is typed from the study's printed consent document, never shown.
+  route('/join-study', 'routes/join-study.tsx'),
+
   // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
   // device whose store has been wiped but whose `firstDataAt` marker survives.
   // TOP-LEVEL and client-only — it must sit outside `_personal`, whose gate is

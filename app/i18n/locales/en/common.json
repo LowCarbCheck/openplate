@@ -960,6 +960,7 @@
     "fasting": "Fasting · openplate",
     "foods": "Your foods · openplate",
     "goals": "Your goals · openplate",
+    "joinStudy": "Join a study · openplate",
     "landing": "openplate — a food tracker that stays on your device",
     "landingDescription": "Photograph your plate or search for what you ate — openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
     "meals": "Saved meals · openplate",
@@ -1289,6 +1290,70 @@
     },
     "anomaly": {
       "serverRetainedWithdrawn": "WARNING FOR THE OPERATOR: this server handed over {{retained}} contribution(s) it had already been instructed to delete. They were purged here, and this deployment needs investigating."
+    },
+    "join": {
+      "title": "Join a study",
+      "description": "A study sent you a link. Joining it needs the fingerprint printed in its consent materials.",
+      "reading": "Reading the link…",
+      "backToResearch": "Back to your studies",
+      "failed": "Joining did not go through. Nothing was saved, so you can try again.",
+      "mismatch": "That is not this key’s fingerprint. Nothing was saved. Check the characters in the consent materials and type them again.",
+      "claimed": {
+        "named": "The link says this is {{name}}.",
+        "unnamed": "The link does not say which study this is.",
+        "account": "Study account number {{studyAccountId}}",
+        "unverified": "Anyone who can write the link can write that name. What proves it is the study is the fingerprint below."
+      },
+      "labelLabel": "Your name for this study",
+      "labelHint": "Only for you, on this device. The study never sees it.",
+      "fingerprintLabel": "Fingerprint from the consent document",
+      "fingerprintHint": "Type the twelve characters printed in the study’s consent materials. Do not take them off this screen or out of the link.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "The link brought the key; the printed page proves the key belongs to this study. Two separate ways of reaching you, and that is what makes the check worth anything.",
+      "submit": "Join this study",
+      "enrolled": {
+        "title": "You have joined.",
+        "body": "Nothing has been sent yet. You choose which days go, and when, on your studies page.",
+        "cta": "Go to your studies"
+      },
+      "compartmentMissing": {
+        "title": "This account cannot join a study yet",
+        "body": "Joining needs a recovery code. Without one, this device could not keep the same identity for you after a restore or on a second device.",
+        "why": "A study would read you as a different person each time, and your earlier days would stand alone. Set up a recovery code, then open the link again.",
+        "cta": "Set up a recovery code"
+      },
+      "invalidLink": {
+        "title": "This link does not look right",
+        "body": "Part of it is missing or was cut off. Ask the study to send it again."
+      },
+      "queryString": {
+        "title": "This link is not safe to use",
+        "body": "The study’s key came in the part of the address that gets sent to servers, so it did not stay between you and the study. That usually means an email or chat app rewrote the link on the way.",
+        "parameters": "Sent in the address: {{parameters}}.",
+        "askAgain": "Ask the study to send the link again, or open it from the consent materials."
+      },
+      "noSync": {
+        "title": "This openplate has no sync",
+        "body": "Contributing to a study goes through sync, and whoever runs this openplate has not set it up."
+      },
+      "signedOut": {
+        "body": "Open your sync session first. Joining a study writes a key that only exists once you are signed in."
+      }
+    },
+    "submit": {
+      "title": "Send days to this study",
+      "description": "Choose the first and last day yourself. Nothing leaves this device until you press send.",
+      "fromLabel": "First day",
+      "toLabel": "Last day",
+      "cta": "Send these days",
+      "failed": "Nothing was sent. You can try again.",
+      "outcome": {
+        "submitted": "Sent {{from}} to {{to}} · version {{version}}.",
+        "conflict": "Another of your devices sent to this study first. Choose the days again and send.",
+        "tooLarge": "That window is wider than this study accepts. Try a shorter one — you can send the rest afterwards.",
+        "unknownStudy": "This server does not know that study, so nothing was sent.",
+        "unavailable": "This server has no research lane, so nothing was sent."
+      }
     }
   },
   "scan": {

@@ -19,12 +19,18 @@
 import {
   deleteLocalStudyEnrolment,
   getLocalResearchIdentity,
+  getLocalStudyEnrolment,
   listLocalStudyEnrolments,
+  putLocalResearchIdentity,
+  putLocalStudyEnrolment,
   type LocalStudyEnrolment,
   type LocalSubmittedWindow,
 } from '#app/lib/local-store';
 import { base64ToBytes } from './engine/crypto/base64';
 import type { ContributionEnrolment } from './engine/client/http-client';
+import { readLocalSnapshot } from './local-store-bridge';
+import { submitContribution, type ContributionSubmitResult } from './research/contribute';
+import { runEnrolmentCeremony, type EnrolmentCompartment, type EnrolmentResult } from './research/enrolment';
 import { deriveStudyPseudonym } from './research/pseudonym';
 import { withdrawFromStudy, type WithdrawalResult } from './research/withdraw';
 import { markSyncPending, syncNow } from './sync-actions';
@@ -148,6 +154,134 @@ export async function withdrawFromStudyAction(studyAccountId: number): Promise<W
   // same reason `forgetPinnedPeer` syncs. Only on a real withdrawal: a kept
   // pin has nothing to propagate.
   if (result.status === 'withdrawn') {
+    markSyncPending();
+    await syncNow();
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Joining a study, and sending it a window
+// ---------------------------------------------------------------------------
+
+/**
+ * Joins a study: the ceremony, wired to this device.
+ *
+ * Every REFUSAL is `research/enrolment.ts`'s and is asserted there — this
+ * function decides nothing. What it supplies is the compartment (or its
+ * absence, which is prohibition 4's whole trigger) and the sync that carries a
+ * successful pin to the account's other devices.
+ *
+ * The public key is the one that arrived in the LINK, and the fingerprint is
+ * the one typed from the study's printed consent document. The ceremony
+ * re-checks them against each other before it writes anything, so nothing
+ * above this line can skip the check by calling here directly.
+ */
+export async function enrolInStudyAction({
+  studyAccountId,
+  publicKeyBase64,
+  typedFingerprint,
+  label,
+}: {
+  studyAccountId: number;
+  publicKeyBase64: string;
+  typedFingerprint: string;
+  /** The person's own name for the study. Local only; the server never sees it. */
+  label: string | null;
+}): Promise<EnrolmentResult> {
+  const vault = requireVault('enrolInStudyAction');
+  const result = await runEnrolmentCeremony({
+    studyAccountId,
+    studyPublicKeyRaw: base64ToBytes(publicKeyBase64),
+    typedFingerprint,
+    compartment: await enrolmentCompartment(vault),
+    label,
+  });
+  if (result.status !== 'enrolled') return result;
+
+  // The pin AND the pseudonym root live in the owner-private compartment, so
+  // an enrolment that never reaches the blob is an enrolment the account's
+  // other devices do not have — and a root that never leaves this device is
+  // the per-device root prohibition 4 exists to prevent. Same reason
+  // `ensureShareIdentity` syncs.
+  markSyncPending();
+  await syncNow();
+  return result;
+}
+
+/**
+ * The owner-private compartment, or `null` for an account that has none.
+ *
+ * `cdk === null` means THIS SESSION has no compartment, which is not quite the
+ * same thing: a device that signed in and has not pulled yet also reads that
+ * way, and refusing it would tell a person with a perfectly good recovery code
+ * that they cannot join a study. So a null goes and pulls once — an adopted
+ * compartment is exactly what `openOwnerPrivateRegion` does on the way — and
+ * only a second null is the answer prohibition 4 is about.
+ *
+ * A transport failure propagates rather than degrading into `null`. "We could
+ * not reach sync" and "this account cannot hold a stable study identity" are
+ * different sentences, and only one of them is about the person's account.
+ */
+async function enrolmentCompartment(vault: SyncVault): Promise<EnrolmentCompartment | null> {
+  if (vault.privateStore.cdk === null) await syncNow();
+  if (vault.privateStore.cdk === null) return null;
+
+  return {
+    researchIdentity: await getLocalResearchIdentity(),
+    enrolments: await listLocalStudyEnrolments(),
+    writeIdentity: async (identity) => void (await putLocalResearchIdentity(identity)),
+    writeEnrolment: async (enrolment) => void (await putLocalStudyEnrolment(enrolment)),
+  };
+}
+
+/**
+ * Sends one window of whole calendar days to one study.
+ *
+ * The reduction, the seal, the version and the refusal order are all
+ * `research/contribute.ts`'s. This function supplies the transport, the
+ * device's own snapshot, the pinned key, the pseudonym root and the
+ * compartment that module writes the accepted window through.
+ *
+ * @throws when this device holds no pin for the study, or holds one with no
+ * pseudonym root. Both are states no ceremony produces and a partial restore
+ * can, and neither has an honest submission to make.
+ */
+export async function submitContributionAction({
+  studyAccountId,
+  fromDayKey,
+  toDayKey,
+}: {
+  studyAccountId: number;
+  fromDayKey: string;
+  toDayKey: string;
+}): Promise<ContributionSubmitResult> {
+  const vault = requireVault('submitContributionAction');
+  const enrolment = await getLocalStudyEnrolment(studyAccountId);
+  if (enrolment === null) throw new Error(`this device is not enrolled in study ${studyAccountId}`);
+  const identity = await getLocalResearchIdentity();
+  if (identity === null) throw new Error(`this device holds a pin for study ${studyAccountId} but no pseudonym root`);
+
+  const result = await submitContribution({
+    transport: vault.http,
+    // The two verbs `research/contribute.ts` asks for, and no more: the write
+    // is its own, beside the branch that decides `submitted`, so no caller can
+    // forget to record the window that was sent.
+    compartment: {
+      getEnrolment: getLocalStudyEnrolment,
+      writeEnrolment: async (pin) => void (await putLocalStudyEnrolment(pin)),
+    },
+    enrolment,
+    pseudonymRoot: base64ToBytes(identity.pseudonymRoot),
+    snapshot: await readLocalSnapshot(),
+    fromDayKey,
+    toDayKey,
+  });
+  // The window it just recorded lives on the pin, in the owner-private
+  // compartment — the same reason `withdrawFromStudyAction` syncs. A window
+  // that never reaches the blob is a window the account's other devices lack,
+  // and they would then offer to send days that have already gone.
+  if (result.status === 'submitted') {
     markSyncPending();
     await syncNow();
   }

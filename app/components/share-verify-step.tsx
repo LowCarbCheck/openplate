@@ -28,7 +28,7 @@
  * choice. A PREFIX of the right value does not pass: the comparison lives in
  * `shareFingerprintMatchesTyped`, which requires all twelve.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyRound, Loader2 } from 'lucide-react';
@@ -36,9 +36,8 @@ import { KeyRound, Loader2 } from 'lucide-react';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
-import { base64ToBytes } from '#app/lib/sync/engine/crypto/base64';
+import { useTypedFingerprintMatch } from '#app/components/use-typed-fingerprint-match';
 import type { ClinicianInvite } from '#app/lib/clinician-link';
-import { shareFingerprintMatchesTyped, shareKeyFingerprint } from '#app/lib/sync/engine/crypto/share-wrap';
 
 /** What the patient has to hand: the clinician's account id and public key, however they travelled. */
 export interface ShareInviteDraft {
@@ -90,7 +89,10 @@ export function ShareVerifyStep({
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<ShareInviteDraft>(() => draftFor(invite));
-  const isMatch = useTypedFingerprintMatch(draft);
+  const isMatch = useTypedFingerprintMatch({
+    publicKeyBase64: draft.publicKeyBase64,
+    typedFingerprint: draft.typedFingerprint,
+  });
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -164,37 +166,4 @@ export function ShareVerifyStep({
       </Button>
     </form>
   );
-}
-
-/**
- * Whether what is typed is the fingerprint of the key that was pasted.
- *
- * Computed in an effect because the fingerprint is a SHA-256 of the key bytes,
- * which WebCrypto only offers asynchronously. A malformed key is simply "no
- * match" — this control never has to explain base64.
- */
-function useTypedFingerprintMatch(draft: ShareInviteDraft): boolean {
-  const [isMatch, setIsMatch] = useState(false);
-
-  useEffect(() => {
-    let isCancelled = false;
-    void (async () => {
-      const matched = await matchesReceivedKey(draft);
-      if (!isCancelled) setIsMatch(matched);
-    })();
-    return () => {
-      isCancelled = true;
-    };
-  }, [draft]);
-
-  return isMatch;
-}
-
-async function matchesReceivedKey(draft: ShareInviteDraft): Promise<boolean> {
-  try {
-    const fingerprint = await shareKeyFingerprint(base64ToBytes(draft.publicKeyBase64));
-    return shareFingerprintMatchesTyped({ typed: draft.typedFingerprint, fingerprint });
-  } catch {
-    return false;
-  }
 }

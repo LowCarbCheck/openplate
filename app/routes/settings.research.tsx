@@ -36,6 +36,7 @@ import { FlaskConical, Loader2 } from 'lucide-react';
 import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { ResearchSubmitPanel } from '#app/components/research-submit-panel';
 import { ResearchWindowLine } from '#app/components/research-window-line';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
@@ -54,9 +55,15 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
   loadResearchEnrolments,
+  submitContributionAction,
   withdrawFromStudyAction,
   type StudyEnrolmentView,
 } from '#app/lib/sync/research-actions';
+import {
+  submitOutcomeCopy,
+  type ResearchWindowDraft,
+  type SubmitOutcomeCopy,
+} from '#app/lib/sync/research/submit-view';
 import { DAILY_INTAKE_V1 } from '#app/lib/sync/research/tiers';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -184,6 +191,7 @@ function EnrolmentsSection({
           enrolment={enrolment}
           isBusy={withdrawing === enrolment.studyAccountId}
           onWithdraw={() => void handleWithdraw(enrolment.studyAccountId)}
+          onSubmitted={onChanged}
         />
       ))}
       {message !== null && <p className="text-sm text-muted-foreground">{message}</p>}
@@ -191,15 +199,18 @@ function EnrolmentsSection({
   );
 }
 
-/** One study: its local name, what it receives, the pseudonym it sees, and the way out. */
+/** One study: its local name, what it receives, the pseudonym it sees, the way to send it a window, and the way out. */
 function EnrolmentCard({
   enrolment,
   isBusy,
   onWithdraw,
+  onSubmitted,
 }: {
   enrolment: StudyEnrolmentView;
   isBusy: boolean;
   onWithdraw: () => void;
+  /** Refreshes the list after an accepted submission, so the window line names the days that just went. */
+  onSubmitted: () => void;
 }) {
   const { t } = useTranslation();
   const name = enrolment.label ?? t('research.enrolments.unnamed', { studyAccountId: enrolment.studyAccountId });
@@ -246,6 +257,13 @@ function EnrolmentCard({
         <p className="text-xs text-muted-foreground">{t('research.enrolments.pseudonymHint')}</p>
       </div>
 
+      {/* Sending is a separate, deliberate act — never a consequence of
+          joining. The panel is hidden on a device that cannot derive the
+          pseudonym, because there is no honest submission to make without it. */}
+      {enrolment.pseudonym !== null && (
+        <SendWindowSection studyAccountId={enrolment.studyAccountId} onSubmitted={onSubmitted} />
+      )}
+
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button type="button" variant="outline" className="h-11" disabled={isBusy}>
@@ -276,5 +294,55 @@ function EnrolmentCard({
         </AlertDialogContent>
       </AlertDialog>
     </section>
+  );
+}
+
+/**
+ * The send-a-window control for one study.
+ *
+ * State lives here rather than on the list so two studies cannot share an
+ * outcome line: "sent 2026-08-01 to 2026-08-24" beside the wrong study would
+ * be the screen naming days it did not send there.
+ *
+ * The picker's emptiness, the sendable check and the outcome sentences are all
+ * `research/submit-view.ts`'s; this function only carries them to the action.
+ */
+function SendWindowSection({ studyAccountId, onSubmitted }: { studyAccountId: number; onSubmitted: () => void }) {
+  const { t } = useTranslation();
+  const [isSending, setIsSending] = useState(false);
+  const [outcome, setOutcome] = useState<SubmitOutcomeCopy | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  async function handleSend(window: ResearchWindowDraft): Promise<void> {
+    setIsSending(true);
+    setOutcome(null);
+    setFailure(null);
+    try {
+      const result = await submitContributionAction({
+        studyAccountId,
+        fromDayKey: window.fromDayKey,
+        toDayKey: window.toDayKey,
+      });
+      setOutcome(submitOutcomeCopy({ result, window }));
+      // Only an accepted submission changed anything worth re-reading: the pin
+      // now carries the window, and the server row a new version.
+      if (result.status === 'submitted') onSubmitted();
+    } catch (caught) {
+      setFailure(describeErrorForUser(caught, t('research.submit.failed')));
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <ResearchSubmitPanel
+        studyAccountId={studyAccountId}
+        onSubmit={(window) => void handleSend(window)}
+        isSubmitting={isSending}
+        outcome={outcome}
+      />
+      {failure !== null && <p className="text-sm text-destructive">{failure}</p>}
+    </div>
   );
 }

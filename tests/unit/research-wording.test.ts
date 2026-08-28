@@ -31,6 +31,14 @@
  * one, or a German stub. So three sentences are asserted by key: the
  * pseudonymised wording, ADR-0003's first-ranked auxiliary-join caveat, and
  * the disclosure that re-joining is not a fresh identity.
+ *
+ * ── The submit outcomes: a sentence per member of the union ──────────────
+ *
+ * `SUBMIT_OUTCOME_KEYS` is `satisfies Record<ContributionSubmitResult['status'], string>`,
+ * so a new outcome cannot compile without a key. What it cannot do is make the
+ * COPY exist, in both locales — that is this file's job (M163/02). The keys
+ * are read from the table rather than listed here for the reason the walk
+ * above is total: a hand-copied list narrows silently.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,6 +46,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
+
+import { SUBMIT_OUTCOME_KEYS } from '../../app/lib/sync/research/submit-view';
 
 /** A translation catalog: nested groups of keys bottoming out in translated strings. */
 type Catalog = { [key: string]: string | Catalog };
@@ -150,5 +160,36 @@ test('the research copy states the caveat in every locale', async () => {
     // nothing to a day total, and `loggedEntryCount` is the only thing that
     // tells "unknown" from "low intake" apart.
     requireSentence('research.export.unknownMacroCaveat', /loggedEntryCount/);
+  }
+});
+
+test('every submit outcome has copy in every locale', async () => {
+  for (const locale of LOCALES) {
+    const all = new Map(
+      leaves(researchNamespace(locale), 'research').map((sentence) => [sentence.key, sentence.value]),
+    );
+
+    for (const key of Object.values(SUBMIT_OUTCOME_KEYS)) {
+      const value = all.get(key);
+      assert.ok(value !== undefined, `${locale} is missing ${key}`);
+      assert.ok(value.trim().length > 20, `${locale} ${key} is a stub: ${value}`);
+    }
+
+    // The accepted one NAMES THE DAYS and the version — M163/01's whole point,
+    // and the only outcome allowed to quote a window at all. `count` is
+    // deliberately not among the parameters: it is i18next's plural selector,
+    // and a key with no `_one`/`_other` forms silently falls back.
+    const submitted = all.get(SUBMIT_OUTCOME_KEYS.submitted) ?? '';
+    for (const placeholder of ['{{from}}', '{{to}}', '{{version}}']) {
+      assert.ok(submitted.includes(placeholder), `${locale} ${SUBMIT_OUTCOME_KEYS.submitted} drops ${placeholder}`);
+    }
+    assert.ok(!submitted.includes('{{count}}'), `${locale} ${SUBMIT_OUTCOME_KEYS.submitted} uses i18next's plural key`);
+
+    // `too-large` is ADVICE, not an error: the window was too wide, so it says
+    // to send a shorter one. Copy that apologised would push a person into
+    // sending less than they meant to next time.
+    const tooLarge = all.get(SUBMIT_OUTCOME_KEYS['too-large']) ?? '';
+    const narrower = { en: /shorter|narrower/i, de: /kürzer|schmaler/i } satisfies Record<Locale, RegExp>;
+    assert.match(tooLarge, narrower[locale], `${locale} ${SUBMIT_OUTCOME_KEYS['too-large']} does not advise anything`);
   }
 });

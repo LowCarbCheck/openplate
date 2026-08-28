@@ -960,6 +960,7 @@
     "fasting": "Fasten · openplate",
     "foods": "Deine Lebensmittel · openplate",
     "goals": "Deine Ziele · openplate",
+    "joinStudy": "Bei einer Studie mitmachen · openplate",
     "landing": "openplate — ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "landingDescription": "Fotografier deinen Teller oder such nach dem, was du gegessen hast — openplate zeigt dir in Sekunden die Kohlenhydrate und rechnet sie gegen dein Tagesziel. Kostenlos, ohne Konto, und alles, was du einträgst, bleibt auf deinem Gerät.",
     "meals": "Gespeicherte Mahlzeiten · openplate",
@@ -1289,6 +1290,70 @@
     },
     "anomaly": {
       "serverRetainedWithdrawn": "WARNUNG FÜR DEN BETRIEB: Dieser Server hat {{retained}} Beitrag/Beiträge geliefert, deren Löschung ihm bereits aufgetragen war. Sie wurden hier entfernt, und diese Installation gehört geprüft."
+    },
+    "join": {
+      "title": "Bei einer Studie mitmachen",
+      "description": "Eine Studie hat dir einen Link geschickt. Zum Mitmachen brauchst du den Fingerabdruck aus ihren Einwilligungsunterlagen.",
+      "reading": "Link wird gelesen …",
+      "backToResearch": "Zurück zu deinen Studien",
+      "failed": "Das Mitmachen hat nicht geklappt. Es wurde nichts gespeichert, du kannst es noch einmal versuchen.",
+      "mismatch": "Das ist nicht der Fingerabdruck dieses Schlüssels. Es wurde nichts gespeichert. Prüfe die Zeichen in den Einwilligungsunterlagen und tippe sie noch einmal.",
+      "claimed": {
+        "named": "Der Link sagt, das sei {{name}}.",
+        "unnamed": "Der Link sagt nicht, um welche Studie es geht.",
+        "account": "Studien-Kontonummer {{studyAccountId}}",
+        "unverified": "Wer den Link schreiben kann, kann auch diesen Namen schreiben. Beweis ist erst der Fingerabdruck weiter unten."
+      },
+      "labelLabel": "Dein Name für diese Studie",
+      "labelHint": "Nur für dich, auf diesem Gerät. Die Studie sieht ihn nie.",
+      "fingerprintLabel": "Fingerabdruck aus den Einwilligungsunterlagen",
+      "fingerprintHint": "Tippe die zwölf Zeichen ab, die in den Einwilligungsunterlagen der Studie gedruckt stehen. Nimm sie nicht von diesem Bildschirm und nicht aus dem Link.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "Der Link hat den Schlüssel gebracht; das gedruckte Blatt belegt, dass der Schlüssel zu dieser Studie gehört. Zwei getrennte Wege zu dir — nur deshalb ist die Prüfung überhaupt etwas wert.",
+      "submit": "Bei dieser Studie mitmachen",
+      "enrolled": {
+        "title": "Du machst mit.",
+        "body": "Gesendet wurde noch nichts. Welche Tage gehen und wann, entscheidest du auf der Seite mit deinen Studien.",
+        "cta": "Zu deinen Studien"
+      },
+      "compartmentMissing": {
+        "title": "Dieses Konto kann noch nicht mitmachen",
+        "body": "Zum Mitmachen brauchst du einen Wiederherstellungscode. Ohne ihn könnte dieses Gerät deine Kennung nach einer Wiederherstellung oder auf einem zweiten Gerät nicht gleich halten.",
+        "why": "Eine Studie würde dich jedes Mal als andere Person lesen, und deine früheren Tage stünden für sich allein. Richte einen Wiederherstellungscode ein und öffne den Link danach noch einmal.",
+        "cta": "Wiederherstellungscode einrichten"
+      },
+      "invalidLink": {
+        "title": "Dieser Link sieht nicht richtig aus",
+        "body": "Ein Teil davon fehlt oder wurde abgeschnitten. Bitte die Studie, ihn noch einmal zu schicken."
+      },
+      "queryString": {
+        "title": "Dieser Link ist nicht sicher zu benutzen",
+        "body": "Der Schlüssel der Studie kam in dem Teil der Adresse an, der an Server geschickt wird. Er blieb also nicht zwischen dir und der Studie. Meist hat eine Mail- oder Chat-App den Link unterwegs umgeschrieben.",
+        "parameters": "In der Adresse mitgeschickt: {{parameters}}.",
+        "askAgain": "Bitte die Studie, den Link noch einmal zu schicken, oder öffne ihn aus den Einwilligungsunterlagen."
+      },
+      "noSync": {
+        "title": "Dieses openplate hat kein Sync",
+        "body": "Ein Beitrag zu einer Studie läuft über Sync, und wer dieses openplate betreibt, hat es nicht eingerichtet."
+      },
+      "signedOut": {
+        "body": "Öffne zuerst deine Sync-Sitzung. Beim Mitmachen wird ein Schlüssel geschrieben, den es erst nach dem Anmelden gibt."
+      }
+    },
+    "submit": {
+      "title": "Tage an diese Studie senden",
+      "description": "Wähle den ersten und den letzten Tag selbst. Vor deinem Tippen auf Senden verlässt nichts dieses Gerät.",
+      "fromLabel": "Erster Tag",
+      "toLabel": "Letzter Tag",
+      "cta": "Diese Tage senden",
+      "failed": "Es wurde nichts gesendet. Du kannst es noch einmal versuchen.",
+      "outcome": {
+        "submitted": "Gesendet {{from}} bis {{to}} · Version {{version}}.",
+        "conflict": "Ein anderes deiner Geräte hat zuerst an diese Studie gesendet. Wähle die Tage noch einmal und sende.",
+        "tooLarge": "Dieser Zeitraum ist weiter, als diese Studie annimmt. Nimm einen kürzeren — den Rest kannst du danach senden.",
+        "unknownStudy": "Dieser Server kennt diese Studie nicht, es wurde nichts gesendet.",
+        "unavailable": "Dieser Server bietet keine Forschungsbeiträge an, es wurde nichts gesendet."
+      }
     }
   },
   "scan": {

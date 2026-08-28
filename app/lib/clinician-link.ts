@@ -38,46 +38,29 @@
  * what the ceremony establishes is that it is AUTHENTIC, and a link can never
  * establish that.
  */
-import { base64ToBytes, bytesToBase64 } from '#app/lib/sync/engine/crypto/base64';
+import {
+  KEY_LINK_PARAMS,
+  LINK_LABEL_MAX_LENGTH,
+  payloadParametersIn,
+  readLinkAccountId,
+  readLinkLabel,
+  readLinkPublicKey,
+  toBase64Url,
+} from '#app/lib/key-link';
 import type { ShareCeremonyResult } from '#app/lib/sync/sharing';
 
 /** Where a clinician link points. Fixed: links already sent out cannot be renamed. */
 export const CLINICIAN_CONNECT_PATH = '/connect-clinician';
 
-/** The fragment's parameter names, short because they are read off a QR code and retyped in a pinch. */
-export const CLINICIAN_LINK_PARAMS = {
-  /** The share public key, base64url, SEC1 uncompressed. */
-  publicKey: 'k',
-  /** The clinician's sync account id. */
-  accountId: 'a',
-  /** The name she CLAIMS. Never verified by anything — see the parse result's `claimedLabel`. */
-  label: 'n',
-} as const;
-
 /**
- * The parameter names that must never appear in a query string.
- *
- * All three, not just the key: a rewriting mailer moves the whole fragment at
- * once, and a link that lost only its account id to the query string is just
- * as much a sign that something in the middle is rewriting URLs.
+ * The fragment's parameter names. The shared ones (`key-link.ts`): a link
+ * already in somebody's inbox cannot be renamed, and the study link beside it
+ * uses the same three so a person only ever learns one shape.
  */
-const PAYLOAD_PARAM_NAMES: readonly string[] = [
-  CLINICIAN_LINK_PARAMS.publicKey,
-  CLINICIAN_LINK_PARAMS.accountId,
-  CLINICIAN_LINK_PARAMS.label,
-];
-
-/** A SEC1 uncompressed P-256 public key: the tag byte plus two 32-byte coordinates (`share-wrap.ts`). */
-const SHARE_PUBLIC_KEY_BYTES = 65;
-
-/** SEC1's uncompressed-point tag. A key that does not start with it is not the key this app wraps to. */
-const SEC1_UNCOMPRESSED_TAG = 0x04;
+export const CLINICIAN_LINK_PARAMS = KEY_LINK_PARAMS;
 
 /** How much of a claimed name is kept. A label is a human's note to themselves, not a message. */
-export const CLINICIAN_LABEL_MAX_LENGTH = 60;
-
-/** The base64url alphabet, unpadded — what {@link buildClinicianLink} emits and all that is accepted back. */
-const BASE64URL_PATTERN = /^[\w-]+$/;
+export const CLINICIAN_LABEL_MAX_LENGTH = LINK_LABEL_MAX_LENGTH;
 
 /** What a clinician link says. All of it unverified: this is transport, and the ceremony is the trust. */
 export interface ClinicianInvite {
@@ -121,13 +104,13 @@ export function parseClinicianLink({ hash, search }: { hash: string; search: str
   if (transmitted.length > 0) return { status: 'query-string', parameters: transmitted };
 
   const fragment = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
-  const publicKeyBase64 = readSharePublicKey(fragment.get(CLINICIAN_LINK_PARAMS.publicKey));
-  const accountId = readAccountId(fragment.get(CLINICIAN_LINK_PARAMS.accountId));
+  const publicKeyBase64 = readLinkPublicKey(fragment.get(CLINICIAN_LINK_PARAMS.publicKey));
+  const accountId = readLinkAccountId(fragment.get(CLINICIAN_LINK_PARAMS.accountId));
   if (publicKeyBase64 === null || accountId === null) return { status: 'invalid' };
 
   return {
     status: 'ok',
-    invite: { accountId, publicKeyBase64, claimedLabel: readLabel(fragment.get(CLINICIAN_LINK_PARAMS.label)) },
+    invite: { accountId, publicKeyBase64, claimedLabel: readLinkLabel(fragment.get(CLINICIAN_LINK_PARAMS.label)) },
   };
 }
 
@@ -152,7 +135,7 @@ export function buildClinicianLink({
   const fragment = new URLSearchParams();
   fragment.set(CLINICIAN_LINK_PARAMS.publicKey, toBase64Url(publicKeyBase64));
   fragment.set(CLINICIAN_LINK_PARAMS.accountId, String(accountId));
-  const claimed = readLabel(label);
+  const claimed = readLinkLabel(label);
   if (claimed !== null) fragment.set(CLINICIAN_LINK_PARAMS.label, claimed);
   return `${origin}${CLINICIAN_CONNECT_PATH}#${fragment.toString()}`;
 }
@@ -197,55 +180,4 @@ export function ceremonyPhaseFor(result: ShareCeremonyResult): ClinicianCeremony
  */
 export function acceptsKeyChangeIn(phase: ClinicianCeremonyPhase): boolean {
   return phase.status === 'key-changed';
-}
-
-// ---------------------------------------------------------------------------
-// Readers
-// ---------------------------------------------------------------------------
-
-/** Which payload names a query string carries, in the order this module declares them. */
-function payloadParametersIn(search: string): string[] {
-  const query = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  return PAYLOAD_PARAM_NAMES.filter((name) => query.has(name));
-}
-
-/**
- * The share public key as standard base64, or `null` if it is not one.
- *
- * Re-encoded from the decoded bytes rather than string-shuffled, so what the
- * ceremony receives is exactly what the length and tag checks passed.
- */
-function readSharePublicKey(value: string | null): string | null {
-  if (value === null || !BASE64URL_PATTERN.test(value)) return null;
-  let bytes: Uint8Array;
-  try {
-    bytes = base64ToBytes(fromBase64Url(value));
-  } catch {
-    return null;
-  }
-  if (bytes.length !== SHARE_PUBLIC_KEY_BYTES || bytes[0] !== SEC1_UNCOMPRESSED_TAG) return null;
-  return bytesToBase64(bytes);
-}
-
-/** A sync account id, or `null`. Positive integers only — the server issues no others. */
-function readAccountId(value: string | null): number | null {
-  if (value === null || !/^\d+$/.test(value)) return null;
-  const accountId = Number.parseInt(value, 10);
-  return Number.isSafeInteger(accountId) && accountId > 0 ? accountId : null;
-}
-
-/** A claimed name, trimmed and capped, or `null` for absent/blank. */
-function readLabel(value: string | null): string | null {
-  if (value === null) return null;
-  const trimmed = value.trim().slice(0, CLINICIAN_LABEL_MAX_LENGTH).trim();
-  return trimmed === '' ? null : trimmed;
-}
-
-function toBase64Url(base64: string): string {
-  return base64.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-}
-
-function fromBase64Url(base64url: string): string {
-  const base64 = base64url.replaceAll('-', '+').replaceAll('_', '/');
-  return base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
 }
