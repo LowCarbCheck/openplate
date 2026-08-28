@@ -46,6 +46,15 @@ export default [
   // that key is typed from the study's printed consent document, never shown.
   route('/join-study', 'routes/join-study.tsx'),
 
+  // The study console (M163/03): the RESEARCHER's side. CLIENT-ONLY and top
+  // level for the same reasons `/join-study` is, plus one that is its own —
+  // this screen signs into the STUDY's account, not this device's, and the
+  // study's private key is unwrapped in the browser. It sits outside
+  // `_personal` deliberately: that layout runs the onboarding gate and mounts
+  // the diary's `SyncController`, and a researcher opening the console may
+  // have no diary here at all. See `.adr/0008-the-study-console-lives-in-openplate.md`.
+  route('/study', 'routes/study._index.tsx'),
+
   // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
   // device whose store has been wiped but whose `firstDataAt` marker survives.
   // TOP-LEVEL and client-only — it must sit outside `_personal`, whose gate is

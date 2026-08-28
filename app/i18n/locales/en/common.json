@@ -973,6 +973,7 @@
     "settings": "Settings · openplate",
     "shared": "Shared with you · openplate",
     "sharing": "Sharing · openplate",
+    "study": "Study console · openplate",
     "sync": "Sync",
     "trends": "Progress · openplate"
   },
@@ -1353,6 +1354,54 @@
         "tooLarge": "That window is wider than this study accepts. Try a shorter one — you can send the rest afterwards.",
         "unknownStudy": "This server does not know that study, so nothing was sent.",
         "unavailable": "This server has no research lane, so nothing was sent."
+      }
+    },
+    "console": {
+      "title": "Study console",
+      "description": "The researcher's side: this study's own account, its key, and the cohort that account can open.",
+      "separateAccount": "This is the study's account, not your own openplate account. Sign in with the study's address and passphrase — never with yours. Nothing on this screen reads or sends this device's diary.",
+      "noSync": {
+        "title": "This openplate has no sync",
+        "body": "A study reads contributions through sync, and whoever runs this openplate has not set it up."
+      },
+      "signIn": {
+        "title": "Open the study's account",
+        "emailLabel": "Study account's email address",
+        "passphraseLabel": "Study account's passphrase",
+        "signIn": "Open the console",
+        "create": "Create a new study account",
+        "failed": "The study account could not be opened. Nothing was changed.",
+        "awaitingVerification": "The study account was created. Confirm its address from the email it was sent, then open the console with the same passphrase."
+      },
+      "recoveryCode": {
+        "title": "Write this recovery code down now",
+        "body": "It is the second and last door to this study's keys, and it is shown once. Nobody can mint another one: if the passphrase and this code are both lost, what contributors already sent can no longer be read."
+      },
+      "identity": {
+        "title": "This study's key",
+        "account": "Study account number {{accountId}}",
+        "noKey": "This study holds no key yet. Mint one before its consent materials are printed.",
+        "fingerprintLabel": "Fingerprint of the current key",
+        "fingerprintHint": "Print these twelve characters in the study's consent document. A contributor types them from that page when joining. This console sends them nowhere and there is nothing here to publish them with.",
+        "generations": "Key generations held: {{generations}}. Every one of them is tried when a contribution is opened, so nothing sealed to an older key is lost.",
+        "generate": "Mint a new key generation",
+        "generating": "Minting…",
+        "generateHint": "A new generation is added beside the ones already held, never in place of them. Only the newest belongs in a consent document being printed now.",
+        "failed": "The key could not be minted. Nothing was changed."
+      },
+      "cohort": {
+        "title": "Pull the cohort",
+        "description": "What this study can open, with every withdrawal already purged.",
+        "fromLabel": "First day of the window you asked for",
+        "toLabel": "Last day of the window you asked for",
+        "pull": "Pull the cohort",
+        "pulling": "Pulling…",
+        "unavailable": "This server has no research lane, so there is no cohort to pull.",
+        "failed": "The cohort could not be pulled.",
+        "empty": "Nothing has been contributed to this study yet.",
+        "summaryTitle": "What the file will say",
+        "export": "Download the cohort as CSV",
+        "exportHint": "The file carries the lines above, word for word, before the table."
       }
     }
   },

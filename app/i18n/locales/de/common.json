@@ -973,6 +973,7 @@
     "settings": "Einstellungen · openplate",
     "shared": "Mit dir geteilt · openplate",
     "sharing": "Teilen · openplate",
+    "study": "Studien-Konsole · openplate",
     "sync": "Sync",
     "trends": "Fortschritt · openplate"
   },
@@ -1353,6 +1354,54 @@
         "tooLarge": "Dieser Zeitraum ist weiter, als diese Studie annimmt. Nimm einen kürzeren — den Rest kannst du danach senden.",
         "unknownStudy": "Dieser Server kennt diese Studie nicht, es wurde nichts gesendet.",
         "unavailable": "Dieser Server bietet keine Forschungsbeiträge an, es wurde nichts gesendet."
+      }
+    },
+    "console": {
+      "title": "Studien-Konsole",
+      "description": "Die Seite der Forschenden: das eigene Konto dieser Studie, ihr Schlüssel und die Beiträge, die dieses Konto öffnen kann.",
+      "separateAccount": "Das ist das Konto der Studie, nicht dein eigenes openplate-Konto. Melde dich mit der Adresse und der Passphrase der Studie an — nie mit deinen eigenen. Nichts auf diesem Bildschirm liest oder sendet das Tagebuch dieses Geräts.",
+      "noSync": {
+        "title": "Dieses openplate hat keine Synchronisierung",
+        "body": "Eine Studie liest Beiträge über die Synchronisierung, und wer dieses openplate betreibt, hat sie nicht eingerichtet."
+      },
+      "signIn": {
+        "title": "Konto der Studie öffnen",
+        "emailLabel": "E-Mail-Adresse des Studienkontos",
+        "passphraseLabel": "Passphrase des Studienkontos",
+        "signIn": "Konsole öffnen",
+        "create": "Neues Studienkonto anlegen",
+        "failed": "Das Studienkonto konnte nicht geöffnet werden. Es wurde nichts geändert.",
+        "awaitingVerification": "Das Studienkonto wurde angelegt. Bestätige seine Adresse über die zugesandte E-Mail und öffne die Konsole dann mit derselben Passphrase."
+      },
+      "recoveryCode": {
+        "title": "Schreib diesen Wiederherstellungscode jetzt auf",
+        "body": "Er ist die zweite und letzte Tür zu den Schlüsseln dieser Studie und wird nur einmal gezeigt. Niemand kann einen neuen erzeugen: Gehen Passphrase und Code beide verloren, ist nicht mehr lesbar, was Teilnehmende bereits gesendet haben."
+      },
+      "identity": {
+        "title": "Der Schlüssel dieser Studie",
+        "account": "Studienkonto Nummer {{accountId}}",
+        "noKey": "Diese Studie hat noch keinen Schlüssel. Erzeuge einen, bevor ihre Einwilligungsunterlagen gedruckt werden.",
+        "fingerprintLabel": "Fingerabdruck des aktuellen Schlüssels",
+        "fingerprintHint": "Druck diese zwölf Zeichen in die Einwilligungsunterlagen der Studie. Teilnehmende tippen sie beim Mitmachen von diesem Blatt ab. Diese Konsole sendet sie nirgendwohin, und hier gibt es nichts, womit man sie veröffentlichen könnte.",
+        "generations": "Vorhandene Schlüsselgenerationen: {{generations}}. Beim Öffnen eines Beitrags wird jede einzelne probiert, damit nichts verloren geht, was mit einem älteren Schlüssel versiegelt wurde.",
+        "generate": "Neue Schlüsselgeneration erzeugen",
+        "generating": "Wird erzeugt…",
+        "generateHint": "Eine neue Generation kommt zu den vorhandenen dazu, nie an ihre Stelle. Nur die neueste gehört in Unterlagen, die jetzt gedruckt werden.",
+        "failed": "Der Schlüssel konnte nicht erzeugt werden. Es wurde nichts geändert."
+      },
+      "cohort": {
+        "title": "Beiträge abrufen",
+        "description": "Was diese Studie öffnen kann, mit allen Widerrufen bereits entfernt.",
+        "fromLabel": "Erster Tag des Zeitraums, um den du gebeten hast",
+        "toLabel": "Letzter Tag des Zeitraums, um den du gebeten hast",
+        "pull": "Beiträge abrufen",
+        "pulling": "Wird abgerufen…",
+        "unavailable": "Dieser Server hat keinen Forschungsbereich, also gibt es nichts abzurufen.",
+        "failed": "Die Beiträge konnten nicht abgerufen werden.",
+        "empty": "Zu dieser Studie wurde noch nichts beigetragen.",
+        "summaryTitle": "Was in der Datei stehen wird",
+        "export": "Beiträge als CSV herunterladen",
+        "exportHint": "Die Datei trägt die Zeilen von oben wortgleich vor der Tabelle."
       }
     }
   },

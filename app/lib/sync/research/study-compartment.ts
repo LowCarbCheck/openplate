@@ -1,0 +1,136 @@
+/**
+ * THE STUDY ACCOUNT'S OWN COMPARTMENT — the same construction as
+ * `private-store.ts`, over a different plaintext.
+ *
+ * `openplate-sync` ADR-0003: "the private key lives in the study account's own
+ * owner-private compartment". The CRYPTO is shared with the diary's
+ * (`engine/crypto/private-store.ts`: one CDK, wrapped under `K_pp` and `K_pr`,
+ * AAD-bound to the account id) — a second wrap format is how the packed-IV
+ * convention drifts, and there is no reason for one here.
+ *
+ * What is NOT shared is the plaintext shape. The diary compartment holds
+ * {@link import('../snapshot-partition').OwnerPrivateRegion}; this one holds
+ * {@link StudyPrivateRegion}. Keeping them apart is what stops a study
+ * identity from becoming a key on `LocalStoreSnapshot` — see
+ * `study-keyring.ts`'s header.
+ *
+ * ── No seal cache, because there is no periodic push ─────────────────────
+ *
+ * `private-store.ts` caches the sealed bytes so an unchanged compartment does
+ * not burn a blob version on every boot. The console has no boot-time sync at
+ * all: it pushes exactly once, when a researcher mints a generation. A cache
+ * here would guard against a write that never happens.
+ */
+import { base64ToBytes, bytesToBase64 } from '../engine/crypto/base64';
+import { openPrivateStore, sealPrivateStore, unwrapCdk } from '../engine/crypto/private-store';
+import type { SealedPrivateStore } from '../snapshot-partition';
+import { studyPrivateRegionSchema, type StudyPrivateRegion } from './study-keyring';
+
+/**
+ * A study console's live compartment state.
+ *
+ * Mirrors `PrivateStoreSession` and is deliberately a DIFFERENT type: the two
+ * are never interchangeable, and a function that accepted either could seal a
+ * diary region into a study blob or the reverse.
+ */
+export interface StudyCompartmentSession {
+  /** Binds the compartment's AAD. A compartment spliced in from another account fails the tag check. */
+  accountId: number;
+  /** `K_pp` for the passphrase that opened this console. */
+  passphraseKek: CryptoKey;
+  /** The compartment data key, once known. `null` before the first successful open or establish. */
+  cdk: Uint8Array | null;
+  /** The two wraps exactly as they must be re-emitted — never rebuilt, because slot 2's KEK is not in this session. */
+  wraps: { cdkWrapPassphrase: string; cdkWrapRecovery: string } | null;
+}
+
+/**
+ * Seals the study region for a push.
+ *
+ * Returns `null` when this session has no compartment — the same degraded but
+ * safe state `sealOwnerPrivateRegion` describes: the key material stays in
+ * memory rather than being published in the clear.
+ */
+export async function sealStudyRegion({
+  session,
+  region,
+}: {
+  session: StudyCompartmentSession;
+  region: StudyPrivateRegion;
+}): Promise<SealedPrivateStore | null> {
+  const { cdk, wraps } = session;
+  if (cdk === null || wraps === null) return null;
+
+  const ciphertext = await sealPrivateStore({
+    cdk,
+    plaintext: new TextEncoder().encode(JSON.stringify(region)),
+    accountId: session.accountId,
+  });
+  return { ciphertext: bytesToBase64(ciphertext), ...wraps };
+}
+
+/**
+ * Opens a pulled study compartment, adopting its CDK into the session.
+ *
+ * `null` for every failure, and the caller keeps what it already had — the
+ * states this covers ("a compartment written under a passphrase this session
+ * does not hold", "no compartment yet") are all "we learned nothing", and a
+ * GCM tag check does not say which. What must NOT follow a `null` is a push:
+ * that would overwrite a study's whole keyring with an empty one.
+ */
+export async function openStudyRegion({
+  session,
+  sealed,
+}: {
+  session: StudyCompartmentSession;
+  sealed: SealedPrivateStore | null;
+}): Promise<StudyPrivateRegion | null> {
+  if (sealed === null) return null;
+
+  for (const cdk of await candidateCdks({ session, sealed })) {
+    const region = await tryOpen({ cdk, sealed, accountId: session.accountId });
+    if (region === null) continue;
+    session.cdk = cdk;
+    session.wraps = { cdkWrapPassphrase: sealed.cdkWrapPassphrase, cdkWrapRecovery: sealed.cdkWrapRecovery };
+    return region;
+  }
+  return null;
+}
+
+/** The session's own CDK first (a compartment it just established), then slot 1 — the second-device and fresh-sign-in case. */
+async function candidateCdks({
+  session,
+  sealed,
+}: {
+  session: StudyCompartmentSession;
+  sealed: SealedPrivateStore;
+}): Promise<Uint8Array[]> {
+  const candidates = session.cdk === null ? [] : [session.cdk];
+  try {
+    candidates.push(
+      await unwrapCdk({ wrappedCdk: base64ToBytes(sealed.cdkWrapPassphrase), kek: session.passphraseKek }),
+    );
+  } catch {
+    // Slot 1 belongs to a passphrase this session does not hold. Not an error
+    // here — the session's own CDK may still open the ciphertext.
+  }
+  return candidates;
+}
+
+/** One decrypt attempt. `null` for every failure, for the reason `private-store.ts`'s twin gives. */
+async function tryOpen({
+  cdk,
+  sealed,
+  accountId,
+}: {
+  cdk: Uint8Array;
+  sealed: SealedPrivateStore;
+  accountId: number;
+}): Promise<StudyPrivateRegion | null> {
+  try {
+    const plaintext = await openPrivateStore({ cdk, ciphertext: base64ToBytes(sealed.ciphertext), accountId });
+    return studyPrivateRegionSchema.parse(JSON.parse(new TextDecoder().decode(plaintext)));
+  } catch {
+    return null;
+  }
+}
