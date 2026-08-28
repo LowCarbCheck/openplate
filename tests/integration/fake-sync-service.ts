@@ -27,7 +27,10 @@
  * key-record CAS on `expectedUpdatedAt` (including "an absent field is a
  * 400"), the KDF-descriptor lookup returning a stable dummy for unknown
  * addresses, reset semantics (`keyRecords: []` leaves kinds untouched), rotating
- * refresh tokens with family revocation on reuse, and the `/health` handshake.
+ * refresh tokens with family revocation on reuse, the `/health` handshake, and
+ * §5.18's research family — the contribution CAS on a strictly-greater INTEGER
+ * `contributionVersion`, its `409 {"currentVersion"}`, the `413`, the tier
+ * allow-list, and study-side reads that carry no contributor account id.
  *
  * Not faithful, deliberately: no throttling (`PERMISSIVE_THROTTLE` exists in
  * the real service for exactly this reason — every request here comes from
@@ -35,6 +38,13 @@
  * on the harness object instead), no pepper (verifiers are stored as the
  * submitted auth-hash, which is what makes it a fake rather than a second
  * implementation), and no retention pruning.
+ *
+ * The research lane is always LIT here, unlike production, which runs
+ * `SYNC_RESEARCH=false` and answers the unknown-route 404 on every research
+ * path ahead of authentication. That terminator is the service's own
+ * behaviour and is asserted in the service's repo; what this fake exists to
+ * cover is the CLIENT against a lane that answers, which is the only
+ * configuration in which a dropped sync is observable at all.
  *
  * `requireEmailVerification` models the real service's config flag of the same
  * name, because the client's behaviour under it is not a variation — it is a
@@ -128,12 +138,21 @@ const putKeyRecordRequestSchema = z.object({
   expectedUpdatedAt: z.string().nullable(),
 });
 
-/** Everything the service ever sees. The zero-knowledge test searches all of it. */
+/** Everything the service ever sees AND everything it answers. The zero-knowledge test searches all of it. */
 export interface ObservedRequest {
   method: string;
   path: string;
   headers: Record<string, string | string[] | undefined>;
   body: unknown;
+  /**
+   * The JSON document this request was answered with, or `undefined` for the
+   * `204`/`end()` replies that carry none.
+   *
+   * RESPONSES ARE RECORDED, not just requests, because half of §5.18 is a
+   * READ: the study-side cohort is something the service SERVES, and a leak
+   * there is invisible in a log of what it was sent.
+   */
+  response: unknown;
 }
 
 interface StoredBlob {
@@ -148,6 +167,48 @@ interface StoredKeyRecord {
   kdfDescriptor: KdfDescriptor | null;
   wrappedDek: string;
   updatedAt: string;
+}
+
+/**
+ * §5.18's contribution limits, TRANSCRIBED rather than imported.
+ *
+ * `protocol.ts` in this repo does not declare them, and it should not: they
+ * are the SERVICE's limits, and a fake that imported the client's copy of a
+ * number would stop being an independent reading of the specification for
+ * exactly the field where the two sides have to agree.
+ */
+const MAX_CONTRIBUTION_BYTES = 256 * 1024;
+/** The envelope's floor: `ephPub(65, uncompressed SEC1) ‖ iv(12) ‖ GCM tag(16)`. Only the floor is checkable — the payload is a window of days, not a fixed-size key. */
+const RESEARCH_BODY_MIN_BYTES = 65 + 12 + 16;
+/** A bound on the pseudonym, never a format check — see the `PUT` handler. */
+const MAX_PSEUDONYM_CHARS = 64;
+/**
+ * The tiers this protocol revision defines, written out here rather than
+ * imported from `research/tiers.ts`.
+ *
+ * Importing the client's constant would make the server-side tier check
+ * vacuous: prohibition 1 has teeth on BOTH sides of the wire precisely because
+ * the two lists are maintained separately and must match.
+ */
+const RESEARCH_SCHEMA_TIERS = ['daily-intake:v1'] as const;
+
+/** One contribution as the service holds it. `body` stays base64 — the service has no key for it and never decodes it. */
+interface StoredContribution {
+  contributorAccountId: number;
+  studyAccountId: number;
+  pseudonym: string;
+  schemaTier: string;
+  body: string;
+  contributionVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A tombstone: a pseudonym that withdrew from one study, and when. There is no account id here and there must never be one. */
+interface StoredWithdrawal {
+  studyAccountId: number;
+  pseudonym: string;
+  withdrawnAt: string;
 }
 
 interface StoredAccount {
@@ -192,6 +253,28 @@ const applyKeyRecords = (account: StoredAccount, submissions: KeyRecordSubmissio
   return true;
 };
 
+/** A counterpart account id from a research URL. Serial ids are positive integers; anything else is malformed, not a miss. */
+function parseAccountIdParam(raw: string | undefined): number | null {
+  return raw !== undefined && /^[1-9][0-9]{0,9}$/.test(raw) ? Number(raw) : null;
+}
+
+/** The ONE 404 of the research family: an unknown study and a study with no relationship to the caller are identical on the wire. */
+function sendContributionNotFound(res: Response): void {
+  res.status(404).json({ error: 'no such study' });
+}
+
+/** The contributor-facing projection of a contribution. Never carries `body` — the contributor still holds the source it was reduced from. */
+function contributionEnrolmentOf(row: StoredContribution) {
+  return {
+    studyAccountId: row.studyAccountId,
+    pseudonym: row.pseudonym,
+    schemaTier: row.schemaTier,
+    contributionVersion: row.contributionVersion,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 export interface FakeSyncService {
   url: string;
   observed: ObservedRequest[];
@@ -214,6 +297,8 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
   const accounts = new Map<number, StoredAccount>();
   const tokens = new Map<string, StoredToken>();
   const verificationTokens = new Map<string, number>();
+  const contributions: StoredContribution[] = [];
+  const withdrawals: StoredWithdrawal[] = [];
   const observed: ObservedRequest[] = [];
   let nextAccountId = 1;
   let lastResetToken: string | null = null;
@@ -221,8 +306,20 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
 
   const app: Express = express();
   app.use(express.json({ limit: Math.ceil((MAX_BLOB_BYTES * 4) / 3) + 4096 }));
-  app.use((req, _res, next) => {
-    observed.push({ method: req.method, path: req.path, headers: { ...req.headers }, body: req.body });
+  app.use((req, res, next) => {
+    const record: ObservedRequest = {
+      method: req.method,
+      path: req.path,
+      headers: { ...req.headers },
+      body: req.body,
+      response: undefined,
+    };
+    observed.push(record);
+    const answerWithJson = res.json.bind(res);
+    res.json = (body) => {
+      record.response = body;
+      return answerWithJson(body);
+    };
     next();
   });
 
@@ -576,6 +673,167 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
     res.status(204).end();
   });
 
+  // ---------------------------------------------------------------------
+  // Research contributions (§5.18, ADR-0003)
+  //
+  // The STRUCTURAL INVERSION of every other family here: the study side is
+  // read-only and carries no contributor account id, ever. `studyAccountId`
+  // on a study-side response is the CALLER'S OWN id, echoed once at the top
+  // level of the envelope, because §3.5's AAD needs it and it is the value
+  // the caller authenticated as. A per-row account id is the one shape this
+  // lane exists to prevent, so `studyRows` below projects the five §5.18
+  // fields and nothing else — there is no contributor id in scope for a
+  // future edit to spread.
+  // ---------------------------------------------------------------------
+
+  /** The §5.18 contributor `PUT`. `body` is held exactly as submitted — base64 of a ciphertext this service cannot open. */
+  const contributionSubmissionSchema = z.object({
+    // Bounded, never format-checked: the service never holds the root, so it
+    // cannot verify a pseudonym and must not imply that it can.
+    pseudonym: z
+      .string()
+      .transform((value) => value.trim())
+      .refine((value) => value.length > 0 && value.length <= MAX_PSEUDONYM_CHARS),
+    schemaTier: z.enum(RESEARCH_SCHEMA_TIERS),
+    body: z.string(),
+    // THE NEW VERSION, not a base — it rides in the AAD. Absent is a 400.
+    contributionVersion: z.number().int().positive(),
+  });
+
+  const findContribution = (contributorAccountId: number, studyAccountId: number): StoredContribution | undefined =>
+    contributions.find(
+      (row) => row.contributorAccountId === contributorAccountId && row.studyAccountId === studyAccountId,
+    );
+
+  app.put(`${SYNC_API_PREFIX}/contributions/:studyAccountId`, (req, res) => {
+    const account = requireAccount(req, res);
+    if (account === null) return;
+
+    const studyAccountId = parseAccountIdParam(req.params.studyAccountId);
+    const parsed = contributionSubmissionSchema.safeParse(req.body);
+    if (studyAccountId === null || !parsed.success) {
+      res.status(400).json({ error: 'invalid request body' });
+      return;
+    }
+    const sealed = Buffer.from(parsed.data.body, 'base64');
+    // The envelope's floor — `ephPub(65) ‖ iv(12) ‖ tag(16)`. Not a parse: the
+    // service still holds no key. A structurally impossible body accepted here
+    // would fail much later, on a researcher's machine, as an unexplained tag
+    // failure.
+    if (sealed.byteLength < RESEARCH_BODY_MIN_BYTES || studyAccountId === account.id) {
+      res.status(400).json({ error: 'invalid request body' });
+      return;
+    }
+    if (sealed.byteLength > MAX_CONTRIBUTION_BYTES) {
+      res.status(413).json({ error: 'contribution too large' });
+      return;
+    }
+    if (!accounts.has(studyAccountId)) {
+      sendContributionNotFound(res);
+      return;
+    }
+    const { pseudonym, schemaTier, contributionVersion } = parsed.data;
+    // ONE PSEUDONYM PER STUDY. The real service enforces this with a unique
+    // index and maps only foreign-key violations, so a collision surfaces as
+    // an unhandled 500 rather than a designed status — which is faithful, and
+    // is the point: at 2^-128 it should never fire, and it makes two
+    // contributors silently merging into one participant series impossible
+    // rather than improbable.
+    const collision = contributions.find(
+      (row) =>
+        row.studyAccountId === studyAccountId && row.pseudonym === pseudonym && row.contributorAccountId !== account.id,
+    );
+    if (collision !== undefined) {
+      res.status(500).json({ error: 'pseudonym already present for this study' });
+      return;
+    }
+
+    const existing = findContribution(account.id, studyAccountId);
+    // THE CAS: strictly greater, never exact-successor. A client that
+    // recomputes and re-pushes the whole projection must not be wedged by a
+    // version that never left the device.
+    if (existing !== undefined && contributionVersion <= existing.contributionVersion) {
+      res.status(409).json({ currentVersion: existing.contributionVersion });
+      return;
+    }
+    const now = new Date().toISOString();
+    const row: StoredContribution = {
+      contributorAccountId: account.id,
+      studyAccountId,
+      pseudonym,
+      schemaTier,
+      body: parsed.data.body,
+      contributionVersion,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+    if (existing === undefined) contributions.push(row);
+    else contributions.splice(contributions.indexOf(existing), 1, row);
+    res.status(200).json(contributionEnrolmentOf(row));
+  });
+
+  app.get(`${SYNC_API_PREFIX}/contributions`, (req, res) => {
+    const account = requireAccount(req, res);
+    if (account === null) return;
+    res.status(200).json({
+      contributions: contributions
+        .filter((row) => row.contributorAccountId === account.id)
+        .map((row) => contributionEnrolmentOf(row)),
+    });
+  });
+
+  app.delete(`${SYNC_API_PREFIX}/contributions/:studyAccountId`, (req, res) => {
+    const account = requireAccount(req, res);
+    if (account === null) return;
+    const studyAccountId = parseAccountIdParam(req.params.studyAccountId);
+    if (studyAccountId === null) {
+      res.status(400).json({ error: 'invalid request body' });
+      return;
+    }
+    // WITHDRAWAL — one transaction on the real service: hard-delete the row
+    // and insert the pseudonym-keyed tombstone. Idempotent, and a withdrawal
+    // with nothing enrolled writes no tombstone: there would be no pseudonym
+    // to key one on.
+    const existing = findContribution(account.id, studyAccountId);
+    if (existing !== undefined) {
+      contributions.splice(contributions.indexOf(existing), 1);
+      const tombstone = withdrawals.find(
+        (row) => row.studyAccountId === studyAccountId && row.pseudonym === existing.pseudonym,
+      );
+      const withdrawnAt = new Date().toISOString();
+      if (tombstone === undefined) withdrawals.push({ studyAccountId, pseudonym: existing.pseudonym, withdrawnAt });
+      else tombstone.withdrawnAt = withdrawnAt;
+    }
+    res.status(204).end();
+  });
+
+  app.get(`${SYNC_API_PREFIX}/study/contributions`, (req, res) => {
+    const account = requireAccount(req, res);
+    if (account === null) return;
+    res.status(200).json({
+      studyAccountId: account.id,
+      contributions: contributions
+        .filter((row) => row.studyAccountId === account.id)
+        .map((row) => ({
+          pseudonym: row.pseudonym,
+          contributionVersion: row.contributionVersion,
+          schemaTier: row.schemaTier,
+          body: row.body,
+          createdAt: row.createdAt,
+        })),
+    });
+  });
+
+  app.get(`${SYNC_API_PREFIX}/study/withdrawals`, (req, res) => {
+    const account = requireAccount(req, res);
+    if (account === null) return;
+    res.status(200).json({
+      withdrawals: withdrawals
+        .filter((row) => row.studyAccountId === account.id)
+        .map((row) => ({ pseudonym: row.pseudonym, withdrawnAt: row.withdrawnAt })),
+    });
+  });
+
   const server: Server = createServer(app);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   // SAFETY: `listen(0, '127.0.0.1')` binds a TCP socket, and `Server#address()`
@@ -588,8 +846,8 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
     url: `http://127.0.0.1:${address.port}`,
     observed,
     dump: () =>
-      JSON.stringify(
-        [...accounts.values()].map((account) => ({
+      JSON.stringify({
+        accounts: [...accounts.values()].map((account) => ({
           id: account.id,
           email: account.email,
           displayName: account.displayName,
@@ -599,7 +857,12 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
           blobs: account.blobs,
           keyRecords: [...account.keyRecords.values()],
         })),
-      ),
+        // The research lane is dumped too, or the zero-knowledge search would
+        // have a blind spot exactly where a contribution's ciphertext is
+        // stored (§5.18).
+        contributions,
+        withdrawals,
+      }),
     lastResetToken: () => lastResetToken,
     lastVerificationToken: () => lastVerificationToken,
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),

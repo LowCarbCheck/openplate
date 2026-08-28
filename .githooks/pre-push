@@ -7,7 +7,13 @@
 # typecheck + unit tests: neither runs `react-router build`, so the
 # PRODUCTION BUILD is part of this gate.
 #
-# Runs: lint -> typecheck -> unit tests -> production build.
+# Runs: lint -> typecheck -> unit tests -> integration tests -> production build.
+#
+# The integration project joined the gate 2026-08-28 (M163/04). It is the only
+# place a COMPOSITION ROOT is exercised — the real actions, over real HTTP,
+# against a protocol-faithful fake — and until it ran here, deleting the sync
+# that carries a research pin to an account's other devices left every gate
+# green. It costs about 4.5 s of a ~33 s gate (measured, 2026-08-28).
 #
 # Escape hatch (use deliberately, it pushes unverified code):
 #   SKIP_TESTS=1 git push        skip the whole gate
@@ -52,6 +58,9 @@ run pnpm typecheck
 
 echo "▶ pre-push: unit tests"
 run pnpm test:unit
+
+echo "▶ pre-push: integration tests"
+run pnpm test:integration
 
 echo "▶ pre-push: production build (react-router build — the Argo image runs this)"
 run pnpm build
