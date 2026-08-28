@@ -138,6 +138,20 @@ const putKeyRecordRequestSchema = z.object({
   expectedUpdatedAt: z.string().nullable(),
 });
 
+/**
+ * §5.16's share `PUT`. CAS-gated exactly as a key record is, and for the same
+ * reason: a rotation's re-wrap can race a re-grant, and a blind write would
+ * clobber whichever landed last.
+ */
+const putShareRequestSchema = z.object({
+  wrappedDek: z.string().min(1),
+  // Pinning metadata the service stores and never endorses (ADR-0002
+  // prohibition 1). It is not verified here because it cannot be: the service
+  // holds no key to compute it from.
+  recipientKeyFingerprint: z.string().min(1),
+  expectedUpdatedAt: z.string().nullable(),
+});
+
 /** Everything the service ever sees AND everything it answers. The zero-knowledge test searches all of it. */
 export interface ObservedRequest {
   method: string;
@@ -166,6 +180,23 @@ interface StoredKeyRecord {
   kind: SyncKeyRecordKind;
   kdfDescriptor: KdfDescriptor | null;
   wrappedDek: string;
+  updatedAt: string;
+}
+
+/**
+ * One grant as the service holds it (§5.16).
+ *
+ * `wrappedDek` is stored but is NEVER served to the grantor: §5.16 defines
+ * `ListSharesResponse` without it, and the grantor has no use for a wrap
+ * addressed to someone else. Only the grantee's own `/shared` read carries it,
+ * and that read is not modelled here — see the handlers below.
+ */
+interface StoredShare {
+  grantorAccountId: number;
+  granteeAccountId: number;
+  wrappedDek: string;
+  recipientKeyFingerprint: string;
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -263,6 +294,16 @@ function sendContributionNotFound(res: Response): void {
   res.status(404).json({ error: 'no such study' });
 }
 
+/** The grantor-facing projection of a share: §5.16's `ShareGrantWire`, and nothing else. The wrap is not in scope for a future edit to spread. */
+function shareGrantOf(row: StoredShare) {
+  return {
+    granteeAccountId: row.granteeAccountId,
+    recipientKeyFingerprint: row.recipientKeyFingerprint,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 /** The contributor-facing projection of a contribution. Never carries `body` — the contributor still holds the source it was reduced from. */
 function contributionEnrolmentOf(row: StoredContribution) {
   return {
@@ -297,6 +338,7 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
   const accounts = new Map<number, StoredAccount>();
   const tokens = new Map<string, StoredToken>();
   const verificationTokens = new Map<string, number>();
+  const shares: StoredShare[] = [];
   const contributions: StoredContribution[] = [];
   const withdrawals: StoredWithdrawal[] = [];
   const observed: ObservedRequest[] = [];
@@ -674,6 +716,72 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
   });
 
   // ---------------------------------------------------------------------
+  // Shares — grantor side (§5.16, `openplate-sync` ADR-0002)
+  //
+  // This fake models a deployment with `SYNC_SHARING` SET. Production's dark
+  // mode is the ordinary unknown-route 404 mounted ahead of authentication —
+  // the service's own behaviour, asserted in the service's repo — and against
+  // that configuration a client can never reach the `granted` branch at all,
+  // so a ceremony's own sync is unobservable. Lighting the family here is what
+  // makes it observable, exactly as the research lane is lit above.
+  //
+  // The GRANTEE side (`GET /shared`, `GET /shared/:id/blob`) is deliberately
+  // ABSENT. Nothing under `tests/` drives a clinician-side read yet, and a
+  // handler written ahead of its caller is a second reading of the
+  // specification that nothing checks — which is the one thing a contract
+  // test must not carry.
+  // ---------------------------------------------------------------------
+
+  app.get(`${SYNC_API_PREFIX}/shares`, (req, res) => {
+    const account = requireAccount(req, res);
+    if (account === null) return;
+    res.status(200).json({
+      shares: shares.filter((row) => row.grantorAccountId === account.id).map((row) => shareGrantOf(row)),
+    });
+  });
+
+  app.put(`${SYNC_API_PREFIX}/shares/:granteeAccountId`, (req, res) => {
+    const account = requireAccount(req, res);
+    if (account === null) return;
+    const granteeAccountId = parseAccountIdParam(req.params.granteeAccountId);
+    // An ABSENT `expectedUpdatedAt` is a 400, exactly as it is for a key
+    // record: no caller may skip the concurrency check by forgetting a field.
+    const carrier = jsonObjectSchema.safeParse(req.body);
+    const parsed = putShareRequestSchema.safeParse(req.body);
+    const carriesCasToken = carrier.success && Object.hasOwn(carrier.data, 'expectedUpdatedAt');
+    if (granteeAccountId === null || !carriesCasToken || !parsed.success) {
+      res.status(400).json({ error: 'invalid request body' });
+      return;
+    }
+    // ONE 404 for "no such account" and for "sharing is off on this
+    // deployment". The client is not able to tell them apart and must not be:
+    // a distinguishable answer here is an account-enumeration oracle.
+    if (!accounts.has(granteeAccountId)) {
+      res.status(404).json({ error: 'no such account' });
+      return;
+    }
+    const existing = shares.find(
+      (row) => row.grantorAccountId === account.id && row.granteeAccountId === granteeAccountId,
+    );
+    if ((existing?.updatedAt ?? null) !== parsed.data.expectedUpdatedAt) {
+      res.status(409).json({ currentUpdatedAt: existing?.updatedAt ?? null });
+      return;
+    }
+    const now = new Date().toISOString();
+    const row: StoredShare = {
+      grantorAccountId: account.id,
+      granteeAccountId,
+      wrappedDek: parsed.data.wrappedDek,
+      recipientKeyFingerprint: parsed.data.recipientKeyFingerprint,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+    if (existing === undefined) shares.push(row);
+    else shares.splice(shares.indexOf(existing), 1, row);
+    res.status(200).json(shareGrantOf(row));
+  });
+
+  // ---------------------------------------------------------------------
   // Research contributions (§5.18, ADR-0003)
   //
   // The STRUCTURAL INVERSION of every other family here: the study side is
@@ -857,9 +965,11 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
           blobs: account.blobs,
           keyRecords: [...account.keyRecords.values()],
         })),
-        // The research lane is dumped too, or the zero-knowledge search would
-        // have a blind spot exactly where a contribution's ciphertext is
-        // stored (§5.18).
+        // Every OTHER surface the service stores is dumped too, or the
+        // zero-knowledge search would have a blind spot exactly where a
+        // ciphertext sits: a share's wrap (§5.16) and a contribution's body
+        // (§5.18) are both held here and neither is inside `accounts`.
+        shares,
         contributions,
         withdrawals,
       }),
