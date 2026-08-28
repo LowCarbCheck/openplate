@@ -967,6 +967,7 @@
     "onboarding": "Welcome to openplate",
     "preferences": "Preferences · openplate",
     "recover": "Recover your diary · openplate",
+    "research": "Research contributions · openplate",
     "scan": "Scan your plate · openplate",
     "settings": "Settings · openplate",
     "shared": "Shared with you · openplate",
@@ -1234,6 +1235,60 @@
     "restoring": "Restoring…",
     "startFresh": "Start a fresh diary",
     "title": "We can't find your diary on this device"
+  },
+  "research": {
+    "title": "Research contributions",
+    "intro": "Studies you contribute to, what each one receives, and how to leave.",
+    "unavailable": "This sync server has no research lane. Nothing can be sent or withdrawn here.",
+    "needsSession": "Research contributions need your sync passphrase. Unlock sync on this device first.",
+    "needsSessionCta": "Go to sync",
+    "loadFailed": "Your studies could not be loaded.",
+    "caveats": {
+      "pseudonymised": "What a study receives is pseudonymised, never your name: it sees one stable pseudonym for you and your daily totals.",
+      "auxiliaryJoin": "A stable pseudonym is not the same as being unidentifiable. Anyone holding another dataset about the same people may be able to re-identify you by joining it to this one.",
+      "unknownMacro": "A macro that was unknown for an entry adds nothing to that day’s total, so a low total can mean unknown rather than little eaten. The study is told to read the entry count beside every total."
+    },
+    "enrolments": {
+      "title": "Studies you contribute to",
+      "empty": "You are not contributing to a study. Joining one needs a fingerprint printed in its consent materials.",
+      "unnamed": "Study {{studyAccountId}}",
+      "tier": "Receives: {{tier}}",
+      "window": "Whole calendar days inside the window you send — one row per day, and never a time, a food name or a photo.",
+      "fields": "Each day carries energy, protein, carbohydrate, fat, fibre, and how many entries that day held.",
+      "joined": "Joined {{at}}",
+      "lastSent": "Last sent {{at}} · version {{version}}",
+      "neverSent": "Nothing has been sent to this study yet.",
+      "pseudonymLabel": "Your pseudonym for this study",
+      "pseudonymHint": "This is what the study sees of you. Quote it if you ask a researcher to confirm your withdrawal was honoured.",
+      "pseudonymUnknown": "This device cannot work out your pseudonym — its research key is missing."
+    },
+    "withdrawal": {
+      "open": "Withdraw",
+      "confirmTitle": "Withdraw from {{name}}?",
+      "instructedToDelete": "The study is instructed to delete your contribution, and openplate’s study tools drop it on every pull.",
+      "alreadyDownloaded": "A copy the study already downloaded cannot be taken back — honouring the instruction is an obligation this system states and cannot enforce.",
+      "noNewData": "No new data will be sent to this study.",
+      "samePseudonymOnRejoin": "Leaving does not give you a new identity. If you join this study again you present the same pseudonym, so anyone who kept an old copy could link the two.",
+      "rejoinNeedsCeremony": "This device forgets the study, so joining again means typing its fingerprint from the consent materials once more.",
+      "confirmCta": "Withdraw",
+      "cancel": "Cancel",
+      "done": "Withdrawn. The study is instructed to delete what it holds.",
+      "failed": "The withdrawal did not go through. You are still contributing, so you can try again.",
+      "unavailable": "This server has no research lane, so nothing was withdrawn. You are still contributing here."
+    },
+    "export": {
+      "pseudonymisedNotice": "This data is PSEUDONYMISED, not anonymous: each participant is a stable pseudonym rather than a name, and anyone holding a second dataset about the same people may be able to re-identify them by joining on it.",
+      "tier": "Schema tier: {{tier}}",
+      "window": "Window: {{from}} to {{to}} (inclusive)",
+      "participants": "Participants in this file: {{participants}}",
+      "withdrawn": "Withdrawn and purged before this export: {{withdrawn}}. Their rows are not in this file and must not be recovered from an earlier one.",
+      "unopenable": "Sealed to a key this device does not hold: {{unopenable}} of {{total}} contributions. They are not in this file. This is a key problem, not a data problem.",
+      "malformed": "Not readable by this version: {{malformed}} contributions. A non-zero number here is a bug worth reporting.",
+      "unknownMacroCaveat": "A macro that was unknown for an entry contributes nothing to that day total, so a low total may mean unknown rather than low intake. Read loggedEntryCount alongside every total, and treat a zero total with a non-zero count as unquantified."
+    },
+    "anomaly": {
+      "serverRetainedWithdrawn": "WARNING FOR THE OPERATOR: this server handed over {{retained}} contribution(s) it had already been instructed to delete. They were purged here, and this deployment needs investigating."
+    }
   },
   "scan": {
     "analyzing": {
@@ -1506,6 +1561,10 @@
       "sync": {
         "notSetUp": "Not set up",
         "title": "Sync"
+      },
+      "research": {
+        "title": "Research",
+        "status": "Studies you contribute to"
       }
     },
     "title": "Settings"

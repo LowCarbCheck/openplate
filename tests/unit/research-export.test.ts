@@ -7,12 +7,19 @@
  * from it. A cohort that silently shrinks is worse than one that says how much
  * it lost — so the counts are asserted here by value, not by "the header is
  * non-empty".
+ *
+ * M161/05 moved the sentences into the `research` i18n namespace. The
+ * assertions below are unchanged and deliberately still English: they are what
+ * proves the move dropped no field, since a header line that stopped being
+ * emitted — or a key that stopped resolving — fails here rather than shipping
+ * a quietly shorter research artifact.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { exportStudyCohortCsv, RESEARCH_EXPORT_STRINGS } from '../../app/lib/sync/research/export';
+import { exportStudyCohortCsv } from '../../app/lib/sync/research/export';
 import type { StudyCohort } from '../../app/lib/sync/research/study';
+import { englishExportStrings as strings } from './research-i18n-harness';
 
 const PSEUDONYM = '1YYFSZXRK6DTYM03TZ22VR1M9M';
 
@@ -40,19 +47,19 @@ function cohort(overrides: Partial<StudyCohort> = {}): StudyCohort {
 }
 
 test('the export header counts the rows it could not open', async () => {
-  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25' });
+  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25', strings });
 
   // Four un-openable rows out of five considered (one opened + four sealed to
   // a key this device does not hold). The NUMBERS are asserted, because a
   // header that merely mentions keys tells a researcher nothing.
   assert.match(csv, /Sealed to a key this device does not hold: 4 of 5 contributions/);
-  assert.ok(csv.includes(RESEARCH_EXPORT_STRINGS.unopenable(4, 5)), 'the un-openable count must reach the header');
+  assert.ok(csv.includes(strings.unopenable(4, 5)), 'the un-openable count must reach the header');
   // Purged people are reported too — the shrink is visible, never silent.
   assert.match(csv, /Withdrawn and purged before this export: 2/);
 });
 
 test('the export says pseudonymised, never anonymous, and states the auxiliary-join caveat', async () => {
-  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25' });
+  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25', strings });
 
   const firstLine = csv.split('\r\n')[0] ?? '';
   assert.match(firstLine, /PSEUDONYMISED, not anonymous/);
@@ -64,7 +71,7 @@ test('the export says pseudonymised, never anonymous, and states the auxiliary-j
 });
 
 test('the export carries the tier, the window and the unknown-macro caveat', async () => {
-  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25' });
+  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25', strings });
 
   assert.match(csv, /Schema tier: daily-intake:v1/);
   assert.match(csv, /Window: 2026-08-24 to 2026-08-25 \(inclusive\)/);
@@ -75,7 +82,7 @@ test('the export carries the tier, the window and the unknown-macro caveat', asy
 });
 
 test('the export table is the frozen tier, one row per participant per day', async () => {
-  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25' });
+  const csv = exportStudyCohortCsv({ cohort: cohort(), fromDayKey: '2026-08-24', toDayKey: '2026-08-25', strings });
 
   const lines = csv.split('\r\n').filter((line) => !line.startsWith('# '));
   // The column list is written LITERALLY here, not imported: importing it
@@ -92,9 +99,32 @@ test('an empty cohort still exports its window and its counts', async () => {
     cohort: cohort({ rows: [], unopenableCount: 3, withdrawnCount: 0 }),
     fromDayKey: '2026-08-24',
     toDayKey: '2026-08-25',
+    strings,
   });
 
   assert.match(csv, /Participants in this file: 0/);
   assert.match(csv, /Sealed to a key this device does not hold: 3 of 3 contributions/);
   assert.match(csv, /Window: 2026-08-24 to 2026-08-25/);
+});
+
+test('the anomaly line is printed only when the server retained a withdrawn contribution', async () => {
+  const clean = exportStudyCohortCsv({
+    cohort: cohort({ serverRetainedWithdrawnCount: 0 }),
+    fromDayKey: '2026-08-24',
+    toDayKey: '2026-08-25',
+    strings,
+  });
+  // "0 anomalies" on every file is how a reader learns to skip the line that
+  // one day says 2.
+  assert.ok(!clean.includes('WARNING FOR THE OPERATOR'), 'a normal pull carries no anomaly line');
+
+  const retained = exportStudyCohortCsv({
+    cohort: cohort({ serverRetainedWithdrawnCount: 2 }),
+    fromDayKey: '2026-08-24',
+    toDayKey: '2026-08-25',
+    strings,
+  });
+  // Addressed to the OPERATOR, not the researcher: the deployment handed over
+  // a contribution it had already been instructed to delete.
+  assert.match(retained, /WARNING FOR THE OPERATOR: this server handed over 2 contribution\(s\)/);
 });

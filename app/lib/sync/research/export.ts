@@ -24,10 +24,11 @@
  *
  * ── Wording lives in one object, on purpose ──────────────────────────────
  *
- * Slice 05 finalises the sentences and translates them. Every string in this
- * file is in {@link RESEARCH_EXPORT_STRINGS} so that pass moves prose and
- * touches no logic. The FIELDS are fixed here: which numbers appear, and which
- * columns the table has.
+ * Slice 05 moved the sentences into the `research` i18n namespace, where both
+ * shipped locales are walked by a test. What stayed here is the FIELD LIST —
+ * {@link ResearchExportStrings} — and the two decisions that are protocol
+ * rather than prose: which numbers appear, and which columns the table has.
+ * The caller passes the words in; this module chooses the lines.
  */
 import { encodeCsv, type CsvRow } from '#app/lib/csv';
 import type { StudyCohort } from './study';
@@ -39,30 +40,60 @@ const COMMENT_PREFIX = '# ';
 /** RFC 4180 record separator, matching `encodeCsv`'s. */
 const RECORD_SEPARATOR = '\r\n';
 
+/** How a translator is passed in — the repo's established `Translate` shape (`app/lib/streak-message.ts` and friends). */
+export type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
+
 /**
- * Every sentence this export writes, in one place for slice 05's wording and
- * i18n pass. Nothing below builds a string by concatenation at its use site.
+ * Every sentence this export writes, as one object the caller supplies.
+ *
+ * THE FIELD LIST IS FIXED HERE and the WORDS ARE NOT: which numbers appear in
+ * a research artifact is a protocol decision (prohibition 5's notice, and the
+ * three counts that stop a file from shrinking silently), while the sentences
+ * are copy and live in the `research` i18n namespace where both locales are
+ * walked by `tests/unit/research-wording.test.ts`. Dropping a field breaks the
+ * typecheck; softening a sentence breaks the wording test.
  */
-export const RESEARCH_EXPORT_STRINGS = {
+export interface ResearchExportStrings {
   /** Prohibition 5, in the first line of the file, with the auxiliary-join caveat in one sentence. */
-  pseudonymisedNotice:
-    'This data is PSEUDONYMISED, not anonymous: each participant is a stable pseudonym rather than a name, and anyone holding a second dataset about the same people may be able to re-identify them by joining on it.',
-  tier: (tier: string): string => `Schema tier: ${tier}`,
-  window: (fromDayKey: string, toDayKey: string): string => `Window: ${fromDayKey} to ${toDayKey} (inclusive)`,
-  participants: (count: number): string => `Participants in this file: ${count}`,
-  withdrawn: (count: number): string =>
-    `Withdrawn and purged before this export: ${count}. Their rows are not in this file and must not be recovered from an earlier one.`,
+  pseudonymisedNotice: string;
+  tier: (tier: string) => string;
+  window: (fromDayKey: string, toDayKey: string) => string;
+  participants: (count: number) => string;
+  withdrawn: (count: number) => string;
   /** Printed ONLY when non-zero — see {@link buildExportHeaderLines}. A line that always says "0" is a line nobody reads. */
-  serverRetainedWithdrawn: (count: number): string =>
-    `ANOMALY: the server returned ${count} contribution(s) it had already been instructed to delete. They were purged here, and the deployment should be investigated.`,
-  unopenable: (unopenable: number, total: number): string =>
-    `Sealed to a key this device does not hold: ${unopenable} of ${total} contributions. They are not in this file. This is a key problem, not a data problem.`,
-  malformed: (count: number): string =>
-    `Not readable by this version: ${count} contributions. A non-zero number here is a bug worth reporting.`,
+  serverRetainedWithdrawn: (count: number) => string;
+  unopenable: (unopenable: number, total: number) => string;
+  malformed: (count: number) => string;
   /** The reduction sums only what was known; a low total can therefore mean "unknown", and `loggedEntryCount` alone does not distinguish the two. */
-  unknownMacroCaveat:
-    'A macro that was unknown for an entry contributes nothing to that day total, so a low total may mean unknown rather than low intake. Read loggedEntryCount alongside every total, and treat a zero total with a non-zero count as unquantified.',
-} as const;
+  unknownMacroCaveat: string;
+}
+
+/**
+ * Reads the export's sentences out of the `research` i18n namespace.
+ *
+ * The anomaly line is deliberately NOT under `research.export`: it is
+ * addressed to an OPERATOR, not to a researcher — "the deployment handed over
+ * a contribution it had been instructed to delete" is a thing to investigate,
+ * not a fact about the cohort — so it sits in `research.anomaly` and reads as
+ * a warning. It still rides in the header, because the person holding the file
+ * is the person who can raise it.
+ */
+export function buildResearchExportStrings(t: Translate): ResearchExportStrings {
+  return {
+    pseudonymisedNotice: t('research.export.pseudonymisedNotice'),
+    tier: (tier) => t('research.export.tier', { tier }),
+    window: (fromDayKey, toDayKey) => t('research.export.window', { from: fromDayKey, to: toDayKey }),
+    // NOT `count`: i18next reads that name as a plural selector, and these
+    // keys have no plural forms. A selector with nothing to select is a silent
+    // fallback waiting to become a missing sentence.
+    participants: (participants) => t('research.export.participants', { participants }),
+    withdrawn: (withdrawn) => t('research.export.withdrawn', { withdrawn }),
+    serverRetainedWithdrawn: (retained) => t('research.anomaly.serverRetainedWithdrawn', { retained }),
+    unopenable: (unopenable, total) => t('research.export.unopenable', { unopenable, total }),
+    malformed: (malformed) => t('research.export.malformed', { malformed }),
+    unknownMacroCaveat: t('research.export.unknownMacroCaveat'),
+  };
+}
 
 /** The table's columns: the participant's pseudonym, then the frozen tier fields in `PROTOCOL.md` §3.5's order. */
 const EXPORT_COLUMNS: readonly string[] = ['pseudonym', ...DAILY_INTAKE_V1_FIELDS];
@@ -74,6 +105,7 @@ const EXPORT_COLUMNS: readonly string[] = ['pseudonym', ...DAILY_INTAKE_V1_FIELD
  * @param fromDayKey - the window's inclusive start, as the study requested it. Echoed, never inferred from the rows: an empty cohort still has a window.
  * @param toDayKey - the window's inclusive end.
  * @param tier - the tier the study asked for. Defaults to the one tier v1 defines.
+ * @param strings - the sentences, from {@link buildResearchExportStrings}. REQUIRED, and deliberately not defaulted to an English object: a default is a second English wording that no locale test walks.
  * @returns the whole document: comment preamble, header row, one row per participant per day.
  */
 export function exportStudyCohortCsv({
@@ -81,13 +113,15 @@ export function exportStudyCohortCsv({
   fromDayKey,
   toDayKey,
   tier = DAILY_INTAKE_V1,
+  strings,
 }: {
   cohort: StudyCohort;
   fromDayKey: string;
   toDayKey: string;
   tier?: string;
+  strings: ResearchExportStrings;
 }): string {
-  const preamble = buildExportHeaderLines({ cohort, fromDayKey, toDayKey, tier });
+  const preamble = buildExportHeaderLines({ cohort, fromDayKey, toDayKey, tier, strings });
   const table = encodeCsv({ header: EXPORT_COLUMNS, rows: buildRows(cohort) });
   return [...preamble.map((line) => `${COMMENT_PREFIX}${line}`), table].join(RECORD_SEPARATOR);
 }
@@ -102,13 +136,14 @@ export function buildExportHeaderLines({
   fromDayKey,
   toDayKey,
   tier = DAILY_INTAKE_V1,
+  strings,
 }: {
   cohort: StudyCohort;
   fromDayKey: string;
   toDayKey: string;
   tier?: string;
+  strings: ResearchExportStrings;
 }): string[] {
-  const strings = RESEARCH_EXPORT_STRINGS;
   // The denominator is what the pull actually considered after the purge:
   // opened rows plus the two it could not use. Adding the withdrawn ones back
   // in would put purged people into a ratio printed on a research artifact.

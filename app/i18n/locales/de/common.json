@@ -967,6 +967,7 @@
     "onboarding": "Willkommen bei openplate",
     "preferences": "Einstellungen · openplate",
     "recover": "Tagebuch wiederherstellen · openplate",
+    "research": "Forschungsbeiträge · openplate",
     "scan": "Teller scannen · openplate",
     "settings": "Einstellungen · openplate",
     "shared": "Mit dir geteilt · openplate",
@@ -1234,6 +1235,60 @@
     "restoring": "Wird wiederhergestellt…",
     "startFresh": "Frisches Tagebuch beginnen",
     "title": "Wir finden dein Tagebuch auf diesem Gerät nicht"
+  },
+  "research": {
+    "title": "Forschungsbeiträge",
+    "intro": "Studien, zu denen du beiträgst, was jede davon bekommt, und wie du wieder aussteigst.",
+    "unavailable": "Dieser Sync-Server bietet keine Forschungsbeiträge an. Hier lässt sich nichts senden und nichts widerrufen.",
+    "needsSession": "Für Forschungsbeiträge brauchst du deine Sync-Passphrase. Entsperre Sync zuerst auf diesem Gerät.",
+    "needsSessionCta": "Zu Sync",
+    "loadFailed": "Deine Studien konnten nicht geladen werden.",
+    "caveats": {
+      "pseudonymised": "Was eine Studie bekommt, ist pseudonymisiert, nie dein Name: Sie sieht ein gleichbleibendes Pseudonym von dir und deine Tagessummen.",
+      "auxiliaryJoin": "Ein gleichbleibendes Pseudonym heißt nicht, dass du nicht erkennbar wärst. Wer einen weiteren Datensatz über dieselben Personen hat, kann dich durch Verknüpfen mit diesem hier möglicherweise re-identifizieren.",
+      "unknownMacro": "Ein Makronährstoff, der für einen Eintrag unbekannt war, geht nicht in die Tagessumme ein. Eine niedrige Summe kann also „unbekannt“ heißen und nicht „wenig gegessen“. Die Studie ist angewiesen, die Anzahl der Einträge neben jeder Summe zu lesen."
+    },
+    "enrolments": {
+      "title": "Studien, zu denen du beiträgst",
+      "empty": "Du trägst zu keiner Studie bei. Zum Mitmachen brauchst du den Fingerabdruck aus den Einwilligungsunterlagen einer Studie.",
+      "unnamed": "Studie {{studyAccountId}}",
+      "tier": "Bekommt: {{tier}}",
+      "window": "Ganze Kalendertage im Zeitraum, den du sendest — eine Zeile pro Tag, nie eine Uhrzeit, ein Lebensmittelname oder ein Foto.",
+      "fields": "Jeder Tag trägt Energie, Eiweiß, Kohlenhydrate, Fett, Ballaststoffe und die Anzahl der Einträge dieses Tages.",
+      "joined": "Dabei seit {{at}}",
+      "lastSent": "Zuletzt gesendet {{at}} · Version {{version}}",
+      "neverSent": "An diese Studie wurde noch nichts gesendet.",
+      "pseudonymLabel": "Dein Pseudonym für diese Studie",
+      "pseudonymHint": "Das sieht die Studie von dir. Nenne es, wenn du bei Forschenden nachfragen willst, ob dein Widerruf umgesetzt wurde.",
+      "pseudonymUnknown": "Dieses Gerät kann dein Pseudonym nicht berechnen — sein Forschungsschlüssel fehlt."
+    },
+    "withdrawal": {
+      "open": "Widerrufen",
+      "confirmTitle": "Beitrag zu {{name}} widerrufen?",
+      "instructedToDelete": "Die Studie wird angewiesen, deinen Beitrag zu löschen, und openplates Studien-Werkzeuge lassen ihn bei jedem Abruf weg.",
+      "alreadyDownloaded": "Eine Kopie, welche die Studie schon heruntergeladen hat, lässt sich nicht zurückholen — die Anweisung zu befolgen ist eine Pflicht, die dieses System ausspricht und nicht erzwingen kann.",
+      "noNewData": "Es werden keine neuen Daten mehr an diese Studie gesendet.",
+      "samePseudonymOnRejoin": "Ein Widerruf gibt dir keine neue Identität. Trittst du derselben Studie wieder bei, zeigst du dasselbe Pseudonym — wer eine alte Kopie behalten hat, könnte beides miteinander verbinden.",
+      "rejoinNeedsCeremony": "Dieses Gerät vergisst die Studie. Für einen erneuten Beitritt tippst du ihren Fingerabdruck aus den Einwilligungsunterlagen noch einmal ein.",
+      "confirmCta": "Widerrufen",
+      "cancel": "Abbrechen",
+      "done": "Widerrufen. Die Studie ist angewiesen, das Vorhandene zu löschen.",
+      "failed": "Der Widerruf hat nicht geklappt. Du trägst weiterhin bei und kannst es noch einmal versuchen.",
+      "unavailable": "Dieser Server bietet keine Forschungsbeiträge an, es wurde nichts widerrufen. Du trägst hier weiterhin bei."
+    },
+    "export": {
+      "pseudonymisedNotice": "Diese Daten sind PSEUDONYMISIERT, nicht anonym: Jede teilnehmende Person erscheint als gleichbleibendes Pseudonym statt mit Namen, und wer einen zweiten Datensatz über dieselben Personen besitzt, kann sie durch Verknüpfen damit möglicherweise re-identifizieren.",
+      "tier": "Schema-Stufe: {{tier}}",
+      "window": "Zeitraum: {{from}} bis {{to}} (einschließlich)",
+      "participants": "Teilnehmende in dieser Datei: {{participants}}",
+      "withdrawn": "Vor diesem Export widerrufen und gelöscht: {{withdrawn}}. Ihre Zeilen fehlen hier und dürfen nicht aus einer früheren Datei zurückgeholt werden.",
+      "unopenable": "Mit einem Schlüssel versiegelt, den dieses Gerät nicht hat: {{unopenable}} von {{total}} Beiträgen. Sie fehlen in dieser Datei. Das ist ein Schlüsselproblem, kein Datenproblem.",
+      "malformed": "Von dieser Version nicht lesbar: {{malformed}} Beiträge. Eine Zahl über null ist ein Fehler, der gemeldet gehört.",
+      "unknownMacroCaveat": "Ein Makronährstoff, der für einen Eintrag unbekannt war, geht nicht in die Tagessumme ein. Eine niedrige Summe kann also „unbekannt“ statt „wenig gegessen“ heißen. Lies loggedEntryCount neben jeder Summe und behandle eine Summe von null mit einer Anzahl über null als nicht quantifiziert."
+    },
+    "anomaly": {
+      "serverRetainedWithdrawn": "WARNUNG FÜR DEN BETRIEB: Dieser Server hat {{retained}} Beitrag/Beiträge geliefert, deren Löschung ihm bereits aufgetragen war. Sie wurden hier entfernt, und diese Installation gehört geprüft."
+    }
   },
   "scan": {
     "analyzing": {
@@ -1506,6 +1561,10 @@
       "sync": {
         "notSetUp": "Nicht eingerichtet",
         "title": "Sync"
+      },
+      "research": {
+        "title": "Forschung",
+        "status": "Studien, zu denen du beiträgst"
       }
     },
     "title": "Einstellungen"

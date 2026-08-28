@@ -29,6 +29,7 @@ import { generateEciesKeyPair } from '../../app/lib/sync/engine/crypto/ecies';
 import { sealContribution } from '../../app/lib/sync/research/contribution-wrap';
 import { encodeDailyIntakeV1Payload } from '../../app/lib/sync/research/payload';
 import { exportStudyCohortCsv } from '../../app/lib/sync/research/export';
+import { englishExportStrings } from './research-i18n-harness';
 import {
   pullStudyCohort,
   openCohortContribution,
@@ -251,7 +252,12 @@ test('a withdrawal the server already honoured still counts as a withdrawal', as
   // THE RENDERED LINE FIRST, deliberately: the number a researcher reads is
   // the one that has to be right, and asserting the field alone would leave
   // the sentence free to print something else.
-  const csv = exportStudyCohortCsv({ cohort: pulled.value, fromDayKey: '2026-08-24', toDayKey: '2026-08-24' });
+  const csv = exportStudyCohortCsv({
+    cohort: pulled.value,
+    fromDayKey: '2026-08-24',
+    toDayKey: '2026-08-24',
+    strings: englishExportStrings,
+  });
   assert.match(
     csv,
     /# Withdrawn and purged before this export: 1\./,
@@ -294,9 +300,14 @@ test('a row the server should have deleted is purged AND reported as an anomaly'
   // separately one row the server should not have sent.
   assert.equal(pulled.value.withdrawnCount, 1, 'the anomaly must not be added to the tombstone count');
 
-  const csv = exportStudyCohortCsv({ cohort: pulled.value, fromDayKey: '2026-08-24', toDayKey: '2026-08-24' });
+  const csv = exportStudyCohortCsv({
+    cohort: pulled.value,
+    fromDayKey: '2026-08-24',
+    toDayKey: '2026-08-24',
+    strings: englishExportStrings,
+  });
   assert.match(csv, /# Withdrawn and purged before this export: 1\./);
-  assert.match(csv, /returned 1 contribution\(s\) it had already been instructed to delete/);
+  assert.match(csv, /handed over 1 contribution\(s\) it had already been instructed to delete/);
 });
 
 test('the anomaly line is absent when there is no anomaly', async () => {
@@ -309,7 +320,12 @@ test('the anomaly line is absent when there is no anomaly', async () => {
   const pulled = await pullStudyCohort({ transport, keys: [key] });
   assert.equal(pulled.status, 'available');
   if (pulled.status !== 'available') return;
-  const csv = exportStudyCohortCsv({ cohort: pulled.value, fromDayKey: '2026-08-24', toDayKey: '2026-08-24' });
+  const csv = exportStudyCohortCsv({
+    cohort: pulled.value,
+    fromDayKey: '2026-08-24',
+    toDayKey: '2026-08-24',
+    strings: englishExportStrings,
+  });
   // A line that appears on every export saying "0 anomalies" trains a reader
   // to skip it. It appears only when it means something.
   assert.doesNotMatch(csv, /already been instructed to delete/);

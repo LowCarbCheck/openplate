@@ -26,7 +26,24 @@ import { submitContribution, type ContributorTransport } from '../../app/lib/syn
 import { deriveStudyPseudonym, generatePseudonymRoot } from '../../app/lib/sync/research/pseudonym';
 import { reduceDailyIntakeV1 } from '../../app/lib/sync/research/reduce';
 import { pullStudyCohort, type StudyKeyPair, type StudyTransport } from '../../app/lib/sync/research/study';
-import { exportStudyCohortCsv } from '../../app/lib/sync/research/export';
+import { buildResearchExportStrings, exportStudyCohortCsv, type Translate } from '../../app/lib/sync/research/export';
+import { withdrawFromStudy } from '../../app/lib/sync/research/withdraw';
+import type { StudyWithdrawal, WithdrawContributionResult } from '../../app/lib/sync/engine/client/http-client';
+
+/**
+ * The export's sentences, echoed as `key(params)` — this file is about BYTES
+ * crossing a wire, not about wording, and `research-export.test.ts` is where
+ * the English is asserted. A key-echo here keeps a re-wording from reddening
+ * a round-trip test.
+ */
+const echoT: Translate = (key, params) =>
+  params === undefined ? key : (
+    `${key}(${Object.entries(params)
+      .map(([name, value]) => `${name}=${String(value)}`)
+      .join(',')})`
+  );
+
+const exportStrings = buildResearchExportStrings(echoT);
 
 const STUDY_ACCOUNT_ID = 7;
 const FROM_DAY = '2026-08-24';
@@ -154,10 +171,120 @@ test('the lane round-trips a contribution end to end, from the diary to the expo
   assert.equal(pulled.value.rows[0]?.pseudonym, submitted.pseudonym);
 
   // And the artifact a researcher keeps carries the day the diary actually had.
-  const csv = exportStudyCohortCsv({ cohort: pulled.value, fromDayKey: FROM_DAY, toDayKey: TO_DAY });
+  const csv = exportStudyCohortCsv({
+    cohort: pulled.value,
+    fromDayKey: FROM_DAY,
+    toDayKey: TO_DAY,
+    strings: exportStrings,
+  });
   // `0.75` fat is emitted as `0.8`: the reduction rounds to one decimal place,
   // because unrounded float noise is itself a fingerprint of the exact entries
   // behind a total.
   assert.match(csv, /,2026-08-24,80,0\.1,27\.5,0\.8,2\.5,1/);
-  assert.match(csv, /PSEUDONYMISED, not anonymous/);
+  assert.match(csv, /research\.export\.pseudonymisedNotice/);
+});
+
+test('withdrawal removes the contributor from a later pull, end to end', async () => {
+  const snapshot = await buildSnapshot();
+  const studyPair = await generateEciesKeyPair();
+  const studyKey: StudyKeyPair = { publicKeyRaw: studyPair.publicKeyRaw, privateKeyPkcs8: studyPair.privateKeyPkcs8 };
+  const root = generatePseudonymRoot();
+
+  // ── One service, standing in for §5.18's two sides ──────────────────────
+  // Withdrawal there is ONE transaction: hard-delete the row, insert the
+  // pseudonym-keyed tombstone. Both are modelled, because the tombstone is
+  // what a study client purges by and the delete is what stops a fresh pull
+  // ever seeing the body again.
+  let stored: StudyContribution[] = [];
+  const tombstones: StudyWithdrawal[] = [];
+  const enrolments: number[] = [STUDY_ACCOUNT_ID];
+
+  const contributorTransport: ContributorTransport = {
+    listMyContributions: async () => ({ status: 'available', value: [] }),
+    putContribution: async (input) => {
+      stored.push({
+        pseudonym: input.pseudonym,
+        contributionVersion: input.contributionVersion,
+        schemaTier: input.schemaTier,
+        body: input.body,
+        createdAt: '2026-08-28T09:00:00.000Z',
+      });
+      return {
+        status: 'accepted',
+        enrolment: {
+          studyAccountId: input.studyAccountId,
+          pseudonym: input.pseudonym,
+          schemaTier: input.schemaTier,
+          contributionVersion: input.contributionVersion,
+          createdAt: '2026-08-28T09:00:00.000Z',
+          updatedAt: '2026-08-28T09:00:00.000Z',
+        },
+      };
+    },
+  };
+
+  const studyTransport: StudyTransport = {
+    listStudyContributions: async () => ({
+      status: 'available',
+      value: { studyAccountId: STUDY_ACCOUNT_ID, contributions: stored },
+    }),
+    listStudyWithdrawals: async () => ({ status: 'available', value: tombstones }),
+  };
+
+  const submitted = await submitContribution({
+    transport: contributorTransport,
+    enrolment: {
+      id: String(STUDY_ACCOUNT_ID),
+      studyAccountId: STUDY_ACCOUNT_ID,
+      publicKeyRaw: bytesToBase64(studyPair.publicKeyRaw),
+      label: 'Charité sleep trial',
+      createdAt: 1_756_000_000_000,
+    },
+    pseudonymRoot: root,
+    snapshot,
+    fromDayKey: FROM_DAY,
+    toDayKey: TO_DAY,
+  });
+  assert.equal(submitted.status, 'submitted');
+  if (submitted.status !== 'submitted') return;
+
+  const before = await pullStudyCohort({ transport: studyTransport, keys: [studyKey] });
+  assert.equal(before.status, 'available');
+  if (before.status !== 'available') return;
+  assert.equal(before.value.rows.length, 1, 'the contributor must be in the cohort before she withdraws');
+
+  const withdrawn = await withdrawFromStudy({
+    transport: {
+      withdrawContribution: async (studyAccountId): Promise<WithdrawContributionResult> => {
+        // The service's one transaction, both halves.
+        stored = stored.filter((row) => row.pseudonym !== submitted.pseudonym);
+        tombstones.push({ pseudonym: submitted.pseudonym, withdrawnAt: '2026-08-28T10:00:00.000Z' });
+        assert.equal(studyAccountId, STUDY_ACCOUNT_ID);
+        return { status: 'withdrawn' };
+      },
+    },
+    compartment: {
+      deleteEnrolment: async (studyAccountId) => void enrolments.splice(enrolments.indexOf(studyAccountId), 1),
+    },
+    studyAccountId: STUDY_ACCOUNT_ID,
+  });
+  assert.deepEqual(withdrawn, { status: 'withdrawn' });
+  assert.deepEqual(enrolments, [], 'the local pin is gone, so re-joining needs the fingerprint typed again');
+
+  const after = await pullStudyCohort({ transport: studyTransport, keys: [studyKey] });
+  assert.equal(after.status, 'available');
+  if (after.status !== 'available') return;
+  assert.deepEqual(after.value.rows, [], 'the withdrawn contributor must not appear in a later pull');
+  // The shrink is REPORTED, never silent: one participant withdrew, and the
+  // server retained nothing it had been told to delete.
+  assert.equal(after.value.withdrawnCount, 1);
+  assert.equal(after.value.serverRetainedWithdrawnCount, 0);
+
+  const csv = exportStudyCohortCsv({
+    cohort: after.value,
+    fromDayKey: FROM_DAY,
+    toDayKey: TO_DAY,
+    strings: exportStrings,
+  });
+  assert.ok(!csv.includes(submitted.pseudonym), 'no purged pseudonym may reach the artifact a researcher keeps');
 });

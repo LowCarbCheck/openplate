@@ -130,6 +130,12 @@ export default [
     // renders one honest sentence instead: that tree answers the ordinary 404
     // to everybody, and the client reads it as "absent", never as an error.
     route('/settings/sharing', 'routes/settings.sharing.tsx'),
+    // Research contributions, the contributor's side (M161/05). Same sync
+    // gate as the two rows above, for the same reason — a contribution is
+    // pushed to the sync service, so with no sync there is nothing here to be
+    // a page about. When the SERVER has no research lane it renders one
+    // honest sentence instead (ADR-0003 prohibition 9).
+    route('/settings/research', 'routes/settings.research.tsx'),
     // Clinician sharing, the grantee's side (M160/05). NO LOADER on either
     // route: the patient's blob is pulled and decrypted in the browser, and
     // `settings.data.tsx`'s rule — the diary lives on the device — has to hold

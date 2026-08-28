@@ -26,6 +26,7 @@ import {
   BookMarked,
   ChevronRight,
   Database,
+  FlaskConical,
   Info,
   Share2,
   ShieldCheck,
@@ -218,6 +219,18 @@ export default function SettingsIndex() {
             icon={Share2}
             title={t('settings.rows.sharing.title')}
             status={t('settings.rows.sharing.status')}
+          />
+        )}
+        {/* Research contributions ride the same sync gate as sharing: a
+            contribution is pushed to the sync service. Whether that service
+            has a research lane at all is a question only the page can answer,
+            and asking it here would fire a request on every settings visit. */}
+        {syncServerUrl !== null && (
+          <SettingsRow
+            to="/settings/research"
+            icon={FlaskConical}
+            title={t('settings.rows.research.title')}
+            status={t('settings.rows.research.status')}
           />
         )}
         <SettingsRow

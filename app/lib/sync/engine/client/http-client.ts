@@ -177,6 +177,22 @@ export type PutContributionHttpResult =
   | { status: 'too-large' }
   | { status: 'not-found' };
 
+/**
+ * The two protocol-meaningful outcomes of a withdrawal `DELETE`.
+ *
+ * They are told apart because the CALLER acts differently on each: a
+ * `withdrawn` is what licenses dropping the local enrolment pin, and an
+ * `unavailable` must not, since a dark lane may still hold a row from when the
+ * lane was lit. A pin dropped against a live server row is a contribution
+ * nobody can withdraw (M161/05, and `research/withdraw.ts` is where the rule
+ * lives).
+ */
+export type WithdrawContributionResult =
+  /** The service answered §5.18's `204`: the row is gone and the tombstone is written. Idempotent, so a second one answers this too. */
+  | { status: 'withdrawn' }
+  /** A `404` — this deployment has no research lane (ADR-0003 prohibition 9). Nothing was withdrawn, and nothing local may be dropped on it. */
+  | { status: 'unavailable' };
+
 /** One cohort row as it arrives, with `body` decoded from base64 and NOTHING opened yet. There is no account id here and there must never be one. */
 export interface StudyContribution {
   pseudonym: string;
@@ -558,16 +574,29 @@ export class SyncHttpClient {
    * honours it on every pull, and no wording anywhere may claim more than
    * that.
    *
-   * A `404` is accepted silently for one reason only: it means this deployment
-   * has no research lane, so there is no row to remove and nothing to report.
+   * A `404` is not an error: it means this deployment has no research lane, so
+   * there is no row to remove. It is REPORTED rather than swallowed, because
+   * the caller drops a local pin on a success and must not drop one here — see
+   * {@link WithdrawContributionResult}.
    */
-  async withdrawContribution(studyAccountId: number): Promise<void> {
+  async withdrawContribution(studyAccountId: number): Promise<WithdrawContributionResult> {
     const response = await this.send({
       path: `${SYNC_API_PREFIX}/contributions/${studyAccountId}`,
       method: 'DELETE',
     });
-    if (response.status === 404) return;
+    if (response.status === 404) return { status: 'unavailable' };
     if (!response.ok) throw await toRequestError(response);
+    // §5.18 answers `204` and nothing else on success. Another 2xx is a
+    // service that is not speaking this protocol, and reading it as a
+    // withdrawal would drop the pin on a row that may still be there.
+    if (response.status !== 204) {
+      throw new SyncRequestError({
+        kind: 'server',
+        message: `withdrawal answered ${response.status}, and §5.18 defines only 204`,
+        status: response.status,
+      });
+    }
+    return { status: 'withdrawn' };
   }
 
   // -------------------------------------------------------------------------
