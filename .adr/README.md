@@ -34,3 +34,4 @@ ADRs are immutable once Accepted. To change a decision, write a new ADR that sup
 | [0006](0006-the-app-server-holds-no-accounts.md)      | The app server holds no accounts                                 | Accepted   |
 | [0007](0007-byok-provider-registry.md)                | BYOK providers are described once, in a provider registry        | Accepted   |
 | [0008](0008-the-study-console-lives-in-openplate.md)  | The study console lives in openplate, at `/study`                | Accepted   |
+| [0009](0009-a-compartment-carries-its-kind.md)         | A compartment carries its kind, and a wrong kind is refused       | Accepted   |

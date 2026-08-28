@@ -83,6 +83,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0006](.adr/0006-the-app-server-holds-no-accounts.md)      | The app server holds no accounts                                 | Accepted   |
 | [0007](.adr/0007-byok-provider-registry.md)                | BYOK providers are described once, in a provider registry        | Accepted   |
 | [0008](.adr/0008-the-study-console-lives-in-openplate.md)  | The study console lives in openplate, at `/study`                | Accepted   |
+| [0009](.adr/0009-a-compartment-carries-its-kind.md)         | A compartment carries its kind, and a wrong kind is refused       | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 

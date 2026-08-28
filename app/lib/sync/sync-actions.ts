@@ -51,6 +51,7 @@ import { partitionSnapshot, recomposeSnapshot, type SyncedSnapshot } from './sna
 import {
   adoptRewrappedSlots,
   createPrivateStoreSession,
+  hasUnopenedCompartment,
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
   type EstablishedPrivateStore,
@@ -458,7 +459,14 @@ export async function syncNow(): Promise<void> {
       phase: 'idle',
       lastSyncedAt: result.lastSyncedAt,
       hasPendingChanges: false,
-      error: null,
+      // NOT ALWAYS `null` ON A CYCLE THAT COMPLETED. A session carrying a
+      // compartment it could not open has just re-emitted those bytes
+      // unchanged (M164/01), which means this device's own key material was
+      // silently NOT published — a share identity generated here exists
+      // nowhere else. The diary itself synced fine, so this is amber rather
+      // than a failure, but reporting it as a clean sync is how a device looks
+      // healthy for a week with its share identity stranded.
+      error: unopenedCompartmentFailure(vault.privateStore),
     });
   } catch (error) {
     updateSyncSession({ phase: 'idle', error: describeSyncFailure(error) });
@@ -500,6 +508,25 @@ async function applySyncedSnapshot({
   const ownerPrivate =
     (await openOwnerPrivateRegion({ session, sealed: merged.privateStore })) ?? (await readLocalOwnerPrivateRegion());
   await applyMergedSnapshot({ merged: recomposeSnapshot({ shareable: merged, ownerPrivate }), local });
+}
+
+/**
+ * The one failure a COMPLETED cycle can still carry: a compartment this
+ * session never opened.
+ *
+ * Since M164/02 that state means exactly one thing. "Could not open" used to
+ * also cover "opened, and belongs to a study console" — that now throws at the
+ * open and arrives through `describeSyncFailure` like any other error — so
+ * what is left is a compartment under a passphrase this session does not hold,
+ * which is what the message says.
+ */
+function unopenedCompartmentFailure(session: PrivateStoreSession): SyncFailure | null {
+  if (!hasUnopenedCompartment(session)) return null;
+  return {
+    reason: 'failed',
+    message:
+      'Your diary is in sync, but this device cannot open the account\u2019s private data \u2014 it was locked by a different passphrase. Sign in with the current one, or use your recovery code.',
+  };
 }
 
 /** Why sync stopped, with the message the status surface shows — `SyncSessionSnapshot['error']`. */

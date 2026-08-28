@@ -17,9 +17,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { generateCdk, wrapCdk } from '../../app/lib/sync/engine/crypto/private-store';
-import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
+import {
+  generateCdk,
+  openPrivateStore,
+  sealPrivateStore,
+  wrapCdk,
+} from '../../app/lib/sync/engine/crypto/private-store';
+import { base64ToBytes, bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { openStudyRegion, sealStudyRegion } from '../../app/lib/sync/research/study-compartment';
+import { WrongCompartmentKindError } from '../../app/lib/sync/compartment-kind';
+import { openOwnerPrivateRegion, sealOwnerPrivateRegion } from '../../app/lib/sync/private-store';
+import { EMPTY_OWNER_PRIVATE_REGION } from '../../app/lib/sync/snapshot-partition';
 import {
   currentStudyPublicKey,
   EMPTY_STUDY_PRIVATE_REGION,
@@ -29,6 +37,9 @@ import {
 } from '../../app/lib/sync/research/study-keyring';
 
 const STUDY_ACCOUNT_ID = 4711;
+
+/** A diary's own share private key — the material a wrong-kind mint would have sealed over. */
+const SHARE_KEY_MARKER = 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg';
 
 /** A compartment session with both halves in hand — what a study console holds after establishing or opening one. */
 async function establishedSession() {
@@ -82,7 +93,7 @@ test('the keyring survives a real compartment seal and open', async () => {
   const region = withNewStudyKeyGeneration({ region: EMPTY_STUDY_PRIVATE_REGION, generation });
 
   const sealed = await sealStudyRegion({ session, region });
-  assert.notEqual(sealed, null, 'an established session sealed nothing');
+  assert.ok(sealed !== null, 'an established session sealed nothing');
 
   // A fresh session, as a second device would have: no CDK, only slot 1.
   const opened = await openStudyRegion({
@@ -96,6 +107,18 @@ test('the keyring survives a real compartment seal and open', async () => {
     sealed,
   });
   assert.deepEqual(opened, region);
+
+  // AND THE SEAL WROTE THE TAG (M164/02). Asserted on the RAW plaintext, since
+  // the region schema strips it on the way out — an open can never see it, so
+  // without this line nothing would notice the study seal going untagged. The
+  // sniff would keep such a compartment readable, which is precisely why its
+  // absence would otherwise be invisible.
+  const plaintext = await openPrivateStore({
+    cdk: session.cdk,
+    ciphertext: base64ToBytes(sealed.ciphertext),
+    accountId: STUDY_ACCOUNT_ID,
+  });
+  assert.deepEqual(JSON.parse(new TextDecoder().decode(plaintext)), { ...region, kind: 'study' });
 });
 
 test('a study compartment cannot be opened as another account', async () => {
@@ -168,4 +191,97 @@ test('a study compartment this console could not open is re-emitted, never blank
   const fresh = { accountId: STUDY_ACCOUNT_ID, passphraseKek: strangerKek, cdk: null, wraps: null, pulled: null };
   assert.equal(await openStudyRegion({ session: fresh, sealed: null }), null);
   assert.equal(await sealStudyRegion({ session: fresh, region: EMPTY_STUDY_PRIVATE_REGION }), null);
+});
+
+/**
+ * A COMPARTMENT CARRIES ITS KIND (M164/02) — the study side of the twin.
+ *
+ * This is the REACHABLE direction. `/study` is an open route, so a researcher
+ * who types her own diary address into it signs in perfectly well: the address
+ * is hers, the passphrase is hers, slot 1 unwraps and the AAD binds the right
+ * account. Before M164/02 the console then read her diary compartment as an
+ * empty keyring, and the next mint sealed `{studyKeyring:[…]}` over her share
+ * private key, her pseudonym root and every study she had joined.
+ */
+test('a diary compartment is not an empty study, and is refused', async () => {
+  const session = await establishedSession();
+  const diaryCompartment = await sealOwnerPrivateRegion({
+    session: { ...session, cache: null },
+    region: {
+      ...EMPTY_OWNER_PRIVATE_REGION,
+      shareIdentity: { publicKeyRaw: 'a-public-key', privateKeyPkcs8: SHARE_KEY_MARKER, createdAt: 6_000 },
+    },
+  });
+  assert.ok(diaryCompartment !== null, 'the fixture must carry a real diary compartment');
+
+  // The console, holding the very key that opens it.
+  const researcherConsole = {
+    accountId: STUDY_ACCOUNT_ID,
+    passphraseKek: session.passphraseKek,
+    cdk: null,
+    wraps: null,
+    pulled: null,
+  };
+  await assert.rejects(
+    () => openStudyRegion({ session: researcherConsole, sealed: diaryCompartment }),
+    // `cause`, because that is what a rejection handler receives — and the
+    // predicate asserts the TYPE, not the message.
+    (cause: unknown) => {
+      assert.ok(cause instanceof WrongCompartmentKindError, 'a wrong kind must be a named error, not a bare one');
+      assert.equal(cause.expected, 'study');
+      assert.equal(cause.actual, 'diary');
+      return true;
+    },
+  );
+
+  // NON-VACUITY: the same bytes open on the side they belong to, so the
+  // refusal is about what the plaintext IS and not about the crypto — which is
+  // exactly why nothing before this could see the mistake.
+  const opened = await openOwnerPrivateRegion({
+    session: {
+      accountId: STUDY_ACCOUNT_ID,
+      passphraseKek: session.passphraseKek,
+      cdk: null,
+      wraps: null,
+      cache: null,
+      pulled: null,
+    },
+    sealed: diaryCompartment,
+  });
+  assert.equal(opened?.shareIdentity?.privateKeyPkcs8, SHARE_KEY_MARKER);
+});
+
+/**
+ * The sniff, and why it is not padding: `/study` has been an unconditional
+ * route since M163/03, so an untagged study compartment can already exist —
+ * and the service is zero-knowledge, so nobody can look on the server and
+ * check. Without this, such a study is locked out of its own keyring.
+ */
+test('an untagged compartment carrying a keyring still opens as a study', async () => {
+  const session = await establishedSession();
+  const generation = await generateStudyKeyGeneration({ now: () => 7_000 });
+  // Sealed WITHOUT the tag, as every console before M164/02 wrote one. The
+  // seal cannot produce these bytes any more, so this is the only place the
+  // pre-tag shape still exists.
+  const json = JSON.stringify({ studyKeyring: [generation] });
+  assert.ok(!json.includes('"kind"'), 'the fixture must be untagged, or it proves nothing');
+  const ciphertext = await sealPrivateStore({
+    cdk: session.cdk,
+    plaintext: new TextEncoder().encode(json),
+    accountId: STUDY_ACCOUNT_ID,
+  });
+
+  const opened = await openStudyRegion({
+    session: {
+      accountId: STUDY_ACCOUNT_ID,
+      passphraseKek: session.passphraseKek,
+      cdk: null,
+      wraps: null,
+      pulled: null,
+    },
+    sealed: { ciphertext: bytesToBase64(ciphertext), ...session.wraps },
+  });
+  // Not "did not throw": the generation itself is read back, because a lockout
+  // and an empty keyring look identical from a truthy assertion.
+  assert.deepEqual(opened?.studyKeyring, [generation]);
 });

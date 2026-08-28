@@ -445,7 +445,14 @@ describe('the owner-private compartment', () => {
       ciphertext: base64ToBytes(compartment.ciphertext),
       accountId: ACCOUNT_ID,
     });
-    assert.deepEqual(JSON.parse(new TextDecoder().decode(plaintext)), partitionSnapshot(snapshot).ownerPrivate);
+    // The region, plus the one field that says what the compartment IS
+    // (M164/02). Asserted on the RAW plaintext rather than through an open,
+    // because the region schema strips the tag on its way out — this is the
+    // only assertion that can see whether the seal actually wrote it.
+    assert.deepEqual(JSON.parse(new TextDecoder().decode(plaintext)), {
+      ...partitionSnapshot(snapshot).ownerPrivate,
+      kind: 'diary',
+    });
 
     // The AAD binds the account: a compartment spliced into another account's
     // blob fails the tag check rather than decrypting into the wrong diary.

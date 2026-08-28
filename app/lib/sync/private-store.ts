@@ -42,7 +42,14 @@ import { base64ToBytes, bytesToBase64 } from './engine/crypto/base64';
 import { openPrivateStore, sealPrivateStore, unwrapCdk } from './engine/crypto/private-store';
 import type { EstablishedPrivateStore } from './engine/crypto/private-store';
 import { contentHash } from './snapshot-sync';
-import { parseOwnerPrivateRegion, type OwnerPrivateRegion, type SealedPrivateStore } from './snapshot-partition';
+import { ownerPrivateRegionSchema } from '#app/lib/local-store/backup';
+import {
+  COMPARTMENT_KIND,
+  parseCompartmentPlaintext,
+  taggedCompartmentPlaintext,
+  WrongCompartmentKindError,
+} from './compartment-kind';
+import type { OwnerPrivateRegion, SealedPrivateStore } from './snapshot-partition';
 
 export type { EstablishedPrivateStore };
 
@@ -117,6 +124,20 @@ export function createPrivateStoreSession({
  * That is a DEGRADED but SAFE state: the key material simply stays on this
  * device instead of being published in the clear. Regenerating the recovery
  * code establishes a compartment and ends it (see `sync-actions.ts`).
+ *
+ * ── RE-EMITTING IS ALSO A DROP, and that must be visible ─────────────────
+ *
+ * Carrying the pulled bytes means this session's own owner-private changes
+ * are NOT published: a share identity generated here is written to the device
+ * and never leaves it. That is strictly better than the destruction it
+ * replaced (M164/01) — and it is still silent, so it must not be reported as
+ * a clean sync.
+ *
+ * Since M164/02 this case is also NARROWER. "Could not open" used to include
+ * "opened fine, but belongs to a study console"; that one now throws at the
+ * open and is visible on its own. What is left here is exactly one thing: a
+ * compartment under a passphrase this session does not hold. {@link
+ * hasUnopenedCompartment} is how `syncNow` says so.
  */
 export async function sealOwnerPrivateRegion({
   session,
@@ -133,12 +154,34 @@ export async function sealOwnerPrivateRegion({
 
   const ciphertext = await sealPrivateStore({
     cdk,
-    plaintext: new TextEncoder().encode(JSON.stringify(region)),
+    // TAGGED, always. An untagged compartment is readable — it defaults to
+    // `diary` — but it is the state the sniff exists to cover, and there is no
+    // reason to keep writing one.
+    plaintext: taggedCompartmentPlaintext({ region, kind: COMPARTMENT_KIND.diary }),
     accountId: session.accountId,
   });
   const sealed: SealedPrivateStore = { ciphertext: bytesToBase64(ciphertext), ...wraps };
   session.cache = { regionHash, sealed };
   return sealed;
+}
+
+/**
+ * Whether this session is carrying a compartment it could not open — the
+ * DEGRADED sync {@link sealOwnerPrivateRegion} describes.
+ *
+ * A predicate rather than a message, because the sentence a person reads is
+ * the status surface's business (`sync-actions.ts`) and this module must not
+ * grow a second opinion about copy. It answers only the state: a pull carried
+ * a compartment, and this session has no key for it.
+ *
+ * Deliberately NOT the same question as "did the last cycle fail". The cycle
+ * succeeded — data moved, the diary is in sync — and what did not happen is
+ * that this device's key material was published. Reporting that as a clean
+ * sync is how a device ends up looking healthy for a week while its share
+ * identity exists nowhere but here.
+ */
+export function hasUnopenedCompartment(session: PrivateStoreSession): boolean {
+  return session.cdk === null && session.pulled !== null;
 }
 
 /**
@@ -229,7 +272,18 @@ async function candidateCdks({
   return candidates;
 }
 
-/** One decrypt attempt. `null` for every failure — a GCM tag check does not say why it failed, and this must not pretend to know. */
+/**
+ * One decrypt attempt. `null` for every failure — a GCM tag check does not say
+ * why it failed, and this must not pretend to know.
+ *
+ * THE ONE EXCEPTION IS A WRONG KIND, and it is not an exception to the reason
+ * above so much as the point where that reason stops applying: the bytes have
+ * decrypted, so this side is holding plaintext and can read what it is. A
+ * `null` there would report "we learned nothing" about the single case where
+ * it learned exactly what it is holding — and the caller's `null` path ends in
+ * a compartment carried forever with a share identity that never publishes.
+ * See `compartment-kind.ts` (M164/02).
+ */
 async function tryOpen({
   cdk,
   sealed,
@@ -241,8 +295,13 @@ async function tryOpen({
 }): Promise<OwnerPrivateRegion | null> {
   try {
     const plaintext = await openPrivateStore({ cdk, ciphertext: base64ToBytes(sealed.ciphertext), accountId });
-    return parseOwnerPrivateRegion({ value: JSON.parse(new TextDecoder().decode(plaintext)) });
-  } catch {
+    return parseCompartmentPlaintext({
+      value: JSON.parse(new TextDecoder().decode(plaintext)),
+      expected: COMPARTMENT_KIND.diary,
+      schema: ownerPrivateRegionSchema,
+    });
+  } catch (cause) {
+    if (cause instanceof WrongCompartmentKindError) throw cause;
     return null;
   }
 }

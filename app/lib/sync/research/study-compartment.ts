@@ -31,6 +31,12 @@
  */
 import { base64ToBytes, bytesToBase64 } from '../engine/crypto/base64';
 import { openPrivateStore, sealPrivateStore, unwrapCdk } from '../engine/crypto/private-store';
+import {
+  COMPARTMENT_KIND,
+  parseCompartmentPlaintext,
+  taggedCompartmentPlaintext,
+  WrongCompartmentKindError,
+} from '../compartment-kind';
 import type { SealedPrivateStore } from '../snapshot-partition';
 import { studyPrivateRegionSchema, type StudyPrivateRegion } from './study-keyring';
 
@@ -85,7 +91,9 @@ export async function sealStudyRegion({
 
   const ciphertext = await sealPrivateStore({
     cdk,
-    plaintext: new TextEncoder().encode(JSON.stringify(region)),
+    // TAGGED as a study compartment, so a diary client that pulls it refuses
+    // instead of reading it as an empty owner-private region.
+    plaintext: taggedCompartmentPlaintext({ region, kind: COMPARTMENT_KIND.study }),
     accountId: session.accountId,
   });
   return { ciphertext: bytesToBase64(ciphertext), ...wraps };
@@ -101,6 +109,12 @@ export async function sealStudyRegion({
  * that RESEALS: that would overwrite a study's whole keyring with an empty
  * one. The bytes are recorded on the session either way, so the seal has the
  * pulled compartment to re-emit instead.
+ *
+ * A DIARY compartment is the exception, and it THROWS (M164/02). `/study` is
+ * an open route and a researcher's own diary address signs in perfectly well
+ * there, so this is the one failure a console must not absorb. It surfaces at
+ * `loadStudyIdentity`, which runs at sign-in and pushes nothing — the refusal
+ * lands before any write, not after one.
  */
 export async function openStudyRegion({
   session,
@@ -145,7 +159,17 @@ async function candidateCdks({
   return candidates;
 }
 
-/** One decrypt attempt. `null` for every failure, for the reason `private-store.ts`'s twin gives. */
+/**
+ * One decrypt attempt. `null` for every failure, for the reason
+ * `private-store.ts`'s twin gives — and a THROW on a diary compartment, for
+ * the reason that twin gives too.
+ *
+ * This is the reachable direction of the hazard: a researcher who typed her
+ * own DIARY address into `/study` signs in successfully, because the address
+ * and the passphrase are hers. Before M164/02 this line handed her an empty
+ * keyring, and the next mint wrote it over her share private key, her
+ * pseudonym root and every study she had joined.
+ */
 async function tryOpen({
   cdk,
   sealed,
@@ -157,8 +181,13 @@ async function tryOpen({
 }): Promise<StudyPrivateRegion | null> {
   try {
     const plaintext = await openPrivateStore({ cdk, ciphertext: base64ToBytes(sealed.ciphertext), accountId });
-    return studyPrivateRegionSchema.parse(JSON.parse(new TextDecoder().decode(plaintext)));
-  } catch {
+    return parseCompartmentPlaintext({
+      value: JSON.parse(new TextDecoder().decode(plaintext)),
+      expected: COMPARTMENT_KIND.study,
+      schema: studyPrivateRegionSchema,
+    });
+  } catch (cause) {
+    if (cause instanceof WrongCompartmentKindError) throw cause;
     return null;
   }
 }

@@ -42,7 +42,6 @@
  * a second person.
  */
 import { z } from 'zod';
-import { ownerPrivateRegionSchema } from '#app/lib/local-store/backup';
 import type { LocalStoreSnapshot } from '#app/lib/local-store';
 
 /** Which side of the partition a snapshot key sits on. There is no third value and no "unknown" — absent means fail. */
@@ -245,7 +244,9 @@ export function recomposeSnapshot({ shareable, ownerPrivate }: SnapshotPartition
   return { foods, foodLogs, weightEntries, profile, fasts, savedMeals, ...ownerPrivate };
 }
 
-/** Validates a compartment plaintext that has just been decrypted. Throws on anything malformed — a half-understood key pair must not be written. */
-export function parseOwnerPrivateRegion({ value }: { value: unknown }): OwnerPrivateRegion {
-  return ownerPrivateRegionSchema.parse(value);
-}
+// A compartment plaintext is validated by `compartment-kind.ts`'s
+// `parseCompartmentPlaintext` (M164/02), which does the same schema parse and
+// additionally refuses the OTHER kind of compartment. The one-line wrapper
+// that used to live here was replaced by it rather than layered over it: a
+// second entry point that skipped the kind check is exactly the drift the
+// shared helper exists to prevent.
