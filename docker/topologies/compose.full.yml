@@ -192,7 +192,7 @@ services:
       # curated nutrition data (food NAMES only, never photos; fails open on
       # outages). An EMPTY string disables it entirely so no food names ever
       # leave your machine.
-      FOOD_DB_API_URL: ${FOOD_DB_API_URL:-https://lowcarbcheck.org}
+      FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
     healthcheck:
@@ -253,7 +253,7 @@ services:
       # the per-IP throttle becomes one global bucket a single attacker can
       # lock for all your users. Set above 0 with nothing in front, anyone can
       # spoof X-Forwarded-For and skip the throttle entirely.
-      TRUST_PROXY: ${TRUST_PROXY:-1}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
 
@@ -261,7 +261,7 @@ services:
       # With nothing set here, verification and reset links are printed to the
       # service log — a supported way to run a family instance, not a degraded
       # one:  docker compose -f compose.full.yml logs -f sync
-      EMAIL_FROM: ${EMAIL_FROM:-openplate <noreply@localhost>}
+      EMAIL_FROM: ${EMAIL_FROM:-openplate-sync <noreply@localhost>}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

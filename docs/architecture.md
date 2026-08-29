@@ -38,8 +38,8 @@ whole promise — see [ADR-0006](../.adr/0006-the-app-server-holds-no-accounts.m
 
 ## Sync is identity, beside the photo path and never inside it
 
-openplate-sync exists to move a diary between devices, which is the one thing that needs an
-account. It is a separate deployable with its own image, database and secret, and the browser
+openplate-sync exists to move a diary between devices, and to hold the separate accounts the
+optional study console uses (ADR-0008). Those are the only things that need an account. It is a separate deployable with its own image, database and secret, and the browser
 talks to it directly. The app server proxies nothing on its behalf and serves no sync route.
 
 **It cannot read your entries.** The client serializes the local store, gzips it, encrypts it
@@ -96,7 +96,7 @@ It is on the photo path, which is the honest cost of it, and the mitigation is a
 the code rather than a setting: the logger's field type admits primitives only, so a body
 cannot reach a log line, upstream error strings are scrubbed of data URIs before they are
 logged or returned, and a test drives a real image through a real error to prove both. It has
-no sync route and never sees a diary. Members of a household share spend, not data.
+no sync route and never sees a diary. Members of a household share spend, not data — unless the operator turns on the gateway's `ORG_MODE`, which stores submitted images and an audit trail on purpose.
 
 Its quota counts requests, not currency, so a spend cap on the upstream key at the provider
 is still required. See its
@@ -123,5 +123,5 @@ injected script exfiltrating a key that lives in the page. See
 | **openplate app server** | Nothing. No database, no secrets, no state. | HTML and JS requests. Never a photo, never a key, never a diary entry, never a sync blob. |
 | **openplate-sync** (optional) | An email address, an authentication verifier, KDF parameters, and ciphertext it holds no key for. | Blob size, write timing, session metadata. Not the contents. |
 | **openplate-inference** (optional) | Nothing per user — no accounts, no sessions, no cookies. Model weights and a food dataset. | The photo you sent it, for as long as the request takes. It makes no outbound call except the one-time weight download. |
-| **openplate-gateway** (optional) | No accounts and no database. One upstream provider key, a members JSON file of token digests, and a quota counter file. | The photo, for as long as it takes to forward it, and which member sent it. Never a body in a log. |
+| **openplate-gateway** (optional) | No accounts and no database. One upstream provider key, a member store of token digests written by invites and the admin API, and a quota counter file. | The photo, for as long as it takes to forward it, and which member sent it. Never a body in a log — **unless the operator turns on `ORG_MODE`**, which deliberately stores submitted images and an audit trail in the operator's own S3-compatible bucket (the gateway's ADR-0003 and `docs/org-mode.md`). |
 | **Cloud AI provider** (BYOK path) | Whatever their policy says. | The photo, and your key. Their terms apply, not ours. |

@@ -50,6 +50,6 @@ Introduce **data migrations** as a first-class concept, modeled on schema migrat
 
 ## References
 
-- Spec: [M1 — Data migrations subsystem](../.tracker/M1-cli-http-api-wrapper/08-data-migrations-subsystem.md) _(to be created)_
+- Spec: `M1 — Data migrations subsystem` (private workspace tracker, not part of this repo)
 - `drizzle/migrations/` — existing schema-migration convention
 - `cli/` — where the runner command will live

@@ -78,11 +78,14 @@ five minutes ago and there is no container to keep alive. The gateway's own READ
 talking you out of running it, and it is right to.
 
 Setup is in the [gateway README quickstart](https://github.com/LowCarbCheck/openplate-gateway#quickstart):
-set `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY` and `GATEWAY_ADMIN_TOKEN`, and bring up the
-compose file. From there it's all in the browser at `/admin/ui`: sign in with the admin
+set `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`, `GATEWAY_ADMIN_TOKEN`, `GATEWAY_PUBLIC_URL` and
+`CLIENT_BASE_URL`, and bring up the compose file. The last two are what give an invite a link
+to send; without both, the invite is created but carries none. From there it's all in the browser at `/admin/ui`: sign in with the admin
 token, create an invite (with its daily quota), and send the member the link it gives you.
 The member opens it, taps to join, and openplate configures itself — no fields to type, no
-file to paste into. Revocation is one click in `/admin/ui` (or a `DELETE
+file to paste into. If your household's openplate is **hosted** rather than one you run, its
+operator must first add the gateway's origin to `CSP_CONNECT_EXTRA`, or the browser blocks the
+connection and the join screen reports the gateway unreachable. Revocation is one click in `/admin/ui` (or a `DELETE
 /admin/members/:id`), takes effect immediately, and needs no restart. See the gateway repo's
 own [docs/family-setup.md](https://github.com/LowCarbCheck/openplate-gateway/blob/main/docs/family-setup.md)
 for the full walkthrough, including what the invite link and the join screen actually show.

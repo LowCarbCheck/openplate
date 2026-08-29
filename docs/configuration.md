@@ -22,7 +22,6 @@ const appUrl = CONFIG.app.url;
 | --------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NODE_ENV`                  | `development`               | Standard Node environment flag.                                                                                                                                                                |
 | `PORT`                      | `3000`                      | HTTP port the app listens on.                                                                                                                                                                  |
-| `HMR_PORT`                  | `24678`                     | Vite HMR port in dev.                                                                                                                                                                          |
 | `LOG_LEVEL`                 | `info`                      | pino log level.                                                                                                                                                                                |
 | `APP_URL`                   | `http://localhost:3000`     | Public URL this instance is reachable at. Required in production — the server refuses to boot without it. Behind a reverse proxy this is the public `https://` address, not the container port. |
 | `TRUST_PROXY`               | `1` in prod, off in dev     | Express `trust proxy`. Required behind a proxy: React Router's CSRF check compares the browser `Origin` against the host it thinks it is serving. Use the hop count (1 = one proxy, 2 = Cloudflare → Traefik). |
@@ -31,7 +30,7 @@ const appUrl = CONFIG.app.url;
 | `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-sync](https://github.com/LowCarbCheck/openplate-sync) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
 | `DEFAULT_INFERENCE_BASE_URL`| unset                       | An OpenAI-compatible vision endpoint this instance offers to every visitor. See [Instance-provided AI](#instance-provided-ai) below.                                                            |
 | `DEFAULT_INFERENCE_API_KEY` | unset                       | Optional key for that endpoint. **Read the security warning below before setting it.**                                                                                                         |
-| `DEFAULT_INFERENCE_MODEL`   | unset                       | Model name to request from that endpoint.                                                                                                                                                      |
+| `DEFAULT_INFERENCE_MODEL`   | `openplate-plate-1`         | Model name to request from that endpoint. Blank or unset falls back to `openplate-plate-1`.                                                                                                                                                      |
 | `CSP_CONNECT_EXTRA`         | unset                       | Space-separated extra origins for the production CSP's `connect-src`. Needed when your own AI endpoint is a **remote** host. See [Custom AI endpoints](#custom-ai-endpoints).                    |
 
 Provider API keys are never read from the environment. A user's key is entered in the
@@ -58,8 +57,9 @@ page. Widen it deliberately.
 - A gateway joined via an invite link (`/connect-gateway`, see [family-setup.md](family-setup.md#the-other-alternative-run-openplate-gateway))
   is a remote endpoint like any other and is subject to the same `connect-src` allowlist: on a
   hosted/public instance, the operator must add the gateway's origin to `CSP_CONNECT_EXTRA`
-  before a member can join. Loopback origins are already allowed, so a gateway running on the
-  same box or tailnet needs nothing extra.
+  before a member can join. Loopback origins (`http://localhost:*` and `http://127.0.0.1:*`) are already allowed, so a
+  gateway on the same box needs nothing extra. A **tailnet address or MagicDNS hostname is
+  not a loopback origin** — it is a remote origin and needs `CSP_CONNECT_EXTRA` set to it.
 
 ## Custom AI endpoints
 
@@ -85,18 +85,27 @@ the OpenAI chat-completions protocol all connect the same way: in **Settings →
 
 ### Instance-provided AI
 
-Instead of asking every visitor to bring a key, an instance can offer its own endpoint. Set
-`DEFAULT_INFERENCE_BASE_URL` (plus `DEFAULT_INFERENCE_MODEL`, and `DEFAULT_INFERENCE_API_KEY`
+Instead of asking every visitor to bring a key, an instance can offer its own endpoint.
+
+**Before you set `DEFAULT_INFERENCE_API_KEY`, know that it is public** — it is embedded in the
+page HTML and readable with view-source by anyone who can open the app. The full rule is the
+second bullet below. Read it first.
+
+Set `DEFAULT_INFERENCE_BASE_URL` (plus `DEFAULT_INFERENCE_MODEL`, and `DEFAULT_INFERENCE_API_KEY`
 if the endpoint needs one) and the AI settings page and the scan screen grow a one-tap
 "this openplate provides its own AI" connect. Leave it unset and bring-your-own-key is the
 only path; nothing extra renders and nothing extra is sent to the browser.
 
-Two rules:
+Three rules:
 
 - **It must be an address a BROWSER can reach.** The photo goes device → endpoint, never
   through the openplate server, so a compose hostname like `http://openplate-inference:8080/v1`
   does not work. Publish the endpoint or put it behind your reverse proxy. Its origin is added
   to the CSP for you.
+- **`DEFAULT_INFERENCE_MODEL` must name a model your endpoint actually serves.** The default,
+  `openplate-plate-1`, is the id openplate-inference serves, and it is sent verbatim. Point
+  the base URL at Ollama, vLLM or LM Studio instead and you must set this to that runtime's own
+  served name, or every request fails.
 - **`DEFAULT_INFERENCE_API_KEY` is public.** It is not kept on the server — it is embedded in
   the page HTML and readable with view-source by anyone who can open the app. That is fine for
   an endpoint only your household or tailnet can reach. It is **not** fine for a metered cloud

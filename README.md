@@ -22,28 +22,36 @@ clears it. Self-hosting is the equally supported option, and it is the one below
 ## Quickstart
 
 ```bash
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.yml
-docker compose up -d
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
+docker compose -f compose.yml up -d
 ```
 
 That is the whole setup — one container, no database, no `.env` step, no secret to generate.
 The app is reachable at `http://localhost:3000`.
 
-Upgrading is `docker compose pull && docker compose up -d`. There is no server-side state to
+Upgrading is `docker compose -f compose.yml pull && docker compose -f compose.yml up -d`. There is no server-side state to
 migrate or lose.
 
-### Run the full stack (with sync)
+### Add sync
 
 If you also want end-to-end-encrypted sync across devices,
-[`docker-compose.full.yml`](docker-compose.full.yml) brings up the app, the
+[`docker/topologies/compose.sync.yml`](docker/topologies/compose.sync.yml) brings up the app, the
 [openplate-sync](https://github.com/LowCarbCheck/openplate-sync) service, and the Postgres that
 sync — and only sync — needs:
 
 ```bash
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker-compose.full.yml
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
-docker compose -f docker-compose.full.yml up -d
+# The URLs a BROWSER will use. Skip these two only for a localhost trial.
+echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
+echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
+docker compose -f compose.sync.yml up -d
 ```
+
+There are two larger shapes as well — self-hosted AI, and everything at once.
+[`docker/topologies/README.md`](docker/topologies/README.md) is the one-page map of all four,
+and `compose.full.yml` in particular needs four values edited inside the file before it will
+work.
 
 Full walkthrough: [docs/self-hosting.md](docs/self-hosting.md) and [docs/sync.md](docs/sync.md).
 
@@ -66,7 +74,7 @@ Run any subset. Only the first one is required.
 | Component                                                                     | What it is                                                                                    | Needed?                                                          |
 | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | **openplate** (this repo)                                                     | The app. Accountless, local-first, stateless, boots with no secrets.                          | Yes — it is the product.                                         |
-| **[openplate-sync](https://github.com/LowCarbCheck/openplate-sync)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address and ciphertext it holds no key for. | No. Everything works without it.                                 |
+| **[openplate-sync](https://github.com/LowCarbCheck/openplate-sync)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address and ciphertext it holds no key for. It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
 | **[openplate-inference](https://github.com/LowCarbCheck/openplate-inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint — open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
 | **[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway)**    | A small multi-tenant proxy: one upstream AI key shared across several people, with a per-member token and a daily quota, invite-based onboarding and an optional audited organization mode. | No, and probably not — provider sub-keys solve most of this. |
 
@@ -89,10 +97,17 @@ Run any subset. Only the first one is required.
 
 ## Development
 
-Requires Node.js ≥ 22 and pnpm. There is no database to install and no service to start
-alongside it.
+Requires Node.js ≥ 22 and pnpm, on **Linux x64 or arm64**. There is no database to install
+and no service to start alongside it.
+
+The repo pins an exact pnpm in `package.json`'s `packageManager` field, so run `corepack
+enable` first and let it fetch that version — a different global pnpm installs against a
+lockfile it does not match. `pnpm-workspace.yaml` also restricts optional native packages to
+Linux, so an install on macOS or Windows silently resolves none of them; build in a container
+there.
 
 ```bash
+corepack enable
 git clone https://github.com/LowCarbCheck/openplate.git
 cd openplate
 pnpm install
@@ -101,8 +116,9 @@ pnpm dev            # http://localhost:3000 — nothing to provision first
 
 ```bash
 pnpm typecheck      # react-router typegen && tsc
-pnpm lint           # eslint --max-warnings 0
+pnpm lint           # oxlint --max-warnings 0
 pnpm test:unit      # node --test against tests/unit/**
+pnpm test:integration # node --test against tests/integration/**
 pnpm build          # react-router build (NODE_ENV=production)
 pnpm start          # tsx ./server.ts (NODE_ENV=production)
 ```

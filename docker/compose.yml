@@ -51,7 +51,12 @@ services:
       # curated nutrition data (food NAMES only, never photos; fails open on
       # outages). An EMPTY string disables it entirely so no food names ever
       # leave your machine.
-      FOOD_DB_API_URL: ${FOOD_DB_API_URL:-https://lowcarbcheck.org}
+      FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
+      # Number of reverse proxies in front of this container. React Router's
+      # CSRF check compares the browser Origin against the host it thinks it
+      # is serving, so a wrong hop count breaks form posts behind a proxy.
+      # 1 = one proxy (Caddy, Traefik); 2 = Cloudflare in front of one.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
     healthcheck:
       test:
         [

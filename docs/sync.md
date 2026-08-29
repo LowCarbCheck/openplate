@@ -29,10 +29,23 @@ Sync is entirely optional. Unset, openplate loses no feature.
 Restart the app after changing it. Unset it again and the sync screens disappear and the app
 stops reaching out. Your local diary is untouched either way.
 
+**Adding a second device:** point it at the same `SYNC_SERVER_URL` and sign in with the same
+email and passphrase you used on the first one. That is the whole procedure — no new recovery
+code is issued, and nothing has to be copied off the first device.
+
 It must be an address a **browser** can reach. The sync client runs in the page, so a compose
 hostname like `http://sync:3000` does not work — use the public URL your users' devices
 resolve. A malformed value stops the boot on purpose, so a typo cannot look like "sync is
 quietly off".
+
+## The research console (`/study`)
+
+The app always carries a `/study` route, and it is inert on an ordinary instance. It comes to
+life only when the sync service it talks to has `SYNC_RESEARCH=true`, which is **off by
+default** — an instance you stand up without touching that flag runs no study, holds no study
+graph, and offers nothing to enrol in. Read `openplate-sync`'s `.env.example` before turning it
+on: it makes the server hold health-adjacent personal data, which is a different undertaking
+from holding ciphertext it cannot read.
 
 ## End-to-end encryption, in one paragraph
 
@@ -46,8 +59,9 @@ the size and timing of your uploads. What it cannot see is anything you ate.
 this in full, including an honest list of the metadata the server does learn.
 
 **The cost of that design, stated up front:** if you forget your passphrase and lose your
-recovery code, your synced data is gone — to us and to you. An email reset restores your
-_login_, never your _data_. The app says exactly this before you finish setting sync up, and
+recovery code, your synced data is gone — to us and to you. An email reset on its own restores your
+_login_, never your _data_ — but entering your recovery code during that same reset restores
+the data too. That is what the recovery code is for, and it is the only thing that can do it. The app says exactly this before you finish setting sync up, and
 shows the recovery code once, behind an explicit acknowledgment.
 
 Plate photos are never part of a sync payload. They stay on the device that took them, and

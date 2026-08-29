@@ -51,12 +51,12 @@ Everything else goes through HTTP. Adding to this list requires a new ADR amendm
 
 **Bad / cost:**
 
-- Migrating existing CLI commands is non-trivial — see [M1](../.tracker/M1-cli-http-api-wrapper/00-README.md) for the plan.
+- Migrating existing CLI commands is non-trivial — see the `M1-cli-http-api-wrapper` milestone in the private workspace tracker for the plan.
 - Bootstrap commands remain direct-DB; we have to be disciplined about keeping that list small.
 - CLI gains a network dependency for almost everything — local dev needs the server running.
 
 ## References
 
-- Milestone: [.tracker/M1-cli-http-api-wrapper](../.tracker/M1-cli-http-api-wrapper/00-README.md)
+- Milestone: `M1-cli-http-api-wrapper` (private workspace tracker, not part of this repo)
 - `cli/lib/transport.ts` (to be created in M1 spec 01)
 - `app/lib/api-auth.server.ts` (to be created in M1 spec 01)

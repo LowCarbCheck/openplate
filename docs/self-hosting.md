@@ -20,13 +20,17 @@ docker compose -f compose.yml up -d
 One container, no database, no `.env` step, no secret to generate. The app is reachable at
 `http://localhost:3000`.
 
+The port is published on **every** interface, so the app is also reachable at this machine's
+LAN address the moment `up -d` returns. On a shared network, change the `ports:` line to
+`'127.0.0.1:3000:3000'` and reach it through a reverse proxy instead.
+
 To build from source instead of pulling the published image, comment out `image:` in
 [`docker/compose.yml`](../docker/compose.yml), uncomment `build:`, and run — from the repo
 root, because the build context is written relative to that file:
 
 ```bash
-docker compose -f docker/compose.yml build
-docker compose -f docker/compose.yml up -d
+docker compose --project-directory . -f docker/compose.yml build
+docker compose --project-directory . -f docker/compose.yml up -d
 ```
 
 Every other shape (sync, self-hosted inference, both) is a separate file under
@@ -54,10 +58,13 @@ echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
 docker compose -f compose.sync.yml up -d
 ```
 
+**Read [openplate-sync's README](https://github.com/LowCarbCheck/openplate-sync) before you
+run that last line on a machine other people can reach.** Both services publish their ports
+on every interface, so the account service is exposed the moment it starts — and running an
+account service is a bigger undertaking than running the app.
+
 The file is annotated line by line, including the two settings that will actually hurt you if
-you get them wrong (`SERVER_SECRET` and `TRUST_PROXY`). Read
-[openplate-sync's README](https://github.com/LowCarbCheck/openplate-sync) before you put it on
-the public internet — running an account service is a bigger undertaking than running the app.
+you get them wrong (`SERVER_SECRET` and `TRUST_PROXY`).
 See [sync.md](sync.md) for what sync is and how the client reaches it.
 
 ## First run
@@ -94,7 +101,14 @@ openplate.example.com {
 ```
 
 Then set `APP_URL=https://openplate.example.com` in `.env` (and `TRUST_PROXY=1`, the
-production default) and restart the `app` service.
+production default) and recreate the `app` service with
+`docker compose -f compose.yml up -d`. A plain `docker compose restart` does **not** re-read
+`.env` — it restarts the container it already built, so the new values never arrive.
+
+Also change the `ports:` line to `'127.0.0.1:3000:3000'`, then apply it the same way with
+`docker compose -f compose.yml up -d`. A proxy in front does not unpublish the container port:
+leave it as `'3000:3000'` and the app keeps answering plain HTTP on port 3000 to the whole
+network, beside the HTTPS address you just set up.
 
 **Tailscale Serve** (no domain, no port-forwarding, HTTPS on your own tailnet):
 
@@ -126,9 +140,14 @@ docker compose -f compose.sync.yml exec postgres \
 ## Upgrading
 
 ```bash
-docker compose pull
-docker compose up -d
+docker compose -f compose.yml pull
+docker compose -f compose.yml up -d
 ```
+
+Use the same `-f` file you deployed with. If you brought up a topology from
+[`docker/topologies/`](../docker/topologies/), name that file instead — for example
+`docker compose -f compose.sync.yml pull`. A bare `docker compose pull` beside
+`compose.sync.yml` fails with `no configuration file provided: not found`.
 
 There is nothing to migrate: the app container holds no state, so a new image just replaces
 the old one. If you run the full stack, the sync service applies its own migrations on start.
@@ -143,14 +162,17 @@ It is a one-way change, so:
 1. **Back up first.** Take a `pg_dump` of the app's old database if you want the account rows
    recoverable, and have every person on every device take a JSON export from **Profile → Your
    data**. That export is the copy that holds their diary.
-2. **Upgrade.** The migration runs on container start. Afterwards there is no login page:
+2. **Upgrade.** First update the `image:` line to `ghcr.io/lowcarbcheck/openplate:latest` —
+   pre-0.1.x images were published under `ghcr.io/sprqvntrs/openplate`, and pulling without
+   this change just re-fetches the old one. The migration then runs on container start. Afterwards there is no login page:
    every device that already has data keeps it and simply stops asking who you are.
 3. **Prune your `.env`.** The session-secret, encryption-key, signup-gate and seeded-superadmin
    variables are gone, and so are `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` and
    the pool-tuning variables. Nothing reads them. Leaving them set is harmless, but they are
    dead weight.
-4. **Drop the old volume** once you are happy:
-   `docker compose down && docker volume rm openplate_pg-data`.
+4. **Drop the old volume** once you are happy. Older releases pinned no Compose project name,
+   so the prefix came from whatever directory you ran in — confirm the real name first:
+   `docker volume ls | grep pg-data`, then `docker compose down && docker volume rm <that name>`.
 
 If two accounts were signed in on the **same** browser profile, note that the device store was
 always device-scoped — their data was already sharing one store and stays that way. Separate

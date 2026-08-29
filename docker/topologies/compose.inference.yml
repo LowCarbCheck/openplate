@@ -129,7 +129,12 @@ services:
       # curated nutrition data (food NAMES only, never photos; fails open on
       # outages). An EMPTY string disables it entirely so no food names ever
       # leave your machine.
-      FOOD_DB_API_URL: ${FOOD_DB_API_URL:-https://lowcarbcheck.org}
+      FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
+
+      # Number of reverse proxies in front of this container. A wrong hop count
+      # breaks form posts: React Router compares the browser Origin against the
+      # host it thinks it serves. 0 = no proxy; 1 = one; 2 = Cloudflare in front.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
 
       # -- The instance preset: this is what turns into openplate's one-tap
       #    "This openplate provides its own AI" card, on the AI settings page

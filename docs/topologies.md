@@ -132,8 +132,9 @@ credit limits, which is the same outcome with no server.
 **You gain:** one upstream key spent on behalf of several people, a per-member daily cap, and
 per-member revocation. The same shape serves a hosted operator running a small tier for
 people who do not want to run anything.
-**You operate:** one small stateless-ish container — no model, no database, a members JSON
-file you edit and a quota counter file that must sit on durable storage.
+**You operate:** one small stateless-ish container — no model, no database, a member roster and
+quota state managed over its own admin API, or by editing the member store file directly if you
+prefer — no restart either way — on durable storage.
 **Compose files:** in the gateway repo —
 [`docker/compose.yml`](https://github.com/LowCarbCheck/openplate-gateway/blob/main/docker/compose.yml)
 for the gateway alone, plus a household and a hosted topology.
