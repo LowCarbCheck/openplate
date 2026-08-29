@@ -1381,7 +1381,7 @@
         "title": "Der Schlüssel dieser Studie",
         "account": "Studienkonto Nummer {{accountId}}",
         "noKey": "Diese Studie hat noch keinen Schlüssel. Erzeuge einen, bevor ihre Einwilligungsunterlagen gedruckt werden.",
-        "unopened": "Diese Konsole konnte die Schlüssel dieser Studie nicht öffnen. Sie kann deshalb keinen davon zeigen und keinen Beitrag öffnen. Meistens wurden sie mit einer anderen Passphrase versiegelt: Melde dich mit der an, mit der sie erzeugt wurden, oder nutze den Wiederherstellungscode dieser Studie. Nichts ist verloren — die Schlüssel liegen weiter auf dem Server, ungelesen von ihm.",
+        "unopened": "Diese Konsole konnte die Schlüssel dieser Studie nicht öffnen. Sie kann deshalb keinen davon zeigen und keinen Beitrag öffnen. Meistens wurden sie mit einer anderen Passphrase versiegelt: Melde dich mit der an, mit der sie erzeugt wurden. Nichts ist verloren — die Schlüssel liegen weiter auf dem Server, ungelesen von ihm.",
         "fingerprintLabel": "Fingerabdruck des aktuellen Schlüssels",
         "fingerprintHint": "Druck diese zwölf Zeichen in die Einwilligungsunterlagen der Studie. Teilnehmende tippen sie beim Mitmachen von diesem Blatt ab. Diese Konsole sendet sie nirgendwohin, und hier gibt es nichts, womit man sie veröffentlichen könnte.",
         "generations": "Vorhandene Schlüsselgenerationen: {{generations}}. Beim Öffnen eines Beitrags wird jede einzelne probiert, damit nichts verloren geht, was mit einem älteren Schlüssel versiegelt wurde.",

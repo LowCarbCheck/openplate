@@ -504,8 +504,13 @@ export async function pullCohort(): Promise<SurfaceRead<StudyCohort>> {
   if (hasUnopenedStudyCompartment(open.compartment)) {
     throw new SyncRequestError({
       kind: 'invalid',
+      // NO RECOVERY CODE IS OFFERED, because `/study` cannot accept one
+      // (M164/08). This module exports `createStudyAccount` and
+      // `signInToStudy` and nothing else, and the route collects a passphrase.
+      // A remedy a person cannot carry out is worse than none: it sends them
+      // looking for a door that is not there.
       message:
-        'This console could not open this study’s keys, so it cannot open any contribution either. Sign in with the passphrase those keys were made with, or use the study’s recovery code.',
+        'This console could not open this study’s keys, so it cannot open any contribution either. Sign in with the passphrase those keys were made with.',
     });
   }
   return pullStudyCohort({ transport: open.http, keys: studyKeyPairsOf(open.region) });

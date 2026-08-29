@@ -208,7 +208,15 @@ export function readCompartmentKind({ value }: { value: unknown }): CompartmentK
   // PRESENT, and not one of the two. A newer client's third kind, a corrupted
   // byte, or a hostile plaintext — this build cannot tell which, and all three
   // have the same correct answer: do not guess, refuse.
-  if (kind !== null && kind !== undefined) return 'unrecognised';
+  //
+  // PRESENCE, not truthiness (M164/08). An explicit `kind: null` is "present
+  // but meaningless", and ADR-0009's amendment puts that on the refusal side:
+  // a plaintext that IS an object and carries a `kind` this build cannot read
+  // is refused, and only an ABSENT tag takes the migration exit below. Reading
+  // `null` as absent was the one shape where present meant absent — masked
+  // today by the untagged sniff, which catches a study plaintext anyway, and
+  // masks are not guarantees.
+  if (Object.hasOwn(plaintext.data, 'kind')) return 'unrecognised';
 
   // UNTAGGED — written before M164/02. A `studyKeyring` here is the only
   // evidence that survives, and it is conclusive in one direction: the diary's

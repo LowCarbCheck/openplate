@@ -129,23 +129,68 @@ export function createPrivateStoreSession({
   passphraseKek: CryptoKey;
   established?: EstablishedPrivateStore | null;
 }): PrivateStoreSession {
-  return {
+  // A SIGN-IN, WHICH HAS SEEN NO PLAINTEXT AT ALL AND MUST SAY SO. That is
+  // what stops a rewrap from turning "I hold a CDK" into "I know what it
+  // protects" — see {@link PrivateStoreSession.extras}.
+  const session: PrivateStoreSession = {
     accountId,
     passphraseKek,
-    cdk: established?.cdk ?? null,
-    wraps:
-      established ?
-        { cdkWrapPassphrase: established.cdkWrapPassphrase, cdkWrapRecovery: established.cdkWrapRecovery }
-      : null,
+    cdk: null,
+    wraps: null,
     cache: null,
-    // AN ESTABLISH IS KNOWLEDGE, A SIGN-IN IS NOT. A session that minted the
-    // compartment is the authority on what is inside it — nothing, yet — so
-    // `{}` is a true statement there. A sign-in has seen no plaintext at all
-    // and must say so, which is what stops a rewrap from turning "I hold a
-    // CDK" into "I know what it protects".
-    extras: established ? {} : null,
+    extras: null,
     pulled: null,
   };
+  // AN ESTABLISH IS KNOWLEDGE, and it is stated by ONE function rather than by
+  // each site that mints a compartment (M164/08). The establish branch in
+  // `sync-actions.ts` wrote `cdk`, `wraps` and `cache` by hand and simply
+  // never made this statement, so the seal declined and a freshly minted
+  // compartment was never published.
+  if (established !== undefined && established !== null) adoptEstablishedCompartment({ session, established });
+  return session;
+}
+
+/**
+ * Takes a compartment this session JUST MINTED — the CDK, both doors, and the
+ * knowledge that comes with having made it.
+ *
+ * ── Why `extras` is `{}` here, and why that is not a shortcut ────────────
+ *
+ * `extras` answers "what is in this compartment that this build cannot name?"
+ * and the session that created the compartment is the authority on it: the
+ * answer is nothing, because nothing is in it yet. That is a TRUE statement,
+ * not an assumption — unlike {@link adoptRewrappedSlots}, which acquires a CDK
+ * for a compartment somebody else wrote and therefore has to admit ignorance.
+ *
+ * ── Why this is a function and not three assignments ─────────────────────
+ *
+ * Because it was three assignments (M164/08). `rotateCompartmentRecoverySlot`
+ * mints a compartment for an account whose data predates the partition, set
+ * `cdk`/`wraps`/`cache`, and left `extras` at `null` — so
+ * {@link sealOwnerPrivateRegion} refused, re-emitted `session.pulled`, and
+ * `pulled` on such an account is `null`. The compartment the user was shown a
+ * recovery code for never reached the service, and never would: with nothing
+ * pushed there is nothing for a later pull to open, so the state does not
+ * clear. Every acquisition of a CDK has to answer the same question — does
+ * this session know the plaintext? — and there are now exactly two places that
+ * can, both of them here.
+ */
+export function adoptEstablishedCompartment({
+  session,
+  established,
+}: {
+  session: PrivateStoreSession;
+  established: EstablishedPrivateStore;
+}): void {
+  session.cdk = established.cdk;
+  session.wraps = {
+    cdkWrapPassphrase: established.cdkWrapPassphrase,
+    cdkWrapRecovery: established.cdkWrapRecovery,
+  };
+  // A fresh compartment has no sealed bytes yet, and the cache is keyed on a
+  // plaintext hash — anything left here would belong to a different one.
+  session.cache = null;
+  session.extras = {};
 }
 
 /**
@@ -204,9 +249,17 @@ export async function sealOwnerPrivateRegion({
   // the rewrap adopt writes) already carries both the newer client's keys and
   // the new wraps. Nothing is lost by not re-sealing it.
   //
-  // The state is also transient, by one cycle at most: this session now holds
-  // the CDK, so its next pull opens the compartment on the first candidate and
-  // `extras` stops being `null` forever after.
+  // THE STATE IS NOT GUARANTEED TO CLEAR, and the sentence that stood here
+  // said it was — "transient, by one cycle at most" (M164/08). A pull clears
+  // it only when the pull CARRIES a compartment: {@link
+  // openOwnerPrivateRegion} returns before touching `extras` when `sealed` is
+  // `null`. That is unreachable from a rewrap adopt, which by definition
+  // rewrapped something that exists, so this branch does clear on the next
+  // pull — but nothing here enforces it, so it is written as what it is: a
+  // consequence of where the state can be entered, which is exactly the kind
+  // of claim that goes stale when a new entry point is added. It is also why
+  // {@link hasUnopenedCompartment} reports the state rather than waiting it
+  // out.
   if (cdk === null || wraps === null || extras === null) return session.pulled;
 
   const plaintextHash = sealCacheKey({ region, extras });
@@ -262,9 +315,24 @@ function sealCacheKey({ region, extras }: { region: OwnerPrivateRegion; extras: 
  * that this device's key material was published. Reporting that as a clean
  * sync is how a device ends up looking healthy for a week while its share
  * identity exists nowhere but here.
+ *
+ * ── TWO WAYS TO HOLD A COMPARTMENT UNOPENED, NOT ONE (M164/08) ───────────
+ *
+ * The question is "did this session read the plaintext?", and a missing CDK is
+ * only one of the two answers. {@link adoptRewrappedSlots} leaves a session
+ * holding a KEY IT HAS NOT READ WITH — a CDK taken out of a rewrapped slot,
+ * with the compartment never decrypted — and the seal re-emits there for the
+ * same reason and with the same silent cost. The predicate therefore mirrors
+ * the seal's own guard rather than a subset of it; a report that covered only
+ * the no-CDK half called the other half a clean sync.
+ *
+ * `pulled !== null` is the other half of both, and it is what keeps the
+ * genuinely compartment-less account out: that one seals to `null` by design
+ * (an account whose first device has not minted one), and reporting it would
+ * turn a documented degraded state into a permanent warning.
  */
 export function hasUnopenedCompartment(session: PrivateStoreSession): boolean {
-  return session.cdk === null && session.pulled !== null;
+  return session.pulled !== null && (session.cdk === null || session.extras === null);
 }
 
 /**

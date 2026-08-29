@@ -1381,7 +1381,7 @@
         "title": "This study's key",
         "account": "Study account number {{accountId}}",
         "noKey": "This study holds no key yet. Mint one before its consent materials are printed.",
-        "unopened": "This console could not open this study's keys, so it can show none of them and open no contribution. Most often they were sealed with a different passphrase: sign in with the one they were made with, or use this study's recovery code. Nothing has been lost — the keys are still on the server, unread by it.",
+        "unopened": "This console could not open this study's keys, so it can show none of them and open no contribution. Most often they were sealed with a different passphrase: sign in with the one they were made with. Nothing has been lost — the keys are still on the server, unread by it.",
         "fingerprintLabel": "Fingerprint of the current key",
         "fingerprintHint": "Print these twelve characters in the study's consent document. A contributor types them from that page when joining. This console sends them nowhere and there is nothing here to publish them with.",
         "generations": "Key generations held: {{generations}}. Every one of them is tried when a contribution is opened, so nothing sealed to an older key is lost.",

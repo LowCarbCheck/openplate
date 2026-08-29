@@ -191,7 +191,10 @@ newer client's key. `PrivateStoreSession.extras` is therefore now
 `null` — the same rule as M164/01, one level in: **a session may only write a
 plaintext it has read.** `adoptRewrappedSlots` records the rewrapped bytes as
 `pulled`, so the re-emission publishes the new door and preserves the
-ciphertext, and the state clears on the session's very next pull.
+ciphertext. This sentence used to end "and the state clears on the session's
+very next pull" — see the 2026-08-29 (spec 08) amendment, which corrects it:
+a pull clears the state only when the pull CARRIES a compartment, and the
+seal's own comment made the same claim about a case where it is false.
 
 This replaces an accident with an invariant. The loss was previously masked by
 the rewrap bumping the compartment's Lamport to `previous + 1` while the fresh
@@ -206,6 +209,71 @@ The study console's `StudyCompartmentSession.extras` is deliberately left
 non-nullable: there is no rewrap adopt on that side, so no path there can
 acquire a CDK without an open.
 
+## Amendment — 2026-08-29 (M164 spec 08)
+
+The decision is unchanged again. Four corrections, one of them a regression the
+spec 06 amendment introduced.
+
+**1. An establish IS knowledge, and one site never said so.** `extras` is
+`CompartmentExtras | null` where `null` is ignorance, and a session that has
+just MINTED the compartment is the authority on what is inside it: nothing,
+yet. `rotateCompartmentRecoverySlot`'s establish branch — the upgrade path for
+an account whose data predates the partition, and the only routine operation
+where both compartment doors exist in one frame — set `cdk`, `wraps` and
+`cache` by hand and left `extras` at `null`. `sealOwnerPrivateRegion` therefore
+declined and re-emitted `session.pulled`, which on that very account is `null`.
+The compartment the user was shown a recovery code for never reached the
+service, and it did not heal: with nothing pushed there is nothing for a later
+pull to open, so `extras` stayed `null` for that session and every session
+after it. `hasUnopenedCompartment` was `false`, so the cycle reported clean —
+precisely the state the consequences above say must not report clean.
+
+The fix is a single function, `adoptEstablishedCompartment` (`private-store.ts`),
+which is now the only way a session takes a minted compartment;
+`createPrivateStoreSession` goes through it too. **Every acquisition of a CDK
+must answer "does this session know the plaintext?" at the site, and there are
+exactly two places that can answer it.**
+
+**2. A session holding a key it has not read with is REPORTED.** After
+`adoptRewrappedSlots` the session has a CDK and `extras === null`, so the seal
+re-emits and this device's own owner-private changes are not published — the
+same silent drop the consequences above made visible for the no-CDK case, and
+nothing reported it. `hasUnopenedCompartment` now mirrors the seal's own guard
+(`pulled !== null && (cdk === null || extras === null)`) rather than a subset of
+it, and reaches the same status-surface sentence. No second vocabulary: the
+consequence is identical, so the report is.
+
+`StudyCompartmentSession` is still exempt for the reason given above — there is
+no rewrap adopt on the console side.
+
+**3. `kind: null` is a refusal.** The amendment above says a plaintext that is
+an object and carries a `kind` this build cannot read is refused, and only an
+ABSENT tag takes the migration exit. An explicit `null` fell through to the
+untagged sniff — the one shape where "present but meaningless" was read as
+"absent". Not exploitable today, because a study plaintext always carries
+`studyKeyring` and the sniff catches it anyway, but a mask is not a guarantee.
+`readCompartmentKind` now tests PRESENCE (`Object.hasOwn`).
+
+**4. The pre-push veto stops the WHOLE CYCLE, and that is accepted.** Before
+spec 06 the wrong-kind throw came one line after `pushBlob`, so a device facing
+an `unrecognised` kind still moved its diary. `assertPulledSnapshot` runs
+before the merge and before the push, so the throw now aborts the whole cycle:
+a downgrade against a compartment written by a newer client stops ALL sync for
+that account on that device, not just the compartment. This is the right trade
+— a client that cannot understand the account's private data should not be
+writing the account — and it is stated here rather than discovered, because it
+widens the "hard failure on a downgrade" already accepted above from one entity
+to the cycle.
+
+**A note on the comment that let #1 ship.** `sealOwnerPrivateRegion` said the
+`extras === null` state was "transient, by one cycle at most: this session now
+holds the CDK, so its next pull opens the compartment on the first candidate".
+That is a reachability claim with nothing enforcing it, and it is false exactly
+in the case above: `openOwnerPrivateRegion` returns before touching `extras`
+when the pull carried no compartment. A sentence asserting that a state cannot
+persist is a fact about today's entry points, not a property, and it must be
+written as one.
+
 ## References
 
 - [ADR-0008](0008-the-study-console-lives-in-openplate.md) — why a study account and a diary account meet in the same browser profile at all.
@@ -214,3 +282,4 @@ acquire a CDK without an open.
 - `.tracker/M164-openplate-research-hardening/01-the-seal-must-never-blank-a-compartment-it-could-not-open.md` — the re-emit invariant this decision splits.
 - `.tracker/M164-openplate-research-hardening/02-a-compartment-carries-its-kind-and-a-wrong-kind-is-refused.md`
 - `.tracker/M164-openplate-research-hardening/06-a-refusal-that-arrives-after-the-write-is-not-a-refusal.md` — the three places this decision was not applied.
+- `.tracker/M164-openplate-research-hardening/08-an-established-compartment-that-is-never-published.md` — the regression spec 06 introduced, and the sync-wide stop recorded above.

@@ -31,8 +31,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  adoptEstablishedCompartment,
   adoptRewrappedSlots,
   createPrivateStoreSession,
+  hasUnopenedCompartment,
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
 } from '../../app/lib/sync/private-store';
@@ -704,5 +706,136 @@ describe('the refusal must come before the write', () => {
     });
     assert.ok(afterOpen !== null);
     assert.deepEqual((await readRawPlaintext({ established, sealed: afterOpen }))[FUTURE_KEY], FUTURE_VALUE);
+  });
+});
+
+/**
+ * AN ESTABLISHED COMPARTMENT THAT IS NEVER PUBLISHED (M164/08).
+ *
+ * M164/06's distinction is right and is not reopened here: `null` is
+ * ignorance, `{}` is knowledge. What it missed is that AN ESTABLISH IS
+ * KNOWLEDGE — a session that just minted the compartment is the authority on
+ * what is inside it, which is nothing, yet. `createPrivateStoreSession` says
+ * so in its own comment; the establish branch in `sync-actions.ts`
+ * (`rotateCompartmentRecoverySlot`) set `cdk`, `wraps` and `cache` and never
+ * made the statement, so the seal declined and the compartment stayed on the
+ * device that minted it — see the integration reproduction in
+ * `sync-e2ee-roundtrip.test.ts`.
+ *
+ * The second half is the state that produced it: a session holding a CDK it
+ * has never read with is a SILENT DROP, and nothing reported it.
+ */
+describe('a compartment this session minted, and one it only holds a key to', () => {
+  it('an establish declares knowledge, so the seal publishes what it minted', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase this device signed in with');
+
+    // A SIGN-IN SESSION, which is where the upgrade path starts: no CDK, no
+    // wraps, and — since M164/06 — no claim to have read any plaintext.
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    assert.equal(session.extras, null, 'a sign-in must start out admitting it has read nothing');
+
+    // THE ESTABLISH, as `rotateCompartmentRecoverySlot` performs it on an
+    // account whose compartment predates the partition.
+    adoptEstablishedCompartment({ session, established });
+
+    const sealed = await sealOwnerPrivateRegion({ session, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
+    assert.ok(sealed !== null, 'a session that minted the compartment must publish it, not re-emit a null');
+
+    // POSITIVE: the bytes are this device's own region, sealed under the CDK
+    // that was just minted — not a re-emission of anything.
+    const raw = await readRawPlaintext({ established, sealed });
+    assert.equal(raw.kind, COMPARTMENT_KIND.diary);
+    assert.equal(raw.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+
+    // AND BOTH DOORS ARE THE MINTED ONES. A seal that rebuilt the wraps from
+    // the CDK would carry a recovery slot nobody can open.
+    assert.deepEqual(
+      { cdkWrapPassphrase: sealed.cdkWrapPassphrase, cdkWrapRecovery: sealed.cdkWrapRecovery },
+      wrapsOf(established),
+    );
+
+    // NON-VACUITY: the same session WITHOUT the establish seals nothing, which
+    // is the state this test exists to distinguish from.
+    const untouched = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    assert.equal(
+      await sealOwnerPrivateRegion({ session: untouched, region: regionWithShareKey(PRIVATE_KEY_MARKER) }),
+      null,
+    );
+  });
+
+  it('a session that holds a key it has not read with is reported, never called clean', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const fromNewerClient = await compartmentFromANewerClient(established);
+
+    // The rewrap-adopted state (M164/06): a device that signed in and changed
+    // its passphrase before its first sync cycle. It holds a CDK, it has never
+    // decrypted the compartment, and its seal therefore re-emits — so this
+    // device's own owner-private changes are NOT published.
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    const nextKek = await privateStoreKekFor('the passphrase this device just moved to');
+    adoptRewrappedSlots({
+      session,
+      cdk: established.cdk,
+      sealed: await rewrappedSlots({ established, sealed: fromNewerClient.sealed, nextKek }),
+    });
+
+    // NON-VACUITY: this is the state with a KEY in it, not the no-CDK one the
+    // predicate already covered.
+    assert.notEqual(session.cdk, null, 'the rewrap must have left a CDK, or this is the old case');
+    assert.equal(session.extras, null, 'and the compartment must never have been opened');
+
+    assert.equal(
+      hasUnopenedCompartment(session),
+      true,
+      'a session that cannot seal its own region must not report a clean sync',
+    );
+
+    // NON-VACUITY 2, both directions. A session that OPENED the compartment
+    // reports nothing, and neither does one that has pulled nothing at all —
+    // without these the predicate could be hard-wired to `true`.
+    const opener = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    await openOwnerPrivateRegion({ session: opener, sealed: fromNewerClient.sealed });
+    assert.equal(hasUnopenedCompartment(opener), false, 'an opened compartment is not an unopened one');
+    assert.equal(
+      hasUnopenedCompartment(createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek })),
+      false,
+      'an account with no compartment at all is a different state, and a reported one would be noise',
+    );
+  });
+
+  /**
+   * `kind: null` is "present but meaningless", and ADR-0009's amendment says a
+   * tag this build cannot read is a REFUSAL. `null` took the migration exit
+   * instead — the untagged sniff — which is the one shape where present reads
+   * as absent.
+   */
+  it('an explicit null kind is refused, not treated as untagged', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const nulled = await sealedJson({
+      established,
+      json: JSON.stringify({ kind: null, ...regionWithShareKey(PRIVATE_KEY_MARKER) }),
+    });
+
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    await assert.rejects(
+      () => openOwnerPrivateRegion({ session, sealed: nulled.sealed }),
+      (cause: unknown) => {
+        assert.ok(cause instanceof WrongCompartmentKindError, 'a tag this build cannot read must be a refusal');
+        assert.equal(cause.actual, 'unrecognised');
+        return true;
+      },
+    );
+    assert.equal(session.cdk, null, 'a refused compartment must not leave a CDK behind');
+
+    // NON-VACUITY: the SAME plaintext without the key is the migration case,
+    // and it still opens. The refusal is about the key being present, not
+    // about the rest of the bytes.
+    const untagged = await sealedJson({
+      established,
+      json: JSON.stringify(regionWithShareKey(PRIVATE_KEY_MARKER)),
+    });
+    const migrating = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    const opened = await openOwnerPrivateRegion({ session: migrating, sealed: untagged.sealed });
+    assert.equal(opened?.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER, 'an untagged compartment still opens');
   });
 });

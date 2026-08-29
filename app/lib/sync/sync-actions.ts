@@ -49,6 +49,7 @@ import {
 } from './local-store-bridge';
 import { partitionSnapshot, recomposeSnapshot, type SyncedSnapshot } from './snapshot-partition';
 import {
+  adoptEstablishedCompartment,
   adoptRewrappedSlots,
   assertOwnerPrivateCompartment,
   createPrivateStoreSession,
@@ -544,6 +545,17 @@ async function applySyncedSnapshot({
  * what is certainly true — the diary synced, and this device's own key
  * material did not — names the likely cause as likely, and offers the remedy
  * for it without promising it.
+ *
+ * ── AND A FOURTH, WHICH HAS THE KEY (M164/08) ───────────────────────────
+ *
+ * `adoptRewrappedSlots` leaves a session holding a CDK it has never read with,
+ * and the seal re-emits there too. The consequence is identical — this
+ * device's own owner-private changes are not published — so it belongs in the
+ * same report rather than in a second vocabulary, and
+ * {@link hasUnopenedCompartment} now answers for both. The sentence below
+ * stays true of it: this device did not open the compartment, and what it
+ * keeps there was not published. It normally clears on the next cycle, which
+ * is why it is amber here and not a thrown error.
  */
 function unopenedCompartmentFailure(session: PrivateStoreSession): SyncFailure | null {
   if (!hasUnopenedCompartment(session)) return null;
@@ -801,12 +813,13 @@ async function rotateCompartmentRecoverySlot({
   if (result.status === 'unopenable') return;
 
   const established = await establishPrivateStore({ passphraseKek: vault.privateStore.passphraseKek, recoveryKek });
-  vault.privateStore.cdk = established.cdk;
-  vault.privateStore.wraps = {
-    cdkWrapPassphrase: established.cdkWrapPassphrase,
-    cdkWrapRecovery: established.cdkWrapRecovery,
-  };
-  vault.privateStore.cache = null;
+  // THROUGH THE ADOPT, never field by field (M164/08). Written here by hand,
+  // this set `cdk`, `wraps` and `cache` and never said that this session KNOWS
+  // the plaintext — so `sealOwnerPrivateRegion` refused, re-emitted
+  // `session.pulled`, and on the very account this branch exists for that is
+  // `null`. The compartment the user was just shown a recovery code for stayed
+  // on this device, and nothing would ever have brought it back.
+  adoptEstablishedCompartment({ session: vault.privateStore, established });
 }
 
 // ---------------------------------------------------------------------------

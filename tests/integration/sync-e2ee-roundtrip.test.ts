@@ -59,6 +59,7 @@ import {
   createSyncAccount,
   completeSyncReset,
   markSyncPending,
+  regenerateRecoveryCode,
   requestSyncReset,
   signInToSync,
   syncNow,
@@ -90,7 +91,9 @@ import {
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
 } from '../../app/lib/sync/private-store';
-import { establishPrivateStore } from '../../app/lib/sync/engine/crypto/private-store';
+import { establishPrivateStore, openPrivateStore, unwrapCdk } from '../../app/lib/sync/engine/crypto/private-store';
+import { derivePrivateStoreRecoveryKek, parseRecoveryCode } from '../../app/lib/sync/engine/client/recovery-kek';
+import { base64ToBytes } from '../../app/lib/sync/engine/crypto/base64';
 import { openStudyRegion, sealStudyRegion } from '../../app/lib/sync/research/study-compartment';
 import { WrongCompartmentKindError } from '../../app/lib/sync/compartment-kind';
 
@@ -1096,4 +1099,104 @@ test('a session carrying an unopened compartment reports an unopened compartment
   markSyncPending();
   await syncNow();
   assert.equal(getSyncSessionSnapshot().error, null, 'an ordinary cycle must still report a clean sync');
+});
+
+/**
+ * AN ESTABLISHED COMPARTMENT THAT IS NEVER PUBLISHED (M164/08).
+ *
+ * The upgrade path for an account whose data predates the partition is
+ * `regenerateRecoveryCode`: it is the one routine operation where both
+ * compartment doors exist in the same frame, so `rotateCompartmentRecoverySlot`
+ * MINTS a compartment when the account has none. The user is shown a recovery
+ * code for it that afternoon.
+ *
+ * M164/06 made `sealOwnerPrivateRegion` refuse to seal from a session that has
+ * never read the compartment plaintext (`extras === null`), which is right —
+ * and the establish branch never said that it HAD read one, because it minted
+ * it. So the seal re-emitted `session.pulled`, which on this account is `null`,
+ * and the compartment stayed on the one device that made it.
+ *
+ * It does not heal: `openOwnerPrivateRegion` returns early on a pull that
+ * carried no compartment, so nothing ever writes `extras`, and every later
+ * session starts in the same state.
+ *
+ * ── Why the recovery door is opened at the end ───────────────────────────
+ *
+ * "A compartment reached the service" is only half the claim. The other half
+ * is that the code the user was just shown opens it — that is the promise the
+ * ceremony makes, and slot 2 is the only place it can be checked.
+ */
+test('a freshly established compartment reaches the service', async () => {
+  const email = `pre-partition-${Date.now()}@example.test`;
+  await createSyncAccount({
+    serverUrl: service.url,
+    email,
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  const founderVault = requireVault();
+
+  // AN ACCOUNT WHOSE BLOB PREDATES THE PARTITION: a real snapshot with no
+  // compartment on it at all. `snapshotOf` carries `privateStore: null`, which
+  // is exactly what every client wrote before M160/07.
+  const founder = { current: snapshotOf([foodLog('log-pre-partition', 'Written before the partition')]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: founderVault, deviceId: 'device-pre-partition', local: founder }));
+
+  // The device that will do the upgrade — a genuinely fresh sign-in, so it
+  // holds no CDK of its own and adopts nothing on its first pull.
+  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  const upgrading = requireVault();
+  markSyncPending();
+  await syncNow();
+
+  // NON-VACUITY 1: the account really has no compartment, so everything below
+  // is about one this device is about to mint rather than one it inherited.
+  assert.equal(upgrading.privateStore.cdk, null, 'the fixture must be an account with no compartment');
+  assert.equal(upgrading.privateStore.pulled, null, 'and no pull may have carried one');
+
+  // THE TRIGGER, exactly as a person reaches it: settings → regenerate the
+  // recovery code. `rewrapPrivateStoreOnServer` answers `no-compartment` and
+  // the establish branch mints one.
+  const { recoveryCode } = await regenerateRecoveryCode();
+
+  // NON-VACUITY 2: the mint happened, and the session is holding the key.
+  assert.notEqual(upgrading.privateStore.cdk, null, 'the establish branch must have minted a compartment');
+
+  markSyncPending();
+  await syncNow();
+
+  // THE ASSERTION THIS TEST WAS WRITTEN FOR, read back off the wire by a third
+  // device rather than out of any in-memory copy.
+  const readback = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: upgrading, deviceId: 'device-readback-mint', local: readback }));
+  const published = readback.current.privateStore;
+  assert.ok(published !== null, 'the compartment the user was shown a recovery code for must reach the service');
+
+  // POSITIVE 1: the passphrase door opens it, and it reads as this account's
+  // own diary compartment. "Not null" says nothing about what the bytes are.
+  const opened = await openOwnerPrivateRegion({
+    session: createPrivateStoreSession({
+      accountId: upgrading.accountId,
+      passphraseKek: upgrading.privateStore.passphraseKek,
+    }),
+    sealed: published,
+  });
+  assert.ok(opened !== null, 'the account’s own passphrase must open what was published');
+
+  // POSITIVE 2: and so does the code the user was handed. A compartment whose
+  // recovery slot nobody can open is the failure this whole ceremony exists to
+  // prevent — see `engine/crypto/private-store.ts`'s header.
+  const raw = parseRecoveryCode(recoveryCode);
+  assert.ok(raw !== null, 'the ceremony must have shown a well-formed code');
+  const recoveryCdk = await unwrapCdk({
+    wrappedCdk: base64ToBytes(published.cdkWrapRecovery),
+    kek: await derivePrivateStoreRecoveryKek(raw),
+  });
+  const plaintext = await openPrivateStore({
+    cdk: recoveryCdk,
+    ciphertext: base64ToBytes(published.ciphertext),
+    accountId: upgrading.accountId,
+  });
+  assert.equal(JSON.parse(new TextDecoder().decode(plaintext)).kind, 'diary');
 });
