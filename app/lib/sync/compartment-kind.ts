@@ -96,9 +96,17 @@ export type CompartmentKind = (typeof COMPARTMENT_KIND)[keyof typeof COMPARTMENT
  *
  *  - `unrecognised`: tagged, with something this build has never heard of. A
  *    NEWER client wrote it, and opening it as ours would be a guess.
- *  - `unreadable`: not shaped like a compartment plaintext at all. Not a
- *    statement about kind, and deliberately not a refusal — the region schema
- *    is left to fail on it, so the caller's existing `null` path is unchanged.
+ *  - `unreadable`: NOT AN OBJECT AT ALL, so there is nowhere for a tag to be.
+ *    Not a statement about kind, and deliberately not a refusal — the region
+ *    schema is left to fail on it, so the caller's existing `null` path is
+ *    unchanged.
+ *
+ * `unreadable` means that ONE thing and nothing else (M164/06). It used to
+ * also cover "the tag schema rejected this plaintext", which made a `kind` of
+ * `5` indistinguishable from an absent tag and walked a mistagged study
+ * compartment straight past the refusal — the exact hazard, reached through
+ * the one door left open. Everything about a plaintext except "is it an
+ * object" is now narrowed by hand, below.
  */
 export type CompartmentKindReading = CompartmentKind | 'unrecognised' | 'unreadable';
 
@@ -137,19 +145,6 @@ export interface ParsedCompartment<TRegion> {
   /** Everything else in the plaintext, minus the kind tag. `{}` for a plaintext this build fully understands. */
   extras: CompartmentExtras;
 }
-
-/**
- * The tag, read WITHOUT committing to either region's schema.
- *
- * `kind` is `z.string()` rather than an enum on purpose: an enum would make an
- * unrecognised tag indistinguishable from a malformed plaintext, and those two
- * take different exits below.
- */
-const compartmentTagSchema = z.object({
-  kind: z.string().nullish(),
-  /** The SNIFF's only evidence. A diary compartment has never had this key; a study one always has it. */
-  studyKeyring: z.array(z.unknown()).nullish(),
-});
 
 /** Thrown when a compartment opened cleanly and turned out to belong to the other kind of account. */
 export class WrongCompartmentKindError extends Error {
@@ -190,17 +185,29 @@ function wrongKindMessage({
 /**
  * What a decrypted plaintext SAYS it is.
  *
- * Pure and total: it never throws, and it reads nothing but the two fields
- * above. Both compartment opens go through it, so the tag and the sniff are
- * written down exactly once.
+ * Pure and total: it never throws, and it reads exactly two keys — `kind` and,
+ * only when there is no tag, `studyKeyring`. Both compartment opens go through
+ * it, so the tag and the sniff are written down exactly once.
  */
 export function readCompartmentKind({ value }: { value: unknown }): CompartmentKindReading {
-  const tag = compartmentTagSchema.safeParse(value);
-  if (!tag.success) return 'unreadable';
+  // THE ONLY SCHEMA IN THIS FUNCTION, and it asks the only question whose
+  // failure honestly means "there is no tag here": is this a dictionary? Every
+  // field below is then narrowed by hand against the value it must equal.
+  //
+  // A schema per field would put the two answers back on one exit — a `kind`
+  // the schema rejects is a REFUSAL, and a `kind` that is absent is a
+  // migration, and a whole-object parse cannot tell them apart. That collapse
+  // is what M164/06 found: `{"kind":5,…}` failed the old tag schema, came back
+  // `'unreadable'`, and was opened as an empty diary.
+  const plaintext = compartmentExtrasSchema.safeParse(value);
+  if (!plaintext.success) return 'unreadable';
 
-  const { kind, studyKeyring } = tag.data;
+  const kind: unknown = plaintext.data['kind'];
   if (kind === COMPARTMENT_KIND.diary) return COMPARTMENT_KIND.diary;
   if (kind === COMPARTMENT_KIND.study) return COMPARTMENT_KIND.study;
+  // PRESENT, and not one of the two. A newer client's third kind, a corrupted
+  // byte, or a hostile plaintext — this build cannot tell which, and all three
+  // have the same correct answer: do not guess, refuse.
   if (kind !== null && kind !== undefined) return 'unrecognised';
 
   // UNTAGGED — written before M164/02. A `studyKeyring` here is the only
@@ -210,6 +217,12 @@ export function readCompartmentKind({ value }: { value: unknown }): CompartmentK
   // the parsed region). See this module's header on why the alternative — a
   // flat "untagged means diary" — is a lockout nobody can rule out, because
   // the server cannot be asked.
+  //
+  // PRESENCE is the evidence, not shape: a `studyKeyring` this build cannot
+  // parse is still a key nothing on the diary side has ever written, and
+  // demanding an array here would hand the malformed case back to the diary
+  // open — which is the whole class of mistake this spec closes.
+  const studyKeyring: unknown = plaintext.data['studyKeyring'];
   if (studyKeyring !== null && studyKeyring !== undefined) return COMPARTMENT_KIND.study;
   return COMPARTMENT_KIND.diary;
 }

@@ -50,6 +50,7 @@ import {
 import { partitionSnapshot, recomposeSnapshot, type SyncedSnapshot } from './snapshot-partition';
 import {
   adoptRewrappedSlots,
+  assertOwnerPrivateCompartment,
   createPrivateStoreSession,
   hasUnopenedCompartment,
   openOwnerPrivateRegion,
@@ -453,6 +454,11 @@ export async function syncNow(): Promise<void> {
       deviceId: vault.deviceId,
       readSnapshot: () => readSyncedSnapshot(vault.privateStore),
       applySnapshot: (input) => applySyncedSnapshot({ session: vault.privateStore, ...input }),
+      // The refusal that has to precede the push. `applySyncedSnapshot` below
+      // opens the same compartment and throws the same error, and until M164/06
+      // that was the ONLY place it happened — one line after `pushBlob`.
+      assertPulledSnapshot: ({ pulled }) =>
+        assertOwnerPrivateCompartment({ session: vault.privateStore, sealed: pulled.privateStore }),
       parseRemoteSnapshot,
     });
     updateSyncSession({

@@ -89,13 +89,19 @@ export interface PrivateStoreSession {
    * The compartment keys THIS BUILD DOES NOT RECOGNISE, as the last successful
    * open found them — a field a newer client added, carried verbatim (M164/03).
    *
-   * `{}` until an open says otherwise, which is also the honest answer for a
-   * compartment this session established itself. Never inspected, never
-   * validated, and never allowed into a snapshot: `recomposeSnapshot` would
-   * have to classify it, and `classifySnapshotKey` is right to refuse a key
-   * nobody has put on a side of the partition.
+   * Never inspected, never validated, and never allowed into a snapshot:
+   * `recomposeSnapshot` would have to classify it, and `classifySnapshotKey` is
+   * right to refuse a key nobody has put on a side of the partition.
+   *
+   * `null` IS NOT `{}` (M164/06). `{}` is knowledge — an open, or an establish,
+   * that found nothing this build cannot name. `null` is ignorance: this
+   * session has never seen the plaintext, so it cannot say what is in it. Only
+   * one state produces it while a CDK is present, and it is an ordinary one:
+   * {@link adoptRewrappedSlots}, which gets its CDK out of a slot without ever
+   * decrypting the compartment. {@link sealOwnerPrivateRegion} refuses to write
+   * a plaintext from that state.
    */
-  extras: CompartmentExtras;
+  extras: CompartmentExtras | null;
   /**
    * The compartment EXACTLY AS LAST PULLED, written on every pull that carried
    * one — whether or not this session could open it.
@@ -132,7 +138,12 @@ export function createPrivateStoreSession({
         { cdkWrapPassphrase: established.cdkWrapPassphrase, cdkWrapRecovery: established.cdkWrapRecovery }
       : null,
     cache: null,
-    extras: {},
+    // AN ESTABLISH IS KNOWLEDGE, A SIGN-IN IS NOT. A session that minted the
+    // compartment is the authority on what is inside it — nothing, yet — so
+    // `{}` is a true statement there. A sign-in has seen no plaintext at all
+    // and must say so, which is what stops a rewrap from turning "I hold a
+    // CDK" into "I know what it protects".
+    extras: established ? {} : null,
     pulled: null,
   };
 }
@@ -175,7 +186,25 @@ export async function sealOwnerPrivateRegion({
   region: OwnerPrivateRegion;
 }): Promise<SealedPrivateStore | null> {
   const { cdk, wraps, extras } = session;
-  if (cdk === null || wraps === null) return session.pulled;
+  // A SESSION MAY ONLY WRITE A PLAINTEXT IT HAS READ (M164/06).
+  //
+  // The first two are M164/01's rule: no key, nothing to seal with. The third
+  // is the same rule one level in, and it covers a state that has a key and
+  // still knows nothing — a CDK adopted from a rewrapped slot
+  // ({@link adoptRewrappedSlots}), where the compartment was never decrypted.
+  // Sealing from there writes `{ ...{}, kind, ...region }` and silently deletes
+  // every key a newer client put in the compartment, with the LOCAL region —
+  // which on the fresh device this happens to is empty.
+  //
+  // Re-emitting is exactly right rather than merely safe: the rewrap left the
+  // CIPHERTEXT byte-identical and only moved a door, so `session.pulled` (which
+  // the rewrap adopt writes) already carries both the newer client's keys and
+  // the new wraps. Nothing is lost by not re-sealing it.
+  //
+  // The state is also transient, by one cycle at most: this session now holds
+  // the CDK, so its next pull opens the compartment on the first candidate and
+  // `extras` stops being `null` forever after.
+  if (cdk === null || wraps === null || extras === null) return session.pulled;
 
   const plaintextHash = sealCacheKey({ region, extras });
   if (session.cache !== null && session.cache.plaintextHash === plaintextHash) return session.cache.sealed;
@@ -284,13 +313,93 @@ export async function openOwnerPrivateRegion({
 }
 
 /**
+ * Refuses a PULLED compartment that belongs to the other kind of account —
+ * the check that has to happen before this device writes anything (M164/06).
+ *
+ * ── Why {@link openOwnerPrivateRegion} was not enough ────────────────────
+ *
+ * It throws the right error in the right place, and the sync cycle calls it
+ * from `applySnapshot`, which the orchestrator runs on the line AFTER
+ * `pushBlob`. So a person who typed a STUDY address into the diary sign-in
+ * pushed this device's whole diary into the study account's blob and only then
+ * saw the refusal. A study passphrase is normally held by more than one
+ * researcher, which makes that a disclosure and not merely a mess. The console
+ * side never had the problem — `loadStudyIdentity` runs at sign-in and pushes
+ * nothing — so this is the diary's missing half of ADR-0009.
+ *
+ * ── The BOUNDARY is the whole design ─────────────────────────────────────
+ *
+ * Three ordinary states reach this same code and mean nothing is wrong, and a
+ * check that fired on any of them would turn an everyday hiccup into a hard
+ * sync failure:
+ *
+ *  - a compartment under a passphrase this session does not hold (another
+ *    device changed it moments ago) — no candidate CDK opens it,
+ *  - a pre-partition blob with no compartment at all — `sealed` is `null`,
+ *  - an account whose first device has not minted one — likewise `null`.
+ *
+ * All three are "we learned nothing", and this function is silent for every
+ * one of them. It refuses exactly when the bytes DECRYPTED and said they
+ * belong to the other kind, which is the one case where guessing is the harm.
+ *
+ * ── It adopts NOTHING, on purpose ────────────────────────────────────────
+ *
+ * No CDK, no wraps, no extras, not even `pulled`. Being free of side effects is
+ * what lets it sit anywhere before the push without changing what the cycle
+ * does — the adoption still happens exactly once, where it always did, in
+ * {@link openOwnerPrivateRegion}. The cost is one extra GCM open per cycle that
+ * pulled a compartment, which is a few hundred microseconds against a network
+ * round trip.
+ *
+ * @throws {WrongCompartmentKindError} and nothing else.
+ */
+export async function assertOwnerPrivateCompartment({
+  session,
+  sealed,
+}: {
+  session: PrivateStoreSession;
+  sealed: SealedPrivateStore | null;
+}): Promise<void> {
+  if (sealed === null) return;
+  for (const cdk of await candidateCdks({ session, sealed })) {
+    // `tryOpen` rethrows only `WrongCompartmentKindError` and answers `null`
+    // for every other failure, so the refusal and the silence below are the
+    // same two exits the adopt already uses. A successful open ends the walk:
+    // the plaintext read as ours, which is all this was asked.
+    if ((await tryOpen({ cdk, sealed, accountId: session.accountId })) !== null) return;
+  }
+}
+
+/**
  * Replaces the session's wraps after a rewrap landed on the server, and drops
  * the seal cache so the next push carries them.
  *
- * `extras` is deliberately untouched. A rewrap replaces the two slots and
- * leaves the ciphertext exactly as it was, so the newer client's keys are still
- * inside it — and the next seal has to put them back, which it can only do from
- * the session.
+ * `extras` is deliberately untouched — and on a session that has never opened
+ * the compartment that leaves it `null`, which is the point. A rewrap unwraps
+ * ONE SLOT; it never decrypts the compartment (`private-store-rewrap.ts` says
+ * so, and keeping the plaintext out of that operation is a property worth
+ * having). So the CDK arrives here without any knowledge of what it protects,
+ * and {@link sealOwnerPrivateRegion} must not write a plaintext from it.
+ *
+ * ── Why the rewrapped bytes become `pulled` (M164/06) ────────────────────
+ *
+ * Because they ARE what the account's blob now holds: the rewrap pushed them
+ * itself, with the ciphertext byte-identical and only the slots changed. A
+ * session that cannot seal has to re-emit something, and re-emitting these
+ * publishes the new door while preserving every key inside — the older
+ * `session.pulled` would republish the door the rewrap just replaced.
+ *
+ * ── The Lamport tie, stated rather than relied on ────────────────────────
+ *
+ * Until this change the loss was masked by ordering: the rewrap bumps the
+ * compartment entity to `previous + 1`, so the remote copy normally outranks a
+ * fresh device's own stamp of `1` and the merge brings the extras back. That
+ * is an accident, not an invariant, and it is NOT safe in the tie case — a blob
+ * carrying a compartment with no `perEntity` stamp for it makes the rewrap's
+ * bump `1` too, against the same device id, and a tie is decided by neither
+ * copy being newer. With the seal refusing, the tie stops mattering for the
+ * reason a tie should: both candidates carry the same ciphertext, so whichever
+ * one wins is the same bytes.
  */
 export function adoptRewrappedSlots({
   session,
@@ -304,6 +413,7 @@ export function adoptRewrappedSlots({
   session.cdk = cdk;
   session.wraps = { cdkWrapPassphrase: sealed.cdkWrapPassphrase, cdkWrapRecovery: sealed.cdkWrapRecovery };
   session.cache = null;
+  session.pulled = sealed;
 }
 
 /**

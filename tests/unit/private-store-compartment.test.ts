@@ -31,6 +31,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  adoptRewrappedSlots,
   createPrivateStoreSession,
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
@@ -40,6 +41,7 @@ import {
   establishPrivateStore,
   openPrivateStore,
   sealPrivateStore,
+  wrapCdk,
   type EstablishedPrivateStore,
 } from '../../app/lib/sync/engine/crypto/private-store';
 import {
@@ -451,6 +453,10 @@ describe('a key this build does not know', () => {
     // understands is taken into the region and only the leftover is carried.
     const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
     await openOwnerPrivateRegion({ session, sealed: fromNewerClient.sealed });
+    // `null` would mean the session never read the plaintext, which after a
+    // successful open it has (M164/06) — and every assertion below is about
+    // WHICH keys it kept, so the distinction has to be made before them.
+    assert.ok(session.extras !== null, 'a successful open must leave the session knowing what it read');
     assert.deepEqual(Object.keys(session.extras), [FUTURE_KEY]);
     assert.ok(
       !Object.keys(session.extras).includes('shareIdentity'),
@@ -494,7 +500,7 @@ describe('a key this build does not know', () => {
 
     // NON-VACUITY: the extra WAS carried. Without this the absence below would
     // pass on a compartment that never had one.
-    assert.deepEqual(session.extras[FUTURE_KEY], FUTURE_VALUE);
+    assert.deepEqual(session.extras?.[FUTURE_KEY], FUTURE_VALUE);
 
     // The snapshot the device would write, built through the real recomposer.
     const { shareable } = partitionSnapshot((await exportBackup({ store: createPrimaryStore() })).data);
@@ -510,5 +516,134 @@ describe('a key this build does not know', () => {
       () => partitionSnapshot(Object.assign({}, recomposed, { [FUTURE_KEY]: FUTURE_VALUE })),
       /not classified in SNAPSHOT_KEY_REGIONS/,
     );
+  });
+});
+
+/**
+ * A REFUSAL THAT ARRIVES AFTER THE WRITE IS NOT A REFUSAL (M164/06).
+ *
+ * Two of the three findings the M164 review reproduced, at the level each one
+ * actually lives.
+ *
+ * ── 1. The tag was read through a schema that could fail on the tag ──────
+ *
+ * `readCompartmentKind` parsed the WHOLE plaintext through one object schema
+ * and answered `'unreadable'` whenever that parse failed. A `kind` of `5`
+ * failed it — so a study compartment carrying a non-string tag came back as
+ * "there is no tag here", which `parseCompartmentPlaintext` deliberately does
+ * not refuse. Measured before the fix: a diary open of
+ * `{"kind":5,"studyKeyring":[…]}` SUCCEEDED and returned an empty region.
+ *
+ * `'unreadable'` has to mean one thing — "this is not an object, so there is
+ * nowhere for a tag to be" — or it becomes a door around the refusal.
+ *
+ * ── 3. A CDK can be adopted without the compartment ever being opened ────
+ *
+ * `adoptRewrappedSlots` hands the session a CDK and two wraps after a rewrap.
+ * The rewrap never decrypts the compartment, so the session's `extras` are
+ * still the empty set it started with — and the next seal wrote
+ * `{ …{}, kind, …region }` over a newer client's key. Sign in on a new device
+ * and change the passphrase before the first sync cycle and that is the whole
+ * reproduction.
+ */
+
+/** The two wraps a rewrap produces: same CDK, same ciphertext, a door that has moved. */
+async function rewrappedSlots({
+  established,
+  sealed,
+  nextKek,
+}: {
+  established: EstablishedPrivateStore;
+  sealed: SealedPrivateStore;
+  nextKek: CryptoKey;
+}): Promise<SealedPrivateStore> {
+  return {
+    ciphertext: sealed.ciphertext,
+    cdkWrapPassphrase: bytesToBase64(await wrapCdk({ cdk: established.cdk, kek: nextKek })),
+    cdkWrapRecovery: sealed.cdkWrapRecovery,
+  };
+}
+
+describe('the refusal must come before the write', () => {
+  it('a non-string kind is refused, not read as an untagged diary', async () => {
+    const { established, passphraseKek } = await establishedFor('one passphrase, two possible accounts');
+    // A study compartment whose tag is a NUMBER. Nothing this repo writes
+    // produces it; a corrupted or hostile plaintext does, and the question is
+    // what the diary side does when it decrypts one.
+    const mistagged = await sealedJson({
+      established,
+      json: JSON.stringify({
+        kind: 5,
+        studyKeyring: [{ publicKey: 'a-public-key', privateKey: STUDY_KEY_MARKER, createdAt: 1_000 }],
+      }),
+    });
+
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    await assert.rejects(
+      () => openOwnerPrivateRegion({ session, sealed: mistagged.sealed }),
+      (cause: unknown) => {
+        assert.ok(cause instanceof WrongCompartmentKindError, 'a tag this build cannot read must be a refusal');
+        assert.equal(cause.expected, 'diary');
+        // NOT `'study'`: the sniff never runs, because a tag IS present. The
+        // build simply cannot say what it means, and guessing is the defect.
+        assert.equal(cause.actual, 'unrecognised');
+        return true;
+      },
+    );
+
+    // NON-VACUITY: the same bytes decrypt perfectly. The refusal is about what
+    // the plaintext SAYS, not about the door or the ciphertext.
+    const plaintext = await openPrivateStore({
+      cdk: established.cdk,
+      ciphertext: base64ToBytes(mistagged.sealed.ciphertext),
+      accountId: ACCOUNT_ID,
+    });
+    assert.ok(new TextDecoder().decode(plaintext).includes(STUDY_KEY_MARKER));
+  });
+
+  it('a rewrap-adopted session re-emits the compartment instead of sealing an empty one', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const fromNewerClient = await compartmentFromANewerClient(established);
+
+    // A device that signed in and CHANGED ITS PASSPHRASE before its first sync
+    // cycle. `rewrapPrivateStoreOnServer` unwrapped slot 1 and rewrapped it —
+    // it never decrypted the compartment, and neither did this session.
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    const nextKek = await privateStoreKekFor('the passphrase this device just moved to');
+    const rewrapped = await rewrappedSlots({ established, sealed: fromNewerClient.sealed, nextKek });
+    adoptRewrappedSlots({ session, cdk: established.cdk, sealed: rewrapped });
+
+    // NON-VACUITY: the session really is holding a usable CDK, so the seal
+    // below is not declining for lack of a key.
+    assert.notEqual(session.cdk, null, 'the rewrap must have left a CDK, or this proves nothing');
+
+    const resealed = await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION });
+    assert.ok(resealed !== null, 'a session holding a CDK must still publish a compartment');
+
+    // THE BYTES, not "not null". A session that has never read the plaintext
+    // has nothing to say about it, so the only correct output is the
+    // compartment it was handed — with the REWRAPPED door on it.
+    assert.equal(resealed.ciphertext, fromNewerClient.sealed.ciphertext, 'the ciphertext must be re-emitted verbatim');
+    assert.equal(resealed.cdkWrapPassphrase, rewrapped.cdkWrapPassphrase, 'the rewrapped slot must be the one pushed');
+
+    // AND THE KEY IS STILL IN THERE, read out of the ciphertext by hand
+    // because no schema in this repo mentions it.
+    const raw = await readRawPlaintext({ established, sealed: resealed });
+    assert.deepEqual(raw[FUTURE_KEY], FUTURE_VALUE);
+    assert.equal(raw.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+
+    // AND THE NEW DOOR OPENS IT: the rewrap is not undone by the re-emission.
+    const nextSession = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek: nextKek });
+    const opened = await openOwnerPrivateRegion({ session: nextSession, sealed: resealed });
+    assert.equal(opened?.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+
+    // AND ONCE IT HAS OPENED, IT SEALS AGAIN. The refusal is about ignorance,
+    // not a permanent state — without this the fix could be "never seal".
+    const afterOpen = await sealOwnerPrivateRegion({
+      session: nextSession,
+      region: { ...EMPTY_OWNER_PRIVATE_REGION, sharePeers: [] },
+    });
+    assert.ok(afterOpen !== null);
+    assert.deepEqual((await readRawPlaintext({ established, sealed: afterOpen }))[FUTURE_KEY], FUTURE_VALUE);
   });
 });

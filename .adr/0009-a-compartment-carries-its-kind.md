@@ -81,11 +81,15 @@ Concretely:
   failed, and the caller keeps what the device already holds. A wrong kind is
   the one case where the client learned exactly what it is holding. On the
   console it surfaces at `loadStudyIdentity`, which runs at sign-in and pushes
-  nothing, so the refusal lands **before** any write; on the diary it reaches
-  `describeSyncFailure` and the sync status surface.
+  nothing, so the refusal lands **before** any write; on the diary it lands at
+  `assertOwnerPrivateCompartment`, which the sync cycle runs after the pull and
+  before the push (see the 2026-08-29 amendment).
 - **A malformed plaintext is NOT a refusal.** It stays the region schema's own
   error, which each `tryOpen` turns into the existing `null`. Only a plaintext
   that reads as the other kind — or as a kind this build does not know — throws.
+  "Malformed" means **not an object at all**, and nothing wider: a plaintext
+  that IS an object and carries a `kind` this build cannot read is a refusal,
+  not a malformed plaintext (see the 2026-08-29 amendment).
 
 ## Alternatives considered
 
@@ -137,6 +141,71 @@ Concretely:
   than read as an empty diary. That is the intended trade: the cost is a hard
   failure on a downgrade, and the alternative is a silent overwrite.
 
+## Amendment — 2026-08-29 (M164 spec 06)
+
+The decision above is unchanged. Three places did not apply it, all found by
+the M164 milestone review and each reproduced as a failing test first.
+
+**1. `'unreadable'` was a door around the refusal.** `readCompartmentKind`
+parsed the whole plaintext through one tag schema and answered `'unreadable'`
+whenever that parse failed — so a `kind` of `5` was indistinguishable from an
+absent tag, and `{"kind":5,"studyKeyring":[…]}` opened as an empty diary with
+no refusal at all. A whole-object schema cannot tell "this build cannot read
+the tag" (a refusal) from "there is no tag" (a migration), and those two must
+take different exits. The tag is now read out of a plain
+`z.record(z.string(), z.unknown())` and every field is narrowed by hand.
+`'unreadable'` now means exactly one thing: **the plaintext is not an object, so
+there is nowhere for a tag to be.**
+
+The untagged `studyKeyring` sniff also stopped demanding an array. Presence is
+the evidence — a `studyKeyring` this build cannot parse is still a key the
+diary side has never written, and requiring a shape would have handed the
+malformed case straight back to the diary open.
+
+**2. The diary's refusal landed after the push.** The throw lives inside
+`openOwnerPrivateRegion`, which the sync cycle reaches through
+`applySnapshot` — and the orchestrator calls `applySnapshot` on the line after
+`pushBlob`. A person who typed a study address into the DIARY sign-in therefore
+pushed the whole device diary into the study account's blob and only then saw
+the refusal. A study passphrase is normally held by more than one researcher,
+so that is a disclosure.
+
+`SyncCycleDeps.assertPulledSnapshot` is now a required dependency, run on the
+snapshot exactly as pulled, before the merge and before the push, on every CAS
+round. Production wires it to `assertOwnerPrivateCompartment`, which adopts
+nothing — no CDK, no wraps, no extras, not even `pulled` — so it can sit there
+without changing what the cycle does. Its boundary is the load-bearing part: it
+is **silent** for a compartment under a passphrase this session does not hold,
+for a blob with no compartment, and for an account whose first device has not
+minted one. It refuses only when the bytes decrypted and said they belong to
+the other kind. Proved the way the console side is proved: the account's blob is
+byte-identical after the refusal, read back off the wire.
+
+**3. A session could hold a CDK without ever having opened the compartment.**
+`adoptRewrappedSlots` takes the CDK out of a rewrapped slot; the rewrap never
+decrypts the compartment, so the session's M164/03 extras were still the empty
+set it started with, and the next seal wrote `{ …{}, kind, …region }` over a
+newer client's key. `PrivateStoreSession.extras` is therefore now
+`CompartmentExtras | null`, where `null` is ignorance and `{}` is knowledge, and
+`sealOwnerPrivateRegion` re-emits `session.pulled` rather than sealing from
+`null` — the same rule as M164/01, one level in: **a session may only write a
+plaintext it has read.** `adoptRewrappedSlots` records the rewrapped bytes as
+`pulled`, so the re-emission publishes the new door and preserves the
+ciphertext, and the state clears on the session's very next pull.
+
+This replaces an accident with an invariant. The loss was previously masked by
+the rewrap bumping the compartment's Lamport to `previous + 1` while the fresh
+device's own stamp was `1`, so the remote copy won and the extras came back.
+That ordering is **not** safe in the tie case — a blob carrying a compartment
+with no `perEntity` stamp for it makes the rewrap's bump `1` as well, against
+the same device id, and a tie means neither copy is newer. With the seal
+refusing, the tie stops mattering for the right reason: both candidates carry
+the same ciphertext, so whichever one wins is the same bytes.
+
+The study console's `StudyCompartmentSession.extras` is deliberately left
+non-nullable: there is no rewrap adopt on that side, so no path there can
+acquire a CDK without an open.
+
 ## References
 
 - [ADR-0008](0008-the-study-console-lives-in-openplate.md) — why a study account and a diary account meet in the same browser profile at all.
@@ -144,3 +213,4 @@ Concretely:
 - `openplate-sync/docs/adr/0003-research-contributions-pseudonymous-but-never-anonymous.md` — "a study is an ordinary sync account", and the private key's home.
 - `.tracker/M164-openplate-research-hardening/01-the-seal-must-never-blank-a-compartment-it-could-not-open.md` — the re-emit invariant this decision splits.
 - `.tracker/M164-openplate-research-hardening/02-a-compartment-carries-its-kind-and-a-wrong-kind-is-refused.md`
+- `.tracker/M164-openplate-research-hardening/06-a-refusal-that-arrives-after-the-write-is-not-a-refusal.md` — the three places this decision was not applied.

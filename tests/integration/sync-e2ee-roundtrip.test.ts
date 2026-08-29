@@ -67,11 +67,14 @@ import {
   type SyncedSnapshot,
 } from '../../app/lib/sync/snapshot-partition';
 import {
+  assertOwnerPrivateCompartment,
   createPrivateStoreSession,
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
 } from '../../app/lib/sync/private-store';
 import { establishPrivateStore } from '../../app/lib/sync/engine/crypto/private-store';
+import { openStudyRegion, sealStudyRegion } from '../../app/lib/sync/research/study-compartment';
+import { WrongCompartmentKindError } from '../../app/lib/sync/compartment-kind';
 
 const FAST_PARAMS: Argon2idParams = { memorySizeKib: 8, iterations: 1, parallelism: 1 };
 /** Tiny parameters, injected at the seam `setup-keys.ts` exposes for exactly this. */
@@ -152,6 +155,12 @@ function deviceDeps({
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
     },
+    // These devices carry the snapshot verbatim and hold no compartment session
+    // of their own, so there is nothing here for the veto to check against —
+    // the two tests that DO hold one override this the way production wires it.
+    // Named rather than defaulted, because `SyncCycleDeps` makes it required on
+    // purpose (M164/06).
+    assertPulledSnapshot: async () => {},
     // The real bridge validates through the backup schema; the substituted
     // snapshot here is already that exact shape.
     // SAFETY: the only snapshot the engine can hand back is the one `readSnapshot`
@@ -756,6 +765,12 @@ test('a compartment it could not adopt survives the next push', async () => {
   const local = { current: snapshotOf([]) };
   const victimDeps = (deviceId: string, storage: ReturnType<typeof createMemoryStorage>) => ({
     ...deviceDeps({ vault: victim, deviceId, local, storage }),
+    // Production's pre-push veto (M164/06), and here it is also a BOUNDARY
+    // assertion: this device cannot open the planted compartment, which is one
+    // of the three ordinary states the veto must stay silent for. If it ever
+    // starts refusing them, both cycles below fail instead of converging.
+    assertPulledSnapshot: ({ pulled }: { pulled: SyncedSnapshot }) =>
+      assertOwnerPrivateCompartment({ session: victim.privateStore, sealed: pulled.privateStore }),
     readSnapshot: async (): Promise<SyncedSnapshot> => ({
       ...local.current,
       privateStore: await sealOwnerPrivateRegion({
@@ -794,4 +809,137 @@ test('a compartment it could not adopt survives the next push', async () => {
 
   // And the diary still converged, so the fix is not "stop syncing".
   assert.deepEqual(afterReadback.current.foodLogs.map((log) => log.name).toSorted(), ['Planted', 'Victim']);
+});
+
+/**
+ * THE DIARY REFUSES A STUDY ACCOUNT BEFORE WRITING (M164/06).
+ *
+ * M164/02 made a wrong-kind compartment throw, and on the CONSOLE side the
+ * throw lands at sign-in, before anything is pushed — `study-session.ts` proves
+ * it with a byte-identical blob. The diary side had the throw and not the
+ * ordering: `openOwnerPrivateRegion` runs inside `applySnapshot`, and the
+ * orchestrator calls `applySnapshot` on the line AFTER `pushBlob`.
+ *
+ * So a person who typed a study address into the DIARY sign-in pushed this
+ * device's whole diary into the study account's blob and then saw the refusal.
+ * A study passphrase is normally held by more than one researcher, so those
+ * bytes are readable by colleagues — this is a disclosure, not just a mess.
+ *
+ * ── WHY "IT THREW" IS NOT THE ASSERTION ─────────────────────────────────
+ *
+ * The throw already happened before this spec. The only claim worth making is
+ * about the SERVICE: the account's blob is byte-identical after the refusal,
+ * read back off the wire rather than off any in-memory copy. The non-vacuity
+ * that makes it a statement is that the refused device was genuinely holding a
+ * change to publish.
+ */
+async function blobOnTheService(vault: SyncVault) {
+  const pulled = await vault.http.pullBlob();
+  assert.ok(pulled !== null, 'the account must have a blob, or "unchanged" is a statement about nothing');
+  return {
+    blobVersion: pulled.blobVersion,
+    envelopeVersion: pulled.envelopeVersion,
+    ciphertext: bytesToBase64(pulled.ciphertext),
+  };
+}
+
+/** A study's private key on the blob — the material a diary push would have sealed over. */
+const STUDY_KEY_MARKER = 'the-study-private-key-that-must-survive';
+
+test('the diary refuses a study account before writing, and the blob is unchanged', async () => {
+  const email = `study-account-${Date.now()}@example.test`;
+  await createSyncAccount({
+    serverUrl: service.url,
+    email,
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  const founderVault = requireVault();
+
+  // A REAL study compartment, sealed under THIS ACCOUNT'S OWN `K_pp`. That is
+  // what makes the hazard reachable rather than theoretical: the diary device
+  // below holds the same passphrase, so slot 1 unwraps, the AAD binds the right
+  // account, the ciphertext decrypts — and the only thing that can refuse it is
+  // the tag inside the plaintext.
+  const passphraseKek = founderVault.privateStore.passphraseKek;
+  const established = await establishPrivateStore({ passphraseKek, recoveryKek: passphraseKek });
+  const studyCompartment = await sealStudyRegion({
+    session: {
+      accountId: founderVault.accountId,
+      passphraseKek,
+      cdk: established.cdk,
+      wraps: {
+        cdkWrapPassphrase: established.cdkWrapPassphrase,
+        cdkWrapRecovery: established.cdkWrapRecovery,
+      },
+      extras: {},
+      pulled: null,
+    },
+    region: { studyKeyring: [{ publicKey: 'a-public-key', privateKey: STUDY_KEY_MARKER, createdAt: 1_000 }] },
+  });
+  assert.ok(studyCompartment !== null, 'the fixture must carry a real study compartment');
+
+  const founder = { current: { ...snapshotOf([]), privateStore: studyCompartment } };
+  await runSyncCycleUnlocked(deviceDeps({ vault: founderVault, deviceId: 'device-study', local: founder }));
+  const blobBefore = await blobOnTheService(founderVault);
+
+  // THE MISTAKE, exactly as a person makes it: the study's address and the
+  // study's passphrase, typed into the ordinary diary sign-in.
+  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  const diary = requireVault();
+
+  // The device under test, wired the way `sync-actions.ts` wires production —
+  // the same three seam lines, and nothing else.
+  const local = { current: snapshotOf([foodLog('log-diary', 'A private diary entry')]) };
+  const diaryDeps = {
+    ...deviceDeps({ vault: diary, deviceId: 'device-diary', local }),
+    readSnapshot: async (): Promise<SyncedSnapshot> => ({
+      ...local.current,
+      privateStore: await sealOwnerPrivateRegion({ session: diary.privateStore, region: EMPTY_OWNER_PRIVATE_REGION }),
+    }),
+    applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
+      await openOwnerPrivateRegion({ session: diary.privateStore, sealed: merged.privateStore });
+      local.current = merged;
+    },
+    // THE SEAM THIS TEST IS ABOUT. `sync-actions.ts` wires exactly this line,
+    // and the orchestrator runs it after the pull and before the push.
+    assertPulledSnapshot: ({ pulled }: { pulled: SyncedSnapshot }) =>
+      assertOwnerPrivateCompartment({ session: diary.privateStore, sealed: pulled.privateStore }),
+  };
+
+  // NON-VACUITY, and the whole reason the blob assertion below is a statement:
+  // this device is holding a diary entry the account has never seen. Without a
+  // pending change there would be nothing to push and no ordering to test.
+  assert.equal(local.current.foodLogs.length, 1, 'the refused device must have something to publish');
+
+  const refusal = await runSyncCycleUnlocked(diaryDeps).then(
+    () => null,
+    (cause: unknown) => cause,
+  );
+  assert.ok(
+    refusal instanceof WrongCompartmentKindError,
+    'a study account must be refused, not read as an empty diary',
+  );
+  assert.deepEqual({ expected: refusal.expected, actual: refusal.actual }, { expected: 'diary', actual: 'study' });
+
+  // THE ASSERTION THE SPEC EXISTS FOR. Not "it threw" — the throw predates this
+  // spec — but that nothing reached the service before it did.
+  assert.deepEqual(
+    await blobOnTheService(founderVault),
+    blobBefore,
+    'the refusal must land before the push — the study account’s blob must be byte-identical',
+  );
+
+  // POSITIVE: what is on the blob is still a study compartment that opens, with
+  // its keyring intact. An unchanged-bytes assertion says nothing about what
+  // those bytes are.
+  const readback = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: founderVault, deviceId: 'device-readback', local: readback }));
+  assert.deepEqual(readback.current.foodLogs, [], 'the diary entry must never have reached the study account');
+  const opened = await openStudyRegion({
+    session: { accountId: founderVault.accountId, passphraseKek, cdk: null, wraps: null, extras: {}, pulled: null },
+    sealed: readback.current.privateStore,
+  });
+  assert.equal(opened?.studyKeyring[0]?.privateKey, STUDY_KEY_MARKER);
 });

@@ -165,6 +165,11 @@ function deps({
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
     },
+    // No compartment in play in this file: every fixture's `privateStore` is
+    // `null`, so there is nothing for the veto to inspect. Named rather than
+    // defaulted, because `SyncCycleDeps` makes it required on purpose
+    // (M164/06).
+    assertPulledSnapshot: async () => {},
     // SAFETY: the only payload these cycles can pull back is one they pushed,
     // built from `local.current` — a `SyncedSnapshot` by construction.
     parseRemoteSnapshot: ({ snapshot: raw }: { snapshot: unknown }) => raw as SyncedSnapshot,

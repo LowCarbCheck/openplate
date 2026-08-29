@@ -68,6 +68,26 @@ export interface SyncCycleDeps {
   /** The device snapshot AS SYNCED: the shareable region plus a sealed compartment (`snapshot-partition.ts`). */
   readSnapshot: () => Promise<SyncedSnapshot>;
   applySnapshot: (input: { merged: SyncedSnapshot; local: SyncedSnapshot }) => Promise<void>;
+  /**
+   * The one veto point, run on the snapshot EXACTLY AS PULLED and before this
+   * cycle writes anything (M164/06).
+   *
+   * Throwing aborts the cycle with nothing pushed. It exists because
+   * `applySnapshot` — where the owner-private compartment is opened, and where
+   * a wrong-kind compartment is refused — runs on the line after `pushBlob`, so
+   * every refusal that lives inside it arrives one write too late. A diary
+   * device signed into a STUDY account pushed the whole diary into that
+   * account's blob before saying no.
+   *
+   * NOT OPTIONAL, deliberately. A default no-op would make "this cycle has no
+   * veto" the silent state, and the defect this closes was exactly a check
+   * nobody noticed was in the wrong place.
+   *
+   * It must be silent for every ordinary outcome — a compartment this device
+   * cannot open, a blob with none, a fresh account. `assertOwnerPrivateCompartment`
+   * is the production implementation and documents that boundary.
+   */
+  assertPulledSnapshot: (input: { pulled: SyncedSnapshot }) => Promise<void>;
   parseRemoteSnapshot: (input: { snapshot: unknown; schemaVersion: number }) => SyncedSnapshot;
   now?: () => number;
   maxAttempts?: number;
@@ -106,6 +126,9 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const remote = await pullRemotePayload(deps);
+    // BEFORE THE MERGE AND BEFORE THE PUSH, and re-run on every CAS round
+    // because every round pulls a blob this device has not inspected yet.
+    if (remote !== null) await deps.assertPulledSnapshot({ pulled: remote.payload.snapshot });
     const baseVersion = remote?.blobVersion ?? 0;
     const merged = remote === null ? localPayload : mergeSnapshots({ local: localPayload, remote: remote.payload });
 
