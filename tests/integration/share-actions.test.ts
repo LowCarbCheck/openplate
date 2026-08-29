@@ -82,7 +82,7 @@ import { createSyncAccount } from '../../app/lib/sync/sync-actions';
 import { ensureShareIdentity, forgetPinnedPeer, grantShare } from '../../app/lib/sync/share-actions';
 import { getSyncVault, type SyncVault } from '../../app/lib/sync/sync-session';
 import { decryptWithSchemaProbe } from '../../app/lib/sync/orchestrator';
-import { openOwnerPrivateRegion } from '../../app/lib/sync/private-store';
+import { createPrivateStoreSession, openOwnerPrivateRegion } from '../../app/lib/sync/private-store';
 import { readSealedPrivateStore, type OwnerPrivateRegion } from '../../app/lib/sync/snapshot-partition';
 import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engine/crypto/argon2';
 import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
@@ -185,6 +185,19 @@ async function createAccount(label: string): Promise<SyncVault> {
  * the compartment nested inside it. Nothing local is consulted — a test that
  * read the device store would pass with the sync deleted, which is the exact
  * defect this file exists to catch.
+ *
+ * ── THE OPEN RUNS ON A THROWAWAY SESSION, NOT THE LIVE ONE (M164/07) ─────
+ *
+ * `openOwnerPrivateRegion` is not a reader. It records `pulled`, adopts a CDK
+ * and the two wraps, and writes `extras` — so calling it on `vault.privateStore`
+ * would mean that merely LOOKING at the service changed the session every
+ * assertion afterwards runs against. It happens not to break the cases in this
+ * file today, and it is exactly the trap the next test to observe-then-expect-
+ * unchanged would fall into.
+ *
+ * The throwaway session is given the live session's `K_pp` and nothing else:
+ * that is what unwraps slot 1 of the account's own compartment, and it is read
+ * from the vault rather than copied.
  */
 async function compartmentOnTheService(vault: SyncVault): Promise<OwnerPrivateRegion> {
   const pulled = await vault.http.pullBlob();
@@ -197,7 +210,10 @@ async function compartmentOnTheService(vault: SyncVault): Promise<OwnerPrivateRe
     dek: vault.dek,
   });
   const region = await openOwnerPrivateRegion({
-    session: vault.privateStore,
+    session: createPrivateStoreSession({
+      accountId: vault.accountId,
+      passphraseKek: vault.privateStore.passphraseKek,
+    }),
     sealed: readSealedPrivateStore({ snapshot: decrypted.payload.snapshot }),
   });
   assert.ok(region !== null, 'the blob carries no owner-private compartment');

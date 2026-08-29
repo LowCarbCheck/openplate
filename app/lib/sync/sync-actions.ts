@@ -520,18 +520,37 @@ async function applySyncedSnapshot({
  * The one failure a COMPLETED cycle can still carry: a compartment this
  * session never opened.
  *
- * Since M164/02 that state means exactly one thing. "Could not open" used to
- * also cover "opened, and belongs to a study console" — that now throws at the
- * open and arrives through `describeSyncFailure` like any other error — so
- * what is left is a compartment under a passphrase this session does not hold,
- * which is what the message says.
+ * ── THREE STATES REACH THIS, NOT ONE (M164/07) ──────────────────────────
+ *
+ * M164/02 narrowed it by one — "opened, and belongs to a study console" now
+ * throws at the open and arrives through `describeSyncFailure` like any other
+ * error. The comment that stood here claimed the narrowing went further than
+ * that, and the message was written to match: it named a different passphrase
+ * as the cause, and sent the reader to a recovery code.
+ *
+ * `tryOpen` (`private-store.ts`) still answers `null` for three different
+ * things, and only the first is about a passphrase:
+ *
+ *  1. slot 1 belongs to a passphrase this session does not hold — the
+ *     ordinary post-passphrase-change state, and the one the recovery code
+ *     fixes;
+ *  2. slot 1 unwrapped and the GCM tag failed — corrupt or truncated
+ *     ciphertext, where a recovery code changes nothing;
+ *  3. the plaintext decrypted and the region schema rejected it — a malformed
+ *     compartment, which ADR-0009 deliberately does NOT refuse, where a
+ *     recovery code changes nothing either.
+ *
+ * A tag check does not say which, and neither can this. So the message states
+ * what is certainly true — the diary synced, and this device's own key
+ * material did not — names the likely cause as likely, and offers the remedy
+ * for it without promising it.
  */
 function unopenedCompartmentFailure(session: PrivateStoreSession): SyncFailure | null {
   if (!hasUnopenedCompartment(session)) return null;
   return {
     reason: 'failed',
     message:
-      'Your diary is in sync, but this device cannot open the account\u2019s private data \u2014 it was locked by a different passphrase. Sign in with the current one, or use your recovery code.',
+      'Your diary is in sync, but this device could not open the account\u2019s private data, so anything it keeps there \u2014 a sharing key, a pinned clinician \u2014 has not been published. Most often the passphrase was changed on another device: sign in with the current one, or use your recovery code.',
   };
 }
 

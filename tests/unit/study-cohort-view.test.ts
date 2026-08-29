@@ -224,7 +224,13 @@ test('the screen shows the export’s own lines, word for word', () => {
 test('offers no way to publish the study key', () => {
   const html = render(
     createElement(StudyKeyCard, {
-      identity: { accountId: 903, email: 'study@example.org', generationCount: 2, fingerprint: 'AB12-CD34-EF56' },
+      identity: {
+        accountId: 903,
+        email: 'study@example.org',
+        generationCount: 2,
+        fingerprint: 'AB12-CD34-EF56',
+        hasUnopenedCompartment: false,
+      },
       onGenerate: () => undefined,
       isBusy: false,
     }),
@@ -250,7 +256,13 @@ test('offers no way to publish the study key', () => {
 test('neither key half ever reaches the markup', () => {
   const html = render(
     createElement(StudyKeyCard, {
-      identity: { accountId: 903, email: 'study@example.org', generationCount: 1, fingerprint: 'AB12-CD34-EF56' },
+      identity: {
+        accountId: 903,
+        email: 'study@example.org',
+        generationCount: 1,
+        fingerprint: 'AB12-CD34-EF56',
+        hasUnopenedCompartment: false,
+      },
       onGenerate: () => undefined,
       isBusy: false,
     }),
@@ -261,5 +273,92 @@ test('neither key half ever reaches the markup', () => {
   assert.equal(
     Object.keys({ accountId: 0, email: '', generationCount: 0, fingerprint: '' }).includes('publicKey'),
     false,
+  );
+});
+
+/**
+ * "NO KEYS YET" AND "I CANNOT READ YOUR KEYS" ARE NOT ONE SCREEN (M164/07).
+ *
+ * `loadStudyIdentity` reports a count and a fingerprint, and a compartment
+ * this console could not open leaves both at their empty values — `0` and
+ * `null`, which is what a study on its first visit shows. One of those two is
+ * a normal Tuesday and the other is the state where minting a generation is a
+ * mistake, so the card must not render the same sentence for both.
+ *
+ * Both directions are asserted, because either alone passes on a card that
+ * always shows one line: the ordinary empty console still gets the invitation
+ * to mint, and the unopened one does not.
+ */
+test('the key card tells "no key yet" apart from "these keys will not open"', () => {
+  const emptyConsole = render(
+    createElement(StudyKeyCard, {
+      identity: {
+        accountId: 903,
+        email: 'study@example.org',
+        generationCount: 0,
+        fingerprint: null,
+        hasUnopenedCompartment: false,
+      },
+      onGenerate: () => undefined,
+      isBusy: false,
+    }),
+  );
+  assert.match(emptyConsole, /holds no key yet/i, 'a study that has minted nothing must still be invited to mint');
+  assert.doesNotMatch(emptyConsole, /could not open/i, 'an ordinary empty console must not be told anything failed');
+
+  const unopened = render(
+    createElement(StudyKeyCard, {
+      identity: {
+        accountId: 903,
+        email: 'study@example.org',
+        generationCount: 0,
+        fingerprint: null,
+        hasUnopenedCompartment: true,
+      },
+      onGenerate: () => undefined,
+      isBusy: false,
+    }),
+  );
+  // The two states carry the SAME count and the SAME fingerprint, so the only
+  // thing that can be different here is the sentence.
+  assert.match(unopened, /could not open/i, 'a console that could not read the keyring must say so');
+  assert.doesNotMatch(unopened, /holds no key yet/i, 'a keyring it could not read is not an absent keyring');
+
+  // AMBER, never destructive: nothing is lost, and this is not a defect —
+  // `study-cohort-panel.tsx`'s own header states the same rule for the same
+  // reason.
+  assert.match(unopened, /accent-amber/, 'the unopened-compartment line must be the amber operator warning');
+  // `text-destructive` and not a bare `destructive`: the shared Button's base
+  // classes carry `aria-invalid:ring-destructive`, so the loose pattern can
+  // only ever fail. `study-cohort-panel.tsx` paints its one real defect line
+  // with `text-destructive`, and that is the class this must not reach.
+  assert.doesNotMatch(unopened, /text-destructive/, 'a wrong passphrase is not a defect');
+
+  // And the mint stays available: `generateStudyKey` refuses on its own with
+  // the reason (M164/01), and a disabled button would say "this is broken"
+  // where the truth is "you are signed in with the wrong passphrase".
+  //
+  // `disabled=` and not `disabled`: the shared Button's class string carries
+  // `disabled:pointer-events-none`, so the loose pattern matches every render
+  // and the assertion could never fail. The busy card below is what proves the
+  // tight one can still see a disabled button.
+  const DISABLED_ATTRIBUTE = /<button[^>]*\sdisabled=/i;
+  assert.doesNotMatch(unopened, DISABLED_ATTRIBUTE, 'the mint must not be disabled by an unopened compartment');
+  assert.match(
+    render(
+      createElement(StudyKeyCard, {
+        identity: {
+          accountId: 903,
+          email: 'study@example.org',
+          generationCount: 0,
+          fingerprint: null,
+          hasUnopenedCompartment: true,
+        },
+        onGenerate: () => undefined,
+        isBusy: true,
+      }),
+    ),
+    DISABLED_ATTRIBUTE,
+    'the pattern above must be able to see a disabled button, or the assertion before it is vacuous',
   );
 });

@@ -121,6 +121,30 @@ export async function sealStudyRegion({
 }
 
 /**
+ * Whether this console is carrying a compartment it could not open — the twin
+ * of the diary's `hasUnopenedCompartment` (`private-store.ts`), and the same
+ * question in the same words.
+ *
+ * A predicate rather than a message, for that twin's reason: the sentence a
+ * researcher reads belongs to the console surface, and this module must not
+ * grow a second opinion about copy.
+ *
+ * ── Why the console needs it MORE than the diary does ────────────────────
+ *
+ * `loadStudyIdentity` reports a count and a fingerprint, and a compartment
+ * that would not open leaves both at their empty values — `0` and `null`,
+ * which is exactly what a study that has minted nothing shows. So the screen
+ * a researcher sees on her first visit and the screen that means "I cannot
+ * read your keys" were the same screen, and the second one is the one where
+ * minting a generation is a mistake. `generateStudyKey` refuses it loudly
+ * (M164/01) and `pullCohort` would otherwise report the whole cohort
+ * unopenable; this is how both stop being a surprise.
+ */
+export function hasUnopenedStudyCompartment(session: StudyCompartmentSession): boolean {
+  return session.cdk === null && session.pulled !== null;
+}
+
+/**
  * Opens a pulled study compartment, adopting its CDK into the session.
  *
  * `null` for every failure, and the caller keeps what it already had — the

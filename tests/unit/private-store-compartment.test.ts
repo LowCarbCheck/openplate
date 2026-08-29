@@ -601,6 +601,65 @@ describe('the refusal must come before the write', () => {
     assert.ok(new TextDecoder().decode(plaintext).includes(STUDY_KEY_MARKER));
   });
 
+  /**
+   * THE DOWNGRADE CASE, and ADR-0009 calls it "the intended trade" (M164/07).
+   *
+   * A kind this build does not recognise is refused rather than defaulted, so
+   * a future third compartment is visibly rejected by today's clients instead
+   * of being read as an empty diary and sealed over. The cost is a hard
+   * failure on a downgrade; the alternative is a silent overwrite.
+   *
+   * `wrongKindMessage`'s first branch — the only sentence that tells a person
+   * to update the app rather than to change a passphrase — had no test at all:
+   * `grep -rn "unrecognised" tests/` reached only the non-string-tag case,
+   * where the tag is unreadable rather than unknown.
+   */
+  it('an unrecognised kind is refused, and never read as an empty diary', async () => {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    // A THIRD compartment, as a release after this one would write it: a
+    // well-formed string tag naming a kind that does not exist yet, beside a
+    // region only that release understands.
+    const fromTheFuture = await sealedJson({
+      established,
+      json: JSON.stringify({ kind: 'clinicianRelay', relayIdentity: { privateKeyPkcs8: PRIVATE_KEY_MARKER } }),
+    });
+
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
+    await assert.rejects(
+      () => openOwnerPrivateRegion({ session, sealed: fromTheFuture.sealed }),
+      (cause: unknown) => {
+        assert.ok(cause instanceof WrongCompartmentKindError, 'an unknown kind must be a named refusal');
+        assert.equal(cause.expected, 'diary');
+        assert.equal(cause.actual, 'unrecognised');
+        // The sentence a person reads has to name the mistake that was made.
+        // "Sign in with your own address" would be wrong advice here, and it
+        // is what the OTHER two branches say.
+        assert.match(cause.message, /newer version/i, 'the message must say the account is ahead of this build');
+        assert.doesNotMatch(cause.message, /study/i, 'this is not a wrong-account mistake');
+        // AND THE TAG ITSELF IS NEVER ECHOED: it is an untrusted string off
+        // the wire, and the screen is not the place to find that out.
+        assert.doesNotMatch(cause.message, /clinicianRelay/, 'an untrusted tag must not reach a screen');
+        return true;
+      },
+    );
+
+    // NON-VACUITY, and the whole point of the refusal: the session learned
+    // NOTHING. Before the kind tag these bytes opened as `{shareIdentity:null,
+    // sharePeers:[],...}` — a plausible empty diary the next push would have
+    // sealed over a compartment this build cannot even name.
+    assert.equal(session.cdk, null, 'a refused compartment must not leave a CDK behind');
+    assert.equal(session.extras, null, 'a refused compartment must leave the session admitting its ignorance');
+
+    // And the bytes decrypt perfectly, which is why nothing before the tag
+    // could see the mistake.
+    const plaintext = await openPrivateStore({
+      cdk: established.cdk,
+      ciphertext: base64ToBytes(fromTheFuture.sealed.ciphertext),
+      accountId: ACCOUNT_ID,
+    });
+    assert.ok(new TextDecoder().decode(plaintext).includes(PRIVATE_KEY_MARKER));
+  });
+
   it('a rewrap-adopted session re-emits the compartment instead of sealing an empty one', async () => {
     const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
     const fromNewerClient = await compartmentFromANewerClient(established);

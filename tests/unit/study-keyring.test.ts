@@ -383,3 +383,155 @@ test('an unknown key survives the study compartment round trip', async () => {
     studyKeyring: [first, second],
   });
 });
+
+/**
+ * THE DOWNGRADE CASE ON THE CONSOLE SIDE (M164/07).
+ *
+ * ADR-0009 calls this "the intended trade": a kind this build does not
+ * recognise is REFUSED rather than defaulted, so a future third compartment
+ * is visibly rejected by today's console instead of being read as an empty
+ * keyring and minted over. The cost is a hard failure on a downgrade; the
+ * alternative is a silent overwrite of every generation the study holds.
+ *
+ * The twin refusal is asserted in `private-store-compartment.test.ts`. Both
+ * sides, because `compartment-kind.ts` exists precisely so a refusal cannot
+ * live on one of them only.
+ */
+test('an unrecognised kind is refused by the study open too', async () => {
+  const session = await establishedSession();
+  // A compartment as a release AFTER this one would write it: a well-formed
+  // string tag naming a kind that does not exist yet.
+  const ciphertext = await sealPrivateStore({
+    cdk: session.cdk,
+    plaintext: new TextEncoder().encode(
+      JSON.stringify({ kind: 'clinicianRelay', relayIdentity: { privateKey: SHARE_KEY_MARKER } }),
+    ),
+    accountId: STUDY_ACCOUNT_ID,
+  });
+  const fromTheFuture = { ciphertext: bytesToBase64(ciphertext), ...session.wraps };
+
+  const researcherConsole: StudyCompartmentSession = {
+    accountId: STUDY_ACCOUNT_ID,
+    passphraseKek: session.passphraseKek,
+    cdk: null,
+    wraps: null,
+    extras: {},
+    pulled: null,
+  };
+  await assert.rejects(
+    () => openStudyRegion({ session: researcherConsole, sealed: fromTheFuture }),
+    (cause: unknown) => {
+      assert.ok(cause instanceof WrongCompartmentKindError, 'an unknown kind must be a named refusal');
+      assert.equal(cause.expected, 'study');
+      assert.equal(cause.actual, 'unrecognised');
+      // The one branch of `wrongKindMessage` that tells a person to update
+      // the app rather than to change an address. The other two would be
+      // wrong advice here.
+      assert.match(cause.message, /newer version/i, 'the message must say the account is ahead of this build');
+      assert.doesNotMatch(cause.message, /diary/i, 'this is not a wrong-account mistake');
+      assert.doesNotMatch(cause.message, /clinicianRelay/, 'an untrusted tag must not reach a screen');
+      return true;
+    },
+  );
+
+  // NON-VACUITY: the console learned nothing. Before the kind tag these bytes
+  // came back as `{studyKeyring: []}` — a plausible empty keyring the next
+  // mint would have sealed over a compartment this build cannot even name.
+  assert.equal(researcherConsole.cdk, null, 'a refused compartment must not leave a CDK behind');
+  // And the bytes decrypt perfectly, which is why nothing before the tag could
+  // see the mistake.
+  const plaintext = await openPrivateStore({
+    cdk: session.cdk,
+    ciphertext: base64ToBytes(fromTheFuture.ciphertext),
+    accountId: STUDY_ACCOUNT_ID,
+  });
+  assert.ok(new TextDecoder().decode(plaintext).includes(SHARE_KEY_MARKER));
+});
+
+/**
+ * THE STUDY SEAL CANNOT BE REACHED WITH A FOREIGN CDK (M164/07).
+ *
+ * The refusal is covered at the OPEN — `a diary compartment is not an empty
+ * study, and is refused` above. What nothing proved is the consequence at the
+ * SEAL, which is the hop that writes: a console that refused a diary
+ * compartment must not then be holding the key that opened it.
+ *
+ * That is not obvious from the throw. `openStudyRegion` records `pulled`
+ * BEFORE it attempts anything, and `candidateCdks` really does produce a
+ * usable CDK here — the researcher's own passphrase unwraps slot 1 of her own
+ * diary compartment. The refusal happens one line after the decrypt, and the
+ * session's `cdk`/`wraps` assignments happen one line after that. Move the
+ * refusal down by two lines and the console would hold a working key for a
+ * diary compartment, with a study region ready to seal over it.
+ *
+ * So this asserts what the seal actually emits: the pulled bytes, unchanged,
+ * still opening as the diary they are.
+ */
+test('the study seal refuses a foreign CDK it never adopted', async () => {
+  const session = await establishedSession();
+  const diaryCompartment = await sealOwnerPrivateRegion({
+    session: { ...session, cache: null },
+    region: {
+      ...EMPTY_OWNER_PRIVATE_REGION,
+      shareIdentity: { publicKeyRaw: 'a-public-key', privateKeyPkcs8: SHARE_KEY_MARKER, createdAt: 6_000 },
+    },
+  });
+  assert.ok(diaryCompartment !== null, 'the fixture must carry a real diary compartment');
+
+  // The researcher's own console, holding the very passphrase KEK that opens
+  // her diary compartment — the reachable mistake, not a contrived one.
+  const researcherConsole: StudyCompartmentSession = {
+    accountId: STUDY_ACCOUNT_ID,
+    passphraseKek: session.passphraseKek,
+    cdk: null,
+    wraps: null,
+    extras: {},
+    pulled: null,
+  };
+  await assert.rejects(
+    () => openStudyRegion({ session: researcherConsole, sealed: diaryCompartment }),
+    (cause: unknown) => cause instanceof WrongCompartmentKindError,
+  );
+
+  // THE CLAIM. The refusal happened before the adopt, so there is no key here
+  // to seal a study region with — and no wraps to publish it under.
+  assert.equal(researcherConsole.cdk, null, 'a refused open must not adopt the compartment’s CDK');
+  assert.equal(researcherConsole.wraps, null, 'a refused open must not adopt the compartment’s wraps');
+
+  // AND THE SEAL IS WHAT THAT IS FOR. A console with a mint in hand emits the
+  // bytes it pulled, because that is all it honestly has (M164/01).
+  const minted = withNewStudyKeyGeneration({
+    region: EMPTY_STUDY_PRIVATE_REGION,
+    generation: await generateStudyKeyGeneration({ now: () => 11_000 }),
+  });
+  const sealed = await sealStudyRegion({ session: researcherConsole, region: minted });
+  assert.ok(sealed !== null, 'the seal must re-emit the compartment it pulled, never blank it');
+  assert.equal(sealed.ciphertext, diaryCompartment.ciphertext, 'the diary’s ciphertext must be re-emitted verbatim');
+  assert.equal(sealed.cdkWrapPassphrase, diaryCompartment.cdkWrapPassphrase);
+  assert.equal(sealed.cdkWrapRecovery, diaryCompartment.cdkWrapRecovery);
+
+  // POSITIVE, because "the bytes did not change" says nothing about what they
+  // are: the diary still opens, and its share private key is still in there.
+  const opened = await openOwnerPrivateRegion({
+    session: {
+      accountId: STUDY_ACCOUNT_ID,
+      passphraseKek: session.passphraseKek,
+      cdk: null,
+      wraps: null,
+      cache: null,
+      extras: {},
+      pulled: null,
+    },
+    sealed,
+  });
+  assert.equal(opened?.shareIdentity?.privateKeyPkcs8, SHARE_KEY_MARKER);
+
+  // NON-VACUITY, and it is the assertion just above: that open started with
+  // `cdk: null` and the SAME `passphraseKek` this console holds, so slot 1
+  // really does unwrap under it. `candidateCdks` therefore had a usable key to
+  // offer, and "no CDK was adopted" is a statement about the refusal rather
+  // than about a console that had nothing to adopt.
+  //
+  // And the seal was asked to write something real, not an empty region.
+  assert.equal(minted.studyKeyring.length, 1, 'the seal must have been asked to write a real generation');
+});

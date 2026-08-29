@@ -50,17 +50,34 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { constants as zlibConstants, gunzipSync } from 'node:zlib';
+// The LAST test in this file drives `syncNow`, which reads the device store —
+// see its header. Every other test here mirrors the two seam lines instead and
+// never touches it.
+import 'fake-indexeddb/auto';
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
-import { createSyncAccount, completeSyncReset, requestSyncReset, signInToSync } from '../../app/lib/sync/sync-actions';
+import {
+  createSyncAccount,
+  completeSyncReset,
+  markSyncPending,
+  requestSyncReset,
+  signInToSync,
+  syncNow,
+} from '../../app/lib/sync/sync-actions';
 import type { SyncSetupOutcome } from '../../app/lib/sync/setup-flow';
 import { AUTH_API_PREFIX } from '../../app/lib/sync/engine/client/auth-wire';
 import { classifySignInFailure } from '../../app/lib/sync/sign-in-error';
-import { closeSyncSession, getSyncVault, type SyncVault } from '../../app/lib/sync/sync-session';
+import {
+  closeSyncSession,
+  getSyncSessionSnapshot,
+  getSyncVault,
+  type SyncVault,
+} from '../../app/lib/sync/sync-session';
 import { runSyncCycleUnlocked } from '../../app/lib/sync/orchestrator';
 import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engine/crypto/argon2';
 import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { createMemoryStorage, createSyncStateStore } from '../../app/lib/sync/sync-state';
 import { SCHEMA_VERSION, type LocalStoreSnapshot } from '../../app/lib/local-store';
+import { readLocalSnapshot } from '../../app/lib/sync/local-store-bridge';
 import {
   EMPTY_OWNER_PRIVATE_REGION,
   type OwnerPrivateRegion,
@@ -69,6 +86,7 @@ import {
 import {
   assertOwnerPrivateCompartment,
   createPrivateStoreSession,
+  hasUnopenedCompartment,
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
 } from '../../app/lib/sync/private-store';
@@ -92,7 +110,43 @@ let service: FakeSyncService;
 
 before(async () => {
   service = await startFakeSyncService();
+  await openTheDeviceStore();
 });
+
+/**
+ * Opens the REAL device store once, without letting its autoLoad poll hold the
+ * test process open. Copied deliberately from `research-actions.test.ts`: the
+ * reasoning is that file's, and the four must not drift.
+ *
+ * Only the last test in this file needs it — `syncNow` is the one verb here
+ * that reads the device store rather than a mirrored seam line.
+ */
+async function openTheDeviceStore(): Promise<void> {
+  // `getPrimaryStore()` refuses outside a browser with IndexedDB. `window` is
+  // a MARKER here, not a browser: nothing in these paths reads a property off
+  // it, and the one place that would (`installFlushOnHide`) also requires
+  // `document`, which stays absent.
+  // SAFETY: the guard this satisfies is `globalThis.window !== undefined`.
+  globalThis.window = globalThis as typeof globalThis & Window;
+
+  const scheduleInterval = globalThis.setInterval;
+  function unrefdSetInterval<TArgs extends unknown[]>(
+    callback: (...args: TArgs) => void,
+    delay?: number,
+    ...args: TArgs
+  ): NodeJS.Timeout {
+    return scheduleInterval(callback, delay, ...args).unref();
+  }
+  // SAFETY: the DOM overload of `setInterval` answers a `number`; in node the
+  // handle is a `Timeout` that carries `unref`, and node is the only runtime
+  // this file executes in.
+  globalThis.setInterval = unrefdSetInterval as typeof globalThis.setInterval;
+  try {
+    await readLocalSnapshot();
+  } finally {
+    globalThis.setInterval = scheduleInterval;
+  }
+}
 
 after(async () => {
   await service.close();
@@ -942,4 +996,104 @@ test('the diary refuses a study account before writing, and the blob is unchange
     sealed: readback.current.privateStore,
   });
   assert.equal(opened?.studyKeyring[0]?.privateKey, STUDY_KEY_MARKER);
+});
+
+/**
+ * A COMPLETED SYNC CAN STILL BE CARRYING A LOSS, AND MUST SAY SO (M164/07).
+ *
+ * `sealOwnerPrivateRegion` re-emits a compartment this session could not open
+ * (M164/01), which is strictly better than the destruction it replaced — and
+ * it is still silent: this device's own owner-private changes are NOT
+ * published. A share identity generated here is written to IndexedDB and
+ * exists nowhere else. The diary itself synced perfectly, so the cycle reports
+ * success, and a device looks healthy for a week with its share identity
+ * stranded.
+ *
+ * ADR-0009's consequences say "a completed sync cycle can now report an
+ * error". `hasUnopenedCompartment` is that report and `syncNow` is where it
+ * reaches a person — and nothing under `tests/` asserted either. This is the
+ * one behaviour change M164/02 made visible to a user.
+ *
+ * ── Why this test is the only one here that drives `syncNow` ─────────────
+ *
+ * Every other test in this file mirrors `sync-actions.ts`'s two seam lines and
+ * runs the orchestrator directly, because `readSyncedSnapshot` and
+ * `applySyncedSnapshot` are module-private and read the device store. The
+ * report under test is not on the orchestrator at all — it is written by
+ * `syncNow` after the cycle returns — so a mirrored cycle cannot see it, and
+ * this file gained a real device store (see `openTheDeviceStore`) for exactly
+ * this one case.
+ */
+test('a session carrying an unopened compartment reports an unopened compartment on a completed sync', async () => {
+  const email = `unopened-report-${Date.now()}@example.test`;
+  await createSyncAccount({
+    serverUrl: service.url,
+    email,
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  const planterVault = requireVault();
+
+  // A REAL compartment under a key this account's passphrase cannot reach —
+  // the ordinary post-passphrase-change state, planted through the production
+  // seal exactly as the adopt-failure test above plants one.
+  const strangerKek = await crypto.subtle.importKey('raw', new Uint8Array(32).fill(31), { name: 'AES-GCM' }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
+  const planted = await sealOwnerPrivateRegion({
+    session: createPrivateStoreSession({
+      accountId: planterVault.accountId,
+      passphraseKek: strangerKek,
+      established: await establishPrivateStore({ passphraseKek: strangerKek, recoveryKek: strangerKek }),
+    }),
+    region: {
+      ...EMPTY_OWNER_PRIVATE_REGION,
+      shareIdentity: { publicKeyRaw: 'public-key', privateKeyPkcs8: 'the-key-this-device-cannot-read', createdAt: 7 },
+    },
+  });
+  assert.ok(planted !== null, 'the fixture must carry a real compartment, or nothing below is a statement');
+  const planter = { current: { ...snapshotOf([foodLog('log-report', 'Planted')]), privateStore: planted } };
+  await runSyncCycleUnlocked(deviceDeps({ vault: planterVault, deviceId: 'device-planter', local: planter }));
+
+  // A genuinely fresh sign-in, and then the production verb — no mirrored
+  // seams, no substituted deps. This is the call the app makes on boot.
+  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  const victim = requireVault();
+  markSyncPending();
+  await syncNow();
+
+  // NON-VACUITY: the cycle really is the degraded one, and it really did
+  // complete. Both halves matter — a failed cycle would report an error too,
+  // and this report is precisely the one a SUCCESSFUL cycle carries.
+  assert.equal(hasUnopenedCompartment(victim.privateStore), true, 'the adopt must have failed, or this proves nothing');
+  const snapshot = getSyncSessionSnapshot();
+  assert.equal(snapshot.phase, 'idle');
+  assert.ok(snapshot.lastSyncedAt !== null, 'the cycle must have completed — this is not a failure report');
+  assert.equal(snapshot.hasPendingChanges, false);
+
+  // THE ASSERTION THIS TEST WAS WRITTEN FOR: the sentence a person reads.
+  assert.ok(snapshot.error !== null, 'a completed cycle carrying an unopened compartment must not report a clean sync');
+  assert.equal(snapshot.error.reason, 'failed');
+  assert.match(snapshot.error.message, /in sync/i, 'the diary DID sync, and the message must not deny it');
+  assert.match(snapshot.error.message, /could not open/i, 'the message must name what did not happen');
+  // AND THE CAUSE IS OFFERED AS LIKELY, NOT STATED (M164/07). Three states
+  // reach here — a passphrase this session does not hold, a failed tag check,
+  // and a plaintext the region schema rejected — and the recovery code helps
+  // only the first. The message that stood here named that one as the cause.
+  assert.match(snapshot.error.message, /most often/i, 'the likely cause must be offered as likely, not as the cause');
+
+  // NON-VACUITY 2: an account with no such compartment reports nothing. Without
+  // this the report could be unconditional.
+  await createSyncAccount({
+    serverUrl: service.url,
+    email: `clean-report-${Date.now()}@example.test`,
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  markSyncPending();
+  await syncNow();
+  assert.equal(getSyncSessionSnapshot().error, null, 'an ordinary cycle must still report a clean sync');
 });

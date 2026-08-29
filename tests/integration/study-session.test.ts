@@ -83,9 +83,15 @@ import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engi
 import { base64ToBytes, bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { shareFingerprintDisplay, shareKeyFingerprint } from '../../app/lib/sync/engine/crypto/share-wrap';
 import { SYNC_API_PREFIX } from '../../app/lib/sync/engine/protocol';
-import { pullStudyBlob } from '../../app/lib/sync/research/study-blob';
-import { openStudyRegion } from '../../app/lib/sync/research/study-compartment';
-import type { StudyPrivateRegion } from '../../app/lib/sync/research/study-keyring';
+import { pullStudyBlob, pushStudyBlob } from '../../app/lib/sync/research/study-blob';
+import { openStudyRegion, sealStudyRegion } from '../../app/lib/sync/research/study-compartment';
+import { establishPrivateStore } from '../../app/lib/sync/engine/crypto/private-store';
+import {
+  EMPTY_STUDY_PRIVATE_REGION,
+  generateStudyKeyGeneration,
+  withNewStudyKeyGeneration,
+  type StudyPrivateRegion,
+} from '../../app/lib/sync/research/study-keyring';
 import { deleteLocalFoodLog, listLocalStudyEnrolments, putLocalFoodLog } from '../../app/lib/local-store';
 import { shareableSnapshotSchema } from '../../app/lib/local-store/backup';
 import type { LocalFoodLog } from '../../app/lib/local-store';
@@ -573,4 +579,171 @@ test('the study console refuses a diary account, and writes nothing to it', asyn
   );
 
   await deleteLocalFoodLog('refused-diary-log');
+});
+
+/**
+ * "NO KEYS YET" AND "I CANNOT READ YOUR KEYS" ARE THE SAME SCREEN (M164/07).
+ *
+ * `loadStudyIdentity` does `open.region = (await openStudyRegion(...)) ??
+ * open.region`, and after `signInToStudy` that fallback is
+ * `EMPTY_STUDY_PRIVATE_REGION`. So a compartment this console could not open
+ * came back as `generationCount: 0, fingerprint: null` — which is exactly what
+ * a study that has minted nothing shows, and that one is a normal thing a
+ * researcher sees on her first visit.
+ *
+ * The consequence is not cosmetic. The next thing she does on that screen is
+ * mint a generation onto a keyring she cannot read, and `pullCohort` reports
+ * every contribution in the study as un-openable — a statement about the
+ * contributors, when the truth is a statement about this console.
+ *
+ * ── The fixture is a REAL compartment under a passphrase this console has
+ * never held ────────────────────────────────────────────────────────────
+ *
+ * Which is the ordinary state: a second researcher's laptop signing in after
+ * the study's passphrase was changed on the first one. It is planted through
+ * the production seal and the production push, over HTTP, so the console pulls
+ * bytes no test wrote by hand.
+ */
+async function plantAnUnopenableCompartment(account: StudyAccountUnderTest): Promise<StudyPrivateRegion> {
+  const { http, dek } = await readStudyAccountFromOutside(account);
+  const strangerKek = await crypto.subtle.importKey('raw', new Uint8Array(32).fill(29), { name: 'AES-GCM' }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
+  const established = await establishPrivateStore({ passphraseKek: strangerKek, recoveryKek: strangerKek });
+  const region = withNewStudyKeyGeneration({
+    region: EMPTY_STUDY_PRIVATE_REGION,
+    generation: await generateStudyKeyGeneration(),
+  });
+  const sealed = await sealStudyRegion({
+    session: {
+      accountId: account.accountId,
+      passphraseKek: strangerKek,
+      cdk: established.cdk,
+      wraps: { cdkWrapPassphrase: established.cdkWrapPassphrase, cdkWrapRecovery: established.cdkWrapRecovery },
+      extras: {},
+      pulled: null,
+    },
+    region,
+  });
+  assert.ok(sealed !== null, 'the planted compartment must be real, or nothing below is a statement');
+
+  await pushStudyBlob({
+    transport: http,
+    accountId: account.accountId,
+    dek,
+    deviceId: 'the-laptop-that-changed-the-passphrase',
+    pulled: await pullStudyBlob({ transport: http, accountId: account.accountId, dek }),
+    reseal: async () => sealed,
+  });
+  return region;
+}
+
+test('the console reports a compartment it could not open, never an empty keyring', async () => {
+  const study = await createStudy('unopened-study');
+  const planted = await plantAnUnopenableCompartment(study);
+
+  // A FRESH SIGN-IN, which is the whole point: the console that created the
+  // account still holds its own CDK, and a session that holds one is not the
+  // situation. This one derives `K_pp` from the study's passphrase, and slot 1
+  // of the planted compartment belongs to another.
+  closeStudyConsole();
+  await signIn(study.email);
+
+  const identity = await loadStudyIdentity();
+
+  // THE ASSERTION THIS TEST WAS WRITTEN FOR. The count and the fingerprint are
+  // deliberately asserted BESIDE it: they are the two fields that make the
+  // state indistinguishable from a fresh study, so the flag has to be what
+  // separates them rather than a difference in either of those.
+  assert.equal(identity.hasUnopenedCompartment, true, 'a compartment this console could not open must be reported');
+  assert.equal(identity.generationCount, 0, 'the empty keyring is exactly what makes this state look ordinary');
+  assert.equal(identity.fingerprint, null);
+
+  // AND THE COHORT READ REFUSES rather than blaming the contributors. Handing
+  // `study.ts` an empty keyring reports every row as `unopenableCount`.
+  const cohortFailure = await pullCohort().then(
+    () => null,
+    (cause: unknown) => cause,
+  );
+  assert.ok(cohortFailure instanceof Error, 'a console with no readable keyring must not report a cohort at all');
+  assert.match(cohortFailure.message, /could not open/i, 'the refusal must name the console, not the contributions');
+
+  // NON-VACUITY 1: the compartment on the service is REAL and READABLE — by
+  // the passphrase it was sealed under. This console's `0` is a reading
+  // failure, not an empty account.
+  const { http, dek } = await readStudyAccountFromOutside(study);
+  const onTheService = await pullStudyBlob({ transport: http, accountId: study.accountId, dek });
+  assert.ok(onTheService.sealed !== null, 'the planted compartment must still be on the blob');
+  assert.equal(planted.studyKeyring.length, 1, 'the plant must have carried a generation');
+
+  // NON-VACUITY 2: the same call on a console that CAN open its compartment
+  // answers `false`. Without this the flag could be hard-wired.
+  closeStudyConsole();
+  const readable = await createStudy('opened-study');
+  await generateStudyKey();
+  const healthy = await loadStudyIdentity();
+  assert.equal(healthy.hasUnopenedCompartment, false, 'a console that opened its compartment must not report this');
+  assert.equal(healthy.generationCount, 1);
+  assert.equal((await pullCohort()).status, 'available', 'and its cohort read must go through');
+  assert.equal(readable.accountId > 0, true);
+});
+
+/**
+ * A GENERATION THE SERVER REJECTED IS NOT THIS STUDY'S KEY (M164/07).
+ *
+ * `generateStudyKey` committed `open.region` inside `reseal`, which runs once
+ * per CAS round and is followed by a request that can fail for reasons that
+ * have nothing to do with the keyring. After a failed push the console was
+ * left holding — and REPORTING — a generation the study account does not have:
+ * a fingerprint no contributor could ever seal to, printed into a consent
+ * document that afternoon.
+ *
+ * ── Why the fingerprint is read back through a SECOND call ──────────────
+ *
+ * `generateStudyKey` throws here, so its return value is unreachable and
+ * cannot be the observation. The phantom lives in the vault, and
+ * `loadStudyIdentity` is what a researcher's screen shows next — a pull that
+ * carries no compartment leaves `open.region` alone, so whatever the failed
+ * mint put there is what she reads.
+ */
+test('a failed push leaves no phantom generation in the console’s vault', async () => {
+  let refusePush = false;
+  const refusingFetch: typeof fetch = async (input, init) => {
+    // Both sync clients call their `fetchImpl` with a string URL.
+    if (refusePush && init?.method === 'POST' && String(input).endsWith(`${SYNC_API_PREFIX}/blob`)) {
+      // What a dropped connection looks like to `fetch` — the ordinary
+      // failure, and the one that arrives AFTER the seal has been computed.
+      throw new TypeError('fetch failed');
+    }
+    return fetch(input, init);
+  };
+
+  const study = await createStudy('phantom-study', refusingFetch);
+  refusePush = true;
+  const failure = await generateStudyKey().then(
+    () => null,
+    (cause: unknown) => cause,
+  );
+  assert.ok(failure instanceof Error, 'the push must actually have failed, or this test proves nothing');
+  refusePush = false;
+
+  // THE ASSERTION THIS TEST WAS WRITTEN FOR: the screen after the failure.
+  const afterFailure = await loadStudyIdentity();
+  assert.equal(afterFailure.generationCount, 0, 'a generation the server rejected must not be in the vault');
+  assert.equal(afterFailure.fingerprint, null, 'and no fingerprint of it may be reported to be printed');
+
+  // And the service agrees, which is what makes the two consistent rather than
+  // merely both empty.
+  const { http, dek } = await readStudyAccountFromOutside(study);
+  const onTheService = await pullStudyBlob({ transport: http, accountId: study.accountId, dek });
+  assert.equal(onTheService.sealed, null, 'the refused push must have written no compartment');
+
+  // NON-VACUITY: the SAME console mints successfully the moment the push is
+  // allowed through, so the zero above is about the failed push and not about
+  // a console left broken by it.
+  const minted = await generateStudyKey();
+  assert.equal(minted.generationCount, 1);
+  assert.ok(minted.fingerprint !== null);
+  assert.equal((await keyringOnTheService(study)).studyKeyring.length, 1, 'and the service holds that one generation');
 });

@@ -58,7 +58,12 @@ import { deviceStorage, resolveDeviceId } from '../sync-state';
 import type { SurfaceRead } from '../engine/client/http-client';
 import { pullStudyCohort, type StudyCohort } from './study';
 import { pullStudyBlob, pushStudyBlob, type PulledStudyBlob } from './study-blob';
-import { openStudyRegion, sealStudyRegion, type StudyCompartmentSession } from './study-compartment';
+import {
+  hasUnopenedStudyCompartment,
+  openStudyRegion,
+  sealStudyRegion,
+  type StudyCompartmentSession,
+} from './study-compartment';
 import {
   currentStudyPublicKey,
   EMPTY_STUDY_PRIVATE_REGION,
@@ -105,6 +110,18 @@ export interface StudyConsoleIdentity {
   generationCount: number;
   /** The NEWEST generation's fingerprint, twelve characters in three groups of four — the form printed in a consent document. `null` before any key exists. */
   fingerprint: string | null;
+  /**
+   * Whether the two fields above are a REPORT or an ADMISSION (M164/07).
+   *
+   * `generationCount: 0` and `fingerprint: null` are what a study that has
+   * minted nothing looks like — the ordinary first visit. They are also what a
+   * console that could not open the compartment looks like, because the open
+   * answers `null` and the empty region is what is left. Those are opposite
+   * situations and one screen cannot say both, so the state comes up with
+   * them, in the diary's own vocabulary (`hasUnopenedCompartment`,
+   * `private-store.ts`).
+   */
+  hasUnopenedCompartment: boolean;
 }
 
 /** Signing in either finds a complete account, or completes a setup that was interrupted and mints the recovery code that repair needs. */
@@ -377,14 +394,34 @@ export async function loadStudyIdentity(): Promise<StudyConsoleIdentity> {
   const open = requireVault('loadStudyIdentity');
   const blob = await pullStudyBlob({ transport: open.http, accountId: open.accountId, dek: open.dek });
   open.region = (await openStudyRegion({ session: open.compartment, sealed: blob.sealed })) ?? open.region;
+  return describeStudyIdentity(open);
+}
 
+/**
+ * What the console may show, from the vault as it stands.
+ *
+ * One function for both verbs so the mint and the sign-in cannot report the
+ * same vault differently — and so the unopened-compartment state is carried by
+ * every answer rather than by the one that remembered to.
+ */
+async function describeStudyIdentity(open: StudyVault): Promise<StudyConsoleIdentity> {
   const publicKeyRaw = currentStudyPublicKey(open.region);
   return {
     accountId: open.accountId,
     email: open.email,
     generationCount: open.region.studyKeyring.length,
     fingerprint: publicKeyRaw === null ? null : shareFingerprintDisplay(await shareKeyFingerprint(publicKeyRaw)),
+    hasUnopenedCompartment: hasUnopenedStudyCompartment(open.compartment),
   };
+}
+
+interface MintedStudyRegion {
+  /**
+   * The region the LAST `reseal` attempt produced — the one the push actually
+   * carried. A CAS retry replaces it, exactly as it replaces the bytes, and
+   * `null` means no attempt ran at all.
+   */
+  region: StudyPrivateRegion | null;
 }
 
 /**
@@ -394,12 +431,25 @@ export async function loadStudyIdentity(): Promise<StudyConsoleIdentity> {
  * inside `reseal` is what makes a CAS retry correct: it appends onto whatever
  * the server holds NOW, so a generation another device minted a moment ago
  * survives this write instead of being replaced by it.
+ *
+ * ── THE VAULT IS COMMITTED AFTER THE PUSH, NEVER INSIDE THE SEAL ─────────
+ *
+ * `reseal` runs once per CAS round and is followed by a request that can fail
+ * for reasons that have nothing to do with the keyring: too-large, a conflict
+ * loop that runs out of rounds, a transport that drops. Assigning
+ * `open.region` in there left the console holding a generation the study
+ * account does not have — it reported a fingerprint no contributor could ever
+ * seal to, and a researcher who printed it that afternoon printed a key that
+ * exists on one laptop. So the minted region is held aside and adopted only
+ * once `pushStudyBlob` has returned, which is the moment the server actually
+ * has it.
  */
 export async function generateStudyKey(): Promise<StudyConsoleIdentity> {
   const open = requireVault('generateStudyKey');
   const generation = await generateStudyKeyGeneration();
   const pulled = await pullStudyBlob({ transport: open.http, accountId: open.accountId, dek: open.dek });
 
+  const minted: MintedStudyRegion = { region: null };
   await pushStudyBlob({
     transport: open.http,
     accountId: open.accountId,
@@ -421,18 +471,19 @@ export async function generateStudyKey(): Promise<StudyConsoleIdentity> {
           message: 'This console could not open the study’s existing keys, so a new key cannot be added to them.',
         });
       }
-      open.region = withNewStudyKeyGeneration({ region: server ?? open.region, generation });
-      return sealStudyRegion({ session: open.compartment, region: open.region });
+      const next = withNewStudyKeyGeneration({ region: server ?? open.region, generation });
+      minted.region = next;
+      return sealStudyRegion({ session: open.compartment, region: next });
     },
   });
 
-  const publicKeyRaw = currentStudyPublicKey(open.region);
-  return {
-    accountId: open.accountId,
-    email: open.email,
-    generationCount: open.region.studyKeyring.length,
-    fingerprint: publicKeyRaw === null ? null : shareFingerprintDisplay(await shareKeyFingerprint(publicKeyRaw)),
-  };
+  // Unreachable: `pushStudyBlob` calls `reseal` on every round and cannot
+  // return without one. Stated rather than asserted away, because the
+  // alternative — a non-null assertion — would make a future push that skipped
+  // the seal report the keyring the console had before it.
+  if (minted.region === null) throw new Error('the study push returned without sealing a region');
+  open.region = minted.region;
+  return describeStudyIdentity(open);
 }
 
 /**
@@ -444,5 +495,18 @@ export async function generateStudyKey(): Promise<StudyConsoleIdentity> {
  */
 export async function pullCohort(): Promise<SurfaceRead<StudyCohort>> {
   const open = requireVault('pullCohort');
+  // AND A CONSOLE WITH NO KEYRING BECAUSE IT COULD NOT READ ONE SAYS SO
+  // (M164/07). `study.ts` reports a row un-openable once every key it was
+  // given has failed, so handing it the empty region here reports the whole
+  // cohort as unreadable contributions — a statement about the contributors,
+  // when the truth is a statement about this console. The two answers look
+  // identical on screen and only one of them is anybody's fault.
+  if (hasUnopenedStudyCompartment(open.compartment)) {
+    throw new SyncRequestError({
+      kind: 'invalid',
+      message:
+        'This console could not open this study’s keys, so it cannot open any contribution either. Sign in with the passphrase those keys were made with, or use the study’s recovery code.',
+    });
+  }
   return pullStudyCohort({ transport: open.http, keys: studyKeyPairsOf(open.region) });
 }

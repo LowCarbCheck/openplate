@@ -172,11 +172,14 @@ export function createPrivateStoreSession({
  * replaced (M164/01) — and it is still silent, so it must not be reported as
  * a clean sync.
  *
- * Since M164/02 this case is also NARROWER. "Could not open" used to include
+ * Since M164/02 this case is NARROWER by one. "Could not open" used to include
  * "opened fine, but belongs to a study console"; that one now throws at the
- * open and is visible on its own. What is left here is exactly one thing: a
- * compartment under a passphrase this session does not hold. {@link
- * hasUnopenedCompartment} is how `syncNow` says so.
+ * open and is visible on its own. What is left is still THREE states, not one
+ * (M164/07): a compartment under a passphrase this session does not hold, a
+ * ciphertext whose tag check failed, and a plaintext the region schema
+ * rejected. A tag check does not say which, so neither does this — {@link
+ * hasUnopenedCompartment} answers the state, and `sync-actions.ts` owns the
+ * sentence that has to be true of all three.
  */
 export async function sealOwnerPrivateRegion({
   session,

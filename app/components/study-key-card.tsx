@@ -24,9 +24,25 @@
  * The count is on screen because it is load-bearing: a study that has rotated
  * still opens its back catalogue with the older generations, and only the
  * newest belongs in the document being printed today.
+ *
+ * ── "No key yet" and "I cannot read your keys" are not one screen ────────
+ *
+ * `loadStudyIdentity` reports a count and a fingerprint, and a compartment
+ * this console could not open leaves both at `0` and `null` — which is
+ * exactly what a study on its first visit shows. The first is ordinary and
+ * the second is the state in which minting a generation is a mistake, so the
+ * identity carries `hasUnopenedCompartment` (M164/07) and this card shows the
+ * two apart.
+ *
+ * AMBER, NOT DESTRUCTIVE, and the mint stays enabled. Nothing is lost here —
+ * the keyring is intact on the service and this console simply cannot read it
+ * — and `generateStudyKey` refuses the mint on its own (M164/01) with the
+ * reason. A disabled button would say "this is broken" where the truth is
+ * "you are signed in with the wrong passphrase". DESIGN §10 keeps
+ * `--destructive` for the line that is a defect.
  */
 import { useTranslation } from 'react-i18next';
-import { KeyRound, Loader2 } from 'lucide-react';
+import { AlertTriangle, KeyRound, Loader2 } from 'lucide-react';
 
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
@@ -52,7 +68,18 @@ export function StudyKeyCard({
         <CardDescription>{t('research.console.identity.account', { accountId: identity.accountId })}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {identity.fingerprint === null && (
+        {identity.hasUnopenedCompartment && (
+          <output className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="flex-1">{t('research.console.identity.unopened')}</span>
+          </output>
+        )}
+
+        {/* The empty state, and ONLY when it is really empty: a console that
+            could not open the compartment has no fingerprint either, and
+            telling that researcher to mint one is how she ends up minting onto
+            a keyring she cannot read. */}
+        {identity.fingerprint === null && !identity.hasUnopenedCompartment && (
           <p className="text-sm text-muted-foreground">{t('research.console.identity.noKey')}</p>
         )}
 
