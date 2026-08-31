@@ -185,6 +185,12 @@ export default function PublicWrapper({
             <Link to="/terms" className="transition-colors hover:text-foreground">
               {t('chrome.terms')}
             </Link>
+            {/* Section 5 DDG requires the imprint to be reachable from every
+                page ("leicht erkennbar, unmittelbar erreichbar"), so it belongs
+                in the footer rather than only at a known URL. */}
+            <Link to="/imprint" className="transition-colors hover:text-foreground">
+              {t('chrome.imprint')}
+            </Link>
           </nav>
         </div>
       </footer>

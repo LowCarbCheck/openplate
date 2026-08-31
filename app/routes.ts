@@ -74,6 +74,9 @@ export default [
     index('routes/index.tsx'),
     route('/terms', 'routes/legal/terms.tsx'),
     route('/privacy', 'routes/legal/privacy.tsx'),
+    // Section 5 DDG provider identification. Public and unauthenticated on
+    // purpose — an imprint behind a login does not discharge the duty.
+    route('/imprint', 'routes/legal/imprint.tsx'),
 
     // Service-worker offline fallback: precached at install, served for failed
     // navigations. Always cacheable, never gated.
