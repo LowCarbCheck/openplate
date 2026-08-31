@@ -25,6 +25,9 @@ import type { MetaFunction } from 'react-router';
 import { KeyRound, Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { takeInviteFromUrl } from '#app/lib/sync/invite-link';
+import { classifySignupFailure } from '#app/lib/sync/signup-error';
+import type { SignupMode } from '#app/lib/sync/engine/protocol';
 import { RecoveryCodeStep, SyncSetupFlow } from '#app/components/sync-setup-flow';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
@@ -46,6 +49,7 @@ import { validateSyncPassphrase, type SyncSetupOutcome } from '#app/lib/sync/set
 import {
   changeSyncPassphrase,
   createSyncAccount,
+  readSignupMode,
   deleteSyncAccount,
   regenerateRecoveryCode,
   requestSyncReset,
@@ -189,6 +193,36 @@ function CreateAccountPanel({
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
+  // Read once, on mount: the fragment is cleared as it is read, so this cannot
+  // be derived during render without losing the value on the second pass.
+  const [invite, setInvite] = useState('');
+  useEffect(() => {
+    const fromLink = takeInviteFromUrl();
+    if (fromLink !== null) setInvite(fromLink);
+  }, []);
+
+  // `null` while unknown — an older service, or one that could not be reached.
+  // The form stays usable either way; this only decides whether the invite
+  // field is offered and which refusal message a 403 gets.
+  const [signupMode, setSignupMode] = useState<SignupMode | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const ask = async (): Promise<void> => {
+      const mode = await readSignupMode(serverUrl);
+      if (!cancelled) setSignupMode(mode);
+    };
+    // `readSignupMode` fails open and never rejects, so there is nothing here
+    // for a catch to do — the unknown mode IS the failure result.
+    void ask();
+    return () => {
+      cancelled = true;
+    };
+  }, [serverUrl]);
+
+  // Offered when the instance says it wants one, and also whenever a link
+  // supplied one — so a person following an invite to a service that could not
+  // be reached still sees their code rather than losing it silently.
+  const wantsInvite = signupMode === 'invite' || invite !== '';
 
   if (confirmedEmail !== null) {
     return (
@@ -197,7 +231,22 @@ function CreateAccountPanel({
         <SyncSetupFlow
           onCeremonyActiveChange={onCeremonyActiveChange}
           provision={async ({ passphrase }) => {
-            const result = await createSyncAccount({ serverUrl, email: confirmedEmail, passphrase });
+            let result: SyncSetupOutcome;
+            try {
+              result = await createSyncAccount({
+                serverUrl,
+                email: confirmedEmail,
+                passphrase,
+                inviteToken: invite === '' ? undefined : invite,
+              });
+            } catch (error) {
+              // Translated here rather than left to `describeErrorForUser`,
+              // which would surface the SERVICE's own English sentence. §4 of
+              // the protocol says a client branches on the status, not the
+              // prose — displaying that prose is the same mistake in the other
+              // direction.
+              throw new Error(describeSignupError(error, signupMode, t), { cause: error });
+            }
             // No session and no key material exist on this branch, so there is
             // nothing to sync and nothing to show yet — the ceremony moves to
             // the sign-in that follows confirmation.
@@ -239,6 +288,22 @@ function CreateAccountPanel({
         />
         <p className="text-xs text-muted-foreground">{t('sync.emailHint')}</p>
       </div>
+      {wantsInvite && (
+        <div className="space-y-2">
+          <Label htmlFor="sync-invite">{t('sync.create.inviteLabel')}</Label>
+          <Input
+            id="sync-invite"
+            type="text"
+            required
+            autoComplete="off"
+            spellCheck={false}
+            value={invite}
+            onChange={(event) => setInvite(event.target.value)}
+            className="h-11"
+          />
+          <p className="text-xs text-muted-foreground">{t('sync.create.inviteHint')}</p>
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         <Button type="submit" className="h-11 w-full">
           {t('sync.create.continue')}
@@ -249,6 +314,24 @@ function CreateAccountPanel({
       </div>
     </form>
   );
+}
+
+/**
+ * Turns a failure to CREATE an account into copy the user can act on.
+ *
+ * The `403` needs `signupMode` to be readable at all: the service answers the
+ * same status whether it is closed or merely wants an invite, and it
+ * deliberately will not distinguish a missing invite from an expired or
+ * already-spent one. When the mode is unknown the generic refusal is the
+ * honest answer — better than sending somebody to look for an invitation that
+ * was never required.
+ */
+function describeSignupError(cause: unknown, signupMode: SignupMode | null, t: (key: string) => string): string {
+  const failure = classifySignupFailure(cause, signupMode);
+  if (failure === 'invite-required') return t('sync.create.inviteRequired');
+  if (failure === 'signups-closed') return t('sync.create.closed');
+  if (failure === 'email-taken') return t('sync.create.emailTaken');
+  return describeErrorForUser(cause, t('sync.setup.setupFailed'));
 }
 
 /**

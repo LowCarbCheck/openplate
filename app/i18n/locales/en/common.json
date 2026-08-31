@@ -1967,7 +1967,12 @@
     "create": {
       "continue": "Continue",
       "cta": "Create a sync account",
-      "forEmail": "Setting up sync for {{email}}."
+      "forEmail": "Setting up sync for {{email}}.",
+      "inviteLabel": "Invite code",
+      "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
+      "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
+      "closed": "This sync server is not accepting new accounts.",
+      "emailTaken": "An account already exists for that address. Sign in instead."
     },
     "danger": {
       "description": "Both options leave the diary on this device untouched.",

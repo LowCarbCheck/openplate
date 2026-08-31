@@ -16,10 +16,13 @@
  * amount of retyping will ever help. The fix for that user is an email link,
  * and this is what lets the UI say so.
  *
- * `forbidden` can only mean "unverified" HERE. The service's other `403` is
- * signups-closed, which belongs to signup and can never be the outcome of a
- * login; this function is deliberately named for the sign-in path so it is not
- * reused where that stops being true.
+ * `forbidden` means "unverified" ON THIS PATH ONLY, and the qualifier earns
+ * its place: `POST /v1/auth/signup` answers `403` for two OTHER reasons — the
+ * instance is closed, or it wants an invite (`PROTOCOL.md` §5.8.1) — neither
+ * of which a login can ever produce. This function is named for the sign-in
+ * path so it is not reused where that stops being true; `signup-error.ts` is
+ * the counterpart, and it needs the instance's signup mode to tell its own two
+ * cases apart.
  */
 import { SyncRequestError } from './engine/client/sync-error';
 

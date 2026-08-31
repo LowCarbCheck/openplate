@@ -48,7 +48,13 @@ import {
 } from './auth-wire';
 import { errorKindForStatus, SyncRequestError } from './sync-error';
 import { defaultFetchImpl } from './fetch-impl';
-import { checkProtocolCompatibility, isProtocolHandshake, type JsonValue, type ProtocolCompatibility } from '../protocol';
+import {
+  checkProtocolCompatibility,
+  isProtocolHandshake,
+  type JsonValue,
+  type ProtocolCompatibility,
+  type SignupMode,
+} from '../protocol';
 import { z } from 'zod';
 
 type FetchImpl = typeof fetch;
@@ -166,6 +172,34 @@ export class SyncAuthClient implements SyncTokenProvider {
     return checkProtocolCompatibility(body);
   }
 
+  /**
+   * Reads the instance's signup policy from the same `/health` body (§5.6).
+   *
+   * SEPARATE FROM `handshake()` ON PURPOSE. That method fails CLOSED — an
+   * unreachable service is reported as incompatible, because a wrong sync
+   * destroys a blob. This one fails OPEN, returning `null` for an unreachable
+   * service, a malformed body, or a service too old to carry the field, and
+   * `null` means "attempt the signup and handle the 403". Folding the two
+   * together would force one failure posture onto both, and the right posture
+   * genuinely differs: refusing to sync on doubt protects data, whereas
+   * refusing to show a sign-up form on doubt just hides a working feature.
+   *
+   * The answer is a HINT for choosing which form to draw. The `403` is the
+   * contract — an operator can change the mode between this call and the
+   * submit.
+   */
+  async signupMode(): Promise<SignupMode | null> {
+    try {
+      const response = await this.fetchImpl(`${this.baseUrl}/health`, { method: 'GET' });
+      if (!response.ok) return null;
+      const body: JsonValue = await response.json();
+      if (!isProtocolHandshake(body)) return null;
+      return body.signupMode ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Pre-login
   // -------------------------------------------------------------------------
@@ -203,6 +237,8 @@ export class SyncAuthClient implements SyncTokenProvider {
     authHash: string;
     kdfDescriptor: KdfDescriptorWire;
     displayName?: string | null;
+    /** Required by an invite-only instance; ignored by an open one. */
+    inviteToken?: string;
   }): Promise<SessionResponseWire> {
     const request: SignupRequestWire = {
       email: input.email,
@@ -210,6 +246,9 @@ export class SyncAuthClient implements SyncTokenProvider {
       kdfDescriptor: input.kdfDescriptor,
       displayName: input.displayName ?? null,
     };
+    // Assigned rather than spread, so an absent invite omits the field instead
+    // of sending an explicit `undefined`.
+    if (input.inviteToken !== undefined) request.inviteToken = input.inviteToken;
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/signup`,
       method: 'POST',

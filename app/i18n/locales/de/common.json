@@ -1967,7 +1967,12 @@
     "create": {
       "continue": "Weiter",
       "cta": "Sync-Konto anlegen",
-      "forEmail": "Sync wird für {{email}} eingerichtet."
+      "forEmail": "Sync wird für {{email}} eingerichtet.",
+      "inviteLabel": "Einladungscode",
+      "inviteHint": "Dieser Server ist nur mit Einladung nutzbar. Füge den Code ein, den du bekommen hast, oder öffne den Einladungslink.",
+      "inviteRequired": "Diese Einladung ist ungültig. Sie wurde vielleicht schon benutzt oder ist abgelaufen. Bitte um eine neue.",
+      "closed": "Dieser Sync-Server nimmt keine neuen Konten an.",
+      "emailTaken": "Für diese Adresse gibt es schon ein Konto. Melde dich stattdessen an."
     },
     "danger": {
       "description": "Beides lässt das Tagebuch auf diesem Gerät unangetastet.",

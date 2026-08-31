@@ -40,6 +40,7 @@ import { ARGON2ID_DEFAULT_PARAMS, generateArgon2idSalt, type Argon2idParams } fr
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
 import { bytesToBase64 } from './engine/crypto/base64';
 import type { KdfDescriptorWire, KeyRecordSubmissionWire } from './engine/client/auth-wire';
+import type { SignupMode } from './engine/protocol';
 import type { SyncSetupOutcome } from './setup-flow';
 import {
   applyMergedSnapshot,
@@ -145,24 +146,52 @@ function toWireDescriptor(descriptor: PassphraseKdfDescriptor): KdfDescriptorWir
  * On the `ready` branch the returned recovery code is the ONLY time it exists
  * in a readable form. The caller (the ceremony) must show it before resolving.
  */
+/**
+ * Asks an instance how it treats new accounts (PROTOCOL.md §5.6).
+ *
+ * FAILS OPEN — `null` for an unreachable service, a malformed handshake, or a
+ * service older than the field — because the answer only decides which sign-up
+ * form to draw. The `403` from signup is the contract, and it is still handled
+ * whatever this returns. Contrast `requireCompatibleService` above, which fails
+ * CLOSED for the opposite reason: a wrong sync can destroy the only copy of a
+ * diary, so doubt there must stop the operation.
+ */
+export async function readSignupMode(serverUrl: string, options: SyncActionOptions = {}): Promise<SignupMode | null> {
+  const { authClient } = clients({ serverUrl, fetchImpl: options.fetchImpl });
+  return await authClient.signupMode();
+}
+
 export async function createSyncAccount({
   serverUrl,
   email,
   passphrase,
+  inviteToken,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
-}: { serverUrl: string; email: string; passphrase: string } & SyncActionOptions): Promise<SyncSetupOutcome> {
+}: {
+  serverUrl: string;
+  email: string;
+  passphrase: string;
+  /** Required by an invite-only instance (PROTOCOL.md §5.8.1); ignored by an open one. */
+  inviteToken?: string;
+} & SyncActionOptions): Promise<SyncSetupOutcome> {
   const { authClient, http } = clients({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
   const recovery = generateRecoveryCode();
   const keys = await setupSyncKeys({ passphrase, recoveryCodeRaw: recovery.raw, params, deriveHash });
 
+  // NOTE ON ORDER: the invite is checked by the service, so a bad one is only
+  // discovered after the Argon2id derivation above has already run. That costs
+  // an invited person nothing (their token is good) and costs an uninvited one
+  // a few seconds, which is the right way round. Checking it earlier would mean
+  // a second round trip on the happy path, and would still not be binding.
   const created = await authClient.signup({
     email,
     authHash: keys.authHash,
     kdfDescriptor: toWireDescriptor(keys.kdfDescriptor),
+    inviteToken,
   });
   if (created.tokens === null) {
     return { status: 'awaiting-email-verification', email: created.account.email };

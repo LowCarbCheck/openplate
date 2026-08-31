@@ -69,6 +69,12 @@ export interface SignupRequestWire {
   authHash: Base64Bytes;
   kdfDescriptor: KdfDescriptorWire;
   displayName: string | null;
+  /**
+   * The single-use token an invite-only instance requires (PROTOCOL.md
+   * §5.8.1). Omitted entirely on an open instance — an explicit `null` would
+   * be a value the service has no rule for.
+   */
+  inviteToken?: string;
 }
 
 export interface LoginRequestWire {

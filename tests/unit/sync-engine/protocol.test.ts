@@ -29,6 +29,7 @@ import {
   SYNC_KEY_RECORD_KINDS,
   checkProtocolCompatibility,
   isProtocolHandshake,
+  SIGNUP_MODES,
   isSyncKeyRecordKind,
 } from '../../../app/lib/sync/engine/protocol';
 
@@ -98,6 +99,27 @@ test('isProtocolHandshake rejects malformed handshake documents', () => {
   assert.equal(isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1 }), false);
   assert.equal(isProtocolHandshake(null), false);
   assert.equal(isProtocolHandshake('not a handshake'), false);
+});
+
+test('signupMode is optional, so a service older than the field is still accepted', () => {
+  // THE COMPATIBILITY TRAP THIS PINS: making the field required would be an
+  // "additive" change that silently refuses every instance deployed before it.
+  assert.equal(isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0' }), true);
+
+  for (const signupMode of SIGNUP_MODES) {
+    assert.equal(
+      isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0', signupMode }),
+      true,
+      signupMode,
+    );
+  }
+
+  // A value outside the vocabulary is refused rather than passed through — a
+  // client must not act on a mode it does not understand.
+  assert.equal(
+    isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0', signupMode: 'sometimes' }),
+    false,
+  );
 });
 
 test('isSyncKeyRecordKind accepts exactly the two documented kinds', () => {

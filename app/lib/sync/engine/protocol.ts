@@ -128,6 +128,20 @@ export function isSyncKeyRecordKind(value: JsonValue | undefined): value is Sync
 // ---------------------------------------------------------------------------
 
 /**
+ * Whether, and on what terms, an instance accepts new accounts.
+ *
+ *  - `'open'` — anyone may register. The default for a self-hosted instance.
+ *  - `'invite'` — registration requires a single-use token the operator
+ *    minted. What the hosted instance runs.
+ *  - `'closed'` — nobody may register. Existing accounts keep working.
+ *
+ * Mirrors `SignupMode` in the service's own `src/protocol.ts` — the two copies
+ * of this file are one contract (PROTOCOL.md §5.8.1).
+ */
+export const SIGNUP_MODES = ['open', 'invite', 'closed'] as const;
+export type SignupMode = (typeof SIGNUP_MODES)[number];
+
+/**
  * What a service reports about itself, read by the client BEFORE its first
  * sync of a session. This replaces the same-process `HOOK_VERSION` check that
  * died with M117's build-time composition seam: client and service are now
@@ -145,6 +159,19 @@ export type ProtocolHandshake = {
   envelopeVersion: number;
   /** Human-readable build identifier — diagnostics only, never compared. */
   serviceVersion: string;
+  /**
+   * How this instance treats new accounts — see {@link SignupMode}.
+   *
+   * OPTIONAL, and it must stay optional. A service older than this field omits
+   * it, and requiring it here would make this build refuse to talk to every
+   * such instance: a compatibility break wearing the clothes of an additive
+   * change. Absent means "attempt the signup and handle the 403".
+   *
+   * It is a HINT, never the contract. An operator can close signups between
+   * the handshake and the submit, so the signup error handling stays in place
+   * even when this said `'open'`.
+   */
+  signupMode?: SignupMode;
 };
 
 /** The decoder for {@link ProtocolHandshake} — the health endpoint is an I/O boundary, so its body is parsed, not assumed. */
@@ -152,6 +179,9 @@ const protocolHandshakeSchema = z.object({
   protocolVersion: z.number(),
   envelopeVersion: z.number(),
   serviceVersion: z.string(),
+  // `.optional()` is load-bearing, not tidiness — see the field's doc comment.
+  // A required entry here would reject every service older than the field.
+  signupMode: z.enum(SIGNUP_MODES).optional(),
 });
 
 /** Result of {@link checkProtocolCompatibility} — `reason` is a user-presentable sentence. */
