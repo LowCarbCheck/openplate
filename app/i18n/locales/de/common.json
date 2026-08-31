@@ -832,7 +832,9 @@
       },
       "noTracking": {
         "body": "In openplate steckt keine Analyse, keine Werbung und kein Zählpixel. Was du in der App tust, wird nicht gezählt, und es wird nichts darüber verschickt.",
-        "title": "Keine Werbung, kein Tracking"
+        "title": "Keine Werbung, kein Tracking",
+        "titleAnalytics": "Keine Werbung, kein Tracking deines Tagebuchs",
+        "bodyAnalytics": "In openplate steckt keine Werbung. Diese Instanz zählt Besuche und Funktionsnutzung mit eigenem, Cookie-freiem Matomo — nie, was du isst, wiegst oder einträgst; dein Tagebuch bleibt auf diesem Gerät. Betreibst du openplate selbst, wird gar nichts gezählt."
       },
       "selfHost": {
         "body": "Ein zustandsloser Container, keine Datenbank zu betreiben und kein Geheimnis einzurichten. Die Compose-Datei liegt im Repository: ein Download und ein Befehl.",

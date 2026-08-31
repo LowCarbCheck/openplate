@@ -1,33 +1,42 @@
 /**
- * The landing page's no-tracking claim, enforced against the code.
+ * The tracking invariants, enforced against the code.
  *
- * ── The claim ────────────────────────────────────────────────────────────
+ * ── What this file used to be, and why it changed ────────────────────────
  *
- * `landing.features.noTracking` says, on the public front page, in two
- * languages:
+ * Until 2026-08-31 this test asserted that NO analytics wiring existed
+ * anywhere in `app/`, because the landing page promised exactly that. That
+ * promise was reversed deliberately — the hosted instance now runs a
+ * cookie-free, self-hosted Matomo — and the reversal went through the order
+ * this file's previous version prescribed: the landing copy changed in both
+ * locales, the privacy policy changed, and only then did this test change.
+ * See `.adr/0010-hosted-analytics.md` for the decision and its reasoning.
  *
- * > "There is no analytics, no advertising and no tracking pixel in openplate.
- * >  Nothing you do in the app is counted, and nothing about it is sent
- * >  anywhere."
+ * ── What it asserts NOW ──────────────────────────────────────────────────
  *
- * That is a product promise on the same footing as "the key never reaches the
- * server" (AGENTS.md, BYOK Security Rules) — and unlike that one, nothing was
- * stopping it from quietly becoming false. `app/lib/sync/telemetry.ts` already
- * holds a Matomo custom-event allowlist, deliberately UNWIRED, with a comment
- * saying M128 spec 04 decides where each event fires. The day someone wires it
- * up, the six-card grid on `/` starts lying and no test notices.
+ * The blanket ban is gone; four narrower invariants replace it, and each one
+ * is a thing that would otherwise rot silently:
  *
- * So: this file fails the moment a tracking call appears in `app/`. If that is
- * a deliberate decision rather than an accident, the fix is to change the
- * claim on the landing page in both locales and then change this test — in
- * that order.
+ *  1. **Only `matomo-events.ts` and the tracker hook touch `_paq`.** The whole
+ *     no-diary-content rule lives in that one module's type signatures. A
+ *     component reaching for the global queue directly bypasses every one of
+ *     them and could push a food name in a single line.
+ *  2. **No competitor tracker, anywhere.** Google, GTM and Plausible stay
+ *     banned outright — the decision was "our own Matomo", not "analytics".
+ *  3. **No hardcoded Matomo host or site id in `app/`.** Both must arrive from
+ *     `MATOMO_URL`/`MATOMO_SITE_ID`, or a self-hosted instance would report
+ *     into SPRQVNTRS's Matomo. This is the invariant that protects a
+ *     self-hoster, and it is the one a hurried copy-paste from the sibling
+ *     SelfHostedWorld hook would break — that hook hardcodes both as defaults.
+ *  4. **The sync telemetry allowlist stays unwired.** `SYNC_TELEMETRY_EVENTS`
+ *     is governed by M128 spec 04 and M117/D9, not by this change, and must
+ *     not be quietly folded into the new events module.
  *
  * ── Why it strips comments first ─────────────────────────────────────────
  *
- * The allowlist module NAMES `trackEvent` and Matomo in its own doc block, on
- * purpose, to explain that it is not wired. A raw grep would fail on the
- * documentation that exists to prevent the problem. Comments are removed
- * before matching so the assertion is about executable code only.
+ * Several of these modules NAME the thing they forbid, on purpose, to explain
+ * the rule. A raw grep would fail on the documentation that exists to prevent
+ * the problem. Comments are removed before matching so every assertion is
+ * about executable code only.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -63,65 +72,64 @@ function stripComments(source: string): string {
     .join('\n');
 }
 
-/** The module that DEFINES the allowlist, relative to `app/`. It is allowed to name it. */
+/** The module that DEFINES the sync allowlist, relative to `app/`. It may name it. */
 const TELEMETRY_MODULE = 'lib/sync/telemetry.ts';
 
+/** The two modules that are ALLOWED to touch Matomo's global queue. */
+const MATOMO_MODULES = ['lib/matomo-events.ts', 'hooks/use-matomo-tracker.ts'];
+
 /**
- * Analytics wiring, by the shapes it actually takes. Names only — a bare
- * `analytics` or `plausible` word-match would fire on prose like "a plausible
- * height", which is in `app/models/body-metrics.ts` today.
+ * Banned everywhere in `app/`, by the shapes the mistakes actually take.
  *
- * `exceptIn` exempts the one file a pattern is expected in. Only the allowlist
- * module itself may mention its own export; every other file naming it is a
- * file that has started using it.
+ * Names only — a bare `analytics` or `plausible` word-match would fire on
+ * prose like "a plausible height", which is in `app/models/body-metrics.ts`
+ * today.
+ *
+ * `exceptIn` exempts the files a pattern is legitimately expected in.
  */
-const TRACKING_PATTERNS: readonly { name: string; pattern: RegExp; exceptIn?: string }[] = [
-  { name: 'Matomo global queue (_paq)', pattern: /_paq\b/ },
-  // A conventional name for a hand-rolled tracker. Nothing in this repository
-  // is called this today — see the note below on why that is not enough on its
-  // own, but it costs nothing and catches the obvious version of the mistake.
-  { name: 'a trackEvent call', pattern: /\btrackEvent\s*\(/ },
+const TRACKING_PATTERNS: readonly { name: string; pattern: RegExp; exceptIn?: readonly string[] }[] = [
+  // (1) The global queue, confined to the two modules that own it.
+  { name: 'Matomo global queue (_paq) outside the analytics modules', pattern: /_paq\b/, exceptIn: MATOMO_MODULES },
+  { name: 'a raw trackEvent call outside the analytics modules', pattern: /\btrackEvent\s*\(/, exceptIn: MATOMO_MODULES },
+  { name: 'a matomo.js / piwik.js script outside the tracker hook', pattern: /(matomo|piwik)\.js/, exceptIn: MATOMO_MODULES },
+
+  // (2) Competitors, banned outright. The decision was "our own Matomo".
   { name: 'Google gtag', pattern: /\bgtag\s*\(/ },
   { name: 'Google Tag Manager dataLayer', pattern: /\bdataLayer\b/ },
-  { name: 'a matomo.js / piwik.js script', pattern: /(matomo|piwik)\.js/ },
   { name: 'a plausible.io beacon', pattern: /plausible\.io/ },
-  /*
-   * The two that name the ACTUAL unwired module, rather than a function that
-   * would have to be invented first.
-   *
-   * `trackEvent(` used to be the ONLY guard aimed at this repository's own
-   * telemetry, and as a guard it was aimed at nothing: no function of that
-   * name exists here, in the allowlist module or out of it. The wiring, when
-   * it comes, will import `SYNC_TELEMETRY_EVENTS` from
-   * `app/lib/sync/telemetry.ts` — that is the module that exists, and its own
-   * header says M128 spec 04 decides where each event fires. So these two
-   * watch the real seam: the allowlist escaping its module, and anyone
-   * importing a telemetry module at all.
-   */
+
+  // (3) The self-hoster protection. A hardcoded host or site id would make
+  // every self-hosted instance report into somebody else's Matomo. The
+  // SelfHostedWorld hook this one was ported from defaults BOTH — that is
+  // precisely the mistake being pinned here.
+  { name: 'a hardcoded Matomo host', pattern: /matomo\.[a-z0-9-]+\.[a-z]{2,}/i },
+  { name: 'a hardcoded Matomo site id', pattern: /\bsiteId\s*[:=]\s*\d/ },
+
+  // (4) The sync allowlist stays unwired — M128 spec 04 owns it.
   {
     name: 'the sync telemetry allowlist, used outside its own module',
     pattern: /\bSYNC_TELEMETRY_EVENTS\b/,
-    exceptIn: TELEMETRY_MODULE,
+    exceptIn: [TELEMETRY_MODULE],
   },
   { name: 'an import of a telemetry module', pattern: /from\s+['"][^'"]*\/telemetry(\.js)?['"]/ },
 ];
 
-describe('the landing page\'s "no analytics, no tracking pixel" claim', () => {
-  it('has no analytics wiring anywhere in app/', () => {
+describe('tracking invariants', () => {
+  it('keeps every banned tracking shape out of app/', () => {
     const offences = sourceFiles(APP_DIR).flatMap((path) => {
       const relative = path.slice(APP_DIR.length);
       const code = stripComments(readFileSync(path, 'utf8'));
-      return TRACKING_PATTERNS.filter(({ pattern, exceptIn }) => exceptIn !== relative && pattern.test(code)).map(
-        ({ name }) => `${relative}: ${name}`,
-      );
+      return TRACKING_PATTERNS.filter(
+        ({ pattern, exceptIn }) => !(exceptIn ?? []).includes(relative) && pattern.test(code),
+      ).map(({ name }) => `${relative}: ${name}`);
     });
 
     assert.deepEqual(
       offences,
       [],
-      `Tracking wiring found in app/. The landing page claims openplate has none ` +
-        `(landing.features.noTracking, en + de). Change that copy in both locales first, ` +
-        `then this test:\n  ${offences.join('\n  ')}`,
+      `Tracking wiring found where it is not allowed. Read .adr/0010-hosted-analytics.md ` +
+        `before relaxing any of these — each one protects either a self-hoster or the ` +
+        `no-diary-content rule in matomo-events.ts:\n  ${offences.join('\n  ')}`,
     );
   });
 
@@ -129,5 +137,36 @@ describe('the landing page\'s "no analytics, no tracking pixel" claim', () => {
     // Guards the guard: a broken walk would make the assertion above pass on
     // an empty list forever.
     assert.ok(sourceFiles(APP_DIR).length > 100, 'expected the app/ source walk to find more than 100 files');
+  });
+
+  it('every exported event is actually fired somewhere — no dead analytics exports', () => {
+    // The failure this pins is one that already happened once in this file's
+    // history: a full events module was written, reviewed and reported as
+    // "implemented" while nothing in the app called any of it. A defined-but-
+    // unfired event is worse than a missing one — it reads as coverage.
+    const eventsSource = readFileSync(join(APP_DIR, 'lib/matomo-events.ts'), 'utf8');
+    const exported = [...eventsSource.matchAll(/^export function (track\w+)/gm)].map((m) => m[1]);
+    assert.ok(exported.length > 0, 'expected matomo-events.ts to export some track* functions');
+
+    const callers = sourceFiles(APP_DIR)
+      .filter((path) => path.slice(APP_DIR.length) !== 'lib/matomo-events.ts')
+      .map((path) => stripComments(readFileSync(path, 'utf8')))
+      .join('\n');
+
+    const unfired = exported.filter((name) => !new RegExp(`\\b${name}\\s*\\(`).test(callers));
+    assert.deepEqual(
+      unfired,
+      [],
+      `Exported but never called. Wire it, or delete it — do not leave it:\n  ${unfired.join('\n  ')}`,
+    );
+  });
+
+  it('the modules it exempts actually exist — an exemption for a deleted file is a silent hole', () => {
+    for (const relative of [...MATOMO_MODULES, TELEMETRY_MODULE]) {
+      assert.ok(
+        sourceFiles(APP_DIR).some((path) => path.slice(APP_DIR.length) === relative),
+        `exempted module not found: ${relative}`,
+      );
+    }
   });
 });

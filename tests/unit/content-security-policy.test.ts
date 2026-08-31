@@ -46,7 +46,7 @@ const DEFAULT_POLICY = buildContentSecurityPolicy({
   // M146 spec 02: the newsletter is off on every instance that did not
   // configure one, and this header must be identical to what it was
   // before that feature existed.
-  newsletterEnabled: false,
+  newsletterEnabled: false, analyticsOrigin: null,
 });
 
 test("script-src carries 'wasm-unsafe-eval' — without it, sync passphrase derivation is dead in production", () => {
@@ -85,7 +85,7 @@ test('the sync origin is appended to connect-src only when sync is configured', 
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
-    newsletterEnabled: false,
+    newsletterEnabled: false, analyticsOrigin: null,
   });
   assert.match(directive(configured, 'connect-src'), /https:\/\/sync\.example\.com/);
 });
@@ -99,7 +99,7 @@ test('operator-supplied connect-src origins survive alongside the sync origin', 
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
-    newsletterEnabled: false,
+    newsletterEnabled: false, analyticsOrigin: null,
   });
   const connectSrc = directive(policy, 'connect-src');
 
@@ -140,7 +140,7 @@ test('the builder is pure — same inputs, identical header', () => {
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
-    newsletterEnabled: false,
+    newsletterEnabled: false, analyticsOrigin: null,
   };
   assert.equal(buildContentSecurityPolicy(input), buildContentSecurityPolicy(input));
 });
@@ -176,7 +176,7 @@ test("connect-src carries the instance preset's origin when one is configured", 
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
-    newsletterEnabled: false,
+    newsletterEnabled: false, analyticsOrigin: null,
   });
 
   assert.match(directive(configured, 'connect-src'), /https:\/\/ai\.house\.example:8443/);

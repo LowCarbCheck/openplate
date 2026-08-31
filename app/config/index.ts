@@ -21,6 +21,7 @@
 
 import { optionalEnv, optionalBoolEnv, optionalIntEnv } from '#app/lib/env';
 import { parseInstanceInferencePreset, parseSyncServerUrl } from './public-config';
+import { parseAnalyticsConfig } from '#app/config/analytics';
 import { parseNewsletterConfig } from './newsletter';
 
 /**
@@ -177,6 +178,21 @@ export const CONFIG = {
   sync: {
     syncServerUrl: parseSyncServerUrl(process.env.SYNC_SERVER_URL),
   },
+
+  /**
+   * Optional Matomo analytics (M165/05) — `null` unless BOTH `MATOMO_URL` and
+   * `MATOMO_SITE_ID` are set.
+   *
+   * `null` is the self-host default and is what keeps two public claims true
+   * at once: the landing page's tracking card and `content-security-policy.ts`'s
+   * "no third-party script on an unconfigured instance". A half-configured pair
+   * throws at boot rather than degrading, exactly as the newsletter pair does —
+   * see `app/config/analytics.ts` for why silence would be worse here.
+   */
+  analytics: parseAnalyticsConfig({
+    matomoUrl: process.env.MATOMO_URL,
+    siteId: process.env.MATOMO_SITE_ID,
+  }),
 
   /**
    * Instance-provided AI endpoint (M138 spec 06)

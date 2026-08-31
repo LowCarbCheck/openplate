@@ -113,6 +113,17 @@ function landingSections() {
     syncEnabled: CONFIG.sync.syncServerUrl !== null,
     /** `NEWSLETTER_SUBSCRIBE_URL` + `NEWSLETTER_TURNSTILE_SITE_KEY` — off by default. */
     newsletter: toNewsletterPublicConfig(CONFIG.newsletter),
+    /**
+     * `MATOMO_URL` + `MATOMO_SITE_ID` — off by default, including on every
+     * self-host.
+     *
+     * A BOOLEAN, not the config: this decides which of two tracking claims the
+     * page makes, and the card needs no URL or site id to say it. Keeping the
+     * value out of this payload also means the landing page carries no Matomo
+     * address on an instance that has one, which is one fewer thing for a
+     * scraper to collect.
+     */
+    analyticsEnabled: CONFIG.analytics !== null,
   };
 }
 
@@ -974,7 +985,7 @@ function LadderCard({
 export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   useHomeHintRepair();
-  const { syncEnabled, newsletter } = loaderData;
+  const { syncEnabled, newsletter, analyticsEnabled } = loaderData;
 
   return (
     <PublicWrapper wide>
@@ -1251,10 +1262,23 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             title={t('landing.features.selfHost.title')}
             body={t('landing.features.selfHost.body')}
           />
+          {/* Two variants, chosen by whether THIS instance has analytics on.
+              A single string cannot be honest on both a hosted instance that
+              counts visits and a self-hosted one that counts nothing, and this
+              card is a promise rather than a feature blurb — see the ADR on
+              hosted analytics. */}
           <FeatureCard
             icon={EyeOff}
-            title={t('landing.features.noTracking.title')}
-            body={t('landing.features.noTracking.body')}
+            title={t(
+              analyticsEnabled
+                ? 'landing.features.noTracking.titleAnalytics'
+                : 'landing.features.noTracking.title',
+            )}
+            body={t(
+              analyticsEnabled
+                ? 'landing.features.noTracking.bodyAnalytics'
+                : 'landing.features.noTracking.body',
+            )}
           />
         </div>
         {/* The pair, restated where the six claims end. This is the one point

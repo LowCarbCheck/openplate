@@ -10,6 +10,7 @@ import { installServerErrorReporter } from '#app/lib/report-error.server';
 import { CONFIG } from '#app/config';
 import { inferenceConnectSrcOrigin, syncConnectSrcOrigin } from '#app/config/public-config';
 import { buildContentSecurityPolicy } from '#app/config/content-security-policy';
+import { analyticsCspOrigin } from '#app/config/analytics';
 import { createWwwRedirectMiddleware } from '#app/lib/www-redirect.server';
 import { PROVIDER_REGISTRY } from '#app/services/vision/registry';
 
@@ -78,6 +79,9 @@ const CONTENT_SECURITY_POLICY = buildContentSecurityPolicy({
   // every instance that didn't configure NEWSLETTER_SUBSCRIBE_URL, which
   // leaves this header exactly as it was before the feature existed.
   newsletterEnabled: CONFIG.newsletter !== null,
+  // `null` unless an operator set MATOMO_URL + MATOMO_SITE_ID, which leaves
+  // this header byte-for-byte what it was before analytics existed.
+  analyticsOrigin: analyticsCspOrigin(CONFIG.analytics),
 });
 
 function createContentSecurityPolicyMiddleware() {

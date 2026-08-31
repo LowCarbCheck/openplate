@@ -48,7 +48,14 @@ export function PrivacyContent() {
             temporary on-device copy of the photo (see Section 2) so you can see it again later; that copy is never
             uploaded anywhere.
           </li>
-          <li>We do not use any third-party analytics, advertising, or tracking.</li>
+          <li>
+            We use no advertising and no third-party analytics. The hosted instance measures visits
+            and feature use with <strong>our own Matomo</strong>, which we run on our own server —
+            no data reaches an analytics company. It sets no cookies, and it is never told what you
+            eat, weigh or log: your diary never leaves your device. See Section 9 for exactly what
+            is recorded and how to object. An instance you host yourself has analytics switched off
+            unless you turn them on.
+          </li>
         </ul>
       </section>
 
@@ -159,8 +166,57 @@ export function PrivacyContent() {
       <section className="mb-8">
         <H2 variant="default">9. Cookies</H2>
         <P>
-          We use a single essential session cookie to keep you signed in. We do not use advertising cookies or
-          third-party tracking cookies, and there is no third-party analytics on the hosted instance.
+          We use a single essential session cookie to keep you signed in. We use no advertising
+          cookies and no third-party tracking cookies, and no analytics company receives anything
+          about you.
+        </P>
+      </section>
+
+      {/*
+        Article 13 disclosure for the hosted instance's analytics, added 2026-08-31
+        with the openplate.de cutover. Written unconditionally rather than gated on
+        the analytics config because this whole document already describes "the
+        hosted openplate instance we operate" — a self-hoster writes their own
+        policy, and the last sentence tells them the default they inherit.
+
+        No consent banner accompanies this, deliberately and on advice: the tracker
+        is loaded with cookies disabled and stores nothing on the device, so §25
+        TTDSG is not engaged and the legal basis is Art. 6(1)(f). If anyone ever
+        switches cookies back on in `use-matomo-tracker.ts`, that reasoning dies
+        with the change and a banner becomes mandatory.
+      */}
+      <section className="mb-8">
+        <H2 variant="default">9a. Analytics on the hosted instance</H2>
+        <P>
+          We measure how the hosted instance is used with <strong>Matomo</strong>, an analytics
+          program we run on our own server. No third party receives the data and it is never sold or
+          shared.
+        </P>
+        <P className="mt-4">
+          <strong>What is recorded:</strong> the page you opened with any query string and account
+          identifier removed before it is sent, a shortened form of your IP address, your browser
+          type, your screen size, the page that linked you here, and which features you used — for
+          example that a plate was scanned, or that a backup was exported. <strong>What is never
+          recorded:</strong> anything from your diary. Not food names, not weights, not goals, not
+          photos, not fasting times, and no identifier that ties events back to you.
+        </P>
+        <P className="mt-4">
+          <strong>Cookies:</strong> none. The tracker runs with cookies switched off and stores
+          nothing on your device, which is why you were not asked to accept anything.
+        </P>
+        <P className="mt-4">
+          <strong>Legal basis:</strong> our legitimate interest in understanding whether the
+          software works and which parts are used (Art. 6(1)(f) GDPR). <strong>Retention:</strong>{' '}
+          raw records are deleted after 90 days; only anonymous totals are kept after that.
+        </P>
+        <P className="mt-4">
+          <strong>Your right to object (Art. 21 GDPR):</strong> turn on “Do Not Track” in your
+          browser and we record nothing — our Matomo is configured to honour it. You may also write
+          to us at the address in the <a href="/imprint">imprint</a>.
+        </P>
+        <P className="mt-4">
+          An instance you host yourself records nothing at all unless you configure Matomo on it.
+          That is the default.
         </P>
       </section>
 

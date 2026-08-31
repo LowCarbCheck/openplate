@@ -17,6 +17,7 @@ import stylesheet from './app.css?url';
 import { combineHeaders } from '#app/utils/misc';
 import { Toaster } from '#app/components/ui/toaster';
 import { useToast } from '#app/hooks/use-toast';
+import { useMatomoTracker } from '#app/hooks/use-matomo-tracker';
 import { useResolvedTheme } from '#app/hooks/use-resolved-theme';
 import { registerServiceWorker } from '#app/lib/service-worker';
 import { startPwaInstallCapture } from '#app/lib/pwa-install-capture';
@@ -71,6 +72,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   const publicConfig: PublicConfig = {
     syncServerUrl: CONFIG.sync.syncServerUrl,
     instancePreset: CONFIG.inference.instancePreset,
+    // `null` unless an operator set MATOMO_URL + MATOMO_SITE_ID. Carries no
+    // secret: a Matomo URL and site id are both public by construction (they
+    // are in the tracker request every page makes).
+    analytics: CONFIG.analytics,
   };
 
   return {
@@ -145,6 +150,13 @@ export default function App() {
   const data = useLoaderData<typeof loader>();
   useToast(data?.toast);
   const resolvedTheme = useResolvedTheme();
+
+  // Analytics. `null` on every instance whose operator did not configure
+  // MATOMO_URL + MATOMO_SITE_ID — the default and the self-host default — and
+  // the hook then loads no script and sends nothing. Mounted at the ROOT so a
+  // single-page navigation still reports a pageview; see the hook for why the
+  // reported URL is scrubbed rather than taken from `location.href`.
+  useMatomoTracker(data?.publicConfig.analytics ?? null);
 
   // Register the service worker once on the client (SSR-safe; the helper guards
   // on `navigator`). Powers offline navigation, the update flow, and the

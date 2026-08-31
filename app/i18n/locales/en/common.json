@@ -832,7 +832,9 @@
       },
       "noTracking": {
         "body": "There is no analytics, no advertising and no tracking pixel in openplate. Nothing you do in the app is counted, and nothing about it is sent anywhere.",
-        "title": "No ads, no tracking"
+        "title": "No ads, no tracking",
+        "titleAnalytics": "No ads, and no tracking of your diary",
+        "bodyAnalytics": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo — never what you eat, weigh or log; your diary stays on this device. Run openplate yourself and nothing is counted at all."
       },
       "selfHost": {
         "body": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",

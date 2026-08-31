@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Download, Upload } from 'lucide-react';
 
 import { buildLogsCsv, type ExportLogInput } from '#app/lib/export-format';
+import { trackBackupExported, trackBackupImported, trackCsvExported } from '#app/lib/matomo-events';
 import {
   exportBackup,
   getLocalProfileGoals,
@@ -106,6 +107,10 @@ async function downloadDiaryCsv(): Promise<void> {
   const profile = await getLocalProfileGoals();
   const date = todayInTimezone(resolveLocalTimezone(profile));
   downloadBlob({ filename: `openplate-diary-${date}.csv`, contentType: 'text/csv;charset=utf-8', body: csv });
+  // After the download, so a failure above is not counted as a success. The
+  // event carries no row count — that is a measure of the diary, not of the
+  // feature (see `matomo-events.ts`).
+  trackCsvExported();
 }
 
 /**
@@ -124,6 +129,9 @@ async function downloadEverythingJson(): Promise<void> {
     contentType: 'application/json;charset=utf-8',
     body: json,
   });
+  // The local-first safety net. If this stays rare, the backup nudge is not
+  // working — which is the whole reason this event is worth having.
+  trackBackupExported();
 }
 
 /**
@@ -147,6 +155,7 @@ function ImportBackupSection() {
     try {
       const json = await file.text();
       await restoreBackup(json);
+      trackBackupImported();
       toast.success(t('settings.data.importSuccess'));
     } catch {
       toast.error(t('settings.data.importError'));

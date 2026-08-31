@@ -108,6 +108,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/compon
 import { AlertTriangle, Camera, Check, ChevronDown, Loader2, ShieldAlert, X } from 'lucide-react';
 import { isAuditDisclosureRequired } from '#app/lib/gateway-invite';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackScanFailed, trackScanFoundNothing, trackScanSucceeded } from '#app/lib/matomo-events';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -438,6 +439,23 @@ type RecordScanAttempt = (params: {
   outcome: 'identified' | 'no_foods' | 'error';
 }) => Promise<void>;
 
+
+/**
+ * Maps a scan outcome to its analytics event.
+ *
+ * `error` reports nothing here on purpose — the outcome alone cannot say WHY,
+ * and a bare 'failed' with no reason is the least useful event we could send.
+ * The failure path reports its own cause where the cause is known.
+ *
+ * Module scope rather than a closure: it captures nothing, and hoisting it
+ * keeps the per-scan setup below to the things that actually depend on the
+ * user's settings.
+ */
+function reportScanOutcome(outcome: 'identified' | 'no_foods' | 'error'): void {
+  if (outcome === 'identified') trackScanSucceeded();
+  else if (outcome === 'no_foods') trackScanFoundNothing();
+}
+
 /** What both task runners below need to attribute and price an attempt. */
 interface ScanAttemptContext {
   visionProvider: VisionProvider;
@@ -560,10 +578,16 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     };
   }
 
+
   // Records exactly one local usage row per outcome. `recordLocalAiUsageEvent`
   // is fail-open, so this never affects whether the scan itself succeeds.
-  const recordAttempt = (params: { usage: ScanTokenUsage | undefined; outcome: 'identified' | 'no_foods' | 'error' }) =>
-    recordLocalAiUsageEvent({
+  const recordAttempt = (params: { usage: ScanTokenUsage | undefined; outcome: 'identified' | 'no_foods' | 'error' }) => {
+    // Analytics rides the usage row's own choke point: every scan outcome
+    // already passes through here exactly once, so reporting here cannot
+    // drift out of step with reality the way N separate call sites would.
+    // No counts, no model id, nothing from the photo — see `matomo-events.ts`.
+    reportScanOutcome(params.outcome);
+    return recordLocalAiUsageEvent({
       provider: settings.provider,
       model: settings.model,
       inputTokens: params.usage?.inputTokens ?? null,
@@ -572,6 +596,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
         params.usage ? (estimateScanCostUsd(settings.provider, settings.model, params.usage) ?? null) : null,
       outcome: params.outcome,
     });
+  };
 
   let base64: string;
   try {
@@ -611,6 +636,14 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       error instanceof VisionProviderError ? error.message : translate('scan.errors.identifyFailed');
     const message = refineIdentifyErrorMessage({ provider: settings.provider, error, fallback: fallbackMessage });
     await recordAttempt({ usage, outcome: 'error' });
+    // The reason, not just the fact. The machine-readable cause lives on
+    // `VisionProviderFailure.failureCause` — NOT on `VisionProviderError.cause`,
+    // which is the standard `Error` cause and holds an arbitrary value.
+    // `ScanFailureReason` mirrors `VisionFailureCause` exactly so nothing has
+    // to be mapped; a mapping is where a real failure would quietly turn into
+    // 'unknown'. A plain `VisionProviderError`, or any other throw, has no
+    // machine-readable cause and lands on 'unknown' honestly.
+    trackScanFailed(failureCause ?? 'unknown');
     return {
       intent: 'identify',
       mode,

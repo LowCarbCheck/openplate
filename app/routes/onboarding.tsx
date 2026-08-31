@@ -60,6 +60,7 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Camera, Key, Search, ShieldCheck } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackOnboardingCompleted } from '#app/lib/matomo-events';
 
 // Title via the pure `meta-title` seam, with the language read off the ROOT
 // loader through `matches` — never the i18next singleton (see `meta-title.ts`
@@ -262,6 +263,10 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   }
   if (intent === INTENT.FINISH) {
     await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
+    // `finish` is the only real exit from the flow (see this action's header),
+    // so it is the only honest place to call onboarding complete. Fired after
+    // the stamp so a failed write is never counted as a completion.
+    trackOnboardingCompleted();
     // The exit destination is unchanged (`/diary`): a just-onboarded device has
     // nothing to show on Overview, and the diary's first-ever empty state is a
     // far better first screen. The hint written here is what sends the NEXT app

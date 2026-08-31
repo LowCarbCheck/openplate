@@ -26,6 +26,8 @@ import { readNewsletterResponse } from '../../app/lib/newsletter-outcome';
 
 /** The landing loader's payload — the only thing that decides what renders. */
 interface LandingData {
+  /** `MATOMO_URL` + `MATOMO_SITE_ID` — a boolean, never the config itself. */
+  analyticsEnabled: boolean;
   syncEnabled: boolean;
   newsletter: { turnstileSiteKey: string } | null;
 }
@@ -115,11 +117,19 @@ describe('landing loader — an empty environment renders neither optional rung'
     assert.equal(payload.syncEnabled, false);
   });
 
-  it('emits nothing else at all — the payload is exactly the two gates', async () => {
+  it('emits nothing else at all — the payload is exactly the three gates', async () => {
     // A new field here is a new thing the landing page publishes about the
     // instance. That is a deliberate act, so it fails this assertion first.
+    // `analyticsEnabled` joined on 2026-08-31 (.adr/0010-hosted-analytics.md):
+    // it is a BOOLEAN and not the Matomo config, so an instance with analytics
+    // on still publishes no Matomo address on its landing page.
     const payload = await loadLandingData();
-    assert.deepEqual(Object.keys(payload).toSorted(), ['newsletter', 'syncEnabled']);
+    assert.deepEqual(Object.keys(payload).toSorted(), ['analyticsEnabled', 'newsletter', 'syncEnabled']);
+  });
+
+  it('reports analytics OFF on an empty environment — the self-host default the card promises', async () => {
+    const payload = await loadLandingData();
+    assert.equal(payload.analyticsEnabled, false);
   });
 
   it('exposes no POST target for the newsletter', async () => {
@@ -144,14 +154,14 @@ describe('CSP — the third-party script origin is part of the gate', () => {
   };
 
   it('names no third-party script origin when the newsletter is off', () => {
-    const policy = buildContentSecurityPolicy({ ...base, newsletterEnabled: false });
+    const policy = buildContentSecurityPolicy({ ...base, newsletterEnabled: false, analyticsOrigin: null });
     assert.doesNotMatch(policy, /challenges\.cloudflare\.com/);
     // No frame-src at all: `default-src 'self'` governs, exactly as before.
     assert.doesNotMatch(policy, /frame-src/);
   });
 
   it('allows Turnstile — script and frame — only when it is on', () => {
-    const policy = buildContentSecurityPolicy({ ...base, newsletterEnabled: true });
+    const policy = buildContentSecurityPolicy({ ...base, newsletterEnabled: true, analyticsOrigin: null });
     assert.match(policy, /script-src [^;]*https:\/\/challenges\.cloudflare\.com/);
     assert.match(policy, /frame-src 'self' https:\/\/challenges\.cloudflare\.com/);
   });

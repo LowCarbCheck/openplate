@@ -86,6 +86,24 @@ export interface ContentSecurityPolicyInput {
    * feature nobody turned on would quietly give up the claim for everyone.
    */
   newsletterEnabled: boolean;
+  /**
+   * The Matomo ORIGIN (`analyticsCspOrigin(CONFIG.analytics)`), or `null` when
+   * no operator configured analytics — which is the default and the self-host
+   * default.
+   *
+   * `null` MUST leave this header byte-for-byte what it was before analytics
+   * existed, for exactly the reason `newsletterEnabled: false` must: the
+   * landing page and the privacy policy both tell a self-hoster that their
+   * instance counts nothing, and a widened `script-src` would quietly make
+   * that false for everyone rather than only for the instance that opted in.
+   *
+   * Matomo needs THREE directives, which is one more than Turnstile:
+   * `script-src` to load `matomo.js`, `connect-src` for the tracker's own
+   * beacon, and `img-src` — Matomo falls back to a GET on a 1×1 image when a
+   * beacon is unavailable, and `img-src` here already allows `https:` so that
+   * third one costs nothing new and is named only for the reader's benefit.
+   */
+  analyticsOrigin: string | null;
 }
 
 /**
@@ -100,6 +118,7 @@ export function buildContentSecurityPolicy({
   providerOrigins,
   presetOrigin,
   newsletterEnabled,
+  analyticsOrigin,
 }: ContentSecurityPolicyInput): string {
   const connectSrc = [
     "'self'",
@@ -124,6 +143,9 @@ export function buildContentSecurityPolicy({
     // (NEWSLETTER_SUBSCRIBE_URL). The widget's own callbacks fetch from this
     // origin; nothing is appended when the feature is off.
     ...(newsletterEnabled ? [TURNSTILE_ORIGIN] : []),
+    // Matomo's tracker beacon, ONLY when analytics are configured. Nothing is
+    // appended when they are not.
+    ...(analyticsOrigin === null ? [] : [analyticsOrigin]),
   ];
 
   // Turnstile draws itself in an iframe from the same origin, so the widget
@@ -131,7 +153,14 @@ export function buildContentSecurityPolicy({
   // NEWSLETTER_SUBSCRIBE_URL is configured; with the feature off there is no
   // `frame-src` directive at all and `default-src 'self'` governs, exactly as
   // before.
-  const scriptSrc = newsletterEnabled ? [...SCRIPT_SRC, TURNSTILE_ORIGIN] : SCRIPT_SRC;
+  const scriptSrc = [
+    ...SCRIPT_SRC,
+    ...(newsletterEnabled ? [TURNSTILE_ORIGIN] : []),
+    // `matomo.js`. Appended only when analytics are configured — with them off
+    // this list is identical to `SCRIPT_SRC`, which is the property the
+    // unconfigured-instance claim rests on.
+    ...(analyticsOrigin === null ? [] : [analyticsOrigin]),
+  ];
   const frameSrc = newsletterEnabled ? [`frame-src 'self' ${TURNSTILE_ORIGIN}`] : [];
 
   return [

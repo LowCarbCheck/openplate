@@ -55,22 +55,26 @@ test('a non-default port survives into the CSP entry', () => {
 
 test('isSyncConfigured is false for every shape of "no config"', () => {
   assert.equal(isSyncConfigured(undefined), false, 'no root loader data — error boundaries take this path');
-  assert.equal(isSyncConfigured({ syncServerUrl: null, instancePreset: null }), false);
-  assert.equal(isSyncConfigured({ syncServerUrl: '', instancePreset: null }), false);
-  assert.equal(isSyncConfigured({ syncServerUrl: 'https://sync.example.com', instancePreset: null }), true);
+  assert.equal(isSyncConfigured({ syncServerUrl: null, instancePreset: null, analytics: null }), false);
+  assert.equal(isSyncConfigured({ syncServerUrl: '', instancePreset: null, analytics: null }), false);
+  assert.equal(isSyncConfigured({ syncServerUrl: 'https://sync.example.com', instancePreset: null, analytics: null }), true);
 });
 
-test('the public config carries the sync URL and the instance preset, and nothing else', () => {
-  // A compile-time assertion made runtime-visible: if a THIRD field is ever
+test('the public config carries exactly three members, and nothing else', () => {
+  // A compile-time assertion made runtime-visible: if a FOURTH field is ever
   // added to `PublicConfig`, this fails and forces the addition to be a
   // decision rather than a side effect. The channel is an allowlist.
   //
-  // The second member (`instancePreset`, M138 spec 06) went through exactly
-  // that gate: it is the address of an operator-provided AI endpoint the
-  // BROWSER dials itself, which is the only kind of value that earns a place
-  // here — see `app/config/public-config.ts`'s header.
-  const config: PublicConfig = { syncServerUrl: 'https://sync.example.com', instancePreset: null };
-  assert.deepEqual(Object.keys(config).toSorted(), ['instancePreset', 'syncServerUrl']);
+  // Every member has passed the same test — it is an address the BROWSER dials
+  // itself, which this server never proxies:
+  //   - `syncServerUrl` (M128 spec 04)
+  //   - `instancePreset` (M138 spec 06), an operator-provided AI endpoint
+  //   - `analytics` (M165, .adr/0010-hosted-analytics.md), the Matomo the page
+  //     itself loads the tracker from. Public by construction: both the URL and
+  //     the site id ride in every tracker request the browser makes.
+  // See `app/config/public-config.ts`'s header.
+  const config: PublicConfig = { syncServerUrl: 'https://sync.example.com', instancePreset: null, analytics: null };
+  assert.deepEqual(Object.keys(config).toSorted(), ['analytics', 'instancePreset', 'syncServerUrl']);
 });
 
 test('the passphrase strength hint never blocks, and never flatters a short passphrase', () => {

@@ -33,6 +33,7 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { loadTurnstile } from '#app/lib/turnstile';
 import type { NewsletterOutcome } from '#app/lib/newsletter-outcome';
+import { trackNewsletterSubscribed } from '#app/lib/matomo-events';
 
 const CONSENT_FIELD_ID = 'newsletter-consent';
 /** Ties the "waiting for the check" line to the disabled submit button. */
@@ -120,6 +121,16 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
     if (outcome === null || outcome.ok) return;
     reset();
   }, [fetcher.state, outcome, reset]);
+
+  // Reported from an effect rather than the render below, because that branch
+  // re-renders and would count one signup many times. `outcome.ok` alone is
+  // the trigger; the status (subscribed vs already-subscribed) is deliberately
+  // NOT sent — it is a fact about one person's prior state, not about whether
+  // the form works.
+  useEffect(() => {
+    if (fetcher.state !== 'idle' || outcome === null || !outcome.ok) return;
+    trackNewsletterSubscribed();
+  }, [fetcher.state, outcome]);
 
   if (outcome !== null && outcome.ok) {
     return (

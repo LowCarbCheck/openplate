@@ -23,6 +23,8 @@
  * that wraps this for component consumption.
  */
 
+import { trackInstallPromptShown, trackInstalled } from '#app/lib/matomo-events';
+
 /**
  * The `beforeinstallprompt` event, which isn't in the standard DOM lib types.
  * Only the two members callers need are declared.
@@ -59,11 +61,16 @@ export function startPwaInstallCapture(): void {
     // that event IS a `BeforeInstallPromptEvent` — lib.dom just types the
     // callback parameter as the base `Event` because the event is non-standard.
     deferredPrompt = event as BeforeInstallPromptEvent;
+    // The install funnel's first step. Fired here rather than in whichever
+    // component happens to render the button, for the same reason the capture
+    // itself lives here: the event arrives before any route has mounted.
+    trackInstallPromptShown();
     notifyListeners();
   });
 
   window.addEventListener('appinstalled', () => {
     hasInstalledEventFired = true;
+    trackInstalled();
     deferredPrompt = null;
     // The one and only storage-persistence request in the app: once
     // installed, ask the browser not to evict our offline data. Best-effort —

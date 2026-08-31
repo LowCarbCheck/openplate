@@ -1,3 +1,4 @@
+import type { AnalyticsConfig } from '#app/config/analytics';
 /**
  * The app's ONE server → browser configuration channel (M128 spec 04).
  *
@@ -71,6 +72,22 @@ export interface PublicConfig {
    * turns on, not a feature that quietly phones somewhere when unconfigured.
    */
   syncServerUrl: string | null;
+  /**
+   * The Matomo instance this deployment reports to (`MATOMO_URL` +
+   * `MATOMO_SITE_ID`), or `null` when the operator configured none.
+   *
+   * `null` is the DEFAULT and the self-host default. It earns its place in
+   * this deliberately minimal allowlist on the same test the other two members
+   * pass: it is an address the BROWSER dials itself. The tracker script is
+   * loaded by the page and the beacon is sent by the page; this server never
+   * proxies either, which is what keeps analytics off the request path of a
+   * user's actual data.
+   *
+   * It also drives the landing page's tracking card, so the claim a visitor
+   * reads matches the instance they are reading it on rather than a hardcoded
+   * string that is right on exactly one deployment.
+   */
+  analytics: AnalyticsConfig | null;
   /**
    * The instance's own AI endpoint (`DEFAULT_INFERENCE_BASE_URL` and friends),
    * or `null` when the operator configured none.
