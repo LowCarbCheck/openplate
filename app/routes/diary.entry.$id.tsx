@@ -665,7 +665,7 @@ function basisFieldValue(basis: Macros | null, key: keyof Macros): string {
 function formatPortionFact(log: LocalFoodLog, grams: number, language: string): string {
   const gramsText = formatMeasureIn(language, grams, 'g');
   if (!log.portion) return gramsText;
-  const label = formatPortionLabel({ unit: log.portion.unit, quantity: log.portion.quantity });
+  const label = formatPortionLabel({ unit: log.portion.unit, quantity: log.portion.quantity, language });
   return `${label} (${gramsText})`;
 }
 

@@ -1200,7 +1200,8 @@ export function PortionStep({
   // otherwise stated-weight relative-size chips ("Small (75 g)") — see
   // `deriveFallbackPortionChoices` — so there's always something to tap, never
   // a bare grams box with a number to invent from nothing.
-  const portionChoices = candidate.defaultPortion ? derivePortionChoices(candidate.defaultPortion) : [];
+  const portionChoices =
+    candidate.defaultPortion ? derivePortionChoices(candidate.defaultPortion, i18n.language) : [];
   const fallbackPortionChoices =
     candidate.defaultPortion ? [] : deriveFallbackPortionChoices(candidate.defaultGrams, t);
   const selectedQuantity =

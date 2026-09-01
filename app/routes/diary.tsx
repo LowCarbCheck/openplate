@@ -1198,7 +1198,7 @@ export function formatEntryPortion(log: LocalFoodLog, language?: string | null):
   // "182 g" like every other gram figure on the page rather than "182g".
   const grams = formatMeasureIn(language, Math.round(log.quantityGrams), 'g');
   if (!log.portion) return grams;
-  const label = formatPortionLabel({ unit: log.portion.unit, quantity: log.portion.quantity });
+  const label = formatPortionLabel({ unit: log.portion.unit, quantity: log.portion.quantity, language });
   return `${label} (${grams})`;
 }
 

@@ -16,12 +16,16 @@ import type { PortionUnitId } from './types';
 /** A household unit's id, excluding the generic `'serving'` fallback (that one has no reference weight of its own — see `types.ts`). */
 export type HouseholdUnitId = Exclude<PortionUnitId, 'serving'>;
 
+/**
+ * A built-in household unit. Deliberately carries NO display noun: the
+ * singular/plural words a chip renders ("egg" / "eggs", "Ei" / "Eier") are UI
+ * copy and live in the translation bundles under `portions.unit.<id>_one` /
+ * `_other`, read by `portion-options.ts`'s `formatPortionLabel`. Keeping an
+ * English `label` here as well would be a second source of truth that only
+ * ever drifts out of the German one.
+ */
 export interface HouseholdUnit {
   id: HouseholdUnitId;
-  /** Singular display label, e.g. "egg". */
-  label: string;
-  /** Plural display label, e.g. "eggs". */
-  labelPlural: string;
   /** Reference grams for ONE unit — see the per-entry sourcing comment below. */
   gramsPerUnit: number;
   /** Lowercase whole words in a food's name that select this unit (see `matchHouseholdUnit`). */
@@ -33,8 +37,6 @@ export interface HouseholdUnit {
 export const HOUSEHOLD_UNITS: readonly HouseholdUnit[] = [
   {
     id: 'egg',
-    label: 'egg',
-    labelPlural: 'eggs',
     // USDA FoodData Central: one large whole egg, edible portion ≈ 50 g.
     gramsPerUnit: 50,
     matchWords: ['egg', 'eggs'],
@@ -42,8 +44,6 @@ export const HOUSEHOLD_UNITS: readonly HouseholdUnit[] = [
   },
   {
     id: 'slice',
-    label: 'slice of bread',
-    labelPlural: 'slices of bread',
     // USDA generic sliced sandwich bread: commonly published in the 28-32 g
     // range per slice; 30 g used as a rounded middle.
     gramsPerUnit: 30,
@@ -52,8 +52,6 @@ export const HOUSEHOLD_UNITS: readonly HouseholdUnit[] = [
   },
   {
     id: 'cup',
-    label: 'cup',
-    labelPlural: 'cups',
     // USDA: 1 cup of cooked white rice ≈ 158 g.
     gramsPerUnit: 158,
     matchWords: ['rice'],
@@ -61,8 +59,6 @@ export const HOUSEHOLD_UNITS: readonly HouseholdUnit[] = [
   },
   {
     id: 'tablespoon',
-    label: 'tablespoon',
-    labelPlural: 'tablespoons',
     // 1 US tablespoon (15 mL) of a typical cooking oil (~0.92 g/mL) ≈ 14 g.
     gramsPerUnit: 14,
     matchWords: ['oil'],
@@ -70,8 +66,6 @@ export const HOUSEHOLD_UNITS: readonly HouseholdUnit[] = [
   },
   {
     id: 'banana',
-    label: 'banana',
-    labelPlural: 'bananas',
     // USDA: 1 medium banana, peeled ≈ 118 g.
     gramsPerUnit: 118,
     matchWords: ['banana', 'bananas'],
@@ -79,8 +73,6 @@ export const HOUSEHOLD_UNITS: readonly HouseholdUnit[] = [
   },
   {
     id: 'apple',
-    label: 'apple',
-    labelPlural: 'apples',
     // USDA: 1 medium apple, whole ≈ 182 g.
     gramsPerUnit: 182,
     matchWords: ['apple', 'apples'],

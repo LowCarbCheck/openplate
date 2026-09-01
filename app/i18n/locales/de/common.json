@@ -218,7 +218,7 @@
     "logoMenuLabel": "openplate-Menü",
     "navDrawerDescription": "Alle Bereiche von openplate",
     "openTracker": "Zum Tagebuch",
-    "preferences": "Einstellungen",
+    "preferences": "Darstellung & Sprache",
     "privacy": "Datenschutz",
     "source": "Quellcode",
     "sourceLabel": "openplate auf GitHub, öffnet in neuem Tab",
@@ -969,7 +969,7 @@
     "nutrients": "Nährstoffe · openplate",
     "offline": "Du bist offline · openplate",
     "onboarding": "Willkommen bei openplate",
-    "preferences": "Einstellungen · openplate",
+    "preferences": "Darstellung & Sprache · openplate",
     "privacy": "Datenschutzerklärung · openplate",
     "recover": "Tagebuch wiederherstellen · openplate",
     "research": "Forschungsbeiträge · openplate",
@@ -1225,7 +1225,7 @@
       "reloadNote": "Beim Wechseln lädt die Seite neu, damit alles auf einmal umschaltet.",
       "title": "Anzeigesprache"
     },
-    "open": "Einstellungen öffnen",
+    "open": "Darstellung & Sprache öffnen",
     "theme": {
       "dark": "Dunkel",
       "description": "Hell, dunkel oder wie dein Gerät bereits eingestellt ist.",
@@ -1233,7 +1233,25 @@
       "system": "System",
       "title": "Erscheinungsbild"
     },
-    "title": "Einstellungen"
+    "title": "Darstellung & Sprache"
+  },
+  "portions": {
+    "unit": {
+      "apple_one": "{{count}} Apfel",
+      "apple_other": "{{count}} Äpfel",
+      "banana_one": "{{count}} Banane",
+      "banana_other": "{{count}} Bananen",
+      "cup_one": "{{count}} Tasse",
+      "cup_other": "{{count}} Tassen",
+      "egg_one": "{{count}} Ei",
+      "egg_other": "{{count}} Eier",
+      "serving_one": "{{count}} Portion",
+      "serving_other": "{{count}} Portionen",
+      "slice_one": "{{count}} Scheibe Brot",
+      "slice_other": "{{count}} Scheiben Brot",
+      "tablespoon_one": "{{count}} Esslöffel",
+      "tablespoon_other": "{{count}} Esslöffel"
+    }
   },
   "recover": {
     "firstDataAt": "Dieses Gerät hat am {{date}} zum ersten Mal Daten gespeichert.",

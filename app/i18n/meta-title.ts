@@ -108,18 +108,50 @@ export function metaLanguage(matches: readonly (MetaLanguageMatch | undefined)[]
   return parsed.success ? toLanguageCode(parsed.data.language) : DEFAULT_LANGUAGE;
 }
 
+/** Fills i18next-style `{{name}}` placeholders. An unsupplied name is left in place, exactly as i18next leaves it. */
+function interpolate(template: string, values: Readonly<Record<string, string>>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (placeholder, name: string) => values[name] ?? placeholder);
+}
+
 /**
- * Translates a document `<title>` (or any other meta string) purely.
+ * The pure `(language, key) -> string` lookup itself, for callers that are not
+ * a `<title>`.
+ *
+ * `meta()` is not the only place that must translate outside the React tree:
+ * a PURE formatting helper (`#app/lib/portions`'s `formatPortionLabel`, which
+ * renders "2 eggs" / "2 Eier") has no hook either, and reaching for the
+ * singleton there is the same cross-request bug this module exists to avoid.
+ * Such a helper takes the language as a parameter and comes through here.
  *
  * Resolution order mirrors i18next's own: the requested language, then English
  * as `fallbackLng`, then the key itself — a visible-but-harmless last resort,
  * the same thing i18next renders for an unknown key, and never a thrown error
- * in the document head.
+ * in the document head. A caller that needs to DETECT a miss can compare the
+ * result against the key it passed.
+ *
+ * @param language - the active language, e.g. `i18n.language` or a stored code.
+ * @param key - a dotted catalog key, e.g. `'portions.unit.egg_other'`.
+ * @param values - `{{name}}` interpolation values, as i18next's `t` takes them.
+ * @returns the translated string.
+ */
+export function translateStatic(
+  language: string | null | undefined,
+  key: string,
+  values: Readonly<Record<string, string>> = {},
+): string {
+  const template = lookup(CATALOGS[toLanguageCode(language)], key) ?? lookup(CATALOGS[DEFAULT_LANGUAGE], key) ?? key;
+  return interpolate(template, values);
+}
+
+/**
+ * Translates a document `<title>` (or any other meta string) purely — a thin
+ * naming of `translateStatic` for the `meta()` call sites this module was
+ * written for.
  *
  * @param language - the active language, e.g. from `metaLanguage(matches)`.
  * @param key - a dotted catalog key, e.g. `'meta.diary'`.
  * @returns the translated string.
  */
 export function metaTitle(language: string | null | undefined, key: string): string {
-  return lookup(CATALOGS[toLanguageCode(language)], key) ?? lookup(CATALOGS[DEFAULT_LANGUAGE], key) ?? key;
+  return translateStatic(language, key);
 }

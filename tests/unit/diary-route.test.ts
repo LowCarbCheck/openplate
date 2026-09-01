@@ -11,6 +11,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import i18next from '../../app/i18n/i18n';
+import deCommon from '../../app/i18n/locales/de/common.json';
 import {
   formatEntryNetCarbs,
   formatEntryPortion,
@@ -131,7 +132,12 @@ describe('formatEntryPortion', () => {
   // printed "0,8 g". One helper, one space, both languages.
   it('separates the figure from its unit in every language', () => {
     const entry = log('a', { quantityGrams: 182, portion: { unit: 'apple', quantity: 1, gramsPerUnit: 182 } });
-    assert.equal(formatEntryPortion(entry, 'de'), '1 apple (182\u00a0g)');
+    // The NOUN is translated too (a German row reads "1 Apfel", never "1
+    // apple"), so the German expectation is built from the shipped bundle
+    // rather than pinning machine-produced copy — see
+    // `portions-portion-options.test.ts`. What this case guards is the space.
+    const apple = deCommon.portions.unit.apple_one.replace('{{count}}', '1');
+    assert.equal(formatEntryPortion(entry, 'de'), `${apple} (182\u00a0g)`);
     assert.equal(formatEntryPortion(entry, 'en'), '1 apple (182\u00a0g)');
   });
 });

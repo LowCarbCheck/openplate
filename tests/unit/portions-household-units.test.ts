@@ -1,6 +1,10 @@
 /**
  * Unit tests for `#app/lib/portions/household-units` — the small, sourced
  * built-in unit table and its whole-word name matcher.
+ *
+ * The table carries no display nouns any more: "egg"/"eggs"/"Ei"/"Eier" are UI
+ * copy in the translation bundles, and `portions-portion-options.test.ts`
+ * asserts every unit id here resolves in BOTH bundles.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -35,8 +39,6 @@ describe('getHouseholdUnit', () => {
   it('finds a unit by id', () => {
     const egg = getHouseholdUnit('egg');
     assert.ok(egg);
-    assert.equal(egg.label, 'egg');
-    assert.equal(egg.labelPlural, 'eggs');
     assert.equal(egg.gramsPerUnit, 50);
   });
 });

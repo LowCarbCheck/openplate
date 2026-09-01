@@ -1235,6 +1235,24 @@
     },
     "title": "Preferences"
   },
+  "portions": {
+    "unit": {
+      "apple_one": "{{count}} apple",
+      "apple_other": "{{count}} apples",
+      "banana_one": "{{count}} banana",
+      "banana_other": "{{count}} bananas",
+      "cup_one": "{{count}} cup",
+      "cup_other": "{{count}} cups",
+      "egg_one": "{{count}} egg",
+      "egg_other": "{{count}} eggs",
+      "serving_one": "{{count}} serving",
+      "serving_other": "{{count}} servings",
+      "slice_one": "{{count}} slice of bread",
+      "slice_other": "{{count}} slices of bread",
+      "tablespoon_one": "{{count}} tablespoon",
+      "tablespoon_other": "{{count}} tablespoons"
+    }
+  },
   "recover": {
     "firstDataAt": "This device first stored data on {{date}}.",
     "lead": "This device has stored openplate data before, but the copy in this browser is empty right now. openplate keeps everything on your device and sends nothing to a server, so there is no other copy for us to fetch.",
