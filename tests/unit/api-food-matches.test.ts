@@ -25,6 +25,7 @@ import type {
   FoodMatchesResponseBody,
   FoodMatchesThrottledResponseBody,
 } from '../../app/routes/api.food-matches';
+import { CONFIG } from '../../app/config';
 import { foodMatchesRateLimitKey } from '../../app/lib/food-matches-rate-limit.server';
 import { clearRateLimit } from '../../app/lib/rate-limit.server';
 
@@ -38,11 +39,13 @@ function restoreFetch(): void {
   globalThis.fetch = originalFetch;
 }
 
-/** Builds the POST request the route's action takes. */
-function foodMatchesRequest(names: string[]): Request {
+/** Builds the POST request the route's action takes, optionally carrying a locale cookie. */
+function foodMatchesRequest(names: string[], cookie?: string): Request {
   return new Request('http://localhost/api/food-matches', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: cookie === undefined ?
+      { 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json', Cookie: cookie },
     body: JSON.stringify({ names }),
   });
 }
@@ -282,5 +285,44 @@ describe('foodMatchesRateLimitKey', () => {
   it('buckets by client IP only — there is no account identifier left to key on (M128 spec 03)', () => {
     const key = foodMatchesRateLimitKey(foodMatchesRequest(['egg']));
     assert.match(key, /^food-matches:ip:/);
+  });
+});
+
+/**
+ * M167 fix: the route searches LCC in the CALLER'S UI language. Before this,
+ * the locale was pinned to `en` in the service, so a German visitor searching
+ * "Hähnchenbrust" got an empty result from a working catalogue.
+ */
+describe('action — search language follows the locale cookie (M167)', () => {
+  /** Runs the action against a stub and hands back the `locale` it sent upstream. */
+  async function capturedLocale(name: string, cookie?: string): Promise<string> {
+    resetBudget();
+    let locale = '';
+    stubFetch(async (_url, init) => {
+      locale = JSON.parse(String(init?.body)).locale;
+      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    });
+    try {
+      const response = await invokeAction(foodMatchesRequest([name], cookie));
+      assert.equal(response.status, 200);
+    } finally {
+      restoreFetch();
+    }
+    return locale;
+  }
+
+  it('an `openplate-language=de` cookie searches the German catalogue', async () => {
+    assert.equal(await capturedLocale(uniquePrefix('haehnchenbrust'), 'openplate-language=de'), 'de');
+  });
+
+  it('no cookie falls back to the instance default, exactly as `root.tsx` does', async () => {
+    assert.equal(await capturedLocale(uniquePrefix('chicken-breast')), CONFIG.i18n.defaultLanguage);
+  });
+
+  it('an unsupported cookie value falls back to the instance default rather than being forwarded', async () => {
+    assert.equal(
+      await capturedLocale(uniquePrefix('tampered-locale-food'), 'openplate-language=xx'),
+      CONFIG.i18n.defaultLanguage,
+    );
   });
 });

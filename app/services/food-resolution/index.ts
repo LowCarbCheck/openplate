@@ -29,6 +29,7 @@
  * this cache is the actual fix for that half of the problem.
  */
 import { CONFIG } from '#app/config';
+import { DEFAULT_LANGUAGE, type LanguageCode } from '#app/i18n/language-prefs';
 import { createComponentLogger } from '#app/lib/logger';
 import { cloneMicronutrients } from '#app/lib/micronutrients';
 import type { FoodMatch } from './types';
@@ -57,7 +58,6 @@ const REQUEST_TIMEOUT_MS = 4000;
  * tracked separately (M123/04's `matcher.ts` specificity-penalty fix).
  */
 const SEARCH_LIMIT = 10;
-const SEARCH_LOCALE = 'en';
 
 /** How long a resolved search result stays cached before asking LCC again for the same normalized name. */
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -164,8 +164,23 @@ function normalizeSearchName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-function searchCacheKey(options: { apiUrl: string; name: string }): string {
-  return `${options.apiUrl}::${normalizeSearchName(options.name)}`;
+/**
+ * The cache key CARRIES THE LANGUAGE (M167 fix), and it has to: the same name
+ * searched under `de` and under `en` returns different rows with different
+ * titles and different locale-specific slugs, so a language-blind key would
+ * serve a German visitor whatever an English one asked for first (and vice
+ * versa) for the whole TTL window.
+ */
+function searchCacheKey(options: { apiUrl: string; name: string; language: LanguageCode }): string {
+  return `${options.apiUrl}::${options.language}::${normalizeSearchName(options.name)}`;
+}
+
+/**
+ * The language to search LCC in for these options. `'en'` when the caller did
+ * not state one — see `ResolveOptions.language`.
+ */
+function searchLanguage(options: ResolveOptions): LanguageCode {
+  return options.language ?? DEFAULT_LANGUAGE;
 }
 
 /** Test-only escape hatch — clears cached/in-flight state so unit tests don't leak between cases. */
@@ -198,8 +213,9 @@ export function clearFoodResolutionCache(): void {
 export function allNamesCached(names: readonly string[], options: ResolveOptions = configuredOptions()): boolean {
   if (!options.enabled || names.length === 0) return true;
   const now = Date.now();
+  const language = searchLanguage(options);
   return names.every((name) => {
-    const cached = searchCache.get(searchCacheKey({ apiUrl: options.apiUrl, name }));
+    const cached = searchCache.get(searchCacheKey({ apiUrl: options.apiUrl, name, language }));
     return cached !== undefined && cached.expiresAt > now;
   });
 }
@@ -208,10 +224,35 @@ export function allNamesCached(names: readonly string[], options: ResolveOptions
 export interface ResolveOptions {
   enabled: boolean;
   apiUrl: string;
+  /**
+   * The language to search the LCC catalogue in — it is sent as the request's
+   * `locale` and decides which rows come back at all, not merely how they are
+   * labelled: `"Hähnchenbrust"` returns nothing under `en` and the right food
+   * under `de`, and an English name like `"chicken breast"` still resolves
+   * under `de` (LCC matches the canonical name too) but comes back with a
+   * German `title`/`slug`/`url`. So this is the UI language of the person
+   * searching, never the language the query text happens to be in.
+   *
+   * OPTIONAL, defaulting to `DEFAULT_LANGUAGE` (`'en'`): a caller that has no
+   * request context to read a language from keeps the previous behaviour.
+   */
+  language?: LanguageCode;
 }
 
 function configuredOptions(): ResolveOptions {
   return { enabled: CONFIG.foodDb.enabled, apiUrl: CONFIG.foodDb.apiUrl };
+}
+
+/**
+ * The configured LCC options for a given UI language — the one entry point a
+ * request handler should use, so the language reaches BOTH `allNamesCached`
+ * and `resolveIdentifiedFoods` from a single decision instead of being
+ * threaded (or forgotten) per call.
+ *
+ * @param language - the language resolved for this request (see `resolveRequestLanguage`).
+ */
+export function foodResolutionOptions(language: LanguageCode): ResolveOptions {
+  return { ...configuredOptions(), language };
 }
 
 function buildSearchUrl(apiUrl: string): string {
@@ -226,7 +267,7 @@ function buildSearchUrl(apiUrl: string): string {
  * throw. Every return path hands back a `cloneMatches` copy, never the
  * array/objects the cache or another caller holds (M123/06).
  */
-async function searchFoodByName(options: { name: string; apiUrl: string }): Promise<FoodMatch[]> {
+async function searchFoodByName(options: { name: string; apiUrl: string; language: LanguageCode }): Promise<FoodMatch[]> {
   const key = searchCacheKey(options);
 
   const cached = searchCache.get(key);
@@ -285,15 +326,15 @@ interface SearchOutcome {
  * API for other callers; this service always uses the POST form. Failure logs
  * never carry the search term (only an HTTP status), for the same reason.
  */
-async function performSearch(options: { name: string; apiUrl: string }): Promise<SearchOutcome> {
-  const { name, apiUrl } = options;
+async function performSearch(options: { name: string; apiUrl: string; language: LanguageCode }): Promise<SearchOutcome> {
+  const { name, apiUrl, language } = options;
 
   let response: Response;
   try {
     response = await fetch(buildSearchUrl(apiUrl), {
       method: 'POST',
       headers: { accept: 'application/json', 'content-type': 'application/json' },
-      body: JSON.stringify({ q: name, locale: SEARCH_LOCALE, limit: SEARCH_LIMIT }),
+      body: JSON.stringify({ q: name, locale: language, limit: SEARCH_LIMIT }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch {
@@ -363,7 +404,8 @@ export async function resolveIdentifiedFoods(
     return foods.map(() => []);
   }
 
+  const language = searchLanguage(options);
   return mapWithConcurrency(foods, RESOLVE_CONCURRENCY, (food) =>
-    searchFoodByName({ name: food.name, apiUrl: options.apiUrl }),
+    searchFoodByName({ name: food.name, apiUrl: options.apiUrl, language }),
   );
 }

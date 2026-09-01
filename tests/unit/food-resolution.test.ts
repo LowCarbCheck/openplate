@@ -17,6 +17,7 @@ import {
   clearFoodResolutionCache,
   MAX_CACHE_ENTRIES,
   allNamesCached,
+  type ResolveOptions,
 } from '../../app/services/food-resolution';
 import { matchMacrosToFormValues, toCuratedSource } from '../../app/services/food-resolution/apply-match';
 
@@ -691,5 +692,71 @@ describe('resolveIdentifiedFoods', () => {
         restoreFetch();
       }
     });
+  });
+});
+
+/**
+ * M167 fix: the LCC `locale` is a PARAMETER of the search, not a module
+ * constant pinned to `en`. It decides which rows come back at all — a German
+ * query returns nothing under `en` — so an `/add` search has to be able to ask
+ * in the visitor's own language.
+ */
+describe('resolveIdentifiedFoods — search language (M167)', () => {
+  beforeEach(() => {
+    clearFoodResolutionCache();
+  });
+
+  /** Runs one resolve against a stub and hands back the parsed request body. */
+  async function captureSearchBody(options: ResolveOptions, name: string): Promise<{ q: string; locale: string }> {
+    let captured: { q: string; locale: string } | null = null;
+    stubFetch(async (_url, init) => {
+      captured = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    });
+    try {
+      await resolveIdentifiedFoods([{ name }], options);
+    } finally {
+      restoreFetch();
+    }
+    assert.ok(captured !== null, 'the search should have reached the upstream stub');
+    return captured;
+  }
+
+  it('sends the requested language as the LCC `locale`', async () => {
+    const body = await captureSearchBody({ ...ENABLED, language: 'de' }, 'Hähnchenbrust');
+    assert.strictEqual(body.locale, 'de');
+    assert.strictEqual(body.q, 'Hähnchenbrust');
+  });
+
+  it("defaults to `en` when the caller states no language — every pre-existing caller is unchanged", async () => {
+    const body = await captureSearchBody(ENABLED, 'chicken breast');
+    assert.strictEqual(body.locale, 'en');
+  });
+
+  it('keys the cache by language — a `de` search never serves an `en` visitor (or the reverse)', async () => {
+    const locales: string[] = [];
+    stubFetch(async (_url, init) => {
+      locales.push(JSON.parse(String(init?.body)).locale);
+      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    });
+    try {
+      await resolveIdentifiedFoods([{ name: 'yogurt' }], { ...ENABLED, language: 'en' });
+      await resolveIdentifiedFoods([{ name: 'yogurt' }], { ...ENABLED, language: 'de' });
+      // The second call must NOT be served from the first's cache entry.
+      assert.deepStrictEqual(locales, ['en', 'de']);
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  it('allNamesCached is language-aware — a name cached under `en` is not cached under `de`', async () => {
+    stubFetch(async () => new Response(JSON.stringify({ results: [] }), { status: 200 }));
+    try {
+      await resolveIdentifiedFoods([{ name: 'quark' }], { ...ENABLED, language: 'en' });
+    } finally {
+      restoreFetch();
+    }
+    assert.strictEqual(allNamesCached(['quark'], { ...ENABLED, language: 'en' }), true);
+    assert.strictEqual(allNamesCached(['quark'], { ...ENABLED, language: 'de' }), false);
   });
 });

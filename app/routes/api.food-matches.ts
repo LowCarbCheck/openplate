@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import type { Route } from './+types/api.food-matches';
+import { CONFIG } from '#app/config';
+import { resolveRequestLanguage } from '#app/i18n/language-prefs';
 import { foodMatchesRateLimitKey } from '#app/lib/food-matches-rate-limit.server';
-import { allNamesCached, resolveIdentifiedFoods } from '#app/services/food-resolution';
+import { allNamesCached, foodResolutionOptions, resolveIdentifiedFoods } from '#app/services/food-resolution';
 import type { FoodMatch } from '#app/services/food-resolution';
 import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.server';
 
@@ -38,6 +40,18 @@ import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.serv
  * changes shape; the by-index-parallel-to-`names` contract on `matches`
  * documented on `resolveIdentifiedFoods` continues to hold for every
  * response that actually resolves names.
+ *
+ * LANGUAGE (M167 fix): the LCC lookup is searched in the CALLER'S UI
+ * language, resolved from the same locale cookie `app/root.tsx` reads, with
+ * `CONFIG.i18n.defaultLanguage` as the fallback. This is not cosmetic — LCC's
+ * `locale` decides which rows exist for a query at all, so a German visitor
+ * typing "Hähnchenbrust" got literally nothing back while the search was
+ * pinned to `en`, taking `/add`'s own German suggestion chips down with it.
+ * Both callers of this route benefit and neither regresses: `/add` sends
+ * text the person typed in their own language, and `/scan` sends
+ * model-produced (English-prompted) names, which LCC still matches under
+ * `de` via the canonical name — and then returns with German titles, which
+ * is what that person should be reading anyway.
  *
  * M123/07 (budget fix): the previous budget (20 requests / 10 minutes) was
  * sized for occasional lookups, not an interactive search-as-you-type box —
@@ -129,12 +143,18 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
 
   const names = parseNames(body);
 
+  // Resolved once and passed to BOTH calls below: `allNamesCached` reads the
+  // same language-keyed cache `resolveIdentifiedFoods` writes, so a
+  // mismatch here would charge (or exempt) the wrong bucket.
+  const language = resolveRequestLanguage(request.headers.get('cookie'), CONFIG.i18n.defaultLanguage);
+  const options = foodResolutionOptions(language);
+
   // Only a request that needs a genuine upstream lookup counts against the
   // budget (M123/07) — see the module doc comment and `allNamesCached` for
   // the full rationale. Checked BEFORE calling `resolveIdentifiedFoods` so a
   // throttled caller (the `false` branch below, once over budget) still
   // never reaches the upstream lookup.
-  if (!allNamesCached(names)) {
+  if (!allNamesCached(names, options)) {
     try {
       checkRateLimit(rateLimitKey, { windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX_REQUESTS });
     } catch (error) {
@@ -148,7 +168,10 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
     }
   }
 
-  const matches: FoodMatch[][] = await resolveIdentifiedFoods(names.map((name) => ({ name })));
+  const matches: FoodMatch[][] = await resolveIdentifiedFoods(
+    names.map((name) => ({ name })),
+    options,
+  );
   const success: FoodMatchesResponseBody = { matches };
   return Response.json(success);
 }
