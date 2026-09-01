@@ -32,6 +32,21 @@ The app is reachable at `http://localhost:3000`.
 Upgrading is `docker compose -f compose.yml pull && docker compose -f compose.yml up -d`. There is no server-side state to
 migrate or lose.
 
+### Pick a language
+
+openplate ships English and German. A visitor who has not chosen yet sees
+English; set `DEFAULT_UI_LANGUAGE=de` to start them in German instead.
+
+```bash
+DEFAULT_UI_LANGUAGE=de
+```
+
+It is a starting language, not a lock: whatever you set, anyone can switch in
+Settings and their choice sticks. An unsupported code fails the boot rather than
+falling back, so a typo is loud instead of serving the wrong language forever.
+
+This is the interface only. It does not translate food names or AI replies.
+
 ### Add sync
 
 If you also want end-to-end-encrypted sync across devices,
