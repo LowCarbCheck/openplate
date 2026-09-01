@@ -6,6 +6,12 @@
  * matters here — the PWA keeps working fully offline in either language
  * without a separate cache entry for the translations.
  *
+ * TWO NAMESPACES. `common` is the UI, loaded on every page. `legal` is the
+ * long prose of the three legal routes and is kept separate so ~600 lines of
+ * policy text in two languages are not carried into the bundle every page
+ * downloads. Both are still inline, for the offline reason above — the split
+ * is about keeping `common` honest, not about lazy loading.
+ *
  * Detection is pinned to the COOKIE ONLY, which is a deliberate deviation from
  * tgl's `['cookie', 'localStorage', 'navigator']`. The server renders from
  * that same cookie and nothing else (see `app/i18n/language-prefs.ts`), so any
@@ -21,19 +27,21 @@ import { initReactI18next } from 'react-i18next';
 import { DEFAULT_LANGUAGE, LANGUAGE_COOKIE } from './language-prefs';
 import enCommon from './locales/en/common.json';
 import deCommon from './locales/de/common.json';
+import enLegal from './locales/en/legal.json';
+import deLegal from './locales/de/legal.json';
 
 void i18next
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
-      en: { common: enCommon },
-      de: { common: deCommon },
+      en: { common: enCommon, legal: enLegal },
+      de: { common: deCommon, legal: deLegal },
     },
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: ['en', 'de'],
     defaultNS: 'common',
-    ns: ['common'],
+    ns: ['common', 'legal'],
     detection: {
       order: ['cookie'],
       lookupCookie: LANGUAGE_COOKIE,

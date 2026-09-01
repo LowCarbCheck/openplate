@@ -3,6 +3,10 @@ import PublicWrapper from '#app/components/public-wrapper';
 import { PHOTO_RETENTION_DAYS } from '#app/lib/local-store/photo-policy';
 import type { MetaFunction } from 'react-router';
 import { usePublicConfig } from '#app/hooks/use-public-config';
+import { Trans, useTranslation } from 'react-i18next';
+import { OPERATOR } from './operator';
+import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
+import '#app/i18n/i18n';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Privacy Policy' }];
@@ -35,194 +39,90 @@ export interface PrivacyContentProps {
 }
 
 export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps) {
+  const { t, i18n } = useTranslation('legal');
+  const days = PHOTO_RETENTION_DAYS;
   return (
     <article className="prose prose-zinc dark:prose-invert max-w-none">
       <H1 variant="default" className="mb-8">
-        Privacy Policy
+        {t('privacy.title')}
       </H1>
 
       <P variant="subtle" className="mb-8">
-        Last updated: September 1, 2026
+        {t('lastUpdated', { date: formatLegalDate(LEGAL_LAST_UPDATED, i18n.language) })}
       </P>
 
       <P variant="lead" className="mb-8">
-        openplate is local-first. Everything you track — your foods, food logs, weight, goals, and AI provider key —
-        lives in your browser on your own device, not on our servers. This policy describes the hosted openplate
-        instance we operate. If you run your own self-hosted copy, you (or whoever operates that instance) are the data
-        controller for it, and this policy does not govern your deployment.
+        {t('privacy.lead')}
       </P>
 
       <section className="mb-8">
-        <H2 variant="default">1. The short version</H2>
+        <H2 variant="default">{t('privacy.s1Heading')}</H2>
         <ul className="mt-4">
-          <li>
-            Your tracker data (foods, logs, weight, goals) is stored on your device, in the browser&apos;s local
-            storage. It is not uploaded to our servers by default.
-          </li>
-          <li>
-            The app itself has no accounts and no sign-in. If you switch on the optional sync
-            service, that separate service keeps a small record so you can sign in: your email and
-            a one-way hash derived from your passphrase. No health or nutrition data is readable
-            from it.
-          </li>
-          <li>
-            AI plate identification uses your own AI provider. Your plate photo and your provider key are sent straight
-            from your browser to that provider — they never pass through our servers. Your browser also keeps a
-            temporary on-device copy of the photo (see Section 2) so you can see it again later; that copy is never
-            uploaded anywhere.
-          </li>
-          <li>
-            We use no advertising and no third-party analytics.{' '}
-            {analyticsEnabled
-              ? 'This instance measures visits and feature use with our own Matomo, which we run on our own server, so no data reaches an analytics company. It sets no cookies, and it is never told what you eat, weigh or log: your diary never leaves your device. See Section 9a for exactly what is recorded and how to object.'
-              : 'This instance measures nothing at all: no analytics program runs on it. See Section 9a.'}{' '}
-            An instance you host yourself has analytics switched off unless you turn them on.
-          </li>
+          <li>{t('privacy.s1Item1')}</li>
+          <li>{t('privacy.s1Item2')}</li>
+          <li>{t('privacy.s1Item3')}</li>
+          <li>{t(analyticsEnabled ? 'privacy.s1Item4Analytics' : 'privacy.s1Item4NoAnalytics')}</li>
         </ul>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">2. What stays on your device</H2>
-        <P>
-          openplate is built local-first. Your personal foods, food logs, weight entries, and profile/goals are stored
-          on-device in your browser&apos;s IndexedDB. This data is not sent to us and we cannot see it. Because it lives
-          in your browser profile, clearing your browser data (or the site&apos;s storage) removes it — so keep that in
-          mind before you clear it, and note that this data is tied to the specific browser and device you use.
-        </P>
-        <P className="mt-4">
-          When you scan a plate, the photo itself is also kept on your device, in a separate on-device cache from your
-          other tracker data, so you can see it again on that food-log entry. It is never uploaded to us and never
-          leaves your device — it only ever goes to the AI provider you connect, as described in Section 4. This cache
-          is on by default, clears itself automatically after {PHOTO_RETENTION_DAYS} days, and you can turn it off or
-          clear it at any time from your Profile page.
-        </P>
+        <H2 variant="default">{t('privacy.s2Heading')}</H2>
+        <P>{t('privacy.s2Body1')}</P>
+        <P className="mt-4">{t('privacy.s2Body2', { days })}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">3. What we store on our servers</H2>
+        <H2 variant="default">{t('privacy.s3Heading')}</H2>
         <P>
-          The openplate app server stores nothing about you at all. It has no accounts, no
-          database, and no record of your visit beyond the ordinary web-request metadata described
-          in Section 5. Everything below concerns the <strong>separate, optional sync service</strong>{' '}
-          described in Section 6, which you only ever reach by choosing to create a sync account.
-          If you never do, none of it applies to you.
+          <Trans i18nKey="legal:privacy.s3Body1" components={{ b: <strong /> }} />
         </P>
-        <P className="mt-4">When you create a sync account, that service stores the minimum needed to operate your sign-in:</P>
+        <P className="mt-4">{t('privacy.s3Intro')}</P>
         <ul className="mt-4">
-          <li>Your email address and display name.</li>
-          <li>
-            A one-way hash of a value derived on your device from your passphrase (never the
-            passphrase itself, and never a key that could decrypt anything). The service can check
-            that you are you; it cannot read your passphrase and cannot recover it for you.
-          </li>
-          <li>
-            Hashes of one-time email-verification and password-reset tokens (never the raw links), used only to confirm
-            the links you receive by email.
-          </li>
-          <li>
-            Basic account timestamps and status flags (for example, when your account was created and whether your email
-            is verified).
-          </li>
+          <li>{t('privacy.s3Item1')}</li>
+          <li>{t('privacy.s3Item2')}</li>
+          <li>{t('privacy.s3Item3')}</li>
+          <li>{t('privacy.s3Item4')}</li>
         </ul>
-        <P className="mt-4">
-          We do not store your foods, food logs, weight, goals, or plate photos in readable form on
-          any server. Those live on your device, and if you switch sync on they are encrypted on
-          your device before they are uploaded (Section 6).
-        </P>
+        <P className="mt-4">{t('privacy.s3Outro')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">4. AI plate identification (your own provider)</H2>
-        <P>
-          openplate&apos;s photo-to-macros feature is bring-your-own-key: you connect your own AI provider (such as an
-          OpenAI-compatible endpoint, OpenRouter, or Anthropic) and supply your own API key. When you scan a plate, your
-          browser sends the photo directly to that provider using your key. The photo and the key never pass through our
-          servers. Your browser does keep an on-device copy of the photo, separate from our servers and described in
-          Section 2, so you can see it again on that entry; it is never uploaded anywhere, it expires on its own after{' '}
-          {PHOTO_RETENTION_DAYS} days, and you can clear it or turn it off entirely from your Profile page. Your AI
-          provider is a separate third party that you have chosen and whose relationship is with you under your own
-          account and key — how they handle the photo is governed by that provider&apos;s own terms and privacy policy,
-          not by us.
-        </P>
+        <H2 variant="default">{t('privacy.s4Heading')}</H2>
+        <P>{t('privacy.s4Body', { days })}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">5. Food search</H2>
-        <P>
-          After a scan identifies foods, openplate can look up curated nutrition data by name from the public
-          LowCarbCheck food database. Only the food name is sent for a food search — never your photo, never your
-          account data. The search term travels in the body of the request (not in the URL) specifically so it does not
-          end up in a server access log, and we do not store the search terms. The one signal that does reach our server
-          during a food search is the ordinary web-request metadata every website receives, including your IP address,
-          which is used transiently for rate-limiting and appears in standard access logs; it is not linked to your
-          tracker data.
-        </P>
+        <H2 variant="default">{t('privacy.s5Heading')}</H2>
+        <P>{t('privacy.s5Body')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">6. End-to-end encrypted sync (optional)</H2>
-        <P>
-          Sync is available and it is off unless you switch it on. It lets you carry your tracker
-          data between your own devices. Registration is currently by invitation only, so you
-          cannot end up with a sync account by accident.
-        </P>
-        <P className="mt-4">
-          It is end-to-end encrypted. Your data is encrypted on your device before it is uploaded,
-          and the sync server stores only opaque ciphertext that it cannot read or decrypt. The
-          encryption keys are derived on your device from a passphrase only you hold — the server
-          never sees your passphrase, your plaintext, or your decryption keys. That also means we
-          cannot reset your passphrase or recover your data if you lose it; there is no back door
-          for us to use on your behalf.
-        </P>
-        <P className="mt-4">
-          The only account-linked information the sync server can see is non-content metadata: your
-          email address, the size of an encrypted blob, and the time it was stored. It runs as a
-          separate service from the app server described in Section 3.
-        </P>
+        <H2 variant="default">{t('privacy.s6Heading')}</H2>
+        <P>{t('privacy.s6Body1')}</P>
+        <P className="mt-4">{t('privacy.s6Body2')}</P>
+        <P className="mt-4">{t('privacy.s6Body3')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">7. Transactional email</H2>
-        <P>
-          The hosted instance sends transactional email only — email verification and password-reset messages. We do not
-          send marketing email. On the hosted instance these messages are delivered through our internal Pigeon email
-          service, which relays them via Amazon SES (in the EU eu-central-1 region). Your email address and the message
-          contents are processed by that delivery chain in order to reach you.
-        </P>
+        <H2 variant="default">{t('privacy.s7Heading')}</H2>
+        <P>{t('privacy.s7Body')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">8. Hosting and backups</H2>
-        <P>
-          The hosted instance runs on Hetzner infrastructure in the EU. The server database — which, as described above,
-          holds the sync service's account records and end-to-end-encrypted sync blobs, but no plaintext tracker
-          data — is included in our routine encrypted backups, stored in Amazon S3 in the EU (eu-central-1 region) for
-          disaster recovery. Encrypted sync blobs remain encrypted in those backups; a backup gives us no more
-          visibility into your data than the live database does. Backups are retained on a rolling basis and rotate out
-          over time.
-        </P>
+        <H2 variant="default">{t('privacy.s8Heading')}</H2>
+        <P>{t('privacy.s8Body')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">9. Cookies</H2>
-        <P>
-          There is no sign-in on this site and therefore no session cookie. The cookies openplate
-          sets are small preference cookies, written by your own browser, read only by this site,
-          and never sent anywhere else:
-        </P>
+        <H2 variant="default">{t('privacy.s9Heading')}</H2>
+        <P>{t('privacy.s9Intro')}</P>
         <ul className="mt-4">
-          <li>Your chosen interface language, so the page loads in it next time.</li>
-          <li>Whether the sidebar is open or closed.</li>
-          <li>Whether you have already seen the home-screen install hint.</li>
-          <li>
-            A short-lived cookie that carries a one-off confirmation message across a page reload.
-          </li>
+          <li>{t('privacy.s9Item1')}</li>
+          <li>{t('privacy.s9Item2')}</li>
+          <li>{t('privacy.s9Item3')}</li>
+          <li>{t('privacy.s9Item4')}</li>
         </ul>
-        <P className="mt-4">
-          None of them identifies you, none is used to build a profile, and none is shared. We use
-          no advertising cookies and no third-party tracking cookies. Clearing your browser data
-          removes them; the only effect is that those preferences reset.
-        </P>
+        <P className="mt-4">{t('privacy.s9Outro')}</P>
       </section>
 
       {/*
@@ -232,7 +132,7 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
         It was written unconditionally at first, reasoning that this whole document
         describes "the hosted openplate instance we operate". That reasoning was
         wrong in exactly one way and it mattered: the cutover shipped the section
-        while `MATOMO_URL` was never set on the hosted instance, so the live policy
+        while MATOMO_URL was never set on the hosted instance, so the live policy
         described measurement that was switched off. It named cookies, a retention
         window and a right to object, all for something that was not running.
 
@@ -243,105 +143,69 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
         No consent banner accompanies this, deliberately and on advice: the tracker
         is loaded with cookies disabled and stores nothing on the device, so §25
         TTDSG is not engaged and the legal basis is Art. 6(1)(f). If anyone ever
-        switches cookies back on in `use-matomo-tracker.ts`, that reasoning dies
+        switches cookies back on in use-matomo-tracker.ts, that reasoning dies
         with the change and a banner becomes mandatory.
       */}
       {analyticsEnabled ? (
         <section className="mb-8">
-          <H2 variant="default">9a. Analytics on the hosted instance</H2>
+          <H2 variant="default">{t('privacy.s9aOnHeading')}</H2>
           <P>
-            We measure how the hosted instance is used with <strong>Matomo</strong>, an analytics
-            program we run on our own server. No third party receives the data and it is never sold or
-            shared.
+            <Trans i18nKey="legal:privacy.s9aOnBody1" components={{ b: <strong /> }} />
           </P>
           <P className="mt-4">
-            <strong>What is recorded:</strong> the page you opened with any query string and account
-            identifier removed before it is sent, a shortened form of your IP address, your browser
-            type, your screen size, the page that linked you here, and which features you used — for
-            example that a plate was scanned, or that a backup was exported. <strong>What is never
-            recorded:</strong> anything from your diary. Not food names, not weights, not goals, not
-            photos, not fasting times, and no identifier that ties events back to you.
+            <Trans i18nKey="legal:privacy.s9aOnBody2" components={{ b: <strong /> }} />
           </P>
           <P className="mt-4">
-            <strong>Cookies:</strong> none. The tracker runs with cookies switched off and stores
-            nothing on your device, which is why you were not asked to accept anything.
+            <Trans i18nKey="legal:privacy.s9aOnBody3" components={{ b: <strong /> }} />
           </P>
           <P className="mt-4">
-            <strong>Legal basis:</strong> our legitimate interest in understanding whether the
-            software works and which parts are used (Art. 6(1)(f) GDPR). <strong>Retention:</strong>{' '}
-            raw records are deleted after 90 days; only anonymous totals are kept after that.
+            <Trans i18nKey="legal:privacy.s9aOnBody4" components={{ b: <strong /> }} />
           </P>
           <P className="mt-4">
-            <strong>Your right to object (Art. 21 GDPR):</strong> turn on “Do Not Track” in your
-            browser and we record nothing — our Matomo is configured to honour it. You may also write
-            to us at the address in the <a href="/imprint">imprint</a>.
+            <Trans
+              i18nKey="legal:privacy.s9aOnBody5"
+              components={{ b: <strong />, imprint: <a href="/imprint">imprint</a> }}
+            />
           </P>
-          <P className="mt-4">
-            An instance you host yourself records nothing at all unless you configure Matomo on it.
-            That is the default.
-          </P>
+          <P className="mt-4">{t('privacy.s9aOnBody6')}</P>
         </section>
       ) : (
         <section className="mb-8">
-          <H2 variant="default">9a. Analytics</H2>
-          <P>
-            This instance measures nothing. No analytics program runs on it, no usage data is
-            collected, and no third party receives anything about you. There is nothing to object
-            to and nothing to opt out of.
-          </P>
-          <P className="mt-4">
-            An instance you host yourself behaves the same way unless you configure Matomo on it.
-            That is the default.
-          </P>
+          <H2 variant="default">{t('privacy.s9aOffHeading')}</H2>
+          <P>{t('privacy.s9aOffBody1')}</P>
+          <P className="mt-4">{t('privacy.s9aOffBody2')}</P>
         </section>
       )}
 
       <section className="mb-8">
-        <H2 variant="default">10. Your rights and data requests</H2>
-        <P>
-          Under the GDPR you have the right to access, correct, delete, restrict, or export your personal data, and to
-          object to its processing. In practice, most of your data is already under your direct control:
-        </P>
+        <H2 variant="default">{t('privacy.s10Heading')}</H2>
+        <P>{t('privacy.s10Intro')}</P>
         <ul className="mt-4">
-          <li>
-            Your tracker data lives on your device, so you can view, change, or erase it directly at any time from
-            within the app or by clearing the site&apos;s local storage.
-          </li>
-          <li>
-            We do not yet offer a self-service button to export or delete your server-side account record. Until we do,
-            you can make an access, correction, export, or erasure request by contacting us at the address below, and we
-            will action it. We are honest about this rather than advertising a self-service flow that does not exist
-            yet.
-          </li>
-          <li>
-            If you run a self-hosted instance, you have direct database and CLI access to your own data and can export
-            or delete it yourself.
-          </li>
+          <li>{t('privacy.s10Item1')}</li>
+          <li>{t('privacy.s10Item2')}</li>
+          <li>{t('privacy.s10Item3')}</li>
+          <li>{t('privacy.s10Item4')}</li>
         </ul>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">11. Self-hosting</H2>
-        <P>
-          openplate is open-source and can be self-hosted. This policy describes the specific hosted instance we
-          operate. On a self-hosted deployment, the operator of that instance — not the openplate project — is the data
-          controller and is responsible for its own privacy practices.
-        </P>
+        <H2 variant="default">{t('privacy.s11Heading')}</H2>
+        <P>{t('privacy.s11Body')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">12. Changes to this policy</H2>
-        <P>
-          We may update this policy as openplate evolves. When we make a
-          material change, we will update the &quot;Last updated&quot; date above.
-        </P>
+        <H2 variant="default">{t('privacy.s12Heading')}</H2>
+        <P>{t('privacy.s12Body')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">13. Contact</H2>
+        <H2 variant="default">{t('privacy.s13Heading')}</H2>
         <P>
-          For any privacy question, or to make a data access, export, or erasure request, contact us at{' '}
-          <a href="mailto:partners@sportsight.de">partners@sportsight.de</a>.
+          <Trans
+            i18nKey="legal:privacy.s13Body"
+            values={{ email: OPERATOR.privacyEmail }}
+            components={{ email: <a href={`mailto:${OPERATOR.privacyEmail}`}>{OPERATOR.privacyEmail}</a> }}
+          />
         </P>
       </section>
     </article>

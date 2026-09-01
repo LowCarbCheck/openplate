@@ -223,3 +223,25 @@ describe('Terms — the operator is a legal person', () => {
     assert.match(renderTerms(), /SPARQ VENTURES UG/);
   });
 });
+
+describe('Legal pages — self-service deletion exists and is described', () => {
+  it('does not claim there is no self-service delete: `settings.sync.tsx` has one', () => {
+    // Was, in BOTH documents: "We do not yet offer a self-service button to
+    // delete your server-side account record." `deleteSyncAccount` is wired
+    // into Settings and the UI offers "Delete sync account" with a confirm.
+    // Understating a data-subject right is not a compliance risk, but it does
+    // tell people to send an email when they could press a button.
+    for (const html of [renderPrivacy(), renderTerms()]) {
+      assert.doesNotMatch(html, /do not yet offer a self-service/i);
+      assert.match(html, /delete your sync account yourself/i);
+    }
+  });
+
+  it('does not promise a 30-day window the product does not honour', () => {
+    // The confirm dialog says "every encrypted copy the server holds. There is
+    // no undo and no grace period." The terms said 30 days. Both cannot be true.
+    const terms = renderTerms();
+    assert.doesNotMatch(terms, /within 30 days/i);
+    assert.match(terms, /immediately, with no grace period/i);
+  });
+});

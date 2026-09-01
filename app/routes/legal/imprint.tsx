@@ -1,6 +1,9 @@
 import { H1, H2, P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import type { MetaFunction } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import { OPERATOR } from './operator';
+import '#app/i18n/i18n';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Imprint (Impressum)' }, { name: 'robots', content: 'noindex, follow' }];
@@ -31,57 +34,59 @@ export const meta: MetaFunction = () => {
  * while `PublicWrapper` needs one.
  */
 export function ImprintContent() {
+  const { t } = useTranslation('legal');
   return (
     <article className="prose prose-zinc dark:prose-invert max-w-none">
       <H1 variant="default" className="mb-8">
-        Imprint (Impressum)
+        {t('imprint.title')}
       </H1>
 
       <P variant="subtle" className="mb-8">
-        Information required under Section 5 of the German Digital Services Act (DDG).
+        {t('imprint.intro')}
       </P>
 
       <section className="mb-8">
-        <H2 variant="default">Provider</H2>
+        <H2 variant="default">{t('imprint.providerHeading')}</H2>
         <address className="not-italic">
           <P className="mt-4">
-            SPARQ VENTURES UG (haftungsbeschränkt)
+            {OPERATOR.legalName}
             <br />
-            Straße 73 49
+            {OPERATOR.street}
             <br />
-            13125 Berlin
+            {OPERATOR.postalCode} {OPERATOR.city}
             <br />
-            Deutschland
+            {OPERATOR.country}
           </P>
         </address>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">Represented By</H2>
-        <P className="mt-4">Managing Director (Geschäftsführer): Altan Sarisin</P>
+        <H2 variant="default">{t('imprint.representedHeading')}</H2>
+        <P className="mt-4">
+          {t('imprint.managingDirectorLabel')}: {OPERATOR.managingDirector}
+        </P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">Register Entry</H2>
+        <H2 variant="default">{t('imprint.registerHeading')}</H2>
         <P className="mt-4">
-          Commercial Register (Handelsregister): HRB 174062 B
+          {t('imprint.registerNumberLabel')}: {OPERATOR.registerNumber}
           <br />
-          Register Court: Amtsgericht Charlottenburg
+          {t('imprint.registerCourtLabel')}: {OPERATOR.registerCourt}
         </P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">VAT ID</H2>
+        <H2 variant="default">{t('imprint.vatHeading')}</H2>
         <P className="mt-4">
-          VAT identification number (Umsatzsteuer-ID) per Section 27a of the German VAT Act (UStG):
-          DE312546809
+          {t('imprint.vatLabel')}: {OPERATOR.vatId}
         </P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">Contact</H2>
+        <H2 variant="default">{t('imprint.contactHeading')}</H2>
         <P className="mt-4">
-          Email: <a href="mailto:info@sprqvntrs.com">info@sprqvntrs.com</a>
+          {t('imprint.emailLabel')}: <a href={`mailto:${OPERATOR.imprintEmail}`}>{OPERATOR.imprintEmail}</a>
         </P>
       </section>
 
@@ -94,11 +99,8 @@ export function ImprintContent() {
       */}
 
       <section className="mb-8">
-        <H2 variant="default">Consumer Dispute Resolution</H2>
-        <P className="mt-4">
-          We are neither willing nor obliged to take part in dispute resolution proceedings before a
-          consumer arbitration board (Verbraucherschlichtungsstelle).
-        </P>
+        <H2 variant="default">{t('imprint.disputeHeading')}</H2>
+        <P className="mt-4">{t('imprint.disputeBody')}</P>
       </section>
     </article>
   );
