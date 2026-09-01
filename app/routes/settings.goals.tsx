@@ -39,6 +39,7 @@ import {
   suggestDailyKcal,
 } from '#app/models/body-metrics';
 import type { BodyMetrics } from '#app/models/body-metrics';
+import { CARB_PRESETS as ONBOARDING_CARB_PRESETS, type CarbPreset } from '#app/lib/onboarding';
 import { makeBodyMetricsSchema } from '#app/lib/body-metrics-schema';
 import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
 import { readStoredWeightUnit, writeStoredWeightUnit } from '#app/lib/weight-unit-preference';
@@ -83,13 +84,18 @@ const INTENT = {
   CLEAR_BODY_METRICS: 'clear-body-metrics',
 } as const;
 
-/** One-tap net-carb ceiling presets rendered as chips above the field. The
- *  hint is a bare number + unit, so it stays literal in every language. */
-const CARB_PRESETS = [
-  { labelKey: 'goals.carbs.presets.keto', hint: '<20g', value: 20 },
-  { labelKey: 'goals.carbs.presets.lowCarb', hint: '<50g', value: 50 },
-  { labelKey: 'goals.carbs.presets.moderate', hint: '<100g', value: 100 },
-] as const;
+/**
+ * One-tap net-carb ceiling presets rendered as chips above the field.
+ *
+ * The SAME table onboarding offers, minus its "decide later" entry — this page
+ * already has an empty field for that. It used to be a second, parallel table
+ * with its own `goals.carbs.presets.*` keys, and the two screens drifted: the
+ * wizard said "Keto, unter 20 g" and this page said "Keto (<20g)" for the very
+ * same choice. One source of presets, one source of wording.
+ */
+const CARB_PRESETS = ONBOARDING_CARB_PRESETS.filter(
+  (preset): preset is CarbPreset & { ceiling: number } => preset.ceiling !== null,
+);
 
 //////////////////////////////////////////////////////////////////////////////
 // Schemas
@@ -322,9 +328,7 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
           onClick={() => onChange(option)}
           className={cn(
             'min-h-8 min-w-11 rounded-full px-3 py-1 transition-colors',
-            unit === option ?
-              'bg-primary text-primary-foreground'
-            : 'text-muted-foreground hover:text-foreground',
+            unit === option ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {option}
@@ -374,7 +378,8 @@ function GoalsCard({
   );
   if (weightUnit !== syncedTarget.unit || goals.targetWeightKg !== syncedTarget.targetWeightKg) {
     const dataChanged = goals.targetWeightKg !== syncedTarget.targetWeightKg;
-    const kgFromCurrentText = dataChanged ? goals.targetWeightKg : parseDisplayWeightToKg(targetWeightText, syncedTarget.unit);
+    const kgFromCurrentText =
+      dataChanged ? goals.targetWeightKg : parseDisplayWeightToKg(targetWeightText, syncedTarget.unit);
     setSyncedTarget({ unit: weightUnit, targetWeightKg: goals.targetWeightKg });
     setTargetWeightText(formatKgForDisplay(kgFromCurrentText, weightUnit));
   }
@@ -399,7 +404,7 @@ function GoalsCard({
   const trimmedCarb = carbCeiling.trim();
   const carbNumber = trimmedCarb === '' ? null : Number(trimmedCarb);
   const isCustomSelected =
-    carbNumber !== null && Number.isFinite(carbNumber) && !CARB_PRESETS.some((preset) => preset.value === carbNumber);
+    carbNumber !== null && Number.isFinite(carbNumber) && !CARB_PRESETS.some((preset) => preset.ceiling === carbNumber);
   const recommendedProteinG = currentWeightKg !== null ? Math.round(PROTEIN_PER_KG * currentWeightKg) : null;
   const isRecommendedProteinSelected =
     recommendedProteinG !== null && proteinFloor.trim() !== '' && Number(proteinFloor.trim()) === recommendedProteinG;
@@ -424,13 +429,13 @@ function GoalsCard({
             <p className="text-xs text-muted-foreground">{t('goals.carbs.hint')}</p>
             <div className="flex flex-wrap gap-2">
               {CARB_PRESETS.map((preset) => {
-                const isSelected = carbNumber === preset.value;
+                const isSelected = carbNumber === preset.ceiling;
                 return (
                   <button
-                    key={preset.value}
+                    key={preset.id}
                     type="button"
                     aria-pressed={isSelected}
-                    onClick={() => setCarbCeiling(String(preset.value))}
+                    onClick={() => setCarbCeiling(String(preset.ceiling))}
                     className={cn(
                       'inline-flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
                       isSelected ?
@@ -438,7 +443,7 @@ function GoalsCard({
                       : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground',
                     )}
                   >
-                    {t(preset.labelKey)} ({preset.hint})
+                    {t('onboarding.carbPreset.chipWithCeiling', { label: t(preset.labelKey), ceiling: preset.ceiling })}
                   </button>
                 );
               })}

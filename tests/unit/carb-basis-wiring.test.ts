@@ -258,7 +258,7 @@ describe('carbBasis reaches every surface that displays a compute-from-parts net
   it('the receipt hero and the diary row agree on the same entry, to the character — the exact disagreement spec 13 was reopened over', () => {
     const log = euBasisLog();
     const heroFigure = findNetCarbBadge(renderEntryReceipt(log)).figure;
-    assert.equal(`${heroFigure}g net carbs`, formatEntryNetCarbs(log, i18next.t, 'en'));
+    assert.equal(`${heroFigure} g net carbs`, formatEntryNetCarbs(log, i18next.t, 'en'));
   });
 
   it('a `total`-basis food is unaffected — still subtracts fibre, still renders correctly', () => {

@@ -411,7 +411,7 @@ describe('authoritative net carbs survive being logged', () => {
     const entry = logEntryFromAddFlow(wheatBranCandidate(), { grams: 100 });
     assert.equal(
       formatEntryNetCarbs(entry, i18next.t, 'en'),
-      `${AUTHORITATIVE_NET_CARBS_PER_100G}g net carbs`,
+      `${AUTHORITATIVE_NET_CARBS_PER_100G} g net carbs`,
       'the diary entry row is projecting the log itself instead of going through localFoodLogToSnapshot',
     );
   });
@@ -789,7 +789,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
       String(AUTHORITATIVE_NET_CARBS_PER_100G),
       'the "Your food" row rendered a different number than the same food’s diary entry',
     );
-    assert.equal(diaryFigure, `${AUTHORITATIVE_NET_CARBS_PER_100G}g net carbs`);
+    assert.equal(diaryFigure, `${AUTHORITATIVE_NET_CARBS_PER_100G} g net carbs`);
   });
 
   it('colours that row’s traffic light from the authoritative figure — a 21.7 g food must not be green here either', () => {
@@ -1010,7 +1010,7 @@ describe('the entry receipt hero reads the entry’s figure, not the linked food
   it('agrees with the diary row for the same entry, to the character', () => {
     const { log, food } = scanned();
     const heroFigure = RECEIPT_HERO_BADGE.exec(renderEntryReceipt({ log, food }))?.[2];
-    assert.equal(`${heroFigure}g net carbs`, formatEntryNetCarbs(log, i18next.t, 'en'));
+    assert.equal(`${heroFigure} g net carbs`, formatEntryNetCarbs(log, i18next.t, 'en'));
   });
 
   it('colours the hero from the authoritative figure — a 21.7 g entry must not read green', () => {
@@ -1177,8 +1177,8 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
       AUTHORITATIVE_NET_CARBS_PER_100G,
       'the most common action a returning user takes still totals a confident, wrong 0',
     );
-    assert.equal(formatEntryNetCarbs(relogged, i18next.t, 'en'), `${AUTHORITATIVE_NET_CARBS_PER_100G}g net carbs`);
-    assert.equal(formatEntryPortion(relogged), `1 serving (${SERVING_GRAMS}g)`);
+    assert.equal(formatEntryNetCarbs(relogged, i18next.t, 'en'), `${AUTHORITATIVE_NET_CARBS_PER_100G} g net carbs`);
+    assert.equal(formatEntryPortion(relogged, 'en'), `1 serving (${SERVING_GRAMS}\u00a0g)`);
   });
 
   it('colours the chip’s traffic-light dot from the authoritative figure — a 21.7 g food must not show a green dot', () => {

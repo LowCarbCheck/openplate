@@ -4,10 +4,15 @@ import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
 import '#app/i18n/i18n';
+import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
-export const meta: MetaFunction = () => {
-  return [{ title: 'Imprint (Impressum)' }, { name: 'robots', content: 'noindex, follow' }];
-};
+// Title via the pure `meta-title` seam, with the language read off the ROOT
+// loader through `matches` — never the i18next singleton (see `meta-title.ts`
+// for why that would leak one visitor's language into another's <title>).
+export const meta: MetaFunction = ({ matches }) => [
+  { title: metaTitle(metaLanguage(matches), 'meta.imprint') },
+  { name: 'robots', content: 'noindex, follow' },
+];
 
 /**
  * The German-law provider identification (Impressum) for the hosted instance.

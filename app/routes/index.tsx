@@ -52,11 +52,31 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 // `meta-title.ts` for why that would leak one visitor's language into
 // another's <title>). The description matters as much as the title here: this
 // is the page search engines and link previews actually quote.
-export const meta: Route.MetaFunction = ({ matches }) => {
+export const meta: Route.MetaFunction = ({ matches, loaderData }) => {
   const language = metaLanguage(matches);
+  const title = metaTitle(language, 'meta.landing');
+  const description = metaTitle(language, 'meta.landingDescription');
+  // The share card. Absolute URLs are not a style choice: every scraper
+  // resolves `og:image` and `og:url` against nothing, so a root-relative path
+  // is simply dropped. The origin rides in on the loader (`siteOrigin`) rather
+  // than being read from `CONFIG` here, because `meta()` also runs in the
+  // browser, where server config does not exist.
+  const origin = loaderData?.siteOrigin ?? '';
+  const image = `${origin}/og-image.png`;
   return [
-    { title: metaTitle(language, 'meta.landing') },
-    { name: 'description', content: metaTitle(language, 'meta.landingDescription') },
+    { title },
+    { name: 'description', content: description },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:site_name', content: 'openplate' },
+    { property: 'og:title', content: title },
+    { property: 'og:description', content: description },
+    { property: 'og:url', content: `${origin}/` },
+    { property: 'og:locale', content: language === 'de' ? 'de_DE' : 'en_US' },
+    { property: 'og:image', content: image },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: title },
+    { name: 'twitter:description', content: description },
+    { name: 'twitter:image', content: image },
   ];
 };
 
@@ -109,6 +129,15 @@ export async function loader({ request }: Route.LoaderArgs) {
  */
 function landingSections() {
   return {
+    /**
+     * This instance's public origin (`APP_URL`), for the Open Graph tags.
+     *
+     * A share card's `og:url` and `og:image` have to be absolute, and `meta()`
+     * runs in the browser too, so it cannot read `CONFIG` itself. This is the
+     * one value that crosses for that reason, and it is already public: it is
+     * the address the visitor typed.
+     */
+    siteOrigin: CONFIG.app.url.replace(/\/+$/, ''),
     /** `SYNC_SERVER_URL` — off by default, including on every self-host. */
     syncEnabled: CONFIG.sync.syncServerUrl !== null,
     /** `NEWSLETTER_SUBSCRIBE_URL` + `NEWSLETTER_TURNSTILE_SITE_KEY` — off by default. */
@@ -1191,10 +1220,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 first and last. `aria-hidden`: the ordered list is the
                 semantics; this is a drawing of them. */}
             <div className="relative">
-              <div
-                aria-hidden="true"
-                className="absolute bottom-4 left-4 top-4 border-l border-primary/15"
-              />
+              <div aria-hidden="true" className="absolute bottom-4 left-4 top-4 border-l border-primary/15" />
               <ol className="relative space-y-6">
                 <SetupStep
                   step={1}
@@ -1270,14 +1296,10 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           <FeatureCard
             icon={EyeOff}
             title={t(
-              analyticsEnabled
-                ? 'landing.features.noTracking.titleAnalytics'
-                : 'landing.features.noTracking.title',
+              analyticsEnabled ? 'landing.features.noTracking.titleAnalytics' : 'landing.features.noTracking.title',
             )}
             body={t(
-              analyticsEnabled
-                ? 'landing.features.noTracking.bodyAnalytics'
-                : 'landing.features.noTracking.body',
+              analyticsEnabled ? 'landing.features.noTracking.bodyAnalytics' : 'landing.features.noTracking.body',
             )}
           />
         </div>

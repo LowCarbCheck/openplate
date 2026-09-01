@@ -19,7 +19,7 @@
  * are pinned by tests rather than by watching a toast go by.
  */
 import { toast as showToast } from 'sonner';
-import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { formatMeasureIn } from '#app/lib/format-macro-number';
 
 /** The i18next `t` shape this module needs, taken as an argument so the copy stays testable without a provider. */
 export type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
@@ -148,7 +148,9 @@ export function formatFoodAddedToast({
     batch.count === 1 ?
       t(verb === 'copied' ? 'diary.toast.copiedOne' : 'diary.toast.addedOne', { name: batch.lastName })
     : t(verb === 'copied' ? 'diary.toast.copiedMany' : 'diary.toast.addedMany', { n: batch.count });
-  const carbs = `${hasEstimates ? '~' : ''}${formatMacroNumberIn(language, netCarbsTotal)}g`;
+  // `formatMeasureIn`, not a `${...}g` template: the toast used to be the only
+  // place on the diary that wrote "35g" while the ring beside it wrote "35 g".
+  const carbs = `${hasEstimates ? '~' : ''}${formatMeasureIn(language, netCarbsTotal, 'g')}`;
   const where = mealLabel === null ? '' : t('diary.toast.toMeal', { meal: mealLabel });
   const when =
     dayLabel === null ? t('diary.toast.soFarToday', { carbs }) : t('diary.toast.onDay', { carbs, day: dayLabel });

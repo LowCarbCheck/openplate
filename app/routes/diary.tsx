@@ -44,7 +44,7 @@ import { authoritativeNetCarbsField, encodeAuthoritativeNetCarbs } from '#app/li
 import { parseCarbBasis } from '#app/lib/net-carbs';
 import { encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrients';
 import { toStoredAttribution } from '#app/lib/attribution';
-import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-number';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { carbStatusDotClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
@@ -1134,7 +1134,7 @@ clientLoader.hydrate = true as const;
  * unit ("protein —g") for any unrecorded macro (carbs-audit round, item 1).
  */
 export function formatMacroOrUnknown(value: number | null, unit: string, t: Translate, language: string): string {
-  return value === null ? t('diary.macros.unknown') : `${formatMacroNumberIn(language, value)}${unit}`;
+  return value === null ? t('diary.macros.unknown') : formatMeasureIn(language, value, unit);
 }
 
 /**
@@ -1192,10 +1192,14 @@ function macroHidden(value: number | null): string {
 }
 
 /** An entry's portion for display: the chosen household unit ("2 eggs") when one was recorded, plus the authoritative grams — otherwise a plain gram figure (item 7). */
-export function formatEntryPortion(log: LocalFoodLog): string {
-  if (!log.portion) return `${log.quantityGrams.toFixed(0)}g`;
+export function formatEntryPortion(log: LocalFoodLog, language?: string | null): string {
+  // Whole grams here (`Math.round`, matching the old `toFixed(0)`) — a portion
+  // is a coarse figure — but through the SHARED unit helper, so the row reads
+  // "182 g" like every other gram figure on the page rather than "182g".
+  const grams = formatMeasureIn(language, Math.round(log.quantityGrams), 'g');
+  if (!log.portion) return grams;
   const label = formatPortionLabel({ unit: log.portion.unit, quantity: log.portion.quantity });
-  return `${label} (${log.quantityGrams.toFixed(0)}g)`;
+  return `${label} (${grams})`;
 }
 
 /**
@@ -1711,7 +1715,7 @@ function LogEntryCard({ log, justAdded, time }: { log: LocalFoodLog; justAdded: 
               <ProvenanceBadge log={log} />
             </div>
             <div className="mt-1 text-sm text-muted-foreground tabular-nums">
-              {time} · {formatEntryPortion(log)} · {formatEntryNetCarbs(log, t, i18n.language)} ·{' '}
+              {time} · {formatEntryPortion(log, i18n.language)} · {formatEntryNetCarbs(log, t, i18n.language)} ·{' '}
               {t('diary.entry.protein')} {formatMacroOrUnknown(log.macros.protein, 'g', t, i18n.language)} ·{' '}
               {t('diary.entry.fat')} {formatMacroOrUnknown(log.macros.fat, 'g', t, i18n.language)} ·{' '}
               {/* "calories" already says what the number is — appending the

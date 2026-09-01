@@ -167,7 +167,10 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
           <FlaskConical className="h-6 w-6 text-primary" aria-hidden="true" /> {t('research.console.title')}
         </h1>
         <p className="text-sm text-muted-foreground">{t('research.console.description')}</p>
-        <p className="text-sm text-muted-foreground">{t('research.console.separateAccount')}</p>
+        {/* `research.console.separateAccount` used to be repeated here, word for
+            word, above the sign-in card that already carries it as its
+            description. Kept in the card: that is where the sentence is
+            actually acting on a decision the reader is about to make. */}
       </header>
 
       {error !== null && <p className="text-sm text-destructive">{error}</p>}

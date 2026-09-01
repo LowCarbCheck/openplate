@@ -44,14 +44,20 @@ const CHALLENGE_HINT_ID = 'newsletter-challenge-hint';
  * (not yet solved, expired, or errored). `reset` spends the current token and
  * asks for a fresh challenge — required after any submit, because a token is
  * single-use.
+ *
+ * `enabled` is the lazy-load switch (see the form below). While it is `false`
+ * this hook does nothing at all: no script tag, no request to Cloudflare, no
+ * widget. That is what keeps the landing page's first paint free of any
+ * third-party contact.
  */
-function useTurnstile(siteKey: string, language: string) {
+function useTurnstile(siteKey: string, language: string, enabled: boolean) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
     const container = containerRef.current;
     if (container === null) return;
 
@@ -88,7 +94,7 @@ function useTurnstile(siteKey: string, language: string) {
       if (widgetId !== null) window.turnstile?.remove(widgetId);
       widgetIdRef.current = null;
     };
-  }, [siteKey, language]);
+  }, [siteKey, language, enabled]);
 
   const reset = useCallback(() => {
     const widgetId = widgetIdRef.current;
@@ -105,14 +111,24 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
   const fetcher = useFetcher<NewsletterOutcome>();
   const [consented, setConsented] = useState(false);
   const language = i18n.resolvedLanguage ?? i18n.language;
-  const { containerRef, token, failed, reset } = useTurnstile(turnstileSiteKey, language);
+  // The challenge is fetched on the visitor's FIRST INTERACTION with this form,
+  // never at first paint. Turnstile is the app's only third-party script, and
+  // loading it up front contacted Cloudflare for every reader of a page whose
+  // whole argument is that nothing here phones anyone — including the readers
+  // who never go near the newsletter. Focus (keyboard or tap) and pointer-down
+  // both arm it, so it is already loading by the time the first character is
+  // typed, and the submit button's existing "waiting for the check" state
+  // covers the gap.
+  const [armed, setArmed] = useState(false);
+  const arm = useCallback(() => setArmed(true), []);
+  const { containerRef, token, failed, reset } = useTurnstile(turnstileSiteKey, language, armed);
 
   const outcome = fetcher.data ?? null;
   const isPending = fetcher.state !== 'idle';
   // The one disabled-button state the visitor cannot act on: the challenge has
   // neither passed nor failed yet. Not shown when it FAILED (that has its own
   // error line below) and not while submitting (the button says so itself).
-  const awaitingChallenge = token === null && !failed && !isPending;
+  const awaitingChallenge = armed && token === null && !failed && !isPending;
 
   // A spent token cannot be replayed, so every completed attempt that did NOT
   // succeed needs a fresh challenge before the visitor can try again.
@@ -142,7 +158,16 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
   }
 
   return (
-    <fetcher.Form method="post" action="/?index" className="space-y-4">
+    <fetcher.Form
+      method="post"
+      action="/?index"
+      className="space-y-4"
+      // Capture phase on both: the events fire on the fields inside, and the
+      // form has to hear the very first one. Idempotent — `arm` only ever
+      // flips `false` to `true`.
+      onFocusCapture={arm}
+      onPointerDownCapture={arm}
+    >
       <input type="hidden" name="intent" value="newsletter" />
       <input type="hidden" name="locale" value={language} />
       <input type="hidden" name="turnstileToken" value={token ?? ''} />

@@ -27,7 +27,10 @@ const routesSource = readFileSync(new URL('../../app/routes.ts', import.meta.url
 
 /** The body of `clientLoader`, comments included — everything up to the `hydrate` flag. */
 function clientLoaderSource(): string {
-  const start = personalSource.indexOf('export async function clientLoader()');
+  // Matched WITHOUT the argument list: the gate took a `{ request }` argument
+  // when `/settings/preferences` became exempt, and a signature-exact grep here
+  // would fail on every future argument change while proving nothing.
+  const start = personalSource.indexOf('export async function clientLoader(');
   const end = personalSource.indexOf('clientLoader.hydrate');
   assert.ok(start !== -1 && end > start, '_personal.tsx no longer has a clientLoader to check');
   return personalSource.slice(start, end);
@@ -50,6 +53,19 @@ describe('the _personal gate consults the had-data marker', () => {
     const body = clientLoaderSource();
     assert.equal(body.match(/redirect\('\/onboarding'\)/g)?.length, 1);
     assert.match(body, /outcome\.kind === 'onboarding'\) throw redirect\('\/onboarding'\)/);
+  });
+});
+
+describe('the gate exempts the preferences page before it decides anything', () => {
+  // The exemption has to come FIRST. Placed after the store reads it would
+  // still work, but placed after the redirects it would not exist at all — so
+  // the assertion is about the order, not just the presence of the call.
+  it('consults the exemption before it reaches the resolver', () => {
+    const body = clientLoaderSource();
+    const exemptAt = body.indexOf('isOnboardingGateExempt(');
+    const resolveAt = body.indexOf('resolveOnboardingGate(');
+    assert.ok(exemptAt !== -1, 'the gate no longer consults isOnboardingGateExempt');
+    assert.ok(exemptAt < resolveAt, 'the exemption must be checked before the gate decides');
   });
 });
 

@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatMacroNumber, formatMacroNumberIn } from '../../app/lib/format-macro-number';
+import { UNIT_SPACE, formatMacroNumber, formatMacroNumberIn, formatMeasureIn } from '../../app/lib/format-macro-number';
 
 describe('formatMacroNumber', () => {
   it('kills floating-point garbage down to one decimal', () => {
@@ -79,5 +79,29 @@ describe('formatMacroNumber stays pinned', () => {
 
   it('emits no thousands grouping, which a number input would reject', () => {
     assert.strictEqual(formatMacroNumber(1467), '1467');
+  });
+});
+
+describe('formatMeasureIn', () => {
+  it('separates the number from its unit with a no-break space, in both languages', () => {
+    assert.strictEqual(formatMeasureIn('en', 0.8, 'g'), `0.8${UNIT_SPACE}g`);
+    assert.strictEqual(formatMeasureIn('de', 0.8, 'g'), `0,8${UNIT_SPACE}g`);
+    assert.strictEqual(formatMeasureIn('de', 182, 'g'), `182${UNIT_SPACE}g`);
+    assert.strictEqual(formatMeasureIn('de', 105, 'kcal'), `105${UNIT_SPACE}kcal`);
+  });
+
+  it('uses U+00A0, so a narrow screen cannot orphan the unit onto its own line', () => {
+    assert.strictEqual(UNIT_SPACE, '\u00a0');
+    assert.ok(!formatMeasureIn('de', 13.8, 'g').includes('\u0020'), 'a plain ASCII space would still break');
+  });
+
+  it('returns the bare number when the caller has no unit to append', () => {
+    assert.strictEqual(formatMeasureIn('de', 105.6, ''), '105,6');
+    assert.strictEqual(formatMeasureIn('en', 105.6, ''), '105.6');
+  });
+
+  it('inherits the shared one-decimal rounding rather than re-implementing it', () => {
+    assert.strictEqual(formatMeasureIn('en', 8.370000000000001, 'g'), `8.4${UNIT_SPACE}g`);
+    assert.strictEqual(formatMeasureIn('de', -0.02, 'g'), `0${UNIT_SPACE}g`);
   });
 });

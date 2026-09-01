@@ -1,12 +1,12 @@
 {
   "name": "openplate",
   "short_name": "openplate",
-  "description": "Self-hosted food tracking with bring-your-own-key AI plate scanning.",
+  "description": "Track food on your device and scan plates using your own AI key.",
   "start_url": "/diary",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
+  "background_color": "#090d0e",
   "theme_color": "#0d968b",
   "categories": ["health", "food", "productivity"],
   "icons": [

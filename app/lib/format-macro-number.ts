@@ -65,3 +65,41 @@ export function formatMacroNumber(value: number): string {
 export function formatMacroNumberIn(language: string | null | undefined, value: number): string {
   return new Intl.NumberFormat(numberLocale(language), { maximumFractionDigits: 1 }).format(roundToOneDecimal(value));
 }
+
+/**
+ * The single character that separates a number from its unit everywhere in the
+ * app: a NO-BREAK space (U+00A0).
+ *
+ * Two properties, both deliberate. It is a SPACE, because DIN 5008 (and every
+ * other typographic convention this app renders under) puts one between a
+ * figure and its unit — "0,8 g", never "0,8g". And it does not BREAK, so a
+ * narrow phone can never orphan the "g" onto its own line, which is how a
+ * "13,8" and a "g" end up looking like two different facts.
+ *
+ * It is U+00A0 rather than the typographically nicer NARROW no-break space
+ * (U+202F) on purpose: dozens of translated strings in `app/i18n/locales/**`
+ * carry their own `{{value}} g` with a plain space, and those are not this
+ * module's to change. U+00A0 renders at the same width as that plain space, so
+ * one screen stays visually uniform; U+202F would be visibly narrower and would
+ * make the inconsistency worse, not better.
+ */
+export const UNIT_SPACE = '\u00a0';
+
+/**
+ * Formats a nutrition number for DISPLAY with its unit attached — the ONE
+ * helper every "number + unit" render in the app goes through, so the spacing
+ * rule is decided once instead of at each `${value}g` template literal.
+ *
+ * An empty `unit` returns the bare number, so a call site whose label already
+ * names the quantity ("Calories 105.6") can share this seam rather than
+ * branching around it.
+ *
+ * @param language - the active UI language (`i18n.language`, or a stored code).
+ * @param value - the raw number to render.
+ * @param unit - the unit symbol ("g", "kcal", "ml"), or "" for none.
+ * @returns e.g. `"0,8 g"` in German, `"0.8 g"` in English (with a no-break space).
+ */
+export function formatMeasureIn(language: string | null | undefined, value: number, unit: string): string {
+  const number = formatMacroNumberIn(language, value);
+  return unit === '' ? number : `${number}${UNIT_SPACE}${unit}`;
+}

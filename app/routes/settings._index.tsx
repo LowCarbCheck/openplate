@@ -92,7 +92,11 @@ function SettingsRow({
       <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium">{title}</span>
-        {status !== null && <span className="block truncate text-xs text-muted-foreground">{status}</span>}
+        {/* `line-clamp-2`, not a single-line `truncate`: German subtitles are
+            roughly a third longer than the English ones, and at 390px the
+            "Data & backup" row lost most of its sentence to an ellipsis. Two
+            lines fit every current subtitle in both languages. */}
+        {status !== null && <span className="block line-clamp-2 text-xs text-muted-foreground">{status}</span>}
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
     </Link>

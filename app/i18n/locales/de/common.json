@@ -734,12 +734,7 @@
       "custom": "Eigener Wert",
       "hint": "Hier werden Netto-Kohlenhydrate gezählt: Ballaststoffe und mehrwertige Alkohole sind bereits abgezogen, genau wie in deinem Tagebuch. Wähle unten einen gängigen Richtwert oder gib deine eigene Menge in Gramm ein.",
       "label": "Tageslimit Kohlenhydrate",
-      "placeholder": "z. B. 20",
-      "presets": {
-        "keto": "Keto",
-        "lowCarb": "Low-Carb",
-        "moderate": "Mittel"
-      }
+      "placeholder": "z. B. 20"
     },
     "card": {
       "description": "Jedes Ziel unten ist optional. Trage ein, was dir hilft, und lasse den Rest frei. Das Leeren eines Feldes entfernt das jeweilige Ziel. Nichts davon ist eine feste Regel, sondern lediglich Richtwerte zur Orientierung.",
@@ -956,21 +951,26 @@
     "add": "Essen eintragen · openplate",
     "ai": "KI-Einstellungen · openplate",
     "connectClinician": "Behandler verbinden · openplate",
+    "connectGateway": "Gateway beitreten · openplate",
     "dashboard": "Übersicht · openplate",
     "data": "Daten & Sicherung · openplate",
     "diary": "Tagebuch · openplate",
     "entry": "Eintrag bearbeiten · openplate",
+    "error": "Etwas ist schiefgelaufen · openplate",
     "fasting": "Fasten · openplate",
     "foods": "Deine Lebensmittel · openplate",
     "goals": "Deine Ziele · openplate",
+    "imprint": "Impressum · openplate",
     "joinStudy": "Bei einer Studie mitmachen · openplate",
     "landing": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "landingDescription": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir in Sekundenschnelle die Kohlenhydrate und vergleicht sie mit deinem festgelegten Tagesziel. Kostenlos, ohne Account, und alles, was du einträgst, bleibt auf deinem Gerät.",
     "meals": "Gespeicherte Mahlzeiten · openplate",
+    "notFound": "Seite nicht gefunden · openplate",
     "nutrients": "Nährstoffe · openplate",
     "offline": "Du bist offline · openplate",
     "onboarding": "Willkommen bei openplate",
     "preferences": "Einstellungen · openplate",
+    "privacy": "Datenschutzerklärung · openplate",
     "recover": "Tagebuch wiederherstellen · openplate",
     "research": "Forschungsbeiträge · openplate",
     "scan": "Teller scannen · openplate",
@@ -978,7 +978,8 @@
     "shared": "Mit dir geteilt · openplate",
     "sharing": "Teilen · openplate",
     "study": "Studien-Konsole · openplate",
-    "sync": "Sync",
+    "sync": "Sync · openplate",
+    "terms": "Nutzungsbedingungen · openplate",
     "trends": "Fortschritt · openplate"
   },
   "nav": {
@@ -2270,6 +2271,9 @@
     },
     "sheet": {
       "close": "Schließen"
+    },
+    "toaster": {
+      "label": "Benachrichtigungen"
     }
   }
 }

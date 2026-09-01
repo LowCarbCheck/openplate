@@ -71,3 +71,29 @@ export function resolveOnboardingGate({
   if (!hasProfile && hasEverHadData) return { kind: 'recover' };
   return { kind: 'onboarding' };
 }
+
+/**
+ * Routes under `_personal` that the gate must NOT redirect away from.
+ *
+ * `/settings/preferences` is the documented way out of the instance's default
+ * language, and this instance defaults to German. A first-time visitor who
+ * does not read German therefore has to reach that page BEFORE onboarding —
+ * otherwise the only screen they can see is a wizard they cannot read, and the
+ * one control that would fix it sits behind that wizard. Nothing on the page
+ * reads onboarding data (theme and language are both device preferences), so
+ * it renders identically with an empty store.
+ *
+ * Exact paths, never a prefix: exempting `/settings` wholesale would open the
+ * whole hub, and the gate has to keep holding for every other route.
+ */
+const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set(['/settings/preferences']);
+
+/**
+ * Is this path reachable before onboarding?
+ *
+ * @param pathname - the request's pathname, e.g. `/settings/preferences`.
+ * @returns `true` when the gate must let it through untested.
+ */
+export function isOnboardingGateExempt(pathname: string): boolean {
+  return GATE_EXEMPT_PATHS.has(pathname.replace(/\/+$/, '') || '/');
+}

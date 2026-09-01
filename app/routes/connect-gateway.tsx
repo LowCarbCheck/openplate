@@ -45,6 +45,7 @@
  * copy.
  */
 import { useEffect, useRef, useState } from 'react';
+import type { MetaFunction } from 'react-router';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ShieldAlert } from 'lucide-react';
@@ -71,8 +72,14 @@ import {
 } from '#app/lib/gateway-invite';
 import { getLocalAiSettings, putLocalAiSettings } from '#app/lib/local-store';
 import { reportError } from '#app/lib/report-error';
+import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
+
+// This route is top-level, so nothing above it supplies a `<title>` — without
+// this export the document head carried an empty one. Title via the pure
+// `meta-title` seam, like every other route (see `meta-title.ts`).
+export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.connectGateway') }];
 
 export const handle = {
   title: 'Join a gateway',

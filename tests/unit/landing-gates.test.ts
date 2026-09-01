@@ -30,6 +30,8 @@ interface LandingData {
   analyticsEnabled: boolean;
   syncEnabled: boolean;
   newsletter: { turnstileSiteKey: string } | null;
+  /** `APP_URL`, trailing slash stripped — the absolute base for the OG tags. */
+  siteOrigin: string;
 }
 
 /** A GET for `/` from a browser carrying no home-entry hint (i.e. a first-time visitor). */
@@ -117,14 +119,28 @@ describe('landing loader — an empty environment renders neither optional rung'
     assert.equal(payload.syncEnabled, false);
   });
 
-  it('emits nothing else at all — the payload is exactly the three gates', async () => {
+  it('emits nothing else at all — the payload is exactly the three gates plus the origin', async () => {
     // A new field here is a new thing the landing page publishes about the
     // instance. That is a deliberate act, so it fails this assertion first.
     // `analyticsEnabled` joined on 2026-08-31 (.adr/0010-hosted-analytics.md):
     // it is a BOOLEAN and not the Matomo config, so an instance with analytics
     // on still publishes no Matomo address on its landing page.
+    // `siteOrigin` joined with the Open Graph tags: `og:url` and `og:image`
+    // must be ABSOLUTE, and `meta()` also runs in the browser, where it cannot
+    // read `CONFIG`. It publishes `APP_URL` — the address the visitor already
+    // typed to get here, so it discloses nothing new about the instance.
     const payload = await loadLandingData();
-    assert.deepEqual(Object.keys(payload).toSorted(), ['analyticsEnabled', 'newsletter', 'syncEnabled']);
+    assert.deepEqual(Object.keys(payload).toSorted(), [
+      'analyticsEnabled',
+      'newsletter',
+      'siteOrigin',
+      'syncEnabled',
+    ]);
+  });
+
+  it('publishes the origin without a trailing slash, so `${origin}/` is not `//`', async () => {
+    const payload = await loadLandingData();
+    assert.equal(payload.siteOrigin, 'http://localhost:3000');
   });
 
   it('reports analytics OFF on an empty environment — the self-host default the card promises', async () => {

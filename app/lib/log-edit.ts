@@ -46,6 +46,35 @@ export function macrosDiffer(original: Macros, edited: Macros): boolean {
   return MACRO_KEYS.some((key) => fieldDiffers(original[key], edited[key]));
 }
 
+/**
+ * The per-100g basis a save (or a live preview) must actually compute from.
+ *
+ * The edit form prefills its number inputs with `formatMacroNumber(basis[key])`
+ * — ROUNDED to one decimal, because that is what a `<input type="number">` can
+ * honestly hold. So an untouched form resubmits a *rounded* copy of the basis,
+ * and scaling that copy to the portion rounds twice: a 0.43 g/100 g protein
+ * becomes 0.4, and 0.4 x 1.82 renders "0.7" next to the receipt's "0.8" for the
+ * very same entry. `macrosDiffer` already treats the two as EQUAL (it compares
+ * at display precision) — this helper is the other half of that rule: when the
+ * user did not change anything, keep the ORIGINAL unrounded basis and let the
+ * single render-time rounding be the only rounding there is.
+ *
+ * A real edit returns the submitted values verbatim: they are then the source.
+ *
+ * @param options.originalBasis - the unrounded per-100g basis the form was prefilled from.
+ * @param options.editedPer100g - the per-100g values submitted (or currently typed).
+ * @returns the basis to scale from.
+ */
+export function resolveEditedBasis({
+  originalBasis,
+  editedPer100g,
+}: {
+  originalBasis: Macros;
+  editedPer100g: Macros;
+}): Macros {
+  return macrosDiffer(originalBasis, editedPer100g) ? editedPer100g : originalBasis;
+}
+
 /** Provenance flags on a food-log row that a macro edit can affect. */
 export interface EntryProvenance {
   aiEstimated: boolean;
@@ -153,7 +182,11 @@ export function computeEditPatch({
 }: ComputeEditPatchInput): EditPatchResult {
   const macrosChanged = macrosDiffer(originalBasis, editedPer100g);
   const provenance = resolveEditedProvenance({ macrosChanged, current: currentProvenance });
-  const snapshot = scaleMacrosPer100gToServing(editedPer100g, grams);
+  // `resolveEditedBasis`, never `editedPer100g` directly: an untouched form
+  // resubmits the basis rounded to one decimal, and scaling THAT is what made
+  // the edit form and the receipt print two different protein figures for one
+  // entry. See that helper's doc.
+  const snapshot = scaleMacrosPer100gToServing(resolveEditedBasis({ originalBasis, editedPer100g }), grams);
   const netCarbsPer100g = resolveEditedNetCarbsPer100g({ macrosChanged, current: currentNetCarbsPer100g });
   return { macrosChanged, provenance, snapshot, netCarbsPer100g };
 }

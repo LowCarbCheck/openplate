@@ -20,7 +20,7 @@
         "notSure": "Not sure",
         "total": "US style (carbs include fibre)"
       },
-      "carbsSummary": "{{value}}g carbs",
+      "carbsSummary": "{{value}} g carbs",
       "description": "Foods you've added yourself. Edit the numbers or remove one here.",
       "editAria": "Edit {{name}}",
       "empty": "You haven't added any foods yet. Use \"Add manually\" to create one. It'll show up here.",
@@ -113,7 +113,7 @@
         "strong": "Strong match",
         "weak": "Rough match"
       },
-      "netCarbs": "{{value}}g net carbs",
+      "netCarbs": "{{value}} g net carbs",
       "per100g": "per 100g: {{summary}}",
       "provenance": {
         "custom": "Your food",
@@ -455,7 +455,7 @@
       "segment": "{{percent}}% {{macro}}"
     },
     "macros": {
-      "breakdownLine": "Carbs {{carbs}}g · Fiber {{fiber}}g · Protein {{protein}}g · Fat {{fat}}g · {{kcal}} calories",
+      "breakdownLine": "Carbs {{carbs}} g · Fiber {{fiber}} g · Protein {{protein}} g · Fat {{fat}} g · {{kcal}} calories",
       "carbs": "Carbs",
       "fat": "Fat",
       "fiber": "Fiber",
@@ -477,7 +477,7 @@
       "openCalendar": "Viewing {{day}}. Open the calendar to jump to a different day.",
       "previousDay": "Previous day"
     },
-    "netCarbsValue": "{{value}}g net carbs",
+    "netCarbsValue": "{{value}} g net carbs",
     "nutrients": {
       "carbs": "carbs",
       "fat": "fat",
@@ -734,12 +734,7 @@
       "custom": "Custom",
       "hint": "This counts net carbs: fiber and sugar alcohols already taken out, the same number your diary tracks. Pick a common starting point below, or type your own amount in grams.",
       "label": "Daily carb limit",
-      "placeholder": "e.g. 20",
-      "presets": {
-        "keto": "Keto",
-        "lowCarb": "Low-carb",
-        "moderate": "Moderate"
-      }
+      "placeholder": "e.g. 20"
     },
     "card": {
       "description": "Every goal below is optional. Set what helps and leave the rest blank. Clearing a field removes that goal; nothing here is a hard rule, just numbers to aim for.",
@@ -762,7 +757,7 @@
       "label": "Daily protein goal",
       "noWeightHint": "Log a weight below and we can suggest an amount based on it.",
       "placeholder": "e.g. 100",
-      "recommended": "Use my recommended amount ({{grams}}g)"
+      "recommended": "Use my recommended amount ({{grams}} g)"
     },
     "save": "Save goals",
     "saving": "Saving…",
@@ -956,21 +951,26 @@
     "add": "Add food · openplate",
     "ai": "AI settings · openplate",
     "connectClinician": "Connect a clinician · openplate",
+    "connectGateway": "Join a gateway · openplate",
     "dashboard": "Overview · openplate",
     "data": "Data & backup · openplate",
     "diary": "Diary · openplate",
     "entry": "Edit entry · openplate",
+    "error": "Something went wrong · openplate",
     "fasting": "Fasting · openplate",
     "foods": "Your foods · openplate",
     "goals": "Your goals · openplate",
+    "imprint": "Imprint · openplate",
     "joinStudy": "Join a study · openplate",
     "landing": "openplate, a food tracker that stays on your device",
     "landingDescription": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
     "meals": "Saved meals · openplate",
+    "notFound": "Page not found · openplate",
     "nutrients": "Nutrients · openplate",
     "offline": "You're offline · openplate",
     "onboarding": "Welcome to openplate",
     "preferences": "Preferences · openplate",
+    "privacy": "Privacy policy · openplate",
     "recover": "Recover your diary · openplate",
     "research": "Research contributions · openplate",
     "scan": "Scan your plate · openplate",
@@ -978,7 +978,8 @@
     "shared": "Shared with you · openplate",
     "sharing": "Sharing · openplate",
     "study": "Study console · openplate",
-    "sync": "Sync",
+    "sync": "Sync · openplate",
+    "terms": "Terms of service · openplate",
     "trends": "Progress · openplate"
   },
   "nav": {
@@ -1552,11 +1553,11 @@
       "match": {
         "applied": "Applied",
         "calories": "{{value}} calories",
-        "carbs": "{{value}}g carbs",
+        "carbs": "{{value}} g carbs",
         "dismiss": "Dismiss suggestion",
-        "fiber": "{{value}}g fiber",
+        "fiber": "{{value}} g fiber",
         "foundIn": "Found in LowCarbCheck",
-        "netCarbs": "{{value}}g net carbs",
+        "netCarbs": "{{value}} g net carbs",
         "per100g": "per 100g: {{summary}}",
         "useThisData": "Use this data",
         "viewOnLcc": "View on lowcarbcheck.org"
@@ -2270,6 +2271,9 @@
     },
     "sheet": {
       "close": "Close"
+    },
+    "toaster": {
+      "label": "Notifications"
     }
   }
 }

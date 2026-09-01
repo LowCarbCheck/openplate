@@ -7,10 +7,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
 import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
 import '#app/i18n/i18n';
+import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
-export const meta: MetaFunction = () => {
-  return [{ title: 'Privacy Policy' }];
-};
+// Title via the pure `meta-title` seam — see `meta-title.ts` for why the
+// i18next singleton must not be read from a `meta()`.
+export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.privacy') }];
 
 /**
  * The policy copy itself, split out from the page chrome so it can be unit-tested
@@ -146,7 +147,7 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
         switches cookies back on in use-matomo-tracker.ts, that reasoning dies
         with the change and a banner becomes mandatory.
       */}
-      {analyticsEnabled ? (
+      {analyticsEnabled ?
         <section className="mb-8">
           <H2 variant="default">{t('privacy.s9aOnHeading')}</H2>
           <P>
@@ -169,13 +170,12 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
           </P>
           <P className="mt-4">{t('privacy.s9aOnBody6')}</P>
         </section>
-      ) : (
-        <section className="mb-8">
+      : <section className="mb-8">
           <H2 variant="default">{t('privacy.s9aOffHeading')}</H2>
           <P>{t('privacy.s9aOffBody1')}</P>
           <P className="mt-4">{t('privacy.s9aOffBody2')}</P>
         </section>
-      )}
+      }
 
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s10Heading')}</H2>

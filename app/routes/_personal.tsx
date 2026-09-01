@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Route } from './+types/_personal';
 import type { BaseHandle } from '#types/base';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,7 +11,7 @@ import {
   type ShouldRevalidateFunctionArgs,
 } from 'react-router';
 import { getLocalProfileGoals, hasEverHadData, listLocalFoodLogs, patchLocalProfileGoals } from '#app/lib/local-store';
-import { resolveOnboardingGate } from '#app/lib/onboarding-gate';
+import { isOnboardingGateExempt, resolveOnboardingGate } from '#app/lib/onboarding-gate';
 import { writeHomeHint } from '#app/lib/home-entry';
 import AppWrapper from '#app/components/app-wrapper';
 import { AppLoading } from '#app/components/app-loading';
@@ -46,11 +47,18 @@ import { ErrorFallback } from '#app/components/route-error-boundary';
  * lets you through is by definition the moment "this device is in the app"
  * became true, which is why the two live in one place.
  *
+ * One route is exempt: `/settings/preferences`. It is the documented way out
+ * of the instance default language, so it has to be reachable before the
+ * wizard rather than behind it (`isOnboardingGateExempt`).
+ *
  * @throws a redirect to `/recover` when this device has held data before but
  *   its tables are now empty, and to `/onboarding` when onboarding is simply
  *   pending with no prior data to self-heal from.
  */
-export async function clientLoader() {
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  // The one route this gate never tests: `/settings/preferences`, the way out
+  // of the instance's default language. See `isOnboardingGateExempt`.
+  if (isOnboardingGateExempt(new URL(request.url).pathname)) return null;
   const profile = await getLocalProfileGoals();
   const hasProfile = profile !== null;
   const hasCompletedOnboarding = profile?.onboardingCompletedAt != null;

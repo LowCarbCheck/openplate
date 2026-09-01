@@ -15,7 +15,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveOnboardingGate, type OnboardingGateInput } from '../../app/lib/onboarding-gate';
+import { isOnboardingGateExempt, resolveOnboardingGate, type OnboardingGateInput } from '../../app/lib/onboarding-gate';
 
 /** A device that has never been written to: the only shape with no marker. */
 function newDevice(overrides: Partial<OnboardingGateInput> = {}): OnboardingGateInput {
@@ -90,5 +90,36 @@ describe('resolveOnboardingGate', () => {
   it('does not recover a device with no marker, whatever else is missing', () => {
     assert.deepEqual(resolveOnboardingGate(newDevice({ hasProfile: true })), { kind: 'onboarding' });
     assert.deepEqual(resolveOnboardingGate(newDevice()), { kind: 'onboarding' });
+  });
+});
+
+/**
+ * The exemption is a second, independent question the gate asks BEFORE the
+ * decision table above: is this route reachable at all before onboarding?
+ *
+ * Exactly one is. `/settings/preferences` holds the language switcher, and on
+ * an instance whose default language a visitor cannot read it is the only way
+ * out — so putting it behind the wizard hides the fix behind the problem.
+ * Everything else under `_personal` stays gated, which is what the negative
+ * cases here pin down: a prefix match would have opened the whole hub.
+ */
+describe('isOnboardingGateExempt', () => {
+  it('exempts the preferences page, with or without a trailing slash', () => {
+    assert.equal(isOnboardingGateExempt('/settings/preferences'), true);
+    assert.equal(isOnboardingGateExempt('/settings/preferences/'), true);
+  });
+
+  it('still gates the settings hub itself', () => {
+    assert.equal(isOnboardingGateExempt('/settings'), false);
+  });
+
+  it('still gates every other personal route', () => {
+    for (const path of ['/diary', '/dashboard', '/scan', '/settings/goals', '/settings/ai', '/settings/data']) {
+      assert.equal(isOnboardingGateExempt(path), false, path);
+    }
+  });
+
+  it('does not exempt a route that merely starts with the exempt path', () => {
+    assert.equal(isOnboardingGateExempt('/settings/preferences-export'), false);
   });
 });

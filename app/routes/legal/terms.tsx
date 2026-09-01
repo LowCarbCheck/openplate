@@ -5,10 +5,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
 import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
 import '#app/i18n/i18n';
+import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
-export const meta: MetaFunction = () => {
-  return [{ title: 'Terms of Service' }];
-};
+// Title via the pure `meta-title` seam — see `meta-title.ts` for why the
+// i18next singleton must not be read from a `meta()`.
+export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.terms') }];
 
 /**
  * The terms copy itself, split out from the page chrome so it can be unit-tested

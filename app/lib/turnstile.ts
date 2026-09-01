@@ -12,6 +12,12 @@
  *   when `NEWSLETTER_SUBSCRIBE_URL` is configured. A self-hoster who set
  *   nothing never has this module's code path executed and never contacts
  *   Cloudflare.
+ * - Even on an instance that DOES configure it, the fetch waits for the
+ *   visitor's first interaction with the form — a focus or a pointer-down (see
+ *   `newsletter-signup.tsx`). It used to run on mount, which meant every reader
+ *   of the landing page contacted Cloudflare at first paint, including the
+ *   overwhelming majority who never touch the newsletter. Deferring it is what
+ *   makes the claim above true for a reader, not just for a self-hoster.
  * - The production CSP widens for this origin under the same condition —
  *   `newsletterEnabled` in `app/config/content-security-policy.ts`.
  *

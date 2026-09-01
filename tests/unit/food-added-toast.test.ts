@@ -31,7 +31,7 @@ describe('formatFoodAddedToast', () => {
   it('names the food, the meal, and the running total', () => {
     const copy = formatFoodAddedToast({ ...BASE, batch: { count: 1, lastName: 'Greek yogurt', startedAtMs: 0 } });
     assert.equal(copy.title, 'Added Greek yogurt');
-    assert.equal(copy.description, 'To Breakfast, 12.4g net carbs so far today.');
+    assert.equal(copy.description, 'To Breakfast, 12.4\u00a0g net carbs so far today.');
   });
 
   it('collapses a burst into a count', () => {
@@ -45,7 +45,7 @@ describe('formatFoodAddedToast', () => {
       mealLabel: null,
       batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
     });
-    assert.equal(copy.description, '12.4g net carbs so far today.');
+    assert.equal(copy.description, '12.4\u00a0g net carbs so far today.');
   });
 
   it('says WHICH day instead of "today" when the entry was back-dated', () => {
@@ -54,7 +54,7 @@ describe('formatFoodAddedToast', () => {
       dayLabel: 'Sun 3 Aug',
       batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
     });
-    assert.equal(copy.description, 'To Breakfast, 12.4g net carbs on Sun 3 Aug.');
+    assert.equal(copy.description, 'To Breakfast, 12.4\u00a0g net carbs on Sun 3 Aug.');
   });
 
   it('hedges the total when the day includes AI estimates', () => {
@@ -63,7 +63,7 @@ describe('formatFoodAddedToast', () => {
       hasEstimates: true,
       batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
     });
-    assert.match(copy.description, /~12\.4g net carbs so far today\./);
+    assert.match(copy.description, /~12\.4\u00a0g net carbs so far today\./);
   });
 
   it('takes a different verb for a copied day without changing the shape', () => {

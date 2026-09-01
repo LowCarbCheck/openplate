@@ -119,12 +119,20 @@ describe('mealGroupLabel', () => {
 
 describe('formatEntryPortion', () => {
   it('falls back to a plain gram figure when no portion was recorded', () => {
-    assert.equal(formatEntryPortion(log('a', { quantityGrams: 150, portion: null })), '150g');
+    assert.equal(formatEntryPortion(log('a', { quantityGrams: 150, portion: null }), 'en'), '150\u00a0g');
   });
 
   it('shows the household-unit label plus the authoritative grams when a portion was recorded', () => {
     const entry = log('a', { quantityGrams: 100, portion: { unit: 'egg', quantity: 2, gramsPerUnit: 50 } });
-    assert.equal(formatEntryPortion(entry), '2 eggs (100g)');
+    assert.equal(formatEntryPortion(entry, 'en'), '2 eggs (100\u00a0g)');
+  });
+
+  // Release-QA defect B: this row printed "182g" while the day ring above it
+  // printed "0,8 g". One helper, one space, both languages.
+  it('separates the figure from its unit in every language', () => {
+    const entry = log('a', { quantityGrams: 182, portion: { unit: 'apple', quantity: 1, gramsPerUnit: 182 } });
+    assert.equal(formatEntryPortion(entry, 'de'), '1 apple (182\u00a0g)');
+    assert.equal(formatEntryPortion(entry, 'en'), '1 apple (182\u00a0g)');
   });
 });
 
@@ -189,12 +197,12 @@ describe('favorite-name persistence (localStorage parse/serialize/toggle)', () =
 describe('formatEntryNetCarbs (carbs-audit round, item 1: entry rows show NET carbs, not total)', () => {
   it('computes net carbs (carbs minus fiber minus polyols) for the entry, not total carbs', () => {
     const entry = log('a', { macros: { carbs: 10, fiber: 3, sugars: 0, polyols: 1, protein: 0, fat: 0, kcal: 0 } });
-    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '6g net carbs');
+    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '6 g net carbs');
   });
 
   it('clamps at zero when fiber and polyols exceed carbs', () => {
     const entry = log('a', { macros: { carbs: 2, fiber: 5, sugars: 0, polyols: 0, protein: 0, fat: 0, kcal: 0 } });
-    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '0g net carbs');
+    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '0 g net carbs');
   });
 
   it('reports "unknown" rather than a fabricated 0g when the entry has no carbs data at all', () => {
@@ -207,18 +215,25 @@ describe('formatEntryNetCarbs (carbs-audit round, item 1: entry rows show NET ca
       aiEstimated: true,
       macros: { carbs: 10, fiber: 2, sugars: 0, polyols: 0, protein: 0, fat: 0, kcal: 0 },
     });
-    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '~8g net carbs');
+    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '~8 g net carbs');
   });
 
   it('treats unknown fiber/polyols as 0 for the subtraction (conservative reading), never hiding a known carbs figure', () => {
     const entry = log('a', { macros: { carbs: 12, fiber: null, sugars: 0, polyols: null, protein: 0, fat: 0, kcal: 0 } });
-    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '12g net carbs');
+    assert.equal(formatEntryNetCarbs(entry, t, 'en'), '12 g net carbs');
   });
 });
 
 describe('formatMacroOrUnknown (carbs-audit round, item 2: no more "—g" for an unrecorded macro)', () => {
-  it('renders a known value with its unit', () => {
-    assert.equal(formatMacroOrUnknown(12.4, 'g', t, 'en'), '12.4g');
+  it('renders a known value with its unit, separated by the shared no-break space', () => {
+    assert.equal(formatMacroOrUnknown(12.4, 'g', t, 'en'), '12.4\u00a0g');
+    assert.equal(formatMacroOrUnknown(12.4, 'g', t, 'de'), '12,4\u00a0g');
+  });
+
+  // The calories column passes '' — its label already names the quantity — and
+  // must not pick up a trailing space from the shared unit helper.
+  it('renders a bare number when the caller supplies no unit', () => {
+    assert.equal(formatMacroOrUnknown(105.6, '', t, 'en'), '105.6');
   });
 
   it('renders "unknown" — never a dangling unit — for a null value', () => {
@@ -270,8 +285,8 @@ describe('formatMacroBreakdownLine (jargon round: "kcal" spelled out, sub-gram g
 
   it('does not silently round a sub-gram macro down to "0g" (the headline-level fix, applied here too)', () => {
     const line = formatMacroBreakdownLine(daySummary({ carbs: 0.3, fiber: 0.2 }), t, 'en');
-    assert.match(line, /Carbs 0\.3g/);
-    assert.match(line, /Fiber 0\.2g/);
+    assert.match(line, /Carbs 0\.3 g/);
+    assert.match(line, /Fiber 0\.2 g/);
   });
 
   it('rounds calories to a whole number', () => {

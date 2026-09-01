@@ -1,12 +1,18 @@
 import { Toaster as Sonner } from 'sonner';
 import { SirenIcon, CheckIcon, AlertTriangleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ theme, ...props }: ToasterProps) => {
+  const { t } = useTranslation();
   return (
     <Sonner
       theme={theme}
+      // Sonner labels its region "Notifications alt+T" in English, whatever the
+      // page language is — a screen reader on the German site announced an
+      // English landmark. The hotkey suffix is sonner's own and stays as is.
+      containerAriaLabel={t('ui.toaster.label')}
       className="toaster group"
       icons={{
         error: <SirenIcon className="text-red-500 w-6 h-6" />,

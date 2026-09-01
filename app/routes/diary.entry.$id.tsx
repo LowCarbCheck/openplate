@@ -23,7 +23,7 @@ import { diaryHrefForDate } from '#app/lib/diary-href';
 import { randomUuid } from '#app/lib/uuid';
 import type { Macros } from '#app/lib/macros';
 import { reconstructPer100g } from '#app/lib/per-hundred';
-import { computeEditPatch, macrosDiffer, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
+import { computeEditPatch, macrosDiffer, resolveEditedBasis, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
 import { encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
 import { encodeMicronutrients } from '#app/lib/micronutrients';
 import { parseNumericFieldValue } from '#app/lib/conform-field-value';
@@ -37,7 +37,8 @@ import {
 } from '#app/lib/portion-preview';
 import { encodeDisplayPortion, formatPortionLabel } from '#app/lib/portions';
 import type { DisplayPortion } from '#app/lib/portions';
-import { formatMacroNumber, formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { UNIT_SPACE, formatMacroNumber, formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-number';
+import { formatMultiplierHintIn } from '#app/lib/format-multiplier';
 import { createOptionalNonNegativeNumberSchema } from '#app/lib/zod-numeric';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
@@ -623,9 +624,15 @@ export async function clientAction({ request, params }: Route.ClientActionArgs) 
 // Shared display helpers
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Per-serving macro value for the facts list: unknown (null) renders an em dash, never 0. */
-function formatFact(value: number | null, language: string): string {
-  return value === null ? '—' : formatMacroNumberIn(language, value);
+/**
+ * Per-serving macro value for the facts list: unknown (null) renders an em
+ * dash, never 0. Goes through the shared `formatMeasureIn` seam so the gram
+ * rows print "0,8 g" with the app's one no-break unit space — they used to
+ * append a plain " g" at each of seven call sites. Pass `''` for the calorie
+ * row, whose label already names the quantity.
+ */
+function formatFact(value: number | null, language: string, unit: string): string {
+  return value === null ? '—' : formatMeasureIn(language, value, unit);
 }
 
 /** Muted per-portion protein/fat/kcal line for the edit preview; unknown fields are skipped. */
@@ -656,9 +663,10 @@ function basisFieldValue(basis: Macros | null, key: keyof Macros): string {
 
 /** The receipt's "Portion" fact: the chosen household unit ("2 eggs") plus the authoritative grams when one was recorded, otherwise a plain gram figure (item 7). */
 function formatPortionFact(log: LocalFoodLog, grams: number, language: string): string {
-  if (!log.portion) return `${formatMacroNumberIn(language, grams)} g`;
+  const gramsText = formatMeasureIn(language, grams, 'g');
+  if (!log.portion) return gramsText;
   const label = formatPortionLabel({ unit: log.portion.unit, quantity: log.portion.quantity });
-  return `${label} (${formatMacroNumberIn(language, grams)} g)`;
+  return `${label} (${gramsText})`;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -773,7 +781,7 @@ function LoggedTogether({ siblings }: { siblings: LocalFoodLog[] }) {
           >
             <span className="min-w-0 truncate text-sm font-medium">{sibling.name}</span>
             <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
-              {formatMacroNumberIn(i18n.language, sibling.quantityGrams)} g
+              {formatMeasureIn(i18n.language, sibling.quantityGrams, 'g')}
               <ChevronRight className="h-4 w-4" />
             </span>
           </Link>
@@ -977,7 +985,10 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-4xl font-bold tabular-nums">
                   {formatMacroNumberIn(i18n.language, heroPreview.netCarbsForPortion)}
-                  <span className="ml-1 text-lg font-medium text-muted-foreground">g</span>
+                  {/* A real (no-break) space, not a bare `ml-1`: the margin
+                      looked right but the hero's TEXT was "21,3g", which is
+                      what a screen reader speaks and a copy-paste carries. */}
+                  <span className="text-lg font-medium text-muted-foreground">{`${UNIT_SPACE}g`}</span>
                 </span>
                 <span
                   className={cn(
@@ -997,9 +1008,9 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
         <CardContent className="p-4">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <FactRow label={t('entry.fact.portion')} value={formatPortionFact(log, grams, i18n.language)} />
-            <FactRow label={t('entry.macro.carbs')} value={`${formatFact(snapshotMacros.carbs, i18n.language)} g`} />
-            <FactRow label={t('entry.macro.fiber')} value={`${formatFact(snapshotMacros.fiber, i18n.language)} g`} />
-            <FactRow label={t('entry.macro.sugars')} value={`${formatFact(snapshotMacros.sugars, i18n.language)} g`} />
+            <FactRow label={t('entry.macro.carbs')} value={formatFact(snapshotMacros.carbs, i18n.language, 'g')} />
+            <FactRow label={t('entry.macro.fiber')} value={formatFact(snapshotMacros.fiber, i18n.language, 'g')} />
+            <FactRow label={t('entry.macro.sugars')} value={formatFact(snapshotMacros.sugars, i18n.language, 'g')} />
             {/* Sugar alcohols (polyols): null for nearly every food, so this
                 row is dropped from the default view rather than showing
                 "Sugar alcohols — g" on almost every entry (carbs-audit round,
@@ -1007,14 +1018,14 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
                 instead of the jargon "Polyols", on the rare entry that
                 actually reports it. */}
             {snapshotMacros.polyols !== null && (
-              <FactRow label={t('entry.fact.polyols')} value={`${formatFact(snapshotMacros.polyols, i18n.language)} g`} />
+              <FactRow label={t('entry.fact.polyols')} value={formatFact(snapshotMacros.polyols, i18n.language, 'g')} />
             )}
-            <FactRow label={t('entry.macro.protein')} value={`${formatFact(snapshotMacros.protein, i18n.language)} g`} />
-            <FactRow label={t('entry.macro.fat')} value={`${formatFact(snapshotMacros.fat, i18n.language)} g`} />
+            <FactRow label={t('entry.macro.protein')} value={formatFact(snapshotMacros.protein, i18n.language, 'g')} />
+            <FactRow label={t('entry.macro.fat')} value={formatFact(snapshotMacros.fat, i18n.language, 'g')} />
             {/* Label already says "Calories" — no reason to also append the
                 jargon unit "kcal" to the value (defect: rows below repeated
                 the concept in both plain English and jargon). */}
-            <FactRow label={t('entry.macro.kcal')} value={formatFact(snapshotMacros.kcal, i18n.language)} />
+            <FactRow label={t('entry.macro.kcal')} value={formatFact(snapshotMacros.kcal, i18n.language, '')} />
           </dl>
           {/* The net-carbs headline above and this Carbs/Fiber pair are two
               different numbers with no stated relationship between them
@@ -1169,8 +1180,16 @@ export function EditEntry({
     macrosChanged: macrosDiffer(basisPer100g ?? EMPTY_MACROS, livePer100g),
     current: log.netCarbsPer100g,
   });
+  // The SAME basis the save will scale from (`computeEditPatch` →
+  // `resolveEditedBasis`), not the parsed input strings: those are the basis
+  // already rounded to one decimal by the prefill, so scaling them printed a
+  // protein figure that disagreed with the receipt's for an untouched form.
+  const previewBasis = resolveEditedBasis({
+    originalBasis: basisPer100g ?? EMPTY_MACROS,
+    editedPer100g: livePer100g,
+  });
   const preview = computeMacroPreview({
-    macrosPer100g: livePer100g,
+    macrosPer100g: previewBasis,
     grams: currentGrams,
     authoritativeNetCarbsPer100g: previewNetCarbsPer100g,
     // Same rule as the receipt hero above: the entry's basis survives a macro
@@ -1215,7 +1234,7 @@ export function EditEntry({
                         : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
                       )}
                     >
-                      {portionScaleLabel({ option, t })} ({option.hint})
+                      {portionScaleLabel({ option, t })} ({formatMultiplierHintIn(i18n.language, option.hint)})
                     </button>
                   );
                 })}

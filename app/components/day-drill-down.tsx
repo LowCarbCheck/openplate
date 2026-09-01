@@ -25,7 +25,7 @@ import type { CarbImpact, CarbImpactLevel, DayGaps, GapNutrient, MacroGap, Macro
 import { describeSuggestion, rankFoodSuggestions } from '#app/lib/food-suggestions';
 import type { FoodSuggestion } from '#app/lib/food-suggestions';
 import { SUGGESTION_FOODS } from '#app/data/suggestion-foods';
-import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-number';
 import { MacroRatioBar } from '#app/components/macro-ratio-bar';
 import { SectionEyebrow } from '#app/components/typography';
 import { cn } from '#app/lib/utils';
@@ -360,7 +360,7 @@ function MacroBreakdown({ summary }: { summary: DaySummary }) {
         <div key={key} className={cn('min-w-0 border-l-2 pl-2.5', MACRO_RULE_CLASS[key])}>
           <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t(labelKey)}</dt>
           <dd className="text-sm font-semibold leading-tight text-foreground tabular-nums">
-            {formatMacroNumberIn(i18n.language, summary[key])}g
+            {formatMeasureIn(i18n.language, summary[key], 'g')}
           </dd>
         </div>
       ))}
