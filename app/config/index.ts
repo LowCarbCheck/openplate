@@ -21,6 +21,7 @@
 
 import { optionalEnv, optionalBoolEnv, optionalIntEnv } from '#app/lib/env';
 import { parseInstanceInferencePreset, parseSyncServerUrl } from './public-config';
+import { SUPPORTED_LANGUAGES, isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 import { parseAnalyticsConfig } from '#app/config/analytics';
 import { parseNewsletterConfig } from './newsletter';
 
@@ -91,6 +92,45 @@ function parseFoodDbConfig(raw: string | undefined): FoodDbConfig {
   return { enabled: true, apiUrl: trimmed.replace(/\/+$/, '') };
 }
 
+/**
+ * Parses `DEFAULT_UI_LANGUAGE` — the language a visitor who has NOT yet chosen
+ * one is served.
+ *
+ * ── THIS IS ONE OF THREE THINGS SPELLED "DEFAULT LANGUAGE"; IT IS NOT THE OTHER TWO ──
+ *
+ *  1. THIS ONE: the instance default. Only `app/root.tsx`'s loader consumes it,
+ *     at the single point where a request arrives with no locale cookie. It is
+ *     the operator's choice and the only one of the three that is configurable.
+ *  2. `DEFAULT_LANGUAGE` in `app/i18n/language-prefs.ts`: the value-level
+ *     fallback for a cookie or loader payload that did not parse. ~24 call
+ *     sites. Stays `'en'`.
+ *  3. `fallbackLng` in `app/i18n/i18n.ts`: i18next's MISSING-KEY fallback.
+ *     Stays `'en'`, and must — `en` is the reference bundle. Point it at `de`
+ *     and a key missing from German falls back to German, which resolves to
+ *     nothing and renders the raw key path to the user.
+ *
+ * Collapsing them would look like a tidy-up and behave like a bug.
+ *
+ * ── WHY AN UNKNOWN CODE IS A BOOT FAILURE ───────────────────────────────────
+ * An operator who wrote `DEFAULT_UI_LANGUAGE=fr` wants French. Falling back to
+ * English would serve the wrong language to every visitor, forever, and say
+ * nothing. There is no correct silent answer here, so there is no silent answer.
+ *
+ * Unset and empty both mean `en`, which is what every instance gets today.
+ */
+export function parseDefaultUiLanguage(raw: string | undefined): LanguageCode {
+  const value = raw?.trim().toLowerCase();
+  if (value === undefined || value === '') return 'en';
+  if (!isLanguageCode(value)) {
+    throw new Error(
+      `Invalid DEFAULT_UI_LANGUAGE: expected one of ${SUPPORTED_LANGUAGES.join('/')}, got "${raw}". ` +
+        'It is refused rather than ignored because ignoring it would serve the wrong language to every ' +
+        'visitor with no cookie, and log nothing.',
+    );
+  }
+  return value;
+}
+
 export const CONFIG = {
   /**
    * Application Environment
@@ -101,6 +141,18 @@ export const CONFIG = {
     isProduction: process.env.NODE_ENV === 'production',
     isTest: process.env.NODE_ENV === 'test',
     url: optionalEnv('APP_URL', 'http://localhost:3000'),
+  },
+
+  /**
+   * UI language (M167 spec 01).
+   *
+   * `defaultLanguage` answers exactly one question: what does a visitor see
+   * BEFORE they have chosen? The locale cookie always wins over it — see
+   * `app/root.tsx`'s loader, the only consumer. It is emphatically not a lock,
+   * and it does not translate food names, AI replies, or anything the user typed.
+   */
+  i18n: {
+    defaultLanguage: parseDefaultUiLanguage(process.env.DEFAULT_UI_LANGUAGE),
   },
 
   /**

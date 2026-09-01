@@ -20,11 +20,12 @@ export function TermsContent() {
       </H1>
 
       <P variant="subtle" className="mb-8">
-        Last updated: July 16, 2026
+        Last updated: September 1, 2026
       </P>
 
       <P variant="lead" className="mb-8">
-        These terms govern your use of the hosted openplate instance we (LowCarbCheck) operate. openplate is a local-first
+        These terms govern your use of the hosted openplate instance we, SPARQ VENTURES UG
+        (haftungsbeschränkt), operate. Our full provider details are in the <a href="/imprint">imprint</a>. openplate is a local-first
         food-tracking tool with bring-your-own-key AI plate identification. By creating an account on the hosted
         instance, or otherwise using it, you agree to these terms. openplate is open-source and can be self-hosted; if
         you run your own copy, these terms describe our hosted deployment only and do not govern your instance.
@@ -44,9 +45,9 @@ export function TermsContent() {
         <H2 variant="default">2. What openplate is</H2>
         <P>
           openplate is a food-tracking tool. It is built local-first: your foods, food logs, weight entries, goals, and
-          your AI provider key live in your browser on your own device, not on our servers. The hosted service
-          additionally keeps a small account record so you can sign in, and — once premium sync ships — can store
-          end-to-end-encrypted copies of your data that only you can decrypt. The core feature is bring-your-own-key AI
+          your AI provider key live in your browser on your own device, not on our servers. The hosted app server keeps
+          no account record at all. A separate, optional sync service can store end-to-end-encrypted copies of your data
+          that only you can decrypt, if you choose to switch it on. The core feature is bring-your-own-key AI
           plate identification: you connect your own AI provider and it estimates the macros and nutrition of a plate
           from a photo.
         </P>
@@ -122,12 +123,13 @@ export function TermsContent() {
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">7. Premium end-to-end encrypted sync</H2>
+        <H2 variant="default">7. End-to-end encrypted sync</H2>
         <P>
-          We are building an optional paid premium tier that will let you sync your tracker data across your own
-          devices. It is not yet available, and the terms in this section apply only once it launches and you subscribe.
-          When it ships, subscribing grants your account a sync entitlement; the terms below describe what that
-          entitlement means so there are no surprises.
+          Sync is an optional, separate service that carries your tracker data between your own
+          devices. It is off unless you switch it on, and registration is currently by invitation
+          only. It is free of charge today; if we ever charge for it, we will say so before you are
+          asked to pay, and these terms will be updated first. This section applies only if you
+          create a sync account.
         </P>
         <ul className="mt-4">
           <li>
@@ -138,12 +140,12 @@ export function TermsContent() {
           <li>
             <strong>Version retention.</strong> To make sync robust, the server keeps a limited history of your
             encrypted data — the five most recent versions per account. When you save a newer version, the oldest is
-            automatically pruned. By using premium sync you agree to this retention model.
+            automatically pruned. By using sync you agree to this retention model.
           </li>
           <li>
-            <strong>Cancellation or downgrade.</strong> If you cancel your premium subscription or delete your account,
+            <strong>Stopping, or deleting your account.</strong> If you switch sync off or delete your sync account,
             your locally stored tracker data on your own devices is unaffected. Your server-stored encrypted sync blobs
-            are deleted within 30 days of cancellation or account deletion, after which they cannot be restored from the
+            are deleted within 30 days of account deletion, after which they cannot be restored from the
             live service. (Routine encrypted backups may retain them a little longer before they rotate out, as
             described in the Privacy Policy.)
           </li>
@@ -180,7 +182,7 @@ export function TermsContent() {
       <section className="mb-8">
         <H2 variant="default">10. Changes to these terms</H2>
         <P>
-          We may update these terms as openplate evolves — for example, when premium sync launches. When we make a
+          We may update these terms as openplate evolves. When we make a
           material change, we will update the &quot;Last updated&quot; date above. Continuing to use the hosted service
           after a change means you accept the updated terms.
         </P>

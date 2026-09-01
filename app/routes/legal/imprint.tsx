@@ -20,12 +20,11 @@ export const meta: MetaFunction = () => {
  * "Straße 73" is a real street name in 13125 Berlin and "49" is the house
  * number — it is not a typo, do not "fix" it.
  *
- * NOTE — entity alignment (M120): `terms.tsx` still says "we (LowCarbCheck)",
- * which is a product name, not a legal person. The provider named here,
- * SPARQ VENTURES UG (haftungsbeschränkt), is the legal person. Aligning the
- * terms and privacy copy to it is M120's job and is deliberately NOT done in
- * this file — an imprint that is correct is worth shipping before the prose
- * around it is reconciled.
+ * Entity alignment, resolved 2026-09-01 (M167/02): `terms.tsx` used to say
+ * "we (LowCarbCheck)", a product name rather than a legal person. It now names
+ * SPARQ VENTURES UG (haftungsbeschränkt), the provider named here, and links
+ * back to this page. That closes the contradiction M120 was tracking; M120's
+ * remaining items (the DPA and the lawyer sign-offs) are untouched.
  *
  * Split into `ImprintContent` + default export for the same reason `terms.tsx`
  * is: the content renders under `renderToStaticMarkup` with no data router,

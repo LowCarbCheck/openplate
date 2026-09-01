@@ -134,3 +134,92 @@ describe('Imprint — Section 5 DDG provider identification', () => {
     assert.doesNotMatch(html, /Responsible for Editorial Content/i);
   });
 });
+
+/**
+ * Staleness guards (M167/02).
+ *
+ * Reviewing these pages on 2026-09-01, before translating them, found five
+ * material inaccuracies in text that had been live for weeks. None of them was
+ * a bug in code, so nothing failed and nothing alerted. That is the pattern
+ * worth guarding: a legal document drifts from the product silently, and the
+ * only thing that catches it is an assertion tied to the product's actual shape.
+ *
+ * Each test below names the claim that was wrong and why.
+ */
+describe('Privacy policy — claims that were false and must not return', () => {
+  it('does not claim a session cookie: there is no sign-in on this app', () => {
+    // Was: "We use a single essential session cookie to keep you signed in."
+    // `app/root.tsx` is explicit that there are no accounts and no session
+    // cookie, and the app actually sets four preference cookies it never named.
+    const html = renderPrivacy();
+    // The AFFIRMATIVE claim is what must not return. The page is allowed to say
+    // there is no session cookie — a bare /session cookie/ match would fail
+    // against the correct text, which is how a guard gets deleted rather than
+    // obeyed.
+    assert.doesNotMatch(html, /we use a single essential session cookie/i);
+    assert.doesNotMatch(html, /keep you signed in/i);
+    assert.match(html, /no sign-in on this site and therefore no session cookie/i);
+  });
+
+  it('names the preference cookies that DO exist', () => {
+    const html = renderPrivacy();
+    assert.match(html, /interface language/i);
+    assert.match(html, /sidebar/i);
+  });
+
+  it('does not describe sync as unavailable: it shipped', () => {
+    // Was: "It is not yet available." sync.openplate.de went live 2026-08-31.
+    const html = renderPrivacy();
+    assert.doesNotMatch(html, /not yet available/i);
+    assert.doesNotMatch(html, /once premium sync ships/i);
+  });
+
+  it('does not claim the app server stores an account: it stores nothing', () => {
+    // Was: "When you create an account on the hosted instance, we store..."
+    // The app server has no database. The account belongs to the sync service.
+    const html = renderPrivacy();
+    assert.match(html, /app server stores nothing about you/i);
+  });
+
+  it('describes a passphrase, not a password: sync has no password', () => {
+    const html = renderPrivacy();
+    assert.doesNotMatch(html, /hash of your password/i);
+    assert.match(html, /passphrase/i);
+  });
+});
+
+describe('Privacy policy — the analytics section tracks reality', () => {
+  it('says nothing is measured when analytics is off — the default', () => {
+    // Was: the section was written unconditionally and shipped on an instance
+    // whose MATOMO_URL was never set, describing measurement that was off.
+    const html = renderToStaticMarkup(createElement(PrivacyContent));
+    assert.match(html, /This instance measures nothing/);
+    assert.doesNotMatch(html, /Do Not Track/);
+    assert.doesNotMatch(html, /raw records are deleted after 90 days/);
+  });
+
+  it('makes the full Article 13 disclosure when analytics is on', () => {
+    const html = renderToStaticMarkup(createElement(PrivacyContent, { analyticsEnabled: true }));
+    assert.match(html, /Matomo/);
+    assert.match(html, /Art\. 6\(1\)\(f\)/);
+    assert.match(html, /Do Not Track/);
+    assert.doesNotMatch(html, /This instance measures nothing/);
+  });
+});
+
+describe('Terms — the operator is a legal person', () => {
+  it('names the UG from the imprint, not a product name', () => {
+    // Was: "we (LowCarbCheck)". LowCarbCheck is a product; the provider in the
+    // imprint is SPARQ VENTURES UG (haftungsbeschränkt).
+    const terms = renderTerms();
+    assert.match(terms, /SPARQ VENTURES UG/);
+    assert.doesNotMatch(terms, /we \(LowCarbCheck\)/);
+  });
+
+  it('names the same legal person the imprint does', () => {
+    // The two documents must not drift apart again.
+    const imprint = renderImprint();
+    assert.match(imprint, /SPARQ VENTURES UG/);
+    assert.match(renderTerms(), /SPARQ VENTURES UG/);
+  });
+});

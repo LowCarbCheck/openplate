@@ -24,7 +24,7 @@ import { startPwaInstallCapture } from '#app/lib/pwa-install-capture';
 import { ErrorFallback } from '#app/components/route-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { I18nProvider } from '#app/i18n/I18nProvider';
-import { DEFAULT_LANGUAGE, parseLanguageCookie, type LanguageCode } from '#app/i18n/language-prefs';
+import { DEFAULT_LANGUAGE, resolveRequestLanguage, type LanguageCode } from '#app/i18n/language-prefs';
 import { CONFIG } from '#app/config';
 import type { PublicConfig } from '#app/config/public-config';
 
@@ -52,10 +52,17 @@ export async function loader({ request }: Route.LoaderArgs) {
   // of HTML without costing this hot path a round trip. See
   // `app/i18n/language-prefs.ts` for why the cookie is the only server signal.
   //
+  // The fallback is the INSTANCE default (`DEFAULT_UI_LANGUAGE`, M167/01), not
+  // the constant `DEFAULT_LANGUAGE`. This is the only line in the app where the
+  // two differ, and the difference is the whole feature: the constant is what a
+  // BAD value falls back to, this is what a visitor who has not chosen yet is
+  // served. The cookie still wins over both, so setting the variable picks a
+  // starting language, never a locked one.
+  //
   // There is deliberately no `user` here any more (M128 spec 03): this app has
   // no accounts, no session cookie, and no `users` table — every visitor is the
   // owner of the device they're on, so there is nothing to resolve.
-  const language = parseLanguageCookie(request.headers.get('cookie')) ?? DEFAULT_LANGUAGE;
+  const language = resolveRequestLanguage(request.headers.get('cookie'), CONFIG.i18n.defaultLanguage);
 
   // The app's ONE server → browser config channel (M128 spec 04). A minimal
   // allowlist, deliberately spelled out field by field rather than spread from
