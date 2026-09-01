@@ -6,7 +6,7 @@
  * than a key-echoing fake, because the defect they pin only exists in real
  * copy: a headline that legitimately ends in a period ("You logged something.")
  * met the '. ' that `trends.grid.aria.day` puts after it, and a screen reader
- * was told "You logged something.. Today — still going.". The fix is at the
+ * was told "You logged something.. Today, still going.". The fix is at the
  * join, so the assertions are on rendered sentences — a translator ending a
  * string with a period must stay correct copy, not a regression.
  */
@@ -95,7 +95,7 @@ describe('describeAdherenceDay — sentence joins', () => {
     const label = ariaLabelFor({ day, goals: NO_GOALS, mode: 'activity', t: en, language: 'en' });
 
     assert.ok(!label.includes('..'), `doubled period in: ${label}`);
-    assert.ok(label.includes('You logged something. Today — still going.'), label);
+    assert.ok(label.includes('You logged something. Today, still going.'), label);
   });
 
   it('does not double the period in German either', () => {
@@ -104,7 +104,7 @@ describe('describeAdherenceDay — sentence joins', () => {
     const label = ariaLabelFor({ day, goals: NO_GOALS, mode: 'activity', t: de, language: 'de' });
 
     assert.ok(!label.includes('..'), `doubled period in: ${label}`);
-    assert.ok(label.includes('Du hast etwas eingetragen. Heute — läuft noch.'), label);
+    assert.ok(label.includes('Du hast etwas eingetragen. Heute, läuft noch.'), label);
   });
 
   it('keeps a single separator after a headline that does NOT end in a period', () => {
@@ -114,7 +114,7 @@ describe('describeAdherenceDay — sentence joins', () => {
 
     assert.ok(!label.includes('..'), `doubled period in: ${label}`);
     assert.ok(label.includes('3 of 3 goals met. 18 g net carbs under 20 g, met'), label);
-    assert.ok(label.endsWith('Today — still going.'), label);
+    assert.ok(label.endsWith('Today, still going.'), label);
   });
 
   it('normalises a period-terminated headline that carries no rows (unrated)', () => {
@@ -124,7 +124,7 @@ describe('describeAdherenceDay — sentence joins', () => {
 
     assert.equal(day.status, 'unrated');
     assert.ok(!label.includes('..'), `doubled period in: ${label}`);
-    assert.ok(label.includes('check your goals. Today — still going.'), label);
+    assert.ok(label.includes('check your goals. Today, still going.'), label);
   });
 
   it('leaves no dangling separator on a note-less day', () => {

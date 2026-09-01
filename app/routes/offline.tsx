@@ -1,11 +1,12 @@
 import { Link } from '#app/components/link';
 import { WifiOff } from 'lucide-react';
+import type { MetaFunction } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '#app/components/ui/button';
-import { APP_NAME } from '#app/lib/brand';
+import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import '#app/i18n/i18n';
 
-export function meta(): Array<{ title: string }> {
-  return [{ title: `You're offline · ${APP_NAME}` }];
-}
+export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.offline') }];
 
 /**
  * Minimal, self-contained offline fallback. The service worker precaches this
@@ -21,19 +22,25 @@ export function meta(): Array<{ title: string }> {
  * "openplate needs a connection to load new data" was wrong: it implied the
  * whole app was offline-broken, when in fact everything already logged, and
  * every page already visited, keeps working with no connection at all.
+ *
+ * Translations are bundled inline (see `app/i18n/i18n.ts`), so this page
+ * renders in the visitor's language even while genuinely offline — there is
+ * no network fetch of the catalog to fail. `meta()` runs outside the React
+ * tree, so its title goes through the pure `meta-title` seam rather than the
+ * i18next singleton (see that module's header); `metaLanguage` degrades to
+ * the default language when the root match is absent, which it always is
+ * here since this route is served by the service worker without a loader.
  */
 export default function Offline() {
+  const { t } = useTranslation();
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-foreground">
       <WifiOff className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
-      <h1 className="text-2xl font-semibold tracking-tight">No connection right now</h1>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        Your diary, and everything you've already logged, lives on this device — they still work with no connection.
-        This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like
-        scanning a photo). Try again once you're back online.
-      </p>
+      <h1 className="text-2xl font-semibold tracking-tight">{t('offline.heading')}</h1>
+      <p className="max-w-sm text-sm text-muted-foreground">{t('offline.body')}</p>
       <Button asChild className="h-11">
-        <Link to="/diary">Go to your diary</Link>
+        <Link to="/diary">{t('offline.cta')}</Link>
       </Button>
     </main>
   );

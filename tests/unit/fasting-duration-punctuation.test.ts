@@ -130,7 +130,7 @@ describe('fasting duration copy', () => {
   it('[de] the once-broken toast now reads with a single period', () => {
     // The literal that shipped wrong, pinned as the regression it was.
     const t = makeTranslate(loadCatalog('de'));
-    assert.equal(t('fasting.toast.ended', { achieved: formatFastDuration(0, t) }), 'Fasten gespeichert — 0 Min.');
+    assert.equal(t('fasting.toast.ended', { achieved: formatFastDuration(0, t) }), 'Fastenzeit gespeichert, 0 Min.');
     assert.equal(t('fasting.summary.targetWas', { target: formatFastDuration(9 * HOUR, t) }), 'Dein Ziel waren 9 Std.');
   });
 });

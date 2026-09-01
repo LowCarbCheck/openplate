@@ -23,7 +23,7 @@ describe('SparseTrendNotice', () => {
   });
 
   it('counts the days the user actually has', () => {
-    assert.match(render(2), /Trends need a few more days to mean anything — you’ve got 2\./);
+    assert.match(render(2), /Trends need a few more days to mean anything, you’ve got 2\./);
     assert.match(render(1), /you’ve got 1\./);
   });
 

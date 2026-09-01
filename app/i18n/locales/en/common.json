@@ -23,7 +23,7 @@
       "carbsSummary": "{{value}}g carbs",
       "description": "Foods you've added yourself. Edit the numbers or remove one here.",
       "editAria": "Edit {{name}}",
-      "empty": "You haven't added any foods yet. Use \"Add manually\" to create one — it'll show up here.",
+      "empty": "You haven't added any foods yet. Use \"Add manually\" to create one. It'll show up here.",
       "fallbackName": "Food",
       "name": "Name",
       "per100g": "per 100 g: {{summary}}",
@@ -48,7 +48,7 @@
       "gramsNotPositive": "Grams must be greater than 0",
       "gramsRequired": "Enter how many grams",
       "nameRequired": "Name is required",
-      "saveFailed": "Couldn't save — check the name and try again."
+      "saveFailed": "Couldn't save. Check the name and try again."
     },
     "loading": "Loading…",
     "macros": {
@@ -61,12 +61,12 @@
       "sugars": "Sugars"
     },
     "manual": {
-      "description": "Enter a food name and how much of it — either per 100 g, or per serving exactly as printed on the label.",
+      "description": "Enter a food name and how much of it, either per 100 g, or per serving exactly as printed on the label.",
       "grams": "Grams",
       "mealOptional": "Meal (optional)",
       "name": "Name",
       "namePlaceholder": "Grilled chicken",
-      "nutritionHint": "Add carbs to also save this as one of your foods for next time — skip this to just log it once.",
+      "nutritionHint": "Add carbs to also save this as one of your foods for next time. Skip this to just log it once.",
       "nutritionToggle": "Nutrition (optional)",
       "per100g": "Per 100 g",
       "perServing": "Per serving",
@@ -92,7 +92,7 @@
       },
       "fat": "Fat {{value}} g",
       "grams": "Grams",
-      "macrosUnknown": "Macros unknown — logged as name only.",
+      "macrosUnknown": "Macros unknown, logged as name only.",
       "meal": "Meal",
       "netCarbs": "{{value}} g net carbs",
       "protein": "Protein {{value}} g",
@@ -128,8 +128,8 @@
         "startTyping": "Start typing to search your foods."
       },
       "label": "Search foods",
-      "offlineBanner": "You're offline. Looking up new foods needs a connection — your recent and saved foods still work.",
-      "offlinePending": "Looking up new foods needs a connection — resumes when you reconnect.",
+      "offlineBanner": "You're offline. Looking up new foods needs a connection. Your recent and saved foods still work.",
+      "offlinePending": "Looking up new foods needs a connection, resumes when you reconnect.",
       "pause": {
         "minute": "in about a minute",
         "minutes": "in a few minutes",
@@ -150,23 +150,23 @@
         "greekYogurt": "Greek yogurt",
         "rice": "Rice"
       },
-      "throttled": "Search is taking a quick break — try again {{when}}. Your recent and saved foods still work below."
+      "throttled": "Search is taking a quick break. Try again {{when}}. Your recent and saved foods still work below."
     },
     "title": "Add food"
   },
   "banners": {
     "backupDismiss": "Dismiss backup reminder",
     "backupExportNow": "Export now",
-    "backupLastExport_one": "Your diary only lives here — one device, no cloud. Last backup: {{count}} day ago.",
-    "backupLastExport_other": "Your diary only lives here — one device, no cloud. Last backup: {{count}} days ago.",
-    "backupNeverExported": "Your diary only lives here — one device, no cloud. Back it up in 10 seconds.",
+    "backupLastExport_one": "Your diary only lives here: one device, no cloud. Last backup: {{count}} day ago.",
+    "backupLastExport_other": "Your diary only lives here: one device, no cloud. Last backup: {{count}} days ago.",
+    "backupNeverExported": "Your diary only lives here: one device, no cloud. Back it up in 10 seconds.",
     "loggingTo": "Logging to <day>{{label}}</day>",
     "offlineDefault": "You're offline. Recent days are readable; new logs sync when you reconnect.",
     "switchToToday": "Switch to today"
   },
   "bodyMetrics": {
     "birthYear": {
-      "hint": "Reference amounts are grouped into wide age ranges, so the year is all we need — never your full date of birth.",
+      "hint": "Reference amounts are grouped into wide age ranges, so the year is all we need, never your full date of birth.",
       "label": "Year of birth",
       "placeholder": "e.g. 1985"
     },
@@ -209,8 +209,8 @@
   },
   "chrome": {
     "back": "Back",
-    "deviceMenuLabel": "This device — open menu",
-    "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc> — a food tracker that stays on your device",
+    "deviceMenuLabel": "This device, open menu",
+    "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker that stays on your device",
     "installApp": "Install app",
     "licence": "MIT licence",
     "licenceShort": "Licence",
@@ -221,7 +221,7 @@
     "preferences": "Preferences",
     "privacy": "Privacy",
     "source": "Source code",
-    "sourceLabel": "openplate on GitHub — opens in a new tab",
+    "sourceLabel": "openplate on GitHub, opens in a new tab",
     "sourceShort": "Source",
     "terms": "Terms",
     "imprint": "Imprint",
@@ -234,7 +234,7 @@
     "description": "Send this to someone who wants to share their diary with you, or let them scan it off your screen.",
     "nameHint": "Optional. It travels in the link, so treat it as something you say about yourself, not as proof.",
     "nameLabel": "The name they will see",
-    "notSecret": "The link is not a secret — it carries your public key, which can seal data to you and nothing else. It also never reaches any server: everything after the # stays in the browser.",
+    "notSecret": "The link is not a secret: it carries your public key, which can seal data to you and nothing else. It also never reaches any server: everything after the # stays in the browser.",
     "qrTitle": "Your connect link as a scannable code",
     "stillReadAloud": "After they open it, read these twelve characters out to them: {{fingerprint}}. Until they type those, nothing is shared.",
     "title": "Your connect link"
@@ -287,7 +287,7 @@
   },
   "connectGateway": {
     "audit": {
-      "body": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports — openplate cannot verify it.",
+      "body": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
       "title": "This gateway says it can review what you send"
     },
     "backToAiSettings": "Back to AI settings",
@@ -302,7 +302,7 @@
       "button": "Join this gateway",
       "join": "Join {{name}}",
       "joining": "Joining…",
-      "replaces": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere — you can set it up again later.",
+      "replaces": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
       "routing": "Your food photos will be sent through {{origin}} for analysis."
     },
     "description": "Someone invited this device to use the AI on a gateway they run.",
@@ -329,7 +329,7 @@
       "openDiary": "Open today's diary"
     },
     "week": {
-      "empty": "No days logged yet — today can be the first.",
+      "empty": "No days logged yet. Today can be the first.",
       "link": "See your progress",
       "title": "Your last 7 days"
     },
@@ -349,7 +349,7 @@
       "missingData": "Some items are missing data"
     },
     "celebration": {
-      "firstLog": "That's your first food logged. Nothing else to set up — just keep going.",
+      "firstLog": "That's your first food logged. Nothing else to set up, just keep going.",
       "firstScan": "That's your first plate identified by your own AI provider.",
       "streak7": "That's seven days logged in a row.",
       "targetWeight": "You reached your target weight."
@@ -381,10 +381,10 @@
     "empty": {
       "firstEver": {
         "cta": "Log your first food",
-        "noData": "No data on this device yet — already used openplate elsewhere? <backup>Import a backup</backup> or <sync>enable sync</sync> to pull data from another device.",
-        "noDataBackupOnly": "No data on this device yet — already used openplate elsewhere? <backup>Import a backup</backup> to bring it over.",
+        "noData": "No data on this device yet. Already used openplate elsewhere? <backup>Import a backup</backup> or <sync>enable sync</sync> to pull data from another device.",
+        "noDataBackupOnly": "No data on this device yet. Already used openplate elsewhere? <backup>Import a backup</backup> to bring it over.",
         "scanLink": "or snap a plate",
-        "subtitle": "Search a food to add it — no setup needed.",
+        "subtitle": "Search a food to add it, no setup needed.",
         "title": "Log your first food"
       },
       "ordinary": {
@@ -413,10 +413,10 @@
       "toGo": "{{value}} g to go"
     },
     "habit": {
-      "logged": "{{date}} — logged",
-      "met": "{{date}} — met your carb goal",
-      "none": "{{date}} — no logs",
-      "over": "{{date}} — over your carb goal",
+      "logged": "{{date}}, logged",
+      "met": "{{date}}, met your carb goal",
+      "none": "{{date}}, no logs",
+      "over": "{{date}}, over your carb goal",
       "overGoal": "over goal",
       "summary": "Logged {{logged}} of the last {{total}} days",
       "underGoal": "under goal"
@@ -488,8 +488,8 @@
       "namePlaceholder": "Meal name",
       "save": "Save",
       "saving": "Saving…",
-      "toast_one": "Saved {{name}} — {{count}} food.",
-      "toast_other": "Saved {{name}} — {{count}} foods.",
+      "toast_one": "Saved {{name}}, {{count}} food.",
+      "toast_other": "Saved {{name}}, {{count}} foods.",
       "trigger": "Save as meal"
     },
     "suggestions": {
@@ -505,7 +505,7 @@
       "addedOne": "Added {{name}}",
       "copiedMany": "Copied {{n}} foods",
       "copiedOne": "Copied {{name}}",
-      "description": "{{where}} — {{when}}",
+      "description": "{{where}}, {{when}}",
       "onDay": "{{carbs}} net carbs on {{day}}.",
       "restored": "{{name}} is back in your diary.",
       "soFarToday": "{{carbs}} net carbs so far today.",
@@ -532,7 +532,7 @@
       "per100gHint": "Macros are per 100 g. Leave a field blank if it's unknown.",
       "save": "Save changes",
       "saving": "Saving…",
-      "subtitle": "Adjust the portion first — macros follow.",
+      "subtitle": "Adjust the portion first. Macros follow.",
       "time": "Time",
       "title": "Edit entry",
       "when": "When"
@@ -567,7 +567,7 @@
       "protein": "Protein",
       "sugars": "Sugars"
     },
-    "macrosUnknown": "Macros unknown — logged as name only.",
+    "macrosUnknown": "Macros unknown, logged as name only.",
     "meal": {
       "breakfast": "Breakfast",
       "dinner": "Dinner",
@@ -594,11 +594,11 @@
     "provenance": {
       "adapted": {
         "badge": "Edited by you",
-        "note": "You changed these numbers, so they’re your own now. They started from our food database — the credit below is for that original data."
+        "note": "You changed these numbers, so they’re your own now. They started from our food database: the credit below is for that original data."
       },
       "ai": {
         "badge": "AI estimated",
-        "note": "These macros are an AI estimate from your plate photo — double-check them if the exact numbers matter."
+        "note": "These macros are an AI estimate from your plate photo, double-check them if the exact numbers matter."
       },
       "curated": {
         "badge": "From our food database",
@@ -665,7 +665,7 @@
       "deleteBody": "It disappears from your history. Nothing else changes.",
       "deleteLabel": "Remove the fast from {{when}}",
       "deleteTitle": "Remove this fast?",
-      "empty": "No fasts yet — your first one shows up here.",
+      "empty": "No fasts yet. Your first one shows up here.",
       "stillOpen": "Still open",
       "stillOpenHint": "Started {{when}}, never ended.",
       "title": "Your fasts"
@@ -678,7 +678,7 @@
       "customPlaceholder": "e.g. 24",
       "description": "The first number is the hours you fast, the second the hours you eat.",
       "eyebrow": "Plan a fast",
-      "honesty": "openplate just counts the hours — it doesn't give medical advice.",
+      "honesty": "openplate just counts the hours. It doesn't give medical advice.",
       "plannedStartLabel": "Start time",
       "protocolAria": "{{fastingHours}} hours fasting, {{eatingHours}} hours eating",
       "protocolGroup": "Fasting window",
@@ -718,7 +718,7 @@
     "title": "Fasting",
     "toast": {
       "deleted": "Fast removed.",
-      "ended": "Fast saved — {{achieved}}.",
+      "ended": "Fast saved, {{achieved}}.",
       "planCancelled": "Plan cancelled.",
       "scheduled": "Fast scheduled.",
       "startAdjusted": "Start time updated.",
@@ -732,7 +732,7 @@
     },
     "carbs": {
       "custom": "Custom",
-      "hint": "This counts net carbs — fiber and sugar alcohols already taken out, the same number your diary tracks. Pick a common starting point below, or type your own amount in grams.",
+      "hint": "This counts net carbs: fiber and sugar alcohols already taken out, the same number your diary tracks. Pick a common starting point below, or type your own amount in grams.",
       "label": "Daily carb limit",
       "placeholder": "e.g. 20",
       "presets": {
@@ -742,7 +742,7 @@
       }
     },
     "card": {
-      "description": "Every goal below is optional — set what helps and leave the rest blank. Clearing a field removes that goal; nothing here is a hard rule, just numbers to aim for.",
+      "description": "Every goal below is optional. Set what helps and leave the rest blank. Clearing a field removes that goal; nothing here is a hard rule, just numbers to aim for.",
       "title": "Your goals"
     },
     "errors": {
@@ -750,7 +750,7 @@
     },
     "kcal": {
       "approximateNote": "We'll show your progress toward this as approximate, since calorie counts from food are often estimates rather than exact numbers.",
-      "hint": "Calories measure the energy in food — think of it like a fuel gauge. There's no single right number; it depends on you. Not sure where to start? Many people begin somewhere between 1,600 and 2,200 a day, but a doctor or dietitian can give you a number that actually fits you.",
+      "hint": "Calories measure the energy in food. Think of it like a fuel gauge. There's no single right number; it depends on you. Not sure where to start? Many people begin somewhere between 1,600 and 2,200 a day, but a doctor or dietitian can give you a number that actually fits you.",
       "label": "Daily calorie goal",
       "placeholder": "e.g. 2000",
       "suggested": "Use {{kcal}} kcal a day (lightly active)",
@@ -758,7 +758,7 @@
     },
     "loading": "Loading goals…",
     "protein": {
-      "hint": "Protein helps you feel full and hold onto muscle, which matters more the fewer carbs or calories you eat. This is an amount to aim for, in grams — going under it isn't a failure.",
+      "hint": "Protein helps you feel full and hold onto muscle, which matters more the fewer carbs or calories you eat. This is an amount to aim for, in grams. Going under it isn't a failure.",
       "label": "Daily protein goal",
       "noWeightHint": "Log a weight below and we can suggest an amount based on it.",
       "placeholder": "e.g. 100",
@@ -779,7 +779,7 @@
       "weightRemoved": "Weigh-in removed."
     },
     "weight": {
-      "description": "Log today's weight. One weigh-in per day — logging again replaces today's.",
+      "description": "Log today's weight. One weigh-in per day, logging again replaces today's.",
       "errors": {
         "notANumber": "Enter a valid number",
         "outOfRange": "Enter a weight between {{min}} and {{max}} kg",
@@ -806,19 +806,19 @@
     "close": {
       "body": "Nothing to sign up for, nothing to configure. Log one food and openplate has everything it needs.",
       "eyebrow": "Start now",
-      "star": "Or star the source on GitHub — MIT licensed",
+      "star": "Or star the source on GitHub, MIT licensed",
       "title": "Start with today's first meal"
     },
     "cta": {
       "howItWorks": "See how it works",
-      "readSource": "Or read the source — MIT licensed",
-      "readSourcePlain": "Read the source — MIT licensed",
-      "tryIt": "Try it now — it's completely free",
-      "tryItFree": "Try it — free, no account"
+      "readSource": "Or read the source, MIT licensed",
+      "readSourcePlain": "Read the source, MIT licensed",
+      "tryIt": "Try it now, it's completely free",
+      "tryItFree": "Try it, free, no account"
     },
     "features": {
       "byok": {
-        "body": "Connect an AI provider yourself — OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key stays on this device and the photo goes straight from your browser to them. They bill you for it rather than us.",
+        "body": "Connect an AI provider yourself: OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key stays on this device and the photo goes straight from your browser to them. They bill you for it rather than us.",
         "title": "Photos become macros with your own key"
       },
       "eyebrow": "What you get",
@@ -827,30 +827,30 @@
         "title": "It installs on your phone"
       },
       "local": {
-        "body": "Every food you log is written to this browser’s own storage. The server keeps no copy — it has no database at all — so there is nothing of yours on it to leak. Export the lot as a file whenever you like.",
+        "body": "Every food you log is written to this browser’s own storage. The server keeps no copy: it has no database at all, so there is nothing of yours on it to leak. Export the lot as a file whenever you like.",
         "title": "The diary lives on this device"
       },
       "noTracking": {
         "body": "There is no analytics, no advertising and no tracking pixel in openplate. Nothing you do in the app is counted, and nothing about it is sent anywhere.",
         "title": "No ads, no tracking",
         "titleAnalytics": "No ads, and no tracking of your diary",
-        "bodyAnalytics": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo — never what you eat, weigh or log; your diary stays on this device. Run openplate yourself and nothing is counted at all."
+        "bodyAnalytics": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary stays on this device. Run openplate yourself and nothing is counted at all."
       },
       "selfHost": {
         "body": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",
         "title": "Self-host it in one container"
       },
       "source": {
-        "body": "Read every line before you trust it with a day of your eating. Fork it, change it, ship it in something of your own — the licence asks for the copyright notice and nothing else.",
+        "body": "Read every line before you trust it with a day of your eating. Fork it, change it, ship it in something of your own. The licence asks for the copyright notice and nothing else.",
         "title": "Open source, under the MIT License"
       },
       "subtitle": "None of these is a roadmap item. Every one of them is in the repository today.",
       "title": "Six claims you can check in the source"
     },
     "goals": {
-      "body": "Choose a daily net-carb ceiling, a protein floor, a calorie target — or none at all. openplate never invents a target you didn't set.",
+      "body": "Choose a daily net-carb ceiling, a protein floor, a calorie target, or none at all. openplate never invents a target you didn't set.",
       "points": {
-        "grid": "Progress keeps a 13-week record of the days you hit your goals — gaps included.",
+        "grid": "Progress keeps a 13-week record of the days you hit your goals, gaps included.",
         "ring": "A ring on your diary shows what's left of today.",
         "tone": "Going over a goal is a number in amber. It is never a mark against you.",
         "weight": "Weigh in whenever you like; the chart smooths the day-to-day noise."
@@ -881,7 +881,7 @@
         "shotAlt": "The diary on a phone: the day ring, then the meals logged under it.",
         "title": "See where the day stands"
       },
-      "subtitle": "This is what using openplate looks like once it is yours — the same handful of taps, every day.",
+      "subtitle": "This is what using openplate looks like once it is yours: the same handful of taps, every day.",
       "title": "Log a meal in a few seconds"
     },
     "newsletter": {
@@ -912,7 +912,7 @@
       "shotAlt": "The overview screen on a phone, with the day ring, the last seven days and the latest weigh-in.",
       "steps": {
         "connect": {
-          "body": "One click connects OpenRouter: you approve it there, and the key comes back to this device and stays on it. Any OpenAI-compatible endpoint works too. Reading a plate typically costs well under a cent per photo, and your provider bills you directly. Skip this and search still works — a key is only needed to read a photo.",
+          "body": "One click connects OpenRouter: you approve it there, and the key comes back to this device and stays on it. Any OpenAI-compatible endpoint works too. Reading a plate typically costs well under a cent per photo, and your provider bills you directly. Skip this and search still works: a key is only needed to read a photo.",
           "title": "Connect a provider, or skip it"
         },
         "open": {
@@ -928,16 +928,16 @@
       "title": "Working in about a minute"
     },
     "sync": {
-      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server — ours, or one you run yourself — and that server has no key to it, because the key is made from a passphrase it never sees.",
+      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server (ours, or one you run yourself) and that server has no key to it, because the key is made from a passphrase it never sees.",
       "link": "Set up sync",
-      "photos": "Plate photos stay where they are — they are never part of a sync blob.",
+      "photos": "Plate photos stay where they are. They are never part of a sync blob.",
       "shotAlt": "The sync screen on a phone, offering to sign in to sync or create a sync account, with a note that plate photos are never uploaded.",
       "title": "Two devices, one diary"
     }
   },
   "meals": {
     "description": "Meals you've saved as a bundle. Log one in a single tap, or remove it here.",
-    "empty": "You haven't saved a meal yet. Save one from the diary — bundle the foods you logged and give them a name.",
+    "empty": "You haven't saved a meal yet. Save one from the diary: bundle the foods you logged and give them a name.",
     "itemCount_one": "{{count}} food",
     "itemCount_other": "{{count}} foods",
     "logNow": "Log now",
@@ -947,8 +947,8 @@
     "removeTitle": "Remove {{name}}?",
     "toast": {
       "deleted": "Removed {{name}}.",
-      "logged_one": "Logged {{name}} — {{count}} food.",
-      "logged_other": "Logged {{name}} — {{count}} foods."
+      "logged_one": "Logged {{name}}, {{count}} food.",
+      "logged_other": "Logged {{name}}, {{count}} foods."
     }
   },
   "meta": {
@@ -964,10 +964,11 @@
     "foods": "Your foods · openplate",
     "goals": "Your goals · openplate",
     "joinStudy": "Join a study · openplate",
-    "landing": "openplate — a food tracker that stays on your device",
-    "landingDescription": "Photograph your plate or search for what you ate — openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
+    "landing": "openplate, a food tracker that stays on your device",
+    "landingDescription": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
     "meals": "Saved meals · openplate",
     "nutrients": "Nutrients · openplate",
+    "offline": "You're offline · openplate",
     "onboarding": "Welcome to openplate",
     "preferences": "Preferences · openplate",
     "recover": "Recover your diary · openplate",
@@ -1074,13 +1075,13 @@
   },
   "oauth": {
     "callback": {
-      "alreadyConnected": "This provider is already connected on this device — nothing else to do here.",
-      "connectedUnverified": "Saved, but couldn't verify the key right now — that's usually a transient provider hiccup, not a problem with the connection itself. You can still try scanning a photo.",
-      "connectedVerified": "Connected and working — you're all set.",
+      "alreadyConnected": "This provider is already connected on this device, nothing else to do here.",
+      "connectedUnverified": "Saved, but couldn't verify the key right now. That's usually a transient provider hiccup, not a problem with the connection itself. You can still try scanning a photo.",
+      "connectedVerified": "Connected and working, you're all set.",
       "description": "Finishing the connection you started in AI settings or the scan screen.",
       "error": {
         "denied": {
-          "body": "No problem — nothing was connected. Try again whenever you're ready.",
+          "body": "No problem, nothing was connected. Try again whenever you're ready.",
           "title": "Connection cancelled"
         },
         "exchangeFailed": {
@@ -1088,15 +1089,15 @@
           "title": "Couldn't finish connecting"
         },
         "expired": {
-          "body": "This connection attempt took too long and expired — try connecting again.",
+          "body": "This connection attempt took too long and expired. Try connecting again.",
           "title": "Took too long"
         },
         "missingVerifier": {
-          "body": "This device lost track of the connection attempt — this can happen if you switched apps while signing in. Try again and it should go straight through.",
+          "body": "This device lost track of the connection attempt. This can happen if you switched apps while signing in. Try again and it should go straight through.",
           "title": "Lost track of that connection"
         },
         "stateMismatch": {
-          "body": "This connection doesn't match the one this device started — try connecting again.",
+          "body": "This connection doesn't match the one this device started. Try connecting again.",
           "title": "That connection doesn't match"
         }
       },
@@ -1115,9 +1116,14 @@
       "notNow": "Not now",
       "photoNote": "Each photo you scan afterward is analyzed by your chosen provider and is never stored by openplate.",
       "redirecting": "Redirecting…",
-      "spendingCap": "OpenRouter's own approval screen lets you set a spending cap before you continue — worth using.",
-      "startFailed": "Couldn't start the connection — check your connection and try again."
+      "spendingCap": "OpenRouter's own approval screen lets you set a spending cap before you continue, worth using.",
+      "startFailed": "Couldn't start the connection. Check your connection and try again."
     }
+  },
+  "offline": {
+    "heading": "No connection right now",
+    "body": "Your diary, and everything you've already logged, lives on this device and still works with no connection. This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like scanning a photo). Try again once you're back online.",
+    "cta": "Go to your diary"
   },
   "onboarding": {
     "actions": {
@@ -1127,7 +1133,7 @@
       "skipping": "Skipping…"
     },
     "carbPreset": {
-      "chipWithCeiling": "{{label}} — under {{ceiling}} g",
+      "chipWithCeiling": "{{label}}, under {{ceiling}} g",
       "keto": {
         "detail": "Under 20 g net carbs a day",
         "label": "Keto"
@@ -1149,7 +1155,7 @@
     "firstFood": {
       "find": "Find a food",
       "finishing": "Finishing…",
-      "keyNote": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI — that connection stays on this device too, just like your diary.",
+      "keyNote": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device too, just like your diary.",
       "keyNoteLink": "Set it up anytime in Settings.",
       "later": "I'll do it later",
       "opening": "Opening…",
@@ -1157,29 +1163,29 @@
     },
     "focus": {
       "calories": {
-        "description": "The same calorie count you would see on a nutrition label — set a daily target.",
+        "description": "The same calorie count you would see on a nutrition label. Set a daily target.",
         "label": "Calories"
       },
       "habit": {
-        "description": "No targets to hit — just log what you eat, and your streak shows up in Trends.",
+        "description": "No targets to hit, just log what you eat, and your streak shows up in Trends.",
         "label": "Just the habit"
       },
       "netCarbs": {
-        "description": "Total carbs minus fiber — the number to watch if you are cutting back on carbs.",
+        "description": "Total carbs minus fiber, the number to watch if you are cutting back on carbs.",
         "label": "Net carbs"
       },
       "recommended": "Recommended"
     },
     "kcal": {
-      "hint": "Leave blank to decide later — you can set it in Settings anytime.",
+      "hint": "Leave blank to decide later. You can set it in Settings anytime.",
       "label": "Daily calorie target (optional)",
       "placeholder": "e.g. 2000"
     },
     "loading": "Loading…",
-    "localFirst": "Your data lives on <strong>this device</strong> — we never see it. The diary you’re about to start stays local, always.",
+    "localFirst": "Your data lives on <strong>this device</strong>. We never see it. The diary you’re about to start stays local, always.",
     "step": {
       "body": {
-        "description": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number — and like everything else, they stay on this device.",
+        "description": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number, and like everything else, they stay on this device.",
         "title": "A bit about you?"
       },
       "firstFood": {
@@ -1187,11 +1193,11 @@
         "title": "Log your first food"
       },
       "focus": {
-        "description": "Pick what matters most to you — you can change this anytime in Settings.",
+        "description": "Pick what matters most to you. You can change this anytime in Settings.",
         "title": "What do you track?"
       },
       "weight": {
-        "description": "Optional. Log today's weight and a target if you like — it powers your trends later.",
+        "description": "Optional. Log today's weight and a target if you like. It powers your trends later.",
         "title": "Track your weight?"
       }
     },
@@ -1202,7 +1208,7 @@
         "notANumber": "Enter a number like 72.5 or 72,5"
       },
       "fieldLabel": "{{label}} ({{unit}})",
-      "hint": "No pressure — leave these blank and add them whenever.",
+      "hint": "No pressure, leave these blank and add them whenever.",
       "placeholder": "e.g. {{value}}",
       "target": "Target weight",
       "unitToggleLabel": "Weight unit",
@@ -1231,7 +1237,7 @@
   "recover": {
     "firstDataAt": "This device first stored data on {{date}}.",
     "lead": "This device has stored openplate data before, but the copy in this browser is empty right now. openplate keeps everything on your device and sends nothing to a server, so there is no other copy for us to fetch.",
-    "noBackupBody": "Then there is nothing left to bring back, and we're sorry — that is the honest answer. You can start a fresh diary from here, and if a backup does turn up later you can still restore it on top.",
+    "noBackupBody": "Then there is nothing left to bring back, and we're sorry, that is the honest answer. You can start a fresh diary from here, and if a backup does turn up later you can still restore it on top.",
     "noBackupHeading": "If you have no backup",
     "restoreBody": "If you have downloaded an openplate backup (a .json file), open it here. Everything in it comes back onto this device.",
     "restoreButton": "Choose a backup file",
@@ -1258,21 +1264,21 @@
       "empty": "You are not contributing to a study. Joining one needs a fingerprint printed in its consent materials.",
       "unnamed": "Study {{studyAccountId}}",
       "tier": "Receives: {{tier}}",
-      "window": "Whole calendar days inside the window you send — one row per day, and never a time, a food name or a photo.",
-      "sentWindow": "Sent {{from}} to {{to}} — whole calendar days, one row per day, and never a time, a food name or a photo.",
+      "window": "Whole calendar days inside the window you send, one row per day, and never a time, a food name or a photo.",
+      "sentWindow": "Sent {{from}} to {{to}}, whole calendar days, one row per day, and never a time, a food name or a photo.",
       "fields": "Each day carries energy, protein, carbohydrate, fat, fibre, and how many entries that day held.",
       "joined": "Joined {{at}}",
       "lastSent": "Last sent {{at}} · version {{version}}",
       "neverSent": "Nothing has been sent to this study yet.",
       "pseudonymLabel": "Your pseudonym for this study",
       "pseudonymHint": "This is what the study sees of you. Quote it if you ask a researcher to confirm your withdrawal was honoured.",
-      "pseudonymUnknown": "This device cannot work out your pseudonym — its research key is missing."
+      "pseudonymUnknown": "This device cannot work out your pseudonym: its research key is missing."
     },
     "withdrawal": {
       "open": "Withdraw",
       "confirmTitle": "Withdraw from {{name}}?",
       "instructedToDelete": "The study is instructed to delete your contribution, and openplate’s study tools drop it on every pull.",
-      "alreadyDownloaded": "A copy the study already downloaded cannot be taken back — honouring the instruction is an obligation this system states and cannot enforce.",
+      "alreadyDownloaded": "A copy the study already downloaded cannot be taken back. Honouring the instruction is an obligation this system states and cannot enforce.",
       "noNewData": "No new data will be sent to this study.",
       "samePseudonymOnRejoin": "Leaving does not give you a new identity. If you join this study again you present the same pseudonym, so anyone who kept an old copy could link the two.",
       "rejoinNeedsCeremony": "This device forgets the study, so joining again means typing its fingerprint from the consent materials once more.",
@@ -1354,7 +1360,7 @@
       "outcome": {
         "submitted": "Sent {{from}} to {{to}} · version {{version}}.",
         "conflict": "Another of your devices sent to this study first. Choose the days again and send.",
-        "tooLarge": "That window is wider than this study accepts. Try a shorter one — you can send the rest afterwards.",
+        "tooLarge": "That window is wider than this study accepts. Try a shorter one, you can send the rest afterwards.",
         "unknownStudy": "This server does not know that study, so nothing was sent.",
         "unavailable": "This server has no research lane, so nothing was sent."
       }
@@ -1362,7 +1368,7 @@
     "console": {
       "title": "Study console",
       "description": "The researcher's side: this study's own account, its key, and the cohort that account can open.",
-      "separateAccount": "This is the study's account, not your own openplate account. Sign in with the study's address and passphrase — never with yours. Nothing on this screen reads or sends this device's diary.",
+      "separateAccount": "This is the study's account, not your own openplate account. Sign in with the study's address and passphrase, never with yours. Nothing on this screen reads or sends this device's diary.",
       "noSync": {
         "title": "This openplate has no sync",
         "body": "A study reads contributions through sync, and whoever runs this openplate has not set it up."
@@ -1384,7 +1390,7 @@
         "title": "This study's key",
         "account": "Study account number {{accountId}}",
         "noKey": "This study holds no key yet. Mint one before its consent materials are printed.",
-        "unopened": "This console could not open this study's keys, so it can show none of them and open no contribution. Most often they were sealed with a different passphrase: sign in with the one they were made with. Nothing has been lost — the keys are still on the server, unread by it.",
+        "unopened": "This console could not open this study's keys, so it can show none of them and open no contribution. Most often they were sealed with a different passphrase: sign in with the one they were made with. Nothing has been lost: the keys are still on the server, unread by it.",
         "fingerprintLabel": "Fingerprint of the current key",
         "fingerprintHint": "Print these twelve characters in the study's consent document. A contributor types them from that page when joining. This console sends them nowhere and there is nothing here to publish them with.",
         "generations": "Key generations held: {{generations}}. Every one of them is tried when a contribution is opened, so nothing sealed to an older key is lost.",
@@ -1413,7 +1419,7 @@
     "analyzing": {
       "analyzing": "Analyzing your plate…",
       "starting": "Starting analysis…",
-      "stillWorking": "Still working — complex plates take a moment…",
+      "stillWorking": "Still working, complex plates take a moment…",
       "uploading": "Uploading photo…"
     },
     "auditNotice": "The administrator of the gateway you're connected to declares that they can review what you send, including photos.",
@@ -1422,7 +1428,7 @@
       "analyze": "Analyze",
       "cancel": "Cancel",
       "chooseLibrary": "Choose from library",
-      "description": "Your photo is sent directly to your own AI provider to identify what's on your plate. Afterward it's kept only on this device (not on openplate's server) so you can see it again on the entry — turn that off or clear it anytime under Data & backup in settings.",
+      "description": "Your photo is sent directly to your own AI provider to identify what's on your plate. Afterward it's kept only on this device (not on openplate's server) so you can see it again on the entry, turn that off or clear it anytime under Data & backup in settings.",
       "emptyHint": "Analyzed by your own AI provider, then kept only on this device.",
       "emptyTitle": "Take a photo or choose an image",
       "photoLabel": "Plate photo",
@@ -1432,36 +1438,36 @@
       "title": "Identify foods from a photo"
     },
     "errors": {
-      "attemptCost": "This attempt used {{amount}} of your API credit — it's recorded in your usage.",
+      "attemptCost": "This attempt used {{amount}} of your API credit. It's recorded in your usage.",
       "attemptRecorded": "This attempt is recorded in your usage.",
       "connectProvider": "Connect your AI provider in settings before using photo identification.",
-      "endpointUnreachable": "Could not reach that endpoint from the browser — likely the content-security policy blocking a non-localhost base URL, or the endpoint not allowing browser (CORS) requests. See AI settings for details.",
+      "endpointUnreachable": "Could not reach that endpoint from the browser, likely the content-security policy blocking a non-localhost base URL, or the endpoint not allowing browser (CORS) requests. See AI settings for details.",
       "identifyFailed": "Failed to identify foods from the photo.",
       "label": {
-        "noMacros": "No nutrition panel was found in that photo — photograph the printed table of values, usually on the back of the package.",
+        "noMacros": "No nutrition panel was found in that photo. Photograph the printed table of values, usually on the back of the package.",
         "photoQualityBody": "Hold the package flat, fill the frame with the panel, and keep the light off the shiny parts.",
         "title": "Couldn't read that panel",
-        "unreadable": "The nutrition panel could not be read — try again straight on, closer, with the panel filling the frame.",
-        "unreadableWithReason": "The nutrition panel could not be read ({{reason}}) — try again straight on, closer, with the panel filling the frame."
+        "unreadable": "The nutrition panel could not be read. Try again straight on, closer, with the panel filling the frame.",
+        "unreadableWithReason": "The nutrition panel could not be read ({{reason}}). Try again straight on, closer, with the panel filling the frame."
       },
-      "missingBaseUrl": "This connection is missing a base URL — open AI settings and set one, or switch to OpenRouter.",
-      "noFoods": "Couldn't identify any foods in that photo — try a clearer shot.",
-      "openrouterRateLimit": "You've hit the provider's rate limit — free-tier scans reset daily, or add credits on OpenRouter for more. Any credits you add go straight to OpenRouter (not openplate), are entirely optional, and are a spend-down balance, not a subscription.",
+      "missingBaseUrl": "This connection is missing a base URL. Open AI settings and set one, or switch to OpenRouter.",
+      "noFoods": "Couldn't identify any foods in that photo. Try a clearer shot.",
+      "openrouterRateLimit": "You've hit the provider's rate limit. Free-tier scans reset daily, or add credits on OpenRouter for more. Any credits you add go straight to OpenRouter (not openplate), are entirely optional, and are a spend-down balance, not a subscription.",
       "photo": {
         "empty": "Please choose a photo to upload.",
         "tooLarge": "Photo is too large (max 8MB).",
-        "undecodableFormat": "That format won't work in this browser — a JPEG or PNG will.",
+        "undecodableFormat": "That format won't work in this browser, a JPEG or PNG will.",
         "unsupportedType": "Unsupported image type. Use JPEG, PNG, WEBP, or HEIC."
       },
       "photoQualityBody": "Mind trying another? Good light and a top-down angle help.",
       "provider": {
-        "auth": "Your API key was rejected by the provider — check it in AI settings and try again.",
-        "credit": "Your provider account is out of credit — add credit with your provider and try again.",
-        "modelNotFound": "The provider doesn't recognize that model — pick a different model in AI settings and try again.",
-        "rateLimit": "The provider is rate-limiting requests right now — wait a moment and try again.",
-        "reconsentRequired": "This gateway's privacy settings changed, so it stopped accepting this device — ask whoever invited you for a new invite link."
+        "auth": "Your API key was rejected by the provider. Check it in AI settings and try again.",
+        "credit": "Your provider account is out of credit. Add credit with your provider and try again.",
+        "modelNotFound": "The provider doesn't recognize that model. Pick a different model in AI settings and try again.",
+        "rateLimit": "The provider is rate-limiting requests right now. Wait a moment and try again.",
+        "reconsentRequired": "This gateway's privacy settings changed, so it stopped accepting this device. Ask whoever invited you for a new invite link."
       },
-      "readPhoto": "Failed to read that photo — try another.",
+      "readPhoto": "Failed to read that photo. Try another.",
       "titles": {
         "auth": "Your AI key isn't working",
         "credit": "Your AI provider is out of credit",
@@ -1475,7 +1481,7 @@
     },
     "labelScan": {
       "capture": {
-        "description": "Photograph the nutrition panel on the package. Your photo goes straight to your own AI provider, which reads the printed numbers — nothing is estimated. Afterward the photo is kept only on this device.",
+        "description": "Photograph the nutrition panel on the package. Your photo goes straight to your own AI provider, which reads the printed numbers: nothing is estimated. Afterward the photo is kept only on this device.",
         "emptyHint": "Hold the package flat and let the panel fill the frame.",
         "emptyTitle": "Photograph the nutrition panel",
         "photoLabel": "Label photo",
@@ -1484,10 +1490,10 @@
       },
       "mode": {
         "label": "A package label",
-        "labelHint": "The nutrition panel printed on a package — we read the numbers exactly as printed, sugar alcohols included.",
+        "labelHint": "The nutrition panel printed on a package: we read the numbers exactly as printed, sugar alcohols included.",
         "legend": "What are you photographing?",
         "plate": "A plate of food",
-        "plateHint": "A meal on a plate — we work out which foods are on it."
+        "plateHint": "A meal on a plate: we work out which foods are on it."
       },
       "review": {
         "basisPer100g": "Taken from the label's per-100 g column.",
@@ -1501,18 +1507,18 @@
           "total": "US style (carbs include fibre)"
         },
         "gramsLabel": "Amount to log (g)",
-        "heading": "Here's what the label says — check it before you log it.",
-        "macrosPer100gNote": "Values are per 100 g. A blank box means the label did not print that row — leave it blank rather than typing 0.",
+        "heading": "Here's what the label says. Check it before you log it.",
+        "macrosPer100gNote": "Values are per 100 g. A blank box means the label did not print that row. Leave it blank rather than typing 0.",
         "modelNote": "Note from the reading: {{note}}",
         "nameLabel": "Product",
         "savedAsCustomFood": "Saving adds this product to your foods, so next time it is one tap and no photo.",
         "servingPrinted": "Serving on the label: {{serving}}",
         "subheading": "Every number was read from your photo. Fix anything that looks wrong.",
-        "unverified": "Read from your photo, not verified. Small print on a curved or shiny package can be misread — please check the numbers."
+        "unverified": "Read from your photo, not verified. Small print on a curved or shiny package can be misread. Please check the numbers."
       }
     },
     "loading": "Loading scan…",
-    "offline": "You're offline. Plate scanning needs a connection — search your recent foods to log now.",
+    "offline": "You're offline. Plate scanning needs a connection. Search your recent foods to log now.",
     "review": {
       "addingSummary_one": "Adding {{count}} food · ~{{netCarbs}} g net carbs",
       "addingSummary_other": "Adding {{count}} foods · ~{{netCarbs}} g net carbs",
@@ -1530,7 +1536,7 @@
       "fineTune": "Fine-tune portion & nutrition",
       "foodLabel": "Food",
       "gramsLabel": "Grams",
-      "heading": "Here's your plate — if it looks right, just confirm.",
+      "heading": "Here's your plate. If it looks right, just confirm.",
       "include": "Include",
       "macroLabels": {
         "carbs": "Carbs (required)",
@@ -1542,7 +1548,7 @@
         "sugars": "Sugars"
       },
       "macrosPer100gNote": "Macros are per 100 g.",
-      "macrosUnknown": "Macros unknown — logged as name only.",
+      "macrosUnknown": "Macros unknown, logged as name only.",
       "match": {
         "applied": "Applied",
         "calories": "{{value}} calories",
@@ -1561,7 +1567,7 @@
         "weak": "Rough match"
       },
       "netCarbsForPortion": "{{value}} g net carbs",
-      "noneSelected": "No foods selected — include at least one to log.",
+      "noneSelected": "No foods selected. Include at least one to log.",
       "plateFallbackName": "plate",
       "portionGrams": "~{{grams}} g",
       "portionScale": {
@@ -1577,10 +1583,10 @@
         "protein": "Protein {{value}} g"
       },
       "sanity": {
-        "componentOverTotal": "{{component}} is {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g — double-check before logging.",
-        "componentSumOverTotal": "{{firstComponent}} and {{secondComponent}} add up to {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g — double-check before logging.",
-        "kcalMismatch": "These numbers look inconsistent ({{stated}} kcal vs ~{{computed}} from the macros) — double-check before logging.",
-        "labelColumnsDisagree": "The label's two columns disagree on {{label}} ({{printed}} per 100 g printed vs {{converted}} worked out from the per-serving column) — one of them was probably misread.",
+        "componentOverTotal": "{{component}} is {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g, double-check before logging.",
+        "componentSumOverTotal": "{{firstComponent}} and {{secondComponent}} add up to {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g, double-check before logging.",
+        "kcalMismatch": "These numbers look inconsistent ({{stated}} kcal vs ~{{computed}} from the macros), double-check before logging.",
+        "labelColumnsDisagree": "The label's two columns disagree on {{label}} ({{printed}} per 100 g printed vs {{converted}} worked out from the per-serving column), one of them was probably misread.",
         "macro": {
           "carbs": "Carbs",
           "fat": "Fat",
@@ -1590,8 +1596,8 @@
           "protein": "Protein",
           "sugars": "Sugars"
         },
-        "macroSumOver100": "Carbs, protein and fat add up to {{sum}} g per 100 g — double-check before logging.",
-        "singleMacroOver100": "{{label}} is {{value}} g per 100 g, which can't be right — double-check before logging."
+        "macroSumOver100": "Carbs, protein and fat add up to {{sum}} g per 100 g, double-check before logging.",
+        "singleMacroOver100": "{{label}} is {{value}} g per 100 g, which can't be right, double-check before logging."
       },
       "saving": "Saving…",
       "seeOtherMatches": "Not right? See other matches",
@@ -1599,30 +1605,30 @@
       "unnamedFood": "Unnamed food"
     },
     "setup": {
-      "body": "This step is entirely optional — logging by hand, and everything else in openplate, works fully without it. It needs a paid account with an AI service that you set up yourself (openplate doesn't run its own AI or offer a trial) — usually a couple of minutes to set up, and usually well under a cent per photo, billed by that provider, not by openplate. Once connected, each photo goes straight to your chosen provider to be read, then stays only on this device — never on openplate's server — until you clear it in Settings.",
-      "bodyPreset": "This step is entirely optional — logging by hand, and everything else in openplate, works fully without it. On this openplate you can connect its own AI in one tap, with no account and no key of your own. Once connected, each photo goes straight from this device to that AI to be read, then stays only on this device — never on openplate.org, and never anywhere else — until you clear it in Settings.",
+      "body": "This step is entirely optional: logging by hand, and everything else in openplate, works fully without it. It needs a paid account with an AI service that you set up yourself (openplate doesn't run its own AI or offer a trial), usually a couple of minutes to set up, and usually well under a cent per photo, billed by that provider, not by openplate. Once connected, each photo goes straight to your chosen provider to be read, then stays only on this device, never on openplate's server, until you clear it in Settings.",
+      "bodyPreset": "This step is entirely optional: logging by hand, and everything else in openplate, works fully without it. On this openplate you can connect its own AI in one tap, with no account and no key of your own. Once connected, each photo goes straight from this device to that AI to be read, then stays only on this device, never on openplate.org, and never anywhere else, until you clear it in Settings.",
       "connectOpenRouter": "Connect with OpenRouter",
       "description": "Take a photo of your plate and an AI service estimates the carbs for you.",
       "manualSetup": "Or set up a provider manually in settings",
       "sharedPhotoAlt": "The photo you shared",
-      "sharedPhotoNote": "We got the photo you shared, but cannot identify foods in it yet — that needs an AI provider connected first. Connect one below, then share or choose this photo again.",
+      "sharedPhotoNote": "We got the photo you shared, but cannot identify foods in it yet. That needs an AI provider connected first. Connect one below, then share or choose this photo again.",
       "title": "Snap a photo, skip the typing"
     },
     "title": "Scan plate"
   },
   "settings": {
     "data": {
-      "description": "Your diary lives on this device — download a full copy anytime, no lock-in, no request-and-wait.",
+      "description": "Your diary lives on this device: download a full copy anytime, no lock-in, no request-and-wait.",
       "downloadCsv": "Download diary (CSV)",
       "downloadJson": "Download everything (JSON)",
       "exportTitle": "Your data",
       "importButton": "Import a backup (JSON)",
-      "importDescription": "Restore a backup exported from openplate (JSON) onto this device — the way to bring data over from another device without sync.",
-      "importError": "Couldn't import that file — make sure it's an openplate backup (JSON).",
+      "importDescription": "Restore a backup exported from openplate (JSON) onto this device, the way to bring data over from another device without sync.",
+      "importError": "Couldn't import that file. Make sure it's an openplate backup (JSON).",
       "importHeading": "Import a backup",
-      "importSuccess": "Backup imported — your diary now includes the imported data.",
+      "importSuccess": "Backup imported. Your diary now includes the imported data.",
       "importing": "Importing…",
-      "photosNote": "Plate photos aren't included in this download — they're kept only on this device (see \"Photos on this device\" below), never bundled into a backup or export. Your download holds only the numbers you logged.",
+      "photosNote": "Plate photos aren't included in this download: they're kept only on this device (see \"Photos on this device\" below), never bundled into a backup or export. Your download holds only the numbers you logged.",
       "preparing": "Preparing…",
       "title": "Data & backup"
     },
@@ -1635,9 +1641,9 @@
     "photos": {
       "cancel": "Cancel",
       "clearAll": "Clear all",
-      "clearConfirmDescription": "This removes every plate photo cached on this device. Your logged entries and their numbers are kept — only the on-device images are deleted. This can't be undone.",
+      "clearConfirmDescription": "This removes every plate photo cached on this device. Your logged entries and their numbers are kept. Only the on-device images are deleted. This can't be undone.",
       "clearConfirmTitle": "Clear all photos on this device?",
-      "description": "When you scan a plate, its photo is kept only on this device so you can see it back on the entry — it's never uploaded and never synced. Older photos clear themselves out automatically after {{days}} days; turn this off to stop saving new ones.",
+      "description": "When you scan a plate, its photo is kept only on this device so you can see it back on the entry. It's never uploaded and never synced. Older photos clear themselves out automatically after {{days}} days; turn this off to stop saving new ones.",
       "switchLabel": "Save plate photos on this device",
       "title": "Photos on this device",
       "usageEmpty": "No photos stored on this device.",
@@ -1692,7 +1698,7 @@
     "advanced": {
       "anthropicOption": "Anthropic direct",
       "backToRecommended": "← Use {{provider}} instead (recommended)",
-      "openaiCompatibleOption": "Self-hosted / local endpoint (Ollama, vLLM, LM Studio...) — localhost only on the hosted instance",
+      "openaiCompatibleOption": "Self-hosted / local endpoint (Ollama, vLLM, LM Studio...), localhost only on the hosted instance",
       "toggle": "Advanced: use a different provider"
     },
     "apiKey": {
@@ -1702,18 +1708,18 @@
         "openaiCompatible": "API key (for your endpoint)",
         "openrouter": "OpenRouter API key"
       },
-      "noKeyYet": "No key configured yet — stored only on this device.",
+      "noKeyYet": "No key configured yet, stored only on this device.",
       "sentToBaseUrl": "Sent to the base URL configured above."
     },
     "baseUrl": {
-      "help": "On the hosted instance, only a localhost/127.0.0.1 endpoint is reachable — the content-security policy blocks other hosts by design, to protect your key if this page is ever compromised. Self-hosting? Set CSP_CONNECT_EXTRA to allow your own remote endpoint (see the README). Direct api.openai.com is never reachable either way — use OpenRouter for OpenAI models."
+      "help": "On the hosted instance, only a localhost/127.0.0.1 endpoint is reachable: the content-security policy blocks other hosts by design, to protect your key if this page is ever compromised. Self-hosting? Set CSP_CONNECT_EXTRA to allow your own remote endpoint (see the README). Direct api.openai.com is never reachable either way. Use OpenRouter for OpenAI models."
     },
     "connectCard": {
-      "description": "Your key, your provider, your data — each plate photo goes straight to your chosen provider to be read. openplate then keeps a copy only on this device (never on our server) so you can see it again later — manage or clear it anytime under Data & backup in settings. Your key itself never leaves this device either, except to the provider you choose below.",
+      "description": "Your key, your provider, your data: each plate photo goes straight to your chosen provider to be read. openplate then keeps a copy only on this device (never on our server) so you can see it again later. Manage or clear it anytime under Data & backup in settings. Your key itself never leaves this device either, except to the provider you choose below.",
       "title": "Connect your AI provider"
     },
     "connected": {
-      "status": "Connected to <strong>{{provider}}</strong> — {{model}}"
+      "status": "Connected to <strong>{{provider}}</strong>, {{model}}"
     },
     "cost": {
       "approxCents": "about {{cents}}¢ a photo",
@@ -1721,7 +1727,7 @@
     },
     "disconnect": {
       "button": "Disconnect",
-      "notRevoked": "This only removes the key from <strong>this device</strong> — it does <strong>not</strong> revoke it at {{provider}}.",
+      "notRevoked": "This only removes the key from <strong>this device</strong>. It does <strong>not</strong> revoke it at {{provider}}.",
       "oauthKeyStillThere": "The key still appears in your <keyLink>{{provider}} key settings</keyLink> (labeled \"openplate\", or \"An app\" on instances the provider hasn't seen traffic from yet) and keeps working there until you revoke it yourself.",
       "stops": "Photo identification will stop working until you reconnect a provider.",
       "title": "Disconnect AI provider?"
@@ -1732,15 +1738,15 @@
       "baseUrlRequired": "A base URL is required for a self-hosted / local endpoint.",
       "baseUrlScheme": "Base URL must start with http:// or https://",
       "disconnectToSwitch": "Disconnect first to switch providers.",
-      "keyRejected": "Key was rejected by the provider — check it and try again.",
+      "keyRejected": "Key was rejected by the provider. Check it and try again.",
       "modelRequired": "Model is required"
     },
     "explainer": {
-      "byok": "Still interested? Here's the deal: openplate doesn't run its own AI, so it can't offer free photo scans. Instead you bring <strong>your own key</strong> from an AI company, and openplate uses it to read your plate photos — your key, your provider, your data. The key lives only on this device: openplate never sends it anywhere but the provider you choose below, and never stores or sees it on its own server.",
-      "notRequired": "<strong>Nothing on this page is required.</strong> Your diary, goals, and trends all work without it. If signing up for a paid AI service and pasting in a key isn't for you, close this page and keep logging by hand — you lose nothing else.",
-      "photosAndCost": "Each photo is sent straight to that provider just long enough to read your plate. openplate itself never keeps a copy on its own server — but by default it does keep a copy on <strong>this device</strong> afterward (in your browser's storage) for about 90 days, so you can see it again on that entry later. You can turn that off, or clear it anytime, under <dataLink>Data & backup</dataLink> in settings. It costs money, but not much: usually under a cent a photo, billed straight to you by your provider — even scanning every meal, most people spend well under $5 a month. You only pay for what you actually scan.",
-      "setup": "Setup means visiting the provider's own site first: create a free account there, and add a payment method (their checkout, not ours — openplate never sees your card). The simplest path is a key from <providerLink>{{provider}}</providerLink> — that's the tab we've put first below, and one key covers every model listed under it.",
-      "setupOpenAiNote": "One exception worth knowing: OpenAI's own service won't answer requests sent straight from a browser, so <strong>OpenAI models are only reachable here through OpenRouter</strong> — whose single key also covers Google's models.",
+      "byok": "Still interested? Here's the deal: openplate doesn't run its own AI, so it can't offer free photo scans. Instead you bring <strong>your own key</strong> from an AI company, and openplate uses it to read your plate photos: your key, your provider, your data. The key lives only on this device: openplate never sends it anywhere but the provider you choose below, and never stores or sees it on its own server.",
+      "notRequired": "<strong>Nothing on this page is required.</strong> Your diary, goals, and trends all work without it. If signing up for a paid AI service and pasting in a key isn't for you, close this page and keep logging by hand, you lose nothing else.",
+      "photosAndCost": "Each photo is sent straight to that provider just long enough to read your plate. openplate itself never keeps a copy on its own server, but by default it does keep a copy on <strong>this device</strong> afterward (in your browser's storage) for about 90 days, so you can see it again on that entry later. You can turn that off, or clear it anytime, under <dataLink>Data & backup</dataLink> in settings. It costs money, but not much: usually under a cent a photo, billed straight to you by your provider. Even scanning every meal, most people spend well under $5 a month. You only pay for what you actually scan.",
+      "setup": "Setup means visiting the provider's own site first: create a free account there, and add a payment method (their checkout, not ours: openplate never sees your card). The simplest path is a key from <providerLink>{{provider}}</providerLink>: that's the tab we've put first below, and one key covers every model listed under it.",
+      "setupOpenAiNote": "One exception worth knowing: OpenAI's own service won't answer requests sent straight from a browser, so <strong>OpenAI models are only reachable here through OpenRouter</strong>, whose single key also covers Google's models.",
       "title": "Snap a photo, get the macros"
     },
     "field": {
@@ -1750,7 +1756,7 @@
     "gateway": {
       "auditNotice": "This gateway declares that its administrator can review your submissions, including photos.",
       "badge": "Gateway",
-      "disconnectNote": "Nothing is revoked anywhere — there is no account or key of yours involved. To use this gateway again you'll need a new invite link from whoever runs it."
+      "disconnectNote": "Nothing is revoked anywhere: there is no account or key of yours involved. To use this gateway again you'll need a new invite link from whoever runs it."
     },
     "loading": "Loading your AI settings…",
     "manualEntry": {
@@ -1761,17 +1767,17 @@
       "blurb": {
         "claude-haiku-4-5": "Quick and accurate on food detail",
         "claude-sonnet-5": "Higher accuracy for tricky plates",
-        "google-gemini-3-1-flash-lite": "Cheap and capable — great default for plate photos",
-        "google-gemini-3-5-flash-lite": "Default after connecting OpenRouter — picked for privacy, not price: no training on your photos",
-        "ministral-14b-2512": "A respectable budget floor — names dishes a bit clumsily",
-        "ministral-3b-2512": "Cheapest of the family — for simple, clearly separated plates",
+        "google-gemini-3-1-flash-lite": "Cheap and capable, great default for plate photos",
+        "google-gemini-3-5-flash-lite": "Default after connecting OpenRouter, picked for privacy, not price: no training on your photos",
+        "ministral-14b-2512": "A respectable budget floor, names dishes a bit clumsily",
+        "ministral-3b-2512": "Cheapest of the family, for simple, clearly separated plates",
         "ministral-8b-2512": "Budget tier with a little more headroom",
         "mistral-large-2512": "Flagship price, weakest plate breakdown of the family",
-        "mistral-medium-2604": "Most accurate on real plates — the one to pick",
+        "mistral-medium-2604": "Most accurate on real plates, the one to pick",
         "mistral-small-2603": "Cheap input, but it misread two of our three test plates",
         "openai-gpt-5-4-mini": "Fast, inexpensive all-rounder",
         "openai-gpt-5-5": "Premium option",
-        "openai-gpt-5-6-luna": "Cheapest option here — new, not yet compared on real plates"
+        "openai-gpt-5-6-luna": "Cheapest option here, new, not yet compared on real plates"
       },
       "createKeyLink": "Get a key from {{provider}}",
       "customHint": "Overrides the model selected above when filled.",
@@ -1782,17 +1788,17 @@
       "recommended": "Recommended"
     },
     "oauth": {
-      "noCardNote": "No credit card needed to get started — you can add one on OpenRouter later."
+      "noCardNote": "No credit card needed to get started, you can add one on OpenRouter later."
     },
     "preset": {
       "badge": "Provided by this openplate",
-      "body": "Whoever set up this openplate runs a plate-reading AI alongside it. Connect it in one tap — no account anywhere, no key to fetch, nothing to pay. Your photos go straight from this device to that endpoint, and nowhere else.",
+      "body": "Whoever set up this openplate runs a plate-reading AI alongside it. Connect it in one tap, no account anywhere, no key to fetch, nothing to pay. Your photos go straight from this device to that endpoint, and nowhere else.",
       "byokStillAvailable": "Prefer your own AI provider? You can still set one up below, and it replaces this whenever you like.",
       "connect": "Use this openplate's AI",
       "connected": "Connected to this openplate's own AI.",
-      "connectedUnverified": "Connected, but this openplate's AI didn't answer just now. Try a scan — if it fails, whoever runs this instance needs to look at it.",
+      "connectedUnverified": "Connected, but this openplate's AI didn't answer just now. Try a scan. If it fails, whoever runs this instance needs to look at it.",
       "connecting": "Connecting…",
-      "disconnectNote": "Nothing is revoked anywhere — there is no account or key of yours involved. This openplate keeps offering its AI, so you can reconnect in one tap whenever you want.",
+      "disconnectNote": "Nothing is revoked anywhere: there is no account or key of yours involved. This openplate keeps offering its AI, so you can reconnect in one tap whenever you want.",
       "explainerNote": "You don't need any of this: this openplate provides its own AI, one tap above. The rest of this page is for bringing your own provider instead.",
       "failed": "Couldn't save the connection. Try again.",
       "title": "This openplate provides its own AI"
@@ -1805,7 +1811,7 @@
     },
     "providerBlurb": {
       "mistral": "Mistral is a French company and runs its models on servers in the EU. Its free tier asks for a phone number, but no credit card.",
-      "openrouter": "One key for every model, including OpenAI's and Google's. Connect in one click — no credit card needed to start."
+      "openrouter": "One key for every model, including OpenAI's and Google's. Connect in one click, no credit card needed to start."
     },
     "providerRow": {
       "connectedHint": "To switch providers, disconnect first.",
@@ -1816,7 +1822,7 @@
       "legend": "Choose an AI provider"
     },
     "quickstart": {
-      "step1": "Pick a provider below — {{provider}} is the recommended one.",
+      "step1": "Pick a provider below. {{provider}} is the recommended one.",
       "step2": "Create an API key in the <providerLink>{{provider}} console</providerLink>.",
       "step3": "Paste it below and scan your first plate.",
       "title": "Three steps, about two minutes"
@@ -1832,15 +1838,15 @@
       "disconnected": "AI provider disconnected.",
       "nothingToDisconnect": "There was nothing to disconnect.",
       "saved": "Settings verified and saved.",
-      "unverified": "Saved — couldn't verify the key right now.",
-      "unverifiedOpenaiCompatible": "Saved — couldn't verify the key right now (often the content-security policy blocking a non-localhost endpoint, or the endpoint not allowing browser CORS requests — see the base URL help text above)."
+      "unverified": "Saved, couldn't verify the key right now.",
+      "unverifiedOpenaiCompatible": "Saved, couldn't verify the key right now (often the content-security policy blocking a non-localhost endpoint, or the endpoint not allowing browser CORS requests, see the base URL help text above)."
     },
     "troubleshooting": {
       "credit": "Your account with the provider needs a payment method or some credit added before it will answer requests.",
       "intro": "A few things usually explain it:",
-      "keyTypo": "The key got copied with an extra space or a missing character — try copying and pasting it again.",
-      "providerDown": "The provider is temporarily busy or down — wait a minute and try again.",
-      "reassurance": "None of this affects the rest of openplate — you can always log food by hand instead.",
+      "keyTypo": "The key got copied with an extra space or a missing character. Try copying and pasting it again.",
+      "providerDown": "The provider is temporarily busy or down. Wait a minute and try again.",
+      "reassurance": "None of this affects the rest of openplate, you can always log food by hand instead.",
       "title": "If a scan doesn't work"
     },
     "usage": {
@@ -1869,11 +1875,11 @@
       "readAloud": "Read these twelve characters out to the person sharing with you, and they type them in. This app worked them out here, from your own key.",
       "publicKeyLabel": "Your public key",
       "publicKeyHint": "Safe to send by email or show as a code. On its own it can decrypt nothing.",
-      "recoveryNote": "Keep your recovery code safe. It protects your patients’ access as well as your own — lose it and your passphrase, and every diary shared with you stops opening."
+      "recoveryNote": "Keep your recovery code safe. It protects your patients’ access as well as your own. Lose it and your passphrase, and every diary shared with you stops opening."
     },
     "grant": {
       "title": "Share with someone",
-      "description": "Do this with them — in the room, or on a call. You need their account number, their key, and the fingerprint they read out.",
+      "description": "Do this with them, in the room, or on a call. You need their account number, their key, and the fingerprint they read out.",
       "accountLabel": "Their account number",
       "accountHint": "They can see it on their own sharing page.",
       "keyLabel": "Their public key",
@@ -1925,7 +1931,7 @@
       "failed": "Could not replace the key. Nothing was changed.",
       "doneTitle": "Your data key was replaced.",
       "doneBody": "{{kept}} share(s) kept, {{revoked}} ended.",
-      "recoveryTitle": "Your new recovery code — write it down now.",
+      "recoveryTitle": "Your new recovery code, write it down now.",
       "recoveryNote": "Shown once. The code you had before no longer works."
     },
     "clinician": {
@@ -1955,13 +1961,13 @@
       "failed": "Couldn’t change the passphrase. Nothing was changed.",
       "newLabel": "New passphrase",
       "open": "Change passphrase",
-      "recoveryNote": "Your recovery code keeps working — it isn’t tied to the passphrase you’re replacing.",
+      "recoveryNote": "Your recovery code keeps working, it isn’t tied to the passphrase you’re replacing.",
       "submit": "Save new passphrase",
       "title": "Change passphrase"
     },
     "connected": {
       "description": "Signed in as {{email}}.",
-      "photosStayHere": "Plate photos stay on the device that took them — they’re never part of a sync, so you won’t see them on your other devices.",
+      "photosStayHere": "Plate photos stay on the device that took them, they’re never part of a sync, so you won’t see them on your other devices.",
       "title": "Sync is on"
     },
     "create": {
@@ -1991,7 +1997,7 @@
     "emailLabel": "Email address",
     "forgot": {
       "back": "Back",
-      "intro": "We’ll email you a link to set a new passphrase. Read the next screen carefully — a reset gets you back in, but it can’t bring your synced data back on its own.",
+      "intro": "We’ll email you a link to set a new passphrase. Read the next screen carefully, a reset gets you back in, but it can’t bring your synced data back on its own.",
       "sent": "If that address has an account, the link is on its way.",
       "sentNote": "We answer the same way either way, so this form can’t be used to find out who has an account.",
       "submit": "Send the link"
@@ -2000,8 +2006,8 @@
     "passphrase": {
       "strength": {
         "fair": "Decent. A few more words would make it much harder to guess.",
-        "strong": "Good — long enough to be genuinely hard to guess.",
-        "weak": "Short passphrases are the weak point here — length helps more than symbols do."
+        "strong": "Good, long enough to be genuinely hard to guess.",
+        "weak": "Short passphrases are the weak point here, length helps more than symbols do."
       }
     },
     "passphraseLabel": "Sync passphrase",
@@ -2010,12 +2016,12 @@
       "manage": "Manage sync",
       "setUp": "Set up sync"
     },
-    "promise": "Your passphrase never leaves this device, and the sync server only ever stores encrypted bytes it has no key for. That also means nobody — including us — can recover your data if you lose both your passphrase and your recovery code.",
+    "promise": "Your passphrase never leaves this device, and the sync server only ever stores encrypted bytes it has no key for. That also means nobody, including us, can recover your data if you lose both your passphrase and your recovery code.",
     "recoveryCode": {
       "description": "The one way back into your synced data if you ever forget your passphrase.",
       "done": "I've saved it",
       "failed": "Couldn't create a new recovery code. Your existing one still works.",
-      "note": "Use this if you never wrote your code down, or can't find it any more. The new code replaces the old one immediately — the old one stops working.",
+      "note": "Use this if you never wrote your code down, or can't find it any more. The new code replaces the old one immediately. The old one stops working.",
       "regenerate": "Show a new recovery code",
       "title": "Recovery code"
     },
@@ -2023,18 +2029,18 @@
       "back": "Back",
       "description": "You’re here from the link we emailed you.",
       "doneWithData": "Done. Your passphrase is set and your synced data is intact.",
-      "doneWithoutData": "Done. You can sign in again — this account starts fresh from here.",
+      "doneWithoutData": "Done. You can sign in again. This account starts fresh from here.",
       "failed": "That didn’t work. Nothing has been changed.",
       "forkNo": "No, I don’t have it",
       "forkQuestion": "Do you have your recovery code?",
-      "forkWarning": "Read this before you continue: a reset restores your ability to sign in. On its own it does not restore your data — the server has never had a key to it.",
+      "forkWarning": "Read this before you continue: a reset restores your ability to sign in. On its own it does not restore your data: the server has never had a key to it.",
       "forkYes": "Yes, I have it",
       "missingToken": "This link is missing its token. Open the link from your email again, or request a new one.",
       "newPassphraseLabel": "New passphrase",
       "newRecoveryCode": "Save your new recovery code. This is the only time it’s shown.",
       "noCode": {
         "acknowledgeDataPermanentlyGone": "I understand my synced data is permanently gone, and I want to continue.",
-        "body": "Everything already synced was encrypted with a key only your passphrase and your recovery code could open. Without either, nobody can open it again — not you, not us. Continuing starts the account over with a new key.",
+        "body": "Everything already synced was encrypted with a key only your passphrase and your recovery code could open. Without either, nobody can open it again, not you, not us. Continuing starts the account over with a new key.",
         "heading": "Without your recovery code, your synced data cannot be recovered."
       },
       "recoveryCodeHint": "The grouped code shown once when you set sync up. Dashes and capitalisation don’t matter.",
@@ -2047,7 +2053,7 @@
     },
     "setup": {
       "awaitingVerification": {
-        "body": "Your account is ready. Open the link we sent to {{email}} to confirm it, then come back and sign in — that's when your recovery code is created.",
+        "body": "Your account is ready. Open the link we sent to {{email}} to confirm it, then come back and sign in, that's when your recovery code is created.",
         "note": "Nothing has been encrypted or uploaded yet. Your diary stays on this device either way.",
         "title": "Check your email"
       },
@@ -2057,27 +2063,27 @@
       "continue": "Continue",
       "copied": "Copied",
       "copy": "Copy",
-      "copyFailed": "Couldn't copy — select and copy manually",
+      "copyFailed": "Couldn't copy, select and copy manually",
       "finish": "Finish setup",
       "generating": "Setting up sync…",
-      "passphraseIntro": "Choose a passphrase to encrypt your data. We use it to derive an encryption key on this device — we never see the passphrase itself, and we can’t reset it for you.",
+      "passphraseIntro": "Choose a passphrase to encrypt your data. We use it to derive an encryption key on this device, we never see the passphrase itself, and we can’t reset it for you.",
       "passphraseLabel": "Sync passphrase",
       "passphraseMismatch": "Those two passphrases don't match.",
-      "passphraseTooShort": "Use at least {{min}} characters — this passphrase is the only thing standing between your synced data and anyone who doesn't have it.",
-      "recoveryWarningBody": "If you lose both your passphrase and this recovery code, we cannot recover your data — that’s the point of end-to-end encryption. Nobody can, not even us.",
-      "recoveryWarningLead": "Save this recovery code somewhere safe — this is the only time it’s shown.",
+      "passphraseTooShort": "Use at least {{min}} characters, this passphrase is the only thing standing between your synced data and anyone who doesn't have it.",
+      "recoveryWarningBody": "If you lose both your passphrase and this recovery code, we cannot recover your data, that’s the point of end-to-end encryption. Nobody can, not even us.",
+      "recoveryWarningLead": "Save this recovery code somewhere safe, this is the only time it’s shown.",
       "retry": "Try again",
-      "setupFailed": "Something went wrong setting up sync. Nothing was saved — you're safe to try again."
+      "setupFailed": "Something went wrong setting up sync. Nothing was saved, you're safe to try again."
     },
     "signIn": {
       "cta": "Sign in to sync",
       "ctaKnown": "Unlock sync for {{email}}",
       "failed": "That didn’t work. Check the address and passphrase and try again.",
-      "finishSetup": "This account was created but its keys were never finished. Let's do that now — it takes a moment and ends with your recovery code.",
+      "finishSetup": "This account was created but its keys were never finished. Let's do that now, it takes a moment and ends with your recovery code.",
       "forgot": "I’ve forgotten my passphrase",
-      "intro": "Enter your passphrase to unlock this device. We ask again after every reload — the key is never stored.",
+      "intro": "Enter your passphrase to unlock this device. We ask again after every reload, the key is never stored.",
       "submit": "Unlock",
-      "unverified": "Your passphrase is right — the address just isn't confirmed yet. Open the link we emailed you, then come back here.",
+      "unverified": "Your passphrase is right, the address just isn't confirmed yet. Open the link we emailed you, then come back here.",
       "working": "Unlocking…"
     },
     "signOut": {
@@ -2089,7 +2095,7 @@
         "failed": "Sync didn’t finish. Your diary on this device is unaffected.",
         "incompatible": "This app and the sync server don’t speak the same version yet, so syncing is paused on purpose.",
         "offline": "Couldn’t reach the sync server. Your diary is safe on this device and will catch up later.",
-        "reauth-required": "Your session ended — sign in again to keep syncing. Nothing has been lost."
+        "reauth-required": "Your session ended. Sign in again to keep syncing. Nothing has been lost."
       },
       "lastSynced": "Last synced {{when}}",
       "never": "Not synced from this device yet",
@@ -2101,7 +2107,7 @@
     },
     "title": "Sync across devices",
     "verifyEmail": {
-      "failed": "That link didn’t work — it may have been used already or expired.",
+      "failed": "That link didn’t work, it may have been used already or expired.",
       "next": "You can close this page and go back to the app.",
       "pending": "One moment…",
       "title": "Confirming your email",
@@ -2130,7 +2136,7 @@
       "rangeGroup": "Time span"
     },
     "empty": {
-      "body": "Once you’ve logged some meals, this page shows the days you hit your goals, recaps your week, and charts your weight — honestly, gaps and all.",
+      "body": "Once you’ve logged some meals, this page shows the days you hit your goals, recaps your week, and charts your weight, honestly, gaps and all.",
       "cta": "Add your first food",
       "description": "Log a few days and your progress appears here."
     },
@@ -2149,7 +2155,7 @@
       "cell": {
         "logged": "You logged something.",
         "metCount": "{{met}} of {{total}} goals met",
-        "today": "Today — still going.",
+        "today": "Today, still going.",
         "unrated": "Logged, but there wasn't enough detail to check your goals."
       },
       "description": "The last 13 weeks. The darker a square, the more of your goals you hit that day.",
@@ -2178,7 +2184,7 @@
     },
     "legend": {
       "goal": "Your goal",
-      "incomplete": "Might be incomplete — the bar is a minimum",
+      "incomplete": "Might be incomplete, the bar is a minimum",
       "noEntry": "No entry",
       "overGoal": "Over your goal"
     },
@@ -2210,18 +2216,18 @@
       "underGoal": "{{days}} of {{total}} logged days were under your {{goal}} g net-carbs goal",
       "vsLastWeek": "({{delta}} vs last week)",
       "weight": "Weight {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": "— day-to-day weight is noisy"
+      "weightNoisy": ", day-to-day weight is noisy"
     },
     "sparse": {
-      "body": "At {{days}} logged days the chart shows up here. Nothing is lost in the meantime — every day you log is already in your diary.",
+      "body": "At {{days}} logged days the chart shows up here. Nothing is lost in the meantime, every day you log is already in your diary.",
       "countNone": "none in this stretch",
-      "headline": "Trends need a few more days to mean anything — you’ve got {{logged}}."
+      "headline": "Trends need a few more days to mean anything, you’ve got {{logged}}."
     },
     "streak": {
-      "active_one": "{{count}} day in a row — keep it going.",
-      "active_other": "{{count}} days in a row — keep it going.",
+      "active_one": "{{count}} day in a row, keep it going.",
+      "active_other": "{{count}} days in a row, keep it going.",
       "empty": "Log a food today to start a streak.",
-      "overGoal": "You logged today. It came in over your carb goal, so it doesn't add to a streak — a streak counts days under it.",
+      "overGoal": "You logged today. It came in over your carb goal, so it doesn't add to a streak, a streak counts days under it.",
       "title": "Your streak"
     },
     "title": "Progress",
@@ -2240,7 +2246,7 @@
         "trend": "trend"
       },
       "pointCaptionIdle": "Move across the chart to read a day.",
-      "singleEntry": "One weigh-in so far — a trend needs a couple more.",
+      "singleEntry": "One weigh-in so far, a trend needs a couple more.",
       "stat": {
         "atTarget": "At your target",
         "change": "Last 13 weeks",
@@ -2254,6 +2260,16 @@
       "title": "Weight",
       "unitKilograms": "kilograms",
       "unitPounds": "pounds"
+    }
+  },
+  "ui": {
+    "sidebar": {
+      "title": "Sidebar",
+      "description": "Displays the mobile sidebar.",
+      "toggle": "Toggle Sidebar"
+    },
+    "sheet": {
+      "close": "Close"
     }
   }
 }

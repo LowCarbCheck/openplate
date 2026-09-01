@@ -23,7 +23,7 @@
       "carbsSummary": "{{value}} g Kohlenhydrate",
       "description": "Lebensmittel, die du selbst angelegt hast. Hier kannst du die Werte ändern oder eins löschen.",
       "editAria": "{{name}} bearbeiten",
-      "empty": "Du hast noch keine eigenen Lebensmittel. Leg über „Selbst eintragen“ eins an — dann taucht es hier auf.",
+      "empty": "Du hast noch keine Lebensmittel hinzugefügt. Nutze „Manuell hinzufügen“, um eines zu erstellen. Es wird dann hier angezeigt.",
       "fallbackName": "Lebensmittel",
       "name": "Name",
       "per100g": "pro 100 g: {{summary}}",
@@ -48,7 +48,7 @@
       "gramsNotPositive": "Gramm muss größer als 0 sein",
       "gramsRequired": "Gib an, wie viel Gramm",
       "nameRequired": "Name fehlt",
-      "saveFailed": "Speichern hat nicht geklappt — prüf den Namen und versuch es nochmal."
+      "saveFailed": "Konnte nicht gespeichert werden. Überprüfe den Namen und versuche es erneut."
     },
     "loading": "Wird geladen…",
     "macros": {
@@ -61,12 +61,12 @@
       "sugars": "Zucker"
     },
     "manual": {
-      "description": "Trag ein, was du gegessen hast und wie viel davon — entweder pro 100 g oder pro Portion, genau so, wie es auf der Packung steht.",
+      "description": "Gib den Namen des Lebensmittels ein und die Menge, entweder pro 100 g oder pro Portion genau wie auf der Verpackung angegeben.",
       "grams": "Gramm",
       "mealOptional": "Mahlzeit (optional)",
       "name": "Name",
       "namePlaceholder": "Gegrilltes Hähnchen",
-      "nutritionHint": "Mit Kohlenhydraten wird daraus auch eins deiner Lebensmittel für nächstes Mal — ohne trägst du es nur dieses eine Mal ein.",
+      "nutritionHint": "Gib Kohlenhydrate an, um dies auch für das nächste Mal als eigenes Lebensmittel zu speichern. Überspringe dies, um es nur einmal einzutragen.",
       "nutritionToggle": "Nährwerte (optional)",
       "per100g": "Pro 100 g",
       "perServing": "Pro Portion",
@@ -92,7 +92,7 @@
       },
       "fat": "Fett {{value}} g",
       "grams": "Gramm",
-      "macrosUnknown": "Nährwerte unbekannt — nur der Name ist eingetragen.",
+      "macrosUnknown": "Nährwerte unbekannt, nur als Name eingetragen.",
       "meal": "Mahlzeit",
       "netCarbs": "{{value}} g Netto-KH",
       "protein": "Eiweiß {{value}} g",
@@ -123,13 +123,13 @@
     "search": {
       "addManually": "Nicht dabei? Selbst eintragen",
       "empty": {
-        "firstTime": "Such nach einem Lebensmittel — oder trag es unten selbst ein.",
+        "firstTime": "Suche nach einem Lebensmittel zum Eintragen oder füge unten manuell eines hinzu.",
         "noMatches": "Nichts gefunden für „{{query}}“. Trag es unten selbst ein.",
         "startTyping": "Tipp los, um deine Lebensmittel zu durchsuchen."
       },
       "label": "Lebensmittel suchen",
-      "offlineBanner": "Du bist offline. Für neue Lebensmittel braucht die Suche eine Verbindung — deine letzten und gespeicherten Lebensmittel gehen weiterhin.",
-      "offlinePending": "Für neue Lebensmittel braucht die Suche eine Verbindung — geht weiter, sobald du wieder verbunden bist.",
+      "offlineBanner": "Du bist offline. Um neue Lebensmittel zu suchen, brauchst du eine Verbindung. Deine zuletzt verwendeten und gespeicherten Lebensmittel funktionieren weiterhin.",
+      "offlinePending": "Die Suche nach neuen Lebensmitteln erfordert eine Verbindung und wird fortgesetzt, sobald du wieder online bist.",
       "pause": {
         "minute": "in etwa einer Minute",
         "minutes": "in ein paar Minuten",
@@ -150,23 +150,23 @@
         "greekYogurt": "Griechischer Joghurt",
         "rice": "Reis"
       },
-      "throttled": "Die Suche macht kurz Pause — versuch es {{when}} nochmal. Deine letzten und gespeicherten Lebensmittel findest du unten weiterhin."
+      "throttled": "Die Suche macht eine kurze Pause. Versuche es {{when}} erneut. Deine zuletzt verwendeten und gespeicherten Lebensmittel funktionieren unten weiterhin."
     },
     "title": "Essen eintragen"
   },
   "banners": {
     "backupDismiss": "Backup-Hinweis ausblenden",
     "backupExportNow": "Jetzt exportieren",
-    "backupLastExport_one": "Dein Tagebuch liegt nur hier — ein Gerät, keine Cloud. Letztes Backup: vor {{count}} Tag.",
-    "backupLastExport_other": "Dein Tagebuch liegt nur hier — ein Gerät, keine Cloud. Letztes Backup: vor {{count}} Tagen.",
-    "backupNeverExported": "Dein Tagebuch liegt nur hier — ein Gerät, keine Cloud. In 10 Sekunden gesichert.",
+    "backupLastExport_one": "Dein Tagebuch existiert nur hier: auf diesem Gerät, ohne Cloud. Letztes Backup: vor {{count}} Tag.",
+    "backupLastExport_other": "Dein Tagebuch existiert nur hier: auf diesem Gerät, ohne Cloud. Letztes Backup: vor {{count}} Tagen.",
+    "backupNeverExported": "Dein Tagebuch existiert nur hier: auf diesem Gerät, ohne Cloud. Erstelle in 10 Sekunden ein Backup.",
     "loggingTo": "Eintrag für <day>{{label}}</day>",
     "offlineDefault": "Du bist offline. Die letzten Tage kannst du lesen; neue Einträge werden übertragen, sobald du wieder verbunden bist.",
     "switchToToday": "Zu heute wechseln"
   },
   "bodyMetrics": {
     "birthYear": {
-      "hint": "Referenzwerte sind in breiten Altersgruppen zusammengefasst — das Jahr reicht uns, dein genaues Geburtsdatum brauchen wir nie.",
+      "hint": "Referenzmengen sind in breite Altersgruppen eingeteilt, daher reicht uns das Geburtsjahr, niemals dein vollständiges Geburtsdatum.",
       "label": "Geburtsjahr",
       "placeholder": "z. B. 1985"
     },
@@ -188,7 +188,7 @@
       "placeholder": "z. B. 175"
     },
     "reproductive": {
-      "hint": "Beides verändert die Referenzwerte für mehrere Nährstoffe. Mit \"Weder noch\" nimmst du die Angabe jederzeit wieder zurück.",
+      "hint": "Beides ändert die Referenzmengen für mehrere Nährstoffe. Wähle „Weder noch“, wenn du es wieder entfernen möchtest.",
       "lactating": "Stillend",
       "legend": "Schwanger oder stillend?",
       "none": "Weder noch",
@@ -209,8 +209,8 @@
   },
   "chrome": {
     "back": "Zurück",
-    "deviceMenuLabel": "Dieses Gerät — Menü öffnen",
-    "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc> — ein Ernährungstagebuch, das auf deinem Gerät bleibt",
+    "deviceMenuLabel": "Dieses Gerät, Menü öffnen",
+    "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "installApp": "App installieren",
     "licence": "MIT-Lizenz",
     "licenceShort": "Lizenz",
@@ -221,7 +221,7 @@
     "preferences": "Einstellungen",
     "privacy": "Datenschutz",
     "source": "Quellcode",
-    "sourceLabel": "openplate auf GitHub — öffnet in einem neuen Tab",
+    "sourceLabel": "openplate auf GitHub, öffnet in neuem Tab",
     "sourceShort": "Quellcode",
     "terms": "AGB",
     "imprint": "Impressum",
@@ -232,9 +232,9 @@
     "copy": "Link kopieren",
     "copyFailed": "Kopieren ging nicht",
     "description": "Schick ihn jemandem, der sein Tagebuch mit dir teilen möchte, oder lass ihn vom Bildschirm abscannen.",
-    "nameHint": "Optional. Er reist im Link mit — behandle ihn als etwas, das du über dich sagst, nicht als Nachweis.",
+    "nameHint": "Optional. Wird im Link übertragen, betrachte es also als Selbstangabe und nicht als Identitätsnachweis.",
     "nameLabel": "Der Name, den sie sehen",
-    "notSecret": "Der Link ist kein Geheimnis — er trägt deinen öffentlichen Schlüssel, der nur Daten für dich versiegeln kann. Und er erreicht keinen Server: alles hinter dem # bleibt im Browser.",
+    "notSecret": "Der Link ist nicht geheim: Er enthält deinen öffentlichen Schlüssel, der Daten ausschließlich für dich verschlüsseln kann. Er erreicht auch niemals einen Server: Alles nach dem # bleibt im Browser.",
     "qrTitle": "Dein Verbindungslink als scannbarer Code",
     "stillReadAloud": "Wenn sie ihn geöffnet haben, lies ihnen diese zwölf Zeichen vor: {{fingerprint}}. Solange sie die nicht eintippen, wird nichts geteilt.",
     "title": "Dein Verbindungslink"
@@ -262,7 +262,7 @@
       "title": "Dieser Link sieht nicht richtig aus"
     },
     "keyChanged": {
-      "body": "Du hattest {{pinned}} bestätigt; dieser Link trägt {{offered}}. Das passiert, wenn jemand einen neuen Schlüssel erstellt — und genauso, wenn jemand einen austauscht. Macht die Prüfung gemeinsam und laut noch einmal, bevor du weitermachst.",
+      "body": "Du hast zuvor {{pinned}} verifiziert; dieser Link enthält {{offered}}. Das passiert, wenn jemand einen neuen Schlüssel erstellt oder austauscht. Führe den Abgleich noch einmal laut mit der Person durch, bevor du fortfährst.",
       "title": "Der Schlüssel hat sich geändert"
     },
     "noSync": {
@@ -271,13 +271,13 @@
     },
     "queryString": {
       "askAgain": "Bitte um einen neuen Link, oder lass dir den Code direkt auf dem Bildschirm zeigen.",
-      "body": "Der Schlüssel kam in dem Teil der Adresse an, der an Server geschickt wird — er blieb also nicht zwischen euch beiden. Meist hat ein E-Mail- oder Chat-Programm den Link unterwegs umgeschrieben.",
+      "body": "Der Schlüssel wurde in dem Teil der Adresse übermittelt, der an Server gesendet wird, und blieb daher nicht nur zwischen euch beiden. Das bedeutet meist, dass eine E-Mail- oder Chat-App den Link unterwegs verändert hat.",
       "parameters": "In der Adresse mitgeschickt: {{parameters}}.",
       "title": "Dieser Link ist nicht sicher zu benutzen"
     },
     "reading": "Link wird gelesen…",
     "sharingOff": {
-      "body": "Auf deinem Sync-Server ist Teilen nicht eingeschaltet. Der geprüfte Schlüssel bleibt auf diesem Gerät — ist Teilen einmal eingeschaltet, kannst du ohne erneute Prüfung teilen.",
+      "body": "Auf deinem Sync-Server ist das Teilen nicht aktiviert. Der geprüfte Schlüssel wird auf diesem Gerät gespeichert, sodass du nach der Aktivierung teilen kannst, ohne die Prüfung erneut durchzuführen.",
       "title": "Geprüft, aber noch nichts geteilt"
     },
     "signedOut": {
@@ -287,7 +287,7 @@
   },
   "connectGateway": {
     "audit": {
-      "body": "Dieses Gateway gibt an, dass seine Administration deine Einsendungen einsehen kann, auch die Fotos. Das ist die Auskunft des Gateways selbst — openplate kann sie nicht überprüfen.",
+      "body": "Dieses Gateway gibt an, dass dessen Administrator deine Einsendungen einschließlich Fotos einsehen kann. Das meldet das Gateway selbst. openplate kann dies nicht überprüfen.",
       "title": "Dieses Gateway sagt, es kann mitlesen"
     },
     "backToAiSettings": "Zurück zu den KI-Einstellungen",
@@ -302,7 +302,7 @@
       "button": "Diesem Gateway beitreten",
       "join": "{{name}} beitreten",
       "joining": "Verbinde…",
-      "replaces": "Das ersetzt deine aktuelle KI-Verbindung ({{current}}). Es wird nichts widerrufen — du kannst sie später wieder einrichten.",
+      "replaces": "Dies ersetzt deine aktuelle KI-Verbindung ({{current}}). Es wird nirgendwo etwas widerrufen. Du kannst sie später wieder einrichten.",
       "routing": "Deine Essensfotos werden zur Analyse über {{origin}} geschickt."
     },
     "description": "Jemand hat dieses Gerät eingeladen, die KI auf einem Gateway zu nutzen, das er betreibt.",
@@ -329,7 +329,7 @@
       "openDiary": "Tagebuch von heute öffnen"
     },
     "week": {
-      "empty": "Noch keine Tage eingetragen — heute kann der erste sein.",
+      "empty": "Noch keine Tage eingetragen. Heute kann der erste sein.",
       "link": "Zu deinem Fortschritt",
       "title": "Deine letzten 7 Tage"
     },
@@ -349,7 +349,7 @@
       "missingData": "Bei einigen Einträgen fehlen Angaben"
     },
     "celebration": {
-      "firstLog": "Das war dein erstes Essen im Tagebuch. Mehr musst du nicht einrichten — mach einfach weiter.",
+      "firstLog": "Dein erstes Lebensmittel ist eingetragen. Es gibt nichts weiter einzurichten, mach einfach weiter so.",
       "firstScan": "Das war der erste Teller, den dein eigener KI-Anbieter erkannt hat.",
       "streak7": "Das sind sieben Tage in Folge.",
       "targetWeight": "Du hast dein Zielgewicht erreicht."
@@ -381,10 +381,10 @@
     "empty": {
       "firstEver": {
         "cta": "Trag dein erstes Essen ein",
-        "noData": "Auf diesem Gerät liegen noch keine Daten — openplate schon woanders benutzt? <backup>Backup importieren</backup> oder <sync>Sync aktivieren</sync>, um die Daten von einem anderen Gerät zu holen.",
-        "noDataBackupOnly": "Auf diesem Gerät liegen noch keine Daten — openplate schon woanders benutzt? Dann <backup>Backup importieren</backup> und alles ist wieder da.",
+        "noData": "Noch keine Daten auf diesem Gerät. Hast du openplate schon woanders genutzt? <backup>Importiere ein Backup</backup> oder <sync>aktiviere die Synchronisierung</sync>, um Daten von einem anderen Gerät zu laden.",
+        "noDataBackupOnly": "Noch keine Daten auf diesem Gerät. Hast du openplate schon woanders genutzt? <backup>Importiere ein Backup</backup>, um deine Daten zu übertragen.",
         "scanLink": "oder einen Teller fotografieren",
-        "subtitle": "Such ein Lebensmittel und trag es ein — ohne Einrichtung.",
+        "subtitle": "Suche nach einem Lebensmittel, um es hinzuzufügen. Keine Einrichtung erforderlich.",
         "title": "Trag dein erstes Essen ein"
       },
       "ordinary": {
@@ -413,10 +413,10 @@
       "toGo": "Noch {{value}} g"
     },
     "habit": {
-      "logged": "{{date}} — eingetragen",
-      "met": "{{date}} — Kohlenhydratziel erreicht",
-      "none": "{{date}} — nichts eingetragen",
-      "over": "{{date}} — über dem Kohlenhydratziel",
+      "logged": "{{date}}, eingetragen",
+      "met": "{{date}}, Kohlenhydratziel erreicht",
+      "none": "{{date}}, keine Einträge",
+      "over": "{{date}}, Kohlenhydratziel überschritten",
       "overGoal": "über dem Ziel",
       "summary": "{{logged}} von {{total}} Tagen eingetragen",
       "underGoal": "unter dem Ziel"
@@ -488,8 +488,8 @@
       "namePlaceholder": "Name der Mahlzeit",
       "save": "Speichern",
       "saving": "Wird gespeichert…",
-      "toast_one": "{{name}} gespeichert — {{count}} Lebensmittel.",
-      "toast_other": "{{name}} gespeichert — {{count}} Lebensmittel.",
+      "toast_one": "{{name}} gespeichert, {{count}} Lebensmittel.",
+      "toast_other": "{{name}} gespeichert, {{count}} Lebensmittel.",
       "trigger": "Als Mahlzeit speichern"
     },
     "suggestions": {
@@ -505,7 +505,7 @@
       "addedOne": "{{name}} eingetragen",
       "copiedMany": "{{n}} Lebensmittel übernommen",
       "copiedOne": "{{name}} übernommen",
-      "description": "{{where}} — {{when}}",
+      "description": "{{where}}, {{when}}",
       "onDay": "{{carbs}} Netto-KH am {{day}}.",
       "restored": "{{name}} ist wieder in deinem Tagebuch.",
       "soFarToday": "{{carbs}} Netto-KH heute bisher.",
@@ -532,7 +532,7 @@
       "per100gHint": "Die Nährwerte gelten pro 100 g. Was du nicht weißt, lässt du einfach leer.",
       "save": "Änderungen speichern",
       "saving": "Wird gespeichert…",
-      "subtitle": "Stell zuerst die Portion ein — die Nährwerte ziehen mit.",
+      "subtitle": "Passe zuerst die Portion an. Die Makronährstoffe folgen.",
       "time": "Uhrzeit",
       "title": "Eintrag bearbeiten",
       "when": "Wann"
@@ -567,7 +567,7 @@
       "protein": "Eiweiß",
       "sugars": "Zucker"
     },
-    "macrosUnknown": "Nährwerte unbekannt — nur der Name ist eingetragen.",
+    "macrosUnknown": "Makronährstoffe unbekannt, nur mit Namen eingetragen.",
     "meal": {
       "breakfast": "Frühstück",
       "dinner": "Abendessen",
@@ -594,11 +594,11 @@
     "provenance": {
       "adapted": {
         "badge": "Von dir geändert",
-        "note": "Du hast diese Werte angepasst, also sind es jetzt deine eigenen. Ursprünglich kamen sie aus unserer Lebensmitteldatenbank — der Hinweis unten gehört zu diesen Ausgangsdaten."
+        "note": "Du hast diese Werte geändert, daher sind es jetzt deine eigenen. Sie stammten ursprünglich aus unserer Lebensmittel-Datenbank: Die Quellenangabe unten bezieht sich auf diese Originaldaten."
       },
       "ai": {
         "badge": "KI-Schätzung",
-        "note": "Diese Nährwerte sind eine KI-Schätzung aus deinem Tellerfoto — schau nochmal drauf, wenn es auf die genauen Zahlen ankommt."
+        "note": "Diese Makronährstoffe sind eine KI-Schätzung anhand deines Tellerfotos. Überprüfe sie bitte, wenn es auf genaue Werte ankommt."
       },
       "curated": {
         "badge": "Aus unserer Lebensmitteldatenbank",
@@ -665,7 +665,7 @@
       "deleteBody": "Es verschwindet aus deinem Verlauf. Sonst ändert sich nichts.",
       "deleteLabel": "Fasten vom {{when}} entfernen",
       "deleteTitle": "Dieses Fasten entfernen?",
-      "empty": "Noch keine Fasten — dein erstes erscheint hier.",
+      "empty": "Noch keine Fastenzeiten. Deine erste erscheint hier.",
       "stillOpen": "Läuft noch",
       "stillOpenHint": "Gestartet {{when}}, nie beendet.",
       "title": "Deine Fasten"
@@ -678,7 +678,7 @@
       "customPlaceholder": "z. B. 24",
       "description": "Die erste Zahl sind die Stunden, in denen du fastest, die zweite die Stunden, in denen du isst.",
       "eyebrow": "Fasten planen",
-      "honesty": "openplate zählt nur die Stunden — medizinische Beratung gibt es hier nicht.",
+      "honesty": "openplate zählt nur die Stunden. Es bietet keine medizinische Beratung.",
       "plannedStartLabel": "Startzeit",
       "protocolAria": "{{fastingHours}} Stunden fasten, {{eatingHours}} Stunden essen",
       "protocolGroup": "Fastenfenster",
@@ -718,7 +718,7 @@
     "title": "Fasten",
     "toast": {
       "deleted": "Fasten entfernt.",
-      "ended": "Fasten gespeichert — {{achieved}}.",
+      "ended": "Fastenzeit gespeichert, {{achieved}}.",
       "planCancelled": "Plan verworfen.",
       "scheduled": "Fasten eingeplant.",
       "startAdjusted": "Startzeit aktualisiert.",
@@ -732,7 +732,7 @@
     },
     "carbs": {
       "custom": "Eigener Wert",
-      "hint": "Gezählt werden Netto-Kohlenhydrate — schon ohne Ballaststoffe und Zuckeralkohole, also genau die Zahl aus deinem Tagebuch. Wähl unten einen gängigen Startwert oder trag deinen eigenen Wert in Gramm ein.",
+      "hint": "Hier werden Netto-Kohlenhydrate gezählt: Ballaststoffe und mehrwertige Alkohole sind bereits abgezogen, genau wie in deinem Tagebuch. Wähle unten einen gängigen Richtwert oder gib deine eigene Menge in Gramm ein.",
       "label": "Tageslimit Kohlenhydrate",
       "placeholder": "z. B. 20",
       "presets": {
@@ -742,23 +742,23 @@
       }
     },
     "card": {
-      "description": "Jedes Ziel hier unten ist freiwillig — setz, was dir hilft, und lass den Rest leer. Ein leeres Feld heißt: kein Ziel. Nichts davon ist eine feste Regel, es sind nur Zahlen zum Anpeilen.",
+      "description": "Jedes Ziel unten ist optional. Trage ein, was dir hilft, und lasse den Rest frei. Das Leeren eines Feldes entfernt das jeweilige Ziel. Nichts davon ist eine feste Regel, sondern lediglich Richtwerte zur Orientierung.",
       "title": "Deine Ziele"
     },
     "errors": {
-      "positiveOrBlank": "Gib eine Zahl über 0 ein — oder lass das Feld leer, dann gibt es kein Ziel"
+      "positiveOrBlank": "Gib eine Zahl größer als 0 ein oder leere das Feld, um das Ziel zu entfernen"
     },
     "kcal": {
-      "approximateNote": "Deinen Stand dazu zeigen wir als ungefähren Wert — Kalorienangaben bei Lebensmitteln sind meist Schätzungen, keine exakten Zahlen.",
-      "hint": "Kalorien messen die Energie im Essen — ungefähr wie eine Tankanzeige. Die eine richtige Zahl gibt es nicht, sie hängt von dir ab. Du weißt nicht, wo du anfangen sollst? Viele starten irgendwo zwischen 1.600 und 2.200 am Tag. Eine Zahl, die wirklich zu dir passt, nennt dir am besten deine Ärztin, dein Arzt oder deine Ernährungsberater:in.",
+      "approximateNote": "Wir zeigen deinen Fortschritt hierbei als Näherungswert an, da Kalorienangaben bei Lebensmitteln oft Schätzungen statt exakter Zahlen sind.",
+      "hint": "Kalorien messen die Energie in Lebensmitteln. Stell es dir wie eine Tankanzeige vor. Es gibt nicht den einen richtigen Wert; es hängt ganz von dir ab. Du bist unsicher, wo du anfangen sollst? Viele beginnen zwischen 1.600 und 2.200 kcal pro Tag, aber ein Arzt oder eine Ernährungsberatung kann dir einen Wert nennen, der wirklich zu dir passt.",
       "label": "Kalorienziel pro Tag",
       "placeholder": "z. B. 2000",
       "suggested": "{{kcal}} kcal pro Tag übernehmen (leicht aktiv)",
-      "suggestionUnavailable": "Trag unten Größe, Geburtsjahr und Geschlecht ein und wieg dich einmal — dann schlagen wir dir einen Startwert vor."
+      "suggestionUnavailable": "Gib unten deine Größe, dein Geburtsjahr und dein Geschlecht sowie ein Gewicht ein, damit wir dir einen Richtwert vorschlagen können."
     },
     "loading": "Ziele werden geladen…",
     "protein": {
-      "hint": "Eiweiß sättigt und hilft dir, Muskeln zu halten — das zählt umso mehr, je weniger Kohlenhydrate oder Kalorien du isst. Das hier ist ein Richtwert in Gramm zum Anpeilen — wenn du drunter bleibst, ist nichts verloren.",
+      "hint": "Protein sorgt für ein gutes Sättigungsgefühl und hilft, Muskeln zu erhalten, was umso wichtiger ist, je weniger Kohlenhydrate oder Kalorien du zu dir nimmst. Dies ist ein Zielwert in Gramm. Darunter zu bleiben ist kein Misserfolg.",
       "label": "Eiweißziel pro Tag",
       "noWeightHint": "Trag unten ein Gewicht ein, dann können wir dir einen Wert vorschlagen.",
       "placeholder": "z. B. 100",
@@ -779,7 +779,7 @@
       "weightRemoved": "Wiegen gelöscht."
     },
     "weight": {
-      "description": "Trag dein heutiges Gewicht ein. Ein Wiegen pro Tag — trägst du nochmal ein, ersetzt das den heutigen Wert.",
+      "description": "Trage dein heutiges Gewicht ein. Eine Wiegung pro Tag: Ein erneuter Eintrag ersetzt den heutigen.",
       "errors": {
         "notANumber": "Gib eine gültige Zahl ein",
         "outOfRange": "Gib ein Gewicht zwischen {{min}} und {{max}} kg ein",
@@ -798,59 +798,59 @@
   },
   "install": {
     "action": "{{appName}} installieren",
-    "description": "Leg {{appName}} auf deinen Startbildschirm — eine Vollbild-App, die sofort startet und auch offline funktioniert.",
+    "description": "Füge {{appName}} zu deinem Startbildschirm hinzu, um eine Vollbild-App zu erhalten, die sofort öffnet und offline weiterfunktioniert.",
     "iosInstructions": "Tippe in Safari auf <share>Teilen</share> und wähle dann <addToHome>Zum Home-Bildschirm</addToHome>.",
     "title": "{{appName}} installieren"
   },
   "landing": {
     "close": {
-      "body": "Nichts anzumelden, nichts einzurichten. Trag ein Lebensmittel ein — mehr braucht openplate nicht.",
+      "body": "Keine Registrierung, keine Konfiguration nötig. Trage ein Lebensmittel ein und openplate hat alles, was es braucht.",
       "eyebrow": "Jetzt anfangen",
-      "star": "Oder gib dem Quellcode auf GitHub einen Stern — MIT-Lizenz",
+      "star": "Oder gib dem Quellcode einen Stern auf GitHub, MIT-lizenziert",
       "title": "Fang mit der ersten Mahlzeit von heute an"
     },
     "cta": {
       "howItWorks": "So funktioniert es",
-      "readSource": "Oder lies den Quellcode — MIT-Lizenz",
-      "readSourcePlain": "Den Quellcode lesen — MIT-Lizenz",
-      "tryIt": "Jetzt ausprobieren — komplett kostenlos",
-      "tryItFree": "Ausprobieren — kostenlos, ohne Konto"
+      "readSource": "Oder lies den Quellcode, MIT-lizenziert",
+      "readSourcePlain": "Quellcode ansehen, MIT-lizenziert",
+      "tryIt": "Jetzt ausprobieren, komplett kostenlos",
+      "tryItFree": "Ausprobieren, kostenlos, ohne Account"
     },
     "features": {
       "byok": {
-        "body": "Du verbindest den KI-Anbieter selbst — OpenRouter, Mistral, Anthropic oder einen beliebigen OpenAI-kompatiblen Endpunkt. Der Schlüssel bleibt auf diesem Gerät, und das Foto geht direkt von deinem Browser dorthin. Die Rechnung stellt dir der Anbieter, nicht wir.",
+        "body": "Verbinde selbst einen KI-Anbieter: OpenRouter, Mistral, Anthropic oder jeden OpenAI-kompatiblen Endpunkt. Der Schlüssel bleibt auf diesem Gerät und das Foto geht direkt von deinem Browser an den Anbieter. Die Abrechnung erfolgt direkt über sie, nicht über uns.",
         "title": "Fotos werden zu Nährwerten, mit deinem eigenen Schlüssel"
       },
       "eyebrow": "Das bekommst du",
       "install": {
-        "body": "Leg openplate auf deinen Startbildschirm, dann öffnet es wie jede andere App — bildschirmfüllend und ohne Browserleiste. Es öffnet auch ohne Verbindung.",
+        "body": "Füge openplate zu deinem Startbildschirm hinzu und es öffnet sich wie jede andere App, im Vollbildmodus und ohne Browser-Leisten. Es öffnet sich auch ohne Internetverbindung.",
         "title": "Es lässt sich aufs Telefon installieren"
       },
       "local": {
-        "body": "Jedes eingetragene Lebensmittel landet im Speicher dieses Browsers. Der Server behält keine Kopie — er hat überhaupt keine Datenbank — es liegt dort also nichts von dir, das abfließen könnte. Exportier alles als Datei, wann immer du magst.",
+        "body": "Jedes eingetragene Lebensmittel wird im lokalen Speicher dieses Browsers abgelegt. Der Server speichert keine Kopie: Er hat überhaupt keine Datenbank, also kann dort auch nichts von dir nach außen dringen. Exportiere jederzeit alles als Datei.",
         "title": "Das Tagebuch bleibt auf diesem Gerät"
       },
       "noTracking": {
         "body": "In openplate steckt keine Analyse, keine Werbung und kein Zählpixel. Was du in der App tust, wird nicht gezählt, und es wird nichts darüber verschickt.",
         "title": "Keine Werbung, kein Tracking",
         "titleAnalytics": "Keine Werbung, kein Tracking deines Tagebuchs",
-        "bodyAnalytics": "In openplate steckt keine Werbung. Diese Instanz zählt Besuche und Funktionsnutzung mit eigenem, Cookie-freiem Matomo — nie, was du isst, wiegst oder einträgst; dein Tagebuch bleibt auf diesem Gerät. Betreibst du openplate selbst, wird gar nichts gezählt."
+        "bodyAnalytics": "openplate enthält keine Werbung. Diese Instanz zählt Besuche und Funktionsnutzung mit einem eigenen, cookielosen Matomo, aber niemals was du isst, wiegst oder einträgst; dein Tagebuch bleibt auf diesem Gerät. Wenn du openplate selbst betreibst, wird überhaupt nichts erfasst."
       },
       "selfHost": {
         "body": "Ein zustandsloser Container, keine Datenbank zu betreiben und kein Geheimnis einzurichten. Die Compose-Datei liegt im Repository: ein Download und ein Befehl.",
         "title": "Selbst betreiben, in einem Container"
       },
       "source": {
-        "body": "Lies jede Zeile, bevor du ihr einen Esstag anvertraust. Fork es, änder es, bau es in etwas Eigenes ein — die Lizenz verlangt den Urheberrechtsvermerk und sonst nichts.",
+        "body": "Lies jede Zeile, bevor du ihr dein Essen für einen Tag anvertraust. Forke es, ändere es, nutze es in deinem eigenen Projekt. Die Lizenz verlangt lediglich den Urheberrechtshinweis und sonst nichts.",
         "title": "Quelloffen, unter der MIT-Lizenz"
       },
       "subtitle": "Nichts davon ist ein Vorhaben. Jedes davon steht heute schon im Repository.",
       "title": "Sechs Aussagen, die du im Quelltext nachprüfen kannst"
     },
     "goals": {
-      "body": "Wähl eine tägliche Netto-KH-Obergrenze, ein Eiweiß-Minimum, ein Kalorienziel — oder gar keins. openplate erfindet kein Ziel, das du nicht gesetzt hast.",
+      "body": "Wähle ein tägliches Netto-Kohlenhydrate-Limit, ein Protein-Minimum, ein Kalorienziel oder gar keins. openplate erfindet niemals ein Ziel, das du nicht selbst festgelegt hast.",
       "points": {
-        "grid": "Der Fortschritt hält 13 Wochen fest — die Tage, an denen du deine Ziele erreicht hast, Lücken inklusive.",
+        "grid": "Der Verlauf speichert eine 13-Wochen-Übersicht der Tage, an denen du deine Ziele erreicht hast, inklusive Lücken.",
         "ring": "Ein Ring im Tagebuch zeigt, was von heute übrig ist.",
         "tone": "Über dem Ziel ist eine Zahl in Bernstein. Nie ein Vorwurf.",
         "weight": "Wieg dich, wann du magst; das Diagramm glättet die täglichen Schwankungen."
@@ -877,11 +877,11 @@
         "title": "Oder einfach suchen"
       },
       "see": {
-        "body": "Dein Tagebuch beginnt mit dem, was vom Tag übrig ist — nicht mit einer Wand aus Zahlen. Und was geschätzt ist, sagt es dazu.",
+        "body": "Dein Tagebuch zeigt dir zuerst, was für den Tag noch übrig ist, statt einer Wand aus Zahlen. Geschätzte Werte sind als solche gekennzeichnet.",
         "shotAlt": "Das Tagebuch auf einem Telefon: der Tagesring und darunter die eingetragenen Mahlzeiten.",
         "title": "Sieh, wo der Tag steht"
       },
-      "subtitle": "So sieht es aus, wenn openplate erst einmal deins ist — jeden Tag dieselben paar Handgriffe.",
+      "subtitle": "So sieht die Nutzung von openplate aus, sobald du es eingerichtet hast: dieselben wenigen Fingertipps, jeden Tag.",
       "title": "Eine Mahlzeit in ein paar Sekunden eintragen"
     },
     "newsletter": {
@@ -912,8 +912,8 @@
       "shotAlt": "Der Übersichtsbildschirm auf einem Telefon, mit dem Tagesring, den letzten sieben Tagen und dem jüngsten Wiegen.",
       "steps": {
         "connect": {
-          "body": "Ein Klick verbindet OpenRouter: Du bestätigst dort, und der Schlüssel kommt zurück auf dieses Gerät und bleibt dort. Jeder OpenAI-kompatible Endpunkt funktioniert genauso. Einen Teller auszulesen kostet in der Regel deutlich weniger als einen Cent pro Foto, und abgerechnet wird direkt bei deinem Anbieter. Überspring es, und die Suche funktioniert trotzdem — einen Schlüssel braucht nur das Foto.",
-          "title": "Anbieter verbinden — oder überspringen"
+          "body": "Ein Klick verbindet OpenRouter: Du bestätigst es dort, und der Schlüssel wird an dieses Gerät übertragen und bleibt darauf gespeichert. Jeder OpenAI-kompatible Endpunkt funktioniert ebenfalls. Die Erkennung eines Tellers kostet typischerweise deutlich unter einem Cent pro Foto, und dein Anbieter rechnet direkt mit dir ab. Wenn du diesen Schritt überspringst, funktioniert die Suche trotzdem: Ein Schlüssel wird nur für die Fotoerkennung benötigt.",
+          "title": "Einen Anbieter verbinden oder überspringen"
         },
         "open": {
           "body": "Das Tagebuch entsteht auf diesem Gerät, sobald du das erste Lebensmittel einträgst.",
@@ -928,16 +928,16 @@
       "title": "In etwa einer Minute einsatzbereit"
     },
     "sync": {
-      "body": "Trag das Mittagessen am Telefon ein und sieh dir die Woche am Laptop an. Die Synchronisierung ist freiwillig und Ende-zu-Ende-verschlüsselt: Der Chiffretext liegt auf einem openplate-sync-Server — unserem oder einem, den du selbst betreibst — und dieser Server hat keinen Schlüssel dazu, denn den ergibt eine Passphrase, die er nie zu sehen bekommt.",
+      "body": "Trage dein Mittagessen auf dem Smartphone ein und sieh dir die Woche auf dem Laptop an. Die Synchronisierung ist optional und Ende-zu-Ende-verschlüsselt: Der verschlüsselte Text liegt auf einem openplate-sync-Server (unserem oder einem selbst gehosteten) und dieser Server hat keinen Schlüssel dazu, da der Schlüssel aus einer Passphrase generiert wird, die er nie zu Gesicht bekommt.",
       "link": "Synchronisierung einrichten",
-      "photos": "Teller-Fotos bleiben, wo sie sind — sie sind nie Teil eines Sync-Pakets.",
+      "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",
       "shotAlt": "Der Sync-Bildschirm auf einem Telefon: Anmelden oder ein Sync-Konto anlegen, mit dem Hinweis, dass Teller-Fotos nie hochgeladen werden.",
       "title": "Zwei Geräte, ein Tagebuch"
     }
   },
   "meals": {
     "description": "Mahlzeiten, die du als Bündel gespeichert hast. Mit einem Tap eintragen oder hier entfernen.",
-    "empty": "Du hast noch keine Mahlzeit gespeichert. Speicher eine aus dem Tagebuch — bündel die eingetragenen Lebensmittel und gib ihnen einen Namen.",
+    "empty": "Du hast noch keine Mahlzeit gespeichert. Speichere eine aus dem Tagebuch: Fasse deine eingetragenen Lebensmittel zusammen und gib ihnen einen Namen.",
     "itemCount_one": "{{count}} Lebensmittel",
     "itemCount_other": "{{count}} Lebensmittel",
     "logNow": "Jetzt eintragen",
@@ -947,8 +947,8 @@
     "removeTitle": "{{name}} entfernen?",
     "toast": {
       "deleted": "{{name}} entfernt.",
-      "logged_one": "{{name}} eingetragen — {{count}} Lebensmittel.",
-      "logged_other": "{{name}} eingetragen — {{count}} Lebensmittel."
+      "logged_one": "{{name}} eingetragen, {{count}} Lebensmittel.",
+      "logged_other": "{{name}} eingetragen, {{count}} Lebensmittel."
     }
   },
   "meta": {
@@ -964,10 +964,11 @@
     "foods": "Deine Lebensmittel · openplate",
     "goals": "Deine Ziele · openplate",
     "joinStudy": "Bei einer Studie mitmachen · openplate",
-    "landing": "openplate — ein Ernährungstagebuch, das auf deinem Gerät bleibt",
-    "landingDescription": "Fotografier deinen Teller oder such nach dem, was du gegessen hast — openplate zeigt dir in Sekunden die Kohlenhydrate und rechnet sie gegen dein Tagesziel. Kostenlos, ohne Konto, und alles, was du einträgst, bleibt auf deinem Gerät.",
+    "landing": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
+    "landingDescription": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir in Sekundenschnelle die Kohlenhydrate und vergleicht sie mit deinem festgelegten Tagesziel. Kostenlos, ohne Account, und alles, was du einträgst, bleibt auf deinem Gerät.",
     "meals": "Gespeicherte Mahlzeiten · openplate",
     "nutrients": "Nährstoffe · openplate",
+    "offline": "Du bist offline · openplate",
     "onboarding": "Willkommen bei openplate",
     "preferences": "Einstellungen · openplate",
     "recover": "Tagebuch wiederherstellen · openplate",
@@ -1010,8 +1011,8 @@
     },
     "coverage": {
       "notEnoughData": "Zu wenig Daten",
-      "notEnoughDataDetail": "Nur für {{share}} von dem, was du in diesem Zeitraum eingetragen hast, liegt hierzu ein Wert vor — eine Summe wäre nicht aussagekräftig.",
-      "why": "Nur Lebensmittel aus der LowCarbCheck-Datenbank bringen Vitamin- und Mineralstoffwerte mit. Von der KI geschätzte Teller und selbst eingetippte Einträge nicht — sie zählen zu dem, was du gegessen hast, aber nicht zu dem, was sich messen lässt."
+      "notEnoughDataDetail": "Nur {{share}} von dem, was du in diesem Zeitraum erfasst hast, enthält Angaben dazu. Daher gibt es keine aussagekräftige Gesamtsumme.",
+      "why": "Nur Lebensmittel aus der LowCarbCheck-Datenbank enthalten Angaben zu Vitaminen und Mineralstoffen. Von der KI geschätzte Teller und selbst eingetragene Lebensmittel enthalten keine, daher zählen sie zu dem, was du gegessen hast, aber nicht zu den messbaren Werten."
     },
     "hero": {
       "addDetails": "Trag dein Geburtsjahr und dein biologisches Geschlecht ein, dann erscheinen hier Referenzwerte, die zu dir passen. Bis dahin wird nichts angenommen.",
@@ -1055,7 +1056,7 @@
       "week": "7 Tage"
     },
     "reference": {
-      "ageOutOfBands": "Veröffentlichte Referenzwerte beginnen bei 14 Jahren — für dein gespeichertes Geburtsjahr gibt es daher keinen.",
+      "ageOutOfBands": "Veröffentlichte Referenzwerte beginnen ab einem Alter von 14 Jahren, daher gibt es für dein gespeichertes Geburtsjahr keine Werte.",
       "footnote": "{{segment}} · {{source}}",
       "noBodyMetricsAction": "Angaben ergänzen",
       "notPublished": "Hierzu ist kein Referenzwert veröffentlicht.",
@@ -1074,13 +1075,13 @@
   },
   "oauth": {
     "callback": {
-      "alreadyConnected": "Dieser Anbieter ist auf diesem Gerät schon verbunden — hier ist nichts mehr zu tun.",
-      "connectedUnverified": "Gespeichert, aber der Schlüssel ließ sich gerade nicht prüfen — das ist meistens ein kurzer Aussetzer beim Anbieter und kein Problem mit der Verbindung. Du kannst trotzdem ein Foto scannen.",
-      "connectedVerified": "Verbunden und funktioniert — alles bereit.",
+      "alreadyConnected": "Dieser Anbieter ist auf diesem Gerät bereits verbunden, hier gibt es nichts weiter zu tun.",
+      "connectedUnverified": "Gespeichert, aber der Schlüssel konnte gerade nicht überprüft werden. Das ist meist nur ein vorübergehendes Problem beim Anbieter und liegt nicht an der Verbindung selbst. Du kannst trotzdem versuchen, ein Foto zu scannen.",
+      "connectedVerified": "Verbunden und einsatzbereit, alles erledigt.",
       "description": "Wir schließen die Verbindung ab, die du in den KI-Einstellungen oder beim Scannen gestartet hast.",
       "error": {
         "denied": {
-          "body": "Kein Problem — es wurde nichts verbunden. Versuch es, wann immer du magst.",
+          "body": "Kein Problem, es wurde nichts verbunden. Versuche es einfach wieder, wenn du so weit bist.",
           "title": "Verbindung abgebrochen"
         },
         "exchangeFailed": {
@@ -1088,15 +1089,15 @@
           "title": "Verbindung ließ sich nicht abschließen"
         },
         "expired": {
-          "body": "Dieser Verbindungsversuch hat zu lange gedauert und ist abgelaufen — verbinde dich einfach nochmal.",
+          "body": "Dieser Verbindungsversuch hat zu lange gedauert und ist abgelaufen. Bitte versuche erneut, dich zu verbinden.",
           "title": "Hat zu lange gedauert"
         },
         "missingVerifier": {
-          "body": "Dieses Gerät hat den Verbindungsversuch aus den Augen verloren — das passiert, wenn du beim Anmelden die App gewechselt hast. Beim nächsten Versuch sollte es direkt durchlaufen.",
+          "body": "Dieses Gerät hat den Verbindungsversuch aus den Augen verloren. Das kann passieren, wenn du beim Anmelden die App gewechselt hast. Versuche es noch einmal, dann sollte es direkt klappen.",
           "title": "Verbindungsversuch verloren"
         },
         "stateMismatch": {
-          "body": "Diese Verbindung gehört nicht zu der, die dieses Gerät gestartet hat — verbinde dich nochmal.",
+          "body": "Diese Verbindung stimmt nicht mit der überein, die dieses Gerät gestartet hat. Versuche erneut, dich zu verbinden.",
           "title": "Diese Verbindung passt nicht"
         }
       },
@@ -1113,11 +1114,16 @@
       "dialogTitle": "Kostenpflichtigen KI-Anbieter verbinden?",
       "leaveNote": "Du verlässt openplate kurz, meldest dich bei OpenRouter an und landest gleich wieder hier.",
       "notNow": "Jetzt nicht",
-      "photoNote": "Jedes Foto, das du danach scannst, wertet dein gewählter Anbieter aus — openplate speichert es nie.",
+      "photoNote": "Jedes Foto, das du danach scannst, wird von deinem gewählten Anbieter analysiert und niemals von openplate gespeichert.",
       "redirecting": "Weiterleitung…",
-      "spendingCap": "Auf OpenRouters eigener Freigabeseite kannst du vorher ein Ausgabenlimit setzen — lohnt sich.",
-      "startFailed": "Die Verbindung ließ sich nicht starten — prüf deine Internetverbindung und versuch es nochmal."
+      "spendingCap": "Auf der Freigabeseite von OpenRouter kannst du vorab ein Ausgabenlimit festlegen, das lohnt sich.",
+      "startFailed": "Die Verbindung konnte nicht gestartet werden. Überprüfe deine Internetverbindung und versuche es erneut."
     }
+  },
+  "offline": {
+    "heading": "Gerade keine Verbindung",
+    "body": "Dein Tagebuch und alles, was du bereits erfasst hast, liegt auf diesem Gerät und funktioniert auch ohne Verbindung. Nur diese eine Seite kann noch nicht geladen werden: Entweder ist sie neu auf diesem Gerät oder sie benötigt Internetzugriff (wie beim Scannen eines Fotos). Versuche es erneut, sobald du wieder online bist.",
+    "cta": "Zu deinem Tagebuch"
   },
   "onboarding": {
     "actions": {
@@ -1127,7 +1133,7 @@
       "skipping": "Wird übersprungen…"
     },
     "carbPreset": {
-      "chipWithCeiling": "{{label}} — unter {{ceiling}} g",
+      "chipWithCeiling": "{{label}}, unter {{ceiling}} g",
       "keto": {
         "detail": "Unter 20 g Netto-KH am Tag",
         "label": "Keto"
@@ -1149,7 +1155,7 @@
     "firstFood": {
       "find": "Lebensmittel suchen",
       "finishing": "Gleich fertig…",
-      "keyNote": "Der Foto-Scan ist optional. Er läuft über einen KI-Dienst, den du selbst einrichtest, zum Beispiel OpenAI — auch diese Verbindung bleibt auf diesem Gerät, genau wie dein Tagebuch.",
+      "keyNote": "Das Scannen von Fotos ist optional. Es verbindet sich mit einem KI-Dienst, den du selbst einrichtest, wie z. B. OpenAI. Diese Verbindung bleibt ebenfalls auf diesem Gerät, genau wie dein Tagebuch.",
       "keyNoteLink": "Du kannst das jederzeit in den Einstellungen einrichten.",
       "later": "Mach ich später",
       "opening": "Wird geöffnet…",
@@ -1157,29 +1163,29 @@
     },
     "focus": {
       "calories": {
-        "description": "Dieselbe Kalorienzahl, die auch auf der Nährwerttabelle steht — setz dir ein Tagesziel.",
+        "description": "Die gleichen Kalorienangaben, die du auf einer Nährwerttabelle findest. Lege ein Tagesziel fest.",
         "label": "Kalorien"
       },
       "habit": {
-        "description": "Keine Ziele, die du treffen musst — trag einfach ein, was du isst, und deine Serie erscheint im Verlauf.",
+        "description": "Keine festen Ziele: Trage einfach ein, was du isst, und deine Serie wird in den Trends angezeigt.",
         "label": "Nur die Gewohnheit"
       },
       "netCarbs": {
-        "description": "Kohlenhydrate minus Ballaststoffe — die Zahl, auf die du schaust, wenn du Kohlenhydrate reduzierst.",
+        "description": "Gesamtkohlenhydrate abzüglich Ballaststoffe: der entscheidende Wert, wenn du Kohlenhydrate reduzierst.",
         "label": "Netto-KH"
       },
       "recommended": "Empfohlen"
     },
     "kcal": {
-      "hint": "Lass es leer und entscheide später — du kannst es jederzeit in den Einstellungen setzen.",
+      "hint": "Leer lassen, um später zu entscheiden. Du kannst den Wert jederzeit in den Einstellungen anpassen.",
       "label": "Tägliches Kalorienziel (optional)",
       "placeholder": "z. B. 2000"
     },
     "loading": "Wird geladen…",
-    "localFirst": "Deine Daten liegen auf <strong>diesem Gerät</strong> — wir sehen sie nie. Das Tagebuch, das du gleich anfängst, bleibt lokal. Immer.",
+    "localFirst": "Deine Daten liegen auf <strong>diesem Gerät</strong>. Wir sehen sie niemals. Das Tagebuch, das du gleich beginnst, bleibt immer lokal.",
     "step": {
       "body": {
-        "description": "Freiwillig. Damit passen wir Nährstoff-Referenzwerte an dich an und schlagen dir einen Kalorienwert vor — und wie alles andere bleiben sie auf diesem Gerät.",
+        "description": "Optional. Damit können wir Nährstoff-Referenzwerte anpassen und eine Kalorienmenge vorschlagen. Wie alles andere bleiben auch diese Angaben auf diesem Gerät.",
         "title": "Ein paar Angaben zu dir?"
       },
       "firstFood": {
@@ -1187,11 +1193,11 @@
         "title": "Trag dein erstes Essen ein"
       },
       "focus": {
-        "description": "Wähl, was dir am wichtigsten ist — du kannst das jederzeit in den Einstellungen ändern.",
+        "description": "Wähle aus, was dir am wichtigsten ist. Du kannst dies jederzeit in den Einstellungen ändern.",
         "title": "Worauf achtest du?"
       },
       "weight": {
-        "description": "Optional. Trag dein heutiges Gewicht und ein Wunschgewicht ein, wenn du magst — daraus wird später dein Gewichtsverlauf.",
+        "description": "Optional. Trage dein heutiges Gewicht und bei Bedarf ein Zielgewicht ein. Das liefert später die Daten für deine Trends.",
         "title": "Gewicht mitverfolgen?"
       }
     },
@@ -1202,7 +1208,7 @@
         "notANumber": "Gib eine Zahl ein, z. B. 72,5"
       },
       "fieldLabel": "{{label}} ({{unit}})",
-      "hint": "Kein Muss — lass die Felder leer und trag sie ein, wann du willst.",
+      "hint": "Kein Stress: Du kannst diese Felder leer lassen und die Werte jederzeit später eintragen.",
       "placeholder": "z. B. {{value}}",
       "target": "Wunschgewicht",
       "unitToggleLabel": "Gewichtseinheit",
@@ -1210,7 +1216,7 @@
     }
   },
   "preferences": {
-    "cardDescription": "Erscheinungsbild und Sprache — bleiben auf diesem Gerät.",
+    "cardDescription": "Design und Sprache, gespeichert auf diesem Gerät.",
     "eyebrow": "Darstellung",
     "language": {
       "description": "Die Sprache, in der openplate auf diesem Gerät mit dir spricht.",
@@ -1221,7 +1227,7 @@
     "open": "Einstellungen öffnen",
     "theme": {
       "dark": "Dunkel",
-      "description": "Hell, dunkel — oder einfach das, was dein Gerät schon eingestellt hat.",
+      "description": "Hell, dunkel oder wie dein Gerät bereits eingestellt ist.",
       "light": "Hell",
       "system": "System",
       "title": "Erscheinungsbild"
@@ -1230,8 +1236,8 @@
   },
   "recover": {
     "firstDataAt": "Dieses Gerät hat am {{date}} zum ersten Mal Daten gespeichert.",
-    "lead": "Auf diesem Gerät waren schon einmal openplate-Daten gespeichert, aber die Kopie in diesem Browser ist gerade leer. openplate behält alles auf deinem Gerät und schickt nichts an einen Server — es gibt also keine andere Kopie, die wir holen könnten.",
-    "noBackupBody": "Dann gibt es nichts mehr zurückzuholen, und das tut uns leid — das ist die ehrliche Antwort. Du kannst hier ein frisches Tagebuch beginnen; taucht später doch noch eine Sicherung auf, kannst du sie einfach darüber wiederherstellen.",
+    "lead": "Auf diesem Gerät wurden bereits openplate-Daten gespeichert, aber die Kopie in diesem Browser ist gerade leer. openplate speichert alles auf deinem Gerät und sendet nichts an einen Server, daher gibt es keine andere Kopie, die wir abrufen könnten.",
+    "noBackupBody": "Dann lässt sich leider nichts wiederherstellen, und so ehrlich müssen wir sein. Du kannst hier ein neues Tagebuch beginnen, und falls später doch noch ein Backup auftaucht, kannst du es nachträglich einspielen.",
     "noBackupHeading": "Wenn du keine Sicherung hast",
     "restoreBody": "Wenn du eine openplate-Sicherung heruntergeladen hast (eine .json-Datei), öffne sie hier. Alles darin kommt zurück auf dieses Gerät.",
     "restoreButton": "Sicherungsdatei auswählen",
@@ -1258,23 +1264,23 @@
       "empty": "Du trägst zu keiner Studie bei. Zum Mitmachen brauchst du den Fingerabdruck aus den Einwilligungsunterlagen einer Studie.",
       "unnamed": "Studie {{studyAccountId}}",
       "tier": "Bekommt: {{tier}}",
-      "window": "Ganze Kalendertage im Zeitraum, den du sendest — eine Zeile pro Tag, nie eine Uhrzeit, ein Lebensmittelname oder ein Foto.",
-      "sentWindow": "Gesendet {{from}} bis {{to}} — ganze Kalendertage, eine Zeile pro Tag, nie eine Uhrzeit, ein Lebensmittelname oder ein Foto.",
+      "window": "Ganze Kalendertage innerhalb des gesendeten Zeitraums, eine Zeile pro Tag, und niemals eine Uhrzeit, ein Lebensmittelname oder ein Foto.",
+      "sentWindow": "Gesendet {{from}} bis {{to}}, ganze Kalendertage, eine Zeile pro Tag, und niemals eine Uhrzeit, ein Lebensmittelname oder ein Foto.",
       "fields": "Jeder Tag trägt Energie, Eiweiß, Kohlenhydrate, Fett, Ballaststoffe und die Anzahl der Einträge dieses Tages.",
       "joined": "Dabei seit {{at}}",
       "lastSent": "Zuletzt gesendet {{at}} · Version {{version}}",
       "neverSent": "An diese Studie wurde noch nichts gesendet.",
       "pseudonymLabel": "Dein Pseudonym für diese Studie",
       "pseudonymHint": "Das sieht die Studie von dir. Nenne es, wenn du bei Forschenden nachfragen willst, ob dein Widerruf umgesetzt wurde.",
-      "pseudonymUnknown": "Dieses Gerät kann dein Pseudonym nicht berechnen — sein Forschungsschlüssel fehlt."
+      "pseudonymUnknown": "Dieses Gerät kann dein Pseudonym nicht ermitteln: Der Forschungsschlüssel fehlt."
     },
     "withdrawal": {
       "open": "Widerrufen",
       "confirmTitle": "Beitrag zu {{name}} widerrufen?",
       "instructedToDelete": "Die Studie wird angewiesen, deinen Beitrag zu löschen, und openplates Studien-Werkzeuge lassen ihn bei jedem Abruf weg.",
-      "alreadyDownloaded": "Eine Kopie, welche die Studie schon heruntergeladen hat, lässt sich nicht zurückholen — die Anweisung zu befolgen ist eine Pflicht, die dieses System ausspricht und nicht erzwingen kann.",
+      "alreadyDownloaded": "Eine Kopie, die von der Studie bereits heruntergeladen wurde, kann nicht zurückgeholt werden. Die Einhaltung der Anweisung ist eine Verpflichtung, die dieses System vorgibt, aber nicht erzwingen kann.",
       "noNewData": "Es werden keine neuen Daten mehr an diese Studie gesendet.",
-      "samePseudonymOnRejoin": "Ein Widerruf gibt dir keine neue Identität. Trittst du derselben Studie wieder bei, zeigst du dasselbe Pseudonym — wer eine alte Kopie behalten hat, könnte beides miteinander verbinden.",
+      "samePseudonymOnRejoin": "Das Verlassen gibt dir keine neue Identität. Wenn du dieser Studie erneut beitrittst, verwendest du dasselbe Pseudonym, sodass jeder, der eine alte Kopie aufbewahrt hat, beide verknüpfen könnte.",
       "rejoinNeedsCeremony": "Dieses Gerät vergisst die Studie. Für einen erneuten Beitritt tippst du ihren Fingerabdruck aus den Einwilligungsunterlagen noch einmal ein.",
       "confirmCta": "Widerrufen",
       "cancel": "Abbrechen",
@@ -1313,7 +1319,7 @@
       "fingerprintLabel": "Fingerabdruck aus den Einwilligungsunterlagen",
       "fingerprintHint": "Tippe die zwölf Zeichen ab, die in den Einwilligungsunterlagen der Studie gedruckt stehen. Nimm sie nicht von diesem Bildschirm und nicht aus dem Link.",
       "fingerprintPlaceholder": "AB12-CD34-EF56",
-      "fingerprintWhy": "Der Link hat den Schlüssel gebracht; das gedruckte Blatt belegt, dass der Schlüssel zu dieser Studie gehört. Zwei getrennte Wege zu dir — nur deshalb ist die Prüfung überhaupt etwas wert.",
+      "fingerprintWhy": "Der Link hat den Schlüssel übermittelt; die gedruckte Seite beweist, dass der Schlüssel zu dieser Studie gehört. Zwei getrennte Wege, die dich erreichen, und genau das macht die Überprüfung verlässlich.",
       "submit": "Bei dieser Studie mitmachen",
       "enrolled": {
         "title": "Du machst mit.",
@@ -1354,7 +1360,7 @@
       "outcome": {
         "submitted": "Gesendet {{from}} bis {{to}} · Version {{version}}.",
         "conflict": "Ein anderes deiner Geräte hat zuerst an diese Studie gesendet. Wähle die Tage noch einmal und sende.",
-        "tooLarge": "Dieser Zeitraum ist weiter, als diese Studie annimmt. Nimm einen kürzeren — den Rest kannst du danach senden.",
+        "tooLarge": "Dieser Zeitraum ist größer, als diese Studie akzeptiert. Versuche einen kürzeren Zeitraum, den Rest kannst du danach senden.",
         "unknownStudy": "Dieser Server kennt diese Studie nicht, es wurde nichts gesendet.",
         "unavailable": "Dieser Server bietet keine Forschungsbeiträge an, es wurde nichts gesendet."
       }
@@ -1362,7 +1368,7 @@
     "console": {
       "title": "Studien-Konsole",
       "description": "Die Seite der Forschenden: das eigene Konto dieser Studie, ihr Schlüssel und die Beiträge, die dieses Konto öffnen kann.",
-      "separateAccount": "Das ist das Konto der Studie, nicht dein eigenes openplate-Konto. Melde dich mit der Adresse und der Passphrase der Studie an — nie mit deinen eigenen. Nichts auf diesem Bildschirm liest oder sendet das Tagebuch dieses Geräts.",
+      "separateAccount": "Dies ist das Konto der Studie, nicht dein eigenes openplate-Konto. Melde dich mit der Adresse und Passphrase der Studie an, niemals mit deinen eigenen. Nichts auf dieser Seite liest oder sendet das Tagebuch dieses Geräts.",
       "noSync": {
         "title": "Dieses openplate hat keine Synchronisierung",
         "body": "Eine Studie liest Beiträge über die Synchronisierung, und wer dieses openplate betreibt, hat sie nicht eingerichtet."
@@ -1384,7 +1390,7 @@
         "title": "Der Schlüssel dieser Studie",
         "account": "Studienkonto Nummer {{accountId}}",
         "noKey": "Diese Studie hat noch keinen Schlüssel. Erzeuge einen, bevor ihre Einwilligungsunterlagen gedruckt werden.",
-        "unopened": "Diese Konsole konnte die Schlüssel dieser Studie nicht öffnen. Sie kann deshalb keinen davon zeigen und keinen Beitrag öffnen. Meistens wurden sie mit einer anderen Passphrase versiegelt: Melde dich mit der an, mit der sie erzeugt wurden. Nichts ist verloren — die Schlüssel liegen weiter auf dem Server, ungelesen von ihm.",
+        "unopened": "Diese Konsole konnte die Schlüssel dieser Studie nicht öffnen, daher kann sie keine davon anzeigen und keinen Beitrag öffnen. Meistens wurden sie mit einer anderen Passphrase versiegelt: Melde dich mit der an, mit der sie erstellt wurden. Es ist nichts verloren gegangen: Die Schlüssel befinden sich weiterhin auf dem Server, von diesem ungelesen.",
         "fingerprintLabel": "Fingerabdruck des aktuellen Schlüssels",
         "fingerprintHint": "Druck diese zwölf Zeichen in die Einwilligungsunterlagen der Studie. Teilnehmende tippen sie beim Mitmachen von diesem Blatt ab. Diese Konsole sendet sie nirgendwohin, und hier gibt es nichts, womit man sie veröffentlichen könnte.",
         "generations": "Vorhandene Schlüsselgenerationen: {{generations}}. Beim Öffnen eines Beitrags wird jede einzelne probiert, damit nichts verloren geht, was mit einem älteren Schlüssel versiegelt wurde.",
@@ -1413,7 +1419,7 @@
     "analyzing": {
       "analyzing": "Dein Teller wird analysiert…",
       "starting": "Analyse startet…",
-      "stillWorking": "Noch dabei — volle Teller brauchen einen Moment…",
+      "stillWorking": "Wird noch analysiert, komplexe Teller dauern einen Moment…",
       "uploading": "Foto wird hochgeladen…"
     },
     "auditNotice": "Die Administration des verbundenen Gateways gibt an, deine Einsendungen einsehen zu können, auch die Fotos.",
@@ -1422,7 +1428,7 @@
       "analyze": "Analysieren",
       "cancel": "Abbrechen",
       "chooseLibrary": "Aus der Galerie wählen",
-      "description": "Dein Foto geht direkt an deinen eigenen KI-Anbieter, der erkennt, was auf dem Teller liegt. Danach bleibt es nur auf diesem Gerät (nicht auf openplates Server), damit du es beim Eintrag wiedersiehst — abschalten oder löschen kannst du es jederzeit unter „Daten & Sicherung“ in den Einstellungen.",
+      "description": "Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, um zu erkennen, was auf deinem Teller liegt. Danach wird es nur auf diesem Gerät gespeichert (nicht auf den Servern von openplate), damit du es im Eintrag wiedersehen kannst. Du kannst dies jederzeit unter „Daten & Backup“ in den Einstellungen deaktivieren oder löschen.",
       "emptyHint": "Wird von deinem eigenen KI-Anbieter analysiert und bleibt danach nur auf diesem Gerät.",
       "emptyTitle": "Mach ein Foto oder wähl ein Bild aus",
       "photoLabel": "Teller-Foto",
@@ -1432,36 +1438,36 @@
       "title": "Lebensmittel per Foto erkennen"
     },
     "errors": {
-      "attemptCost": "Dieser Versuch hat {{amount}} von deinem API-Guthaben gekostet — er steht in deiner Nutzung.",
+      "attemptCost": "Dieser Versuch hat {{amount}} deines API-Guthabens verbraucht. Es wurde in deinen Nutzungsdaten erfasst.",
       "attemptRecorded": "Dieser Versuch steht in deiner Nutzung.",
       "connectProvider": "Verbinde in den Einstellungen deinen KI-Anbieter, bevor du Fotos erkennen lässt.",
-      "endpointUnreachable": "Der Endpunkt war vom Browser aus nicht erreichbar — vermutlich blockiert die Content-Security-Policy eine Basis-URL außerhalb von localhost, oder der Endpunkt lässt keine Browser-Anfragen (CORS) zu. Mehr dazu in den KI-Einstellungen.",
+      "endpointUnreachable": "Der Endpunkt konnte vom Browser aus nicht erreicht werden. Wahrscheinlich blockiert die Content Security Policy eine Base-URL außerhalb von localhost oder der Endpunkt lässt keine Browser-Anfragen (CORS) zu. Details findest du in den KI-Einstellungen.",
       "identifyFailed": "Die Lebensmittel auf dem Foto konnten nicht erkannt werden.",
       "label": {
-        "noMacros": "Auf diesem Foto war keine Nährwerttabelle zu finden — fotografiere die gedruckte Wertetabelle, meist auf der Rückseite der Verpackung.",
+        "noMacros": "Auf diesem Foto wurde keine Nährwerttabelle gefunden. Fotografiere die gedruckte Wertetabelle, die sich meist auf der Rückseite der Packung befindet.",
         "photoQualityBody": "Halte die Verpackung flach, fülle das Bild mit der Tabelle und halte das Licht von glänzenden Stellen fern.",
         "title": "Diese Tabelle war nicht lesbar",
-        "unreadable": "Die Nährwerttabelle war nicht lesbar — versuche es gerade von vorn, näher dran und bildfüllend.",
-        "unreadableWithReason": "Die Nährwerttabelle war nicht lesbar ({{reason}}) — versuche es gerade von vorn, näher dran und bildfüllend."
+        "unreadable": "Die Nährwerttabelle konnte nicht gelesen werden. Versuche es noch einmal frontal, näher dran und so, dass die Tabelle das Bild ausfüllt.",
+        "unreadableWithReason": "Die Nährwerttabelle konnte nicht gelesen werden ({{reason}}). Versuche es noch einmal frontal, näher dran und so, dass die Tabelle das Bild ausfüllt."
       },
-      "missingBaseUrl": "Dieser Verbindung fehlt eine Basis-URL — trag in den KI-Einstellungen eine ein oder wechsel zu OpenRouter.",
-      "noFoods": "Auf dem Foto war nichts zu erkennen — versuch es mit einer schärferen Aufnahme.",
-      "openrouterRateLimit": "Du hast das Limit des Anbieters erreicht — im Gratis-Kontingent gibt es täglich wieder neue Scans, oder du lädst bei OpenRouter Guthaben auf. Das Guthaben geht direkt an OpenRouter (nicht an openplate), ist völlig freiwillig und wird einfach aufgebraucht — kein Abo.",
+      "missingBaseUrl": "Dieser Verbindung fehlt eine Base-URL. Öffne die KI-Einstellungen und lege eine fest, oder wechsle zu OpenRouter.",
+      "noFoods": "Auf diesem Foto konnten keine Lebensmittel erkannt werden. Versuche es mit einer deutlicheren Aufnahme.",
+      "openrouterRateLimit": "Du hast das Nutzungslimit des Anbieters erreicht. Kostenlose Scans werden täglich zurückgesetzt, oder lade Guthaben bei OpenRouter auf, um mehr Scans zu erhalten. Jedes aufgeladene Guthaben geht direkt an OpenRouter (nicht an openplate), ist vollkommen optional und ist ein verbrauchbares Prepaid-Guthaben, kein Abonnement.",
       "photo": {
         "empty": "Wähl ein Foto zum Hochladen aus.",
         "tooLarge": "Das Foto ist zu groß (max. 8 MB).",
-        "undecodableFormat": "Dieses Format kann der Browser nicht öffnen — mit JPEG oder PNG klappt es.",
+        "undecodableFormat": "Dieses Format funktioniert in diesem Browser nicht, ein JPEG oder PNG hingegen schon.",
         "unsupportedType": "Dieses Bildformat geht nicht. Nimm JPEG, PNG, WEBP oder HEIC."
       },
       "photoQualityBody": "Magst du es nochmal versuchen? Gutes Licht und ein Blick von oben helfen.",
       "provider": {
-        "auth": "Der Anbieter hat deinen API-Schlüssel abgelehnt — prüf ihn in den KI-Einstellungen und versuch es nochmal.",
-        "credit": "Dein Konto beim Anbieter hat kein Guthaben mehr — lad dort Guthaben auf und versuch es nochmal.",
-        "modelNotFound": "Der Anbieter kennt dieses Modell nicht — wähl in den KI-Einstellungen ein anderes und versuch es nochmal.",
-        "rateLimit": "Der Anbieter bremst gerade die Anfragen — warte einen Moment und versuch es nochmal.",
-        "reconsentRequired": "Die Datenschutz-Einstellungen dieses Gateways haben sich geändert, deshalb nimmt es dieses Gerät nicht mehr an — bitte lass dir einen neuen Einladungslink schicken."
+        "auth": "Dein API-Schlüssel wurde vom Anbieter abgelehnt. Überprüfe ihn in den KI-Einstellungen und versuche es erneut.",
+        "credit": "Dein Guthaben beim Anbieter ist aufgebraucht. Lade Guthaben bei deinem Anbieter auf und versuche es erneut.",
+        "modelNotFound": "Der Anbieter erkennt dieses Modell nicht. Wähle ein anderes Modell in den KI-Einstellungen und versuche es erneut.",
+        "rateLimit": "Der Anbieter begrenzt gerade die Anzahl der Anfragen. Warte einen Moment und versuche es erneut.",
+        "reconsentRequired": "Die Datenschutzeinstellungen dieses Gateways haben sich geändert, weshalb dieses Gerät nicht mehr akzeptiert wird. Bitte die Person, die dich eingeladen hat, um einen neuen Einladungslink."
       },
-      "readPhoto": "Das Foto ließ sich nicht lesen — nimm ein anderes.",
+      "readPhoto": "Das Foto konnte nicht gelesen werden. Versuche es mit einem anderen.",
       "titles": {
         "auth": "Dein KI-Schlüssel funktioniert nicht",
         "credit": "Dein KI-Anbieter hat kein Guthaben mehr",
@@ -1475,7 +1481,7 @@
     },
     "labelScan": {
       "capture": {
-        "description": "Fotografiere die Nährwerttabelle auf der Verpackung. Dein Foto geht direkt an deinen eigenen KI-Anbieter, der die gedruckten Zahlen liest — es wird nichts geschätzt. Danach bleibt das Foto nur auf diesem Gerät.",
+        "description": "Fotografiere die Nährwerttabelle auf der Verpackung. Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, der die gedruckten Zahlen liest: Es wird nichts geschätzt. Danach bleibt das Foto ausschließlich auf diesem Gerät gespeichert.",
         "emptyHint": "Halte die Verpackung flach und lass die Tabelle das Bild ausfüllen.",
         "emptyTitle": "Fotografiere die Nährwerttabelle",
         "photoLabel": "Etikettenfoto",
@@ -1484,10 +1490,10 @@
       },
       "mode": {
         "label": "Ein Verpackungsetikett",
-        "labelHint": "Die Nährwerttabelle auf einer Verpackung — wir lesen die Zahlen genau so, wie sie gedruckt sind, inklusive Zuckeralkohole.",
+        "labelHint": "Die Nährwerttabelle auf einer Verpackung: Wir lesen die Zahlen genau so ab, wie sie aufgedruckt sind, einschließlich mehrwertiger Alkohole.",
         "legend": "Was fotografierst du?",
         "plate": "Einen Teller Essen",
-        "plateHint": "Eine Mahlzeit auf dem Teller — wir erkennen, welche Lebensmittel darauf sind."
+        "plateHint": "Eine Mahlzeit auf einem Teller: Wir ermitteln, welche Lebensmittel darauf liegen."
       },
       "review": {
         "basisPer100g": "Aus der Spalte „pro 100 g“ des Etiketts übernommen.",
@@ -1501,18 +1507,18 @@
           "total": "US-Stil (Kohlenhydrate inkl. Ballaststoffe)"
         },
         "gramsLabel": "Menge zum Eintragen (g)",
-        "heading": "Das steht auf dem Etikett — prüfe es, bevor du es einträgst.",
-        "macrosPer100gNote": "Die Werte gelten pro 100 g. Ein leeres Feld heißt: Das Etikett hat diese Zeile nicht gedruckt — lass es leer, statt 0 einzutragen.",
+        "heading": "Das steht auf dem Etikett. Überprüfe die Angaben, bevor du sie einträgst.",
+        "macrosPer100gNote": "Die Werte gelten pro 100 g. Ein leeres Feld bedeutet, dass diese Zeile auf dem Etikett nicht angegeben war. Lass es lieber leer, anstatt 0 einzutragen.",
         "modelNote": "Hinweis aus der Auswertung: {{note}}",
         "nameLabel": "Produkt",
         "savedAsCustomFood": "Beim Speichern kommt das Produkt zu deinen Lebensmitteln. Beim nächsten Mal genügt ein Tippen, ganz ohne Foto.",
         "servingPrinted": "Portion laut Etikett: {{serving}}",
         "subheading": "Alle Zahlen stammen aus deinem Foto. Korrigiere alles, was nicht stimmt.",
-        "unverified": "Aus deinem Foto gelesen, nicht geprüft. Kleine Schrift auf gewölbten oder glänzenden Verpackungen kann falsch gelesen werden — bitte prüfe die Zahlen."
+        "unverified": "Aus deinem Foto abgelesen, nicht verifiziert. Kleingedrucktes auf gewölbten oder spiegelnden Verpackungen kann falsch erkannt werden. Bitte prüfe die Zahlen."
       }
     },
     "loading": "Scan wird geladen…",
-    "offline": "Du bist offline. Für den Teller-Scan brauchst du eine Verbindung — trag solange etwas aus deinen letzten Lebensmitteln ein.",
+    "offline": "Du bist offline. Das Scannen von Tellern erfordert eine Internetverbindung. Durchsuche deine kürzlich genutzten Lebensmittel, um jetzt etwas einzutragen.",
     "review": {
       "addingSummary_one": "{{count}} Lebensmittel wird eingetragen · ~{{netCarbs}} g Netto-KH",
       "addingSummary_other": "{{count}} Lebensmittel werden eingetragen · ~{{netCarbs}} g Netto-KH",
@@ -1530,7 +1536,7 @@
       "fineTune": "Portion & Nährwerte anpassen",
       "foodLabel": "Lebensmittel",
       "gramsLabel": "Gramm",
-      "heading": "Das ist dein Teller — wenn es passt, einfach bestätigen.",
+      "heading": "Hier ist dein Teller. Wenn alles stimmt, bestätige einfach.",
       "include": "Übernehmen",
       "macroLabels": {
         "carbs": "Kohlenhydrate (Pflicht)",
@@ -1542,7 +1548,7 @@
         "sugars": "Zucker"
       },
       "macrosPer100gNote": "Nährwerte je 100 g.",
-      "macrosUnknown": "Nährwerte unbekannt — nur mit Namen eingetragen.",
+      "macrosUnknown": "Nährwerte unbekannt, nur mit Namen eingetragen.",
       "match": {
         "applied": "Übernommen",
         "calories": "{{value}} Kalorien",
@@ -1561,7 +1567,7 @@
         "weak": "Grober Treffer"
       },
       "netCarbsForPortion": "{{value}} g Netto-Kohlenhydrate",
-      "noneSelected": "Nichts ausgewählt — wähl mindestens ein Lebensmittel aus.",
+      "noneSelected": "Keine Lebensmittel ausgewählt. Wähle mindestens eines aus, um es einzutragen.",
       "plateFallbackName": "Teller",
       "portionGrams": "~{{grams}} g",
       "portionScale": {
@@ -1577,10 +1583,10 @@
         "protein": "Eiweiß {{value}} g"
       },
       "sanity": {
-        "componentOverTotal": "{{component}} liegt bei {{componentValue}} g je 100 g, mehr als die {{total}}-Gesamtmenge von {{totalValue}} g — prüf das vor dem Eintragen.",
-        "componentSumOverTotal": "{{firstComponent}} und {{secondComponent}} ergeben zusammen {{componentValue}} g je 100 g, mehr als die {{total}}-Gesamtmenge von {{totalValue}} g — prüf das vor dem Eintragen.",
-        "kcalMismatch": "Diese Zahlen passen nicht zusammen ({{stated}} kcal gegenüber ~{{computed}} aus den Nährwerten) — prüf das vor dem Eintragen.",
-        "labelColumnsDisagree": "Die beiden Spalten des Etiketts widersprechen sich bei {{label}} ({{printed}} pro 100 g gedruckt, {{converted}} aus der Portionsspalte berechnet) — eine davon wurde wahrscheinlich falsch gelesen.",
+        "componentOverTotal": "{{component}} beträgt {{componentValue}} g pro 100 g, mehr als der Gesamtwert für {{total}} von {{totalValue}} g: Bitte vor dem Eintragen überprüfen.",
+        "componentSumOverTotal": "{{firstComponent}} und {{secondComponent}} ergeben zusammen {{componentValue}} g pro 100 g, mehr als der Gesamtwert für {{total}} von {{totalValue}} g: Bitte vor dem Eintragen überprüfen.",
+        "kcalMismatch": "Diese Zahlen wirken unstimmig ({{stated}} kcal gegenüber ~{{computed}} aus den Makronährwerten): Bitte vor dem Eintragen überprüfen.",
+        "labelColumnsDisagree": "Die beiden Spalten des Etiketts weichen bei {{label}} voneinander ab ({{printed}} pro 100 g aufgedruckt gegenüber {{converted}} berechnet aus der Portionsspalte): Eine davon wurde vermutlich falsch erkannt.",
         "macro": {
           "carbs": "Kohlenhydrate",
           "fat": "Fett",
@@ -1590,39 +1596,39 @@
           "protein": "Eiweiß",
           "sugars": "Zucker"
         },
-        "macroSumOver100": "Kohlenhydrate, Eiweiß und Fett ergeben zusammen {{sum}} g je 100 g — prüf das vor dem Eintragen.",
-        "singleMacroOver100": "{{label}} liegt bei {{value}} g je 100 g, das kann nicht stimmen — prüf das vor dem Eintragen."
+        "macroSumOver100": "Kohlenhydrate, Eiweiß und Fett ergeben zusammen {{sum}} g pro 100 g: Bitte vor dem Eintragen überprüfen.",
+        "singleMacroOver100": "{{label}} beträgt {{value}} g pro 100 g, was nicht stimmen kann: Bitte vor dem Eintragen überprüfen."
       },
       "saving": "Wird gespeichert…",
       "seeOtherMatches": "Passt nicht? Andere Treffer ansehen",
-      "subheading": "Tipp auf eine Portion, um sie anzupassen — oder ändere unten alles im Detail.",
+      "subheading": "Tippe auf eine Portion, um sie anzupassen, oder nimm unten Feineinstellungen vor.",
       "unnamedFood": "Lebensmittel ohne Namen"
     },
     "setup": {
-      "body": "Dieser Schritt ist völlig freiwillig — von Hand eintragen und alles andere in openplate funktioniert auch ohne. Du brauchst dafür ein kostenpflichtiges Konto bei einem KI-Dienst, das du selbst einrichtest (openplate betreibt keine eigene KI und bietet keine Testphase). Das Einrichten dauert meist ein paar Minuten und kostet pro Foto in der Regel deutlich weniger als einen Cent — abgerechnet von diesem Anbieter, nicht von openplate. Danach geht jedes Foto direkt zum Anbieter deiner Wahl und bleibt anschließend nur auf diesem Gerät — nie auf openplates Server —, bis du es in den Einstellungen löschst.",
-      "bodyPreset": "Dieser Schritt ist völlig freiwillig — von Hand eintragen und alles andere in openplate funktioniert auch ohne. Bei diesem openplate kannst du seine eigene KI mit einem Tipp verbinden, ohne Konto und ohne eigenen Schlüssel. Danach geht jedes Foto direkt von diesem Gerät an diese KI und bleibt anschließend nur auf diesem Gerät — nie auf openplate.org und nirgendwo sonst —, bis du es in den Einstellungen löschst.",
+      "body": "Dieser Schritt ist vollkommen optional: Das manuelle Eintragen und alle anderen Funktionen in openplate funktionieren auch ohne ihn uneingeschränkt. Dafür ist ein kostenpflichtiges Konto bei einem KI-Dienst erforderlich, das du selbst einrichtest (openplate betreibt keine eigene KI und bietet keine Testversion an). Die Einrichtung dauert meist nur wenige Minuten und kostet in der Regel deutlich unter einem Cent pro Foto, abgerechnet über diesen Anbieter, nicht über openplate. Nach der Verknüpfung wird jedes Foto direkt an deinen gewählten Anbieter zur Erkennung gesendet und verbleibt danach ausschließlich auf diesem Gerät, niemals auf dem Server von openplate, bis du es in den Einstellungen löschst.",
+      "bodyPreset": "Dieser Schritt ist vollkommen optional: Das manuelle Eintragen und alle anderen Funktionen in openplate funktionieren auch ohne ihn uneingeschränkt. In dieser openplate-Instanz kannst du die eigene KI mit einem Fingertipp verknüpfen, ganz ohne eigenes Konto oder eigenen Schlüssel. Nach der Verknüpfung wird jedes Foto direkt von diesem Gerät an diese KI zur Erkennung gesendet und verbleibt danach ausschließlich auf diesem Gerät, niemals auf openplate.org und nirgendwo sonst, bis du es in den Einstellungen löschst.",
       "connectOpenRouter": "Mit OpenRouter verbinden",
       "description": "Fotografier deinen Teller und ein KI-Dienst schätzt die Kohlenhydrate für dich.",
       "manualSetup": "Oder richte einen Anbieter selbst in den Einstellungen ein",
       "sharedPhotoAlt": "Das Foto, das du geteilt hast",
-      "sharedPhotoNote": "Dein geteiltes Foto ist angekommen, aber wir können darauf noch nichts erkennen — dafür muss zuerst ein KI-Anbieter verbunden sein. Verbinde unten einen und teile oder wähle das Foto dann nochmal.",
+      "sharedPhotoNote": "Wir haben das geteilte Foto erhalten, können Lebensmittel darauf aber noch nicht erkennen. Dafür muss zuerst ein KI-Anbieter verknüpft werden. Verknüpfe unten einen Anbieter und teile oder wähle dieses Foto dann erneut aus.",
       "title": "Foto machen statt tippen"
     },
     "title": "Teller scannen"
   },
   "settings": {
     "data": {
-      "description": "Dein Tagebuch liegt auf diesem Gerät — du kannst jederzeit eine vollständige Kopie herunterladen. Kein Lock-in, kein Antrag, kein Warten.",
+      "description": "Dein Tagebuch wird auf diesem Gerät gespeichert: Lade dir jederzeit eine vollständige Kopie herunter, ohne Bindung, ohne Wartezeit.",
       "downloadCsv": "Tagebuch laden (CSV)",
       "downloadJson": "Alles laden (JSON)",
       "exportTitle": "Deine Daten",
       "importButton": "Backup importieren (JSON)",
-      "importDescription": "Spiel ein aus openplate exportiertes Backup (JSON) auf diesem Gerät wieder ein — so holst du Daten von einem anderen Gerät herüber, ganz ohne Sync.",
-      "importError": "Diese Datei ließ sich nicht importieren — achte darauf, dass es ein openplate-Backup (JSON) ist.",
+      "importDescription": "Stelle ein aus openplate exportiertes Backup (JSON) auf diesem Gerät wieder her. So überträgst du Daten ohne Synchronisierung von einem anderen Gerät.",
+      "importError": "Diese Datei konnte nicht importiert werden. Stelle sicher, dass es sich um ein openplate-Backup (JSON) handelt.",
       "importHeading": "Backup importieren",
-      "importSuccess": "Backup importiert — die Daten stehen jetzt in deinem Tagebuch.",
+      "importSuccess": "Backup importiert. Dein Tagebuch enthält jetzt die importierten Daten.",
       "importing": "Wird importiert…",
-      "photosNote": "Tellerfotos sind in diesem Download nicht enthalten — sie bleiben nur auf diesem Gerät (siehe „Fotos auf diesem Gerät“ weiter unten) und landen nie in einem Backup oder Export. Im Download stehen nur die Zahlen, die du eingetragen hast.",
+      "photosNote": "Fotos von deinen Mahlzeiten sind in diesem Download nicht enthalten: Sie werden nur auf diesem Gerät gespeichert (siehe „Fotos auf diesem Gerät“ unten) und nie in ein Backup oder einen Export gepackt. Dein Download enthält nur die erfassten Werte.",
       "preparing": "Wird vorbereitet…",
       "title": "Daten & Sicherung"
     },
@@ -1635,9 +1641,9 @@
     "photos": {
       "cancel": "Abbrechen",
       "clearAll": "Alle löschen",
-      "clearConfirmDescription": "Damit werden alle Tellerfotos gelöscht, die auf diesem Gerät liegen. Deine Einträge und ihre Zahlen bleiben — nur die Bilder auf dem Gerät verschwinden. Das lässt sich nicht rückgängig machen.",
+      "clearConfirmDescription": "Dadurch werden alle auf diesem Gerät zwischengespeicherten Fotos von Mahlzeiten gelöscht. Deine erfassten Einträge und Werte bleiben erhalten. Es werden nur die Bilder auf diesem Gerät gelöscht. Dies kann nicht rückgängig gemacht werden.",
       "clearConfirmTitle": "Alle Fotos auf diesem Gerät löschen?",
-      "description": "Wenn du einen Teller scannst, bleibt das Foto nur auf diesem Gerät, damit du es beim Eintrag wiedersiehst — es wird nie hochgeladen und nie synchronisiert. Ältere Fotos räumen sich nach {{days}} Tagen von selbst weg; schalte das hier aus, wenn gar keine neuen mehr gespeichert werden sollen.",
+      "description": "Wenn du einen Teller scannst, wird das Foto nur auf diesem Gerät gespeichert, damit du es im Eintrag wieder ansehen kannst. Es wird weder hochgeladen noch synchronisiert. Ältere Fotos werden nach {{days}} Tagen automatisch gelöscht. Deaktiviere dies, um keine neuen Fotos mehr zu speichern.",
       "switchLabel": "Tellerfotos auf diesem Gerät speichern",
       "title": "Fotos auf diesem Gerät",
       "usageEmpty": "Keine Fotos auf diesem Gerät.",
@@ -1692,7 +1698,7 @@
     "advanced": {
       "anthropicOption": "Anthropic direkt",
       "backToRecommended": "← Doch lieber {{provider}} (empfohlen)",
-      "openaiCompatibleOption": "Selbst gehostet / lokaler Endpunkt (Ollama, vLLM, LM Studio …) — auf der gehosteten Instanz nur localhost",
+      "openaiCompatibleOption": "Selbst gehosteter / lokaler Endpunkt (Ollama, vLLM, LM Studio ...), auf der gehosteten Instanz nur localhost",
       "toggle": "Erweitert: einen anderen Anbieter nutzen"
     },
     "apiKey": {
@@ -1702,18 +1708,18 @@
         "openaiCompatible": "API-Schlüssel (für deinen Endpunkt)",
         "openrouter": "OpenRouter API-Schlüssel"
       },
-      "noKeyYet": "Noch kein Schlüssel hinterlegt — er bleibt nur auf diesem Gerät.",
+      "noKeyYet": "Noch kein Schlüssel konfiguriert, wird nur auf diesem Gerät gespeichert.",
       "sentToBaseUrl": "Geht an die Basis-URL, die oben eingetragen ist."
     },
     "baseUrl": {
-      "help": "Auf der gehosteten Instanz ist nur ein Endpunkt auf localhost/127.0.0.1 erreichbar — die Content-Security-Policy blockiert andere Hosts mit Absicht, damit dein Schlüssel geschützt bleibt, falls diese Seite je manipuliert wird. Du hostest selbst? Dann erlaubst du deinen eigenen Endpunkt über CSP_CONNECT_EXTRA (steht in der README). api.openai.com ist so oder so nie direkt erreichbar — für OpenAI-Modelle nimm OpenRouter."
+      "help": "Auf der gehosteten Instanz ist nur ein Endpunkt unter localhost/127.0.0.1 erreichbar: Die Content Security Policy blockiert absichtlich andere Hosts, um deinen Schlüssel zu schützen, falls diese Seite jemals kompromittiert werden sollte. Selbst gehostet? Setze CSP_CONNECT_EXTRA, um deinen eigenen Remote-Endpunkt zuzulassen (siehe README). Ein direkter Zugriff auf api.openai.com ist so oder so nicht möglich. Verwende OpenRouter für OpenAI-Modelle."
     },
     "connectCard": {
-      "description": "Dein Schlüssel, dein Anbieter, deine Daten — jedes Tellerfoto geht direkt an den Anbieter, den du wählst, und wird dort gelesen. openplate behält danach eine Kopie nur auf diesem Gerät (nie auf unserem Server), damit du sie später nochmal ansehen kannst — verwalten oder löschen kannst du sie jederzeit unter „Daten & Sicherung“ in den Einstellungen. Auch dein Schlüssel verlässt dieses Gerät nie, außer zu dem Anbieter, den du unten auswählst.",
+      "description": "Dein Schlüssel, dein Anbieter, deine Daten: Jedes Foto einer Mahlzeit wird zur Auswertung direkt an den von dir gewählten Anbieter gesendet. openplate speichert anschließend eine Kopie ausschließlich auf diesem Gerät (nie auf unserem Server), damit du es später wieder ansehen kannst. Du kannst dies jederzeit unter „Daten & Backup“ in den Einstellungen verwalten oder löschen. Dein Schlüssel selbst verlässt dieses Gerät ebenfalls nie, außer in Richtung des unten ausgewählten Anbieters.",
       "title": "Verbinde deinen KI-Anbieter"
     },
     "connected": {
-      "status": "Verbunden mit <strong>{{provider}}</strong> — {{model}}"
+      "status": "Verbunden mit <strong>{{provider}}</strong>, {{model}}"
     },
     "cost": {
       "approxCents": "etwa {{cents}} Cent pro Foto",
@@ -1721,7 +1727,7 @@
     },
     "disconnect": {
       "button": "Trennen",
-      "notRevoked": "Damit verschwindet der Schlüssel nur von <strong>diesem Gerät</strong> — bei {{provider}} wird er <strong>nicht</strong> gesperrt.",
+      "notRevoked": "Dadurch wird der Schlüssel nur von <strong>diesem Gerät</strong> entfernt. Er wird bei {{provider}} <strong>nicht</strong> widerrufen.",
       "oauthKeyStillThere": "Der Schlüssel steht weiterhin in deinen <keyLink>Schlüsseleinstellungen bei {{provider}}</keyLink> (dort heißt er „openplate“, oder „An app“, solange der Anbieter von dieser Instanz noch keinen Traffic gesehen hat) und funktioniert dort, bis du ihn selbst sperrst.",
       "stops": "Die Foto-Erkennung funktioniert erst wieder, wenn du einen Anbieter verbindest.",
       "title": "KI-Anbieter trennen?"
@@ -1732,15 +1738,15 @@
       "baseUrlRequired": "Für einen selbst gehosteten oder lokalen Endpunkt wird eine Basis-URL gebraucht.",
       "baseUrlScheme": "Die Basis-URL muss mit http:// oder https:// anfangen",
       "disconnectToSwitch": "Trenn erst die Verbindung, dann kannst du den Anbieter wechseln.",
-      "keyRejected": "Der Anbieter hat den Schlüssel abgelehnt — schau ihn dir nochmal an und versuch es erneut.",
+      "keyRejected": "Der Schlüssel wurde vom Anbieter abgelehnt. Bitte überprüfe ihn und versuche es erneut.",
       "modelRequired": "Ein Modell wird gebraucht"
     },
     "explainer": {
-      "byok": "Neugierig? So läuft es: openplate betreibt keine eigene KI und kann deshalb keine kostenlosen Foto-Scans anbieten. Stattdessen bringst du <strong>deinen eigenen Schlüssel</strong> von einer KI-Firma mit, und openplate liest damit deine Tellerfotos — dein Schlüssel, dein Anbieter, deine Daten. Der Schlüssel bleibt nur auf diesem Gerät: openplate schickt ihn nirgendwo hin außer zu dem Anbieter, den du unten wählst, und speichert oder sieht ihn nie auf dem eigenen Server.",
-      "notRequired": "<strong>Nichts auf dieser Seite musst du machen.</strong> Dein Tagebuch, deine Ziele und dein Verlauf funktionieren auch ohne. Wenn ein kostenpflichtiges KI-Konto und ein eingefügter Schlüssel nichts für dich sind, schließ diese Seite und trag weiter von Hand ein — dir entgeht sonst nichts.",
-      "photosAndCost": "Jedes Foto geht direkt an diesen Anbieter, gerade lange genug, um deinen Teller zu lesen. openplate selbst behält nie eine Kopie auf dem eigenen Server — aber standardmäßig bleibt danach eine Kopie auf <strong>diesem Gerät</strong> (im Speicher deines Browsers), etwa 90 Tage lang, damit du sie beim Eintrag später nochmal siehst. Das kannst du abschalten oder jederzeit löschen, unter <dataLink>Daten & Sicherung</dataLink> in den Einstellungen. Es kostet Geld, aber wenig: meist unter einem Cent pro Foto, direkt von deinem Anbieter abgerechnet — selbst wer jede Mahlzeit scannt, bleibt meistens deutlich unter 5 $ im Monat. Du zahlst nur, was du wirklich scannst.",
-      "setup": "Zum Einrichten gehst du zuerst auf die Seite des Anbieters: dort ein kostenloses Konto anlegen und eine Zahlungsmethode hinterlegen (bei denen, nicht bei uns — openplate sieht deine Karte nie). Am einfachsten ist ein <providerLink>{{provider}}-Schlüssel</providerLink> — das ist der Reiter, den wir unten zuerst zeigen, und ein Schlüssel reicht für jedes Modell darunter.",
-      "setupOpenAiNote": "Eine Ausnahme solltest du kennen: Der eigene Dienst von OpenAI beantwortet keine Anfragen, die direkt aus dem Browser kommen — <strong>OpenAI-Modelle sind hier also nur über OpenRouter erreichbar</strong>, dessen einzelner Schlüssel auch die Modelle von Google abdeckt.",
+      "byok": "Weiterhin interessiert? So funktioniert es: openplate betreibt keine eigene KI und kann daher keine kostenlosen Foto-Scans anbieten. Stattdessen bringst du <strong>deinen eigenen Schlüssel</strong> eines KI-Anbieters mit, und openplate nutzt ihn zum Auslesen deiner Mahlzeiten-Fotos: dein Schlüssel, dein Anbieter, deine Daten. Der Schlüssel verbleibt ausschließlich auf diesem Gerät: openplate sendet ihn an niemanden außer den unten gewählten Anbieter und speichert oder sieht ihn nie auf dem eigenen Server.",
+      "notRequired": "<strong>Nichts auf dieser Seite ist erforderlich.</strong> Dein Tagebuch, deine Ziele und Trends funktionieren alle auch ohne dies. Wenn die Registrierung bei einem kostenpflichtigen KI-Dienst und das Einfügen eines Schlüssels nichts für dich ist, schließe diese Seite einfach und erfasse deine Mahlzeiten weiterhin manuell: dir geht sonst nichts verloren.",
+      "photosAndCost": "Jedes Foto wird direkt an diesen Anbieter gesendet, und zwar nur so lange, wie es zum Auslesen deines Tellers benötigt wird. openplate selbst speichert nie eine Kopie auf dem eigenen Server, behält danach standardmäßig aber für etwa 90 Tage eine Kopie auf <strong>diesem Gerät</strong> (im Speicher deines Browsers), damit du es später bei diesem Eintrag wieder ansehen kannst. Du kannst dies jederzeit unter <dataLink>Daten & Backup</dataLink> in den Einstellungen deaktivieren oder löschen. Es kostet Geld, aber nicht viel: meist unter einem Cent pro Foto, direkt abgerechnet von deinem Anbieter. Selbst wenn jede Mahlzeit gescannt wird, geben die meisten deutlich unter 5 $ im Monat aus. Du zahlst nur für das, was du tatsächlich scannst.",
+      "setup": "Für die Einrichtung besuchst du zuerst die Website des Anbieters: Erstelle dort ein kostenloses Konto und hinterlege eine Zahlungsmethode (beim Anbieter selbst, nicht bei uns: openplate sieht deine Karte nie). Der einfachste Weg ist ein Schlüssel von <providerLink>{{provider}}</providerLink>: Diesen Tab haben wir unten an die erste Stelle gesetzt, und ein einziger Schlüssel deckt jedes darunter aufgeführte Modell ab.",
+      "setupOpenAiNote": "Eine wichtige Ausnahme: Der direkte Dienst von OpenAI beantwortet keine Anfragen direkt aus einem Browser. Daher sind <strong>OpenAI-Modelle hier nur über OpenRouter erreichbar</strong>, dessen Schlüssel auch die Modelle von Google abdeckt.",
       "title": "Foto machen, Makros bekommen"
     },
     "field": {
@@ -1750,7 +1756,7 @@
     "gateway": {
       "auditNotice": "Dieses Gateway gibt an, dass seine Administration deine Einsendungen einsehen kann, auch die Fotos.",
       "badge": "Gateway",
-      "disconnectNote": "Es wird nichts widerrufen — es ist kein Konto und kein Schlüssel von dir im Spiel. Um dieses Gateway wieder zu nutzen, brauchst du einen neuen Einladungslink von der Person, die es betreibt."
+      "disconnectNote": "Es wird nirgendwo etwas widerrufen: Es ist kein Konto und kein Schlüssel von dir im Spiel. Um dieses Gateway erneut zu nutzen, benötigst du einen neuen Einladungslink von der Person, die es betreibt."
     },
     "loading": "Deine KI-Einstellungen werden geladen…",
     "manualEntry": {
@@ -1761,17 +1767,17 @@
       "blurb": {
         "claude-haiku-4-5": "Schnell und genau bei Details auf dem Teller",
         "claude-sonnet-5": "Trifft auch bei kniffligen Tellern",
-        "google-gemini-3-1-flash-lite": "Günstig und stark — gute Standardwahl für Tellerfotos",
-        "google-gemini-3-5-flash-lite": "Standard nach der OpenRouter-Verbindung — nach Datenschutz gewählt, nicht nach Preis: kein Training mit deinen Fotos",
-        "ministral-14b-2512": "Solide Sparvariante — benennt Gerichte etwas holprig",
-        "ministral-3b-2512": "Das günstigste der Familie — für einfache, klar getrennte Teller",
+        "google-gemini-3-1-flash-lite": "Günstig und fähig, eine hervorragende Standardwahl für Fotos von Mahlzeiten",
+        "google-gemini-3-5-flash-lite": "Standard nach Verbindung mit OpenRouter, ausgewählt für Datenschutz, nicht Preis: kein Training mit deinen Fotos",
+        "ministral-14b-2512": "Eine solide Einstiegsoption für kleines Budget, benennt Gerichte etwas ungelenk",
+        "ministral-3b-2512": "Das günstigste Modell der Familie, für einfache, klar getrennte Speisen auf dem Teller",
         "ministral-8b-2512": "Sparvariante mit etwas mehr Luft nach oben",
         "mistral-large-2512": "Flaggschiff-Preis, aber die schwächste Aufschlüsselung der Familie",
-        "mistral-medium-2604": "Am genauesten bei echten Tellern — nimm dieses",
+        "mistral-medium-2604": "Am genauesten bei echten Mahlzeiten, die beste Empfehlung",
         "mistral-small-2603": "Günstig im Input, hat aber zwei unserer drei Testteller falsch gelesen",
         "openai-gpt-5-4-mini": "Schneller, günstiger Allrounder",
         "openai-gpt-5-5": "Die Premium-Variante",
-        "openai-gpt-5-6-luna": "Günstigste Option hier — neu, auf echten Tellern noch nicht verglichen"
+        "openai-gpt-5-6-luna": "Günstigste Option hier, neu, noch nicht an echten Tellern getestet"
       },
       "createKeyLink": "Schlüssel bei {{provider}} holen",
       "customHint": "Überschreibt das oben gewählte Modell, sobald hier etwas steht.",
@@ -1782,17 +1788,17 @@
       "recommended": "Empfohlen"
     },
     "oauth": {
-      "noCardNote": "Für den Anfang brauchst du keine Kreditkarte — die kannst du später bei OpenRouter hinterlegen."
+      "noCardNote": "Keine Kreditkarte für den Einstieg nötig, du kannst später bei OpenRouter eine hinzufügen."
     },
     "preset": {
       "badge": "Von diesem openplate bereitgestellt",
-      "body": "Wer dieses openplate eingerichtet hat, betreibt gleich daneben eine KI, die Teller liest. Ein Tipp genügt — kein Konto irgendwo, kein Schlüssel zum Abholen, nichts zu bezahlen. Deine Fotos gehen direkt von diesem Gerät an diese Adresse und sonst nirgendwohin.",
-      "byokStillAvailable": "Lieber deinen eigenen KI-Anbieter? Den kannst du unten weiterhin einrichten — er ersetzt das hier jederzeit.",
+      "body": "Wer diese openplate-Instanz eingerichtet hat, betreibt parallel eine KI zur Tellererkennung. Verbinde sie mit einem Tippen: kein Account nötig, kein Key erforderlich, keine Kosten. Deine Fotos werden direkt von diesem Gerät an diesen Endpunkt gesendet und nirgendwo sonst hin.",
+      "byokStillAvailable": "Möchtest du lieber deinen eigenen KI-Anbieter nutzen? Du kannst unten jederzeit einen einrichten, der diesen ersetzt.",
       "connect": "KI dieses openplate nutzen",
       "connected": "Mit der eigenen KI dieses openplate verbunden.",
-      "connectedUnverified": "Verbunden, aber die KI dieses openplate hat gerade nicht geantwortet. Probier einen Scan — wenn er scheitert, muss sich wer dieses openplate betreibt das ansehen.",
+      "connectedUnverified": "Verbunden, aber die KI dieser openplate-Instanz hat gerade nicht geantwortet. Versuche einen Scan. Wenn er fehlschlägt, muss die Person nachsehen, die diese Instanz betreibt.",
       "connecting": "Verbinde…",
-      "disconnectNote": "Es wird nichts widerrufen — es ist kein Konto und kein Schlüssel von dir im Spiel. Dieses openplate bietet seine KI weiter an, du kannst also jederzeit mit einem Tipp wieder verbinden.",
+      "disconnectNote": "Es wird nirgendwo etwas widerrufen: Es ist kein Account oder Key von dir involviert. Diese openplate-Instanz bietet ihre KI weiterhin an, sodass du sie jederzeit mit einem Tippen wieder verbinden kannst.",
       "explainerNote": "Du brauchst das alles nicht: dieses openplate bringt seine eigene KI mit, ein Tipp weiter oben. Der Rest dieser Seite ist für den Fall, dass du stattdessen deinen eigenen Anbieter nutzen willst.",
       "failed": "Die Verbindung ließ sich nicht speichern. Versuch es nochmal.",
       "title": "Dieses openplate bringt seine eigene KI mit"
@@ -1805,18 +1811,18 @@
     },
     "providerBlurb": {
       "mistral": "Mistral ist ein französisches Unternehmen und lässt seine Modelle auf Servern in der EU laufen. Für den kostenlosen Tarif brauchst du eine Telefonnummer, aber keine Kreditkarte.",
-      "openrouter": "Ein Schlüssel für jedes Modell, auch für die von OpenAI und Google. Verbinden geht mit einem Klick — für den Anfang ohne Kreditkarte."
+      "openrouter": "Ein Key für alle Modelle, einschließlich derer von OpenAI und Google. Mit einem Klick verbinden, keine Kreditkarte für den Einstieg nötig."
     },
     "providerRow": {
       "connectedHint": "Zum Wechseln erst die Verbindung trennen.",
       "label": "Anbieter:",
-      "switchHint": "Wähl unten einen aus — oder nimm unter „Erweitert“ einen eigenen Endpunkt."
+      "switchHint": "Wähle unten einen aus oder öffne „Erweitert“ für einen selbst gehosteten Endpunkt."
     },
     "providerTabs": {
       "legend": "KI-Anbieter wählen"
     },
     "quickstart": {
-      "step1": "Wähl unten einen Anbieter — empfohlen ist {{provider}}.",
+      "step1": "Wähle unten einen Anbieter aus. {{provider}} wird empfohlen.",
       "step2": "Leg dir in der <providerLink>{{provider}}-Konsole</providerLink> einen API-Schlüssel an.",
       "step3": "Füg ihn unten ein und scann deinen ersten Teller.",
       "title": "Drei Schritte, etwa zwei Minuten"
@@ -1832,15 +1838,15 @@
       "disconnected": "KI-Anbieter getrennt.",
       "nothingToDisconnect": "Es gab nichts zu trennen.",
       "saved": "Einstellungen geprüft und gespeichert.",
-      "unverified": "Gespeichert — der Schlüssel ließ sich gerade nicht prüfen.",
-      "unverifiedOpenaiCompatible": "Gespeichert — der Schlüssel ließ sich gerade nicht prüfen (meist blockiert die Content-Security-Policy einen Endpunkt außerhalb von localhost, oder der Endpunkt lässt keine CORS-Anfragen aus dem Browser zu — siehe der Hinweis zur Basis-URL oben)."
+      "unverified": "Gespeichert, der Key konnte gerade nicht überprüft werden.",
+      "unverifiedOpenaiCompatible": "Gespeichert, der Key konnte gerade nicht überprüft werden (oft blockiert die Content Security Policy einen Nicht-Localhost-Endpunkt oder der Endpunkt erlaubt keine Browser-CORS-Anfragen; siehe Hilfetext zur Basis-URL oben)."
     },
     "troubleshooting": {
       "credit": "Bei deinem Anbieter muss eine Zahlungsmethode oder etwas Guthaben hinterlegt sein, sonst beantwortet er keine Anfragen.",
       "intro": "Meistens liegt es an einer dieser Sachen:",
-      "keyTypo": "Beim Kopieren ist ein Leerzeichen mitgerutscht oder ein Zeichen verloren gegangen — kopier den Schlüssel nochmal.",
-      "providerDown": "Der Anbieter ist gerade überlastet oder gestört — warte eine Minute und versuch es nochmal.",
-      "reassurance": "Der Rest von openplate bleibt davon unberührt — du kannst dein Essen jederzeit von Hand eintragen.",
+      "keyTypo": "Der Key wurde mit einem zusätzlichen Leerzeichen oder einem fehlenden Zeichen kopiert. Versuche, ihn noch einmal zu kopieren und einzufügen.",
+      "providerDown": "Der Anbieter ist vorübergehend überlastet oder nicht erreichbar. Warte eine Minute und versuche es erneut.",
+      "reassurance": "Nichts davon beeinträchtigt das restliche openplate: Du kannst Mahlzeiten jederzeit manuell eintragen.",
       "title": "Wenn ein Scan nicht klappt"
     },
     "usage": {
@@ -1855,7 +1861,7 @@
   "sharing": {
     "cancel": "Abbrechen",
     "title": "Teilen",
-    "intro": "Lass eine Ernährungsberater:in oder Ärzt:in dein Tagebuch lesen. Es bleibt durchgehend verschlüsselt: sie bekommen eine Kopie deines Schlüssels, versiegelt für ihren — der Server kann weiterhin nichts lesen.",
+    "intro": "Lass deine Ernährungsberatung oder deinen Arzt dein Tagebuch einsehen. Es bleibt durchgehend verschlüsselt: Sie erhalten eine mit ihrem Key versiegelte Kopie deines Keys, und der Server kann weiterhin nichts mitlesen.",
     "unavailable": "Dieser Sync-Server bietet kein Teilen an. Hier ist nichts eingeschaltet, und es wurde nichts gesendet.",
     "needsSession": "Zum Teilen brauchst du deine Sync-Passphrase. Entsperre Sync zuerst auf diesem Gerät.",
     "needsSessionCta": "Zu Sync",
@@ -1866,14 +1872,14 @@
       "generate": "Teilen-Schlüssel erzeugen",
       "failed": "Der Teilen-Schlüssel konnte nicht erzeugt werden.",
       "fingerprintLabel": "Dein Fingerabdruck",
-      "readAloud": "Lies diese zwölf Zeichen der Person vor, die mit dir teilt — sie tippt sie ein. Diese App hat sie hier aus deinem eigenen Schlüssel berechnet.",
+      "readAloud": "Lies diese zwölf Zeichen der Person vor, die mit dir teilt, und sie gibt sie ein. Die App hat sie hier aus deinem eigenen Key ermittelt.",
       "publicKeyLabel": "Dein öffentlicher Schlüssel",
       "publicKeyHint": "Kann gefahrlos per E-Mail oder als Code weitergegeben werden. Allein entschlüsselt er nichts.",
-      "recoveryNote": "Bewahre deinen Wiederherstellungscode gut auf. Er schützt auch den Zugang deiner Patient:innen — verlierst du ihn und deine Passphrase, lässt sich kein geteiltes Tagebuch mehr öffnen."
+      "recoveryNote": "Bewahre deinen Wiederherstellungscode sicher auf. Er schützt den Zugriff deiner Patientinnen und Patienten sowie deinen eigenen. Wenn du ihn und deine Passphrase verlierst, lässt sich kein einziges mit dir geteiltes Tagebuch mehr öffnen."
     },
     "grant": {
       "title": "Mit jemandem teilen",
-      "description": "Macht das gemeinsam — im Raum oder am Telefon. Du brauchst ihre Kontonummer, ihren Schlüssel und den Fingerabdruck, den sie vorliest.",
+      "description": "Mache dies gemeinsam mit der Person, vor Ort oder in einem Anruf. Du benötigst ihre Kontonummer, ihren Key und den Fingerabdruck, den sie dir vorliest.",
       "accountLabel": "Ihre Kontonummer",
       "accountHint": "Sie sehen sie auf ihrer eigenen Teilen-Seite.",
       "keyLabel": "Ihr öffentlicher Schlüssel",
@@ -1883,7 +1889,7 @@
       "fingerprintLabel": "Der vorgelesene Fingerabdruck",
       "fingerprintHint": "Bitte sie, die zwölf Zeichen von ihrem Bildschirm vorzulesen. Tippe ein, was du hörst.",
       "fingerprintPlaceholder": "AB12-CD34-EF56",
-      "fingerprintWhy": "Das Eintippen ist die Prüfung. Hat jemand unterwegs ihren Schlüssel ausgetauscht, passt das Gehörte nicht — und es wird nichts geteilt.",
+      "fingerprintWhy": "Die Eingabe dient zur Überprüfung. Falls der Key unterwegs ausgetauscht wurde, stimmt das Gehörte nicht überein und es wird nichts geteilt.",
       "submit": "Mein Tagebuch teilen",
       "badAccount": "Diese Kontonummer sieht nicht richtig aus.",
       "mismatch": "Das ist nicht der Fingerabdruck dieses Schlüssels. Es wurde nichts geteilt. Geht die Zeichen gemeinsam durch und versucht es erneut.",
@@ -1920,12 +1926,12 @@
       "confirmTitle": "Datenschlüssel ersetzen?",
       "confirmBody": "Alles, was du eingetragen hast, wird mit einem neuen Schlüssel neu versiegelt, und alle, mit denen du weiter teilst, bekommen eine frische versiegelte Kopie. Du bekommst einen neuen Wiederherstellungscode, der alte gilt dann nicht mehr.",
       "passphraseLabel": "Mit deiner Passphrase bestätigen",
-      "passphraseHint": "Wir fragen, weil der neue Schlüssel für deine Passphrase versiegelt wird — eine falsche würde dich aus deinem eigenen Tagebuch aussperren.",
+      "passphraseHint": "Wir fragen danach, weil der neue Key mit deiner Passphrase versiegelt werden muss, und eine falsche Passphrase dich aus deinem eigenen Tagebuch aussperren würde.",
       "confirmCta": "Schlüssel ersetzen",
       "failed": "Der Schlüssel konnte nicht ersetzt werden. Es wurde nichts geändert.",
       "doneTitle": "Dein Datenschlüssel wurde ersetzt.",
       "doneBody": "{{kept}} Freigabe(n) behalten, {{revoked}} beendet.",
-      "recoveryTitle": "Dein neuer Wiederherstellungscode — schreib ihn jetzt auf.",
+      "recoveryTitle": "Dein neuer Wiederherstellungscode, notiere ihn jetzt.",
       "recoveryNote": "Wird einmal gezeigt. Der Code von vorher gilt nicht mehr."
     },
     "clinician": {
@@ -1955,13 +1961,13 @@
       "failed": "Die Passphrase konnte nicht geändert werden. Geändert wurde nichts.",
       "newLabel": "Neue Passphrase",
       "open": "Passphrase ändern",
-      "recoveryNote": "Dein Wiederherstellungscode gilt weiter — er hängt nicht an der Passphrase, die du gerade ersetzt.",
+      "recoveryNote": "Dein Wiederherstellungscode funktioniert weiterhin, er ist nicht an die Passphrase gebunden, die du gerade ersetzt.",
       "submit": "Neue Passphrase speichern",
       "title": "Passphrase ändern"
     },
     "connected": {
       "description": "Angemeldet als {{email}}.",
-      "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem du sie aufgenommen hast — sie gehen nie in den Sync, auf deinen anderen Geräten tauchen sie also nicht auf.",
+      "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nicht synchronisiert, daher siehst du sie nicht auf deinen anderen Geräten.",
       "title": "Sync ist aktiv"
     },
     "create": {
@@ -1991,17 +1997,17 @@
     "emailLabel": "E-Mail-Adresse",
     "forgot": {
       "back": "Zurück",
-      "intro": "Wir schicken dir per E-Mail einen Link, um eine neue Passphrase zu setzen. Lies den nächsten Schritt in Ruhe — anmelden kannst du dich danach wieder, deine synchronisierten Daten holt das allein aber nicht zurück.",
+      "intro": "Wir senden dir per E-Mail einen Link zum Festlegen einer neuen Passphrase. Lies den nächsten Bildschirm sorgfältig durch: Ein Zurücksetzen verschafft dir wieder Zugang, kann deine synchronisierten Daten allein jedoch nicht wiederherstellen.",
       "sent": "Falls es zu dieser Adresse ein Konto gibt, ist der Link unterwegs.",
-      "sentNote": "Wir antworten in beiden Fällen gleich — so lässt sich über dieses Formular nicht herausfinden, wer ein Konto hat.",
+      "sentNote": "Wir antworten in jedem Fall auf dieselbe Weise, sodass dieses Formular nicht genutzt werden kann, um herauszufinden, wer ein Konto hat.",
       "submit": "Link schicken"
     },
-    "intro": "Optional. Hält dein Tagebuch auf allen Geräten gleich — verschlüsselt wird schon auf diesem Gerät, bevor irgendetwas rausgeht.",
+    "intro": "Optional. Halte dein Tagebuch auf all deinen Geräten synchron: auf diesem Gerät verschlüsselt, bevor es übertragen wird.",
     "passphrase": {
       "strength": {
         "fair": "Solide. Ein paar Wörter mehr und es wird deutlich schwerer zu raten.",
-        "strong": "Gut — lang genug, dass Raten wirklich aussichtslos wird.",
-        "weak": "Kurze Passphrasen sind hier die Schwachstelle — Länge bringt mehr als Sonderzeichen."
+        "strong": "Gut, lang genug, um wirklich schwer zu erraten zu sein.",
+        "weak": "Kurze Passphrasen sind hier die Schwachstelle. Länge bringt mehr als Sonderzeichen."
       }
     },
     "passphraseLabel": "Sync-Passphrase",
@@ -2010,12 +2016,12 @@
       "manage": "Sync verwalten",
       "setUp": "Sync einrichten"
     },
-    "promise": "Deine Passphrase verlässt dieses Gerät nie, und auf dem Sync-Server liegen nur verschlüsselte Bytes, für die er keinen Schlüssel hat. Das heißt aber auch: Verlierst du Passphrase und Wiederherstellungscode, kommt niemand mehr an deine Daten — wir auch nicht.",
+    "promise": "Deine Passphrase verlässt dieses Gerät nie, und der Sync-Server speichert nur verschlüsselte Daten, für die er keinen Schlüssel hat. Das bedeutet auch: Niemand, auch wir nicht, kann deine Daten wiederherstellen, wenn du sowohl deine Passphrase als auch deinen Wiederherstellungscode verlierst.",
     "recoveryCode": {
       "description": "Der einzige Weg zurück zu deinen synchronisierten Daten, falls du deine Passphrase mal vergisst.",
       "done": "Hab ihn gespeichert",
       "failed": "Es konnte kein neuer Wiederherstellungscode erstellt werden. Dein bisheriger gilt weiterhin.",
-      "note": "Nimm das, wenn du deinen Code nie notiert hast oder ihn nicht mehr findest. Der neue ersetzt den alten sofort — der alte funktioniert dann nicht mehr.",
+      "note": "Nutze dies, wenn du deinen Code nie aufgeschrieben hast oder ihn nicht mehr findest. Der neue Code ersetzt den alten sofort. Der alte Code verliert seine Gültigkeit.",
       "regenerate": "Neuen Wiederherstellungscode anzeigen",
       "title": "Wiederherstellungscode"
     },
@@ -2023,18 +2029,18 @@
       "back": "Zurück",
       "description": "Du kommst über den Link aus unserer E-Mail.",
       "doneWithData": "Fertig. Deine Passphrase steht und deine synchronisierten Daten sind unversehrt.",
-      "doneWithoutData": "Fertig. Du kannst dich wieder anmelden — dieses Konto fängt ab hier neu an.",
+      "doneWithoutData": "Erledigt. Du kannst dich wieder anmelden. Dieses Konto startet ab hier neu.",
       "failed": "Das hat nicht geklappt. Geändert wurde nichts.",
       "forkNo": "Nein, ich habe ihn nicht",
       "forkQuestion": "Hast du deinen Wiederherstellungscode?",
-      "forkWarning": "Lies das, bevor du weitermachst: Zurücksetzen bringt dir die Anmeldung zurück. Deine Daten holt es für sich genommen nicht zurück — der Server hatte nie einen Schlüssel dafür.",
+      "forkWarning": "Lies das, bevor du fortfährst: Ein Zurücksetzen stellt deine Anmeldemöglichkeit wieder her. Deine Daten werden dadurch nicht wiederhergestellt: Der Server hatte nie einen Schlüssel dazu.",
       "forkYes": "Ja, ich habe ihn",
       "missingToken": "Diesem Link fehlt sein Token. Öffne den Link aus der E-Mail nochmal oder fordere einen neuen an.",
       "newPassphraseLabel": "Neue Passphrase",
       "newRecoveryCode": "Leg deinen neuen Wiederherstellungscode sicher ab. Er wird dir nur dieses eine Mal angezeigt.",
       "noCode": {
         "acknowledgeDataPermanentlyGone": "Mir ist klar, dass meine synchronisierten Daten endgültig weg sind, und ich will weitermachen.",
-        "body": "Alles bereits Synchronisierte ist mit einem Schlüssel verschlüsselt, den nur deine Passphrase und dein Wiederherstellungscode öffnen konnten. Ohne eins von beidem bekommt das niemand mehr auf — weder du noch wir. Wenn du weitermachst, fängt das Konto mit einem neuen Schlüssel von vorn an.",
+        "body": "Alles, was bereits synchronisiert wurde, ist mit einem Schlüssel verschlüsselt, den nur deine Passphrase und dein Wiederherstellungscode öffnen können. Ohne beides kann niemand mehr darauf zugreifen: weder du noch wir. Wenn du fortfährst, wird das Konto mit einem neuen Schlüssel neu gestartet.",
         "heading": "Ohne deinen Wiederherstellungscode sind deine synchronisierten Daten nicht wiederherstellbar."
       },
       "recoveryCodeHint": "Der gruppierte Code, der beim Einrichten einmalig angezeigt wurde. Bindestriche und Groß- und Kleinschreibung spielen keine Rolle.",
@@ -2047,37 +2053,37 @@
     },
     "setup": {
       "awaitingVerification": {
-        "body": "Dein Konto steht. Öffne den Link, den wir an {{email}} geschickt haben, um die Adresse zu bestätigen — danach meldest du dich hier an, und dabei entsteht dein Wiederherstellungscode.",
+        "body": "Dein Konto ist bereit. Öffne den Link, den wir an {{email}} gesendet haben, um es zu bestätigen. Melde dich danach hier wieder an: erst dann wird dein Wiederherstellungscode erstellt.",
         "note": "Bis dahin wurde nichts verschlüsselt und nichts hochgeladen. Dein Tagebuch bleibt so oder so auf diesem Gerät.",
         "title": "Schau in deine E-Mails"
       },
       "complete": "Sync ist auf diesem Gerät eingerichtet.",
       "confirmLabel": "Passphrase bestätigen",
-      "confirmSaved": "Ich habe diesen Wiederherstellungscode sicher abgelegt — getrennt von meiner Passphrase.",
+      "confirmSaved": "Ich habe diesen Wiederherstellungscode an einem sicheren Ort gespeichert, getrennt von meiner Passphrase.",
       "continue": "Weiter",
       "copied": "Kopiert",
       "copy": "Kopieren",
-      "copyFailed": "Kopieren hat nicht geklappt — markier den Code und kopier ihn selbst",
+      "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell auswählen und kopieren",
       "finish": "Einrichtung abschließen",
       "generating": "Sync wird eingerichtet…",
-      "passphraseIntro": "Wähl eine Passphrase, mit der deine Daten verschlüsselt werden. Daraus wird auf diesem Gerät ein Schlüssel abgeleitet — die Passphrase selbst sehen wir nie, und zurücksetzen können wir sie für dich auch nicht.",
+      "passphraseIntro": "Wähle eine Passphrase, um deine Daten zu verschlüsseln. Wir leiten daraus auf diesem Gerät einen Schlüssel ab. Wir sehen die Passphrase selbst nie und können sie nicht für dich zurücksetzen.",
       "passphraseLabel": "Sync-Passphrase",
       "passphraseMismatch": "Die beiden Passphrasen stimmen nicht überein.",
-      "passphraseTooShort": "Nimm mindestens {{min}} Zeichen — diese Passphrase ist das Einzige, was zwischen deinen synchronisierten Daten und allen anderen steht.",
-      "recoveryWarningBody": "Wenn du deine Passphrase und diesen Wiederherstellungscode beide verlierst, können wir deine Daten nicht wiederherstellen — genau das ist der Sinn von Ende-zu-Ende-Verschlüsselung. Niemand kann das, wir auch nicht.",
-      "recoveryWarningLead": "Leg diesen Wiederherstellungscode sicher ab — er wird dir nur dieses eine Mal angezeigt.",
+      "passphraseTooShort": "Verwende mindestens {{min}} Zeichen. Diese Passphrase ist das Einzige, was deine synchronisierten Daten vor unbefugtem Zugriff schützt.",
+      "recoveryWarningBody": "Wenn du sowohl deine Passphrase als auch diesen Wiederherstellungscode verlierst, können wir deine Daten nicht wiederherstellen: genau das ist der Sinn einer Ende-zu-Ende-Verschlüsselung. Niemand kann das, nicht einmal wir.",
+      "recoveryWarningLead": "Speichere diesen Wiederherstellungscode an einem sicheren Ort: Er wird nur dieses eine Mal angezeigt.",
       "retry": "Nochmal versuchen",
-      "setupFailed": "Beim Einrichten des Sync ist etwas schiefgelaufen. Gespeichert wurde nichts — du kannst es bedenkenlos nochmal versuchen."
+      "setupFailed": "Beim Einrichten der Synchronisierung ist etwas schiefgelaufen. Es wurde nichts gespeichert, du kannst es einfach noch einmal versuchen."
     },
     "signIn": {
       "cta": "Bei Sync anmelden",
       "ctaKnown": "Sync für {{email}} entsperren",
       "failed": "Das hat nicht geklappt. Prüf Adresse und Passphrase und versuch es nochmal.",
-      "finishSetup": "Dieses Konto wurde angelegt, aber seine Schlüssel wurden nie fertig eingerichtet. Das holen wir jetzt nach — dauert einen Moment und endet mit deinem Wiederherstellungscode.",
+      "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Lass uns das jetzt nachholen: Es dauert nur einen Moment und endet mit deinem Wiederherstellungscode.",
       "forgot": "Ich habe meine Passphrase vergessen",
-      "intro": "Gib deine Passphrase ein, um dieses Gerät zu entsperren. Nach jedem Neuladen fragen wir wieder — der Schlüssel wird nirgends gespeichert.",
+      "intro": "Gib deine Passphrase ein, um dieses Gerät zu entsperren. Wir fragen nach jedem Neuladen erneut danach; der Schlüssel wird niemals gespeichert.",
       "submit": "Entsperren",
-      "unverified": "Deine Passphrase stimmt — nur die Adresse ist noch nicht bestätigt. Öffne den Link aus unserer E-Mail und komm dann hierher zurück.",
+      "unverified": "Deine Passphrase stimmt, aber die E-Mail-Adresse ist noch nicht bestätigt. Öffne den Link aus unserer E-Mail und kehre dann hierher zurück.",
       "working": "Wird entsperrt…"
     },
     "signOut": {
@@ -2087,9 +2093,9 @@
     "status": {
       "error": {
         "failed": "Der Sync ist nicht durchgelaufen. An deinem Tagebuch auf diesem Gerät ändert das nichts.",
-        "incompatible": "App und Sync-Server sprechen gerade unterschiedliche Versionen — der Sync pausiert deshalb mit Absicht.",
+        "incompatible": "Diese App und der Sync-Server nutzen noch nicht dieselbe Version, daher ist die Synchronisierung vorübergehend pausiert.",
         "offline": "Der Sync-Server war nicht erreichbar. Dein Tagebuch liegt sicher auf diesem Gerät und holt später auf.",
-        "reauth-required": "Deine Sitzung ist abgelaufen — melde dich neu an, dann geht der Sync weiter. Verloren ist nichts."
+        "reauth-required": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um weiter zu synchronisieren. Es ist nichts verloren gegangen."
       },
       "lastSynced": "Zuletzt synchronisiert: {{when}}",
       "never": "Von diesem Gerät noch nicht synchronisiert",
@@ -2101,7 +2107,7 @@
     },
     "title": "Sync zwischen Geräten",
     "verifyEmail": {
-      "failed": "Der Link hat nicht funktioniert — vielleicht wurde er schon benutzt oder ist abgelaufen.",
+      "failed": "Dieser Link hat nicht funktioniert. Er wurde möglicherweise bereits verwendet oder ist abgelaufen.",
       "next": "Du kannst diese Seite schließen und zurück in die App gehen.",
       "pending": "Einen Moment…",
       "title": "E-Mail wird bestätigt",
@@ -2130,7 +2136,7 @@
       "rangeGroup": "Zeitraum"
     },
     "empty": {
-      "body": "Sobald du ein paar Mahlzeiten eingetragen hast, zeigt diese Seite die Tage, an denen du deine Ziele erreicht hast, fasst deine Woche zusammen und zeichnet deinen Gewichtsverlauf — ehrlich, mit allen Lücken.",
+      "body": "Sobald du einige Mahlzeiten eingetragen hast, zeigt diese Seite die Tage, an denen du deine Ziele erreicht hast, fasst deine Woche zusammen und stellt dein Gewicht dar: ganz ehrlich, inklusive aller Lücken.",
       "cta": "Trag dein erstes Essen ein",
       "description": "Trag ein paar Tage ein, dann erscheint hier dein Fortschritt."
     },
@@ -2149,7 +2155,7 @@
       "cell": {
         "logged": "Du hast etwas eingetragen.",
         "metCount": "{{met}} von {{total}} Zielen erreicht",
-        "today": "Heute — läuft noch.",
+        "today": "Heute, läuft noch.",
         "unrated": "Eingetragen, aber es fehlten Angaben, um die Ziele zu prüfen."
       },
       "description": "Die letzten 13 Wochen. Je dunkler ein Kästchen, desto mehr deiner Ziele hast du an dem Tag erreicht.",
@@ -2178,7 +2184,7 @@
     },
     "legend": {
       "goal": "Dein Ziel",
-      "incomplete": "Kann unvollständig sein — Balken ist ein Mindestwert",
+      "incomplete": "Möglicherweise unvollständig, der Balken stellt das Minimum dar",
       "noEntry": "Kein Eintrag",
       "overGoal": "Über dem Ziel"
     },
@@ -2210,18 +2216,18 @@
       "underGoal": "An {{days}} von {{total}} eingetragenen Tagen lagst du unter deinem Ziel von {{goal}} g Netto-KH",
       "vsLastWeek": "({{delta}} gegenüber der Vorwoche)",
       "weight": "Gewicht {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": "— das Gewicht schwankt von Tag zu Tag"
+      "weightNoisy": ", das tägliche Gewicht schwankt oft"
     },
     "sparse": {
-      "body": "Ab {{days}} eingetragenen Tagen erscheint hier das Diagramm. Bis dahin geht nichts verloren — jeder Tag, den du einträgst, steht schon in deinem Tagebuch.",
+      "body": "Ab {{days}} erfassten Tagen erscheint hier das Diagramm. In der Zwischenzeit geht nichts verloren: Jeder Tag, den du einträgst, ist bereits in deinem Tagebuch.",
       "countNone": "keine in diesem Zeitraum",
-      "headline": "Ein Verlauf braucht noch ein paar Tage mehr — eingetragene Tage bisher: {{logged}}."
+      "headline": "Trends brauchen noch ein paar Tage, um aussagekräftig zu sein: Du hast {{logged}}."
     },
     "streak": {
-      "active_one": "{{count}} Tag in Folge — bleib dran.",
-      "active_other": "{{count}} Tage in Folge — bleib dran.",
+      "active_one": "{{count}} Tag in Folge, mach weiter so.",
+      "active_other": "{{count}} Tage in Folge, mach weiter so.",
       "empty": "Trag heute etwas ein, dann startet deine Serie.",
-      "overGoal": "Du hast heute eingetragen. Der Tag liegt über deinem Kohlenhydratziel und zählt deshalb nicht zur Serie — eine Serie zählt die Tage darunter.",
+      "overGoal": "Du hast heute etwas eingetragen. Da dein Kohlenhydratziel überschritten wurde, zählt es nicht zur Serie: Eine Serie zählt Tage darunter.",
       "title": "Deine Serie"
     },
     "title": "Fortschritt",
@@ -2240,7 +2246,7 @@
         "trend": "Trend"
       },
       "pointCaptionIdle": "Fahr über das Diagramm, um einen Tag abzulesen.",
-      "singleEntry": "Bisher ein Wiegen — für einen Verlauf braucht es noch ein paar mehr.",
+      "singleEntry": "Bisher einmal gewogen, für einen Trend braucht es noch ein paar Einträge mehr.",
       "stat": {
         "atTarget": "Am Ziel",
         "change": "Letzte 13 Wochen",
@@ -2254,6 +2260,16 @@
       "title": "Gewicht",
       "unitKilograms": "Kilogramm",
       "unitPounds": "Pfund"
+    }
+  },
+  "ui": {
+    "sidebar": {
+      "title": "Seitenleiste",
+      "description": "Zeigt die mobile Seitenleiste an.",
+      "toggle": "Seitenleiste ein-/ausblenden"
+    },
+    "sheet": {
+      "close": "Schließen"
     }
   }
 }
