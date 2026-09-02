@@ -135,18 +135,11 @@ services:
       # passphrase reset. Changing it has the same effect as losing it.
       SERVER_SECRET: ${SERVER_SECRET:?generate one with `openssl rand -hex 32` and put it in .env}
 
-      # Where your openplate client is served. Verification and reset emails
-      # link here; this service has no interface of its own.
-      CLIENT_BASE_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
-
-      # `false` closes registration on a personal or family instance while
-      # leaving existing accounts working. Consider it once your household
-      # has signed up.
-      SIGNUPS_OPEN: ${SIGNUPS_OPEN:-true}
-
-      # Off by default on purpose: with no mail configured, turning this on
-      # locks everyone out. Turn it on together with SMTP below.
-      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      # Who may create an account: open | invite | closed. `invite` and
+      # `closed` leave existing accounts working. Consider one of them once
+      # your household has signed up. The older SIGNUPS_OPEN name is a boot
+      # failure, so it is not forwarded here.
+      SIGNUP_MODE: ${SIGNUP_MODE:-open}
 
       # GET THIS RIGHT — it is the other setting that can hurt you. Set it to
       # the number of reverse proxies in front of this service. Left at 0
@@ -158,16 +151,22 @@ services:
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
 
-      # ── Mail (optional) ──
-      # With nothing set here, verification and reset links are printed to the
-      # service log — a supported way to run a family instance, not a degraded
-      # one:  docker compose -f compose.sync.yml logs -f sync
-      EMAIL_FROM: ${EMAIL_FROM:-openplate-sync <noreply@localhost>}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
+      # ── The operator notice (optional) ──
+      # One short sentence /health publishes and the client shows, for the
+      # things this service can no longer tell anyone: a move, a shutdown, a
+      # maintenance window. Empty means no notice, and SYNC_NOTICE_URL
+      # without SYNC_NOTICE is a boot failure.
+      SYNC_NOTICE: ${SYNC_NOTICE:-}
+      SYNC_NOTICE_URL: ${SYNC_NOTICE_URL:-}
+
+      # THIS SERVICE SENDS NO MAIL and stores no email address. An account is
+      # a HANDLE plus a passphrase, and a lost passphrase is recovered with
+      # the recovery code the client showed at signup. Lose both and the
+      # account is gone — there is no third path, because a reset the server
+      # could perform would mean a server that can open your data.
+      #
+      # Setting CLIENT_BASE_URL, REQUIRE_EMAIL_VERIFICATION, EMAIL_FROM, any
+      # SMTP_*, or any PIGEON_* is a BOOT FAILURE, not a no-op.
 
 volumes:
   pg-data:
