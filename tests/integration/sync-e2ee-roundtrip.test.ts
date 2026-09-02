@@ -3,7 +3,7 @@
  * (`fake-sync-service.ts`).
  *
  * The client code exercised here is the production stack, unmodified:
- * `createSyncAccount` / `signInToSync` / `completeSyncReset` from
+ * `createSyncAccount` / `signInToSync` / `recoverSyncAccount` from
  * `sync-actions.ts`, the real `SyncAuthClient` and `SyncHttpClient`, the real
  * envelope and merge engine, and the real orchestrator loop. Only three things
  * are substituted, all of them at documented seams:
@@ -15,7 +15,8 @@
  *    (`readSnapshot`/`applySnapshot`), which `node:test` does not have. What
  *    is under test is the sync algorithm, and `local-store-bridge.ts` is the
  *    only line between the two.
- *  - The reset "email" is read off the harness instead of an inbox.
+ *  - Nothing else. Recovery needs no harness hook at all now: the proof is
+ *    the recovery code the client itself minted.
  *
  * THE ZERO-KNOWLEDGE TEST IS THE POINT OF THIS FILE. "End-to-end encrypted" is
  * usually a claim defended by code review, which is to say defended until
@@ -57,16 +58,13 @@ import 'fake-indexeddb/auto';
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
 import {
   createSyncAccount,
-  completeSyncReset,
   markSyncPending,
-  regenerateRecoveryCode,
-  requestSyncReset,
+  recoverSyncAccount,
   signInToSync,
   syncNow,
 } from '../../app/lib/sync/sync-actions';
 import type { SyncSetupOutcome } from '../../app/lib/sync/setup-flow';
-import { AUTH_API_PREFIX } from '../../app/lib/sync/engine/client/auth-wire';
-import { classifySignInFailure } from '../../app/lib/sync/sign-in-error';
+import { classifyRecoveryFailure } from '../../app/lib/sync/sign-in-error';
 import {
   closeSyncSession,
   getSyncSessionSnapshot,
@@ -317,17 +315,26 @@ function decodedViews(serialized: string): { name: string; haystack: string | nu
   ];
 }
 
-/** Asserts the ordinary (no email verification) signup branch and hands back the recovery code. */
+/**
+ * The interruption, injected at the seam that makes it real: the signup goes
+ * through, the first key-record PUT does not.
+ */
+const failingKeyRecordFetch: typeof fetch = async (input, init) => {
+  if (String(input).includes('/key-records/')) throw new TypeError('Failed to fetch');
+  return fetch(input, init);
+};
+
+/** Asserts the signup completed and hands back the recovery code it showed. */
 function expectReady(outcome: SyncSetupOutcome): string {
-  assert.equal(outcome.status, 'ready', 'expected setup to complete without an email-verification step');
-  return outcome.status === 'ready' ? outcome.recoveryCode : '';
+  assert.equal(outcome.status, 'ready', 'a signup must complete and produce a recovery code');
+  return outcome.recoveryCode;
 }
 
 test("signup → key records → push: the service never sees the diary's plaintext", async () => {
-  const email = `canary-${Date.now()}@example.test`;
+  const handle = `canary-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -407,10 +414,10 @@ test("signup → key records → push: the service never sees the diary's plaint
 });
 
 test('a second device signs in with the passphrase alone and reads the first device’s data', async () => {
-  const email = `二-device-${Date.now()}@example.test`;
+  const handle = `二-device-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -420,7 +427,7 @@ test('a second device signs in with the passphrase alone and reads the first dev
   await runSyncCycleUnlocked(deviceDeps({ vault: first, deviceId: 'device-1', local: deviceOne }));
 
   // A genuinely fresh device: nothing but the address and the passphrase.
-  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const second = requireVault();
   const deviceTwo = { current: snapshotOf([]) };
   await runSyncCycleUnlocked(deviceDeps({ vault: second, deviceId: 'device-2', local: deviceTwo }));
@@ -432,16 +439,16 @@ test('a second device signs in with the passphrase alone and reads the first dev
 });
 
 test('two devices pushing AT THE SAME TIME both survive — the 409 loop over real HTTP', async () => {
-  const email = `race-${Date.now()}@example.test`;
+  const handle = `race-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
   });
   const vaultOne = requireVault();
-  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const vaultTwo = requireVault();
 
   const deviceOne = { current: snapshotOf([foodLog('race-a', 'Baked cod')]) };
@@ -470,16 +477,16 @@ test('two devices pushing AT THE SAME TIME both survive — the 409 loop over re
 });
 
 test('two diverged devices converge on the union and then go quiet', async () => {
-  const email = `converge-${Date.now()}@example.test`;
+  const handle = `converge-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
   });
   const vaultOne = requireVault();
-  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const vaultTwo = requireVault();
 
   const storageOne = createMemoryStorage();
@@ -516,12 +523,12 @@ test('two diverged devices converge on the union and then go quiet', async () =>
   assert.equal(settledTwo.pushed, false);
 });
 
-test('reset WITH the recovery code keeps the synced data readable', async () => {
-  const email = `recover-${Date.now()}@example.test`;
+test('recovery with the code sets a new passphrase and keeps the synced data readable', async () => {
+  const handle = `recover-${Date.now()}`;
   const recoveryCode = expectReady(
     await createSyncAccount({
       serverUrl: service.url,
-      email,
+      handle,
       passphrase: PASSPHRASE,
       deriveHash: fastDeriver,
       params: FAST_PARAMS,
@@ -530,26 +537,21 @@ test('reset WITH the recovery code keeps the synced data readable', async () => 
   const vaultBefore = requireVault();
   const device = { current: snapshotOf([foodLog('log-keep', 'Lentil soup')]) };
   await runSyncCycleUnlocked(deviceDeps({ vault: vaultBefore, deviceId: 'device-1', local: device }));
+  closeSyncSession();
 
-  await requestSyncReset({ serverUrl: service.url, email });
-  const token = service.lastResetToken();
-  assert.ok(token !== null, 'the service should have issued a reset token');
-
-  const outcome = await completeSyncReset({
+  await recoverSyncAccount({
     serverUrl: service.url,
-    token,
-    newPassphrase: 'a completely different phrase entirely',
+    handle,
     recoveryCode,
+    newPassphrase: 'a completely different phrase entirely',
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
   });
-  assert.equal(outcome.dataPreserved, true);
-  assert.equal(outcome.recoveryCode, null, 'the existing recovery code stays valid and is not replaced');
 
   // The real proof: sign in with the NEW passphrase and read the OLD blob.
   await signInToSync({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: 'a completely different phrase entirely',
     deriveHash: fastDeriver,
   });
@@ -559,180 +561,162 @@ test('reset WITH the recovery code keeps the synced data readable', async () => 
   assert.deepEqual(
     restored.current.foodLogs.map((log) => log.name),
     ['Lentil soup'],
-    'data written before the reset must still decrypt afterwards',
+    'data written before the recovery must still decrypt afterwards',
+  );
+
+  // The OLD passphrase is genuinely gone — a recovery that left it working
+  // would be a rotation that did not rotate.
+  await assert.rejects(
+    () => signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver }),
+    'the passphrase the recovery replaced must no longer sign in',
   );
 });
 
-test('reset WITHOUT the recovery code honours the data-loss fork', async () => {
-  const email = `lost-${Date.now()}@example.test`;
+/**
+ * THE MISSING DOOR, asserted rather than assumed.
+ *
+ * There is no "I lost my recovery code too" branch any more, because there is
+ * no endpoint behind one: the code IS the second authenticator. A wrong code
+ * is refused, and the refusal is the SAME one an unknown handle gets — the
+ * service will not say which, so neither can this test.
+ */
+test('recovery with a wrong code is refused, and says nothing about which half was wrong', async () => {
+  const handle = `lost-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
   });
-  const vaultBefore = requireVault();
   const device = { current: snapshotOf([foodLog('log-gone', 'Something precious')]) };
-  await runSyncCycleUnlocked(deviceDeps({ vault: vaultBefore, deviceId: 'device-1', local: device }));
-  const dekBeforeReset = bytesToBase64(vaultBefore.dek);
+  await runSyncCycleUnlocked(deviceDeps({ vault: requireVault(), deviceId: 'device-1', local: device }));
+  closeSyncSession();
 
-  await requestSyncReset({ serverUrl: service.url, email });
-  const token = service.lastResetToken();
-  assert.ok(token !== null);
-
-  const outcome = await completeSyncReset({
-    serverUrl: service.url,
-    token,
-    newPassphrase: 'an entirely new passphrase here',
-    // The fork, taken explicitly. `reset-flow.ts` is what makes a real user
-    // arrive at this `null` knowingly.
-    recoveryCode: null,
-    deriveHash: fastDeriver,
-    params: FAST_PARAMS,
-  });
-  assert.equal(outcome.dataPreserved, false);
-  assert.ok(outcome.recoveryCode !== null, 'a brand new recovery code must be issued for the new key');
-
-  await signInToSync({
-    serverUrl: service.url,
-    email,
-    passphrase: 'an entirely new passphrase here',
-    deriveHash: fastDeriver,
-  });
-  const vaultAfter = requireVault();
-  assert.notEqual(bytesToBase64(vaultAfter.dek), dekBeforeReset, 'the reset must mint a genuinely new key');
-
-  // The old blob is still on the server and is now permanently unreadable —
-  // the honest, documented consequence, asserted rather than assumed.
-  const recovered = { current: snapshotOf([]) };
-  await assert.rejects(
-    () => runSyncCycleUnlocked(deviceDeps({ vault: vaultAfter, deviceId: 'device-2', local: recovered })),
-    /could not be decrypted/,
-    'the pre-reset blob must NOT decrypt under the new key',
+  // A well-formed code that belongs to nobody, so the refusal is about the
+  // PROOF and not about the format.
+  const stranger = expectReady(
+    await createSyncAccount({
+      serverUrl: service.url,
+      handle: `stranger-${Date.now()}`,
+      passphrase: PASSPHRASE,
+      deriveHash: fastDeriver,
+      params: FAST_PARAMS,
+    }),
   );
-  assert.deepEqual(recovered.current.foodLogs, [], 'nothing from before the reset may be recovered');
+  closeSyncSession();
+
+  await assert.rejects(
+    () =>
+      recoverSyncAccount({
+        serverUrl: service.url,
+        handle,
+        recoveryCode: stranger,
+        newPassphrase: 'an entirely new passphrase here',
+        deriveHash: fastDeriver,
+        params: FAST_PARAMS,
+      }),
+    (error) => {
+      assert.equal(classifyRecoveryFailure(error), 'rejected');
+      return true;
+    },
+  );
+
+  // And nothing moved: the original passphrase still signs in and still reads
+  // the diary. A refused recovery that had already rotated something would be
+  // the worst of both.
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  const readback = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: requireVault(), deviceId: 'device-2', local: readback }));
+  assert.deepEqual(
+    readback.current.foodLogs.map((log) => log.name),
+    ['Something precious'],
+  );
 });
 
 /**
- * THE DEADLOCK, end to end.
+ * THE INTERRUPTED SETUP, end to end — and the one thing it cannot restore.
  *
- * On an instance with `REQUIRE_EMAIL_VERIFICATION` (which is what
- * auth.lowcarbcheck.org runs), every door was shut: signup returned no session
- * and the client threw; signing up again answered `409`; and signing in after
- * confirming reached an account with no key records and threw there too. No
- * user could ever finish setup, and no test could see it, because the fake
- * service had no way to express the flag.
+ * An account created whose key records never landed (the device died between
+ * the two writes) exists and can never be unlocked. Signing in detects the
+ * empty key-record list and repairs it, which is the only door left open:
+ * signing up again answers `409` forever.
  *
- * This drives the whole designed path instead: pending → confirm → sign-in
- * repair → converge, with the failure modes asserted as *gone* rather than the
- * happy path merely working.
+ * WHAT THE REPAIR CANNOT DO is register a recovery code. The service takes
+ * `recoveryAuthHash` at signup or never (M181 spec 02), so the verifier on
+ * file belongs to the code the interrupted signup minted and never showed. The
+ * repair's code opens the DATA and the compartment; it cannot log in. That is
+ * asserted here rather than left to be discovered, because a test that only
+ * drove the happy path would have let the ceremony promise a login it does not
+ * have.
  */
-test('REQUIRE_EMAIL_VERIFICATION: signup pends, verification unlocks, sign-in finishes setup', async () => {
-  const strict = await startFakeSyncService({ requireEmailVerification: true });
-  // The session store is a module singleton and earlier tests left one open;
-  // "no session was opened" is only a meaningful assertion from a clean start.
+test('an interrupted setup is repaired by the next sign-in', async () => {
   closeSyncSession();
-  try {
-    const email = `verify-${Date.now()}@example.test`;
+  const handle = `interrupted-${Date.now()}`;
 
-    // 1. Signup returns a DESIGNED pending state, not a throw.
-    const outcome = await createSyncAccount({
-      serverUrl: strict.url,
-      email,
+  await assert.rejects(() =>
+    createSyncAccount({
+      serverUrl: service.url,
+      handle,
       passphrase: PASSPHRASE,
       deriveHash: fastDeriver,
       params: FAST_PARAMS,
-    });
-    assert.equal(outcome.status, 'awaiting-email-verification', 'signup must not throw when a session is withheld');
-    assert.equal(getSyncVault(), null, 'no session may be opened, and no key material kept, from the pending branch');
-    assert.equal(
-      strict.dump().includes('"keyRecords":[]'),
-      true,
-      'no key records can exist yet — writing them needs the session that was withheld',
-    );
+      fetchImpl: failingKeyRecordFetch,
+    }),
+  );
+  assert.equal(getSyncVault(), null, 'no session may survive a setup that did not finish');
+  assert.equal(service.dump().includes('"keyRecords":[]'), true, 'the account exists with no key records');
 
-    // 2. Signing in BEFORE confirming is refused as unverified (403), which
-    //    must never be reported as a wrong passphrase.
-    await assert.rejects(
-      () => signInToSync({ serverUrl: strict.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver }),
-      (error) => {
-        assert.equal(classifySignInFailure(error), 'email-unverified');
-        return true;
-      },
-    );
+  const signedIn = await signInToSync({
+    serverUrl: service.url,
+    handle,
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+  });
+  assert.equal(signedIn.status, 'setup-incomplete');
+  assert.equal(getSyncVault(), null, 'the vault stays shut until the ceremony has actually written the keys');
 
-    // 3. The link from the email.
-    const verificationToken = strict.lastVerificationToken();
-    assert.ok(verificationToken !== null, 'signup should have issued a verification token');
-    const confirmed = await fetch(`${strict.url}${AUTH_API_PREFIX}/verify-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: verificationToken }),
-    });
-    assert.equal(confirmed.ok, true);
-    // The token is single use — the client's replay guard exists precisely
-    // because a second redemption looks like a forged one.
-    const replayed = await fetch(`${strict.url}${AUTH_API_PREFIX}/verify-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: verificationToken }),
-    });
-    assert.equal(replayed.ok, false, 'a redeemed verification token must not be reusable');
+  assert.ok(signedIn.status === 'setup-incomplete');
+  const repaired = await signedIn.completeSetup({ passphrase: PASSPHRASE });
+  const recoveryCode = expectReady(repaired);
 
-    // 4. Sign in: the account has no key records, so this is the REPAIR path —
-    //    and it must not be the "setup never finished" dead end it used to be.
-    const signedIn = await signInToSync({
-      serverUrl: strict.url,
-      email,
-      passphrase: PASSPHRASE,
-      deriveHash: fastDeriver,
-    });
-    assert.equal(signedIn.status, 'setup-incomplete');
-    assert.equal(getSyncVault(), null, 'the vault stays shut until the ceremony has actually written the keys');
+  // The account is now genuinely usable: push, then read it back on a fresh
+  // sign-in that takes the ORDINARY path.
+  const device = { current: snapshotOf([foodLog('log-repaired', 'Baked aubergine')]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: requireVault(), deviceId: 'device-repaired', local: device }));
 
-    assert.ok(signedIn.status === 'setup-incomplete');
-    const repaired = await signedIn.completeSetup({ passphrase: PASSPHRASE });
-    assert.equal(repaired.status, 'ready', 'the repair must produce a recovery code, shown by the same ceremony');
-    const recoveryCode = expectReady(repaired);
+  const second = await signInToSync({
+    serverUrl: service.url,
+    handle,
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+  });
+  assert.equal(second.status, 'connected', 'once the keys exist, sign-in is ordinary again');
+  const restored = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault: requireVault(), deviceId: 'device-2', local: restored }));
+  assert.deepEqual(
+    restored.current.foodLogs.map((log) => log.name),
+    ['Baked aubergine'],
+  );
+  closeSyncSession();
 
-    // 5. The account is now genuinely usable: push, then read it back on a
-    //    fresh sign-in that takes the ORDINARY path.
-    const vault = requireVault();
-    const device = { current: snapshotOf([foodLog('log-verified', 'Baked aubergine')]) };
-    await runSyncCycleUnlocked(deviceDeps({ vault, deviceId: 'device-verified', local: device }));
-
-    const second = await signInToSync({
-      serverUrl: strict.url,
-      email,
-      passphrase: PASSPHRASE,
-      deriveHash: fastDeriver,
-    });
-    assert.equal(second.status, 'connected', 'once the keys exist, sign-in is ordinary again');
-    const restored = { current: snapshotOf([]) };
-    await runSyncCycleUnlocked(deviceDeps({ vault: requireVault(), deviceId: 'device-2', local: restored }));
-    assert.deepEqual(
-      restored.current.foodLogs.map((log) => log.name),
-      ['Baked aubergine'],
-    );
-
-    // 6. The recovery code minted by the repair really opens the account —
-    //    otherwise the ceremony would have shown the user a useless string.
-    await requestSyncReset({ serverUrl: strict.url, email });
-    const resetToken = strict.lastResetToken();
-    assert.ok(resetToken !== null);
-    const reset = await completeSyncReset({
-      serverUrl: strict.url,
-      token: resetToken,
-      newPassphrase: 'a different passphrase entirely',
-      recoveryCode,
-      deriveHash: fastDeriver,
-      params: FAST_PARAMS,
-    });
-    assert.equal(reset.dataPreserved, true, 'the repair-issued recovery code must unwrap the repair-issued DEK');
-  } finally {
-    await strict.close();
-  }
+  // THE LIMITATION, stated as a test: the repair's code cannot authenticate,
+  // because the verifier belongs to the code the interrupted signup minted.
+  await assert.rejects(
+    () =>
+      recoverSyncAccount({
+        serverUrl: service.url,
+        handle,
+        recoveryCode,
+        newPassphrase: 'a different passphrase entirely',
+        deriveHash: fastDeriver,
+        params: FAST_PARAMS,
+      }),
+    (error) => {
+      assert.equal(classifyRecoveryFailure(error), 'rejected');
+      return true;
+    },
+  );
 });
 
 test('the payload schema version travels through the AAD, not the wire', async () => {
@@ -763,10 +747,10 @@ test('the payload schema version travels through the AAD, not the wire', async (
  * blob until this spec.
  */
 test('a compartment it could not adopt survives the next push', async () => {
-  const email = `compartment-${Date.now()}@example.test`;
+  const handle = `compartment-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -807,7 +791,7 @@ test('a compartment it could not adopt survives the next push', async () => {
 
   // A genuinely fresh sign-in: the account's passphrase, and no CDK. Its first
   // pull will fail to adopt the planted compartment.
-  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const victim = requireVault();
 
   /**
@@ -904,10 +888,10 @@ async function blobOnTheService(vault: SyncVault) {
 const STUDY_KEY_MARKER = 'the-study-private-key-that-must-survive';
 
 test('the diary refuses a study account before writing, and the blob is unchanged', async () => {
-  const email = `study-account-${Date.now()}@example.test`;
+  const handle = `study-account-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -943,7 +927,7 @@ test('the diary refuses a study account before writing, and the blob is unchange
 
   // THE MISTAKE, exactly as a person makes it: the study's address and the
   // study's passphrase, typed into the ordinary diary sign-in.
-  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const diary = requireVault();
 
   // The device under test, wired the way `sync-actions.ts` wires production —
@@ -1028,10 +1012,10 @@ test('the diary refuses a study account before writing, and the blob is unchange
  * this one case.
  */
 test('a session carrying an unopened compartment reports an unopened compartment on a completed sync', async () => {
-  const email = `unopened-report-${Date.now()}@example.test`;
+  const handle = `unopened-report-${Date.now()}`;
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -1062,7 +1046,7 @@ test('a session carrying an unopened compartment reports an unopened compartment
 
   // A genuinely fresh sign-in, and then the production verb — no mirrored
   // seams, no substituted deps. This is the call the app makes on boot.
-  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const victim = requireVault();
   markSyncPending();
   await syncNow();
@@ -1091,7 +1075,7 @@ test('a session carrying an unopened compartment reports an unopened compartment
   // this the report could be unconditional.
   await createSyncAccount({
     serverUrl: service.url,
-    email: `clean-report-${Date.now()}@example.test`,
+    handle: `clean-report-${Date.now()}`,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -1105,10 +1089,12 @@ test('a session carrying an unopened compartment reports an unopened compartment
  * AN ESTABLISHED COMPARTMENT THAT IS NEVER PUBLISHED (M164/08).
  *
  * The upgrade path for an account whose data predates the partition is
- * `regenerateRecoveryCode`: it is the one routine operation where both
- * compartment doors exist in the same frame, so `rotateCompartmentRecoverySlot`
- * MINTS a compartment when the account has none. The user is shown a recovery
- * code for it that afternoon.
+ * RECOVERY: it is the one routine operation left where both compartment doors
+ * exist in the same frame — the recovery code the user just typed, and the
+ * passphrase they just chose — so `rewrapCompartmentAfterRecovery` MINTS a
+ * compartment when the account has none. (It was recovery-code regeneration
+ * until M181, which deleted that button: the service registers a recovery
+ * verifier at signup or never, so a regenerated code could no longer log in.)
  *
  * M164/06 made `sealOwnerPrivateRegion` refuse to seal from a session that has
  * never read the compartment plaintext (`extras === null`), which is right —
@@ -1123,18 +1109,20 @@ test('a session carrying an unopened compartment reports an unopened compartment
  * ── Why the recovery door is opened at the end ───────────────────────────
  *
  * "A compartment reached the service" is only half the claim. The other half
- * is that the code the user was just shown opens it — that is the promise the
- * ceremony makes, and slot 2 is the only place it can be checked.
+ * is that the code the user holds opens it — that is the promise the ceremony
+ * makes, and slot 2 is the only place it can be checked.
  */
 test('a freshly established compartment reaches the service', async () => {
-  const email = `pre-partition-${Date.now()}@example.test`;
-  await createSyncAccount({
-    serverUrl: service.url,
-    email,
-    passphrase: PASSPHRASE,
-    deriveHash: fastDeriver,
-    params: FAST_PARAMS,
-  });
+  const handle = `pre-partition-${Date.now()}`;
+  const recoveryCode = expectReady(
+    await createSyncAccount({
+      serverUrl: service.url,
+      handle,
+      passphrase: PASSPHRASE,
+      deriveHash: fastDeriver,
+      params: FAST_PARAMS,
+    }),
+  );
   const founderVault = requireVault();
 
   // AN ACCOUNT WHOSE BLOB PREDATES THE PARTITION: a real snapshot with no
@@ -1143,22 +1131,31 @@ test('a freshly established compartment reaches the service', async () => {
   const founder = { current: snapshotOf([foodLog('log-pre-partition', 'Written before the partition')]) };
   await runSyncCycleUnlocked(deviceDeps({ vault: founderVault, deviceId: 'device-pre-partition', local: founder }));
 
-  // The device that will do the upgrade — a genuinely fresh sign-in, so it
-  // holds no CDK of its own and adopts nothing on its first pull.
-  await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
-  const upgrading = requireVault();
+  // A genuinely fresh sign-in, so the device holds no CDK of its own and
+  // adopts nothing on its first pull.
+  await signInToSync({ serverUrl: service.url, handle, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  const beforeUpgrade = requireVault();
   markSyncPending();
   await syncNow();
 
   // NON-VACUITY 1: the account really has no compartment, so everything below
-  // is about one this device is about to mint rather than one it inherited.
-  assert.equal(upgrading.privateStore.cdk, null, 'the fixture must be an account with no compartment');
-  assert.equal(upgrading.privateStore.pulled, null, 'and no pull may have carried one');
+  // is about one that is about to be minted rather than one it inherited.
+  assert.equal(beforeUpgrade.privateStore.cdk, null, 'the fixture must be an account with no compartment');
+  assert.equal(beforeUpgrade.privateStore.pulled, null, 'and no pull may have carried one');
+  closeSyncSession();
 
-  // THE TRIGGER, exactly as a person reaches it: settings → regenerate the
-  // recovery code. `rewrapPrivateStoreOnServer` answers `no-compartment` and
-  // the establish branch mints one.
-  const { recoveryCode } = await regenerateRecoveryCode();
+  // THE TRIGGER, exactly as a person reaches it: "I have forgotten my
+  // passphrase" with the code in hand. `rewrapPrivateStoreOnServer` answers
+  // `no-compartment` and the establish branch mints one.
+  await recoverSyncAccount({
+    serverUrl: service.url,
+    handle,
+    recoveryCode,
+    newPassphrase: 'a recovered passphrase entirely',
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  const upgrading = requireVault();
 
   // NON-VACUITY 2: the mint happened, and the session is holding the key.
   assert.notEqual(upgrading.privateStore.cdk, null, 'the establish branch must have minted a compartment');
@@ -1171,7 +1168,7 @@ test('a freshly established compartment reaches the service', async () => {
   const readback = { current: snapshotOf([]) };
   await runSyncCycleUnlocked(deviceDeps({ vault: upgrading, deviceId: 'device-readback-mint', local: readback }));
   const published = readback.current.privateStore;
-  assert.ok(published !== null, 'the compartment the user was shown a recovery code for must reach the service');
+  assert.ok(published !== null, 'the compartment minted during the recovery must reach the service');
 
   // POSITIVE 1: the passphrase door opens it, and it reads as this account's
   // own diary compartment. "Not null" says nothing about what the bytes are.
@@ -1184,7 +1181,7 @@ test('a freshly established compartment reaches the service', async () => {
   });
   assert.ok(opened !== null, 'the account’s own passphrase must open what was published');
 
-  // POSITIVE 2: and so does the code the user was handed. A compartment whose
+  // POSITIVE 2: and so does the code the user still holds. A compartment whose
   // recovery slot nobody can open is the failure this whole ceremony exists to
   // prevent — see `engine/crypto/private-store.ts`'s header.
   const raw = parseRecoveryCode(recoveryCode);

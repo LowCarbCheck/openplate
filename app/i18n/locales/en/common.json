@@ -1394,12 +1394,11 @@
       },
       "signIn": {
         "title": "Open the study's account",
-        "emailLabel": "Study account's email address",
         "passphraseLabel": "Study account's passphrase",
         "signIn": "Open the console",
         "create": "Create a new study account",
         "failed": "The study account could not be opened. Nothing was changed.",
-        "awaitingVerification": "The study account was created. Confirm its address from the email it was sent, then open the console with the same passphrase."
+        "handleLabel": "Study account's handle"
       },
       "recoveryCode": {
         "title": "Write this recovery code down now",
@@ -1980,31 +1979,30 @@
       "failed": "Couldn’t change the passphrase. Nothing was changed.",
       "newLabel": "New passphrase",
       "open": "Change passphrase",
-      "recoveryNote": "Your recovery code keeps working, it isn’t tied to the passphrase you’re replacing.",
+      "recoveryNote": "Your recovery code keeps working, it is not tied to the passphrase you are replacing.",
       "submit": "Save new passphrase",
       "title": "Change passphrase"
     },
     "connected": {
-      "description": "Signed in as {{email}}.",
+      "description": "Signed in as {{handle}}.",
       "photosStayHere": "Plate photos stay on the device that took them, they’re never part of a sync, so you won’t see them on your other devices.",
-      "title": "Sync is on"
+      "title": "Sync is on",
+      "keepYourCard": "Keep your account card. Your handle and your recovery code are the only way back in, and neither can be issued again."
     },
     "create": {
-      "continue": "Continue",
       "cta": "Create a sync account",
-      "forEmail": "Setting up sync for {{email}}.",
       "inviteLabel": "Invite code",
       "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
       "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
       "closed": "This sync server is not accepting new accounts.",
-      "emailTaken": "An account already exists for that address. Sign in instead."
+      "handleTaken": "That handle is already taken on this server. Change it and try again."
     },
     "danger": {
       "description": "Both options leave the diary on this device untouched.",
       "title": "Ending sync"
     },
     "delete": {
-      "confirmBody": "This removes the account for {{email}} and every encrypted copy the server holds. There is no undo and no grace period. Your diary on this device is not touched.",
+      "confirmBody": "This removes the account {{handle}} and every encrypted copy the server holds. There is no undo and no grace period. Your diary on this device is not touched.",
       "confirmCta": "Delete permanently",
       "confirmTitle": "Delete this sync account?",
       "cta": "Delete sync account",
@@ -2012,15 +2010,8 @@
       "note": "We ask for your passphrase again because a session left open on a shared device shouldn’t be enough to delete an account.",
       "passphraseLabel": "Confirm with your passphrase"
     },
-    "emailHint": "Used to sign in on your other devices and to send a reset link. Nothing else.",
-    "emailLabel": "Email address",
-    "forgot": {
-      "back": "Back",
-      "intro": "We’ll email you a link to set a new passphrase. Read the next screen carefully, a reset gets you back in, but it can’t bring your synced data back on its own.",
-      "sent": "If that address has an account, the link is on its way.",
-      "sentNote": "We answer the same way either way, so this form can’t be used to find out who has an account.",
-      "submit": "Send the link"
-    },
+    "handleHint": "Your name on this sync server. We generate one so it is never an email address, and you can change it before your account is created.",
+    "handleLabel": "Handle",
     "intro": "Optional. Keep your diary in step across your devices, encrypted on this device before it leaves it.",
     "notice": {
       "dismiss": "Dismiss this message from the server operator",
@@ -2040,75 +2031,54 @@
       "setUp": "Set up sync"
     },
     "promise": "Your passphrase never leaves this device, and the sync server only ever stores encrypted bytes it has no key for. That also means nobody, including us, can recover your data if you lose both your passphrase and your recovery code.",
-    "recoveryCode": {
-      "description": "The one way back into your synced data if you ever forget your passphrase.",
-      "done": "I've saved it",
-      "failed": "Couldn't create a new recovery code. Your existing one still works.",
-      "note": "Use this if you never wrote your code down, or can't find it any more. The new code replaces the old one immediately. The old one stops working.",
-      "regenerate": "Show a new recovery code",
-      "title": "Recovery code"
-    },
-    "reset": {
-      "back": "Back",
-      "description": "You’re here from the link we emailed you.",
-      "doneWithData": "Done. Your passphrase is set and your synced data is intact.",
-      "doneWithoutData": "Done. You can sign in again. This account starts fresh from here.",
-      "failed": "That didn’t work. Nothing has been changed.",
-      "forkNo": "No, I don’t have it",
-      "forkQuestion": "Do you have your recovery code?",
-      "forkWarning": "Read this before you continue: a reset restores your ability to sign in. On its own it does not restore your data: the server has never had a key to it.",
-      "forkYes": "Yes, I have it",
-      "missingToken": "This link is missing its token. Open the link from your email again, or request a new one.",
+    "recover": {
+      "codeHint": "The grouped code from your account card. Dashes and capitalisation do not matter.",
+      "codeLabel": "Recovery code",
+      "done": "Done. Your new passphrase is set and your synced data is intact.",
+      "failed": "That did not work. Nothing has been changed.",
+      "intro": "Your recovery code sets a new passphrase and keeps your synced data. Without it, and without your passphrase, this account cannot be recovered by anyone, including us.",
       "newPassphraseLabel": "New passphrase",
-      "newRecoveryCode": "Save your new recovery code. This is the only time it’s shown.",
-      "noCode": {
-        "acknowledgeDataPermanentlyGone": "I understand my synced data is permanently gone, and I want to continue.",
-        "body": "Everything already synced was encrypted with a key only your passphrase and your recovery code could open. Without either, nobody can open it again, not you, not us. Continuing starts the account over with a new key.",
-        "heading": "Without your recovery code, your synced data cannot be recovered."
-      },
-      "recoveryCodeHint": "The grouped code shown once when you set sync up. Dashes and capitalisation don’t matter.",
-      "recoveryCodeLabel": "Recovery code",
-      "startOver": "Start over",
-      "submitWithData": "Set the new passphrase and keep my data",
-      "submitWithoutData": "Start over with a new key",
-      "title": "Set a new passphrase",
+      "rejected": "That handle and recovery code do not go together. Check both and try again.",
+      "submit": "Set a new passphrase",
+      "tryAgain": "Try again",
       "working": "Setting your new passphrase…"
     },
     "setup": {
-      "awaitingVerification": {
-        "body": "Your account is ready. Open the link we sent to {{email}} to confirm it, then come back and sign in, that's when your recovery code is created.",
-        "note": "Nothing has been encrypted or uploaded yet. Your diary stays on this device either way.",
-        "title": "Check your email",
-        "toastBody": "Open the link we sent to {{email}} before you sign in for the first time.",
-        "toastTitle": "Account created"
+      "accountCard": {
+        "bothRequired": "You need both of these to get back in. The handle names your account, the code is the only way past a forgotten passphrase, and neither is shown again.",
+        "codeLabel": "Recovery code",
+        "confirmSaved": "I have saved my handle and my recovery code somewhere safe.",
+        "title": "Your account card"
       },
       "complete": "Sync is set up on this device.",
       "confirmLabel": "Confirm passphrase",
-      "confirmSaved": "I’ve saved this recovery code somewhere safe, separate from my passphrase.",
       "continue": "Continue",
       "copied": "Copied",
       "copy": "Copy",
       "copyFailed": "Couldn't copy, select and copy manually",
       "finish": "Finish setup",
       "generating": "Setting up sync…",
-      "passphraseIntro": "Choose a passphrase to encrypt your data. We use it to derive an encryption key on this device, we never see the passphrase itself, and we can’t reset it for you.",
+      "handleNotAnEmail": "A handle is not an email address. This server never stores one, so it cannot accept a handle containing “@”.",
+      "handleRequired": "Choose a handle, or use the one we generated.",
+      "handleShuffle": "Generate a different handle",
+      "handleTooLong": "That handle is too long. Keep it under 64 characters.",
+      "passphraseIntro": "Choose a passphrase to encrypt your data. We use it to derive an encryption key on this device, we never see the passphrase itself, and we cannot reset it for you.",
       "passphraseLabel": "Sync passphrase",
       "passphraseMismatch": "Those two passphrases don't match.",
       "passphraseTooShort": "Use at least {{min}} characters, this passphrase is the only thing standing between your synced data and anyone who doesn't have it.",
-      "recoveryWarningBody": "If you lose both your passphrase and this recovery code, we cannot recover your data, that’s the point of end-to-end encryption. Nobody can, not even us.",
-      "recoveryWarningLead": "Save this recovery code somewhere safe, this is the only time it’s shown.",
+      "recoveryWarningBody": "If you lose your passphrase and this recovery code, nobody can get you back in and nobody can read your synced data, not even us. That is what end-to-end encryption means.",
+      "recoveryWarningLead": "Save both of these now, this is the only time they are shown.",
       "retry": "Try again",
       "setupFailed": "Something went wrong setting up sync. Nothing was saved, you're safe to try again."
     },
     "signIn": {
       "cta": "Sign in to sync",
-      "ctaKnown": "Unlock sync for {{email}}",
-      "failed": "That didn’t work. Check the address and passphrase and try again.",
-      "finishSetup": "This account was created but its keys were never finished. Let's do that now, it takes a moment and ends with your recovery code.",
-      "forgot": "I’ve forgotten my passphrase",
+      "ctaKnown": "Unlock sync for {{handle}}",
+      "failed": "That did not work. Check the handle and passphrase and try again.",
+      "finishSetup": "This account was created but its keys were never finished. Let us do that now. It ends with a recovery code that unlocks your data on another device, though this account can only be signed in to with its passphrase.",
+      "forgot": "I have forgotten my passphrase",
       "intro": "Enter your passphrase to unlock this device. We ask again after every reload, the key is never stored.",
       "submit": "Unlock",
-      "unverified": "Your passphrase is right, the address just isn't confirmed yet. Open the link we emailed you, then come back here.",
       "working": "Unlocking…"
     },
     "signOut": {
@@ -2130,14 +2100,7 @@
       "syncedAgo": "Synced · {{when}}",
       "syncing": "Syncing…"
     },
-    "title": "Sync across devices",
-    "verifyEmail": {
-      "failed": "That link didn’t work, it may have been used already or expired.",
-      "next": "You can close this page and go back to the app.",
-      "pending": "One moment…",
-      "title": "Confirming your email",
-      "verified": "Confirmed. You can sign in to sync now."
-    }
+    "title": "Sync across devices"
   },
   "trends": {
     "chart": {

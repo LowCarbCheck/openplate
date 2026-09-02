@@ -8,28 +8,23 @@
  * would break silently when it did. `SyncRequestError.kind` is that status,
  * already normalised.
  *
- * The distinction this exists for: on an instance running with
- * `REQUIRE_EMAIL_VERIFICATION`, an unconfirmed address gets `403` from
- * `POST /v1/auth/login` while a wrong passphrase gets `401`. Both used to
- * surface the same "check the address and passphrase and try again", which is
- * actively misleading in the `403` case — the credentials were correct, and no
- * amount of retyping will ever help. The fix for that user is an email link,
- * and this is what lets the UI say so.
+ * ── Why sign-in has only two answers now ─────────────────────────────────
  *
- * `forbidden` means "unverified" ON THIS PATH ONLY, and the qualifier earns
- * its place: `POST /v1/auth/signup` answers `403` for two OTHER reasons — the
- * instance is closed, or it wants an invite (`PROTOCOL.md` §5.8.1) — neither
- * of which a login can ever produce. This function is named for the sign-in
- * path so it is not reused where that stops being true; `signup-error.ts` is
- * the counterpart, and it needs the instance's signup mode to tell its own two
- * cases apart.
+ * It used to have three: a `403` meant "the credentials are right, the address
+ * is simply not confirmed yet". M181 removed addresses and the verification
+ * with them, so `POST /v1/auth/login` answers `401` for a wrong handle and a
+ * wrong passphrase alike — ONE message for both, by protocol design, because
+ * telling them apart would make the form an account-enumeration oracle.
+ *
+ * `signup-error.ts` is the counterpart and is still a separate function:
+ * `POST /v1/auth/signup` answers `403` for two reasons a login can never
+ * produce (the instance is closed, or it wants an invite, `PROTOCOL.md`
+ * §5.8.1), and it needs the instance's signup mode to tell those apart.
  */
 import { SyncRequestError } from './engine/client/sync-error';
 
 export type SignInFailure =
-  /** `403` — the credentials were right; the address has not been confirmed yet. */
-  | 'email-unverified'
-  /** `401` — wrong email or passphrase. One message for both, by protocol design. */
+  /** `401` — wrong handle or passphrase. One message for both, by protocol design. */
   | 'rejected'
   /** Anything else: transport, an incompatible service, a DEK that will not unwrap. Show what it said. */
   | 'other';
@@ -37,7 +32,26 @@ export type SignInFailure =
 /** @param cause - anything the sign-in call threw. */
 export function classifySignInFailure(cause: unknown): SignInFailure {
   if (!(cause instanceof SyncRequestError)) return 'other';
-  if (cause.kind === 'forbidden') return 'email-unverified';
+  if (cause.kind === 'unauthorized') return 'rejected';
+  return 'other';
+}
+
+/**
+ * Classifies why a recovery failed.
+ *
+ * SEPARATE FROM the sign-in classifier above even though both map `401` onto
+ * "rejected", because the sentence each produces is different: a sign-in
+ * failure sends the user back to their passphrase, a recovery failure sends
+ * them back to the recovery code. The service answers ONE `401` for an unknown
+ * handle, an account that never set a recovery code, a wrong code and a lost
+ * rotation race — it deliberately will not distinguish them, so neither does
+ * this.
+ */
+export type RecoveryFailure = 'rejected' | 'other';
+
+/** @param cause - anything the recovery call threw. */
+export function classifyRecoveryFailure(cause: unknown): RecoveryFailure {
+  if (!(cause instanceof SyncRequestError)) return 'other';
   if (cause.kind === 'unauthorized') return 'rejected';
   return 'other';
 }

@@ -86,14 +86,11 @@ export default [
     // entirely to the on-device primary store.
     route('/onboarding', 'routes/onboarding.tsx'),
 
-    // Landing pages for the sync service's emails (M128 spec 04). The PATHS
-    // ARE FIXED by `openplate-sync/src/mail/messages.ts` — renaming either
-    // breaks every link already sitting in an inbox. Both 404 on an instance
-    // with no `SYNC_SERVER_URL`, and both live out here rather than under
-    // `_personal` so its onboarding gate can't bounce someone who arrived from
-    // an email into a first-run wizard.
-    route('/reset-passphrase', 'routes/reset-passphrase.tsx'),
-    route('/verify-email', 'routes/verify-email.tsx'),
+    // WHAT USED TO BE HERE: `/reset-passphrase` and `/verify-email`, the two
+    // landing pages for the sync service's emails (M128 spec 04). M181 deleted
+    // the mailer, both endpoints and both routes — an account is a handle plus
+    // a passphrase, and a lost passphrase is recovered on `/settings/sync`
+    // with the recovery code the user already holds.
 
     // Catch-all: unmatched URLs get 404 inside the layout
     route('*', 'routes/$.tsx'),

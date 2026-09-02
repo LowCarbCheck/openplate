@@ -31,7 +31,7 @@
  * device store through its module singleton rather than through an injectable:
  *
  *  - Argon2id runs in-process with tiny parameters (`deriveHash`/`params`).
- *  - The reset "email" is not needed here at all.
+ *  - No recovery flow is exercised here at all.
  *  - THE DEVICE STORE IS REAL — `fake-indexeddb` behind the production
  *    `getPrimaryStore()` singleton, not a plain object. It has to be: these
  *    actions call `putLocalStudyEnrolment` and friends directly, and
@@ -182,7 +182,7 @@ let accountCounter = 0;
 async function createAccount(label: string): Promise<SyncVault> {
   await createSyncAccount({
     serverUrl: service.url,
-    email: `${label}-${Date.now()}-${accountCounter++}@example.test`,
+    handle: `${label}-${Date.now()}-${accountCounter++}`,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,

@@ -22,14 +22,15 @@ import type { FormEvent } from 'react';
 import { useLoaderData } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
-import { KeyRound, Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
+import { Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { consumePendingInvite, takeInviteFromUrl } from '#app/lib/sync/invite-link';
 import { classifySignupFailure } from '#app/lib/sync/signup-error';
 import type { SignupMode } from '#app/lib/sync/engine/protocol';
 import { ServerNoticeBanner } from '#app/components/sync-notice-banner';
-import { RecoveryCodeStep, SyncSetupFlow } from '#app/components/sync-setup-flow';
+import { SyncSetupFlow } from '#app/components/sync-setup-flow';
+import { SyncRecoveryFlow } from '#app/components/sync-recovery-flow';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
@@ -52,8 +53,6 @@ import {
   createSyncAccount,
   readSignupMode,
   deleteSyncAccount,
-  regenerateRecoveryCode,
-  requestSyncReset,
   signInToSync,
   signOutOfSync,
   syncNow,
@@ -100,7 +99,7 @@ export default function SettingsSync() {
           see `ServerNoticeBanner`. */}
       <ServerNoticeBanner serverUrl={syncServerUrl} />
       {screen === 'connected' && session.account !== null ?
-        <ConnectedPanel email={session.account.email} />
+        <ConnectedPanel accountHandle={session.account.handle} />
       : <SignedOutPanel serverUrl={syncServerUrl} onCeremonyActiveChange={setIsCeremonyActive} />}
     </div>
   );
@@ -121,11 +120,11 @@ function SignedOutPanel({
 }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<SignedOutMode>('choose');
-  // A returning visitor's address, kept on the device so the screen says
+  // A returning visitor's handle, kept on the device so the screen says
   // "unlock" rather than presenting a sign-up form that reads like their data
   // is gone. Read in an effect: `localStorage` does not exist during SSR.
-  const [knownEmail, setKnownEmail] = useState<string | null>(null);
-  useEffect(() => setKnownEmail(readAccountHint()), []);
+  const [knownHandle, setKnownHandle] = useState<string | null>(null);
+  useEffect(() => setKnownHandle(readAccountHint()), []);
   // The invite is read HERE, not inside the create form, and reading it opens
   // that form. This panel starts on `choose`, which does not mount
   // `CreateAccountPanel` at all — so a token read down there was never read on
@@ -158,7 +157,7 @@ function SignedOutPanel({
             <p className="text-sm text-muted-foreground">{t('sync.promise')}</p>
             <div className="flex flex-col gap-2">
               <Button type="button" className="h-11 w-full" onClick={() => setMode('sign-in')}>
-                {knownEmail === null ? t('sync.signIn.cta') : t('sync.signIn.ctaKnown', { email: knownEmail })}
+                {knownHandle === null ? t('sync.signIn.cta') : t('sync.signIn.ctaKnown', { handle: knownHandle })}
               </Button>
               <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setMode('create')}>
                 {t('sync.create.cta')}
@@ -178,16 +177,16 @@ function SignedOutPanel({
         {mode === 'sign-in' && (
           <SignInPanel
             serverUrl={serverUrl}
-            initialEmail={knownEmail ?? ''}
+            initialHandle={knownHandle ?? ''}
             onCancel={() => setMode('choose')}
             onForgot={() => setMode('forgot')}
             onCeremonyActiveChange={onCeremonyActiveChange}
           />
         )}
         {mode === 'forgot' && (
-          <ForgotPassphrasePanel
+          <SyncRecoveryFlow
             serverUrl={serverUrl}
-            initialEmail={knownEmail ?? ''}
+            initialHandle={knownHandle ?? ''}
             onCancel={() => setMode('sign-in')}
           />
         )}
@@ -197,13 +196,22 @@ function SignedOutPanel({
 }
 
 /**
- * Account creation, in two steps: the address, then the ceremony.
+ * Account creation: the invite, if this instance wants one, wrapped around the
+ * ceremony that mints the handle and shows the account card.
  *
- * Splitting them is deliberate. The passphrase step carries the warnings that
- * matter ("we cannot reset this for you", the recovery code), and burying them
- * under an email field on a combined form is how they get skimmed. It also
- * keeps `SyncSetupFlow` a pure ceremony component, reusable anywhere setup has
- * to happen.
+ * ── Why the handle is NOT collected here ─────────────────────────────────
+ *
+ * It used to be an email field on this panel, with the passphrase warnings on
+ * the next screen. The handle is not that: it is generated, not typed, and it
+ * is one half of the account card the ceremony ends on. Keeping it beside the
+ * passphrase — in `SyncSetupFlow` — is what lets the card show the two values
+ * the ceremony actually produced, rather than one collected here and one
+ * produced there.
+ *
+ * The invite stays, because it is a capability from outside the ceremony and
+ * the field is also the paste target for a code that arrived as text rather
+ * than as a link. It is hidden once provisioning starts: an invite box beside
+ * an account card is asking a question that has already been answered.
  */
 function CreateAccountPanel({
   serverUrl,
@@ -218,11 +226,10 @@ function CreateAccountPanel({
   onCeremonyActiveChange: (isActive: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const [email, setEmail] = useState('');
-  const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
   // Seeded from the link, still editable: the field is also the paste target
   // for a code that arrived as text rather than as a link.
   const [invite, setInvite] = useState(initialInvite);
+  const [isCeremonyActive, setIsCeremonyActive] = useState(false);
 
   // `null` while unknown — an older service, or one that could not be reached.
   // The form stays usable either way; this only decides whether the invite
@@ -247,82 +254,14 @@ function CreateAccountPanel({
   // be reached still sees their code rather than losing it silently.
   const wantsInvite = signupMode === 'invite' || invite !== '';
 
-  if (confirmedEmail !== null) {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">{t('sync.create.forEmail', { email: confirmedEmail })}</p>
-        <SyncSetupFlow
-          onCeremonyActiveChange={onCeremonyActiveChange}
-          provision={async ({ passphrase }) => {
-            let result: SyncSetupOutcome;
-            try {
-              result = await createSyncAccount({
-                serverUrl,
-                email: confirmedEmail,
-                passphrase,
-                inviteToken: invite === '' ? undefined : invite,
-              });
-            } catch (error) {
-              // Translated here rather than left to `describeErrorForUser`,
-              // which would surface the SERVICE's own English sentence. §4 of
-              // the protocol says a client branches on the status, not the
-              // prose — displaying that prose is the same mistake in the other
-              // direction.
-              throw new Error(describeSignupError(error, signupMode, t), { cause: error });
-            }
-            // No session and no key material exist on this branch, so there is
-            // nothing to sync and nothing to show yet — the ceremony moves to
-            // the sign-in that follows confirmation.
-            if (result.status === 'awaiting-email-verification') return result;
-            // The first push is fired but deliberately NOT awaited. Awaiting it
-            // put a network round trip between "the account and its key records
-            // exist" and "the user is shown the recovery code" — so a transient
-            // failure there threw, the wizard fell into its error branch, and a
-            // code that had already been written to the server was never
-            // displayed. Retrying then failed with "an account already exists".
-            // A failed first sync is recoverable and surfaces on the status
-            // line; a recovery code nobody saw is not recoverable at all.
-            void syncNow().catch(() => undefined);
-            return result;
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        // The person has acted on the prefilled code, so the pending slot has
-        // done its job and is emptied here rather than on mount: until this
-        // moment a reload still has to be able to bring the token back, and
-        // after it a later visit to this page must not resurrect a spent one.
-        consumePendingInvite();
-        setConfirmedEmail(email.trim());
-      }}
-    >
-      <div className="space-y-2">
-        <Label htmlFor="sync-email">{t('sync.emailLabel')}</Label>
-        <Input
-          id="sync-email"
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="h-11"
-        />
-        <p className="text-xs text-muted-foreground">{t('sync.emailHint')}</p>
-      </div>
-      {wantsInvite && (
+    <div className="space-y-4">
+      {wantsInvite && !isCeremonyActive && (
         <div className="space-y-2">
           <Label htmlFor="sync-invite">{t('sync.create.inviteLabel')}</Label>
           <Input
             id="sync-invite"
             type="text"
-            required
             autoComplete="off"
             spellCheck={false}
             value={invite}
@@ -332,15 +271,40 @@ function CreateAccountPanel({
           <p className="text-xs text-muted-foreground">{t('sync.create.inviteHint')}</p>
         </div>
       )}
-      <div className="flex flex-col gap-2">
-        <Button type="submit" className="h-11 w-full">
-          {t('sync.create.continue')}
-        </Button>
+      <SyncSetupFlow
+        onCeremonyActiveChange={(isActive) => {
+          setIsCeremonyActive(isActive);
+          onCeremonyActiveChange(isActive);
+        }}
+        provision={async ({ handle: accountHandle, passphrase }) => {
+          // The person has acted on the prefilled code, so the pending slot
+          // has done its job and is emptied HERE rather than on mount: until
+          // this moment a reload still has to be able to bring the token back,
+          // and after it a later visit must not resurrect a spent one.
+          consumePendingInvite();
+          try {
+            return await createSyncAccount({
+              serverUrl,
+              handle: accountHandle,
+              passphrase,
+              inviteToken: invite === '' ? undefined : invite,
+            });
+          } catch (error) {
+            // Translated here rather than left to `describeErrorForUser`,
+            // which would surface the SERVICE's own English sentence. §4 of
+            // the protocol says a client branches on the status, not the
+            // prose — displaying that prose is the same mistake in the other
+            // direction.
+            throw new Error(describeSignupError(error, signupMode, t), { cause: error });
+          }
+        }}
+      />
+      {!isCeremonyActive && (
         <Button type="button" variant="ghost" className="h-11 w-full" onClick={onCancel}>
           {t('sync.cancel')}
         </Button>
-      </div>
-    </form>
+      )}
+    </div>
   );
 }
 
@@ -358,22 +322,21 @@ function describeSignupError(cause: unknown, signupMode: SignupMode | null, t: (
   const failure = classifySignupFailure(cause, signupMode);
   if (failure === 'invite-required') return t('sync.create.inviteRequired');
   if (failure === 'signups-closed') return t('sync.create.closed');
-  if (failure === 'email-taken') return t('sync.create.emailTaken');
+  if (failure === 'handle-taken') return t('sync.create.handleTaken');
   return describeErrorForUser(cause, t('sync.setup.setupFailed'));
 }
 
 /**
  * Turns a sign-in failure into copy the user can act on.
  *
- * The `403` case is the one that matters: the credentials were correct and the
- * address simply has not been confirmed yet. Falling through to "check the
- * address and passphrase" there sends someone to retype something that already
- * worked, when the thing they need is a link sitting in their inbox.
+ * ONE message for a wrong handle and a wrong passphrase, because the service
+ * answers one status for both — telling them apart would make this form an
+ * account-enumeration oracle. Everything else keeps its own words: a DEK that
+ * will not unwrap is not a wrong passphrase, and saying so sends people to try
+ * harder at something that cannot work.
  */
 function describeSignInError(cause: unknown, t: (key: string) => string): string {
-  const failure = classifySignInFailure(cause);
-  if (failure === 'email-unverified') return t('sync.signIn.unverified');
-  if (failure === 'rejected') return t('sync.signIn.failed');
+  if (classifySignInFailure(cause) === 'rejected') return t('sync.signIn.failed');
   return describeErrorForUser(cause, t('sync.signIn.failed'));
 }
 
@@ -383,12 +346,11 @@ function describeSignInError(cause: unknown, t: (key: string) => string): string
  *
  * ── Why the repair lives HERE and not behind "create an account" ──────────
  *
- * A verification-required instance creates the account at signup and withholds
- * the session, so the key hierarchy cannot be written until the address is
- * confirmed. Sending the user back to "create an account" afterwards answers
- * `409` (the account exists) and always will — the only door left open is a
- * sign-in, which is exactly where the missing key records become visible. That
- * made this the deadlock: neither door worked, and the account was permanently
+ * An account whose device died between the signup and the key-record writes
+ * exists with no key hierarchy. Sending that user back to "create an account"
+ * answers `409` (the account exists) and always will — the only door left open
+ * is a sign-in, which is exactly where the missing key records become visible.
+ * Without the repair, neither door works and the account is permanently
  * unusable.
  *
  * The repair reuses `SyncSetupFlow` rather than printing a code inline, so the
@@ -400,23 +362,24 @@ function describeSignInError(cause: unknown, t: (key: string) => string): string
  */
 function SignInPanel({
   serverUrl,
-  initialEmail,
+  initialHandle,
   onCancel,
   onForgot,
   onCeremonyActiveChange,
 }: {
   serverUrl: string;
-  initialEmail: string;
+  initialHandle: string;
   onCancel: () => void;
   onForgot: () => void;
   onCeremonyActiveChange: (isActive: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const [email, setEmail] = useState(initialEmail);
+  const [accountHandle, setAccountHandle] = useState(initialHandle);
   const [passphrase, setPassphrase] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [repair, setRepair] = useState<{
+    handle: string;
     passphrase: string;
     completeSetup: (input: { passphrase: string }) => Promise<SyncSetupOutcome>;
   } | null>(null);
@@ -426,9 +389,9 @@ function SignInPanel({
     setIsBusy(true);
     setError(null);
     try {
-      const result = await signInToSync({ serverUrl, email: email.trim(), passphrase });
+      const result = await signInToSync({ serverUrl, handle: accountHandle.trim(), passphrase });
       if (result.status === 'setup-incomplete') {
-        setRepair({ passphrase, completeSetup: result.completeSetup });
+        setRepair({ handle: accountHandle.trim(), passphrase, completeSetup: result.completeSetup });
         return;
       }
       await syncNow();
@@ -444,10 +407,10 @@ function SignInPanel({
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">{t('sync.signIn.finishSetup')}</p>
         <SyncSetupFlow
-          resume={{ passphrase: repair.passphrase }}
+          resume={{ handle: repair.handle, passphrase: repair.passphrase }}
           onCeremonyActiveChange={onCeremonyActiveChange}
           provision={async (input) => {
-            const outcome = await repair.completeSetup(input);
+            const outcome = await repair.completeSetup({ passphrase: input.passphrase });
             // Fired, never awaited — same reason as the create path: a network
             // round trip between "the key records exist" and "the code is on
             // screen" turns a transient failure into a lost recovery code.
@@ -463,15 +426,17 @@ function SignInPanel({
     <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
       <p className="text-sm text-muted-foreground">{t('sync.signIn.intro')}</p>
       <div className="space-y-2">
-        <Label htmlFor="sync-signin-email">{t('sync.emailLabel')}</Label>
+        <Label htmlFor="sync-signin-handle">{t('sync.handleLabel')}</Label>
         <Input
-          id="sync-signin-email"
-          type="email"
+          id="sync-signin-handle"
+          type="text"
           required
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="h-11"
+          autoComplete="username"
+          spellCheck={false}
+          autoCapitalize="none"
+          value={accountHandle}
+          onChange={(event) => setAccountHandle(event.target.value)}
+          className="h-11 font-mono"
         />
       </div>
       <div className="space-y-2">
@@ -507,81 +472,11 @@ function SignInPanel({
   );
 }
 
-/**
- * Requests the reset email. Always reports the same thing back, whether or not
- * the address has an account — the service answers `202` either way, and
- * echoing anything more specific would turn this form into an account
- * enumeration oracle the protocol deliberately closes.
- */
-function ForgotPassphrasePanel({
-  serverUrl,
-  initialEmail,
-  onCancel,
-}: {
-  serverUrl: string;
-  initialEmail: string;
-  onCancel: () => void;
-}) {
-  const { t } = useTranslation();
-  const [email, setEmail] = useState(initialEmail);
-  const [isSent, setIsSent] = useState(false);
-  const [isBusy, setIsBusy] = useState(false);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    setIsBusy(true);
-    try {
-      await requestSyncReset({ serverUrl, email: email.trim() });
-    } finally {
-      setIsBusy(false);
-      setIsSent(true);
-    }
-  }
-
-  if (isSent) {
-    return (
-      <div className="space-y-3">
-        <p className="text-sm">{t('sync.forgot.sent')}</p>
-        <p className="text-xs text-muted-foreground">{t('sync.forgot.sentNote')}</p>
-        <Button type="button" variant="ghost" className="h-11 w-full" onClick={onCancel}>
-          {t('sync.forgot.back')}
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
-      <p className="text-sm text-muted-foreground">{t('sync.forgot.intro')}</p>
-      <div className="space-y-2">
-        <Label htmlFor="sync-forgot-email">{t('sync.emailLabel')}</Label>
-        <Input
-          id="sync-forgot-email"
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="h-11"
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Button type="submit" className="h-11 w-full" disabled={isBusy}>
-          {t('sync.forgot.submit')}
-        </Button>
-        <Button type="button" variant="ghost" className="h-11 w-full" onClick={onCancel}>
-          {t('sync.cancel')}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Connected
 // ---------------------------------------------------------------------------
 
-function ConnectedPanel({ email }: { email: string }) {
+function ConnectedPanel({ accountHandle }: { accountHandle: string }) {
   const { t } = useTranslation();
 
   return (
@@ -591,7 +486,7 @@ function ConnectedPanel({ email }: { email: string }) {
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" /> {t('sync.connected.title')}
           </CardTitle>
-          <CardDescription>{t('sync.connected.description', { email })}</CardDescription>
+          <CardDescription>{t('sync.connected.description', { handle: accountHandle })}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <SyncStatus onSyncNow={() => void syncNow().catch(() => undefined)} />
@@ -600,91 +495,30 @@ function ConnectedPanel({ email }: { email: string }) {
           <p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
             {t('sync.connected.photosStayHere')}
           </p>
+          {/* Said on the one screen a signed-in person actually revisits: the
+              account card was shown once, and this is the only later reminder
+              that both halves of it are load-bearing. */}
+          <p className="text-xs text-muted-foreground">{t('sync.connected.keepYourCard')}</p>
         </CardContent>
       </Card>
 
-      <RecoveryCodeCard />
       <ChangePassphraseCard />
-      <DangerZoneCard email={email} />
+      <DangerZoneCard accountHandle={accountHandle} />
     </>
   );
 }
 
 /**
- * Replaces the account's recovery code.
+ * WHAT USED TO BE HERE: a "show a new recovery code" card.
  *
- * This is the answer to "the tab died during setup" and to the far more common
- * "I lost the piece of paper". In both cases the account is fine and the data
- * is intact — what is broken is the BACKUP, silently: there is a recovery
- * record on file that no known code opens.
- *
- * Change-passphrase does not help, despite the intuition that it should. It
- * deliberately leaves the recovery record alone, because that record wraps the
- * same unchanged data key and survives a passphrase rotation. Replacing the
- * recovery code is a separate operation, and this is the only one.
- *
- * It reuses `RecoveryCodeStep` — the same warning, the same "I've saved this"
- * gate — rather than printing the code in a corner of a settings page. A code
- * treated as unmissable in one place and casual in another is the same bug
- * twice.
+ * It rotated the `recovery` key record onto a freshly minted code. M181 made
+ * the recovery code the account's SECOND AUTHENTICATOR, and the service
+ * registers that verifier at signup or never — so a regenerated code would
+ * still unwrap the DEK and would no longer prove anything to
+ * `POST /v1/auth/recover`. A button that hands somebody a code which
+ * authenticates nowhere is worse than no button, so the setup copy says
+ * plainly that the code is issued once, with the handle, on the account card.
  */
-function RecoveryCodeCard() {
-  const { t } = useTranslation();
-  const [code, setCode] = useState<string | null>(null);
-  const [hasConfirmedSaved, setHasConfirmedSaved] = useState(false);
-  const [isBusy, setIsBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleRegenerate(): Promise<void> {
-    setIsBusy(true);
-    setError(null);
-    try {
-      const result = await regenerateRecoveryCode();
-      setHasConfirmedSaved(false);
-      setCode(result.recoveryCode);
-    } catch (caught) {
-      setError(describeErrorForUser(caught, t('sync.recoveryCode.failed')));
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <KeyRound className="h-5 w-5" aria-hidden="true" /> {t('sync.recoveryCode.title')}
-        </CardTitle>
-        <CardDescription>{t('sync.recoveryCode.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {code !== null ?
-          <RecoveryCodeStep
-            recoveryCode={code}
-            hasConfirmedSaved={hasConfirmedSaved}
-            onConfirmToggle={setHasConfirmedSaved}
-            onFinish={() => setCode(null)}
-            finishLabel={t('sync.recoveryCode.done')}
-          />
-        : <>
-            {error !== null && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 w-full sm:w-auto"
-              disabled={isBusy}
-              onClick={() => void handleRegenerate()}
-            >
-              {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              {t('sync.recoveryCode.regenerate')}
-            </Button>
-            <p className="text-xs text-muted-foreground">{t('sync.recoveryCode.note')}</p>
-          </>
-        }
-      </CardContent>
-    </Card>
-  );
-}
 
 function ChangePassphraseCard() {
   const { t } = useTranslation();
@@ -785,7 +619,7 @@ function ChangePassphraseCard() {
  * submits to a route action and this page has none: sync talks to another
  * origin entirely, never through this server.
  */
-function DangerZoneCard({ email }: { email: string }) {
+function DangerZoneCard({ accountHandle }: { accountHandle: string }) {
   const { t } = useTranslation();
   const [passphrase, setPassphrase] = useState('');
   const [isBusy, setIsBusy] = useState(false);
@@ -830,7 +664,7 @@ function DangerZoneCard({ email }: { email: string }) {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>{t('sync.delete.confirmTitle')}</AlertDialogTitle>
-              <AlertDialogDescription>{t('sync.delete.confirmBody', { email })}</AlertDialogDescription>
+              <AlertDialogDescription>{t('sync.delete.confirmBody', { handle: accountHandle })}</AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2">
               <Label htmlFor="sync-delete-passphrase">{t('sync.delete.passphraseLabel')}</Label>

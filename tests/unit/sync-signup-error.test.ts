@@ -32,9 +32,9 @@ test('a 403 with an UNKNOWN mode falls back to the generic refusal', () => {
   assert.equal(classifySignupFailure(thrown('forbidden', 403), null), 'signups-closed');
 });
 
-test('a 409 is the taken address, whatever the mode', () => {
+test('a 409 is the taken handle, whatever the mode', () => {
   for (const mode of ['open', 'invite', 'closed', null] as const) {
-    assert.equal(classifySignupFailure(thrown('conflict', 409), mode), 'email-taken');
+    assert.equal(classifySignupFailure(thrown('conflict', 409), mode), 'handle-taken');
   }
 });
 

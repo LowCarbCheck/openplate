@@ -16,7 +16,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
-import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import { deriveCredentialsFromPassphrase } from '../../app/lib/sync/engine/client/derive-credentials';
 import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engine/crypto/argon2';
 import { createMemoryStorage } from '../../app/lib/sync/sync-state';
@@ -70,7 +69,7 @@ function stubService() {
     if (url.endsWith('/v1/auth/signup')) {
       return respond(
         {
-          account: { id: 1, email: 'person@example.test', displayName: null, emailVerified: true },
+          account: { id: 1, handle: 'k7m2q3xr9t', displayName: null },
           tokens: {
             accessToken: 'access-1',
             accessTokenExpiresAt: '2026-08-04T10:15:00.000Z',
@@ -83,7 +82,7 @@ function stubService() {
     }
     if (url.endsWith('/v1/auth/login')) {
       return respond({
-        account: { id: 1, email: 'person@example.test', displayName: null, emailVerified: true },
+        account: { id: 1, handle: 'k7m2q3xr9t', displayName: null },
         tokens: {
           accessToken: 'access-2',
           accessTokenExpiresAt: '2026-08-04T10:15:00.000Z',
@@ -111,13 +110,13 @@ test('the passphrase never appears in ANY request the client sends', async () =>
   const { fetchImpl, captured } = stubService();
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
 
-  const wire = await client.fetchKdfDescriptor('person@example.test');
+  const wire = await client.fetchKdfDescriptor('k7m2q3xr9t');
   const { authHash } = await deriveCredentialsFromPassphrase({
     passphrase: PASSPHRASE,
     descriptor: { salt: wire.salt, params: wire.params },
     deriveHash: fastDeriver,
   });
-  await client.login({ email: 'person@example.test', authHash });
+  await client.login({ handle: 'k7m2q3xr9t', authHash });
 
   assert.ok(captured.length > 0, 'expected the stub service to have been called');
   for (const request of captured) {
@@ -141,13 +140,13 @@ test('the passphrase never lands in any client storage', async () => {
   // surface it could write to and must not touch with anything sensitive.
   const storage = createMemoryStorage();
 
-  const wire = await client.fetchKdfDescriptor('person@example.test');
+  const wire = await client.fetchKdfDescriptor('k7m2q3xr9t');
   const { authHash } = await deriveCredentialsFromPassphrase({
     passphrase: PASSPHRASE,
     descriptor: { salt: wire.salt, params: wire.params },
     deriveHash: fastDeriver,
   });
-  await client.login({ email: 'person@example.test', authHash });
+  await client.login({ handle: 'k7m2q3xr9t', authHash });
 
   for (const key of ['openplate.sync.account-hint', 'openplate.sync.state.v1:1', 'openplate.sync.device-id']) {
     const value = storage.getItem(key);
@@ -195,7 +194,7 @@ test('signup adopts the returned session so key records can be written immediate
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
 
   await client.signup({
-    email: 'person@example.test',
+    handle: 'k7m2q3xr9t',
     authHash: 'AAAA',
     kdfDescriptor: { salt: SALT_BASE64, params: FAST_PARAMS },
   });
@@ -209,7 +208,7 @@ test('concurrent refreshes are serialized — a spent refresh token is read as t
     const url = String(input);
     if (url.endsWith('/v1/auth/login')) {
       return respond({
-        account: { id: 1, email: 'a@b.test', displayName: null, emailVerified: true },
+        account: { id: 1, handle: 'ab7k2m', displayName: null },
         tokens: {
           accessToken: 'a1',
           accessTokenExpiresAt: 'x',
@@ -225,7 +224,7 @@ test('concurrent refreshes are serialized — a spent refresh token is read as t
   };
 
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
-  await client.login({ email: 'a@b.test', authHash: 'AAAA' });
+  await client.login({ handle: 'ab7k2m', authHash: 'AAAA' });
 
   const [first, second] = await Promise.all([client.refreshAccessToken(), client.refreshAccessToken()]);
 
@@ -239,7 +238,7 @@ const revokedRefreshFetch: typeof fetch = async (input) => {
   const url = String(input);
   if (url.endsWith('/v1/auth/login')) {
     return respond({
-      account: { id: 1, email: 'a@b.test', displayName: null, emailVerified: true },
+      account: { id: 1, handle: 'ab7k2m', displayName: null },
       tokens: { accessToken: 'a1', accessTokenExpiresAt: 'x', refreshToken: 'r1', refreshTokenExpiresAt: 'y' },
     });
   }
@@ -248,26 +247,10 @@ const revokedRefreshFetch: typeof fetch = async (input) => {
 
 test('a rejected refresh clears the session and reports null rather than throwing', async () => {
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl: revokedRefreshFetch });
-  await client.login({ email: 'a@b.test', authHash: 'AAAA' });
+  await client.login({ handle: 'ab7k2m', authHash: 'AAAA' });
 
   assert.equal(await client.refreshAccessToken(), null);
   assert.equal(client.getSession(), null);
-});
-
-/** A login that succeeds on credentials but reports the address as unconfirmed. */
-const unverifiedLoginFetch: typeof fetch = async () =>
-  respond({
-    account: { id: 1, email: 'a@b.test', displayName: null, emailVerified: false },
-    tokens: null,
-  });
-
-test('login refuses an unverified account instead of reporting a signed-in state', async () => {
-  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl: unverifiedLoginFetch });
-
-  await assert.rejects(
-    () => client.login({ email: 'a@b.test', authHash: 'AAAA' }),
-    (error) => error instanceof SyncRequestError && error.kind === 'forbidden',
-  );
 });
 
 const unreachableFetch: typeof fetch = async () => {

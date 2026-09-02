@@ -1,6 +1,7 @@
 /**
  * Every operation the sync UI can trigger, in one place: create an account,
- * sign in, sync, change the passphrase, reset it, delete the account.
+ * sign in, sync, change the passphrase, recover it with the recovery code,
+ * delete the account.
  *
  * This is the composition root for the feature. The engine modules underneath
  * are all injectable and individually testable; nothing here is, and nothing
@@ -31,6 +32,7 @@ import { setupSyncKeys, type Argon2idDeriver, type SyncKeySetupRecord } from './
 import { createPassphraseKdfDescriptor, type PassphraseKdfDescriptor } from './engine/client/passphrase-kek';
 import {
   derivePrivateStoreRecoveryKek,
+  deriveRecoveryAuthHash,
   deriveRecoveryKek,
   generateRecoveryCode,
   parseRecoveryCode,
@@ -60,7 +62,7 @@ import {
   type EstablishedPrivateStore,
   type PrivateStoreSession,
 } from './private-store';
-import { rewrapPrivateStoreOnServer, type BlobTransport } from './private-store-rewrap';
+import { rewrapPrivateStoreOnServer } from './private-store-rewrap';
 import { runSyncCycle } from './orchestrator';
 import { createSyncStateStore, deviceStorage, resolveDeviceId } from './sync-state';
 import {
@@ -124,27 +126,18 @@ function toWireDescriptor(descriptor: PassphraseKdfDescriptor): KdfDescriptorWir
  * key-record list) and repairs, rather than presenting an account that can
  * never be unlocked.
  *
- * ── `tokens: null` is an OUTCOME, not a failure ───────────────────────────
+ * ── THE RECOVERY CODE IS REGISTERED HERE OR NEVER (M181) ─────────────────
  *
- * An instance running with `REQUIRE_EMAIL_VERIFICATION` withholds the session
- * until the address is confirmed (`PROTOCOL.md` §5.8). This used to throw,
- * which deadlocked the feature completely on every such instance: the account
- * was created, so a second attempt answered `409`, and signing in after
- * confirming reached an account with no key records and errored there too. So
- * it returns `awaiting-email-verification` instead, and the SETUP CEREMONY
- * MOVES to the sign-in that follows — see `signInToSync`, which is the one
- * place that can complete it, because writing key records needs the session
- * this response deliberately did not hand out.
+ * `recoveryAuthHash` rides on the signup request, and the service has no other
+ * endpoint that can set it. That is why the code is generated BEFORE the
+ * account: the second authenticator and the account are one write, so an
+ * account cannot exist in a state where its recovery code opens the data but
+ * cannot log in.
  *
- * NOTHING IS KEPT from that branch. The derived KEK, the DEK and the recovery
- * code are all local to this call and are dropped when it returns; no session
- * is opened, nothing is written to the device, and the code the user would
- * eventually save is minted fresh during the repair. Persisting any of it "so
- * setup can carry on later" would put key material on disk for the sake of
- * saving one Argon2id run.
- *
- * On the `ready` branch the returned recovery code is the ONLY time it exists
- * in a readable form. The caller (the ceremony) must show it before resolving.
+ * The returned recovery code is the ONLY time it exists in a readable form,
+ * and the handle is returned with it: the caller (the ceremony) shows both on
+ * one account card, because a user who saves the code and never registers that
+ * the handle is equally required cannot get back in either.
  */
 /**
  * Asks an instance how it treats new accounts (PROTOCOL.md §5.6).
@@ -183,7 +176,7 @@ export async function readServerNotice(
 
 export async function createSyncAccount({
   serverUrl,
-  email,
+  handle,
   passphrase,
   inviteToken,
   deriveHash = workerArgon2idDeriver,
@@ -191,7 +184,7 @@ export async function createSyncAccount({
   fetchImpl,
 }: {
   serverUrl: string;
-  email: string;
+  handle: string;
   passphrase: string;
   /** Required by an invite-only instance (PROTOCOL.md §5.8.1); ignored by an open one. */
   inviteToken?: string;
@@ -208,14 +201,16 @@ export async function createSyncAccount({
   // a few seconds, which is the right way round. Checking it earlier would mean
   // a second round trip on the happy path, and would still not be binding.
   const created = await authClient.signup({
-    email,
+    handle,
     authHash: keys.authHash,
     kdfDescriptor: toWireDescriptor(keys.kdfDescriptor),
+    // The SECOND authenticator, derived under the `RECOVERY_AUTH` label — a
+    // sibling of the recovery KEK and never the KEK itself, which would hand
+    // the operator material from the same HKDF output as the key that opens
+    // the diary (`recovery-kek.ts`).
+    recoveryAuthHash: await deriveRecoveryAuthHash(recovery.raw),
     inviteToken,
   });
-  if (created.tokens === null) {
-    return { status: 'awaiting-email-verification', email: created.account.email };
-  }
 
   // First-time create: `expectedUpdatedAt: null` asserts "no record of this
   // kind exists yet". A conflict here means another device completed setup
@@ -236,12 +231,12 @@ export async function createSyncAccount({
     http,
     serverUrl,
     accountId: created.account.id,
-    email: created.account.email,
+    handle: created.account.handle,
     dek: keys.dek,
     privateStoreKek: keys.privateStoreKek,
     privateStore: keys.privateStore,
   });
-  return { status: 'ready', recoveryCode: recovery.formatted };
+  return { status: 'ready', handle: created.account.handle, recoveryCode: recovery.formatted };
 }
 
 /** A setup key record plus the slot it fills — what a first-time `PUT /v1/keys` needs. */
@@ -268,11 +263,10 @@ async function putFirstKeyRecord(http: SyncHttpClient, record: FirstKeyRecord): 
  * The three ways a sign-in can end, all of them designed.
  *
  * `setup-incomplete` is the account that exists with no key records — signup
- * succeeded and the ceremony never did, either because the device died between
- * the two writes or because this instance requires email verification and
- * therefore refused signup a session at all (see `createSyncAccount`). The
- * session IS open at that point; what is missing is the key hierarchy, and
- * `completeSetup` is the only thing that can write it.
+ * succeeded and the ceremony never did, because the device died between the
+ * two writes (see `createSyncAccount`). The session IS open at that point;
+ * what is missing is the key hierarchy, and `completeSetup` is the only thing
+ * that can write it.
  */
 export type SignInToSyncResult =
   | { status: 'connected' }
@@ -289,36 +283,33 @@ export type SignInToSyncResult =
  * Signs in and unlocks the vault: authenticate with the auth branch, then
  * unwrap the DEK with the KEK branch of the SAME Argon2id run.
  *
- * ── Four endings, none of them interchangeable ───────────────────────────
+ * ── Three endings, none of them interchangeable ──────────────────────────
  *
- *  - login rejected (`401`) → wrong email or passphrase. Thrown.
- *  - login refused for an unconfirmed address (`403`) → the credentials are
- *    RIGHT; the address is not confirmed yet. Thrown, and the sign-in UI tells
- *    the user to use the link in their inbox rather than to try harder at a
- *    passphrase that already worked (`classifySignInFailure`).
+ *  - login rejected (`401`) → wrong handle or passphrase. One message for
+ *    both, by protocol design (`classifySignInFailure`).
  *  - logged in, but no key records → setup never finished. Returned as
- *    `setup-incomplete`, NOT thrown: this is repairable, and it is the only
- *    state a verification-required signup can leave behind, so an error here
- *    made the whole feature a dead end on those instances.
+ *    `setup-incomplete`, NOT thrown: this is repairable, and an error here
+ *    would leave the account permanently unusable.
  *  - logged in, but the DEK will not unwrap → the passphrase is right for the
- *    ACCOUNT and wrong for the DATA, which happens after a reset completed
- *    without a recovery code. Thrown, with its own wording: saying "wrong
- *    passphrase" sends people to try harder at something that cannot work.
+ *    ACCOUNT and wrong for the DATA, which happens when another device
+ *    recovered the account onto a different passphrase. Thrown, with its own
+ *    wording: saying "wrong passphrase" sends people to try harder at
+ *    something that cannot work.
  */
 export async function signInToSync({
   serverUrl,
-  email,
+  handle,
   passphrase,
   deriveHash = workerArgon2idDeriver,
   fetchImpl,
-}: { serverUrl: string; email: string; passphrase: string } & SyncActionOptions): Promise<SignInToSyncResult> {
+}: { serverUrl: string; handle: string; passphrase: string } & SyncActionOptions): Promise<SignInToSyncResult> {
   const { authClient, http } = clients({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
   // Always the account's OWN parameters, never this build's defaults — an
   // account created under raised costs derives differently, and getting it
   // wrong is indistinguishable from a wrong passphrase.
-  const wire = await authClient.fetchKdfDescriptor(email);
+  const wire = await authClient.fetchKdfDescriptor(handle);
   const descriptor: PassphraseKdfDescriptor = { salt: wire.salt, params: wire.params };
   const { authHash, passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
     passphrase,
@@ -326,7 +317,7 @@ export async function signInToSync({
     deriveHash,
   });
 
-  const session = await authClient.login({ email, authHash });
+  const session = await authClient.login({ handle, authHash });
 
   const records = await http.listKeyRecords();
   const passphraseRecord = records.find((record) => record.kind === 'passphrase');
@@ -357,7 +348,7 @@ export async function signInToSync({
     throw new SyncRequestError({
       kind: 'invalid',
       message:
-        'That passphrase signs you in, but it cannot open this account’s data — it was replaced by a reset. Use your recovery code to restore access.',
+        'That passphrase signs you in, but it cannot open this account’s data — another device set a new one. Use the passphrase that device chose, or your recovery code.',
     });
   }
 
@@ -366,7 +357,7 @@ export async function signInToSync({
     http,
     serverUrl,
     accountId: session.account.id,
-    email: session.account.email,
+    handle: session.account.handle,
     dek,
     privateStoreKek,
   });
@@ -401,7 +392,7 @@ async function finishInterruptedSetup({
   authClient: SyncAuthClient;
   http: SyncHttpClient;
   serverUrl: string;
-  account: { id: number; email: string };
+  account: { id: number; handle: string };
   passphrase: string;
   descriptor: PassphraseKdfDescriptor;
   deriveHash: Argon2idDeriver;
@@ -437,26 +428,27 @@ async function finishInterruptedSetup({
     http,
     serverUrl,
     accountId: account.id,
-    email: account.email,
+    handle: account.handle,
     dek,
     privateStoreKek,
     privateStore,
   });
-  return { status: 'ready', recoveryCode: recovery.formatted };
+  return { status: 'ready', handle: account.handle, recoveryCode: recovery.formatted };
 }
 
+/** Publishes the vault and returns it, so a caller that must keep working on the session it just opened does not have to fetch it back. */
 function openSession(input: {
   authClient: SyncAuthClient;
   http: SyncHttpClient;
   serverUrl: string;
   accountId: number;
-  email: string;
+  handle: string;
   dek: Uint8Array;
   /** `K_pp` for the passphrase that just unlocked this session — the compartment's door. */
   privateStoreKek: CryptoKey;
   /** Present only when this call ESTABLISHED the compartment (setup); a sign-in adopts one on its first pull instead. */
   privateStore?: EstablishedPrivateStore | null;
-}): void {
+}): SyncVault {
   const storage = deviceStorage();
   const state = createSyncStateStore({ storage, accountId: input.accountId });
   const vault: SyncVault = {
@@ -469,13 +461,14 @@ function openSession(input: {
       established: input.privateStore ?? null,
     }),
     accountId: input.accountId,
-    email: input.email,
+    handle: input.handle,
     deviceId: resolveDeviceId(storage),
     state,
     serverUrl: input.serverUrl,
   };
-  writeAccountHint(input.email, storage);
+  writeAccountHint(input.handle, storage);
   openSyncSession(vault, { lastSyncedAt: state.load().lastSyncedAt });
+  return vault;
 }
 
 // ---------------------------------------------------------------------------
@@ -689,7 +682,7 @@ export async function changeSyncPassphrase({
   const vault = getSyncVault();
   if (vault === null) throw new Error('changeSyncPassphrase called without an open sync session');
 
-  const currentWire = await vault.authClient.fetchKdfDescriptor(vault.email);
+  const currentWire = await vault.authClient.fetchKdfDescriptor(vault.handle);
   const current = await deriveCredentialsFromPassphrase({
     passphrase: currentPassphrase,
     descriptor: { salt: currentWire.salt, params: currentWire.params },
@@ -761,229 +754,80 @@ async function rewrapCompartmentForNewPassphrase({
 }
 
 // ---------------------------------------------------------------------------
-// Recovery code
+// Recovery
 // ---------------------------------------------------------------------------
 
 /**
- * Mints a NEW recovery code and rotates the account's `recovery` key record
- * onto it. Returns the code — which, like the one from setup, is displayed
- * exactly once and cannot be retrieved afterwards.
+ * WHAT USED TO BE HERE (M181).
  *
- * ── Why this has to exist ────────────────────────────────────────────────
+ * `requestSyncReset` and `completeSyncReset` asked the service to mail a link
+ * and then redeemed it. Both endpoints are gone: on a zero-knowledge service a
+ * mailed reset was an account-TAKEOVER path that returned no recovery, because
+ * the DEK is wrapped under keys the server never sees. `recoverSyncAccount`
+ * below replaces them with the code the user already holds.
  *
- * Two ordinary situations leave an account with a recovery record whose code
- * nobody knows, and until this existed there was no way out of either:
- *
- *  1. **The tab dies during the setup ceremony.** The account and both key
- *     records are already written by then; only the display is lost. The user
- *     can still sign in with their passphrase and their data is completely
- *     intact — so this is NOT data loss. What is lost is the BACKUP: the
- *     recovery record on file is opened by a code that no longer exists
- *     anywhere. The degradation is silent, which is the dangerous part.
- *  2. **The user loses the paper.** Far more common, same end state.
- *
- * Change-passphrase does NOT cover either case, despite the intuition that it
- * should: it deliberately leaves the `recovery` record untouched, because that
- * record wraps the same unchanged DEK and stays valid across a passphrase
- * rotation (see `changeSyncPassphrase`). Rotating the recovery record is a
- * genuinely separate operation, and this is it.
- *
- * It needs no re-authentication because it grants no new access: the caller
- * already holds the DEK, and the only thing being replaced is one of the two
- * doors to it. The old code stops working the moment this succeeds.
+ * `regenerateRecoveryCode` went with them, and its absence is a real
+ * limitation rather than an oversight. A recovery code is now the account's
+ * SECOND AUTHENTICATOR, and the service registers that verifier at signup or
+ * never — so a freshly minted code could still unwrap the DEK but could no
+ * longer prove anything to `POST /v1/auth/recover`. Shipping a button that
+ * hands the user a code which authenticates nowhere is worse than not offering
+ * one, so the button is gone and the setup copy says the code is issued once.
  */
-export async function regenerateRecoveryCode(): Promise<{ recoveryCode: string }> {
-  const vault = getSyncVault();
-  if (vault === null) throw new Error('regenerateRecoveryCode called without an open sync session');
-
-  // Read first for the CAS token: another device may have rotated this record,
-  // and blind-overwriting it would invalidate a code that device just showed
-  // its user.
-  const records = await vault.http.listKeyRecords();
-  const existing = records.find((record) => record.kind === 'recovery');
-
-  const recovery = generateRecoveryCode();
-  const result = await vault.http.putKeyRecord({
-    kind: 'recovery',
-    // Always null for this kind — the recovery path is HKDF-only and has no
-    // parameters to record; the service rejects a descriptor here.
-    kdfDescriptor: null,
-    wrappedDek: await wrapDek({ dek: vault.dek, kek: await deriveRecoveryKek(recovery.raw) }),
-    expectedUpdatedAt: existing?.updatedAt ?? null,
-  });
-  if (result.status === 'conflict') {
-    throw new SyncRequestError({
-      kind: 'conflict',
-      message: 'Another device changed this account’s recovery key just now. Try again to get a fresh code.',
-    });
-  }
-
-  // THE COMPARTMENT'S SLOT 2 MOVES WITH IT (ADR-0002's partition amendment).
-  // Forgetting this would leave the OLD code — the one the user is about to
-  // discard — as the only thing that opens their share keys, and the failure
-  // would surface months later on a recovery restore that recovered the diary
-  // and lost every patient's access.
-  await rotateCompartmentRecoverySlot({ vault, recoveryKek: await derivePrivateStoreRecoveryKek(recovery.raw) });
-
-  return { recoveryCode: recovery.formatted };
-}
 
 /**
- * Moves the compartment onto a new `K_pr`, or CREATES one when the account has
- * none.
+ * Sets a new passphrase using the recovery code — the whole of what "I forgot
+ * my passphrase" now means.
  *
- * The create branch is the upgrade path for an account whose compartment
- * predates the partition: a compartment needs both doors at once, this is the
- * only routine operation where a recovery code exists in the clear, and the
- * session supplies the other door. Nothing is pushed here — clearing the seal
- * cache is enough, because the next sync cycle seals and pushes it.
+ * ── Three round trips, and the order is the safety property ──────────────
+ *
+ *  1. `POST /v1/auth/recover` — the code proves who this is and opens a
+ *     session. Nothing is written.
+ *  2. With that session, the `recovery` key record is read and the DEK is
+ *     unwrapped with the code. This MUST happen before anything rotates: key
+ *     records are behind bearer auth, so a client that rotated first would
+ *     have replaced the passphrase record without ever having held the DEK it
+ *     is supposed to re-wrap.
+ *  3. `POST /v1/auth/recover-rotate` — the new verifier, the new descriptor
+ *     and the re-wrapped DEK move together in ONE server transaction. A half
+ *     update is impossible; that is the endpoint's whole reason for existing.
+ *
+ * The recovery code itself is NOT rotated. It still opens the same unchanged
+ * DEK, and replacing it here would mean showing a second code on a screen
+ * whose entire subject is the passphrase.
+ *
+ * If both secrets are lost there is no third path, and there is no code here
+ * that pretends otherwise: a mechanism that let the server restore access
+ * would mean the server could open the data.
  */
-async function rotateCompartmentRecoverySlot({
-  vault,
-  recoveryKek,
-}: {
-  vault: SyncVault;
-  recoveryKek: CryptoKey;
-}): Promise<void> {
-  const result = await rewrapPrivateStoreOnServer({
-    http: vault.http,
-    accountId: vault.accountId,
-    dek: vault.dek,
-    deviceId: vault.deviceId,
-    currentKek: vault.privateStore.passphraseKek,
-    currentSlot: 'passphrase',
-    nextPassphraseKek: null,
-    nextRecoveryKek: recoveryKek,
-  });
-  if (result.status === 'rewrapped') {
-    adoptRewrappedSlots({ session: vault.privateStore, cdk: result.cdk, sealed: result.sealed });
-    return;
-  }
-  if (result.status === 'unopenable') return;
-
-  const established = await establishPrivateStore({ passphraseKek: vault.privateStore.passphraseKek, recoveryKek });
-  // THROUGH THE ADOPT, never field by field (M164/08). Written here by hand,
-  // this set `cdk`, `wraps` and `cache` and never said that this session KNOWS
-  // the plaintext — so `sealOwnerPrivateRegion` refused, re-emitted
-  // `session.pulled`, and on the very account this branch exists for that is
-  // `null`. The compartment the user was just shown a recovery code for stayed
-  // on this device, and nothing would ever have brought it back.
-  adoptEstablishedCompartment({ session: vault.privateStore, established });
-}
-
-// ---------------------------------------------------------------------------
-// Reset
-// ---------------------------------------------------------------------------
-
-/** Asks the service to email a reset link. Always succeeds from the client's point of view — the response reveals nothing. */
-export async function requestSyncReset({
+export async function recoverSyncAccount({
   serverUrl,
-  email,
-  fetchImpl,
-}: { serverUrl: string; email: string } & SyncActionOptions): Promise<void> {
-  const { authClient } = clients({ serverUrl, fetchImpl });
-  await authClient.requestReset(email);
-}
-
-/**
- * Completes a reset.
- *
- * THE FORK, in code. `recoveryCode` is the whole difference between the two
- * outcomes, and the type says so — a required parameter that may be `null`,
- * never an omittable option, so no caller reaches this function without having
- * decided.
- *
- * ── Why the two branches take different shapes ────────────────────────────
- *
- * Key records are behind bearer auth (`PROTOCOL.md` §5), and a person who has
- * forgotten their passphrase has no session — so the recovery-code branch
- * CANNOT read the wrapped DEK before resetting. It is therefore two phases,
- * and both use documented endpoints only:
- *
- *  1. `POST /v1/auth/reset` with `keyRecords: []`. §5.14: "kinds not submitted
- *     are left untouched" — so this restores LOGIN and touches no key
- *     material at all. Nothing is destroyed, and the response carries a
- *     session.
- *  2. With that session: read the `recovery` record, unwrap the DEK with the
- *     code, and CAS-rotate the `passphrase` record to wrap that same DEK under
- *     the new passphrase's KEK.
- *
- * If the device dies between the two, the account is in a recoverable state,
- * not a broken one: the new passphrase signs in, and `signInToSync` detects
- * the un-rotated record and says so in those words rather than "wrong
- * passphrase".
- *
- * The no-code branch is a single ATOMIC submission instead — a brand-new DEK
- * and a brand-new recovery code, applied together with the new verifier. Every
- * blob written under the old DEK becomes permanently undecryptable, by
- * everyone, forever. `app/lib/sync/reset-flow.ts` is the gate that makes a
- * user choose that knowingly.
- */
-export async function completeSyncReset({
-  serverUrl,
-  token,
-  newPassphrase,
+  handle,
   recoveryCode,
+  newPassphrase,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
 }: {
   serverUrl: string;
-  /** The single-use token from the emailed link. The email address itself is never needed — the token identifies the account. */
-  token: string;
+  handle: string;
+  /** As the user typed it — grouping and case do not matter (`parseRecoveryCode`). */
+  recoveryCode: string;
   newPassphrase: string;
-  /** `null` is the explicit "I do not have it, and I accept losing the data" branch. */
-  recoveryCode: string | null;
-} & SyncActionOptions): Promise<{ dataPreserved: boolean; recoveryCode: string | null }> {
+} & SyncActionOptions): Promise<void> {
   const { authClient, http } = clients({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
-  const descriptor = createPassphraseKdfDescriptor(generateArgon2idSalt(), params);
-  const credentials = await deriveCredentialsFromPassphrase({ passphrase: newPassphrase, descriptor, deriveHash });
-
-  const rawRecoveryCode = recoveryCode === null ? null : parseRecoveryCode(recoveryCode);
-  if (recoveryCode !== null && rawRecoveryCode === null) {
+  const rawRecoveryCode = parseRecoveryCode(recoveryCode);
+  if (rawRecoveryCode === null) {
     throw new SyncRequestError({ kind: 'invalid', message: 'That recovery code is not in the right format.' });
   }
 
-  if (rawRecoveryCode === null) {
-    const freshRecovery = generateRecoveryCode();
-    const dek = generateDek();
-    await authClient.resetCredential({
-      token,
-      authHash: credentials.authHash,
-      kdfDescriptor: toWireDescriptor(descriptor),
-      keyRecords: [
-        {
-          kind: 'passphrase',
-          kdfDescriptor: descriptor,
-          wrappedDek: bytesToBase64(await wrapDek({ dek, kek: credentials.passphraseKek })),
-        },
-        // The old recovery record wraps a DEK nobody can produce any more;
-        // leaving it would leave a "recovery" path that recovers nothing.
-        {
-          kind: 'recovery',
-          kdfDescriptor: null,
-          wrappedDek: bytesToBase64(await wrapDek({ dek, kek: await deriveRecoveryKek(freshRecovery.raw) })),
-        },
-      ],
-    });
-    return { dataPreserved: false, recoveryCode: freshRecovery.formatted };
-  }
-
-  // Phase 1: restore login only. `keyRecords: []` is submitted EXPLICITLY —
-  // §5.14 requires the key to be present even when empty, so that silence is
-  // never read as consent on a path that can strand data.
-  const tokens = await authClient.resetCredential({
-    token,
-    authHash: credentials.authHash,
-    kdfDescriptor: toWireDescriptor(descriptor),
-    keyRecords: [],
+  const recovered = await authClient.recover({
+    handle,
+    recoveryAuthHash: await deriveRecoveryAuthHash(rawRecoveryCode),
   });
-  const adopted = await authClient.adoptTokens(tokens);
 
-  // Phase 2: reopen the DEK with the recovery code and rotate the passphrase
-  // record onto the new KEK.
   const records = await http.listKeyRecords();
   const recoveryRecord = records.find((record) => record.kind === 'recovery');
   if (recoveryRecord === undefined) {
@@ -993,87 +837,121 @@ export async function completeSyncReset({
   try {
     dek = await unwrapDek({ wrappedDek: recoveryRecord.wrappedDek, kek: await deriveRecoveryKek(rawRecoveryCode) });
   } catch {
-    throw new SyncRequestError({ kind: 'invalid', message: 'That recovery code does not open this account.' });
+    // The code authenticated but does not open the data. That is a genuinely
+    // different situation from a wrong code, and saying "wrong code" here
+    // would send the user to retype something that already worked.
+    throw new SyncRequestError({ kind: 'invalid', message: 'That recovery code does not open this account’s data.' });
   }
 
-  const existingPassphraseRecord = records.find((record) => record.kind === 'passphrase');
-  const rotated = await http.putKeyRecord({
-    kind: 'passphrase',
-    kdfDescriptor: descriptor,
-    wrappedDek: await wrapDek({ dek, kek: credentials.passphraseKek }),
-    expectedUpdatedAt: existingPassphraseRecord?.updatedAt ?? null,
+  const descriptor = createPassphraseKdfDescriptor(generateArgon2idSalt(), params);
+  const credentials = await deriveCredentialsFromPassphrase({ passphrase: newPassphrase, descriptor, deriveHash });
+
+  await authClient.recoverRotate({
+    handle,
+    recoveryAuthHash: await deriveRecoveryAuthHash(rawRecoveryCode),
+    newAuthHash: credentials.authHash,
+    kdfDescriptor: toWireDescriptor(descriptor),
+    keyRecords: [
+      {
+        kind: 'passphrase',
+        kdfDescriptor: descriptor,
+        wrappedDek: bytesToBase64(await wrapDek({ dek, kek: credentials.passphraseKek })),
+      },
+    ],
   });
-  if (rotated.status === 'conflict') {
-    throw new SyncRequestError({
-      kind: 'conflict',
-      message: 'Another device changed this account’s keys while the reset was in progress. Start the reset again.',
-    });
-  }
 
-  // Phase 3: the compartment. It opens by `K_pr` here — the recovery code is
-  // the only door this person has — and BOTH slots are rewritten, because the
-  // passphrase behind slot 1 no longer exists. This must happen while the code
-  // is still in this call frame: a compartment whose slot 1 belongs to a
-  // forgotten passphrase and whose slot 2 belongs to a spent code is
-  // unopenable by anyone, forever.
-  const compartmentRecoveryKek = await derivePrivateStoreRecoveryKek(rawRecoveryCode);
-  await rewrapCompartmentAfterReset({
+  const vault = openSession({
+    authClient,
     http,
-    accountId: adopted.account.id,
+    serverUrl,
+    accountId: recovered.account.id,
+    handle: recovered.account.handle,
     dek,
-    recoveryKek: compartmentRecoveryKek,
-    passphraseKek: credentials.privateStoreKek,
+    privateStoreKek: credentials.privateStoreKek,
   });
 
-  return { dataPreserved: true, recoveryCode: null };
+  // The compartment, LAST and in this same call frame. It opens by `K_pr` —
+  // the recovery code is the only door this person has — and BOTH slots are
+  // rewritten, because the passphrase behind slot 1 no longer exists. A
+  // compartment whose slot 1 belongs to a forgotten passphrase and whose slot 2
+  // belongs to a code nobody re-enters is unopenable by anyone, forever.
+  await rewrapCompartmentAfterRecovery({
+    vault,
+    recoveryKek: await derivePrivateStoreRecoveryKek(rawRecoveryCode),
+  });
 }
 
 /**
- * The reset's compartment step, with the ONE thing it must not do: report a
- * completed reset as a failure.
+ * The recovery's compartment step: moves BOTH slots, or CREATES the
+ * compartment when the account has none.
  *
- * By the time this runs, login is restored and the passphrase key record is
- * rotated — the reset SUCCEEDED. So a failure here is re-thrown with wording
- * that says exactly that, rather than the generic conflict message that would
- * invite the user to start a reset whose token is already spent.
+ * ── Why the create branch lives here ─────────────────────────────────────
+ *
+ * A compartment needs both doors at once, and recovery is now the only
+ * routine operation where a recovery code exists in the clear — the session
+ * supplies the other door. That makes this the upgrade path for an account
+ * whose blob predates the partition (M160/07), a job that used to belong to
+ * the recovery-code regeneration this milestone deleted.
+ *
+ * Nothing is pushed here: clearing the seal cache is enough, because the next
+ * sync cycle seals and pushes it.
+ *
+ * ── The ONE thing this must not do ───────────────────────────────────────
+ *
+ * Report a completed recovery as a failure. By the time it runs the rotation
+ * has committed and the new passphrase works, so a failure is re-thrown with
+ * wording that says exactly that, rather than a generic conflict message that
+ * would invite the user to start a recovery whose passphrase has already
+ * changed.
  *
  * Slot 2 is rewrapped under the SAME `K_pr` it already had. That is not a
  * no-op: it is what makes both slots products of one operation, so a future
  * reader never has to reason about a compartment whose halves were written at
  * different times under different assumptions.
  */
-async function rewrapCompartmentAfterReset({
-  http,
-  accountId,
-  dek,
+async function rewrapCompartmentAfterRecovery({
+  vault,
   recoveryKek,
-  passphraseKek,
 }: {
-  http: BlobTransport;
-  accountId: number;
-  dek: Uint8Array;
+  vault: SyncVault;
   recoveryKek: CryptoKey;
-  passphraseKek: CryptoKey;
 }): Promise<void> {
   try {
-    await rewrapPrivateStoreOnServer({
-      http,
-      accountId,
-      dek,
-      deviceId: resolveDeviceId(deviceStorage()),
+    const result = await rewrapPrivateStoreOnServer({
+      http: vault.http,
+      accountId: vault.accountId,
+      dek: vault.dek,
+      deviceId: vault.deviceId,
       currentKek: recoveryKek,
       currentSlot: 'recovery',
-      nextPassphraseKek: passphraseKek,
+      nextPassphraseKek: vault.privateStore.passphraseKek,
       nextRecoveryKek: recoveryKek,
     });
+    if (result.status === 'rewrapped') {
+      adoptRewrappedSlots({ session: vault.privateStore, cdk: result.cdk, sealed: result.sealed });
+      return;
+    }
+    if (result.status === 'unopenable') return;
+
+    const established = await establishPrivateStore({
+      passphraseKek: vault.privateStore.passphraseKek,
+      recoveryKek,
+    });
+    // THROUGH THE ADOPT, never field by field (M164/08). Written by hand this
+    // sets `cdk`, `wraps` and `cache` and never says that this session KNOWS
+    // the plaintext — so `sealOwnerPrivateRegion` refuses, re-emits
+    // `session.pulled`, and on the very account this branch exists for that is
+    // `null`. The compartment the user was just shown a recovery code for
+    // would stay on this device, and nothing would ever bring it back.
+    adoptEstablishedCompartment({ session: vault.privateStore, established });
   } catch {
     // The cause is deliberately dropped rather than chained: every failure
     // reaching here is already a `SyncRequestError` whose own message would
-    // read as "the reset failed", which is the one thing that is not true.
+    // read as "the recovery failed", which is the one thing that is not true.
     throw new SyncRequestError({
       kind: 'conflict',
       message:
-        'Your passphrase was reset and your diary is intact, but this device could not move your clinician share keys onto the new passphrase. Sign in and try sharing again.',
+        'Your passphrase is set and your diary is intact, but this device could not move your clinician share keys onto the new passphrase. Try sharing again from this device.',
     });
   }
 }
@@ -1098,7 +976,7 @@ export async function deleteSyncAccount({
   const vault = getSyncVault();
   if (vault === null) throw new Error('deleteSyncAccount called without an open sync session');
 
-  const wire = await vault.authClient.fetchKdfDescriptor(vault.email);
+  const wire = await vault.authClient.fetchKdfDescriptor(vault.handle);
   const { authHash } = await deriveCredentialsFromPassphrase({
     passphrase,
     descriptor: { salt: wire.salt, params: wire.params },

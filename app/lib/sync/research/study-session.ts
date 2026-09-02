@@ -49,7 +49,12 @@ import { workerArgon2idDeriver } from '../engine/client/argon2-worker';
 import { deriveCredentialsFromPassphrase } from '../engine/client/derive-credentials';
 import { setupSyncKeys, type Argon2idDeriver } from '../engine/client/setup-keys';
 import type { PassphraseKdfDescriptor } from '../engine/client/passphrase-kek';
-import { derivePrivateStoreRecoveryKek, deriveRecoveryKek, generateRecoveryCode } from '../engine/client/recovery-kek';
+import {
+  derivePrivateStoreRecoveryKek,
+  deriveRecoveryAuthHash,
+  deriveRecoveryKek,
+  generateRecoveryCode,
+} from '../engine/client/recovery-kek';
 import { establishPrivateStore } from '../engine/crypto/private-store';
 import { ARGON2ID_DEFAULT_PARAMS, type Argon2idParams } from '../engine/crypto/argon2';
 import { generateDek, unwrapDek, wrapDek } from '../engine/crypto/dek-wrap';
@@ -91,7 +96,7 @@ interface StudyVault {
   http: SyncHttpClient;
   dek: Uint8Array;
   accountId: number;
-  email: string;
+  handle: string;
   serverUrl: string;
   /** This browser's sync device id, reused so the compartment's Lamport tie-break is stable. It never leaves the encrypted envelope. */
   deviceId: string;
@@ -105,7 +110,7 @@ let vault: StudyVault | null = null;
 /** What a study console is allowed to show. Carries no key material — a fingerprint is a hash, and the count is a count. */
 export interface StudyConsoleIdentity {
   accountId: number;
-  email: string;
+  handle: string;
   /** How many key generations this study holds. All of them are tried when opening a cohort. */
   generationCount: number;
   /** The NEWEST generation's fingerprint, twelve characters in three groups of four — the form printed in a consent document. `null` before any key exists. */
@@ -127,9 +132,8 @@ export interface StudyConsoleIdentity {
 /** Signing in either finds a complete account, or completes a setup that was interrupted and mints the recovery code that repair needs. */
 export type StudySignInResult = { status: 'connected' } | { status: 'setup-completed'; recoveryCode: string };
 
-/** Creating the account either opens the console, or stops at an instance that requires the address to be confirmed first. */
-export type StudyAccountSetupResult =
-  { status: 'ready'; recoveryCode: string } | { status: 'awaiting-email-verification'; email: string };
+/** Creating the account opens the console and hands back the recovery code, shown once beside the handle as one account card. */
+export type StudyAccountSetupResult = { status: 'ready'; recoveryCode: string };
 
 function clientsFor({ serverUrl, fetchImpl }: { serverUrl: string; fetchImpl?: typeof fetch }) {
   const authClient = new SyncAuthClient({ baseUrl: serverUrl, fetchImpl });
@@ -154,12 +158,12 @@ async function requireCompatibleService(authClient: SyncAuthClient): Promise<voi
  */
 export async function createStudyAccount({
   serverUrl,
-  email,
+  handle,
   passphrase,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
-}: { serverUrl: string; email: string; passphrase: string } & StudySessionOptions): Promise<StudyAccountSetupResult> {
+}: { serverUrl: string; handle: string; passphrase: string } & StudySessionOptions): Promise<StudyAccountSetupResult> {
   const { authClient, http } = clientsFor({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
@@ -167,13 +171,13 @@ export async function createStudyAccount({
   const keys = await setupSyncKeys({ passphrase, recoveryCodeRaw: recovery.raw, params, deriveHash });
 
   const created = await authClient.signup({
-    email,
+    handle,
     authHash: keys.authHash,
     kdfDescriptor: { salt: keys.kdfDescriptor.salt, params: keys.kdfDescriptor.params },
+    // The study account's second authenticator, set here or never — the same
+    // one-shot registration the diary account gets (`sync-actions.ts`).
+    recoveryAuthHash: await deriveRecoveryAuthHash(recovery.raw),
   });
-  // Nothing is kept from this branch: no session, no key records, no code. The
-  // sign-in that follows the confirmation completes the setup instead.
-  if (created.tokens === null) return { status: 'awaiting-email-verification', email: created.account.email };
 
   await putFirstKeyRecord(http, {
     kind: 'passphrase',
@@ -191,7 +195,7 @@ export async function createStudyAccount({
     http,
     dek: keys.dek,
     accountId: created.account.id,
-    email: created.account.email,
+    handle: created.account.handle,
     serverUrl,
     deviceId: resolveDeviceId(deviceStorage()),
     compartment: {
@@ -229,25 +233,25 @@ async function putFirstKeyRecord(
  * Signs the console into an existing study account.
  *
  * An account with NO key records is repaired here rather than refused. That
- * state is reachable on any instance that requires email confirmation — signup
- * is answered without a session, so the key hierarchy could not be written —
- * and refusing it would deadlock the console on exactly those instances, which
- * is the bug `sync-actions.ts` documents on the diary side.
+ * state is reachable whenever a device dies between the signup and the
+ * key-record writes, and refusing it would leave the console permanently
+ * locked out of an account that exists, which is the bug `sync-actions.ts`
+ * documents on the diary side.
  */
 export async function signInToStudy({
   serverUrl,
-  email,
+  handle,
   passphrase,
   deriveHash = workerArgon2idDeriver,
   fetchImpl,
-}: { serverUrl: string; email: string; passphrase: string } & StudySessionOptions): Promise<StudySignInResult> {
+}: { serverUrl: string; handle: string; passphrase: string } & StudySessionOptions): Promise<StudySignInResult> {
   const { authClient, http } = clientsFor({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
   // The ACCOUNT'S own parameters, never this build's defaults: an account
   // created under different costs derives differently, and getting that wrong
   // is indistinguishable from a wrong passphrase.
-  const wire = await authClient.fetchKdfDescriptor(email);
+  const wire = await authClient.fetchKdfDescriptor(handle);
   const descriptor: PassphraseKdfDescriptor = { salt: wire.salt, params: wire.params };
   const { authHash, passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
     passphrase,
@@ -255,7 +259,7 @@ export async function signInToStudy({
     deriveHash,
   });
 
-  const session = await authClient.login({ email, authHash });
+  const session = await authClient.login({ handle, authHash });
   const records = await http.listKeyRecords();
   const passphraseRecord = records.find((record) => record.kind === 'passphrase');
   if (passphraseRecord === undefined) {
@@ -277,7 +281,7 @@ export async function signInToStudy({
     throw new SyncRequestError({
       kind: 'invalid',
       message:
-        'That passphrase signs this study in, but it cannot open the account\u2019s data \u2014 it was replaced by a reset. Use the recovery code to restore access.',
+        'That passphrase signs this study in, but it cannot open the account\u2019s data \u2014 it was replaced. Use the recovery code to restore access.',
     });
   }
 
@@ -286,7 +290,7 @@ export async function signInToStudy({
     http,
     dek,
     accountId: session.account.id,
-    email: session.account.email,
+    handle: session.account.handle,
     serverUrl,
     deviceId: resolveDeviceId(deviceStorage()),
     compartment: {
@@ -321,7 +325,7 @@ async function finishInterruptedStudySetup({
   authClient: SyncAuthClient;
   http: SyncHttpClient;
   serverUrl: string;
-  account: { id: number; email: string };
+  account: { id: number; handle: string };
   descriptor: PassphraseKdfDescriptor;
   passphraseKek: CryptoKey;
   privateStoreKek: CryptoKey;
@@ -351,7 +355,7 @@ async function finishInterruptedStudySetup({
     http,
     dek,
     accountId: account.id,
-    email: account.email,
+    handle: account.handle,
     serverUrl,
     deviceId: resolveDeviceId(deviceStorage()),
     compartment: {
@@ -408,7 +412,7 @@ async function describeStudyIdentity(open: StudyVault): Promise<StudyConsoleIden
   const publicKeyRaw = currentStudyPublicKey(open.region);
   return {
     accountId: open.accountId,
-    email: open.email,
+    handle: open.handle,
     generationCount: open.region.studyKeyring.length,
     fingerprint: publicKeyRaw === null ? null : shareFingerprintDisplay(await shareKeyFingerprint(publicKeyRaw)),
     hasUnopenedCompartment: hasUnopenedStudyCompartment(open.compartment),

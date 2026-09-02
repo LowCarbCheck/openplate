@@ -46,6 +46,7 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { generateHandle, normalizeHandle } from '#app/lib/sync/handle';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
   buildExportHeaderLines,
@@ -109,7 +110,6 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
-  const [pendingVerification, setPendingVerification] = useState<string | null>(null);
 
   // Leaving the console ends the session. There is nothing to persist and
   // nothing that should outlive the screen.
@@ -128,26 +128,21 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
   }
 
   function handleSignIn({
-    email,
+    handle: accountHandle,
     passphrase,
     isNewAccount,
   }: {
-    email: string;
+    handle: string;
     passphrase: string;
     isNewAccount: boolean;
   }): void {
     void run(async () => {
       setRecoveryCode(null);
-      setPendingVerification(null);
       if (isNewAccount) {
-        const created = await createStudyAccount({ serverUrl, email, passphrase });
-        if (created.status === 'awaiting-email-verification') {
-          setPendingVerification(created.email);
-          return;
-        }
+        const created = await createStudyAccount({ serverUrl, handle: accountHandle, passphrase });
         setRecoveryCode(created.recoveryCode);
       } else {
-        const signedIn = await signInToStudy({ serverUrl, email, passphrase });
+        const signedIn = await signInToStudy({ serverUrl, handle: accountHandle, passphrase });
         if (signedIn.status === 'setup-completed') setRecoveryCode(signedIn.recoveryCode);
       }
       setState({ status: 'open', identity: await loadStudyIdentity() });
@@ -174,13 +169,6 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
       </header>
 
       {error !== null && <p className="text-sm text-destructive">{error}</p>}
-
-      {pendingVerification !== null && (
-        <Alert>
-          <AlertTitle>{t('research.console.signIn.title')}</AlertTitle>
-          <AlertDescription>{t('research.console.signIn.awaitingVerification')}</AlertDescription>
-        </Alert>
-      )}
 
       {recoveryCode !== null && (
         <Alert>
@@ -224,16 +212,18 @@ function SignInCard({
   onSubmit,
   isBusy,
 }: {
-  onSubmit: (input: { email: string; passphrase: string; isNewAccount: boolean }) => void;
+  onSubmit: (input: { handle: string; passphrase: string; isNewAccount: boolean }) => void;
   isBusy: boolean;
 }) {
   const { t } = useTranslation();
-  const [email, setEmail] = useState('');
+  // Minted, not typed — the same rule the diary's ceremony follows
+  // (`app/lib/sync/handle.ts`), and the field stays editable.
+  const [accountHandle, setAccountHandle] = useState(generateHandle);
   const [passphrase, setPassphrase] = useState('');
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    onSubmit({ email, passphrase, isNewAccount: false });
+    onSubmit({ handle: normalizeHandle(accountHandle), passphrase, isNewAccount: false });
   };
 
   return (
@@ -245,13 +235,16 @@ function SignInCard({
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="study-console-email">{t('research.console.signIn.emailLabel')}</Label>
+            <Label htmlFor="study-console-handle">{t('research.console.signIn.handleLabel')}</Label>
             <Input
-              id="study-console-email"
-              type="email"
+              id="study-console-handle"
+              type="text"
               autoComplete="off"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              spellCheck={false}
+              autoCapitalize="none"
+              className="font-mono"
+              value={accountHandle}
+              onChange={(event) => setAccountHandle(event.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -264,7 +257,7 @@ function SignInCard({
               onChange={(event) => setPassphrase(event.target.value)}
             />
           </div>
-          <Button type="submit" className="h-11 w-full" disabled={isBusy || email === '' || passphrase === ''}>
+          <Button type="submit" className="h-11 w-full" disabled={isBusy || accountHandle === '' || passphrase === ''}>
             {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
             {t('research.console.signIn.signIn')}
           </Button>
@@ -272,8 +265,8 @@ function SignInCard({
             type="button"
             variant="outline"
             className="h-11 w-full"
-            disabled={isBusy || email === '' || passphrase === ''}
-            onClick={() => onSubmit({ email, passphrase, isNewAccount: true })}
+            disabled={isBusy || accountHandle === '' || passphrase === ''}
+            onClick={() => onSubmit({ handle: normalizeHandle(accountHandle), passphrase, isNewAccount: true })}
           >
             {t('research.console.signIn.create')}
           </Button>

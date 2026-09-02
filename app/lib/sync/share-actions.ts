@@ -242,7 +242,7 @@ export async function planDekRotation(): Promise<SharingRead<{ keep: number; dro
  *
  * §5.17 requires BOTH key records, and the recovery KEK can only be derived
  * from the code itself — which nobody keeps in a session. So a rotation issues
- * a new code and shows it once, exactly as `regenerateRecoveryCode` does. The
+ * a new code and shows it once, exactly as the setup ceremony does. The
  * compartment's slot 2 moves with it in the same client moment; forgetting
  * that would leave the code the user is about to discard as the only thing
  * that opens their share keys.
@@ -259,7 +259,7 @@ export async function rotateSyncDek({
 }): Promise<RotateDekOutcome> {
   const vault = requireVault('rotateSyncDek');
 
-  const descriptor = await vault.authClient.fetchKdfDescriptor(vault.email);
+  const descriptor = await vault.authClient.fetchKdfDescriptor(vault.handle);
   const credentials = await deriveCredentialsFromPassphrase({
     passphrase,
     descriptor: { salt: descriptor.salt, params: descriptor.params },

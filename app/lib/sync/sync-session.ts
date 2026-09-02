@@ -3,7 +3,7 @@
  *
  * ── The split this module enforces ────────────────────────────────────────
  *
- * `SyncSessionSnapshot` is the React-visible state — an email, a timestamp, a
+ * `SyncSessionSnapshot` is the React-visible state — a handle, a timestamp, a
  * phase. The VAULT (the DEK, the tokens, the HTTP clients) lives in a
  * module-private variable that no snapshot ever references. React state is
  * copied into component closures, serialized by devtools, and captured in
@@ -20,11 +20,12 @@
  * benefit, plus a credential sitting on disk for any XSS to read. Bitwarden
  * locks its vault on reload for exactly this reason.
  *
- * The one thing that IS persisted is the account HINT: the email address the
- * person typed on this device. It is not a credential, and having it means a
- * returning visitor sees "unlock your sync" with their address filled in
- * rather than a sign-up form that makes them wonder whether their data is
- * gone.
+ * The one thing that IS persisted is the account HINT: the handle this device
+ * last signed in with. It is not a credential, and having it means a returning
+ * visitor sees "unlock your sync" with their handle filled in rather than a
+ * sign-up form that makes them wonder whether their data is gone. Since M181
+ * it is also the only readable trace of the account left on the device, which
+ * is a good deal less than an address was.
  */
 import type { SyncAuthClient } from './engine/client/auth-client';
 import type { SyncHttpClient } from './engine/client/http-client';
@@ -50,7 +51,7 @@ export type SyncErrorReason =
 
 export interface SyncSessionSnapshot {
   /** `null` when no session is open. Carries NO credential material. */
-  account: { id: number; email: string } | null;
+  account: { id: number; handle: string } | null;
   phase: SyncPhase;
   /** Epoch-ms of the last successful cycle on this device, or `null` if it has never completed one. */
   lastSyncedAt: number | null;
@@ -77,7 +78,7 @@ export interface SyncVault {
    */
   privateStore: PrivateStoreSession;
   accountId: number;
-  email: string;
+  handle: string;
   deviceId: string;
   state: SyncStateStore;
   serverUrl: string;
@@ -132,7 +133,7 @@ export function updateSyncSession(patch: Partial<SyncSessionSnapshot>): void {
 export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number | null }): void {
   vault = next;
   publish({
-    account: { id: next.accountId, email: next.email },
+    account: { id: next.accountId, handle: next.handle },
     phase: 'idle',
     lastSyncedAt: initial.lastSyncedAt,
     hasPendingChanges: false,
@@ -162,17 +163,17 @@ export function getSyncVault(): SyncVault | null {
 // Account hint (non-secret, persisted)
 // ---------------------------------------------------------------------------
 
-/** The email this device last signed in with. An address, not a credential. */
+/** The handle this device last signed in with. A name, not a credential. */
 export function readAccountHint(storage: KeyValueStorage | null = browserStorage()): string | null {
   const value = storage?.getItem(ACCOUNT_HINT_KEY) ?? null;
   return value === '' ? null : value;
 }
 
-export function writeAccountHint(email: string, storage: KeyValueStorage | null = browserStorage()): void {
-  storage?.setItem(ACCOUNT_HINT_KEY, email);
+export function writeAccountHint(handle: string, storage: KeyValueStorage | null = browserStorage()): void {
+  storage?.setItem(ACCOUNT_HINT_KEY, handle);
 }
 
-/** Cleared on sign-out and on account deletion, so a shared device stops offering someone else's address. */
+/** Cleared on sign-out and on account deletion, so a shared device stops offering someone else's handle. */
 export function clearAccountHint(storage: KeyValueStorage | null = browserStorage()): void {
   storage?.removeItem(ACCOUNT_HINT_KEY);
 }

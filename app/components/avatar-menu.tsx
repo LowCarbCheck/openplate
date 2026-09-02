@@ -226,7 +226,7 @@ export function AvatarMenu() {
         <DropdownMenuLabel className="py-2">
           <span className="block">{t('chrome.thisDevice')}</span>
           {session.account !== null && (
-            <span className="block truncate text-xs font-normal text-muted-foreground">{session.account.email}</span>
+            <span className="block truncate text-xs font-normal text-muted-foreground">{session.account.handle}</span>
           )}
         </DropdownMenuLabel>
 

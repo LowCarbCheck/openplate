@@ -1,6 +1,6 @@
 /**
  * Pure state machine for the sync-setup wizard (M117/08 item 5) — the
- * passphrase-entry -> recovery-code-display -> confirm-saved dance the
+ * details-entry -> account-card -> confirm-saved dance the
  * design/counsel review called table stakes for a paid, unrecoverable-by-
  * design feature. No React, no crypto, no fetch: this file only decides
  * which screen is showing and how it responds to an event. The actual
@@ -43,35 +43,31 @@ export function validateSyncPassphrase(passphrase: string, t: Translate): string
  * What a provisioning attempt can END in — the contract between the ceremony
  * and whatever is doing the actual work (`sync-actions.ts`).
  *
- * `awaiting-email-verification` is a DESIGNED outcome, not a failure. On an
- * instance running with `REQUIRE_EMAIL_VERIFICATION`, `POST /v1/auth/signup`
- * creates the account and deliberately withholds the session until the address
- * is confirmed. Treating that as an error (which is what this used to do) put
- * a red message in front of a user whose account had just been created
- * correctly, and left them with no route forward: signing up again answers
- * `409`, and signing in lands on an account with no key records.
+ * ONE outcome, since M181. The old second branch existed for an instance that
+ * withheld the session until an address was confirmed; with no address there
+ * is nothing to confirm, so a signup either produces an account with a session
+ * or throws.
  *
- * There is no recovery code in that branch ON PURPOSE. Key records need an
- * authenticated session to write, so nothing was generated and nothing was
- * kept — the ceremony happens later, on the sign-in that follows verification.
+ * Both fields are carried because both are shown, together, on one account
+ * card. The handle is not decoration: a user who saves the recovery code and
+ * never registers that the handle is equally required to get back in has saved
+ * half a credential.
  */
-export type SyncSetupOutcome =
-  | { status: 'ready'; recoveryCode: string }
-  | { status: 'awaiting-email-verification'; email: string };
+export type SyncSetupOutcome = { status: 'ready'; handle: string; recoveryCode: string };
 
 export type SyncSetupState =
-  | { kind: 'enter-passphrase'; error: string | null }
+  /** The one form: the handle (generated, editable) and the passphrase. */
+  | { kind: 'enter-details'; error: string | null }
   | { kind: 'generating' }
-  | { kind: 'show-recovery-code'; recoveryCode: string; hasConfirmedSaved: boolean }
-  | { kind: 'awaiting-email-verification'; email: string }
+  /** THE ACCOUNT CARD: handle and recovery code on one screen, behind one save confirmation. */
+  | { kind: 'show-account-card'; handle: string; recoveryCode: string; hasConfirmedSaved: boolean }
   | { kind: 'error'; message: string }
   | { kind: 'complete' };
 
 export type SyncSetupAction =
-  | { type: 'passphraseRejected'; message: string }
-  | { type: 'passphraseSubmitted' }
-  | { type: 'setupSucceeded'; recoveryCode: string }
-  | { type: 'verificationRequired'; email: string }
+  | { type: 'detailsRejected'; message: string }
+  | { type: 'detailsSubmitted' }
+  | { type: 'setupSucceeded'; handle: string; recoveryCode: string }
   | { type: 'setupFailed'; message: string }
   | { type: 'confirmSavedToggled'; checked: boolean }
   | { type: 'finishRequested' }
@@ -80,9 +76,10 @@ export type SyncSetupAction =
 /**
  * The state a wizard starts in.
  *
- * `resume` is the setup-COMPLETION path: the account already exists and the
- * passphrase has already been typed (on the sign-in form), so there is nothing
- * to ask for and the ceremony opens straight into `generating`. Everything
+ * `resume` is the setup-COMPLETION path: the account already exists and both
+ * the handle and the passphrase have already been typed (on the sign-in form),
+ * so there is nothing to ask for and the ceremony opens straight into
+ * `generating`. Everything
  * after that — the recovery-code display and its un-skippable acknowledgment —
  * is the same ceremony as first-time setup, because a code produced by a
  * repair is exactly as unrecoverable as one produced by a signup.
@@ -91,7 +88,7 @@ export function initialSyncSetupState(options?: { resume?: boolean }): SyncSetup
   return options?.resume === true ? { kind: 'generating' } : INITIAL_SYNC_SETUP_STATE;
 }
 
-export const INITIAL_SYNC_SETUP_STATE: SyncSetupState = { kind: 'enter-passphrase', error: null };
+export const INITIAL_SYNC_SETUP_STATE: SyncSetupState = { kind: 'enter-details', error: null };
 
 /**
  * Whether the wizard is holding something the user MUST still see, so no
@@ -102,7 +99,7 @@ export const INITIAL_SYNC_SETUP_STATE: SyncSetupState = { kind: 'enter-passphras
  * `createSyncAccount` opens the sync session as part of provisioning. The
  * settings route rendered `session.account === null ? <setup> : <connected>`,
  * so the instant provisioning finished — while this reducer was still moving
- * from `generating` to `show-recovery-code` — the route swapped panels and
+ * from `generating` to `show-account-card` — the route swapped panels and
  * unmounted the wizard mid-transition. The recovery code was generated,
  * written to the server, and never displayed. It is shown exactly once and is
  * the only data-preserving recovery path there is, so that is a silent,
@@ -114,18 +111,16 @@ export const INITIAL_SYNC_SETUP_STATE: SyncSetupState = { kind: 'enter-passphras
  * (`setup-screen.ts`) is the only thing allowed to act on it.
  *
  * - `generating` — the session flips to signed-in DURING this state. Protected.
- * - `show-recovery-code` — the one and only display of the code. Protected.
- * - `enter-passphrase` — nothing shown yet, and no session exists to swap to.
- * - `awaiting-email-verification` — no session was opened (that is the whole
- *   meaning of the state) and no key material exists, so there is nothing a
- *   connected panel could replace. Not protected.
+ * - `show-account-card` — the one and only display of the handle beside the
+ *   recovery code. Protected.
+ * - `enter-details` — nothing shown yet, and no session exists to swap to.
  * - `error` — nothing to protect; if an account was created anyway, letting
  *   the connected panel take over is the more useful outcome than trapping
  *   the user in a wizard for an account that already exists.
  * - `complete` — the user has acknowledged. Handing over is correct.
  */
 export function isSyncSetupCeremonyActive(state: SyncSetupState): boolean {
-  return state.kind === 'generating' || state.kind === 'show-recovery-code';
+  return state.kind === 'generating' || state.kind === 'show-account-card';
 }
 
 /**
@@ -136,33 +131,35 @@ export function isSyncSetupCeremonyActive(state: SyncSetupState): boolean {
  * hit "retry") should never crash the UI.
  */
 export function syncSetupReducer(state: SyncSetupState, action: SyncSetupAction): SyncSetupState {
-  if (action.type === 'passphraseRejected' && state.kind === 'enter-passphrase') {
-    return { kind: 'enter-passphrase', error: action.message };
+  if (action.type === 'detailsRejected' && state.kind === 'enter-details') {
+    return { kind: 'enter-details', error: action.message };
   }
-  if (action.type === 'passphraseSubmitted' && state.kind === 'enter-passphrase') {
+  if (action.type === 'detailsSubmitted' && state.kind === 'enter-details') {
     return { kind: 'generating' };
   }
   if (action.type === 'setupSucceeded' && state.kind === 'generating') {
-    return { kind: 'show-recovery-code', recoveryCode: action.recoveryCode, hasConfirmedSaved: false };
-  }
-  if (action.type === 'verificationRequired' && state.kind === 'generating') {
-    return { kind: 'awaiting-email-verification', email: action.email };
+    return {
+      kind: 'show-account-card',
+      handle: action.handle,
+      recoveryCode: action.recoveryCode,
+      hasConfirmedSaved: false,
+    };
   }
   if (action.type === 'setupFailed' && state.kind === 'generating') {
     return { kind: 'error', message: action.message };
   }
-  if (action.type === 'confirmSavedToggled' && state.kind === 'show-recovery-code') {
+  if (action.type === 'confirmSavedToggled' && state.kind === 'show-account-card') {
     return { ...state, hasConfirmedSaved: action.checked };
   }
   // The confirm-saved dance (D5 / counsel End User review): setup can only
-  // complete once the user has explicitly acknowledged they saved the
-  // recovery code — the button that dispatches this is disabled until then,
-  // but the reducer re-checks so a forged/replayed action can't skip it either.
-  if (action.type === 'finishRequested' && state.kind === 'show-recovery-code' && state.hasConfirmedSaved) {
+  // complete once the user has explicitly acknowledged they saved the account
+  // card — the button that dispatches this is disabled until then, but the
+  // reducer re-checks so a forged/replayed action can't skip it either.
+  if (action.type === 'finishRequested' && state.kind === 'show-account-card' && state.hasConfirmedSaved) {
     return { kind: 'complete' };
   }
   if (action.type === 'retried' && state.kind === 'error') {
-    return { kind: 'enter-passphrase', error: null };
+    return { kind: 'enter-details', error: null };
   }
   return state;
 }

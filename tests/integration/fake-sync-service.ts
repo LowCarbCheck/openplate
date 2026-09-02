@@ -26,7 +26,9 @@
  * Faithful: the endpoints, the status codes, blob CAS on `blobVersion`,
  * key-record CAS on `expectedUpdatedAt` (including "an absent field is a
  * 400"), the KDF-descriptor lookup returning a stable dummy for unknown
- * addresses, reset semantics (`keyRecords: []` leaves kinds untouched), rotating
+ * handles, the recovery pair (`/recover` proves the code, `/recover-rotate`
+ * moves the verifier and the key records together and refuses without a
+ * `passphrase` record), rotating
  * refresh tokens with family revocation on reuse, the `/health` handshake, and
  * §5.18's research family — the contribution CAS on a strictly-greater INTEGER
  * `contributionVersion`, its `409 {"currentVersion"}`, the `413`, the tier
@@ -34,10 +36,10 @@
  *
  * Not faithful, deliberately: no throttling (`PERMISSIVE_THROTTLE` exists in
  * the real service for exactly this reason — every request here comes from
- * 127.0.0.1), no email delivery (the reset and verification tokens are exposed
- * on the harness object instead), no pepper (verifiers are stored as the
- * submitted auth-hash, which is what makes it a fake rather than a second
- * implementation), and no retention pruning.
+ * 127.0.0.1, and the real recovery endpoints are throttled per IP and handle),
+ * no pepper (verifiers are stored as the submitted auth-hash, which is what
+ * makes it a fake rather than a second implementation), and no retention
+ * pruning.
  *
  * The research lane is always LIT here, unlike production, which runs
  * `SYNC_RESEARCH=false` and answers the unknown-route 404 on every research
@@ -46,12 +48,11 @@
  * cover is the CLIENT against a lane that answers, which is the only
  * configuration in which a dropped sync is observable at all.
  *
- * `requireEmailVerification` models the real service's config flag of the same
- * name, because the client's behaviour under it is not a variation — it is a
- * different flow (signup answers `tokens: null`, login answers `403` until the
- * address is confirmed, and the key records therefore cannot be written until
- * afterwards). That flow deadlocked in production while every test here passed,
- * for the simple reason that nothing here could express it.
+ * WHAT USED TO BE HERE: `requireEmailVerification`, `/verify-email`,
+ * `/request-reset` and `/reset`. M181 deleted email from the service, so this
+ * fake cannot model a flow the real service no longer has — and keeping a
+ * `tokens: null` branch alive here would let the client keep a dead branch of
+ * its own that no server would ever exercise.
  */
 import { createServer, type Server } from 'node:http';
 import { createHmac, randomUUID } from 'node:crypto';
@@ -95,26 +96,42 @@ const keyRecordSubmissionSchema = z.object({
 type KeyRecordSubmission = z.infer<typeof keyRecordSubmissionSchema>;
 const keyRecordSubmissionsSchema = z.array(keyRecordSubmissionSchema);
 
-const kdfLookupRequestSchema = z.object({ email: z.string().includes('@') });
+/**
+ * A handle, with the ONE structural rule the real service enforces
+ * (`auth-input.ts`): non-empty, length-bounded, and never containing `@`. The
+ * refusal is what stops the column drifting back into an address register, so
+ * a fake that accepted an address would let a client regress unnoticed.
+ */
+const handleSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .refine((value) => !value.includes('@'), { message: 'handle must not contain "@"' });
+
+const kdfLookupRequestSchema = z.object({ handle: handleSchema });
 
 const signupRequestSchema = z.object({
-  email: z.string().includes('@'),
+  handle: handleSchema,
   authHash: z.string(),
   kdfDescriptor: kdfDescriptorSchema.optional(),
   displayName: z.string().nullish(),
+  /** The second authenticator, set at signup or never. `null` is the explicit "this account has none". */
+  recoveryAuthHash: z.string().nullish(),
 });
 
-const verifyEmailRequestSchema = z.object({ token: z.string() });
-const loginRequestSchema = z.object({ email: z.string(), authHash: z.string() });
+const loginRequestSchema = z.object({ handle: z.string(), authHash: z.string() });
 const refreshRequestSchema = z.object({ refreshToken: z.string() });
-const requestResetRequestSchema = z.object({ email: z.string() });
 
-const resetRequestSchema = z.object({
-  token: z.string(),
-  authHash: z.string(),
+const recoverRequestSchema = z.object({ handle: z.string(), recoveryAuthHash: z.string() });
+
+const recoverRotateRequestSchema = z.object({
+  handle: z.string(),
+  recoveryAuthHash: z.string(),
+  newAuthHash: z.string(),
   kdfDescriptor: kdfDescriptorSchema.optional(),
   // Parsed separately so "absent" and "malformed" stay distinguishable (§5.14).
   keyRecords: z.unknown(),
+  newRecoveryAuthHash: z.string().optional(),
 });
 
 const changePassphraseRequestSchema = z.object({
@@ -244,11 +261,12 @@ interface StoredWithdrawal {
 
 interface StoredAccount {
   id: number;
-  email: string;
+  handle: string;
   displayName: string | null;
-  emailVerified: boolean;
   /** The submitted auth-hash. The real service stores an HMAC of it under a pepper held outside the database. */
   verifier: string;
+  /** The recovery code's auth proof, or `null` for an account with no second authenticator. */
+  recoveryVerifier: string | null;
   kdfDescriptor: KdfDescriptor | undefined;
   blobs: StoredBlob[];
   keyRecords: Map<SyncKeyRecordKind, StoredKeyRecord>;
@@ -263,11 +281,17 @@ interface StoredToken {
 
 const ENUMERATION_SECRET = 'fake-service-enumeration-secret';
 
+/**
+ * Canonicalises a handle the way the real store's unique index does: NFKC,
+ * trim, lowercase. Two spellings of one handle must collide here too, or the
+ * fake would accept a duplicate the real service refuses.
+ */
+const canonical = (handle: string): string => handle.normalize('NFKC').trim().toLowerCase();
+
 const summarize = (account: StoredAccount) => ({
   id: account.id,
-  email: account.email,
+  handle: account.handle,
   displayName: account.displayName,
-  emailVerified: account.emailVerified,
 });
 
 const applyKeyRecords = (account: StoredAccount, submissions: KeyRecordSubmission[]): boolean => {
@@ -321,30 +345,17 @@ export interface FakeSyncService {
   observed: ObservedRequest[];
   /** Everything the service holds at rest, as JSON — the other half of the zero-knowledge search. */
   dump(): string;
-  /** The most recent reset token, standing in for the email the real service would send. */
-  lastResetToken(): string | null;
-  /** The most recent email-verification token, likewise standing in for the inbox. */
-  lastVerificationToken(): string | null;
   close(): Promise<void>;
 }
 
-export interface FakeSyncServiceOptions {
-  /** Mirrors the service's `REQUIRE_EMAIL_VERIFICATION`: signup withholds the session and login refuses until confirmed. */
-  requireEmailVerification?: boolean;
-}
-
-export async function startFakeSyncService(options: FakeSyncServiceOptions = {}): Promise<FakeSyncService> {
-  const requireEmailVerification = options.requireEmailVerification ?? false;
+export async function startFakeSyncService(): Promise<FakeSyncService> {
   const accounts = new Map<number, StoredAccount>();
   const tokens = new Map<string, StoredToken>();
-  const verificationTokens = new Map<string, number>();
   const shares: StoredShare[] = [];
   const contributions: StoredContribution[] = [];
   const withdrawals: StoredWithdrawal[] = [];
   const observed: ObservedRequest[] = [];
   let nextAccountId = 1;
-  let lastResetToken: string | null = null;
-  let lastVerificationToken: string | null = null;
 
   const app: Express = express();
   app.use(express.json({ limit: Math.ceil((MAX_BLOB_BYTES * 4) / 3) + 4096 }));
@@ -365,10 +376,10 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
     next();
   });
 
-  const findAccountByEmail = (email: string | undefined): StoredAccount | undefined =>
-    email === undefined ?
-      undefined
-    : [...accounts.values()].find((account) => account.email.toLowerCase() === email.toLowerCase());
+  const findAccountByHandle = (handle: string | undefined): StoredAccount | undefined =>
+    handle === undefined ? undefined : (
+      [...accounts.values()].find((account) => account.handle === canonical(handle))
+    );
 
   const mintTokens = (accountId: number, family: string = randomUUID()) => {
     const accessToken: string = randomUUID();
@@ -421,17 +432,19 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
   app.post(`${AUTH_API_PREFIX}/kdf`, (req, res) => {
     const parsed = kdfLookupRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: 'invalid email' });
+      res.status(400).json({ error: 'invalid handle' });
       return;
     }
-    const email = parsed.data.email;
+    const handle = canonical(parsed.data.handle);
     // Derived UNCONDITIONALLY, before the branch: a lazily-computed dummy is a
-    // timing oracle even when the response is identical.
+    // timing oracle even when the response is identical. Over the CANONICAL
+    // handle, so two spellings of one unknown handle cannot be told apart by
+    // their descriptors.
     const dummy = {
-      salt: createHmac('sha256', ENUMERATION_SECRET).update(email.toLowerCase()).digest('base64').slice(0, 24),
+      salt: createHmac('sha256', ENUMERATION_SECRET).update(handle).digest('base64').slice(0, 24),
       params: { memorySizeKib: 65536, iterations: 3, parallelism: 1 },
     };
-    const account = findAccountByEmail(email);
+    const account = findAccountByHandle(handle);
     res.json({ kdfDescriptor: account?.kdfDescriptor ?? dummy });
   });
 
@@ -441,65 +454,38 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
       res.status(400).json({ error: 'invalid signup' });
       return;
     }
-    const { email, authHash, kdfDescriptor, displayName } = parsed.data;
-    if (findAccountByEmail(email) !== undefined) {
-      res.status(409).json({ error: 'an account already exists for this email' });
+    const { handle, authHash, kdfDescriptor, displayName, recoveryAuthHash } = parsed.data;
+    if (findAccountByHandle(handle) !== undefined) {
+      // The ONE accepted enumeration oracle on this service: a duplicate
+      // signup must fail loudly rather than silently not create the account,
+      // and with no address to write to there is no channel that could carry
+      // the news instead.
+      res.status(409).json({ error: 'an account already exists for this handle' });
       return;
     }
     const account: StoredAccount = {
       id: nextAccountId,
-      email,
+      handle: canonical(handle),
       displayName: displayName ?? null,
-      emailVerified: !requireEmailVerification,
       verifier: authHash,
+      // SET HERE OR NEVER. No endpoint on the real service can add one
+      // afterwards, which is why the client mints the code before the account.
+      recoveryVerifier: recoveryAuthHash ?? null,
       kdfDescriptor,
       blobs: [],
       keyRecords: new Map(),
     };
     nextAccountId += 1;
     accounts.set(account.id, account);
-
-    if (requireEmailVerification) {
-      // §5.8: the account exists, and there is NO session until the address is
-      // confirmed — otherwise the requirement is bypassed by never leaving the
-      // tab. The key records consequently cannot be written yet either.
-      const verificationToken: string = randomUUID();
-      lastVerificationToken = verificationToken;
-      verificationTokens.set(verificationToken, account.id);
-      res.status(201).json({ account: summarize(account), tokens: null });
-      return;
-    }
     res.status(201).json({ account: summarize(account), tokens: mintTokens(account.id) });
-  });
-
-  app.post(`${AUTH_API_PREFIX}/verify-email`, (req, res) => {
-    const parsed = verifyEmailRequestSchema.safeParse(req.body);
-    const accountId = parsed.success ? verificationTokens.get(parsed.data.token) : undefined;
-    const account = accountId === undefined ? undefined : accounts.get(accountId);
-    if (!parsed.success || account === undefined) {
-      res.status(400).json({ error: 'invalid or expired verification token' });
-      return;
-    }
-    // SINGLE USE. Replaying a spent link is indistinguishable from a forged
-    // one here, which is correct on the wire and is exactly why the client
-    // keeps its own "already redeemed" marker.
-    verificationTokens.delete(parsed.data.token);
-    account.emailVerified = true;
-    res.status(204).end();
   });
 
   app.post(`${AUTH_API_PREFIX}/login`, (req, res) => {
     const parsed = loginRequestSchema.safeParse(req.body);
-    const account = parsed.success ? findAccountByEmail(parsed.data.email) : undefined;
+    const account = parsed.success ? findAccountByHandle(parsed.data.handle) : undefined;
     // One message for both failures — never "no such account" vs "wrong passphrase".
     if (!parsed.success || account === undefined || account.verifier !== parsed.data.authHash) {
-      res.status(401).json({ error: 'invalid email or passphrase' });
-      return;
-    }
-    // 403, NOT 401: the credentials were right. Conflating the two is what
-    // makes a client tell someone to retype a passphrase that already worked.
-    if (requireEmailVerification && !account.emailVerified) {
-      res.status(403).json({ error: 'email address is not verified' });
+      res.status(401).json({ error: 'invalid handle or passphrase' });
       return;
     }
     res.json({ account: summarize(account), tokens: mintTokens(account.id) });
@@ -537,44 +523,79 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
     res.json({ account: summarize(account) });
   });
 
-  app.post(`${AUTH_API_PREFIX}/request-reset`, (req, res) => {
-    const parsed = requestResetRequestSchema.safeParse(req.body);
-    const account = parsed.success ? findAccountByEmail(parsed.data.email) : undefined;
-    // Always 202 — the only channel that reveals anything is the inbox.
-    if (account !== undefined) {
-      const resetToken: string = randomUUID();
-      lastResetToken = resetToken;
-      tokens.set(resetToken, { accountId: account.id, family: 'reset', kind: 'access', revoked: false });
+  /**
+   * The ONE failure both recovery endpoints report — an unknown handle, an
+   * account that never set a code, and a wrong code all collapse into it.
+   * Telling them apart would hand a caller an oracle.
+   */
+  const RECOVERY_REJECTED = 'invalid handle or recovery code';
+
+  const authenticateRecoveryCode = (handle: string, recoveryAuthHash: string): StoredAccount | undefined => {
+    const account = findAccountByHandle(handle);
+    if (account === undefined || account.recoveryVerifier === null) return undefined;
+    return account.recoveryVerifier === recoveryAuthHash ? account : undefined;
+  };
+
+  app.post(`${AUTH_API_PREFIX}/recover`, (req, res) => {
+    const parsed = recoverRequestSchema.safeParse(req.body);
+    const account =
+      parsed.success ? authenticateRecoveryCode(parsed.data.handle, parsed.data.recoveryAuthHash) : undefined;
+    if (account === undefined) {
+      res.status(401).json({ error: RECOVERY_REJECTED });
+      return;
     }
-    res.status(202).json({});
+    // An ORDINARY session, not a lesser one: the holder of the recovery code
+    // is the account owner by construction.
+    res.json({ account: summarize(account), tokens: mintTokens(account.id) });
   });
 
-  app.post(`${AUTH_API_PREFIX}/reset`, (req, res) => {
-    const parsed = resetRequestSchema.safeParse(req.body);
-    const stored = parsed.success ? tokens.get(parsed.data.token) : undefined;
-    if (!parsed.success || stored === undefined || stored.revoked || stored.family !== 'reset') {
-      res.status(400).json({ error: 'invalid or expired reset token' });
+  app.post(`${AUTH_API_PREFIX}/recover-rotate`, (req, res) => {
+    const parsed = recoverRotateRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'invalid rotation' });
       return;
     }
     if (parsed.data.keyRecords === undefined) {
       res.status(400).json({ error: 'keyRecords must be present, even as []' });
       return;
     }
-    const account = accounts.get(stored.accountId);
-    if (account === undefined) {
-      res.status(400).json({ error: 'invalid reset token' });
-      return;
-    }
     const submissions = keyRecordSubmissionsSchema.safeParse(parsed.data.keyRecords);
-    if (!submissions.success || !applyKeyRecords(account, submissions.data)) {
+    if (!submissions.success) {
       res.status(400).json({ error: 'invalid key records' });
       return;
     }
-    stored.revoked = true;
-    account.verifier = parsed.data.authHash;
+    // A `passphrase` record is REQUIRED here, unlike change-passphrase where
+    // an empty array is a legitimate "I am changing nothing": the
+    // passphrase-KEK necessarily changed, so a rotation without a re-wrapped
+    // DEK would mint an account that logs in and decrypts nothing.
+    const kinds = new Set(submissions.data.map((record) => record.kind));
+    if (!kinds.has('passphrase')) {
+      res.status(400).json({ error: 'a passphrase key record is required' });
+      return;
+    }
+    // Rotating the code is all-or-nothing: a new verifier without a re-wrapped
+    // `recovery` record leaves a code that authenticates and unwraps nothing.
+    if ((parsed.data.newRecoveryAuthHash !== undefined) !== kinds.has('recovery')) {
+      res.status(400).json({ error: 'rotating the recovery code requires both halves' });
+      return;
+    }
+
+    // The proof is checked in the SAME call that writes — the whole reason
+    // this endpoint exists rather than a session minted by `/recover`.
+    const account = authenticateRecoveryCode(parsed.data.handle, parsed.data.recoveryAuthHash);
+    if (account === undefined) {
+      res.status(401).json({ error: RECOVERY_REJECTED });
+      return;
+    }
+    if (!applyKeyRecords(account, submissions.data)) {
+      res.status(400).json({ error: 'invalid key records' });
+      return;
+    }
+    account.verifier = parsed.data.newAuthHash;
     account.kdfDescriptor = parsed.data.kdfDescriptor;
+    if (parsed.data.newRecoveryAuthHash !== undefined) account.recoveryVerifier = parsed.data.newRecoveryAuthHash;
     revokeAll(account.id);
-    res.json({ tokens: mintTokens(account.id) });
+    res.json({ account: summarize(account), tokens: mintTokens(account.id) });
   });
 
   app.post(`${AUTH_API_PREFIX}/change-passphrase`, (req, res) => {
@@ -957,10 +978,10 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
       JSON.stringify({
         accounts: [...accounts.values()].map((account) => ({
           id: account.id,
-          email: account.email,
+          handle: account.handle,
           displayName: account.displayName,
-          emailVerified: account.emailVerified,
           verifier: account.verifier,
+          recoveryVerifier: account.recoveryVerifier,
           kdfDescriptor: account.kdfDescriptor,
           blobs: account.blobs,
           keyRecords: [...account.keyRecords.values()],
@@ -973,8 +994,6 @@ export async function startFakeSyncService(options: FakeSyncServiceOptions = {})
         contributions,
         withdrawals,
       }),
-    lastResetToken: () => lastResetToken,
-    lastVerificationToken: () => lastVerificationToken,
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
 }

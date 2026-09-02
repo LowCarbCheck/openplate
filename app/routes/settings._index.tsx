@@ -208,7 +208,7 @@ export default function SettingsIndex() {
             to="/settings/sync"
             icon={ShieldCheck}
             title={t('settings.rows.sync.title')}
-            status={session.account === null ? t('settings.rows.sync.notSetUp') : session.account.email}
+            status={session.account === null ? t('settings.rows.sync.notSetUp') : session.account.handle}
           />
         )}
         {/* Sharing rides the same gate as the sync row and for the same

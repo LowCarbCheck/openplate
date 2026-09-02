@@ -4,11 +4,12 @@
  *
  * ── Why this is separate from `sign-in-error.ts` ──────────────────────────
  *
- * They map the SAME status onto different meanings. On `POST /v1/auth/login` a
- * `403` can only mean "the address is not confirmed yet". On
- * `POST /v1/auth/signup` it means the instance refused to create an account —
- * either because it is closed, or because it wanted an invite. One function
- * covering both would have to guess which endpoint it was called for.
+ * They map the SAME statuses onto different meanings. `POST /v1/auth/login`
+ * answers `401` for a wrong handle or a wrong passphrase and nothing else. On
+ * `POST /v1/auth/signup` a `403` means the instance refused to create an
+ * account — either because it is closed, or because it wanted an invite — and
+ * a `409` means the handle is taken. One function covering both would have to
+ * guess which endpoint it was called for.
  *
  * ── The 403 needs the instance's mode to be readable ──────────────────────
  *
@@ -32,8 +33,8 @@ export type SignupFailure =
   | 'invite-required'
   /** `403` on an instance that is not accepting accounts at all. */
   | 'signups-closed'
-  /** `409` — that address already has an account here. */
-  | 'email-taken'
+  /** `409` — that handle already has an account here. The ONE accepted enumeration oracle on this service, and since M181 it leaks an opaque string rather than a person's address. */
+  | 'handle-taken'
   /** Anything else: transport, an incompatible service, a malformed request. Show what it said. */
   | 'other';
 
@@ -43,7 +44,7 @@ export type SignupFailure =
  */
 export function classifySignupFailure(cause: unknown, signupMode: SignupMode | null): SignupFailure {
   if (!(cause instanceof SyncRequestError)) return 'other';
-  if (cause.kind === 'conflict') return 'email-taken';
+  if (cause.kind === 'conflict') return 'handle-taken';
   if (cause.kind !== 'forbidden') return 'other';
   // `closed` is reported as closed; everything else — including an unknown
   // mode — falls back to the generic refusal rather than promising the user

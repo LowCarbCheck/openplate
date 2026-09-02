@@ -1394,12 +1394,11 @@
       },
       "signIn": {
         "title": "Konto der Studie öffnen",
-        "emailLabel": "E-Mail-Adresse des Studienkontos",
         "passphraseLabel": "Passphrase des Studienkontos",
         "signIn": "Konsole öffnen",
         "create": "Neues Studienkonto anlegen",
         "failed": "Das Studienkonto konnte nicht geöffnet werden. Es wurde nichts geändert.",
-        "awaitingVerification": "Das Studienkonto wurde angelegt. Bestätige seine Adresse über die zugesandte E-Mail und öffne die Konsole dann mit derselben Passphrase."
+        "handleLabel": "Kennung des Studienkontos"
       },
       "recoveryCode": {
         "title": "Schreib diesen Wiederherstellungscode jetzt auf",
@@ -1980,31 +1979,30 @@
       "failed": "Die Passphrase konnte nicht geändert werden. Geändert wurde nichts.",
       "newLabel": "Neue Passphrase",
       "open": "Passphrase ändern",
-      "recoveryNote": "Dein Wiederherstellungscode funktioniert weiterhin, er ist nicht an die Passphrase gebunden, die du gerade ersetzt.",
+      "recoveryNote": "Dein Wiederherstellungscode bleibt gültig. Er ist nicht an die Passphrase gebunden, die du gerade ersetzt.",
       "submit": "Neue Passphrase speichern",
       "title": "Passphrase ändern"
     },
     "connected": {
-      "description": "Angemeldet als {{email}}.",
+      "description": "Angemeldet als {{handle}}.",
       "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nicht synchronisiert, daher siehst du sie nicht auf deinen anderen Geräten.",
-      "title": "Sync ist aktiv"
+      "title": "Sync ist aktiv",
+      "keepYourCard": "Bewahre deine Kontokarte auf. Deine Kennung und dein Wiederherstellungscode sind der einzige Zugang, und keines von beiden kann erneut ausgestellt werden."
     },
     "create": {
-      "continue": "Weiter",
       "cta": "Sync-Konto anlegen",
-      "forEmail": "Sync wird für {{email}} eingerichtet.",
       "inviteLabel": "Einladungscode",
       "inviteHint": "Dieser Server ist nur mit Einladung nutzbar. Füge den Code ein, den du bekommen hast, oder öffne den Einladungslink.",
       "inviteRequired": "Diese Einladung ist ungültig. Sie wurde vielleicht schon benutzt oder ist abgelaufen. Bitte um eine neue.",
       "closed": "Dieser Sync-Server nimmt keine neuen Konten an.",
-      "emailTaken": "Für diese Adresse gibt es schon ein Konto. Melde dich stattdessen an."
+      "handleTaken": "Diese Kennung ist auf diesem Server bereits vergeben. Ändere sie und versuche es erneut."
     },
     "danger": {
       "description": "Beides lässt das Tagebuch auf diesem Gerät unangetastet.",
       "title": "Sync beenden"
     },
     "delete": {
-      "confirmBody": "Damit verschwinden das Konto für {{email}} und jede verschlüsselte Kopie, die auf dem Server liegt. Es gibt kein Zurück und keine Frist. Dein Tagebuch auf diesem Gerät bleibt unangetastet.",
+      "confirmBody": "Dadurch wird das Konto {{handle}} und jede verschlüsselte Kopie auf dem Server gelöscht. Dies kann nicht rückgängig gemacht werden und es gibt keine Übergangsfrist. Dein Tagebuch auf diesem Gerät bleibt unberührt.",
       "confirmCta": "Endgültig löschen",
       "confirmTitle": "Dieses Sync-Konto löschen?",
       "cta": "Sync-Konto löschen",
@@ -2012,15 +2010,8 @@
       "note": "Wir fragen die Passphrase noch einmal ab, weil eine offen gebliebene Sitzung auf einem geteilten Gerät nicht reichen darf, um ein Konto zu löschen.",
       "passphraseLabel": "Mit deiner Passphrase bestätigen"
     },
-    "emailHint": "Damit meldest du dich auf deinen anderen Geräten an, und darüber kommt der Link zum Zurücksetzen. Sonst nichts.",
-    "emailLabel": "E-Mail-Adresse",
-    "forgot": {
-      "back": "Zurück",
-      "intro": "Wir senden dir per E-Mail einen Link zum Festlegen einer neuen Passphrase. Lies den nächsten Bildschirm sorgfältig durch: Ein Zurücksetzen verschafft dir wieder Zugang, kann deine synchronisierten Daten allein jedoch nicht wiederherstellen.",
-      "sent": "Falls es zu dieser Adresse ein Konto gibt, ist der Link unterwegs.",
-      "sentNote": "Wir antworten in jedem Fall auf dieselbe Weise, sodass dieses Formular nicht genutzt werden kann, um herauszufinden, wer ein Konto hat.",
-      "submit": "Link schicken"
-    },
+    "handleHint": "Dein Name auf diesem Sync-Server. Wir erzeugen eine Kennung, damit es nie eine E-Mail-Adresse ist. Du kannst sie ändern, bevor dein Konto erstellt wird.",
+    "handleLabel": "Kennung",
     "intro": "Optional. Halte dein Tagebuch auf all deinen Geräten synchron: auf diesem Gerät verschlüsselt, bevor es übertragen wird.",
     "notice": {
       "dismiss": "Diese Nachricht vom Server-Betreiber ausblenden",
@@ -2040,75 +2031,54 @@
       "setUp": "Sync einrichten"
     },
     "promise": "Deine Passphrase verlässt dieses Gerät nie, und der Sync-Server speichert nur verschlüsselte Daten, für die er keinen Schlüssel hat. Das bedeutet auch: Niemand, auch wir nicht, kann deine Daten wiederherstellen, wenn du sowohl deine Passphrase als auch deinen Wiederherstellungscode verlierst.",
-    "recoveryCode": {
-      "description": "Der einzige Weg zurück zu deinen synchronisierten Daten, falls du deine Passphrase mal vergisst.",
-      "done": "Hab ihn gespeichert",
-      "failed": "Es konnte kein neuer Wiederherstellungscode erstellt werden. Dein bisheriger gilt weiterhin.",
-      "note": "Nutze dies, wenn du deinen Code nie aufgeschrieben hast oder ihn nicht mehr findest. Der neue Code ersetzt den alten sofort. Der alte Code verliert seine Gültigkeit.",
-      "regenerate": "Neuen Wiederherstellungscode anzeigen",
-      "title": "Wiederherstellungscode"
-    },
-    "reset": {
-      "back": "Zurück",
-      "description": "Du kommst über den Link aus unserer E-Mail.",
-      "doneWithData": "Fertig. Deine Passphrase steht und deine synchronisierten Daten sind unversehrt.",
-      "doneWithoutData": "Erledigt. Du kannst dich wieder anmelden. Dieses Konto startet ab hier neu.",
-      "failed": "Das hat nicht geklappt. Geändert wurde nichts.",
-      "forkNo": "Nein, ich habe ihn nicht",
-      "forkQuestion": "Hast du deinen Wiederherstellungscode?",
-      "forkWarning": "Lies das, bevor du fortfährst: Ein Zurücksetzen stellt deine Anmeldemöglichkeit wieder her. Deine Daten werden dadurch nicht wiederhergestellt: Der Server hatte nie einen Schlüssel dazu.",
-      "forkYes": "Ja, ich habe ihn",
-      "missingToken": "Diesem Link fehlt sein Token. Öffne den Link aus der E-Mail nochmal oder fordere einen neuen an.",
+    "recover": {
+      "codeHint": "Der gruppierte Code von deiner Kontokarte. Bindestriche und Groß- oder Kleinschreibung spielen keine Rolle.",
+      "codeLabel": "Wiederherstellungscode",
+      "done": "Fertig. Deine neue Passphrase ist eingerichtet und deine synchronisierten Daten sind erhalten.",
+      "failed": "Das hat nicht geklappt. Es wurde nichts geändert.",
+      "intro": "Mit deinem Wiederherstellungscode legst du eine neue Passphrase fest und behältst deine synchronisierten Daten. Ohne ihn und ohne deine Passphrase kann dieses Konto von niemandem wiederhergestellt werden, auch nicht von uns.",
       "newPassphraseLabel": "Neue Passphrase",
-      "newRecoveryCode": "Leg deinen neuen Wiederherstellungscode sicher ab. Er wird dir nur dieses eine Mal angezeigt.",
-      "noCode": {
-        "acknowledgeDataPermanentlyGone": "Mir ist klar, dass meine synchronisierten Daten endgültig weg sind, und ich will weitermachen.",
-        "body": "Alles, was bereits synchronisiert wurde, ist mit einem Schlüssel verschlüsselt, den nur deine Passphrase und dein Wiederherstellungscode öffnen können. Ohne beides kann niemand mehr darauf zugreifen: weder du noch wir. Wenn du fortfährst, wird das Konto mit einem neuen Schlüssel neu gestartet.",
-        "heading": "Ohne deinen Wiederherstellungscode sind deine synchronisierten Daten nicht wiederherstellbar."
-      },
-      "recoveryCodeHint": "Der gruppierte Code, der beim Einrichten einmalig angezeigt wurde. Bindestriche und Groß- und Kleinschreibung spielen keine Rolle.",
-      "recoveryCodeLabel": "Wiederherstellungscode",
-      "startOver": "Von vorn anfangen",
-      "submitWithData": "Neue Passphrase setzen und Daten behalten",
-      "submitWithoutData": "Mit neuem Schlüssel von vorn anfangen",
-      "title": "Neue Passphrase setzen",
-      "working": "Neue Passphrase wird gesetzt…"
+      "rejected": "Diese Kennung und dieser Wiederherstellungscode passen nicht zusammen. Prüfe beides und versuche es erneut.",
+      "submit": "Neue Passphrase festlegen",
+      "tryAgain": "Erneut versuchen",
+      "working": "Neue Passphrase wird eingerichtet…"
     },
     "setup": {
-      "awaitingVerification": {
-        "body": "Dein Konto ist bereit. Öffne den Link, den wir an {{email}} gesendet haben, um es zu bestätigen. Melde dich danach hier wieder an: erst dann wird dein Wiederherstellungscode erstellt.",
-        "note": "Bis dahin wurde nichts verschlüsselt und nichts hochgeladen. Dein Tagebuch bleibt so oder so auf diesem Gerät.",
-        "title": "Schau in deine E-Mails",
-        "toastBody": "Öffne den Link, den wir an {{email}} geschickt haben, bevor du dich zum ersten Mal anmeldest.",
-        "toastTitle": "Konto erstellt"
+      "accountCard": {
+        "bothRequired": "Du benötigst beides, um wieder Zugang zu erhalten. Die Kennung benennt dein Konto, der Code ist der einzige Weg bei einer vergessenen Passphrase. Beides wird nie wieder angezeigt.",
+        "codeLabel": "Wiederherstellungscode",
+        "confirmSaved": "Ich habe meine Kennung und meinen Wiederherstellungscode sicher aufbewahrt.",
+        "title": "Deine Kontokarte"
       },
       "complete": "Sync ist auf diesem Gerät eingerichtet.",
       "confirmLabel": "Passphrase bestätigen",
-      "confirmSaved": "Ich habe diesen Wiederherstellungscode an einem sicheren Ort gespeichert, getrennt von meiner Passphrase.",
       "continue": "Weiter",
       "copied": "Kopiert",
       "copy": "Kopieren",
       "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell auswählen und kopieren",
       "finish": "Einrichtung abschließen",
       "generating": "Sync wird eingerichtet…",
+      "handleNotAnEmail": "Eine Kennung ist keine E-Mail-Adresse. Dieser Server speichert nie eine, daher kann er keine Kennung annehmen, die „@“ enthält.",
+      "handleRequired": "Wähle eine Kennung oder nutze die von uns erzeugte.",
+      "handleShuffle": "Andere Kennung erzeugen",
+      "handleTooLong": "Diese Kennung ist zu lang. Verwende maximal 64 Zeichen.",
       "passphraseIntro": "Wähle eine Passphrase, um deine Daten zu verschlüsseln. Wir leiten daraus auf diesem Gerät einen Schlüssel ab. Wir sehen die Passphrase selbst nie und können sie nicht für dich zurücksetzen.",
       "passphraseLabel": "Sync-Passphrase",
       "passphraseMismatch": "Die beiden Passphrasen stimmen nicht überein.",
       "passphraseTooShort": "Verwende mindestens {{min}} Zeichen. Diese Passphrase ist das Einzige, was deine synchronisierten Daten vor unbefugtem Zugriff schützt.",
-      "recoveryWarningBody": "Wenn du sowohl deine Passphrase als auch diesen Wiederherstellungscode verlierst, können wir deine Daten nicht wiederherstellen: genau das ist der Sinn einer Ende-zu-Ende-Verschlüsselung. Niemand kann das, nicht einmal wir.",
-      "recoveryWarningLead": "Speichere diesen Wiederherstellungscode an einem sicheren Ort: Er wird nur dieses eine Mal angezeigt.",
+      "recoveryWarningBody": "Wenn du deine Passphrase und diesen Wiederherstellungscode verlierst, kann dir niemand wieder Zugriff verschaffen und niemand kann deine synchronisierten Daten lesen, nicht einmal wir. Das bedeutet Ende-zu-Ende-Verschlüsselung.",
+      "recoveryWarningLead": "Sichere beides jetzt. Sie werden nur dieses eine Mal angezeigt.",
       "retry": "Nochmal versuchen",
       "setupFailed": "Beim Einrichten der Synchronisierung ist etwas schiefgelaufen. Es wurde nichts gespeichert, du kannst es einfach noch einmal versuchen."
     },
     "signIn": {
       "cta": "Bei Sync anmelden",
-      "ctaKnown": "Sync für {{email}} entsperren",
-      "failed": "Das hat nicht geklappt. Prüf Adresse und Passphrase und versuch es nochmal.",
-      "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Lass uns das jetzt nachholen: Es dauert nur einen Moment und endet mit deinem Wiederherstellungscode.",
+      "ctaKnown": "Sync für {{handle}} freischalten",
+      "failed": "Das hat nicht geklappt. Prüfe die Kennung und Passphrase und versuche es erneut.",
+      "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Lass uns das jetzt tun. Am Ende erhältst du einen Wiederherstellungscode, der deine Daten auf einem anderen Gerät freischaltet. Bei diesem Konto kannst du dich jedoch nur mit der Passphrase anmelden.",
       "forgot": "Ich habe meine Passphrase vergessen",
       "intro": "Gib deine Passphrase ein, um dieses Gerät zu entsperren. Wir fragen nach jedem Neuladen erneut danach; der Schlüssel wird niemals gespeichert.",
       "submit": "Entsperren",
-      "unverified": "Deine Passphrase stimmt, aber die E-Mail-Adresse ist noch nicht bestätigt. Öffne den Link aus unserer E-Mail und kehre dann hierher zurück.",
       "working": "Wird entsperrt…"
     },
     "signOut": {
@@ -2130,14 +2100,7 @@
       "syncedAgo": "Synchronisiert · {{when}}",
       "syncing": "Wird synchronisiert…"
     },
-    "title": "Sync zwischen Geräten",
-    "verifyEmail": {
-      "failed": "Dieser Link hat nicht funktioniert. Er wurde möglicherweise bereits verwendet oder ist abgelaufen.",
-      "next": "Du kannst diese Seite schließen und zurück in die App gehen.",
-      "pending": "Einen Moment…",
-      "title": "E-Mail wird bestätigt",
-      "verified": "Bestätigt. Du kannst dich jetzt bei Sync anmelden."
-    }
+    "title": "Sync zwischen Geräten"
   },
   "trends": {
     "chart": {

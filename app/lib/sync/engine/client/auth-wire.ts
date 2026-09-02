@@ -34,17 +34,17 @@ export interface KdfDescriptorWire {
   };
 }
 
-/** `POST /v1/auth/kdf` — the pre-login lookup. An UNKNOWN email gets a stable, real-shaped dummy, never a 404. */
+/** `POST /v1/auth/kdf` — the pre-login lookup. An UNKNOWN handle gets a stable, real-shaped dummy, never a 404. */
 export interface KdfDescriptorResponse {
   kdfDescriptor: KdfDescriptorWire;
 }
 
-/** The account as the service describes it. No credential material of any kind. */
+/** The account as the service describes it. No credential material of any kind, and since M181 no address either. */
 export interface AccountSummaryWire {
   id: number;
-  email: string;
+  /** The account's canonical handle: NFKC, trimmed, lowercased by the service, and never containing `@`. */
+  handle: string;
   displayName: string | null;
-  emailVerified: boolean;
 }
 
 /**
@@ -58,17 +58,35 @@ export interface SessionTokensWire {
   refreshTokenExpiresAt: IsoTimestamp;
 }
 
-/** `tokens: null` means this instance requires email verification and the address is unconfirmed. */
+/**
+ * A signed-in account and its tokens.
+ *
+ * `tokens` IS NEVER NULL. It was nullable while an instance could withhold a
+ * session until an address was confirmed; M181 deleted verification along with
+ * every other use of a mailbox, so signup, login and both recovery endpoints
+ * hand out a session or fail. Keeping the nullable shape would have kept a
+ * dead branch alive in every caller.
+ */
 export interface SessionResponseWire {
   account: AccountSummaryWire;
-  tokens: SessionTokensWire | null;
+  tokens: SessionTokensWire;
 }
 
 export interface SignupRequestWire {
-  email: string;
+  handle: string;
   authHash: Base64Bytes;
   kdfDescriptor: KdfDescriptorWire;
   displayName: string | null;
+  /**
+   * The recovery code's auth proof — the SECOND authenticator, set at signup
+   * or never (`PROTOCOL.md` §5.8). Derived under the `RECOVERY_AUTH` HKDF
+   * label, which is never the `RECOVERY_KEK` label.
+   *
+   * `null` is a real value here, not an omission: an account may exist with no
+   * second authenticator, and saying so explicitly is what keeps a typo in
+   * this field name from silently creating an unrecoverable account.
+   */
+  recoveryAuthHash: Base64Bytes | null;
   /**
    * The single-use token an invite-only instance requires (PROTOCOL.md
    * §5.8.1). Omitted entirely on an open instance — an explicit `null` would
@@ -78,7 +96,7 @@ export interface SignupRequestWire {
 }
 
 export interface LoginRequestWire {
-  email: string;
+  handle: string;
   authHash: Base64Bytes;
 }
 
@@ -111,12 +129,39 @@ export interface ChangePassphraseRequestWire {
   keyRecords: KeyRecordSubmissionWire[];
 }
 
-/** `POST /v1/auth/reset` — proof is the emailed token. Restores LOGIN; restores data only if `keyRecords` carries a re-wrapped DEK. */
-export interface ResetRequestWire {
-  token: string;
-  authHash: Base64Bytes;
+/**
+ * `POST /v1/auth/recover` — log in with the recovery code instead of the
+ * passphrase.
+ *
+ * It replaced `POST /v1/auth/reset`, whose proof was a mailed token. On a
+ * zero-knowledge service that link was an account-TAKEOVER path returning no
+ * recovery: whoever held the mailbox got a login to a diary they still could
+ * not read, and could lock the owner out on the way. The recovery code is held
+ * by the user and never by the server, so it both authenticates AND unwraps.
+ */
+export interface RecoverRequestWire {
+  handle: string;
+  recoveryAuthHash: Base64Bytes;
+}
+
+/**
+ * `POST /v1/auth/recover-rotate` — prove the recovery code and set a new
+ * passphrase, in ONE request applied as one transaction.
+ *
+ * The proof travels here rather than in a session minted by `/recover`, so the
+ * code is checked in the same call that writes. A `passphrase` key record is
+ * REQUIRED: the passphrase-KEK necessarily changed, so accepting the rotation
+ * without a re-wrapped DEK would mint an account that logs in perfectly and
+ * decrypts nothing.
+ */
+export interface RecoverRotateRequestWire {
+  handle: string;
+  recoveryAuthHash: Base64Bytes;
+  newAuthHash: Base64Bytes;
   kdfDescriptor: KdfDescriptorWire;
   keyRecords: KeyRecordSubmissionWire[];
+  /** Present only when the recovery code itself is being replaced — and then a `recovery` key record must accompany it, or the service refuses both halves. */
+  newRecoveryAuthHash?: Base64Bytes;
 }
 
 /** Both rotation endpoints return a fresh pair for the caller. */

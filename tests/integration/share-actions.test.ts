@@ -167,7 +167,7 @@ let accountCounter = 0;
 async function createAccount(label: string): Promise<SyncVault> {
   await createSyncAccount({
     serverUrl: service.url,
-    email: `${label}-${Date.now()}-${accountCounter++}@example.test`,
+    handle: `${label}-${Date.now()}-${accountCounter++}`,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,

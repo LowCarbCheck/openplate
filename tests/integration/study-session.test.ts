@@ -179,41 +179,41 @@ async function openTheDeviceStore(): Promise<void> {
   }
 }
 
-/** Makes each generated address unique within one run, since the whole file shares a service. */
+/** Makes each generated handle unique within one run, since the whole file shares a service. */
 let accountCounter = 0;
 
-function freshEmail(label: string): string {
-  return `${label}-${Date.now()}-${accountCounter++}@example.test`;
+function freshHandle(label: string): string {
+  return `${label}-${Date.now()}-${accountCounter++}`;
 }
 
 /** What is needed to read a study account's compartment back from the outside. Carries no key material — a passphrase this file chose, and an id. */
 interface StudyAccountUnderTest {
-  email: string;
+  handle: string;
   accountId: number;
 }
 
 /** Creates a study account through the real console and reports what it opened. */
 async function createStudy(label: string, fetchImpl?: typeof fetch): Promise<StudyAccountUnderTest> {
-  const email = freshEmail(label);
+  const handle = freshHandle(label);
   const created = await createStudyAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
     fetchImpl,
   });
-  assert.equal(created.status, 'ready', 'the fake service does not require email verification');
+  assert.equal(created.status, 'ready', 'a signup opens the console straight away');
   const identity = await loadStudyIdentity();
   assert.equal(identity.generationCount, 0, 'a study that has minted nothing holds no generations');
-  return { email, accountId: identity.accountId };
+  return { handle, accountId: identity.accountId };
 }
 
 /** Signs the console into an existing study account, asserting the sign-in itself passed. */
-async function signIn(email: string): Promise<void> {
+async function signIn(handle: string): Promise<void> {
   const result = await signInToStudy({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
   });
@@ -231,13 +231,13 @@ async function signIn(email: string): Promise<void> {
  */
 async function readStudyAccountFromOutside(account: StudyAccountUnderTest) {
   const authClient = new SyncAuthClient({ baseUrl: service.url });
-  const wire = await authClient.fetchKdfDescriptor(account.email);
+  const wire = await authClient.fetchKdfDescriptor(account.handle);
   const { authHash, passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
     passphrase: PASSPHRASE,
     descriptor: { salt: wire.salt, params: wire.params },
     deriveHash: fastDeriver,
   });
-  await authClient.login({ email: account.email, authHash });
+  await authClient.login({ handle: account.handle, authHash });
   const http = new SyncHttpClient({ baseUrl: service.url, tokens: authClient });
 
   const passphraseRecord = (await http.listKeyRecords()).find((record) => record.kind === 'passphrase');
@@ -329,7 +329,7 @@ const interposingFetch: typeof fetch = async (input, init) => {
 /** A diary account and the session it opened, for the isolation assertions. */
 interface DiaryUnderTest {
   vault: SyncVault;
-  email: string;
+  handle: string;
 }
 
 /**
@@ -340,10 +340,10 @@ interface DiaryUnderTest {
  * leave untouched.
  */
 async function createDiaryWithABlob(label: string, dayKey: string): Promise<DiaryUnderTest> {
-  const email = freshEmail(label);
+  const handle = freshHandle(label);
   await createSyncAccount({
     serverUrl: service.url,
-    email,
+    handle,
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -354,7 +354,7 @@ async function createDiaryWithABlob(label: string, dayKey: string): Promise<Diar
   await putLocalFoodLog(foodLog(`${label}-log`, dayKey, 'Lentil soup', 430));
   markSyncPending();
   await syncNow();
-  return { vault, email };
+  return { vault, handle };
 }
 
 /** The diary account's blob exactly as the service holds it: the version, the envelope version and the ciphertext. */
@@ -400,7 +400,7 @@ test('a mint that loses the CAS re-reads the server: both generations survive a 
   // travel the default fetch, so it cannot interpose on itself.
   let competingFingerprint: string | null = null;
   interpose = async () => {
-    await signIn(study.email);
+    await signIn(study.handle);
     competingFingerprint = (await generateStudyKey()).fingerprint;
   };
 
@@ -432,7 +432,7 @@ test('a contribution sealed to an old generation still opens after a rotation', 
   const window = WINDOWS.rotation;
   await createSyncAccount({
     serverUrl: service.url,
-    email: freshEmail('rotation-contributor'),
+    handle: freshHandle('rotation-contributor'),
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -488,7 +488,7 @@ test("a whole study session leaves the diary account's blob untouched", async ()
   const blobBefore = await diaryBlobOnTheService(diary);
   assert.equal(
     readAccountHint(deviceStorage()),
-    diary.email,
+    diary.handle,
     'the diary sign-in must have written the hint, or the assertion below is about an empty field',
   );
 
@@ -537,8 +537,8 @@ test("a whole study session leaves the diary account's blob untouched", async ()
   // Reason 3: the study's address must not be sitting in the unlock field of a
   // shared laptop.
   const hint = readAccountHint(deviceStorage());
-  assert.equal(hint, diary.email, 'the unlock hint must still name the diary account');
-  assert.notEqual(hint, study.email, 'no study address may be written to the device’s unlock hint');
+  assert.equal(hint, diary.handle, 'the unlock hint must still name the diary account');
+  assert.notEqual(hint, study.handle, 'no study handle may be written to the device’s unlock hint');
 
   await deleteLocalFoodLog('isolation-diary-log');
 });
@@ -550,7 +550,7 @@ test('the study console refuses a diary account, and writes nothing to it', asyn
   // `/study` is an open route and a researcher's own diary address signs in
   // there perfectly well — the address and the passphrase are hers. So the
   // sign-in SUCCEEDS, and the refusal has to come from the compartment.
-  await signIn(diary.email);
+  await signIn(diary.handle);
 
   const refusal = await loadStudyIdentity().then(
     () => null,
@@ -648,7 +648,7 @@ test('the console reports a compartment it could not open, never an empty keyrin
   // situation. This one derives `K_pp` from the study's passphrase, and slot 1
   // of the planted compartment belongs to another.
   closeStudyConsole();
-  await signIn(study.email);
+  await signIn(study.handle);
 
   const identity = await loadStudyIdentity();
 

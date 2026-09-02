@@ -39,8 +39,9 @@ import {
   type KeyRecordSubmissionWire,
   type LoginRequestWire,
   type RefreshRequestWire,
+  type RecoverRequestWire,
+  type RecoverRotateRequestWire,
   type RefreshResponseWire,
-  type ResetRequestWire,
   type RotationResponseWire,
   type SessionResponseWire,
   type SessionTokensWire,
@@ -85,7 +86,7 @@ export interface SyncAuthSession {
  * only so the bearer header can be attached to that one request; nothing
  * outside that method ever observes it.
  */
-const PENDING_ACCOUNT: AccountSummaryWire = { id: -1, email: '', displayName: null, emailVerified: false };
+const PENDING_ACCOUNT: AccountSummaryWire = { id: -1, handle: '', displayName: null };
 
 export class SyncAuthClient implements SyncTokenProvider {
   private readonly baseUrl: string;
@@ -117,9 +118,8 @@ export class SyncAuthClient implements SyncTokenProvider {
   }
 
   /**
-   * Adopts a token pair minted by an endpoint other than login/signup — in
-   * practice `POST /v1/auth/reset`, which returns a session for the caller
-   * without ever describing the account.
+   * Adopts a token pair minted elsewhere — a rotation endpoint that returns
+   * fresh tokens for the caller without describing the account again.
    *
    * The account is then READ from `/v1/auth/account` rather than assumed. A
    * placeholder id would end up in the envelope's AAD, where it would bind
@@ -235,15 +235,15 @@ export class SyncAuthClient implements SyncTokenProvider {
    * under raised costs derives differently, and getting it wrong looks exactly
    * like a wrong passphrase.
    *
-   * An unknown address returns a stable, real-shaped dummy — by design, so
+   * An unknown handle returns a stable, real-shaped dummy — by design, so
    * this endpoint cannot be used to enumerate accounts. The client cannot tell
    * the difference and must not try to.
    */
-  async fetchKdfDescriptor(email: string): Promise<KdfDescriptorWire> {
+  async fetchKdfDescriptor(handle: string): Promise<KdfDescriptorWire> {
     const body = await this.requestJson<KdfDescriptorResponse>({
       path: `${AUTH_API_PREFIX}/kdf`,
       method: 'POST',
-      body: { email },
+      body: { handle },
     });
     return body.kdfDescriptor;
   }
@@ -253,23 +253,29 @@ export class SyncAuthClient implements SyncTokenProvider {
   // -------------------------------------------------------------------------
 
   /**
-   * Creates an account. `tokens: null` in the response means this instance
-   * requires email verification — the account exists, but there is no session
-   * yet and the caller must say so rather than showing a signed-in screen.
+   * Creates an account and returns its first session.
+   *
+   * `recoveryAuthHash` is the second authenticator and is set HERE or never
+   * (`PROTOCOL.md` §5.8). That is not a limitation to be worked around: the
+   * client shows the handle and the recovery code together as one saved
+   * account card, so signup is the one moment the user is holding both.
    */
   async signup(input: {
-    email: string;
+    handle: string;
     authHash: string;
     kdfDescriptor: KdfDescriptorWire;
     displayName?: string | null;
+    /** The recovery code's auth proof, or `null` for an account with no second authenticator. */
+    recoveryAuthHash?: string | null;
     /** Required by an invite-only instance; ignored by an open one. */
     inviteToken?: string;
   }): Promise<SessionResponseWire> {
     const request: SignupRequestWire = {
-      email: input.email,
+      handle: input.handle,
       authHash: input.authHash,
       kdfDescriptor: input.kdfDescriptor,
       displayName: input.displayName ?? null,
+      recoveryAuthHash: input.recoveryAuthHash ?? null,
     };
     // Assigned rather than spread, so an absent invite omits the field instead
     // of sending an explicit `undefined`.
@@ -283,20 +289,75 @@ export class SyncAuthClient implements SyncTokenProvider {
     return response;
   }
 
-  async login(input: { email: string; authHash: string }): Promise<SyncAuthSession> {
-    const request: LoginRequestWire = { email: input.email, authHash: input.authHash };
+  async login(input: { handle: string; authHash: string }): Promise<SyncAuthSession> {
+    const request: LoginRequestWire = { handle: input.handle, authHash: input.authHash };
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/login`,
       method: 'POST',
       body: request,
     });
-    if (response.tokens === null) {
-      throw new SyncRequestError({
-        kind: 'forbidden',
-        message: 'This account still needs its email address confirmed before it can sync.',
-        status: 403,
-      });
-    }
+    const session: SyncAuthSession = { account: response.account, tokens: response.tokens };
+    this.session = session;
+    return session;
+  }
+
+  /**
+   * `POST /v1/auth/recover` — a session proved with the recovery code instead
+   * of the passphrase.
+   *
+   * The session it returns is an ORDINARY one, deliberately: the holder of the
+   * recovery code is the account owner by construction, and a lesser
+   * "recovery mode" token would add a second authorization surface carrying no
+   * property the code does not already have.
+   *
+   * Throttled per IP and handle server-side, and never cleared on success —
+   * this endpoint accepts a guess at a value written on a piece of paper.
+   */
+  async recover(input: { handle: string; recoveryAuthHash: string }): Promise<SyncAuthSession> {
+    const request: RecoverRequestWire = { handle: input.handle, recoveryAuthHash: input.recoveryAuthHash };
+    const response = await this.requestJson<SessionResponseWire>({
+      path: `${AUTH_API_PREFIX}/recover`,
+      method: 'POST',
+      body: request,
+    });
+    const session: SyncAuthSession = { account: response.account, tokens: response.tokens };
+    this.session = session;
+    return session;
+  }
+
+  /**
+   * `POST /v1/auth/recover-rotate` — prove the recovery code and set a new
+   * passphrase, atomically.
+   *
+   * `keyRecords` MUST carry the `passphrase` record re-wrapped under the new
+   * KEK; the service refuses the rotation without it rather than mint an
+   * account that signs in and decrypts nothing. Rotating the recovery code as
+   * well is all-or-nothing: `newRecoveryAuthHash` and a `recovery` record
+   * travel together or neither does.
+   */
+  async recoverRotate(input: {
+    handle: string;
+    recoveryAuthHash: string;
+    newAuthHash: string;
+    kdfDescriptor: KdfDescriptorWire;
+    keyRecords: KeyRecordSubmissionWire[];
+    newRecoveryAuthHash?: string;
+  }): Promise<SyncAuthSession> {
+    const request: RecoverRotateRequestWire = {
+      handle: input.handle,
+      recoveryAuthHash: input.recoveryAuthHash,
+      newAuthHash: input.newAuthHash,
+      kdfDescriptor: input.kdfDescriptor,
+      keyRecords: input.keyRecords,
+    };
+    // Assigned rather than spread, so an unrotated code omits the field
+    // instead of sending an explicit `undefined` the service has no rule for.
+    if (input.newRecoveryAuthHash !== undefined) request.newRecoveryAuthHash = input.newRecoveryAuthHash;
+    const response = await this.requestJson<SessionResponseWire>({
+      path: `${AUTH_API_PREFIX}/recover-rotate`,
+      method: 'POST',
+      body: request,
+    });
     const session: SyncAuthSession = { account: response.account, tokens: response.tokens };
     this.session = session;
     return session;
@@ -402,40 +463,6 @@ export class SyncAuthClient implements SyncTokenProvider {
     return body.tokens;
   }
 
-  /** Always `202`, whether or not the address has an account. The email is the only channel that reveals anything. */
-  async requestReset(email: string): Promise<void> {
-    await this.requestJson<unknown>({
-      path: `${AUTH_API_PREFIX}/request-reset`,
-      method: 'POST',
-      body: { email },
-    });
-  }
-
-  /**
-   * Completes an emailed reset.
-   *
-   * Reset restores LOGIN. It restores DATA only when `keyRecords` carries a
-   * DEK re-wrapped under the new passphrase — which is possible only if the
-   * user still has their recovery code. Submitting `[]` produces a working
-   * account whose existing blob is permanently undecryptable, which is why the
-   * UI in front of this makes the user choose that branch explicitly
-   * (`app/lib/sync/reset-flow.ts`) rather than discover it afterwards.
-   */
-  async resetCredential(input: {
-    token: string;
-    authHash: string;
-    kdfDescriptor: KdfDescriptorWire;
-    keyRecords: KeyRecordSubmissionWire[];
-  }): Promise<SessionTokensWire> {
-    const request: ResetRequestWire = input;
-    const body = await this.requestJson<RotationResponseWire>({
-      path: `${AUTH_API_PREFIX}/reset`,
-      method: 'POST',
-      body: request,
-    });
-    return body.tokens;
-  }
-
   /**
    * Deletes the account and, by cascade, every blob and key record it owns.
    * No soft delete, no grace period.
@@ -511,7 +538,6 @@ export class SyncAuthClient implements SyncTokenProvider {
   }
 
   private adoptSession(response: SessionResponseWire): void {
-    if (response.tokens === null) return;
     this.session = { account: response.account, tokens: response.tokens };
   }
 }
