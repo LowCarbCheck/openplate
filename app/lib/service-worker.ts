@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
  * reference. `registerServiceWorker` is SSR-safe (guards on `navigator`, defers
  * to the load event when the document isn't `complete` yet), checks for updates
  * every 60s, and silently activates a new worker (`SKIP_WAITING`) then reloads
- * exactly once on `controllerchange`.
+ * exactly once on `controllerchange` — but only when the page was already
+ * controlled, i.e. on an UPDATE and never on a first install.
  *
  * Registration is production-only (see `healDevBrowser` below for why dev never
  * registers the worker at all).
@@ -105,11 +106,33 @@ export function registerServiceWorker(): void {
   }
 
   const doRegister = (): void => {
+    // Whether this page is ALREADY controlled, sampled before registering.
+    //
+    // `controllerchange` fires for two very different reasons. The one this
+    // reload is for is an UPDATE: a newer worker skipped waiting and replaced
+    // the one that has been serving this page, so the page is now running
+    // against a mixture of old and new and a reload settles it.
+    //
+    // The other is a FIRST INSTALL. `sw.js` calls `clients.claim()` on
+    // activate, so the very first production visit in a fresh browser profile
+    // goes from uncontrolled to controlled — and reloading there threw away a
+    // perfectly good page that was already serving the newest assets there are.
+    // It cost every first-time visitor a flash, and it cost more than that on
+    // `/settings/sync`, where an emailed invite's single-use token had been
+    // read out of the URL fragment by the page the reload discarded.
+    //
+    // An uncontrolled page has no stale worker to settle with, so it never
+    // needs the reload. (The token now also survives one anyway — see
+    // `app/lib/sync/invite-link.ts` — because an update reload can still land
+    // at any moment.)
+    const wasAlreadyControlled = navigator.serviceWorker.controller !== null;
+
     void registerAndWatchForUpdates();
 
-    // Reload once the new service worker takes control (guarded so it fires once).
+    // Reload once the NEW service worker takes control (guarded so it fires once).
     let isRefreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!wasAlreadyControlled) return;
       if (isRefreshing) return;
       isRefreshing = true;
       window.location.reload();

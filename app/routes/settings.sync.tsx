@@ -25,7 +25,7 @@ import type { MetaFunction } from 'react-router';
 import { KeyRound, Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { takeInviteFromUrl } from '#app/lib/sync/invite-link';
+import { consumePendingInvite, takeInviteFromUrl } from '#app/lib/sync/invite-link';
 import { classifySignupFailure } from '#app/lib/sync/signup-error';
 import type { SignupMode } from '#app/lib/sync/engine/protocol';
 import { RecoveryCodeStep, SyncSetupFlow } from '#app/components/sync-setup-flow';
@@ -127,6 +127,9 @@ function SignedOutPanel({
   // create an account" screen with their one single-use capability still
   // sitting in the address bar. Read once, on mount: `takeInviteFromUrl`
   // CLEARS the fragment as it reads it, so it cannot be derived during render.
+  // It is safe to run again on a remount or after the service worker's
+  // first-install reload — the token is parked in a pending slot and the second
+  // read returns it, which is the whole reason that slot exists.
   const [invite, setInvite] = useState('');
   useEffect(() => {
     const fromLink = takeInviteFromUrl();
@@ -286,6 +289,11 @@ function CreateAccountPanel({
       className="space-y-4"
       onSubmit={(event) => {
         event.preventDefault();
+        // The person has acted on the prefilled code, so the pending slot has
+        // done its job and is emptied here rather than on mount: until this
+        // moment a reload still has to be able to bring the token back, and
+        // after it a later visit to this page must not resurrect a spent one.
+        consumePendingInvite();
         setConfirmedEmail(email.trim());
       }}
     >
