@@ -97,9 +97,13 @@ describe('resolveOnboardingGate', () => {
  * The exemption is a second, independent question the gate asks BEFORE the
  * decision table above: is this route reachable at all before onboarding?
  *
- * Exactly one is. `/settings/preferences` holds the language switcher, and on
+ * Two routes are. `/settings/preferences` holds the language switcher, and on
  * an instance whose default language a visitor cannot read it is the only way
  * out — so putting it behind the wizard hides the fix behind the problem.
+ * `/settings/sync` is where an emailed invite link lands, and the redirect
+ * threw away the URL FRAGMENT the single-use token rides in, so the invite
+ * could never be redeemed on a device that had not onboarded.
+ *
  * Everything else under `_personal` stays gated, which is what the negative
  * cases here pin down: a prefix match would have opened the whole hub.
  */
@@ -107,6 +111,11 @@ describe('isOnboardingGateExempt', () => {
   it('exempts the preferences page, with or without a trailing slash', () => {
     assert.equal(isOnboardingGateExempt('/settings/preferences'), true);
     assert.equal(isOnboardingGateExempt('/settings/preferences/'), true);
+  });
+
+  it('exempts the sync page, where an invite link lands', () => {
+    assert.equal(isOnboardingGateExempt('/settings/sync'), true);
+    assert.equal(isOnboardingGateExempt('/settings/sync/'), true);
   });
 
   it('still gates the settings hub itself', () => {
@@ -119,7 +128,8 @@ describe('isOnboardingGateExempt', () => {
     }
   });
 
-  it('does not exempt a route that merely starts with the exempt path', () => {
+  it('does not exempt a route that merely starts with an exempt path', () => {
     assert.equal(isOnboardingGateExempt('/settings/preferences-export'), false);
+    assert.equal(isOnboardingGateExempt('/settings/sync-debug'), false);
   });
 });

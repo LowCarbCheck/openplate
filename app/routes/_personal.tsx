@@ -47,17 +47,20 @@ import { ErrorFallback } from '#app/components/route-error-boundary';
  * lets you through is by definition the moment "this device is in the app"
  * became true, which is why the two live in one place.
  *
- * One route is exempt: `/settings/preferences`. It is the documented way out
- * of the instance default language, so it has to be reachable before the
- * wizard rather than behind it (`isOnboardingGateExempt`).
+ * Two routes are exempt. `/settings/preferences` is the documented way out of
+ * the instance default language, so it has to be reachable before the wizard
+ * rather than behind it. `/settings/sync` is where an emailed invite link
+ * lands, and the redirect dropped the URL fragment that carried the invite
+ * token. Both are listed in `isOnboardingGateExempt`.
  *
  * @throws a redirect to `/recover` when this device has held data before but
  *   its tables are now empty, and to `/onboarding` when onboarding is simply
  *   pending with no prior data to self-heal from.
  */
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  // The one route this gate never tests: `/settings/preferences`, the way out
-  // of the instance's default language. See `isOnboardingGateExempt`.
+  // The two routes this gate never tests: `/settings/preferences`, the way out
+  // of the instance's default language, and `/settings/sync`, where an emailed
+  // invite link lands. See `isOnboardingGateExempt`.
   if (isOnboardingGateExempt(new URL(request.url).pathname)) return null;
   const profile = await getLocalProfileGoals();
   const hasProfile = profile !== null;

@@ -2074,7 +2074,9 @@
       "awaitingVerification": {
         "body": "Dein Konto ist bereit. Öffne den Link, den wir an {{email}} gesendet haben, um es zu bestätigen. Melde dich danach hier wieder an: erst dann wird dein Wiederherstellungscode erstellt.",
         "note": "Bis dahin wurde nichts verschlüsselt und nichts hochgeladen. Dein Tagebuch bleibt so oder so auf diesem Gerät.",
-        "title": "Schau in deine E-Mails"
+        "title": "Schau in deine E-Mails",
+        "toastBody": "Öffne den Link, den wir an {{email}} geschickt haben, bevor du dich zum ersten Mal anmeldest.",
+        "toastTitle": "Konto erstellt"
       },
       "complete": "Sync ist auf diesem Gerät eingerichtet.",
       "confirmLabel": "Passphrase bestätigen",

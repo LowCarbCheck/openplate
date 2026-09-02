@@ -120,6 +120,20 @@ function SignedOutPanel({
   // is gone. Read in an effect: `localStorage` does not exist during SSR.
   const [knownEmail, setKnownEmail] = useState<string | null>(null);
   useEffect(() => setKnownEmail(readAccountHint()), []);
+  // The invite is read HERE, not inside the create form, and reading it opens
+  // that form. This panel starts on `choose`, which does not mount
+  // `CreateAccountPanel` at all — so a token read down there was never read on
+  // arrival, and someone following an invite link landed on a "sign in or
+  // create an account" screen with their one single-use capability still
+  // sitting in the address bar. Read once, on mount: `takeInviteFromUrl`
+  // CLEARS the fragment as it reads it, so it cannot be derived during render.
+  const [invite, setInvite] = useState('');
+  useEffect(() => {
+    const fromLink = takeInviteFromUrl();
+    if (fromLink === null) return;
+    setInvite(fromLink);
+    setMode('create');
+  }, []);
 
   return (
     <Card>
@@ -147,6 +161,7 @@ function SignedOutPanel({
         {mode === 'create' && (
           <CreateAccountPanel
             serverUrl={serverUrl}
+            initialInvite={invite}
             onCancel={() => setMode('choose')}
             onCeremonyActiveChange={onCeremonyActiveChange}
           />
@@ -183,23 +198,22 @@ function SignedOutPanel({
  */
 function CreateAccountPanel({
   serverUrl,
+  initialInvite,
   onCancel,
   onCeremonyActiveChange,
 }: {
   serverUrl: string;
+  /** The token from an `#invite=…` link, already taken out of the URL by `SignedOutPanel`, or `''`. */
+  initialInvite: string;
   onCancel: () => void;
   onCeremonyActiveChange: (isActive: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
-  // Read once, on mount: the fragment is cleared as it is read, so this cannot
-  // be derived during render without losing the value on the second pass.
-  const [invite, setInvite] = useState('');
-  useEffect(() => {
-    const fromLink = takeInviteFromUrl();
-    if (fromLink !== null) setInvite(fromLink);
-  }, []);
+  // Seeded from the link, still editable: the field is also the paste target
+  // for a code that arrived as text rather than as a link.
+  const [invite, setInvite] = useState(initialInvite);
 
   // `null` while unknown — an older service, or one that could not be reached.
   // The form stays usable either way; this only decides whether the invite

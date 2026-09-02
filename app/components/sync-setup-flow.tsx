@@ -11,6 +11,7 @@ import {
 } from '#app/lib/sync/setup-flow';
 import { passphraseStrengthKey, ratePassphrase } from '#app/lib/sync/passphrase-strength';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
+import { showSyncSignupPendingToast } from '#app/lib/sync/signup-toast';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
@@ -82,6 +83,10 @@ export function SyncSetupFlow({
         const outcome = await provision({ passphrase: chosenPassphrase });
         if (outcome.status === 'awaiting-email-verification') {
           dispatch({ type: 'verificationRequired', email: outcome.email });
+          // Announced as well as displayed. The panel below is calm and sits
+          // where the form was; the toast is what makes the SUCCESS an event
+          // the user cannot scroll past. See `signup-toast.ts`.
+          showSyncSignupPendingToast(t, outcome.email);
           return;
         }
         dispatch({ type: 'setupSucceeded', recoveryCode: outcome.recoveryCode });

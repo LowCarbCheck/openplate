@@ -83,10 +83,20 @@ export function resolveOnboardingGate({
  * reads onboarding data (theme and language are both device preferences), so
  * it renders identically with an empty store.
  *
+ * `/settings/sync` is where an emailed sync INVITE link lands
+ * (`#invite=<token>`), which is exactly the position `/connect-gateway` and
+ * `/connect-clinician` are already in — and the route tree keeps both of those
+ * outside this layout for that reason (see the comments in `app/routes.ts`).
+ * Somebody who opens an invite mail has not necessarily used the app on that
+ * device, so the gate fired, the redirect to `/onboarding` dropped the URL
+ * FRAGMENT the token rides in, and the invite could never be redeemed. The
+ * page itself reads nothing from onboarding either: it renders from the sync
+ * session and one loader string, both independent of any profile or goals.
+ *
  * Exact paths, never a prefix: exempting `/settings` wholesale would open the
  * whole hub, and the gate has to keep holding for every other route.
  */
-const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set(['/settings/preferences']);
+const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set(['/settings/preferences', '/settings/sync']);
 
 /**
  * Is this path reachable before onboarding?

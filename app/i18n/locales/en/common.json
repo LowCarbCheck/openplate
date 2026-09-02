@@ -2074,7 +2074,9 @@
       "awaitingVerification": {
         "body": "Your account is ready. Open the link we sent to {{email}} to confirm it, then come back and sign in, that's when your recovery code is created.",
         "note": "Nothing has been encrypted or uploaded yet. Your diary stays on this device either way.",
-        "title": "Check your email"
+        "title": "Check your email",
+        "toastBody": "Open the link we sent to {{email}} before you sign in for the first time.",
+        "toastTitle": "Account created"
       },
       "complete": "Sync is set up on this device.",
       "confirmLabel": "Confirm passphrase",
