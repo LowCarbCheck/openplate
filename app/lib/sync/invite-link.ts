@@ -26,6 +26,19 @@
  * already gone too, and the person who followed the invite lands on a plain
  * "sign in or create an account" screen with their one capability lost.
  *
+ * ── One slot, for the whole join ─────────────────────────────────────────
+ *
+ * Since M181/05 a link may carry TWO capabilities: a sync signup invite and a
+ * gateway invite, plus the gateway's address (`app/lib/join-link.ts`). They are
+ * redeemed against different services, minutes apart, with a navigation and
+ * possibly a reload in between, so they need the same durability the sync
+ * invite already had. This slot was generalised to hold them rather than
+ * growing a second mechanism beside it: two mechanisms for "keep the token
+ * across the reload" is how one of them ends up missing the reload.
+ *
+ * Each field has its own storage key and its own mirror, and is consumed on its
+ * own — spending the sync invite must not throw away the gateway half.
+ *
  * So reading the fragment parks the token in a PENDING SLOT that outlives both
  * a remount and a reload, and a second read returns the still-pending token
  * instead of `null`. The slot is `sessionStorage`, which is tab-scoped and dies
@@ -38,8 +51,45 @@
 /** The fragment key the operator CLI writes (`sync-api invites create`). */
 const INVITE_FRAGMENT_KEY = 'invite';
 
-/** The `sessionStorage` key the pending slot occupies. */
+/**
+ * The shape every sync signup invite carries, and the client's half of the
+ * service binding minted in `openplate-sync/src/lib/tokens.ts`.
+ *
+ * Checked here so the ordinary accident is caught before it becomes a network
+ * call: a gateway invite (`gi_`) pasted into the sync field, a link built with
+ * the two halves swapped, a copy of the wrong line of an operator's output. The
+ * server runs the same gate, and that is the one that matters; this one only
+ * turns a remote refusal nobody can explain into a local message.
+ */
+export const SYNC_INVITE_PREFIX = 'si_';
+
+/** Whether a string could be a sync signup invite at all. A shape gate, never a validity check. */
+export function isSyncInviteToken(token: string): boolean {
+  return token.startsWith(SYNC_INVITE_PREFIX);
+}
+
+/**
+ * The parts of a pending join this slot can hold.
+ *
+ * Two tokens and one address: the gateway's URL is parked beside its token
+ * because a token without the address it belongs to is unredeemable, and the
+ * reload this slot exists for would otherwise strand it.
+ */
+export type PendingJoinField = 'syncInvite' | 'gatewayInvite' | 'gatewayUrl';
+
+/** The module-level mirror behind the storage slot: every field, parked or not. */
+type PendingJoinMirror = { [Field in PendingJoinField]: string | null };
+
+/** The `sessionStorage` key the sync half of the pending slot occupies. */
 export const PENDING_INVITE_STORAGE_KEY = 'openplate.sync.pending-invite';
+
+const PENDING_STORAGE_KEYS = {
+  // Unchanged since M166: an invite parked by an older build of this app must
+  // still be found by this one.
+  syncInvite: PENDING_INVITE_STORAGE_KEY,
+  gatewayInvite: 'openplate.gateway.pending-invite',
+  gatewayUrl: 'openplate.gateway.pending-url',
+} satisfies Record<PendingJoinField, string>;
 
 /** The subset of `Storage` the pending slot needs — so tests pass a plain object and never touch a global. */
 export interface PendingInviteStorage {
@@ -56,7 +106,68 @@ export interface PendingInviteStorage {
  * document reload, which is exactly the case the storage slot exists for.
  * Neither is redundant.
  */
-let mirroredPendingInvite: string | null = null;
+const mirroredPendingJoin: PendingJoinMirror = { syncInvite: null, gatewayInvite: null, gatewayUrl: null };
+
+/** Parks one field of a pending join. A storage failure leaves the mirror, which is still better than nothing. */
+export function rememberPendingJoinField({
+  field,
+  value,
+  storage,
+}: {
+  field: PendingJoinField;
+  value: string;
+  storage: PendingInviteStorage | null;
+}): void {
+  mirroredPendingJoin[field] = value;
+  if (storage === null) return;
+  try {
+    storage.setItem(PENDING_STORAGE_KEYS[field], value);
+  } catch {
+    // Private-mode or quota. The value survives this mount either way; it just
+    // will not survive a reload.
+  }
+}
+
+/** @returns the parked value of one field, or `null` if none is waiting. */
+export function readPendingJoinField({
+  field,
+  storage,
+}: {
+  field: PendingJoinField;
+  storage: PendingInviteStorage | null;
+}): string | null {
+  const mirrored = mirroredPendingJoin[field];
+  if (mirrored !== null) return mirrored;
+  if (storage === null) return null;
+  try {
+    const stored = storage.getItem(PENDING_STORAGE_KEYS[field]);
+    if (stored === null || stored === '') return null;
+    // Re-seed the mirror so a storage that starts throwing mid-session does not
+    // lose a value this session already read successfully.
+    mirroredPendingJoin[field] = stored;
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
+/** Empties one field. Total: a storage failure still clears the mirror. */
+export function clearPendingJoinField({
+  field,
+  storage,
+}: {
+  field: PendingJoinField;
+  storage: PendingInviteStorage | null;
+}): void {
+  mirroredPendingJoin[field] = null;
+  if (storage === null) return;
+  try {
+    storage.removeItem(PENDING_STORAGE_KEYS[field]);
+  } catch {
+    // Nothing to do: the mirror is cleared, and a slot we cannot write to is a
+    // slot we could not have written the value into either.
+  }
+}
 
 /**
  * Pulls the invite out of a fragment like `#invite=abc`, or returns `null`.
@@ -71,47 +182,25 @@ export function parseInviteFragment(hash: string): string | null {
   const token = new URLSearchParams(withoutHash).get(INVITE_FRAGMENT_KEY);
   // An empty value is treated as absent: `#invite=` is a malformed link, not a
   // request to submit an empty token.
-  return token === null || token === '' ? null : token;
+  if (token === null || token === '') return null;
+  // And a token of the wrong SERVICE is absent too, rather than prefilled into
+  // a form that would post a gateway credential to the sync service.
+  return isSyncInviteToken(token) ? token : null;
 }
 
-/** Parks a token in the pending slot. A storage failure leaves the mirror, which is still better than nothing. */
+/** Parks a sync invite. The named view of the slot's `syncInvite` field. */
 export function rememberPendingInvite(token: string, storage: PendingInviteStorage | null): void {
-  mirroredPendingInvite = token;
-  if (storage === null) return;
-  try {
-    storage.setItem(PENDING_INVITE_STORAGE_KEY, token);
-  } catch {
-    // Private-mode or quota. The token survives this mount either way; it just
-    // will not survive a reload.
-  }
+  rememberPendingJoinField({ field: 'syncInvite', value: token, storage });
 }
 
-/** @returns the token parked in the pending slot, or `null` if none is waiting. */
+/** @returns the sync invite parked in the pending slot, or `null` if none is waiting. */
 export function readPendingInvite(storage: PendingInviteStorage | null): string | null {
-  if (mirroredPendingInvite !== null) return mirroredPendingInvite;
-  if (storage === null) return null;
-  try {
-    const stored = storage.getItem(PENDING_INVITE_STORAGE_KEY);
-    if (stored === null || stored === '') return null;
-    // Re-seed the mirror so a storage that starts throwing mid-session does not
-    // lose a token this session already read successfully.
-    mirroredPendingInvite = stored;
-    return stored;
-  } catch {
-    return null;
-  }
+  return readPendingJoinField({ field: 'syncInvite', storage });
 }
 
-/** Empties the pending slot. Total: a storage failure still clears the mirror. */
+/** Empties the sync half of the pending slot, and only that half. */
 export function clearPendingInvite(storage: PendingInviteStorage | null): void {
-  mirroredPendingInvite = null;
-  if (storage === null) return;
-  try {
-    storage.removeItem(PENDING_INVITE_STORAGE_KEY);
-  } catch {
-    // Nothing to do: the mirror is cleared, and a slot we cannot write to is a
-    // slot we could not have written the token into either.
-  }
+  clearPendingJoinField({ field: 'syncInvite', storage });
 }
 
 /** `sessionStorage`, or `null` during SSR and wherever it is blocked outright. */

@@ -17,6 +17,7 @@ import {
   buildGatewayAiSettings,
   gatewayInfoSchema,
   gatewayRedeemResponseSchema,
+  isGatewayInviteToken,
   isAuditDisclosureRequired,
   normalizeGatewayUrl,
   normalizeInviteToken,
@@ -71,11 +72,23 @@ describe('normalizeGatewayUrl', () => {
 
 describe('normalizeInviteToken', () => {
   it('trims a real token and rejects every empty shape', () => {
-    assert.equal(normalizeInviteToken('  inv_abc  '), 'inv_abc');
+    assert.equal(normalizeInviteToken('  gi_abc  '), 'gi_abc');
     assert.equal(normalizeInviteToken(''), null);
     assert.equal(normalizeInviteToken('   '), null);
     assert.equal(normalizeInviteToken(null), null);
     assert.equal(normalizeInviteToken(undefined), null);
+  });
+
+  it('refuses a SYNC invite, so the wrong half of a link is never posted to a gateway', () => {
+    // `si_` is an openplate-sync signup invite. The two tokens travel in the
+    // same link and are otherwise interchangeable strings; this is the client
+    // half of the binding the gateway also enforces on the way in.
+    assert.equal(normalizeInviteToken('si_a_sync_signup_invite'), null);
+    // And a token with no prefix at all, which is what a pre-M181 gateway
+    // minted, is no longer accepted either.
+    assert.equal(normalizeInviteToken('opgwi_an_old_gateway_invite'), null);
+    assert.equal(isGatewayInviteToken('gi_ok'), true);
+    assert.equal(isGatewayInviteToken('si_no'), false);
   });
 });
 

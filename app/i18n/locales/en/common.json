@@ -797,6 +797,26 @@
     "iosInstructions": "Tap the <share>Share</share> button in Safari, then choose <addToHome>Add to Home Screen</addToHome>.",
     "title": "Install {{appName}}"
   },
+  "join": {
+    "description": "This link can set up your account and your AI connection.",
+    "foreignServer": {
+      "body": "It sets up an account on {{origin}}, and this app is set up for another one. Open the link on the app that belongs to that server.",
+      "bodyUnknown": "It sets up an account on a server this app is not set up for. Open the link on the app that belongs to that server.",
+      "title": "This link is for a different server"
+    },
+    "invalidLink": {
+      "body": "Part of it is missing, or it was cut off on the way here. Ask whoever sent it for a new one.",
+      "title": "This link doesn't look right"
+    },
+    "sync": {
+      "body": "Your invite is ready. On the next screen you pick a passphrase and save your account card.",
+      "continue": "Create my account",
+      "skip": "Skip, I already have an account",
+      "thenGateway": "After that, come back here to finish joining the gateway.",
+      "title": "First, create your account"
+    },
+    "title": "Join"
+  },
   "landing": {
     "close": {
       "body": "Nothing to sign up for, nothing to configure. Log one food and openplate has everything it needs.",
@@ -961,6 +981,7 @@
     "foods": "Your foods · openplate",
     "goals": "Your goals · openplate",
     "imprint": "Imprint · openplate",
+    "join": "Join · openplate",
     "joinStudy": "Join a study · openplate",
     "landing": "openplate, a food tracker that stays on your device",
     "landingDescription": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
@@ -2025,6 +2046,10 @@
       }
     },
     "passphraseLabel": "Sync passphrase",
+    "pendingGateway": {
+      "action": "Finish joining it",
+      "body": "Your link also joins the gateway at {{origin}}."
+    },
     "photosStayHere": "Plate photos stay on the device that took them. They are never uploaded.",
     "profileCard": {
       "manage": "Manage sync",

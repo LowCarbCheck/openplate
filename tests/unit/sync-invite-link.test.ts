@@ -21,15 +21,15 @@ import {
 } from '#app/lib/sync/invite-link';
 
 test('an invite is read from the fragment, with or without the leading hash', () => {
-  assert.equal(parseInviteFragment('#invite=abc123'), 'abc123');
-  assert.equal(parseInviteFragment('invite=abc123'), 'abc123');
+  assert.equal(parseInviteFragment('#invite=si_abc123'), 'si_abc123');
+  assert.equal(parseInviteFragment('invite=si_abc123'), 'si_abc123');
 });
 
 test('a base64url token survives the parse intact', () => {
   // The service mints `randomBytes(32).toString('base64url')`, so `-` and `_`
   // are ordinary characters here. A parser that decoded them wrongly would
   // produce a token that looks right and is refused.
-  const token = 'VZPqQ8gRzJ9i4wJMxfYlOZeyfqBPPwgN5e-BrMnh5R4';
+  const token = 'si_VZPqQ8gRzJ9i4wJMxfYlOZeyfqBPPwgN5e-BrMnh5R4';
   assert.equal(parseInviteFragment(`#invite=${token}`), token);
 });
 
@@ -42,8 +42,17 @@ test('an absent, empty or unrelated fragment yields null', () => {
   assert.equal(parseInviteFragment('#invite='), null);
 });
 
+test('a fragment carrying the OTHER service\'s token yields no invite', () => {
+  // `gi_` is an openplate-gateway invite. Reading it here would prefill a
+  // gateway credential into the sync signup form, which posts it to the sync
+  // service. The client half of the service binding; the server runs its own.
+  assert.equal(parseInviteFragment('#invite=gi_a_gateway_invite'), null);
+  // And a bare token, which is what this service minted before M181.
+  assert.equal(parseInviteFragment('#invite=abc123'), null);
+});
+
 test('the invite is found beside other fragment parameters', () => {
-  assert.equal(parseInviteFragment('#from=email&invite=abc123'), 'abc123');
+  assert.equal(parseInviteFragment('#from=email&invite=si_abc123'), 'si_abc123');
 });
 
 // ---------------------------------------------------------------------------
@@ -125,10 +134,10 @@ function withFakeWindow(hash: string): FakeWindowHandle {
 }
 
 test('the first read takes the token from the URL and clears the fragment', () => {
-  const fake = withFakeWindow('#invite=abc123');
+  const fake = withFakeWindow('#invite=si_abc123');
   try {
     consumePendingInvite();
-    assert.equal(takeInviteFromUrl(), 'abc123');
+    assert.equal(takeInviteFromUrl(), 'si_abc123');
     assert.equal(fake.location.hash, '');
   } finally {
     consumePendingInvite();
@@ -137,14 +146,14 @@ test('the first read takes the token from the URL and clears the fragment', () =
 });
 
 test('a second read after a remount still returns the token, though the fragment is gone', () => {
-  const fake = withFakeWindow('#invite=abc123');
+  const fake = withFakeWindow('#invite=si_abc123');
   try {
     consumePendingInvite();
-    assert.equal(takeInviteFromUrl(), 'abc123');
+    assert.equal(takeInviteFromUrl(), 'si_abc123');
     // The remount: same module, no fragment left to read. Before the pending
     // slot existed this returned `null` and the invite was lost for good.
-    assert.equal(takeInviteFromUrl(), 'abc123');
-    assert.equal(takeInviteFromUrl(), 'abc123');
+    assert.equal(takeInviteFromUrl(), 'si_abc123');
+    assert.equal(takeInviteFromUrl(), 'si_abc123');
   } finally {
     consumePendingInvite();
     fake.restore();
@@ -152,10 +161,10 @@ test('a second read after a remount still returns the token, though the fragment
 });
 
 test('once consumed, a re-read returns null rather than resurrecting a spent token', () => {
-  const fake = withFakeWindow('#invite=abc123');
+  const fake = withFakeWindow('#invite=si_abc123');
   try {
     consumePendingInvite();
-    assert.equal(takeInviteFromUrl(), 'abc123');
+    assert.equal(takeInviteFromUrl(), 'si_abc123');
     consumePendingInvite();
     assert.equal(takeInviteFromUrl(), null);
   } finally {
@@ -183,13 +192,13 @@ test('there is no window during SSR, so the read is null and nothing is parked',
 
 test('the token is parked in web storage, so it survives a reload that empties module memory', () => {
   const storage = fakeStorage();
-  rememberPendingInvite('abc123', storage);
-  assert.equal(storage.entries.get(PENDING_INVITE_STORAGE_KEY), 'abc123');
+  rememberPendingInvite('si_abc123', storage);
+  assert.equal(storage.entries.get(PENDING_INVITE_STORAGE_KEY), 'si_abc123');
 
   // The reload: a fresh module has an empty mirror, and only storage is left.
   // Passing `null` clears the mirror and nothing else, which is that state.
   clearPendingInvite(null);
-  assert.equal(readPendingInvite(storage), 'abc123');
+  assert.equal(readPendingInvite(storage), 'si_abc123');
 
   clearPendingInvite(storage);
   assert.equal(storage.entries.has(PENDING_INVITE_STORAGE_KEY), false);

@@ -109,11 +109,38 @@ export function normalizeGatewayUrl(raw: string | null | undefined): string | nu
   return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
 }
 
-/** The `?invite=` token, trimmed, or `null` when absent/blank. */
+/**
+ * The shape every gateway invite carries, and the client's half of the service
+ * binding minted in `openplate-gateway/src/invite-store.ts`.
+ *
+ * A join link can carry this token beside an `openplate-sync` signup invite,
+ * which wears `si_`. Without the prefix the two are interchangeable strings,
+ * and posting one to the wrong service is one swapped argument away. The
+ * gateway runs the same gate on the way in, and that is the one that matters;
+ * this one only stops the accident before it becomes a network call and turns a
+ * remote refusal into a local message.
+ */
+export const GATEWAY_INVITE_PREFIX = 'gi_';
+
+/** Whether a string could be a gateway invite at all. A shape gate, never a validity check. */
+export function isGatewayInviteToken(token: string): boolean {
+  return token.startsWith(GATEWAY_INVITE_PREFIX);
+}
+
+/**
+ * The invite token, trimmed, or `null` when absent, blank or minted by the
+ * other service.
+ *
+ * A wrong-service token reads as NO token, which lands on the same "this link
+ * doesn't look right" card a truncated link gets. There is nothing better to
+ * offer: the person holding it cannot fix a link somebody else built, and the
+ * only useful instruction is to ask for another one.
+ */
 export function normalizeInviteToken(raw: string | null | undefined): string | null {
   if (raw === null || raw === undefined) return null;
   const trimmed = raw.trim();
-  return trimmed === '' ? null : trimmed;
+  if (trimmed === '') return null;
+  return isGatewayInviteToken(trimmed) ? trimmed : null;
 }
 
 /**

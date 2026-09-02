@@ -24,11 +24,18 @@ export default [
   // never depends on a layout loader that doesn't apply to it.
   route('/oauth/openrouter/callback', 'routes/oauth.openrouter.callback.tsx'),
 
-  // Gateway-mode onboarding: where an emailed invite link lands. CLIENT-ONLY
-  // for the same reason the OAuth callback is — the invite and member tokens
-  // must never reach this server — and top-level so it depends on no layout
-  // loader and no onboarding gate: someone arriving from an invite email may
-  // never have opened this app before.
+  // ONE join link (M181/05): where an invite lands, whether it admits someone
+  // to sync, to a gateway, or to both. CLIENT-ONLY for the same reason the
+  // OAuth callback is — no invite or member token may reach this server — and
+  // top-level so it depends on no layout loader and no onboarding gate:
+  // someone arriving from an invite may never have opened this app before.
+  // The tokens ride in the URL FRAGMENT, which no browser sends anywhere, so
+  // there is nothing here a loader could read even if one existed.
+  route('/join', 'routes/join.tsx'),
+
+  // The old gateway invite link, kept alive as a REDIRECT into `/join` —
+  // operators have already handed these out. Client-only for the same reasons,
+  // and it renders nothing: see the route file.
   route('/connect-gateway', 'routes/connect-gateway.tsx'),
 
   // Clinician onboarding: where a clinician's connect link lands (M160/08).

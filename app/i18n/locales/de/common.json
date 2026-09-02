@@ -797,6 +797,26 @@
     "iosInstructions": "Tippe in Safari auf <share>Teilen</share> und wähle dann <addToHome>Zum Home-Bildschirm</addToHome>.",
     "title": "{{appName}} installieren"
   },
+  "join": {
+    "description": "Dieser Link richtet dein Konto und deine KI-Verbindung ein.",
+    "foreignServer": {
+      "body": "Er richtet ein Konto auf {{origin}} ein, aber diese App ist für einen anderen Server eingerichtet. Öffne den Link in der App, die zu diesem Server gehört.",
+      "bodyUnknown": "Er richtet ein Konto auf einem Server ein, für den diese App nicht eingerichtet ist. Öffne den Link in der App, die zu diesem Server gehört.",
+      "title": "Dieser Link ist für einen anderen Server"
+    },
+    "invalidLink": {
+      "body": "Ein Teil fehlt oder wurde unterwegs abgeschnitten. Bitte die Person, die ihn dir geschickt hat, um einen neuen.",
+      "title": "Mit diesem Link stimmt etwas nicht"
+    },
+    "sync": {
+      "body": "Deine Einladung ist bereit. Als Nächstes wählst du eine Passphrase und sicherst deine Kontokarte.",
+      "continue": "Mein Konto erstellen",
+      "skip": "Überspringen, ich habe schon ein Konto",
+      "thenGateway": "Komm danach hierher zurück, um dem Gateway beizutreten.",
+      "title": "Erstelle zuerst dein Konto"
+    },
+    "title": "Beitreten"
+  },
   "landing": {
     "close": {
       "body": "Keine Registrierung, keine Konfiguration nötig. Trage ein Lebensmittel ein und openplate hat alles, was es braucht.",
@@ -961,6 +981,7 @@
     "foods": "Deine Lebensmittel · openplate",
     "goals": "Deine Ziele · openplate",
     "imprint": "Impressum · openplate",
+    "join": "Beitreten · openplate",
     "joinStudy": "Bei einer Studie mitmachen · openplate",
     "landing": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "landingDescription": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir in Sekundenschnelle die Kohlenhydrate und vergleicht sie mit deinem festgelegten Tagesziel. Kostenlos, ohne Account, und alles, was du einträgst, bleibt auf deinem Gerät.",
@@ -2025,6 +2046,10 @@
       }
     },
     "passphraseLabel": "Sync-Passphrase",
+    "pendingGateway": {
+      "action": "Beitritt abschließen",
+      "body": "Dein Link verbindet dich auch mit dem Gateway auf {{origin}}."
+    },
     "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem du sie aufgenommen hast. Hochgeladen werden sie nie.",
     "profileCard": {
       "manage": "Sync verwalten",

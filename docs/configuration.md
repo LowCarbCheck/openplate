@@ -54,12 +54,14 @@ ships a strict Content-Security-Policy. Its `connect-src` allows:
 That allowlist is what stops an injected script from exfiltrating a key that lives in the
 page. Widen it deliberately.
 
-- A gateway joined via an invite link (`/connect-gateway`, see [family-setup.md](family-setup.md#the-other-alternative-run-openplate-gateway))
+- A gateway joined via an invite link (`/join`, and `/connect-gateway`, which redirects into it, see [family-setup.md](family-setup.md#the-other-alternative-run-openplate-gateway))
   is a remote endpoint like any other and is subject to the same `connect-src` allowlist: on a
   hosted/public instance, the operator must add the gateway's origin to `CSP_CONNECT_EXTRA`
   before a member can join. Loopback origins (`http://localhost:*` and `http://127.0.0.1:*`) are already allowed, so a
   gateway on the same box needs nothing extra. A **tailnet address or MagicDNS hostname is
   not a loopback origin** — it is a remote origin and needs `CSP_CONNECT_EXTRA` set to it.
+  The gateway's address arrives inside somebody's link, so this app cannot allow it for you and
+  will not widen the policy at runtime: a blocked join says which origin to add, and to whom.
 
 ## Custom AI endpoints
 

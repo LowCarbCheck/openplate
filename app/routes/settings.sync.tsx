@@ -26,6 +26,8 @@ import { Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { consumePendingInvite, takeInviteFromUrl } from '#app/lib/sync/invite-link';
+import { readPendingGatewayJoin } from '#app/lib/join-link';
+import { Link } from '#app/components/link';
 import { classifySignupFailure } from '#app/lib/sync/signup-error';
 import type { SignupMode } from '#app/lib/sync/engine/protocol';
 import { ServerNoticeBanner } from '#app/components/sync-notice-banner';
@@ -98,10 +100,44 @@ export default function SettingsSync() {
           a user gets that their instance is moving or closing. Pull-only —
           see `ServerNoticeBanner`. */}
       <ServerNoticeBanner serverUrl={syncServerUrl} />
+      <PendingGatewayBanner />
       {screen === 'connected' && session.account !== null ?
         <ConnectedPanel accountHandle={session.account.handle} />
       : <SignedOutPanel serverUrl={syncServerUrl} onCeremonyActiveChange={setIsCeremonyActive} />}
     </div>
+  );
+}
+
+/**
+ * "Your link also joins a gateway."
+ *
+ * A join link may carry two capabilities, and the sync half is spent HERE while
+ * the gateway half waits in the pending slot (`app/lib/join-link.ts`). Without
+ * this line the second half is invisible: the person finishes the account
+ * ceremony, closes the page, and the gateway invite quietly expires in
+ * `sessionStorage`.
+ *
+ * Read in an effect, because the slot is web storage and there is none during
+ * SSR. It renders nothing at all when there is nothing pending, which is the
+ * ordinary case.
+ */
+function PendingGatewayBanner() {
+  const { t } = useTranslation();
+  const [gatewayOrigin, setGatewayOrigin] = useState<string | null>(null);
+  useEffect(() => {
+    const pending = readPendingGatewayJoin();
+    if (pending === null) return;
+    setGatewayOrigin(new URL(pending.gatewayUrl).origin);
+  }, []);
+
+  if (gatewayOrigin === null) return null;
+  return (
+    <p className="text-sm text-muted-foreground">
+      {t('sync.pendingGateway.body', { origin: gatewayOrigin })}{' '}
+      <Link to="/join" className="underline underline-offset-4 hover:text-foreground">
+        {t('sync.pendingGateway.action')}
+      </Link>
+    </p>
   );
 }
 

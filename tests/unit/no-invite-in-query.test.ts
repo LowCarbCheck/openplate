@@ -20,19 +20,24 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * SCOPED TO THE SYNC SIGNUP PATH, deliberately.
+ * SCOPED TO THE PATHS THAT REDEEM AN INVITE, deliberately.
  *
- * A whole-`app/` walk fails on `app/lib/gateway-invite.ts` and
- * `app/routes/connect-gateway.tsx`, which read a `?invite=` token for a
- * DIFFERENT feature — joining an operator-run AI gateway. That is a separate,
- * pre-existing design with its own trade-offs, and this test has no business
- * ruling on it; a check that fails on unrelated code gets suppressed rather
- * than obeyed. (The same query-string exposure does apply there, and is worth
- * raising on its own terms rather than smuggled in here.)
+ * `app/lib/join-link.ts` and `app/routes/join.tsx` joined the sync sources in
+ * M181/05: the join link carries the gateway's token in the same fragment, so
+ * the rule now covers both services' capabilities.
+ *
+ * Two files still read a `?invite=` and are deliberately NOT walked.
+ * `app/lib/gateway-invite.ts` normalizes a token whatever its source, and
+ * `app/routes/connect-gateway.tsx` exists ONLY to translate the old query-string
+ * link into a fragment and redirect — reading that query is the entire job, and
+ * a check that fails on the code fixing the problem gets suppressed rather than
+ * obeyed.
  */
 const SYNC_SOURCES: readonly string[] = [
   join(process.cwd(), 'app', 'lib', 'sync'),
+  join(process.cwd(), 'app', 'lib', 'join-link.ts'),
   join(process.cwd(), 'app', 'routes', 'settings.sync.tsx'),
+  join(process.cwd(), 'app', 'routes', 'join.tsx'),
 ];
 
 function sourceFiles(target: string): string[] {
