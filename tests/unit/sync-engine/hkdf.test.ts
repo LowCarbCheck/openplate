@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deriveAesKeyViaHkdf, HKDF_INFO } from '../../../app/lib/sync/engine/crypto/hkdf';
 import { aesGcmDecrypt, aesGcmEncrypt } from '../../../app/lib/sync/engine/crypto/aes-gcm';
+import { deriveRecoveryAuthHash, deriveRecoveryKek } from '../../../app/lib/sync/engine/client/recovery-kek';
+import { base64ToBytes } from '../../../app/lib/sync/engine/crypto/base64';
+import { toBufferSource } from '../../../app/lib/sync/engine/crypto/buffer-source';
 
 const IKM = new TextEncoder().encode('input-key-material-32-bytes-long!!');
 const SALT = new Uint8Array(16).fill(7);
@@ -71,8 +74,38 @@ test('every HKDF label is DISTINCT — the domain-separation guard, in code rath
     'openplate-sync:passphrase-kek:v1',
     'openplate-sync:private-store-kek:v1',
     'openplate-sync:private-store-recovery-kek:v1',
+    'openplate-sync:recovery-auth:v1',
     'openplate-sync:recovery-kek:v1',
     'openplate-sync:research-kek:p256:v1',
     'openplate-sync:share-kek:p256:v1',
   ]);
+});
+
+test('RECOVERY_AUTH is the frozen literal openplate-sync:recovery-auth:v1', () => {
+  // Its BYTES, not its name. A rename would derive an entirely different
+  // proof and lock every account out of recovery, and the failure would be
+  // invisible until a user with a lost passphrase actually needed it.
+  assert.equal(new TextDecoder().decode(HKDF_INFO.RECOVERY_AUTH), 'openplate-sync:recovery-auth:v1');
+  assert.notDeepEqual(HKDF_INFO.RECOVERY_AUTH, HKDF_INFO.RECOVERY_KEK);
+});
+
+test('the recovery AUTH proof is not the recovery KEK — the value sent cannot open the wrap', async () => {
+  // THE SECURITY CORE OF M181 spec 02, asserted rather than asserted-about.
+  // Both derive from the SAME raw recovery code with the same (empty) salt,
+  // so only the label separates them. If it ever stopped doing so, the server
+  // would be storing an HMAC of the material that unwraps the DEK.
+  const rawCode = new Uint8Array(20).fill(3);
+
+  const kek = await deriveRecoveryKek(rawCode);
+  const plaintext = new TextEncoder().encode('the wrapped DEK');
+  const { iv, ciphertext } = await aesGcmEncrypt({ key: kek, plaintext });
+
+  const authHash = base64ToBytes(await deriveRecoveryAuthHash(rawCode));
+  assert.equal(authHash.byteLength, 32);
+
+  // Import the proof AS an AES key and try it on the wrap. If the two
+  // derivations ever collapsed onto one label this would decrypt, which is
+  // the whole failure being ruled out.
+  const proofAsKey = await crypto.subtle.importKey('raw', toBufferSource(authHash), 'AES-GCM', false, ['decrypt']);
+  await assert.rejects(() => aesGcmDecrypt({ key: proofAsKey, iv, ciphertext }));
 });

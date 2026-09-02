@@ -128,6 +128,26 @@ export const HKDF_INFO = {
    * a re-reading of this `:v1`.
    */
   RESEARCH_KEK: new TextEncoder().encode('openplate-sync:research-kek:p256:v1'),
+  /**
+   * The RECOVERY AUTHENTICATION branch (`openplate-sync` M181) — the value a
+   * client sends to the service to prove it holds the recovery code, so a
+   * user who has lost their passphrase can set a new one.
+   *
+   * IT MUST NEVER BE `RECOVERY_KEK`, and that is the entire security argument
+   * for this label existing. `RECOVERY_KEK` derives the key that WRAPS the
+   * account's DEK. If the same output were also sent to the server as an auth
+   * proof, the service would be storing an HMAC of the material that opens
+   * the diary, and its one claim — the operator cannot read your data — would
+   * rest on SHA-256 being one-way rather than on the operator never having
+   * held the value at all. Domain separation is what keeps that claim
+   * structural instead of computational.
+   *
+   * It is to `RECOVERY_KEK` exactly what `AUTH` is to `PASSPHRASE_KEK`: two
+   * HKDF siblings over one high-entropy input, one that leaves the device and
+   * one that never does. Sending the wrong one would not throw; it would
+   * authenticate, and hand the server a key.
+   */
+  RECOVERY_AUTH: new TextEncoder().encode('openplate-sync:recovery-auth:v1'),
 } as const;
 
 /**
@@ -164,7 +184,8 @@ export async function deriveAesKeyViaHkdf({
 /**
  * Derives RAW BYTES via HKDF-SHA-256, rather than a `CryptoKey`.
  *
- * Used for exactly one thing: the `AUTH` branch, whose output is not a key
+ * Used for exactly two things: the `AUTH` and `RECOVERY_AUTH` branches, whose
+ * output is not a key
  * this client uses locally but a 32-byte value it base64-encodes and SENDS
  * (`PROTOCOL.md` §3.1). `deriveAesKeyViaHkdf` above deliberately produces
  * non-extractable keys — the right default for anything that stays here — so
