@@ -1368,7 +1368,7 @@
       },
       "compartmentMissing": {
         "title": "Dieses Konto kann noch nicht mitmachen",
-        "body": "Zum Mitmachen brauchst du einen Wiederherstellungscode. Ohne ihn könnte dieses Gerät deine Kennung nach einer Wiederherstellung oder auf einem zweiten Gerät nicht gleich halten.",
+        "body": "Für den Beitritt wird ein Wiederherstellungscode benötigt. Ohne ihn kann dieses Gerät nach einer Wiederherstellung oder auf einem zweiten Gerät nicht dieselbe Identität für dich beibehalten.",
         "why": "Eine Studie würde dich jedes Mal als andere Person lesen, und deine früheren Tage stünden für sich allein. Richte einen Wiederherstellungscode ein und öffne den Link danach noch einmal.",
         "cta": "Wiederherstellungscode einrichten"
       },
@@ -1419,7 +1419,7 @@
         "signIn": "Konsole öffnen",
         "create": "Neues Studienkonto anlegen",
         "failed": "Das Studienkonto konnte nicht geöffnet werden. Es wurde nichts geändert.",
-        "handleLabel": "Kennung des Studienkontos"
+        "handleLabel": "Anmeldename des Studienkontos"
       },
       "recoveryCode": {
         "title": "Schreib diesen Wiederherstellungscode jetzt auf",
@@ -2008,7 +2008,7 @@
       "description": "Angemeldet als {{handle}}.",
       "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nicht synchronisiert, daher siehst du sie nicht auf deinen anderen Geräten.",
       "title": "Sync ist aktiv",
-      "keepYourCard": "Bewahre deine Kontokarte auf. Deine Kennung und dein Wiederherstellungscode sind der einzige Zugang, und keines von beiden kann erneut ausgestellt werden."
+      "keepYourCard": "Bewahre deine Kontokarte gut auf. Dein Anmeldename und dein Wiederherstellungscode sind die einzige Möglichkeit, wieder Zugriff zu erhalten, und beides kann nicht erneut ausgestellt werden."
     },
     "create": {
       "cta": "Sync-Konto anlegen",
@@ -2016,7 +2016,7 @@
       "inviteHint": "Dieser Server ist nur mit Einladung nutzbar. Füge den Code ein, den du bekommen hast, oder öffne den Einladungslink.",
       "inviteRequired": "Diese Einladung ist ungültig. Sie wurde vielleicht schon benutzt oder ist abgelaufen. Bitte um eine neue.",
       "closed": "Dieser Sync-Server nimmt keine neuen Konten an.",
-      "handleTaken": "Diese Kennung ist auf diesem Server bereits vergeben. Ändere sie und versuche es erneut."
+      "handleTaken": "Dieser Anmeldename ist auf diesem Server bereits vergeben. Ändere ihn und versuche es erneut."
     },
     "danger": {
       "description": "Beides lässt das Tagebuch auf diesem Gerät unangetastet.",
@@ -2031,8 +2031,8 @@
       "note": "Wir fragen die Passphrase noch einmal ab, weil eine offen gebliebene Sitzung auf einem geteilten Gerät nicht reichen darf, um ein Konto zu löschen.",
       "passphraseLabel": "Mit deiner Passphrase bestätigen"
     },
-    "handleHint": "Dein Name auf diesem Sync-Server. Wir erzeugen eine Kennung, damit es nie eine E-Mail-Adresse ist. Du kannst sie ändern, bevor dein Konto erstellt wird.",
-    "handleLabel": "Kennung",
+    "handleHint": "Dein Name auf diesem Sync-Server. Wir schlagen einen vor, damit es niemals deine E-Mail-Adresse ist. Du kannst ihn ändern, bevor das Konto erstellt wird.",
+    "handleLabel": "Anmeldename",
     "intro": "Optional. Halte dein Tagebuch auf all deinen Geräten synchron: auf diesem Gerät verschlüsselt, bevor es übertragen wird.",
     "notice": {
       "dismiss": "Diese Nachricht vom Server-Betreiber ausblenden",
@@ -2063,16 +2063,16 @@
       "failed": "Das hat nicht geklappt. Es wurde nichts geändert.",
       "intro": "Mit deinem Wiederherstellungscode legst du eine neue Passphrase fest und behältst deine synchronisierten Daten. Ohne ihn und ohne deine Passphrase kann dieses Konto von niemandem wiederhergestellt werden, auch nicht von uns.",
       "newPassphraseLabel": "Neue Passphrase",
-      "rejected": "Diese Kennung und dieser Wiederherstellungscode passen nicht zusammen. Prüfe beides und versuche es erneut.",
+      "rejected": "Dieser Anmeldename und dieser Wiederherstellungscode passen nicht zusammen. Überprüfe beides und versuche es erneut.",
       "submit": "Neue Passphrase festlegen",
       "tryAgain": "Erneut versuchen",
       "working": "Neue Passphrase wird eingerichtet…"
     },
     "setup": {
       "accountCard": {
-        "bothRequired": "Du benötigst beides, um wieder Zugang zu erhalten. Die Kennung benennt dein Konto, der Code ist der einzige Weg bei einer vergessenen Passphrase. Beides wird nie wieder angezeigt.",
+        "bothRequired": "Du benötigst beides, um wieder Zugriff zu erhalten. Der Anmeldename benennt dein Konto, der Code ist der einzige Weg bei einer vergessenen Passphrase, und keines von beidem wird noch einmal angezeigt.",
         "codeLabel": "Wiederherstellungscode",
-        "confirmSaved": "Ich habe meine Kennung und meinen Wiederherstellungscode sicher aufbewahrt.",
+        "confirmSaved": "Ich habe meinen Anmeldenamen und meinen Wiederherstellungscode an einem sicheren Ort gespeichert.",
         "title": "Deine Kontokarte"
       },
       "complete": "Sync ist auf diesem Gerät eingerichtet.",
@@ -2083,10 +2083,10 @@
       "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell auswählen und kopieren",
       "finish": "Einrichtung abschließen",
       "generating": "Sync wird eingerichtet…",
-      "handleNotAnEmail": "Eine Kennung ist keine E-Mail-Adresse. Dieser Server speichert nie eine, daher kann er keine Kennung annehmen, die „@“ enthält.",
-      "handleRequired": "Wähle eine Kennung oder nutze die von uns erzeugte.",
-      "handleShuffle": "Andere Kennung erzeugen",
-      "handleTooLong": "Diese Kennung ist zu lang. Verwende maximal 64 Zeichen.",
+      "handleNotAnEmail": "Ein Anmeldename darf kein @ enthalten.",
+      "handleRequired": "Wähle einen Anmeldenamen oder verwende den, den wir generiert haben.",
+      "handleShuffle": "Anderen Anmeldenamen generieren",
+      "handleTooLong": "Dieser Anmeldename ist zu lang. Verwende weniger als 64 Zeichen.",
       "passphraseIntro": "Wähle eine Passphrase, um deine Daten zu verschlüsseln. Wir leiten daraus auf diesem Gerät einen Schlüssel ab. Wir sehen die Passphrase selbst nie und können sie nicht für dich zurücksetzen.",
       "passphraseLabel": "Sync-Passphrase",
       "passphraseMismatch": "Die beiden Passphrasen stimmen nicht überein.",
@@ -2099,7 +2099,7 @@
     "signIn": {
       "cta": "Bei Sync anmelden",
       "ctaKnown": "Sync für {{handle}} freischalten",
-      "failed": "Das hat nicht geklappt. Prüfe die Kennung und Passphrase und versuche es erneut.",
+      "failed": "Das hat nicht geklappt. Überprüfe den Anmeldenamen sowie die Passphrase und versuche es erneut.",
       "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Lass uns das jetzt tun. Am Ende erhältst du einen Wiederherstellungscode, der deine Daten auf einem anderen Gerät freischaltet. Bei diesem Konto kannst du dich jedoch nur mit der Passphrase anmelden.",
       "forgot": "Ich habe meine Passphrase vergessen",
       "intro": "Gib deine Passphrase ein, um dieses Gerät zu entsperren. Wir fragen nach jedem Neuladen erneut danach; der Schlüssel wird niemals gespeichert.",

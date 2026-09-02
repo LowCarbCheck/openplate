@@ -1419,7 +1419,7 @@
         "signIn": "Open the console",
         "create": "Create a new study account",
         "failed": "The study account could not be opened. Nothing was changed.",
-        "handleLabel": "Study account's handle"
+        "handleLabel": "Study account's sign-in name"
       },
       "recoveryCode": {
         "title": "Write this recovery code down now",
@@ -2008,7 +2008,7 @@
       "description": "Signed in as {{handle}}.",
       "photosStayHere": "Plate photos stay on the device that took them, they’re never part of a sync, so you won’t see them on your other devices.",
       "title": "Sync is on",
-      "keepYourCard": "Keep your account card. Your handle and your recovery code are the only way back in, and neither can be issued again."
+      "keepYourCard": "Keep your account card. Your sign-in name and your recovery code are the only way back in, and neither can be issued again."
     },
     "create": {
       "cta": "Create a sync account",
@@ -2016,7 +2016,7 @@
       "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
       "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
       "closed": "This sync server is not accepting new accounts.",
-      "handleTaken": "That handle is already taken on this server. Change it and try again."
+      "handleTaken": "That sign-in name is already taken on this server. Change it and try again."
     },
     "danger": {
       "description": "Both options leave the diary on this device untouched.",
@@ -2031,8 +2031,8 @@
       "note": "We ask for your passphrase again because a session left open on a shared device shouldn’t be enough to delete an account.",
       "passphraseLabel": "Confirm with your passphrase"
     },
-    "handleHint": "Your name on this sync server. We generate one so it is never an email address, and you can change it before your account is created.",
-    "handleLabel": "Handle",
+    "handleHint": "Your name on this sync server. We suggest one so it is never your email address. You can change it before the account is created.",
+    "handleLabel": "Sign-in name",
     "intro": "Optional. Keep your diary in step across your devices, encrypted on this device before it leaves it.",
     "notice": {
       "dismiss": "Dismiss this message from the server operator",
@@ -2063,16 +2063,16 @@
       "failed": "That did not work. Nothing has been changed.",
       "intro": "Your recovery code sets a new passphrase and keeps your synced data. Without it, and without your passphrase, this account cannot be recovered by anyone, including us.",
       "newPassphraseLabel": "New passphrase",
-      "rejected": "That handle and recovery code do not go together. Check both and try again.",
+      "rejected": "That sign-in name and recovery code do not go together. Check both and try again.",
       "submit": "Set a new passphrase",
       "tryAgain": "Try again",
       "working": "Setting your new passphrase…"
     },
     "setup": {
       "accountCard": {
-        "bothRequired": "You need both of these to get back in. The handle names your account, the code is the only way past a forgotten passphrase, and neither is shown again.",
+        "bothRequired": "You need both of these to get back in. The sign-in name names your account, the code is the only way past a forgotten passphrase, and neither is shown again.",
         "codeLabel": "Recovery code",
-        "confirmSaved": "I have saved my handle and my recovery code somewhere safe.",
+        "confirmSaved": "I have saved my sign-in name and my recovery code somewhere safe.",
         "title": "Your account card"
       },
       "complete": "Sync is set up on this device.",
@@ -2083,10 +2083,10 @@
       "copyFailed": "Couldn't copy, select and copy manually",
       "finish": "Finish setup",
       "generating": "Setting up sync…",
-      "handleNotAnEmail": "A handle is not an email address. This server never stores one, so it cannot accept a handle containing “@”.",
-      "handleRequired": "Choose a handle, or use the one we generated.",
-      "handleShuffle": "Generate a different handle",
-      "handleTooLong": "That handle is too long. Keep it under 64 characters.",
+      "handleNotAnEmail": "A sign-in name cannot contain @.",
+      "handleRequired": "Choose a sign-in name, or use the one we generated.",
+      "handleShuffle": "Generate a different sign-in name",
+      "handleTooLong": "That sign-in name is too long. Keep it under 64 characters.",
       "passphraseIntro": "Choose a passphrase to encrypt your data. We use it to derive an encryption key on this device, we never see the passphrase itself, and we cannot reset it for you.",
       "passphraseLabel": "Sync passphrase",
       "passphraseMismatch": "Those two passphrases don't match.",
@@ -2099,7 +2099,7 @@
     "signIn": {
       "cta": "Sign in to sync",
       "ctaKnown": "Unlock sync for {{handle}}",
-      "failed": "That did not work. Check the handle and passphrase and try again.",
+      "failed": "That did not work. Check the sign-in name and passphrase and try again.",
       "finishSetup": "This account was created but its keys were never finished. Let us do that now. It ends with a recovery code that unlocks your data on another device, though this account can only be signed in to with its passphrase.",
       "forgot": "I have forgotten my passphrase",
       "intro": "Enter your passphrase to unlock this device. We ask again after every reload, the key is never stored.",
