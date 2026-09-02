@@ -1948,24 +1948,42 @@ function MatchOptionRow({ match, applied, onUse }: { match: FoodMatch; applied: 
   const { t, i18n } = useTranslation();
   const macroSummary = formatCuratedMacroSummary(match, t, i18n.language);
   return (
-    <div className="flex items-start gap-3 rounded-md border bg-background p-2">
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-900">
-        {match.imageUrl && <img src={match.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />}
-      </div>
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="truncate text-sm font-medium">{match.title}</p>
-        {shouldShowCanonicalName(match) && (
-          <p className="truncate text-xs text-muted-foreground">{match.canonicalName}</p>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          <MatchNetCarbBadge netCarbsPer100g={match.netCarbsPer100g} />
-          <MatchTierChip tier={matchTier(match.score)} />
+    // Below sm: thumbnail+text on one row, then a full-width button below —
+    // the button's non-shrinking label (e.g. German "Diese Daten übernehmen")
+    // otherwise starves the text column down to a sliver, truncating the
+    // title and wrapping the macro line one word per line. At sm+: original
+    // side-by-side layout (thumbnail + text | button).
+    <div className="flex flex-col gap-2 rounded-md border bg-background p-2 sm:flex-row sm:items-start sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-900">
+          {match.imageUrl && (
+            <img src={match.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+          )}
         </div>
-        {macroSummary && (
-          <p className="text-xs text-muted-foreground">{t('scan.review.match.per100g', { summary: macroSummary })}</p>
-        )}
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="truncate text-sm font-medium">{match.title}</p>
+          {shouldShowCanonicalName(match) && (
+            <p className="truncate text-xs text-muted-foreground">{match.canonicalName}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <MatchNetCarbBadge netCarbsPer100g={match.netCarbsPer100g} />
+            <MatchTierChip tier={matchTier(match.score)} />
+          </div>
+          {macroSummary && (
+            <p className="text-xs text-muted-foreground">
+              {t('scan.review.match.per100g', { summary: macroSummary })}
+            </p>
+          )}
+        </div>
       </div>
-      <Button type="button" variant="secondary" size="sm" onClick={onUse} disabled={applied}>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={onUse}
+        disabled={applied}
+        className="w-full sm:w-auto sm:shrink-0"
+      >
         {applied && <Check className="h-4 w-4" />}
         {applied ? t('scan.review.match.applied') : t('scan.review.match.useThisData')}
       </Button>
