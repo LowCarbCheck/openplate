@@ -2031,7 +2031,7 @@
       "note": "Wir fragen die Passphrase noch einmal ab, weil eine offen gebliebene Sitzung auf einem geteilten Gerät nicht reichen darf, um ein Konto zu löschen.",
       "passphraseLabel": "Mit deiner Passphrase bestätigen"
     },
-    "handleHint": "Dein Name auf diesem Sync-Server. Wir schlagen einen vor, damit es niemals deine E-Mail-Adresse ist. Du kannst ihn ändern, bevor das Konto erstellt wird.",
+    "handleHint": "Wähle einen beliebigen Namen, der keine E-Mail-Adresse ist. Oder lass dir einen vorschlagen.",
     "handleLabel": "Anmeldename",
     "intro": "Optional. Halte dein Tagebuch auf all deinen Geräten synchron: auf diesem Gerät verschlüsselt, bevor es übertragen wird.",
     "notice": {
@@ -2084,8 +2084,8 @@
       "finish": "Einrichtung abschließen",
       "generating": "Sync wird eingerichtet…",
       "handleNotAnEmail": "Ein Anmeldename darf kein @ enthalten.",
-      "handleRequired": "Wähle einen Anmeldenamen oder verwende den, den wir generiert haben.",
-      "handleShuffle": "Anderen Anmeldenamen generieren",
+      "handleRequired": "Wähle einen Anmeldenamen oder lass dir einen vorschlagen.",
+      "handleShuffle": "Namen vorschlagen",
       "handleTooLong": "Dieser Anmeldename ist zu lang. Verwende weniger als 64 Zeichen.",
       "passphraseIntro": "Wähle eine Passphrase, um deine Daten zu verschlüsseln. Wir leiten daraus auf diesem Gerät einen Schlüssel ab. Wir sehen die Passphrase selbst nie und können sie nicht für dich zurücksetzen.",
       "passphraseLabel": "Sync-Passphrase",

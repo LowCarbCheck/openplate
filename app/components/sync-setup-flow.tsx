@@ -68,11 +68,11 @@ export function SyncSetupFlow({
 }) {
   const { t } = useTranslation();
   const [state, dispatch] = useReducer(syncSetupReducer, { resume: resume !== undefined }, initialSyncSetupState);
-  // Minted once, on first render, and then owned by the field. A `useState`
-  // initialiser rather than an effect: the value must exist for the first
-  // paint, and re-minting it on a re-render would move the handle under a user
-  // who is halfway through editing it.
-  const [handle, setHandle] = useState(generateHandle);
+  // Starts EMPTY (owner decision, 2026-09-02): a prefilled random handle reads
+  // as a generated password and confuses people into thinking it must be kept
+  // as-is. The field stays editable and the "suggest a name" button next to it
+  // can still mint one with `generateHandle` on demand.
+  const [handle, setHandle] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [confirmPassphrase, setConfirmPassphrase] = useState('');
 
@@ -116,6 +116,15 @@ export function SyncSetupFlow({
     void runProvision({ handle: resume.handle, passphrase: resume.passphrase });
   }, [resume, runProvision]);
 
+  // Clears a showing rejection the moment the user edits the field again —
+  // validation itself still only runs on submit (`handleDetailsSubmit`), this
+  // just stops a stale "required"/"@"/"too long" message from lingering under
+  // a field the user has already started fixing.
+  function handleHandleChange(value: string): void {
+    setHandle(value);
+    dispatch({ type: 'detailsFieldChanged' });
+  }
+
   async function handleDetailsSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     // The reducer stores already-translated text: messages are produced here,
@@ -149,8 +158,8 @@ export function SyncSetupFlow({
         passphrase={passphrase}
         confirmPassphrase={confirmPassphrase}
         error={state.error}
-        onHandleChange={setHandle}
-        onRegenerateHandle={() => setHandle(generateHandle())}
+        onHandleChange={handleHandleChange}
+        onRegenerateHandle={() => handleHandleChange(generateHandle())}
         onPassphraseChange={setPassphrase}
         onConfirmPassphraseChange={setConfirmPassphrase}
         onSubmit={handleDetailsSubmit}
@@ -227,7 +236,12 @@ function DetailsStep({
           <Input
             id="sync-handle"
             type="text"
-            required
+            // NOT `required`: the field now starts empty (owner decision,
+            // 2026-09-02), and the browser's native required-field popup
+            // ("Please fill out this field") would intercept the submit
+            // before `handleDetailsSubmit` ever runs, showing untranslated
+            // browser copy instead of `sync.setup.handleRequired`. The empty
+            // check below is the only gate.
             autoComplete="username"
             spellCheck={false}
             autoCapitalize="none"

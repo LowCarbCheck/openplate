@@ -2031,7 +2031,7 @@
       "note": "We ask for your passphrase again because a session left open on a shared device shouldn’t be enough to delete an account.",
       "passphraseLabel": "Confirm with your passphrase"
     },
-    "handleHint": "Your name on this sync server. We suggest one so it is never your email address. You can change it before the account is created.",
+    "handleHint": "Pick any name that is not an email address. Or let us suggest one.",
     "handleLabel": "Sign-in name",
     "intro": "Optional. Keep your diary in step across your devices, encrypted on this device before it leaves it.",
     "notice": {
@@ -2084,8 +2084,8 @@
       "finish": "Finish setup",
       "generating": "Setting up sync…",
       "handleNotAnEmail": "A sign-in name cannot contain @.",
-      "handleRequired": "Choose a sign-in name, or use the one we generated.",
-      "handleShuffle": "Generate a different sign-in name",
+      "handleRequired": "Choose a sign-in name, or let us suggest one.",
+      "handleShuffle": "Suggest a name",
       "handleTooLong": "That sign-in name is too long. Keep it under 64 characters.",
       "passphraseIntro": "Choose a passphrase to encrypt your data. We use it to derive an encryption key on this device, we never see the passphrase itself, and we cannot reset it for you.",
       "passphraseLabel": "Sync passphrase",

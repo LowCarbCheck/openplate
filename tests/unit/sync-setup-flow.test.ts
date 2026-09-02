@@ -14,6 +14,8 @@ import {
   validateSyncPassphrase,
 } from '../../app/lib/sync/setup-flow';
 import type { SyncSetupState, Translate } from '../../app/lib/sync/setup-flow';
+import { describeHandleProblem } from '../../app/components/sync-setup-flow';
+import { MAX_HANDLE_LENGTH } from '../../app/lib/sync/handle';
 
 /** Renders `key` plus any interpolation params, so both are assertable without i18next. */
 const fakeT: Translate = (key, params) => (params === undefined ? key : `${key} ${JSON.stringify(params)}`);
@@ -119,6 +121,26 @@ describe('syncSetupReducer', () => {
     assert.deepEqual(complete, { kind: 'complete' });
   });
 
+  // The handle field starts EMPTY (owner decision, 2026-09-02) and validates
+  // only on submit — but once a rejection is showing, editing the field is
+  // the user acting on it, so the message must not linger.
+  it('detailsFieldChanged clears a showing error without touching anything else', () => {
+    const errored: SyncSetupState = { kind: 'enter-details', error: 'sync.setup.handleRequired' };
+    const next = syncSetupReducer(errored, { type: 'detailsFieldChanged' });
+    assert.deepEqual(next, { kind: 'enter-details', error: null });
+  });
+
+  it('detailsFieldChanged is a no-op when there is no error to clear', () => {
+    const next = syncSetupReducer(INITIAL_SYNC_SETUP_STATE, { type: 'detailsFieldChanged' });
+    assert.deepEqual(next, INITIAL_SYNC_SETUP_STATE);
+  });
+
+  it('detailsFieldChanged does not apply outside of enter-details', () => {
+    const generating: SyncSetupState = { kind: 'generating' };
+    const next = syncSetupReducer(generating, { type: 'detailsFieldChanged' });
+    assert.deepEqual(next, generating);
+  });
+
   it('retried moves from error back to a clean enter-details', () => {
     const errored: SyncSetupState = { kind: 'error', message: 'network error' };
     const next = syncSetupReducer(errored, { type: 'retried' });
@@ -177,5 +199,30 @@ describe('initialSyncSetupState', () => {
       { type: 'finishRequested' },
     );
     assert.equal(acknowledged.kind, 'complete');
+  });
+});
+
+/**
+ * `describeHandleProblem` turns a refused candidate into the sentence shown
+ * under the form on submit — three cases, three sentences, and the field
+ * starts empty (owner decision, 2026-09-02) so "required" is the one a
+ * first-time submit is most likely to hit.
+ */
+describe('describeHandleProblem', () => {
+  it('names an empty candidate as required, not as any other problem', () => {
+    assert.equal(describeHandleProblem('', fakeT), 'sync.setup.handleRequired');
+    assert.equal(describeHandleProblem('   ', fakeT), 'sync.setup.handleRequired');
+  });
+
+  it('names an email-shaped candidate as not an email address', () => {
+    assert.equal(describeHandleProblem('a@b', fakeT), 'sync.setup.handleNotAnEmail');
+  });
+
+  it('names an over-length candidate as too long', () => {
+    assert.equal(describeHandleProblem('a'.repeat(MAX_HANDLE_LENGTH + 1), fakeT), 'sync.setup.handleTooLong');
+  });
+
+  it('accepts an ordinary handle with no problem', () => {
+    assert.equal(describeHandleProblem('kitchen-sink', fakeT), null);
   });
 });

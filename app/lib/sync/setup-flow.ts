@@ -66,6 +66,7 @@ export type SyncSetupState =
 
 export type SyncSetupAction =
   | { type: 'detailsRejected'; message: string }
+  | { type: 'detailsFieldChanged' }
   | { type: 'detailsSubmitted' }
   | { type: 'setupSucceeded'; handle: string; recoveryCode: string }
   | { type: 'setupFailed'; message: string }
@@ -133,6 +134,12 @@ export function isSyncSetupCeremonyActive(state: SyncSetupState): boolean {
 export function syncSetupReducer(state: SyncSetupState, action: SyncSetupAction): SyncSetupState {
   if (action.type === 'detailsRejected' && state.kind === 'enter-details') {
     return { kind: 'enter-details', error: action.message };
+  }
+  // Validation runs on submit only, never on keystroke — but once a rejection
+  // is showing, editing the field is the user acting on it, so the message
+  // should not linger after they've clearly started to fix it.
+  if (action.type === 'detailsFieldChanged' && state.kind === 'enter-details' && state.error !== null) {
+    return { kind: 'enter-details', error: null };
   }
   if (action.type === 'detailsSubmitted' && state.kind === 'enter-details') {
     return { kind: 'generating' };
