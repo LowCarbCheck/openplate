@@ -172,7 +172,38 @@ export type ProtocolHandshake = {
    * even when this said `'open'`.
    */
   signupMode?: SignupMode;
+  /**
+   * A short message the operator of that instance wants shown — a planned
+   * migration, a shutdown date, a "read this before you sync again".
+   *
+   * WHY IT IS HERE AT ALL. The service holds no addresses (M181), so it has no
+   * channel to write to anybody. This is PULL, never push: the client already
+   * reads `/health` on connect, so a person who opens the app sees it and a
+   * person who does not, does not. It is not a notification system.
+   *
+   * OPTIONAL, exactly like `signupMode`: an instance with nothing to say omits
+   * it, and a service older than the field never had it.
+   *
+   * TREAT IT AS HOSTILE INPUT. It comes from whatever server the user pointed
+   * at, which on a self-hosted product is not necessarily the operator they
+   * think it is. Render `text` as text and never as markup, and never build a
+   * link from `url` without checking its scheme first — see
+   * `#app/components/sync-notice-banner`.
+   */
+  notice?: OperatorNotice;
 };
+
+/** The optional operator message of {@link ProtocolHandshake.notice}. `url` is absent when the notice links nowhere. */
+export type OperatorNotice = {
+  text: string;
+  url?: string;
+};
+
+/** The decoder for {@link OperatorNotice} — a hostile-input boundary, so the body is parsed, never assumed. */
+const operatorNoticeSchema = z.object({
+  text: z.string(),
+  url: z.string().optional(),
+});
 
 /** The decoder for {@link ProtocolHandshake} — the health endpoint is an I/O boundary, so its body is parsed, not assumed. */
 const protocolHandshakeSchema = z.object({
@@ -182,6 +213,10 @@ const protocolHandshakeSchema = z.object({
   // `.optional()` is load-bearing, not tidiness — see the field's doc comment.
   // A required entry here would reject every service older than the field.
   signupMode: z.enum(SIGNUP_MODES).optional(),
+  // Optional for the same reason, and dropped rather than fatal when
+  // malformed: a broken notice must never stop a client talking to a service
+  // whose protocol version is fine.
+  notice: operatorNoticeSchema.optional(),
 });
 
 /** Result of {@link checkProtocolCompatibility} — `reason` is a user-presentable sentence. */
@@ -189,6 +224,21 @@ export type ProtocolCompatibility = { status: 'compatible' } | { status: 'incomp
 
 export function isProtocolHandshake(value: JsonValue | undefined): value is ProtocolHandshake {
   return protocolHandshakeSchema.safeParse(value).success;
+}
+
+/**
+ * The operator notice carried by a `/health` body, or `null` — for a body that
+ * is not a handshake, an instance that set no notice, or a service older than
+ * the field.
+ *
+ * Returns the PARSED value rather than the raw one on purpose: this is the
+ * boundary where a server-supplied object becomes a typed one, and the caller
+ * renders it. Nothing downstream should be re-deriving it from a `JsonValue`.
+ */
+export function readHandshakeNotice(value: JsonValue | undefined): OperatorNotice | null {
+  const parsed = protocolHandshakeSchema.safeParse(value);
+  if (!parsed.success) return null;
+  return parsed.data.notice ?? null;
 }
 
 /**

@@ -2022,6 +2022,10 @@
       "submit": "Link schicken"
     },
     "intro": "Optional. Halte dein Tagebuch auf all deinen Geräten synchron: auf diesem Gerät verschlüsselt, bevor es übertragen wird.",
+    "notice": {
+      "dismiss": "Diese Nachricht vom Server-Betreiber ausblenden",
+      "readMore": "Mehr erfahren"
+    },
     "passphrase": {
       "strength": {
         "fair": "Solide. Ein paar Wörter mehr und es wird deutlich schwerer zu raten.",

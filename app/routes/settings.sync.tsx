@@ -28,6 +28,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { consumePendingInvite, takeInviteFromUrl } from '#app/lib/sync/invite-link';
 import { classifySignupFailure } from '#app/lib/sync/signup-error';
 import type { SignupMode } from '#app/lib/sync/engine/protocol';
+import { ServerNoticeBanner } from '#app/components/sync-notice-banner';
 import { RecoveryCodeStep, SyncSetupFlow } from '#app/components/sync-setup-flow';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
@@ -93,6 +94,11 @@ export default function SettingsSync() {
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
+      {/* The operator's notice, above everything: it is the one message on
+          this page that did not come from us, and it may be the only warning
+          a user gets that their instance is moving or closing. Pull-only —
+          see `ServerNoticeBanner`. */}
+      <ServerNoticeBanner serverUrl={syncServerUrl} />
       {screen === 'connected' && session.account !== null ?
         <ConnectedPanel email={session.account.email} />
       : <SignedOutPanel serverUrl={syncServerUrl} onCeremonyActiveChange={setIsCeremonyActive} />}

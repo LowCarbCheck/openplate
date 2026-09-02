@@ -2022,6 +2022,10 @@
       "submit": "Send the link"
     },
     "intro": "Optional. Keep your diary in step across your devices, encrypted on this device before it leaves it.",
+    "notice": {
+      "dismiss": "Dismiss this message from the server operator",
+      "readMore": "Read more"
+    },
     "passphrase": {
       "strength": {
         "fair": "Decent. A few more words would make it much harder to guess.",

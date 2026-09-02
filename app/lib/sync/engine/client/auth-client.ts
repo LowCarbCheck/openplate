@@ -51,7 +51,9 @@ import { defaultFetchImpl } from './fetch-impl';
 import {
   checkProtocolCompatibility,
   isProtocolHandshake,
+  readHandshakeNotice,
   type JsonValue,
+  type OperatorNotice,
   type ProtocolCompatibility,
   type SignupMode,
 } from '../protocol';
@@ -195,6 +197,29 @@ export class SyncAuthClient implements SyncTokenProvider {
       const body: JsonValue = await response.json();
       if (!isProtocolHandshake(body)) return null;
       return body.signupMode ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Reads the operator's notice from the same `/health` body (§5.6).
+   *
+   * FAILS OPEN, like `signupMode()` above and unlike `handshake()`: an
+   * unreachable service, a malformed body or a service older than the field
+   * all mean `null`, which means "show no banner". A message the operator
+   * wanted shown is worth reaching for, and is never worth blocking a sync
+   * over.
+   *
+   * The value is SERVER-SUPPLIED and hostile: `readHandshakeNotice` parses it,
+   * and the banner renders it as text and scheme-checks the link.
+   */
+  async notice(): Promise<OperatorNotice | null> {
+    try {
+      const response = await this.fetchImpl(`${this.baseUrl}/health`, { method: 'GET' });
+      if (!response.ok) return null;
+      const body: JsonValue = await response.json();
+      return readHandshakeNotice(body);
     } catch {
       return null;
     }

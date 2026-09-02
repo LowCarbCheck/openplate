@@ -40,7 +40,7 @@ import { ARGON2ID_DEFAULT_PARAMS, generateArgon2idSalt, type Argon2idParams } fr
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
 import { bytesToBase64 } from './engine/crypto/base64';
 import type { KdfDescriptorWire, KeyRecordSubmissionWire } from './engine/client/auth-wire';
-import type { SignupMode } from './engine/protocol';
+import type { OperatorNotice, SignupMode } from './engine/protocol';
 import type { SyncSetupOutcome } from './setup-flow';
 import {
   applyMergedSnapshot,
@@ -159,6 +159,26 @@ function toWireDescriptor(descriptor: PassphraseKdfDescriptor): KdfDescriptorWir
 export async function readSignupMode(serverUrl: string, options: SyncActionOptions = {}): Promise<SignupMode | null> {
   const { authClient } = clients({ serverUrl, fetchImpl: options.fetchImpl });
   return await authClient.signupMode();
+}
+
+/**
+ * Asks an instance whether its operator has a message for its users
+ * (PROTOCOL.md §5.6).
+ *
+ * FAILS OPEN, like `readSignupMode` — `null` means "no banner", and an
+ * unreachable service, a malformed body or one older than the field are all
+ * the same answer. This is a PULL channel: the service holds no addresses and
+ * cannot contact anyone, so this reaches only the people who open the app.
+ *
+ * The result is server-supplied and hostile. `SyncNoticeBanner` renders it as
+ * text and refuses any link whose scheme it does not allow.
+ */
+export async function readServerNotice(
+  serverUrl: string,
+  options: SyncActionOptions = {},
+): Promise<OperatorNotice | null> {
+  const { authClient } = clients({ serverUrl, fetchImpl: options.fetchImpl });
+  return await authClient.notice();
 }
 
 export async function createSyncAccount({
