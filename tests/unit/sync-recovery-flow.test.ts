@@ -16,24 +16,24 @@ import { canSubmitRecovery, INITIAL_RECOVERY_FLOW_STATE, recoveryFlowReducer } f
 import type { RecoveryFlowState } from '../../app/lib/sync/recovery-flow';
 
 describe('recoveryFlowReducer', () => {
-  it('starts on the form with no error', () => {
-    assert.deepEqual(INITIAL_RECOVERY_FLOW_STATE, { kind: 'entering', error: null });
+  it('starts on the form', () => {
+    assert.deepEqual(INITIAL_RECOVERY_FLOW_STATE, { kind: 'entering' });
   });
 
   it('submitted moves to submitting', () => {
     assert.deepEqual(recoveryFlowReducer(INITIAL_RECOVERY_FLOW_STATE, { type: 'submitted' }), { kind: 'submitting' });
   });
 
-  it('rejected keeps the form and shows why', () => {
-    const next = recoveryFlowReducer(INITIAL_RECOVERY_FLOW_STATE, { type: 'rejected', message: 'too short' });
-    assert.deepEqual(next, { kind: 'entering', error: 'too short' });
-  });
+  // What the three FIELDS must contain is the recovery schema's business now
+  // (`recovery-schema.ts`), rendered by Conform under each field — so this
+  // machine no longer has a client-side rejection to hold (owner request,
+  // 2026-09-02). The service's own `401` still gets its own screen below.
 
   it('failed carries the message, and retrying returns to a CLEAN form', () => {
     const submitting: RecoveryFlowState = { kind: 'submitting' };
     const failed = recoveryFlowReducer(submitting, { type: 'failed', message: 'that did not work' });
     assert.deepEqual(failed, { kind: 'failed', message: 'that did not work' });
-    assert.deepEqual(recoveryFlowReducer(failed, { type: 'retried' }), { kind: 'entering', error: null });
+    assert.deepEqual(recoveryFlowReducer(failed, { type: 'retried' }), { kind: 'entering' });
   });
 
   it('succeeded completes', () => {
@@ -60,19 +60,13 @@ describe('recoveryFlowReducer', () => {
     // from — the rule every flow reducer in this feature follows.
     const complete: RecoveryFlowState = { kind: 'complete' };
     assert.deepEqual(recoveryFlowReducer(complete, { type: 'failed', message: 'late' }), complete);
-    assert.deepEqual(recoveryFlowReducer(INITIAL_RECOVERY_FLOW_STATE, { type: 'succeeded' }), {
-      kind: 'entering',
-      error: null,
-    });
+    assert.deepEqual(recoveryFlowReducer(INITIAL_RECOVERY_FLOW_STATE, { type: 'succeeded' }), { kind: 'entering' });
   });
 
   it('every failure is re-enterable: there is no dead end in this machine', () => {
     // Recovery is the LAST door. A state with no transition out of it would
     // mean a user who mistyped their code had to reload the app to try again.
-    const states: RecoveryFlowState[] = [
-      { kind: 'entering', error: 'x' },
-      { kind: 'failed', message: 'x' },
-    ];
+    const states: RecoveryFlowState[] = [{ kind: 'entering' }, { kind: 'failed', message: 'x' }];
     for (const state of states) {
       const recovered =
         state.kind === 'failed' ?

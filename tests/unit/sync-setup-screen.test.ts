@@ -61,7 +61,7 @@ test('a ceremony without a session still shows setup — the ordinary first scre
 test('the ceremony is active exactly while the wizard owes the user something', () => {
   const states: { state: SyncSetupState; active: boolean; why: string }[] = [
     {
-      state: { kind: 'enter-details', error: null },
+      state: { kind: 'enter-details', serverError: null },
       active: false,
       why: 'nothing shown yet, no session to swap to',
     },
@@ -157,7 +157,11 @@ test('a failed provision releases the screen instead of trapping the user', () =
   // the wizard open would leave no route to it — the connected panel is the
   // more useful place to land.
   let state: SyncSetupState = syncSetupReducer(INITIAL_SYNC_SETUP_STATE, { type: 'detailsSubmitted' });
-  state = syncSetupReducer(state, { type: 'setupFailed', message: 'the sync server could not be reached' });
+  state = syncSetupReducer(state, {
+    type: 'setupFailed',
+    message: 'the sync server could not be reached',
+    field: null,
+  });
 
   assert.equal(isSyncSetupCeremonyActive(state), false);
   assert.equal(resolveSyncScreen({ hasAccount: true, isCeremonyActive: false }), 'connected');

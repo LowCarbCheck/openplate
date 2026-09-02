@@ -13,6 +13,8 @@
  * different `kind`s, not independent booleans.
  */
 
+import type { SyncFormField } from './form-field-error';
+
 /** Minimum passphrase length (M117/08) — a sync passphrase protects data with no server-side recovery, so it's held to a higher floor than a login password. */
 export const MIN_SYNC_PASSPHRASE_LENGTH = 12;
 
@@ -55,9 +57,21 @@ export function validateSyncPassphrase(passphrase: string, t: Translate): string
  */
 export type SyncSetupOutcome = { status: 'ready'; handle: string; recoveryCode: string };
 
+/**
+ * A refusal from the SERVICE that the details form can show, attached to the
+ * field it is about.
+ *
+ * Only server errors reach the reducer now. Everything the client can decide
+ * for itself — an empty name, an `@`, a short or mistyped passphrase, an
+ * invite that is not shaped like one — is the signup schema's business
+ * (`signup-schema.ts`), and Conform renders each of those under its own field
+ * without a state transition (owner request, 2026-09-02).
+ */
+export type SyncSetupServerError = { field: SyncFormField; message: string };
+
 export type SyncSetupState =
-  /** The one form: the handle (generated, editable) and the passphrase. */
-  | { kind: 'enter-details'; error: string | null }
+  /** The one form: the invite, the sign-in name and the passphrase. */
+  | { kind: 'enter-details'; serverError: SyncSetupServerError | null }
   | { kind: 'generating' }
   /** THE ACCOUNT CARD: handle and recovery code on one screen, behind one save confirmation. */
   | { kind: 'show-account-card'; handle: string; recoveryCode: string; hasConfirmedSaved: boolean }
@@ -65,11 +79,10 @@ export type SyncSetupState =
   | { kind: 'complete' };
 
 export type SyncSetupAction =
-  | { type: 'detailsRejected'; message: string }
-  | { type: 'detailsFieldChanged' }
   | { type: 'detailsSubmitted' }
   | { type: 'setupSucceeded'; handle: string; recoveryCode: string }
-  | { type: 'setupFailed'; message: string }
+  /** `field` is `null` for a refusal nothing on the form can fix — that one gets the retry screen. */
+  | { type: 'setupFailed'; message: string; field: SyncFormField | null }
   | { type: 'confirmSavedToggled'; checked: boolean }
   | { type: 'finishRequested' }
   | { type: 'retried' };
@@ -89,7 +102,7 @@ export function initialSyncSetupState(options?: { resume?: boolean }): SyncSetup
   return options?.resume === true ? { kind: 'generating' } : INITIAL_SYNC_SETUP_STATE;
 }
 
-export const INITIAL_SYNC_SETUP_STATE: SyncSetupState = { kind: 'enter-details', error: null };
+export const INITIAL_SYNC_SETUP_STATE: SyncSetupState = { kind: 'enter-details', serverError: null };
 
 /**
  * Whether the wizard is holding something the user MUST still see, so no
@@ -132,15 +145,6 @@ export function isSyncSetupCeremonyActive(state: SyncSetupState): boolean {
  * hit "retry") should never crash the UI.
  */
 export function syncSetupReducer(state: SyncSetupState, action: SyncSetupAction): SyncSetupState {
-  if (action.type === 'detailsRejected' && state.kind === 'enter-details') {
-    return { kind: 'enter-details', error: action.message };
-  }
-  // Validation runs on submit only, never on keystroke — but once a rejection
-  // is showing, editing the field is the user acting on it, so the message
-  // should not linger after they've clearly started to fix it.
-  if (action.type === 'detailsFieldChanged' && state.kind === 'enter-details' && state.error !== null) {
-    return { kind: 'enter-details', error: null };
-  }
   if (action.type === 'detailsSubmitted' && state.kind === 'enter-details') {
     return { kind: 'generating' };
   }
@@ -152,8 +156,13 @@ export function syncSetupReducer(state: SyncSetupState, action: SyncSetupAction)
       hasConfirmedSaved: false,
     };
   }
+  // A refusal the person can act on goes BACK TO THE FORM, under its field —
+  // "that sign-in name is taken" is answered by changing the name, and a
+  // dead-end screen with a retry button that would fail identically is the
+  // wrong place to say so. Everything else keeps the retry screen.
   if (action.type === 'setupFailed' && state.kind === 'generating') {
-    return { kind: 'error', message: action.message };
+    if (action.field === null) return { kind: 'error', message: action.message };
+    return { kind: 'enter-details', serverError: { field: action.field, message: action.message } };
   }
   if (action.type === 'confirmSavedToggled' && state.kind === 'show-account-card') {
     return { ...state, hasConfirmedSaved: action.checked };
@@ -166,7 +175,7 @@ export function syncSetupReducer(state: SyncSetupState, action: SyncSetupAction)
     return { kind: 'complete' };
   }
   if (action.type === 'retried' && state.kind === 'error') {
-    return { kind: 'enter-details', error: null };
+    return { kind: 'enter-details', serverError: null };
   }
   return state;
 }

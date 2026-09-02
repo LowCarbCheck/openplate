@@ -65,6 +65,14 @@ export const MAX_HANDLE_LENGTH = 64;
  */
 const HANDLE_ALPHABET = CROCKFORD_BASE32_ALPHABET;
 
+/**
+ * The narrow translation lookup this module needs for {@link describeHandleProblem}.
+ *
+ * Threaded in as a parameter, never imported: the file stays pure and callable
+ * from `node:test`, which has no i18next instance.
+ */
+export type HandleTranslate = (key: string) => string;
+
 /** Fills a byte buffer with randomness. Injected so the generator is testable without stubbing a global. */
 export type RandomBytes = (length: number) => Uint8Array;
 
@@ -207,4 +215,24 @@ export function suggestHandle(language: string, randomBytes: RandomBytes = webCr
   const animal = animals[pickIndex(animals.length, randomBytes)];
   const number = HANDLE_NUMBER_MIN + pickIndex(HANDLE_NUMBER_COUNT, randomBytes);
   return `${adjective}-${animal}-${number}`;
+}
+
+/**
+ * Turns a refused handle into the sentence that names the rule.
+ *
+ * Three cases, three sentences: "a handle is not an email address" is the one
+ * that has to be unmistakable, because typing an address into this box is the
+ * single most likely mistake a person arriving from any other service makes.
+ *
+ * It lives HERE, beside {@link findHandleProblem}, rather than in a component:
+ * three forms need it (signup, sign-in, recovery) and each one feeds it into a
+ * Zod schema, so a copy of the mapping in any one of them would be a fourth
+ * place for the `@` rule to drift.
+ */
+export function describeHandleProblem(candidate: string, t: HandleTranslate): string | null {
+  const problem = findHandleProblem(candidate);
+  if (problem === null) return null;
+  if (problem === 'email-shaped') return t('sync.setup.handleNotAnEmail');
+  if (problem === 'too-long') return t('sync.setup.handleTooLong');
+  return t('sync.setup.handleRequired');
 }

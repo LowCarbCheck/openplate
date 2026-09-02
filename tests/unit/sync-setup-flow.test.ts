@@ -14,8 +14,7 @@ import {
   validateSyncPassphrase,
 } from '../../app/lib/sync/setup-flow';
 import type { SyncSetupState, Translate } from '../../app/lib/sync/setup-flow';
-import { describeHandleProblem } from '../../app/components/sync-setup-flow';
-import { MAX_HANDLE_LENGTH } from '../../app/lib/sync/handle';
+import { MAX_HANDLE_LENGTH, describeHandleProblem } from '../../app/lib/sync/handle';
 
 /** Renders `key` plus any interpolation params, so both are assertable without i18next. */
 const fakeT: Translate = (key, params) => (params === undefined ? key : `${key} ${JSON.stringify(params)}`);
@@ -46,13 +45,8 @@ describe('validateSyncPassphrase', () => {
 });
 
 describe('syncSetupReducer', () => {
-  it('starts on enter-details with no error', () => {
-    assert.deepEqual(INITIAL_SYNC_SETUP_STATE, { kind: 'enter-details', error: null });
-  });
-
-  it('detailsRejected sets the error and stays on enter-details', () => {
-    const next = syncSetupReducer(INITIAL_SYNC_SETUP_STATE, { type: 'detailsRejected', message: 'too short' });
-    assert.deepEqual(next, { kind: 'enter-details', error: 'too short' });
+  it('starts on enter-details with no server error', () => {
+    assert.deepEqual(INITIAL_SYNC_SETUP_STATE, { kind: 'enter-details', serverError: null });
   });
 
   it('detailsSubmitted moves from enter-details to generating', () => {
@@ -88,10 +82,40 @@ describe('syncSetupReducer', () => {
     assert.equal(shown.kind === 'show-account-card' && shown.recoveryCode, 'ABCDE-FGHJK');
   });
 
-  it('setupFailed moves from generating to error', () => {
+  it('setupFailed with no field moves from generating to the retry screen', () => {
     const generating: SyncSetupState = { kind: 'generating' };
-    const next = syncSetupReducer(generating, { type: 'setupFailed', message: 'network error' });
+    const next = syncSetupReducer(generating, { type: 'setupFailed', message: 'network error', field: null });
     assert.deepEqual(next, { kind: 'error', message: 'network error' });
+  });
+
+  // A refusal the person can act on is answered by editing a field, so it goes
+  // BACK TO THE FORM rather than to a dead-end screen whose retry button would
+  // fail identically (owner request, 2026-09-02).
+  it('setupFailed with a field returns to the form, carrying the server error', () => {
+    const generating: SyncSetupState = { kind: 'generating' };
+    const next = syncSetupReducer(generating, {
+      type: 'setupFailed',
+      message: 'that name is taken',
+      field: 'handle',
+    });
+    assert.deepEqual(next, {
+      kind: 'enter-details',
+      serverError: { field: 'handle', message: 'that name is taken' },
+    });
+  });
+
+  it('an invite refusal comes back under the invite field', () => {
+    const next = syncSetupReducer({ kind: 'generating' }, {
+      type: 'setupFailed',
+      message: 'that invite is not valid',
+      field: 'invite',
+    });
+    assert.equal(next.kind === 'enter-details' && next.serverError?.field, 'invite');
+  });
+
+  it('ignores a setupFailed that arrives outside of generating', () => {
+    const complete: SyncSetupState = { kind: 'complete' };
+    assert.deepEqual(syncSetupReducer(complete, { type: 'setupFailed', message: 'late', field: 'handle' }), complete);
   });
 
   it('confirmSavedToggled flips hasConfirmedSaved without losing the card', () => {
@@ -121,30 +145,22 @@ describe('syncSetupReducer', () => {
     assert.deepEqual(complete, { kind: 'complete' });
   });
 
-  // The handle field starts EMPTY (owner decision, 2026-09-02) and validates
-  // only on submit — but once a rejection is showing, editing the field is
-  // the user acting on it, so the message must not linger.
-  it('detailsFieldChanged clears a showing error without touching anything else', () => {
-    const errored: SyncSetupState = { kind: 'enter-details', error: 'sync.setup.handleRequired' };
-    const next = syncSetupReducer(errored, { type: 'detailsFieldChanged' });
-    assert.deepEqual(next, { kind: 'enter-details', error: null });
-  });
-
-  it('detailsFieldChanged is a no-op when there is no error to clear', () => {
-    const next = syncSetupReducer(INITIAL_SYNC_SETUP_STATE, { type: 'detailsFieldChanged' });
-    assert.deepEqual(next, INITIAL_SYNC_SETUP_STATE);
-  });
-
-  it('detailsFieldChanged does not apply outside of enter-details', () => {
-    const generating: SyncSetupState = { kind: 'generating' };
-    const next = syncSetupReducer(generating, { type: 'detailsFieldChanged' });
-    assert.deepEqual(next, generating);
+  // Client-side validation no longer reaches this machine at all: an empty
+  // name, an `@`, a short or mistyped passphrase and a malformed invite are
+  // the signup schema's business, rendered by Conform under their own fields
+  // (owner request, 2026-09-02). Only the SERVICE's refusals get a state.
+  it('a resubmission from a server-rejected form goes back to generating', () => {
+    const rejected: SyncSetupState = {
+      kind: 'enter-details',
+      serverError: { field: 'handle', message: 'that name is taken' },
+    };
+    assert.deepEqual(syncSetupReducer(rejected, { type: 'detailsSubmitted' }), { kind: 'generating' });
   });
 
   it('retried moves from error back to a clean enter-details', () => {
     const errored: SyncSetupState = { kind: 'error', message: 'network error' };
     const next = syncSetupReducer(errored, { type: 'retried' });
-    assert.deepEqual(next, { kind: 'enter-details', error: null });
+    assert.deepEqual(next, { kind: 'enter-details', serverError: null });
   });
 
   it('ignores an action that does not apply to the current state (no-op, no throw)', () => {
@@ -204,9 +220,10 @@ describe('initialSyncSetupState', () => {
 
 /**
  * `describeHandleProblem` turns a refused candidate into the sentence shown
- * under the form on submit — three cases, three sentences, and the field
- * starts empty (owner decision, 2026-09-02) so "required" is the one a
- * first-time submit is most likely to hit.
+ * under the HANDLE FIELD on submit — three cases, three sentences, and the
+ * field starts empty (owner decision, 2026-09-02) so "required" is the one a
+ * first-time submit is most likely to hit. It lives in `handle.ts` because all
+ * three sync forms feed it into a Zod schema.
  */
 describe('describeHandleProblem', () => {
   it('names an empty candidate as required, not as any other problem', () => {

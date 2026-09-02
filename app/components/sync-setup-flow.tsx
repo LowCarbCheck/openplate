@@ -1,26 +1,30 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Copy, Loader2, RefreshCw } from 'lucide-react';
+import { getFormProps, getInputProps, useForm } from '@conform-to/react';
+import type { Submission } from '@conform-to/react';
+import { parseWithZod } from '@conform-to/zod/v4';
 import {
   initialSyncSetupState,
   isSyncSetupCeremonyActive,
   syncSetupReducer,
-  validateSyncPassphrase,
   type SyncSetupOutcome,
-  type Translate,
+  type SyncSetupServerError,
 } from '#app/lib/sync/setup-flow';
-import { findHandleProblem, normalizeHandle, suggestHandle } from '#app/lib/sync/handle';
+import { makeSyncSignupSchema, type SyncInviteRule, type SyncSignupValues } from '#app/lib/sync/signup-schema';
+import { readSyncErrorField } from '#app/lib/sync/form-field-error';
+import { normalizeHandle, suggestHandle } from '#app/lib/sync/handle';
 import { passphraseStrengthKey, ratePassphrase } from '#app/lib/sync/passphrase-strength';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
+import { FieldError } from '#app/components/field-error';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 
 /**
- * The sync-setup CEREMONY: handle and passphrase entry -> the ACCOUNT CARD,
- * with an unmissable loss warning -> a confirm-saved gate before setup can
- * complete.
+ * The sync-setup CEREMONY: invite, handle and passphrase entry -> the ACCOUNT
+ * CARD, with an unmissable loss warning -> a confirm-saved gate before setup
+ * can complete.
  *
  * THE HANDLE IS TYPED, with a suggestion one click away. The field starts
  * empty and "suggest a name" fills it with `suggestHandle`'s readable
@@ -31,6 +35,21 @@ import { Label } from '#app/components/ui/label';
  * runs locally (`handle.ts`), so a person who types their email address is
  * told immediately rather than after a round trip.
  *
+ * ── One Conform form, one error per field ────────────────────────────────
+ *
+ * Validation is a single Zod schema (`signup-schema.ts`) driven through
+ * Conform, exactly like `settings.goals.tsx` and `fasting.tsx`. What it
+ * replaced was a chain of `if`s whose first failure became one red sentence
+ * above the submit button — one problem at a time, attached to no field
+ * (owner request, 2026-09-02). `shouldRevalidate: 'onInput'` is not optional
+ * here: without it a reported error survives the person fixing it.
+ *
+ * THE INVITE LIVES IN THIS FORM, not above it. It is the first field of the
+ * same submission, so an invalid code lands under the invite box rather than
+ * over the button, and a code that arrived through a link is shown read-only
+ * with a check — it needs no action, and "Change" is there for the person who
+ * has a different one to paste.
+ *
  * `provision` is injected, and this component knows nothing about what it
  * does. That is the whole point of the split: the ceremony is a fixed piece of
  * UX (M117/08, D5) that has to look and behave the same whether it runs during
@@ -40,8 +59,11 @@ import { Label } from '#app/components/ui/label';
  * (`app/lib/sync/sync-actions.ts`).
  *
  * `provision` must REJECT on failure. Anything it throws becomes the reducer's
- * `error` branch — nothing is swallowed, because a setup that silently half-
- * completed is the one state a user cannot recover from without support.
+ * failure branch — nothing is swallowed, because a setup that silently half-
+ * completed is the one state a user cannot recover from without support. A
+ * refusal the person can still fix (`SyncFieldError`: a taken name, a spent
+ * invite) comes back to THIS form under its field; everything else gets the
+ * retry screen.
  *
  * `resume` is the setup-COMPLETION entry point: an account that exists with no
  * key records, reached from the sign-in form where the handle and passphrase
@@ -53,8 +75,9 @@ export function SyncSetupFlow({
   provision,
   onCeremonyActiveChange,
   resume,
+  invite,
 }: {
-  provision: (input: { handle: string; passphrase: string }) => Promise<SyncSetupOutcome>;
+  provision: (input: { handle: string; passphrase: string; invite: string }) => Promise<SyncSetupOutcome>;
   /**
    * Reports whether this wizard is holding something the user MUST still see,
    * so the surrounding screen can refuse to swap it out.
@@ -68,16 +91,24 @@ export function SyncSetupFlow({
   onCeremonyActiveChange?: (isActive: boolean) => void;
   /** Skips the details form and provisions immediately with an already-known handle and passphrase. */
   resume?: { handle: string; passphrase: string };
+  /** Omitted when this instance neither wants nor was given an invite — then no invite field is rendered at all. */
+  invite?: SyncSetupInvite;
 }) {
   const { t, i18n } = useTranslation();
   const [state, dispatch] = useReducer(syncSetupReducer, { resume: resume !== undefined }, initialSyncSetupState);
-  // Starts EMPTY (owner decision, 2026-09-02): a prefilled random handle reads
-  // as a generated password and confuses people into thinking it must be kept
-  // as-is. The field stays editable and the "suggest a name" button next to it
-  // fills in a readable `suggestHandle` name on demand.
-  const [handle, setHandle] = useState('');
-  const [passphrase, setPassphrase] = useState('');
-  const [confirmPassphrase, setConfirmPassphrase] = useState('');
+  /**
+   * The last submission Conform accepted, kept so the form can be re-seeded
+   * with what the person typed when it comes BACK — after a service refusal,
+   * or after "try again" on the failure screen. The details form unmounts
+   * while provisioning runs, so nothing inside it survives on its own, and
+   * `reply()` carries both the payload and any field error in the one shape
+   * Conform's `lastResult` expects.
+   */
+  const lastSubmissionRef = useRef<SyncSignupSubmission | null>(null);
+  // The invite arrived ready to use, so it starts read-only. Held HERE rather
+  // than in the details form, which unmounts during provisioning: a person who
+  // pressed "Change" must not find the box locked again on the way back.
+  const [isInviteUnlocked, setIsInviteUnlocked] = useState(false);
 
   // Reported from an effect, never during render — the parent turns this into
   // state, and a render-phase parent update is a React error. Releasing on
@@ -91,7 +122,7 @@ export function SyncSetupFlow({
 
   /** The provisioning round trip, shared by the form submit and the `resume` entry point. */
   const runProvision = useCallback(
-    async (chosen: { handle: string; passphrase: string }): Promise<void> => {
+    async (chosen: { handle: string; passphrase: string; invite: string }): Promise<void> => {
       try {
         const outcome = await provision(chosen);
         dispatch({ type: 'setupSucceeded', handle: outcome.handle, recoveryCode: outcome.recoveryCode });
@@ -100,8 +131,14 @@ export function SyncSetupFlow({
         // taken" is worth reading, and a generic failure message would send
         // the user round the same loop. `describeErrorForUser` rather than an
         // `instanceof Error` check: WebCrypto rejects with a DOMException, and
-        // this step is where one is most likely to surface.
-        dispatch({ type: 'setupFailed', message: describeErrorForUser(error, t('sync.setup.setupFailed')) });
+        // this step is where one is most likely to surface. `field` is what
+        // decides between "back to the form, under the invite box" and the
+        // retry screen.
+        dispatch({
+          type: 'setupFailed',
+          message: describeErrorForUser(error, t('sync.setup.setupFailed')),
+          field: readSyncErrorField(error),
+        });
       }
     },
     [provision, t],
@@ -116,55 +153,47 @@ export function SyncSetupFlow({
   useEffect(() => {
     if (resume === undefined || hasResumedRef.current) return;
     hasResumedRef.current = true;
-    void runProvision({ handle: resume.handle, passphrase: resume.passphrase });
+    void runProvision({ handle: resume.handle, passphrase: resume.passphrase, invite: '' });
   }, [resume, runProvision]);
 
-  // Clears a showing rejection the moment the user edits the field again —
-  // validation itself still only runs on submit (`handleDetailsSubmit`), this
-  // just stops a stale "required"/"@"/"too long" message from lingering under
-  // a field the user has already started fixing.
-  function handleHandleChange(value: string): void {
-    setHandle(value);
-    dispatch({ type: 'detailsFieldChanged' });
-  }
+  /**
+   * What the details form is re-seeded with. `undefined` before the first
+   * submission — there is nothing to restore and nothing to complain about.
+   *
+   * Memoised on the reducer state so the object identity only changes when the
+   * screen does: Conform re-applies `lastResult` whenever it is a new object,
+   * and a fresh one every render would fight the person's typing.
+   */
+  const detailsResult = useMemo(() => {
+    if (state.kind !== 'enter-details') return undefined;
+    const submission = lastSubmissionRef.current;
+    if (submission === null) return undefined;
+    if (state.serverError === null) return submission.reply();
+    return submission.reply({ fieldErrors: { [state.serverError.field]: [state.serverError.message] } });
+  }, [state]);
 
-  async function handleDetailsSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    // The reducer stores already-translated text: messages are produced here,
-    // where a `t` exists, rather than as keys resolved at render time.
-    const handleError = describeHandleProblem(handle, t);
-    if (handleError !== null) {
-      dispatch({ type: 'detailsRejected', message: handleError });
-      return;
-    }
-    const lengthError = validateSyncPassphrase(passphrase, t);
-    if (lengthError) {
-      dispatch({ type: 'detailsRejected', message: lengthError });
-      return;
-    }
-    if (passphrase !== confirmPassphrase) {
-      dispatch({ type: 'detailsRejected', message: t('sync.setup.passphraseMismatch') });
-      return;
-    }
-
+  function handleDetailsSubmit(submission: SyncSignupSubmission): void {
+    if (submission.status !== 'success') return;
+    lastSubmissionRef.current = submission;
     dispatch({ type: 'detailsSubmitted' });
     // The CANONICAL form goes to the service — NFKC, trimmed, lowercased, the
     // same normalisation the server applies. Sending the raw field would show
     // the user one handle on the account card and register another.
-    await runProvision({ handle: normalizeHandle(handle), passphrase });
+    void runProvision({
+      handle: normalizeHandle(submission.value.handle),
+      passphrase: submission.value.passphrase,
+      invite: submission.value.invite.trim(),
+    });
   }
 
   if (state.kind === 'enter-details') {
     return (
       <DetailsStep
-        handle={handle}
-        passphrase={passphrase}
-        confirmPassphrase={confirmPassphrase}
-        error={state.error}
-        onHandleChange={handleHandleChange}
-        onRegenerateHandle={() => handleHandleChange(suggestHandle(i18n.language))}
-        onPassphraseChange={setPassphrase}
-        onConfirmPassphraseChange={setConfirmPassphrase}
+        invite={invite}
+        isInviteUnlocked={isInviteUnlocked || isInviteRejected(state.serverError)}
+        onUnlockInvite={() => setIsInviteUnlocked(true)}
+        lastResult={detailsResult}
+        onSuggestHandle={() => suggestHandle(i18n.language)}
         onSubmit={handleDetailsSubmit}
       />
     );
@@ -189,95 +218,160 @@ export function SyncSetupFlow({
   return <CompleteStep />;
 }
 
-/**
- * Turns a refused handle into the sentence that names the rule.
- *
- * Three cases, three sentences: "a handle is not an email address" is the one
- * that has to be unmistakable, because typing an address into this box is the
- * single most likely mistake a person arriving from any other service makes.
- */
-export function describeHandleProblem(candidate: string, t: Translate): string | null {
-  const problem = findHandleProblem(candidate);
-  if (problem === null) return null;
-  if (problem === 'email-shaped') return t('sync.setup.handleNotAnEmail');
-  if (problem === 'too-long') return t('sync.setup.handleTooLong');
-  return t('sync.setup.handleRequired');
+/** How the details form should treat the invite, when there is one at all. */
+export type SyncSetupInvite = {
+  /** The token an `#invite=…` link supplied, already taken out of the URL, or `''`. */
+  initialValue: string;
+  /** It came from a link, so it needs no action: shown read-only, with a check and a "Change" action. */
+  isFromLink: boolean;
+  /** This instance refuses signups without one, so an empty box is worth saying so before the round trip. */
+  isRequired: boolean;
+};
+
+/** The shape `parseWithZod` hands back for this form, and the shape `lastResult` is built from. */
+type SyncSignupSubmission = Submission<SyncSignupValues, string[], SyncSignupValues>;
+
+/** A service refusal the person answers by editing the invite, so the box has to be editable again. */
+function isInviteRejected(serverError: SyncSetupServerError | null): boolean {
+  return serverError !== null && serverError.field === 'invite';
+}
+
+/** What the schema is told to demand of the invite, derived from the one prop that describes it. */
+function inviteRule(invite: SyncSetupInvite | undefined): SyncInviteRule {
+  if (invite === undefined) return 'none';
+  return invite.isRequired ? 'required' : 'optional';
 }
 
 function DetailsStep({
-  handle,
-  passphrase,
-  confirmPassphrase,
-  error,
-  onHandleChange,
-  onRegenerateHandle,
-  onPassphraseChange,
-  onConfirmPassphraseChange,
+  invite,
+  isInviteUnlocked,
+  onUnlockInvite,
+  lastResult,
+  onSuggestHandle,
   onSubmit,
 }: {
-  handle: string;
-  passphrase: string;
-  confirmPassphrase: string;
-  error: string | null;
-  onHandleChange: (value: string) => void;
-  onRegenerateHandle: () => void;
-  onPassphraseChange: (value: string) => void;
-  onConfirmPassphraseChange: (value: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  invite?: SyncSetupInvite;
+  isInviteUnlocked: boolean;
+  onUnlockInvite: () => void;
+  lastResult: ReturnType<SyncSignupSubmission['reply']> | undefined;
+  onSuggestHandle: () => string;
+  onSubmit: (submission: SyncSignupSubmission) => void;
 }) {
   const { t } = useTranslation();
+  // A local mirror ONLY because something else reads the live value: the
+  // strength hint paints from it. Conform still owns the field itself (see the
+  // input), and this is fed by an `onChange` layered on the spread.
+  const [passphrase, setPassphrase] = useState('');
+
+  const [form, fields] = useForm({
+    id: 'sync-signup',
+    lastResult,
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: makeSyncSignupSchema(t, { invite: inviteRule(invite) }) });
+    },
+    // `shouldValidate` stays at Conform's `onSubmit` default — nothing is red
+    // before the person asks for it — but REVALIDATION is `onInput`, so a
+    // corrected field clears its own error as it is typed. Left at the default,
+    // a reported error would sit there, `aria-invalid` and all, until the next
+    // submit.
+    shouldRevalidate: 'onInput',
+    defaultValue: { invite: invite?.initialValue ?? '', handle: '', passphrase: '', confirmPassphrase: '' },
+    onSubmit(event, { submission }) {
+      // Nothing is posted anywhere: this form's "action" is a browser-side
+      // ceremony, and the default navigation would abandon it.
+      event.preventDefault();
+      if (submission === undefined) return;
+      onSubmit(submission);
+    },
+  });
+
   // A HINT, never a gate (`passphrase-strength.ts`): the 12-character floor is
   // the only hard rule, and a meter that refuses pushes people towards
   // whatever pattern satisfies it rather than towards length.
   const strength = ratePassphrase(passphrase);
+  const strengthId = `${fields.passphrase.id}-strength`;
+  const isInviteReadOnly = invite?.isFromLink === true && !isInviteUnlocked;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form {...getFormProps(form)} className="space-y-4">
+      {invite !== undefined && (
+        <div className="space-y-2">
+          <Label htmlFor={fields.invite.id}>{t('sync.create.inviteLabel')}</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              {...getInputProps(fields.invite, { type: 'text' })}
+              autoComplete="off"
+              spellCheck={false}
+              readOnly={isInviteReadOnly}
+              className={isInviteReadOnly ? 'h-11 bg-muted text-muted-foreground' : 'h-11'}
+            />
+            {isInviteReadOnly && (
+              <>
+                <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="sr-only">{t('sync.create.inviteFromLink')}</span>
+                <Button type="button" variant="ghost" className="h-11 shrink-0" onClick={onUnlockInvite}>
+                  {t('sync.create.inviteChange')}
+                </Button>
+              </>
+            )}
+          </div>
+          {/* The "this instance is invite-only" hint is for someone who has to
+              find a code. Once one is sitting in the box, ready to use, it is
+              an instruction to do something already done. */}
+          {!isInviteReadOnly && <p className="text-xs text-muted-foreground">{t('sync.create.inviteHint')}</p>}
+          <FieldError id={fields.invite.errorId} errors={fields.invite.errors} />
+        </div>
+      )}
+
       <div className="space-y-2">
-        <Label htmlFor="sync-handle">{t('sync.handleLabel')}</Label>
+        <Label htmlFor={fields.handle.id}>{t('sync.handleLabel')}</Label>
         <div className="flex gap-2">
+          {/*
+            Conform owns this field end to end — `getInputProps` supplies the
+            id, the name, the seeded `defaultValue` and the
+            `aria-invalid`/`aria-describedby` pair from the SAME metadata
+            `FieldError` reads. Presentation-only props go AFTER the spread so
+            they aren't clobbered by it. NOT `required`: the field starts empty
+            (owner decision, 2026-09-02) and the browser's native popup would
+            intercept the submit with untranslated copy before the schema ever
+            ran.
+          */}
           <Input
-            id="sync-handle"
-            type="text"
-            // NOT `required`: the field now starts empty (owner decision,
-            // 2026-09-02), and the browser's native required-field popup
-            // ("Please fill out this field") would intercept the submit
-            // before `handleDetailsSubmit` ever runs, showing untranslated
-            // browser copy instead of `sync.setup.handleRequired`. The empty
-            // check below is the only gate.
+            {...getInputProps(fields.handle, { type: 'text' })}
             autoComplete="username"
             spellCheck={false}
             autoCapitalize="none"
-            value={handle}
-            onChange={(event) => onHandleChange(event.target.value)}
             className="h-11 font-mono"
           />
           <Button
             type="button"
             variant="outline"
             className="h-11 shrink-0"
-            onClick={onRegenerateHandle}
+            // `form.update` rather than a local value: the input is
+            // uncontrolled, so rewriting Conform's initialValue is what puts
+            // the suggestion in the box AND in the next submission.
+            onClick={() => form.update({ name: fields.handle.name, value: onSuggestHandle() })}
             aria-label={t('sync.setup.handleShuffle')}
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">{t('sync.handleHint')}</p>
+        <FieldError id={fields.handle.errorId} errors={fields.handle.errors} />
       </div>
+
       <p className="text-sm text-muted-foreground">{t('sync.setup.passphraseIntro')}</p>
+
       <div className="space-y-2">
-        <Label htmlFor="sync-passphrase">{t('sync.setup.passphraseLabel')}</Label>
+        <Label htmlFor={fields.passphrase.id}>{t('sync.setup.passphraseLabel')}</Label>
         <Input
-          id="sync-passphrase"
-          type="password"
+          {...getInputProps(fields.passphrase, { type: 'password', ariaDescribedBy: strengthId })}
           autoComplete="new-password"
-          value={passphrase}
-          onChange={(event) => onPassphraseChange(event.target.value)}
+          onChange={(event) => setPassphrase(event.target.value)}
           className="h-11"
-          aria-describedby="sync-passphrase-strength"
         />
         <p
-          id="sync-passphrase-strength"
+          id={strengthId}
           aria-live="polite"
           className={
             passphrase === '' ? 'sr-only'
@@ -290,19 +384,23 @@ function DetailsStep({
         >
           {passphrase === '' ? '' : t(passphraseStrengthKey(strength))}
         </p>
+        <FieldError id={fields.passphrase.errorId} errors={fields.passphrase.errors} />
       </div>
+
       <div className="space-y-2">
-        <Label htmlFor="sync-passphrase-confirm">{t('sync.setup.confirmLabel')}</Label>
+        <Label htmlFor={fields.confirmPassphrase.id}>{t('sync.setup.confirmLabel')}</Label>
         <Input
-          id="sync-passphrase-confirm"
-          type="password"
+          {...getInputProps(fields.confirmPassphrase, { type: 'password' })}
           autoComplete="new-password"
-          value={confirmPassphrase}
-          onChange={(event) => onConfirmPassphraseChange(event.target.value)}
           className="h-11"
         />
+        <FieldError id={fields.confirmPassphrase.errorId} errors={fields.confirmPassphrase.errors} />
       </div>
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+      {/* Only what belongs to no field lands here: a service refusal with a
+          named field went back to that field on the way in. */}
+      <FieldError id={form.errorId} errors={form.errors} />
+
       <Button type="submit" className="h-11 w-full">
         {t('sync.setup.continue')}
       </Button>

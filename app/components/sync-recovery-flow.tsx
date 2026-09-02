@@ -1,12 +1,14 @@
 import { useReducer, useState } from 'react';
-import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Loader2 } from 'lucide-react';
+import { getFormProps, getInputProps, useForm } from '@conform-to/react';
+import { parseWithZod } from '@conform-to/zod/v4';
 import { canSubmitRecovery, INITIAL_RECOVERY_FLOW_STATE, recoveryFlowReducer } from '#app/lib/sync/recovery-flow';
-import { validateSyncPassphrase } from '#app/lib/sync/setup-flow';
+import { makeSyncRecoverySchema, type SyncRecoveryValues } from '#app/lib/sync/recovery-schema';
 import { classifyRecoveryFailure } from '#app/lib/sync/sign-in-error';
 import { recoverSyncAccount } from '#app/lib/sync/sync-actions';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
+import { FieldError } from '#app/components/field-error';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
@@ -27,7 +29,15 @@ import { Label } from '#app/components/ui/label';
  *
  * The state machine and its "may this be submitted" predicate live in
  * `app/lib/sync/recovery-flow.ts`, unit-tested independently of this
- * component, so the gate cannot be loosened by a styling change.
+ * component, so the gate cannot be loosened by a styling change. What the
+ * three FIELDS must contain is a Zod schema instead
+ * (`app/lib/sync/recovery-schema.ts`), driven through Conform so each broken
+ * rule renders under the field that broke it rather than as one sentence above
+ * the button (owner request, 2026-09-02).
+ *
+ * The service's own refusal stays on its own screen: it is a `401` that
+ * deliberately will not say WHICH of the two secrets was wrong, so it belongs
+ * to the form rather than to a field.
  */
 export function SyncRecoveryFlow({
   serverUrl,
@@ -41,23 +51,27 @@ export function SyncRecoveryFlow({
 }) {
   const { t } = useTranslation();
   const [state, dispatch] = useReducer(recoveryFlowReducer, INITIAL_RECOVERY_FLOW_STATE);
-  const [handle, setHandle] = useState(initialHandle);
-  const [recoveryCode, setRecoveryCode] = useState('');
-  const [passphrase, setPassphrase] = useState('');
+  // The values are needed again after a failed attempt (the form remounts on
+  // "try again"), so they are mirrored here rather than left inside a form
+  // that no longer exists. Nothing is written to storage: two of the three are
+  // secrets.
+  const [draft, setDraft] = useState<SyncRecoveryValues>({
+    handle: initialHandle,
+    recoveryCode: '',
+    passphrase: '',
+  });
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
+  async function handleSubmit(values: SyncRecoveryValues): Promise<void> {
     if (!canSubmitRecovery(state)) return;
-
-    const lengthError = validateSyncPassphrase(passphrase, t);
-    if (lengthError !== null) {
-      dispatch({ type: 'rejected', message: lengthError });
-      return;
-    }
-
+    setDraft(values);
     dispatch({ type: 'submitted' });
     try {
-      await recoverSyncAccount({ serverUrl, handle: handle.trim(), recoveryCode, newPassphrase: passphrase });
+      await recoverSyncAccount({
+        serverUrl,
+        handle: values.handle.trim(),
+        recoveryCode: values.recoveryCode,
+        newPassphrase: values.passphrase,
+      });
       dispatch({ type: 'succeeded' });
     } catch (error) {
       dispatch({ type: 'failed', message: describeRecoveryError(error, t) });
@@ -96,59 +110,82 @@ export function SyncRecoveryFlow({
     );
   }
 
+  return <RecoveryForm draft={draft} onSubmit={(values) => void handleSubmit(values)} onCancel={onCancel} />;
+}
+
+function RecoveryForm({
+  draft,
+  onSubmit,
+  onCancel,
+}: {
+  draft: SyncRecoveryValues;
+  onSubmit: (values: SyncRecoveryValues) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const [form, fields] = useForm({
+    id: 'sync-recover',
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: makeSyncRecoverySchema(t) });
+    },
+    // Nothing red before the person asks for it, but a corrected field clears
+    // its own error as it is typed. See `.claude/conform-to-react.md`.
+    shouldRevalidate: 'onInput',
+    defaultValue: draft,
+    onSubmit(event, { submission }) {
+      // Client-side ceremony, no action to post to: the default navigation
+      // would abandon it.
+      event.preventDefault();
+      if (submission?.status !== 'success') return;
+      onSubmit(submission.value);
+    },
+  });
+
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+    <form {...getFormProps(form)} className="space-y-4">
       <div className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface p-4 text-sm text-accent-amber">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>{t('sync.recover.intro')}</p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="sync-recover-handle">{t('sync.handleLabel')}</Label>
+        <Label htmlFor={fields.handle.id}>{t('sync.handleLabel')}</Label>
         <Input
-          id="sync-recover-handle"
-          type="text"
-          required
+          {...getInputProps(fields.handle, { type: 'text' })}
           autoComplete="username"
           spellCheck={false}
           autoCapitalize="none"
-          value={handle}
-          onChange={(event) => setHandle(event.target.value)}
           className="h-11 font-mono"
         />
+        <FieldError id={fields.handle.errorId} errors={fields.handle.errors} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="sync-recover-code">{t('sync.recover.codeLabel')}</Label>
+        <Label htmlFor={fields.recoveryCode.id}>{t('sync.recover.codeLabel')}</Label>
         <Input
-          id="sync-recover-code"
-          required
+          {...getInputProps(fields.recoveryCode, { type: 'text' })}
           autoComplete="off"
           spellCheck={false}
-          value={recoveryCode}
-          onChange={(event) => setRecoveryCode(event.target.value)}
           className="h-11 font-mono"
         />
         <p className="text-xs text-muted-foreground">{t('sync.recover.codeHint')}</p>
+        <FieldError id={fields.recoveryCode.errorId} errors={fields.recoveryCode.errors} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="sync-recover-passphrase">{t('sync.recover.newPassphraseLabel')}</Label>
+        <Label htmlFor={fields.passphrase.id}>{t('sync.recover.newPassphraseLabel')}</Label>
         <Input
-          id="sync-recover-passphrase"
-          type="password"
-          required
+          {...getInputProps(fields.passphrase, { type: 'password' })}
           autoComplete="new-password"
-          value={passphrase}
-          onChange={(event) => setPassphrase(event.target.value)}
           className="h-11"
         />
+        <FieldError id={fields.passphrase.errorId} errors={fields.passphrase.errors} />
       </div>
 
-      {state.error !== null && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+      <FieldError id={form.errorId} errors={form.errors} />
 
       <div className="flex flex-col gap-2">
-        <Button type="submit" className="h-11 w-full" disabled={!canSubmitRecovery(state)}>
+        <Button type="submit" className="h-11 w-full">
           {t('sync.recover.submit')}
         </Button>
         <Button type="button" variant="ghost" className="h-11 w-full" onClick={onCancel}>

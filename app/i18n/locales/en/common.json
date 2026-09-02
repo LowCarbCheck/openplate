@@ -2016,7 +2016,11 @@
       "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
       "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
       "closed": "This sync server is not accepting new accounts.",
-      "handleTaken": "That sign-in name is already taken on this server. Change it and try again."
+      "handleTaken": "That sign-in name is already taken on this server. Change it and try again.",
+      "inviteChange": "Change",
+      "inviteFromLink": "Invite code taken from your link, ready to use.",
+      "inviteMissing": "Paste your invite code, or open the invite link you were sent.",
+      "inviteMalformed": "That does not look like an invite code. They start with {{prefix}}."
     },
     "danger": {
       "description": "Both options leave the diary on this device untouched.",
@@ -2066,7 +2070,8 @@
       "rejected": "That sign-in name and recovery code do not go together. Check both and try again.",
       "submit": "Set a new passphrase",
       "tryAgain": "Try again",
-      "working": "Setting your new passphrase…"
+      "working": "Setting your new passphrase…",
+      "codeRequired": "Enter the recovery code from your account card."
     },
     "setup": {
       "accountCard": {
@@ -2104,7 +2109,9 @@
       "forgot": "I have forgotten my passphrase",
       "intro": "Enter your passphrase to unlock this device. We ask again after every reload, the key is never stored.",
       "submit": "Unlock",
-      "working": "Unlocking…"
+      "working": "Unlocking…",
+      "passphraseRequired": "Enter your sync passphrase.",
+      "handleRequired": "Enter your sign-in name."
     },
     "signOut": {
       "cta": "Sign out on this device",

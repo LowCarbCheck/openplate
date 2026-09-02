@@ -26,21 +26,25 @@
 
 /** Every screen the recovery flow can be on. Invalid combinations are unrepresentable — they are different `kind`s. */
 export type RecoveryFlowState =
-  /** The one form: handle, recovery code, new passphrase. */
-  | { kind: 'entering'; error: string | null }
+  /**
+   * The one form: handle, recovery code, new passphrase.
+   *
+   * It carries NO error slot. Every rule this form has is now the recovery
+   * schema's (`recovery-schema.ts`) and Conform renders each break under its
+   * own field, so the only failure left for the machine to hold is the
+   * service's — and that one has its own screen below (owner request,
+   * 2026-09-02).
+   */
+  | { kind: 'entering' }
   | { kind: 'submitting' }
   /** Failed, and re-enterable: the values are still in the form, and a mistyped code is the likeliest cause. */
   | { kind: 'failed'; message: string }
   | { kind: 'complete' };
 
 export type RecoveryFlowAction =
-  | { type: 'submitted' }
-  | { type: 'rejected'; message: string }
-  | { type: 'failed'; message: string }
-  | { type: 'succeeded' }
-  | { type: 'retried' };
+  { type: 'submitted' } | { type: 'failed'; message: string } | { type: 'succeeded' } | { type: 'retried' };
 
-export const INITIAL_RECOVERY_FLOW_STATE: RecoveryFlowState = { kind: 'entering', error: null };
+export const INITIAL_RECOVERY_FLOW_STATE: RecoveryFlowState = { kind: 'entering' };
 
 /**
  * Whether the flow may submit from `state`.
@@ -58,9 +62,6 @@ export function canSubmitRecovery(state: RecoveryFlowState): boolean {
 }
 
 export function recoveryFlowReducer(state: RecoveryFlowState, action: RecoveryFlowAction): RecoveryFlowState {
-  if (action.type === 'rejected' && state.kind === 'entering') {
-    return { kind: 'entering', error: action.message };
-  }
   if (action.type === 'submitted' && canSubmitRecovery(state)) {
     return { kind: 'submitting' };
   }
@@ -71,7 +72,7 @@ export function recoveryFlowReducer(state: RecoveryFlowState, action: RecoveryFl
     return { kind: 'complete' };
   }
   if (action.type === 'retried' && state.kind === 'failed') {
-    return { kind: 'entering', error: null };
+    return { kind: 'entering' };
   }
   return state;
 }
