@@ -68,6 +68,28 @@ test('a both link parses to both halves, and round-trips through the builder', (
   assert.equal(fragmentFor(link), fragmentFor(whole));
 });
 
+/**
+ * THE SHARED FIXTURE. The exact string the operator CLI emits for these inputs,
+ * asserted here against the parser and in `djinn/openplate/join-link.test.ts`
+ * against the builder. djinn cannot import this module, so the grammar is
+ * written twice; this literal is what stops the two copies drifting apart, and
+ * a change to the grammar has to be made in both files or one of them fails.
+ */
+const CANONICAL_JOIN_FRAGMENT =
+  '#sync=https%3A%2F%2Fsync.example.test&invite=si_pMTz3s2n4h9QeQnQ0O_zA-3aWjIvbCzHkqk' +
+  '&gateway=https%3A%2F%2Fgw.example.test&ginvite=gi_9c8Vv3rTbn0lQpQ4Wc-yZaGkQhLmNoPq';
+
+test('the canonical operator link parses to both halves, and rebuilds to itself', () => {
+  const link = parseJoinFragment(CANONICAL_JOIN_FRAGMENT);
+  assert.deepEqual(link, {
+    syncUrl: SYNC_URL,
+    syncInvite: SYNC_INVITE,
+    gatewayUrl: GATEWAY_URL,
+    gatewayInvite: GATEWAY_INVITE,
+  });
+  assert.equal(fragmentFor(link), CANONICAL_JOIN_FRAGMENT);
+});
+
 test('a link with no capability at all is the one invalid case', () => {
   assert.equal(isJoinLinkEmpty(parseJoinFragment('')), true);
   assert.equal(isJoinLinkEmpty(parseJoinFragment('#')), true);
