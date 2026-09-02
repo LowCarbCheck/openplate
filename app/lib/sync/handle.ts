@@ -8,7 +8,17 @@
  * has no opinion about it beyond "non-empty, no `@`, length-bounded, unique".
  * Asking a person to invent one would produce either their email address or
  * their first name, and the first of those is exactly the PII the milestone
- * removed. So the default is generated, and the user may edit it.
+ * removed. So the client offers a name, and the user may edit it.
+ *
+ * ── Two mints, for two different jobs ────────────────────────────────────
+ *
+ * `generateHandle` produces ten Crockford characters. `suggestHandle` (bottom
+ * of this file) produces `flink-otter-42`. The difference is not cosmetic:
+ * the first is what the STUDY console mints into a field nobody reads aloud,
+ * the second is what the sync signup form's "suggest a name" button fills in,
+ * where a base32 string reads as a password and stops people editing it
+ * (owner decision, 2026-09-02). Both stay lowercase, `@`-free and inside
+ * `MAX_HANDLE_LENGTH`, so either is a handle the service accepts.
  *
  * ── Why Crockford base32 ─────────────────────────────────────────────────
  *
@@ -30,6 +40,8 @@
  * feedback a `400`.
  */
 import { CROCKFORD_BASE32_ALPHABET } from './engine/crypto/base32';
+import { DE_HANDLE_ADJECTIVES, DE_HANDLE_ANIMALS } from './handle-words.de';
+import { EN_HANDLE_ADJECTIVES, EN_HANDLE_ANIMALS } from './handle-words.en';
 
 /**
  * Handle length, in characters.
@@ -111,4 +123,88 @@ export function generateHandle(randomBytes: RandomBytes = webCryptoRandomBytes):
     handle += HANDLE_ALPHABET[byte & 0x1f];
   }
   return handle.toLowerCase();
+}
+
+/**
+ * The two-digit tail's range. Two digits, never `0`-prefixed: the suffix is
+ * there to make a suggestion collision-resistant enough to be worth offering,
+ * and `flink-otter-07` reads as a version number rather than as a name.
+ */
+export const HANDLE_NUMBER_MIN = 10;
+const HANDLE_NUMBER_COUNT = 90;
+
+/**
+ * How many draws `pickIndex` will make before giving up.
+ *
+ * With a bound in the low hundreds the rejection window covers all but a few
+ * parts per ten million of the 32-bit range, so a single retry is already
+ * vanishingly unlikely and sixty-four is a bound, not a budget. It exists so
+ * this loop can never spin: a `randomBytes` that returns a constant is a bug
+ * worth a thrown error rather than a hung tab.
+ */
+const MAX_DRAW_ATTEMPTS = 64;
+
+/**
+ * Picks a uniform index in `[0, bound)` from the injected randomness.
+ *
+ * REJECTION SAMPLING, not modulo. `generateHandle` above can mask because 32
+ * divides 256; a word list has an arbitrary length, so `value % bound` would
+ * quietly favour the first `2^32 % bound` entries of the list. Every draw
+ * outside the largest whole multiple of `bound` is discarded instead.
+ */
+function pickIndex(bound: number, randomBytes: RandomBytes): number {
+  const limit = Math.floor(0x1_00000000 / bound) * bound;
+  for (let attempt = 0; attempt < MAX_DRAW_ATTEMPTS; attempt += 1) {
+    const bytes = randomBytes(4);
+    const value = ((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) >>> 0;
+    if (value < limit) return value % bound;
+  }
+  throw new Error('Could not draw an unbiased index: the random source is not producing varied bytes.');
+}
+
+/** The adjective and animal lists a given UI language draws from. */
+export type HandleWordLists = { adjectives: readonly string[]; animals: readonly string[] };
+
+/**
+ * Chooses the word lists for a UI language tag.
+ *
+ * ENGLISH IS THE FALLBACK, deliberately: a suggestion in the wrong language is
+ * still a usable handle, whereas throwing would break the one button whose
+ * whole job is to unblock someone who cannot think of a name. The tag is
+ * matched on its primary subtag, so `de`, `de-DE` and `de-AT` all land on the
+ * German lists.
+ */
+export function resolveHandleWords(language: string): HandleWordLists {
+  const primary = language.toLowerCase().replace(/[^a-z].*$/, '');
+  if (primary === 'de') return { adjectives: DE_HANDLE_ADJECTIVES, animals: DE_HANDLE_ANIMALS };
+  return { adjectives: EN_HANDLE_ADJECTIVES, animals: EN_HANDLE_ANIMALS };
+}
+
+/**
+ * Suggests a READABLE handle: `<adjective>-<animal>-<two digits>`, in the UI
+ * language — `quick-otter-42`, `flink-otter-42`.
+ *
+ * ── Why this is not `generateHandle` ─────────────────────────────────────
+ *
+ * `generateHandle` mints ten Crockford characters, which is the right shape
+ * for a recovery code and the wrong shape for a name: `b7k2xq9m4t` reads as a
+ * password, and someone shown one in a field they are allowed to edit
+ * concludes they must keep it (owner decision, 2026-09-02). A suggestion has
+ * to look like something a person could have chosen. `generateHandle` stays
+ * for the study console, which mints rather than suggests.
+ *
+ * ── The bounds this respects ─────────────────────────────────────────────
+ *
+ * Twenty-four characters at the very longest (10 + 1 + 10 + 1 + 2), well
+ * inside {@link MAX_HANDLE_LENGTH}, and no `@` can appear because both lists
+ * are `[a-z]` only — so every value this returns passes
+ * {@link findHandleProblem} and the service's own rule. `handle-words.test.ts`
+ * pins that hygiene on the lists themselves.
+ */
+export function suggestHandle(language: string, randomBytes: RandomBytes = webCryptoRandomBytes): string {
+  const { adjectives, animals } = resolveHandleWords(language);
+  const adjective = adjectives[pickIndex(adjectives.length, randomBytes)];
+  const animal = animals[pickIndex(animals.length, randomBytes)];
+  const number = HANDLE_NUMBER_MIN + pickIndex(HANDLE_NUMBER_COUNT, randomBytes);
+  return `${adjective}-${animal}-${number}`;
 }

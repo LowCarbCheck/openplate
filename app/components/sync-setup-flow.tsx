@@ -10,7 +10,7 @@ import {
   type SyncSetupOutcome,
   type Translate,
 } from '#app/lib/sync/setup-flow';
-import { findHandleProblem, generateHandle, normalizeHandle } from '#app/lib/sync/handle';
+import { findHandleProblem, normalizeHandle, suggestHandle } from '#app/lib/sync/handle';
 import { passphraseStrengthKey, ratePassphrase } from '#app/lib/sync/passphrase-strength';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { Button } from '#app/components/ui/button';
@@ -22,8 +22,11 @@ import { Label } from '#app/components/ui/label';
  * with an unmissable loss warning -> a confirm-saved gate before setup can
  * complete.
  *
- * THE HANDLE IS MINTED HERE, not typed. `generateHandle` produces a short
- * Crockford-base32 name on first render and the field stays editable, which is
+ * THE HANDLE IS TYPED, with a suggestion one click away. The field starts
+ * empty and "suggest a name" fills it with `suggestHandle`'s readable
+ * `<adjective>-<animal>-<number>` in the UI language (`quick-otter-42`,
+ * `flink-otter-42`) — never the Crockford string `generateHandle` mints, which
+ * reads as a password and makes people think it cannot be changed. This is
  * also where the `@` rule becomes visible: the same check the service enforces
  * runs locally (`handle.ts`), so a person who types their email address is
  * told immediately rather than after a round trip.
@@ -66,12 +69,12 @@ export function SyncSetupFlow({
   /** Skips the details form and provisions immediately with an already-known handle and passphrase. */
   resume?: { handle: string; passphrase: string };
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [state, dispatch] = useReducer(syncSetupReducer, { resume: resume !== undefined }, initialSyncSetupState);
   // Starts EMPTY (owner decision, 2026-09-02): a prefilled random handle reads
   // as a generated password and confuses people into thinking it must be kept
   // as-is. The field stays editable and the "suggest a name" button next to it
-  // can still mint one with `generateHandle` on demand.
+  // fills in a readable `suggestHandle` name on demand.
   const [handle, setHandle] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [confirmPassphrase, setConfirmPassphrase] = useState('');
@@ -159,7 +162,7 @@ export function SyncSetupFlow({
         confirmPassphrase={confirmPassphrase}
         error={state.error}
         onHandleChange={handleHandleChange}
-        onRegenerateHandle={() => handleHandleChange(generateHandle())}
+        onRegenerateHandle={() => handleHandleChange(suggestHandle(i18n.language))}
         onPassphraseChange={setPassphrase}
         onConfirmPassphraseChange={setConfirmPassphrase}
         onSubmit={handleDetailsSubmit}
