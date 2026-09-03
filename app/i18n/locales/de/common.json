@@ -951,6 +951,14 @@
       "title": "Zwei Geräte, ein Tagebuch"
     }
   },
+  "launcher": {
+    "moreOptions": "Weitere Möglichkeiten, Essen einzutragen",
+    "sheetTitle": "Essen eintragen",
+    "platePhoto": "Tellerfoto",
+    "labelPhoto": "Etikettenfoto",
+    "speak": "Sprechen",
+    "type": "Tippen"
+  },
   "meals": {
     "description": "Mahlzeiten, die du als Bündel gespeichert hast. Mit einem Tap eintragen oder hier entfernen.",
     "empty": "Du hast noch keine Mahlzeit gespeichert. Speichere eine aus dem Tagebuch: Fasse deine eingetragenen Lebensmittel zusammen und gib ihnen einen Namen.",
@@ -1473,6 +1481,7 @@
       "description": "Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, um zu erkennen, was auf deinem Teller liegt. Danach wird es nur auf diesem Gerät gespeichert (nicht auf den Servern von openplate), damit du es im Eintrag wiedersehen kannst. Du kannst dies jederzeit unter „Daten & Backup“ in den Einstellungen deaktivieren oder löschen.",
       "emptyHint": "Wird von deinem eigenen KI-Anbieter analysiert und bleibt danach nur auf diesem Gerät.",
       "emptyTitle": "Mach ein Foto oder wähl ein Bild aus",
+      "labelPhoto": "Etikettenfoto",
       "photoLabel": "Teller-Foto",
       "preparing": "Dein Foto wird vorbereitet…",
       "previewAlt": "Ausgewählter Teller",

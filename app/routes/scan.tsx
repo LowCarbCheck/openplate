@@ -88,6 +88,7 @@ import {
   type AnalyzePhase,
   type PickSource,
 } from '#app/lib/scan-analyze';
+import { takePickedFile } from '#app/lib/scan-handoff';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
@@ -1063,6 +1064,9 @@ function ScanFlow({
   const processSharedRef = useRef<(file: File) => void>(() => {});
   // Guards the once-only shared-photo pickup against a StrictMode double-mount.
   const sharedPhotoHandledRef = useRef(false);
+  // Same pair for the tab-bar launcher's hand-off (see `scan-handoff.ts`).
+  const processHandoffRef = useRef<(file: File, scanMode: VisionMode) => void>(() => {});
+  const handoffHandledRef = useRef(false);
 
   const activeData = fetcher.data === suppressedData ? undefined : fetcher.data;
 
@@ -1128,7 +1132,25 @@ function ScanFlow({
     return () => clearInterval(timer);
   }, [state.phase]);
 
-  const processSelectedFile = async (picked: File, source: PickSource): Promise<void> => {
+  /**
+   * The single entry to the capture pipeline: validate → downscale → arm.
+   *
+   * `scanMode` is a parameter rather than a read of the `mode` state because
+   * the tab-bar launcher hands over a photo AND the scan it was taken for in
+   * the same tick (see `scan-handoff.ts`): `setMode` has not landed yet at
+   * that point, and reading the stale state would downscale a label capture to
+   * the plate ceiling — the exact detail loss the label task's higher ceiling
+   * exists to prevent.
+   */
+  const processSelectedFile = async ({
+    picked,
+    source,
+    scanMode = mode,
+  }: {
+    picked: File;
+    source: PickSource;
+    scanMode?: VisionMode;
+  }): Promise<void> => {
     const validation = validatePhoto({ type: picked.type, size: picked.size }, t);
     if (!validation.valid) {
       setSelectionError(validation.error);
@@ -1143,7 +1165,7 @@ function ScanFlow({
       // selected descriptor — not an `if (mode === 'label')` here. A panel's
       // 6-point "of which polyols" row needs the detail; a plate does not, and
       // would pay for it on every scan (see `ScanTaskDescriptor.captureMaxDimension`).
-      nextFile = await downscaleToJpeg(picked, { maxDimension: SCAN_TASK_BY_MODE[mode].captureMaxDimension });
+      nextFile = await downscaleToJpeg(picked, { maxDimension: SCAN_TASK_BY_MODE[scanMode].captureMaxDimension });
     } catch {
       // Decode failed (e.g. HEIC outside Safari). Send the original when the
       // browser will still accept it; otherwise ask for a friendlier format.
@@ -1166,8 +1188,26 @@ function ScanFlow({
   // Keep the ref pointing at the current pipeline entry (no dep array — runs
   // every render) so the mount effect below always calls the freshest closure.
   useEffect(() => {
-    processSharedRef.current = (sharedFile: File) => void processSelectedFile(sharedFile, 'library');
+    processSharedRef.current = (sharedFile: File) =>
+      void processSelectedFile({ picked: sharedFile, source: 'library' });
+    processHandoffRef.current = (handedFile: File, scanMode: VisionMode) =>
+      void processSelectedFile({ picked: handedFile, source: 'camera', scanMode });
   });
+
+  // The tab bar's launcher opened the camera itself and parked the photo for
+  // us (`scan-handoff.ts`). Feed it into the SAME pipeline a capture taken on
+  // this screen goes through — 'camera' dispatches at once, exactly as it does
+  // when the shutter is pressed here, so the grace-window semantics are the
+  // capture's, not the hand-off's. The slot empties as it is read, so a
+  // remount can never re-analyse (and re-charge for) the same photo.
+  useEffect(() => {
+    if (handoffHandledRef.current) return;
+    handoffHandledRef.current = true;
+    const handed = takePickedFile();
+    if (handed === null) return;
+    setMode(handed.mode);
+    processHandoffRef.current(handed.file, handed.mode);
+  }, []);
 
   // Web Share Target v2: a photo shared into the app lands on /scan?shared=1. The
   // service worker stashed the file in a cache; read it back, strip the flag, and
@@ -1194,7 +1234,7 @@ function ScanFlow({
 
   const handlePick = (source: PickSource, picked: File | null) => {
     if (!picked) return;
-    void processSelectedFile(picked, source);
+    void processSelectedFile({ picked, source });
   };
 
   const handleRetry = () => {
@@ -1364,60 +1404,6 @@ export function describeFailureBody(
  * overlays, and the failure copy. Stateless beyond the two hidden file inputs it
  * owns — all decisions flow down as props from `ScanFlow`.
  */
-/**
- * The "what am I photographing?" control — the entry point to label mode.
- *
- * Deliberately BEFORE the pickers and always visible: the mode has to be chosen
- * before the shutter, because choosing afterwards would mean paying for a call
- * that ran the wrong prompt. Two plain buttons rather than a select, so the
- * choice is readable at a glance on a phone; `aria-pressed` carries the state
- * to assistive tech.
- */
-function ScanModeChoice({
-  mode,
-  onModeChange,
-  disabled,
-}: {
-  mode: VisionMode;
-  onModeChange: (mode: VisionMode) => void;
-  disabled: boolean;
-}) {
-  const { t } = useTranslation();
-  const options: ReadonlyArray<{ value: VisionMode; labelKey: string }> = [
-    { value: 'plate', labelKey: 'scan.labelScan.mode.plate' },
-    { value: 'label', labelKey: 'scan.labelScan.mode.label' },
-  ];
-  return (
-    <fieldset className="grid gap-2" disabled={disabled}>
-      <legend className="mb-2 text-sm font-medium">{t('scan.labelScan.mode.legend')}</legend>
-      <div className="flex gap-2">
-        {options.map((option) => {
-          const isSelected = mode === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => onModeChange(option.value)}
-              className={cn(
-                'inline-flex min-h-11 flex-1 items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60',
-                isSelected ?
-                  'border-primary bg-primary text-primary-foreground'
-                : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
-              )}
-            >
-              {t(option.labelKey)}
-            </button>
-          );
-        })}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {mode === 'label' ? t('scan.labelScan.mode.labelHint') : t('scan.labelScan.mode.plateHint')}
-      </p>
-    </fieldset>
-  );
-}
-
 function UploadForm({
   phase,
   mode,
@@ -1484,7 +1470,6 @@ function UploadForm({
   const captureTitle = isLabelMode ? t('scan.labelScan.capture.title') : t('scan.capture.title');
   const captureDescription = isLabelMode ? t('scan.labelScan.capture.description') : t('scan.capture.description');
   const emptyTitle = isLabelMode ? t('scan.labelScan.capture.emptyTitle') : t('scan.capture.emptyTitle');
-  const emptyHint = isLabelMode ? t('scan.labelScan.capture.emptyHint') : t('scan.capture.emptyHint');
   const photoLabel = isLabelMode ? t('scan.labelScan.capture.photoLabel') : t('scan.capture.photoLabel');
   const previewAlt = isLabelMode ? t('scan.labelScan.capture.previewAlt') : t('scan.capture.previewAlt');
   const alertTitle =
@@ -1525,10 +1510,6 @@ function UploadForm({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* The mode is chosen BEFORE the shutter — see `ScanModeChoice`. Locked
-                while a photo is being prepared or a paid call is in flight. */}
-            <ScanModeChoice mode={mode} onModeChange={onModeChange} disabled={pickDisabled} />
-
             {/* Two hidden trigger inputs feed the same downscale → auto-analyze pipeline. */}
             <input
               ref={cameraInputRef}
@@ -1582,28 +1563,48 @@ function UploadForm({
               )}
 
               {!file && (
-                <div className="flex aspect-video max-h-72 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-center sm:max-h-80">
+                <div className="flex aspect-video max-h-44 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-4 text-center">
                   <Camera className="h-8 w-8 text-muted-foreground" />
                   <p className="text-sm font-medium">{emptyTitle}</p>
-                  <p className="text-xs text-muted-foreground">{emptyHint}</p>
                 </div>
               )}
 
-              <div className="flex flex-col gap-2 sm:flex-row">
+              {/* The mode is still chosen BEFORE the shutter — it just is not a
+                  lobby any more. Each row picks its own scan and opens the
+                  camera in the same tap, which is what the tab bar's launcher
+                  does too; this screen is the direct-visit twin of it.
+                  `onModeChange` runs first and only re-renders — the click
+                  below is what stays inside the gesture. */}
+              <div className="flex flex-col gap-2">
                 <Button
                   type="button"
-                  onClick={() => cameraInputRef.current?.click()}
+                  onClick={() => {
+                    onModeChange('plate');
+                    cameraInputRef.current?.click();
+                  }}
                   disabled={pickDisabled}
-                  className="h-11 w-full sm:flex-1"
+                  className="h-14 w-full text-base"
                 >
-                  <Camera className="h-4 w-4" /> {t('scan.capture.takePhoto')}
+                  <Camera className="h-5 w-5" /> {t('scan.capture.takePhoto')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    onModeChange('label');
+                    cameraInputRef.current?.click();
+                  }}
+                  disabled={pickDisabled}
+                  className="h-11 w-full"
+                >
+                  {t('scan.capture.labelPhoto')}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => libraryInputRef.current?.click()}
                   disabled={pickDisabled}
-                  className="h-11 w-full sm:flex-1"
+                  className="h-11 w-full"
                 >
                   {t('scan.capture.chooseLibrary')}
                 </Button>

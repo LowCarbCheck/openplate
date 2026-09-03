@@ -8,7 +8,11 @@
  * Goals moved out of this bar first (into the top-left navigation drawer), and
  * Trends followed in the nav-surfaces pass: the bar is now the DAILY LOGGING
  * LOOP only — Diary · Scan · Add — and the drawer/sidebar carry the complete
- * map. See the "renders exactly the three logging-loop destinations" test.
+ * map. See the "still has exactly three slots" test.
+ *
+ * The middle slot stopped being a link in the one-tap pass: it opens the
+ * camera inside its own tap (`add-launcher.tsx`), so it renders as a button
+ * with no href and the bar carries its own capture input.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,7 +23,7 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import { BottomNav } from '../../app/components/bottom-nav';
-import { personalNavigationItems } from '../../app/components/app-sidebar';
+import { personalNavigationItems, tabNavigationItems } from '../../app/components/app-sidebar';
 
 /**
  * A hermetic three-key catalog rather than `app/i18n/i18n.ts`: the assertion
@@ -31,7 +35,12 @@ import { personalNavigationItems } from '../../app/components/app-sidebar';
 void i18next.use(initReactI18next).init({
   lng: 'en',
   resources: {
-    en: { translation: { nav: { diary: 'Diary', scan: 'Scan', add: 'Add' } } },
+    en: {
+      translation: {
+        nav: { diary: 'Diary', scan: 'Scan', add: 'Add' },
+        launcher: { moreOptions: 'More ways to add food' },
+      },
+    },
   },
   react: { useSuspense: false },
 });
@@ -54,10 +63,34 @@ describe('BottomNav', () => {
     assert.ok(!hrefsOf(renderBottomNav()).includes('/settings/ai'));
   });
 
-  it('renders exactly the three logging-loop destinations, in order', () => {
-    // Three slots is what makes the raised Scan button a real center rather
-    // than the near-center M129/04 had to fake with four.
-    assert.deepEqual(hrefsOf(renderBottomNav()), ['/diary', '/scan', '/add']);
+  it('still has exactly three slots, with the launcher in the middle', () => {
+    // Three slots is what makes the raised centre button a real center rather
+    // than the near-center M129/04 had to fake with four. The middle one is
+    // no longer a LINK: it opens the camera inside its own tap (see
+    // `add-launcher.tsx`), so it renders as a button and carries no href.
+    // The bar's two flat tabs are the only hrefs left.
+    assert.deepEqual(hrefsOf(renderBottomNav()), ['/diary', '/add']);
+    assert.equal(tabNavigationItems.length, 3);
+    assert.equal(tabNavigationItems[1]?.to, '/scan');
+    assert.equal(tabNavigationItems[1]?.tab?.raised, true);
+  });
+
+  it('opens the camera from the bar itself rather than travelling to /scan first', () => {
+    const html = renderBottomNav();
+
+    // The whole point of the pass: the capture input is IN the tab bar, so
+    // the tap that starts a scan is the tap that opens the camera.
+    assert.ok(html.includes('capture="environment"'), 'the bar carries its own camera input');
+    assert.ok(!hrefsOf(html).includes('/scan'), 'the launcher must not be a link any more');
+  });
+
+  it('offers a visible, labelled way into the rest of the sheet', () => {
+    // A long press is a bonus path, never the only one — so there is a
+    // chevron button beside the launcher, and it says what it opens.
+    const html = renderBottomNav();
+
+    assert.ok(html.includes('aria-haspopup="dialog"'), 'the chevron announces the sheet');
+    assert.ok(html.includes('More ways to add food'), 'and it is labelled, not a bare glyph');
   });
 
   it('no longer has a Goals tab — it moved into the nav drawer', () => {

@@ -951,6 +951,14 @@
       "title": "Two devices, one diary"
     }
   },
+  "launcher": {
+    "moreOptions": "More ways to add food",
+    "sheetTitle": "Add food",
+    "platePhoto": "Plate photo",
+    "labelPhoto": "Label photo",
+    "speak": "Speak",
+    "type": "Type"
+  },
   "meals": {
     "description": "Meals you've saved as a bundle. Log one in a single tap, or remove it here.",
     "empty": "You haven't saved a meal yet. Save one from the diary: bundle the foods you logged and give them a name.",
@@ -1473,6 +1481,7 @@
       "description": "Your photo is sent directly to your own AI provider to identify what's on your plate. Afterward it's kept only on this device (not on openplate's server) so you can see it again on the entry, turn that off or clear it anytime under Data & backup in settings.",
       "emptyHint": "Analyzed by your own AI provider, then kept only on this device.",
       "emptyTitle": "Take a photo or choose an image",
+      "labelPhoto": "Label photo",
       "photoLabel": "Plate photo",
       "preparing": "Preparing your photo…",
       "previewAlt": "Selected plate",

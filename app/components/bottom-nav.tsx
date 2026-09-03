@@ -2,6 +2,7 @@ import { NavLink } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import { cn } from '#app/lib/utils';
 import { tabNavigationItems, type NavigationItem } from './app-sidebar';
+import { AddLauncher } from '#app/components/add-launcher';
 
 /**
  * The bar carries the **daily logging loop and nothing else**: Diary · Scan ·
@@ -50,67 +51,26 @@ function FlatTab({ tab }: { tab: NavigationItem }) {
 }
 
 /**
- * The flagship action as a raised circular button. The circle breaks the top
- * edge of the bar by `RAISED_OVERHANG` (the `-mt-5` below plus its 4px ring),
- * which is the whole point — it's the only element in the chrome that leaves
- * its own container, so it reads as the app's primary verb without needing a
- * bigger label or a second color.
- *
- * Two clearances depend on that overhang and are a contract with it:
- * `app-wrapper.tsx` reserves `6rem` of bottom page padding, and `/scan`'s
- * sticky action bar carries extra bottom padding so the circle only ever
- * overlaps empty padding, never its "Confirm & log" button.
- *
- * The active state is not color-only: the circle grows slightly and gains a
- * brand-tinted shadow, and its label goes semibold — plus `NavLink` supplies
- * `aria-current="page"` exactly as it does for the flat tabs.
- */
-function RaisedTab({ tab }: { tab: NavigationItem }) {
-  const { t } = useTranslation();
-
-  return (
-    <NavLink
-      to={tab.to}
-      className={({ isActive }) =>
-        cn(
-          'relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-[11px] transition-colors',
-          isActive ? 'font-semibold text-primary' : 'font-medium text-muted-foreground hover:text-foreground',
-        )
-      }
-    >
-      {({ isActive }) => (
-        <>
-          <span
-            className={cn(
-              '-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-background',
-              'motion-safe:transition-all motion-safe:duration-200',
-              isActive ? 'shadow-lg shadow-primary/40 motion-safe:scale-105' : 'shadow-md shadow-primary/20',
-            )}
-          >
-            <tab.icon className="h-6 w-6" aria-hidden="true" />
-          </span>
-          <span>{t(tab.labelKey)}</span>
-        </>
-      )}
-    </NavLink>
-  );
-}
-
-/**
  * Mobile-only fixed bottom tab bar (hidden at `md`+, where the sidebar takes
  * over). Active tab uses the teal brand accent (DESIGN.md §6); inactive tabs
  * are muted. The `h-14` content height plus the `env(safe-area-inset-bottom)`
  * padding is a contract: the scan route positions its sticky action bar above
  * this bar, and `AppWrapper` reserves matching bottom padding so page content
- * is never occluded. The raised Scan button adds a second clearance on top of
- * that — see `RaisedTab`.
+ * is never occluded. The raised launcher adds a second clearance on top of
+ * that — see `AddLauncher`, which owns the circle, its chevron and the sheet.
+ *
+ * That slot stopped being a `NavLink` in the one-tap pass: the tap now opens
+ * the camera inside its own gesture rather than travelling to `/scan` first.
+ * The geometry is unchanged, and so are the two clearances that depend on it
+ * (`app-wrapper.tsx`'s `6rem` of bottom page padding, and `/scan`'s sticky
+ * action bar's extra bottom padding).
  */
 export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       <div className="flex h-14 items-stretch">
         {BOTTOM_NAV_TABS.map((tab) =>
-          tab.tab?.raised === true ? <RaisedTab key={tab.to} tab={tab} /> : <FlatTab key={tab.to} tab={tab} />,
+          tab.tab?.raised === true ? <AddLauncher key={tab.to} tab={tab} /> : <FlatTab key={tab.to} tab={tab} />,
         )}
       </div>
     </nav>
