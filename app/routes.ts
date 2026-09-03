@@ -62,6 +62,15 @@ export default [
   // have no diary here at all. See `.adr/0008-the-study-console-lives-in-openplate.md`.
   route('/study', 'routes/study._index.tsx'),
 
+  // The first screen on a device that holds nothing (M183 spec 02): "Start" or
+  // "I already have an account". TOP-LEVEL and client-only, and it has to be —
+  // `_personal.tsx`'s onboarding gate is what redirects here, so a route nested
+  // inside that layout would be redirected away from itself in a loop. Exactly
+  // the position `/recover` is in below, for exactly the same reason. Both
+  // hints it reads (the remembered sign-in name and the gateway membership)
+  // live in the browser, so there is nothing here for a loader to do either.
+  route('/welcome', 'routes/welcome.tsx'),
+
   // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
   // device whose store has been wiped but whose `firstDataAt` marker survives.
   // TOP-LEVEL and client-only — it must sit outside `_personal`, whose gate is

@@ -26,10 +26,13 @@ import { ErrorFallback } from '#app/components/route-error-boundary';
  * no `users` table, no session, and no server-side health data left to migrate,
  * so there is no server loader on this layout at all any more.
  *
- * A visitor who hasn't finished onboarding is sent to `/onboarding` — unless
+ * A visitor who hasn't finished onboarding is sent to `/welcome` — unless
  * the local store already holds a food log (a device that pre-dates the local
  * `onboardingCompletedAt` stamp), in which case we self-heal by stamping local
- * completion so nobody is ever trapped in the flow.
+ * completion so nobody is ever trapped in the flow. `/welcome`, not
+ * `/onboarding`: the wizard is one of the two doors that screen offers, and
+ * the other one is for the returning user whose profile has not arrived yet
+ * (M183 spec 02).
  *
  * The third branch is `/recover` (M123 spec 01). An empty local store is NOT
  * proof of a fresh install: the load/autosave race documented in
@@ -47,20 +50,21 @@ import { ErrorFallback } from '#app/components/route-error-boundary';
  * lets you through is by definition the moment "this device is in the app"
  * became true, which is why the two live in one place.
  *
- * Two routes are exempt. `/settings/preferences` is the documented way out of
+ * Four routes are exempt. `/settings/preferences` is the documented way out of
  * the instance default language, so it has to be reachable before the wizard
  * rather than behind it. `/settings/sync` is where an emailed invite link
  * lands, and the redirect dropped the URL fragment that carried the invite
- * token. Both are listed in `isOnboardingGateExempt`.
+ * token. `/welcome` and `/sign-in` are this gate's own destinations. All four
+ * are listed in `isOnboardingGateExempt`.
  *
  * @throws a redirect to `/recover` when this device has held data before but
- *   its tables are now empty, and to `/onboarding` when onboarding is simply
+ *   its tables are now empty, and to `/welcome` when onboarding is simply
  *   pending with no prior data to self-heal from.
  */
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  // The two routes this gate never tests: `/settings/preferences`, the way out
-  // of the instance's default language, and `/settings/sync`, where an emailed
-  // invite link lands. See `isOnboardingGateExempt`.
+  // The routes this gate never tests: `/settings/preferences`, the way out of
+  // the instance's default language, `/settings/sync`, where an emailed invite
+  // link lands, and the gate's own two destinations. See `isOnboardingGateExempt`.
   if (isOnboardingGateExempt(new URL(request.url).pathname)) return null;
   const profile = await getLocalProfileGoals();
   const hasProfile = profile !== null;
@@ -78,7 +82,11 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   });
 
   if (outcome.kind === 'recover') throw redirect('/recover');
-  if (outcome.kind === 'onboarding') throw redirect('/onboarding');
+  // NOT `/onboarding` any more (M183 spec 02). A device with no local profile
+  // is not necessarily a new person: a returning user's profile row rides in
+  // the encrypted sync snapshot and lands only after they sign in. `/welcome`
+  // is where that question gets asked instead of assumed.
+  if (outcome.kind === 'welcome') throw redirect('/welcome');
   if (outcome.kind === 'self-heal') await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
   writeHomeHint();
   return null;

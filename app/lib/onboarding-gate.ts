@@ -23,8 +23,8 @@ export type OnboardingGateOutcome =
   | { kind: 'self-heal' }
   /** Probable data loss: block, and offer a restore. NEVER the onboarding wizard. */
   | { kind: 'recover' }
-  /** A genuinely new (or genuinely mid-flow) device: the first-run wizard. */
-  | { kind: 'onboarding' };
+  /** A device with nothing on it: the welcome screen, which offers both doors. */
+  | { kind: 'welcome' };
 
 /** Everything the gate looks at. All three come from the on-device store. */
 export interface OnboardingGateInput {
@@ -58,7 +58,13 @@ export interface OnboardingGateInput {
  *    writes sets the marker — would be told their data was lost the moment they
  *    navigated into an app route mid-flow. That false positive is both far more
  *    common than the fault and far more alarming, so the narrower test wins.
- * 4. **Otherwise the wizard**, unchanged, for a device with no marker at all.
+ * 4. **Otherwise the welcome screen**, for a device with no marker at all.
+ *    This branch used to go straight to the first-run wizard (M183 spec 02).
+ *    It does not any more, because "no local profile" is not the same as "new
+ *    person": a returning user's profile row travels inside the encrypted sync
+ *    snapshot and arrives only AFTER they sign in, so a device that has never
+ *    pulled one looks exactly like a fresh install. The welcome screen is the
+ *    place that asks which of the two this is, rather than assuming.
  */
 export function resolveOnboardingGate({
   hasProfile,
@@ -69,7 +75,7 @@ export function resolveOnboardingGate({
   if (hasProfile && hasCompletedOnboarding) return { kind: 'pass' };
   if (logCount > 0) return { kind: 'self-heal' };
   if (!hasProfile && hasEverHadData) return { kind: 'recover' };
-  return { kind: 'onboarding' };
+  return { kind: 'welcome' };
 }
 
 /**
@@ -93,10 +99,20 @@ export function resolveOnboardingGate({
  * page itself reads nothing from onboarding either: it renders from the sync
  * session and one loader string, both independent of any profile or goals.
  *
+ * `/welcome` and `/sign-in` are the gate's own destinations (M183 spec 02).
+ * Both are registered outside this layout, so the exemption is belt and braces
+ * rather than load-bearing today — but a redirect target that the gate would
+ * itself redirect away from is a loop, and the set is where that is stated.
+ *
  * Exact paths, never a prefix: exempting `/settings` wholesale would open the
  * whole hub, and the gate has to keep holding for every other route.
  */
-const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set(['/settings/preferences', '/settings/sync']);
+const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
+  '/settings/preferences',
+  '/settings/sync',
+  '/welcome',
+  '/sign-in',
+]);
 
 /**
  * Is this path reachable before onboarding?

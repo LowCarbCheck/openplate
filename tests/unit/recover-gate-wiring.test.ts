@@ -49,10 +49,16 @@ describe('the _personal gate consults the had-data marker', () => {
     assert.match(clientLoaderSource(), /'recover'[\s\S]*redirect\('\/recover'\)/);
   });
 
-  it('has exactly one /onboarding redirect, guarded by the onboarding outcome', () => {
+  // Since M183 spec 02 the fourth outcome is `welcome`, and the gate's own
+  // redirect to `/onboarding` is gone: the questionnaire is now one of the two
+  // doors the welcome screen offers, chosen by the person rather than by the
+  // gate. A gate that redirects straight to `/onboarding` again is the
+  // regression this asserts against.
+  it('has exactly one /welcome redirect, guarded by the welcome outcome, and no /onboarding one', () => {
     const body = clientLoaderSource();
-    assert.equal(body.match(/redirect\('\/onboarding'\)/g)?.length, 1);
-    assert.match(body, /outcome\.kind === 'onboarding'\) throw redirect\('\/onboarding'\)/);
+    assert.equal(body.match(/throw redirect\('\/welcome'\)/g)?.length, 1);
+    assert.match(body, /outcome\.kind === 'welcome'\) throw redirect\('\/welcome'\)/);
+    assert.equal(body.match(/throw redirect\('\/onboarding'\)/g), null);
   });
 });
 

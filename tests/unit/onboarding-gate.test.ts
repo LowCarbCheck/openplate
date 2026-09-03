@@ -23,8 +23,8 @@ function newDevice(overrides: Partial<OnboardingGateInput> = {}): OnboardingGate
 }
 
 describe('resolveOnboardingGate', () => {
-  it('sends a genuinely new device to onboarding — no marker, no profile, no logs', () => {
-    assert.deepEqual(resolveOnboardingGate(newDevice()), { kind: 'onboarding' });
+  it('sends a genuinely blank device to welcome — no marker, no profile, no logs', () => {
+    assert.deepEqual(resolveOnboardingGate(newDevice()), { kind: 'welcome' });
   });
 
   // THE REGRESSION. Same visible state as the line above except for the marker,
@@ -33,8 +33,14 @@ describe('resolveOnboardingGate', () => {
     assert.deepEqual(resolveOnboardingGate(newDevice({ hasEverHadData: true })), { kind: 'recover' });
   });
 
-  it('never resolves a marked, empty device to onboarding', () => {
-    assert.notEqual(resolveOnboardingGate(newDevice({ hasEverHadData: true })).kind, 'onboarding');
+  // Both names, because this is the assertion M183 spec 02 renamed: a wiped
+  // device must reach neither the welcome screen nor, under its old name, the
+  // wizard. "Start fresh" offered to someone who has just lost weeks of data is
+  // the exact failure `recover` exists to prevent.
+  it('never resolves a marked, empty device to welcome or onboarding', () => {
+    const kind = resolveOnboardingGate(newDevice({ hasEverHadData: true })).kind;
+    assert.notEqual(kind, 'welcome');
+    assert.notEqual(kind, 'onboarding');
   });
 
   // The day-one user: onboarded this morning, nothing logged yet. Their profile
@@ -80,16 +86,16 @@ describe('resolveOnboardingGate', () => {
   // stamps completion, and each of those writes sets the marker — so this user
   // has the marker and zero logs while nothing whatsoever has been lost. A
   // surviving profile row is positive evidence the tables were not wiped (the
-  // failure empties the whole partition in one replace), so they keep today's
-  // onboarding redirect.
-  it('keeps a mid-onboarding device in the wizard, marker and all', () => {
+  // failure empties the whole partition in one replace), so they go to the
+  // welcome screen like any other device with nothing to recover.
+  it('keeps a mid-onboarding device out of recovery, marker and all', () => {
     const outcome = resolveOnboardingGate(newDevice({ hasProfile: true, hasEverHadData: true }));
-    assert.deepEqual(outcome, { kind: 'onboarding' });
+    assert.deepEqual(outcome, { kind: 'welcome' });
   });
 
   it('does not recover a device with no marker, whatever else is missing', () => {
-    assert.deepEqual(resolveOnboardingGate(newDevice({ hasProfile: true })), { kind: 'onboarding' });
-    assert.deepEqual(resolveOnboardingGate(newDevice()), { kind: 'onboarding' });
+    assert.deepEqual(resolveOnboardingGate(newDevice({ hasProfile: true })), { kind: 'welcome' });
+    assert.deepEqual(resolveOnboardingGate(newDevice()), { kind: 'welcome' });
   });
 });
 
@@ -97,12 +103,13 @@ describe('resolveOnboardingGate', () => {
  * The exemption is a second, independent question the gate asks BEFORE the
  * decision table above: is this route reachable at all before onboarding?
  *
- * Two routes are. `/settings/preferences` holds the language switcher, and on
+ * Four routes are. `/settings/preferences` holds the language switcher, and on
  * an instance whose default language a visitor cannot read it is the only way
  * out — so putting it behind the wizard hides the fix behind the problem.
  * `/settings/sync` is where an emailed invite link lands, and the redirect
  * threw away the URL FRAGMENT the single-use token rides in, so the invite
- * could never be redeemed on a device that had not onboarded.
+ * could never be redeemed on a device that had not onboarded. `/welcome` and
+ * `/sign-in` are the gate's own destinations (M183 spec 02).
  *
  * Everything else under `_personal` stays gated, which is what the negative
  * cases here pin down: a prefix match would have opened the whole hub.
@@ -116,6 +123,15 @@ describe('isOnboardingGateExempt', () => {
   it('exempts the sync page, where an invite link lands', () => {
     assert.equal(isOnboardingGateExempt('/settings/sync'), true);
     assert.equal(isOnboardingGateExempt('/settings/sync/'), true);
+  });
+
+  // The gate's own destinations (M183 spec 02). Both sit outside `_personal`
+  // today, so this is belt and braces — but a redirect target the gate would
+  // itself redirect away from is a loop, and that is worth pinning down.
+  it('exempts the two screens the gate itself redirects to', () => {
+    for (const path of ['/welcome', '/welcome/', '/sign-in', '/sign-in/']) {
+      assert.equal(isOnboardingGateExempt(path), true, path);
+    }
   });
 
   it('still gates the settings hub itself', () => {

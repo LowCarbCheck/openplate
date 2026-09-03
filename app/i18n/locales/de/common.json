@@ -1001,7 +1001,8 @@
     "study": "Studien-Konsole · openplate",
     "sync": "Konto · openplate",
     "terms": "Nutzungsbedingungen · openplate",
-    "trends": "Fortschritt · openplate"
+    "trends": "Fortschritt · openplate",
+    "welcome": "Willkommen · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -2295,5 +2296,15 @@
     "toaster": {
       "label": "Benachrichtigungen"
     }
+  },
+  "welcome": {
+    "body": "Auf diesem Gerät ist noch kein Tagebuch. Starte ein neues, oder melde dich bei deinem Konto an.",
+    "haveAccount": "Ich habe schon ein Konto",
+    "returning": "Dieses Gerät war zuvor an einem Konto angemeldet.",
+    "signIn": "Anmelden",
+    "signInAs": "Als {{name}} anmelden",
+    "start": "Starten",
+    "startFresh": "Leer starten",
+    "title": "Willkommen bei openplate"
   }
 }

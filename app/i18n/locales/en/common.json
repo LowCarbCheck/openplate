@@ -1001,7 +1001,8 @@
     "study": "Study console · openplate",
     "sync": "Account · openplate",
     "terms": "Terms of service · openplate",
-    "trends": "Progress · openplate"
+    "trends": "Progress · openplate",
+    "welcome": "Welcome · openplate"
   },
   "nav": {
     "add": "Add",
@@ -2295,5 +2296,15 @@
     "toaster": {
       "label": "Notifications"
     }
+  },
+  "welcome": {
+    "body": "This device has no diary on it yet. Start a new one, or sign in to your account.",
+    "haveAccount": "I already have an account",
+    "returning": "This device was signed in to an account before.",
+    "signIn": "Sign in",
+    "signInAs": "Sign in as {{name}}",
+    "start": "Start",
+    "startFresh": "Start fresh",
+    "title": "Welcome to openplate"
   }
 }
