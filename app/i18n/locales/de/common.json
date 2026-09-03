@@ -1646,8 +1646,8 @@
       "unnamedFood": "Lebensmittel ohne Namen"
     },
     "setup": {
-      "body": "Dieser Schritt ist vollkommen optional: Das manuelle Eintragen und alle anderen Funktionen in openplate funktionieren auch ohne ihn uneingeschränkt. Dafür ist ein kostenpflichtiges Konto bei einem KI-Dienst erforderlich, das du selbst einrichtest (openplate betreibt keine eigene KI und bietet keine Testversion an). Die Einrichtung dauert meist nur wenige Minuten und kostet in der Regel deutlich unter einem Cent pro Foto, abgerechnet über diesen Anbieter, nicht über openplate. Nach der Verknüpfung wird jedes Foto direkt an deinen gewählten Anbieter zur Erkennung gesendet und verbleibt danach ausschließlich auf diesem Gerät, niemals auf dem Server von openplate, bis du es in den Einstellungen löschst.",
-      "bodyPreset": "Dieser Schritt ist vollkommen optional: Das manuelle Eintragen und alle anderen Funktionen in openplate funktionieren auch ohne ihn uneingeschränkt. In dieser openplate-Instanz kannst du die eigene KI mit einem Fingertipp verknüpfen, ganz ohne eigenes Konto oder eigenen Schlüssel. Nach der Verknüpfung wird jedes Foto direkt von diesem Gerät an diese KI zur Erkennung gesendet und verbleibt danach ausschließlich auf diesem Gerät, niemals auf openplate.org und nirgendwo sonst, bis du es in den Einstellungen löschst.",
+      "body": "Dieser Schritt ist optional. Manuelles Eintragen und alle anderen Funktionen klappen auch ohne ihn. openplate betreibt keine KI und bietet keine Testversion. Du richtest in wenigen Minuten dein eigenes, kostenpflichtiges KI-Konto ein. Dein Anbieter stellt dir weniger als einen Cent pro Foto in Rechnung, nicht openplate. Fotos gehen zum Auslesen direkt an deinen Anbieter. Sie bleiben auf diesem Gerät, bis du sie in den Einstellungen löschst, niemals auf Servern von openplate.",
+      "bodyPreset": "Dieser Schritt ist optional. Manuelles Eintragen und alle anderen Funktionen klappen auch ohne ihn. Verbinde die KI dieses openplate mit einem Fingertipp, ganz ohne persönliches Konto oder Schlüssel. Fotos gehen zum Auslesen direkt von diesem Gerät an diese KI. Sie bleiben auf diesem Gerät, bis du sie in den Einstellungen löschst, niemals auf openplate.org oder anderswo.",
       "connectOpenRouter": "Mit OpenRouter verbinden",
       "description": "Fotografier deinen Teller und ein KI-Dienst schätzt die Kohlenhydrate für dich.",
       "manualSetup": "Oder richte einen Anbieter selbst in den Einstellungen ein",
@@ -1756,7 +1756,7 @@
       "help": "Auf der gehosteten Instanz ist nur ein Endpunkt unter localhost/127.0.0.1 erreichbar: Die Content Security Policy blockiert absichtlich andere Hosts, um deinen Schlüssel zu schützen, falls diese Seite jemals kompromittiert werden sollte. Selbst gehostet? Setze CSP_CONNECT_EXTRA, um deinen eigenen Remote-Endpunkt zuzulassen (siehe README). Ein direkter Zugriff auf api.openai.com ist so oder so nicht möglich. Verwende OpenRouter für OpenAI-Modelle."
     },
     "connectCard": {
-      "description": "Dein Schlüssel, dein Anbieter, deine Daten: Jedes Foto einer Mahlzeit wird zur Auswertung direkt an den von dir gewählten Anbieter gesendet. openplate speichert anschließend eine Kopie ausschließlich auf diesem Gerät (nie auf unserem Server), damit du es später wieder ansehen kannst. Du kannst dies jederzeit unter „Daten & Backup“ in den Einstellungen verwalten oder löschen. Dein Schlüssel selbst verlässt dieses Gerät ebenfalls nie, außer in Richtung des unten ausgewählten Anbieters.",
+      "description": "Teller-Fotos gehen zum Auslesen direkt an deinen gewählten Anbieter. openplate speichert eine Kopie nur auf diesem Gerät, damit du sie später ansehen kannst, niemals auf unserem Server. Verwalte oder lösche Kopien jederzeit unter Daten & Backup in den Einstellungen. Dein Schlüssel verlässt dieses Gerät nie, außer an den unten gewählten Anbieter.",
       "title": "Verbinde deinen KI-Anbieter"
     },
     "connected": {

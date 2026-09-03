@@ -1646,8 +1646,8 @@
       "unnamedFood": "Unnamed food"
     },
     "setup": {
-      "body": "This step is entirely optional: logging by hand, and everything else in openplate, works fully without it. It needs a paid account with an AI service that you set up yourself (openplate doesn't run its own AI or offer a trial), usually a couple of minutes to set up, and usually well under a cent per photo, billed by that provider, not by openplate. Once connected, each photo goes straight to your chosen provider to be read, then stays only on this device, never on openplate's server, until you clear it in Settings.",
-      "bodyPreset": "This step is entirely optional: logging by hand, and everything else in openplate, works fully without it. On this openplate you can connect its own AI in one tap, with no account and no key of your own. Once connected, each photo goes straight from this device to that AI to be read, then stays only on this device, never on openplate.org, and never anywhere else, until you clear it in Settings.",
+      "body": "This step is optional. Hand logging and all other features work without it. openplate runs no AI and offers no trial. You set up your own paid AI account in minutes. Your provider bills you under a cent per photo, not openplate. Photos go straight to your provider to be read. They stay on this device until cleared in Settings, never on openplate servers.",
+      "bodyPreset": "This step is optional. Hand logging and all other features work without it. Connect this openplate's AI in one tap, with no personal account or key. Photos go straight from this device to that AI to be read. They stay on this device until cleared in Settings, never on openplate.org or anywhere else.",
       "connectOpenRouter": "Connect with OpenRouter",
       "description": "Take a photo of your plate and an AI service estimates the carbs for you.",
       "manualSetup": "Or set up a provider manually in settings",
@@ -1756,7 +1756,7 @@
       "help": "On the hosted instance, only a localhost/127.0.0.1 endpoint is reachable: the content-security policy blocks other hosts by design, to protect your key if this page is ever compromised. Self-hosting? Set CSP_CONNECT_EXTRA to allow your own remote endpoint (see the README). Direct api.openai.com is never reachable either way. Use OpenRouter for OpenAI models."
     },
     "connectCard": {
-      "description": "Your key, your provider, your data: each plate photo goes straight to your chosen provider to be read. openplate then keeps a copy only on this device (never on our server) so you can see it again later. Manage or clear it anytime under Data & backup in settings. Your key itself never leaves this device either, except to the provider you choose below.",
+      "description": "Plate photos go straight to your chosen provider to be read. openplate keeps a copy only on this device so you can view it later, never on our server. Manage or clear copies anytime under Data & backup in settings. Your key never leaves this device, except to the provider chosen below.",
       "title": "Connect your AI provider"
     },
     "connected": {
