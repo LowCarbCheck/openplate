@@ -312,6 +312,7 @@
     },
     "inviteInvalid": {
       "body": "Bitte lass dir einen neuen Link schicken.",
+      "continue": "Weiter zur App",
       "title": "Diese Einladung ist ungültig oder abgelaufen"
     },
     "joined": "Mit {{name}} verbunden.",

@@ -306,7 +306,19 @@ function InvalidLinkCard() {
   );
 }
 
-function InviteInvalidCard() {
+/**
+ * The gateway refused the invite — a dead end, but not a dead end on this
+ * screen.
+ *
+ * Continue is the primary action because whoever followed this link wanted into
+ * the app, not into a settings page. It goes to `/diary`, which is inside
+ * `_personal` and therefore behind the onboarding gate: a device that is
+ * already in the app lands on its diary, a blank one is routed on to
+ * `/welcome`, and neither can come back here. Reusing the gate is what keeps
+ * that decision in one place. The AI settings link stays as the secondary
+ * action for the person who came from there.
+ */
+function InviteInvalidCard({ onContinue }: { onContinue: () => void }) {
   const { t } = useTranslation();
   return (
     <CardContent className="space-y-4 py-6 text-center">
@@ -314,6 +326,9 @@ function InviteInvalidCard() {
       {/* Generic by design — the gateway never tells us which of invalid /
           expired / already-used it was, and this page would not repeat it. */}
       <p className="text-sm text-muted-foreground">{t('connectGateway.inviteInvalid.body')}</p>
+      <Button type="button" className="h-11 w-full" onClick={onContinue}>
+        {t('connectGateway.inviteInvalid.continue')}
+      </Button>
       <BackToSettingsLink />
     </CardContent>
   );
@@ -491,6 +506,13 @@ export default function Join() {
 
     const redeemed = await redeemInvite(invite);
     if (redeemed === null) {
+      // A rejected token is spent for this tab too: empty its slot BEFORE the
+      // error card goes up. The slot outlives this screen, and `sign-in-flow.ts`
+      // sends a signed-in tab back to `/join` whenever a gateway half is parked
+      // there — so leaving a dead token behind turns one bad link into every
+      // later sign-in in this tab failing the same way. The sync half is not
+      // touched, exactly as on the success path below.
+      consumeGatewayInvite();
       setPhase({ status: 'invite-invalid' });
       return;
     }
@@ -547,7 +569,7 @@ export default function Join() {
             onJoin={() => void handleJoin()}
           />
         )}
-        {phase.status === 'invite-invalid' && <InviteInvalidCard />}
+        {phase.status === 'invite-invalid' && <InviteInvalidCard onContinue={() => void navigate('/diary')} />}
       </Card>
     </div>
   );

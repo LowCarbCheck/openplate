@@ -312,6 +312,7 @@
     },
     "inviteInvalid": {
       "body": "Ask whoever invited you for a new link.",
+      "continue": "Continue to the app",
       "title": "This invite is not valid or has expired"
     },
     "joined": "Connected to {{name}}.",
