@@ -17,9 +17,9 @@
  * this server, which is the property the whole design rests on (AGENTS.md,
  * "Sync Architecture").
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useLoaderData } from 'react-router';
+import { useLoaderData, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
 import { Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
@@ -27,6 +27,7 @@ import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { CreateAccountPanel } from '#app/components/create-account-panel';
 import { SignInPanel } from '#app/components/sign-in-panel';
+import { useManagedInstance } from '#app/hooks/use-public-config';
 import { takeInviteFromUrl } from '#app/lib/sync/invite-link';
 import { readPendingGatewayJoin } from '#app/lib/join-link';
 import { Link } from '#app/components/link';
@@ -74,6 +75,8 @@ export function loader() {
 export default function SettingsSync() {
   const { syncServerUrl } = useLoaderData<typeof loader>();
   const session = useSyncSession();
+  const managed = useManagedInstance();
+  const navigate = useNavigate();
   // `createSyncAccount` opens the session as PART of provisioning, so
   // `session.account` goes non-null while the setup wizard is still on its way
   // to showing the recovery code. Deciding this screen on the session alone
@@ -82,6 +85,37 @@ export default function SettingsSync() {
   // lives in `resolveSyncScreen`, where it has a name and a test.
   const [isCeremonyActive, setIsCeremonyActive] = useState(false);
   const screen = resolveSyncScreen({ hasAccount: session.account !== null, isCeremonyActive });
+
+  /**
+   * The account ceremony ENDING is the middle of one journey on a managed
+   * instance (M187 spec 03).
+   *
+   * The person followed one link carrying two capabilities, and this page
+   * spent the first. On an open instance the second waits in the slot and the
+   * banner above points at it, because a gateway is genuinely optional there.
+   * On a managed instance it is not optional and there is nothing to decide:
+   * `/join` picks the parked half up and redeems it, then lands them in the
+   * app. Without this, the one ceremony ends on a settings page with a
+   * sentence asking the person to go and finish it.
+   *
+   * A ref, because this callback also receives `false` on mount and on
+   * unmount: only a true→false EDGE is a ceremony that ended.
+   */
+  const wasCeremonyActive = useRef(false);
+  const handleCeremonyActiveChange = useCallback(
+    (isActive: boolean): void => {
+      setIsCeremonyActive(isActive);
+      if (isActive) {
+        wasCeremonyActive.current = true;
+        return;
+      }
+      if (!wasCeremonyActive.current) return;
+      wasCeremonyActive.current = false;
+      if (!managed || readPendingGatewayJoin() === null) return;
+      void navigate('/join');
+    },
+    [managed, navigate],
+  );
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -93,7 +127,12 @@ export default function SettingsSync() {
       <PendingGatewayBanner />
       {screen === 'connected' && session.account !== null ?
         <ConnectedPanel accountHandle={session.account.handle} />
-      : <SignedOutPanel serverUrl={syncServerUrl} onCeremonyActiveChange={setIsCeremonyActive} />}
+      : <SignedOutPanel
+          serverUrl={syncServerUrl}
+          managed={managed}
+          onCeremonyActiveChange={handleCeremonyActiveChange}
+        />
+      }
     </div>
   );
 }
@@ -144,9 +183,12 @@ type SignedOutMode = 'choose' | 'create' | 'sign-in' | 'forgot';
 
 function SignedOutPanel({
   serverUrl,
+  managed,
   onCeremonyActiveChange,
 }: {
   serverUrl: string;
+  /** `PublicConfig.managed` — `false` renders exactly the panel this page had before. */
+  managed: boolean;
   onCeremonyActiveChange: (isActive: boolean) => void;
 }) {
   const { t } = useTranslation();
@@ -204,9 +246,18 @@ function SignedOutPanel({
                   {t('sync.signIn.notYou')}
                 </button>
               )}
-              <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setMode('create')}>
-                {t('sync.create.cta')}
-              </Button>
+              {/* On a managed instance an account cannot be created here at
+                  all: the sync service refuses a signup without an invite, so
+                  the button led to a form whose only outcome was a refusal.
+                  One line says where accounts come from instead. The create
+                  form is still MOUNTED by the effect above when a link parked
+                  an invite — that is the path this line points at. */}
+              {managed ?
+                <p className="text-sm text-muted-foreground">{t('sync.managed.inviteOnly')}</p>
+              : <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setMode('create')}>
+                  {t('sync.create.cta')}
+                </Button>
+              }
             </div>
             <p className="text-xs text-muted-foreground">{t('sync.photosStayHere')}</p>
           </div>

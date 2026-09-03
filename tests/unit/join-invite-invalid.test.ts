@@ -2,12 +2,17 @@
  * A refused gateway invite is spent, and the card it puts up leads somewhere
  * (M187 spec 01).
  *
- * `handleJoin` is a closure inside `/join`'s route component: it reads a ref,
- * calls the gateway over the network and drives React state, so exercising it
- * means rendering the route, which this repo's `node --test` tier has no DOM
- * for. Rather than fake one, this pins the two invariants by reading the
- * source, the same idiom `tests/unit/sync-sign-out-hint.test.ts` uses for
- * `sync-actions.ts`'s composition root.
+ * The redemption is a closure inside `/join`'s route component: it reads a
+ * ref, calls the gateway over the network and drives React state, so
+ * exercising it means rendering the route, which this repo's `node --test`
+ * tier has no DOM for. Rather than fake one, this pins the two invariants by
+ * reading the source, the same idiom `tests/unit/sync-sign-out-hint.test.ts`
+ * uses for `sync-actions.ts`'s composition root.
+ *
+ * It was `handleJoin` when this file was written. M187 spec 03 turned it into
+ * the `redeemAndSave` callback — the managed flow calls it straight out of the
+ * probe, so it could no longer read `phase` — and the anchors below moved with
+ * it. The invariants did not.
  *
  * Both invariants come from one owner report: an invite parked on one day was
  * revoked the next, and because the rejection path only rendered an error, the
@@ -40,14 +45,20 @@ function extractBody(opening: string, indent: string): string {
   return source.slice(start, start + closingBrace.index);
 }
 
-describe('handleJoin, when the gateway refuses the invite', () => {
-  const body = extractBody('  async function handleJoin', '  ');
+describe('the redemption, when the gateway refuses the invite', () => {
+  // A `useCallback` rather than a plain function since M187 spec 03, so the
+  // body is bounded at its dependency array instead of at a closing brace.
+  const callbackStart = source.indexOf('  const redeemAndSave = useCallback(');
+  assert.ok(callbackStart !== -1, 'the redemption callback is no longer in join.tsx');
+  const callbackEnd = source.indexOf('[managed, navigate, t],', callbackStart);
+  assert.ok(callbackEnd > callbackStart, 'the redemption callback has no dependency array to bound it');
+  const body = source.slice(callbackStart, callbackEnd);
   // Bounded at the branch's own closing brace, or the success path's identical
   // `consumeGatewayInvite()` call further down would satisfy these assertions
   // on its own and the test would pass against the bug it exists to catch.
   const branchStart = body.indexOf('redeemed === null');
-  assert.ok(branchStart !== -1, 'handleJoin no longer has a null-redemption branch');
-  const branchEnd = /^ {4}}$/m.exec(body.slice(branchStart));
+  assert.ok(branchStart !== -1, 'the redemption no longer has a null-redemption branch');
+  const branchEnd = /^ {6}}$/m.exec(body.slice(branchStart));
   assert.ok(branchEnd !== null, 'the null-redemption branch has no closing brace alone on its own line');
   const rejection = body.slice(branchStart, branchStart + branchEnd.index);
 

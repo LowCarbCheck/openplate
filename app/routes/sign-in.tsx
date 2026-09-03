@@ -47,8 +47,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { consumeSyncInvite, readPendingGatewayJoin } from '#app/lib/join-link';
-import { getLocalProfileGoals, hasEverHadData, listLocalFoodLogs } from '#app/lib/local-store';
-import { resolveOnboardingGate } from '#app/lib/onboarding-gate';
+import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
 import { completeSignIn, resolveSignInDestination, type SignInDestination } from '#app/lib/sign-in-flow';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { syncNow } from '#app/lib/sync/sync-actions';
@@ -72,22 +71,15 @@ type Phase =
  * Reads the freshly pulled store and asks both authorities where this device
  * belongs: the onboarding gate, and the pending join slot.
  *
- * Same three inputs, read the same way, as `_personal.tsx`'s gate — including
- * its shortcut, which skips the expensive log listing once onboarding is
- * stamped, because the resolver returns before it looks.
+ * The gate read itself lives in `read-onboarding-gate.ts` now (M187 spec 03),
+ * because `/join` ends a managed ceremony with the same question and two
+ * readers would be two chances to read a different set of facts.
  */
 async function readDestination(): Promise<SignInDestination> {
-  const profile = await getLocalProfileGoals();
-  const hasProfile = profile !== null;
-  const hasCompletedOnboarding = profile?.onboardingCompletedAt != null;
-  const logCount = hasProfile && hasCompletedOnboarding ? 0 : (await listLocalFoodLogs()).length;
-  const outcome = resolveOnboardingGate({
-    hasProfile,
-    hasCompletedOnboarding,
-    logCount,
-    hasEverHadData: await hasEverHadData(),
+  return resolveSignInDestination({
+    gate: await readOnboardingGateKind(),
+    hasPendingGatewayJoin: readPendingGatewayJoin() !== null,
   });
-  return resolveSignInDestination({ gate: outcome.kind, hasPendingGatewayJoin: readPendingGatewayJoin() !== null });
 }
 
 export default function SignIn() {

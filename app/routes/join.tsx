@@ -32,6 +32,17 @@
  * nothing. The only thing a page load does is the idempotent `GET
  * /v1/gateway/info`; the POST waits for a human tapping "Join".
  *
+ * ── On a managed instance this is ONE ceremony ───────────────────────────
+ *
+ * When this instance declares a gateway (`PublicConfig.managed`) the link is
+ * the instance's own front door, and both halves came from its operator in one
+ * message. So the sync step offers exactly one action, "Create my account",
+ * and when the person comes back from that ceremony the gateway half is
+ * redeemed without a second tap: see `app/lib/managed-join.ts` for the two
+ * things that still stop it, and for why an auditing gateway keeps its card.
+ * The skip is gone there too — it offers an account to somebody who, on such
+ * an instance, has neither one nor a way to make one.
+ *
  * ── The sync half hands off, rather than being reimplemented ─────────────
  *
  * Creating a sync account is a ceremony with a handle, a passphrase and an
@@ -61,7 +72,7 @@
  * else reads as "unreachable", and the two get different, separately actionable
  * copy.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -94,7 +105,11 @@ import {
   takeJoinLinkFromUrl,
   type JoinLink,
 } from '#app/lib/join-link';
-import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useManagedInstance, useSyncServerUrl } from '#app/hooks/use-public-config';
+import { resolveGatewayStep } from '#app/lib/managed-join';
+import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
+import { resolveSignInDestination } from '#app/lib/sign-in-flow';
+import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import { getLocalAiSettings, putLocalAiSettings, putLocalGatewayConnection } from '#app/lib/local-store';
 import { syncNow } from '#app/lib/sync/sync-actions';
 import { reportError } from '#app/lib/report-error';
@@ -130,6 +145,8 @@ type Phase =
   | { status: 'foreign-server'; origin: string }
   /** Step one: the sync invite is parked, and `/settings/sync` is where it is spent. */
   | { status: 'sync'; hasGateway: boolean }
+  /** Managed instance, gateway half only, signed out: the connection needs an account to belong to. */
+  | { status: 'sign-in-first' }
   /** The gateway answered nothing. `reason` picks between two different fixes, by two different people. */
   | { status: 'unreachable'; reason: 'blocked' | 'network'; gatewayOrigin: string }
   | { status: 'confirm'; info: GatewayInfo; gatewayOrigin: string; replaces: string | null }
@@ -237,13 +254,23 @@ function LoadingCard() {
  * signed in to on this device before the gateway half means anything here. It
  * is not dropped — `/sign-in` returns to this route once the parked gateway
  * half is all that is left (owner decision, worklog `01M1KMSJXNVZFV1JFYVV`).
+ *
+ * ON A MANAGED INSTANCE THERE IS NO SKIP (M187 spec 03). It offers "I already
+ * have an account" to somebody who, on such an instance, has neither an
+ * account nor a way to make one outside this very link, so the only thing it
+ * can do is send them to a sign-in form they cannot fill in. The line about
+ * coming back afterwards goes too: they do not come back, the gateway half is
+ * redeemed for them when the account ceremony ends.
  */
 function SyncStepCard({
   hasGateway,
+  managed,
   onContinue,
   onSkip,
 }: {
   hasGateway: boolean;
+  /** `PublicConfig.managed` — `false` renders exactly the card this route had before. */
+  managed: boolean;
   onContinue: () => void;
   onSkip: () => void;
 }) {
@@ -252,15 +279,41 @@ function SyncStepCard({
     <CardContent className="space-y-4 py-6">
       <p className="text-base font-medium">{t('join.sync.title')}</p>
       <p className="text-sm text-muted-foreground">{t('join.sync.body')}</p>
-      {hasGateway && <p className="text-sm text-muted-foreground">{t('join.sync.thenGateway')}</p>}
+      {hasGateway && (
+        <p className="text-sm text-muted-foreground">
+          {managed ? t('join.managed.thenGateway') : t('join.sync.thenGateway')}
+        </p>
+      )}
       <Button type="button" className="h-11 w-full" onClick={onContinue}>
         {t('join.sync.continue')}
       </Button>
-      {hasGateway && (
+      {hasGateway && !managed && (
         <Button type="button" variant="ghost" className="h-11 w-full" onClick={onSkip}>
           {t('join.sync.skip')}
         </Button>
       )}
+    </CardContent>
+  );
+}
+
+/**
+ * A managed instance's link carrying only the gateway half, on a signed-out
+ * device.
+ *
+ * The connection this link grants belongs to the ACCOUNT now (M187 spec 02),
+ * so redeeming it here would write it onto a device that carries it nowhere.
+ * `/sign-in` returns to this route as soon as the parked gateway half is all
+ * that is left, and the redemption then runs by itself.
+ */
+function SignInFirstCard({ onSignIn }: { onSignIn: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <CardContent className="space-y-4 py-6">
+      <p className="text-base font-medium">{t('join.managed.signInFirst.title')}</p>
+      <p className="text-sm text-muted-foreground">{t('join.managed.signInFirst.body')}</p>
+      <Button type="button" className="h-11 w-full" onClick={onSignIn}>
+        {t('join.managed.signInFirst.action')}
+      </Button>
     </CardContent>
   );
 }
@@ -433,6 +486,14 @@ function ConfirmCard({
   );
 }
 
+/** Everything the confirm card and the redemption both need about this gateway. */
+interface GatewayOffer {
+  info: GatewayInfo;
+  gatewayOrigin: string;
+  /** The connection this join takes over, or `null` — see `describeReplacedConnection`. */
+  replaces: string | null;
+}
+
 export default function Join() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -446,6 +507,127 @@ export default function Join() {
   const hasProbedRef = useRef(false);
 
   const syncServerUrl = useSyncServerUrl();
+  const managed = useManagedInstance();
+
+  /**
+   * Redeem, write the two rows, and leave.
+   *
+   * Takes the offer as an argument rather than reading `phase`, because the
+   * managed flow calls it straight out of the probe — where the confirm state
+   * was never entered and a `phase` read would still hold the previous value.
+   *
+   * A `useCallback`, like `probeGateway` below it, because the mount effect
+   * calls into this chain: without a stable identity the effect would list a
+   * function that changes every render.
+   */
+  const redeemAndSave = useCallback(
+    async (offer: GatewayOffer): Promise<void> => {
+      const invite = inviteRef.current;
+      if (invite === null) return;
+      setPhase({ status: 'joining', ...offer });
+
+      const redeemed = await redeemInvite(invite);
+      if (redeemed === null) {
+        // A rejected token is spent for this tab too: empty its slot BEFORE the
+        // error card goes up. The slot outlives this screen, and
+        // `sign-in-flow.ts` sends a signed-in tab back to `/join` whenever a
+        // gateway half is parked there — so leaving a dead token behind turns
+        // one bad link into every later sign-in in this tab failing the same
+        // way. The sync half is not touched, exactly as on the success path.
+        consumeGatewayInvite();
+        setPhase({ status: 'invite-invalid' });
+        return;
+      }
+
+      try {
+        // TWO writes of one fact, and both are needed (M187/02). The settings
+        // row is this DEVICE's provider configuration: the device holds one AI
+        // configuration, so this write both creates the gateway connection and
+        // makes it the active provider, and re-joining the SAME gateway lands
+        // on the same row and simply refreshes its token. The gatewayConnection
+        // singleton is the ACCOUNT's record of the same redemption, and it is
+        // what rides in the owner-private compartment so a second device of
+        // this account is not asked to connect to a provider all over again.
+        const now = Date.now();
+        await putLocalAiSettings(buildGatewayAiSettings({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
+        await putLocalGatewayConnection(buildGatewayConnection({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
+      } catch (error) {
+        reportError(error, { boundary: 'join-gateway-save' });
+        setPhase({ status: 'confirm', ...offer });
+        toast.error(t('connectGateway.saveFailed'));
+        return;
+      }
+
+      // The gateway half is spent: empty its slot so a later visit to `/join`
+      // does not offer a burnt invite. The sync half was consumed by whoever
+      // spent it, so no successful path leaves either one parked.
+      consumeGatewayInvite();
+      // Publish the connection now rather than waiting for the next debounce or
+      // page load: nothing else on this route schedules a cycle, and the whole
+      // point of the singleton above is that the person's OTHER device stops
+      // asking them to connect. A no-op when sync is not configured or the
+      // vault is locked, and deliberately not awaited — a slow or offline sync
+      // server must not hold up the success navigation.
+      void syncNow().catch(() => undefined);
+      toast.success(t('connectGateway.joined', { name: redeemed.gateway.name }));
+      void navigate(await destinationAfterJoin(managed));
+    },
+    [managed, navigate, t],
+  );
+
+  /**
+   * `GET /v1/gateway/info`, then whatever this instance does with a gateway
+   * half.
+   *
+   * A page load still burns nothing on an open instance, and on a managed one
+   * it only redeems for somebody already signed in to it (`resolveGatewayStep`).
+   * That is what keeps the header's promise against link previewers and mail
+   * scanners: none of them carries a session, so all of them reach
+   * `sign-in-first` and stop.
+   */
+  const probeGateway = useCallback(
+    async (link: JoinLink): Promise<void> => {
+      if (link.gatewayUrl === null || link.gatewayInvite === null) {
+        setPhase({ status: 'invalid-link' });
+        return;
+      }
+      const gatewayUrl = link.gatewayUrl;
+      inviteRef.current = { gatewayUrl, inviteToken: link.gatewayInvite };
+      const gatewayOrigin = new URL(gatewayUrl).origin;
+
+      const probe = await fetchGatewayInfo(gatewayUrl);
+      if (!probe.ok) {
+        const isBlocked =
+          probe.kind === 'blocked' &&
+          requiresOperatorCspAllowlisting({ gatewayUrl, appOrigin: window.location.origin });
+        setPhase({ status: 'unreachable', reason: isBlocked ? 'blocked' : 'network', gatewayOrigin });
+        return;
+      }
+
+      const step = resolveGatewayStep({
+        managed,
+        hasAccount: getSyncSessionSnapshot().account !== null,
+        auditRequired: isAuditDisclosureRequired(probe.info),
+      });
+      if (step === 'sign-in-first') {
+        setPhase({ status: 'sign-in-first' });
+        return;
+      }
+      // Read the existing connection only once the gateway is real, so a dead
+      // link never touches the settings store at all.
+      const offer: GatewayOffer = {
+        info: probe.info,
+        gatewayOrigin,
+        replaces: await describeReplacedConnection(gatewayUrl),
+      };
+      if (step === 'auto-redeem') {
+        await redeemAndSave(offer);
+        return;
+      }
+      setPhase({ status: 'confirm', ...offer });
+    },
+    [managed, redeemAndSave],
+  );
 
   useEffect(() => {
     // StrictMode double-mount guard: the fragment is stripped below, so a
@@ -468,93 +650,16 @@ export default function Join() {
       return;
     }
     // Sync first, and it is a HANDOFF: the invite is parked, and the ceremony
-    // on `/settings/sync` reads the same slot. The gateway half waits in the
-    // slot until this route is opened again, which is what the banner on that
-    // page is for.
+    // on `/settings/sync` reads the same slot. On an open instance the gateway
+    // half then waits in the slot until this route is opened again, which is
+    // what the banner on that page is for; on a managed one that page brings
+    // the person back here itself as soon as the account card is saved.
     if (link.syncInvite !== null) {
       setPhase({ status: 'sync', hasGateway: hasGatewayHalf(link) });
       return;
     }
     void probeGateway(link);
-  }, [syncServerUrl]);
-
-  /** `GET /v1/gateway/info`, then the confirm card. Never redeems: a page load must burn nothing. */
-  async function probeGateway(link: JoinLink): Promise<void> {
-    if (link.gatewayUrl === null || link.gatewayInvite === null) {
-      setPhase({ status: 'invalid-link' });
-      return;
-    }
-    const gatewayUrl = link.gatewayUrl;
-    inviteRef.current = { gatewayUrl, inviteToken: link.gatewayInvite };
-    const gatewayOrigin = new URL(gatewayUrl).origin;
-
-    const probe = await fetchGatewayInfo(gatewayUrl);
-    if (!probe.ok) {
-      const isBlocked =
-        probe.kind === 'blocked' && requiresOperatorCspAllowlisting({ gatewayUrl, appOrigin: window.location.origin });
-      setPhase({ status: 'unreachable', reason: isBlocked ? 'blocked' : 'network', gatewayOrigin });
-      return;
-    }
-    // Read the existing connection only once the gateway is real, so a dead
-    // link never touches the settings store at all.
-    const replaces = await describeReplacedConnection(gatewayUrl);
-    setPhase({ status: 'confirm', info: probe.info, gatewayOrigin, replaces });
-  }
-
-  async function handleJoin(): Promise<void> {
-    const invite = inviteRef.current;
-    if (phase.status !== 'confirm' || invite === null) return;
-    setPhase({ ...phase, status: 'joining' });
-
-    const redeemed = await redeemInvite(invite);
-    if (redeemed === null) {
-      // A rejected token is spent for this tab too: empty its slot BEFORE the
-      // error card goes up. The slot outlives this screen, and `sign-in-flow.ts`
-      // sends a signed-in tab back to `/join` whenever a gateway half is parked
-      // there — so leaving a dead token behind turns one bad link into every
-      // later sign-in in this tab failing the same way. The sync half is not
-      // touched, exactly as on the success path below.
-      consumeGatewayInvite();
-      setPhase({ status: 'invite-invalid' });
-      return;
-    }
-
-    try {
-      // TWO writes of one fact, and both are needed (M187/02). The settings row
-      // is this DEVICE's provider configuration: the device holds one AI
-      // configuration, so this write both creates the gateway connection and
-      // makes it the active provider, and re-joining the SAME gateway lands on
-      // the same row and simply refreshes its token. The gatewayConnection
-      // singleton is the ACCOUNT's record of the same redemption, and it is
-      // what rides in the owner-private compartment so a second device of this
-      // account is not asked to connect to a provider all over again.
-      const now = Date.now();
-      await putLocalAiSettings(buildGatewayAiSettings({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
-      await putLocalGatewayConnection(buildGatewayConnection({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
-    } catch (error) {
-      reportError(error, { boundary: 'join-gateway-save' });
-      setPhase({ ...phase, status: 'confirm' });
-      toast.error(t('connectGateway.saveFailed'));
-      return;
-    }
-
-    // The AI settings page IS the success state: it reads the row back from the
-    // device and renders the connected panel (plus the standing audit notice
-    // when this gateway declared one), so there is no second copy of "you are
-    // connected" to keep in step here.
-    // The gateway half is spent: empty its slot so a later visit to `/join`
-    // does not offer a burnt invite. The sync half is untouched by this.
-    consumeGatewayInvite();
-    // Publish the connection now rather than waiting for the next debounce or
-    // page load: nothing else on this route schedules a cycle, and the whole
-    // point of the singleton above is that the person's OTHER device stops
-    // asking them to connect. A no-op when sync is not configured or the vault
-    // is locked, and deliberately not awaited — a slow or offline sync server
-    // must not hold up the success navigation.
-    void syncNow().catch(() => undefined);
-    toast.success(t('connectGateway.joined', { name: redeemed.gateway.name }));
-    void navigate('/settings/ai');
-  }
+  }, [syncServerUrl, probeGateway]);
 
   return (
     <div className="mx-auto max-w-md py-16">
@@ -569,10 +674,12 @@ export default function Join() {
         {phase.status === 'sync' && (
           <SyncStepCard
             hasGateway={phase.hasGateway}
+            managed={managed}
             onContinue={() => void navigate('/settings/sync')}
             onSkip={() => void navigate('/sign-in')}
           />
         )}
+        {phase.status === 'sign-in-first' && <SignInFirstCard onSignIn={() => void navigate('/sign-in')} />}
         {phase.status === 'unreachable' && (
           <UnreachableCard reason={phase.reason} gatewayOrigin={phase.gatewayOrigin} />
         )}
@@ -582,11 +689,34 @@ export default function Join() {
             gatewayOrigin={phase.gatewayOrigin}
             replaces={phase.replaces}
             isJoining={phase.status === 'joining'}
-            onJoin={() => void handleJoin()}
+            onJoin={() =>
+              void redeemAndSave({ info: phase.info, gatewayOrigin: phase.gatewayOrigin, replaces: phase.replaces })
+            }
           />
         )}
         {phase.status === 'invite-invalid' && <InviteInvalidCard onContinue={() => void navigate('/diary')} />}
       </Card>
     </div>
   );
+}
+
+/**
+ * Where a finished join lands.
+ *
+ * On an OPEN instance: the AI settings page, which IS the success state — it
+ * reads the row back from the device and renders the connected panel, plus the
+ * standing audit notice when this gateway declared one, so there is no second
+ * copy of "you are connected" to keep in step.
+ *
+ * On a MANAGED instance the join is the last step of getting IN, and a settings
+ * page is not where somebody who just followed an invite wants to be left. The
+ * onboarding gate decides instead, exactly as it does after a sign-in: the
+ * diary when this account already holds one, the questionnaire when the
+ * account was created a moment ago. `hasPendingGatewayJoin` is false by
+ * construction here — the slot was emptied above — and passing anything else
+ * would send the person back to this screen.
+ */
+async function destinationAfterJoin(managed: boolean): Promise<string> {
+  if (!managed) return '/settings/ai';
+  return resolveSignInDestination({ gate: await readOnboardingGateKind(), hasPendingGatewayJoin: false });
 }

@@ -44,7 +44,7 @@ import {
 } from '#app/services/food-resolution/apply-match';
 import { fetchFoodMatches } from '#app/lib/food-matches-client';
 import { randomUuid } from '#app/lib/uuid';
-import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
+import { useGatewayUrl, useInstanceInferencePreset } from '#app/hooks/use-public-config';
 import { OAuthConnectButton } from '#app/components/oauth-connect-button';
 import { InstancePresetConnect } from '#app/components/instance-preset-connect';
 import { LoadingDots } from '#app/components/app-loading';
@@ -1722,6 +1722,26 @@ function useKeylessSharedPhotoPreview(): string | null {
 }
 
 /**
+ * The host a photo would reach on an instance that runs AI of its own, or
+ * `null` on one that runs none.
+ *
+ * Naming the recipient is the whole point of this line: a person deciding
+ * whether to press the shutter is deciding who sees the photo. The gateway
+ * wins over a preset when both are configured, because on a managed instance
+ * the gateway is where the photo actually goes.
+ */
+function instanceAiHost({
+  gatewayUrl,
+  presetBaseUrl,
+}: {
+  gatewayUrl: string | null;
+  presetBaseUrl: string | null;
+}): string | null {
+  const address = gatewayUrl ?? presetBaseUrl;
+  return address === null ? null : new URL(address).host;
+}
+
+/**
  * Keyless-friendly landing for a user without an AI provider yet — also the cold
  * open for anyone who's never scanned before, since /scan is a primary tab. Says
  * plainly, before any jargon, what this does, that it needs a paid account the
@@ -1738,10 +1758,15 @@ function ConnectCard({ logDate }: { logDate: string | null }) {
   const revalidator = useRevalidator();
   const addHref = logDate ? `/add?date=${logDate}` : '/add';
   const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
-  // `null` unless this instance's operator wired up its own inference endpoint
-  // (M138 spec 06) — in which case the body copy below has to stop saying
-  // openplate doesn't run its own AI, because on this instance it does.
+  // `null` unless this instance runs AI of its own — in which case the body
+  // copy below has to stop saying openplate doesn't, because on this instance
+  // it does. TWO ways an instance can: its own inference endpoint (M138 spec
+  // 06) or the gateway a managed instance hands out with its accounts (M187
+  // spec 03). The gateway comes first when both are set: on a managed instance
+  // it is where the photo actually goes.
+  const gatewayUrl = useGatewayUrl();
   const instancePreset = useInstanceInferencePreset();
+  const managedHost = instanceAiHost({ gatewayUrl, presetBaseUrl: instancePreset?.baseUrl ?? null });
   return (
     <Card>
       <CardHeader>
@@ -1760,11 +1785,11 @@ function ConnectCard({ logDate }: { logDate: string | null }) {
             The audit line, when a gateway declared one, is rendered by
             `AuditReviewNotice` on the connected screen — it describes a
             connection that does not exist yet on this card. */}
-        {instancePreset === null ?
+        {managedHost === null ?
           <p className="text-sm text-muted-foreground">{t('scan.setup.crisp.selfHosted')}</p>
         : <div className="space-y-1 text-sm text-muted-foreground">
             <p>{t('scan.setup.crisp.managedWhat')}</p>
-            <p>{t('scan.setup.crisp.managedWho', { host: new URL(instancePreset.baseUrl).host })}</p>
+            <p>{t('scan.setup.crisp.managedWho', { host: managedHost })}</p>
           </div>
         }
         {/* One tap, no key to go and get — renders nothing at all when this
