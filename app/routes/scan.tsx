@@ -1751,9 +1751,22 @@ function ConnectCard({ logDate }: { logDate: string | null }) {
         <CardDescription>{t('scan.setup.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          {instancePreset === null ? t('scan.setup.body') : t('scan.setup.bodyPreset')}
-        </p>
+        {/* Two shapes, because the honest answer differs. On a self-hosted
+            instance there is nobody but the provider the user chooses, so one
+            sentence covers it. On a managed instance the photo goes to an
+            endpoint this instance's operator runs, and the recipient is NAMED
+            rather than left as "an AI" — a person deciding whether to press
+            the shutter is deciding who sees the photo.
+            The audit line, when a gateway declared one, is rendered by
+            `AuditReviewNotice` on the connected screen — it describes a
+            connection that does not exist yet on this card. */}
+        {instancePreset === null ?
+          <p className="text-sm text-muted-foreground">{t('scan.setup.crisp.selfHosted')}</p>
+        : <div className="space-y-1 text-sm text-muted-foreground">
+            <p>{t('scan.setup.crisp.managedWhat')}</p>
+            <p>{t('scan.setup.crisp.managedWho', { host: new URL(instancePreset.baseUrl).host })}</p>
+          </div>
+        }
         {/* One tap, no key to go and get — renders nothing at all when this
             instance provides no AI of its own. Above the BYOK buttons because
             on such an instance it is the whole answer; `revalidate` re-runs

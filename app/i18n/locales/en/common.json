@@ -1659,6 +1659,11 @@
       "body": "This step is optional. Hand logging and all other features work without it. openplate runs no AI and offers no trial. You set up your own paid AI account in minutes. Your provider bills you under a cent per photo, not openplate. Photos go straight to your provider to be read. They stay on this device until cleared in Settings, never on openplate servers.",
       "bodyPreset": "This step is optional. Hand logging and all other features work without it. Connect this openplate's AI in one tap, with no personal account or key. Photos go straight from this device to that AI to be read. They stay on this device until cleared in Settings, never on openplate.org or anywhere else.",
       "connectOpenRouter": "Connect with OpenRouter",
+      "crisp": {
+        "selfHosted": "Connect an AI to read your photos. Your photo goes only to that AI.",
+        "managedWhat": "Take a photo of your plate, and the AI works out the carbs for you.",
+        "managedWho": "Your photo goes to {{host}}, a server run by the operator of this openplate."
+      },
       "description": "Take a photo of your plate and an AI service estimates the carbs for you.",
       "manualSetup": "Or set up a provider manually in settings",
       "sharedPhotoAlt": "The photo you shared",

@@ -1659,6 +1659,11 @@
       "body": "Dieser Schritt ist optional. Manuelles Eintragen und alle anderen Funktionen klappen auch ohne ihn. openplate betreibt keine KI und bietet keine Testversion. Du richtest in wenigen Minuten dein eigenes, kostenpflichtiges KI-Konto ein. Dein Anbieter stellt dir weniger als einen Cent pro Foto in Rechnung, nicht openplate. Fotos gehen zum Auslesen direkt an deinen Anbieter. Sie bleiben auf diesem Gerät, bis du sie in den Einstellungen löschst, niemals auf Servern von openplate.",
       "bodyPreset": "Dieser Schritt ist optional. Manuelles Eintragen und alle anderen Funktionen klappen auch ohne ihn. Verbinde die KI dieses openplate mit einem Fingertipp, ganz ohne persönliches Konto oder Schlüssel. Fotos gehen zum Auslesen direkt von diesem Gerät an diese KI. Sie bleiben auf diesem Gerät, bis du sie in den Einstellungen löschst, niemals auf openplate.org oder anderswo.",
       "connectOpenRouter": "Mit OpenRouter verbinden",
+      "crisp": {
+        "selfHosted": "Verbinde eine KI, um deine Fotos zu lesen. Dein Foto geht nur an diese KI.",
+        "managedWhat": "Mach ein Foto von deinem Teller, und die KI berechnet die Kohlenhydrate für dich.",
+        "managedWho": "Dein Foto geht an {{host}}, einen Server vom Betreiber dieses openplate."
+      },
       "description": "Fotografier deinen Teller und ein KI-Dienst schätzt die Kohlenhydrate für dich.",
       "manualSetup": "Oder richte einen Anbieter selbst in den Einstellungen ein",
       "sharedPhotoAlt": "Das Foto, das du geteilt hast",
