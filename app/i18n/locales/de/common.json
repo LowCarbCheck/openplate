@@ -998,6 +998,7 @@
     "settings": "Einstellungen · openplate",
     "shared": "Mit dir geteilt · openplate",
     "sharing": "Teilen · openplate",
+    "signIn": "Anmelden · openplate",
     "study": "Studien-Konsole · openplate",
     "sync": "Konto · openplate",
     "terms": "Nutzungsbedingungen · openplate",
@@ -1992,6 +1993,14 @@
       "gone": "Dieses Tagebuch ist nicht verfügbar. Vielleicht wurde das Teilen beendet, oder es wurde noch nichts synchronisiert."
     }
   },
+  "signIn": {
+    "title": "Anmelden",
+    "body": "Melde dich an, um dein Tagebuch wieder auf dieses Gerät zu holen.",
+    "pulling": "Dein Tagebuch wird geladen…",
+    "pullFailedTitle": "Dein Tagebuch ist nicht angekommen",
+    "pullFailedBody": "Du bist angemeldet, aber dein Tagebuch ist noch nicht angekommen.",
+    "unavailable": "Konten sind auf diesem Server deaktiviert."
+  },
   "sync": {
     "cancel": "Abbrechen",
     "changePassphrase": {
@@ -2112,7 +2121,8 @@
       "submit": "Anmelden",
       "working": "Wird angemeldet…",
       "passphraseRequired": "Gib dein Passwort ein.",
-      "handleRequired": "Gib deinen Anmeldenamen ein."
+      "handleRequired": "Gib deinen Anmeldenamen ein.",
+      "notYou": "Nicht du?"
     },
     "signOut": {
       "cta": "Auf diesem Gerät abmelden",

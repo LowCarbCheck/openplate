@@ -52,14 +52,14 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
 const START_PATH = '/onboarding';
 
 /**
- * Where "I already have an account" goes.
+ * Where "I already have an account" goes (M183 spec 03).
  *
- * TODO(M183/03): retarget to `/sign-in` once that route exists. Until then the
- * signed-out `/settings/sync` screen is the only door in, and it already reads
- * the SAME account hint this page reads, so the sign-in name is prefilled there
- * without this link having to carry it.
+ * A page of its own rather than `/settings/sync`, which is a page about a
+ * mechanism with a sign-in form buried three taps inside it. `/sign-in` reads
+ * the SAME account hint this page reads, so the sign-in name is prefilled
+ * there without this link having to carry it.
  */
-const SIGN_IN_PATH = '/settings/sync';
+const SIGN_IN_PATH = '/sign-in';
 
 /**
  * The two device traces, read once on mount.

@@ -71,6 +71,15 @@ export default [
   // live in the browser, so there is nothing here for a loader to do either.
   route('/welcome', 'routes/welcome.tsx'),
 
+  // The door back in for somebody who already has an account (M183 spec 03):
+  // sign-in name, password, and the recovery flow behind "I have forgotten my
+  // password". TOP-LEVEL and client-only for the same two reasons `/welcome`
+  // above is — `_personal.tsx`'s gate redirects here, so nesting it inside
+  // that layout would redirect it away from itself in a loop, and everything
+  // it touches (the remembered name, the password, the pulled diary) belongs
+  // to the browser and to the sync service's own origin, never to this server.
+  route('/sign-in', 'routes/sign-in.tsx'),
+
   // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
   // device whose store has been wiped but whose `firstDataAt` marker survives.
   // TOP-LEVEL and client-only — it must sit outside `_personal`, whose gate is

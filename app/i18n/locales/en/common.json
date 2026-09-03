@@ -998,6 +998,7 @@
     "settings": "Settings · openplate",
     "shared": "Shared with you · openplate",
     "sharing": "Sharing · openplate",
+    "signIn": "Sign in · openplate",
     "study": "Study console · openplate",
     "sync": "Account · openplate",
     "terms": "Terms of service · openplate",
@@ -1992,6 +1993,14 @@
       "gone": "This diary is not available. The share may have been stopped, or nothing has been synced yet."
     }
   },
+  "signIn": {
+    "title": "Sign in",
+    "body": "Sign in to bring your diary back to this device.",
+    "pulling": "Getting your diary…",
+    "pullFailedTitle": "Your diary did not arrive",
+    "pullFailedBody": "You are signed in, but your diary has not arrived yet.",
+    "unavailable": "Accounts are turned off on this server."
+  },
   "sync": {
     "cancel": "Cancel",
     "changePassphrase": {
@@ -2112,7 +2121,8 @@
       "submit": "Sign in",
       "working": "Signing in…",
       "passphraseRequired": "Enter your password.",
-      "handleRequired": "Enter your sign-in name."
+      "handleRequired": "Enter your sign-in name.",
+      "notYou": "Not you?"
     },
     "signOut": {
       "cta": "Sign out on this device",

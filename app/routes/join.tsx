@@ -229,6 +229,12 @@ function LoadingCard() {
  * reads the same slot and prefills itself — see the header. The skip is offered
  * only when there is a gateway half left to do, because skipping a sync-only
  * link would leave the person on a screen with nothing on it.
+ *
+ * "Skip, I already have an account" goes to `/sign-in` (M183 spec 03), not
+ * straight on to the gateway step: the account they already have has to be
+ * signed in to on this device before the gateway half means anything here. It
+ * is not dropped — `/sign-in` returns to this route once the parked gateway
+ * half is all that is left (owner decision, worklog `01M1KMSJXNVZFV1JFYVV`).
  */
 function SyncStepCard({
   hasGateway,
@@ -478,16 +484,6 @@ export default function Join() {
     setPhase({ status: 'confirm', info: probe.info, gatewayOrigin, replaces });
   }
 
-  /** Step one is done (or skipped): continue to the gateway, or leave for the sync ceremony. */
-  function handleSyncStep(next: 'sync-settings' | 'gateway'): void {
-    if (next === 'sync-settings') {
-      void navigate('/settings/sync');
-      return;
-    }
-    const pending = takeJoinLinkFromUrl({ configuredSyncUrl: syncServerUrl });
-    void probeGateway(pending);
-  }
-
   async function handleJoin(): Promise<void> {
     const invite = inviteRef.current;
     if (phase.status !== 'confirm' || invite === null) return;
@@ -535,8 +531,8 @@ export default function Join() {
         {phase.status === 'sync' && (
           <SyncStepCard
             hasGateway={phase.hasGateway}
-            onContinue={() => handleSyncStep('sync-settings')}
-            onSkip={() => handleSyncStep('gateway')}
+            onContinue={() => void navigate('/settings/sync')}
+            onSkip={() => void navigate('/sign-in')}
           />
         )}
         {phase.status === 'unreachable' && (

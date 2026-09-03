@@ -19,23 +19,18 @@
  */
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { getFormProps, getInputProps, useForm } from '@conform-to/react';
-import type { Submission } from '@conform-to/react';
-import { parseWithZod } from '@conform-to/zod/v4';
 import { useLoaderData } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
 import { Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { consumePendingInvite, takeInviteFromUrl } from '#app/lib/sync/invite-link';
+import { CreateAccountPanel } from '#app/components/create-account-panel';
+import { SignInPanel } from '#app/components/sign-in-panel';
+import { takeInviteFromUrl } from '#app/lib/sync/invite-link';
 import { readPendingGatewayJoin } from '#app/lib/join-link';
 import { Link } from '#app/components/link';
-import { classifySignupFailure } from '#app/lib/sync/signup-error';
-import type { SignupMode } from '#app/lib/sync/engine/protocol';
 import { ServerNoticeBanner } from '#app/components/sync-notice-banner';
-import { SyncSetupFlow } from '#app/components/sync-setup-flow';
-import { FieldError } from '#app/components/field-error';
 import { SyncRecoveryFlow } from '#app/components/sync-recovery-flow';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
@@ -53,19 +48,8 @@ import {
   AlertDialogTrigger,
 } from '#app/components/ui/alert-dialog';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
-import { validateSyncPassphrase, type SyncSetupOutcome } from '#app/lib/sync/setup-flow';
-import {
-  changeSyncPassphrase,
-  createSyncAccount,
-  readSignupMode,
-  deleteSyncAccount,
-  signInToSync,
-  signOutOfSync,
-  syncNow,
-} from '#app/lib/sync/sync-actions';
-import { classifySignInFailure } from '#app/lib/sync/sign-in-error';
-import { makeSyncSignInSchema, type SyncSignInValues } from '#app/lib/sync/sign-in-schema';
-import { SyncFieldError, type SyncRefusal } from '#app/lib/sync/form-field-error';
+import { validateSyncPassphrase } from '#app/lib/sync/setup-flow';
+import { changeSyncPassphrase, deleteSyncAccount, signOutOfSync, syncNow } from '#app/lib/sync/sync-actions';
 import { readAccountHint } from '#app/lib/sync/sync-session';
 import { resolveSyncScreen } from '#app/lib/sync/setup-screen';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
@@ -151,6 +135,11 @@ function PendingGatewayBanner() {
 // Signed out: create an account, or sign in on this device
 // ---------------------------------------------------------------------------
 
+// Both credential forms themselves live in `app/components` (M183 spec 03):
+// `/sign-in` is a page of its own now, and it renders the SAME two components
+// this panel does. A second copy of a sign-in form is how one of them quietly
+// rots — so this file keeps the CHOICE between them, and neither form.
+
 type SignedOutMode = 'choose' | 'create' | 'sign-in' | 'forgot';
 
 function SignedOutPanel({
@@ -234,304 +223,6 @@ function SignedOutPanel({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-/**
- * Account creation: the invite, if this instance wants one, wrapped around the
- * ceremony that mints the handle and shows the account card.
- *
- * ── Why the handle is NOT collected here ─────────────────────────────────
- *
- * It used to be an email field on this panel, with the passphrase warnings on
- * the next screen. The handle is not that: it is generated, not typed, and it
- * is one half of the account card the ceremony ends on. Keeping it beside the
- * passphrase — in `SyncSetupFlow` — is what lets the card show the two values
- * the ceremony actually produced, rather than one collected here and one
- * produced there.
- *
- * The invite stays, because it is a capability from outside the ceremony and
- * the field is also the paste target for a code that arrived as text rather
- * than as a link. It is now a FIELD OF THE CEREMONY'S FORM rather than a box
- * above it (owner request, 2026-09-02): that is what puts an invalid code
- * under the invite box instead of over the submit button, and it disappears
- * with the rest of the form once provisioning starts — an invite box beside an
- * account card is asking a question that has already been answered.
- */
-function CreateAccountPanel({
-  serverUrl,
-  initialInvite,
-  onCancel,
-  onCeremonyActiveChange,
-}: {
-  serverUrl: string;
-  /** The token from an `#invite=…` link, already taken out of the URL by `SignedOutPanel`, or `''`. */
-  initialInvite: string;
-  onCancel: () => void;
-  onCeremonyActiveChange: (isActive: boolean) => void;
-}) {
-  const { t } = useTranslation();
-  const [isCeremonyActive, setIsCeremonyActive] = useState(false);
-
-  // `null` while unknown — an older service, or one that could not be reached.
-  // The form stays usable either way; this only decides whether the invite
-  // field is offered and which refusal message a 403 gets.
-  const [signupMode, setSignupMode] = useState<SignupMode | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    const ask = async (): Promise<void> => {
-      const mode = await readSignupMode(serverUrl);
-      if (!cancelled) setSignupMode(mode);
-    };
-    // `readSignupMode` fails open and never rejects, so there is nothing here
-    // for a catch to do — the unknown mode IS the failure result.
-    void ask();
-    return () => {
-      cancelled = true;
-    };
-  }, [serverUrl]);
-
-  // Offered when the instance says it wants one, and also whenever a link
-  // supplied one — so a person following an invite to a service that could not
-  // be reached still sees their code rather than losing it silently.
-  const wantsInvite = signupMode === 'invite' || initialInvite !== '';
-
-  return (
-    <div className="space-y-4">
-      <SyncSetupFlow
-        invite={
-          wantsInvite ?
-            { initialValue: initialInvite, isFromLink: initialInvite !== '', isRequired: signupMode === 'invite' }
-          : undefined
-        }
-        onCeremonyActiveChange={(isActive) => {
-          setIsCeremonyActive(isActive);
-          onCeremonyActiveChange(isActive);
-        }}
-        provision={async ({ handle: accountHandle, passphrase, invite }) => {
-          // The person has acted on the prefilled code, so the pending slot
-          // has done its job and is emptied HERE rather than on mount: until
-          // this moment a reload still has to be able to bring the token back,
-          // and after it a later visit must not resurrect a spent one.
-          consumePendingInvite();
-          try {
-            return await createSyncAccount({
-              serverUrl,
-              handle: accountHandle,
-              passphrase,
-              inviteToken: invite === '' ? undefined : invite,
-            });
-          } catch (error) {
-            // Translated here rather than left to `describeErrorForUser`,
-            // which would surface the SERVICE's own English sentence. §4 of
-            // the protocol says a client branches on the status, not the
-            // prose — displaying that prose is the same mistake in the other
-            // direction. The FIELD travels with the message, so a taken name
-            // and a spent invite land under the box the person has to change.
-            const refusal = describeSignupError(error, signupMode, t);
-            if (refusal.field !== null) throw new SyncFieldError(refusal.field, refusal.message, { cause: error });
-            throw new Error(refusal.message, { cause: error });
-          }
-        }}
-      />
-      {!isCeremonyActive && (
-        <Button type="button" variant="ghost" className="h-11 w-full" onClick={onCancel}>
-          {t('sync.cancel')}
-        </Button>
-      )}
-    </div>
-  );
-}
-
-/**
- * Turns a failure to CREATE an account into copy the user can act on, plus the
- * FIELD it belongs under when there is one.
- *
- * The `403` needs `signupMode` to be readable at all: the service answers the
- * same status whether it is closed or merely wants an invite, and it
- * deliberately will not distinguish a missing invite from an expired or
- * already-spent one. When the mode is unknown the generic refusal is the
- * honest answer — better than sending somebody to look for an invitation that
- * was never required.
- */
-function describeSignupError(cause: unknown, signupMode: SignupMode | null, t: (key: string) => string): SyncRefusal {
-  const failure = classifySignupFailure(cause, signupMode);
-  if (failure === 'invite-required') return { field: 'invite', message: t('sync.create.inviteRequired') };
-  if (failure === 'handle-taken') return { field: 'handle', message: t('sync.create.handleTaken') };
-  // "This server is not accepting new accounts" is about the server, and
-  // nothing typed into any field answers it — so it belongs to the form, on
-  // the screen that offers a retry rather than under a box.
-  if (failure === 'signups-closed') return { field: null, message: t('sync.create.closed') };
-  return { field: null, message: describeErrorForUser(cause, t('sync.setup.setupFailed')) };
-}
-
-/**
- * Turns a sign-in failure into copy the user can act on.
- *
- * ONE message for a wrong handle and a wrong passphrase, because the service
- * answers one status for both — telling them apart would make this form an
- * account-enumeration oracle. Everything else keeps its own words: a DEK that
- * will not unwrap is not a wrong passphrase, and saying so sends people to try
- * harder at something that cannot work.
- */
-function describeSignInError(cause: unknown, t: (key: string) => string): string {
-  if (classifySignInFailure(cause) === 'rejected') return t('sync.signIn.failed');
-  return describeErrorForUser(cause, t('sync.signIn.failed'));
-}
-
-/** The shape `parseWithZod` hands back for the sign-in form, and what a service refusal is replied onto. */
-type SyncSignInSubmission = Submission<SyncSignInValues, string[], SyncSignInValues>;
-
-/**
- * Sign in — and, when the account turns out to have no key records, finish the
- * setup that never completed.
- *
- * ── Why the repair lives HERE and not behind "create an account" ──────────
- *
- * An account whose device died between the signup and the key-record writes
- * exists with no key hierarchy. Sending that user back to "create an account"
- * answers `409` (the account exists) and always will — the only door left open
- * is a sign-in, which is exactly where the missing key records become visible.
- * Without the repair, neither door works and the account is permanently
- * unusable.
- *
- * The repair reuses `SyncSetupFlow` rather than printing a code inline, so the
- * un-skippable "I've saved this recovery code" gate applies identically. And
- * because provisioning opens the session mid-ceremony, `onCeremonyActiveChange`
- * has to be threaded up to the route here for the same reason it is on the
- * create path — otherwise `resolveSyncScreen` swaps in the connected panel and
- * unmounts the code.
- */
-function SignInPanel({
-  serverUrl,
-  initialHandle,
-  onCancel,
-  onForgot,
-  onCeremonyActiveChange,
-}: {
-  serverUrl: string;
-  initialHandle: string;
-  onCancel: () => void;
-  onForgot: () => void;
-  onCeremonyActiveChange: (isActive: boolean) => void;
-}) {
-  const { t } = useTranslation();
-  const [isBusy, setIsBusy] = useState(false);
-  // The service's refusal, fed back into the form as Conform's `lastResult`.
-  // It is a FORM-level error on purpose: one status answers both a wrong name
-  // and a wrong passphrase, so naming a field would be a guess — and an
-  // account-enumeration oracle if the guess were right.
-  const [lastResult, setLastResult] = useState<ReturnType<SyncSignInSubmission['reply']> | undefined>(undefined);
-  const [repair, setRepair] = useState<{
-    handle: string;
-    passphrase: string;
-    completeSetup: (input: { passphrase: string }) => Promise<SyncSetupOutcome>;
-  } | null>(null);
-
-  const [form, fields] = useForm({
-    id: 'sync-signin',
-    lastResult,
-    onValidate({ formData }) {
-      return parseWithZod(formData, { schema: makeSyncSignInSchema(t) });
-    },
-    // Nothing red before the person asks for it, but a corrected field clears
-    // its own error as it is typed. See `.claude/conform-to-react.md`.
-    shouldRevalidate: 'onInput',
-    defaultValue: { handle: initialHandle, passphrase: '' },
-    onSubmit(event, { submission }) {
-      // No action to post to: signing in is Argon2id and a fetch to the sync
-      // service, both in this browser, and the default navigation would
-      // abandon them.
-      event.preventDefault();
-      if (submission?.status !== 'success') return;
-      void handleSubmit(submission);
-    },
-  });
-
-  async function handleSubmit(submission: SyncSignInSubmission): Promise<void> {
-    if (submission.status !== 'success') return;
-    const { handle: accountHandle, passphrase } = submission.value;
-    setIsBusy(true);
-    setLastResult(undefined);
-    try {
-      const result = await signInToSync({ serverUrl, handle: accountHandle.trim(), passphrase });
-      if (result.status === 'setup-incomplete') {
-        setRepair({ handle: accountHandle.trim(), passphrase, completeSetup: result.completeSetup });
-        return;
-      }
-      await syncNow();
-    } catch (caught) {
-      setLastResult(submission.reply({ formErrors: [describeSignInError(caught, t)] }));
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
-  if (repair !== null) {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">{t('sync.signIn.finishSetup')}</p>
-        <SyncSetupFlow
-          resume={{ handle: repair.handle, passphrase: repair.passphrase }}
-          onCeremonyActiveChange={onCeremonyActiveChange}
-          provision={async (input) => {
-            const outcome = await repair.completeSetup({ passphrase: input.passphrase });
-            // Fired, never awaited — same reason as the create path: a network
-            // round trip between "the key records exist" and "the code is on
-            // screen" turns a transient failure into a lost recovery code.
-            void syncNow().catch(() => undefined);
-            return outcome;
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <form {...getFormProps(form)} className="space-y-4">
-      <p className="text-sm text-muted-foreground">{t('sync.signIn.intro')}</p>
-      <div className="space-y-2">
-        <Label htmlFor={fields.handle.id}>{t('sync.handleLabel')}</Label>
-        {/* Conform owns the field: id, name, seeded value and the
-            `aria-invalid`/`aria-describedby` pair all come from the same
-            metadata `FieldError` reads. No `required` — the browser's native
-            popup would intercept the submit with untranslated copy. */}
-        <Input
-          {...getInputProps(fields.handle, { type: 'text' })}
-          autoComplete="username"
-          spellCheck={false}
-          autoCapitalize="none"
-          className="h-11 font-mono"
-        />
-        <FieldError id={fields.handle.errorId} errors={fields.handle.errors} />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={fields.passphrase.id}>{t('sync.passphraseLabel')}</Label>
-        <Input
-          {...getInputProps(fields.passphrase, { type: 'password' })}
-          autoComplete="current-password"
-          className="h-11"
-        />
-        <FieldError id={fields.passphrase.errorId} errors={fields.passphrase.errors} />
-      </div>
-      <FieldError id={form.errorId} errors={form.errors} />
-      <div className="flex flex-col gap-2">
-        <Button type="submit" className="h-11 w-full" disabled={isBusy}>
-          {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-          {isBusy ? t('sync.signIn.working') : t('sync.signIn.submit')}
-        </Button>
-        <button
-          type="button"
-          onClick={onForgot}
-          className="min-h-11 text-sm text-primary underline-offset-4 hover:underline"
-        >
-          {t('sync.signIn.forgot')}
-        </button>
-        <Button type="button" variant="ghost" className="h-11 w-full" onClick={onCancel}>
-          {t('sync.cancel')}
-        </Button>
-      </div>
-    </form>
   );
 }
 
