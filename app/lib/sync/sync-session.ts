@@ -173,7 +173,14 @@ export function writeAccountHint(handle: string, storage: KeyValueStorage | null
   storage?.setItem(ACCOUNT_HINT_KEY, handle);
 }
 
-/** Cleared on sign-out and on account deletion, so a shared device stops offering someone else's handle. */
+/**
+ * Cleared on account deletion and by the explicit "Not you?" link (M183
+ * spec 04) — NOT on sign-out. A name is not a credential, and keeping it
+ * across sign-out is what turns a returning visitor's next visit into a
+ * sign-in instead of a sign-up. The shared-device concern this used to
+ * answer with a side effect is answered better by a control the person can
+ * see and press.
+ */
 export function clearAccountHint(storage: KeyValueStorage | null = browserStorage()): void {
   storage?.removeItem(ACCOUNT_HINT_KEY);
 }

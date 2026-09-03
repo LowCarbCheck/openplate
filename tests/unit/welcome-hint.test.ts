@@ -108,4 +108,13 @@ describe('/welcome is reachable from a blank device', () => {
   it('touches neither the home hint nor onboarding state', () => {
     assert.doesNotMatch(welcomeSource, /clearHomeHint|writeHomeHint|patchLocalProfileGoals/);
   });
+
+  // "Not you?" (M183 spec 04): the prefilled name is disowned in the same
+  // storage the sign-in route and the settings choose screen share, and the
+  // clear must reach the screen's own state too, not just localStorage — the
+  // whole point is "Start" becoming primary without a reload.
+  it('offers "Not you?" and clears both the stored hint and its own state', () => {
+    assert.match(welcomeSource, /clearAccountHint/);
+    assert.match(welcomeSource, /sync\.signIn\.notYou/);
+  });
 });

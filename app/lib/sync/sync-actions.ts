@@ -649,12 +649,15 @@ export function markSyncPending(): void {
  * The device's synced data stays on the device — signing out of sync is not a
  * wipe, and treating it as one would make it a terrifying button to press.
  * The baseline is kept too, so signing back in does not re-upload everything.
+ * The remembered sign-in name stays too (M183 spec 04): it is not a
+ * credential, and keeping it is what turns the next visit into a sign-in
+ * instead of a sign-up. "Not you?" is the explicit, visible way to clear it —
+ * a side effect of the sign-out button is not.
  */
 export async function signOutOfSync(): Promise<void> {
   const vault = getSyncVault();
   if (vault === null) return;
   await vault.authClient.logout();
-  clearAccountHint();
   closeSyncSession();
 }
 

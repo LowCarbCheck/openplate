@@ -2126,7 +2126,7 @@
     },
     "signOut": {
       "cta": "Auf diesem Gerät abmelden",
-      "note": "Meldet nur dieses Gerät ab. Dein Tagebuch bleibt darauf, und deine anderen Geräte synchronisieren weiter."
+      "note": "Meldet nur dieses Gerät ab. Dein Tagebuch bleibt darauf, andere Geräte synchronisieren weiter und dieses Gerät merkt sich deinen Anmeldenamen, damit du dich einfach wieder anmelden kannst."
     },
     "status": {
       "error": {

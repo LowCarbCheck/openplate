@@ -27,8 +27,15 @@
  * touches no onboarding state. Landing here is a question, not a decision:
  * `/onboarding` still clears the hint when the person actually chooses to start
  * fresh, which is where that belongs.
+ *
+ * "NOT YOU?" (M183 spec 04) sits beside the prefilled name and clears the
+ * account hint, both in storage and in this screen's own state, so "Start"
+ * becomes the primary button on the next paint rather than after a reload.
+ * The hint is kept as raw device traces (`useWelcomeHint`), not the derived
+ * `WelcomeHint`, precisely so the link can clear one trace without a second
+ * IndexedDB read for the other.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -39,8 +46,8 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { getLocalAiSettings } from '#app/lib/local-store';
-import { readAccountHint } from '#app/lib/sync/sync-session';
-import { resolveWelcomeHint, type WelcomeHint } from '#app/lib/welcome-hint';
+import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
+import { resolveWelcomeHint, type WelcomeHintInput, type WelcomeHint } from '#app/lib/welcome-hint';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -69,8 +76,10 @@ const SIGN_IN_PATH = '/sign-in';
  * — moves a button under a thumb that is already on its way down, and the read
  * is one localStorage lookup plus one IndexedDB open.
  */
-function useWelcomeHint(): WelcomeHint | null {
-  const [hint, setHint] = useState<WelcomeHint | null>(null);
+function useWelcomeHint() {
+  // The two RAW device traces, not the derived hint — so "Not you?" can clear
+  // just the account hint and recompute, without a second IndexedDB read.
+  const [raw, setRaw] = useState<WelcomeHintInput | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -80,7 +89,7 @@ function useWelcomeHint(): WelcomeHint | null {
       // that has never stored anything at all.
       const aiSettings = await getLocalAiSettings().catch(() => null);
       if (!isMounted) return;
-      setHint(resolveWelcomeHint({ accountHint: readAccountHint(), connectedVia: aiSettings?.connectedVia ?? null }));
+      setRaw({ accountHint: readAccountHint(), connectedVia: aiSettings?.connectedVia ?? null });
     }
     void readHints();
     return () => {
@@ -88,11 +97,20 @@ function useWelcomeHint(): WelcomeHint | null {
     };
   }, []);
 
-  return hint;
+  // Clears the stored hint AND the on-screen prefill in the same call, so
+  // "Start" becomes primary without a reload (M183 spec 04). The gateway
+  // trace is untouched: disowning a name does not disown an invite.
+  const forgetName = useCallback((): void => {
+    clearAccountHint();
+    setRaw((current) => (current === null ? current : { ...current, accountHint: null }));
+  }, []);
+
+  const hint = raw === null ? null : resolveWelcomeHint(raw);
+  return { hint, forgetName };
 }
 
 /** The primary door, plus the other one underneath it as a quieter button. */
-function WelcomeChoices({ hint }: { hint: WelcomeHint }) {
+function WelcomeChoices({ hint, onForgetName }: { hint: WelcomeHint; onForgetName: () => void }) {
   const { t } = useTranslation();
   const signInLabel =
     hint.accountName === null ? t('welcome.signIn') : t('welcome.signInAs', { name: hint.accountName });
@@ -104,6 +122,18 @@ function WelcomeChoices({ hint }: { hint: WelcomeHint }) {
         <Button asChild className="h-11 w-full justify-center">
           <Link to={SIGN_IN_PATH}>{signInLabel}</Link>
         </Button>
+        {/* Beside the prefilled name, because that is the thing it disowns.
+            A gateway-only hint carries no name, so there is nothing here to
+            disown. */}
+        {hint.accountName !== null && (
+          <button
+            type="button"
+            onClick={onForgetName}
+            className="w-full text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {t('sync.signIn.notYou')}
+          </button>
+        )}
         <Button asChild variant="outline" className="h-11 w-full justify-center">
           <Link to={START_PATH}>{t('welcome.startFresh')}</Link>
         </Button>
@@ -125,7 +155,7 @@ function WelcomeChoices({ hint }: { hint: WelcomeHint }) {
 
 export default function Welcome() {
   const { t } = useTranslation();
-  const hint = useWelcomeHint();
+  const { hint, forgetName } = useWelcomeHint();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
@@ -140,7 +170,7 @@ export default function Welcome() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               <span className="sr-only">{t('chrome.loading')}</span>
             </div>
-          : <WelcomeChoices hint={hint} />}
+          : <WelcomeChoices hint={hint} onForgetName={forgetName} />}
         </CardContent>
       </Card>
     </main>

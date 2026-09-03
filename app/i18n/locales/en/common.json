@@ -2126,7 +2126,7 @@
     },
     "signOut": {
       "cta": "Sign out on this device",
-      "note": "Signs this device out only. Your diary stays on it, and your other devices keep syncing."
+      "note": "Signs this device out only. Your diary stays on it, other devices keep syncing, and this device remembers your sign-in name so you can easily sign back in."
     },
     "status": {
       "error": {

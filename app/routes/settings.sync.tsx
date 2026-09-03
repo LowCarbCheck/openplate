@@ -50,7 +50,7 @@ import {
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { validateSyncPassphrase } from '#app/lib/sync/setup-flow';
 import { changeSyncPassphrase, deleteSyncAccount, signOutOfSync, syncNow } from '#app/lib/sync/sync-actions';
-import { readAccountHint } from '#app/lib/sync/sync-session';
+import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
 import { resolveSyncScreen } from '#app/lib/sync/setup-screen';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 
@@ -190,6 +190,20 @@ function SignedOutPanel({
               <Button type="button" className="h-11 w-full" onClick={() => setMode('sign-in')}>
                 {knownHandle === null ? t('sync.signIn.cta') : t('sync.signIn.ctaKnown', { handle: knownHandle })}
               </Button>
+              {/* Beside the button that names the remembered handle, because
+                  that is the thing it disowns (M183 spec 04). */}
+              {knownHandle !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearAccountHint();
+                    setKnownHandle(null);
+                  }}
+                  className="text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  {t('sync.signIn.notYou')}
+                </button>
+              )}
               <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setMode('create')}>
                 {t('sync.create.cta')}
               </Button>
