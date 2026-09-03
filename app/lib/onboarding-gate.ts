@@ -123,3 +123,47 @@ const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
 export function isOnboardingGateExempt(pathname: string): boolean {
   return GATE_EXEMPT_PATHS.has(pathname.replace(/\/+$/, '') || '/');
 }
+
+/**
+ * May this device open the first-run questionnaire at all (M187 spec 03)?
+ *
+ * The gate above decides where a device with no diary is SENT. This decides
+ * something narrower and one step earlier: whether `/onboarding` is a page on
+ * this instance for this device, or an address that redirects to `/welcome`.
+ *
+ * On an OPEN instance the answer is always yes, and that is today's app: a
+ * local-only diary needs nobody's permission, which is the whole point of a
+ * local-first tracker.
+ *
+ * On a MANAGED instance the anonymous path leads nowhere — there is no AI
+ * without the gateway invite and no diary that outlives the device without the
+ * account the same link creates — so it is CLOSED rather than merely hidden.
+ * Hiding "Start" on the welcome screen would leave the wizard one typed URL
+ * away, and somebody who found it would spend ten minutes answering questions
+ * into a diary they cannot keep.
+ *
+ * Two exits keep that from locking anybody out:
+ *
+ * 1. **A profile row on the device.** Anything already answered here means
+ *    this is a person part-way through, not a stranger at the door. That
+ *    includes a device that onboarded before the instance became managed.
+ * 2. **An open sync session.** This is the create-account flow's own path:
+ *    the ceremony finishes, the account exists, and the questionnaire is the
+ *    very next screen. Without this exit the flow would redirect itself back
+ *    to `/welcome` at the last step.
+ */
+export function isAnonymousStartAllowed({
+  managed,
+  hasProfile,
+  hasSyncAccount,
+}: {
+  /** `PublicConfig.managed` — `false` is the self-host default and the whole open branch. */
+  managed: boolean;
+  /** Is there a profile-goals row at all? Mid-onboarding counts. */
+  hasProfile: boolean;
+  /** Is a sync session open on this device right now? */
+  hasSyncAccount: boolean;
+}): boolean {
+  if (!managed) return true;
+  return hasProfile || hasSyncAccount;
+}

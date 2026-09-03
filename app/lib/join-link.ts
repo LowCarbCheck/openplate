@@ -96,6 +96,27 @@ export function parseJoinFragment(hash: string): JoinLink {
   };
 }
 
+/**
+ * Parses a link a person PASTED rather than opened (M187 spec 03).
+ *
+ * A managed instance's welcome screen offers a box for the link, because a
+ * link opened in a mail app's own browser, or copied out of a chat, does not
+ * always arrive at this app as a navigation. The box has to lead to exactly
+ * the same place the navigation would, so this reads the fragment out of what
+ * was pasted and hands it to {@link parseJoinFragment} — the one grammar.
+ *
+ * Accepts the whole URL, and also a bare fragment, because "copy the link"
+ * produces both in the wild. Everything before the first `#` is discarded
+ * unread: the host in a pasted link decides nothing here, exactly as the
+ * `sync=` field decides nothing (see {@link isForeignSyncServer}).
+ */
+export function parseJoinLinkInput(raw: string): JoinLink {
+  const trimmed = raw.trim();
+  if (trimmed === '') return { ...EMPTY_JOIN_LINK };
+  const hashAt = trimmed.indexOf('#');
+  return parseJoinFragment(hashAt === -1 ? trimmed : trimmed.slice(hashAt + 1));
+}
+
 /** The sync token, trimmed, or `null` when absent, blank or minted by the gateway. */
 export function normalizeSyncInviteToken(raw: string | null | undefined): string | null {
   if (raw === null || raw === undefined) return null;

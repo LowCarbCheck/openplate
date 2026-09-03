@@ -24,6 +24,10 @@ import {
 import type { BodyMetrics, BodyMetricsSubmission } from '#app/models/body-metrics';
 import { todayInTimezone } from '#app/lib/user-days';
 import { clearHomeHint, writeHomeHint } from '#app/lib/home-entry';
+import { CONFIG } from '#app/config';
+import { isAnonymousStartAllowed } from '#app/lib/onboarding-gate';
+import { shouldFallbackOffline } from '#app/lib/local-store/offline-fallback';
+import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import {
   CARB_PRESETS,
   ONBOARDING_STEPS,
@@ -129,13 +133,18 @@ const FOCUS_OPTIONS: readonly {
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Reduced to nothing — onboarding completion is now a LOCAL concept (a new
- * account has no server profile row at all; see `register.tsx`), so the
- * "already complete → redirect to /diary" gate and every field this route
- * reads/writes moved to `clientLoader`/`clientAction` below.
+ * ONE fact, and it is about the instance rather than the person: is this a
+ * managed instance (M187 spec 03)?
+ *
+ * Onboarding completion is a LOCAL concept (a new account has no server
+ * profile row at all), so the "already complete → redirect to /diary" gate and
+ * every field this route reads/writes live in `clientLoader`/`clientAction`
+ * below. `managed` cannot: it comes from this server's own environment, and
+ * the client half of the decision — is there a profile, is a session open —
+ * has to be joined to it on the device. Hence the `serverLoader()` call there.
  */
 export async function loader() {
-  return {};
+  return { managed: CONFIG.gateway.managed };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -154,11 +163,23 @@ export async function loader() {
  *
  * @throws a redirect to `/diary` when onboarding is already complete.
  */
-export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+export async function clientLoader({ request, serverLoader }: Route.ClientLoaderArgs) {
   const profile = await getLocalProfileGoals();
   if (profile !== null && profile.onboardingCompletedAt !== null) {
     throw redirect('/diary');
   }
+  // On a managed instance the anonymous path is CLOSED, not merely hidden:
+  // hiding "Start" on `/welcome` while leaving this address open would let
+  // somebody spend ten minutes answering questions into a diary they cannot
+  // keep. A device with a profile row, or with a session open — which is what
+  // the create-account flow arrives here with — is never turned away. The rule
+  // itself is pure and lives with the gate it belongs to.
+  const isAllowed = isAnonymousStartAllowed({
+    managed: await readManagedInstance(serverLoader),
+    hasProfile: profile !== null,
+    hasSyncAccount: getSyncSessionSnapshot().account !== null,
+  });
+  if (!isAllowed) throw redirect('/welcome');
   clearHomeHint();
   const step = parseOnboardingStep(new URL(request.url).searchParams.get('step'));
   const entries = await listLocalWeightEntries();
@@ -182,6 +203,25 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   };
 }
 clientLoader.hydrate = true as const;
+
+/**
+ * The instance's shape, from the server loader, failing OPEN.
+ *
+ * On a hard load this costs nothing: `clientLoader.hydrate` means the server
+ * loader already ran and `serverLoader()` hands back the data that came with
+ * the document. Only an in-app navigation fetches, and offline that fetch
+ * rejects — so it answers `false`, the open behaviour. Locking somebody out of
+ * their own first-run screen because the network is down would be the worse
+ * failure by far, and a managed instance is unreachable offline anyway.
+ */
+async function readManagedInstance(serverLoader: () => Promise<{ managed: boolean }>): Promise<boolean> {
+  try {
+    return (await serverLoader()).managed;
+  } catch (cause) {
+    if (shouldFallbackOffline(cause)) return false;
+    throw cause;
+  }
+}
 
 /**
  * Shown while the client loader reads onboarding state from the on-device

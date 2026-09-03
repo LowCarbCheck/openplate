@@ -20,31 +20,39 @@ import { resolveWelcomeHint } from '../../app/lib/welcome-hint';
 
 describe('resolveWelcomeHint', () => {
   it('leads with Start on a device carrying neither hint', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: null }), {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: null, managed: false }), {
       primary: 'start',
+      secondary: 'sign-in',
       accountName: null,
+      isReturning: false,
     });
   });
 
   it('leads with Sign in, named, when the device remembers a sign-in name', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: null }), {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: null, managed: false }), {
       primary: 'sign-in',
+      secondary: 'start',
       accountName: 'anna',
+      isReturning: true,
     });
   });
 
   // The weak signal on its own: it reorders the buttons and stops there.
   it('leads with Sign in, unnamed, on a gateway membership alone', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: 'invite' }), {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: 'invite', managed: false }), {
       primary: 'sign-in',
+      secondary: 'start',
       accountName: null,
+      isReturning: true,
     });
   });
 
   it('leads with Sign in, named, when the device carries both hints', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: 'invite' }), {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: 'invite', managed: false }), {
       primary: 'sign-in',
+      secondary: 'start',
       accountName: 'anna',
+      isReturning: true,
     });
   });
 
@@ -53,8 +61,8 @@ describe('resolveWelcomeHint', () => {
   it('ignores every AI connection method except an invite', () => {
     for (const connectedVia of ['manual', 'oauth', 'preset'] as const) {
       assert.deepEqual(
-        resolveWelcomeHint({ accountHint: null, connectedVia }),
-        { primary: 'start', accountName: null },
+        resolveWelcomeHint({ accountHint: null, connectedVia, managed: false }),
+        { primary: 'start', secondary: 'sign-in', accountName: null, isReturning: false },
         connectedVia,
       );
     }
@@ -63,15 +71,18 @@ describe('resolveWelcomeHint', () => {
   it('treats a blank or whitespace-only remembered name as no name at all', () => {
     for (const accountHint of ['', '   ']) {
       assert.deepEqual(
-        resolveWelcomeHint({ accountHint, connectedVia: null }),
-        { primary: 'start', accountName: null },
+        resolveWelcomeHint({ accountHint, connectedVia: null, managed: false }),
+        { primary: 'start', secondary: 'sign-in', accountName: null, isReturning: false },
         JSON.stringify(accountHint),
       );
     }
   });
 
   it('trims the remembered name it hands to the button', () => {
-    assert.equal(resolveWelcomeHint({ accountHint: '  anna \n', connectedVia: null }).accountName, 'anna');
+    assert.equal(
+      resolveWelcomeHint({ accountHint: '  anna \n', connectedVia: null, managed: false }).accountName,
+      'anna',
+    );
   });
 });
 

@@ -12,6 +12,16 @@
  * guessing on the person's behalf: start a new diary, or sign in to the account
  * that already holds one.
  *
+ * ON A MANAGED INSTANCE THE TWO DOORS ARE DIFFERENT ONES (M187 spec 03). An
+ * instance that declares a gateway hands out accounts and an AI connection
+ * together, by invite, so there is no anonymous diary to start: the doors are
+ * "sign in" and "I have an invite link", and the second one opens a box for a
+ * link that arrived as text rather than as a navigation. Pasting it goes to
+ * `/join` with the same fragment the link carries, so there is exactly one
+ * implementation of the join ceremony and this screen holds none of it.
+ * `/onboarding` is closed on such an instance too — see `isAnonymousStartAllowed` —
+ * because hiding the button while leaving the address open is not closing it.
+ *
  * WHICH DOOR LEADS depends on what the device carries, and that decision is
  * pure (`app/lib/welcome-hint.ts`) — a remembered sign-in name, or a gateway
  * membership, tips the emphasis towards signing in. It only ever reorders the
@@ -36,6 +46,7 @@
  * IndexedDB read for the other.
  */
 import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -44,7 +55,11 @@ import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { Input } from '#app/components/ui/input';
+import { Label } from '#app/components/ui/label';
+import { useManagedInstance } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { buildJoinFragment, isJoinLinkEmpty, parseJoinLinkInput } from '#app/lib/join-link';
 import { getLocalAiSettings } from '#app/lib/local-store';
 import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
 import { resolveWelcomeHint, type WelcomeHintInput, type WelcomeHint } from '#app/lib/welcome-hint';
@@ -69,17 +84,17 @@ const START_PATH = '/onboarding';
 const SIGN_IN_PATH = '/sign-in';
 
 /**
- * The two device traces, read once on mount.
+ * The two device traces, read once on mount, plus the instance's own shape.
  *
  * `null` while the read is in flight, and the screen shows no buttons until it
  * resolves. The alternative — render the no-hint order and swap it a tick later
  * — moves a button under a thumb that is already on its way down, and the read
  * is one localStorage lookup plus one IndexedDB open.
  */
-function useWelcomeHint() {
+function useWelcomeHint(managed: boolean) {
   // The two RAW device traces, not the derived hint — so "Not you?" can clear
   // just the account hint and recompute, without a second IndexedDB read.
-  const [raw, setRaw] = useState<WelcomeHintInput | null>(null);
+  const [raw, setRaw] = useState<Omit<WelcomeHintInput, 'managed'> | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,12 +120,23 @@ function useWelcomeHint() {
     setRaw((current) => (current === null ? current : { ...current, accountHint: null }));
   }, []);
 
-  const hint = raw === null ? null : resolveWelcomeHint(raw);
+  // `managed` is not a device trace and is not read in the effect: it arrives
+  // with the root loader's public config and is already there on the first
+  // render. It joins the traces only here, where the decision is made.
+  const hint = raw === null ? null : resolveWelcomeHint({ ...raw, managed });
   return { hint, forgetName };
 }
 
 /** The primary door, plus the other one underneath it as a quieter button. */
-function WelcomeChoices({ hint, onForgetName }: { hint: WelcomeHint; onForgetName: () => void }) {
+function WelcomeChoices({
+  hint,
+  onForgetName,
+  onPasteInviteLink,
+}: {
+  hint: WelcomeHint;
+  onForgetName: () => void;
+  onPasteInviteLink: () => void;
+}) {
   const { t } = useTranslation();
   const signInLabel =
     hint.accountName === null ? t('welcome.signIn') : t('welcome.signInAs', { name: hint.accountName });
@@ -118,7 +144,10 @@ function WelcomeChoices({ hint, onForgetName }: { hint: WelcomeHint; onForgetNam
   if (hint.primary === 'sign-in') {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">{t('welcome.returning')}</p>
+        {/* Only when this device really was signed in before. On a managed
+            instance signing in leads regardless, and printing this line to a
+            first-time visitor there would simply be untrue. */}
+        {hint.isReturning && <p className="text-sm text-muted-foreground">{t('welcome.returning')}</p>}
         <Button asChild className="h-11 w-full justify-center">
           <Link to={SIGN_IN_PATH}>{signInLabel}</Link>
         </Button>
@@ -134,9 +163,7 @@ function WelcomeChoices({ hint, onForgetName }: { hint: WelcomeHint; onForgetNam
             {t('sync.signIn.notYou')}
           </button>
         )}
-        <Button asChild variant="outline" className="h-11 w-full justify-center">
-          <Link to={START_PATH}>{t('welcome.startFresh')}</Link>
-        </Button>
+        <SecondaryAction action={hint.secondary} onPasteInviteLink={onPasteInviteLink} />
       </div>
     );
   }
@@ -146,31 +173,135 @@ function WelcomeChoices({ hint, onForgetName }: { hint: WelcomeHint; onForgetNam
       <Button asChild className="h-11 w-full justify-center">
         <Link to={START_PATH}>{t('welcome.start')}</Link>
       </Button>
+      <SecondaryAction action={hint.secondary} onPasteInviteLink={onPasteInviteLink} />
+    </div>
+  );
+}
+
+/**
+ * The quieter button under the primary one, whichever of the three it is.
+ *
+ * One component rather than three inline branches, so "the secondary action"
+ * is a single thing the resolver decides and this file only renders.
+ */
+function SecondaryAction({
+  action,
+  onPasteInviteLink,
+}: {
+  action: WelcomeHint['secondary'];
+  onPasteInviteLink: () => void;
+}) {
+  const { t } = useTranslation();
+
+  if (action === 'invite-link') {
+    return (
+      <Button type="button" variant="outline" className="h-11 w-full justify-center" onClick={onPasteInviteLink}>
+        {t('welcome.managed.haveInvite')}
+      </Button>
+    );
+  }
+  if (action === 'sign-in') {
+    return (
       <Button asChild variant="outline" className="h-11 w-full justify-center">
         <Link to={SIGN_IN_PATH}>{t('welcome.haveAccount')}</Link>
       </Button>
-    </div>
+    );
+  }
+  return (
+    <Button asChild variant="outline" className="h-11 w-full justify-center">
+      <Link to={START_PATH}>{t('welcome.startFresh')}</Link>
+    </Button>
+  );
+}
+
+/**
+ * One box for a link that arrived as text.
+ *
+ * It reimplements NOTHING of the join ceremony. What is pasted is parsed by
+ * the one join-link grammar (`app/lib/join-link.ts`), rewritten as the same
+ * fragment an opened link carries, and handed to `/join` — which then reads it
+ * exactly as it reads a link somebody tapped.
+ *
+ * A DOCUMENT navigation rather than a router `navigate`, for the reason
+ * `/connect-gateway` gives: a client-side navigation can be dropped, and this
+ * one carries the only copy of a single-use capability. `assign` rather than
+ * `replace` so Back still returns here from a link that turns out to be wrong.
+ */
+function PasteInviteLink({ onCancel }: { onCancel: () => void }) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState('');
+  const [isRejected, setIsRejected] = useState(false);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    const link = parseJoinLinkInput(value);
+    if (isJoinLinkEmpty(link)) {
+      // Nothing usable in it. Said here rather than by navigating to `/join`
+      // and letting it show its invalid-link card, so the box the person has
+      // to correct is still on screen with what they pasted in it.
+      setIsRejected(true);
+      return;
+    }
+    globalThis.window.location.assign(`/join${buildJoinFragment(link)}`);
+  }
+
+  return (
+    <form className="space-y-3" onSubmit={handleSubmit}>
+      <p className="text-sm font-medium">{t('welcome.managed.pasteTitle')}</p>
+      <div className="space-y-2">
+        <Label htmlFor="welcome-invite-link">{t('welcome.managed.pasteLabel')}</Label>
+        <Input
+          id="welcome-invite-link"
+          name="inviteLink"
+          type="text"
+          inputMode="url"
+          autoComplete="off"
+          className="h-11"
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            setIsRejected(false);
+          }}
+        />
+        <p className="text-xs text-muted-foreground">{t('welcome.managed.pasteHint')}</p>
+        {isRejected && <p className="text-sm text-red-600 dark:text-red-400">{t('welcome.managed.pasteInvalid')}</p>}
+      </div>
+      <Button type="submit" className="h-11 w-full justify-center" disabled={value.trim() === ''}>
+        {t('welcome.managed.pasteContinue')}
+      </Button>
+      <Button type="button" variant="ghost" className="h-11 w-full justify-center" onClick={onCancel}>
+        {t('sync.cancel')}
+      </Button>
+    </form>
   );
 }
 
 export default function Welcome() {
   const { t } = useTranslation();
-  const { hint, forgetName } = useWelcomeHint();
+  const managed = useManagedInstance();
+  const { hint, forgetName } = useWelcomeHint(managed);
+  const [isPastingLink, setIsPastingLink] = useState(false);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{t('welcome.title')}</CardTitle>
-          <CardDescription>{t('welcome.body')}</CardDescription>
+          {/* The open body offers starting a diary, which is not on offer
+              here — so a managed instance says what its two doors are. */}
+          <CardDescription>{managed ? t('welcome.managed.body') : t('welcome.body')}</CardDescription>
         </CardHeader>
         <CardContent>
-          {hint === null ?
+          {isPastingLink && <PasteInviteLink onCancel={() => setIsPastingLink(false)} />}
+          {!isPastingLink && hint === null && (
             <div className="flex justify-center py-4" aria-busy="true">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               <span className="sr-only">{t('chrome.loading')}</span>
             </div>
-          : <WelcomeChoices hint={hint} onForgetName={forgetName} />}
+          )}
+          {!isPastingLink && hint !== null && (
+            <WelcomeChoices hint={hint} onForgetName={forgetName} onPasteInviteLink={() => setIsPastingLink(true)} />
+          )}
         </CardContent>
       </Card>
     </main>
