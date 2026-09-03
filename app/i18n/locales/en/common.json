@@ -830,6 +830,15 @@
       "body": "Part of it is missing, or it was cut off on the way here. Ask whoever sent it for a new one.",
       "title": "This link doesn't look right"
     },
+    "managed": {
+      "thenGateway": "Your AI connection is set up straight after that, on this same screen.",
+      "connecting": "Setting up your AI connection.",
+      "signInFirst": {
+        "title": "Sign in first",
+        "body": "This link adds an AI connection to your account. Sign in, and it is set up for you.",
+        "action": "Sign in"
+      }
+    },
     "sync": {
       "body": "Your invite is ready. On the next screen you pick a password and save your account card.",
       "continue": "Create my account",
@@ -2180,7 +2189,10 @@
       "syncing": "Syncing…"
     },
     "title": "Account",
-    "passwordNote": "Your password also encrypts your diary. We cannot reset it, so keep your recovery code."
+    "passwordNote": "Your password also encrypts your diary. We cannot reset it, so keep your recovery code.",
+    "managed": {
+      "inviteOnly": "Accounts here are created with an invite link. If you have one, open it to get started."
+    }
   },
   "trends": {
     "chart": {
@@ -2346,6 +2358,15 @@
   "welcome": {
     "body": "This device has no diary on it yet. Start a new one, or sign in to your account.",
     "haveAccount": "I already have an account",
+    "managed": {
+      "body": "Sign in to your account, or open the invite link you were sent.",
+      "haveInvite": "I have an invite link",
+      "pasteTitle": "Paste your invite link",
+      "pasteLabel": "Invite link",
+      "pasteHint": "Paste the whole link, exactly as you received it.",
+      "pasteContinue": "Continue",
+      "pasteInvalid": "That does not look like an invite link. Paste the whole link, exactly as you received it."
+    },
     "returning": "This device was signed in to an account before.",
     "signIn": "Sign in",
     "signInAs": "Sign in as {{name}}",

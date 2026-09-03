@@ -830,6 +830,15 @@
       "body": "Ein Teil fehlt oder wurde unterwegs abgeschnitten. Bitte die Person, die ihn dir geschickt hat, um einen neuen.",
       "title": "Mit diesem Link stimmt etwas nicht"
     },
+    "managed": {
+      "thenGateway": "Deine KI-Verbindung wird direkt danach eingerichtet, auf demselben Bildschirm.",
+      "connecting": "Deine KI-Verbindung wird eingerichtet.",
+      "signInFirst": {
+        "title": "Melde dich zuerst an",
+        "body": "Dieser Link fügt deinem Konto eine KI-Verbindung hinzu. Melde dich an, dann wird sie für dich eingerichtet.",
+        "action": "Anmelden"
+      }
+    },
     "sync": {
       "body": "Deine Einladung liegt bereit. Auf dem nächsten Bildschirm wählst du ein Passwort und speicherst deine Kontokarte.",
       "continue": "Mein Konto erstellen",
@@ -2180,7 +2189,10 @@
       "syncing": "Wird synchronisiert…"
     },
     "title": "Konto",
-    "passwordNote": "Dein Passwort verschlüsselt auch dein Tagebuch. Wir können es nicht zurücksetzen, bewahre daher deinen Wiederherstellungscode gut auf."
+    "passwordNote": "Dein Passwort verschlüsselt auch dein Tagebuch. Wir können es nicht zurücksetzen, bewahre daher deinen Wiederherstellungscode gut auf.",
+    "managed": {
+      "inviteOnly": "Konten werden hier mit einem Einladungslink erstellt. Wenn du einen hast, öffne ihn, um loszulegen."
+    }
   },
   "trends": {
     "chart": {
@@ -2346,6 +2358,15 @@
   "welcome": {
     "body": "Auf diesem Gerät ist noch kein Tagebuch. Starte ein neues, oder melde dich bei deinem Konto an.",
     "haveAccount": "Ich habe schon ein Konto",
+    "managed": {
+      "body": "Melde dich bei deinem Konto an oder öffne den Einladungslink, den du erhalten hast.",
+      "haveInvite": "Ich habe einen Einladungslink",
+      "pasteTitle": "Füge deinen Einladungslink ein",
+      "pasteLabel": "Einladungslink",
+      "pasteHint": "Füge den gesamten Link genau so ein, wie du ihn erhalten hast.",
+      "pasteContinue": "Weiter",
+      "pasteInvalid": "Das sieht nicht nach einem Einladungslink aus. Füge den gesamten Link genau so ein, wie du ihn erhalten hast."
+    },
     "returning": "Dieses Gerät war zuvor an einem Konto angemeldet.",
     "signIn": "Anmelden",
     "signInAs": "Als {{name}} anmelden",
