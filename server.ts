@@ -8,7 +8,7 @@ import { createComponentLogger } from '#app/lib/logger';
 import { reportError } from '#app/lib/report-error';
 import { installServerErrorReporter } from '#app/lib/report-error.server';
 import { CONFIG } from '#app/config';
-import { inferenceConnectSrcOrigin, syncConnectSrcOrigin } from '#app/config/public-config';
+import { gatewayConnectSrcOrigin, inferenceConnectSrcOrigin, syncConnectSrcOrigin } from '#app/config/public-config';
 import { buildContentSecurityPolicy } from '#app/config/content-security-policy';
 import { analyticsCspOrigin } from '#app/config/analytics';
 import { createWwwRedirectMiddleware } from '#app/lib/www-redirect.server';
@@ -75,6 +75,10 @@ const CONTENT_SECURITY_POLICY = buildContentSecurityPolicy({
   // and must be allowlisted; otherwise the one-click connect ships a button
   // whose first scan is blocked by CSP in production only.
   presetOrigin: inferenceConnectSrcOrigin(CONFIG.inference.instancePreset),
+  // The instance's own AI gateway (M187 spec 03). Known at boot for the same
+  // reason the preset is — the operator set it here — so configuring
+  // GATEWAY_URL is enough and CSP_CONNECT_EXTRA never has to repeat it.
+  gatewayOrigin: gatewayConnectSrcOrigin(CONFIG.gateway.gatewayUrl),
   // The optional newsletter's Turnstile widget (M146 spec 02). `false` on
   // every instance that didn't configure NEWSLETTER_SUBSCRIBE_URL, which
   // leaves this header exactly as it was before the feature existed.

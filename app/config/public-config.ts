@@ -14,6 +14,14 @@ import type { AnalyticsConfig } from '#app/config/analytics';
  * addresses the BROWSER has to dial itself, which is the only thing that earns
  * a place here.
  *
+ * M187 spec 03 added the gateway's address on the same test — the browser
+ * redeems its invite and sends its plate photos there directly — plus one
+ * member that is NOT an address: `managed`. It is a single boolean derived
+ * from two of the others, and it exists because the shape of the product
+ * follows from it: an instance that declares a gateway is a managed instance,
+ * and a managed instance has one door. Deriving it in each screen instead
+ * would let "this is a managed instance" be true on one and false on the next.
+ *
  * The first is the sync server's base URL. It has to reach the
  * browser because the sync client runs entirely in the browser: it derives
  * keys there, encrypts there, and talks to the service directly from there,
@@ -98,6 +106,34 @@ export interface PublicConfig {
    * app behaves byte-for-byte as it did before this field existed.
    */
   instancePreset: InstanceInferencePreset | null;
+  /**
+   * Base URL of the AI gateway this instance belongs to (`GATEWAY_URL`), or
+   * `null` when the operator runs none.
+   *
+   * `null` is the DEFAULT and the self-host default, and it means exactly what
+   * the two fields above mean by `null`: nothing about the gateway renders and
+   * nothing is dialled. A gateway invite link still works on such an instance,
+   * because the address it needs travels inside the link itself — this field
+   * is the operator SAYING SO in their own environment, which is a different
+   * fact, and the only one the app can act on before a link arrives.
+   */
+  gatewayUrl: string | null;
+  /**
+   * Whether this instance is a MANAGED instance: one that hands out accounts
+   * and an AI connection together, through an invite link.
+   *
+   * `false` is the DEFAULT and the self-host default, and it is today's app in
+   * full: `/welcome` offers "Start", `/onboarding` opens an anonymous
+   * local-only diary, and `/join` offers to skip the account. All three are
+   * right when a person can genuinely use the app without an account.
+   *
+   * `true` closes that anonymous path, because on a managed instance it leads
+   * nowhere: there is no AI without the gateway invite, and no sync without
+   * the account the same link creates. Derived rather than configured — see
+   * {@link isManagedInstance} — so an operator cannot set it and mean
+   * something the rest of the configuration does not support.
+   */
+  managed: boolean;
 }
 
 /**
@@ -144,6 +180,78 @@ export function parseSyncServerUrl(raw: string | undefined): string | null {
 export function syncConnectSrcOrigin(syncServerUrl: string | null): string | null {
   if (syncServerUrl === null) return null;
   return new URL(syncServerUrl).origin;
+}
+
+/**
+ * Parses `GATEWAY_URL` into the value {@link PublicConfig.gatewayUrl} carries.
+ *
+ * The same contract as {@link parseSyncServerUrl}, deliberately, down to the
+ * throw: unset / empty / whitespace → `null`, a valid absolute `http`/`https`
+ * URL → that URL with any trailing slash trimmed, anything else → THROWS.
+ *
+ * The throw matters more here than anywhere else in this file. A typo'd
+ * gateway address that quietly became `null` would not present a
+ * feature-missing app — it would present an OPEN instance: the welcome screen
+ * would offer to start an anonymous diary, and the operator of a closed beta
+ * would have re-opened their front door without touching it.
+ */
+export function parseGatewayUrl(raw: string | undefined): string | null {
+  if (raw === undefined || raw.trim() === '') return null;
+  const trimmed = raw.trim();
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error(`GATEWAY_URL is not a valid absolute URL: ${trimmed}`);
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`GATEWAY_URL must be an http(s) URL, got ${parsed.protocol}`);
+  }
+  return trimmed.replace(/\/+$/, '');
+}
+
+/**
+ * The CSP `connect-src` entry the gateway needs, or `null` when none is
+ * configured — same origin-only rule as {@link syncConnectSrcOrigin}.
+ *
+ * Setting `GATEWAY_URL` is enough. An operator must NOT also have to list the
+ * same origin in `CSP_CONNECT_EXTRA`: the two would then have to be kept in
+ * step by hand, and the failure of forgetting is a join that dies in the
+ * browser with nothing on the server to see.
+ */
+export function gatewayConnectSrcOrigin(gatewayUrl: string | null): string | null {
+  if (gatewayUrl === null) return null;
+  return new URL(gatewayUrl).origin;
+}
+
+/**
+ * Whether this instance is managed — {@link PublicConfig.managed}.
+ *
+ * Both halves are required. A gateway gives a person AI; an account is what
+ * carries it to their second device and holds the diary it produces. An
+ * instance offering the first without the second is not a managed instance,
+ * it is a misconfigured one — so this THROWS rather than quietly answering
+ * `false`, which would leave the operator with a closed-beta gateway behind an
+ * app still inviting strangers to start an anonymous diary.
+ *
+ * @throws when `gatewayUrl` is set and `syncServerUrl` is not.
+ */
+export function isManagedInstance({
+  gatewayUrl,
+  syncServerUrl,
+}: {
+  gatewayUrl: string | null;
+  syncServerUrl: string | null;
+}): boolean {
+  if (gatewayUrl === null) return false;
+  if (syncServerUrl === null) {
+    throw new Error(
+      'GATEWAY_URL is set but SYNC_SERVER_URL is not: a managed instance needs accounts, ' +
+        'because the gateway connection belongs to an account rather than to one device. ' +
+        'Set SYNC_SERVER_URL as well, or unset GATEWAY_URL.',
+    );
+  }
+  return true;
 }
 
 /**
@@ -229,4 +337,21 @@ export function inferenceConnectSrcOrigin(preset: InstanceInferencePreset | null
  */
 export function getInstanceInferencePreset(config: PublicConfig | undefined): InstanceInferencePreset | null {
   return config?.instancePreset ?? null;
+}
+
+/**
+ * THE GATE for every managed-instance branch in the UI.
+ *
+ * `undefined` config (an error boundary, where the root loader never ran)
+ * resolves to `false` — the OPEN behaviour, and the safe direction for the
+ * same reason the sync surfaces treat it that way: a screen that cannot read
+ * its configuration must not lock somebody out of the app on a guess.
+ */
+export function isManagedInstanceConfig(config: PublicConfig | undefined): boolean {
+  return config?.managed === true;
+}
+
+/** The gateway this instance belongs to, or `null` — see {@link PublicConfig.gatewayUrl}. */
+export function getGatewayUrl(config: PublicConfig | undefined): string | null {
+  return config?.gatewayUrl ?? null;
 }

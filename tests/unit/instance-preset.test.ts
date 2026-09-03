@@ -100,11 +100,29 @@ describe('parseInstanceInferencePreset', () => {
 describe('getInstanceInferencePreset', () => {
   it('is null for every shape of "no preset" — no UI may render on any of them', () => {
     assert.equal(getInstanceInferencePreset(undefined), null, 'error boundaries take this path');
-    assert.equal(getInstanceInferencePreset({ syncServerUrl: null, instancePreset: null, analytics: null }), null);
+    assert.equal(
+      getInstanceInferencePreset({
+        syncServerUrl: null,
+        instancePreset: null,
+        analytics: null,
+        gatewayUrl: null,
+        managed: false,
+      }),
+      null,
+    );
   });
 
   it('hands the configured preset through untouched', () => {
-    assert.deepEqual(getInstanceInferencePreset({ syncServerUrl: null, instancePreset: PRESET, analytics: null }), PRESET);
+    assert.deepEqual(
+      getInstanceInferencePreset({
+        syncServerUrl: null,
+        instancePreset: PRESET,
+        analytics: null,
+        gatewayUrl: null,
+        managed: false,
+      }),
+      PRESET,
+    );
   });
 });
 

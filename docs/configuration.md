@@ -28,6 +28,7 @@ const appUrl = CONFIG.app.url;
 | `VITE_ALLOWED_HOSTS`        | unset                       | Dev only. Comma-separated extra hostnames Vite should accept (for example your tailnet MagicDNS name).                                                                                          |
 | `FOOD_DB_API_URL`           | `https://lowcarbcheck.org`  | Curated nutrition data and food images for identified foods. Only food **names** are sent — never photos, never anything about you — and the lookup fails open. Set to an empty string to disable it entirely. |
 | `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-sync](https://github.com/LowCarbCheck/openplate-sync) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
+| `GATEWAY_URL`               | unset (open instance)       | Base URL of an [openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway) this instance hands out with its accounts. Setting it declares a **managed instance** — see [Managed instances](#managed-instances) below. Requires `SYNC_SERVER_URL`. Its origin is added to the production CSP automatically. |
 | `DEFAULT_INFERENCE_BASE_URL`| unset                       | An OpenAI-compatible vision endpoint this instance offers to every visitor. See [Instance-provided AI](#instance-provided-ai) below.                                                            |
 | `DEFAULT_INFERENCE_API_KEY` | unset                       | Optional key for that endpoint. **Read the security warning below before setting it.**                                                                                                         |
 | `DEFAULT_INFERENCE_MODEL`   | `openplate-plate-1`         | Model name to request from that endpoint. Blank or unset falls back to `openplate-plate-1`.                                                                                                                                                      |
@@ -48,7 +49,7 @@ ships a strict Content-Security-Policy. Its `connect-src` allows:
 - the built-in providers' own origins (OpenRouter, Mistral, Anthropic), derived automatically
   from the provider registry — see [ADR-0007](../.adr/0007-byok-provider-registry.md)
 - `localhost`, `127.0.0.1` and `[::1]` on any port
-- your `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL`, if set
+- your `SYNC_SERVER_URL`, `DEFAULT_INFERENCE_BASE_URL` and `GATEWAY_URL`, if set
 - anything in `CSP_CONNECT_EXTRA`
 
 That allowlist is what stops an injected script from exfiltrating a key that lives in the
@@ -62,6 +63,36 @@ page. Widen it deliberately.
   not a loopback origin** — it is a remote origin and needs `CSP_CONNECT_EXTRA` set to it.
   The gateway's address arrives inside somebody's link, so this app cannot allow it for you and
   will not widen the policy at runtime: a blocked join says which origin to add, and to whom.
+  A gateway you configured yourself with `GATEWAY_URL` is the exception, and only because it is
+  no longer arriving in a link: it is known at boot, so its origin is added to `connect-src`
+  automatically and must NOT be repeated in `CSP_CONNECT_EXTRA`.
+
+## Managed instances
+
+An instance that sets `GATEWAY_URL` is a **managed instance**: it hands out an account and an AI
+connection together, through one invite link (`/join`, minted by whoever runs the instance). This is
+what openplate.de is, and it is off by default — a self-hoster who sets nothing gets the open app.
+
+`GATEWAY_URL` requires `SYNC_SERVER_URL`. A gateway gives a person AI; the account is what carries
+that connection to their second device and holds the diary it produces. Setting one without the
+other stops the boot rather than half-enabling anything.
+
+What changes when it is set:
+
+- `/welcome` offers exactly two actions: **Sign in**, and **I have an invite link** (which takes a
+  pasted link and hands it to `/join`). There is no "Start".
+- `/onboarding` redirects to `/welcome` for a device with neither a local diary nor an account. The
+  anonymous local-only path is closed, not merely hidden — on a managed instance it leads nowhere,
+  because there is no AI without the gateway and no diary that survives the device without the
+  account. A device that already holds a diary is never thrown out.
+- `/join` runs one ceremony: create the account, then the gateway half is redeemed in the same flow.
+  The "Skip, I already have an account" action is gone, because on such an instance the person
+  offered it has neither.
+- **Settings → Sync**, signed out, offers signing in and says that accounts here come from an invite
+  link. There is no "create an account" button.
+
+Everything above is unchanged on an instance with no `GATEWAY_URL`, and a test pins both variants
+side by side.
 
 ## Custom AI endpoints
 

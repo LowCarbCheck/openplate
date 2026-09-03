@@ -43,6 +43,7 @@ const DEFAULT_POLICY = buildContentSecurityPolicy({
   connectExtra: [],
   providerOrigins: REGISTRY_PROVIDER_ORIGINS,
   presetOrigin: null,
+  gatewayOrigin: null,
   // M146 spec 02: the newsletter is off on every instance that did not
   // configure one, and this header must be identical to what it was
   // before that feature existed.
@@ -82,6 +83,7 @@ test('the sync origin is appended to connect-src only when sync is configured', 
     connectExtra: [],
     providerOrigins: [],
     presetOrigin: null,
+    gatewayOrigin: null,
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
@@ -96,6 +98,7 @@ test('operator-supplied connect-src origins survive alongside the sync origin', 
     connectExtra: ['https://ai.example.com'],
     providerOrigins: [],
     presetOrigin: null,
+    gatewayOrigin: null,
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
@@ -137,6 +140,7 @@ test('the builder is pure — same inputs, identical header', () => {
     connectExtra: ['https://ai.example.com'],
     providerOrigins: REGISTRY_PROVIDER_ORIGINS,
     presetOrigin: null,
+    gatewayOrigin: null,
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
@@ -173,6 +177,7 @@ test("connect-src carries the instance preset's origin when one is configured", 
     connectExtra: [],
     providerOrigins: REGISTRY_PROVIDER_ORIGINS,
     presetOrigin: 'https://ai.house.example:8443',
+    gatewayOrigin: null,
     // M146 spec 02: the newsletter is off on every instance that did not
     // configure one, and this header must be identical to what it was
     // before that feature existed.
@@ -180,6 +185,31 @@ test("connect-src carries the instance preset's origin when one is configured", 
   });
 
   assert.match(directive(configured, 'connect-src'), /https:\/\/ai\.house\.example:8443/);
+});
+
+test("connect-src carries the gateway's origin when GATEWAY_URL is configured", () => {
+  // The trap this guards (M187 spec 03): the operator sets one variable and
+  // expects the app to work. If the origin does not land here, the very first
+  // join on a managed instance dies inside the browser — `fetch` throws a bare
+  // TypeError with no response — and the server logs nothing at all. An
+  // operator must not have to repeat the same origin in CSP_CONNECT_EXTRA to
+  // make their own instance work.
+  const configured = buildContentSecurityPolicy({
+    syncOrigin: 'https://sync.example.com',
+    connectExtra: [],
+    providerOrigins: REGISTRY_PROVIDER_ORIGINS,
+    presetOrigin: null,
+    gatewayOrigin: 'https://gateway.example.com',
+    newsletterEnabled: false,
+    analyticsOrigin: null,
+  });
+
+  assert.match(directive(configured, 'connect-src'), /https:\/\/gateway\.example\.com/);
+});
+
+test('connect-src gains nothing when no gateway is configured', () => {
+  // The self-host default must be byte-identical to its pre-spec-03 self.
+  assert.doesNotMatch(directive(DEFAULT_POLICY, 'connect-src'), /gateway/);
 });
 
 test('connect-src gains nothing when no instance preset is configured', () => {

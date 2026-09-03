@@ -20,7 +20,7 @@
  */
 
 import { optionalEnv, optionalBoolEnv, optionalIntEnv } from '#app/lib/env';
-import { parseInstanceInferencePreset, parseSyncServerUrl } from './public-config';
+import { isManagedInstance, parseGatewayUrl, parseInstanceInferencePreset, parseSyncServerUrl } from './public-config';
 import { SUPPORTED_LANGUAGES, isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 import { parseAnalyticsConfig } from '#app/config/analytics';
 import { parseNewsletterConfig } from './newsletter';
@@ -131,6 +131,17 @@ export function parseDefaultUiLanguage(raw: string | undefined): LanguageCode {
   return value;
 }
 
+/**
+ * The two addresses that decide what KIND of instance this is, parsed once
+ * before `CONFIG` is built.
+ *
+ * They are read here rather than inline below because `managed` is derived
+ * from BOTH of them (M187 spec 03), and parsing either one twice inside the
+ * object literal would mean two chances for the two readings to drift apart.
+ */
+const SYNC_SERVER_URL = parseSyncServerUrl(process.env.SYNC_SERVER_URL);
+const GATEWAY_URL = parseGatewayUrl(process.env.GATEWAY_URL);
+
 export const CONFIG = {
   /**
    * Application Environment
@@ -228,7 +239,31 @@ export const CONFIG = {
    * typo can't present as "sync is quietly disabled".
    */
   sync: {
-    syncServerUrl: parseSyncServerUrl(process.env.SYNC_SERVER_URL),
+    syncServerUrl: SYNC_SERVER_URL,
+  },
+
+  /**
+   * The AI gateway this instance belongs to, and what that makes it (M187
+   * spec 03)
+   *
+   * `GATEWAY_URL` unset is the DEFAULT and the self-host default: `managed` is
+   * `false` and the app is exactly what it was before this existed — an
+   * anonymous local diary anyone can start, with sync and a gateway both
+   * optional extras.
+   *
+   * Set it and this instance says it is MANAGED: it hands out accounts and an
+   * AI connection together, through one invite link, and the anonymous path is
+   * closed because on such an instance it leads nowhere. The origin joins the
+   * production CSP `connect-src` automatically (`server.ts`), so an operator
+   * never has to keep `CSP_CONNECT_EXTRA` in step with it.
+   *
+   * Setting it without `SYNC_SERVER_URL` stops the boot — see
+   * `isManagedInstance` for why a gateway without accounts is not a managed
+   * instance but a misconfigured one.
+   */
+  gateway: {
+    gatewayUrl: GATEWAY_URL,
+    managed: isManagedInstance({ gatewayUrl: GATEWAY_URL, syncServerUrl: SYNC_SERVER_URL }),
   },
 
   /**
