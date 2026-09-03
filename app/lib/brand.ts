@@ -37,4 +37,4 @@ export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
  * bundle to read one string. `tests/unit/brand.test.ts` asserts the two stay
  * equal, so the copy cannot drift silently.
  */
-export const APP_VERSION = '0.9.0';
+export const APP_VERSION = '0.9.1';
