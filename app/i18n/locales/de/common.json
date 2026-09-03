@@ -809,7 +809,7 @@
       "title": "Mit diesem Link stimmt etwas nicht"
     },
     "sync": {
-      "body": "Deine Einladung ist bereit. Als Nächstes wählst du eine Passphrase und sicherst deine Kontokarte.",
+      "body": "Deine Einladung liegt bereit. Auf dem nächsten Bildschirm wählst du ein Passwort und speicherst deine Kontokarte.",
       "continue": "Mein Konto erstellen",
       "skip": "Überspringen, ich habe schon ein Konto",
       "thenGateway": "Komm danach hierher zurück, um dem Gateway beizutreten.",
@@ -943,10 +943,10 @@
       "title": "In etwa einer Minute einsatzbereit"
     },
     "sync": {
-      "body": "Trage dein Mittagessen auf dem Smartphone ein und sieh dir die Woche auf dem Laptop an. Die Synchronisierung ist optional und Ende-zu-Ende-verschlüsselt: Der verschlüsselte Text liegt auf einem openplate-sync-Server (unserem oder einem selbst gehosteten) und dieser Server hat keinen Schlüssel dazu, da der Schlüssel aus einer Passphrase generiert wird, die er nie zu Gesicht bekommt.",
-      "link": "Synchronisierung einrichten",
+      "body": "Trage dein Mittagessen auf dem Smartphone ein und schau dir die Woche auf dem Laptop an. Die Synchronisation ist optional und Ende-zu-Ende-verschlüsselt: Die verschlüsselten Daten liegen auf einem openplate-sync-Server (unserem oder deinem eigenen). Der Server hat keinen Schlüssel dazu, denn der Schlüssel entsteht aus einem Passwort, das er nie zu Gesicht bekommt.",
+      "link": "Konto erstellen",
       "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",
-      "shotAlt": "Der Sync-Bildschirm auf einem Telefon: Anmelden oder ein Sync-Konto anlegen, mit dem Hinweis, dass Teller-Fotos nie hochgeladen werden.",
+      "shotAlt": "Die Konto-Ansicht auf einem Smartphone mit den Optionen, sich anzumelden oder ein Konto zu erstellen, sowie dem Hinweis, dass Fotos vom Teller nie hochgeladen werden.",
       "title": "Zwei Geräte, ein Tagebuch"
     }
   },
@@ -999,7 +999,7 @@
     "shared": "Mit dir geteilt · openplate",
     "sharing": "Teilen · openplate",
     "study": "Studien-Konsole · openplate",
-    "sync": "Sync · openplate",
+    "sync": "Konto · openplate",
     "terms": "Nutzungsbedingungen · openplate",
     "trends": "Fortschritt · openplate"
   },
@@ -1291,8 +1291,8 @@
     "title": "Forschungsbeiträge",
     "intro": "Studien, zu denen du beiträgst, was jede davon bekommt, und wie du wieder aussteigst.",
     "unavailable": "Dieser Sync-Server bietet keine Forschungsbeiträge an. Hier lässt sich nichts senden und nichts widerrufen.",
-    "needsSession": "Für Forschungsbeiträge brauchst du deine Sync-Passphrase. Entsperre Sync zuerst auf diesem Gerät.",
-    "needsSessionCta": "Zu Sync",
+    "needsSession": "Für Forschungsbeiträge brauchst du dein Passwort. Melde dich zuerst auf diesem Gerät an.",
+    "needsSessionCta": "Zum Konto",
     "loadFailed": "Deine Studien konnten nicht geladen werden.",
     "caveats": {
       "pseudonymised": "Was eine Studie bekommt, ist pseudonymisiert, nie dein Name: Sie sieht ein gleichbleibendes Pseudonym von dir und deine Tagessummen.",
@@ -1408,14 +1408,14 @@
     "console": {
       "title": "Studien-Konsole",
       "description": "Die Seite der Forschenden: das eigene Konto dieser Studie, ihr Schlüssel und die Beiträge, die dieses Konto öffnen kann.",
-      "separateAccount": "Dies ist das Konto der Studie, nicht dein eigenes openplate-Konto. Melde dich mit der Adresse und Passphrase der Studie an, niemals mit deinen eigenen. Nichts auf dieser Seite liest oder sendet das Tagebuch dieses Geräts.",
+      "separateAccount": "Das ist das Konto der Studie, nicht dein eigenes openplate-Konto. Melde dich mit der Adresse und dem Passwort der Studie an, nie mit deinen eigenen. Nichts auf dieser Seite liest oder sendet das Tagebuch dieses Geräts.",
       "noSync": {
         "title": "Dieses openplate hat keine Synchronisierung",
         "body": "Eine Studie liest Beiträge über die Synchronisierung, und wer dieses openplate betreibt, hat sie nicht eingerichtet."
       },
       "signIn": {
         "title": "Konto der Studie öffnen",
-        "passphraseLabel": "Passphrase des Studienkontos",
+        "passphraseLabel": "Passwort des Studienkontos",
         "signIn": "Konsole öffnen",
         "create": "Neues Studienkonto anlegen",
         "failed": "Das Studienkonto konnte nicht geöffnet werden. Es wurde nichts geändert.",
@@ -1423,13 +1423,13 @@
       },
       "recoveryCode": {
         "title": "Schreib diesen Wiederherstellungscode jetzt auf",
-        "body": "Er ist die zweite und letzte Tür zu den Schlüsseln dieser Studie und wird nur einmal gezeigt. Niemand kann einen neuen erzeugen: Gehen Passphrase und Code beide verloren, ist nicht mehr lesbar, was Teilnehmende bereits gesendet haben."
+        "body": "Er ist der zweite und letzte Weg zu den Schlüsseln dieser Studie und wird nur einmal angezeigt. Niemand kann einen neuen erstellen: Wenn das Passwort und dieser Code verloren gehen, lässt sich das, was Teilnehmende bereits gesendet haben, nicht mehr lesen."
       },
       "identity": {
         "title": "Der Schlüssel dieser Studie",
         "account": "Studienkonto Nummer {{accountId}}",
         "noKey": "Diese Studie hat noch keinen Schlüssel. Erzeuge einen, bevor ihre Einwilligungsunterlagen gedruckt werden.",
-        "unopened": "Diese Konsole konnte die Schlüssel dieser Studie nicht öffnen, daher kann sie keine davon anzeigen und keinen Beitrag öffnen. Meistens wurden sie mit einer anderen Passphrase versiegelt: Melde dich mit der an, mit der sie erstellt wurden. Es ist nichts verloren gegangen: Die Schlüssel befinden sich weiterhin auf dem Server, von diesem ungelesen.",
+        "unopened": "Diese Konsole konnte die Schlüssel dieser Studie nicht öffnen. Daher kann sie keine davon anzeigen und keine Beiträge öffnen. Meistens wurden sie mit einem anderen Passwort versiegelt: Melde dich mit dem Passwort an, mit dem sie erstellt wurden. Es ist nichts verloren gegangen: Die Schlüssel liegen weiterhin auf dem Server, von diesem ungelesen.",
         "fingerprintLabel": "Fingerabdruck des aktuellen Schlüssels",
         "fingerprintHint": "Druck diese zwölf Zeichen in die Einwilligungsunterlagen der Studie. Teilnehmende tippen sie beim Mitmachen von diesem Blatt ab. Diese Konsole sendet sie nirgendwohin, und hier gibt es nichts, womit man sie veröffentlichen könnte.",
         "generations": "Vorhandene Schlüsselgenerationen: {{generations}}. Beim Öffnen eines Beitrags wird jede einzelne probiert, damit nichts verloren geht, was mit einem älteren Schlüssel versiegelt wurde.",
@@ -1724,7 +1724,7 @@
       },
       "sync": {
         "notSetUp": "Nicht eingerichtet",
-        "title": "Sync"
+        "title": "Konto"
       },
       "research": {
         "title": "Forschung",
@@ -1902,8 +1902,8 @@
     "title": "Teilen",
     "intro": "Lass deine Ernährungsberatung oder deinen Arzt dein Tagebuch einsehen. Es bleibt durchgehend verschlüsselt: Sie erhalten eine mit ihrem Key versiegelte Kopie deines Keys, und der Server kann weiterhin nichts mitlesen.",
     "unavailable": "Dieser Sync-Server bietet kein Teilen an. Hier ist nichts eingeschaltet, und es wurde nichts gesendet.",
-    "needsSession": "Zum Teilen brauchst du deine Sync-Passphrase. Entsperre Sync zuerst auf diesem Gerät.",
-    "needsSessionCta": "Zu Sync",
+    "needsSession": "Fürs Teilen brauchst du dein Passwort. Melde dich zuerst auf diesem Gerät an.",
+    "needsSessionCta": "Zum Konto",
     "identity": {
       "title": "Dein Teilen-Schlüssel",
       "description": "Der Schlüssel, für den andere ihr Tagebuch versiegeln. Er entsteht auf diesem Gerät und wandert mit deinem Konto.",
@@ -1914,7 +1914,7 @@
       "readAloud": "Lies diese zwölf Zeichen der Person vor, die mit dir teilt, und sie gibt sie ein. Die App hat sie hier aus deinem eigenen Key ermittelt.",
       "publicKeyLabel": "Dein öffentlicher Schlüssel",
       "publicKeyHint": "Kann gefahrlos per E-Mail oder als Code weitergegeben werden. Allein entschlüsselt er nichts.",
-      "recoveryNote": "Bewahre deinen Wiederherstellungscode sicher auf. Er schützt den Zugriff deiner Patientinnen und Patienten sowie deinen eigenen. Wenn du ihn und deine Passphrase verlierst, lässt sich kein einziges mit dir geteiltes Tagebuch mehr öffnen."
+      "recoveryNote": "Bewahre deinen Wiederherstellungscode sicher auf. Er schützt den Zugriff deiner Patientinnen und Patienten genauso wie deinen eigenen. Verlierst du ihn und dein Passwort, lässt sich kein mit dir geteiltes Tagebuch mehr öffnen."
     },
     "grant": {
       "title": "Mit jemandem teilen",
@@ -1964,8 +1964,8 @@
       "open": "Datenschlüssel ersetzen",
       "confirmTitle": "Datenschlüssel ersetzen?",
       "confirmBody": "Alles, was du eingetragen hast, wird mit einem neuen Schlüssel neu versiegelt, und alle, mit denen du weiter teilst, bekommen eine frische versiegelte Kopie. Du bekommst einen neuen Wiederherstellungscode, der alte gilt dann nicht mehr.",
-      "passphraseLabel": "Mit deiner Passphrase bestätigen",
-      "passphraseHint": "Wir fragen danach, weil der neue Key mit deiner Passphrase versiegelt werden muss, und eine falsche Passphrase dich aus deinem eigenen Tagebuch aussperren würde.",
+      "passphraseLabel": "Mit deinem Passwort bestätigen",
+      "passphraseHint": "Wir fragen danach, weil der neue Schlüssel mit deinem Passwort geschützt werden muss. Mit einem falschen Passwort würdest du dich aus deinem eigenen Tagebuch aussperren.",
       "confirmCta": "Schlüssel ersetzen",
       "failed": "Der Schlüssel konnte nicht ersetzt werden. Es wurde nichts geändert.",
       "doneTitle": "Dein Datenschlüssel wurde ersetzt.",
@@ -1994,24 +1994,24 @@
   "sync": {
     "cancel": "Abbrechen",
     "changePassphrase": {
-      "currentLabel": "Aktuelle Passphrase",
-      "description": "Setzt eine neue Passphrase und meldet deine anderen Geräte ab. An deinen synchronisierten Daten ändert sich nichts.",
-      "done": "Passphrase geändert. Deine anderen Geräte fragen jetzt nach der neuen.",
-      "failed": "Die Passphrase konnte nicht geändert werden. Geändert wurde nichts.",
-      "newLabel": "Neue Passphrase",
-      "open": "Passphrase ändern",
-      "recoveryNote": "Dein Wiederherstellungscode bleibt gültig. Er ist nicht an die Passphrase gebunden, die du gerade ersetzt.",
-      "submit": "Neue Passphrase speichern",
-      "title": "Passphrase ändern"
+      "currentLabel": "Aktuelles Passwort",
+      "description": "Legt ein neues Passwort fest und meldet deine anderen Geräte ab. Deine synchronisierten Daten bleiben genau dort, wo sie sind.",
+      "done": "Passwort geändert. Deine anderen Geräte werden nach dem neuen fragen.",
+      "failed": "Das Passwort konnte nicht geändert werden. Es wurde nichts verändert.",
+      "newLabel": "Neues Passwort",
+      "open": "Passwort ändern",
+      "recoveryNote": "Dein Wiederherstellungscode funktioniert weiterhin; er ist nicht an das Passwort gebunden, das du gerade ersetzt.",
+      "submit": "Neues Passwort speichern",
+      "title": "Passwort ändern"
     },
     "connected": {
       "description": "Angemeldet als {{handle}}.",
       "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nicht synchronisiert, daher siehst du sie nicht auf deinen anderen Geräten.",
-      "title": "Sync ist aktiv",
+      "title": "Konto",
       "keepYourCard": "Bewahre deine Kontokarte gut auf. Dein Anmeldename und dein Wiederherstellungscode sind die einzige Möglichkeit, wieder Zugriff zu erhalten, und beides kann nicht erneut ausgestellt werden."
     },
     "create": {
-      "cta": "Sync-Konto anlegen",
+      "cta": "Konto erstellen",
       "inviteLabel": "Einladungscode",
       "inviteHint": "Dieser Server ist nur mit Einladung nutzbar. Füge den Code ein, den du bekommen hast, oder öffne den Einladungslink.",
       "inviteRequired": "Diese Einladung ist ungültig. Sie wurde vielleicht schon benutzt oder ist abgelaufen. Bitte um eine neue.",
@@ -2024,16 +2024,16 @@
     },
     "danger": {
       "description": "Beides lässt das Tagebuch auf diesem Gerät unangetastet.",
-      "title": "Sync beenden"
+      "title": "Abmelden oder Konto löschen"
     },
     "delete": {
       "confirmBody": "Dadurch wird das Konto {{handle}} und jede verschlüsselte Kopie auf dem Server gelöscht. Dies kann nicht rückgängig gemacht werden und es gibt keine Übergangsfrist. Dein Tagebuch auf diesem Gerät bleibt unberührt.",
       "confirmCta": "Endgültig löschen",
-      "confirmTitle": "Dieses Sync-Konto löschen?",
-      "cta": "Sync-Konto löschen",
+      "confirmTitle": "Dieses Konto löschen?",
+      "cta": "Konto löschen",
       "failed": "Das Konto konnte nicht gelöscht werden. Geändert wurde nichts.",
-      "note": "Wir fragen die Passphrase noch einmal ab, weil eine offen gebliebene Sitzung auf einem geteilten Gerät nicht reichen darf, um ein Konto zu löschen.",
-      "passphraseLabel": "Mit deiner Passphrase bestätigen"
+      "note": "Wir fragen noch einmal nach deinem Passwort, weil eine offene Sitzung auf einem geteilten Gerät nicht ausreichen sollte, um ein Konto zu löschen.",
+      "passphraseLabel": "Mit deinem Passwort bestätigen"
     },
     "handleHint": "Wähle einen beliebigen Namen, der keine E-Mail-Adresse ist. Oder lass dir einen vorschlagen.",
     "handleLabel": "Anmeldename",
@@ -2046,71 +2046,71 @@
       "strength": {
         "fair": "Solide. Ein paar Wörter mehr und es wird deutlich schwerer zu raten.",
         "strong": "Gut, lang genug, um wirklich schwer zu erraten zu sein.",
-        "weak": "Kurze Passphrasen sind hier die Schwachstelle. Länge bringt mehr als Sonderzeichen."
+        "weak": "Kurze Passwörter sind hier die Schwachstelle. Länge hilft mehr als Sonderzeichen."
       }
     },
-    "passphraseLabel": "Sync-Passphrase",
+    "passphraseLabel": "Passwort",
     "pendingGateway": {
       "action": "Beitritt abschließen",
       "body": "Dein Link verbindet dich auch mit dem Gateway auf {{origin}}."
     },
     "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem du sie aufgenommen hast. Hochgeladen werden sie nie.",
     "profileCard": {
-      "manage": "Sync verwalten",
-      "setUp": "Sync einrichten"
+      "manage": "Konto",
+      "setUp": "Konto erstellen"
     },
-    "promise": "Deine Passphrase verlässt dieses Gerät nie, und der Sync-Server speichert nur verschlüsselte Daten, für die er keinen Schlüssel hat. Das bedeutet auch: Niemand, auch wir nicht, kann deine Daten wiederherstellen, wenn du sowohl deine Passphrase als auch deinen Wiederherstellungscode verlierst.",
+    "promise": "Der Server speichert nur verschlüsselte Daten, die er nicht lesen kann.",
     "recover": {
       "codeHint": "Der gruppierte Code von deiner Kontokarte. Bindestriche und Groß- oder Kleinschreibung spielen keine Rolle.",
       "codeLabel": "Wiederherstellungscode",
-      "done": "Fertig. Deine neue Passphrase ist eingerichtet und deine synchronisierten Daten sind erhalten.",
+      "done": "Erledigt. Dein neues Passwort ist festgelegt und deine synchronisierten Daten sind unversehrt.",
       "failed": "Das hat nicht geklappt. Es wurde nichts geändert.",
-      "intro": "Mit deinem Wiederherstellungscode legst du eine neue Passphrase fest und behältst deine synchronisierten Daten. Ohne ihn und ohne deine Passphrase kann dieses Konto von niemandem wiederhergestellt werden, auch nicht von uns.",
-      "newPassphraseLabel": "Neue Passphrase",
+      "intro": "Nutze deinen Wiederherstellungscode, um ein neues Passwort festzulegen.",
+      "newPassphraseLabel": "Neues Passwort",
       "rejected": "Dieser Anmeldename und dieser Wiederherstellungscode passen nicht zusammen. Überprüfe beides und versuche es erneut.",
-      "submit": "Neue Passphrase festlegen",
+      "submit": "Neues Passwort festlegen",
       "tryAgain": "Erneut versuchen",
-      "working": "Neue Passphrase wird eingerichtet…",
+      "working": "Neues Passwort wird eingerichtet …",
       "codeRequired": "Gib den Wiederherstellungscode von deiner Kontokarte ein."
     },
     "setup": {
       "accountCard": {
-        "bothRequired": "Du benötigst beides, um wieder Zugriff zu erhalten. Der Anmeldename benennt dein Konto, der Code ist der einzige Weg bei einer vergessenen Passphrase, und keines von beidem wird noch einmal angezeigt.",
+        "bothRequired": "Du brauchst beides, um dich wieder anzumelden. Der Anmeldename bezeichnet dein Konto, der Code ist der einzige Weg bei einem vergessenen Passwort und keines von beiden wird noch einmal angezeigt.",
         "codeLabel": "Wiederherstellungscode",
         "confirmSaved": "Ich habe meinen Anmeldenamen und meinen Wiederherstellungscode an einem sicheren Ort gespeichert.",
         "title": "Deine Kontokarte"
       },
-      "complete": "Sync ist auf diesem Gerät eingerichtet.",
-      "confirmLabel": "Passphrase bestätigen",
+      "complete": "Dein Konto ist auf diesem Gerät eingerichtet.",
+      "confirmLabel": "Passwort bestätigen",
       "continue": "Weiter",
       "copied": "Kopiert",
       "copy": "Kopieren",
       "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell auswählen und kopieren",
       "finish": "Einrichtung abschließen",
-      "generating": "Sync wird eingerichtet…",
+      "generating": "Dein Konto wird eingerichtet …",
       "handleNotAnEmail": "Ein Anmeldename darf kein @ enthalten.",
       "handleRequired": "Wähle einen Anmeldenamen oder lass dir einen vorschlagen.",
       "handleShuffle": "Namen vorschlagen",
       "handleTooLong": "Dieser Anmeldename ist zu lang. Verwende weniger als 64 Zeichen.",
-      "passphraseIntro": "Wähle eine Passphrase, um deine Daten zu verschlüsseln. Wir leiten daraus auf diesem Gerät einen Schlüssel ab. Wir sehen die Passphrase selbst nie und können sie nicht für dich zurücksetzen.",
-      "passphraseLabel": "Sync-Passphrase",
-      "passphraseMismatch": "Die beiden Passphrasen stimmen nicht überein.",
-      "passphraseTooShort": "Verwende mindestens {{min}} Zeichen. Diese Passphrase ist das Einzige, was deine synchronisierten Daten vor unbefugtem Zugriff schützt.",
-      "recoveryWarningBody": "Wenn du deine Passphrase und diesen Wiederherstellungscode verlierst, kann dir niemand wieder Zugriff verschaffen und niemand kann deine synchronisierten Daten lesen, nicht einmal wir. Das bedeutet Ende-zu-Ende-Verschlüsselung.",
+      "passphraseIntro": "Wähle ein Passwort für dein Konto.",
+      "passphraseLabel": "Passwort",
+      "passphraseMismatch": "Die beiden Passwörter stimmen nicht überein.",
+      "passphraseTooShort": "Verwende mindestens {{min}} Zeichen.",
+      "recoveryWarningBody": "Wenn du dein Passwort und diesen Wiederherstellungscode verlierst, kann dich niemand wieder anmelden und niemand kann deine synchronisierten Daten lesen, nicht einmal wir. Genau das bedeutet Ende-zu-Ende-Verschlüsselung.",
       "recoveryWarningLead": "Sichere beides jetzt. Sie werden nur dieses eine Mal angezeigt.",
       "retry": "Nochmal versuchen",
-      "setupFailed": "Beim Einrichten der Synchronisierung ist etwas schiefgelaufen. Es wurde nichts gespeichert, du kannst es einfach noch einmal versuchen."
+      "setupFailed": "Beim Einrichten deines Kontos ist etwas schiefgelaufen. Es wurde nichts gespeichert, du kannst es einfach noch einmal versuchen."
     },
     "signIn": {
-      "cta": "Bei Sync anmelden",
-      "ctaKnown": "Sync für {{handle}} freischalten",
-      "failed": "Das hat nicht geklappt. Überprüfe den Anmeldenamen sowie die Passphrase und versuche es erneut.",
-      "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Lass uns das jetzt tun. Am Ende erhältst du einen Wiederherstellungscode, der deine Daten auf einem anderen Gerät freischaltet. Bei diesem Konto kannst du dich jedoch nur mit der Passphrase anmelden.",
-      "forgot": "Ich habe meine Passphrase vergessen",
-      "intro": "Gib deine Passphrase ein, um dieses Gerät zu entsperren. Wir fragen nach jedem Neuladen erneut danach; der Schlüssel wird niemals gespeichert.",
-      "submit": "Entsperren",
-      "working": "Wird entsperrt…",
-      "passphraseRequired": "Gib deine Sync-Passphrase ein.",
+      "cta": "Anmelden",
+      "ctaKnown": "Als {{handle}} anmelden",
+      "failed": "Das hat nicht geklappt. Prüfe Anmeldename sowie Passwort und versuche es erneut.",
+      "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Holen wir das jetzt nach. Am Ende erhältst du einen Wiederherstellungscode, mit dem du dich auf einem anderen Gerät anmelden kannst, auch wenn die Anmeldung bei diesem Konto nur mit seinem Passwort möglich ist.",
+      "forgot": "Ich habe mein Passwort vergessen",
+      "intro": "Gib dein Passwort ein, um dich auf diesem Gerät anzumelden. Wir fragen nach jedem Neuladen erneut, der Schlüssel wird nie gespeichert.",
+      "submit": "Anmelden",
+      "working": "Wird angemeldet…",
+      "passphraseRequired": "Gib dein Passwort ein.",
       "handleRequired": "Gib deinen Anmeldenamen ein."
     },
     "signOut": {
@@ -2132,7 +2132,8 @@
       "syncedAgo": "Synchronisiert · {{when}}",
       "syncing": "Wird synchronisiert…"
     },
-    "title": "Sync zwischen Geräten"
+    "title": "Konto",
+    "passwordNote": "Dein Passwort verschlüsselt auch dein Tagebuch. Wir können es nicht zurücksetzen, bewahre daher deinen Wiederherstellungscode gut auf."
   },
   "trends": {
     "chart": {

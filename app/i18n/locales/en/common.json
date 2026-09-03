@@ -809,7 +809,7 @@
       "title": "This link doesn't look right"
     },
     "sync": {
-      "body": "Your invite is ready. On the next screen you pick a passphrase and save your account card.",
+      "body": "Your invite is ready. On the next screen you pick a password and save your account card.",
       "continue": "Create my account",
       "skip": "Skip, I already have an account",
       "thenGateway": "After that, come back here to finish joining the gateway.",
@@ -943,10 +943,10 @@
       "title": "Working in about a minute"
     },
     "sync": {
-      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server (ours, or one you run yourself) and that server has no key to it, because the key is made from a passphrase it never sees.",
-      "link": "Set up sync",
+      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server (ours, or one you run yourself) and that server has no key to it, because the key is made from a password it never sees.",
+      "link": "Create an account",
       "photos": "Plate photos stay where they are. They are never part of a sync blob.",
-      "shotAlt": "The sync screen on a phone, offering to sign in to sync or create a sync account, with a note that plate photos are never uploaded.",
+      "shotAlt": "The account screen on a phone, offering to sign in or create an account, with a note that plate photos are never uploaded.",
       "title": "Two devices, one diary"
     }
   },
@@ -999,7 +999,7 @@
     "shared": "Shared with you · openplate",
     "sharing": "Sharing · openplate",
     "study": "Study console · openplate",
-    "sync": "Sync · openplate",
+    "sync": "Account · openplate",
     "terms": "Terms of service · openplate",
     "trends": "Progress · openplate"
   },
@@ -1291,8 +1291,8 @@
     "title": "Research contributions",
     "intro": "Studies you contribute to, what each one receives, and how to leave.",
     "unavailable": "This sync server has no research lane. Nothing can be sent or withdrawn here.",
-    "needsSession": "Research contributions need your sync passphrase. Unlock sync on this device first.",
-    "needsSessionCta": "Go to sync",
+    "needsSession": "Research contributions need your account password. Sign in on this device first.",
+    "needsSessionCta": "Go to account",
     "loadFailed": "Your studies could not be loaded.",
     "caveats": {
       "pseudonymised": "What a study receives is pseudonymised, never your name: it sees one stable pseudonym for you and your daily totals.",
@@ -1408,14 +1408,14 @@
     "console": {
       "title": "Study console",
       "description": "The researcher's side: this study's own account, its key, and the cohort that account can open.",
-      "separateAccount": "This is the study's account, not your own openplate account. Sign in with the study's address and passphrase, never with yours. Nothing on this screen reads or sends this device's diary.",
+      "separateAccount": "This is the study's account, not your own openplate account. Sign in with the study's address and password, never with yours. Nothing on this screen reads or sends this device's diary.",
       "noSync": {
         "title": "This openplate has no sync",
         "body": "A study reads contributions through sync, and whoever runs this openplate has not set it up."
       },
       "signIn": {
         "title": "Open the study's account",
-        "passphraseLabel": "Study account's passphrase",
+        "passphraseLabel": "Study account's password",
         "signIn": "Open the console",
         "create": "Create a new study account",
         "failed": "The study account could not be opened. Nothing was changed.",
@@ -1423,13 +1423,13 @@
       },
       "recoveryCode": {
         "title": "Write this recovery code down now",
-        "body": "It is the second and last door to this study's keys, and it is shown once. Nobody can mint another one: if the passphrase and this code are both lost, what contributors already sent can no longer be read."
+        "body": "It is the second and last door to this study's keys, and it is shown once. Nobody can mint another one: if the password and this code are both lost, what contributors already sent can no longer be read."
       },
       "identity": {
         "title": "This study's key",
         "account": "Study account number {{accountId}}",
         "noKey": "This study holds no key yet. Mint one before its consent materials are printed.",
-        "unopened": "This console could not open this study's keys, so it can show none of them and open no contribution. Most often they were sealed with a different passphrase: sign in with the one they were made with. Nothing has been lost: the keys are still on the server, unread by it.",
+        "unopened": "This console could not open this study's keys, so it can show none of them and open no contribution. Most often they were sealed with a different password: sign in with the one they were made with. Nothing has been lost: the keys are still on the server, unread by it.",
         "fingerprintLabel": "Fingerprint of the current key",
         "fingerprintHint": "Print these twelve characters in the study's consent document. A contributor types them from that page when joining. This console sends them nowhere and there is nothing here to publish them with.",
         "generations": "Key generations held: {{generations}}. Every one of them is tried when a contribution is opened, so nothing sealed to an older key is lost.",
@@ -1724,7 +1724,7 @@
       },
       "sync": {
         "notSetUp": "Not set up",
-        "title": "Sync"
+        "title": "Account"
       },
       "research": {
         "title": "Research",
@@ -1902,8 +1902,8 @@
     "title": "Sharing",
     "intro": "Let a dietician or doctor read your diary. It stays encrypted the whole way: they get a copy of your key sealed to theirs, and the server still cannot read a thing.",
     "unavailable": "This sync server does not offer sharing. Nothing here is switched on, and nothing was sent.",
-    "needsSession": "Sharing needs your sync passphrase. Unlock sync on this device first.",
-    "needsSessionCta": "Go to sync",
+    "needsSession": "Sharing needs your account password. Sign in on this device first.",
+    "needsSessionCta": "Go to account",
     "identity": {
       "title": "Your sharing key",
       "description": "The key other people seal their diary to. It is made on this device and travels with your account.",
@@ -1914,7 +1914,7 @@
       "readAloud": "Read these twelve characters out to the person sharing with you, and they type them in. This app worked them out here, from your own key.",
       "publicKeyLabel": "Your public key",
       "publicKeyHint": "Safe to send by email or show as a code. On its own it can decrypt nothing.",
-      "recoveryNote": "Keep your recovery code safe. It protects your patients’ access as well as your own. Lose it and your passphrase, and every diary shared with you stops opening."
+      "recoveryNote": "Keep your recovery code safe. It protects your patients’ access as well as your own. Lose it and your password, and every diary shared with you stops opening."
     },
     "grant": {
       "title": "Share with someone",
@@ -1964,8 +1964,8 @@
       "open": "Replace my data key",
       "confirmTitle": "Replace your data key?",
       "confirmBody": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working.",
-      "passphraseLabel": "Confirm with your passphrase",
-      "passphraseHint": "We ask because the new key has to be sealed to your passphrase, and a wrong one would lock you out of your own diary.",
+      "passphraseLabel": "Confirm with your password",
+      "passphraseHint": "We ask because the new key has to be sealed to your password, and a wrong one would lock you out of your own diary.",
       "confirmCta": "Replace the key",
       "failed": "Could not replace the key. Nothing was changed.",
       "doneTitle": "Your data key was replaced.",
@@ -1994,24 +1994,24 @@
   "sync": {
     "cancel": "Cancel",
     "changePassphrase": {
-      "currentLabel": "Current passphrase",
-      "description": "Sets a new passphrase and signs your other devices out. Your synced data stays exactly where it is.",
-      "done": "Passphrase changed. Your other devices will ask for the new one.",
-      "failed": "Couldn’t change the passphrase. Nothing was changed.",
-      "newLabel": "New passphrase",
-      "open": "Change passphrase",
-      "recoveryNote": "Your recovery code keeps working, it is not tied to the passphrase you are replacing.",
-      "submit": "Save new passphrase",
-      "title": "Change passphrase"
+      "currentLabel": "Current password",
+      "description": "Sets a new password and signs your other devices out. Your synced data stays exactly where it is.",
+      "done": "Password changed. Your other devices will ask for the new one.",
+      "failed": "Couldn’t change the password. Nothing was changed.",
+      "newLabel": "New password",
+      "open": "Change password",
+      "recoveryNote": "Your recovery code keeps working, it is not tied to the password you are replacing.",
+      "submit": "Save new password",
+      "title": "Change password"
     },
     "connected": {
       "description": "Signed in as {{handle}}.",
       "photosStayHere": "Plate photos stay on the device that took them, they’re never part of a sync, so you won’t see them on your other devices.",
-      "title": "Sync is on",
+      "title": "Account",
       "keepYourCard": "Keep your account card. Your sign-in name and your recovery code are the only way back in, and neither can be issued again."
     },
     "create": {
-      "cta": "Create a sync account",
+      "cta": "Create an account",
       "inviteLabel": "Invite code",
       "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
       "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
@@ -2024,16 +2024,16 @@
     },
     "danger": {
       "description": "Both options leave the diary on this device untouched.",
-      "title": "Ending sync"
+      "title": "Sign out or delete account"
     },
     "delete": {
       "confirmBody": "This removes the account {{handle}} and every encrypted copy the server holds. There is no undo and no grace period. Your diary on this device is not touched.",
       "confirmCta": "Delete permanently",
-      "confirmTitle": "Delete this sync account?",
-      "cta": "Delete sync account",
+      "confirmTitle": "Delete this account?",
+      "cta": "Delete account",
       "failed": "Couldn’t delete the account. Nothing was changed.",
-      "note": "We ask for your passphrase again because a session left open on a shared device shouldn’t be enough to delete an account.",
-      "passphraseLabel": "Confirm with your passphrase"
+      "note": "We ask for your password again because a session left open on a shared device shouldn’t be enough to delete an account.",
+      "passphraseLabel": "Confirm with your password"
     },
     "handleHint": "Pick any name that is not an email address. Or let us suggest one.",
     "handleLabel": "Sign-in name",
@@ -2046,71 +2046,71 @@
       "strength": {
         "fair": "Decent. A few more words would make it much harder to guess.",
         "strong": "Good, long enough to be genuinely hard to guess.",
-        "weak": "Short passphrases are the weak point here, length helps more than symbols do."
+        "weak": "Short passwords are the weak point here, length helps more than symbols do."
       }
     },
-    "passphraseLabel": "Sync passphrase",
+    "passphraseLabel": "Password",
     "pendingGateway": {
       "action": "Finish joining it",
       "body": "Your link also joins the gateway at {{origin}}."
     },
     "photosStayHere": "Plate photos stay on the device that took them. They are never uploaded.",
     "profileCard": {
-      "manage": "Manage sync",
-      "setUp": "Set up sync"
+      "manage": "Account",
+      "setUp": "Create account"
     },
-    "promise": "Your passphrase never leaves this device, and the sync server only ever stores encrypted bytes it has no key for. That also means nobody, including us, can recover your data if you lose both your passphrase and your recovery code.",
+    "promise": "The server only stores encrypted data it cannot read.",
     "recover": {
       "codeHint": "The grouped code from your account card. Dashes and capitalisation do not matter.",
       "codeLabel": "Recovery code",
-      "done": "Done. Your new passphrase is set and your synced data is intact.",
+      "done": "Done. Your new password is set and your synced data is intact.",
       "failed": "That did not work. Nothing has been changed.",
-      "intro": "Your recovery code sets a new passphrase and keeps your synced data. Without it, and without your passphrase, this account cannot be recovered by anyone, including us.",
-      "newPassphraseLabel": "New passphrase",
+      "intro": "Use your recovery code to set a new password.",
+      "newPassphraseLabel": "New password",
       "rejected": "That sign-in name and recovery code do not go together. Check both and try again.",
-      "submit": "Set a new passphrase",
+      "submit": "Set a new password",
       "tryAgain": "Try again",
-      "working": "Setting your new passphrase…",
+      "working": "Setting your new password…",
       "codeRequired": "Enter the recovery code from your account card."
     },
     "setup": {
       "accountCard": {
-        "bothRequired": "You need both of these to get back in. The sign-in name names your account, the code is the only way past a forgotten passphrase, and neither is shown again.",
+        "bothRequired": "You need both of these to get back in. The sign-in name names your account, the code is the only way past a forgotten password, and neither is shown again.",
         "codeLabel": "Recovery code",
         "confirmSaved": "I have saved my sign-in name and my recovery code somewhere safe.",
         "title": "Your account card"
       },
-      "complete": "Sync is set up on this device.",
-      "confirmLabel": "Confirm passphrase",
+      "complete": "Your account is set up on this device.",
+      "confirmLabel": "Confirm password",
       "continue": "Continue",
       "copied": "Copied",
       "copy": "Copy",
       "copyFailed": "Couldn't copy, select and copy manually",
       "finish": "Finish setup",
-      "generating": "Setting up sync…",
+      "generating": "Setting up your account…",
       "handleNotAnEmail": "A sign-in name cannot contain @.",
       "handleRequired": "Choose a sign-in name, or let us suggest one.",
       "handleShuffle": "Suggest a name",
       "handleTooLong": "That sign-in name is too long. Keep it under 64 characters.",
-      "passphraseIntro": "Choose a passphrase to encrypt your data. We use it to derive an encryption key on this device, we never see the passphrase itself, and we cannot reset it for you.",
-      "passphraseLabel": "Sync passphrase",
-      "passphraseMismatch": "Those two passphrases don't match.",
-      "passphraseTooShort": "Use at least {{min}} characters, this passphrase is the only thing standing between your synced data and anyone who doesn't have it.",
-      "recoveryWarningBody": "If you lose your passphrase and this recovery code, nobody can get you back in and nobody can read your synced data, not even us. That is what end-to-end encryption means.",
+      "passphraseIntro": "Choose a password for your account.",
+      "passphraseLabel": "Password",
+      "passphraseMismatch": "Those two passwords don't match.",
+      "passphraseTooShort": "Use at least {{min}} characters.",
+      "recoveryWarningBody": "If you lose your password and this recovery code, nobody can get you back in and nobody can read your synced data, not even us. That is what end-to-end encryption means.",
       "recoveryWarningLead": "Save both of these now, this is the only time they are shown.",
       "retry": "Try again",
-      "setupFailed": "Something went wrong setting up sync. Nothing was saved, you're safe to try again."
+      "setupFailed": "Something went wrong setting up your account. Nothing was saved, you're safe to try again."
     },
     "signIn": {
-      "cta": "Sign in to sync",
-      "ctaKnown": "Unlock sync for {{handle}}",
-      "failed": "That did not work. Check the sign-in name and passphrase and try again.",
-      "finishSetup": "This account was created but its keys were never finished. Let us do that now. It ends with a recovery code that unlocks your data on another device, though this account can only be signed in to with its passphrase.",
-      "forgot": "I have forgotten my passphrase",
-      "intro": "Enter your passphrase to unlock this device. We ask again after every reload, the key is never stored.",
-      "submit": "Unlock",
-      "working": "Unlocking…",
-      "passphraseRequired": "Enter your sync passphrase.",
+      "cta": "Sign in",
+      "ctaKnown": "Sign in as {{handle}}",
+      "failed": "That did not work. Check the sign-in name and password and try again.",
+      "finishSetup": "This account was created but its keys were never finished. Let us do that now. It ends with a recovery code that lets you sign in on another device, though this account can only be signed in to with its password.",
+      "forgot": "I have forgotten my password",
+      "intro": "Enter your password to sign in on this device. We ask again after every reload, the key is never stored.",
+      "submit": "Sign in",
+      "working": "Signing in…",
+      "passphraseRequired": "Enter your password.",
       "handleRequired": "Enter your sign-in name."
     },
     "signOut": {
@@ -2132,7 +2132,8 @@
       "syncedAgo": "Synced · {{when}}",
       "syncing": "Syncing…"
     },
-    "title": "Sync across devices"
+    "title": "Account",
+    "passwordNote": "Your password also encrypts your diary. We cannot reset it, so keep your recovery code."
   },
   "trends": {
     "chart": {

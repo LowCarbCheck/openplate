@@ -148,6 +148,12 @@ function RecoveryForm({
         <p>{t('sync.recover.intro')}</p>
       </div>
 
+      {/* The same sentence the create screen shows, and the only other place
+          the password is explained. */}
+      <div className="text-sm text-muted-foreground">
+        <p>{t('sync.passwordNote')}</p>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor={fields.handle.id}>{t('sync.handleLabel')}</Label>
         <Input

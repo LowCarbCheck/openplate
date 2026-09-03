@@ -361,6 +361,9 @@ function DetailsStep({
       </div>
 
       <p className="text-sm text-muted-foreground">{t('sync.setup.passphraseIntro')}</p>
+      {/* The one place, with the forgot screen, that says what the password
+          also does. One string, two call sites: see `sync.passwordNote`. */}
+      <p className="text-sm text-muted-foreground">{t('sync.passwordNote')}</p>
 
       <div className="space-y-2">
         <Label htmlFor={fields.passphrase.id}>{t('sync.setup.passphraseLabel')}</Label>
