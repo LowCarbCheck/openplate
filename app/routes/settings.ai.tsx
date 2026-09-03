@@ -19,10 +19,12 @@ import {
   getLocalAiSettings,
   getLocalMonthlyAiUsage,
   putLocalAiSettings,
+  putLocalGatewayConnection,
 } from '#app/lib/local-store';
 import type { LocalAiSettings } from '#app/lib/local-store';
 import { resolveSettingsReturnPath } from '#app/lib/settings-return';
 import { isAuditDisclosureRequired } from '#app/lib/gateway-invite';
+import { syncNow } from '#app/lib/sync/sync-actions';
 import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
 import { randomUuid } from '#app/lib/uuid';
 import { formatSettingsUsageLine } from '#app/models/ai-usage';
@@ -334,6 +336,19 @@ export async function clientAction({ request }: Route.ClientActionArgs): Promise
     return { id: randomUuid(), type: 'message', description: translate('settingsAi.toast.nothingToDisconnect') };
   }
   await deleteLocalAiSettings();
+  // The TOMBSTONE, and it has to be written rather than inferred (M187/02).
+  // The line above deletes the whole settings row, so "this device
+  // disconnected" and "this device never joined" look identical afterwards —
+  // and the account's `gatewayConnection` singleton is merged by `updatedAt`,
+  // which an absence carries none of. Without this stamp the next cycle would
+  // hand the connection straight back from whichever device still had it.
+  //
+  // Written unconditionally, including for a manual/oauth/preset row: a
+  // disconnect here is the person saying this account is not on a gateway any
+  // more, and the apply rule already refuses to clear anything but an `invite`
+  // row on the devices that receive it.
+  await putLocalGatewayConnection({ status: 'disconnected', updatedAt: Date.now() });
+  void syncNow().catch(() => undefined);
   return { id: randomUuid(), type: 'success', description: translate('settingsAi.toast.disconnected') };
 }
 

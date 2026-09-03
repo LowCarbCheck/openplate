@@ -13,20 +13,28 @@
  * Keeping the seam in one small file also makes the blast radius of a
  * local-store refactor exactly one import list.
  */
+import type { Store } from 'tinybase';
 import {
+  deleteLocalAiSettings,
   deleteLocalFood,
   deleteLocalFoodLog,
   deleteLocalWeightEntry,
   exportBackup,
+  getLocalAiSettings,
+  getLocalGatewayConnection,
   getLocalResearchIdentity,
   getLocalShareIdentity,
   importBackup,
   listLocalSharePeers,
   listLocalStudyEnrolments,
   migrateEnvelopeForward,
+  putLocalAiSettings,
+  putLocalGatewayConnection,
   SCHEMA_VERSION,
+  type LocalGatewayConnection,
   type LocalStoreSnapshot,
 } from '#app/lib/local-store';
+import { decideGatewayConnectionApply, pickNewerGatewayConnection } from './gateway-connection-apply';
 import {
   partitionSnapshot,
   readSealedPrivateStore,
@@ -35,9 +43,26 @@ import {
   type SyncedSnapshot,
 } from './snapshot-partition';
 
-/** Reads the device's full health snapshot — the same lossless projection a backup export produces. */
-export async function readLocalSnapshot(): Promise<LocalStoreSnapshot> {
-  return (await exportBackup()).data;
+/**
+ * Reads the device's full health snapshot — a backup export, PLUS the one key
+ * an export deliberately omits.
+ *
+ * The two projections were identical until M187/02. They are not any more, and
+ * the difference is the whole of "the gateway travels but is never exported":
+ * `backup.ts`'s `readSnapshot` leaves `gatewayConnection` out because a backup
+ * file must carry no provider credential, and this — the SYNC read path, whose
+ * output is sealed into the owner-private compartment before it goes anywhere
+ * — puts it back. This is the only producer that does, which is why the key is
+ * optional on `LocalStoreSnapshot`.
+ *
+ * `store` is injectable for the tests that build a snapshot the way production
+ * reads one; production passes nothing and gets the singleton stores.
+ */
+export async function readLocalSnapshot({ store }: { store?: Store } = {}): Promise<LocalStoreSnapshot> {
+  return {
+    ...(await exportBackup({ store })).data,
+    gatewayConnection: await getLocalGatewayConnection({ store }),
+  };
 }
 
 /**
@@ -55,6 +80,7 @@ export async function readLocalOwnerPrivateRegion(): Promise<OwnerPrivateRegion>
     sharePeers: await listLocalSharePeers(),
     researchIdentity: await getLocalResearchIdentity(),
     studyEnrolments: await listLocalStudyEnrolments(),
+    gatewayConnection: await getLocalGatewayConnection(),
   };
 }
 
@@ -134,4 +160,32 @@ export async function applyMergedSnapshot({
   }
 
   await importBackup({ schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data: merged });
+
+  // The gateway connection is NOT written by `importBackup`: the backup
+  // importer restores a device's own file, and this key is the one thing a
+  // backup never carries. It is applied here instead, under the rule in
+  // `gateway-connection-apply.ts`.
+  await applyGatewayConnection({ synced: merged.gatewayConnection ?? null });
+}
+
+/**
+ * Lands a synced gateway connection on this device — the impure half of
+ * `gateway-connection-apply.ts` (M187/02).
+ *
+ * Two writes, in this order and for two different reasons. The connection row
+ * is the ACCOUNT's record and is written whenever the merge produced a newer
+ * one, so the next cycle re-uploads what this device now believes. The AI
+ * settings row is this DEVICE's provider configuration, and is touched only
+ * where the rule allows — never over a key its owner pasted, connected by
+ * OAuth, or took from this instance's preset.
+ */
+async function applyGatewayConnection({ synced }: { synced: LocalGatewayConnection | null }): Promise<void> {
+  const local = await getLocalGatewayConnection();
+  const winner = pickNewerGatewayConnection({ synced, local });
+  if (winner === null) return;
+  if (winner !== local) await putLocalGatewayConnection(winner);
+
+  const decision = decideGatewayConnectionApply({ connection: winner, settings: await getLocalAiSettings() });
+  if (decision.action === 'write') await putLocalAiSettings(decision.settings);
+  if (decision.action === 'clear') await deleteLocalAiSettings();
 }

@@ -66,3 +66,19 @@ shows the recovery code once, behind an explicit acknowledgment.
 
 Plate photos are never part of a sync payload. They stay on the device that took them, and
 they are excluded from JSON exports too.
+
+## The gateway follows the account
+
+If you joined a gateway someone else runs (a household or organization box, from an invite
+link), that connection is part of your account rather than part of one browser. Sign in on a
+second device and the gateway comes with it: you are not asked to set up an AI provider again.
+
+It rides in the same sealed compartment as your key material, so a clinician you share your
+diary with never learns it, and it is the one thing in your account that a **backup export
+does not contain** — an exported file must never carry a provider credential. Keep the invite
+link, or ask for a new one, if you need to set up a device that cannot sign in.
+
+A key you set up yourself is never touched by this. A pasted key, an OpenRouter connection and
+an instance's own preset stay on the device you configured them on, and a gateway arriving
+from another device will not overwrite them. Disconnecting on one device disconnects the
+gateway on the others — that is the same connection, ending.

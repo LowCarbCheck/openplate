@@ -19,7 +19,7 @@
 import { z } from 'zod';
 
 import { DEFAULT_INSTANCE_INFERENCE_MODEL } from '#app/config/public-config';
-import type { LocalAiSettings } from '#app/lib/local-store';
+import type { ConnectedGatewayConnection, LocalAiSettings } from '#app/lib/local-store';
 
 /**
  * The gateway's API namespace, and the suffix a connected settings row's
@@ -212,13 +212,65 @@ export function buildGatewayAiSettings({
   redeemed: GatewayRedeemResponse;
   now: number;
 }): LocalAiSettings {
+  return aiSettingsFromGatewayConnection({ connection: buildGatewayConnection({ gatewayUrl, redeemed, now }) });
+}
+
+/**
+ * The ACCOUNT's record of the same redemption (M187/02) — what travels in the
+ * owner-private compartment while the settings row above stays on this device.
+ *
+ * Two records of one fact, and the split is deliberate: the settings row is
+ * what the vision client reads and it is device-local by the BYOK rules, while
+ * the connection is what a SECOND device of the same account needs in order to
+ * build an identical row for itself. Both are minted here, from the same
+ * response, so the two cannot describe different gateways.
+ */
+export function buildGatewayConnection({
+  gatewayUrl,
+  redeemed,
+  now,
+}: {
+  gatewayUrl: string;
+  redeemed: GatewayRedeemResponse;
+  now: number;
+}): ConnectedGatewayConnection {
+  return {
+    status: 'connected',
+    gatewayUrl,
+    memberToken: redeemed.memberToken,
+    model: redeemed.gateway.model,
+    auditEnabled: redeemed.gateway.auditEnabled,
+    connectedAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * THE one construction of a gateway settings row, which both the redeeming
+ * device and every device the connection syncs to go through.
+ *
+ * `buildGatewayAiSettings` above is this function with a redeem response in
+ * front of it. Written that way rather than as two builders because the whole
+ * point of the synced connection is that a second device ends up with the row
+ * the first device wrote — a second construction site is how the model, the
+ * base-URL suffix or the audit flag come to differ by device.
+ *
+ * `updatedAt` is taken from the connection rather than a clock, so applying the
+ * same connection twice produces the same row and the sync path can tell "this
+ * is already what we have" from "this changed".
+ */
+export function aiSettingsFromGatewayConnection({
+  connection,
+}: {
+  connection: ConnectedGatewayConnection;
+}): LocalAiSettings {
   return {
     provider: 'openai-compatible',
-    model: redeemed.gateway.model ?? DEFAULT_INSTANCE_INFERENCE_MODEL,
-    baseUrl: `${gatewayUrl}${GATEWAY_API_PREFIX}`,
-    apiKey: redeemed.memberToken,
+    model: connection.model ?? DEFAULT_INSTANCE_INFERENCE_MODEL,
+    baseUrl: `${connection.gatewayUrl}${GATEWAY_API_PREFIX}`,
+    apiKey: connection.memberToken,
     connectedVia: 'invite',
-    auditEnabled: redeemed.gateway.auditEnabled,
-    updatedAt: now,
+    auditEnabled: connection.auditEnabled,
+    updatedAt: connection.updatedAt,
   };
 }

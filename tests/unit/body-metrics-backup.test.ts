@@ -46,11 +46,12 @@ describe('schema version', () => {
   // PERSONAL FOOD at v10, saved meals at v11, the carb-basis flag (spec 13)
   // at v12, clinician sharing at v13, the snapshot partition (M160/07) at
   // v14, research contributions (M161/03) at v15, and the submitted research
-  // window (M163/01) at v16. What it guards is that a bump is never silent —
+  // window (M163/01) at v16, and the gateway connection (M187/02) at v17.
+  // What it guards is that a bump is never silent —
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 16 — bumped past the v8 body-metrics bump by everything through the M163/01 submitted window', () => {
-    assert.equal(SCHEMA_VERSION, 16);
+  it('is 17 — bumped past the v8 body-metrics bump by everything through the M187/02 gateway connection', () => {
+    assert.equal(SCHEMA_VERSION, 17);
   });
 });
 

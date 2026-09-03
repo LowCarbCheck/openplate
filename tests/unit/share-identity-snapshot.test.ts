@@ -61,8 +61,8 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
 }
 
 describe('the local schema version', () => {
-  it('is 16 — the submitted-research-window bump (M163/01)', () => {
-    assert.equal(SCHEMA_VERSION, 16);
+  it('is 17 — the gateway-connection bump (M187/02)', () => {
+    assert.equal(SCHEMA_VERSION, 17);
   });
 });
 
@@ -74,7 +74,7 @@ describe('a v12 backup envelope', () => {
       data: { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
     });
 
-    assert.equal(migrated.schemaVersion, 16);
+    assert.equal(migrated.schemaVersion, 17);
     assert.equal(migrated.data.shareIdentity, null);
     assert.deepEqual(migrated.data.sharePeers, []);
     // And the v15 keys default the same way, which is the whole of the v14 ->

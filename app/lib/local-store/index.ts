@@ -109,6 +109,11 @@ export {
   listLocalStudyEnrolments,
   getLocalStudyEnrolment,
   deleteLocalStudyEnrolment,
+  // The gateway this account joined (M187/02). OWNER-PRIVATE in the synced
+  // snapshot and absent from every backup: the member token is a provider
+  // credential issued to the person, not to this browser profile.
+  putLocalGatewayConnection,
+  getLocalGatewayConnection,
 } from './primary-store';
 
 // Pure saved-meal builders (no store) — the "save as meal"/"re-log a saved
@@ -214,6 +219,8 @@ export type {
   LocalResearchIdentity,
   LocalStudyEnrolment,
   LocalSubmittedWindow,
+  LocalGatewayConnection,
+  ConnectedGatewayConnection,
 } from './schema';
 
 // BYOK AI settings + local-only usage log (M117/02) — device-only, never

@@ -272,6 +272,30 @@
  * window, and putting one there would tell the SERVER the date range of a
  * person's diary contribution — a new §9.2 disclosure for a convenience the
  * client can serve locally.
+ *
+ * NOTE (M187/02, gateway connection): `SCHEMA_VERSION` v16 -> v17 adds ONE
+ * WHOLE NEW ENTITY — `LocalGatewayConnection`, plus its table — and one new
+ * key on `LocalStoreSnapshot` itself, under the `researchIdentity` rules
+ * rather than the optional-field ones. A v16 envelope has no key, so
+ * `backup.ts`'s `.default(null)` in `ownerPrivateRegionSchema` IS the complete
+ * forward migration ("this device joined no gateway, because a gateway could
+ * not travel"). No `migrateSnapshotToV17` step.
+ *
+ * THE KEY IS OWNER-PRIVATE, and it is the first credential in the compartment
+ * that is not this app's own key material: a gateway member token is issued to
+ * the PERSON by whoever runs the gateway, so it belongs to the account rather
+ * than to one browser profile (`.adr/0009`, amended 2026-09-03). Before this,
+ * a hosted account meant "one invite per device": a second device signed in,
+ * found no AI settings row, and asked its owner to connect to OpenRouter.
+ *
+ * IT IS THE ONE SNAPSHOT KEY A BACKUP DOES NOT CARRY, and the reason is
+ * `ai-settings.ts`'s header: an export of a person's tracker must never carry
+ * a provider credential. So `backup.ts`'s `readSnapshot` omits it by name (the
+ * allowlist is one line per key), which is why the field is `?:` — a snapshot
+ * read from an export legitimately lacks it. `app/lib/sync/local-store-bridge.ts`'s
+ * `readLocalSnapshot` is the one producer that attaches it, and
+ * `tests/unit/gateway-connection-backup-exclusion.test.ts` is what proves an
+ * export carries no `memberToken`.
  */
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
@@ -284,7 +308,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 16;
+export const SCHEMA_VERSION = 17;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -330,6 +354,10 @@ export const RESEARCH_IDENTITY_TABLE = 'researchIdentity';
 export const RESEARCH_IDENTITY_ROW_ID = 'me';
 /** Study enrolments (M161/03) — one row per study this account contributes to, keyed by that study's account id as a string. */
 export const STUDY_ENROLMENTS_TABLE = 'studyEnrolments';
+/** Gateway connection table (M187/02) — a SINGLETON, keyed by {@link GATEWAY_CONNECTION_ROW_ID}, exactly like the research identity row. */
+export const GATEWAY_CONNECTION_TABLE = 'gatewayConnection';
+/** The one row id the gateway connection ever occupies — a device holds one AI configuration, so it can follow at most one gateway. */
+export const GATEWAY_CONNECTION_ROW_ID = 'me';
 
 /** The single JSON cell every primary-store row uses to hold its serialized entity. */
 export const PRIMARY_ENTITY_CELL = 'entity';
@@ -933,6 +961,53 @@ export interface LocalStudyEnrolment {
 }
 
 /**
+ * THE GATEWAY THIS ACCOUNT JOINED (M187/02) — a stamped, two-state singleton.
+ *
+ * A gateway member token is handed to a PERSON by whoever runs the gateway, so
+ * it follows the account rather than the browser profile that redeemed the
+ * link. It rides in the owner-private compartment: synced to this account's own
+ * devices, never disclosed to a clinician grantee, never written into a backup
+ * (see the `NOTE (M187/02, gateway connection)` block at the top of this file).
+ *
+ * ONLY an invite-provisioned connection is ever stored here. A pasted key
+ * (`manual`), an OpenRouter OAuth key and this instance's own preset stay
+ * exactly as device-local as `ai-settings.ts`'s header says they must.
+ *
+ * ── Why `disconnected` is a MEMBER rather than an absent row ─────────────
+ *
+ * Disconnecting deletes the whole AI settings row (`deleteLocalAiSettings`),
+ * so "this device disconnected" and "this device never joined" would read
+ * identically — and last-writer-wins would then have no instant to compare.
+ * The tombstone is therefore written and STAMPED, and it is what lets a
+ * disconnect on the phone clear the laptop instead of the laptop's older
+ * connection quietly reinstating itself on the next cycle.
+ */
+export type LocalGatewayConnection =
+  | {
+      status: 'connected';
+      /** The gateway's origin as it was typed into the join link, no trailing API prefix — `buildGatewayAiSettings` appends that. */
+      gatewayUrl: string;
+      /** The bearer token the gateway issued to this person. A credential: never exported, never logged, never sent to the openplate server. */
+      memberToken: string;
+      /** The model the gateway named at join time, or `null` when it named none and the instance default applies. */
+      model: string | null;
+      /** What the gateway declared about administrator review at join time — the standing disclosure the settings notice renders offline. */
+      auditEnabled: boolean;
+      /** Epoch-ms the invite was redeemed. Display and provenance; the merge never reads it. */
+      connectedAt: number;
+      /** Epoch-ms this record was written. THE merge input: last writer by this value wins. */
+      updatedAt: number;
+    }
+  | {
+      status: 'disconnected';
+      /** Epoch-ms the disconnect was performed — the only field a tombstone needs, and the reason it is a record rather than an absence. */
+      updatedAt: number;
+    };
+
+/** The connected member of {@link LocalGatewayConnection} — what a builder returns and what a settings row can be made from. */
+export type ConnectedGatewayConnection = Extract<LocalGatewayConnection, { status: 'connected' }>;
+
+/**
  * A full, lossless snapshot of the primary store's health data — the payload a
  * backup envelope carries (`backup.ts`). Device-only photos are deliberately
  * excluded (they never enter export, sync, or the server — see `photos.ts`).
@@ -999,4 +1074,19 @@ export interface LocalStoreSnapshot {
    * do not suggest: WHICH STUDIES a person joined is health data.
    */
   studyEnrolments: LocalStudyEnrolment[];
+  /**
+   * Added v17 (the gateway follows the account, M187/02) — the gateway this
+   * account joined by invite, the stamped tombstone left by a disconnect, or
+   * `null`/absent on a device that has never joined one (the normal state).
+   *
+   * OPTIONAL, alone among the keys here, and the `?:` is load-bearing: this is
+   * the one key a BACKUP does not carry, so `backup.ts`'s `readSnapshot`
+   * legitimately produces a snapshot without it. `local-store-bridge.ts`'s
+   * `readLocalSnapshot` — the sync read path, and the only producer that
+   * matters for the wire — always attaches it.
+   *
+   * OWNER-PRIVATE. The member token is a provider credential, and a clinician
+   * grant must never mean "spend the gateway I was given".
+   */
+  gatewayConnection?: LocalGatewayConnection | null;
 }

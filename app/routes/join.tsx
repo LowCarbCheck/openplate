@@ -78,6 +78,7 @@ import {
   GATEWAY_INFO_PATH,
   GATEWAY_REDEEM_PATH,
   buildGatewayAiSettings,
+  buildGatewayConnection,
   gatewayInfoSchema,
   gatewayRedeemResponseSchema,
   isAuditDisclosureRequired,
@@ -94,7 +95,8 @@ import {
   type JoinLink,
 } from '#app/lib/join-link';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
-import { getLocalAiSettings, putLocalAiSettings } from '#app/lib/local-store';
+import { getLocalAiSettings, putLocalAiSettings, putLocalGatewayConnection } from '#app/lib/local-store';
+import { syncNow } from '#app/lib/sync/sync-actions';
 import { reportError } from '#app/lib/report-error';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -518,10 +520,17 @@ export default function Join() {
     }
 
     try {
-      // The device holds one AI configuration, so this write both creates the
-      // gateway connection and makes it the active provider; re-joining the
-      // SAME gateway lands on the same row and simply refreshes its token.
-      await putLocalAiSettings(buildGatewayAiSettings({ gatewayUrl: invite.gatewayUrl, redeemed, now: Date.now() }));
+      // TWO writes of one fact, and both are needed (M187/02). The settings row
+      // is this DEVICE's provider configuration: the device holds one AI
+      // configuration, so this write both creates the gateway connection and
+      // makes it the active provider, and re-joining the SAME gateway lands on
+      // the same row and simply refreshes its token. The gatewayConnection
+      // singleton is the ACCOUNT's record of the same redemption, and it is
+      // what rides in the owner-private compartment so a second device of this
+      // account is not asked to connect to a provider all over again.
+      const now = Date.now();
+      await putLocalAiSettings(buildGatewayAiSettings({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
+      await putLocalGatewayConnection(buildGatewayConnection({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
     } catch (error) {
       reportError(error, { boundary: 'join-gateway-save' });
       setPhase({ ...phase, status: 'confirm' });
@@ -536,6 +545,13 @@ export default function Join() {
     // The gateway half is spent: empty its slot so a later visit to `/join`
     // does not offer a burnt invite. The sync half is untouched by this.
     consumeGatewayInvite();
+    // Publish the connection now rather than waiting for the next debounce or
+    // page load: nothing else on this route schedules a cycle, and the whole
+    // point of the singleton above is that the person's OTHER device stops
+    // asking them to connect. A no-op when sync is not configured or the vault
+    // is locked, and deliberately not awaited — a slow or offline sync server
+    // must not hold up the success navigation.
+    void syncNow().catch(() => undefined);
     toast.success(t('connectGateway.joined', { name: redeemed.gateway.name }));
     void navigate('/settings/ai');
   }

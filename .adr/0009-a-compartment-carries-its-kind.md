@@ -274,6 +274,52 @@ when the pull carried no compartment. A sentence asserting that a state cannot
 persist is a fact about today's entry points, not a property, and it must be
 written as one.
 
+## Amendment — 2026-09-03 (M187 spec 02): the compartment carries a credential this app did not mint
+
+The owner-private compartment now also carries `gatewayConnection` — the address
+and MEMBER TOKEN of a gateway this account joined from an invite link.
+
+This is the first thing in the compartment that is not key material this app
+generated. The reason it belongs here is the same reason the share private key
+does, one recipient class over: a gateway member token is issued to the PERSON
+by whoever runs the gateway, not to the browser profile that redeemed the link.
+Keeping it in the device-local AI store turned a hosted account into "one invite
+per device" — a second device signed in, found no settings row, and asked its
+owner to connect to OpenRouter, which is the opposite of the promise that one
+join link is followed by an account that carries you.
+
+Two properties are stated plainly, because they are what a reader will want to
+check:
+
+**It is never disclosed to a share.** It sits in the owner-private region, so a
+clinician grantee holding a full DEK reaches it only as ciphertext. A grant may
+mean "read my diary"; it may never mean "spend the gateway I was given".
+
+**It is never exported.** This is the one snapshot key a backup does not carry,
+and it is the first asymmetry between the local shape and the backup file. The
+rule it obeys is `ai-settings.ts`'s, not this ADR's: an export of a person's
+tracker must never carry a provider credential, and that outranks the "a backup
+is the owner's own copy" argument that keeps the share private key in the file.
+Enforced twice — `backup.ts`'s `readSnapshot` allowlist omits the key, and the
+backup payload schema has no such field, so an import strips one that was
+injected by hand. `tests/unit/gateway-connection-backup-exclusion.test.ts`
+proves both halves over one store.
+
+Only an invite-provisioned connection travels. A pasted key, an OpenRouter OAuth
+key and this instance's own preset stay device-local, and the apply rule
+(`app/lib/sync/gateway-connection-apply.ts`) refuses to overwrite or clear any
+of them: a person who set up their own key on the laptop does not lose it
+because the phone joined a household gateway.
+
+A disconnect writes a STAMPED TOMBSTONE rather than deleting the row.
+`deleteLocalAiSettings` wipes the whole settings row, so "disconnected" and
+"never joined" would otherwise be the same absence, and last-writer-wins would
+have no instant to compare — the connection would come straight back from
+whichever device still held it.
+
+No protocol change. `PROTOCOL.md` §3.2 already declares everything inside
+`snapshot` opaque, which is the same standing the compartment itself has.
+
 ## References
 
 - [ADR-0008](0008-the-study-console-lives-in-openplate.md) — why a study account and a diary account meet in the same browser profile at all.
