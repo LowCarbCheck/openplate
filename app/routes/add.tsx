@@ -1,5 +1,5 @@
 import type { Route } from './+types/add';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form, redirect, useNavigate, useNavigation } from 'react-router';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
@@ -70,6 +70,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
 import { SearchResultRow } from '#app/components/add/search-result-row';
+import { SpeechInputButton, useSpeechInputAvailable } from '#app/components/add/speech-input-button';
 import { ManageCustomFoodsSheet } from '#app/components/add/manage-custom-foods';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { SubmitButton } from '#app/components/submit-button';
@@ -571,6 +572,8 @@ export interface AddData {
   /** True only when the curated lookup was rate-limited — never "no matches" (see `describeSearchPause`). */
   throttled: boolean;
   retryAfterMs: number | null;
+  /** `?speak=1` — the launcher's "Speak" entry. Arms and focuses the microphone button; never starts listening (see `SpeechInputButton`). */
+  speak: boolean;
 }
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise<AddData> {
@@ -637,6 +640,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     logDateLabel,
     throttled,
     retryAfterMs,
+    speak: url.searchParams.get('speak') === '1',
   };
 }
 clientLoader.hydrate = true as const;
@@ -1579,6 +1583,38 @@ export function searchEmptyMessage({
   return t('add.search.empty.firstTime');
 }
 
+/**
+ * What the polite live region says once a SPOKEN search has settled.
+ *
+ * Speech is the one path where the person may not be looking at the screen, so
+ * the count is spoken rather than merely rendered — and the transcript is
+ * repeated back with it, because "no results" is useless without knowing which
+ * word the recogniser actually heard.
+ *
+ * Three keys rather than an i18next `count` plural: the German and English
+ * forms here differ only in the one/many split, and three flat keys keep the
+ * catalog readable and this function trivially testable.
+ *
+ * @param input.count - how many candidates the settled search produced.
+ * @param input.transcript - what the recogniser heard, as it was put in the field.
+ */
+export function speechResultsMessage({
+  count,
+  transcript,
+  t,
+}: {
+  count: number;
+  transcript: string;
+  t: Translate;
+}): string {
+  if (count === 0) return t('add.speak.results.none', { transcript });
+  if (count === 1) return t('add.speak.results.one', { transcript });
+  // `n`, not `count`: an i18next `count` option switches the lookup into
+  // plural-suffix resolution, and these three keys carry the plural split
+  // themselves.
+  return t('add.speak.results.many', { n: count, transcript });
+}
+
 /** Splits the federated candidate list into its three source buckets, preserving each bucket's existing (already relevance-ordered) order — one labeled section per bucket instead of one long undifferentiated list. */
 export function groupCandidatesBySource(candidates: readonly AddSearchCandidate[]) {
   return {
@@ -1632,6 +1668,7 @@ function SearchStep({
   hasAnyRecent,
   throttled,
   retryAfterMs,
+  speak,
   manualResult,
   onSelect,
 }: {
@@ -1643,6 +1680,7 @@ function SearchStep({
   hasAnyRecent: boolean;
   throttled: boolean;
   retryAfterMs: number | null;
+  speak: boolean;
   manualResult: SubmissionResult<string[]> | undefined;
   onSelect: (candidate: AddSearchCandidate) => void;
 }) {
@@ -1677,12 +1715,64 @@ function SearchStep({
     return () => clearTimeout(timer);
   }, [searchValue, query, returnTo, logContext.date, navigate, isOnline]);
 
+  // Speech is a way to TYPE into the field below — never a way to log. The
+  // button only exists once hydration confirms this browser has a recogniser
+  // (`null` while that is still unknown), so a Firefox visitor and the server
+  // render see the same plain field.
+  const speechAvailable = useSpeechInputAvailable();
+  const [speakArmed, setSpeakArmed] = useState(speak);
+  const isSpeakArmed = speakArmed && speechAvailable === true;
+  const [speechNotice, setSpeechNotice] = useState('');
+  const [spokenQuery, setSpokenQuery] = useState<string | null>(null);
+
   // The search field is the whole point of this step, and reaching it is the
   // navigation the person just made — so focus moves there once, on mount,
-  // rather than being reclaimed on every keystroke-driven re-render.
+  // rather than being reclaimed on every keystroke-driven re-render. The one
+  // exception is `/add?speak=1`: there the microphone button claims focus
+  // instead (it focuses itself on mount), so this waits for the availability
+  // answer before deciding and then never runs again.
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const hasClaimedInitialFocus = useRef(false);
   useEffect(() => {
+    if (hasClaimedInitialFocus.current) return;
+    if (speechAvailable === null) return;
+    hasClaimedInitialFocus.current = true;
+    if (speak && speechAvailable) return;
     searchInputRef.current?.focus();
+  }, [speak, speechAvailable]);
+
+  // A transcript lands as an ordinary edit of the field, and the caret goes to
+  // its end so the person can correct a misheard ending by typing. Focus and
+  // caret move in an effect rather than in the callback because the controlled
+  // input only carries the new text after this render.
+  const isCaretMovePending = useRef(false);
+  useEffect(() => {
+    if (!isCaretMovePending.current) return;
+    isCaretMovePending.current = false;
+    const field = searchInputRef.current;
+    if (field === null) return;
+    field.focus();
+    field.setSelectionRange(field.value.length, field.value.length);
+  }, [searchValue]);
+
+  // The result count is announced only for a SPOKEN search, and only once the
+  // debounced navigation has actually produced results for that transcript —
+  // announcing on every keystroke would make the live region unusable.
+  useEffect(() => {
+    if (spokenQuery === null) return;
+    if (query !== spokenQuery.trim()) return;
+    setSpeechNotice(speechResultsMessage({ count: candidates.length, transcript: spokenQuery, t }));
+    setSpokenQuery(null);
+  }, [spokenQuery, query, candidates.length, t]);
+
+  const applyTranscript = useCallback((transcript: string): void => {
+    setSearchValue(transcript);
+    setSpokenQuery(transcript);
+    isCaretMovePending.current = true;
+  }, []);
+
+  const disarmSpeak = useCallback((): void => {
+    setSpeakArmed(false);
   }, []);
 
   const grouped = groupCandidatesBySource(candidates);
@@ -1694,18 +1784,36 @@ function SearchStep({
 
       <div className="grid gap-2">
         <Label htmlFor="food-search">{t('add.search.label')}</Label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="food-search"
-            ref={searchInputRef}
-            type="search"
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-            placeholder={t('add.search.placeholder')}
-            className="h-11 pl-9"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="food-search"
+              ref={searchInputRef}
+              type="search"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder={t('add.search.placeholder')}
+              className="h-11 pl-9"
+            />
+          </div>
+          {speechAvailable === true && (
+            <SpeechInputButton
+              armed={speakArmed}
+              onTranscript={applyTranscript}
+              onNotice={setSpeechNotice}
+              onListenStart={disarmSpeak}
+            />
+          )}
         </div>
+        {isSpeakArmed && <p className="text-xs text-muted-foreground">{t('add.speak.hint')}</p>}
+        {/* One polite region for everything speech says back: the settled
+            result count, and the three failure messages. `sr-only` because
+            each of those is already visible on screen — the transcript in the
+            field, the results below it — for anyone who is looking. */}
+        <output aria-live="polite" className="sr-only">
+          {speechNotice}
+        </output>
         {!isOnline && searchValue.trim() !== query && (
           <p className="text-xs text-muted-foreground">{t('add.search.offlinePending')}</p>
         )}
@@ -1782,8 +1890,19 @@ function candidateKey(candidate: AddSearchCandidate): string {
 }
 
 export default function AddFood({ loaderData, actionData }: Route.ComponentProps) {
-  const { query, returnTo, defaultMealType, candidates, customFoods, hasAnyRecent, logDate, logDateLabel, throttled, retryAfterMs } =
-    loaderData;
+  const {
+    query,
+    returnTo,
+    defaultMealType,
+    candidates,
+    customFoods,
+    hasAnyRecent,
+    logDate,
+    logDateLabel,
+    throttled,
+    retryAfterMs,
+    speak,
+  } = loaderData;
   const [selected, setSelected] = useState<AddSearchCandidate | null>(null);
   const logResult = actionData?.intent === 'log' ? actionData.submission : undefined;
   const manualResult = actionData?.intent === 'manual' ? actionData.submission : undefined;
@@ -1819,6 +1938,7 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
       hasAnyRecent={hasAnyRecent}
       throttled={throttled}
       retryAfterMs={retryAfterMs}
+      speak={speak}
       manualResult={manualResult}
       onSelect={setSelected}
     />

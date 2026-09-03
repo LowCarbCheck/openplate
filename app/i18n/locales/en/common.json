@@ -152,6 +152,27 @@
       },
       "throttled": "Search is taking a quick break. Try again {{when}}. Your recent and saved foods still work below."
     },
+    "speak": {
+      "start": "Search by voice",
+      "stop": "Stop listening",
+      "hint": "Tap to speak",
+      "consent": {
+        "title": "Use voice search",
+        "body": "Your browser sends your voice to Google or Apple to turn it into text. Your audio is not sent to openplate or your AI provider.",
+        "continue": "Continue",
+        "cancel": "Cancel"
+      },
+      "error": {
+        "permission": "Allow microphone access in your browser, then tap again.",
+        "noSpeech": "Nothing heard. Tap and speak again.",
+        "failed": "Voice search did not work. Type your food or try again."
+      },
+      "results": {
+        "none": "No foods found for {{transcript}}.",
+        "one": "Found one food for {{transcript}}.",
+        "many": "Found {{n}} foods for {{transcript}}."
+      }
+    },
     "title": "Add food"
   },
   "banners": {

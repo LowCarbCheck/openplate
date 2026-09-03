@@ -152,6 +152,27 @@
       },
       "throttled": "Die Suche macht eine kurze Pause. Versuche es {{when}} erneut. Deine zuletzt verwendeten und gespeicherten Lebensmittel funktionieren unten weiterhin."
     },
+    "speak": {
+      "start": "Mit Sprache suchen",
+      "stop": "Zuhören beenden",
+      "hint": "Tippen und sprechen",
+      "consent": {
+        "title": "Sprachsuche nutzen",
+        "body": "Dein Browser sendet deine Stimme an Google oder Apple, um sie in Text umzuwandeln. Deine Audiodaten werden nicht an openplate oder deinen KI-Anbieter gesendet.",
+        "continue": "Weiter",
+        "cancel": "Abbrechen"
+      },
+      "error": {
+        "permission": "Erlaube den Mikrofonzugriff in deinem Browser und tippe dann noch einmal.",
+        "noSpeech": "Nichts gehört. Tippe und sprich noch einmal.",
+        "failed": "Sprachsuche hat nicht geklappt. Tippe dein Essen ein oder versuche es noch einmal."
+      },
+      "results": {
+        "none": "Keine Lebensmittel für {{transcript}} gefunden.",
+        "one": "Ein Lebensmittel für {{transcript}} gefunden.",
+        "many": "{{n}} Lebensmittel für {{transcript}} gefunden."
+      }
+    },
     "title": "Essen eintragen"
   },
   "banners": {
