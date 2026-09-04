@@ -2,6 +2,20 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.9.2 - 2026-09-04
+
+- A failed save on the device no longer consumes the invite link. If
+  saving the AI connection fails after the link is accepted, a retry card
+  appears. Retrying saves the connection without using the link a second
+  time, and reloading picks up where it left off.
+- The AI connection now reaches the account even if the device saved it
+  before the account did. The next sync carries it over.
+- On a managed instance, a device without an AI connection no longer offers
+  "Connect with OpenRouter". The scan card now says the invitation did not
+  include photo recognition, and offers adding food without a photo.
+- The sign-in step after an invite link now says the link belongs to an
+  existing account, and that the rest is set up after signing in.
+
 ## 0.9.1 - 2026-09-03
 
 - The camera opens on one tap from the tab bar. A chevron beside it opens a
