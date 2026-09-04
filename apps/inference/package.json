@@ -1,6 +1,6 @@
 {
   "name": "openplate-inference",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "type": "module",
   "description": "Self-hostable, OpenAI-compatible plate-identification endpoint for openplate. Takes one plate photo, returns a PlateIdentification payload. Photos are processed in memory and never written to disk or logged.",
