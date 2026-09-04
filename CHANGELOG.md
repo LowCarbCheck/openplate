@@ -2,6 +2,17 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.9.3 - 2026-09-04
+
+- Invite links that create an account and connect the AI now run as one
+  flow. Before, the app left the account screen too early. It never showed
+  the recovery code, and the next screen asked you to sign in to the
+  account you just created. The app now shows the account card with the
+  sign-in name and recovery code. The AI connection follows once you
+  confirm you saved the code.
+- If the AI connection cannot be reached while the link is used, the link
+  is kept and offered again. Before, a network error spent the link.
+
 ## 0.9.2 - 2026-09-04
 
 - A failed save on the device no longer consumes the invite link. If
