@@ -11,6 +11,7 @@ import { CONFIG } from '#app/config';
 import { inferenceConnectSrcOrigin, syncConnectSrcOrigin } from '#app/config/public-config';
 import { buildContentSecurityPolicy } from '#app/config/content-security-policy';
 import { analyticsCspOrigin } from '#app/config/analytics';
+import { createRobotsTagMiddleware } from '#app/lib/robots-tag.server';
 import { createWwwRedirectMiddleware } from '#app/lib/www-redirect.server';
 import { PROVIDER_REGISTRY } from '#app/services/vision/registry';
 
@@ -148,6 +149,17 @@ const remixHandler = createRequestHandler({
 app.set('trust proxy', CONFIG.server.trustProxy);
 app.use(compression());
 app.disable('x-powered-by');
+
+// Keep the app out of search results, before anything below can serve a body.
+// It sits ABOVE the two rules that follow on purpose. Unlike the CSP it is not
+// gated on production, because a self-hosted instance is a private tool on
+// somebody's own domain and must not be indexed either, and unlike the
+// canonical-host redirect it exempts no path, because a header changes no
+// status code and so cannot break a health probe. Mounted here it also lands
+// on that redirect's 301, on the static files and on every error response.
+// See `#app/lib/robots-tag` for why the project site is the page that ranks.
+app.use(createRobotsTagMiddleware());
+
 // See `createContentSecurityPolicyMiddleware` above for why this is prod-only.
 if (CONFIG.app.isProduction) {
   app.use(createContentSecurityPolicyMiddleware());

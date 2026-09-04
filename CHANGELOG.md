@@ -2,6 +2,15 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.10.2 - 2026-09-05
+
+- Search engines no longer index the app. The project site at openplate.de
+  describes openplate instead, and it is the page a search should lead to. An
+  instance you run yourself is your own tool, so it stays out of results too.
+- The sign-in screen no longer claims you are asked for your password again
+  after every reload. You have stayed signed in until you sign out since
+  0.10.0; only the text still said otherwise.
+
 ## 0.10.1 - 2026-09-04
 
 - You stay signed in when you open the app again. After following an

@@ -9,10 +9,13 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 // Title via the pure `meta-title` seam, with the language read off the ROOT
 // loader through `matches` — never the i18next singleton (see `meta-title.ts`
 // for why that would leak one visitor's language into another's <title>).
-export const meta: MetaFunction = ({ matches }) => [
-  { title: metaTitle(metaLanguage(matches), 'meta.imprint') },
-  { name: 'robots', content: 'noindex, follow' },
-];
+//
+// No `robots` meta tag here. Since 0.10.2 the server sends
+// `X-Robots-Tag: noindex, nofollow` on every response, so this page carried a
+// second, WEAKER instruction saying `noindex, follow`. Two rules that disagree
+// on following links is a contradiction a crawler resolves for us, and the one
+// that would win is not the one this line asked for. See `#app/lib/robots-tag`.
+export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.imprint') }];
 
 /**
  * The German-law provider identification (Impressum) for the hosted instance.

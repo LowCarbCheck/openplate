@@ -2161,7 +2161,7 @@
       "failed": "That did not work. Check the sign-in name and password and try again.",
       "finishSetup": "This account was created but its keys were never finished. Let us do that now. It ends with a recovery code that lets you sign in on another device, though this account can only be signed in to with its password.",
       "forgot": "I have forgotten my password",
-      "intro": "Enter your password to sign in on this device. We ask again after every reload, the key is never stored.",
+      "intro": "Enter your password once to sign in on this device. You stay signed in until you sign out.",
       "submit": "Sign in",
       "working": "Signing in…",
       "passphraseRequired": "Enter your password.",
