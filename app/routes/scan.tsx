@@ -1722,23 +1722,33 @@ function useKeylessSharedPhotoPreview(): string | null {
 }
 
 /**
- * The host a photo would reach on an instance that runs AI of its own, or
- * `null` on one that runs none.
+ * Which of the three connect cards this instance shows a user who has no AI
+ * connection yet.
  *
- * Naming the recipient is the whole point of this line: a person deciding
- * whether to press the shutter is deciding who sees the photo. The gateway
- * wins over a preset when both are configured, because on a managed instance
- * the gateway is where the photo actually goes.
+ * - `self-hosted`: nobody but the provider the user picks themselves, so the
+ *   BYOK buttons are the whole answer.
+ * - `instance-ai`: this instance runs an inference endpoint of its own (M138
+ *   spec 06), and the recipient is NAMED — a person deciding whether to press
+ *   the shutter is deciding who sees the photo.
+ * - `managed-missing`: a managed instance (M187 spec 03), where AI arrives
+ *   with an invite link and never from a button on this card. The gateway
+ *   therefore wins over a preset: a user here brings no key of their own.
  */
-function instanceAiHost({
+export type ConnectCardVariant =
+  | { kind: 'self-hosted' }
+  | { kind: 'instance-ai'; host: string }
+  | { kind: 'managed-missing' };
+
+export function resolveConnectCardVariant({
   gatewayUrl,
   presetBaseUrl,
 }: {
   gatewayUrl: string | null;
   presetBaseUrl: string | null;
-}): string | null {
-  const address = gatewayUrl ?? presetBaseUrl;
-  return address === null ? null : new URL(address).host;
+}): ConnectCardVariant {
+  if (gatewayUrl !== null) return { kind: 'managed-missing' };
+  if (presetBaseUrl === null) return { kind: 'self-hosted' };
+  return { kind: 'instance-ai', host: new URL(presetBaseUrl).host };
 }
 
 /**
@@ -1752,21 +1762,24 @@ function instanceAiHost({
  * photo-free path to logging. When a photo was shared in from the OS share sheet
  * before an AI provider was connected, says so honestly instead of silently
  * dropping it (see `useKeylessSharedPhotoPreview`).
+ *
+ * On a MANAGED instance this card is a dead end by design, and says so: AI
+ * comes from the gateway the operator runs and is attached by an invite link,
+ * so there is no button here that can fix a missing connection. Exported for
+ * `scan-connect-card.test.ts`, which renders both shapes.
  */
-function ConnectCard({ logDate }: { logDate: string | null }) {
+export function ConnectCard({ logDate }: { logDate: string | null }) {
   const { t } = useTranslation();
   const revalidator = useRevalidator();
   const addHref = logDate ? `/add?date=${logDate}` : '/add';
   const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
-  // `null` unless this instance runs AI of its own — in which case the body
-  // copy below has to stop saying openplate doesn't, because on this instance
-  // it does. TWO ways an instance can: its own inference endpoint (M138 spec
-  // 06) or the gateway a managed instance hands out with its accounts (M187
-  // spec 03). The gateway comes first when both are set: on a managed instance
-  // it is where the photo actually goes.
+  // Which instance this is decides the whole card. An instance that runs AI of
+  // its own cannot say openplate runs none, because on this instance it does.
+  // TWO ways an instance can: its own inference endpoint (M138 spec 06) or the
+  // gateway a managed instance hands out with its accounts (M187 spec 03).
   const gatewayUrl = useGatewayUrl();
   const instancePreset = useInstanceInferencePreset();
-  const managedHost = instanceAiHost({ gatewayUrl, presetBaseUrl: instancePreset?.baseUrl ?? null });
+  const variant = resolveConnectCardVariant({ gatewayUrl, presetBaseUrl: instancePreset?.baseUrl ?? null });
   return (
     <Card>
       <CardHeader>
@@ -1776,22 +1789,35 @@ function ConnectCard({ logDate }: { logDate: string | null }) {
         <CardDescription>{t('scan.setup.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Two shapes, because the honest answer differs. On a self-hosted
+        {/* Three shapes, because the honest answer differs. On a self-hosted
             instance there is nobody but the provider the user chooses, so one
-            sentence covers it. On a managed instance the photo goes to an
-            endpoint this instance's operator runs, and the recipient is NAMED
-            rather than left as "an AI" — a person deciding whether to press
-            the shutter is deciding who sees the photo.
+            sentence covers it. On an instance with an AI endpoint of its own
+            the photo goes to an endpoint this instance's operator runs, and
+            the recipient is NAMED rather than left as "an AI" — a person
+            deciding whether to press the shutter is deciding who sees the
+            photo. On a managed instance this card is a DEAD END by design: the
+            connection arrives with an invite link, never from a button here,
+            so the card explains the gap and points at the person who invited
+            them. The recipient line is dropped in that case, because no photo
+            goes anywhere yet.
             The audit line, when a gateway declared one, is rendered by
             `AuditReviewNotice` on the connected screen — it describes a
             connection that does not exist yet on this card. */}
-        {managedHost === null ?
+        {variant.kind === 'self-hosted' && (
           <p className="text-sm text-muted-foreground">{t('scan.setup.crisp.selfHosted')}</p>
-        : <div className="space-y-1 text-sm text-muted-foreground">
+        )}
+        {variant.kind === 'instance-ai' && (
+          <div className="space-y-1 text-sm text-muted-foreground">
             <p>{t('scan.setup.crisp.managedWhat')}</p>
-            <p>{t('scan.setup.crisp.managedWho', { host: managedHost })}</p>
+            <p>{t('scan.setup.crisp.managedWho', { host: variant.host })}</p>
           </div>
-        }
+        )}
+        {variant.kind === 'managed-missing' && (
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <p>{t('scan.setup.crisp.managedWhat')}</p>
+            <p>{t('scan.setup.managedMissing.body')}</p>
+          </div>
+        )}
         {/* One tap, no key to go and get — renders nothing at all when this
             instance provides no AI of its own. Above the BYOK buttons because
             on such an instance it is the whole answer; `revalidate` re-runs
@@ -1811,8 +1837,11 @@ function ConnectCard({ logDate }: { logDate: string | null }) {
         <div className="flex flex-col gap-3 sm:flex-row">
           {/* Primary CTA: openrouter is the only provider with a one-click OAuth
               connect (`vision/registry.ts`) — rendered off that capability,
-              never a hardcoded provider check here. */}
-          {supportsOauthPkce('openrouter') && (
+              never a hardcoded provider check here. Absent on a managed
+              instance: a user there never brings a key of their own, so
+              offering one reads as "your OpenRouter connection is missing"
+              when the real answer is a new invite link. */}
+          {variant.kind !== 'managed-missing' && supportsOauthPkce('openrouter') && (
             <OAuthConnectButton className="h-11 w-full sm:flex-1">
               {t('scan.setup.connectOpenRouter')}
             </OAuthConnectButton>
@@ -1821,15 +1850,19 @@ function ConnectCard({ logDate }: { logDate: string | null }) {
             <Link to={addHref}>{t('scan.capture.addWithoutPhoto')}</Link>
           </Button>
         </div>
-        <div className="text-center">
-          {/* `?next=scan` returns the user here once their key is connected. */}
-          <Link
-            to="/settings/ai?next=scan"
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            {t('scan.setup.manualSetup')}
-          </Link>
-        </div>
+        {variant.kind !== 'managed-missing' && (
+          <div className="text-center">
+            {/* `?next=scan` returns the user here once their key is connected.
+                Dropped on a managed instance for the same reason as the OAuth
+                button: there is no key for this user to set up by hand. */}
+            <Link
+              to="/settings/ai?next=scan"
+              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {t('scan.setup.manualSetup')}
+            </Link>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

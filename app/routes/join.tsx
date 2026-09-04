@@ -87,23 +87,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import {
   GATEWAY_API_PREFIX,
   GATEWAY_INFO_PATH,
-  GATEWAY_REDEEM_PATH,
-  buildGatewayAiSettings,
-  buildGatewayConnection,
   gatewayInfoSchema,
-  gatewayRedeemResponseSchema,
   isAuditDisclosureRequired,
   requiresOperatorCspAllowlisting,
   type GatewayInfo,
-  type GatewayRedeemResponse,
 } from '#app/lib/gateway-invite';
 import {
-  consumeGatewayInvite,
+  GATEWAY_REQUEST_TIMEOUT_MS,
+  redeemAndPark,
+  redeemInvite,
+  savePendingRedemption,
+  type CapturedInvite,
+  type RedemptionDeps,
+  type RedemptionOutcome,
+} from '#app/lib/gateway-redemption';
+import {
   hasGatewayHalf,
   isForeignSyncServer,
   isJoinLinkEmpty,
+  readPendingGatewayRedemption,
   takeJoinLinkFromUrl,
   type JoinLink,
+  type ParkedGatewayRedemption,
 } from '#app/lib/join-link';
 import { useManagedInstance, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { resolveGatewayStep } from '#app/lib/managed-join';
@@ -112,7 +117,6 @@ import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import { getLocalAiSettings, putLocalAiSettings, putLocalGatewayConnection } from '#app/lib/local-store';
 import { syncNow } from '#app/lib/sync/sync-actions';
-import { reportError } from '#app/lib/report-error';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -126,15 +130,6 @@ export const handle = {
   title: 'Join',
   titleKey: 'join.title',
 };
-
-/** How long the browser waits on a gateway before calling it unreachable. */
-const GATEWAY_REQUEST_TIMEOUT_MS = 10_000;
-
-/** The captured invite, held in a ref and never in state, URL, or storage. */
-interface CapturedInvite {
-  gatewayUrl: string;
-  inviteToken: string;
-}
 
 type Phase =
   /** Before the mount effect has read the fragment (and during SSR). */
@@ -152,7 +147,16 @@ type Phase =
   | { status: 'confirm'; info: GatewayInfo; gatewayOrigin: string; replaces: string | null }
   | { status: 'joining'; info: GatewayInfo; gatewayOrigin: string; replaces: string | null }
   /** Any non-200 from redeem. Deliberately one state: the gateway's reason is never shown. */
-  | { status: 'invite-invalid' };
+  | { status: 'invite-invalid' }
+  /**
+   * The invite is SPENT and one of the two local writes failed.
+   *
+   * Its own state, not a return to `confirm`, because the two offer different
+   * actions: the confirm button redeems, and redeeming again would post a token
+   * the gateway has already burnt. This one repeats the local writes off the
+   * parked answer and dials nothing — see `app/lib/gateway-redemption.ts`.
+   */
+  | { status: 'save-retry'; parked: ParkedGatewayRedemption; isSaving: boolean };
 
 /** Why an info probe produced no gateway — `blocked` means `fetch` threw, i.e. no response at all. */
 type InfoProbeResult = { ok: true; info: GatewayInfo } | { ok: false; kind: 'blocked' | 'network' };
@@ -174,34 +178,6 @@ async function fetchGatewayInfo(gatewayUrl: string): Promise<InfoProbeResult> {
   if (!response.ok) return { ok: false, kind: 'network' };
   const parsed = gatewayInfoSchema.safeParse(await response.json().catch(() => null));
   return parsed.success ? { ok: true, info: parsed.data } : { ok: false, kind: 'network' };
-}
-
-/**
- * `POST /v1/invites/redeem`, or `null` for any failure.
- *
- * ONE null for every failure on purpose. The gateway answers an invalid,
- * expired or already-used invite with a generic 400, and this client keeps it
- * generic: telling someone which of the three it was tells an attacker holding
- * a guessed token the same thing.
- */
-async function redeemInvite({ gatewayUrl, inviteToken }: CapturedInvite): Promise<GatewayRedeemResponse | null> {
-  let response: Response;
-  try {
-    response = await fetch(`${gatewayUrl}${GATEWAY_REDEEM_PATH}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ inviteToken }),
-      signal: AbortSignal.timeout(GATEWAY_REQUEST_TIMEOUT_MS),
-    });
-  } catch (error) {
-    // Never carries the token: `reportError` receives the fetch failure only,
-    // and this module logs nothing itself.
-    reportError(error, { boundary: 'join-gateway-redeem' });
-    return null;
-  }
-  if (!response.ok) return null;
-  const parsed = gatewayRedeemResponseSchema.safeParse(await response.json().catch(() => null));
-  return parsed.success ? parsed.data : null;
 }
 
 /**
@@ -486,6 +462,37 @@ function ConfirmCard({
   );
 }
 
+/**
+ * The invite is spent and the device did not manage to write it down.
+ *
+ * Deliberately NOT the confirm card with an error on it. That card's button
+ * redeems, and redeeming again posts a token the gateway has already burnt —
+ * which is precisely how this failure used to turn into a lost join. This one
+ * has a single action that repeats the two local writes off the parked answer
+ * and dials nothing.
+ *
+ * The copy leads with "nothing is lost", because from where the person is
+ * standing the join looked like it failed and the truthful thing to say is that
+ * it did not: they are already a member, and only their device is behind.
+ */
+function SaveRetryCard({ isSaving, onRetry }: { isSaving: boolean; onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <CardContent className="space-y-4 py-6">
+      <Alert variant="warning">
+        <AlertTitle>{t('connectGateway.saveFailed')}</AlertTitle>
+        <AlertDescription>{t('connectGateway.saveRetry')}</AlertDescription>
+      </Alert>
+      <Button type="button" className="h-11 w-full" disabled={isSaving} onClick={onRetry}>
+        {isSaving ? t('connectGateway.confirm.joining') : t('connectGateway.retry')}
+      </Button>
+      <div className="text-center">
+        <BackToSettingsLink />
+      </div>
+    </CardContent>
+  );
+}
+
 /** Everything the confirm card and the redemption both need about this gateway. */
 interface GatewayOffer {
   info: GatewayInfo;
@@ -493,6 +500,28 @@ interface GatewayOffer {
   /** The connection this join takes over, or `null` — see `describeReplacedConnection`. */
   replaces: string | null;
 }
+
+/**
+ * The live boundaries a redemption is handed: the gateway, this device's two
+ * stores, and the clock.
+ *
+ * Named here rather than built inside the component so the identity is stable
+ * across renders, and so the one place production wires the network to the
+ * store is one readable object. `app/lib/gateway-redemption.ts` holds the
+ * sequence; this holds only what it acts on.
+ */
+const LIVE_REDEMPTION_DEPS: RedemptionDeps = {
+  redeem: (invite: CapturedInvite) => redeemInvite(invite),
+  // Wrapped rather than passed by reference: both store functions hand back the
+  // row they wrote, and the redemption has no use for it.
+  putAiSettings: async (settings) => {
+    await putLocalAiSettings(settings);
+  },
+  putGatewayConnection: async (connection) => {
+    await putLocalGatewayConnection(connection);
+  },
+  now: () => Date.now(),
+};
 
 export default function Join() {
   const { t } = useTranslation();
@@ -510,7 +539,49 @@ export default function Join() {
   const managed = useManagedInstance();
 
   /**
-   * Redeem, write the two rows, and leave.
+   * What a finished redemption does with its outcome.
+   *
+   * Split out of the redemption itself so the first attempt and every retry
+   * land on identical screens, and so the only place that decides "this join is
+   * done" is one function.
+   */
+  const applyOutcome = useCallback(
+    async (outcome: RedemptionOutcome, parked: ParkedGatewayRedemption | null): Promise<void> => {
+      if (outcome.status === 'invite-invalid') {
+        // The slot was emptied by the redemption itself, before this ran.
+        setPhase({ status: 'invite-invalid' });
+        return;
+      }
+      if (outcome.status === 'save-failed') {
+        // The answer is parked — that is what `save-failed` means. Reading it
+        // back rather than trusting the argument covers the resume path, where
+        // this mount never held it in the first place.
+        const held = parked ?? readPendingGatewayRedemption();
+        if (held === null) {
+          // Nothing to retry: the answer is gone, so this is a dead end like a
+          // refused invite, and the card that offers a way on is the right one.
+          setPhase({ status: 'invite-invalid' });
+          return;
+        }
+        setPhase({ status: 'save-retry', parked: held, isSaving: false });
+        return;
+      }
+
+      // Publish the connection now rather than waiting for the next debounce or
+      // page load: nothing else on this route schedules a cycle, and the whole
+      // point of the account's connection row is that the person's OTHER device
+      // stops asking them to connect. A no-op when sync is not configured or
+      // the vault is locked, and deliberately not awaited — a slow or offline
+      // sync server must not hold up the success navigation.
+      void syncNow().catch(() => undefined);
+      toast.success(t('connectGateway.joined', { name: outcome.gatewayName }));
+      void navigate(await destinationAfterJoin(managed));
+    },
+    [managed, navigate, t],
+  );
+
+  /**
+   * Spend the invite, write the two rows, and leave.
    *
    * Takes the offer as an argument rather than reading `phase`, because the
    * managed flow calls it straight out of the probe — where the confirm state
@@ -525,54 +596,25 @@ export default function Join() {
       const invite = inviteRef.current;
       if (invite === null) return;
       setPhase({ status: 'joining', ...offer });
-
-      const redeemed = await redeemInvite(invite);
-      if (redeemed === null) {
-        // A rejected token is spent for this tab too: empty its slot BEFORE the
-        // error card goes up. The slot outlives this screen, and
-        // `sign-in-flow.ts` sends a signed-in tab back to `/join` whenever a
-        // gateway half is parked there — so leaving a dead token behind turns
-        // one bad link into every later sign-in in this tab failing the same
-        // way. The sync half is not touched, exactly as on the success path.
-        consumeGatewayInvite();
-        setPhase({ status: 'invite-invalid' });
-        return;
-      }
-
-      try {
-        // TWO writes of one fact, and both are needed (M187/02). The settings
-        // row is this DEVICE's provider configuration: the device holds one AI
-        // configuration, so this write both creates the gateway connection and
-        // makes it the active provider, and re-joining the SAME gateway lands
-        // on the same row and simply refreshes its token. The gatewayConnection
-        // singleton is the ACCOUNT's record of the same redemption, and it is
-        // what rides in the owner-private compartment so a second device of
-        // this account is not asked to connect to a provider all over again.
-        const now = Date.now();
-        await putLocalAiSettings(buildGatewayAiSettings({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
-        await putLocalGatewayConnection(buildGatewayConnection({ gatewayUrl: invite.gatewayUrl, redeemed, now }));
-      } catch (error) {
-        reportError(error, { boundary: 'join-gateway-save' });
-        setPhase({ status: 'confirm', ...offer });
-        toast.error(t('connectGateway.saveFailed'));
-        return;
-      }
-
-      // The gateway half is spent: empty its slot so a later visit to `/join`
-      // does not offer a burnt invite. The sync half was consumed by whoever
-      // spent it, so no successful path leaves either one parked.
-      consumeGatewayInvite();
-      // Publish the connection now rather than waiting for the next debounce or
-      // page load: nothing else on this route schedules a cycle, and the whole
-      // point of the singleton above is that the person's OTHER device stops
-      // asking them to connect. A no-op when sync is not configured or the
-      // vault is locked, and deliberately not awaited — a slow or offline sync
-      // server must not hold up the success navigation.
-      void syncNow().catch(() => undefined);
-      toast.success(t('connectGateway.joined', { name: redeemed.gateway.name }));
-      void navigate(await destinationAfterJoin(managed));
+      await applyOutcome(await redeemAndPark({ invite, deps: LIVE_REDEMPTION_DEPS }), null);
     },
-    [managed, navigate, t],
+    [applyOutcome],
+  );
+
+  /**
+   * The retry, and the resume after a reload: the two local writes and nothing
+   * else.
+   *
+   * This is the whole reason the redeemed result is parked. It never calls
+   * `redeemAndPark`, so no path through this screen can post a spent token a
+   * second time.
+   */
+  const saveRedeemed = useCallback(
+    async (parked: ParkedGatewayRedemption): Promise<void> => {
+      setPhase({ status: 'save-retry', parked, isSaving: true });
+      await applyOutcome(await savePendingRedemption({ parked, deps: LIVE_REDEMPTION_DEPS }), parked);
+    },
+    [applyOutcome],
   );
 
   /**
@@ -641,6 +683,18 @@ export default function Join() {
     // tokens are just as sensitive.
     const link = takeJoinLinkFromUrl({ configuredSyncUrl: syncServerUrl });
 
+    // A join that already spent its invite and did not finish writing it down.
+    // Checked BEFORE the empty-link test, because such a slot holds no invite
+    // and would read as an empty link — which is how a reload in the middle of
+    // this would land on "this link doesn't look right". The sync half still
+    // goes first when one is parked: the account is what the person keeps, and
+    // they come back through here with it spent.
+    const resumable = link.gatewayInvite === null ? readPendingGatewayRedemption() : null;
+    if (resumable !== null && link.syncInvite === null) {
+      void saveRedeemed(resumable);
+      return;
+    }
+
     if (isJoinLinkEmpty(link)) {
       setPhase({ status: 'invalid-link' });
       return;
@@ -659,7 +713,7 @@ export default function Join() {
       return;
     }
     void probeGateway(link);
-  }, [syncServerUrl, probeGateway]);
+  }, [syncServerUrl, probeGateway, saveRedeemed]);
 
   return (
     <div className="mx-auto max-w-md py-16">
@@ -693,6 +747,9 @@ export default function Join() {
               void redeemAndSave({ info: phase.info, gatewayOrigin: phase.gatewayOrigin, replaces: phase.replaces })
             }
           />
+        )}
+        {phase.status === 'save-retry' && (
+          <SaveRetryCard isSaving={phase.isSaving} onRetry={() => void saveRedeemed(phase.parked)} />
         )}
         {phase.status === 'invite-invalid' && <InviteInvalidCard onContinue={() => void navigate('/diary')} />}
       </Card>

@@ -342,7 +342,9 @@
     "unreachable": {
       "body": "Das Gateway hat nicht geantwortet. Prüf die Adresse, oder frag die Person, die dich eingeladen hat, ob es läuft.",
       "title": "{{origin}} ist nicht erreichbar"
-    }
+    },
+    "saveRetry": "Beim Speichern auf diesem Gerät ist etwas schiefgelaufen. Es ist nichts verloren. Versuch es noch einmal.",
+    "retry": "Erneut versuchen"
   },
   "dashboard": {
     "loading": "Dein Tag wird geladen…",
@@ -834,8 +836,8 @@
       "thenGateway": "Deine KI-Verbindung wird direkt danach eingerichtet, auf demselben Bildschirm.",
       "connecting": "Deine KI-Verbindung wird eingerichtet.",
       "signInFirst": {
-        "title": "Melde dich zuerst an",
-        "body": "Dieser Link fügt deinem Konto eine KI-Verbindung hinzu. Melde dich an, dann wird sie für dich eingerichtet.",
+        "title": "Zum Abschließen anmelden",
+        "body": "Dieser Link gehört zu einem bestehenden openplate-Konto. Melde dich an, der Rest wird für dich eingerichtet.",
         "action": "Anmelden"
       }
     },
@@ -1698,7 +1700,10 @@
       "manualSetup": "Oder richte einen Anbieter selbst in den Einstellungen ein",
       "sharedPhotoAlt": "Das Foto, das du geteilt hast",
       "sharedPhotoNote": "Wir haben das geteilte Foto erhalten, können Lebensmittel darauf aber noch nicht erkennen. Dafür muss zuerst ein KI-Anbieter verknüpft werden. Verknüpfe unten einen Anbieter und teile oder wähle dieses Foto dann erneut aus.",
-      "title": "Foto machen statt tippen"
+      "title": "Foto machen statt tippen",
+      "managedMissing": {
+        "body": "Deine Einladung enthält keine Fotoerkennung. Bitte die Person, die dich eingeladen hat, um einen neuen Link. Du kannst Essen trotzdem ohne Foto hinzufügen."
+      }
     },
     "title": "Teller scannen"
   },

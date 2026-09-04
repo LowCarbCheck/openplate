@@ -18,13 +18,16 @@ import assert from 'node:assert/strict';
 
 import {
   buildJoinFragment,
+  clearPendingGatewayRedemption,
   consumeGatewayInvite,
   consumeSyncInvite,
   hasGatewayHalf,
   isForeignSyncServer,
   isJoinLinkEmpty,
+  parkGatewayRedemption,
   parseJoinFragment,
   readPendingGatewayJoin,
+  readPendingGatewayRedemption,
   takeJoinLinkFromUrl,
 } from '#app/lib/join-link';
 
@@ -299,4 +302,67 @@ test('there is no window during SSR, so the read is empty and nothing is parked'
   emptyTheSlot();
   assert.equal(globalThis.window, undefined, 'this test only means anything without a window');
   assert.equal(isJoinLinkEmpty(takeJoinLinkFromUrl({ configuredSyncUrl: SYNC_URL })), true);
+});
+
+// ---------------------------------------------------------------------------
+// The fourth field: a SPENT invite's answer
+// ---------------------------------------------------------------------------
+
+const REDEEMED = {
+  memberId: 'member-1',
+  memberToken: 'mt_QsRt7uVw8xYz9AbCdEfGhIjKlMnOpQr',
+  gateway: { name: 'Haushalt', model: null, auditEnabled: true },
+};
+
+test('a redeemed result parks, reads back whole, and clears', () => {
+  emptyTheSlot();
+  try {
+    parkGatewayRedemption({ gatewayUrl: GATEWAY_URL, redeemed: REDEEMED, redeemedAt: 42 });
+    assert.deepEqual(readPendingGatewayRedemption(), {
+      gatewayUrl: GATEWAY_URL,
+      redeemed: REDEEMED,
+      redeemedAt: 42,
+    });
+
+    clearPendingGatewayRedemption();
+    assert.equal(readPendingGatewayRedemption(), null);
+  } finally {
+    emptyTheSlot();
+  }
+});
+
+test('parking the answer takes the spent invite out of the slot in the same breath', () => {
+  // The whole point: after this there is no token left for a retry to re-post.
+  const fake = withFakeWindow(fragmentFor({ gatewayUrl: GATEWAY_URL, gatewayInvite: GATEWAY_INVITE }));
+  try {
+    emptyTheSlot();
+    takeJoinLinkFromUrl({ configuredSyncUrl: SYNC_URL });
+    parkGatewayRedemption({ gatewayUrl: GATEWAY_URL, redeemed: REDEEMED, redeemedAt: 42 });
+
+    assert.equal(takeJoinLinkFromUrl({ configuredSyncUrl: SYNC_URL }).gatewayInvite, null);
+  } finally {
+    emptyTheSlot();
+    fake.restore();
+  }
+});
+
+test('a parked answer alone is still unfinished gateway business', () => {
+  // `sign-in-flow.ts` bounces a signed-in tab back to `/join` on the strength
+  // of this answer, and a join whose invite is spent but whose writes failed is
+  // exactly the case that most needs bringing back.
+  emptyTheSlot();
+  try {
+    parkGatewayRedemption({ gatewayUrl: GATEWAY_URL, redeemed: REDEEMED, redeemedAt: 42 });
+    assert.deepEqual(readPendingGatewayJoin(), { gatewayUrl: GATEWAY_URL, gatewayInvite: null });
+  } finally {
+    emptyTheSlot();
+  }
+});
+
+test('consuming the gateway half clears the answer too, not just the token', () => {
+  emptyTheSlot();
+  parkGatewayRedemption({ gatewayUrl: GATEWAY_URL, redeemed: REDEEMED, redeemedAt: 42 });
+  consumeGatewayInvite();
+  assert.equal(readPendingGatewayRedemption(), null);
+  assert.equal(readPendingGatewayJoin(), null);
 });

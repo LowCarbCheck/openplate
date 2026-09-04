@@ -26,6 +26,13 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { redeemAndPark, type RedemptionOutcome } from '#app/lib/gateway-redemption';
+import {
+  consumeGatewayInvite,
+  consumeSyncInvite,
+  readPendingGatewayJoin,
+  readPendingGatewayRedemption,
+} from '#app/lib/join-link';
 import { resolveGatewayStep } from '../../app/lib/managed-join';
 
 describe('resolveGatewayStep', () => {
@@ -73,33 +80,42 @@ const createPanelSource = readFileSync(
   'utf8',
 );
 
-/** The body of `/join`'s redemption, bounded at its own dependency array. */
-function redeemAndSaveBody(): string {
-  const from = joinSource.indexOf('const redeemAndSave = useCallback(');
-  const to = joinSource.indexOf('[managed, navigate, t],', from);
-  assert.ok(from !== -1 && to > from, 'the redemption callback has been renamed or restructured');
-  return joinSource.slice(from, to);
+/**
+ * The two slot invariants below were source-inspected while the redemption
+ * lived inside the route. It now lives in `app/lib/gateway-redemption.ts` and
+ * is exercised directly, which is both stronger and immune to a rename.
+ */
+async function redemptionWith({ refuses }: { refuses: boolean }): Promise<RedemptionOutcome> {
+  consumeSyncInvite();
+  consumeGatewayInvite();
+  return redeemAndPark({
+    invite: { gatewayUrl: 'https://gw.example.test', inviteToken: 'gi_managed' },
+    deps: {
+      redeem: async () =>
+        refuses ? null : (
+          { memberId: 'm', memberToken: 'mt_x', gateway: { name: 'Haus', model: null, auditEnabled: false } }
+        ),
+      putAiSettings: async () => undefined,
+      putGatewayConnection: async () => undefined,
+      now: () => 0,
+    },
+  });
 }
 
 describe('no successful path leaves a parked half', () => {
-  it('empties the gateway slot on the SUCCESS path, before the person is sent on', () => {
-    const body = redeemAndSaveBody();
-    // Bounded to the success tail: everything after the save failure's toast,
-    // which is the last line of the catch. The rejection branch above holds an
-    // identical call, and an unbounded slice would pass without this one.
-    const tail = body.slice(body.indexOf("toast.error(t('connectGateway.saveFailed'))"));
-    assert.ok(tail.length > 0, 'the save-failure branch is gone; re-bound this slice');
-    const consumedAt = tail.indexOf('consumeGatewayInvite()');
-    const finishedAt = tail.indexOf("toast.success(t('connectGateway.joined'");
-    assert.ok(consumedAt !== -1, 'a successful join must empty the gateway slot');
-    assert.ok(finishedAt !== -1, 'the success toast is gone; re-bound this slice');
-    assert.ok(consumedAt < finishedAt, 'the slot must be emptied before the screen is left');
+  it('empties the gateway slot on the SUCCESS path, before the person is sent on', async () => {
+    const outcome = await redemptionWith({ refuses: false });
+    assert.equal(outcome.status, 'joined');
+    // The route only navigates on this outcome, so an empty slot HERE is an
+    // empty slot before the person is sent on.
+    assert.equal(readPendingGatewayJoin(), null);
+    assert.equal(readPendingGatewayRedemption(), null);
   });
 
-  it('empties it on the REJECTION path too (spec 01)', () => {
-    const body = redeemAndSaveBody();
-    const branch = body.slice(body.indexOf('if (redeemed === null) {'), body.indexOf('try {'));
-    assert.match(branch, /consumeGatewayInvite\(\)/);
+  it('empties it on the REJECTION path too (spec 01)', async () => {
+    const outcome = await redemptionWith({ refuses: true });
+    assert.equal(outcome.status, 'invite-invalid');
+    assert.equal(readPendingGatewayJoin(), null);
   });
 
   it('spends the sync half when the account is created, not when the form renders', () => {

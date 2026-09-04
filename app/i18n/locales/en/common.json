@@ -342,7 +342,9 @@
     "unreachable": {
       "body": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
       "title": "Can't reach {{origin}}"
-    }
+    },
+    "saveRetry": "Something went wrong while saving on this device. Nothing is lost. Try again.",
+    "retry": "Try again"
   },
   "dashboard": {
     "loading": "Loading your day…",
@@ -834,8 +836,8 @@
       "thenGateway": "Your AI connection is set up straight after that, on this same screen.",
       "connecting": "Setting up your AI connection.",
       "signInFirst": {
-        "title": "Sign in first",
-        "body": "This link adds an AI connection to your account. Sign in, and it is set up for you.",
+        "title": "Sign in to finish",
+        "body": "This link belongs to an existing openplate account. Sign in, and the rest is set up for you.",
         "action": "Sign in"
       }
     },
@@ -1698,7 +1700,10 @@
       "manualSetup": "Or set up a provider manually in settings",
       "sharedPhotoAlt": "The photo you shared",
       "sharedPhotoNote": "We got the photo you shared, but cannot identify foods in it yet. That needs an AI provider connected first. Connect one below, then share or choose this photo again.",
-      "title": "Snap a photo, skip the typing"
+      "title": "Snap a photo, skip the typing",
+      "managedMissing": {
+        "body": "Your invitation did not include photo recognition. Ask the person who invited you for a new link. You can still add food without a photo."
+      }
     },
     "title": "Scan plate"
   },

@@ -36,12 +36,35 @@
  * is read, so the tokens do not sit in the address bar for a screenshot or a
  * screen share, and parks what it found in the pending slot so a remount or the
  * service worker's first-visit document reload cannot destroy the only copy.
+ *
+ * ── And the ANSWER is parked too ─────────────────────────────────────────
+ *
+ * Spending the gateway invite and saving what it bought are not one
+ * transaction, and they cannot be made into one: the burn happens on somebody
+ * else's server and the save happens in this browser's IndexedDB. The gateway
+ * marks the invite used the instant it answers, so for the length of the two
+ * local writes the server has moved on and this device still has nothing. If
+ * either write throws in that window, the old shape lost the whole join: the
+ * only copy of the member token was a local variable, retrying re-posted a
+ * token the gateway had already burnt, and the person ended up as a member of a
+ * gateway their device could not reach.
+ *
+ * So the redeemed result is parked in the SAME slot as the tokens, by
+ * {@link parkGatewayRedemption}, before either write is attempted — the client
+ * keeps the server's answer until that answer is safe on disk. It is cleared by
+ * {@link consumeGatewayInvite} together with the invite it replaced, and it is
+ * a credential like the invite was: `sessionStorage` only, never a query
+ * string, never logged.
  */
+import { z } from 'zod';
+
 import {
   GATEWAY_INVITE_PREFIX,
+  gatewayRedeemResponseSchema,
   isGatewayInviteToken,
   normalizeGatewayUrl,
   normalizeInviteToken,
+  type GatewayRedeemResponse,
 } from '#app/lib/gateway-invite';
 import {
   SYNC_INVITE_PREFIX,
@@ -265,20 +288,107 @@ export function consumeSyncInvite(): void {
   clearPendingJoinField({ field: 'syncInvite', storage: sessionInviteStorage() });
 }
 
-/** Ends the gateway half's stay, both the token and the address it belongs to. */
+/**
+ * Ends the gateway half's stay: the token, the address it belongs to, AND the
+ * redeemed result parked in its place.
+ *
+ * All three, because they are three states of one thing. A join that reached
+ * the redeemed result no longer has a token to clear, and clearing only the
+ * token would leave a member credential in the tab plus a `/join` screen that
+ * keeps trying to finish a join that is already finished.
+ */
 export function consumeGatewayInvite(): void {
   const storage = sessionInviteStorage();
   clearPendingJoinField({ field: 'gatewayInvite', storage });
   clearPendingJoinField({ field: 'gatewayUrl', storage });
+  clearPendingJoinField({ field: 'gatewayRedeemed', storage });
 }
 
-/** @returns the parked gateway half, or `null` when there is nothing left to join. */
-export function readPendingGatewayJoin(): { gatewayUrl: string; gatewayInvite: string } | null {
+/** The gateway business this tab has not finished — an unspent invite, or a spent one's answer. */
+export interface PendingGatewayJoin {
+  gatewayUrl: string;
+  /** `null` once the invite has been spent and {@link readPendingGatewayRedemption} holds its answer. */
+  gatewayInvite: string | null;
+}
+
+/**
+ * @returns the parked gateway half, or `null` when there is nothing left to
+ * join.
+ *
+ * A REDEEMED result counts, and has to: `sign-in-flow.ts` sends a signed-in tab
+ * back to `/join` on the strength of this answer, and a join whose invite is
+ * spent but whose local writes failed is exactly the case that most needs to be
+ * brought back here.
+ */
+export function readPendingGatewayJoin(): PendingGatewayJoin | null {
   const storage = sessionInviteStorage();
   const gatewayUrl = readPendingJoinField({ field: 'gatewayUrl', storage });
   const gatewayInvite = readPendingJoinField({ field: 'gatewayInvite', storage });
-  if (gatewayUrl === null || gatewayInvite === null) return null;
-  return { gatewayUrl, gatewayInvite };
+  if (gatewayUrl !== null && gatewayInvite !== null) return { gatewayUrl, gatewayInvite };
+
+  const redeemed = readPendingGatewayRedemption();
+  if (redeemed === null) return null;
+  return { gatewayUrl: redeemed.gatewayUrl, gatewayInvite: null };
+}
+
+/**
+ * What a spent gateway invite bought, held until the device has written it
+ * down.
+ *
+ * `redeemedAt` is parked rather than re-read from a clock on every retry, so a
+ * retry, and a retry after a reload, write the same `connectedAt` the first
+ * attempt would have — the connection row is merged across an account's devices
+ * by its timestamps, and a value that moves on every attempt is a value that
+ * describes the retry rather than the join.
+ */
+export interface ParkedGatewayRedemption {
+  gatewayUrl: string;
+  redeemed: GatewayRedeemResponse;
+  redeemedAt: number;
+}
+
+const parkedGatewayRedemptionSchema = z.object({
+  gatewayUrl: z.string().min(1),
+  redeemed: gatewayRedeemResponseSchema,
+  redeemedAt: z.number(),
+});
+
+/**
+ * Parks the gateway's answer, and takes the invite out of the slot in the same
+ * breath.
+ *
+ * The two happen together because they are one state change: the invite is
+ * spent, and this is what it bought. Leaving the invite parked beside the
+ * answer is the bug this function exists to prevent — a retry would find a
+ * token and re-post it, the gateway would refuse a token it had already burnt,
+ * and the screen would report an invalid invite for a join that had in fact
+ * succeeded.
+ */
+export function parkGatewayRedemption(parked: ParkedGatewayRedemption): void {
+  const storage = sessionInviteStorage();
+  rememberPendingJoinField({ field: 'gatewayRedeemed', value: JSON.stringify(parked), storage });
+  clearPendingJoinField({ field: 'gatewayInvite', storage });
+}
+
+/** @returns the parked answer, or `null` when none is waiting or what is parked is not one. */
+export function readPendingGatewayRedemption(): ParkedGatewayRedemption | null {
+  const raw = readPendingJoinField({ field: 'gatewayRedeemed', storage: sessionInviteStorage() });
+  if (raw === null) return null;
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const parsed = parkedGatewayRedemptionSchema.safeParse(decoded);
+  // A slot written by another build, or a half-written one, reads as nothing
+  // rather than throwing on a mount: the person can follow the link again.
+  return parsed.success ? parsed.data : null;
+}
+
+/** Ends the redeemed result's stay, and only that. Called once both local writes are down. */
+export function clearPendingGatewayRedemption(): void {
+  clearPendingJoinField({ field: 'gatewayRedeemed', storage: sessionInviteStorage() });
 }
 
 /** Re-exported so a caller checking a pasted token needs one import, not three. */

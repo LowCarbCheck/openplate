@@ -225,7 +225,7 @@ export type {
 
 // BYOK AI settings + local-only usage log (M117/02) — device-only, never
 // synced/backed-up, never sent to the openplate server.
-export { getLocalAiSettings, putLocalAiSettings, deleteLocalAiSettings } from './ai-settings';
+export { getLocalAiSettings, peekLocalAiSettings, putLocalAiSettings, deleteLocalAiSettings } from './ai-settings';
 export type { LocalAiSettings } from './ai-settings';
 export {
   recordLocalAiUsageEvent,

@@ -15,7 +15,7 @@ import type { Store } from 'tinybase';
 import { z } from 'zod';
 import type { AiProviderType } from '#types/enums';
 import { AI_ENTITY_CELL, AI_SETTINGS_ROW_ID, AI_SETTINGS_TABLE } from './store';
-import { getAiStore } from './persist';
+import { getAiStore, peekAiStore } from './persist';
 
 /**
  * How the API key was provisioned — 'oauth' for the OpenRouter PKCE connect
@@ -78,7 +78,31 @@ async function resolveStore(store: Store | undefined): Promise<Store> {
 
 /** The device's saved BYOK settings, or null when never configured. */
 export async function getLocalAiSettings({ store }: StoreOption = {}): Promise<LocalAiSettings | null> {
-  const resolved = await resolveStore(store);
+  return readSettingsRow(await resolveStore(store));
+}
+
+/**
+ * The device's saved BYOK settings, but ONLY if the AI store is already open
+ * and loaded. Returns null immediately otherwise: it never opens the database
+ * and never waits for a load.
+ *
+ * The AI store is a second IndexedDB database on purpose (see this file's
+ * header), so any caller that awaits it makes its own completion depend on a
+ * database it may not need at all. For a caller that can carry on without the
+ * settings, this is the read to use; every caller that needs them still uses
+ * {@link getLocalAiSettings}.
+ *
+ * An INJECTED store counts as loaded — a caller holding a store handed to it
+ * is a caller with nothing left to wait for.
+ */
+export function peekLocalAiSettings({ store }: StoreOption = {}): LocalAiSettings | null {
+  const resolved = store ?? peekAiStore();
+  if (resolved === null) return null;
+  return readSettingsRow(resolved);
+}
+
+/** The parse shared by both reads above — pure, given an open store. */
+function readSettingsRow(resolved: Store): LocalAiSettings | null {
   if (!resolved.hasRow(AI_SETTINGS_TABLE, AI_SETTINGS_ROW_ID)) return null;
   const raw = entityCellSchema.safeParse(resolved.getCell(AI_SETTINGS_TABLE, AI_SETTINGS_ROW_ID, AI_ENTITY_CELL));
   if (!raw.success) return null;

@@ -1104,6 +1104,19 @@ let photosPromise: Promise<Store> | null = null;
 let aiPromise: Promise<Store> | null = null;
 
 /**
+ * The AI store ONLY once its load has finished — the synchronous half of
+ * {@link getAiStore}, and null until that promise resolves.
+ *
+ * It exists for exactly one caller shape: a path that would like the device's
+ * settings but must never WAIT for them (see `ai-settings.ts`'s
+ * `peekLocalAiSettings`). Reading the promise is not an option there, because
+ * awaiting it is precisely what such a caller is trying to avoid, and calling
+ * `getAiStore()` at all would open a second IndexedDB database that the caller
+ * had no business opening.
+ */
+let loadedAiStore: Store | null = null;
+
+/**
  * The lazily-created, IndexedDB-backed PRIMARY store — the durable home for
  * personal foods, food logs, weight entries, and profile/goals. Its own
  * IndexedDB database, wholly independent of the outbox/photos/AI caches, so no
@@ -1172,10 +1185,28 @@ export function getPhotosStore(): Promise<Store> {
  */
 export function getAiStore(): Promise<Store> {
   if (!aiPromise) {
-    aiPromise = initPersistedStore(createAiStore(), AI_DB_NAME).catch((cause: unknown) => {
-      aiPromise = null;
-      throw cause;
-    });
+    aiPromise = initPersistedStore(createAiStore(), AI_DB_NAME)
+      .then((store) => {
+        loadedAiStore = store;
+        return store;
+      })
+      .catch((cause: unknown) => {
+        aiPromise = null;
+        throw cause;
+      });
   }
   return aiPromise;
+}
+
+/**
+ * The AI store if it is already open and loaded, otherwise null — never a
+ * load, never an IndexedDB open, never a wait.
+ *
+ * A caller that can do without the settings uses this; a caller that needs
+ * them uses {@link getAiStore}. The distinction matters because the AI store
+ * is a SECOND IndexedDB database, and a path that must finish (a sync push)
+ * cannot make its own completion depend on that database's load.
+ */
+export function peekAiStore(): Store | null {
+  return loadedAiStore;
 }

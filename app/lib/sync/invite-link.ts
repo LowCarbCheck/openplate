@@ -74,8 +74,15 @@ export function isSyncInviteToken(token: string): boolean {
  * Two tokens and one address: the gateway's URL is parked beside its token
  * because a token without the address it belongs to is unredeemable, and the
  * reload this slot exists for would otherwise strand it.
+ *
+ * `gatewayRedeemed` is the fourth, and it holds something the other three do
+ * not: a SPENT invite's answer. The gateway burns the invite the instant it
+ * answers, and the two local writes that answer feeds happen afterwards, so
+ * between them there is a moment where the server has moved on and this device
+ * has nothing. Parking the answer closes that moment — see
+ * `app/lib/join-link.ts`'s `parkGatewayRedemption`.
  */
-export type PendingJoinField = 'syncInvite' | 'gatewayInvite' | 'gatewayUrl';
+export type PendingJoinField = 'syncInvite' | 'gatewayInvite' | 'gatewayUrl' | 'gatewayRedeemed';
 
 /** The module-level mirror behind the storage slot: every field, parked or not. */
 type PendingJoinMirror = { [Field in PendingJoinField]: string | null };
@@ -89,6 +96,7 @@ const PENDING_STORAGE_KEYS = {
   syncInvite: PENDING_INVITE_STORAGE_KEY,
   gatewayInvite: 'openplate.gateway.pending-invite',
   gatewayUrl: 'openplate.gateway.pending-url',
+  gatewayRedeemed: 'openplate.gateway.pending-redeemed',
 } satisfies Record<PendingJoinField, string>;
 
 /** The subset of `Storage` the pending slot needs — so tests pass a plain object and never touch a global. */
@@ -106,7 +114,12 @@ export interface PendingInviteStorage {
  * document reload, which is exactly the case the storage slot exists for.
  * Neither is redundant.
  */
-const mirroredPendingJoin: PendingJoinMirror = { syncInvite: null, gatewayInvite: null, gatewayUrl: null };
+const mirroredPendingJoin: PendingJoinMirror = {
+  syncInvite: null,
+  gatewayInvite: null,
+  gatewayUrl: null,
+  gatewayRedeemed: null,
+};
 
 /** Parks one field of a pending join. A storage failure leaves the mirror, which is still better than nothing. */
 export function rememberPendingJoinField({

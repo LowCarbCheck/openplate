@@ -274,3 +274,53 @@ export function aiSettingsFromGatewayConnection({
     updatedAt: connection.updatedAt,
   };
 }
+
+/**
+ * The account's connection record, reconstructed from the DEVICE's settings row
+ * — the repair for a join that wrote the first row and not the second.
+ *
+ * The two rows live in two different IndexedDB databases, deliberately (see
+ * `local-store/ai-settings.ts`: a backup of the tracker must never carry a
+ * provider credential). Two databases means two transactions means a window in
+ * which the settings row is written and the connection row is not — a device
+ * that can use its gateway while the account has no record of it, so the
+ * person's second device is asked to connect all over again.
+ *
+ * This closes that window from the SYNC READ path rather than by retrying the
+ * write: whatever the settings row says is what actually happened, so a push
+ * that finds settings for a gateway and no connection can state the connection
+ * instead of leaving the account behind (`sync/local-store-bridge.ts`).
+ *
+ * `null` for anything that is not an invite-joined gateway. A pasted key, an
+ * OAuth connection and this instance's own preset are all connections the
+ * ACCOUNT has no business recording, and a row whose `baseUrl` does not end in
+ * the gateway API prefix is not one this function can name a gateway for.
+ *
+ * NOT a perfect inverse of {@link aiSettingsFromGatewayConnection}: a
+ * connection that named no model is written into the settings row as this
+ * instance's default, so the model comes back as that default rather than as
+ * `null`. That is the correct answer for a repair — the default is the model
+ * the device is actually using — and it is why this is a reconciliation and not
+ * a round-trip.
+ */
+export function deriveGatewayConnectionFromSettings(
+  settings: LocalAiSettings | null,
+): ConnectedGatewayConnection | null {
+  if (settings === null || settings.connectedVia !== 'invite') return null;
+  const baseUrl = settings.baseUrl;
+  if (baseUrl === null || !baseUrl.endsWith(GATEWAY_API_PREFIX)) return null;
+  const gatewayUrl = baseUrl.slice(0, -GATEWAY_API_PREFIX.length);
+  if (gatewayUrl === '') return null;
+  return {
+    status: 'connected',
+    gatewayUrl,
+    memberToken: settings.apiKey,
+    model: settings.model,
+    auditEnabled: settings.auditEnabled === true,
+    // The settings row's own instant, not a fresh clock: this record describes
+    // the join that wrote that row, and a newer stamp would beat a connection
+    // another device wrote later and legitimately.
+    connectedAt: settings.updatedAt,
+    updatedAt: settings.updatedAt,
+  };
+}

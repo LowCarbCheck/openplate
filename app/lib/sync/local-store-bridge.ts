@@ -28,12 +28,14 @@ import {
   listLocalSharePeers,
   listLocalStudyEnrolments,
   migrateEnvelopeForward,
+  peekLocalAiSettings,
   putLocalAiSettings,
   putLocalGatewayConnection,
   SCHEMA_VERSION,
   type LocalGatewayConnection,
   type LocalStoreSnapshot,
 } from '#app/lib/local-store';
+import { deriveGatewayConnectionFromSettings } from '#app/lib/gateway-invite';
 import { decideGatewayConnectionApply, pickNewerGatewayConnection } from './gateway-connection-apply';
 import {
   partitionSnapshot,
@@ -55,14 +57,61 @@ import {
  * — puts it back. This is the only producer that does, which is why the key is
  * optional on `LocalStoreSnapshot`.
  *
- * `store` is injectable for the tests that build a snapshot the way production
- * reads one; production passes nothing and gets the singleton stores.
+ * The two stores are injectable for the tests that build a snapshot the way
+ * production reads one; production passes nothing and gets the singletons. They
+ * are two arguments because they are two IndexedDB databases — see
+ * {@link readGatewayConnectionForPush}, which is the whole reason the AI store
+ * is read here at all.
  */
-export async function readLocalSnapshot({ store }: { store?: Store } = {}): Promise<LocalStoreSnapshot> {
+export async function readLocalSnapshot({
+  store,
+  aiStore,
+}: { store?: Store; aiStore?: Store } = {}): Promise<LocalStoreSnapshot> {
   return {
     ...(await exportBackup({ store })).data,
-    gatewayConnection: await getLocalGatewayConnection({ store }),
+    gatewayConnection: await readGatewayConnectionForPush({ store, aiStore }),
   };
+}
+
+/**
+ * The connection this push publishes: the account's own record, or one derived
+ * from the device's settings when the account has none.
+ *
+ * A join writes two rows in two IndexedDB DATABASES — the settings row and the
+ * connection row cannot share a transaction, because the settings store is
+ * deliberately separate so that a tracker backup can never carry a provider
+ * credential (`local-store/ai-settings.ts`). Settings are written first, so the
+ * one way the pair can be torn is: this device can use its gateway, and the
+ * account has no record of it. Left alone, the person's SECOND device would
+ * keep asking them to connect to a provider they already joined.
+ *
+ * So the push repairs it here rather than anywhere else: the read is the last
+ * moment before the account's state leaves this device, and repairing at the
+ * read costs nothing on the overwhelmingly common path where the stored record
+ * is present.
+ *
+ * A stored record always wins, including a DISCONNECT tombstone. A tombstone
+ * means somebody deliberately left the gateway, and deriving a connection from
+ * a settings row that has not been cleared yet would undo that.
+ *
+ * The settings read PEEKS rather than loads, and that asymmetry is deliberate.
+ * The derivation is a repair for a rare drift, while a push is the thing the
+ * account depends on: making every push wait on a second IndexedDB database
+ * would trade a rare stale record for a sync that can stall on a store this
+ * device may never even open. When the AI store is not loaded yet, the repair
+ * simply travels one cycle later — by which time the settings the app itself
+ * reads have opened it.
+ */
+async function readGatewayConnectionForPush({
+  store,
+  aiStore,
+}: {
+  store?: Store;
+  aiStore?: Store;
+}): Promise<LocalGatewayConnection | null> {
+  const stored = await getLocalGatewayConnection({ store });
+  if (stored !== null) return stored;
+  return deriveGatewayConnectionFromSettings(peekLocalAiSettings({ store: aiStore }));
 }
 
 /**
