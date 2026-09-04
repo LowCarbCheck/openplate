@@ -44,7 +44,9 @@ import {
 } from '#app/services/food-resolution/apply-match';
 import { fetchFoodMatches } from '#app/lib/food-matches-client';
 import { randomUuid } from '#app/lib/uuid';
-import { useGatewayUrl, useInstanceInferencePreset } from '#app/hooks/use-public-config';
+import { useInstanceInferencePreset, useManagedInstance } from '#app/hooks/use-public-config';
+import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
+import { managedAiCredential, type ManagedAiSettings } from '#app/lib/ai/managed-ai-settings';
 import { OAuthConnectButton } from '#app/components/oauth-connect-button';
 import { InstancePresetConnect } from '#app/components/instance-preset-connect';
 import { LoadingDots } from '#app/components/app-loading';
@@ -106,8 +108,7 @@ import { Label } from '#app/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '#app/components/ui/alert';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
-import { AlertTriangle, Camera, Check, ChevronDown, Loader2, ShieldAlert, X } from 'lucide-react';
-import { isAuditDisclosureRequired } from '#app/lib/gateway-invite';
+import { AlertTriangle, Camera, Check, ChevronDown, Loader2, X } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackScanFailed, trackScanFoundNothing, trackScanSucceeded } from '#app/lib/matomo-events';
 
@@ -269,10 +270,7 @@ function makeClientLogBatchIdField(t: Translate) {
     },
     z
       .string()
-      .regex(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-        t('scan.review.errors.invalidBatchId'),
-      )
+      .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, t('scan.review.errors.invalidBatchId'))
       .optional(),
   );
 }
@@ -440,7 +438,6 @@ type RecordScanAttempt = (params: {
   outcome: 'identified' | 'no_foods' | 'error';
 }) => Promise<void>;
 
-
 /**
  * Maps a scan outcome to its analytics event.
  *
@@ -547,6 +544,49 @@ async function runLabelScan(context: ScanAttemptContext): Promise<IdentifyResult
  * here anymore (there's no server round trip left to gate) — the user's own
  * provider billing is the natural throttle on their own key.
  */
+/** The three form fields the screen uses to tell the action which AI it resolved. */
+const MANAGED_AI_FIELDS = { source: 'aiSource', baseUrl: 'aiBaseUrl', model: 'aiModel' } as const;
+
+/**
+ * Writes the managed descriptor into a submission, or nothing at all.
+ *
+ * Nothing SECRET crosses: a base URL and a model id, both of which the server
+ * already publishes to this browser. The bearer is never in the form — it is
+ * fetched from the vault inside the action, one frame before the request.
+ */
+export function writeManagedAiFields(formData: FormData, managed: ManagedAiSettings | null): void {
+  if (managed === null || managed.model === null) return;
+  formData.append(MANAGED_AI_FIELDS.source, 'managed');
+  formData.append(MANAGED_AI_FIELDS.baseUrl, managed.baseUrl);
+  formData.append(MANAGED_AI_FIELDS.model, managed.model);
+}
+
+/**
+ * The parse of the three fields — a form is an I/O boundary, so this is where
+ * `FormDataEntryValue` becomes a domain value.
+ *
+ * A partial or malformed set reads as "no managed AI" rather than throwing:
+ * the fields are written by one function in this same file, so anything else
+ * arriving here is a submission this build did not make.
+ */
+const managedAiFieldsSchema = z.object({
+  [MANAGED_AI_FIELDS.source]: z.literal('managed'),
+  [MANAGED_AI_FIELDS.baseUrl]: z.string().min(1),
+  [MANAGED_AI_FIELDS.model]: z.string().min(1),
+});
+
+/** Reads them back, or `null` when this submission is an ordinary BYOK scan. */
+export function readManagedAiFields(formData: FormData): ManagedAiSettings | null {
+  const parsed = managedAiFieldsSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return null;
+  return {
+    source: 'managed',
+    provider: 'managed',
+    baseUrl: parsed.data[MANAGED_AI_FIELDS.baseUrl],
+    model: parsed.data[MANAGED_AI_FIELDS.model],
+  };
+}
+
 async function handleClientIdentify(formData: FormData): Promise<IdentifyResult> {
   const mode = scanModeSchema.parse(formData.get('mode'));
   const photo = formData.get('photo');
@@ -558,8 +598,17 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     return { intent: 'identify', mode, error: validation.error };
   }
 
-  const settings = await getLocalAiSettings();
-  if (!settings) {
+  // WHICH AI, decided by the COMPONENT and carried in the form (M192).
+  //
+  // The rule needs the public config and the sync session, and neither is
+  // reachable from a `clientAction`: this function runs outside React, and the
+  // route has no server loader to read the root's data through. So the screen
+  // resolves it with `useEffectiveAiSettings` and posts the answer as three
+  // fields. Nothing secret travels — a base URL and a model id — and the
+  // bearer is fetched from the vault here, in this frame.
+  const managed = readManagedAiFields(formData);
+  const settings = managed === null ? await getLocalAiSettings() : null;
+  if (managed === null && !settings) {
     return {
       intent: 'identify',
       mode,
@@ -571,7 +620,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   // could still have `baseUrl: null` for openai-compatible. Catch it here
   // with a friendly, actionable message rather than letting
   // `createVisionProvider`'s own guard throw synchronously below.
-  if (settings.provider === 'openai-compatible' && (!settings.baseUrl || settings.baseUrl.trim() === '')) {
+  if (settings?.provider === 'openai-compatible' && (!settings.baseUrl || settings.baseUrl.trim() === '')) {
     return {
       intent: 'identify',
       mode,
@@ -579,22 +628,40 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     };
   }
 
+  // The two shapes collapse into one triple here, so everything below reads
+  // the same three values whichever kind of instance this is.
+  const provider: AiProviderType = managed?.provider ?? settings?.provider ?? 'openrouter';
+  const model = managed?.model ?? settings?.model ?? '';
+  const baseUrl = managed?.baseUrl ?? settings?.baseUrl ?? null;
+  if (model === '') {
+    // A managed instance with an upstream key but no advertised model. The
+    // proxy passes the body through untouched, so there is no model id to
+    // send, and inventing one would fail upstream with a message nobody on
+    // this side could explain.
+    return { intent: 'identify', mode, error: translate('scan.errors.connectProvider') };
+  }
 
   // Records exactly one local usage row per outcome. `recordLocalAiUsageEvent`
   // is fail-open, so this never affects whether the scan itself succeeds.
-  const recordAttempt = (params: { usage: ScanTokenUsage | undefined; outcome: 'identified' | 'no_foods' | 'error' }) => {
+  const recordAttempt = (params: {
+    usage: ScanTokenUsage | undefined;
+    outcome: 'identified' | 'no_foods' | 'error';
+  }) => {
     // Analytics rides the usage row's own choke point: every scan outcome
     // already passes through here exactly once, so reporting here cannot
     // drift out of step with reality the way N separate call sites would.
     // No counts, no model id, nothing from the photo — see `matomo-events.ts`.
     reportScanOutcome(params.outcome);
     return recordLocalAiUsageEvent({
-      provider: settings.provider,
-      model: settings.model,
+      provider,
+      model,
       inputTokens: params.usage?.inputTokens ?? null,
       outputTokens: params.usage?.outputTokens ?? null,
-      estimatedCostUsd:
-        params.usage ? (estimateScanCostUsd(settings.provider, settings.model, params.usage) ?? null) : null,
+      // `null` for a managed scan, and that is the honest answer rather than a
+      // missing feature: the catalog prices a person's own provider key, and a
+      // managed scan is spent against an allowance their organization pays
+      // for. A number here would be a bill nobody receives.
+      estimatedCostUsd: params.usage ? (estimateScanCostUsd(provider, model, params.usage) ?? null) : null,
       outcome: params.outcome,
     });
   };
@@ -608,16 +675,19 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
 
   try {
     const visionProvider = createVisionProvider({
-      provider: settings.provider,
-      baseUrl: settings.baseUrl,
-      model: settings.model,
-      apiKey: settings.apiKey,
+      provider,
+      baseUrl,
+      model,
+      // The MANAGED path hands over a token provider rather than a key, and
+      // that is what lets the adapter refresh once on a 401 — an access token
+      // lasts fifteen minutes and a tab stays open for hours.
+      credential: managed === null ? { apiKey: settings?.apiKey ?? '' } : managedAiCredential(),
     });
     const context: ScanAttemptContext = {
       visionProvider,
       image: { base64, mimeType: photo.type },
-      providerType: settings.provider,
-      modelId: settings.model,
+      providerType: provider,
+      modelId: model,
       recordAttempt,
     };
     // The ONE branch the two scans need, and it is over the RESULT SHAPE: a
@@ -635,7 +705,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     // substitutes localized copy for every typed cause it recognizes.
     const fallbackMessage =
       error instanceof VisionProviderError ? error.message : translate('scan.errors.identifyFailed');
-    const message = refineIdentifyErrorMessage({ provider: settings.provider, error, fallback: fallbackMessage });
+    const message = refineIdentifyErrorMessage({ provider, error, fallback: fallbackMessage });
     await recordAttempt({ usage, outcome: 'error' });
     // The reason, not just the fact. The machine-readable cause lives on
     // `VisionProviderFailure.failureCause` — NOT on `VisionProviderError.cause`,
@@ -650,9 +720,9 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       mode,
       error: message,
       usage,
-      modelId: settings.model,
+      modelId: model,
       failureCause,
-      provider: settings.provider,
+      provider,
     };
   }
 }
@@ -1024,6 +1094,7 @@ function formatFailedAttemptCreditLine(estimatedCostUsd: number | null, t: Trans
  * fetcher returns an identification it swaps to the confirm draft.
  */
 function ScanFlow({
+  managedAi,
   monthlyUsage,
   confirmResult,
   labelConfirmResult,
@@ -1031,6 +1102,8 @@ function ScanFlow({
   logDateLabel,
   userId,
 }: {
+  /** The instance's own AI, when this screen resolved one. `null` for an ordinary BYOK scan. */
+  managedAi: ManagedAiSettings | null;
   monthlyUsage: MonthlyAiUsage;
   confirmResult?: SubmissionResult<string[]>;
   /** Re-validation result of a failed LABEL confirm — keeps that form mounted with its errors. */
@@ -1105,8 +1178,12 @@ function ScanFlow({
     formData.append('_intent', 'identify');
     formData.append('mode', mode);
     formData.append('photo', file);
+    // WHICH AI, decided here where the config and the session are readable and
+    // carried into the action, which can read neither. See
+    // `writeManagedAiFields`.
+    writeManagedAiFields(formData, managedAi);
     void fetcher.submit(formData, { method: 'post', encType: 'multipart/form-data' });
-  }, [state.phase, state.dispatchId, file, fetcher, mode]);
+  }, [state.phase, state.dispatchId, file, fetcher, mode, managedAi]);
 
   // Settle the machine on the fetcher's active→idle edge (not merely "idle", which
   // is also the pre-submit state) so an in-flight dispatch is never cut short.
@@ -1463,12 +1540,21 @@ function UploadForm({
   // never fix a rejected API key.
   const isPhotoQualityFailure = failureCause === undefined || failureCause === 'genuinely-no-food';
   const isLabelMode = mode === 'label';
+  const managed = useManagedInstance();
   // COPY ONLY. Every task-specific behaviour (prompt, schema, parse, capture
   // resolution) is on the scan-task descriptor; what changes here is what the
   // sentences say, because "no foods on that plate" is not "couldn't read that
   // panel" and a user told the wrong one retries the wrong thing.
   const captureTitle = isLabelMode ? t('scan.labelScan.capture.title') : t('scan.capture.title');
-  const captureDescription = isLabelMode ? t('scan.labelScan.capture.description') : t('scan.capture.description');
+  // THE RECIPIENT IS NAMED DIFFERENTLY on a managed instance (M192/05), and
+  // that is the whole reason for the branch: "your own AI provider" is true on
+  // an open instance and false here, where the photo goes to a proxy the
+  // person's own organization runs. Somebody deciding whether to press the
+  // shutter is deciding who sees the photo.
+  const captureDescription =
+    isLabelMode ? t('scan.labelScan.capture.description')
+    : managed ? t('scan.capture.managedDescription')
+    : t('scan.capture.description');
   const emptyTitle = isLabelMode ? t('scan.labelScan.capture.emptyTitle') : t('scan.capture.emptyTitle');
   const photoLabel = isLabelMode ? t('scan.labelScan.capture.photoLabel') : t('scan.capture.photoLabel');
   const previewAlt = isLabelMode ? t('scan.labelScan.capture.previewAlt') : t('scan.capture.previewAlt');
@@ -1630,19 +1716,19 @@ function UploadForm({
                 <Camera className="h-4 w-4" />
                 <AlertTitle>{alertTitle}</AlertTitle>
                 <AlertDescription>
-                  {isPhotoQualityFailure ?
-                    <>
-                      {photoQualityBody}
-                      {showSpecificError && (
-                        <span className="mt-1 block text-xs text-muted-foreground">{error}</span>
-                      )}
-                    </>
-                    // A non-photo-quality failure's `error` message is already
-                    // the specific, actionable detail (see `failure-cause.ts`)
-                    // — showing it as the main body, not a muted afterthought.
-                    // `describeFailureBody` additionally swaps in OpenRouter-
-                    // specific free-tier copy for a `rate-limit` failure.
-                  : describeFailureBody({ failureCause, provider, error }, t)}
+                  {
+                    isPhotoQualityFailure ?
+                      <>
+                        {photoQualityBody}
+                        {showSpecificError && <span className="mt-1 block text-xs text-muted-foreground">{error}</span>}
+                      </>
+                      // A non-photo-quality failure's `error` message is already
+                      // the specific, actionable detail (see `failure-cause.ts`)
+                      // — showing it as the main body, not a muted afterthought.
+                      // `describeFailureBody` additionally swaps in OpenRouter-
+                      // specific free-tier copy for a `rate-limit` failure.
+                    : describeFailureBody({ failureCause, provider, error }, t)
+                  }
                 </AlertDescription>
               </Alert>
             )}
@@ -1730,23 +1816,22 @@ function useKeylessSharedPhotoPreview(): string | null {
  * - `instance-ai`: this instance runs an inference endpoint of its own (M138
  *   spec 06), and the recipient is NAMED — a person deciding whether to press
  *   the shutter is deciding who sees the photo.
- * - `managed-missing`: a managed instance (M187 spec 03), where AI arrives
- *   with an invite link and never from a button on this card. The gateway
- *   therefore wins over a preset: a user here brings no key of their own.
+ * - `managed-missing`: a managed instance (M187 spec 03, M192), where AI comes
+ *   from the account and never from a button on this card. It wins over a
+ *   preset: a person here brings no key of their own, and the answer to a
+ *   missing connection is their administrator rather than a provider signup.
  */
 export type ConnectCardVariant =
-  | { kind: 'self-hosted' }
-  | { kind: 'instance-ai'; host: string }
-  | { kind: 'managed-missing' };
+  { kind: 'self-hosted' } | { kind: 'instance-ai'; host: string } | { kind: 'managed-missing' };
 
 export function resolveConnectCardVariant({
-  gatewayUrl,
+  managed,
   presetBaseUrl,
 }: {
-  gatewayUrl: string | null;
+  managed: boolean;
   presetBaseUrl: string | null;
 }): ConnectCardVariant {
-  if (gatewayUrl !== null) return { kind: 'managed-missing' };
+  if (managed) return { kind: 'managed-missing' };
   if (presetBaseUrl === null) return { kind: 'self-hosted' };
   return { kind: 'instance-ai', host: new URL(presetBaseUrl).host };
 }
@@ -1775,18 +1860,20 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
   const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
   // Which instance this is decides the whole card. An instance that runs AI of
   // its own cannot say openplate runs none, because on this instance it does.
-  // TWO ways an instance can: its own inference endpoint (M138 spec 06) or the
-  // gateway a managed instance hands out with its accounts (M187 spec 03).
-  const gatewayUrl = useGatewayUrl();
+  // TWO ways an instance can: its own inference endpoint (M138 spec 06), or by
+  // being a managed instance whose server proxies AI for its accounts (M192).
+  const managed = useManagedInstance();
   const instancePreset = useInstanceInferencePreset();
-  const variant = resolveConnectCardVariant({ gatewayUrl, presetBaseUrl: instancePreset?.baseUrl ?? null });
+  const variant = resolveConnectCardVariant({ managed, presetBaseUrl: instancePreset?.baseUrl ?? null });
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Camera className="h-5 w-5" /> {t('scan.setup.title')}
         </CardTitle>
-        <CardDescription>{t('scan.setup.description')}</CardDescription>
+        <CardDescription>
+          {variant.kind === 'managed-missing' ? t('scan.setup.managed.description') : t('scan.setup.description')}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Three shapes, because the honest answer differs. On a self-hosted
@@ -1812,10 +1899,15 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
             <p>{t('scan.setup.crisp.managedWho', { host: variant.host })}</p>
           </div>
         )}
+        {/* A DEAD END BY DESIGN, and it says so plainly: on a managed instance
+            there is no key to bring and no provider to pick, so the only true
+            answer is that photo estimates are not switched on for this account
+            and the administrator is who switches them on. Every button that
+            would suggest otherwise is suppressed below. */}
         {variant.kind === 'managed-missing' && (
           <div className="space-y-1 text-sm text-muted-foreground">
-            <p>{t('scan.setup.crisp.managedWhat')}</p>
             <p>{t('scan.setup.managedMissing.body')}</p>
+            <p>{t('scan.setup.managedMissing.askAdmin')}</p>
           </div>
         )}
         {/* One tap, no key to go and get — renders nothing at all when this
@@ -1823,7 +1915,13 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
             on such an instance it is the whole answer; `revalidate` re-runs
             `clientLoader`, which re-reads the device settings and swaps this
             card for the real scan flow. */}
-        <InstancePresetConnect onConnected={() => void revalidator.revalidate()} />
+        {/* Renders nothing when this instance provides no AI of its own, and
+            is suppressed outright on a managed one: a preset button there would
+            offer a second way in beside the account, which is not how the
+            answer arrives. */}
+        {variant.kind !== 'managed-missing' && (
+          <InstancePresetConnect onConnected={() => void revalidator.revalidate()} />
+        )}
         {sharedPhotoPreviewUrl && (
           <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
             <img
@@ -1982,9 +2080,7 @@ function CuratedMatchCard({
           )}
           <MatchNetCarbBadge netCarbsPer100g={match.netCarbsPer100g} />
           {macroSummary && (
-            <p className="text-xs text-muted-foreground">
-              {t('scan.review.match.per100g', { summary: macroSummary })}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('scan.review.match.per100g', { summary: macroSummary })}</p>
           )}
           {match.url && (
             <a
@@ -2028,9 +2124,7 @@ function MatchOptionRow({ match, applied, onUse }: { match: FoodMatch; applied: 
     <div className="flex flex-col gap-2 rounded-md border bg-background p-2 sm:flex-row sm:items-start sm:gap-3">
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-900">
-          {match.imageUrl && (
-            <img src={match.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
-          )}
+          {match.imageUrl && <img src={match.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />}
         </div>
         <div className="min-w-0 flex-1 space-y-1">
           <p className="truncate text-sm font-medium">{match.title}</p>
@@ -2042,9 +2136,7 @@ function MatchOptionRow({ match, applied, onUse }: { match: FoodMatch; applied: 
             <MatchTierChip tier={matchTier(match.score)} />
           </div>
           {macroSummary && (
-            <p className="text-xs text-muted-foreground">
-              {t('scan.review.match.per100g', { summary: macroSummary })}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('scan.review.match.per100g', { summary: macroSummary })}</p>
           )}
         </div>
       </div>
@@ -2669,11 +2761,7 @@ export function ConfirmDraftForm({
               {/* Same "derived every render from `curatedSource`, never withdrawn by an
                   edit" treatment as `attribution` above, not `netCarbsPer100g`'s
                   clear-on-edit treatment — see `resolveAppliedMatchSnapshot`'s doc. */}
-              <input
-                type="hidden"
-                name={itemFieldset.carbBasis.name}
-                value={view.appliedSnapshot.carbBasis ?? ''}
-              />
+              <input type="hidden" name={itemFieldset.carbBasis.name} value={view.appliedSnapshot.carbBasis ?? ''} />
 
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
@@ -2723,7 +2811,9 @@ export function ConfirmDraftForm({
                       carbStatusBadgeClass[carbStatus],
                     )}
                   >
-                    {t('scan.review.netCarbsForPortion', { value: formatMacroNumberIn(i18n.language, preview.netCarbsForPortion) })}
+                    {t('scan.review.netCarbsForPortion', {
+                      value: formatMacroNumberIn(i18n.language, preview.netCarbsForPortion),
+                    })}
                   </span>
                   {mutedPreview && <span className="text-xs text-muted-foreground">{mutedPreview}</span>}
                 </div>
@@ -2857,28 +2947,6 @@ export function ConfirmDraftForm({
   );
 }
 
-/**
- * Standing "somebody else can read this" line on the capture screen.
- *
- * Deliberately HERE and not only in settings: the moment of risk is the moment
- * a photo is about to be sent, and a disclosure read once during onboarding
- * weeks ago is not consent at the point of submission. Subtle by design — one
- * muted line, no colour alarm — because it describes the normal, agreed
- * arrangement of a gateway, not an error.
- *
- * Renders for the connected row's `auditEnabled` only, which today is set
- * exclusively by a gateway join (`app/lib/gateway-invite.ts`).
- */
-function AuditReviewNotice() {
-  const { t } = useTranslation();
-  return (
-    <p className="mb-4 flex items-start gap-2 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
-      <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-      {t('scan.auditNotice')}
-    </p>
-  );
-}
-
 export default function ScanPlate({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useTranslation();
   // Scanning is inherently online (it calls the user's AI provider). Offline, an
@@ -2886,9 +2954,15 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
   // still works. `OfflineBanner` renders nothing while online.
   const offlineNote = <OfflineBanner message={t('scan.offline')} className="mb-4" />;
 
-  // Keyless-friendly: a user without an AI provider gets a warm connect card
+  // THE ONE READ OF THE RULE on this screen (M192): the instance's own AI when
+  // this is a managed instance and the account has an allowance, the device's
+  // BYOK row on an open one, `null` when there is neither.
+  const effective = useEffectiveAiSettings(loaderData.settings);
+  const managedAi = effective?.source === 'managed' ? effective : null;
+
+  // Keyless-friendly: a person with no AI at all gets a warm connect card
   // instead of the old hard redirect to /settings/ai.
-  if (!loaderData.settings) {
+  if (effective === null) {
     return (
       <>
         {offlineNote}
@@ -2903,8 +2977,8 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
   return (
     <>
       {offlineNote}
-      {isAuditDisclosureRequired(loaderData.settings) && <AuditReviewNotice />}
       <ScanFlow
+        managedAi={managedAi}
         monthlyUsage={loaderData.monthlyUsage}
         confirmResult={confirmResult}
         labelConfirmResult={labelConfirmResult}

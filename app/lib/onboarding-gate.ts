@@ -89,18 +89,20 @@ export function resolveOnboardingGate({
  * reads onboarding data (theme and language are both device preferences), so
  * it renders identically with an empty store.
  *
- * `/settings/sync` is where an emailed sync INVITE link lands
- * (`#invite=<token>`), which is exactly the position `/connect-gateway` and
- * `/connect-clinician` are already in — and the route tree keeps both of those
- * outside this layout for that reason (see the comments in `app/routes.ts`).
- * Somebody who opens an invite mail has not necessarily used the app on that
- * device, so the gate fired, the redirect to `/onboarding` dropped the URL
- * FRAGMENT the token rides in, and the invite could never be redeemed. The
- * page itself reads nothing from onboarding either: it renders from the sync
- * session and one loader string, both independent of any profile or goals.
+ * `/settings/account` is where `/settings/sync` went (M192/05), and it is
+ * exempt for the reason that address was: somebody who followed a mail has not
+ * necessarily used the app on that device, so the gate would fire and the
+ * redirect to `/onboarding` would drop the URL FRAGMENT a token rides in. The
+ * page itself reads nothing from onboarding: it renders from the sync session
+ * and one loader string, both independent of any profile or goals.
  *
- * `/welcome` and `/sign-in` are the gate's own destinations (M183 spec 02).
- * Both are registered outside this layout, so the exemption is belt and braces
+ * `/settings/sync` stays in the set as well, because it is still a live
+ * address: it redirects, and a gate that bounced it to `/onboarding` first
+ * would swallow the redirect.
+ *
+ * `/welcome` and `/sign-in` are the gate's own destinations (M183 spec 02),
+ * and `/forgot` and `/reset` are where a mailed link lands (M192/05). All four
+ * are registered outside this layout, so the exemptions are belt and braces
  * rather than load-bearing today — but a redirect target that the gate would
  * itself redirect away from is a loop, and the set is where that is stated.
  *
@@ -109,9 +111,12 @@ export function resolveOnboardingGate({
  */
 const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   '/settings/preferences',
+  '/settings/account',
   '/settings/sync',
   '/welcome',
   '/sign-in',
+  '/forgot',
+  '/reset',
 ]);
 
 /**

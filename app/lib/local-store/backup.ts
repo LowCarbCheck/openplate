@@ -367,34 +367,6 @@ export const shareableSnapshotFields = {
 } as const;
 
 /**
- * Added v17 (the gateway follows the account, M187/02) — the gateway this
- * account joined, or the stamped tombstone a disconnect left.
- *
- * A discriminated union rather than five nullable fields, so "connected with
- * no token" cannot be represented at all. It is named here for the reason
- * every field in this file is named: zod STRIPS unrecognized keys, and this
- * object is what the COMPARTMENT plaintext is validated against
- * (`ownerPrivateRegionSchema`), so omitting it would drop the connection on
- * every seal/open round trip and leave the second device asking its owner to
- * connect to a provider it already has.
- *
- * It is nonetheless the one snapshot key `readSnapshot` below does NOT read —
- * see the comment there.
- */
-const gatewayConnectionSchema = z.discriminatedUnion('status', [
-  z.object({
-    status: z.literal('connected'),
-    gatewayUrl: z.string(),
-    memberToken: z.string(),
-    model: z.string().nullable(),
-    auditEnabled: z.boolean(),
-    connectedAt: z.number(),
-    updatedAt: z.number(),
-  }),
-  z.object({ status: z.literal('disconnected'), updatedAt: z.number() }),
-]);
-
-/**
  * THE OWNER-PRIVATE COMPARTMENT's plaintext: key material and trust pins.
  * This is what a grant must NEVER mean — see ADR-0002's partition amendment
  * for why a grantee holding the grantor's share private key is a cascade
@@ -441,18 +413,21 @@ export const shareableSnapshotSchema = z.object(shareableSnapshotFields);
  * The compartment's plaintext as a schema — what a just-decrypted compartment
  * is validated against.
  *
- * ONE KEY WIDER THAN A BACKUP (M187/02). The compartment carries
- * `gatewayConnection` and `snapshotSchema` below deliberately does not, which
- * is what makes "it syncs but is never exported" structural rather than a
- * convention: the export path cannot emit the key because the shape it
- * validates against has no such field, and an import that found one would
- * strip it. `.default(null)` is the whole v16 -> v17 forward migration for a
- * compartment sealed before the key existed.
+ * IDENTICAL TO A BACKUP'S OWNER-PRIVATE HALF AGAIN, as of v18. M187/02 made it
+ * one key wider — the compartment carried `gatewayConnection` and a backup
+ * deliberately did not — and M192 deleted that key along with the gateway. The
+ * two are spelled as one spread rather than merged into `snapshotSchema`
+ * outright, because the reason they differed is a live one: the moment
+ * something belongs in the compartment and not in an export, it is added HERE
+ * and the export path cannot emit it, since the shape it validates against has
+ * no such field.
+ *
+ * A compartment sealed at v17 still carries `gatewayConnection` in its
+ * plaintext. Zod STRIPS what it does not list, and here that is the intended
+ * outcome for once: the key is a dead credential (see `schema.ts`'s v18 note),
+ * so dropping it on the next open is the migration.
  */
-export const ownerPrivateRegionSchema = z.object({
-  ...ownerPrivateRegionFields,
-  gatewayConnection: gatewayConnectionSchema.nullable().default(null),
-});
+export const ownerPrivateRegionSchema = z.object({ ...ownerPrivateRegionFields });
 
 /** A BACKUP file's payload — the shareable region plus the owner-private keys a backup is allowed to carry. See above for the one it is not. */
 const snapshotSchema = z.object({ ...shareableSnapshotFields, ...ownerPrivateRegionFields });
@@ -618,14 +593,11 @@ async function resolveStore(store: Store | undefined): Promise<Store> {
 /**
  * Reads the full health snapshot from the primary store (deterministic order).
  *
- * THE ALLOWLIST, one line per key — and `gatewayConnection` (v17) is
- * deliberately not among them. This function is the export path, and a gateway
- * member token is a provider credential: `ai-settings.ts`'s header says an
- * export of a person's tracker must never carry one, and that reason holds
- * whichever store the credential happens to sit in. The SYNC read path
- * attaches it instead (`app/lib/sync/local-store-bridge.ts`), which is why
- * `LocalStoreSnapshot.gatewayConnection` is optional and why
- * `tests/unit/gateway-connection-backup-exclusion.test.ts` exists.
+ * THE ALLOWLIST, one line per key. It is an allowlist rather than a spread so
+ * that a new entity has to be added here deliberately — the export file is the
+ * one artefact a person carries off this device, and a credential that reached
+ * it would leave with them. `openplate-ai` and `openplate-session` are
+ * different databases entirely and there is no code path from here to either.
  */
 async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
   return {

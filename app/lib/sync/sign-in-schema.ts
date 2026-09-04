@@ -1,6 +1,6 @@
 /**
- * The Conform/Zod schema for the sync SIGN-IN form — sign-in name and
- * passphrase.
+ * The Conform/Zod schema for the sync SIGN-IN form — email address and
+ * password.
  *
  * ── Why the passphrase is only checked for emptiness ─────────────────────
  *
@@ -10,13 +10,13 @@
  * useless and wrong-headed: the only authority on whether it opens the account
  * is the account. So this form asks for a value and lets the service answer.
  *
- * The handle rules ARE applied, because they are shape rules the service
- * enforces at signup: no account can exist whose name contains `@` or runs
- * past the length bound, so a submission carrying one cannot succeed and is
- * better refused here than after a round trip.
+ * The ADDRESS rules ARE applied, because they are shape rules the service
+ * enforces: no account can exist at a value with no `@`, so a submission
+ * carrying one cannot succeed and is better refused here than after a round
+ * trip.
  */
 import { z } from 'zod';
-import { describeHandleProblem } from './handle';
+import { describeEmailProblem } from './email';
 import type { Translate } from './setup-flow';
 
 /**
@@ -28,17 +28,12 @@ import type { Translate } from './setup-flow';
 export function makeSyncSignInSchema(t: Translate) {
   return z
     .object({
-      handle: z.string().default(''),
+      email: z.string().default(''),
       passphrase: z.string().default(''),
     })
     .superRefine((value, ctx) => {
-      // An EMPTY field gets its own sentence here. The signup copy ("choose a
-      // sign-in name, or let us suggest one") belongs to a form with a suggest
-      // button next to the box; on this one there is nothing to suggest, and
-      // the name being asked for already exists.
-      const handleProblem =
-        value.handle.trim() === '' ? t('sync.signIn.handleRequired') : describeHandleProblem(value.handle, t);
-      if (handleProblem !== null) ctx.addIssue({ code: 'custom', path: ['handle'], message: handleProblem });
+      const emailProblem = describeEmailProblem(value.email, t);
+      if (emailProblem !== null) ctx.addIssue({ code: 'custom', path: ['email'], message: emailProblem });
 
       if (value.passphrase === '') {
         ctx.addIssue({ code: 'custom', path: ['passphrase'], message: t('sync.signIn.passphraseRequired') });

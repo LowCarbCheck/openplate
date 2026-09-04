@@ -90,6 +90,10 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s4Heading')}</H2>
         <P>{t('privacy.s4Body', { days })}</P>
+        {/* The photo's RECIPIENT differs by instance, and this is the page
+            that has to say so: on a managed instance it is the organization's
+            own proxy rather than a provider the person picked. */}
+        <P className="mt-4">{t('privacy.s4ManagedBody')}</P>
       </section>
 
       <section className="mb-8">
@@ -101,7 +105,13 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
         <H2 variant="default">{t('privacy.s6Heading')}</H2>
         <P>{t('privacy.s6Body1')}</P>
         <P className="mt-4">{t('privacy.s6Body2')}</P>
+        {/* THE ESCROW, said plainly (M192). The paragraph this replaced said
+            the operator could not decrypt a diary; that stopped being true
+            when the recovery code moved into escrow so a mailed reset could
+            return somebody's data. A promise nobody can keep is worse than the
+            honest sentence. */}
         <P className="mt-4">{t('privacy.s6Body3')}</P>
+        <P className="mt-4">{t('privacy.s6Body4')}</P>
       </section>
 
       <section className="mb-8">

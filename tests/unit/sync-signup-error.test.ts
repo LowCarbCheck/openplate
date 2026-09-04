@@ -1,45 +1,44 @@
 /**
  * Classifying a failed account creation.
  *
- * The property that matters: the service answers the SAME `403` whether it is
- * closed or merely wants an invite, and deliberately will not distinguish a
- * missing invite from an expired or already-spent one. So the status alone
- * cannot choose the message, and the instance's advertised mode is what makes
- * it readable. When that mode is unknown the honest answer is the generic
- * refusal — never a guess that sends somebody looking for an invitation that
- * was never required.
+ * The property that matters: the service answers the SAME `403` for an invite
+ * that is missing, unknown, expired, revoked or already spent, and it will not
+ * distinguish them — telling them apart would let a caller probe which tokens
+ * exist. All four are one outcome here, because the person's next step is the
+ * same for all four: ask whoever invited them for a new link.
+ *
+ * ── What M192 removed from this signature ────────────────────────────────
+ *
+ * A `signupMode` parameter. It was needed while the same `403` also covered
+ * "this instance is closed", and the status alone could not say which. There
+ * is one way in now, so there is one meaning.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { classifySignupFailure } from '#app/lib/sync/signup-error';
 import { SyncRequestError } from '#app/lib/sync/engine/client/sync-error';
 
-function thrown(kind: 'forbidden' | 'conflict' | 'unauthorized', status: number): SyncRequestError {
+function thrown(kind: 'forbidden' | 'conflict' | 'suspended' | 'unauthorized', status: number): SyncRequestError {
   return new SyncRequestError({ kind, message: 'whatever the service said', status });
 }
 
-test('a 403 on an invite-only instance asks for an invite', () => {
-  assert.equal(classifySignupFailure(thrown('forbidden', 403), 'invite'), 'invite-required');
+test('a 403 is an invite problem, and there is only one of those', () => {
+  assert.equal(classifySignupFailure(thrown('forbidden', 403)), 'invite-required');
 });
 
-test('a 403 on a closed instance says the door is shut', () => {
-  assert.equal(classifySignupFailure(thrown('forbidden', 403), 'closed'), 'signups-closed');
+test('a 409 is an account that already exists at the invited address', () => {
+  assert.equal(classifySignupFailure(thrown('conflict', 409)), 'account-exists');
 });
 
-test('a 403 with an UNKNOWN mode falls back to the generic refusal', () => {
-  // An older service, or one that could not be reached for the handshake.
-  // Promising that an invite would help here would be a guess.
-  assert.equal(classifySignupFailure(thrown('forbidden', 403), null), 'signups-closed');
-});
-
-test('a 409 is the taken handle, whatever the mode', () => {
-  for (const mode of ['open', 'invite', 'closed', null] as const) {
-    assert.equal(classifySignupFailure(thrown('conflict', 409), mode), 'handle-taken');
-  }
+test('a suspended account is its own outcome, not an invite problem', () => {
+  // It reaches this form when somebody redeems an invite for an address whose
+  // account an admin has since suspended. "Ask for a new invitation" would
+  // send them to the wrong person.
+  assert.equal(classifySignupFailure(thrown('suspended', 403)), 'suspended');
 });
 
 test('anything that is not a sync request error is left alone', () => {
-  assert.equal(classifySignupFailure(new Error('network died'), 'invite'), 'other');
-  assert.equal(classifySignupFailure('a thrown string', 'invite'), 'other');
-  assert.equal(classifySignupFailure(thrown('unauthorized', 401), 'invite'), 'other');
+  assert.equal(classifySignupFailure(new Error('network died')), 'other');
+  assert.equal(classifySignupFailure('a thrown string'), 'other');
+  assert.equal(classifySignupFailure(thrown('unauthorized', 401)), 'other');
 });

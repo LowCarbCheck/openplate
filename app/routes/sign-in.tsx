@@ -41,12 +41,11 @@ import { Loader2 } from 'lucide-react';
 
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SignInPanel } from '#app/components/sign-in-panel';
-import { SyncRecoveryFlow } from '#app/components/sync-recovery-flow';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
-import { consumeSyncInvite, readPendingGatewayJoin } from '#app/lib/join-link';
+import { consumeSyncInvite } from '#app/lib/join-link';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
 import { completeSignIn, resolveSignInDestination, type SignInDestination } from '#app/lib/sign-in-flow';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
@@ -59,10 +58,9 @@ export { RouteErrorBoundary as ErrorBoundary };
 // seam every other route uses.
 export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.signIn') }];
 
-/** What the screen is doing. The form and the recovery flow are the two doors; the other two are the pull. */
+/** What the screen is doing. The form is the door; the other two are the pull. */
 type Phase =
   | { status: 'form' }
-  | { status: 'forgot' }
   | { status: 'pulling' }
   /** Signed in, snapshot missing. `message` is what went wrong, in the person's language. */
   | { status: 'pull-failed'; message: string };
@@ -78,7 +76,6 @@ type Phase =
 async function readDestination(): Promise<SignInDestination> {
   return resolveSignInDestination({
     gate: await readOnboardingGateKind(),
-    hasPendingGatewayJoin: readPendingGatewayJoin() !== null,
   });
 }
 
@@ -90,8 +87,8 @@ export default function SignIn() {
   // The remembered sign-in name, or `''`. Read in an effect: `localStorage`
   // does not exist during SSR. It also seeds an uncontrolled Conform field, so
   // clearing it has to REMOUNT the panel — see the `key` below.
-  const [knownHandle, setKnownHandle] = useState('');
-  useEffect(() => setKnownHandle(readAccountHint() ?? ''), []);
+  const [knownEmail, setKnownEmail] = useState('');
+  useEffect(() => setKnownEmail(readAccountHint() ?? ''), []);
 
   const startFirstPull = useCallback(async (): Promise<void> => {
     setPhase({ status: 'pulling' });
@@ -100,11 +97,11 @@ export default function SignIn() {
       setPhase({ status: 'pull-failed', message: describeErrorForUser(outcome.cause, t('signIn.pullFailedBody')) });
       return;
     }
-    // Returning to `/join` means the person spent the link's sync half by
-    // signing in to the account they already had, so the SIGNUP invite is
-    // moot — and leaving it parked would put `/join` straight back on its
-    // sync step, which is the screen that just sent them here.
-    if (outcome.path === '/join') consumeSyncInvite();
+    // A SIGN-IN SPENDS THE PARKED INVITE, whatever the destination. Somebody
+    // who followed an invitation and turned out to already have an account has
+    // answered the invitation; leaving it parked would offer them the signup
+    // screen again on the next visit, for an account that exists.
+    consumeSyncInvite();
     void navigate(outcome.path);
   }, [navigate, t]);
 
@@ -117,8 +114,8 @@ export default function SignIn() {
    *
    * Driven by the wizard's COMPLETE event rather than by the `false` edge of
    * its active flag: that flag is re-reported by an effect cleanup whenever
-   * the callback's identity changes, so the edge can arrive while the card is
-   * still on screen. Acting on it would pull the person off their recovery
+   * the callback's identity changes, so the edge can arrive mid-flight.
+   * Acting on it would pull the person off their own
    * code — the same defect that hit `/settings/sync` on 2026-09-04.
    */
   const handleCeremonyComplete = useCallback((): void => {
@@ -138,12 +135,11 @@ export default function SignIn() {
           : <SignedOutBody
               phase={phase}
               serverUrl={serverUrl}
-              knownHandle={knownHandle}
-              onForgot={() => setPhase({ status: 'forgot' })}
-              onBackToForm={() => setPhase({ status: 'form' })}
+              knownEmail={knownEmail}
+              onForgot={() => void navigate('/forgot')}
               onForgetName={() => {
                 clearAccountHint();
-                setKnownHandle('');
+                setKnownEmail('');
               }}
               onSignedIn={() => void startFirstPull()}
               onCeremonyComplete={handleCeremonyComplete}
@@ -160,9 +156,8 @@ export default function SignIn() {
 function SignedOutBody({
   phase,
   serverUrl,
-  knownHandle,
+  knownEmail,
   onForgot,
-  onBackToForm,
   onForgetName,
   onSignedIn,
   onCeremonyComplete,
@@ -170,9 +165,8 @@ function SignedOutBody({
 }: {
   phase: Phase;
   serverUrl: string;
-  knownHandle: string;
+  knownEmail: string;
   onForgot: () => void;
-  onBackToForm: () => void;
   onForgetName: () => void;
   onSignedIn: () => void;
   onCeremonyComplete: () => void;
@@ -201,20 +195,14 @@ function SignedOutBody({
     );
   }
 
-  if (phase.status === 'forgot') {
-    // The ONE recovery flow, the same component `/settings/sync` opens. There
-    // is no second implementation of it and there must not be.
-    return <SyncRecoveryFlow serverUrl={serverUrl} initialHandle={knownHandle} onCancel={onBackToForm} />;
-  }
-
   return (
     <SignInPanel
       // Conform seeds the name box once, on mount, from `defaultValue`. "Not
       // you?" therefore has to bring a NEW form rather than a changed prop —
       // see `.claude/conform-to-react.md`.
-      key={knownHandle}
+      key={knownEmail}
       serverUrl={serverUrl}
-      initialHandle={knownHandle}
+      initialEmail={knownEmail}
       onForgot={onForgot}
       onForgetName={onForgetName}
       onSignedIn={onSignedIn}

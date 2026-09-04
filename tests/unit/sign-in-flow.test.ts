@@ -16,34 +16,39 @@ import { completeSignIn, resolveSignInDestination } from '../../app/lib/sign-in-
 
 describe('resolveSignInDestination', () => {
   it('sends an onboarded profile to the diary', () => {
-    assert.equal(resolveSignInDestination({ gate: 'pass', hasPendingGatewayJoin: false }), '/diary');
+    assert.equal(resolveSignInDestination({ gate: 'pass' }), '/diary');
   });
 
   it('sends a pre-stamp device with logs to the diary, where the layout stamps it', () => {
-    assert.equal(resolveSignInDestination({ gate: 'self-heal', hasPendingGatewayJoin: false }), '/diary');
+    assert.equal(resolveSignInDestination({ gate: 'self-heal' }), '/diary');
   });
 
   it('sends an account whose snapshot held no onboarded profile to the questionnaire', () => {
-    assert.equal(resolveSignInDestination({ gate: 'welcome', hasPendingGatewayJoin: false }), '/onboarding');
+    assert.equal(resolveSignInDestination({ gate: 'welcome' }), '/onboarding');
   });
 
   it('never answers /welcome, which would bounce the person back to the screen they came from', () => {
-    const outcomes = ['pass', 'self-heal', 'recover', 'welcome'] as const;
-    for (const gate of outcomes) {
-      for (const hasPendingGatewayJoin of [true, false]) {
-        assert.notEqual(resolveSignInDestination({ gate, hasPendingGatewayJoin }), '/welcome');
-      }
+    for (const gate of ['pass', 'self-heal', 'recover', 'welcome'] as const) {
+      assert.notEqual(resolveSignInDestination({ gate }), '/welcome');
     }
   });
 
-  it('returns to /join to finish the gateway half of a two-capability link', () => {
-    assert.equal(resolveSignInDestination({ gate: 'pass', hasPendingGatewayJoin: true }), '/join');
-    assert.equal(resolveSignInDestination({ gate: 'welcome', hasPendingGatewayJoin: true }), '/join');
+  // WHAT M192 DELETED: a `/join` answer for a parked GATEWAY half. One link
+  // carries one capability now, and signing in spends all of it, so there is
+  // no half left to strand and `/join` is unreachable from here.
+  it('never answers /join, which a completed sign-in has nothing left to finish', () => {
+    for (const gate of ['pass', 'self-heal', 'recover', 'welcome'] as const) {
+      // A DEAD COMPARISON by construction — `/join` left the union — and that
+      // is the point: the destination is collected into a `string[]` so the
+      // assertion is legal without an assertion, and it documents the removal
+      // rather than restating the type.
+      const reachable: string[] = [resolveSignInDestination({ gate })];
+      assert.equal(reachable.includes('/join'), false, gate);
+    }
   });
 
-  it('lets possible data loss outrank a parked gateway invite', () => {
-    assert.equal(resolveSignInDestination({ gate: 'recover', hasPendingGatewayJoin: true }), '/recover');
-    assert.equal(resolveSignInDestination({ gate: 'recover', hasPendingGatewayJoin: false }), '/recover');
+  it('lets possible data loss outrank everything else', () => {
+    assert.equal(resolveSignInDestination({ gate: 'recover' }), '/recover');
   });
 });
 
@@ -93,8 +98,12 @@ describe('/sign-in wiring', () => {
     assert.match(route, /clearAccountHint/);
   });
 
-  it('offers the one recovery flow rather than a second implementation', () => {
-    assert.match(route, /SyncRecoveryFlow/);
+  it('sends "forgot password" to its own page rather than opening a form here', () => {
+    // A reset takes minutes and arrives by mail. A card three taps deep inside
+    // a sign-in screen is not somewhere a person can come back to, so `/forgot`
+    // is a page and this route only links to it (M192/05).
+    assert.match(route, /navigate\('\/forgot'\)/);
+    assert.doesNotMatch(route, /SyncResetRequestForm|SyncRecoveryFlow/);
   });
 
   it('keeps a failed pull signed in', () => {

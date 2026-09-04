@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { getPrimaryStore } from '#app/lib/local-store/persist';
-import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { getSyncSessionSnapshot, getSyncVault, updateSyncSession } from '#app/lib/sync/sync-session';
 import { markSyncPending, syncNow } from '#app/lib/sync/sync-actions';
+import { resumeSyncSession } from '#app/lib/sync/session-cache';
 import { createComponentLogger } from '#app/lib/logger';
 
 const log = createComponentLogger('sync-controller');
@@ -11,8 +12,25 @@ const log = createComponentLogger('sync-controller');
 const PUSH_DEBOUNCE_MS = 3_000;
 
 /**
- * Drives sync in the background: a cycle on boot, one when the device comes
- * back online, and a debounced one after local writes. Renders nothing.
+ * Drives sync in the background: RESUME the cached session, then a cycle on
+ * boot, one when the device comes back online, and a debounced one after local
+ * writes. Renders nothing.
+ *
+ * ── The resume comes FIRST, and it does not block rendering ──────────────
+ *
+ * `resumeSyncSession` rebuilds the vault from `openplate-session` (M192), so a
+ * reload of a signed-in tab ends signed in rather than at `/sign-in`. It runs
+ * inside this effect, which React runs AFTER paint — the diary is on screen
+ * before a single request goes out, exactly as it is on a device that has
+ * never synced.
+ *
+ * It runs BEFORE the first cycle because the order is the whole point: a
+ * `syncNow()` with no vault is a silent no-op, and firing it first would waste
+ * the boot cycle and leave the device idle until the next local write.
+ *
+ * It NEVER THROWS. Offline, a 500, a service mid-deploy — all of them leave
+ * the app signed out and the local diary working, which is what it does on a
+ * device that has never signed in.
  *
  * ── The gate ─────────────────────────────────────────────────────────────
  *
@@ -44,8 +62,13 @@ export function SyncController() {
   const serverUrl = useSyncServerUrl();
 
   useEffect(() => {
-    // Sync is off on this instance. Attach nothing, request nothing.
-    if (serverUrl === null) return;
+    // Sync is off on this instance. Attach nothing, request nothing. The
+    // resume flag is still settled: no session will ever be reopened here, and
+    // a screen left waiting for one would wait forever.
+    if (serverUrl === null) {
+      updateSyncSession({ isResuming: false });
+      return;
+    }
 
     let timer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
@@ -73,7 +96,24 @@ export function SyncController() {
       timer = setTimeout(runCycle, PUSH_DEBOUNCE_MS);
     };
 
-    runCycle();
+    // Resume first, then the boot cycle. `syncNow()` before the vault exists
+    // is a no-op, so the two cannot be reordered without losing the cycle.
+    const bootstrap = async (): Promise<void> => {
+      // Already open — a client-side navigation back to a diary route, rather
+      // than a reload. Nothing to resume, and asking again would spend a
+      // refresh token for a session that is already live.
+      if (getSyncVault() === null) await resumeSyncSession({ serverUrl });
+      // SETTLED HERE, on every path, whatever the resume decided. This is the
+      // only place that knows the attempt is over: `resumeSyncSession` returns
+      // the same signed-out snapshot for "there was no cache", "the tokens
+      // were refused" and "the service could not be reached", and the last of
+      // those keeps the cache — so a screen watching the cache instead of this
+      // flag would wait for a resume that already happened and failed.
+      updateSyncSession({ isResuming: false });
+      if (cancelled) return;
+      await runSyncCycle();
+    };
+    void bootstrap();
     window.addEventListener('online', runCycle);
 
     const attachStoreListener = async (): Promise<void> => {

@@ -19,11 +19,9 @@ import {
   getLocalAiSettings,
   getLocalMonthlyAiUsage,
   putLocalAiSettings,
-  putLocalGatewayConnection,
 } from '#app/lib/local-store';
 import type { LocalAiSettings } from '#app/lib/local-store';
 import { resolveSettingsReturnPath } from '#app/lib/settings-return';
-import { isAuditDisclosureRequired } from '#app/lib/gateway-invite';
 import { syncNow } from '#app/lib/sync/sync-actions';
 import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
 import { randomUuid } from '#app/lib/uuid';
@@ -131,6 +129,12 @@ const ADVANCED_OPTION_KEYS = {
   anthropic: 'settingsAi.advanced.anthropicOption',
   openrouter: undefined,
   mistral: undefined,
+  // NEVER RENDERED. `managed` has no tab, no card and no key field on this
+  // page (`placement: 'derived'` in the registry) — its endpoint, model and
+  // bearer all come from the open session. The entry exists because the map is
+  // total over `AiProviderType`, and a total map is what stops a new provider
+  // shipping with a silently missing label.
+  managed: undefined,
 } satisfies Record<AiProviderType, string | undefined>;
 
 /**
@@ -149,6 +153,7 @@ const PROVIDER_BLURB_KEYS = {
   mistral: 'settingsAi.providerBlurb.mistral',
   'openai-compatible': undefined,
   anthropic: undefined,
+  managed: undefined,
 } satisfies Record<AiProviderType, string | undefined>;
 
 /** Only meaningful where the model is free text — a provider with a curated picker never shows it. */
@@ -157,6 +162,12 @@ const MODEL_PLACEHOLDER = {
   anthropic: 'claude-sonnet-5',
   openrouter: undefined,
   mistral: undefined,
+  // NEVER RENDERED. `managed` has no tab, no card and no key field on this
+  // page (`placement: 'derived'` in the registry) — its endpoint, model and
+  // bearer all come from the open session. The entry exists because the map is
+  // total over `AiProviderType`, and a total map is what stops a new provider
+  // shipping with a silently missing label.
+  managed: undefined,
 } satisfies Record<AiProviderType, string | undefined>;
 
 /**
@@ -204,6 +215,8 @@ const API_KEY_LABEL_KEYS = {
   mistral: 'settingsAi.apiKey.label.mistral',
   'openai-compatible': 'settingsAi.apiKey.label.openaiCompatible',
   anthropic: 'settingsAi.apiKey.label.anthropic',
+  // Never rendered — `managed` has no key field. See `ADVANCED_OPTION_KEYS`.
+  managed: 'settingsAi.apiKey.label.openaiCompatible',
 } satisfies Record<AiProviderType, string>;
 
 /**
@@ -218,6 +231,7 @@ const API_KEY_PLACEHOLDERS = {
   mistral: '',
   'openai-compatible': 'sk-...',
   anthropic: 'sk-ant-...',
+  managed: '',
 } satisfies Record<AiProviderType, string>;
 
 /** Placeholder base URL — a local Ollama-style endpoint, which the CSP's localhost carve-out always allows. */
@@ -336,18 +350,13 @@ export async function clientAction({ request }: Route.ClientActionArgs): Promise
     return { id: randomUuid(), type: 'message', description: translate('settingsAi.toast.nothingToDisconnect') };
   }
   await deleteLocalAiSettings();
-  // The TOMBSTONE, and it has to be written rather than inferred (M187/02).
-  // The line above deletes the whole settings row, so "this device
-  // disconnected" and "this device never joined" look identical afterwards —
-  // and the account's `gatewayConnection` singleton is merged by `updatedAt`,
-  // which an absence carries none of. Without this stamp the next cycle would
-  // hand the connection straight back from whichever device still had it.
-  //
-  // Written unconditionally, including for a manual/oauth/preset row: a
-  // disconnect here is the person saying this account is not on a gateway any
-  // more, and the apply rule already refuses to clear anything but an `invite`
-  // row on the devices that receive it.
-  await putLocalGatewayConnection({ status: 'disconnected', updatedAt: Date.now() });
+  // NO TOMBSTONE ANY MORE (M192). A disconnect used to also write a stamped
+  // `gatewayConnection: 'disconnected'` row, because the settings row it
+  // deleted was synced across the account's devices and an absence carries no
+  // `updatedAt` to merge on. That whole entity is gone: BYOK settings are
+  // device-local again, and a managed instance's AI is derived from the
+  // session rather than stored, so there is nothing here for another device to
+  // hand back.
   void syncNow().catch(() => undefined);
   return { id: randomUuid(), type: 'success', description: translate('settingsAi.toast.disconnected') };
 }
@@ -441,7 +450,12 @@ function CatalogModelSection({
         {definition.keyConsoleUrl && (
           <>
             {' '}
-            <a href={definition.keyConsoleUrl} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+            <a
+              href={definition.keyConsoleUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-4"
+            >
               {t('settingsAi.model.createKeyLink', { provider: t(definition.labelKey) })}
             </a>
             .
@@ -519,23 +533,6 @@ function DisconnectDialogDescription({ settings }: { settings: LocalAiSettings }
     );
   }
 
-  // A gateway joined by invite (`routes/connect-gateway.tsx`) is the same shape
-  // of connection as a preset — a base URL and a token somebody else issued —
-  // so the same reasoning applies: there is no provider account of the user's
-  // to revoke anything at. What differs is the remedy: an instance preset can be
-  // reconnected in one tap, while re-joining a gateway needs a fresh invite from
-  // whoever runs it.
-  if (settings.connectedVia === 'invite') {
-    return (
-      <span className="block space-y-2">
-        <span className="block">{t('settingsAi.disconnect.stops')}</span>
-        <span className="block rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-accent-amber">
-          {t('settingsAi.gateway.disconnectNote')}
-        </span>
-      </span>
-    );
-  }
-
   const showOauthKeyNote = supportsOauthPkce(provider) && definition.keyConsoleUrl !== null;
   return (
     <span className="block space-y-2">
@@ -596,7 +593,6 @@ function ConnectedPanel({ settings, onDisconnected }: { settings: LocalAiSetting
             you never typed" is otherwise indistinguishable from a manual
             self-hosted connect, and the disconnect dialog's copy differs. */}
           {settings.connectedVia === 'preset' && <Badge variant="secondary">{t('settingsAi.preset.badge')}</Badge>}
-          {settings.connectedVia === 'invite' && <Badge variant="secondary">{t('settingsAi.gateway.badge')}</Badge>}
         </div>
         <ConfirmAction
           trigger={
@@ -612,15 +608,6 @@ function ConnectedPanel({ settings, onDisconnected }: { settings: LocalAiSetting
           onSuccess={onDisconnected}
         />
       </div>
-      {/* PERSISTENT, for as long as the connection lasts — the same predicate
-          the pre-join card and the scan screen use, so "an administrator can
-          read this" can never be true on one surface and absent on another.
-          Worded as the gateway's own declaration, not as a verified fact. */}
-      {isAuditDisclosureRequired(settings) && (
-        <p className="rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-xs text-accent-amber">
-          {t('settingsAi.gateway.auditNotice')}
-        </p>
-      )}
     </div>
   );
 }
@@ -933,9 +920,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
 
       const data = submission.value;
       if (!data.apiKey && !settings) {
-        setLastResult(
-          submission.reply({ fieldErrors: { apiKey: [t('settingsAi.errors.apiKeyRequiredFirstTime')] } }),
-        );
+        setLastResult(submission.reply({ fieldErrors: { apiKey: [t('settingsAi.errors.apiKeyRequiredFirstTime')] } }));
         return;
       }
       if (settings && !data.apiKey && data.provider !== settings.provider) {
@@ -1015,7 +1000,8 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
   // switch and the API-key field) must never hide a validation error the user
   // can't see a reason for — this additionally covers `apiKey`, the one field
   // that lives directly inside the new outer panel rather than the nested one.
-  const hasHiddenManualEntryFieldError = hasHiddenAdvancedFieldError || (!isConnected && (fields.apiKey.errors?.length ?? 0) > 0);
+  const hasHiddenManualEntryFieldError =
+    hasHiddenAdvancedFieldError || (!isConnected && (fields.apiKey.errors?.length ?? 0) > 0);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -1052,9 +1038,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
               <span>{t('settingsAi.providerRow.label')}</span>
               <Badge variant="secondary">{providerLabel({ provider: providerValue, t })}</Badge>
               <span className="text-xs">
-                {isConnected ?
-                  t('settingsAi.providerRow.connectedHint')
-                : t('settingsAi.providerRow.switchHint')}
+                {isConnected ? t('settingsAi.providerRow.connectedHint') : t('settingsAi.providerRow.switchHint')}
               </span>
             </div>
 
@@ -1172,7 +1156,10 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                       `hasHiddenManualEntryFieldError` above forces the `Collapsible` open
                       whenever that happens, so the `<FieldError>`s below are never silently
                       blocking a submit the user can't see a reason for. */}
-                  <CollapsibleContent forceMount className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden">
+                  <CollapsibleContent
+                    forceMount
+                    className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
+                  >
                     <Collapsible open={isAdvancedOpen || hasHiddenAdvancedFieldError} onOpenChange={setIsAdvancedOpen}>
                       <CollapsibleTrigger asChild>
                         <button
@@ -1182,7 +1169,10 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                           <ChevronDown className="h-3.5 w-3.5" /> {t('settingsAi.advanced.toggle')}
                         </button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent forceMount className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden">
+                      <CollapsibleContent
+                        forceMount
+                        className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
+                      >
                         {PROVIDER_REGISTRY[selectedProvider].placement === 'advanced' && (
                           <button
                             type="button"
@@ -1266,10 +1256,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
         </CardContent>
       </Card>
       {!isConnected && (
-        <NotConnectedExplainer
-          recommendedProvider={recommendedProvider}
-          hasInstancePreset={instancePreset !== null}
-        />
+        <NotConnectedExplainer recommendedProvider={recommendedProvider} hasInstancePreset={instancePreset !== null} />
       )}
       <ScanTroubleshootingCard />
     </div>

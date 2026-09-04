@@ -1,6 +1,11 @@
 /**
- * The Conform/Zod schema for the sync SIGNUP form — invite, sign-in name,
- * passphrase, confirm.
+ * The Conform/Zod schema for the sync SIGNUP form — invite, password, confirm,
+ * and an optional display name.
+ *
+ * THERE IS NO ADDRESS FIELD, and that is M192's whole shape: the invite is
+ * written to an address, the service reads it off the token, and the join
+ * screen SHOWS it rather than asking for it. A form that asked would let
+ * somebody create an account at an address their admin did not invite.
  *
  * ── Why a schema and not four `if`s in the component ─────────────────────
  *
@@ -14,10 +19,8 @@
  *
  * ── It owns no rules ─────────────────────────────────────────────────────
  *
- * Every bound here is borrowed: the handle rules from `handle.ts`
- * ({@link describeHandleProblem}, which is also what the service enforces),
- * the passphrase floor from `setup-flow.ts`
- * ({@link validateSyncPassphrase}), and the invite's shape from
+ * Every bound here is borrowed: the passphrase floor from `setup-flow.ts`
+ * ({@link validateSyncPassphrase}) and the invite's shape from
  * `invite-link.ts` ({@link isSyncInviteToken}). All this file adds is the
  * mapping from a broken rule to the FIELD that broke it.
  *
@@ -26,7 +29,6 @@
  * resolve against the ACTIVE language, which isn't known at module-eval time.
  */
 import { z } from 'zod';
-import { describeHandleProblem } from './handle';
 import { SYNC_INVITE_PREFIX, isSyncInviteToken } from './invite-link';
 import { validateSyncPassphrase, type Translate } from './setup-flow';
 
@@ -55,14 +57,12 @@ export function makeSyncSignupSchema(t: Translate, { invite }: { invite: SyncInv
       // field defaults rather than failing with zod's own untranslated
       // "required" copy.
       invite: z.string().default(''),
-      handle: z.string().default(''),
+      /** Optional, and unchecked beyond its length: a display name is decoration. */
+      displayName: z.string().max(64).default(''),
       passphrase: z.string().default(''),
       confirmPassphrase: z.string().default(''),
     })
     .superRefine((value, ctx) => {
-      const handleProblem = describeHandleProblem(value.handle, t);
-      if (handleProblem !== null) ctx.addIssue({ code: 'custom', path: ['handle'], message: handleProblem });
-
       const passphraseProblem = validateSyncPassphrase(value.passphrase, t);
       if (passphraseProblem !== null) {
         ctx.addIssue({ code: 'custom', path: ['passphrase'], message: passphraseProblem });
@@ -80,7 +80,7 @@ export function makeSyncSignupSchema(t: Translate, { invite }: { invite: SyncInv
     });
 }
 
-/** The four raw field values a valid signup submission carries. */
+/** The raw field values a valid signup submission carries. */
 export type SyncSignupValues = z.infer<ReturnType<typeof makeSyncSignupSchema>>;
 
 /**

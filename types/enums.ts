@@ -17,12 +17,20 @@ export type FoodLogSourceType = 'manual' | 'plate_ai';
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 /**
- * BYOK AI provider backing a user's plate-identification requests. Everything
- * a provider DOES — its endpoint, adapter, auth methods, key check and UI
+ * The AI provider backing a user's plate-identification requests. Everything a
+ * provider DOES — its endpoint, adapter, auth methods, key check and UI
  * placement — is described once in `app/services/vision/registry.ts`; this is
  * the plain enum that registry is keyed by.
+ *
+ * `'managed'` (M192) is the odd one and is worth its own sentence: it is the
+ * only member that is never STORED. On a managed instance the settings are
+ * derived from the open session — the sync server's `/v1`, the model it
+ * advertises, and the account's own access token as the bearer — so nothing is
+ * written into `openplate-ai` for it and no row ever carries this value. It is
+ * in the enum because `createVisionProvider` dispatches on it, and putting it
+ * anywhere else would mean a second dispatch beside the registry.
  */
-export type AiProviderType = 'openrouter' | 'mistral' | 'openai-compatible' | 'anthropic';
+export type AiProviderType = 'openrouter' | 'mistral' | 'openai-compatible' | 'anthropic' | 'managed';
 
 /**
  * Outcome of a single plate-identification provider call, recorded on every

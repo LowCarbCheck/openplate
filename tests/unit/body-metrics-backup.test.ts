@@ -45,13 +45,14 @@ describe('schema version', () => {
   // the micronutrient snapshot on the LOG at v9, the same snapshot on the
   // PERSONAL FOOD at v10, saved meals at v11, the carb-basis flag (spec 13)
   // at v12, clinician sharing at v13, the snapshot partition (M160/07) at
-  // v14, research contributions (M161/03) at v15, and the submitted research
-  // window (M163/01) at v16, and the gateway connection (M187/02) at v17.
+  // v14, research contributions (M161/03) at v15, the submitted research
+  // window (M163/01) at v16, the gateway connection (M187/02) at v17, and its
+  // REMOVAL (M192) at v18 — the first bump here that deletes an entity.
   // What it guards is that a bump is never silent —
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 17 — bumped past the v8 body-metrics bump by everything through the M187/02 gateway connection', () => {
-    assert.equal(SCHEMA_VERSION, 17);
+  it('is 18 — bumped past the v8 body-metrics bump by everything through the M192 gateway removal', () => {
+    assert.equal(SCHEMA_VERSION, 18);
   });
 });
 

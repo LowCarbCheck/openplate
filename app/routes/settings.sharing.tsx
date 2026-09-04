@@ -129,7 +129,7 @@ function SignedOutNotice() {
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{t('sharing.needsSession')}</p>
       <Button asChild variant="outline" className="h-11">
-        <Link to="/settings/sync">{t('sharing.needsSessionCta')}</Link>
+        <Link to="/settings/account">{t('sharing.needsSessionCta')}</Link>
       </Button>
     </div>
   );
@@ -309,12 +309,14 @@ function RotationCard({ onRotated }: { onRotated: () => void }) {
           </AlertDialog>
         : <div className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-4">
             <p className="text-sm font-medium">{t('sharing.rotate.doneTitle')}</p>
+            {/* THE COUNTS, and nothing else (M192). A rotation still mints a
+                fresh recovery code, and the card used to print it with a
+                "keep this" note. It is escrowed with the service now and never
+                shown, so there is nothing for a person to write down and
+                nothing here to write it on. */}
             <p className="text-sm text-muted-foreground">
               {t('sharing.rotate.doneBody', { kept: outcome.keptShares, revoked: outcome.revokedShares })}
             </p>
-            <p className="text-sm text-muted-foreground">{t('sharing.rotate.recoveryTitle')}</p>
-            <p className="font-mono text-base tracking-widest">{outcome.recoveryCode}</p>
-            <p className="text-xs text-muted-foreground">{t('sharing.rotate.recoveryNote')}</p>
           </div>
         }
       </CardContent>

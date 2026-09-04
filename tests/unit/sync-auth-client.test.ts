@@ -36,11 +36,7 @@ const fastDeriver = (input: { passphrase: string; salt: Uint8Array; params: Argo
 
 /** Every JSON document the stub service can answer with — the protocol's own response types. */
 type StubResponseBody =
-  | ProtocolHandshake
-  | KdfDescriptorResponse
-  | SessionResponseWire
-  | RefreshResponseWire
-  | ProtocolErrorResponse;
+  ProtocolHandshake | KdfDescriptorResponse | SessionResponseWire | RefreshResponseWire | ProtocolErrorResponse;
 
 const respond = (body: StubResponseBody, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -62,14 +58,23 @@ function stubService() {
       body: body === undefined || body === null ? undefined : String(body),
     });
 
-    if (url.endsWith('/health')) return respond({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: 'test' });
+    if (url.endsWith('/health')) return respond({ protocolVersion: 2, envelopeVersion: 1, serviceVersion: 'test' });
     if (url.endsWith('/v1/auth/kdf')) {
       return respond({ kdfDescriptor: { salt: SALT_BASE64, params: FAST_PARAMS } });
     }
     if (url.endsWith('/v1/auth/signup')) {
       return respond(
         {
-          account: { id: 1, handle: 'k7m2q3xr9t', displayName: null },
+          account: {
+            id: 1,
+            email: 'anna@example.org',
+            displayName: null,
+            role: 'member',
+            dailyAiLimit: 0,
+            aiUsedToday: 0,
+            suspendedAt: null,
+            createdAt: '2026-09-04T10:00:00.000Z',
+          },
           tokens: {
             accessToken: 'access-1',
             accessTokenExpiresAt: '2026-08-04T10:15:00.000Z',
@@ -82,7 +87,16 @@ function stubService() {
     }
     if (url.endsWith('/v1/auth/login')) {
       return respond({
-        account: { id: 1, handle: 'k7m2q3xr9t', displayName: null },
+        account: {
+          id: 1,
+          email: 'anna@example.org',
+          displayName: null,
+          role: 'member',
+          dailyAiLimit: 0,
+          aiUsedToday: 0,
+          suspendedAt: null,
+          createdAt: '2026-09-04T10:00:00.000Z',
+        },
         tokens: {
           accessToken: 'access-2',
           accessTokenExpiresAt: '2026-08-04T10:15:00.000Z',
@@ -110,13 +124,13 @@ test('the passphrase never appears in ANY request the client sends', async () =>
   const { fetchImpl, captured } = stubService();
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
 
-  const wire = await client.fetchKdfDescriptor('k7m2q3xr9t');
+  const wire = await client.fetchKdfDescriptor('anna@example.org');
   const { authHash } = await deriveCredentialsFromPassphrase({
     passphrase: PASSPHRASE,
     descriptor: { salt: wire.salt, params: wire.params },
     deriveHash: fastDeriver,
   });
-  await client.login({ handle: 'k7m2q3xr9t', authHash });
+  await client.login({ email: 'anna@example.org', authHash });
 
   assert.ok(captured.length > 0, 'expected the stub service to have been called');
   for (const request of captured) {
@@ -140,15 +154,15 @@ test('the passphrase never lands in any client storage', async () => {
   // surface it could write to and must not touch with anything sensitive.
   const storage = createMemoryStorage();
 
-  const wire = await client.fetchKdfDescriptor('k7m2q3xr9t');
+  const wire = await client.fetchKdfDescriptor('anna@example.org');
   const { authHash } = await deriveCredentialsFromPassphrase({
     passphrase: PASSPHRASE,
     descriptor: { salt: wire.salt, params: wire.params },
     deriveHash: fastDeriver,
   });
-  await client.login({ handle: 'k7m2q3xr9t', authHash });
+  await client.login({ email: 'anna@example.org', authHash });
 
-  for (const key of ['openplate.sync.account-hint', 'openplate.sync.state.v1:1', 'openplate.sync.device-id']) {
+  for (const key of ['openplate.sync.email-hint', 'openplate.sync.state.v1:1', 'openplate.sync.device-id']) {
     const value = storage.getItem(key);
     assert.equal(value?.includes(PASSPHRASE) ?? false, false, `passphrase found under ${key}`);
   }
@@ -194,9 +208,15 @@ test('signup adopts the returned session so key records can be written immediate
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
 
   await client.signup({
-    handle: 'k7m2q3xr9t',
+    inviteToken: 'si_TESTTOKENONLY',
     authHash: 'AAAA',
     kdfDescriptor: { salt: SALT_BASE64, params: FAST_PARAMS },
+    recoveryAuthHash: 'BBBB',
+    recoveryCode: 'ABCDE-FGHJK-LMNPQ-RSTVW-XYZ01-23456-789AB-CDEFG',
+    keyRecords: [
+      { kind: 'passphrase', kdfDescriptor: { salt: SALT_BASE64, params: FAST_PARAMS }, wrappedDek: 'CCCC' },
+      { kind: 'recovery', kdfDescriptor: null, wrappedDek: 'DDDD' },
+    ],
   });
 
   assert.equal(client.getAccessToken(), 'access-1');
@@ -208,7 +228,16 @@ test('concurrent refreshes are serialized — a spent refresh token is read as t
     const url = String(input);
     if (url.endsWith('/v1/auth/login')) {
       return respond({
-        account: { id: 1, handle: 'ab7k2m', displayName: null },
+        account: {
+          id: 1,
+          email: 'anna@example.org',
+          displayName: null,
+          role: 'member',
+          dailyAiLimit: 0,
+          aiUsedToday: 0,
+          suspendedAt: null,
+          createdAt: '2026-09-04T10:00:00.000Z',
+        },
         tokens: {
           accessToken: 'a1',
           accessTokenExpiresAt: 'x',
@@ -224,7 +253,7 @@ test('concurrent refreshes are serialized — a spent refresh token is read as t
   };
 
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
-  await client.login({ handle: 'ab7k2m', authHash: 'AAAA' });
+  await client.login({ email: 'anna@example.org', authHash: 'AAAA' });
 
   const [first, second] = await Promise.all([client.refreshAccessToken(), client.refreshAccessToken()]);
 
@@ -238,7 +267,16 @@ const revokedRefreshFetch: typeof fetch = async (input) => {
   const url = String(input);
   if (url.endsWith('/v1/auth/login')) {
     return respond({
-      account: { id: 1, handle: 'ab7k2m', displayName: null },
+      account: {
+        id: 1,
+        email: 'anna@example.org',
+        displayName: null,
+        role: 'member',
+        dailyAiLimit: 0,
+        aiUsedToday: 0,
+        suspendedAt: null,
+        createdAt: '2026-09-04T10:00:00.000Z',
+      },
       tokens: { accessToken: 'a1', accessTokenExpiresAt: 'x', refreshToken: 'r1', refreshTokenExpiresAt: 'y' },
     });
   }
@@ -247,7 +285,7 @@ const revokedRefreshFetch: typeof fetch = async (input) => {
 
 test('a rejected refresh clears the session and reports null rather than throwing', async () => {
   const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl: revokedRefreshFetch });
-  await client.login({ handle: 'ab7k2m', authHash: 'AAAA' });
+  await client.login({ email: 'anna@example.org', authHash: 'AAAA' });
 
   assert.equal(await client.refreshAccessToken(), null);
   assert.equal(client.getSession(), null);

@@ -740,9 +740,7 @@ async function handleDeleteBatch(formData: FormData): Promise<{ intent: 'copy-un
  * button always submits at least one hidden `logIds` field per entry in the
  * group it renders from) rather than user input to recover from — fail fast.
  */
-async function handleSaveMeal(
-  formData: FormData,
-): Promise<{ intent: 'save-meal'; name: string; count: number }> {
+async function handleSaveMeal(formData: FormData): Promise<{ intent: 'save-meal'; name: string; count: number }> {
   const submission = parseWithZod(formData, { schema: SaveMealSchema });
   if (submission.status !== 'success') throw new Response('Invalid save-meal payload', { status: 400 });
   const { name, logIds } = submission.value;
@@ -2077,7 +2075,12 @@ function CopyFromYesterday({
         )}
       </div>
       {isPicking && (
-        <CopyEntryPicker date={date} timezone={timezone} entries={copyableEntries} onClose={() => setIsPicking(false)} />
+        <CopyEntryPicker
+          date={date}
+          timezone={timezone}
+          entries={copyableEntries}
+          onClose={() => setIsPicking(false)}
+        />
       )}
     </div>
   );
@@ -2190,9 +2193,7 @@ function CopyEntryPicker({
               {t('diary.copy.cancel')}
             </Button>
             <Button type="submit" size="sm" disabled={selectedIds.size === 0 || isCopying}>
-              {isCopying ?
-                t('diary.copy.copying')
-              : t('diary.copy.copySelected', { count: selectedIds.size })}
+              {isCopying ? t('diary.copy.copying') : t('diary.copy.copySelected', { count: selectedIds.size })}
             </Button>
           </div>
         </form>
@@ -2255,9 +2256,12 @@ function FirstEverEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
             i18nKey={syncServerUrl === null ? 'diary.empty.firstEver.noDataBackupOnly' : 'diary.empty.firstEver.noData'}
             components={{
               backup: (
-                <Link to="/settings/data#import-backup" className="underline underline-offset-2 hover:text-foreground" />
+                <Link
+                  to="/settings/data#import-backup"
+                  className="underline underline-offset-2 hover:text-foreground"
+                />
               ),
-              sync: <Link to="/settings/sync" className="underline underline-offset-2 hover:text-foreground" />,
+              sync: <Link to="/settings/account" className="underline underline-offset-2 hover:text-foreground" />,
             }}
           />
         </p>

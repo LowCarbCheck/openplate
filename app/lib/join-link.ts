@@ -1,99 +1,121 @@
 /**
- * ONE join link: the fragment `/join` reads, and the fragment an operator's CLI
- * writes.
+ * THE TWO MAILED LINKS: the fragment `/join` reads, and the fragment `/reset`
+ * reads. One grammar, one strip, one pending slot.
  *
- * A person joining is handed one address. It may admit them to a sync account,
- * to a household gateway, or to both, and it looks like this:
+ * A person invited to an organization's instance is handed one address:
  *
- *   https://app.example/join#sync=https%3A%2F%2Fsync.example&invite=si_…
- *                           &gateway=https%3A%2F%2Fgw.example&ginvite=gi_…
+ *   https://app.example/join#server=https%3A%2F%2Fsync.example&invite=si_…
  *
- * Any of the four keys may be absent. A sync-only link, a gateway-only link and
- * a both link are all ordinary; a link with neither capability is the one
- * invalid case, and it lands on an explanation rather than an error.
+ * and a person who forgot their password is handed the other:
+ *
+ *   https://app.example/reset#server=https%3A%2F%2Fsync.example&token=sr_…
+ *
+ * They are in ONE module because every rule below applies to both, and a
+ * second copy of "read the fragment, strip it, park what it carried" is how
+ * one of the two ends up missing the service worker's first-visit reload.
+ * Both keys may be absent, and a link with no capability is the one invalid
+ * case — it lands on an explanation rather than an error.
+ *
+ * ── WHAT M192 DELETED ────────────────────────────────────────────────────
+ *
+ * The gateway half: `gateway=`, `ginvite=`, the `gi_` prefix, the redeemed
+ * answer parked beside them, and the two-token grammar that existed because a
+ * person had to join two services in one sitting. There is one service now, so
+ * there is one token, and the `sync=` key is spelled `server=` to say so.
+ *
+ * A link minted before this build carries `sync=` and `invite=`; the invite is
+ * still read, and the address it names is still only a CHECK (see
+ * {@link isForeignSyncServer}), so such a link keeps working on the instance it
+ * was minted for.
  *
  * ── The fragment, never the query string ──────────────────────────────────
  *
- * Inherited from `sync/invite-link.ts`, and non-negotiable for the same reason:
- * both tokens are LIVE CAPABILITIES. A query string carries them into the
- * browser's history, into the `Referer` of the next request, and into the
- * access log of every server the link passes on its way to the person invited.
- * A fragment is never sent to any server at all. That is also why nothing here
- * reads the page's query string: by construction there is nothing in it.
- *
- * ── Two services, two prefixes ───────────────────────────────────────────
- *
- * `invite` is a sync signup invite and wears `si_`; `ginvite` is a gateway
- * invite and wears `gi_`. The parse applies each service's shape gate, so a
- * link built with the two halves swapped yields no token rather than a token
- * this app would post to the wrong service. Both servers run the same gate,
- * and theirs are the ones that matter — see `openplate-sync/src/lib/tokens.ts`
- * and `openplate-gateway/src/invite-store.ts`.
+ * The invite is a LIVE CAPABILITY: whoever holds it can create an account on
+ * this instance, at an address somebody else chose. A query string carries it
+ * into the browser's history, into the `Referer` of the next request, and into
+ * the access log of every server the link passes on its way to the person
+ * invited. A fragment is never sent to any server at all. That is also why
+ * nothing here reads the page's query string: by construction there is nothing
+ * in it.
  *
  * ── Read once, park, strip ───────────────────────────────────────────────
  *
  * `takeJoinLinkFromUrl` clears the fragment with `replaceState` the moment it
- * is read, so the tokens do not sit in the address bar for a screenshot or a
+ * is read, so the token does not sit in the address bar for a screenshot or a
  * screen share, and parks what it found in the pending slot so a remount or the
  * service worker's first-visit document reload cannot destroy the only copy.
- *
- * ── And the ANSWER is parked too ─────────────────────────────────────────
- *
- * Spending the gateway invite and saving what it bought are not one
- * transaction, and they cannot be made into one: the burn happens on somebody
- * else's server and the save happens in this browser's IndexedDB. The gateway
- * marks the invite used the instant it answers, so for the length of the two
- * local writes the server has moved on and this device still has nothing. If
- * either write throws in that window, the old shape lost the whole join: the
- * only copy of the member token was a local variable, retrying re-posted a
- * token the gateway had already burnt, and the person ended up as a member of a
- * gateway their device could not reach.
- *
- * So the redeemed result is parked in the SAME slot as the tokens, by
- * {@link parkGatewayRedemption}, before either write is attempted — the client
- * keeps the server's answer until that answer is safe on disk. It is cleared by
- * {@link consumeGatewayInvite} together with the invite it replaced, and it is
- * a credential like the invite was: `sessionStorage` only, never a query
- * string, never logged.
  */
-import { z } from 'zod';
-
-import {
-  GATEWAY_INVITE_PREFIX,
-  gatewayRedeemResponseSchema,
-  isGatewayInviteToken,
-  normalizeGatewayUrl,
-  normalizeInviteToken,
-  type GatewayRedeemResponse,
-} from '#app/lib/gateway-invite';
 import {
   SYNC_INVITE_PREFIX,
+  SYNC_RESET_PREFIX,
   clearPendingJoinField,
   isSyncInviteToken,
+  isSyncResetToken,
   readPendingJoinField,
   rememberPendingJoinField,
   sessionInviteStorage,
-  type PendingInviteStorage,
 } from '#app/lib/sync/invite-link';
 
-/** The sync service's address. A CHECK, not an instruction — see {@link isForeignSyncServer}. */
-const SYNC_URL_KEY = 'sync';
-/** The sync signup invite, spelled the same as the M166 `#invite=` link, which still works. */
-const SYNC_INVITE_KEY = 'invite';
-/** The gateway's address. */
-const GATEWAY_URL_KEY = 'gateway';
-/** The gateway invite. Named apart from `invite` so the two can never be confused positionally. */
-const GATEWAY_INVITE_KEY = 'ginvite';
+/**
+ * The service's address. A CHECK, not an instruction — see
+ * {@link isForeignSyncServer}.
+ *
+ * `sync` is read as well, unchanged, because links minted before M192 spell it
+ * that way and they are already in people's mailboxes.
+ */
+const SERVER_URL_KEY = 'server';
+const LEGACY_SERVER_URL_KEY = 'sync';
+/** The signup invite, spelled the same as the M166 `#invite=` link, which still works. */
+const INVITE_KEY = 'invite';
+/** The password-reset token. Named apart from `invite` so the two can never be confused positionally. */
+const RESET_TOKEN_KEY = 'token';
 
-/** What one join link offers. Every field is independently optional. */
+/** What one join link offers. Both fields are independently optional. */
 export interface JoinLink {
-  syncUrl: string | null;
-  syncInvite: string | null;
-  gatewayUrl: string | null;
-  gatewayInvite: string | null;
+  serverUrl: string | null;
+  invite: string | null;
 }
 
-const EMPTY_JOIN_LINK: JoinLink = { syncUrl: null, syncInvite: null, gatewayUrl: null, gatewayInvite: null };
+const EMPTY_JOIN_LINK: JoinLink = { serverUrl: null, invite: null };
+
+/** Hostnames a plain `http:` address is accepted for — the CSP's own loopback carve-out, written down. */
+const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1']);
+
+/**
+ * Normalizes the `server=` value, or `null` when it is not a usable address.
+ *
+ * `null` rather than a throw: this value arrives from a link in someone's
+ * inbox, so a mangled one is an ordinary user-facing outcome ("this link
+ * doesn't look right"), not an exceptional condition. Contrast
+ * `parseSyncServerUrl`, which throws — that one is an OPERATOR's own
+ * environment variable, where failing loudly at boot is the cheap option.
+ *
+ * The rules:
+ * - `https:` anywhere;
+ * - `http:` ONLY for loopback, matching the CSP's standing carve-out. A plain
+ *   `http://` address on a LAN is blocked by the browser's mixed-content rule
+ *   regardless of what this function returns, so accepting it here would only
+ *   move the failure later and make it harder to explain;
+ * - trailing slashes trimmed, so `${serverUrl}${AUTH_API_PREFIX}` can never
+ *   produce a double slash;
+ * - any query string or fragment dropped — a service address has neither, and
+ *   silently carrying one into every request URL is a debugging trap.
+ */
+export function normalizeServerUrl(raw: string | null | undefined): string | null {
+  if (raw === null || raw === undefined || raw.trim() === '') return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+
+  const isLoopback = LOOPBACK_HOSTNAMES.has(parsed.hostname);
+  if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && isLoopback)) return null;
+
+  return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
+}
 
 /**
  * Parses a join fragment. Pure, and takes the fragment as a string rather than
@@ -108,14 +130,8 @@ export function parseJoinFragment(hash: string): JoinLink {
 
   const params = new URLSearchParams(withoutHash);
   return {
-    // Both addresses take the gateway rule: `https:` anywhere, `http:` only for
-    // loopback. It is the browser's own mixed-content and CSP behaviour written
-    // down, and it does not become more permissive because the service on the
-    // other end is a different one.
-    syncUrl: normalizeGatewayUrl(params.get(SYNC_URL_KEY)),
-    syncInvite: normalizeSyncInviteToken(params.get(SYNC_INVITE_KEY)),
-    gatewayUrl: normalizeGatewayUrl(params.get(GATEWAY_URL_KEY)),
-    gatewayInvite: normalizeInviteToken(params.get(GATEWAY_INVITE_KEY)),
+    serverUrl: normalizeServerUrl(params.get(SERVER_URL_KEY) ?? params.get(LEGACY_SERVER_URL_KEY)),
+    invite: normalizeInviteToken(params.get(INVITE_KEY)),
   };
 }
 
@@ -131,7 +147,7 @@ export function parseJoinFragment(hash: string): JoinLink {
  * Accepts the whole URL, and also a bare fragment, because "copy the link"
  * produces both in the wild. Everything before the first `#` is discarded
  * unread: the host in a pasted link decides nothing here, exactly as the
- * `sync=` field decides nothing (see {@link isForeignSyncServer}).
+ * `server=` field decides nothing (see {@link isForeignSyncServer}).
  */
 export function parseJoinLinkInput(raw: string): JoinLink {
   const trimmed = raw.trim();
@@ -140,48 +156,57 @@ export function parseJoinLinkInput(raw: string): JoinLink {
   return parseJoinFragment(hashAt === -1 ? trimmed : trimmed.slice(hashAt + 1));
 }
 
-/** The sync token, trimmed, or `null` when absent, blank or minted by the gateway. */
-export function normalizeSyncInviteToken(raw: string | null | undefined): string | null {
+/** The invite, trimmed, or `null` when absent, blank, or not shaped like one. */
+export function normalizeInviteToken(raw: string | null | undefined): string | null {
+  return normalizeToken(raw, isSyncInviteToken);
+}
+
+/** The reset token, trimmed, or `null` when absent, blank, or not shaped like one. */
+export function normalizeResetToken(raw: string | null | undefined): string | null {
+  return normalizeToken(raw, isSyncResetToken);
+}
+
+/**
+ * The shape gate both tokens share.
+ *
+ * An empty value is treated as ABSENT: `#invite=` is a malformed link, not a
+ * request to submit an empty token. A value of the wrong SHAPE is absent too,
+ * rather than prefilled into a form that would post it and get a refusal
+ * nobody can explain.
+ */
+function normalizeToken(raw: string | null | undefined, belongsToService: (token: string) => boolean): string | null {
   if (raw === null || raw === undefined) return null;
   const trimmed = raw.trim();
   if (trimmed === '') return null;
-  return isSyncInviteToken(trimmed) ? trimmed : null;
+  return belongsToService(trimmed) ? trimmed : null;
 }
 
 /**
  * Builds the fragment, including the leading `#`.
  *
- * The one place a join link is written, so the operator CLI (spec 06), the
- * `/connect-gateway` redirect and any test all produce the same grammar. Absent
- * fields are omitted rather than written empty: `#ginvite=` is a link that
- * looks like it carries a gateway and does not.
+ * The one place a join link is written, so the admin page, the operator CLI and
+ * any test all produce the same grammar. Absent fields are omitted rather than
+ * written empty: `#invite=` is a link that looks like it carries an invitation
+ * and does not.
  */
 export function buildJoinFragment(link: Partial<JoinLink>): string {
   const params = new URLSearchParams();
-  if (link.syncUrl != null && link.syncUrl !== '') params.set(SYNC_URL_KEY, link.syncUrl);
-  if (link.syncInvite != null && link.syncInvite !== '') params.set(SYNC_INVITE_KEY, link.syncInvite);
-  if (link.gatewayUrl != null && link.gatewayUrl !== '') params.set(GATEWAY_URL_KEY, link.gatewayUrl);
-  if (link.gatewayInvite != null && link.gatewayInvite !== '') params.set(GATEWAY_INVITE_KEY, link.gatewayInvite);
+  if (link.serverUrl != null && link.serverUrl !== '') params.set(SERVER_URL_KEY, link.serverUrl);
+  if (link.invite != null && link.invite !== '') params.set(INVITE_KEY, link.invite);
   const encoded = params.toString();
   return encoded === '' ? '' : `#${encoded}`;
 }
 
 /** Whether this link admits anyone to anything. A link that does not is the one invalid case. */
 export function isJoinLinkEmpty(link: JoinLink): boolean {
-  return link.syncInvite === null && !hasGatewayHalf(link);
-}
-
-/** A gateway can only be joined with BOTH its address and its invite. */
-export function hasGatewayHalf(link: JoinLink): boolean {
-  return link.gatewayUrl !== null && link.gatewayInvite !== null;
+  return link.invite === null;
 }
 
 /**
- * Whether the link names a DIFFERENT sync service than this app is configured
- * for.
+ * Whether the link names a DIFFERENT service than this app is configured for.
  *
  * The address in the link is a check, never an instruction. This client posts a
- * passphrase-derived verifier to the sync server its own operator configured
+ * passphrase-derived verifier to the server its own operator configured
  * (`SYNC_SERVER_URL`); letting a link redirect that would let anyone who can
  * send a link choose where those credentials go. So a mismatch is reported to
  * the person, and nothing is dialled.
@@ -190,15 +215,15 @@ export function hasGatewayHalf(link: JoinLink): boolean {
  * service, and the origin is the part a browser enforces anything about.
  */
 export function isForeignSyncServer({
-  linkSyncUrl,
+  linkServerUrl,
   configuredSyncUrl,
 }: {
-  linkSyncUrl: string | null;
+  linkServerUrl: string | null;
   configuredSyncUrl: string | null;
 }): boolean {
-  if (linkSyncUrl === null) return false;
+  if (linkServerUrl === null) return false;
   if (configuredSyncUrl === null) return true;
-  return safeOrigin(linkSyncUrl) !== safeOrigin(configuredSyncUrl);
+  return safeOrigin(linkServerUrl) !== safeOrigin(configuredSyncUrl);
 }
 
 function safeOrigin(url: string): string | null {
@@ -210,13 +235,12 @@ function safeOrigin(url: string): string | null {
 }
 
 /**
- * Reads the join link from the current URL, strips the fragment, and parks what
- * it found and this app can actually use — or, when the URL carries none, returns what is still parked.
+ * Reads the join link from the current URL, strips the fragment, and parks the
+ * invite — or, when the URL carries none, returns what is still parked.
  *
  * Calling this twice is safe and is the normal case: the second call comes from
  * the remount, or from the mount after the service worker's first-visit reload,
- * and it gets the same link back. `consumeSyncInvite` / `consumeGatewayInvite`
- * are what end that, each for its own half.
+ * and it gets the same link back. {@link consumeSyncInvite} is what ends that.
  *
  * Returns an empty link during SSR, where there is no `location`.
  */
@@ -227,169 +251,96 @@ export function takeJoinLinkFromUrl({ configuredSyncUrl }: { configuredSyncUrl: 
   const fromUrl = parseJoinFragment(globalThis.window.location.hash);
   if (globalThis.window.location.hash !== '') {
     // Unconditionally, and before anything is dialled: even a link this app
-    // rejects carries tokens that are just as sensitive. `replaceState` rather
+    // rejects carries a token that is just as sensitive. `replaceState` rather
     // than assigning `location.hash`, which would push a history entry and put
-    // the tokens straight back in the bar on Back.
+    // the token straight back in the bar on Back.
     const { pathname, search } = globalThis.window.location;
     globalThis.window.history.replaceState(null, '', `${pathname}${search}`);
   }
-  park({
-    link: fromUrl,
-    storage,
-    // A link for ANOTHER sync service parks nothing of its sync half. Parking
-    // it would leave a token this app can never spend sitting in the slot,
-    // where the next link read picks it up and offers a signup that belongs to
-    // somebody else's server.
-    keepSyncInvite: !isForeignSyncServer({ linkSyncUrl: fromUrl.syncUrl, configuredSyncUrl }),
-  });
+  // A link for ANOTHER service parks nothing. Parking it would leave a token
+  // this app can never spend sitting in the slot, where the next link read
+  // picks it up and offers a signup that belongs to somebody else's server.
+  const isForeign = isForeignSyncServer({ linkServerUrl: fromUrl.serverUrl, configuredSyncUrl });
+  if (fromUrl.invite !== null && !isForeign) {
+    rememberPendingJoinField({ field: 'invite', value: fromUrl.invite, storage });
+  }
 
   return {
-    syncUrl: fromUrl.syncUrl,
-    syncInvite: readPendingJoinField({ field: 'syncInvite', storage }),
-    gatewayUrl: readPendingJoinField({ field: 'gatewayUrl', storage }),
-    gatewayInvite: readPendingJoinField({ field: 'gatewayInvite', storage }),
+    // The ADDRESS is deliberately not parked: it is a check run against this
+    // app's own configuration at the moment of arrival, not something a later
+    // mount needs.
+    serverUrl: fromUrl.serverUrl,
+    invite: readPendingJoinField({ field: 'invite', storage }),
   };
 }
 
 /**
- * Parks the capabilities of a freshly read link.
- *
- * The sync ADDRESS is deliberately not parked: it is a check run against this
- * app's own configuration at the moment of arrival, not something a later mount
- * needs. The gateway address is, because a gateway token without the address it
- * belongs to cannot be redeemed at all.
- */
-function park({
-  link,
-  storage,
-  keepSyncInvite,
-}: {
-  link: JoinLink;
-  storage: PendingInviteStorage | null;
-  keepSyncInvite: boolean;
-}): void {
-  if (link.syncInvite !== null && keepSyncInvite) {
-    rememberPendingJoinField({ field: 'syncInvite', value: link.syncInvite, storage });
-  }
-  if (link.gatewayUrl !== null && link.gatewayInvite !== null) {
-    rememberPendingJoinField({ field: 'gatewayUrl', value: link.gatewayUrl, storage });
-    rememberPendingJoinField({ field: 'gatewayInvite', value: link.gatewayInvite, storage });
-  }
-}
-
-/**
- * Ends the sync invite's stay in the pending slot, leaving the gateway half
- * alone.
+ * Ends the invite's stay in the pending slot.
  *
  * Called when the person acts on the prefilled form, not when it merely
  * renders: until then a reload has to be able to bring the token back.
  */
 export function consumeSyncInvite(): void {
-  clearPendingJoinField({ field: 'syncInvite', storage: sessionInviteStorage() });
+  clearPendingJoinField({ field: 'invite', storage: sessionInviteStorage() });
 }
 
 /**
- * Ends the gateway half's stay: the token, the address it belongs to, AND the
- * redeemed result parked in its place.
+ * The reset link, read exactly the way the join link is: the fragment is
+ * stripped as it is read, and the token is parked so a remount or the service
+ * worker's first-visit document reload cannot destroy the only copy.
  *
- * All three, because they are three states of one thing. A join that reached
- * the redeemed result no longer has a token to clear, and clearing only the
- * token would leave a member credential in the tab plus a `/join` screen that
- * keeps trying to finish a join that is already finished.
+ * A SEPARATE FUNCTION rather than a flag on {@link takeJoinLinkFromUrl},
+ * because the two are read by different screens and each must park only its
+ * own capability: `/reset` reading a join fragment would leave an invite in
+ * the slot that `/join` then offers, for a person who came to change a
+ * password.
  */
-export function consumeGatewayInvite(): void {
+export function takeResetLinkFromUrl({ configuredSyncUrl }: { configuredSyncUrl: string | null }): ResetLink {
+  if (globalThis.window === undefined) return { serverUrl: null, resetToken: null };
   const storage = sessionInviteStorage();
-  clearPendingJoinField({ field: 'gatewayInvite', storage });
-  clearPendingJoinField({ field: 'gatewayUrl', storage });
-  clearPendingJoinField({ field: 'gatewayRedeemed', storage });
-}
 
-/** The gateway business this tab has not finished — an unspent invite, or a spent one's answer. */
-export interface PendingGatewayJoin {
-  gatewayUrl: string;
-  /** `null` once the invite has been spent and {@link readPendingGatewayRedemption} holds its answer. */
-  gatewayInvite: string | null;
-}
-
-/**
- * @returns the parked gateway half, or `null` when there is nothing left to
- * join.
- *
- * A REDEEMED result counts, and has to: `sign-in-flow.ts` sends a signed-in tab
- * back to `/join` on the strength of this answer, and a join whose invite is
- * spent but whose local writes failed is exactly the case that most needs to be
- * brought back here.
- */
-export function readPendingGatewayJoin(): PendingGatewayJoin | null {
-  const storage = sessionInviteStorage();
-  const gatewayUrl = readPendingJoinField({ field: 'gatewayUrl', storage });
-  const gatewayInvite = readPendingJoinField({ field: 'gatewayInvite', storage });
-  if (gatewayUrl !== null && gatewayInvite !== null) return { gatewayUrl, gatewayInvite };
-
-  const redeemed = readPendingGatewayRedemption();
-  if (redeemed === null) return null;
-  return { gatewayUrl: redeemed.gatewayUrl, gatewayInvite: null };
-}
-
-/**
- * What a spent gateway invite bought, held until the device has written it
- * down.
- *
- * `redeemedAt` is parked rather than re-read from a clock on every retry, so a
- * retry, and a retry after a reload, write the same `connectedAt` the first
- * attempt would have — the connection row is merged across an account's devices
- * by its timestamps, and a value that moves on every attempt is a value that
- * describes the retry rather than the join.
- */
-export interface ParkedGatewayRedemption {
-  gatewayUrl: string;
-  redeemed: GatewayRedeemResponse;
-  redeemedAt: number;
-}
-
-const parkedGatewayRedemptionSchema = z.object({
-  gatewayUrl: z.string().min(1),
-  redeemed: gatewayRedeemResponseSchema,
-  redeemedAt: z.number(),
-});
-
-/**
- * Parks the gateway's answer, and takes the invite out of the slot in the same
- * breath.
- *
- * The two happen together because they are one state change: the invite is
- * spent, and this is what it bought. Leaving the invite parked beside the
- * answer is the bug this function exists to prevent — a retry would find a
- * token and re-post it, the gateway would refuse a token it had already burnt,
- * and the screen would report an invalid invite for a join that had in fact
- * succeeded.
- */
-export function parkGatewayRedemption(parked: ParkedGatewayRedemption): void {
-  const storage = sessionInviteStorage();
-  rememberPendingJoinField({ field: 'gatewayRedeemed', value: JSON.stringify(parked), storage });
-  clearPendingJoinField({ field: 'gatewayInvite', storage });
-}
-
-/** @returns the parked answer, or `null` when none is waiting or what is parked is not one. */
-export function readPendingGatewayRedemption(): ParkedGatewayRedemption | null {
-  const raw = readPendingJoinField({ field: 'gatewayRedeemed', storage: sessionInviteStorage() });
-  if (raw === null) return null;
-  let decoded: unknown;
-  try {
-    decoded = JSON.parse(raw);
-  } catch {
-    return null;
+  const hash = globalThis.window.location.hash;
+  const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+  const serverUrl = normalizeServerUrl(params.get(SERVER_URL_KEY) ?? params.get(LEGACY_SERVER_URL_KEY));
+  const fromUrl = normalizeResetToken(params.get(RESET_TOKEN_KEY));
+  if (hash !== '') {
+    const { pathname, search } = globalThis.window.location;
+    globalThis.window.history.replaceState(null, '', `${pathname}${search}`);
   }
-  const parsed = parkedGatewayRedemptionSchema.safeParse(decoded);
-  // A slot written by another build, or a half-written one, reads as nothing
-  // rather than throwing on a mount: the person can follow the link again.
-  return parsed.success ? parsed.data : null;
+  // A link for ANOTHER service parks nothing, for the reason
+  // `takeJoinLinkFromUrl` gives: a token this app can never spend would sit in
+  // the slot and be offered on the next visit.
+  const isForeign = isForeignSyncServer({ linkServerUrl: serverUrl, configuredSyncUrl });
+  if (fromUrl !== null && !isForeign) rememberPendingJoinField({ field: 'reset', value: fromUrl, storage });
+
+  return { serverUrl, resetToken: readPendingJoinField({ field: 'reset', storage }) };
 }
 
-/** Ends the redeemed result's stay, and only that. Called once both local writes are down. */
-export function clearPendingGatewayRedemption(): void {
-  clearPendingJoinField({ field: 'gatewayRedeemed', storage: sessionInviteStorage() });
+/** What one reset link offers. Both fields are independently optional. */
+export interface ResetLink {
+  serverUrl: string | null;
+  resetToken: string | null;
+}
+
+/**
+ * Ends the reset token's stay in the pending slot.
+ *
+ * Called when the person SUBMITS, not when the form renders: until then a
+ * reload has to be able to bring the token back, and after it a later visit
+ * must not resurrect a token the service has already spent.
+ */
+export function consumeResetToken(): void {
+  clearPendingJoinField({ field: 'reset', storage: sessionInviteStorage() });
+}
+
+/** Builds a reset fragment, so the service's mail and any test produce one grammar. */
+export function buildResetFragment(link: Partial<ResetLink>): string {
+  const params = new URLSearchParams();
+  if (link.serverUrl != null && link.serverUrl !== '') params.set(SERVER_URL_KEY, link.serverUrl);
+  if (link.resetToken != null && link.resetToken !== '') params.set(RESET_TOKEN_KEY, link.resetToken);
+  const encoded = params.toString();
+  return encoded === '' ? '' : `#${encoded}`;
 }
 
 /** Re-exported so a caller checking a pasted token needs one import, not three. */
-export { GATEWAY_INVITE_PREFIX, SYNC_INVITE_PREFIX, isGatewayInviteToken, isSyncInviteToken };
+export { SYNC_INVITE_PREFIX, SYNC_RESET_PREFIX, isSyncInviteToken, isSyncResetToken };

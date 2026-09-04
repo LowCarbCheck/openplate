@@ -55,61 +55,46 @@ test('a non-default port survives into the CSP entry', () => {
 
 test('isSyncConfigured is false for every shape of "no config"', () => {
   assert.equal(isSyncConfigured(undefined), false, 'no root loader data — error boundaries take this path');
-  assert.equal(
-    isSyncConfigured({ syncServerUrl: null, instancePreset: null, analytics: null, gatewayUrl: null, managed: false }),
-    false,
-  );
-  assert.equal(
-    isSyncConfigured({ syncServerUrl: '', instancePreset: null, analytics: null, gatewayUrl: null, managed: false }),
-    false,
-  );
+  assert.equal(isSyncConfigured({ syncServerUrl: null, instancePreset: null, analytics: null, managed: false }), false);
+  assert.equal(isSyncConfigured({ syncServerUrl: '', instancePreset: null, analytics: null, managed: false }), false);
   assert.equal(
     isSyncConfigured({
       syncServerUrl: 'https://sync.example.com',
       instancePreset: null,
       analytics: null,
-      gatewayUrl: null,
       managed: false,
     }),
     true,
   );
 });
 
-test('the public config carries exactly five members, and nothing else', () => {
-  // A compile-time assertion made runtime-visible: if a SIXTH field is ever
+test('the public config carries exactly four members, and nothing else', () => {
+  // A compile-time assertion made runtime-visible: if a FIFTH field is ever
   // added to `PublicConfig`, this fails and forces the addition to be a
   // decision rather than a side effect. The channel is an allowlist.
   //
-  // The first three members passed the same test — each is an address the
-  // BROWSER dials itself, which this server never proxies:
+  // Three members passed the same test — each is an address the BROWSER dials
+  // itself, which this server never proxies:
   //   - `syncServerUrl` (M128 spec 04)
   //   - `instancePreset` (M138 spec 06), an operator-provided AI endpoint
   //   - `analytics` (M165, .adr/0010-hosted-analytics.md), the Matomo the page
   //     itself loads the tracker from. Public by construction: both the URL and
   //     the site id ride in every tracker request the browser makes.
-  //   - `gatewayUrl` (M187 spec 03), the AI gateway this instance belongs to.
-  //     The browser redeems the invite and sends its plate photos there
-  //     directly, so it passes the same test as the three above.
+  //
+  // `gatewayUrl` (M187 spec 03) was a fourth address and is GONE (M192): the
+  // sync server took over the AI proxy, so the browser dials one host.
   //
   // `managed` is the ONE member that is not an address, and it is admitted on
-  // a different ground: it is derived from two of the others and it decides
-  // the SHAPE of the app (one door or two). Deriving it per screen instead
-  // would let "this is a managed instance" be true on one and false on the
-  // next. See `app/config/public-config.ts`'s header.
+  // a different ground: it decides the SHAPE of the app (one door or two).
+  // Deriving it per screen instead would let "this is a managed instance" be
+  // true on one and false on the next.
   const config: PublicConfig = {
     syncServerUrl: 'https://sync.example.com',
     instancePreset: null,
     analytics: null,
-    gatewayUrl: null,
     managed: false,
   };
-  assert.deepEqual(Object.keys(config).toSorted(), [
-    'analytics',
-    'gatewayUrl',
-    'instancePreset',
-    'managed',
-    'syncServerUrl',
-  ]);
+  assert.deepEqual(Object.keys(config).toSorted(), ['analytics', 'instancePreset', 'managed', 'syncServerUrl']);
 });
 
 test('the passphrase strength hint never blocks, and never flatters a short passphrase', () => {

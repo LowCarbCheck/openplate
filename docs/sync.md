@@ -30,8 +30,8 @@ Restart the app after changing it. Unset it again and the sync screens disappear
 stops reaching out. Your local diary is untouched either way.
 
 **Adding a second device:** point it at the same `SYNC_SERVER_URL` and sign in with the same
-email and passphrase you used on the first one. That is the whole procedure — no new recovery
-code is issued, and nothing has to be copied off the first device.
+email address and password you used on the first one. That is the whole procedure, and nothing
+has to be copied off the first device.
 
 It must be an address a **browser** can reach. The sync client runs in the page, so a compose
 hostname like `http://sync:3000` does not work — use the public URL your users' devices
@@ -47,38 +47,40 @@ graph, and offers nothing to enrol in. Read `openplate-sync`'s `.env.example` be
 on: it makes the server hold health-adjacent personal data, which is a different undertaking
 from holding ciphertext it cannot read.
 
-## End-to-end encryption, in one paragraph
+## Encryption, and what the operator holds
 
-Your passphrase never leaves your browser. It is stretched with Argon2id and split by HKDF
-into two independent branches: one wraps the data key and stays on the device, the other is
-sent to the service as the login credential. The two are cryptographic siblings, not parent
-and child — holding one reveals nothing about the other, so the server cannot decrypt a blob
-by construction rather than by policy. What the service **can** see is an email address, and
-the size and timing of your uploads. What it cannot see is anything you ate.
-[PROTOCOL.md](https://github.com/LowCarbCheck/openplate-sync/blob/main/PROTOCOL.md) states
-this in full, including an honest list of the metadata the server does learn.
+Your password never leaves your browser. It is stretched with Argon2id and split by HKDF into
+two independent branches: one wraps the data key and stays on the device, the other is sent to
+the service as the login credential. The two are cryptographic siblings, not parent and child,
+so holding one reveals nothing about the other. Your diary is encrypted on the device before
+it is uploaded and stays encrypted in transit; the service stores opaque ciphertext, and what
+it sees beside that is an email address plus the size and timing of your uploads.
 
-**The cost of that design, stated up front:** if you forget your passphrase and lose your
-recovery code, your synced data is gone — to us and to you. An email reset on its own restores your
-_login_, never your _data_ — but entering your recovery code during that same reset restores
-the data too. That is what the recovery code is for, and it is the only thing that can do it. The app says exactly this before you finish setting sync up, and
-shows the recovery code once, behind an explicit acknowledgment.
+**The operator holds a recovery key.** At signup the app generates a recovery code, wraps your
+data key under it, and sends the code to the server, which keeps it sealed under a secret of
+its own. That is what makes "forgot my password" return your diary rather than an empty
+account: the mailed link hands the code back to your browser, which uses it to unwrap the data
+key and re-wrap it under the new password.
 
-Plate photos are never part of a sync payload. They stay on the device that took them, and
-they are excluded from JSON exports too.
+Stated plainly, because it is the trade this design makes: the operator of an instance can
+restore, and therefore in principle read, a diary on it. On an instance you host yourself, you
+are that operator. On an instance an organization runs for you, they already see every plate
+photo that passes through their AI proxy, so this changes the promise less than it looks, and
+it is what buys a password reset that does not lose your data.
 
-## The gateway follows the account
+Before M192 there was no escrow, and the cost was the other way round: a forgotten password
+plus a lost recovery code meant the data was gone, to us and to you, and the app had to show
+the code once and ask a person to keep it forever. Nobody does.
 
-If you joined a gateway someone else runs (a household or organization box, from an invite
-link), that connection is part of your account rather than part of one browser. Sign in on a
-second device and the gateway comes with it: you are not asked to set up an AI provider again.
+Plate photos are never part of a sync payload. They stay on the device that took them, they
+are excluded from JSON exports, and on a managed instance the copy that reaches the AI proxy
+is read once and not stored.
 
-It rides in the same sealed compartment as your key material, so a clinician you share your
-diary with never learns it, and it is the one thing in your account that a **backup export
-does not contain** — an exported file must never carry a provider credential. Keep the invite
-link, or ask for a new one, if you need to set up a device that cannot sign in.
+## What used to be here: the gateway
 
-A key you set up yourself is never touched by this. A pasted key, an OpenRouter connection and
-an instance's own preset stay on the device you configured them on, and a gateway arriving
-from another device will not overwrite them. Disconnecting on one device disconnects the
-gateway on the others — that is the same connection, ending.
+Until M192 a person could join a separate AI gateway from the same invite link, and that
+connection travelled with the account inside the sealed compartment. There is no gateway any
+more: the sync service took over the AI proxy, so on an instance an organization runs, a
+signed-in account with an allowance scans through the one server it already talks to, and no
+connection step exists to carry anywhere. An instance you host yourself is unchanged: a key
+you set up stays on the device you set it up on.

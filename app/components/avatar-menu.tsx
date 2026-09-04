@@ -111,7 +111,7 @@ function SyncRow({ state }: { state: SyncMenuState }) {
 
   return (
     <DropdownMenuItem asChild className="cursor-pointer py-2">
-      <Link to="/settings/sync">
+      <Link to="/settings/account">
         <SyncStateIcon state={state} />
         <span className="min-w-0 flex-1">
           <span className="block">{isSetUp ? t('settings.rows.sync.title') : t('sync.profileCard.setUp')}</span>
@@ -206,11 +206,7 @@ export function AvatarMenu() {
             the header's right edge as the left drawer trigger (an `icon`-size
             button) sits from the left edge — otherwise the default size's
             16px right padding stacks on top of the header's own `px-4`. */}
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 pr-2 -mr-2"
-          aria-label={t('chrome.deviceMenuLabel')}
-        >
+        <Button variant="ghost" className="flex items-center gap-2 pr-2 -mr-2" aria-label={t('chrome.deviceMenuLabel')}>
           <Avatar className="h-7 w-7">
             <AvatarFallback className="text-sm">
               <User className="h-4 w-4" />
@@ -226,7 +222,7 @@ export function AvatarMenu() {
         <DropdownMenuLabel className="py-2">
           <span className="block">{t('chrome.thisDevice')}</span>
           {session.account !== null && (
-            <span className="block truncate text-xs font-normal text-muted-foreground">{session.account.handle}</span>
+            <span className="block truncate text-xs font-normal text-muted-foreground">{session.account.email}</span>
           )}
         </DropdownMenuLabel>
 

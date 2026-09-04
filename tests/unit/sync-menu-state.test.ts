@@ -15,7 +15,15 @@ import { formatRelativeTime, relativeTimeParts } from '../../app/lib/relative-ti
 
 function session(overrides: Partial<SyncSessionSnapshot> = {}): SyncSessionSnapshot {
   return {
-    account: { id: 1, handle: 'k7m2q3xr9t' },
+    account: {
+      id: 1,
+      email: 'anna@example.org',
+      displayName: null,
+      role: 'member',
+      dailyAiLimit: 0,
+      aiUsedToday: 0,
+    },
+    isResuming: false,
     phase: 'idle',
     lastSyncedAt: null,
     hasPendingChanges: false,

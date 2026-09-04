@@ -56,7 +56,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
     try {
       const provider = createVisionProvider({
         provider: 'openrouter',
-        apiKey: 'sk-or-test',
+        credential: { apiKey: 'sk-or-test' },
         model: 'google/gemini-3.1-flash-lite',
       });
       await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
@@ -80,7 +80,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
     try {
       const provider = createVisionProvider({
         provider: 'openrouter',
-        apiKey: 'sk-or-test',
+        credential: { apiKey: 'sk-or-test' },
         model: 'google/gemini-3.1-flash-lite',
         baseUrl: 'https://attacker.example/v1',
       });
@@ -102,7 +102,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
     try {
       const provider = createVisionProvider({
         provider: 'openai-compatible',
-        apiKey: 'sk-test',
+        credential: { apiKey: 'sk-test' },
         model: 'gpt-5o',
         baseUrl: 'http://localhost:11434/v1',
       });
@@ -125,7 +125,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
     try {
       const provider = createVisionProvider({
         provider: 'openrouter',
-        apiKey: 'sk-or-test',
+        credential: { apiKey: 'sk-or-test' },
         model: 'openai/gpt-5.6-luna',
       });
       await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
@@ -148,7 +148,7 @@ describe('createVisionProvider — openrouter dispatch', () => {
     try {
       const provider = createVisionProvider({
         provider: 'openai-compatible',
-        apiKey: 'sk-test',
+        credential: { apiKey: 'sk-test' },
         model: 'llama3',
         baseUrl: 'http://localhost:11434/v1',
       });
@@ -162,12 +162,19 @@ describe('createVisionProvider — openrouter dispatch', () => {
   });
 
   it('throws (never silently falls back to api.openai.com) when openai-compatible has no base URL — the browser can never reach it directly', () => {
-    assert.throws(() => createVisionProvider({ provider: 'openai-compatible', apiKey: 'sk-test', model: 'gpt-5o' }));
+    assert.throws(() =>
+      createVisionProvider({ provider: 'openai-compatible', credential: { apiKey: 'sk-test' }, model: 'gpt-5o' }),
+    );
   });
 
   it('throws for a blank (whitespace-only) base URL the same way', () => {
     assert.throws(() =>
-      createVisionProvider({ provider: 'openai-compatible', apiKey: 'sk-test', model: 'gpt-5o', baseUrl: '   ' }),
+      createVisionProvider({
+        provider: 'openai-compatible',
+        credential: { apiKey: 'sk-test' },
+        model: 'gpt-5o',
+        baseUrl: '   ',
+      }),
     );
   });
 });

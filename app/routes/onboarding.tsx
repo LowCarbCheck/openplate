@@ -26,6 +26,7 @@ import { todayInTimezone } from '#app/lib/user-days';
 import { clearHomeHint, writeHomeHint } from '#app/lib/home-entry';
 import { CONFIG } from '#app/config';
 import { isAnonymousStartAllowed } from '#app/lib/onboarding-gate';
+import { useManagedInstance } from '#app/hooks/use-public-config';
 import { shouldFallbackOffline } from '#app/lib/local-store/offline-fallback';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import {
@@ -144,7 +145,7 @@ const FOCUS_OPTIONS: readonly {
  * has to be joined to it on the device. Hence the `serverLoader()` call there.
  */
 export async function loader() {
-  return { managed: CONFIG.gateway.managed };
+  return { managed: CONFIG.instance.managed };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1083,26 +1084,37 @@ function FirstFoodStep() {
  */
 function FirstFoodKeyNote() {
   const { t } = useTranslation();
+  const managed = useManagedInstance();
   const navigation = useNavigation();
   const isBusy = navigation.state !== 'idle';
   const isOpening = isBusy && navigation.formData?.get('destination') === '/settings/ai?next=diary';
   return (
-    <Form method="post" className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+    <Form
+      method="post"
+      className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground"
+    >
       <TimezoneField />
       <input type="hidden" name="_intent" value={INTENT.FINISH} />
       <Key className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <span>
-        {t('onboarding.firstFood.keyNote')}{' '}
-        <button
-          type="submit"
-          name="destination"
-          value="/settings/ai?next=diary"
-          disabled={isBusy}
-          className="text-primary underline underline-offset-4 disabled:opacity-60"
-        >
-          {isOpening ? t('onboarding.firstFood.opening') : t('onboarding.firstFood.keyNoteLink')}
-        </button>
-      </span>
+      {/* ON A MANAGED INSTANCE THE ESTIMATE IS INCLUDED (M192/05), so this is
+          one sentence and no link: there is nothing to go and set up, and the
+          old copy sent people to a settings page whose whole content is a
+          provider they do not need. */}
+      {managed ?
+        <span>{t('onboarding.firstFood.managedNote')}</span>
+      : <span>
+          {t('onboarding.firstFood.keyNote')}{' '}
+          <button
+            type="submit"
+            name="destination"
+            value="/settings/ai?next=diary"
+            disabled={isBusy}
+            className="text-primary underline underline-offset-4 disabled:opacity-60"
+          >
+            {isOpening ? t('onboarding.firstFood.opening') : t('onboarding.firstFood.keyNoteLink')}
+          </button>
+        </span>
+      }
     </Form>
   );
 }

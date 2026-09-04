@@ -23,7 +23,7 @@ import { ConnectCard, resolveConnectCardVariant } from '../../app/routes/scan';
 import type { PublicConfig } from '../../app/config/public-config';
 
 const CONNECT_OPENROUTER = 'Connect with OpenRouter';
-const MANAGED_MISSING = 'Your invitation did not include photo recognition.';
+const MANAGED_MISSING = 'Photo estimates are not switched on for this account.';
 const ADD_WITHOUT_PHOTO = 'Add food without a photo';
 
 /** A self-hosted instance's public config: no gateway, no preset. */
@@ -32,7 +32,6 @@ function publicConfig(overrides: Partial<PublicConfig> = {}): PublicConfig {
     syncServerUrl: null,
     analytics: null,
     instancePreset: null,
-    gatewayUrl: null,
     managed: false,
     ...overrides,
   };
@@ -62,31 +61,30 @@ function render(config: PublicConfig): string {
 
 describe('resolveConnectCardVariant', () => {
   it('is self-hosted when the instance runs no AI of its own', () => {
-    assert.deepEqual(resolveConnectCardVariant({ gatewayUrl: null, presetBaseUrl: null }), {
+    assert.deepEqual(resolveConnectCardVariant({ managed: false, presetBaseUrl: null }), {
       kind: 'self-hosted',
     });
   });
 
   it('names the preset host when the instance runs its own endpoint', () => {
-    assert.deepEqual(resolveConnectCardVariant({ gatewayUrl: null, presetBaseUrl: 'https://ai.example.org:8443' }), {
+    assert.deepEqual(resolveConnectCardVariant({ managed: false, presetBaseUrl: 'https://ai.example.org:8443' }), {
       kind: 'instance-ai',
       host: 'ai.example.org:8443',
     });
   });
 
   it('is the managed dead end whenever a gateway is configured, preset or not', () => {
-    assert.deepEqual(resolveConnectCardVariant({ gatewayUrl: 'https://gw.example.org', presetBaseUrl: null }), {
+    assert.deepEqual(resolveConnectCardVariant({ managed: true, presetBaseUrl: null }), {
       kind: 'managed-missing',
     });
-    assert.deepEqual(
-      resolveConnectCardVariant({ gatewayUrl: 'https://gw.example.org', presetBaseUrl: 'https://ai.example.org' }),
-      { kind: 'managed-missing' },
-    );
+    assert.deepEqual(resolveConnectCardVariant({ managed: true, presetBaseUrl: 'https://ai.example.org' }), {
+      kind: 'managed-missing',
+    });
   });
 });
 
 describe('ConnectCard on a managed instance', () => {
-  const markup = render(publicConfig({ gatewayUrl: 'https://gateway.openplate.de', managed: true }));
+  const markup = render(publicConfig({ managed: true }));
 
   it('never offers to connect OpenRouter', () => {
     assert.ok(
@@ -95,8 +93,13 @@ describe('ConnectCard on a managed instance', () => {
     );
   });
 
-  it('says the invitation carried no photo recognition', () => {
+  it('says photo estimates are not switched on, and names who switches them on', () => {
     assert.ok(markup.includes(MANAGED_MISSING), markup.slice(0, 400));
+    // AND THE NEXT STEP, which is a person rather than a settings page: on a
+    // managed instance there is no key to bring, so "connect a provider" would
+    // send somebody to a screen that cannot help them.
+    assert.ok(markup.includes('Ask your administrator'), markup.slice(0, 600));
+    assert.ok(!markup.includes('OpenRouter'), 'a managed instance must not offer a provider signup');
   });
 
   it('leaves adding without a photo as the only action', () => {

@@ -11,7 +11,6 @@
 import { useRouteLoaderData } from 'react-router';
 import type { loader as rootLoader } from '#app/root';
 import {
-  getGatewayUrl,
   getInstanceInferencePreset,
   isManagedInstanceConfig,
   isSyncConfigured,
@@ -51,8 +50,9 @@ export function useInstanceInferencePreset(): InstanceInferencePreset | null {
 }
 
 /**
- * Whether this instance is managed (M187 spec 03) — an instance that hands out
- * accounts and an AI connection together, through an invite link.
+ * Whether this instance is managed (M187 spec 03, redefined by M192) — an
+ * instance an organization runs for its people, where an admin invites by
+ * email and the server supplies the AI.
  *
  * Same contract as the two hooks above: one hook, so "is this a managed
  * instance" has exactly one answer per render and cannot be true on the
@@ -61,15 +61,4 @@ export function useInstanceInferencePreset(): InstanceInferencePreset | null {
  */
 export function useManagedInstance(): boolean {
   return isManagedInstanceConfig(usePublicConfig());
-}
-
-/**
- * The gateway this instance belongs to, or `null` when its operator configured
- * none — which is the default.
- *
- * A managed instance always has one, so this is also how a screen NAMES the
- * host a photo would go to before any invite has been redeemed.
- */
-export function useGatewayUrl(): string | null {
-  return getGatewayUrl(usePublicConfig());
 }

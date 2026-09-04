@@ -83,10 +83,10 @@
     "s4Body": "openplate’s photo-to-macros feature is bring-your-own-key: you connect your own AI provider (such as an OpenAI-compatible endpoint, OpenRouter, or Anthropic) and supply your own API key. When you scan a plate, your browser sends the photo directly to that provider using your key. The photo and the key never pass through our servers. Your browser does keep an on-device copy of the photo, separate from our servers and described in Section 2, so you can see it again on that entry; it is never uploaded anywhere, it expires on its own after {{days}} days, and you can clear it or turn it off entirely from your Profile page. Your AI provider is a separate third party that you have chosen and whose relationship is with you under your own account and key — how they handle the photo is governed by that provider’s own terms and privacy policy, not by us.",
     "s5Heading": "5. Food search",
     "s5Body": "After a scan identifies foods, openplate can look up curated nutrition data by name from the public LowCarbCheck food database. Only the food name is sent for a food search — never your photo, never your account data. The search term travels in the body of the request (not in the URL) specifically so it does not end up in a server access log, and we do not store the search terms. The one signal that does reach our server during a food search is the ordinary web-request metadata every website receives, including your IP address, which is used transiently for rate-limiting and appears in standard access logs; it is not linked to your tracker data.",
-    "s6Heading": "6. End-to-end encrypted sync (optional)",
-    "s6Body1": "Sync is available and it is off unless you switch it on. It lets you carry your tracker data between your own devices. Registration is currently by invitation only, so you cannot end up with a sync account by accident.",
-    "s6Body2": "It is end-to-end encrypted. Your data is encrypted on your device before it is uploaded, and the sync server stores only opaque ciphertext that it cannot read or decrypt. The encryption keys are derived on your device from a passphrase only you hold — the server never sees your passphrase, your plaintext, or your decryption keys. That also means we cannot reset your passphrase or recover your data if you lose it; there is no back door for us to use on your behalf.",
-    "s6Body3": "The only account-linked information the sync server can see is non-content metadata: your email address, the size of an encrypted blob, and the time it was stored. It runs as a separate service from the app server described in Section 3.",
+    "s6Heading": "6. Your account and your devices",
+    "s6Body1": "An account lets you carry your tracker data between your own devices. You get one by invitation, so you cannot end up with one by accident.",
+    "s6Body2": "Your data is encrypted on your device before it is uploaded, and it stays encrypted in transit. The server stores opaque ciphertext and the encryption keys are derived on your device from your password.",
+    "s6Body3": "On an instance run for you by an organization, the operator also holds a recovery key for your account. That is what makes \"forgot my password\" give you your diary back rather than an empty account. It also means the operator can restore, and therefore in principle read, a diary. On an instance you host yourself, you are that operator.",
     "s7Heading": "7. Transactional email",
     "s7Body": "The hosted instance sends transactional email only — email verification and password-reset messages. We do not send marketing email. On the hosted instance these messages are delivered through our internal Pigeon email service, which relays them via Amazon SES (in the EU eu-central-1 region). Your email address and the message contents are processed by that delivery chain in order to reach you.",
     "s8Heading": "8. Hosting and backups",
@@ -119,6 +119,8 @@
     "s12Heading": "12. Changes to this policy",
     "s12Body": "We may update this policy as openplate evolves. When we make a material change, we will update the \"Last updated\" date above.",
     "s13Heading": "13. Contact",
-    "s13Body": "For any privacy question, or to make a data access, export, or erasure request, contact us at <email>{{email}}</email>."
+    "s13Body": "For any privacy question, or to make a data access, export, or erasure request, contact us at <email>{{email}}</email>.",
+    "s6Body4": "The only account-linked information the server can see beyond that is non-content metadata: your email address, the size of a stored blob, and the time it was stored. It runs as a separate service from the app server described in Section 3.",
+    "s4ManagedBody": "On an instance run for you by an organization, your plate photo goes to that organization's own AI proxy instead of to a provider you chose. The photo is read once to work out what is on the plate and is not stored there."
   }
 }

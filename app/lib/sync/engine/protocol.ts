@@ -32,7 +32,7 @@ import { z } from 'zod';
  * Purely additive changes (a new optional response field, a new endpoint that
  * older clients simply never call) do not require a bump.
  */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /**
  * The encrypted-blob wire format version — INDEPENDENT of
@@ -128,18 +128,36 @@ export function isSyncKeyRecordKind(value: JsonValue | undefined): value is Sync
 // ---------------------------------------------------------------------------
 
 /**
- * Whether, and on what terms, an instance accepts new accounts.
+ * WHAT USED TO BE HERE: `SIGNUP_MODES` and `SignupMode`.
  *
- *  - `'open'` — anyone may register. The default for a self-hosted instance.
- *  - `'invite'` — registration requires a single-use token the operator
- *    minted. What the hosted instance runs.
- *  - `'closed'` — nobody may register. Existing accounts keep working.
- *
- * Mirrors `SignupMode` in the service's own `src/protocol.ts` — the two copies
- * of this file are one contract (PROTOCOL.md §5.8.1).
+ * Protocol 2 has one way in. Every account is created by redeeming an invite
+ * addressed to an email, so there is no open registration for a mode to
+ * describe and no closed one to refuse. The field is gone from `/health`, and
+ * a service that still sent it would simply be ignored.
  */
-export const SIGNUP_MODES = ['open', 'invite', 'closed'] as const;
-export type SignupMode = (typeof SIGNUP_MODES)[number];
+
+/**
+ * What the instance says about ITSELF, as opposed to about the protocol
+ * (protocol 2, `/health`).
+ *
+ * OPTIONAL for the same reason `notice` is: a service older than the field
+ * omits it, and a client that required it would refuse to talk to that service
+ * — a compatibility break wearing the clothes of an additive change.
+ *
+ * `ai` is `null` when the instance proxies no model. That is a MEANING, not an
+ * omission: it is how a managed instance says "no AI here", and it is what the
+ * derived AI settings read to decide whether a signed-in account can scan.
+ */
+export type InstanceDescriptor = {
+  /** The operator's name for this instance. Display only, and hostile input like every other field here. */
+  name: string;
+  /** The language the instance writes its mail in (`en` or `de` today). Display only. */
+  language: string;
+  /** Whether the instance can send mail. `false` means an invite or a reset is a link somebody copies by hand. */
+  mail: boolean;
+  /** The model the instance's AI proxy serves, or `null` when it has no upstream key. */
+  ai: { model: string | null } | null;
+};
 
 /**
  * What a service reports about itself, read by the client BEFORE its first
@@ -160,18 +178,13 @@ export type ProtocolHandshake = {
   /** Human-readable build identifier — diagnostics only, never compared. */
   serviceVersion: string;
   /**
-   * How this instance treats new accounts — see {@link SignupMode}.
+   * What the instance says about itself — see {@link InstanceDescriptor}.
    *
-   * OPTIONAL, and it must stay optional. A service older than this field omits
-   * it, and requiring it here would make this build refuse to talk to every
-   * such instance: a compatibility break wearing the clothes of an additive
-   * change. Absent means "attempt the signup and handle the 403".
-   *
-   * It is a HINT, never the contract. An operator can close signups between
-   * the handshake and the submit, so the signup error handling stays in place
-   * even when this said `'open'`.
+   * OPTIONAL, and it must stay optional, for the reason the deleted
+   * `signupMode` field carried in this slot: a service older than the field
+   * omits it, and requiring it would refuse every such instance.
    */
-  signupMode?: SignupMode;
+  instance?: InstanceDescriptor;
   /**
    * A short message the operator of that instance wants shown — a planned
    * migration, a shutdown date, a "read this before you sync again".
@@ -181,7 +194,7 @@ export type ProtocolHandshake = {
    * reads `/health` on connect, so a person who opens the app sees it and a
    * person who does not, does not. It is not a notification system.
    *
-   * OPTIONAL, exactly like `signupMode`: an instance with nothing to say omits
+   * OPTIONAL, exactly like `instance`: an instance with nothing to say omits
    * it, and a service older than the field never had it.
    *
    * TREAT IT AS HOSTILE INPUT. It comes from whatever server the user pointed
@@ -205,6 +218,14 @@ const operatorNoticeSchema = z.object({
   url: z.string().optional(),
 });
 
+/** The decoder for {@link InstanceDescriptor} — same hostile-input boundary as the notice above. */
+const instanceDescriptorSchema = z.object({
+  name: z.string(),
+  language: z.string(),
+  mail: z.boolean(),
+  ai: z.object({ model: z.string().nullable() }).nullable(),
+});
+
 /** The decoder for {@link ProtocolHandshake} — the health endpoint is an I/O boundary, so its body is parsed, not assumed. */
 const protocolHandshakeSchema = z.object({
   protocolVersion: z.number(),
@@ -212,7 +233,7 @@ const protocolHandshakeSchema = z.object({
   serviceVersion: z.string(),
   // `.optional()` is load-bearing, not tidiness — see the field's doc comment.
   // A required entry here would reject every service older than the field.
-  signupMode: z.enum(SIGNUP_MODES).optional(),
+  instance: instanceDescriptorSchema.optional(),
   // Optional for the same reason, and dropped rather than fatal when
   // malformed: a broken notice must never stop a client talking to a service
   // whose protocol version is fine.
@@ -239,6 +260,21 @@ export function readHandshakeNotice(value: JsonValue | undefined): OperatorNotic
   const parsed = protocolHandshakeSchema.safeParse(value);
   if (!parsed.success) return null;
   return parsed.data.notice ?? null;
+}
+
+/**
+ * The instance descriptor carried by a `/health` body, or `null` — for a body
+ * that is not a handshake, and for a service older than the field.
+ *
+ * Parsed rather than asserted, like the notice above: this is the boundary
+ * where a server-supplied object becomes a typed one. The one consumer that
+ * matters is the managed-AI settings derivation, which reads `instance.ai` to
+ * learn which model to ask for.
+ */
+export function readHandshakeInstance(value: JsonValue | undefined): InstanceDescriptor | null {
+  const parsed = protocolHandshakeSchema.safeParse(value);
+  if (!parsed.success) return null;
+  return parsed.data.instance ?? null;
 }
 
 /**
@@ -510,6 +546,26 @@ export interface RotateDekRequest {
   keyRecords: RotateDekKeyRecordWire[];
   /** The keep list. `[]` is valid and revokes everything; an ABSENT key is a `400`. */
   shares: RotateDekShareWire[];
+  /**
+   * The new recovery code's auth proof, and the raw code itself. BOTH REQUIRED
+   * (M192 addendum); a request without either is a `400`.
+   *
+   * ── The bug this closes, which was live from M181 to M192 ───────────────
+   *
+   * A rotation always mints a fresh recovery code, because the `recovery` key
+   * record above wraps the NEW DEK. Until this addendum the request carried no
+   * verifier and no escrow, so the service kept both on the OLD code: the old
+   * code authenticated and unwrapped nothing, the new code unwrapped and
+   * authenticated nothing, and neither opened the account. Nothing threw. The
+   * failure surfaced on a later reset, on a different day, as a diary that
+   * would not decrypt.
+   *
+   * So the verifier and the escrow move inside the rotation's transaction,
+   * with the key records they belong to. `recoveryCode` is Crockford base32
+   * text; the service canonicalizes it, exactly as it does at signup.
+   */
+  newRecoveryAuthHash: Base64Bytes;
+  recoveryCode: string;
 }
 
 /** `200` from a rotation. `revokedShares` counts the rows the keep list did not name. */

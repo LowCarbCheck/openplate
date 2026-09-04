@@ -52,7 +52,7 @@ describe('openai-compatible runScan — label task', () => {
     });
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-test', model: 'gpt-5o' });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const reading = await provider.runScan({
         task: LABEL_SCAN_TASK,
         image: { base64: 'AAAA', mimeType: 'image/jpeg' },

@@ -273,7 +273,7 @@ function SignedOutCard() {
     <CardContent className="space-y-4 py-6">
       <p className="text-sm text-muted-foreground">{t('research.join.signedOut.body')}</p>
       <Button asChild variant="outline" className="h-11 w-full">
-        <Link to="/settings/sync">{t('research.needsSessionCta')}</Link>
+        <Link to="/settings/account">{t('research.needsSessionCta')}</Link>
       </Button>
     </CardContent>
   );

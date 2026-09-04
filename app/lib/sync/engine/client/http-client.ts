@@ -481,6 +481,11 @@ export class SyncHttpClient {
    * same transaction — silence is revocation here, inverting §5.14, because
    * these rows are somebody else's capability on the caller's diary.
    *
+   * IT CARRIES THE NEW RECOVERY CODE TOO (M192 addendum): the `recovery` key
+   * record wraps the new DEK, so the verifier and the escrow have to move in
+   * the same transaction or the account ends with a code that authenticates
+   * and a different one that decrypts. See `RotateDekRequest`.
+   *
    * Present on every deployment: an owner who never shared anything still
    * needs a way to retire a DEK they believe leaked.
    */

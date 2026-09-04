@@ -64,6 +64,12 @@ export interface ModelOption {
  * `openai-compatible` is deliberately EMPTY: a self-hosted endpoint's pricing
  * is unknowable, so every model there resolves to no cost estimate. Empty is a
  * real, intended state, not a gap waiting to be filled.
+ *
+ * `managed` is EMPTY for a different reason and it is not a pricing one: there
+ * is no picker. The instance names its own model in `/health`, the person does
+ * not choose it, and what it costs is the operator's bill rather than theirs —
+ * so showing a per-million rate beside a scan somebody is not paying for would
+ * be worse than showing nothing.
  */
 /** One model list per provider — every provider has exactly one, possibly empty. */
 type ModelCatalog = { readonly [K in AiProviderType]: readonly ModelOption[] };
@@ -189,6 +195,7 @@ export const MODEL_CATALOG: ModelCatalog = {
   ],
   // Empty on purpose — see the doc comment above.
   'openai-compatible': [],
+  managed: [],
   // Bare ids, because that is what Anthropic's own API takes. Claude is no
   // longer offered via OpenRouter (cheaper models won that list), but these
   // stay: a user whose BYOK key is an Anthropic key can only call Claude, so

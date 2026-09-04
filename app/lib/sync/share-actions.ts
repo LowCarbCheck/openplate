@@ -33,7 +33,12 @@ import type { RotateDekKeyRecordWire } from './engine/protocol';
 import { SyncRequestError } from './engine/client/sync-error';
 import { workerArgon2idDeriver } from './engine/client/argon2-worker';
 import { deriveCredentialsFromPassphrase } from './engine/client/derive-credentials';
-import { derivePrivateStoreRecoveryKek, deriveRecoveryKek, generateRecoveryCode } from './engine/client/recovery-kek';
+import {
+  derivePrivateStoreRecoveryKek,
+  deriveRecoveryAuthHash,
+  deriveRecoveryKek,
+  generateRecoveryCode,
+} from './engine/client/recovery-kek';
 import type { Argon2idDeriver } from './engine/client/setup-keys';
 import type { ReceivedShare } from './engine/client/http-client';
 import { decryptWithSchemaProbe } from './orchestrator';
@@ -205,10 +210,16 @@ export async function forgetPinnedPeer(accountId: number): Promise<void> {
 // Tier 2: rotating the data key (§5.17)
 // ---------------------------------------------------------------------------
 
-/** What a rotation did, and what it could not carry across. */
+/**
+ * What a rotation did, and what it could not carry across.
+ *
+ * THERE IS NO `recoveryCode` HERE, and the absence is the point (M192). A
+ * rotation still mints a fresh code — the `recovery` key record has to wrap
+ * the new DEK — but the code is escrowed with the service in the same
+ * transaction and never shown, exactly as it is at signup. A field for it
+ * would be a field a screen could render.
+ */
 export interface RotateDekOutcome {
-  /** Shown ONCE. The old recovery code stops working the moment the rotation commits. */
-  recoveryCode: string;
   keptShares: number;
   revokedShares: number;
   /** The grants this device could not re-wrap, and why. They are revoked by the rotation. */
@@ -259,7 +270,7 @@ export async function rotateSyncDek({
 }): Promise<RotateDekOutcome> {
   const vault = requireVault('rotateSyncDek');
 
-  const descriptor = await vault.authClient.fetchKdfDescriptor(vault.handle);
+  const descriptor = await vault.authClient.fetchKdfDescriptor(vault.email);
   const credentials = await deriveCredentialsFromPassphrase({
     passphrase,
     descriptor: { salt: descriptor.salt, params: descriptor.params },
@@ -341,6 +352,14 @@ export async function rotateSyncDek({
     },
     keyRecords,
     shares: await buildRotationKeepList({ keep: plan.keep, dek: newDek, grantorAccountId: vault.accountId }),
+    // THE VERIFIER AND THE ESCROW, in the same transaction as the key records
+    // they belong to (M192 addendum). Until this existed the service kept both
+    // on the OLD code while the `recovery` record above moved to the new one,
+    // so the account ended with a code that authenticated and a different one
+    // that decrypted, and neither opened it. Nothing threw; the failure
+    // surfaced on a later reset.
+    newRecoveryAuthHash: await deriveRecoveryAuthHash(recovery.raw),
+    recoveryCode: recovery.formatted,
   });
   if (result.status === 'conflict') {
     throw new SyncRequestError({
@@ -354,12 +373,7 @@ export async function rotateSyncDek({
   vault.state.save({ ...vault.state.load(), lastBlobVersion: result.newVersion });
   await moveCompartmentOntoNewRecoveryCode({ vault, recoveryRaw: recovery.raw });
 
-  return {
-    recoveryCode: recovery.formatted,
-    keptShares: result.keptShares,
-    revokedShares: result.revokedShares,
-    dropped: plan.drop,
-  };
+  return { keptShares: result.keptShares, revokedShares: result.revokedShares, dropped: plan.drop };
 }
 
 /**

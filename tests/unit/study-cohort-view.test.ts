@@ -226,7 +226,7 @@ test('offers no way to publish the study key', () => {
     createElement(StudyKeyCard, {
       identity: {
         accountId: 903,
-        handle: 'study7k2m9x',
+        email: 'study7k2m9x@example.org',
         generationCount: 2,
         fingerprint: 'AB12-CD34-EF56',
         hasUnopenedCompartment: false,
@@ -258,7 +258,7 @@ test('neither key half ever reaches the markup', () => {
     createElement(StudyKeyCard, {
       identity: {
         accountId: 903,
-        handle: 'study7k2m9x',
+        email: 'study7k2m9x@example.org',
         generationCount: 1,
         fingerprint: 'AB12-CD34-EF56',
         hasUnopenedCompartment: false,
@@ -271,7 +271,7 @@ test('neither key half ever reaches the markup', () => {
   // there is no prop through which a key could arrive on screen.
   assert.doesNotMatch(html, /BEGIN [A-Z ]*PRIVATE KEY/);
   assert.equal(
-    Object.keys({ accountId: 0, handle: '', generationCount: 0, fingerprint: '' }).includes('publicKey'),
+    Object.keys({ accountId: 0, email: '@example.org', generationCount: 0, fingerprint: '' }).includes('publicKey'),
     false,
   );
 });
@@ -294,7 +294,7 @@ test('the key card tells "no key yet" apart from "these keys will not open"', ()
     createElement(StudyKeyCard, {
       identity: {
         accountId: 903,
-        handle: 'study7k2m9x',
+        email: 'study7k2m9x@example.org',
         generationCount: 0,
         fingerprint: null,
         hasUnopenedCompartment: false,
@@ -310,7 +310,7 @@ test('the key card tells "no key yet" apart from "these keys will not open"', ()
     createElement(StudyKeyCard, {
       identity: {
         accountId: 903,
-        handle: 'study7k2m9x',
+        email: 'study7k2m9x@example.org',
         generationCount: 0,
         fingerprint: null,
         hasUnopenedCompartment: true,
@@ -349,7 +349,7 @@ test('the key card tells "no key yet" apart from "these keys will not open"', ()
       createElement(StudyKeyCard, {
         identity: {
           accountId: 903,
-          handle: 'study7k2m9x',
+          email: 'study7k2m9x@example.org',
           generationCount: 0,
           fingerprint: null,
           hasUnopenedCompartment: true,

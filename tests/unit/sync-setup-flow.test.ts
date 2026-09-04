@@ -14,7 +14,7 @@ import {
   validateSyncPassphrase,
 } from '../../app/lib/sync/setup-flow';
 import type { SyncSetupState, Translate } from '../../app/lib/sync/setup-flow';
-import { MAX_HANDLE_LENGTH, describeHandleProblem } from '../../app/lib/sync/handle';
+import { MAX_EMAIL_LENGTH, canonicalizeEmail, describeEmailProblem } from '../../app/lib/sync/email';
 
 /** Renders `key` plus any interpolation params, so both are assertable without i18next. */
 const fakeT: Translate = (key, params) => (params === undefined ? key : `${key} ${JSON.stringify(params)}`);
@@ -54,32 +54,20 @@ describe('syncSetupReducer', () => {
     assert.deepEqual(next, { kind: 'generating' });
   });
 
-  it('setupSucceeded moves from generating to the account card, unconfirmed', () => {
+  // STRAIGHT TO `complete`, with no card between (M192). The account exists,
+  // the session is open, and the person has nothing to write down: the
+  // recovery code is escrowed with the service and never shown.
+  it('setupSucceeded moves from generating straight to complete', () => {
     const generating: SyncSetupState = { kind: 'generating' };
-    const next = syncSetupReducer(generating, {
-      type: 'setupSucceeded',
-      handle: 'k7m2q3xr9t',
-      recoveryCode: 'ABCDE-FGHJK',
-    });
-    assert.deepEqual(next, {
-      kind: 'show-account-card',
-      handle: 'k7m2q3xr9t',
-      recoveryCode: 'ABCDE-FGHJK',
-      hasConfirmedSaved: false,
-    });
+    assert.deepEqual(syncSetupReducer(generating, { type: 'setupSucceeded' }), { kind: 'complete' });
   });
 
-  // THE CARD CARRIES BOTH, and that is the requirement rather than a detail:
-  // a user who saves the code and never registers that the handle is equally
-  // required to get back in has saved half a credential.
-  it('the account card holds the handle beside the code, on one state', () => {
-    const shown = syncSetupReducer({ kind: 'generating' }, {
-      type: 'setupSucceeded',
-      handle: 'k7m2q3xr9t',
-      recoveryCode: 'ABCDE-FGHJK',
-    });
-    assert.equal(shown.kind === 'show-account-card' && shown.handle, 'k7m2q3xr9t');
-    assert.equal(shown.kind === 'show-account-card' && shown.recoveryCode, 'ABCDE-FGHJK');
+  // THE ACTION CARRIES NOTHING, and that is the requirement rather than a
+  // detail: an action with a `recoveryCode` on it is an action some future
+  // screen can render.
+  it('the success action carries no recovery code for anything to render', () => {
+    const action = { type: 'setupSucceeded' } as const;
+    assert.deepEqual(Object.keys(action), ['type']);
   });
 
   it('setupFailed with no field moves from generating to the retry screen', () => {
@@ -95,64 +83,40 @@ describe('syncSetupReducer', () => {
     const generating: SyncSetupState = { kind: 'generating' };
     const next = syncSetupReducer(generating, {
       type: 'setupFailed',
-      message: 'that name is taken',
-      field: 'handle',
+      message: 'that invitation is no longer valid',
+      field: 'invite',
     });
     assert.deepEqual(next, {
       kind: 'enter-details',
-      serverError: { field: 'handle', message: 'that name is taken' },
+      serverError: { field: 'invite', message: 'that invitation is no longer valid' },
     });
   });
 
   it('an invite refusal comes back under the invite field', () => {
-    const next = syncSetupReducer({ kind: 'generating' }, {
-      type: 'setupFailed',
-      message: 'that invite is not valid',
-      field: 'invite',
-    });
+    const next = syncSetupReducer(
+      { kind: 'generating' },
+      {
+        type: 'setupFailed',
+        message: 'that invite is not valid',
+        field: 'invite',
+      },
+    );
     assert.equal(next.kind === 'enter-details' && next.serverError?.field, 'invite');
   });
 
   it('ignores a setupFailed that arrives outside of generating', () => {
     const complete: SyncSetupState = { kind: 'complete' };
-    assert.deepEqual(syncSetupReducer(complete, { type: 'setupFailed', message: 'late', field: 'handle' }), complete);
+    assert.deepEqual(syncSetupReducer(complete, { type: 'setupFailed', message: 'late', field: 'invite' }), complete);
   });
 
-  it('confirmSavedToggled flips hasConfirmedSaved without losing the card', () => {
-    const shown: SyncSetupState = {
-      kind: 'show-account-card',
-      handle: 'k7m2q3xr9t',
-      recoveryCode: 'ABCDE-FGHJK',
-      hasConfirmedSaved: false,
-    };
-    const checked = syncSetupReducer(shown, { type: 'confirmSavedToggled', checked: true });
-    assert.deepEqual(checked, { ...shown, hasConfirmedSaved: true });
-    const unchecked = syncSetupReducer(checked, { type: 'confirmSavedToggled', checked: false });
-    assert.deepEqual(unchecked, shown);
-  });
-
-  it('finishRequested completes setup ONLY when hasConfirmedSaved is true', () => {
-    const unconfirmed: SyncSetupState = {
-      kind: 'show-account-card',
-      handle: 'k7m2q3xr9t',
-      recoveryCode: 'ABCDE-FGHJK',
-      hasConfirmedSaved: false,
-    };
-    const stillShown = syncSetupReducer(unconfirmed, { type: 'finishRequested' });
-    assert.deepEqual(stillShown, unconfirmed, 'finishRequested must be a no-op without confirmation');
-
-    const complete = syncSetupReducer({ ...unconfirmed, hasConfirmedSaved: true }, { type: 'finishRequested' });
-    assert.deepEqual(complete, { kind: 'complete' });
-  });
-
-  // Client-side validation no longer reaches this machine at all: an empty
-  // name, an `@`, a short or mistyped passphrase and a malformed invite are
-  // the signup schema's business, rendered by Conform under their own fields
-  // (owner request, 2026-09-02). Only the SERVICE's refusals get a state.
+  // Client-side validation no longer reaches this machine at all: a short or
+  // mistyped password and a malformed invite are the signup schema's business,
+  // rendered by Conform under their own fields (owner request, 2026-09-02).
+  // Only the SERVICE's refusals get a state.
   it('a resubmission from a server-rejected form goes back to generating', () => {
     const rejected: SyncSetupState = {
       kind: 'enter-details',
-      serverError: { field: 'handle', message: 'that name is taken' },
+      serverError: { field: 'invite', message: 'that invitation is no longer valid' },
     };
     assert.deepEqual(syncSetupReducer(rejected, { type: 'detailsSubmitted' }), { kind: 'generating' });
   });
@@ -171,19 +135,14 @@ describe('syncSetupReducer', () => {
 
   it('ignores a stray setupSucceeded that arrives outside of generating', () => {
     const errored: SyncSetupState = { kind: 'error', message: 'network error' };
-    const next = syncSetupReducer(errored, {
-      type: 'setupSucceeded',
-      handle: 'k7m2q3xr9t',
-      recoveryCode: 'ABCDE-FGHJK',
-    });
-    assert.deepEqual(next, errored);
+    assert.deepEqual(syncSetupReducer(errored, { type: 'setupSucceeded' }), errored);
   });
 });
 
 /**
  * The setup-COMPLETION (repair) entry point: an account that exists with no
- * key records, reached from the sign-in form where the handle and passphrase
- * have already been typed.
+ * key records, reached from the sign-in form where the address and the
+ * password have already been typed.
  */
 describe('initialSyncSetupState', () => {
   it('starts on the details form by default, exactly as before', () => {
@@ -197,49 +156,70 @@ describe('initialSyncSetupState', () => {
 
   it('a resumed ceremony holds the screen from its very first render', () => {
     // `completeSetup` opens the session while this state is showing, so the
-    // protection has to be in place before anything is dispatched — not from
-    // the moment the code appears.
+    // protection has to be in place before anything is dispatched.
     assert.equal(isSyncSetupCeremonyActive(initialSyncSetupState({ resume: true })), true);
   });
 
-  it('a resumed ceremony reaches the SAME un-skippable acknowledgment gate', () => {
-    let state = initialSyncSetupState({ resume: true });
-    state = syncSetupReducer(state, { type: 'setupSucceeded', handle: 'k7m2q3xr9t', recoveryCode: 'ABCDE-FGHJK' });
-    assert.equal(state.kind, 'show-account-card');
-
-    const skipped = syncSetupReducer(state, { type: 'finishRequested' });
-    assert.equal(skipped.kind, 'show-account-card', 'the repair must not be able to bypass the confirm-saved gate');
-
-    const acknowledged = syncSetupReducer(
-      syncSetupReducer(state, { type: 'confirmSavedToggled', checked: true }),
-      { type: 'finishRequested' },
-    );
-    assert.equal(acknowledged.kind, 'complete');
+  it('a resumed ceremony ends the same way a first-time one does', () => {
+    const state = syncSetupReducer(initialSyncSetupState({ resume: true }), { type: 'setupSucceeded' });
+    assert.equal(state.kind, 'complete');
+    assert.equal(isSyncSetupCeremonyActive(state), false, 'the screen is released once the repair is done');
   });
 });
 
 /**
- * `describeHandleProblem` turns a refused candidate into the sentence shown
- * under the HANDLE FIELD on submit — three cases, three sentences, and the
- * field starts empty (owner decision, 2026-09-02) so "required" is the one a
- * first-time submit is most likely to hit. It lives in `handle.ts` because all
- * three sync forms feed it into a Zod schema.
+ * `describeEmailProblem` turns a refused address into the sentence shown under
+ * the ADDRESS FIELD on submit. It lives in `email.ts` because two sync forms
+ * feed it into a Zod schema, and because it is the INVERSE of the rule it
+ * replaced: a handle was refused for containing `@`, and an address is refused
+ * for not containing exactly one.
  */
-describe('describeHandleProblem', () => {
-  it('names an empty candidate as required, not as any other problem', () => {
-    assert.equal(describeHandleProblem('', fakeT), 'sync.setup.handleRequired');
-    assert.equal(describeHandleProblem('   ', fakeT), 'sync.setup.handleRequired');
+describe('describeEmailProblem', () => {
+  it('names an empty value as required, not as any other problem', () => {
+    assert.equal(describeEmailProblem('', fakeT), 'sync.email.required');
+    assert.equal(describeEmailProblem('   ', fakeT), 'sync.email.required');
   });
 
-  it('names an email-shaped candidate as not an email address', () => {
-    assert.equal(describeHandleProblem('a@b', fakeT), 'sync.setup.handleNotAnEmail');
+  it('names the maximum in the too-long message, so it is actionable', () => {
+    const tooLong = `${'a'.repeat(MAX_EMAIL_LENGTH)}@example.org`;
+    assert.equal(describeEmailProblem(tooLong, fakeT), `sync.email.tooLong {"max":${MAX_EMAIL_LENGTH}}`);
   });
 
-  it('names an over-length candidate as too long', () => {
-    assert.equal(describeHandleProblem('a'.repeat(MAX_HANDLE_LENGTH + 1), fakeT), 'sync.setup.handleTooLong');
+  it('refuses the ordinary typing accidents, and only those', () => {
+    // Each of these is a value the service would refuse, so catching it here
+    // turns a round trip nobody can explain into a sentence under the field.
+    for (const bad of ['anna', 'anna@', '@example.org', 'anna@@example.org', 'anna@example', 'anna @example.org']) {
+      assert.notEqual(describeEmailProblem(bad, fakeT), null, bad);
+    }
   });
 
-  it('accepts an ordinary handle with no problem', () => {
-    assert.equal(describeHandleProblem('kitchen-sink', fakeT), null);
+  it('accepts an ordinary address, and one with the parts people actually use', () => {
+    for (const good of ['anna@example.org', 'anna.b+openplate@mail.example.co.uk', 'A.Nna@Example.ORG']) {
+      assert.equal(describeEmailProblem(good, fakeT), null, good);
+    }
+  });
+});
+
+/**
+ * The canonical form — NFKC, trimmed, lowercased.
+ *
+ * It matters more than it looks: `POST /v1/auth/kdf` and `POST /v1/auth/login`
+ * must agree on the string, and an Argon2id run against a differently-spelled
+ * address derives a verifier that simply does not match. On screen that is
+ * indistinguishable from a wrong password.
+ */
+describe('canonicalizeEmail', () => {
+  it('lowercases, trims, and normalises', () => {
+    assert.equal(canonicalizeEmail('  Anna@Example.ORG \n'), 'anna@example.org');
+    // NFKC folds a fullwidth form onto the ordinary one; two spellings of one
+    // address must collide here, as they do in the service's unique index.
+    assert.equal(canonicalizeEmail('\uFF41nna@example.org'), 'anna@example.org');
+  });
+
+  it('canonicalises whatever it is given, including a value the checker refuses', () => {
+    // Canonicalising and validating are separate steps, because the caller
+    // does them in a different order: a form validates what was typed, and a
+    // request sends what was canonicalised.
+    assert.equal(canonicalizeEmail('  NOT AN ADDRESS '), 'not an address');
   });
 });

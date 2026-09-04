@@ -145,6 +145,9 @@ import { z } from 'zod';
 import { createComponentLogger } from '#app/lib/logger';
 import {
   AI_DB_NAME,
+  AI_ENTITY_CELL,
+  AI_SETTINGS_ROW_ID,
+  AI_SETTINGS_TABLE,
   createAiStore,
   createOutboxStore,
   createPhotosStore,
@@ -153,11 +156,15 @@ import {
   PHOTOS_DB_NAME,
   PRIMARY_DB_NAME,
 } from './store';
+import { RETIRED_GATEWAY_CONNECTION_TABLE } from './schema';
 
 const log = createComponentLogger('local-store/persist');
 
 /** One row of the persister's `tables` object store: `k` is the table name, `v` that table's rows. */
 const persistedTableRowSchema = z.looseObject({ k: z.string() });
+
+/** The AI settings cell as it comes off the store — a TinyBase cell, not yet JSON text. */
+const retiredAiCellSchema = z.string();
 
 /** A table's rows as the persister stores them — keyed by row id; anything else counts as zero rows. */
 const persistedTableRowsSchema = z.looseObject({});
@@ -509,7 +516,9 @@ function isStatusAwarePersister(
   persister: SaveStep,
 ): persister is SaveStep & Required<Pick<SaveStep, 'getStatus' | 'addStatusListener' | 'delListener'>> {
   return (
-    persister.getStatus !== undefined && persister.addStatusListener !== undefined && persister.delListener !== undefined
+    persister.getStatus !== undefined &&
+    persister.addStatusListener !== undefined &&
+    persister.delListener !== undefined
   );
 }
 
@@ -1068,7 +1077,18 @@ export async function primeFreshDatabaseIfNeeded(dbName: string, persister: Save
 // Store singletons
 // ---------------------------------------------------------------------------
 
-async function initPersistedStore(store: Store, dbName: string): Promise<Store> {
+/**
+ * A one-shot cleanup run once a store's load has finished — the SCHEMA
+ * MIGRATION hook for the persisted stores.
+ *
+ * It runs AFTER `startLockedAutoSave`, deliberately: the autosave is a
+ * store-change listener, so anything written before it is installed lands in
+ * memory and never reaches IndexedDB. A migration that had to run again on
+ * every boot would look identical to one that worked.
+ */
+type AfterLoad = (store: Store) => void;
+
+async function initPersistedStore(store: Store, dbName: string, afterLoad?: AfterLoad): Promise<Store> {
   assertBrowserWithIndexedDb(dbName);
   const persister = createIndexedDbPersister(store, dbName, undefined, (cause: unknown) => {
     // TinyBase itself swallows this error silently (no callback = discarded).
@@ -1095,7 +1115,62 @@ async function initPersistedStore(store: Store, dbName: string): Promise<Store> 
   // discarded every non-winning tab's writes — see this file's module doc).
   startLockedAutoSave(store, dbName, persister);
 
+  afterLoad?.(store);
+
   return store;
+}
+
+/**
+ * Drops the v17 gateway connection from the primary store (M192, schema v18).
+ *
+ * The table held a gateway MEMBER TOKEN for a service that no longer exists.
+ * It is deleted rather than left in place because the compartment is sealed
+ * from what this store holds: a row left behind would be re-sealed and
+ * re-pushed on every cycle, carrying a dead credential between an account's
+ * devices forever.
+ *
+ * `delTable` on a store with no such table is a no-op, so this costs nothing
+ * on the overwhelmingly common boot where there is nothing to drop.
+ */
+function dropRetiredGatewayConnection(store: Store): void {
+  if (!store.hasTable(RETIRED_GATEWAY_CONNECTION_TABLE)) return;
+  log.info('local-store: dropping the retired gateway connection (schema v18 — the gateway is gone)');
+  store.delTable(RETIRED_GATEWAY_CONNECTION_TABLE);
+}
+
+/**
+ * Deletes an AI settings row provisioned by a gateway invite (M192, schema
+ * v18).
+ *
+ * `connectedVia: 'invite'` means the row's `apiKey` is a gateway member token
+ * and its `baseUrl` points at a gateway. Both are dead. Keeping the row would
+ * be worse than clearing it: the settings page would report a working AI
+ * connection and every scan would fail with a network error, which reads as
+ * "openplate is broken" rather than "reconnect your AI".
+ *
+ * The row is parsed by hand here rather than through `getLocalAiSettings`,
+ * because that module reads the STORE SINGLETON and this runs while that
+ * singleton's promise is still resolving.
+ */
+function dropRetiredGatewayAiSettings(store: Store): void {
+  if (!store.hasRow(AI_SETTINGS_TABLE, AI_SETTINGS_ROW_ID)) return;
+  const raw = retiredAiCellSchema.safeParse(store.getCell(AI_SETTINGS_TABLE, AI_SETTINGS_ROW_ID, AI_ENTITY_CELL));
+  if (!raw.success) return;
+  let connectedVia: unknown;
+  try {
+    // SAFETY: this cell is written only by `ai-settings.ts`'s
+    // `putLocalAiSettings`, which stores `JSON.stringify(LocalAiSettings)`. The
+    // one field read below is compared to a literal, so a value of any other
+    // shape simply does not match and nothing is deleted. A malformed cell is
+    // `ai-settings.ts`'s problem, not this migration's: its own parse already
+    // answers `null` for one.
+    connectedVia = (JSON.parse(raw.data) as { connectedVia?: unknown }).connectedVia;
+  } catch {
+    return;
+  }
+  if (connectedVia !== 'invite') return;
+  log.info('local-store: dropping the AI settings row provisioned by a gateway invite (schema v18)');
+  store.delRow(AI_SETTINGS_TABLE, AI_SETTINGS_ROW_ID);
 }
 
 let primaryPromise: Promise<Store> | null = null;
@@ -1128,10 +1203,12 @@ let loadedAiStore: Store | null = null;
  */
 export function getPrimaryStore(): Promise<Store> {
   if (!primaryPromise) {
-    primaryPromise = initPersistedStore(createPrimaryStore(), PRIMARY_DB_NAME).catch((cause: unknown) => {
-      primaryPromise = null;
-      throw cause;
-    });
+    primaryPromise = initPersistedStore(createPrimaryStore(), PRIMARY_DB_NAME, dropRetiredGatewayConnection).catch(
+      (cause: unknown) => {
+        primaryPromise = null;
+        throw cause;
+      },
+    );
   }
   return primaryPromise;
 }
@@ -1185,7 +1262,7 @@ export function getPhotosStore(): Promise<Store> {
  */
 export function getAiStore(): Promise<Store> {
   if (!aiPromise) {
-    aiPromise = initPersistedStore(createAiStore(), AI_DB_NAME)
+    aiPromise = initPersistedStore(createAiStore(), AI_DB_NAME, dropRetiredGatewayAiSettings)
       .then((store) => {
         loadedAiStore = store;
         return store;

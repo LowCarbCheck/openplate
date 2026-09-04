@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 
 import { canSubmitRecovery, INITIAL_RECOVERY_FLOW_STATE, recoveryFlowReducer } from '../../app/lib/sync/recovery-flow';
 import type { RecoveryFlowState } from '../../app/lib/sync/recovery-flow';
+import { generateRecoveryCode, parseRecoveryCode } from '../../app/lib/sync/engine/client/recovery-kek';
 
 describe('recoveryFlowReducer', () => {
   it('starts on the form', () => {
@@ -74,5 +75,43 @@ describe('recoveryFlowReducer', () => {
         : recoveryFlowReducer(state, { type: 'submitted' });
       assert.notDeepEqual(recovered, state, `${state.kind} must have a way forward`);
     }
+  });
+});
+
+/**
+ * THE CODE ON THE WIRE (M192 addendum): the service canonicalizes to 32
+ * ungrouped uppercase characters and `reset/open` returns that form, while
+ * `signup` and `recover-rotate` send the grouped form the generator produces.
+ *
+ * So the decoder has to accept both, and it is the ONLY decoder this client
+ * has: `resetSyncPassphrase` feeds `/reset/open`'s answer straight into it. A
+ * decoder that only took the grouped form would refuse every mailed reset, and
+ * the refusal would read as "that code does not open this account".
+ */
+describe('parseRecoveryCode across both wire forms', () => {
+  it('reads the grouped form the generator produces', () => {
+    const code = generateRecoveryCode();
+    assert.match(code.formatted, /-/, 'the generator groups for display');
+    assert.deepEqual([...(parseRecoveryCode(code.formatted) ?? [])], [...code.raw]);
+  });
+
+  it('reads the UNGROUPED, canonical form the service returns', () => {
+    const code = generateRecoveryCode();
+    const canonical = code.formatted.replaceAll('-', '');
+    assert.equal(canonical.length, 32, 'twenty bytes of base32 is thirty-two characters');
+    assert.deepEqual([...(parseRecoveryCode(canonical) ?? [])], [...code.raw]);
+  });
+
+  it('reads a re-typed code whatever the case and the grouping', () => {
+    // The alphabet omits O, I and L precisely because a person mis-transcribes
+    // them, and the forgiveness below is the other half of that decision.
+    const code = generateRecoveryCode();
+    const retyped = code.formatted.toLowerCase().replaceAll('-', ' ');
+    assert.deepEqual([...(parseRecoveryCode(retyped) ?? [])], [...code.raw]);
+  });
+
+  it('refuses a value that is not a code at all', () => {
+    assert.equal(parseRecoveryCode(''), null);
+    assert.equal(parseRecoveryCode('   '), null);
   });
 });

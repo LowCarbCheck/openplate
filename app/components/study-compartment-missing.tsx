@@ -33,10 +33,14 @@ export function StudyCompartmentMissing() {
         <AlertDescription>{t('research.join.compartmentMissing.body')}</AlertDescription>
       </Alert>
       <p className="text-sm text-muted-foreground">{t('research.join.compartmentMissing.why')}</p>
-      {/* A link, not a button that enrols. The only route out of this screen
-          leads to the recovery-code setup. */}
+      {/* A link, not a button that enrols. The route out is a password reset:
+          the compartment is established at signup, and the reset ceremony is
+          the one routine operation that can create one for an account whose
+          data predates it (see `rewrapCompartmentAfterRecovery`). It used to
+          point at a "set up a recovery code" screen, which no longer exists —
+          the code is escrowed and never shown (M192). */}
       <Button asChild variant="outline" className="h-11 w-full">
-        <Link to="/settings/sync">{t('research.join.compartmentMissing.cta')}</Link>
+        <Link to="/forgot">{t('research.join.compartmentMissing.cta')}</Link>
       </Button>
     </div>
   );

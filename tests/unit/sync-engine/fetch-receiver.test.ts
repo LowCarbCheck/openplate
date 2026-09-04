@@ -121,7 +121,7 @@ test('the default resolves globalThis.fetch at CALL time, not at module load', a
 
 test('SyncAuthClient handshakes through its DEFAULT fetch without losing the receiver', async () => {
   const { restore, calls } = installBrandCheckedFetch(() =>
-    json({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: 'test' }),
+    json({ protocolVersion: 2, envelopeVersion: 1, serviceVersion: 'test' }),
   );
   try {
     // No `fetchImpl` — that override is what every other test passes, and it

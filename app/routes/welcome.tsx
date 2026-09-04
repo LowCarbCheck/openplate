@@ -60,7 +60,6 @@ import { Label } from '#app/components/ui/label';
 import { useManagedInstance } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { buildJoinFragment, isJoinLinkEmpty, parseJoinLinkInput } from '#app/lib/join-link';
-import { getLocalAiSettings } from '#app/lib/local-store';
 import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
 import { resolveWelcomeHint, type WelcomeHintInput, type WelcomeHint } from '#app/lib/welcome-hint';
 
@@ -92,29 +91,19 @@ const SIGN_IN_PATH = '/sign-in';
  * is one localStorage lookup plus one IndexedDB open.
  */
 function useWelcomeHint(managed: boolean) {
-  // The two RAW device traces, not the derived hint — so "Not you?" can clear
-  // just the account hint and recompute, without a second IndexedDB read.
+  // The RAW device trace, not the derived hint — so "Not you?" can clear it
+  // and recompute without re-reading anything.
   const [raw, setRaw] = useState<Omit<WelcomeHintInput, 'managed'> | null>(null);
 
+  // AN EFFECT, not a render-time read: `readAccountHint` touches
+  // `localStorage`, which does not exist during SSR, and reading it in render
+  // would produce a hydration mismatch — a blank screen in this app.
   useEffect(() => {
-    let isMounted = true;
-    async function readHints(): Promise<void> {
-      // A missing or unreadable settings row is simply no gateway hint. It
-      // cannot be an error state here: this screen has to render on a device
-      // that has never stored anything at all.
-      const aiSettings = await getLocalAiSettings().catch(() => null);
-      if (!isMounted) return;
-      setRaw({ accountHint: readAccountHint(), connectedVia: aiSettings?.connectedVia ?? null });
-    }
-    void readHints();
-    return () => {
-      isMounted = false;
-    };
+    setRaw({ accountHint: readAccountHint() });
   }, []);
 
   // Clears the stored hint AND the on-screen prefill in the same call, so
-  // "Start" becomes primary without a reload (M183 spec 04). The gateway
-  // trace is untouched: disowning a name does not disown an invite.
+  // "Start" becomes primary without a reload (M183 spec 04).
   const forgetName = useCallback((): void => {
     clearAccountHint();
     setRaw((current) => (current === null ? current : { ...current, accountHint: null }));

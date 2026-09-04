@@ -76,10 +76,12 @@
 import { after, afterEach, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import 'fake-indexeddb/auto';
+import { z } from 'zod';
 
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
-import { createSyncAccount } from '../../app/lib/sync/sync-actions';
-import { ensureShareIdentity, forgetPinnedPeer, grantShare } from '../../app/lib/sync/share-actions';
+import { createSyncAccount, recoverSyncAccount } from '../../app/lib/sync/sync-actions';
+import { closeAndForgetSyncSession } from '../../app/lib/sync/session-cache';
+import { ensureShareIdentity, forgetPinnedPeer, grantShare, rotateSyncDek } from '../../app/lib/sync/share-actions';
 import { getSyncVault, type SyncVault } from '../../app/lib/sync/sync-session';
 import { decryptWithSchemaProbe } from '../../app/lib/sync/orchestrator';
 import { createPrivateStoreSession, openOwnerPrivateRegion } from '../../app/lib/sync/private-store';
@@ -165,9 +167,13 @@ let accountCounter = 0;
  * own transports.
  */
 async function createAccount(label: string): Promise<SyncVault> {
+  // AN INVITE, because protocol 2 has no other way in. Minted through the
+  // fake's test seam: `/v1/admin/invites` belongs to the server spec, and
+  // nothing in this file exercises an admin surface.
+  const email = `${label}-${Date.now()}-${accountCounter++}@example.org`;
   await createSyncAccount({
     serverUrl: service.url,
-    handle: `${label}-${Date.now()}-${accountCounter++}`,
+    inviteToken: service.createInvite({ email }),
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
@@ -378,3 +384,72 @@ test('forgetting a peer that reached the service removes it there', async () => 
     'the forget must reach the service — exactly the forgotten peer gone, the other still pinned',
   );
 });
+
+/**
+ * THE ROTATION MOVES THE RECOVERY CODE WITH THE KEY RECORDS (M192 addendum).
+ *
+ * ── The bug this pins, which was live from M181 to M192 ──────────────────
+ *
+ * A rotation mints a fresh recovery code, because the `recovery` key record it
+ * writes wraps the NEW DEK. The request carried no verifier and no escrow, so
+ * the service kept both on the OLD code: the old code authenticated and
+ * unwrapped nothing, the new one unwrapped and authenticated nothing, and the
+ * account had no working recovery path at all. Nothing threw. It surfaced on a
+ * later reset, on a different day, as a diary that would not decrypt.
+ *
+ * The observation point is the SERVICE's own escrow, read back through the
+ * reset link — the only way a code reaches a client now. A test that asserted
+ * on `rotateSyncDek`'s return value could not see this at all, and after this
+ * milestone there is no return value to assert on.
+ */
+test('a DEK rotation replaces the escrowed recovery code, not just the key records', async () => {
+  const email = `rotation-${Date.now()}-${accountCounter++}@example.org`;
+  await createSyncAccount({
+    serverUrl: service.url,
+    inviteToken: service.createInvite({ email }),
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  // A blob has to exist before a rotation: it re-encrypts one.
+  await ensureShareIdentity();
+
+  const beforeCode = await escrowedCodeOf(email);
+
+  const outcome = await rotateSyncDek({ passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  // NO CODE IN THE OUTCOME, and the type has no field for one: the code is
+  // escrowed with the service and never shown, exactly as at signup.
+  assert.deepEqual(Object.keys(outcome).toSorted(), ['dropped', 'keptShares', 'revokedShares']);
+
+  const afterCode = await escrowedCodeOf(email);
+  assert.notEqual(afterCode, beforeCode, 'the rotation must replace the escrow, not leave it on the retired code');
+
+  // AND THE ESCROWED CODE IS THE ONE THAT WORKS. This is the half the old
+  // shape failed: the verifier moved with it, so the code authenticates AND
+  // unwraps the freshly rotated DEK.
+  await closeAndForgetSyncSession();
+  await recoverSyncAccount({
+    serverUrl: service.url,
+    email,
+    recoveryCode: afterCode,
+    newPassphrase: 'a passphrase set from the rotated code',
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  assert.notEqual(getSyncVault(), null, 'the code the rotation escrowed must open the account');
+});
+
+/** The escrowed code as the SERVICE holds it, read through a reset link — the only path a code takes to a client. */
+async function escrowedCodeOf(email: string): Promise<string> {
+  const token = service.createResetToken(email);
+  assert.notEqual(token, null, `no account at ${email} to mint a reset link for`);
+  const response = await fetch(`${service.url}/v1/auth/reset/open`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resetToken: token ?? '' }),
+  });
+  assert.equal(response.status, 200, 'a live reset token must open');
+  return resetOpenBodySchema.parse(await response.json()).recoveryCode;
+}
+
+const resetOpenBodySchema = z.object({ email: z.string(), recoveryCode: z.string().min(1) });

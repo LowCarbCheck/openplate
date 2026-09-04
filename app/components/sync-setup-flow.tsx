@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Copy, Loader2, RefreshCw } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import type { Submission } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
@@ -13,8 +13,7 @@ import {
 } from '#app/lib/sync/setup-flow';
 import { makeSyncSignupSchema, type SyncInviteRule, type SyncSignupValues } from '#app/lib/sync/signup-schema';
 import { readSyncErrorField } from '#app/lib/sync/form-field-error';
-import { normalizeHandle, suggestHandle } from '#app/lib/sync/handle';
-import { passphraseStrengthKey, ratePassphrase } from '#app/lib/sync/passphrase-strength';
+import { PasswordFields } from '#app/components/password-fields';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { FieldError } from '#app/components/field-error';
 import { Button } from '#app/components/ui/button';
@@ -22,18 +21,24 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 
 /**
- * The sync-setup CEREMONY: invite, handle and passphrase entry -> the ACCOUNT
- * CARD, with an unmissable loss warning -> a confirm-saved gate before setup
- * can complete.
+ * The sync-setup CEREMONY: invite and password entry -> the account exists.
  *
- * THE HANDLE IS TYPED, with a suggestion one click away. The field starts
- * empty and "suggest a name" fills it with `suggestHandle`'s readable
- * `<adjective>-<animal>-<number>` in the UI language (`quick-otter-42`,
- * `flink-otter-42`) — never the Crockford string `generateHandle` mints, which
- * reads as a password and makes people think it cannot be changed. This is
- * also where the `@` rule becomes visible: the same check the service enforces
- * runs locally (`handle.ts`), so a person who types their email address is
- * told immediately rather than after a round trip.
+ * ── WHAT M192 REMOVED FROM THIS FILE ─────────────────────────────────────
+ *
+ * A handle field with a suggestion button, and the ACCOUNT CARD that followed
+ * provisioning: the handle and the recovery code shown together, once, behind
+ * an un-skippable "I have saved this" tick.
+ *
+ * Neither has anything left to do. The address comes from the invite, so there
+ * is no name to choose; and the recovery code is escrowed with the service and
+ * never shown, so there is nothing for a person to save. What is left is a
+ * password and a confirmation.
+ *
+ * That is a deliberate loss of a safeguard, and the trade is stated in the
+ * milestone's decisions: the operator of a managed instance now holds what it
+ * takes to open a diary, and what that buys is a person who forgets their
+ * password getting their diary back instead of a working login to something
+ * unreadable.
  *
  * ── One Conform form, one error per field ────────────────────────────────
  *
@@ -66,10 +71,9 @@ import { Label } from '#app/components/ui/label';
  * retry screen.
  *
  * `resume` is the setup-COMPLETION entry point: an account that exists with no
- * key records, reached from the sign-in form where the handle and passphrase
- * have already been typed. The wizard then opens straight into provisioning
- * and runs the identical card ceremony — the code it produces is exactly as
- * unrecoverable as a first-time one, so it gets exactly the same gate.
+ * key records, reached from the sign-in form where the address and the
+ * password have already been typed. The wizard then opens straight into
+ * provisioning.
  */
 export function SyncSetupFlow({
   provision,
@@ -78,38 +82,34 @@ export function SyncSetupFlow({
   resume,
   invite,
 }: {
-  provision: (input: { handle: string; passphrase: string; invite: string }) => Promise<SyncSetupOutcome>;
+  provision: (input: { passphrase: string; invite: string; displayName: string }) => Promise<SyncSetupOutcome>;
   /**
-   * Reports whether this wizard is holding something the user MUST still see,
-   * so the surrounding screen can refuse to swap it out.
+   * Reports whether this wizard is mid-flight, so the surrounding screen can
+   * refuse to swap it out.
    *
-   * Provisioning opens the sync session as a side effect, which used to make
-   * the settings route replace this component with the connected panel while
-   * it was one dispatch away from displaying the account card — a card shown
-   * exactly once, and the only way back into the account there is. See
-   * `isSyncSetupCeremonyActive` and `resolveSyncScreen` for the rule.
+   * Provisioning opens the sync session as a side effect, which makes the
+   * settings route want to replace this component with the connected panel
+   * while it is still running. See `isSyncSetupCeremonyActive` and
+   * `resolveSyncScreen` for the rule.
    */
   onCeremonyActiveChange?: (isActive: boolean) => void;
   /**
-   * The ceremony is OVER: the account exists, the card has been shown, and the
-   * person has ticked "I saved it" and pressed on.
+   * The ceremony is OVER: the account exists and the session is open.
    *
    * A separate event from `onCeremonyActiveChange` because the `false` edge of
    * that flag is NOT the end of the ceremony, and reading it as one shipped a
    * production bug on 2026-09-04: the effect below re-fires whenever its own
    * identity changes, so the caller saw `false` while provisioning was still
-   * running, navigated away, and the account card, the only display of the
-   * recovery code there will ever be, was never rendered. This fires once,
-   * from the reducer's `complete` state, which is unreachable until the card
-   * has been seen and acknowledged (`setup-flow.ts`).
+   * running and navigated away mid-flight. This fires once, from the reducer's
+   * `complete` state.
    */
   onCeremonyComplete?: () => void;
-  /** Skips the details form and provisions immediately with an already-known handle and passphrase. */
-  resume?: { handle: string; passphrase: string };
+  /** Skips the details form and provisions immediately with an already-known password. */
+  resume?: { passphrase: string };
   /** Omitted when this instance neither wants nor was given an invite — then no invite field is rendered at all. */
   invite?: SyncSetupInvite;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [state, dispatch] = useReducer(syncSetupReducer, { resume: resume !== undefined }, initialSyncSetupState);
   /**
    * The last submission Conform accepted, kept so the form can be re-seeded
@@ -148,13 +148,13 @@ export function SyncSetupFlow({
 
   /** The provisioning round trip, shared by the form submit and the `resume` entry point. */
   const runProvision = useCallback(
-    async (chosen: { handle: string; passphrase: string; invite: string }): Promise<void> => {
+    async (chosen: { passphrase: string; invite: string; displayName: string }): Promise<void> => {
       try {
-        const outcome = await provision(chosen);
-        dispatch({ type: 'setupSucceeded', handle: outcome.handle, recoveryCode: outcome.recoveryCode });
+        await provision(chosen);
+        dispatch({ type: 'setupSucceeded' });
       } catch (error) {
-        // The underlying words wherever there are any — "that handle is
-        // taken" is worth reading, and a generic failure message would send
+        // The underlying words wherever there are any — "that invitation is no
+        // longer valid" is worth reading, and a generic failure would send
         // the user round the same loop. `describeErrorForUser` rather than an
         // `instanceof Error` check: WebCrypto rejects with a DOMException, and
         // this step is where one is most likely to surface. `field` is what
@@ -179,7 +179,7 @@ export function SyncSetupFlow({
   useEffect(() => {
     if (resume === undefined || hasResumedRef.current) return;
     hasResumedRef.current = true;
-    void runProvision({ handle: resume.handle, passphrase: resume.passphrase, invite: '' });
+    void runProvision({ passphrase: resume.passphrase, invite: '', displayName: '' });
   }, [resume, runProvision]);
 
   /**
@@ -202,13 +202,10 @@ export function SyncSetupFlow({
     if (submission.status !== 'success') return;
     lastSubmissionRef.current = submission;
     dispatch({ type: 'detailsSubmitted' });
-    // The CANONICAL form goes to the service — NFKC, trimmed, lowercased, the
-    // same normalisation the server applies. Sending the raw field would show
-    // the user one handle on the account card and register another.
     void runProvision({
-      handle: normalizeHandle(submission.value.handle),
       passphrase: submission.value.passphrase,
       invite: submission.value.invite.trim(),
+      displayName: submission.value.displayName.trim(),
     });
   }
 
@@ -219,24 +216,12 @@ export function SyncSetupFlow({
         isInviteUnlocked={isInviteUnlocked || isInviteRejected(state.serverError)}
         onUnlockInvite={() => setIsInviteUnlocked(true)}
         lastResult={detailsResult}
-        onSuggestHandle={() => suggestHandle(i18n.language)}
         onSubmit={handleDetailsSubmit}
       />
     );
   }
   if (state.kind === 'generating') {
     return <GeneratingStep />;
-  }
-  if (state.kind === 'show-account-card') {
-    return (
-      <AccountCardStep
-        handle={state.handle}
-        recoveryCode={state.recoveryCode}
-        hasConfirmedSaved={state.hasConfirmedSaved}
-        onConfirmToggle={(checked) => dispatch({ type: 'confirmSavedToggled', checked })}
-        onFinish={() => dispatch({ type: 'finishRequested' })}
-      />
-    );
   }
   if (state.kind === 'error') {
     return <ErrorStep message={state.message} onRetry={() => dispatch({ type: 'retried' })} />;
@@ -273,21 +258,15 @@ function DetailsStep({
   isInviteUnlocked,
   onUnlockInvite,
   lastResult,
-  onSuggestHandle,
   onSubmit,
 }: {
   invite?: SyncSetupInvite;
   isInviteUnlocked: boolean;
   onUnlockInvite: () => void;
   lastResult: ReturnType<SyncSignupSubmission['reply']> | undefined;
-  onSuggestHandle: () => string;
   onSubmit: (submission: SyncSignupSubmission) => void;
 }) {
   const { t } = useTranslation();
-  // A local mirror ONLY because something else reads the live value: the
-  // strength hint paints from it. Conform still owns the field itself (see the
-  // input), and this is fed by an `onChange` layered on the spread.
-  const [passphrase, setPassphrase] = useState('');
 
   const [form, fields] = useForm({
     id: 'sync-signup',
@@ -301,7 +280,7 @@ function DetailsStep({
     // a reported error would sit there, `aria-invalid` and all, until the next
     // submit.
     shouldRevalidate: 'onInput',
-    defaultValue: { invite: invite?.initialValue ?? '', handle: '', passphrase: '', confirmPassphrase: '' },
+    defaultValue: { invite: invite?.initialValue ?? '', displayName: '', passphrase: '', confirmPassphrase: '' },
     onSubmit(event, { submission }) {
       // Nothing is posted anywhere: this form's "action" is a browser-side
       // ceremony, and the default navigation would abandon it.
@@ -311,11 +290,6 @@ function DetailsStep({
     },
   });
 
-  // A HINT, never a gate (`passphrase-strength.ts`): the 12-character floor is
-  // the only hard rule, and a meter that refuses pushes people towards
-  // whatever pattern satisfies it rather than towards length.
-  const strength = ratePassphrase(passphrase);
-  const strengthId = `${fields.passphrase.id}-strength`;
   const isInviteReadOnly = invite?.isFromLink === true && !isInviteUnlocked;
 
   return (
@@ -349,82 +323,26 @@ function DetailsStep({
         </div>
       )}
 
+      {/* OPTIONAL, and the last field rather than the first: the address came
+          from the invite and is not asked for, so this box is the only one on
+          the form that is not required, and putting it above the password
+          would read as a name somebody has to choose. */}
       <div className="space-y-2">
-        <Label htmlFor={fields.handle.id}>{t('sync.handleLabel')}</Label>
-        <div className="flex gap-2">
-          {/*
-            Conform owns this field end to end — `getInputProps` supplies the
-            id, the name, the seeded `defaultValue` and the
-            `aria-invalid`/`aria-describedby` pair from the SAME metadata
-            `FieldError` reads. Presentation-only props go AFTER the spread so
-            they aren't clobbered by it. NOT `required`: the field starts empty
-            (owner decision, 2026-09-02) and the browser's native popup would
-            intercept the submit with untranslated copy before the schema ever
-            ran.
-          */}
-          <Input
-            {...getInputProps(fields.handle, { type: 'text' })}
-            autoComplete="username"
-            spellCheck={false}
-            autoCapitalize="none"
-            className="h-11 font-mono"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 shrink-0"
-            // `form.update` rather than a local value: the input is
-            // uncontrolled, so rewriting Conform's initialValue is what puts
-            // the suggestion in the box AND in the next submission.
-            onClick={() => form.update({ name: fields.handle.name, value: onSuggestHandle() })}
-            aria-label={t('sync.setup.handleShuffle')}
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">{t('sync.handleHint')}</p>
-        <FieldError id={fields.handle.errorId} errors={fields.handle.errors} />
+        <Label htmlFor={fields.displayName.id}>{t('sync.displayNameLabel')}</Label>
+        <Input {...getInputProps(fields.displayName, { type: 'text' })} autoComplete="name" className="h-11" />
+        <FieldError id={fields.displayName.errorId} errors={fields.displayName.errors} />
       </div>
 
       <p className="text-sm text-muted-foreground">{t('sync.setup.passphraseIntro')}</p>
-      {/* The one place, with the forgot screen, that says what the password
-          also does. One string, two call sites: see `sync.passwordNote`. */}
-      <p className="text-sm text-muted-foreground">{t('sync.passwordNote')}</p>
 
-      <div className="space-y-2">
-        <Label htmlFor={fields.passphrase.id}>{t('sync.setup.passphraseLabel')}</Label>
-        <Input
-          {...getInputProps(fields.passphrase, { type: 'password', ariaDescribedBy: strengthId })}
-          autoComplete="new-password"
-          onChange={(event) => setPassphrase(event.target.value)}
-          className="h-11"
-        />
-        <p
-          id={strengthId}
-          aria-live="polite"
-          className={
-            passphrase === '' ? 'sr-only'
-            : strength === 'strong' ?
-              'text-xs text-primary'
-            : strength === 'fair' ?
-              'text-xs text-accent-amber'
-            : 'text-xs text-muted-foreground'
-          }
-        >
-          {passphrase === '' ? '' : t(passphraseStrengthKey(strength))}
-        </p>
-        <FieldError id={fields.passphrase.errorId} errors={fields.passphrase.errors} />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={fields.confirmPassphrase.id}>{t('sync.setup.confirmLabel')}</Label>
-        <Input
-          {...getInputProps(fields.confirmPassphrase, { type: 'password' })}
-          autoComplete="new-password"
-          className="h-11"
-        />
-        <FieldError id={fields.confirmPassphrase.errorId} errors={fields.confirmPassphrase.errors} />
-      </div>
+      {/* THE SHARED PAIR (M192): the same two fields, the same strength hint
+          and the same mismatch placement the reset screen and the change-
+          password card use. Three hand-drawn copies had already drifted. */}
+      <PasswordFields
+        passphrase={fields.passphrase}
+        confirmPassphrase={fields.confirmPassphrase}
+        passwordLabel={t('sync.setup.passphraseLabel')}
+      />
 
       {/* Only what belongs to no field lands here: a service refusal with a
           named field went back to that field on the way in. */}
@@ -445,100 +363,6 @@ function GeneratingStep() {
       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
       {t('sync.setup.generating')}
     </output>
-  );
-}
-
-/**
- * THE ACCOUNT CARD: handle and recovery code, together, once, behind one save
- * confirmation.
- *
- * ── Why one card and not two screens ─────────────────────────────────────
- *
- * The failure this guards against is a user who saves the recovery code and
- * never registers that the handle is equally required to get back in. Two
- * screens, or two separate copy-to-clipboard moments, are how that happens:
- * the second value reads as an afterthought. So there is one copy action that
- * takes both, one checkbox, and one sentence saying what losing them costs.
- *
- * EXPORTED so any flow that has to show these values reuses this exact
- * ceremony instead of growing a second, inevitably weaker one.
- */
-export function AccountCardStep({
-  handle,
-  recoveryCode,
-  hasConfirmedSaved,
-  onConfirmToggle,
-  onFinish,
-  finishLabel,
-}: {
-  handle: string;
-  recoveryCode: string;
-  hasConfirmedSaved: boolean;
-  onConfirmToggle: (checked: boolean) => void;
-  onFinish: () => void;
-  /** Defaults to the first-time-setup wording; another flow passes its own. */
-  finishLabel?: string;
-}) {
-  const { t } = useTranslation();
-  const [copyLabel, setCopyLabel] = useState(() => t('sync.setup.copy'));
-
-  async function handleCopy(): Promise<void> {
-    try {
-      // BOTH values in one clipboard write, labelled. A copy button that took
-      // only the code would be the two-moments failure this card exists to
-      // prevent, wearing a different hat.
-      await navigator.clipboard.writeText(
-        `${t('sync.handleLabel')}: ${handle}\n${t('sync.setup.accountCard.codeLabel')}: ${recoveryCode}`,
-      );
-      setCopyLabel(t('sync.setup.copied'));
-      setTimeout(() => setCopyLabel(t('sync.setup.copy')), 2000);
-    } catch {
-      setCopyLabel(t('sync.setup.copyFailed'));
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface p-4 text-sm text-accent-amber">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <p>
-          <strong>{t('sync.setup.recoveryWarningLead')}</strong> {t('sync.setup.recoveryWarningBody')}
-        </p>
-      </div>
-
-      <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
-        <p className="text-sm font-medium">{t('sync.setup.accountCard.title')}</p>
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">{t('sync.handleLabel')}</p>
-          <p className="font-mono text-sm tracking-wide">{handle}</p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">{t('sync.setup.accountCard.codeLabel')}</p>
-          <p className="font-mono text-sm tracking-wide">{recoveryCode}</p>
-        </div>
-        <div className="flex justify-end">
-          <Button type="button" variant="ghost" size="sm" onClick={() => void handleCopy()} className="gap-1">
-            <Copy className="h-3.5 w-3.5" /> {copyLabel}
-          </Button>
-        </div>
-      </div>
-
-      <p className="text-sm text-muted-foreground">{t('sync.setup.accountCard.bothRequired')}</p>
-
-      <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border p-4 text-sm">
-        <input
-          type="checkbox"
-          checked={hasConfirmedSaved}
-          onChange={(event) => onConfirmToggle(event.target.checked)}
-          className="mt-1 accent-primary"
-        />
-        <span>{t('sync.setup.accountCard.confirmSaved')}</span>
-      </label>
-
-      <Button type="button" disabled={!hasConfirmedSaved} onClick={onFinish} className="h-11 w-full">
-        <Check className="h-4 w-4" /> {finishLabel ?? t('sync.setup.finish')}
-      </Button>
-    </div>
   );
 }
 

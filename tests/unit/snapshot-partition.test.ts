@@ -30,7 +30,6 @@ import {
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
-  putLocalGatewayConnection,
   putLocalResearchIdentity,
   putLocalSavedMeal,
   putLocalShareIdentity,
@@ -110,18 +109,6 @@ const STUDY_LABEL_MARKER = 'Charite sleep trial';
  * is checked absent from the grantee's view beside the other four.
  */
 const SENT_WINDOW_MARKER = '2026-08-24';
-
-/**
- * M187/02's marker: the member token of the gateway this account joined.
- *
- * It is the first thing in the compartment this app did not mint itself — a
- * credential issued to the PERSON by whoever runs the gateway — and a grantee
- * who learned it could spend that gateway's inference budget in this person's
- * name. Which is also why the same string is hunted in
- * `tests/unit/gateway-connection-backup-exclusion.test.ts`: it travels between
- * the account's own devices and appears in no export.
- */
-const MEMBER_TOKEN_MARKER = 'gm_a-member-token-that-must-not-reach-a-grantee';
 
 /** Argon2id stands in as a plain digest here. The LABELS are what this file tests, and they sit above the hash. */
 async function fakeArgon2id({ passphrase, salt }: { passphrase: string; salt: Uint8Array }): Promise<Uint8Array> {
@@ -250,21 +237,10 @@ async function buildPopulatedSnapshot(): Promise<LocalStoreSnapshot> {
     },
     { store },
   );
-  await putLocalGatewayConnection(
-    {
-      status: 'connected',
-      gatewayUrl: 'https://gateway.example.org',
-      memberToken: MEMBER_TOKEN_MARKER,
-      model: 'google/gemini-3.7-flash',
-      auditEnabled: true,
-      connectedAt: 11_000,
-      updatedAt: 11_000,
-    },
-    { store },
-  );
-  // `readLocalSnapshot` rather than `exportBackup` since M187/02: the two
-  // stopped being the same projection when `gatewayConnection` became the one
-  // key an export omits, and THIS is the one that reaches the wire.
+  // `readLocalSnapshot` rather than `exportBackup`, although M192 made the two
+  // the same projection again: this is the one that reaches the WIRE, and the
+  // moment they diverge a second time this file must be reading the one a
+  // clinician can see.
   return readLocalSnapshot({ store });
 }
 
@@ -336,10 +312,6 @@ describe('the snapshot classification map', () => {
     assert.equal(snapshot.researchIdentity?.pseudonymRoot, PSEUDONYM_ROOT_MARKER);
     assert.equal(snapshot.studyEnrolments[0]?.label, STUDY_LABEL_MARKER);
     assert.equal(snapshot.studyEnrolments[0]?.lastSubmission?.fromDayKey, SENT_WINDOW_MARKER);
-    assert.equal(
-      snapshot.gatewayConnection?.status === 'connected' ? snapshot.gatewayConnection.memberToken : null,
-      MEMBER_TOKEN_MARKER,
-    );
 
     // The key set is DERIVED from that fixture. A new snapshot field arrives
     // here automatically, which is the whole point.
@@ -362,11 +334,12 @@ describe('the snapshot classification map', () => {
       sharePeers: snapshot.sharePeers,
       researchIdentity: snapshot.researchIdentity,
       studyEnrolments: snapshot.studyEnrolments,
-      gatewayConnection: snapshot.gatewayConnection,
     });
-    // The pin the spec asks for: a later edit that moves this key into the
-    // shareable region fails HERE rather than in a clinician's browser.
-    assert.equal(SNAPSHOT_KEY_REGIONS.gatewayConnection, 'owner-private');
+    // The pin the spec asks for: a later edit that moves one of these keys
+    // into the shareable region fails HERE rather than in a clinician's
+    // browser.
+    assert.equal(SNAPSHOT_KEY_REGIONS.shareIdentity, 'owner-private');
+    assert.equal(SNAPSHOT_KEY_REGIONS.researchIdentity, 'owner-private');
     assert.deepEqual(recomposeSnapshot(partitioned), snapshot);
   });
 });
@@ -425,7 +398,6 @@ describe('a clinician grantee', () => {
     assert.equal(granteeView.includes(PSEUDONYM_ROOT_MARKER), false, 'the pseudonym root reached a grantee');
     assert.equal(granteeView.includes(STUDY_LABEL_MARKER), false, 'a study enrolment reached a grantee');
     assert.equal(granteeView.includes(SENT_WINDOW_MARKER), false, 'a sent research window reached a grantee');
-    assert.equal(granteeView.includes(MEMBER_TOKEN_MARKER), false, 'the gateway member token reached a grantee');
 
     // POSITIVE, the other half: the SAME markers ARE recoverable — through the
     // CDK path, which the grantee has no key for.
@@ -443,12 +415,6 @@ describe('a clinician grantee', () => {
     // `backup.ts`'s `studyEnrolmentSchema` would strip it here, silently, and
     // every other assertion in this file would stay green.
     assert.equal(opened?.studyEnrolments[0]?.lastSubmission?.fromDayKey, SENT_WINDOW_MARKER);
-    // And so does the gateway connection, which is the whole of "signing in on
-    // a second device brings the gateway with it".
-    assert.equal(
-      opened?.gatewayConnection?.status === 'connected' ? opened.gatewayConnection.memberToken : null,
-      MEMBER_TOKEN_MARKER,
-    );
 
     // The grantee holds the DEK and the compartment bytes, and still cannot
     // open it: the CDK is behind a key derived from the owner's passphrase.

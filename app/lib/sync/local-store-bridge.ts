@@ -15,28 +15,19 @@
  */
 import type { Store } from 'tinybase';
 import {
-  deleteLocalAiSettings,
   deleteLocalFood,
   deleteLocalFoodLog,
   deleteLocalWeightEntry,
   exportBackup,
-  getLocalAiSettings,
-  getLocalGatewayConnection,
   getLocalResearchIdentity,
   getLocalShareIdentity,
   importBackup,
   listLocalSharePeers,
   listLocalStudyEnrolments,
   migrateEnvelopeForward,
-  peekLocalAiSettings,
-  putLocalAiSettings,
-  putLocalGatewayConnection,
   SCHEMA_VERSION,
-  type LocalGatewayConnection,
   type LocalStoreSnapshot,
 } from '#app/lib/local-store';
-import { deriveGatewayConnectionFromSettings } from '#app/lib/gateway-invite';
-import { decideGatewayConnectionApply, pickNewerGatewayConnection } from './gateway-connection-apply';
 import {
   partitionSnapshot,
   readSealedPrivateStore,
@@ -46,72 +37,24 @@ import {
 } from './snapshot-partition';
 
 /**
- * Reads the device's full health snapshot — a backup export, PLUS the one key
- * an export deliberately omits.
+ * Reads the device's full health snapshot.
  *
- * The two projections were identical until M187/02. They are not any more, and
- * the difference is the whole of "the gateway travels but is never exported":
- * `backup.ts`'s `readSnapshot` leaves `gatewayConnection` out because a backup
- * file must carry no provider credential, and this — the SYNC read path, whose
- * output is sealed into the owner-private compartment before it goes anywhere
- * — puts it back. This is the only producer that does, which is why the key is
- * optional on `LocalStoreSnapshot`.
+ * IDENTICAL TO A BACKUP EXPORT AGAIN, as of M192. Between M187/02 and M192 it
+ * was one key wider — it attached `gatewayConnection`, the gateway member
+ * token a backup deliberately never carried — and that key went with the
+ * gateway.
  *
- * The two stores are injectable for the tests that build a snapshot the way
- * production reads one; production passes nothing and gets the singletons. They
- * are two arguments because they are two IndexedDB databases — see
- * {@link readGatewayConnectionForPush}, which is the whole reason the AI store
- * is read here at all.
+ * IT MUST NOT GROW A SECOND IndexedDB READ. This function is on the PUSH path,
+ * and the version that attached the gateway connection also peeked at the AI
+ * store to repair a torn write. A peek was safe; an `await` on that store's
+ * load would make every push depend on a database this device may never open,
+ * which is a sync that hangs with nothing on screen to say so.
+ *
+ * The store is injectable for the tests that build a snapshot the way
+ * production reads one; production passes nothing and gets the singleton.
  */
-export async function readLocalSnapshot({
-  store,
-  aiStore,
-}: { store?: Store; aiStore?: Store } = {}): Promise<LocalStoreSnapshot> {
-  return {
-    ...(await exportBackup({ store })).data,
-    gatewayConnection: await readGatewayConnectionForPush({ store, aiStore }),
-  };
-}
-
-/**
- * The connection this push publishes: the account's own record, or one derived
- * from the device's settings when the account has none.
- *
- * A join writes two rows in two IndexedDB DATABASES — the settings row and the
- * connection row cannot share a transaction, because the settings store is
- * deliberately separate so that a tracker backup can never carry a provider
- * credential (`local-store/ai-settings.ts`). Settings are written first, so the
- * one way the pair can be torn is: this device can use its gateway, and the
- * account has no record of it. Left alone, the person's SECOND device would
- * keep asking them to connect to a provider they already joined.
- *
- * So the push repairs it here rather than anywhere else: the read is the last
- * moment before the account's state leaves this device, and repairing at the
- * read costs nothing on the overwhelmingly common path where the stored record
- * is present.
- *
- * A stored record always wins, including a DISCONNECT tombstone. A tombstone
- * means somebody deliberately left the gateway, and deriving a connection from
- * a settings row that has not been cleared yet would undo that.
- *
- * The settings read PEEKS rather than loads, and that asymmetry is deliberate.
- * The derivation is a repair for a rare drift, while a push is the thing the
- * account depends on: making every push wait on a second IndexedDB database
- * would trade a rare stale record for a sync that can stall on a store this
- * device may never even open. When the AI store is not loaded yet, the repair
- * simply travels one cycle later — by which time the settings the app itself
- * reads have opened it.
- */
-async function readGatewayConnectionForPush({
-  store,
-  aiStore,
-}: {
-  store?: Store;
-  aiStore?: Store;
-}): Promise<LocalGatewayConnection | null> {
-  const stored = await getLocalGatewayConnection({ store });
-  if (stored !== null) return stored;
-  return deriveGatewayConnectionFromSettings(peekLocalAiSettings({ store: aiStore }));
+export async function readLocalSnapshot({ store }: { store?: Store } = {}): Promise<LocalStoreSnapshot> {
+  return (await exportBackup({ store })).data;
 }
 
 /**
@@ -129,7 +72,6 @@ export async function readLocalOwnerPrivateRegion(): Promise<OwnerPrivateRegion>
     sharePeers: await listLocalSharePeers(),
     researchIdentity: await getLocalResearchIdentity(),
     studyEnrolments: await listLocalStudyEnrolments(),
-    gatewayConnection: await getLocalGatewayConnection(),
   };
 }
 
@@ -209,32 +151,4 @@ export async function applyMergedSnapshot({
   }
 
   await importBackup({ schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data: merged });
-
-  // The gateway connection is NOT written by `importBackup`: the backup
-  // importer restores a device's own file, and this key is the one thing a
-  // backup never carries. It is applied here instead, under the rule in
-  // `gateway-connection-apply.ts`.
-  await applyGatewayConnection({ synced: merged.gatewayConnection ?? null });
-}
-
-/**
- * Lands a synced gateway connection on this device — the impure half of
- * `gateway-connection-apply.ts` (M187/02).
- *
- * Two writes, in this order and for two different reasons. The connection row
- * is the ACCOUNT's record and is written whenever the merge produced a newer
- * one, so the next cycle re-uploads what this device now believes. The AI
- * settings row is this DEVICE's provider configuration, and is touched only
- * where the rule allows — never over a key its owner pasted, connected by
- * OAuth, or took from this instance's preset.
- */
-async function applyGatewayConnection({ synced }: { synced: LocalGatewayConnection | null }): Promise<void> {
-  const local = await getLocalGatewayConnection();
-  const winner = pickNewerGatewayConnection({ synced, local });
-  if (winner === null) return;
-  if (winner !== local) await putLocalGatewayConnection(winner);
-
-  const decision = decideGatewayConnectionApply({ connection: winner, settings: await getLocalAiSettings() });
-  if (decision.action === 'write') await putLocalAiSettings(decision.settings);
-  if (decision.action === 'clear') await deleteLocalAiSettings();
 }

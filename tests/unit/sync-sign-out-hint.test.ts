@@ -1,5 +1,5 @@
 /**
- * Sign-out keeps the remembered sign-in name; only account deletion and the
+ * Sign-out keeps the remembered ADDRESS; only account deletion and the
  * explicit "Not you?" link clear it (M183 spec 04).
  *
  * `signOutOfSync` and `deleteSyncAccount` both live in `sync-actions.ts`,
@@ -11,11 +11,14 @@
  * `clearAccountHint()`. `tests/unit/sign-in-flow.test.ts` already uses this
  * same source-inspection idiom for `/sign-in`'s wiring.
  *
- * A name is not a credential — it unlocks nothing — and keeping it across
+ * An address is not a credential — it unlocks nothing — and keeping it across
  * sign-out is what turns a returning visitor's NEXT visit into a sign-in
- * instead of a sign-up. Before this milestone, sign-out cleared it, so every
- * device that signed out (including the one that just did) was offered
- * "Create account" first.
+ * instead of a dead end. Before M183 spec 04, sign-out cleared it, so every
+ * device that signed out was offered "Create account" first.
+ *
+ * THE CACHED SESSION IS THE OPPOSITE CASE (M192), and it is asserted below for
+ * the same reason: it IS a credential, so a sign-out that left it behind would
+ * be undone by the next reload.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -45,20 +48,27 @@ function extractFunctionBody(functionName: string): string {
 describe('signOutOfSync', () => {
   const body = extractFunctionBody('signOutOfSync');
 
-  it('does not forget the remembered sign-in name', () => {
+  it('does not forget the remembered address', () => {
     assert.doesNotMatch(body, /clearAccountHint/);
   });
 
-  it('still revokes the device session and drops the vault', () => {
+  it('still revokes the device session, and drops BOTH the vault and its cached copy', () => {
     assert.match(body, /\.logout\(\)/);
-    assert.match(body, /closeSyncSession\(\)/);
+    // `closeAndForgetSyncSession` is the pair, exported together so that
+    // clearing one without the other is not something a call site can do:
+    // a closed vault beside a live cache resumes itself on the next reload.
+    assert.match(body, /closeAndForgetSyncSession\(\)/);
   });
 });
 
 describe('deleteSyncAccount', () => {
   const body = extractFunctionBody('deleteSyncAccount');
 
-  it('still forgets the remembered sign-in name — there is no account left to offer', () => {
+  it('still forgets the remembered address — there is no account left to offer', () => {
     assert.match(body, /clearAccountHint\(\)/);
+  });
+
+  it('drops the cached session too — a deleted account must not resume on the next reload', () => {
+    assert.match(body, /closeAndForgetSyncSession\(\)/);
   });
 });

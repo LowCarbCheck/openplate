@@ -85,8 +85,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     // anonymous onboarding path is closed, and the join ceremony runs without
     // a skip. `false` on every instance that set no GATEWAY_URL, which is
     // today's app in full.
-    gatewayUrl: CONFIG.gateway.gatewayUrl,
-    managed: CONFIG.gateway.managed,
+    managed: CONFIG.instance.managed,
     // `null` unless an operator set MATOMO_URL + MATOMO_SITE_ID. Carries no
     // secret: a Matomo URL and site id are both public by construction (they
     // are in the tracker request every page makes).

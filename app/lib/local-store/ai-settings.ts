@@ -21,20 +21,25 @@ import { getAiStore, peekAiStore } from './persist';
  * How the API key was provisioned — 'oauth' for the OpenRouter PKCE connect
  * flow (`routes/oauth.openrouter.callback.tsx`), 'manual' for a pasted key
  * (`routes/settings.ai.tsx`), 'preset' for this instance's own operator-provided
- * endpoint (`components/instance-preset-connect.tsx`, M138 spec 06), 'invite' for
- * a gateway someone else runs, joined from an emailed invite link
- * (`routes/connect-gateway.tsx`). Read-only
+ * endpoint (`components/instance-preset-connect.tsx`, M138 spec 06). Read-only
  * display detail (the AI settings page's connected summary) — never gates
  * behavior.
  *
- * Widening this union is cheap for the same reason adding the field was (see
- * `LocalAiSettings.connectedVia`): a settings row is one opaque JSON blob, not
- * versioned columns, so no stored row needs migrating. What it is NOT cheap for
- * is copy — every surface that words this value needs the third wording, which
- * is why the summary and the disconnect dialog both branch on it explicitly
- * rather than defaulting.
+ * `'invite'` WAS A FOURTH MEMBER and is deleted (M192). It marked a row holding
+ * a gateway member token, and there is no gateway: a managed instance's AI now
+ * comes from the sync server on the account's access token, and those settings
+ * are DERIVED from the session rather than stored here at all
+ * (`app/lib/ai/managed-ai-settings.ts`). A row left over from that era names a
+ * service that no longer answers, so it is deleted when the AI store loads —
+ * see `local-store/schema.ts`'s v18 note.
+ *
+ * Widening this union is cheap for the same reason adding the field was: a
+ * settings row is one opaque JSON blob, not versioned columns, so no stored row
+ * needs migrating. What it is NOT cheap for is copy — every surface that words
+ * this value needs the new wording, which is why the summary and the disconnect
+ * dialog both branch on it explicitly rather than defaulting.
  */
-export type AiConnectionMethod = 'oauth' | 'manual' | 'preset' | 'invite';
+export type AiConnectionMethod = 'oauth' | 'manual' | 'preset';
 
 /** The device's BYOK configuration. `apiKey` never leaves this store. */
 export interface LocalAiSettings {
@@ -50,17 +55,6 @@ export interface LocalAiSettings {
    * simply parses with this field absent, not wrong.
    */
   connectedVia: AiConnectionMethod;
-  /**
-   * `true` when the endpoint's administrator can review what is submitted to it
-   * — today only a gateway joined by invite says so (`connectedVia: 'invite'`,
-   * `routes/connect-gateway.tsx`). ABSENT on every other row, which is why it is
-   * optional rather than defaulted: "we were never told" and "we were told no"
-   * are the same thing for display purposes, and both must render no notice.
-   *
-   * Persisted rather than re-fetched so the settings page can render the notice
-   * offline. It is a snapshot of what the gateway declared at join time.
-   */
-  auditEnabled?: boolean;
   /** Epoch-ms of the last save — display-only. */
   updatedAt: number;
 }
@@ -114,6 +108,12 @@ function readSettingsRow(resolved: Store): LocalAiSettings | null {
     // Backward-compat: rows saved before `connectedVia` existed simply lack
     // the field — default them to 'manual' rather than treating an old row
     // as broken.
+    //
+    // A row still saying `'invite'` is NOT defaulted here, and must not be: it
+    // is a dead gateway credential, and the AI store's load deletes it
+    // outright (`persist.ts`). Reading one as `'manual'` would keep a settings
+    // row pointing at a service that no longer answers, and every scan would
+    // fail with a network error instead of an explanation.
     return { ...parsed, connectedVia: parsed.connectedVia ?? 'manual' };
   } catch {
     return null;

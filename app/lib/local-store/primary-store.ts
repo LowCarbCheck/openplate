@@ -25,8 +25,6 @@ import type { BodyMetrics } from '#app/models/body-metrics';
 import {
   FASTS_TABLE,
   FOOD_LOGS_TABLE,
-  GATEWAY_CONNECTION_ROW_ID,
-  GATEWAY_CONNECTION_TABLE,
   PERSONAL_FOODS_TABLE,
   PRIMARY_ENTITY_CELL,
   PROFILE_GOALS_TABLE,
@@ -48,7 +46,6 @@ import type {
   FastProtocolId,
   LocalFast,
   LocalFoodLog,
-  LocalGatewayConnection,
   LocalPersonalFood,
   LocalProfileGoals,
   LocalResearchIdentity,
@@ -70,8 +67,7 @@ type PrimaryEntity =
   | LocalShareIdentity
   | LocalSharePeer
   | LocalResearchIdentity
-  | LocalStudyEnrolment
-  | LocalGatewayConnection;
+  | LocalStudyEnrolment;
 
 /** The entity cell as it comes back off the store — a TinyBase cell, not yet JSON text. */
 const entityCellSchema = z.string();
@@ -600,7 +596,11 @@ export async function putLocalResearchIdentity(
 
 /** This account's pseudonym root, or null on a device that has never enrolled in a study (the normal state — contributing is opt-in). */
 export async function getLocalResearchIdentity({ store }: StoreOption = {}): Promise<LocalResearchIdentity | null> {
-  return readEntity<LocalResearchIdentity>(await resolveStore(store), RESEARCH_IDENTITY_TABLE, RESEARCH_IDENTITY_ROW_ID);
+  return readEntity<LocalResearchIdentity>(
+    await resolveStore(store),
+    RESEARCH_IDENTITY_TABLE,
+    RESEARCH_IDENTITY_ROW_ID,
+  );
 }
 
 /**
@@ -644,33 +644,3 @@ export async function deleteLocalStudyEnrolment(studyAccountId: number, { store 
 // The gateway this account joined (M187/02) — the singleton that travels in
 // the owner-private compartment
 // ---------------------------------------------------------------------------
-
-/**
- * Records the gateway this account is connected to, or the tombstone a
- * disconnect leaves. A SINGLETON, like the research identity.
- *
- * STAMP EVERY WRITE with a fresh `updatedAt`. This row is merged across the
- * account's devices by that value alone, so a write carrying an old instant is
- * a write that loses to the state it was meant to replace.
- *
- * The row is deliberately NOT the thing the AI client reads — that stays the
- * device-local settings row in `ai-settings.ts`. This is the account's record
- * of the connection, and `app/lib/sync/gateway-connection-apply.ts` decides
- * when it may be projected onto a device.
- */
-export async function putLocalGatewayConnection(
-  connection: LocalGatewayConnection,
-  { store }: StoreOption = {},
-): Promise<LocalGatewayConnection> {
-  writeEntity(await resolveStore(store), GATEWAY_CONNECTION_TABLE, GATEWAY_CONNECTION_ROW_ID, connection);
-  return connection;
-}
-
-/** The gateway this account joined, the tombstone of the one it left, or null on a device that has never joined one. */
-export async function getLocalGatewayConnection({ store }: StoreOption = {}): Promise<LocalGatewayConnection | null> {
-  return readEntity<LocalGatewayConnection>(
-    await resolveStore(store),
-    GATEWAY_CONNECTION_TABLE,
-    GATEWAY_CONNECTION_ROW_ID,
-  );
-}

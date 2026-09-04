@@ -24,19 +24,14 @@ export default [
   // never depends on a layout loader that doesn't apply to it.
   route('/oauth/openrouter/callback', 'routes/oauth.openrouter.callback.tsx'),
 
-  // ONE join link (M181/05): where an invite lands, whether it admits someone
-  // to sync, to a gateway, or to both. CLIENT-ONLY for the same reason the
-  // OAuth callback is — no invite or member token may reach this server — and
-  // top-level so it depends on no layout loader and no onboarding gate:
-  // someone arriving from an invite may never have opened this app before.
-  // The tokens ride in the URL FRAGMENT, which no browser sends anywhere, so
-  // there is nothing here a loader could read even if one existed.
+  // ONE join link (M181/05, narrowed to one service in M192): where an invite
+  // lands. CLIENT-ONLY for the same reason the OAuth callback is — no invite
+  // may reach this server — and top-level so it depends on no layout loader
+  // and no onboarding gate: someone arriving from an invite may never have
+  // opened this app before. The token rides in the URL FRAGMENT, which no
+  // browser sends anywhere, so there is nothing here a loader could read even
+  // if one existed.
   route('/join', 'routes/join.tsx'),
-
-  // The old gateway invite link, kept alive as a REDIRECT into `/join` —
-  // operators have already handed these out. Client-only for the same reasons,
-  // and it renders nothing: see the route file.
-  route('/connect-gateway', 'routes/connect-gateway.tsx'),
 
   // Clinician onboarding: where a clinician's connect link lands (M160/08).
   // CLIENT-ONLY and top-level for the same two reasons as `/connect-gateway`,
@@ -72,13 +67,26 @@ export default [
   route('/welcome', 'routes/welcome.tsx'),
 
   // The door back in for somebody who already has an account (M183 spec 03):
-  // sign-in name, password, and the recovery flow behind "I have forgotten my
-  // password". TOP-LEVEL and client-only for the same two reasons `/welcome`
-  // above is — `_personal.tsx`'s gate redirects here, so nesting it inside
-  // that layout would redirect it away from itself in a loop, and everything
-  // it touches (the remembered name, the password, the pulled diary) belongs
-  // to the browser and to the sync service's own origin, never to this server.
+  // email, password, and a link to `/forgot`. TOP-LEVEL and client-only for
+  // the same two reasons `/welcome` above is — `_personal.tsx`'s gate
+  // redirects here, so nesting it inside that layout would redirect it away
+  // from itself in a loop, and everything it touches (the remembered address,
+  // the password, the pulled diary) belongs to the browser and to the sync
+  // service's own origin, never to this server.
   route('/sign-in', 'routes/sign-in.tsx'),
+
+  // "I have forgotten my password" (M192/05). One field, and one answer
+  // whether or not the address has an account — the service returns `202`
+  // either way so that this form cannot be used to ask whether somebody is a
+  // member of the organization, and the screen has to match. Top-level and
+  // client-only for the same reasons `/sign-in` is.
+  route('/forgot', 'routes/forgot.tsx'),
+
+  // Where the mailed reset link lands (M192/05). The token rides in the URL
+  // FRAGMENT, which no browser sends to any server, so there is nothing here a
+  // loader could read even if one existed — the same rule `/join` follows, and
+  // the same `join-link.ts` grammar reads both.
+  route('/reset', 'routes/reset.tsx'),
 
   // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
   // device whose store has been wiped but whose `firstDataAt` marker survives.
@@ -162,7 +170,13 @@ export default [
     // Export/import + the device-local photo cache — the old profile page's
     // "Your data" and "Photos on this device" cards, given their own page.
     route('/settings/data', 'routes/settings.data.tsx'),
-    // Optional E2EE sync (M128 spec 04). 404s unless `SYNC_SERVER_URL` is set.
+    // The account: who am I, what am I called, change my password, sign out,
+    // delete me (M192/05). 404s unless `SYNC_SERVER_URL` is set — on an
+    // instance with no server there are no accounts, so this is not a page.
+    route('/settings/account', 'routes/settings.account.tsx'),
+    // The address the account page used to live at. Kept as a REDIRECT because
+    // it is in bookmarks and in every release note before M192; a 404 there
+    // would read as "the feature was removed".
     route('/settings/sync', 'routes/settings.sync.tsx'),
     // Clinician sharing, the patient's side (M160/05). 404s unless
     // `SYNC_SERVER_URL` is set, for the same reason `/settings/sync` does — a
@@ -186,6 +200,11 @@ export default [
     // Provenance: version, licence and the source repository (M146 spec 01).
     // Ungated — it is true on every instance, including a self-hoster's.
     route('/settings/about', 'routes/settings.about.tsx'),
+    // The administration console (M192/06). 404s unless `SYNC_SERVER_URL` is
+    // set, like every account screen: an instance with no server has nobody to
+    // administer. The layout renders the not-an-administrator card for
+    // everybody else, so being ROUTABLE here is not being allowed here.
+    route('/admin', 'routes/admin.tsx', [index('routes/admin._index.tsx'), route('invite', 'routes/admin.invite.tsx')]),
     // Resource route: server-proxied LCC food-name lookup for the client-side
     // scan flow (M117/02) — see app/routes/api.food-matches.ts.
     route('/api/food-matches', 'routes/api.food-matches.ts'),

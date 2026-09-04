@@ -58,6 +58,7 @@ import {
 import { establishPrivateStore } from '../engine/crypto/private-store';
 import { ARGON2ID_DEFAULT_PARAMS, type Argon2idParams } from '../engine/crypto/argon2';
 import { generateDek, unwrapDek, wrapDek } from '../engine/crypto/dek-wrap';
+import { bytesToBase64 } from '../engine/crypto/base64';
 import { shareFingerprintDisplay, shareKeyFingerprint } from '../engine/crypto/share-wrap';
 import { deviceStorage, resolveDeviceId } from '../sync-state';
 import type { SurfaceRead } from '../engine/client/http-client';
@@ -96,7 +97,7 @@ interface StudyVault {
   http: SyncHttpClient;
   dek: Uint8Array;
   accountId: number;
-  handle: string;
+  email: string;
   serverUrl: string;
   /** This browser's sync device id, reused so the compartment's Lamport tie-break is stable. It never leaves the encrypted envelope. */
   deviceId: string;
@@ -110,7 +111,7 @@ let vault: StudyVault | null = null;
 /** What a study console is allowed to show. Carries no key material — a fingerprint is a hash, and the count is a count. */
 export interface StudyConsoleIdentity {
   accountId: number;
-  handle: string;
+  email: string;
   /** How many key generations this study holds. All of them are tried when opening a cohort. */
   generationCount: number;
   /** The NEWEST generation's fingerprint, twelve characters in three groups of four — the form printed in a consent document. `null` before any key exists. */
@@ -130,10 +131,16 @@ export interface StudyConsoleIdentity {
 }
 
 /** Signing in either finds a complete account, or completes a setup that was interrupted and mints the recovery code that repair needs. */
-export type StudySignInResult = { status: 'connected' } | { status: 'setup-completed'; recoveryCode: string };
+/**
+ * NO `recoveryCode` ON EITHER MEMBER (M192/05). A study account is an ordinary
+ * protocol-2 account: its code is escrowed with the service at signup and
+ * never shown, so there is nothing for the console to print and no field a
+ * future screen could print it from.
+ */
+export type StudySignInResult = { status: 'connected' } | { status: 'setup-completed' };
 
-/** Creating the account opens the console and hands back the recovery code, shown once beside the handle as one account card. */
-export type StudyAccountSetupResult = { status: 'ready'; recoveryCode: string };
+/** Creating the account opens the console. There is nothing to hand back: see {@link StudySignInResult}. */
+export type StudyAccountSetupResult = { status: 'ready' };
 
 function clientsFor({ serverUrl, fetchImpl }: { serverUrl: string; fetchImpl?: typeof fetch }) {
   const authClient = new SyncAuthClient({ baseUrl: serverUrl, fetchImpl });
@@ -158,12 +165,23 @@ async function requireCompatibleService(authClient: SyncAuthClient): Promise<voi
  */
 export async function createStudyAccount({
   serverUrl,
-  handle,
+  inviteToken,
   passphrase,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
-}: { serverUrl: string; handle: string; passphrase: string } & StudySessionOptions): Promise<StudyAccountSetupResult> {
+}: {
+  serverUrl: string;
+  /**
+   * The `si_` invite this study account is redeemed from.
+   *
+   * A STUDY ACCOUNT IS AN ORDINARY ACCOUNT under protocol 2, so a researcher
+   * gets one the same way anybody else does: an admin invites their address.
+   * There is no open signup left to mint one from.
+   */
+  inviteToken: string;
+  passphrase: string;
+} & StudySessionOptions): Promise<StudyAccountSetupResult> {
   const { authClient, http } = clientsFor({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
@@ -171,23 +189,29 @@ export async function createStudyAccount({
   const keys = await setupSyncKeys({ passphrase, recoveryCodeRaw: recovery.raw, params, deriveHash });
 
   const created = await authClient.signup({
-    handle,
+    inviteToken,
     authHash: keys.authHash,
     kdfDescriptor: { salt: keys.kdfDescriptor.salt, params: keys.kdfDescriptor.params },
     // The study account's second authenticator, set here or never — the same
     // one-shot registration the diary account gets (`sync-actions.ts`).
     recoveryAuthHash: await deriveRecoveryAuthHash(recovery.raw),
-  });
-
-  await putFirstKeyRecord(http, {
-    kind: 'passphrase',
-    kdfDescriptor: keys.passphraseKeyRecord.kdfDescriptor,
-    wrappedDek: keys.passphraseKeyRecord.wrappedDek,
-  });
-  await putFirstKeyRecord(http, {
-    kind: 'recovery',
-    kdfDescriptor: null,
-    wrappedDek: keys.recoveryKeyRecord.wrappedDek,
+    // ESCROWED, like every other account's, and that is a CHANGE FOR A STUDY:
+    // ADR-0003 said losing both doors was attrition with no escrow, and
+    // protocol 2 makes the field required for every signup. The consequence is
+    // stated rather than hidden — the operator of this instance can now open a
+    // study's compartment — and it is the same consequence the diary side took
+    // on for the same reason. It is NOT shown either: a code a researcher is
+    // told to keep, on an account the operator can already open, would be a
+    // ceremony that protects nothing.
+    recoveryCode: recovery.formatted,
+    keyRecords: [
+      {
+        kind: 'passphrase',
+        kdfDescriptor: keys.passphraseKeyRecord.kdfDescriptor,
+        wrappedDek: bytesToBase64(keys.passphraseKeyRecord.wrappedDek),
+      },
+      { kind: 'recovery', kdfDescriptor: null, wrappedDek: bytesToBase64(keys.recoveryKeyRecord.wrappedDek) },
+    ],
   });
 
   vault = {
@@ -195,7 +219,7 @@ export async function createStudyAccount({
     http,
     dek: keys.dek,
     accountId: created.account.id,
-    handle: created.account.handle,
+    email: created.account.email,
     serverUrl,
     deviceId: resolveDeviceId(deviceStorage()),
     compartment: {
@@ -211,7 +235,7 @@ export async function createStudyAccount({
     },
     region: EMPTY_STUDY_PRIVATE_REGION,
   };
-  return { status: 'ready', recoveryCode: recovery.formatted };
+  return { status: 'ready' };
 }
 
 /** A first-time key-record write. A conflict means another device finished setup first, and must not be overwritten. */
@@ -240,18 +264,18 @@ async function putFirstKeyRecord(
  */
 export async function signInToStudy({
   serverUrl,
-  handle,
+  email,
   passphrase,
   deriveHash = workerArgon2idDeriver,
   fetchImpl,
-}: { serverUrl: string; handle: string; passphrase: string } & StudySessionOptions): Promise<StudySignInResult> {
+}: { serverUrl: string; email: string; passphrase: string } & StudySessionOptions): Promise<StudySignInResult> {
   const { authClient, http } = clientsFor({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
   // The ACCOUNT'S own parameters, never this build's defaults: an account
   // created under different costs derives differently, and getting that wrong
   // is indistinguishable from a wrong passphrase.
-  const wire = await authClient.fetchKdfDescriptor(handle);
+  const wire = await authClient.fetchKdfDescriptor(email);
   const descriptor: PassphraseKdfDescriptor = { salt: wire.salt, params: wire.params };
   const { authHash, passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
     passphrase,
@@ -259,7 +283,7 @@ export async function signInToStudy({
     deriveHash,
   });
 
-  const session = await authClient.login({ handle, authHash });
+  const session = await authClient.login({ email, authHash });
   const records = await http.listKeyRecords();
   const passphraseRecord = records.find((record) => record.kind === 'passphrase');
   if (passphraseRecord === undefined) {
@@ -290,7 +314,7 @@ export async function signInToStudy({
     http,
     dek,
     accountId: session.account.id,
-    handle: session.account.handle,
+    email: session.account.email,
     serverUrl,
     deviceId: resolveDeviceId(deviceStorage()),
     compartment: {
@@ -325,7 +349,7 @@ async function finishInterruptedStudySetup({
   authClient: SyncAuthClient;
   http: SyncHttpClient;
   serverUrl: string;
-  account: { id: number; handle: string };
+  account: { id: number; email: string };
   descriptor: PassphraseKdfDescriptor;
   passphraseKek: CryptoKey;
   privateStoreKek: CryptoKey;
@@ -355,7 +379,7 @@ async function finishInterruptedStudySetup({
     http,
     dek,
     accountId: account.id,
-    handle: account.handle,
+    email: account.email,
     serverUrl,
     deviceId: resolveDeviceId(deviceStorage()),
     compartment: {
@@ -368,7 +392,7 @@ async function finishInterruptedStudySetup({
     },
     region: EMPTY_STUDY_PRIVATE_REGION,
   };
-  return { status: 'setup-completed', recoveryCode: recovery.formatted };
+  return { status: 'setup-completed' };
 }
 
 /** Ends the console session and drops the secrets it held. `fill(0)` is best-effort hygiene, as `closeSyncSession` says of the same line. */
@@ -412,7 +436,7 @@ async function describeStudyIdentity(open: StudyVault): Promise<StudyConsoleIden
   const publicKeyRaw = currentStudyPublicKey(open.region);
   return {
     accountId: open.accountId,
-    handle: open.handle,
+    email: open.email,
     generationCount: open.region.studyKeyring.length,
     fingerprint: publicKeyRaw === null ? null : shareFingerprintDisplay(await shareKeyFingerprint(publicKeyRaw)),
     hasUnopenedCompartment: hasUnopenedStudyCompartment(open.compartment),

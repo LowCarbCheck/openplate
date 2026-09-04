@@ -26,7 +26,7 @@ import { isAnonymousStartAllowed } from '../../app/lib/onboarding-gate';
 
 describe('the welcome screen on an OPEN instance is unchanged', () => {
   it('offers Start to a blank device, with sign in underneath', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: null, managed: false }), {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: null, managed: false }), {
       primary: 'start',
       secondary: 'sign-in',
       accountName: null,
@@ -35,23 +35,21 @@ describe('the welcome screen on an OPEN instance is unchanged', () => {
   });
 
   it('offers Start fresh under a remembered name', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: null, managed: false }), {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna@example.org', managed: false }), {
       primary: 'sign-in',
       secondary: 'start',
-      accountName: 'anna',
+      accountName: 'anna@example.org',
       isReturning: true,
     });
   });
 
   it('never offers the invite-link box', () => {
-    for (const accountHint of [null, 'anna']) {
-      for (const connectedVia of [null, 'invite'] as const) {
-        assert.notEqual(
-          resolveWelcomeHint({ accountHint, connectedVia, managed: false }).secondary,
-          'invite-link',
-          `${String(accountHint)} / ${String(connectedVia)}`,
-        );
-      }
+    for (const accountHint of [null, 'anna@example.org']) {
+      assert.notEqual(
+        resolveWelcomeHint({ accountHint, managed: false }).secondary,
+        'invite-link',
+        String(accountHint),
+      );
     }
   });
 });
@@ -59,7 +57,7 @@ describe('the welcome screen on an OPEN instance is unchanged', () => {
 describe('the welcome screen on a MANAGED instance has one door', () => {
   it('leads with sign in on a device carrying nothing at all', () => {
     // The open branch would lead with Start here. That is the whole difference.
-    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: null, managed: true }), {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: null, managed: true }), {
       primary: 'sign-in',
       secondary: 'invite-link',
       accountName: null,
@@ -67,29 +65,28 @@ describe('the welcome screen on a MANAGED instance has one door', () => {
     });
   });
 
-  it('still prefills the remembered name, and still knows this device is returning', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: null, managed: true }), {
+  it('still prefills the remembered address, and still knows this device is returning', () => {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna@example.org', managed: true }), {
       primary: 'sign-in',
       secondary: 'invite-link',
-      accountName: 'anna',
+      accountName: 'anna@example.org',
       isReturning: true,
     });
   });
 
   it('offers neither Start nor Start fresh, whatever the device carries', () => {
-    for (const accountHint of [null, 'anna', '   ']) {
-      for (const connectedVia of [null, 'invite', 'manual', 'oauth', 'preset'] as const) {
-        const hint = resolveWelcomeHint({ accountHint, connectedVia, managed: true });
-        assert.equal(hint.primary, 'sign-in', `${String(accountHint)} / ${String(connectedVia)}`);
-        assert.equal(hint.secondary, 'invite-link', `${String(accountHint)} / ${String(connectedVia)}`);
-      }
+    for (const accountHint of [null, 'anna@example.org', '   ']) {
+      const hint = resolveWelcomeHint({ accountHint, managed: true });
+      assert.equal(hint.primary, 'sign-in', String(accountHint));
+      assert.equal(hint.secondary, 'invite-link', String(accountHint));
     }
   });
 
-  // A gateway membership never invents a name, on either kind of instance:
-  // redeeming an invite says nothing about a sync account existing.
-  it('never invents a name from a gateway membership', () => {
-    assert.equal(resolveWelcomeHint({ accountHint: null, connectedVia: 'invite', managed: true }).accountName, null);
+  // WHAT M192 DELETED: a second input, `connectedVia: 'invite'`, which could
+  // reorder the buttons and never produced a name. The address is the only
+  // trace left, and it never invents one either.
+  it('invents no address for a device that has never signed in', () => {
+    assert.equal(resolveWelcomeHint({ accountHint: null, managed: true }).accountName, null);
   });
 });
 
@@ -140,7 +137,7 @@ describe('the two screens actually consult the rules', () => {
     // The join ceremony has exactly one implementation, and it is not here.
     assert.match(welcomeSource, /parseJoinLinkInput/);
     assert.match(welcomeSource, /buildJoinFragment/);
-    assert.doesNotMatch(welcomeSource, /redeem|consumeGatewayInvite/i);
+    assert.doesNotMatch(welcomeSource, /redeem/i);
   });
 
   it("onboarding's client loader asks the rule and redirects to /welcome", () => {

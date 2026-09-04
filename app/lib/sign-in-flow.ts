@@ -15,7 +15,7 @@
 import type { OnboardingGateOutcome } from '#app/lib/onboarding-gate';
 
 /** Every path a finished sign-in can send somebody to. */
-export type SignInDestination = '/diary' | '/onboarding' | '/recover' | '/join';
+export type SignInDestination = '/diary' | '/onboarding' | '/recover';
 
 /**
  * Turns the gate's verdict, plus one fact about this device, into a path.
@@ -24,31 +24,23 @@ export type SignInDestination = '/diary' | '/onboarding' | '/recover' | '/join';
  *
  * 1. **`recover` wins outright.** A device whose tables were wiped while its
  *    `firstDataAt` marker survived is a possible data loss, and that question
- *    outranks both the diary and a half-finished invite. The gateway half is
- *    parked in `sessionStorage` and `/settings/sync` still links to it, so
- *    nothing is destroyed by postponing it.
- * 2. **A parked gateway half returns to `/join`.** The person followed one
- *    link carrying two capabilities and spent only the sync half by signing in
- *    to the account they already had. Sending them to the diary here drops the
- *    other half on the floor with no way back to it (owner decision, recorded
- *    in worklog thread `01M1KMSJXNVZFV1JFYVV`).
- * 3. **`pass` and `self-heal` mean there is a diary.** `self-heal` is stamped
+ *    outranks the diary.
+ * 2. **`pass` and `self-heal` mean there is a diary.** `self-heal` is stamped
  *    by the `_personal` gate on arrival, so `/diary` is the right door for it
  *    too — that layout runs the stamp and then lets the request through.
- * 4. **Otherwise the questionnaire.** The pull happened and brought back no
+ * 3. **Otherwise the questionnaire.** The pull happened and brought back no
  *    onboarded profile, so this really is somebody's first diary.
+ *
+ * WHAT USED TO SIT BETWEEN 1 AND 2: a parked GATEWAY half sent the person back
+ * to `/join`, because one link carried two capabilities and signing in spent
+ * only one of them. M192 deleted the second capability — one link, one token,
+ * one service — so there is no half left to strand and `/join` is no longer a
+ * destination this function can reach.
  *
  * @returns the path to navigate to.
  */
-export function resolveSignInDestination({
-  gate,
-  hasPendingGatewayJoin,
-}: {
-  gate: OnboardingGateOutcome['kind'];
-  hasPendingGatewayJoin: boolean;
-}): SignInDestination {
+export function resolveSignInDestination({ gate }: { gate: OnboardingGateOutcome['kind'] }): SignInDestination {
   if (gate === 'recover') return '/recover';
-  if (hasPendingGatewayJoin) return '/join';
   if (gate === 'pass' || gate === 'self-heal') return '/diary';
   return '/onboarding';
 }

@@ -1,7 +1,7 @@
 import type { AiProviderType } from '#types/enums';
 import type { VisionProvider } from './types';
 import { VisionProviderError } from './types';
-import { createOpenAiCompatibleProvider } from './openai-compatible';
+import { createOpenAiCompatibleProvider, type OpenAiCompatibleCredential } from './openai-compatible';
 import { createAnthropicProvider } from './anthropic';
 import { getProviderDefinition } from './registry';
 import type { ProviderDefinition } from './registry';
@@ -16,7 +16,15 @@ export * from './task';
 export interface CreateVisionProviderOptions {
   provider: AiProviderType;
   model: string;
-  apiKey: string;
+  /**
+   * A static BYOK key, or a bearer provider reading the sync session (M192).
+   *
+   * A union rather than two optional fields — see
+   * {@link OpenAiCompatibleCredential}. Which one a provider takes is not
+   * expressible in the type system, because `provider` and `credential` are
+   * independent arguments, so `anthropic` checks at runtime below.
+   */
+  credential: OpenAiCompatibleCredential;
   /** Only consulted when the provider has no fixed endpoint of its own (`baseUrl: null` in the registry). */
   baseUrl?: string | null;
 }
@@ -69,12 +77,21 @@ export function createVisionProvider(options: CreateVisionProviderOptions): Visi
   const baseUrl = resolveBaseUrl({ definition, requestedBaseUrl: options.baseUrl });
 
   switch (definition.adapter) {
-    case 'anthropic':
+    case 'anthropic': {
+      // A STATIC KEY ONLY. Anthropic is a BYOK provider and there is no
+      // managed variant of it, so a bearer provider here is unreachable by
+      // construction — this is the belt to the registry's braces, and it
+      // throws rather than dropping the credential and sending an
+      // unauthenticated request that fails somewhere less obvious.
+      if (!('apiKey' in options.credential)) {
+        throw new VisionProviderError('This AI provider needs its own API key and cannot use your account session.');
+      }
       // Composes no URLs from `baseUrl` — its endpoint is baked into the adapter.
-      return createAnthropicProvider({ apiKey: options.apiKey, model: options.model });
+      return createAnthropicProvider({ apiKey: options.credential.apiKey, model: options.model });
+    }
     case 'openai-compatible':
       return createOpenAiCompatibleProvider({
-        apiKey: options.apiKey,
+        credential: options.credential,
         model: options.model,
         baseUrl,
         extraHeaders: definition.extraHeaders?.(),

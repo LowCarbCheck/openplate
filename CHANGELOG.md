@@ -2,6 +2,44 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.10.0 - 2026-09-04
+
+- You sign in with your email address and a password. The made up sign-in
+  name is gone. An address is something you already know, and it is what a
+  reset link is sent to.
+- An invitation link asks for a password and nothing else. There is no
+  recovery code to write down any more, and none is shown. The instance
+  keeps the key that recovers your diary, which is what makes a password
+  reset give your entries back instead of an empty account.
+- A forgotten password is reset from the sign-in page. Ask for a link, open
+  the mail, set a new password, and your diary is still there.
+- You stay signed in after a reload. Closing the tab or restarting the
+  browser no longer asks for your password again. It is still asked when
+  you sign in, when you change your password, and when you delete your
+  account.
+- On an instance run for you by an organization, the photo estimate works
+  as soon as you are signed in. There is no AI setup, no key to paste, and
+  no separate connection step. Your daily allowance is shown on the account
+  page.
+- Administrators manage people at /admin: invite by email, see everyone
+  with their allowance and what they have used today, change an allowance
+  or a role, suspend and bring back, send a reset link, and delete an
+  account.
+- The account page moved from Settings, Sync to Settings, Account. The old
+  address still works and sends you to the new one.
+
+### Upgrading
+
+- This version needs a server running openplate-sync 0.6.0 or later. Older
+  servers do not have the new sign-in.
+- The separate gateway is no longer used. Set INSTANCE_MODE=managed instead
+  of GATEWAY_URL. Leaving GATEWAY_URL set now stops the app from starting,
+  on purpose, so that a half migrated instance cannot run.
+- Accounts from 0.9.x cannot be carried over. The identity model changed
+  from a sign-in name to an email address, so people need a fresh
+  invitation. Export a backup from each device before upgrading, and import
+  it after signing in to the new account.
+
 ## 0.9.3 - 2026-09-04
 
 - Invite links that create an account and connect the AI now run as one

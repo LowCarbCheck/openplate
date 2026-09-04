@@ -20,7 +20,13 @@
  */
 
 import { optionalEnv, optionalBoolEnv, optionalIntEnv } from '#app/lib/env';
-import { isManagedInstance, parseGatewayUrl, parseInstanceInferencePreset, parseSyncServerUrl } from './public-config';
+import {
+  assertGatewayUrlUnset,
+  isManagedInstance,
+  parseInstanceInferencePreset,
+  parseInstanceMode,
+  parseSyncServerUrl,
+} from './public-config';
 import { SUPPORTED_LANGUAGES, isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 import { parseAnalyticsConfig } from '#app/config/analytics';
 import { parseNewsletterConfig } from './newsletter';
@@ -132,15 +138,20 @@ export function parseDefaultUiLanguage(raw: string | undefined): LanguageCode {
 }
 
 /**
- * The two addresses that decide what KIND of instance this is, parsed once
- * before `CONFIG` is built.
+ * What KIND of instance this is, decided once before `CONFIG` is built.
  *
- * They are read here rather than inline below because `managed` is derived
- * from BOTH of them (M187 spec 03), and parsing either one twice inside the
- * object literal would mean two chances for the two readings to drift apart.
+ * `managed` is derived from BOTH values, so they are read here rather than
+ * inline below: parsing either one twice inside the object literal would mean
+ * two chances for the two readings to drift apart.
+ *
+ * The refusal comes FIRST. `GATEWAY_URL` is the variable that used to make an
+ * instance managed, and an operator who upgrades without editing their
+ * environment must not get an open instance out of a file that still reads as
+ * a closed one — see `assertGatewayUrlUnset`.
  */
+assertGatewayUrlUnset(process.env.GATEWAY_URL);
 const SYNC_SERVER_URL = parseSyncServerUrl(process.env.SYNC_SERVER_URL);
-const GATEWAY_URL = parseGatewayUrl(process.env.GATEWAY_URL);
+const INSTANCE_MODE = parseInstanceMode(process.env.INSTANCE_MODE);
 
 export const CONFIG = {
   /**
@@ -243,27 +254,24 @@ export const CONFIG = {
   },
 
   /**
-   * The AI gateway this instance belongs to, and what that makes it (M187
-   * spec 03)
+   * What KIND of instance this is (M192)
    *
-   * `GATEWAY_URL` unset is the DEFAULT and the self-host default: `managed` is
-   * `false` and the app is exactly what it was before this existed — an
-   * anonymous local diary anyone can start, with sync and a gateway both
-   * optional extras.
+   * `INSTANCE_MODE` unset is the DEFAULT and the self-host default: `managed`
+   * is `false` and the app is an anonymous local diary anyone can start, with
+   * sync an optional extra and AI a provider key the person brings.
    *
-   * Set it and this instance says it is MANAGED: it hands out accounts and an
-   * AI connection together, through one invite link, and the anonymous path is
-   * closed because on such an instance it leads nowhere. The origin joins the
-   * production CSP `connect-src` automatically (`server.ts`), so an operator
-   * never has to keep `CSP_CONNECT_EXTRA` in step with it.
+   * `INSTANCE_MODE=managed` says an organization runs this instance for its
+   * people: an admin invites by email, there is no anonymous path because on
+   * such an instance it leads nowhere, and the AI comes from the sync server
+   * on the account's own daily allowance. It requires `SYNC_SERVER_URL` and
+   * stops the boot without it — see `isManagedInstance`.
    *
-   * Setting it without `SYNC_SERVER_URL` stops the boot — see
-   * `isManagedInstance` for why a gateway without accounts is not a managed
-   * instance but a misconfigured one.
+   * It replaced `GATEWAY_URL`, which said the same thing by naming a second
+   * service. There is no second service.
    */
-  gateway: {
-    gatewayUrl: GATEWAY_URL,
-    managed: isManagedInstance({ gatewayUrl: GATEWAY_URL, syncServerUrl: SYNC_SERVER_URL }),
+  instance: {
+    mode: INSTANCE_MODE,
+    managed: isManagedInstance({ instanceMode: INSTANCE_MODE, syncServerUrl: SYNC_SERVER_URL }),
   },
 
   /**

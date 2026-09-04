@@ -8,9 +8,11 @@
  * created beside a full one, and the two never meet. Leading with "Sign in" for
  * somebody who has never had an account is merely a wasted tap.
  *
- * The gateway membership is the weak signal and the tests say so: it may
- * reorder the buttons, and it must NEVER produce a name to prefill, because
- * redeeming a gateway invite says nothing about a sync account existing.
+ * There WAS a second, weaker signal: a gateway membership
+ * (`connectedVia: 'invite'`). It could reorder the buttons and never produced
+ * a name to prefill, because redeeming a gateway invite said nothing about an
+ * account existing. M192 deleted the gateway and with it that input, so the
+ * remembered address is the only trace left.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,8 +21,8 @@ import { readFileSync } from 'node:fs';
 import { resolveWelcomeHint } from '../../app/lib/welcome-hint';
 
 describe('resolveWelcomeHint', () => {
-  it('leads with Start on a device carrying neither hint', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: null, managed: false }), {
+  it('leads with Start on a device carrying no hint', () => {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: null, managed: false }), {
       primary: 'start',
       secondary: 'sign-in',
       accountName: null,
@@ -28,60 +30,29 @@ describe('resolveWelcomeHint', () => {
     });
   });
 
-  it('leads with Sign in, named, when the device remembers a sign-in name', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: null, managed: false }), {
+  it('leads with Sign in, named, when the device remembers an address', () => {
+    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna@example.org', managed: false }), {
       primary: 'sign-in',
       secondary: 'start',
-      accountName: 'anna',
+      accountName: 'anna@example.org',
       isReturning: true,
     });
   });
 
-  // The weak signal on its own: it reorders the buttons and stops there.
-  it('leads with Sign in, unnamed, on a gateway membership alone', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: null, connectedVia: 'invite', managed: false }), {
-      primary: 'sign-in',
-      secondary: 'start',
-      accountName: null,
-      isReturning: true,
-    });
-  });
-
-  it('leads with Sign in, named, when the device carries both hints', () => {
-    assert.deepEqual(resolveWelcomeHint({ accountHint: 'anna', connectedVia: 'invite', managed: false }), {
-      primary: 'sign-in',
-      secondary: 'start',
-      accountName: 'anna',
-      isReturning: true,
-    });
-  });
-
-  // Every other connection method is somebody typing their own provider key.
-  // That is not a trace of an openplate account and must not reorder anything.
-  it('ignores every AI connection method except an invite', () => {
-    for (const connectedVia of ['manual', 'oauth', 'preset'] as const) {
-      assert.deepEqual(
-        resolveWelcomeHint({ accountHint: null, connectedVia, managed: false }),
-        { primary: 'start', secondary: 'sign-in', accountName: null, isReturning: false },
-        connectedVia,
-      );
-    }
-  });
-
-  it('treats a blank or whitespace-only remembered name as no name at all', () => {
+  it('treats a blank or whitespace-only remembered address as none at all', () => {
     for (const accountHint of ['', '   ']) {
       assert.deepEqual(
-        resolveWelcomeHint({ accountHint, connectedVia: null, managed: false }),
+        resolveWelcomeHint({ accountHint, managed: false }),
         { primary: 'start', secondary: 'sign-in', accountName: null, isReturning: false },
         JSON.stringify(accountHint),
       );
     }
   });
 
-  it('trims the remembered name it hands to the button', () => {
+  it('trims the remembered address it hands to the button', () => {
     assert.equal(
-      resolveWelcomeHint({ accountHint: '  anna \n', connectedVia: null, managed: false }).accountName,
-      'anna',
+      resolveWelcomeHint({ accountHint: '  anna@example.org \n', managed: false }).accountName,
+      'anna@example.org',
     );
   });
 });
@@ -108,9 +79,8 @@ describe('/welcome is reachable from a blank device', () => {
     assert.doesNotMatch(welcomeSource, /^export (async )?function (loader|action)\b/m);
   });
 
-  it('reads both device hints', () => {
+  it('reads the device hint', () => {
     assert.match(welcomeSource, /readAccountHint/);
-    assert.match(welcomeSource, /connectedVia/);
   });
 
   // The welcome screen is a QUESTION, not a decision: it must not clear the

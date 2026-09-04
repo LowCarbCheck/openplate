@@ -113,13 +113,14 @@ test('an account with no compartment offers recovery, never enrolment', async ()
 
   const html = render(createElement(StudyCompartmentMissing));
 
-  // The way out leads to the recovery code, which is what establishes a
-  // compartment. Nothing here submits anything.
-  assert.match(html, /href="\/settings\/sync"/);
+  // The way out leads to a password reset, which is the one routine operation
+  // that establishes a compartment for an account whose data predates it.
+  // Nothing here submits anything.
+  assert.match(html, /href="\/forgot"/);
   assert.doesNotMatch(html, /<button/i, 'the refusal grew a control');
   assert.doesNotMatch(html, /<form/i, 'the refusal grew a form');
   assert.doesNotMatch(html, /<input/i, 'the refusal grew a field');
   // And it explains the refusal in the person's own terms rather than as a
   // technical failure: no compartment means no stable identity for a study.
-  assert.match(html, /recovery code/i);
+  assert.match(html, /stable identity/i);
 });

@@ -37,8 +37,17 @@ import {
 /** How a user hands openplate a key for a provider, in UI-preference order. */
 export type AuthMethod = 'manual' | 'oauth-pkce';
 
-/** Whether the provider gets its own primary tab or sits behind "Advanced". */
-export type ProviderPlacement = 'primary' | 'advanced';
+/**
+ * Where the settings page offers this provider.
+ *
+ * `'derived'` is the third value and it means NOWHERE: the provider is not
+ * something a person picks, because its configuration comes from somewhere
+ * else entirely. `managed` is the only one today — its endpoint, model and
+ * bearer all come from the open session. It is a placement rather than an
+ * absence so that `getProvidersByPlacement` keeps working off one field, and
+ * so a reader of the registry can see that the omission is deliberate.
+ */
+export type ProviderPlacement = 'primary' | 'advanced' | 'derived';
 
 /** Which wire adapter runs the scan — a tag, not a factory (see `./index`). */
 export type VisionAdapterTag = 'openai-compatible' | 'anthropic';
@@ -159,6 +168,30 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     placement: 'advanced',
     keyConsoleUrl: null,
   },
+  managed: {
+    id: 'managed',
+    labelKey: 'settingsAi.provider.managed',
+    // NEITHER, and the empty tuple is the honest answer. A person does not
+    // hand this provider a key at all: the bearer is their own access token,
+    // minted by the sign-in they already did, and rotated by the auth client.
+    authMethods: [],
+    // `null` for a DIFFERENT reason than `openai-compatible`'s. That one is
+    // null because the endpoint is user-typed and unknowable at boot; this one
+    // is null because the endpoint is `${SYNC_SERVER_URL}/v1`, which the
+    // server already publishes to the browser and whose origin the CSP already
+    // allows through `syncOrigin`. Repeating it here would be a second copy of
+    // an address that has one home.
+    baseUrl: null,
+    // INERT. Verification is the "is this pasted key valid" check, and there is
+    // no pasted key: an invalid bearer here means the session is over, which
+    // the auth client answers with a refresh and then a sign-in prompt. The
+    // field is filled because the registry is total, and a decorative-looking
+    // field is its own drift trap (see `baseUrl`'s note on `anthropic`).
+    verification: { kind: 'base-url-path', path: '/models' },
+    adapter: 'openai-compatible',
+    placement: 'derived',
+    keyConsoleUrl: null,
+  },
   anthropic: {
     id: 'anthropic',
     labelKey: 'settingsAi.provider.anthropic',
@@ -188,7 +221,7 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
 // const`, and the `satisfies` constraint are a single guarantee, and the
 // milestone's verification greps for them together.
 // prettier-ignore
-export const PROVIDER_IDS = ['openrouter', 'mistral', 'openai-compatible', 'anthropic'] as const satisfies readonly AiProviderType[];
+export const PROVIDER_IDS = ['openrouter', 'mistral', 'openai-compatible', 'anthropic', 'managed'] as const satisfies readonly AiProviderType[];
 
 /** Compiles only for `never` — the assertion vehicle for the check below. */
 type AssertNever<T extends never> = T;

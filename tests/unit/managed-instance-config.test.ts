@@ -1,28 +1,31 @@
 /**
- * `GATEWAY_URL`, and the one fact derived from it: is this a MANAGED instance?
+ * `INSTANCE_MODE`, the refusal of `GATEWAY_URL`, and the one fact derived from
+ * the pair: is this a MANAGED instance?
  *
- * The two parsers are ordinary. The predicate is not: `managed` decides the
- * shape of the product rather than the presence of a card, so both of its
- * failure directions are covered here.
+ * The parser is ordinary. The predicate is not: `managed` decides the shape of
+ * the product rather than the presence of a card, so both of its failure
+ * directions are covered here.
  *
- * - A typo'd `GATEWAY_URL` that degraded to `null` would not present a
- *   feature-missing app. It would present an OPEN one, on an instance whose
- *   operator is running a closed beta: the welcome screen would offer to start
- *   an anonymous diary again. So a malformed value stops the boot.
- * - `GATEWAY_URL` without `SYNC_SERVER_URL` is the same failure wearing a
- *   different hat: a gateway hands somebody AI, and the account is what
- *   carries that connection to their second device and holds the diary it
- *   produces. Answering `false` there would silently re-open the front door,
- *   so it stops the boot too, naming both variables.
+ * - A typo'd `INSTANCE_MODE` that degraded to `'open'` would not present a
+ *   feature-missing app. It would present an OPEN one, on an instance an
+ *   organization runs for its people: the welcome screen would offer to start
+ *   an anonymous diary again. So an unrecognised value stops the boot.
+ * - `INSTANCE_MODE=managed` without `SYNC_SERVER_URL` is the same failure
+ *   wearing a different hat: every managed behaviour goes through that server,
+ *   so answering `false` there would silently re-open the front door. It stops
+ *   the boot too, naming both variables.
+ * - `GATEWAY_URL` is the variable that USED to make an instance managed
+ *   (M187/03, deleted by M192). An operator who upgrades without editing their
+ *   environment must not silently get an open instance out of a file that
+ *   still reads as a closed one, so setting it at all stops the boot.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  gatewayConnectSrcOrigin,
-  getGatewayUrl,
+  assertGatewayUrlUnset,
   isManagedInstance,
   isManagedInstanceConfig,
-  parseGatewayUrl,
+  parseInstanceMode,
   type PublicConfig,
 } from '../../app/config/public-config';
 
@@ -31,92 +34,75 @@ const OPEN_CONFIG: PublicConfig = {
   syncServerUrl: null,
   instancePreset: null,
   analytics: null,
-  gatewayUrl: null,
   managed: false,
 };
 
-test('an unset, empty, or whitespace GATEWAY_URL means no gateway', () => {
-  assert.equal(parseGatewayUrl(undefined), null);
-  assert.equal(parseGatewayUrl(''), null);
-  assert.equal(parseGatewayUrl('   '), null);
+test('an unset, empty, or whitespace INSTANCE_MODE means an open instance', () => {
+  assert.equal(parseInstanceMode(undefined), 'open');
+  assert.equal(parseInstanceMode(''), 'open');
+  assert.equal(parseInstanceMode('   '), 'open');
 });
 
-test('a valid GATEWAY_URL is kept, with any trailing slash trimmed', () => {
-  assert.equal(parseGatewayUrl('https://gateway.example.com'), 'https://gateway.example.com');
-  // A trailing slash would produce `https://host//v1/gateway/info` at every call site.
-  assert.equal(parseGatewayUrl('https://gateway.example.com/'), 'https://gateway.example.com');
-  assert.equal(parseGatewayUrl('https://gateway.example.com///'), 'https://gateway.example.com');
-  assert.equal(parseGatewayUrl('  http://localhost:8080  '), 'http://localhost:8080');
+test('both documented modes are accepted, case-insensitively and trimmed', () => {
+  assert.equal(parseInstanceMode('open'), 'open');
+  assert.equal(parseInstanceMode('managed'), 'managed');
+  assert.equal(parseInstanceMode('  MANAGED  '), 'managed');
 });
 
-test('a malformed GATEWAY_URL stops the boot rather than quietly re-opening the instance', () => {
-  assert.throws(() => parseGatewayUrl('gateway.example.com'), /GATEWAY_URL is not a valid absolute URL/);
-  assert.throws(() => parseGatewayUrl('not a url at all'), /GATEWAY_URL is not a valid absolute URL/);
-  assert.throws(() => parseGatewayUrl('ftp://gateway.example.com'), /GATEWAY_URL must be an http\(s\) URL/);
-  assert.throws(() => parseGatewayUrl('httpx://gateway.example.com'), /GATEWAY_URL must be an http\(s\) URL/);
+test('an unrecognised INSTANCE_MODE stops the boot rather than quietly re-opening the instance', () => {
+  // The likeliest typo, and the one that would be silent: `manged` is not
+  // `managed`, and falling back to `open` would offer an anonymous diary to
+  // every visitor of an organization's app.
+  assert.throws(() => parseInstanceMode('manged'), /Invalid INSTANCE_MODE/);
+  assert.throws(() => parseInstanceMode('true'), /Invalid INSTANCE_MODE/);
+  assert.throws(() => parseInstanceMode('1'), /Invalid INSTANCE_MODE/);
 });
 
-test('the CSP entry is the ORIGIN only — connect-src ignores paths', () => {
-  assert.equal(gatewayConnectSrcOrigin('https://gateway.example.com/v1'), 'https://gateway.example.com');
-  assert.equal(gatewayConnectSrcOrigin('http://localhost:8080'), 'http://localhost:8080');
-  assert.equal(gatewayConnectSrcOrigin(null), null, 'nothing is appended when no gateway is configured');
+test('GATEWAY_URL set at all stops the boot, and the message names its replacement', () => {
+  assert.doesNotThrow(() => assertGatewayUrlUnset(undefined));
+  assert.doesNotThrow(() => assertGatewayUrlUnset(''));
+  assert.doesNotThrow(() => assertGatewayUrlUnset('   '));
+
+  // Caught by hand rather than with an `assert.throws` predicate: an `unknown`
+  // parameter is refused by the anti-slop lint rules.
+  let message: string | null = null;
+  try {
+    assertGatewayUrlUnset('https://gateway.example.com');
+  } catch (caught) {
+    message = caught instanceof Error ? caught.message : String(caught);
+  }
+  assert.notEqual(message, null, 'a leftover GATEWAY_URL must not resolve quietly to an open instance');
+  assert.match(message ?? '', /GATEWAY_URL/);
+  assert.match(message ?? '', /INSTANCE_MODE/, 'the operator has to be told what replaces it');
 });
 
-test('a non-default gateway port survives into the CSP entry', () => {
-  // Dropping it would block the redeem call and every scan after it, with only
-  // a console violation in one browser to go on.
-  assert.equal(gatewayConnectSrcOrigin('https://gateway.example.com:8443'), 'https://gateway.example.com:8443');
-});
-
-test('no GATEWAY_URL means an OPEN instance, with or without sync', () => {
-  assert.equal(isManagedInstance({ gatewayUrl: null, syncServerUrl: null }), false);
+test('an open instance is open with or without sync', () => {
+  assert.equal(isManagedInstance({ instanceMode: 'open', syncServerUrl: null }), false);
   assert.equal(
-    isManagedInstance({ gatewayUrl: null, syncServerUrl: 'https://sync.example.com' }),
+    isManagedInstance({ instanceMode: 'open', syncServerUrl: 'https://sync.example.com' }),
     false,
     'sync alone is an optional extra, not a managed instance',
   );
 });
 
-test('both halves configured is what makes an instance managed', () => {
-  assert.equal(
-    isManagedInstance({ gatewayUrl: 'https://gateway.example.com', syncServerUrl: 'https://sync.example.com' }),
-    true,
-  );
+test('managed plus a server address is what makes an instance managed', () => {
+  assert.equal(isManagedInstance({ instanceMode: 'managed', syncServerUrl: 'https://sync.example.com' }), true);
 });
 
-test('GATEWAY_URL without SYNC_SERVER_URL stops the boot, naming both variables', () => {
-  // Three assertions on one message, so the operator is told which variable is
-  // missing and why the pair is a pair. `assert.throws` with a predicate would
-  // read better and is not available here: an `unknown` parameter is refused
-  // by the anti-slop lint rules, so the throw is caught by hand instead.
+test('INSTANCE_MODE=managed without SYNC_SERVER_URL stops the boot, naming both variables', () => {
   let message: string | null = null;
   try {
-    isManagedInstance({ gatewayUrl: 'https://gateway.example.com', syncServerUrl: null });
+    isManagedInstance({ instanceMode: 'managed', syncServerUrl: null });
   } catch (caught) {
     message = caught instanceof Error ? caught.message : String(caught);
   }
-  assert.notEqual(message, null, 'a gateway without accounts must not resolve quietly to "open"');
-  assert.match(message ?? '', /GATEWAY_URL/);
+  assert.notEqual(message, null, 'a managed instance without a server must not resolve quietly to "open"');
+  assert.match(message ?? '', /INSTANCE_MODE/);
   assert.match(message ?? '', /SYNC_SERVER_URL/, 'the operator has to be told which OTHER variable is missing');
-  assert.match(message ?? '', /accounts/, 'and why a gateway without accounts is not a managed instance');
 });
 
 test('the UI gate reads false for every shape of "not managed"', () => {
   assert.equal(isManagedInstanceConfig(undefined), false, 'no root loader data — error boundaries take this path');
   assert.equal(isManagedInstanceConfig(OPEN_CONFIG), false);
-  assert.equal(
-    isManagedInstanceConfig({ ...OPEN_CONFIG, gatewayUrl: 'https://gateway.example.com' }),
-    false,
-    'the address alone does not flip the shape of the app — `managed` does',
-  );
   assert.equal(isManagedInstanceConfig({ ...OPEN_CONFIG, managed: true }), true);
-});
-
-test('the gateway address reads null on an instance that configured none', () => {
-  assert.equal(getGatewayUrl(undefined), null);
-  assert.equal(getGatewayUrl(OPEN_CONFIG), null);
-  assert.equal(
-    getGatewayUrl({ ...OPEN_CONFIG, gatewayUrl: 'https://gateway.example.com', managed: true }),
-    'https://gateway.example.com',
-  );
 });

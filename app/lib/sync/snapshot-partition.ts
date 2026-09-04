@@ -40,13 +40,12 @@
  * patient's wrap. Only the SYNCED shape ({@link SyncedSnapshot}) partitions,
  * because only a blob is ever handed to a second person.
  *
- * ONE key breaks that symmetry, and only in the backup direction (M187/02):
- * `gatewayConnection` holds a gateway MEMBER TOKEN, which is a provider
- * credential rather than this app's own key material, and `ai-settings.ts`'s
- * header rule — an export of a person's tracker never carries a provider
- * credential — outranks the restore argument above. So it syncs like every
- * other owner-private key and is absent from every export; `backup.ts`'s
- * `readSnapshot` is where that omission lives.
+ * ONE key used to break that symmetry: `gatewayConnection` (M187/02) held a
+ * gateway member token, which is a provider credential rather than this app's
+ * own key material, so it synced and was never exported. M192 deleted it with
+ * the gateway, and the two regions line up again. The asymmetry is worth
+ * remembering rather than forgetting: the next key that is a credential
+ * somebody else issued belongs on the same footing.
  */
 import { z } from 'zod';
 import type { LocalStoreSnapshot } from '#app/lib/local-store';
@@ -85,20 +84,13 @@ export const SNAPSHOT_KEY_REGIONS = {
   sharePeers: 'owner-private',
   researchIdentity: 'owner-private',
   studyEnrolments: 'owner-private',
-  // M187/02. The FIRST credential here that this app did not mint: a gateway
-  // member token, issued to the PERSON by whoever runs the gateway. It is here
-  // rather than in the shareable half because a clinician grant may mean "read
-  // my diary" and must never mean "spend the gateway I was given" — and it is
-  // additionally the one key no BACKUP carries at all (`backup.ts`'s
-  // `readSnapshot`), for the reason `ai-settings.ts`'s header gives.
-  gatewayConnection: 'owner-private',
 } as const satisfies Record<keyof LocalStoreSnapshot, SnapshotRegion>;
 
 /** The snapshot keys the map assigns to `region`. Derived from the map, so the map is what moves a key. */
-// `-?` because `gatewayConnection` is OPTIONAL on `LocalStoreSnapshot` (only a
-// backup-read snapshot legitimately lacks it, see `backup.ts`'s `readSnapshot`).
-// Without the modifier the mapped type's value for that key would include
-// `undefined`, and `Pick` would reject the resulting union outright.
+// `-?` is kept although no key is optional today. It was needed while
+// `gatewayConnection` was `?:` (M187/02 to M192), and without it a mapped
+// type's value for an optional key includes `undefined`, which `Pick` rejects
+// outright — a compile error several files away from the `?:` that caused it.
 type KeysInRegion<TRegion extends SnapshotRegion> = {
   [TKey in keyof LocalStoreSnapshot]-?: (typeof SNAPSHOT_KEY_REGIONS)[TKey] extends TRegion ? TKey : never;
 }[keyof LocalStoreSnapshot];
@@ -115,7 +107,6 @@ export const EMPTY_OWNER_PRIVATE_REGION: OwnerPrivateRegion = {
   sharePeers: [],
   researchIdentity: null,
   studyEnrolments: [],
-  gatewayConnection: null,
 };
 
 /**
@@ -233,23 +224,13 @@ export function partitionSnapshot(snapshot: LocalStoreSnapshot): SnapshotPartiti
   for (const key of Object.keys(snapshot)) classifySnapshotKey(key);
 
   const { foods, foodLogs, weightEntries, profile, fasts, savedMeals } = snapshot;
-  const { shareIdentity, sharePeers, researchIdentity, studyEnrolments, gatewayConnection } = snapshot;
+  const { shareIdentity, sharePeers, researchIdentity, studyEnrolments } = snapshot;
   // Written out name by name, and the two literals are the type-level half of
   // the same guard: move a key between regions in the map above, or add one,
   // and these stop compiling until a human has put it on a side.
   return {
     shareable: { foods, foodLogs, weightEntries, profile, fasts, savedMeals },
-    // `gatewayConnection` is normalised to `null` rather than passed through:
-    // a snapshot read from a BACKUP has no such key, and an `undefined` here
-    // would seal a compartment whose shape differs from a synced device's for
-    // no reason a reader could see.
-    ownerPrivate: {
-      shareIdentity,
-      sharePeers,
-      researchIdentity,
-      studyEnrolments,
-      gatewayConnection: gatewayConnection ?? null,
-    },
+    ownerPrivate: { shareIdentity, sharePeers, researchIdentity, studyEnrolments },
   };
 }
 

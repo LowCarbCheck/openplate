@@ -46,7 +46,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { InstallCard } from '#app/components/install-card';
 import { SectionEyebrow } from '#app/components/typography';
 import { THEME_LABEL_KEYS, getStoredTheme, type Theme } from '#app/components/theme-selector';
-import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useManagedInstance, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useSyncSession } from '#app/components/sync-status';
 import { DEFAULT_LANGUAGE, LANGUAGE_LABELS, isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -177,13 +177,22 @@ export default function SettingsIndex() {
   // sync row renders NOTHING — no row, no mention (AGENTS.md: unset means no
   // sync UI anywhere).
   const syncServerUrl = useSyncServerUrl();
+  const managed = useManagedInstance();
   const session = useSyncSession();
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
-      <SettingsGroup label={t('settings.groups.scanning')}>
-        <SettingsRow to="/settings/ai" icon={Sparkles} title={t('settings.rows.ai.title')} status={aiStatus} />
-      </SettingsGroup>
+      {/* THE PROVIDER ROW IS ABSENT ON A MANAGED INSTANCE (M192/05). There is
+          no key to bring there and no provider to pick: photo estimates come
+          with the account, and the whole of `/settings/ai` is a page about
+          choosing and paying a provider. Offering it would send somebody to a
+          screen that cannot help them and reads as "your connection is
+          missing". The allowance lives on `/settings/account` instead. */}
+      {!managed && (
+        <SettingsGroup label={t('settings.groups.scanning')}>
+          <SettingsRow to="/settings/ai" icon={Sparkles} title={t('settings.rows.ai.title')} status={aiStatus} />
+        </SettingsGroup>
+      )}
 
       <SettingsGroup label={t('settings.groups.you')}>
         <SettingsRow to="/settings/goals" icon={Target} title={t('settings.rows.goals.title')} status={goalsStatus} />
@@ -205,10 +214,23 @@ export default function SettingsIndex() {
         <SettingsRow to="/meals" icon={BookMarked} title={t('settings.rows.meals.title')} status={null} />
         {syncServerUrl !== null && (
           <SettingsRow
-            to="/settings/sync"
+            to="/settings/account"
             icon={ShieldCheck}
-            title={t('settings.rows.sync.title')}
-            status={session.account === null ? t('settings.rows.sync.notSetUp') : session.account.handle}
+            title={t('settings.rows.account.title')}
+            status={session.account === null ? t('settings.rows.account.signedOut') : session.account.email}
+          />
+        )}
+        {/* ADMINISTRATORS ONLY, and read from the session rather than from a
+            request. `/admin` renders the not-an-administrator card to everybody
+            else, so this row is discoverability, not access control: offering
+            it to an ordinary account would send them to a card that tells them
+            nothing they wanted to know. */}
+        {session.account?.role === 'admin' && (
+          <SettingsRow
+            to="/admin"
+            icon={ShieldCheck}
+            title={t('settings.rows.admin.title')}
+            status={t('settings.rows.admin.status')}
           />
         )}
         {/* Sharing rides the same gate as the sync row and for the same

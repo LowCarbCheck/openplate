@@ -5,10 +5,12 @@
  *
  * The route decided its screen with `session.account === null ? setup :
  * connected`. `createSyncAccount` opens the session as PART of provisioning,
- * so the instant the key records landed the route re-rendered, and the setup
- * subtree — including a wizard that was one dispatch away from displaying the
- * recovery code — was unmounted. The code is shown exactly once and is the
- * only data-preserving recovery path there is. Nobody ever saw it.
+ * so the instant the account landed the route re-rendered and the setup
+ * subtree was unmounted mid-flight. When there was still a recovery code to
+ * show — shown exactly once, the only data-preserving recovery path there was
+ * — nobody ever saw it. M192 escrows the code and shows nothing, so the same
+ * bug is now "the screen changed under me halfway through", which is smaller
+ * and still wrong.
  *
  * ── Why the existing tests did not catch it ─────────────────────────────
  *
@@ -22,10 +24,10 @@
  *
  * This repo's unit suite is `node:test` with no DOM and no renderer, so this
  * cannot mount the route. Instead the composition rule was given a name and
- * made pure (`resolveSyncScreen`), and the last test below drives the real
- * reducer through the real sequence — including the session appearing
- * mid-flight, at exactly the point production flips it — asserting the screen
- * never leaves `setup` until the user has ticked "I've saved it".
+ * made pure (`resolveSyncScreen`), and the tests below drive the real reducer
+ * through the real sequence — including the session appearing mid-flight, at
+ * exactly the point production flips it — asserting the screen never leaves
+ * `setup` while the wizard is still working.
  *
  * That is a faithful model of the failure, not a substitute for a render test:
  * it would catch this bug and any future re-ordering of the rule, but it
@@ -67,16 +69,6 @@ test('the ceremony is active exactly while the wizard owes the user something', 
     },
     { state: { kind: 'generating' }, active: true, why: 'THE SESSION FLIPS DURING THIS STATE' },
     {
-      state: { kind: 'show-account-card', handle: 'k7m2q3xr9t', recoveryCode: 'X', hasConfirmedSaved: false },
-      active: true,
-      why: 'the one and only display of the handle and the code',
-    },
-    {
-      state: { kind: 'show-account-card', handle: 'k7m2q3xr9t', recoveryCode: 'X', hasConfirmedSaved: true },
-      active: true,
-      why: 'ticked but not yet finished — still on screen',
-    },
-    {
       state: { kind: 'error', message: 'boom' },
       active: false,
       why: 'nothing to protect; do not trap the user in a wizard for an account that may already exist',
@@ -89,14 +81,14 @@ test('the ceremony is active exactly while the wizard owes the user something', 
   }
 });
 
-test('the full provisioning sequence keeps the setup screen until the code is acknowledged', () => {
+test('the full provisioning sequence keeps the setup screen until the wizard releases it', () => {
   // Walks the REAL reducer through the REAL order of events, with the session
   // appearing exactly where `createSyncAccount` opens it.
   let state = INITIAL_SYNC_SETUP_STATE;
   let hasAccount = false;
   const screenNow = (): string => resolveSyncScreen({ hasAccount, isCeremonyActive: isSyncSetupCeremonyActive(state) });
 
-  assert.equal(screenNow(), 'setup', 'handle and passphrase entry');
+  assert.equal(screenNow(), 'setup', 'invite and password entry');
 
   state = syncSetupReducer(state, { type: 'detailsSubmitted' });
   assert.equal(screenNow(), 'setup', 'deriving keys');
@@ -106,17 +98,7 @@ test('the full provisioning sequence keeps the setup screen until the code is ac
   hasAccount = true;
   assert.equal(screenNow(), 'setup', 'a session now exists, but the wizard is mid-flight');
 
-  state = syncSetupReducer(state, { type: 'setupSucceeded', handle: 'k7m2q3xr9t', recoveryCode: 'ABCDE-FGHJK' });
-  assert.equal(state.kind, 'show-account-card');
-  assert.equal(screenNow(), 'setup', 'THE ACCOUNT CARD IS ON SCREEN — nothing may replace it');
-
-  // The user reads it, but has not ticked the box yet.
-  assert.equal(screenNow(), 'setup', 'still displayed while unacknowledged');
-
-  state = syncSetupReducer(state, { type: 'confirmSavedToggled', checked: true });
-  assert.equal(screenNow(), 'setup', 'ticked, but not yet dismissed');
-
-  state = syncSetupReducer(state, { type: 'finishRequested' });
+  state = syncSetupReducer(state, { type: 'setupSucceeded' });
   assert.equal(state.kind, 'complete');
   assert.equal(screenNow(), 'connected', 'only now does the connected panel take over');
 });
@@ -124,11 +106,10 @@ test('the full provisioning sequence keeps the setup screen until the code is ac
 test('THE REPAIR CEREMONY IS PROTECTED TOO — and it is protected from render one', () => {
   // The setup-completion path (an account with no key records, finished from
   // the sign-in form) has a WORSE version of the original hazard: it starts
-  // already provisioning, so there is no `enter-details` render in which
-  // the flag could be raised. If the rule only covered the first-time path,
-  // the session would open, the route would swap in the connected panel, and
-  // the repair's recovery code — just as unrecoverable as a first-time one —
-  // would never be seen.
+  // already provisioning, so there is no `enter-details` render in which the
+  // flag could be raised. If the rule only covered the first-time path, the
+  // session would open and the route would swap in the connected panel while
+  // the repair was still writing key records.
   let state = initialSyncSetupState({ resume: true });
   let hasAccount = false;
   const screenNow = (): string => resolveSyncScreen({ hasAccount, isCeremonyActive: isSyncSetupCeremonyActive(state) });
@@ -141,13 +122,7 @@ test('THE REPAIR CEREMONY IS PROTECTED TOO — and it is protected from render o
   hasAccount = true;
   assert.equal(screenNow(), 'setup', 'the session now exists, but the repair is mid-flight');
 
-  state = syncSetupReducer(state, { type: 'setupSucceeded', handle: 'k7m2q3xr9t', recoveryCode: 'ABCDE-FGHJK' });
-  assert.equal(screenNow(), 'setup', 'THE ACCOUNT CARD IS ON SCREEN — nothing may replace it');
-
-  state = syncSetupReducer(state, { type: 'confirmSavedToggled', checked: true });
-  assert.equal(screenNow(), 'setup', 'ticked, but not yet dismissed');
-
-  state = syncSetupReducer(state, { type: 'finishRequested' });
+  state = syncSetupReducer(state, { type: 'setupSucceeded' });
   assert.equal(state.kind, 'complete');
   assert.equal(screenNow(), 'connected', 'only now does the connected panel take over');
 });
@@ -167,18 +142,19 @@ test('a failed provision releases the screen instead of trapping the user', () =
   assert.equal(resolveSyncScreen({ hasAccount: true, isCeremonyActive: false }), 'connected');
 });
 
-test('the acknowledgment gate is what releases the screen — it cannot be skipped', () => {
-  // Belt-and-braces with `sync-setup-flow.test.ts`: the ONLY transition out of
-  // `show-account-card` into `complete` requires `hasConfirmedSaved`, so the
-  // screen-release rule inherits that guarantee rather than restating it.
-  const shown = syncSetupReducer(syncSetupReducer(INITIAL_SYNC_SETUP_STATE, { type: 'detailsSubmitted' }), {
-    type: 'setupSucceeded',
-    handle: 'k7m2q3xr9t',
-    recoveryCode: 'ABCDE-FGHJK',
-  });
-
-  const skipped = syncSetupReducer(shown, { type: 'finishRequested' });
-  assert.equal(skipped.kind, 'show-account-card', 'finishing without ticking must be a no-op');
-  assert.equal(isSyncSetupCeremonyActive(skipped), true);
-  assert.equal(resolveSyncScreen({ hasAccount: true, isCeremonyActive: true }), 'setup');
+test('WHAT M192 DELETED HERE: the acknowledgment gate', () => {
+  // There used to be a test asserting that `finishRequested` without
+  // `hasConfirmedSaved` left the account card on screen. Both the action and
+  // the state are gone: the recovery code is escrowed with the service and
+  // never shown, so there is nothing for a person to acknowledge.
+  //
+  // The SCREEN rule survives it, and this is what is left of the guarantee:
+  // `generating` is still protected, so the connected panel cannot take over
+  // while provisioning is in flight.
+  const generating = syncSetupReducer(INITIAL_SYNC_SETUP_STATE, { type: 'detailsSubmitted' });
+  assert.equal(generating.kind, 'generating');
+  assert.equal(
+    resolveSyncScreen({ hasAccount: true, isCeremonyActive: isSyncSetupCeremonyActive(generating) }),
+    'setup',
+  );
 });

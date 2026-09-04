@@ -18,8 +18,19 @@ export type SyncErrorKind =
   | 'invalid'
   /** `401` — no valid session. After one failed refresh this means "send the user to sign in again". */
   | 'unauthorized'
-  /** `403` — authenticated but not permitted (signups closed, email unverified). */
+  /** `403` — authenticated but not permitted (an invite refused, an AI allowance of zero). */
   | 'forbidden'
+  /**
+   * `403 {"error":"account-suspended"}` — an admin has suspended this account.
+   *
+   * A SEPARATE KIND rather than a `forbidden` a caller string-matches, because
+   * it is the one 403 that can land on ANY authenticated call: a login, a
+   * refresh, a sync cycle, a scan. Every one of those surfaces has to say the
+   * same true thing ("an administrator has suspended this account"), and a
+   * kind is what lets them without each one re-reading the server's prose —
+   * which `PROTOCOL.md` §4 forbids branching on.
+   */
+  | 'suspended'
   /** `404` — no such resource. Only an error where the protocol doesn't already give 404 a meaning. */
   | 'not-found'
   /** `409` — a duplicate account on signup. (Blob/key-record 409s are CAS outcomes and never reach here.) */
@@ -59,11 +70,26 @@ export class SyncRequestError extends Error {
   }
 }
 
-/** Maps a status code onto its {@link SyncErrorKind}. The only place that mapping is written down. */
-export function errorKindForStatus(status: number): SyncErrorKind {
+/**
+ * The body text the service uses for a suspended account, transcribed from
+ * M192's contract table.
+ *
+ * The ONE place a message is compared rather than a status. `403` alone cannot
+ * carry the distinction — the same status also means "this invite is not
+ * valid" and "this account has no AI allowance" — and the service documents
+ * this exact token for exactly this purpose. It is read once, here, and turned
+ * into a {@link SyncErrorKind} that everything downstream branches on.
+ */
+export const ACCOUNT_SUSPENDED_ERROR = 'account-suspended';
+
+/**
+ * Maps a status code, and for one documented token the body, onto a
+ * {@link SyncErrorKind}. The only place that mapping is written down.
+ */
+export function errorKindForStatus(status: number, errorText?: string): SyncErrorKind {
   if (status === 400) return 'invalid';
   if (status === 401) return 'unauthorized';
-  if (status === 403) return 'forbidden';
+  if (status === 403) return errorText === ACCOUNT_SUSPENDED_ERROR ? 'suspended' : 'forbidden';
   if (status === 404) return 'not-found';
   if (status === 409) return 'conflict';
   if (status === 413) return 'too-large';

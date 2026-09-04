@@ -29,12 +29,12 @@ import {
   SYNC_KEY_RECORD_KINDS,
   checkProtocolCompatibility,
   isProtocolHandshake,
-  SIGNUP_MODES,
+  readHandshakeInstance,
   isSyncKeyRecordKind,
 } from '../../../app/lib/sync/engine/protocol';
 
 // --- Transcribed from openplate-sync/src/protocol.ts. Keep in lockstep. ---
-const EXPECTED_PROTOCOL_VERSION = 1;
+const EXPECTED_PROTOCOL_VERSION = 2;
 const EXPECTED_ENVELOPE_VERSION = 1;
 const EXPECTED_MAX_BLOB_BYTES = 2 * 1024 * 1024;
 const EXPECTED_BLOB_VERSION_RETENTION = 5;
@@ -94,31 +94,47 @@ test('checkProtocolCompatibility REFUSES an envelope-version mismatch even when 
 });
 
 test('isProtocolHandshake rejects malformed handshake documents', () => {
-  assert.equal(isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0' }), true);
-  assert.equal(isProtocolHandshake({ protocolVersion: '1', envelopeVersion: 1, serviceVersion: '0.1.0' }), false);
-  assert.equal(isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1 }), false);
+  assert.equal(isProtocolHandshake({ protocolVersion: 2, envelopeVersion: 1, serviceVersion: '0.6.0' }), true);
+  assert.equal(isProtocolHandshake({ protocolVersion: '2', envelopeVersion: 1, serviceVersion: '0.6.0' }), false);
+  assert.equal(isProtocolHandshake({ protocolVersion: 2, envelopeVersion: 1 }), false);
   assert.equal(isProtocolHandshake(null), false);
   assert.equal(isProtocolHandshake('not a handshake'), false);
 });
 
-test('signupMode is optional, so a service older than the field is still accepted', () => {
+test('the instance block is optional, so a service older than the field is still accepted', () => {
   // THE COMPATIBILITY TRAP THIS PINS: making the field required would be an
   // "additive" change that silently refuses every instance deployed before it.
-  assert.equal(isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0' }), true);
+  const base = { protocolVersion: 2, envelopeVersion: 1, serviceVersion: '0.6.0' };
+  assert.equal(isProtocolHandshake(base), true);
+  assert.equal(readHandshakeInstance(base), null);
 
-  for (const signupMode of SIGNUP_MODES) {
-    assert.equal(
-      isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0', signupMode }),
-      true,
-      signupMode,
-    );
-  }
+  const managed = {
+    ...base,
+    instance: { name: 'openplate', language: 'de', mail: true, ai: { model: 'google/gemini-3.7-flash' } },
+  };
+  assert.equal(isProtocolHandshake(managed), true);
+  assert.deepEqual(readHandshakeInstance(managed)?.ai, { model: 'google/gemini-3.7-flash' });
 
-  // A value outside the vocabulary is refused rather than passed through — a
-  // client must not act on a mode it does not understand.
+  // `ai: null` is the instance SAYING it proxies no model, which is why it is
+  // nullable rather than absent — see `InstanceDescriptor`.
+  const noAi = { ...base, instance: { name: 'openplate', language: 'en', mail: false, ai: null } };
+  assert.equal(isProtocolHandshake(noAi), true);
+  assert.equal(readHandshakeInstance(noAi)?.ai, null);
+
+  // A malformed block is refused rather than passed through — a client must
+  // not act on a description it does not understand.
+  assert.equal(isProtocolHandshake({ ...base, instance: { name: 'openplate' } }), false);
+});
+
+test('signupMode is gone from protocol 2, and a service that still sends one is unaffected', () => {
+  // Protocol 2 has one way in: an invite addressed to an email. The field was
+  // dropped rather than deprecated, so a stray value must be IGNORED — a
+  // strict parse here would refuse a service mid-upgrade over a dead field.
+  const withDeadField = { protocolVersion: 2, envelopeVersion: 1, serviceVersion: '0.6.0', signupMode: 'invite' };
+  assert.equal(isProtocolHandshake(withDeadField), true);
   assert.equal(
-    isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0', signupMode: 'sometimes' }),
-    false,
+    checkProtocolCompatibility({ protocolVersion: 2, envelopeVersion: 1, serviceVersion: '0.6.0' }).status,
+    'compatible',
   );
 });
 

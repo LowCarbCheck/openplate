@@ -75,21 +75,6 @@ export interface ContentSecurityPolicyInput {
    */
   presetOrigin: string | null;
   /**
-   * Origin of the AI gateway this instance belongs to (`GATEWAY_URL`, M187
-   * spec 03) — `gatewayConnectSrcOrigin(CONFIG.gateway.gatewayUrl)` — or
-   * `null` when the operator configured none, which is the default.
-   *
-   * A gateway address that arrives inside somebody's LINK still cannot be
-   * allowlisted (see `app/routes/join.tsx`'s header: widening the policy at
-   * runtime would give up the protection it exists for). This one is
-   * different for the same reason `presetOrigin` is: the operator set it in
-   * this server's own environment, so it is known at boot. Configuring it is
-   * therefore all an operator has to do — `CSP_CONNECT_EXTRA` must not have to
-   * repeat it, because the failure of forgetting is a join that dies in the
-   * browser with nothing on the server to see.
-   */
-  gatewayOrigin: string | null;
-  /**
    * Whether the optional newsletter capture is configured
    * (`NEWSLETTER_SUBSCRIBE_URL` + `NEWSLETTER_TURNSTILE_SITE_KEY` — see
    * `app/config/newsletter.ts`).
@@ -132,7 +117,6 @@ export function buildContentSecurityPolicy({
   connectExtra,
   providerOrigins,
   presetOrigin,
-  gatewayOrigin,
   newsletterEnabled,
   analyticsOrigin,
 }: ContentSecurityPolicyInput): string {
@@ -159,7 +143,6 @@ export function buildContentSecurityPolicy({
     // so this is the same failure mode once more: without the entry a managed
     // instance's very first join dies on a CSP violation. Nothing is appended
     // when no gateway is configured. Origin only.
-    ...(gatewayOrigin === null ? [] : [gatewayOrigin]),
     ...connectExtra,
     // Cloudflare Turnstile, ONLY when the newsletter is configured
     // (NEWSLETTER_SUBSCRIBE_URL). The widget's own callbacks fetch from this

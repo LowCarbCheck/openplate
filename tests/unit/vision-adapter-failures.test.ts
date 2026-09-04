@@ -49,7 +49,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     });
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-bad', model: 'gpt-5o' });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-bad' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
         provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
@@ -68,7 +68,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     });
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-test', model: 'gpt-5o' });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
         provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
@@ -87,7 +87,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     });
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-test', model: 'gpt-5o' });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
         provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
@@ -115,8 +115,11 @@ describe('openai-compatible adapter — retry narrowing', () => {
     });
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-test', model: 'llama3' });
-      const result = await provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'llama3' });
+      const result = await provider.runScan({
+        task: PLATE_SCAN_TASK,
+        image: { base64: 'AAAA', mimeType: 'image/png' },
+      });
       assert.strictEqual(callCount, 2, 'a 400 should trigger exactly one retry without response_format');
       assert.ok(sawStructuredOutputOnFirstCall, 'the first attempt should still request structured output');
       assert.deepStrictEqual(result.foods, []);
@@ -133,7 +136,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     });
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-test', model: 'llama3' });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'llama3' });
       const failure = await expectVisionProviderFailure(
         provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
@@ -150,7 +153,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     });
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-test', model: 'gpt-5o' });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
         provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
@@ -165,7 +168,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     stubFetch(async () => new Response(JSON.stringify({ choices: [{ message: { content: '' } }] }), { status: 200 }));
 
     try {
-      const provider = createOpenAiCompatibleProvider({ apiKey: 'sk-test', model: 'gpt-5o' });
+      const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
         provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );

@@ -126,7 +126,7 @@ export default function SharedIndex() {
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">{t('sharing.needsSession')}</p>
               <Button asChild variant="outline" className="h-11">
-                <Link to="/settings/sync">{t('sharing.needsSessionCta')}</Link>
+                <Link to="/settings/account">{t('sharing.needsSessionCta')}</Link>
               </Button>
             </div>
           )}

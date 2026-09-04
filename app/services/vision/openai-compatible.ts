@@ -12,6 +12,22 @@
  * key, an empty balance, or a rate limit into success — it would just
  * double-bill the user and re-upload their photo for nothing (see
  * `isStructuredOutputRejection` below).
+ *
+ * ── TWO KINDS OF CREDENTIAL (M192) ───────────────────────────────────────
+ *
+ * `apiKey` is a STATIC string: a BYOK provider key, the same on every request
+ * until its owner changes it, and a 401 from it means the key is wrong.
+ *
+ * `getBearer` is a PROVIDER: a function that answers with the session's
+ * current access token. Those expire every fifteen minutes, so a 401 there is
+ * the ordinary state of a long-lived tab rather than a bad credential, and it
+ * is retried EXACTLY ONCE after asking for a fresh token. Once, because a
+ * second refusal means the session is genuinely over — and a scan that retried
+ * in a loop would re-upload the photo on every attempt.
+ *
+ * That 401 is deliberately excluded from `NON_RETRYABLE_CLIENT_ERROR_STATUSES`
+ * only on this path. On the static path the set still holds: resending the
+ * same wrong key changes nothing.
  */
 import { z } from 'zod';
 
@@ -28,8 +44,31 @@ const HTTP_SERVER_ERROR_START = 500;
 /** Statuses that mean "this exact request can never succeed by resending it" — never retried. */
 const NON_RETRYABLE_CLIENT_ERROR_STATUSES: ReadonlySet<number> = new Set([401, 402, 403, 429]);
 
+/**
+ * How this adapter authenticates: a fixed key, or a function that produces the
+ * current one.
+ *
+ * A UNION rather than an optional second field, so "both" and "neither" are
+ * unrepresentable. Both would be a request whose `Authorization` header
+ * depended on which branch ran last; neither would be an unauthenticated
+ * request that fails somewhere unhelpful.
+ */
+export type OpenAiCompatibleCredential =
+  /** A BYOK provider key. Static for the life of this provider instance. */
+  | { apiKey: string }
+  /**
+   * A bearer the caller can re-derive — the sync session's access token.
+   *
+   * `refresh` is asked for a NEW one after a 401, and answers `null` when the
+   * session is over. Two functions rather than one with a flag, because "give
+   * me the token" and "that token was refused, get another" are different
+   * questions and only the second may spend a refresh token.
+   */
+  | { getBearer: () => Promise<string | null>; refreshBearer: () => Promise<string | null> };
+
 export interface OpenAiCompatibleProviderOptions {
-  apiKey: string;
+  /** How to authenticate. See {@link OpenAiCompatibleCredential}. */
+  credential: OpenAiCompatibleCredential;
   model: string;
   baseUrl?: string;
   /** Merged into every request's headers — used for OpenRouter attribution (see `./constants`). */
@@ -165,14 +204,20 @@ export function buildOpenAiCompatibleRequestBody({
   return body;
 }
 
+/** Whether this credential re-derives its bearer, narrowed for the retry branch below. */
+function isBearerProvider(
+  credential: OpenAiCompatibleCredential,
+): credential is Extract<OpenAiCompatibleCredential, { getBearer: unknown }> {
+  return 'getBearer' in credential;
+}
+
 export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProviderOptions): VisionProvider {
   const baseUrl = (options.baseUrl?.trim() || DEFAULT_BASE_URL).replace(/\/$/, '');
   const url = `${baseUrl}/chat/completions`;
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${options.apiKey}`,
-    ...options.extraHeaders,
-  };
+  const { credential } = options;
+
+  const authorization = async (): Promise<string | null> =>
+    isBearerProvider(credential) ? await credential.getBearer() : credential.apiKey;
 
   async function runScan<TResult extends ScanResultBase>({
     task,
@@ -183,7 +228,12 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
   }): Promise<TResult> {
     const dataUrl = `data:${image.mimeType};base64,${image.base64}`;
 
-    const sendRequest = async (useStructuredOutput: boolean): Promise<Response> => {
+    const sendRequest = async (useStructuredOutput: boolean, bearer: string | null): Promise<Response> => {
+      const headers = new Headers({ 'Content-Type': 'application/json', ...options.extraHeaders });
+      // A MISSING bearer is sent as no header at all rather than as
+      // `Bearer null`. The endpoint then answers its own 401, which classifies
+      // as "sign in again" — the truth — instead of a malformed credential.
+      if (bearer !== null) headers.set('Authorization', `Bearer ${bearer}`);
       try {
         return await fetch(url, {
           method: 'POST',
@@ -205,14 +255,26 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       }
     };
 
-    let response = await sendRequest(true);
+    let bearer = await authorization();
+    let response = await sendRequest(true, bearer);
+
+    // A 401 ON THE PROVIDER PATH IS AN EXPIRED TOKEN, not a wrong one. Access
+    // tokens last fifteen minutes and a tab stays open for hours, so this is
+    // the ordinary case rather than a failure. EXACTLY ONCE: a second refusal
+    // means the session is over, and a loop here would re-upload the photo on
+    // every attempt.
+    if (response.status === 401 && isBearerProvider(credential)) {
+      bearer = await credential.refreshBearer();
+      if (bearer !== null) response = await sendRequest(true, bearer);
+    }
+
     // A custom server that rejects `response_format` answers with a 4xx —
     // retry exactly once without it, then rely on the prompt + text parse.
     // Only for the subset of 4xx that plausibly means that (see
     // `isStructuredOutputRejection`) — never for a bad key, an empty
     // balance, or a rate limit, where resending changes nothing.
     if (isStructuredOutputRejection(response.status)) {
-      response = await sendRequest(false);
+      response = await sendRequest(false, bearer);
     }
 
     if (!response.ok) {

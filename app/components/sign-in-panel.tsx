@@ -15,12 +15,11 @@
  * Without the repair, neither door works and the account is permanently
  * unusable.
  *
- * The repair reuses `SyncSetupFlow` rather than printing a code inline, so the
- * un-skippable "I've saved this recovery code" gate applies identically. And
- * because provisioning opens the session mid-ceremony, `onCeremonyActiveChange`
- * has to be threaded up to the caller for the same reason it is on the create
- * path — otherwise `resolveSyncScreen` swaps in the connected panel and
- * unmounts the code.
+ * The repair reuses `SyncSetupFlow` rather than growing a second provisioning
+ * path beside it. Because provisioning opens the session mid-ceremony,
+ * `onCeremonyActiveChange` has to be threaded up to the caller for the same
+ * reason it is on the create path — otherwise `resolveSyncScreen` swaps in the
+ * connected panel and unmounts the wizard mid-flight.
  */
 import { useState } from 'react';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
@@ -34,6 +33,7 @@ import { SyncSetupFlow } from '#app/components/sync-setup-flow';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
+import { canonicalizeEmail } from '#app/lib/sync/email';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { classifySignInFailure } from '#app/lib/sync/sign-in-error';
 import { makeSyncSignInSchema, type SyncSignInValues } from '#app/lib/sync/sign-in-schema';
@@ -45,7 +45,7 @@ type SyncSignInSubmission = Submission<SyncSignInValues, string[], SyncSignInVal
 
 export function SignInPanel({
   serverUrl,
-  initialHandle,
+  initialEmail,
   onCancel,
   onForgot,
   onForgetName,
@@ -54,9 +54,17 @@ export function SignInPanel({
   onCeremonyComplete,
 }: {
   serverUrl: string;
-  initialHandle: string;
+  initialEmail: string;
   /** Omitted where there is nowhere to cancel BACK to, e.g. on `/sign-in`, which is a page rather than a mode. */
   onCancel?: () => void;
+  /**
+   * "Forgot password?" — a NAVIGATION, and the caller owns where to.
+   *
+   * It used to open an inline recovery form on this same card. `/forgot` is a
+   * page of its own now (M192/05), because the answer to it arrives by mail
+   * minutes later and a person who closes the tab has to be able to come back
+   * to a link rather than to a card three taps deep inside a settings screen.
+   */
   onForgot: () => void;
   /** "Not you?" — offered only beside a prefilled name, and only where the caller can act on it. */
   onForgetName?: () => void;
@@ -94,7 +102,6 @@ export function SignInPanel({
   // account-enumeration oracle if the guess were right.
   const [lastResult, setLastResult] = useState<ReturnType<SyncSignInSubmission['reply']> | undefined>(undefined);
   const [repair, setRepair] = useState<{
-    handle: string;
     passphrase: string;
     completeSetup: (input: { passphrase: string }) => Promise<SyncSetupOutcome>;
   } | null>(null);
@@ -108,7 +115,7 @@ export function SignInPanel({
     // Nothing red before the person asks for it, but a corrected field clears
     // its own error as it is typed. See `.claude/conform-to-react.md`.
     shouldRevalidate: 'onInput',
-    defaultValue: { handle: initialHandle, passphrase: '' },
+    defaultValue: { email: initialEmail, passphrase: '' },
     onSubmit(event, { submission }) {
       // No action to post to: signing in is Argon2id and a fetch to the sync
       // service, both in this browser, and the default navigation would
@@ -121,13 +128,17 @@ export function SignInPanel({
 
   async function handleSubmit(submission: SyncSignInSubmission): Promise<void> {
     if (submission.status !== 'success') return;
-    const { handle: accountHandle, passphrase } = submission.value;
+    const { email, passphrase } = submission.value;
     setIsBusy(true);
     setLastResult(undefined);
     try {
-      const result = await signInToSync({ serverUrl, handle: accountHandle.trim(), passphrase });
+      // THE CANONICAL FORM goes to the service — NFKC, trimmed, lowercased,
+      // the same normalisation the server's unique index applies. Sending the
+      // raw field would derive a verifier against a different string, which on
+      // screen is indistinguishable from a wrong password.
+      const result = await signInToSync({ serverUrl, email: canonicalizeEmail(email), passphrase });
       if (result.status === 'setup-incomplete') {
-        setRepair({ handle: accountHandle.trim(), passphrase, completeSetup: result.completeSetup });
+        setRepair({ passphrase, completeSetup: result.completeSetup });
         return;
       }
       if (onSignedIn !== undefined) {
@@ -147,14 +158,14 @@ export function SignInPanel({
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">{t('sync.signIn.finishSetup')}</p>
         <SyncSetupFlow
-          resume={{ handle: repair.handle, passphrase: repair.passphrase }}
+          resume={{ passphrase: repair.passphrase }}
           onCeremonyActiveChange={onCeremonyActiveChange}
           onCeremonyComplete={onCeremonyComplete}
           provision={async (input) => {
             const outcome = await repair.completeSetup({ passphrase: input.passphrase });
-            // Fired, never awaited — same reason as the create path: a network
-            // round trip between "the key records exist" and "the code is on
-            // screen" turns a transient failure into a lost recovery code.
+            // Fired, never awaited — same reason as the create path: the
+            // ceremony is finished the moment the key records exist, and a
+            // network round trip after that would only hold the screen.
             void syncNow().catch(() => undefined);
             return outcome;
           }}
@@ -167,24 +178,24 @@ export function SignInPanel({
     <form {...getFormProps(form)} className="space-y-4">
       <p className="text-sm text-muted-foreground">{t('sync.signIn.intro')}</p>
       <div className="space-y-2">
-        <Label htmlFor={fields.handle.id}>{t('sync.handleLabel')}</Label>
+        <Label htmlFor={fields.email.id}>{t('sync.emailLabel')}</Label>
         {/* Conform owns the field: id, name, seeded value and the
             `aria-invalid`/`aria-describedby` pair all come from the same
             metadata `FieldError` reads. No `required` — the browser's native
             popup would intercept the submit with untranslated copy. */}
         <Input
-          {...getInputProps(fields.handle, { type: 'text' })}
+          {...getInputProps(fields.email, { type: 'email' })}
           autoComplete="username"
           spellCheck={false}
           autoCapitalize="none"
-          className="h-11 font-mono"
+          className="h-11"
         />
-        <FieldError id={fields.handle.errorId} errors={fields.handle.errors} />
-        {/* Beside the prefilled name, because that is the thing it disowns.
-            The device remembers a name so a returning person does not have to
-            type it; the shared or handed-on device needs one line to say the
-            name is not theirs. */}
-        {onForgetName !== undefined && initialHandle !== '' && (
+        <FieldError id={fields.email.errorId} errors={fields.email.errors} />
+        {/* Beside the prefilled address, because that is the thing it disowns.
+            The device remembers an address so a returning person does not have
+            to type it; the shared or handed-on device needs one line to say
+            the address is not theirs. */}
+        {onForgetName !== undefined && initialEmail !== '' && (
           <button
             type="button"
             onClick={onForgetName}
@@ -229,7 +240,7 @@ export function SignInPanel({
 /**
  * Turns a sign-in failure into copy the user can act on.
  *
- * ONE message for a wrong handle and a wrong passphrase, because the service
+ * ONE message for a wrong address and a wrong password, because the service
  * answers one status for both — telling them apart would make this form an
  * account-enumeration oracle. Everything else keeps its own words: a DEK that
  * will not unwrap is not a wrong passphrase, and saying so sends people to try

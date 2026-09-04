@@ -11,21 +11,25 @@
  * one file rather than two makes the boundary visible: the only way to reach
  * the vault is `getSyncVault()`, and grepping it shows every call site.
  *
- * ── Everything here is memory-only, and that is the design ────────────────
+ * ── The vault is memory-only; a COPY of it may sit on this device ─────────
  *
- * A page reload ends the session and the user re-enters their passphrase.
- * That is not a gap to be closed with `localStorage`. The DEK cannot be
- * re-derived without the passphrase, so a persisted token would restore a
- * SESSION the user still could not decrypt anything with — all cost, no
- * benefit, plus a credential sitting on disk for any XSS to read. Bitwarden
- * locks its vault on reload for exactly this reason.
+ * Nothing in this module writes to disk. `session-cache.ts` does, and it is
+ * the only thing that may: it keeps the tokens, the DEK and the compartment
+ * key in a device-only IndexedDB database so a reload resumes instead of
+ * ending the session (M192).
  *
- * The one thing that IS persisted is the account HINT: the handle this device
+ * The argument that used to stand here was that a persisted token buys
+ * nothing because the DEK cannot be re-derived without the passphrase. THE NEW
+ * RULE, and why it costs nothing: the local diary is already plaintext in
+ * IndexedDB on this device and this origin. Anything that can read the cached
+ * key can read the diary it opens, directly, without it — so a password prompt
+ * on every reload was protecting the copy in the cloud from somebody who
+ * already had the copy in front of them.
+ *
+ * The other thing that IS persisted is the EMAIL HINT: the address this device
  * last signed in with. It is not a credential, and having it means a returning
- * visitor sees "unlock your sync" with their handle filled in rather than a
- * sign-up form that makes them wonder whether their data is gone. Since M181
- * it is also the only readable trace of the account left on the device, which
- * is a good deal less than an address was.
+ * visitor sees a sign-in form with their address filled in rather than a blank
+ * one that makes them wonder whether their data is gone.
  */
 import type { SyncAuthClient } from './engine/client/auth-client';
 import type { SyncHttpClient } from './engine/client/http-client';
@@ -33,7 +37,15 @@ import type { PrivateStoreSession } from './private-store';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { browserStorage } from './sync-state';
 
-const ACCOUNT_HINT_KEY = 'openplate.sync.account-hint';
+/**
+ * The address this device last signed in with.
+ *
+ * A NEW KEY, not a rename of `openplate.sync.account-hint`. That one held a
+ * HANDLE, which protocol 2 has no field for any more — reusing the key would
+ * prefill a sign-in form with a value the service would answer `401` to, and
+ * the person would be told their password was wrong.
+ */
+const EMAIL_HINT_KEY = 'openplate.sync.email-hint';
 
 /** What sync is doing right now, for the status surface. */
 export type SyncPhase = 'idle' | 'syncing';
@@ -50,8 +62,36 @@ export type SyncErrorReason =
   | 'failed';
 
 export interface SyncSessionSnapshot {
-  /** `null` when no session is open. Carries NO credential material. */
-  account: { id: number; handle: string } | null;
+  /**
+   * `null` when no session is open. Carries NO credential material.
+   *
+   * `dailyAiLimit` is here because a screen decides whether AI is available
+   * from it (`managed-ai-settings.ts`), and a screen may only read the
+   * SNAPSHOT — the vault is off limits to React. `aiUsedToday` rides with it
+   * so the same read answers "and how much is left".
+   */
+  account: {
+    id: number;
+    email: string;
+    displayName: string | null;
+    role: 'admin' | 'member';
+    dailyAiLimit: number;
+    aiUsedToday: number;
+  } | null;
+  /**
+   * True while this device may still be reopening a session it already had.
+   *
+   * `account === null` alone cannot be read as "nobody is signed in": it is
+   * also what the first moments after a reload look like, before
+   * `resumeSyncSession` has finished. A screen that treats the two as one
+   * tells a signed-in person they are signed out, once per reload.
+   *
+   * OWNED BY `SyncController`, which is the only thing that ever resumes and
+   * therefore the only thing that knows when the attempt is over. It settles
+   * this to `false` on every path, including the instance where sync is off
+   * and no resume is attempted at all.
+   */
+  isResuming: boolean;
   phase: SyncPhase;
   /** Epoch-ms of the last successful cycle on this device, or `null` if it has never completed one. */
   lastSyncedAt: number | null;
@@ -78,21 +118,29 @@ export interface SyncVault {
    */
   privateStore: PrivateStoreSession;
   accountId: number;
-  handle: string;
+  email: string;
   deviceId: string;
   state: SyncStateStore;
   serverUrl: string;
 }
 
+/** Signed out, and SETTLED: the resume either finished with nothing or was never attempted. */
 const SIGNED_OUT: SyncSessionSnapshot = {
   account: null,
+  isResuming: false,
   phase: 'idle',
   lastSyncedAt: null,
   hasPendingChanges: false,
   error: null,
 };
 
-let snapshot: SyncSessionSnapshot = SIGNED_OUT;
+/**
+ * Where every browser starts: nobody is signed in YET, and this device has not
+ * looked in its cache. The only state in which `isResuming` is true.
+ */
+const BOOTING: SyncSessionSnapshot = { ...SIGNED_OUT, isResuming: true };
+
+let snapshot: SyncSessionSnapshot = BOOTING;
 let vault: SyncVault | null = null;
 const listeners = new Set<() => void>();
 
@@ -129,11 +177,28 @@ export function updateSyncSession(patch: Partial<SyncSessionSnapshot>): void {
   publish({ ...snapshot, ...patch });
 }
 
-/** Opens a session. Called once a passphrase has produced a DEK and the service has issued tokens. */
+/**
+ * Opens a session. Called once a passphrase (or a resumed cache) has produced
+ * a DEK and the service has issued tokens.
+ *
+ * The account fields come from the vault's auth client rather than from
+ * arguments: the client already holds the `AccountView` the service returned,
+ * and copying it through a second set of parameters is how the snapshot ends
+ * up describing a different account than the one the vault is talking to.
+ */
 export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number | null }): void {
   vault = next;
+  const account = next.authClient.getSession()?.account ?? null;
   publish({
-    account: { id: next.accountId, handle: next.handle },
+    account: {
+      id: next.accountId,
+      email: next.email,
+      displayName: account?.displayName ?? null,
+      role: account?.role ?? 'member',
+      dailyAiLimit: account?.dailyAiLimit ?? 0,
+      aiUsedToday: account?.aiUsedToday ?? 0,
+    },
+    isResuming: false,
     phase: 'idle',
     lastSyncedAt: initial.lastSyncedAt,
     hasPendingChanges: false,
@@ -160,27 +225,27 @@ export function getSyncVault(): SyncVault | null {
 }
 
 // ---------------------------------------------------------------------------
-// Account hint (non-secret, persisted)
+// Email hint (non-secret, persisted)
 // ---------------------------------------------------------------------------
 
-/** The handle this device last signed in with. A name, not a credential. */
+/** The address this device last signed in with. A name, not a credential. */
 export function readAccountHint(storage: KeyValueStorage | null = browserStorage()): string | null {
-  const value = storage?.getItem(ACCOUNT_HINT_KEY) ?? null;
+  const value = storage?.getItem(EMAIL_HINT_KEY) ?? null;
   return value === '' ? null : value;
 }
 
-export function writeAccountHint(handle: string, storage: KeyValueStorage | null = browserStorage()): void {
-  storage?.setItem(ACCOUNT_HINT_KEY, handle);
+export function writeAccountHint(email: string, storage: KeyValueStorage | null = browserStorage()): void {
+  storage?.setItem(EMAIL_HINT_KEY, email);
 }
 
 /**
  * Cleared on account deletion and by the explicit "Not you?" link (M183
- * spec 04) — NOT on sign-out. A name is not a credential, and keeping it
+ * spec 04) — NOT on sign-out. An address is not a credential, and keeping it
  * across sign-out is what turns a returning visitor's next visit into a
- * sign-in instead of a sign-up. The shared-device concern this used to
+ * sign-in instead of a dead end. The shared-device concern this used to
  * answer with a side effect is answered better by a control the person can
  * see and press.
  */
 export function clearAccountHint(storage: KeyValueStorage | null = browserStorage()): void {
-  storage?.removeItem(ACCOUNT_HINT_KEY);
+  storage?.removeItem(EMAIL_HINT_KEY);
 }

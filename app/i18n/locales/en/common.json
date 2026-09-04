@@ -822,33 +822,41 @@
     "title": "Install {{appName}}"
   },
   "join": {
-    "description": "This link can set up your account and your AI connection.",
+    "description": "Set a password and your diary is ready.",
     "foreignServer": {
-      "body": "It sets up an account on {{origin}}, and this app is set up for another one. Open the link on the app that belongs to that server.",
-      "bodyUnknown": "It sets up an account on a server this app is not set up for. Open the link on the app that belongs to that server.",
-      "title": "This link is for a different server"
+      "body": "The link points at {{origin}}. Open it there instead.",
+      "bodyUnknown": "The link points somewhere this app does not know. Open it in the app you were invited to.",
+      "title": "This link is for another openplate"
     },
     "invalidLink": {
-      "body": "Part of it is missing, or it was cut off on the way here. Ask whoever sent it for a new one.",
-      "title": "This link doesn't look right"
+      "body": "It carries no invitation. Ask the person who invited you to send the link again.",
+      "title": "This link is incomplete"
     },
     "managed": {
-      "thenGateway": "Your AI connection is set up straight after that, on this same screen.",
-      "connecting": "Setting up your AI connection.",
-      "signInFirst": {
-        "title": "Sign in to finish",
-        "body": "This link belongs to an existing openplate account. Sign in, and the rest is set up for you.",
-        "action": "Sign in"
-      }
+      "connecting": "Setting up your AI connection."
     },
-    "sync": {
-      "body": "Your invite is ready. On the next screen you pick a password and save your account card.",
-      "continue": "Create my account",
-      "skip": "Skip, I already have an account",
-      "thenGateway": "After that, come back here to finish joining the gateway.",
-      "title": "First, create your account"
+    "title": "You have been invited",
+    "invitedAs": "You were invited as {{email}}.",
+    "inviteInvalid": {
+      "title": "This invitation is no longer valid",
+      "body": "It may have been used already, or it may have run out. Ask the person who invited you for a new one.",
+      "continue": "Carry on without an account"
     },
-    "title": "Join"
+    "unreachable": {
+      "title": "We could not reach the server",
+      "retry": "Your invitation is probably fine. Try the link again in a moment."
+    },
+    "signedInElsewhere": {
+      "title": "You are signed in as somebody else",
+      "body": "This device is signed in as {{signedInAs}}, and the invitation is for {{invitedEmail}}. Sign out first to use it.",
+      "signOut": "Sign out"
+    },
+    "alreadyRegistered": {
+      "title": "This address already has an account",
+      "body": "There is already an account for {{email}}. Sign in with the password you chose.",
+      "signIn": "Go to sign in"
+    },
+    "working": "Setting up your account"
   },
   "landing": {
     "close": {
@@ -1044,7 +1052,11 @@
     "sync": "Account · openplate",
     "terms": "Terms of service · openplate",
     "trends": "Progress · openplate",
-    "welcome": "Welcome · openplate"
+    "welcome": "Welcome · openplate",
+    "forgot": "Forgot password",
+    "reset": "Set a new password",
+    "account": "Account",
+    "admin": "Administration"
   },
   "nav": {
     "add": "Add",
@@ -1224,7 +1236,8 @@
       "keyNoteLink": "Set it up anytime in Settings.",
       "later": "I'll do it later",
       "opening": "Opening…",
-      "scan": "Scan a plate"
+      "scan": "Scan a plate",
+      "managedNote": "Photo estimates are included. Take a photo of a plate and the carbs are worked out for you."
     },
     "focus": {
       "calories": {
@@ -1411,9 +1424,9 @@
       },
       "compartmentMissing": {
         "title": "This account cannot join a study yet",
-        "body": "Joining needs a recovery code. Without one, this device could not keep the same identity for you after a restore or on a second device.",
+        "body": "Joining needs a stable identity for this account, and this device does not have one yet. Setting a new password creates it.",
         "why": "A study would read you as a different person each time, and your earlier days would stand alone. Set up a recovery code, then open the link again.",
-        "cta": "Set up a recovery code"
+        "cta": "Set a new password"
       },
       "invalidLink": {
         "title": "This link does not look right",
@@ -1461,12 +1474,7 @@
         "passphraseLabel": "Study account's password",
         "signIn": "Open the console",
         "create": "Create a new study account",
-        "failed": "The study account could not be opened. Nothing was changed.",
-        "handleLabel": "Study account's sign-in name"
-      },
-      "recoveryCode": {
-        "title": "Write this recovery code down now",
-        "body": "It is the second and last door to this study's keys, and it is shown once. Nobody can mint another one: if the password and this code are both lost, what contributors already sent can no longer be read."
+        "failed": "The study account could not be opened. Nothing was changed."
       },
       "identity": {
         "title": "This study's key",
@@ -1494,6 +1502,10 @@
         "summaryTitle": "What the file will say",
         "export": "Download the cohort as CSV",
         "exportHint": "The file carries the lines above, word for word, before the table."
+      },
+      "created": {
+        "title": "Account created",
+        "body": "You are signed in. Generate a key below to publish one for your consent document."
       }
     }
   },
@@ -1504,7 +1516,6 @@
       "stillWorking": "Still working, complex plates take a moment…",
       "uploading": "Uploading photo…"
     },
-    "auditNotice": "The administrator of the gateway you're connected to declares that they can review what you send, including photos.",
     "capture": {
       "addWithoutPhoto": "Add food without a photo",
       "analyze": "Analyze",
@@ -1518,7 +1529,8 @@
       "preparing": "Preparing your photo…",
       "previewAlt": "Selected plate",
       "takePhoto": "Take photo",
-      "title": "Identify foods from a photo"
+      "title": "Identify foods from a photo",
+      "managedDescription": "Your photo is read once to work out what is on your plate, and is not kept. Afterwards it stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings."
     },
     "errors": {
       "attemptCost": "This attempt used {{amount}} of your API credit. It's recorded in your usage.",
@@ -1702,7 +1714,11 @@
       "sharedPhotoNote": "We got the photo you shared, but cannot identify foods in it yet. That needs an AI provider connected first. Connect one below, then share or choose this photo again.",
       "title": "Snap a photo, skip the typing",
       "managedMissing": {
-        "body": "Your invitation did not include photo recognition. Ask the person who invited you for a new link. You can still add food without a photo."
+        "body": "Photo estimates are not switched on for this account.",
+        "askAdmin": "Ask your administrator to switch them on. You can add food without a photo in the meantime."
+      },
+      "managed": {
+        "description": "Take a photo of your plate and the carbs are worked out for you."
       }
     },
     "title": "Scan plate"
@@ -1781,6 +1797,14 @@
       "research": {
         "title": "Research",
         "status": "Studies you contribute to"
+      },
+      "account": {
+        "title": "Account",
+        "signedOut": "Signed out"
+      },
+      "admin": {
+        "title": "Administration",
+        "status": "Invitations and accounts"
       }
     },
     "title": "Settings"
@@ -1844,11 +1868,6 @@
       "baseUrl": "Base URL",
       "model": "Model"
     },
-    "gateway": {
-      "auditNotice": "This gateway declares that its administrator can review your submissions, including photos.",
-      "badge": "Gateway",
-      "disconnectNote": "Nothing is revoked anywhere: there is no account or key of yours involved. To use this gateway again you'll need a new invite link from whoever runs it."
-    },
     "loading": "Loading your AI settings…",
     "manualEntry": {
       "enterKey": "Enter your API key",
@@ -1898,7 +1917,8 @@
       "anthropic": "Anthropic",
       "mistral": "Mistral",
       "openaiCompatible": "Self-hosted / local endpoint",
-      "openrouter": "OpenRouter"
+      "openrouter": "OpenRouter",
+      "managed": "This instance"
     },
     "providerBlurb": {
       "mistral": "Mistral is a French company and runs its models on servers in the EU. Its free tier asks for a phone number, but no credit card.",
@@ -2021,9 +2041,7 @@
       "confirmCta": "Replace the key",
       "failed": "Could not replace the key. Nothing was changed.",
       "doneTitle": "Your data key was replaced.",
-      "doneBody": "{{kept}} share(s) kept, {{revoked}} ended.",
-      "recoveryTitle": "Your new recovery code, write it down now.",
-      "recoveryNote": "Shown once. The code you had before no longer works."
+      "doneBody": "{{kept}} share(s) kept, {{revoked}} ended."
     },
     "clinician": {
       "title": "Shared with you",
@@ -2045,11 +2063,12 @@
   },
   "signIn": {
     "title": "Sign in",
-    "body": "Sign in to bring your diary back to this device.",
+    "body": "Your email address and your password.",
     "pulling": "Getting your diary…",
     "pullFailedTitle": "Your diary did not arrive",
     "pullFailedBody": "You are signed in, but your diary has not arrived yet.",
-    "unavailable": "Accounts are turned off on this server."
+    "unavailable": "Accounts are turned off on this server.",
+    "forgot": "Forgot password?"
   },
   "sync": {
     "cancel": "Cancel",
@@ -2067,20 +2086,18 @@
     "connected": {
       "description": "Signed in as {{handle}}.",
       "photosStayHere": "Plate photos stay on the device that took them, they’re never part of a sync, so you won’t see them on your other devices.",
-      "title": "Account",
-      "keepYourCard": "Keep your account card. Your sign-in name and your recovery code are the only way back in, and neither can be issued again."
+      "title": "Account"
     },
     "create": {
       "cta": "Create an account",
       "inviteLabel": "Invite code",
       "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
       "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
-      "closed": "This sync server is not accepting new accounts.",
-      "handleTaken": "That sign-in name is already taken on this server. Change it and try again.",
       "inviteChange": "Change",
       "inviteFromLink": "Invite code taken from your link, ready to use.",
       "inviteMissing": "Paste your invite code, or open the invite link you were sent.",
-      "inviteMalformed": "That does not look like an invite code. They start with {{prefix}}."
+      "inviteMalformed": "That does not look like an invite code. They start with {{prefix}}.",
+      "accountExists": "That address already has an account here. Sign in instead."
     },
     "danger": {
       "description": "Both options leave the diary on this device untouched.",
@@ -2095,8 +2112,6 @@
       "note": "We ask for your password again because a session left open on a shared device shouldn’t be enough to delete an account.",
       "passphraseLabel": "Confirm with your password"
     },
-    "handleHint": "Pick any name that is not an email address. Or let us suggest one.",
-    "handleLabel": "Sign-in name",
     "intro": "Optional. Keep your diary in step across your devices, encrypted on this device before it leaves it.",
     "notice": {
       "dismiss": "Dismiss this message from the server operator",
@@ -2110,10 +2125,6 @@
       }
     },
     "passphraseLabel": "Password",
-    "pendingGateway": {
-      "action": "Finish joining it",
-      "body": "Your link also joins the gateway at {{origin}}."
-    },
     "photosStayHere": "Plate photos stay on the device that took them. They are never uploaded.",
     "profileCard": {
       "manage": "Account",
@@ -2121,43 +2132,18 @@
     },
     "promise": "The server only stores encrypted data it cannot read.",
     "recover": {
-      "codeHint": "The grouped code from your account card. Dashes and capitalisation do not matter.",
-      "codeLabel": "Recovery code",
-      "done": "Done. Your new password is set and your synced data is intact.",
       "failed": "That did not work. Nothing has been changed.",
-      "intro": "Use your recovery code to set a new password.",
-      "newPassphraseLabel": "New password",
-      "rejected": "That sign-in name and recovery code do not go together. Check both and try again.",
-      "submit": "Set a new password",
-      "tryAgain": "Try again",
-      "working": "Setting your new password…",
-      "codeRequired": "Enter the recovery code from your account card."
+      "rejected": "That sign-in name and recovery code do not go together. Check both and try again."
     },
     "setup": {
-      "accountCard": {
-        "bothRequired": "You need both of these to get back in. The sign-in name names your account, the code is the only way past a forgotten password, and neither is shown again.",
-        "codeLabel": "Recovery code",
-        "confirmSaved": "I have saved my sign-in name and my recovery code somewhere safe.",
-        "title": "Your account card"
-      },
       "complete": "Your account is set up on this device.",
       "confirmLabel": "Confirm password",
       "continue": "Continue",
-      "copied": "Copied",
-      "copy": "Copy",
-      "copyFailed": "Couldn't copy, select and copy manually",
-      "finish": "Finish setup",
       "generating": "Setting up your account…",
-      "handleNotAnEmail": "A sign-in name cannot contain @.",
-      "handleRequired": "Choose a sign-in name, or let us suggest one.",
-      "handleShuffle": "Suggest a name",
-      "handleTooLong": "That sign-in name is too long. Keep it under 64 characters.",
       "passphraseIntro": "Choose a password for your account.",
       "passphraseLabel": "Password",
       "passphraseMismatch": "Those two passwords don't match.",
       "passphraseTooShort": "Use at least {{min}} characters.",
-      "recoveryWarningBody": "If you lose your password and this recovery code, nobody can get you back in and nobody can read your synced data, not even us. That is what end-to-end encryption means.",
-      "recoveryWarningLead": "Save both of these now, this is the only time they are shown.",
       "retry": "Try again",
       "setupFailed": "Something went wrong setting up your account. Nothing was saved, you're safe to try again."
     },
@@ -2171,7 +2157,6 @@
       "submit": "Sign in",
       "working": "Signing in…",
       "passphraseRequired": "Enter your password.",
-      "handleRequired": "Enter your sign-in name.",
       "notYou": "Not you?"
     },
     "signOut": {
@@ -2197,7 +2182,15 @@
     "passwordNote": "Your password also encrypts your diary. We cannot reset it, so keep your recovery code.",
     "managed": {
       "inviteOnly": "Accounts here are created with an invite link. If you have one, open it to get started."
-    }
+    },
+    "emailLabel": "Email address",
+    "email": {
+      "required": "Enter the email address you were invited at.",
+      "invalid": "That does not look like an email address.",
+      "tooLong": "That address is longer than {{max}} characters."
+    },
+    "displayNameLabel": "Your name (optional)",
+    "suspended": "An administrator has suspended this account. Ask them to reactivate it."
   },
   "trends": {
     "chart": {
@@ -2378,5 +2371,193 @@
     "start": "Start",
     "startFresh": "Start fresh",
     "title": "Welcome to openplate"
+  },
+  "forgot": {
+    "title": "Forgot your password?",
+    "body": "Type your email address and we will send you a link to set a new one.",
+    "submit": "Send the link",
+    "sent": "If there is an account for that address, the link is on its way.",
+    "sentHint": "The link works for one hour. Check the spam folder if it does not arrive.",
+    "backToSignIn": "Back to sign in"
+  },
+  "reset": {
+    "title": "Set a new password",
+    "body": "Choose a new password. Your diary stays as it is.",
+    "newPasswordLabel": "New password",
+    "submit": "Set the password",
+    "working": "Setting your password",
+    "failed": "The password could not be set. Try the link again in a moment.",
+    "invalid": {
+      "title": "This link no longer works",
+      "body": "It may have been used already, or it may have run out. Ask for a new one.",
+      "otherApp": "This link belongs to another openplate. Open it there instead.",
+      "askAgain": "Send me a new link"
+    }
+  },
+  "account": {
+    "title": "Account",
+    "name": {
+      "label": "Your name",
+      "hint": "Optional. Shown to you, and to an administrator.",
+      "save": "Save",
+      "saved": "Saved.",
+      "failed": "The name could not be saved."
+    },
+    "allowance": {
+      "title": "Photo estimates",
+      "body": "{{used}} of {{limit}} used today.",
+      "none": "Photo estimates are not switched on for this account.",
+      "askAdmin": "Your administrator sets this."
+    },
+    "devices": {
+      "title": "Your devices",
+      "body": "Your diary is kept in step across every device you sign in on.",
+      "photosStayHere": "Photos stay on the device that took them. They are never copied to another device."
+    },
+    "password": {
+      "title": "Password",
+      "body": "Change the password you sign in with.",
+      "open": "Change password",
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "submit": "Change password",
+      "done": "Password changed.",
+      "failed": "The password could not be changed."
+    },
+    "danger": {
+      "title": "Sign out and delete",
+      "body": "Both of these end this account on every device."
+    },
+    "signOut": {
+      "cta": "Sign out everywhere",
+      "note": "Signs this account out on every device. Your diary stays on this one."
+    },
+    "delete": {
+      "cta": "Delete account",
+      "confirmTitle": "Delete this account?",
+      "confirmBody": "Everything stored for {{email}} is removed and cannot be brought back. The diary on this device stays.",
+      "passwordLabel": "Your password",
+      "confirmCta": "Delete it",
+      "failed": "The account could not be deleted.",
+      "note": "Type your password to confirm. This cannot be undone."
+    },
+    "signedOut": {
+      "title": "You are signed out",
+      "body": "Sign in to see your account.",
+      "signIn": "Sign in"
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Invite people, set how many photos they may read a day, and look after their accounts.",
+    "notAdmin": {
+      "title": "You do not run this instance",
+      "body": "This page belongs to the people who do. Ask one of them if you need something changed about your account.",
+      "back": "Back to settings"
+    },
+    "stats": {
+      "people": "People",
+      "admins": "Administrators",
+      "pending": "Open invitations",
+      "photosToday": "Photos read today"
+    },
+    "people": {
+      "title": "People",
+      "empty": "Nobody has an account here yet.",
+      "loading": "Loading",
+      "failed": "The list could not be loaded.",
+      "retry": "Try again"
+    },
+    "columns": {
+      "person": "Person",
+      "role": "Role",
+      "allowance": "Photos per day",
+      "usedToday": "Used today",
+      "standing": "Standing",
+      "joined": "Joined",
+      "actions": "Actions"
+    },
+    "usage": "{{used}} of {{limit}}",
+    "usageNone": "No photos",
+    "role": {
+      "label": "Role",
+      "admin": "Administrator",
+      "standard": "Standard"
+    },
+    "standing": {
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "you": "You",
+    "noName": "No name",
+    "edit": {
+      "open": "Change",
+      "save": "Save",
+      "cancel": "Cancel",
+      "allowanceLabel": "Photos per day",
+      "allowanceHint": "0 turns photo reading off for this person.",
+      "saved": "Saved.",
+      "failed": "That change did not go through."
+    },
+    "suspend": {
+      "cta": "Suspend",
+      "confirmTitle": "Suspend {{email}}?",
+      "confirmBody": "They are signed out on every device and cannot sign in again until you bring them back. Their diary is kept.",
+      "confirmCta": "Suspend"
+    },
+    "reactivate": {
+      "cta": "Bring back"
+    },
+    "resetMail": {
+      "cta": "Send a reset link",
+      "sent": "Reset link sent to {{email}}.",
+      "noMail": "This instance sends no mail, so pass the link to {{email}} yourself.",
+      "failed": "The reset link could not be sent."
+    },
+    "delete": {
+      "cta": "Delete",
+      "confirmTitle": "Delete {{email}}?",
+      "confirmBody": "The account and everything stored here for it are removed. This cannot be undone.",
+      "typeLabel": "Type the address to confirm",
+      "confirmCta": "Delete for good",
+      "failed": "The account could not be deleted."
+    },
+    "invites": {
+      "title": "Open invitations",
+      "empty": "No invitation is waiting.",
+      "expires": "Valid until {{date}}",
+      "resend": "Send again",
+      "resent": "A new invitation went to {{email}}.",
+      "revoke": "Withdraw",
+      "revokeConfirmTitle": "Withdraw the invitation for {{email}}?",
+      "revokeConfirmBody": "Their link stops working. You can invite them again whenever you like.",
+      "revokeConfirmCta": "Withdraw",
+      "failed": "That did not go through."
+    },
+    "invite": {
+      "cta": "Invite someone",
+      "title": "Invite someone",
+      "body": "They get a mail with a link. It asks for a password and puts them straight into the app.",
+      "emailLabel": "Email address",
+      "emailRequired": "An email address is needed.",
+      "nameLabel": "Name",
+      "nameHint": "Optional. Shown to them, and to you in the list.",
+      "allowanceLabel": "Photos per day",
+      "allowanceHint": "How many plate photos they may have read each day. 0 turns it off.",
+      "expiryLabel": "The link stays valid for",
+      "expiryHint": "In days. 30 at most.",
+      "submit": "Send the invitation",
+      "sending": "Sending",
+      "sentTitle": "Invitation sent to {{email}}",
+      "sentBody": "They can set a password and start straight away.",
+      "linkTitle": "Invitation ready for {{email}}",
+      "linkBody": "This instance sends no mail, so pass the link to them yourself. Anyone who has it can open the account, so send it the way you would send a password.",
+      "linkCopy": "Copy the link",
+      "linkCopied": "Copied",
+      "again": "Invite somebody else",
+      "failed": "The invitation could not be created.",
+      "exists": "{{email}} already has an account here.",
+      "back": "Back to the list"
+    }
   }
 }

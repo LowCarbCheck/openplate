@@ -180,9 +180,13 @@ let accountCounter = 0;
 
 /** Creates an account on the fake service and returns the session it opened. */
 async function createAccount(label: string): Promise<SyncVault> {
+  // AN INVITE, because protocol 2 has no other way in. Minted through the
+  // fake's test seam: `/v1/admin/invites` belongs to the server spec, and
+  // nothing in this file exercises an admin surface.
+  const email = `${label}-${Date.now()}-${accountCounter++}@example.org`;
   await createSyncAccount({
     serverUrl: service.url,
-    handle: `${label}-${Date.now()}-${accountCounter++}`,
+    inviteToken: service.createInvite({ email }),
     passphrase: PASSPHRASE,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,

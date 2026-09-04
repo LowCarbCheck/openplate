@@ -1390,7 +1390,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           >
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.body')}</p>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.photos')}</p>
-            <Link to="/settings/sync" className={SECONDARY_ACTION}>
+            <Link to="/settings/account" className={SECONDARY_ACTION}>
               {t('landing.sync.link')}
             </Link>
           </LadderCard>

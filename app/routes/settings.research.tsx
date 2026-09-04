@@ -147,7 +147,7 @@ function SignedOutNotice() {
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{t('research.needsSession')}</p>
       <Button asChild variant="outline" className="h-11">
-        <Link to="/settings/sync">{t('research.needsSessionCta')}</Link>
+        <Link to="/settings/account">{t('research.needsSessionCta')}</Link>
       </Button>
     </div>
   );

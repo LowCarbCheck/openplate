@@ -11,15 +11,27 @@
  * it an already-derived `authHash` — which makes the invariant structural
  * rather than a rule someone has to remember.
  *
- * TOKENS LIVE IN MEMORY ONLY, and that is a design decision with a visible
- * consequence: reloading the page signs the session out and the user re-enters
- * their passphrase. That is not an oversight to be "fixed" with localStorage.
- * A persisted refresh token would only restore the SESSION — the DEK still
- * cannot be re-derived without the passphrase, so the user has to be prompted
- * anyway, and the persisted token would buy nothing except an XSS-readable
- * credential sitting on disk. Bitwarden's vault locks on reload for the same
- * reason. The refresh token earns its keep WITHIN a session: access tokens
- * last 15 minutes and a sync session can outlive that many times over.
+ * TOKENS LIVE IN MEMORY HERE, AND ON DISK ONE LAYER UP (M192). This class
+ * still holds them in a private field and still hands nothing out but an
+ * access token; what changed is that `session-cache.ts` may now write that
+ * pair, the DEK and the compartment key into a device-only IndexedDB database
+ * so a reload does not end the session.
+ *
+ * The argument that used to stand here was: a persisted refresh token buys
+ * nothing, because the DEK cannot be re-derived without the passphrase, so the
+ * user must be prompted anyway. That premise was the whole load-bearing part,
+ * and it is false once the DEK is cached beside the token. THE NEW RULE, and
+ * why it costs nothing: the local diary is already plaintext in IndexedDB on
+ * the same device and the same origin. Anything that can read the cached key
+ * can read the diary it opens, directly, without it. A password prompt on
+ * every reload was therefore protecting the copy in the cloud from an attacker
+ * who already had the copy in front of them.
+ *
+ * The password is still asked at sign-in, at a passphrase change, at account
+ * deletion, and whenever a refresh is refused. Nowhere else.
+ *
+ * The refresh token also earns its keep WITHIN a session: access tokens last
+ * 15 minutes and a sync session can outlive that many times over.
  *
  * REFRESHES ARE SERIALIZED (`refreshInFlight`). Rotation is single-use, so two
  * concurrent refreshes would spend the same token twice — and a REUSED refresh
@@ -31,17 +43,22 @@
 import {
   AUTH_API_PREFIX,
   type AccountResponseWire,
-  type AccountSummaryWire,
+  type AccountViewWire,
   type ChangePassphraseRequestWire,
   type DeleteAccountRequestWire,
+  type InviteLookupResponseWire,
   type KdfDescriptorResponse,
   type KdfDescriptorWire,
   type KeyRecordSubmissionWire,
   type LoginRequestWire,
+  type PatchAccountRequestWire,
   type RefreshRequestWire,
   type RecoverRequestWire,
   type RecoverRotateRequestWire,
   type RefreshResponseWire,
+  type ResetOpenRequestWire,
+  type ResetOpenResponseWire,
+  type ResetRequestWire,
   type RotationResponseWire,
   type SessionResponseWire,
   type SessionTokensWire,
@@ -52,11 +69,12 @@ import { defaultFetchImpl } from './fetch-impl';
 import {
   checkProtocolCompatibility,
   isProtocolHandshake,
+  readHandshakeInstance,
   readHandshakeNotice,
+  type InstanceDescriptor,
   type JsonValue,
   type OperatorNotice,
   type ProtocolCompatibility,
-  type SignupMode,
 } from '../protocol';
 import { z } from 'zod';
 
@@ -74,9 +92,9 @@ export interface SyncTokenProvider {
   refreshAccessToken(): Promise<string | null>;
 }
 
-/** A signed-in session, as this client tracks it. Both tokens are memory-only (see the module header). */
+/** A signed-in session, as this client tracks it. See the module header on where these tokens may be written. */
 export interface SyncAuthSession {
-  account: AccountSummaryWire;
+  account: AccountViewWire;
   tokens: SessionTokensWire;
 }
 
@@ -86,7 +104,16 @@ export interface SyncAuthSession {
  * only so the bearer header can be attached to that one request; nothing
  * outside that method ever observes it.
  */
-const PENDING_ACCOUNT: AccountSummaryWire = { id: -1, handle: '', displayName: null };
+const PENDING_ACCOUNT: AccountViewWire = {
+  id: -1,
+  email: '',
+  displayName: null,
+  role: 'member',
+  dailyAiLimit: 0,
+  aiUsedToday: 0,
+  suspendedAt: null,
+  createdAt: '',
+};
 
 export class SyncAuthClient implements SyncTokenProvider {
   private readonly baseUrl: string;
@@ -114,6 +141,31 @@ export class SyncAuthClient implements SyncTokenProvider {
   /** Drops all token state. Local only — call `logout()` to also revoke server-side. */
   clearSession(): void {
     this.session = null;
+    this.refreshInFlight = null;
+  }
+
+  /**
+   * Restores a session from a CACHED pair, with no round trip.
+   *
+   * The `account` handed in is a placeholder taken from the cache: it carries
+   * the id and the address, and nothing else that has to be right. The caller
+   * (`resumeSyncSession`) reads the real `AccountView` from `/v1/auth/account`
+   * immediately afterwards, and it must — `dailyAiLimit`, `aiUsedToday` and
+   * `suspendedAt` all change on the server between one visit and the next, so
+   * a resumed session that trusted its cached copy of them would show a
+   * suspended account a working scan button.
+   *
+   * DISTINCT FROM {@link adoptTokens}, which reads the account itself before
+   * returning. The difference is what happens on the way: `adoptTokens` runs
+   * one authenticated request under a fake id, which is safe for a rotation
+   * that just proved itself, and would be a silent 401 here where the cached
+   * access token is usually already expired.
+   */
+  restoreSession(input: { account: { id: number; email: string }; tokens: SessionTokensWire }): void {
+    this.session = {
+      account: { ...PENDING_ACCOUNT, id: input.account.id, email: input.account.email },
+      tokens: input.tokens,
+    };
     this.refreshInFlight = null;
   }
 
@@ -175,28 +227,28 @@ export class SyncAuthClient implements SyncTokenProvider {
   }
 
   /**
-   * Reads the instance's signup policy from the same `/health` body (§5.6).
+   * Reads the instance's self-description from the same `/health` body — its
+   * name, its language, whether it can send mail, and which model its AI proxy
+   * serves (protocol 2).
    *
    * SEPARATE FROM `handshake()` ON PURPOSE. That method fails CLOSED — an
    * unreachable service is reported as incompatible, because a wrong sync
    * destroys a blob. This one fails OPEN, returning `null` for an unreachable
-   * service, a malformed body, or a service too old to carry the field, and
-   * `null` means "attempt the signup and handle the 403". Folding the two
-   * together would force one failure posture onto both, and the right posture
-   * genuinely differs: refusing to sync on doubt protects data, whereas
-   * refusing to show a sign-up form on doubt just hides a working feature.
+   * service, a malformed body, or a service too old to carry the field.
+   * Folding the two together would force one failure posture onto both, and
+   * the right posture genuinely differs: refusing to sync on doubt protects
+   * data, whereas refusing to name a model on doubt just hides a working
+   * feature behind a blank card.
    *
-   * The answer is a HINT for choosing which form to draw. The `403` is the
-   * contract — an operator can change the mode between this call and the
-   * submit.
+   * It replaced `signupMode()`, which asked a question protocol 2 no longer
+   * has an answer to: every account comes from an addressed invite.
    */
-  async signupMode(): Promise<SignupMode | null> {
+  async instance(): Promise<InstanceDescriptor | null> {
     try {
       const response = await this.fetchImpl(`${this.baseUrl}/health`, { method: 'GET' });
       if (!response.ok) return null;
       const body: JsonValue = await response.json();
-      if (!isProtocolHandshake(body)) return null;
-      return body.signupMode ?? null;
+      return readHandshakeInstance(body);
     } catch {
       return null;
     }
@@ -205,7 +257,7 @@ export class SyncAuthClient implements SyncTokenProvider {
   /**
    * Reads the operator's notice from the same `/health` body (§5.6).
    *
-   * FAILS OPEN, like `signupMode()` above and unlike `handshake()`: an
+   * FAILS OPEN, like `instance()` above and unlike `handshake()`: an
    * unreachable service, a malformed body or a service older than the field
    * all mean `null`, which means "show no banner". A message the operator
    * wanted shown is worth reaching for, and is never worth blocking a sync
@@ -235,15 +287,15 @@ export class SyncAuthClient implements SyncTokenProvider {
    * under raised costs derives differently, and getting it wrong looks exactly
    * like a wrong passphrase.
    *
-   * An unknown handle returns a stable, real-shaped dummy — by design, so
-   * this endpoint cannot be used to enumerate accounts. The client cannot tell
-   * the difference and must not try to.
+   * An unknown email returns a stable, real-shaped dummy — by design, so this
+   * endpoint cannot be used to enumerate accounts. The client cannot tell the
+   * difference and must not try to.
    */
-  async fetchKdfDescriptor(handle: string): Promise<KdfDescriptorWire> {
+  async fetchKdfDescriptor(email: string): Promise<KdfDescriptorWire> {
     const body = await this.requestJson<KdfDescriptorResponse>({
       path: `${AUTH_API_PREFIX}/kdf`,
       method: 'POST',
-      body: { handle },
+      body: { email },
     });
     return body.kdfDescriptor;
   }
@@ -253,33 +305,66 @@ export class SyncAuthClient implements SyncTokenProvider {
   // -------------------------------------------------------------------------
 
   /**
-   * Creates an account and returns its first session.
+   * Looks an invite up before anything is derived from it.
    *
-   * `recoveryAuthHash` is the second authenticator and is set HERE or never
-   * (`PROTOCOL.md` §5.8). That is not a limitation to be worked around: the
-   * client shows the handle and the recovery code together as one saved
-   * account card, so signup is the one moment the user is holding both.
+   * The answer is what the join screen shows the person: the address the
+   * invite was written to, and the name whoever sent it typed. So the screen
+   * says "you were invited as anna@example.org" rather than asking somebody to
+   * type an address that is already decided.
+   *
+   * An invalid, spent, revoked or expired token is ONE outcome
+   * (`{ status: 'invalid' }`), not four, and it is a RETURN rather than a
+   * throw: a dead invite is an ordinary thing to arrive with, and it has a
+   * screen of its own. Every other failure — offline, a 500, a service that
+   * does not speak protocol 2 — still throws, because those mean "we do not
+   * know", which must never be shown as "your invitation is not valid".
+   */
+  async inviteLookup(input: { inviteToken: string }): Promise<InviteLookupResponseWire | { status: 'invalid' }> {
+    try {
+      return await this.requestJson<InviteLookupResponseWire>({
+        path: `${AUTH_API_PREFIX}/invite-lookup`,
+        method: 'POST',
+        body: { inviteToken: input.inviteToken },
+      });
+    } catch (error) {
+      if (error instanceof SyncRequestError && error.kind === 'not-found') return { status: 'invalid' };
+      throw error;
+    }
+  }
+
+  /**
+   * Redeems an invite into an account and returns its first session.
+   *
+   * EVERY RECOVERY FIELD IS REQUIRED, and the signature says so rather than
+   * leaving it to a server 400. The client no longer shows the recovery code
+   * to anybody, so an account created without the escrow is an account nobody
+   * can ever reset — and unlike a missing key record, nothing detects that
+   * afterwards. Making the three fields non-optional here is what stops a
+   * future caller from omitting one and getting an account that works
+   * perfectly until somebody forgets their password.
+   *
+   * The email is NOT in this body. It comes from the invite, server-side,
+   * which is what makes the invite the address verification.
    */
   async signup(input: {
-    handle: string;
+    inviteToken: string;
     authHash: string;
     kdfDescriptor: KdfDescriptorWire;
     displayName?: string | null;
-    /** The recovery code's auth proof, or `null` for an account with no second authenticator. */
-    recoveryAuthHash?: string | null;
-    /** Required by an invite-only instance; ignored by an open one. */
-    inviteToken?: string;
+    recoveryAuthHash: string;
+    /** The RAW code, escrowed by the service. See `auth-wire.ts` on why this is here. */
+    recoveryCode: string;
+    keyRecords: KeyRecordSubmissionWire[];
   }): Promise<SessionResponseWire> {
     const request: SignupRequestWire = {
-      handle: input.handle,
+      inviteToken: input.inviteToken,
       authHash: input.authHash,
       kdfDescriptor: input.kdfDescriptor,
       displayName: input.displayName ?? null,
-      recoveryAuthHash: input.recoveryAuthHash ?? null,
+      recoveryAuthHash: input.recoveryAuthHash,
+      recoveryCode: input.recoveryCode,
+      keyRecords: input.keyRecords,
     };
-    // Assigned rather than spread, so an absent invite omits the field instead
-    // of sending an explicit `undefined`.
-    if (input.inviteToken !== undefined) request.inviteToken = input.inviteToken;
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/signup`,
       method: 'POST',
@@ -289,8 +374,8 @@ export class SyncAuthClient implements SyncTokenProvider {
     return response;
   }
 
-  async login(input: { handle: string; authHash: string }): Promise<SyncAuthSession> {
-    const request: LoginRequestWire = { handle: input.handle, authHash: input.authHash };
+  async login(input: { email: string; authHash: string }): Promise<SyncAuthSession> {
+    const request: LoginRequestWire = { email: input.email, authHash: input.authHash };
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/login`,
       method: 'POST',
@@ -310,11 +395,14 @@ export class SyncAuthClient implements SyncTokenProvider {
    * "recovery mode" token would add a second authorization surface carrying no
    * property the code does not already have.
    *
-   * Throttled per IP and handle server-side, and never cleared on success —
-   * this endpoint accepts a guess at a value written on a piece of paper.
+   * Throttled per IP and email server-side, and never cleared on success.
+   *
+   * NO SCREEN CALLS THIS WITH A TYPED CODE any more. Its only caller is
+   * `resetSyncPassphrase`, which fetched the code from `/reset/open` moments
+   * earlier — see `sync-actions.ts`.
    */
-  async recover(input: { handle: string; recoveryAuthHash: string }): Promise<SyncAuthSession> {
-    const request: RecoverRequestWire = { handle: input.handle, recoveryAuthHash: input.recoveryAuthHash };
+  async recover(input: { email: string; recoveryAuthHash: string }): Promise<SyncAuthSession> {
+    const request: RecoverRequestWire = { email: input.email, recoveryAuthHash: input.recoveryAuthHash };
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/recover`,
       method: 'POST',
@@ -331,28 +419,37 @@ export class SyncAuthClient implements SyncTokenProvider {
    *
    * `keyRecords` MUST carry the `passphrase` record re-wrapped under the new
    * KEK; the service refuses the rotation without it rather than mint an
-   * account that signs in and decrypts nothing. Rotating the recovery code as
-   * well is all-or-nothing: `newRecoveryAuthHash` and a `recovery` record
-   * travel together or neither does.
+   * account that signs in and decrypts nothing.
+   *
+   * Rotating the recovery code is all-or-nothing and now travels in THREE
+   * parts: `newRecoveryAuthHash`, a `recovery` key record, and the raw
+   * `recoveryCode` that replaces the escrow. Moving the verifier and leaving
+   * the old escrow behind would leave the service holding a code that opens
+   * nothing, and the NEXT reset would appear to work and return an unreadable
+   * diary — the failure would surface one reset later, on a different day,
+   * with nothing to connect it to.
    */
   async recoverRotate(input: {
-    handle: string;
+    email: string;
     recoveryAuthHash: string;
     newAuthHash: string;
     kdfDescriptor: KdfDescriptorWire;
     keyRecords: KeyRecordSubmissionWire[];
     newRecoveryAuthHash?: string;
+    /** REQUIRED whenever `newRecoveryAuthHash` is sent; the service refuses one half without the other. */
+    recoveryCode?: string;
   }): Promise<SyncAuthSession> {
     const request: RecoverRotateRequestWire = {
-      handle: input.handle,
+      email: input.email,
       recoveryAuthHash: input.recoveryAuthHash,
       newAuthHash: input.newAuthHash,
       kdfDescriptor: input.kdfDescriptor,
       keyRecords: input.keyRecords,
     };
-    // Assigned rather than spread, so an unrotated code omits the field
+    // Assigned rather than spread, so an unrotated code omits the fields
     // instead of sending an explicit `undefined` the service has no rule for.
     if (input.newRecoveryAuthHash !== undefined) request.newRecoveryAuthHash = input.newRecoveryAuthHash;
+    if (input.recoveryCode !== undefined) request.recoveryCode = input.recoveryCode;
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/recover-rotate`,
       method: 'POST',
@@ -394,7 +491,13 @@ export class SyncAuthClient implements SyncTokenProvider {
         body: request,
       });
     } catch (error) {
-      if (error instanceof SyncRequestError && error.kind === 'unauthorized') {
+      // A SUSPENDED ACCOUNT ENDS THE SESSION TOO, and it has to be handled
+      // here rather than only at the call sites: a suspension arrives mid
+      // session, on whatever call happens next, and every one of those calls
+      // goes through a refresh first. Treating it as an unexplained error
+      // would leave a device retrying a refresh it can never win, quietly, for
+      // as long as the tab stays open.
+      if (error instanceof SyncRequestError && (error.kind === 'unauthorized' || error.kind === 'suspended')) {
         this.clearSession();
         return null;
       }
@@ -427,13 +530,103 @@ export class SyncAuthClient implements SyncTokenProvider {
   // Account management
   // -------------------------------------------------------------------------
 
-  async getAccount(): Promise<AccountSummaryWire> {
+  /**
+   * Reads the account, and ADOPTS what it read into the held session.
+   *
+   * The adopt is the load-bearing half. `AccountView` carries three fields
+   * that move on the SERVER between one call and the next — `dailyAiLimit`,
+   * `aiUsedToday` and `suspendedAt` — and the session snapshot is what every
+   * screen branches on. Returning a fresh view while the session kept a stale
+   * one is how a resumed session offers a scan button to a suspended account,
+   * or to one whose allowance an admin lowered to zero.
+   *
+   * A no-op when no session is held: this method is `authenticated: true`, so
+   * that state is unreachable, and the guard is what keeps it from being a
+   * `!` assertion.
+   */
+  async getAccount(): Promise<AccountViewWire> {
     const body = await this.requestJson<AccountResponseWire>({
       path: `${AUTH_API_PREFIX}/account`,
       method: 'GET',
       authenticated: true,
     });
+    const tokens = this.session?.tokens;
+    if (tokens !== undefined) this.session = { account: body.account, tokens };
     return body.account;
+  }
+
+  /**
+   * Sets the display name — the only field an account owner may edit about
+   * themselves.
+   *
+   * The email is deliberately NOT editable here. It is the identity, an admin
+   * issued the invite that carries it, and changing it would silently move an
+   * account away from the person the organization invited.
+   *
+   * The updated view is ADOPTED into the session, so the next screen reads the
+   * new name from the same object every other screen reads. Returning it
+   * without adopting is how a settings page shows a saved name and an avatar
+   * menu two rows away keeps the old one.
+   */
+  async patchAccount(input: { displayName: string | null }): Promise<AccountViewWire> {
+    const request: PatchAccountRequestWire = { displayName: input.displayName };
+    const body = await this.requestJson<AccountResponseWire>({
+      path: `${AUTH_API_PREFIX}/account`,
+      method: 'PATCH',
+      body: request,
+      authenticated: true,
+    });
+    const tokens = this.session?.tokens;
+    if (tokens !== undefined) this.session = { account: body.account, tokens };
+    return body.account;
+  }
+
+  /**
+   * Asks the instance to mail a password-reset link.
+   *
+   * RETURNS NOTHING, and cannot fail in a way the caller may show. The service
+   * answers `202` whether or not the address has an account, so that this
+   * endpoint cannot be used to ask whether somebody is a member of the
+   * organization. A caller that branched on the answer would be building the
+   * oracle the endpoint exists to refuse.
+   *
+   * Unconfigured mail is the operator's problem, not the person's: the service
+   * still answers `202` and the admin page is where the link appears instead.
+   */
+  async resetRequest(input: { email: string }): Promise<void> {
+    const request: ResetRequestWire = { email: input.email };
+    await this.requestJson<unknown>({
+      path: `${AUTH_API_PREFIX}/reset/request`,
+      method: 'POST',
+      body: request,
+    });
+  }
+
+  /**
+   * Spends a mailed reset token for the account's email and its ESCROWED
+   * recovery code.
+   *
+   * The token is consumed by this call, so the code it returns is the only
+   * copy the client will ever get — the rotation that follows has to run in
+   * the same call frame (`resetSyncPassphrase`), and a caller that stored this
+   * answer anywhere would be writing the account's master door to disk.
+   *
+   * An unknown, spent or expired token is ONE outcome, like a dead invite:
+   * telling them apart would say whether a link had already been used, which
+   * is exactly what somebody reading a forwarded mail would want to know.
+   */
+  async resetOpen(input: { resetToken: string }): Promise<ResetOpenResponseWire | { status: 'invalid' }> {
+    const request: ResetOpenRequestWire = { resetToken: input.resetToken };
+    try {
+      return await this.requestJson<ResetOpenResponseWire>({
+        path: `${AUTH_API_PREFIX}/reset/open`,
+        method: 'POST',
+        body: request,
+      });
+    } catch (error) {
+      if (error instanceof SyncRequestError && error.kind === 'not-found') return { status: 'invalid' };
+      throw error;
+    }
   }
 
   /**
@@ -498,7 +691,7 @@ export class SyncAuthClient implements SyncTokenProvider {
     authenticated = false,
   }: {
     path: string;
-    method: 'GET' | 'POST';
+    method: AuthorizedMethod;
     body?: unknown;
     authenticated?: boolean;
   }): Promise<T> {
@@ -537,22 +730,60 @@ export class SyncAuthClient implements SyncTokenProvider {
     return (await readJson(response)) as T;
   }
 
+  /**
+   * ONE authenticated request to a path this class knows nothing about,
+   * carrying the signed-in account's token and §11's refresh-once rule.
+   *
+   * WHY THIS EXISTS: the admin surface (`/v1/admin/*`) is authenticated by a
+   * signed-in admin's access token, exactly like `/v1/auth/account`, and
+   * `PROTOCOL.md` §11's "on 401 refresh once, on a second 401 sign the user
+   * out" rule is written down once in this file. A second client that opened
+   * its own token lifecycle would rotate the refresh token independently, and
+   * a REUSED refresh token is the theft signal that revokes the whole family
+   * and logs the real user out. The admin page would be the thing that logged
+   * them out.
+   *
+   * RETURNS PARSED JSON RATHER THAN A CAST. Everything on the other side of
+   * this method belongs to another module's contract, so this one cannot know
+   * its shape; the caller parses what it asked for. A `204` becomes `null`,
+   * which is what a body-less success looks like to a parser.
+   */
+  async requestAsAccount(input: { path: string; method: AuthorizedMethod; body?: JsonValue }): Promise<JsonValue> {
+    const body = await this.requestJson<JsonValue | undefined>({
+      path: input.path,
+      method: input.method,
+      body: input.body,
+      authenticated: true,
+    });
+    return body ?? null;
+  }
+
   private adoptSession(response: SessionResponseWire): void {
     this.session = { account: response.account, tokens: response.tokens };
   }
 }
 
+/** The verbs an authenticated call may use. `PUT` is absent because the protocol has no `PUT`. */
+export type AuthorizedMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+
 /** Builds a {@link SyncRequestError} from a non-2xx response, keeping the server's prose for diagnostics only. */
 export async function toRequestError(response: Response): Promise<SyncRequestError> {
-  const kind = errorKindForStatus(response.status);
   let message = `sync request failed with status ${response.status}`;
+  let errorText: string | undefined;
   try {
     const parsed = protocolErrorBodySchema.safeParse(await response.json());
-    if (parsed.success) message = parsed.data.error;
+    if (parsed.success) {
+      message = parsed.data.error;
+      errorText = parsed.data.error;
+    }
   } catch {
     // A non-JSON error body is itself diagnostic; the status already carries
     // the meaning a client is allowed to branch on.
   }
+  // The body is read BEFORE the kind is decided, for the one documented token
+  // that a status cannot express — see `errorKindForStatus`. Everything else
+  // still branches on the status alone.
+  const kind = errorKindForStatus(response.status, errorText);
   const retryAfter = response.headers.get('Retry-After');
   return new SyncRequestError({
     kind,

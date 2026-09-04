@@ -26,18 +26,16 @@
  * already gone too, and the person who followed the invite lands on a plain
  * "sign in or create an account" screen with their one capability lost.
  *
- * ── One slot, for the whole join ─────────────────────────────────────────
+ * ── One slot, one field ──────────────────────────────────────────────────
  *
- * Since M181/05 a link may carry TWO capabilities: a sync signup invite and a
- * gateway invite, plus the gateway's address (`app/lib/join-link.ts`). They are
- * redeemed against different services, minutes apart, with a navigation and
- * possibly a reload in between, so they need the same durability the sync
- * invite already had. This slot was generalised to hold them rather than
- * growing a second mechanism beside it: two mechanisms for "keep the token
- * across the reload" is how one of them ends up missing the reload.
- *
- * Each field has its own storage key and its own mirror, and is consumed on its
- * own — spending the sync invite must not throw away the gateway half.
+ * M181/05 generalised this slot to hold two capabilities at once, because a
+ * link then admitted somebody to a sync account AND to a gateway. M192 deleted
+ * the gateway, so the slot is back to the one field it started with. The
+ * generalised shape is kept — a `PendingJoinField` union with its own key and
+ * its own mirror per field — because the next thing that needs to survive the
+ * reload gets a member rather than a second mechanism beside this one, and two
+ * mechanisms for "keep the token across the reload" is how one of them ends up
+ * missing the reload.
  *
  * So reading the fragment parks the token in a PENDING SLOT that outlives both
  * a remount and a reload, and a second read returns the still-pending token
@@ -52,14 +50,14 @@
 const INVITE_FRAGMENT_KEY = 'invite';
 
 /**
- * The shape every sync signup invite carries, and the client's half of the
- * service binding minted in `openplate-sync/src/lib/tokens.ts`.
+ * The shape every signup invite carries, and the client's half of the service
+ * binding minted in `openplate-sync/src/lib/tokens.ts`.
  *
  * Checked here so the ordinary accident is caught before it becomes a network
- * call: a gateway invite (`gi_`) pasted into the sync field, a link built with
- * the two halves swapped, a copy of the wrong line of an operator's output. The
- * server runs the same gate, and that is the one that matters; this one only
- * turns a remote refusal nobody can explain into a local message.
+ * call: a copy of the wrong line of an operator's output, a truncated paste, a
+ * reset token (`sr_`) pasted where an invite belongs. The server runs the same
+ * gate, and that is the one that matters; this one only turns a remote refusal
+ * nobody can explain into a local message.
  */
 export const SYNC_INVITE_PREFIX = 'si_';
 
@@ -69,34 +67,46 @@ export function isSyncInviteToken(token: string): boolean {
 }
 
 /**
+ * The shape every password-reset token carries (`sr_`), the sibling of
+ * {@link SYNC_INVITE_PREFIX}.
+ *
+ * The two prefixes are what stop the commonest paste mistake becoming a
+ * network call: an invite pasted into a reset link, or the other way round,
+ * is refused here with a local sentence rather than remotely with a `404` that
+ * reads as "your link has expired".
+ */
+export const SYNC_RESET_PREFIX = 'sr_';
+
+/** Whether a string could be a password-reset token at all. A shape gate, never a validity check. */
+export function isSyncResetToken(token: string): boolean {
+  return token.startsWith(SYNC_RESET_PREFIX);
+}
+
+/**
  * The parts of a pending join this slot can hold.
  *
- * Two tokens and one address: the gateway's URL is parked beside its token
- * because a token without the address it belongs to is unredeemable, and the
- * reload this slot exists for would otherwise strand it.
+ * TWO, and they are the two live capabilities a link can carry: a signup
+ * invite (`si_`) and a password-reset token (`sr_`). Both are destroyed by the
+ * fragment strip and both have to survive the service worker's first-visit
+ * document reload, so both need the slot for exactly the same reason.
  *
- * `gatewayRedeemed` is the fourth, and it holds something the other three do
- * not: a SPENT invite's answer. The gateway burns the invite the instant it
- * answers, and the two local writes that answer feeds happen afterwards, so
- * between them there is a moment where the server has moved on and this device
- * has nothing. Parking the answer closes that moment — see
- * `app/lib/join-link.ts`'s `parkGatewayRedemption`.
+ * They are separate fields rather than one because they are spent by different
+ * screens: consuming the invite must not throw away a reset token, and the
+ * reverse.
  */
-export type PendingJoinField = 'syncInvite' | 'gatewayInvite' | 'gatewayUrl' | 'gatewayRedeemed';
+export type PendingJoinField = 'invite' | 'reset';
 
 /** The module-level mirror behind the storage slot: every field, parked or not. */
 type PendingJoinMirror = { [Field in PendingJoinField]: string | null };
 
-/** The `sessionStorage` key the sync half of the pending slot occupies. */
+/** The `sessionStorage` key the pending slot occupies. */
 export const PENDING_INVITE_STORAGE_KEY = 'openplate.sync.pending-invite';
 
 const PENDING_STORAGE_KEYS = {
   // Unchanged since M166: an invite parked by an older build of this app must
   // still be found by this one.
-  syncInvite: PENDING_INVITE_STORAGE_KEY,
-  gatewayInvite: 'openplate.gateway.pending-invite',
-  gatewayUrl: 'openplate.gateway.pending-url',
-  gatewayRedeemed: 'openplate.gateway.pending-redeemed',
+  invite: PENDING_INVITE_STORAGE_KEY,
+  reset: 'openplate.sync.pending-reset',
 } satisfies Record<PendingJoinField, string>;
 
 /** The subset of `Storage` the pending slot needs — so tests pass a plain object and never touch a global. */
@@ -115,10 +125,8 @@ export interface PendingInviteStorage {
  * Neither is redundant.
  */
 const mirroredPendingJoin: PendingJoinMirror = {
-  syncInvite: null,
-  gatewayInvite: null,
-  gatewayUrl: null,
-  gatewayRedeemed: null,
+  invite: null,
+  reset: null,
 };
 
 /** Parks one field of a pending join. A storage failure leaves the mirror, which is still better than nothing. */
@@ -196,24 +204,24 @@ export function parseInviteFragment(hash: string): string | null {
   // An empty value is treated as absent: `#invite=` is a malformed link, not a
   // request to submit an empty token.
   if (token === null || token === '') return null;
-  // And a token of the wrong SERVICE is absent too, rather than prefilled into
-  // a form that would post a gateway credential to the sync service.
+  // And a token of the wrong SHAPE is absent too, rather than prefilled into a
+  // form that would post it and get a refusal nobody can explain.
   return isSyncInviteToken(token) ? token : null;
 }
 
-/** Parks a sync invite. The named view of the slot's `syncInvite` field. */
+/** Parks an invite. The named view of the slot's `invite` field. */
 export function rememberPendingInvite(token: string, storage: PendingInviteStorage | null): void {
-  rememberPendingJoinField({ field: 'syncInvite', value: token, storage });
+  rememberPendingJoinField({ field: 'invite', value: token, storage });
 }
 
-/** @returns the sync invite parked in the pending slot, or `null` if none is waiting. */
+/** @returns the invite parked in the pending slot, or `null` if none is waiting. */
 export function readPendingInvite(storage: PendingInviteStorage | null): string | null {
-  return readPendingJoinField({ field: 'syncInvite', storage });
+  return readPendingJoinField({ field: 'invite', storage });
 }
 
-/** Empties the sync half of the pending slot, and only that half. */
+/** Empties the pending slot. */
 export function clearPendingInvite(storage: PendingInviteStorage | null): void {
-  clearPendingJoinField({ field: 'syncInvite', storage });
+  clearPendingJoinField({ field: 'invite', storage });
 }
 
 /** `sessionStorage`, or `null` during SSR and wherever it is blocked outright. */

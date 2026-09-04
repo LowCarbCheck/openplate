@@ -822,33 +822,41 @@
     "title": "{{appName}} installieren"
   },
   "join": {
-    "description": "Dieser Link richtet dein Konto und deine KI-Verbindung ein.",
+    "description": "Passwort festlegen, dann ist dein Tagebuch bereit.",
     "foreignServer": {
-      "body": "Er richtet ein Konto auf {{origin}} ein, aber diese App ist für einen anderen Server eingerichtet. Öffne den Link in der App, die zu diesem Server gehört.",
-      "bodyUnknown": "Er richtet ein Konto auf einem Server ein, für den diese App nicht eingerichtet ist. Öffne den Link in der App, die zu diesem Server gehört.",
-      "title": "Dieser Link ist für einen anderen Server"
+      "body": "Der Link führt zu {{origin}}. Öffne ihn dort.",
+      "bodyUnknown": "Der Link führt zu einem Ziel, das diese App nicht kennt. Öffne ihn in der App, zu der du eingeladen wurdest.",
+      "title": "Dieser Link ist für ein anderes openplate"
     },
     "invalidLink": {
-      "body": "Ein Teil fehlt oder wurde unterwegs abgeschnitten. Bitte die Person, die ihn dir geschickt hat, um einen neuen.",
-      "title": "Mit diesem Link stimmt etwas nicht"
+      "body": "Er enthält keine Einladung. Bitte die Person, die dich eingeladen hat, den Link noch einmal zu senden.",
+      "title": "Dieser Link ist unvollständig"
     },
     "managed": {
-      "thenGateway": "Deine KI-Verbindung wird direkt danach eingerichtet, auf demselben Bildschirm.",
-      "connecting": "Deine KI-Verbindung wird eingerichtet.",
-      "signInFirst": {
-        "title": "Zum Abschließen anmelden",
-        "body": "Dieser Link gehört zu einem bestehenden openplate-Konto. Melde dich an, der Rest wird für dich eingerichtet.",
-        "action": "Anmelden"
-      }
+      "connecting": "Deine KI-Verbindung wird eingerichtet."
     },
-    "sync": {
-      "body": "Deine Einladung liegt bereit. Auf dem nächsten Bildschirm wählst du ein Passwort und speicherst deine Kontokarte.",
-      "continue": "Mein Konto erstellen",
-      "skip": "Überspringen, ich habe schon ein Konto",
-      "thenGateway": "Komm danach hierher zurück, um dem Gateway beizutreten.",
-      "title": "Erstelle zuerst dein Konto"
+    "title": "Du wurdest eingeladen",
+    "invitedAs": "Du wurdest als {{email}} eingeladen.",
+    "inviteInvalid": {
+      "title": "Diese Einladung ist nicht mehr gültig",
+      "body": "Sie wurde vielleicht schon genutzt oder ist abgelaufen. Bitte die Person, die dich eingeladen hat, um eine neue.",
+      "continue": "Ohne Konto weitermachen"
     },
-    "title": "Beitreten"
+    "unreachable": {
+      "title": "Server nicht erreichbar",
+      "retry": "Mit deiner Einladung ist wahrscheinlich alles in Ordnung. Versuch es gleich noch einmal über den Link."
+    },
+    "signedInElsewhere": {
+      "title": "Du bist als jemand anderes angemeldet",
+      "body": "Dieses Gerät ist als {{signedInAs}} angemeldet, die Einladung gilt aber für {{invitedEmail}}. Melde dich zuerst ab, um sie zu nutzen.",
+      "signOut": "Abmelden"
+    },
+    "alreadyRegistered": {
+      "title": "Diese Adresse hat bereits ein Konto",
+      "body": "Für {{email}} gibt es bereits ein Konto. Melde dich mit deinem Passwort an.",
+      "signIn": "Zur Anmeldung"
+    },
+    "working": "Konto wird eingerichtet"
   },
   "landing": {
     "close": {
@@ -1044,7 +1052,11 @@
     "sync": "Konto · openplate",
     "terms": "Nutzungsbedingungen · openplate",
     "trends": "Fortschritt · openplate",
-    "welcome": "Willkommen · openplate"
+    "welcome": "Willkommen · openplate",
+    "forgot": "Passwort vergessen",
+    "reset": "Neues Passwort festlegen",
+    "account": "Konto",
+    "admin": "Administration"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -1224,7 +1236,8 @@
       "keyNoteLink": "Du kannst das jederzeit in den Einstellungen einrichten.",
       "later": "Mach ich später",
       "opening": "Wird geöffnet…",
-      "scan": "Teller scannen"
+      "scan": "Teller scannen",
+      "managedNote": "Foto-Schätzungen sind enthalten. Fotografiere einen Teller und die Kohlenhydrate werden für dich berechnet."
     },
     "focus": {
       "calories": {
@@ -1411,9 +1424,9 @@
       },
       "compartmentMissing": {
         "title": "Dieses Konto kann noch nicht mitmachen",
-        "body": "Für den Beitritt wird ein Wiederherstellungscode benötigt. Ohne ihn kann dieses Gerät nach einer Wiederherstellung oder auf einem zweiten Gerät nicht dieselbe Identität für dich beibehalten.",
+        "body": "Für die Teilnahme wird eine feste Identität für dieses Konto benötigt, und dieses Gerät hat noch keine. Durch das Festlegen eines neuen Passworts wird sie erstellt.",
         "why": "Eine Studie würde dich jedes Mal als andere Person lesen, und deine früheren Tage stünden für sich allein. Richte einen Wiederherstellungscode ein und öffne den Link danach noch einmal.",
-        "cta": "Wiederherstellungscode einrichten"
+        "cta": "Neues Passwort festlegen"
       },
       "invalidLink": {
         "title": "Dieser Link sieht nicht richtig aus",
@@ -1461,12 +1474,7 @@
         "passphraseLabel": "Passwort des Studienkontos",
         "signIn": "Konsole öffnen",
         "create": "Neues Studienkonto anlegen",
-        "failed": "Das Studienkonto konnte nicht geöffnet werden. Es wurde nichts geändert.",
-        "handleLabel": "Anmeldename des Studienkontos"
-      },
-      "recoveryCode": {
-        "title": "Schreib diesen Wiederherstellungscode jetzt auf",
-        "body": "Er ist der zweite und letzte Weg zu den Schlüsseln dieser Studie und wird nur einmal angezeigt. Niemand kann einen neuen erstellen: Wenn das Passwort und dieser Code verloren gehen, lässt sich das, was Teilnehmende bereits gesendet haben, nicht mehr lesen."
+        "failed": "Das Studienkonto konnte nicht geöffnet werden. Es wurde nichts geändert."
       },
       "identity": {
         "title": "Der Schlüssel dieser Studie",
@@ -1494,6 +1502,10 @@
         "summaryTitle": "Was in der Datei stehen wird",
         "export": "Beiträge als CSV herunterladen",
         "exportHint": "Die Datei trägt die Zeilen von oben wortgleich vor der Tabelle."
+      },
+      "created": {
+        "title": "Konto erstellt",
+        "body": "Du bist angemeldet. Erstelle unten einen Schlüssel, um einen für dein Einwilligungsdokument zu veröffentlichen."
       }
     }
   },
@@ -1504,7 +1516,6 @@
       "stillWorking": "Wird noch analysiert, komplexe Teller dauern einen Moment…",
       "uploading": "Foto wird hochgeladen…"
     },
-    "auditNotice": "Die Administration des verbundenen Gateways gibt an, deine Einsendungen einsehen zu können, auch die Fotos.",
     "capture": {
       "addWithoutPhoto": "Essen ohne Foto eintragen",
       "analyze": "Analysieren",
@@ -1518,7 +1529,8 @@
       "preparing": "Dein Foto wird vorbereitet…",
       "previewAlt": "Ausgewählter Teller",
       "takePhoto": "Foto aufnehmen",
-      "title": "Lebensmittel per Foto erkennen"
+      "title": "Lebensmittel per Foto erkennen",
+      "managedDescription": "Dein Foto wird einmal ausgelesen, um zu erkennen, was auf deinem Teller liegt, und nicht gespeichert. Danach bleibt es nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst das unter „Daten und Backup“ in den Einstellungen jederzeit ausschalten oder löschen."
     },
     "errors": {
       "attemptCost": "Dieser Versuch hat {{amount}} deines API-Guthabens verbraucht. Es wurde in deinen Nutzungsdaten erfasst.",
@@ -1702,7 +1714,11 @@
       "sharedPhotoNote": "Wir haben das geteilte Foto erhalten, können Lebensmittel darauf aber noch nicht erkennen. Dafür muss zuerst ein KI-Anbieter verknüpft werden. Verknüpfe unten einen Anbieter und teile oder wähle dieses Foto dann erneut aus.",
       "title": "Foto machen statt tippen",
       "managedMissing": {
-        "body": "Deine Einladung enthält keine Fotoerkennung. Bitte die Person, die dich eingeladen hat, um einen neuen Link. Du kannst Essen trotzdem ohne Foto hinzufügen."
+        "body": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
+        "askAdmin": "Bitte deine Administration, sie zu aktivieren. In der Zwischenzeit kannst du Mahlzeiten ohne Foto eintragen."
+      },
+      "managed": {
+        "description": "Fotografiere deinen Teller und die Kohlenhydrate werden für dich berechnet."
       }
     },
     "title": "Teller scannen"
@@ -1781,6 +1797,14 @@
       "research": {
         "title": "Forschung",
         "status": "Studien, zu denen du beiträgst"
+      },
+      "account": {
+        "title": "Konto",
+        "signedOut": "Abgemeldet"
+      },
+      "admin": {
+        "title": "Administration",
+        "status": "Einladungen und Konten"
       }
     },
     "title": "Einstellungen"
@@ -1844,11 +1868,6 @@
       "baseUrl": "Basis-URL",
       "model": "Modell"
     },
-    "gateway": {
-      "auditNotice": "Dieses Gateway gibt an, dass seine Administration deine Einsendungen einsehen kann, auch die Fotos.",
-      "badge": "Gateway",
-      "disconnectNote": "Es wird nirgendwo etwas widerrufen: Es ist kein Konto und kein Schlüssel von dir im Spiel. Um dieses Gateway erneut zu nutzen, benötigst du einen neuen Einladungslink von der Person, die es betreibt."
-    },
     "loading": "Deine KI-Einstellungen werden geladen…",
     "manualEntry": {
       "enterKey": "Gib deinen API-Schlüssel ein",
@@ -1898,7 +1917,8 @@
       "anthropic": "Anthropic",
       "mistral": "Mistral",
       "openaiCompatible": "Selbst gehostet / lokaler Endpunkt",
-      "openrouter": "OpenRouter"
+      "openrouter": "OpenRouter",
+      "managed": "Diese Instanz"
     },
     "providerBlurb": {
       "mistral": "Mistral ist ein französisches Unternehmen und lässt seine Modelle auf Servern in der EU laufen. Für den kostenlosen Tarif brauchst du eine Telefonnummer, aber keine Kreditkarte.",
@@ -2021,9 +2041,7 @@
       "confirmCta": "Schlüssel ersetzen",
       "failed": "Der Schlüssel konnte nicht ersetzt werden. Es wurde nichts geändert.",
       "doneTitle": "Dein Datenschlüssel wurde ersetzt.",
-      "doneBody": "{{kept}} Freigabe(n) behalten, {{revoked}} beendet.",
-      "recoveryTitle": "Dein neuer Wiederherstellungscode, notiere ihn jetzt.",
-      "recoveryNote": "Wird einmal gezeigt. Der Code von vorher gilt nicht mehr."
+      "doneBody": "{{kept}} Freigabe(n) behalten, {{revoked}} beendet."
     },
     "clinician": {
       "title": "Mit dir geteilt",
@@ -2045,11 +2063,12 @@
   },
   "signIn": {
     "title": "Anmelden",
-    "body": "Melde dich an, um dein Tagebuch wieder auf dieses Gerät zu holen.",
+    "body": "Deine E-Mail-Adresse und dein Passwort.",
     "pulling": "Dein Tagebuch wird geladen…",
     "pullFailedTitle": "Dein Tagebuch ist nicht angekommen",
     "pullFailedBody": "Du bist angemeldet, aber dein Tagebuch ist noch nicht angekommen.",
-    "unavailable": "Konten sind auf diesem Server deaktiviert."
+    "unavailable": "Konten sind auf diesem Server deaktiviert.",
+    "forgot": "Passwort vergessen?"
   },
   "sync": {
     "cancel": "Abbrechen",
@@ -2067,20 +2086,18 @@
     "connected": {
       "description": "Angemeldet als {{handle}}.",
       "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nicht synchronisiert, daher siehst du sie nicht auf deinen anderen Geräten.",
-      "title": "Konto",
-      "keepYourCard": "Bewahre deine Kontokarte gut auf. Dein Anmeldename und dein Wiederherstellungscode sind die einzige Möglichkeit, wieder Zugriff zu erhalten, und beides kann nicht erneut ausgestellt werden."
+      "title": "Konto"
     },
     "create": {
       "cta": "Konto erstellen",
       "inviteLabel": "Einladungscode",
       "inviteHint": "Dieser Server ist nur mit Einladung nutzbar. Füge den Code ein, den du bekommen hast, oder öffne den Einladungslink.",
       "inviteRequired": "Diese Einladung ist ungültig. Sie wurde vielleicht schon benutzt oder ist abgelaufen. Bitte um eine neue.",
-      "closed": "Dieser Sync-Server nimmt keine neuen Konten an.",
-      "handleTaken": "Dieser Anmeldename ist auf diesem Server bereits vergeben. Ändere ihn und versuche es erneut.",
       "inviteChange": "Ändern",
       "inviteFromLink": "Einladungscode aus deinem Link übernommen, alles bereit.",
       "inviteMissing": "Füge deinen Einladungscode ein oder öffne den Einladungslink, den du erhalten hast.",
-      "inviteMalformed": "Das sieht nicht nach einem Einladungscode aus. Sie beginnen mit {{prefix}}."
+      "inviteMalformed": "Das sieht nicht nach einem Einladungscode aus. Sie beginnen mit {{prefix}}.",
+      "accountExists": "Für diese Adresse gibt es hier schon ein Konto. Melde dich stattdessen an."
     },
     "danger": {
       "description": "Beides lässt das Tagebuch auf diesem Gerät unangetastet.",
@@ -2095,8 +2112,6 @@
       "note": "Wir fragen noch einmal nach deinem Passwort, weil eine offene Sitzung auf einem geteilten Gerät nicht ausreichen sollte, um ein Konto zu löschen.",
       "passphraseLabel": "Mit deinem Passwort bestätigen"
     },
-    "handleHint": "Wähle einen beliebigen Namen, der keine E-Mail-Adresse ist. Oder lass dir einen vorschlagen.",
-    "handleLabel": "Anmeldename",
     "intro": "Optional. Halte dein Tagebuch auf all deinen Geräten synchron: auf diesem Gerät verschlüsselt, bevor es übertragen wird.",
     "notice": {
       "dismiss": "Diese Nachricht vom Server-Betreiber ausblenden",
@@ -2110,10 +2125,6 @@
       }
     },
     "passphraseLabel": "Passwort",
-    "pendingGateway": {
-      "action": "Beitritt abschließen",
-      "body": "Dein Link verbindet dich auch mit dem Gateway auf {{origin}}."
-    },
     "photosStayHere": "Tellerfotos bleiben auf dem Gerät, mit dem du sie aufgenommen hast. Hochgeladen werden sie nie.",
     "profileCard": {
       "manage": "Konto",
@@ -2121,43 +2132,18 @@
     },
     "promise": "Der Server speichert nur verschlüsselte Daten, die er nicht lesen kann.",
     "recover": {
-      "codeHint": "Der gruppierte Code von deiner Kontokarte. Bindestriche und Groß- oder Kleinschreibung spielen keine Rolle.",
-      "codeLabel": "Wiederherstellungscode",
-      "done": "Erledigt. Dein neues Passwort ist festgelegt und deine synchronisierten Daten sind unversehrt.",
       "failed": "Das hat nicht geklappt. Es wurde nichts geändert.",
-      "intro": "Nutze deinen Wiederherstellungscode, um ein neues Passwort festzulegen.",
-      "newPassphraseLabel": "Neues Passwort",
-      "rejected": "Dieser Anmeldename und dieser Wiederherstellungscode passen nicht zusammen. Überprüfe beides und versuche es erneut.",
-      "submit": "Neues Passwort festlegen",
-      "tryAgain": "Erneut versuchen",
-      "working": "Neues Passwort wird eingerichtet …",
-      "codeRequired": "Gib den Wiederherstellungscode von deiner Kontokarte ein."
+      "rejected": "Dieser Anmeldename und dieser Wiederherstellungscode passen nicht zusammen. Überprüfe beides und versuche es erneut."
     },
     "setup": {
-      "accountCard": {
-        "bothRequired": "Du brauchst beides, um dich wieder anzumelden. Der Anmeldename bezeichnet dein Konto, der Code ist der einzige Weg bei einem vergessenen Passwort und keines von beiden wird noch einmal angezeigt.",
-        "codeLabel": "Wiederherstellungscode",
-        "confirmSaved": "Ich habe meinen Anmeldenamen und meinen Wiederherstellungscode an einem sicheren Ort gespeichert.",
-        "title": "Deine Kontokarte"
-      },
       "complete": "Dein Konto ist auf diesem Gerät eingerichtet.",
       "confirmLabel": "Passwort bestätigen",
       "continue": "Weiter",
-      "copied": "Kopiert",
-      "copy": "Kopieren",
-      "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell auswählen und kopieren",
-      "finish": "Einrichtung abschließen",
       "generating": "Dein Konto wird eingerichtet …",
-      "handleNotAnEmail": "Ein Anmeldename darf kein @ enthalten.",
-      "handleRequired": "Wähle einen Anmeldenamen oder lass dir einen vorschlagen.",
-      "handleShuffle": "Namen vorschlagen",
-      "handleTooLong": "Dieser Anmeldename ist zu lang. Verwende weniger als 64 Zeichen.",
       "passphraseIntro": "Wähle ein Passwort für dein Konto.",
       "passphraseLabel": "Passwort",
       "passphraseMismatch": "Die beiden Passwörter stimmen nicht überein.",
       "passphraseTooShort": "Verwende mindestens {{min}} Zeichen.",
-      "recoveryWarningBody": "Wenn du dein Passwort und diesen Wiederherstellungscode verlierst, kann dich niemand wieder anmelden und niemand kann deine synchronisierten Daten lesen, nicht einmal wir. Genau das bedeutet Ende-zu-Ende-Verschlüsselung.",
-      "recoveryWarningLead": "Sichere beides jetzt. Sie werden nur dieses eine Mal angezeigt.",
       "retry": "Nochmal versuchen",
       "setupFailed": "Beim Einrichten deines Kontos ist etwas schiefgelaufen. Es wurde nichts gespeichert, du kannst es einfach noch einmal versuchen."
     },
@@ -2171,7 +2157,6 @@
       "submit": "Anmelden",
       "working": "Wird angemeldet…",
       "passphraseRequired": "Gib dein Passwort ein.",
-      "handleRequired": "Gib deinen Anmeldenamen ein.",
       "notYou": "Nicht du?"
     },
     "signOut": {
@@ -2197,7 +2182,15 @@
     "passwordNote": "Dein Passwort verschlüsselt auch dein Tagebuch. Wir können es nicht zurücksetzen, bewahre daher deinen Wiederherstellungscode gut auf.",
     "managed": {
       "inviteOnly": "Konten werden hier mit einem Einladungslink erstellt. Wenn du einen hast, öffne ihn, um loszulegen."
-    }
+    },
+    "emailLabel": "E-Mail-Adresse",
+    "email": {
+      "required": "Gib die E-Mail-Adresse ein, an die deine Einladung ging.",
+      "invalid": "Das sieht nicht nach einer E-Mail-Adresse aus.",
+      "tooLong": "Diese Adresse ist länger als {{max}} Zeichen."
+    },
+    "displayNameLabel": "Dein Name (optional)",
+    "suspended": "Ein Administrator hat dieses Konto gesperrt. Bitte ihn, es wieder freizugeben."
   },
   "trends": {
     "chart": {
@@ -2378,5 +2371,193 @@
     "start": "Starten",
     "startFresh": "Leer starten",
     "title": "Willkommen bei openplate"
+  },
+  "forgot": {
+    "title": "Passwort vergessen?",
+    "body": "Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link, um ein neues festzulegen.",
+    "submit": "Link senden",
+    "sent": "Wenn ein Konto für diese Adresse existiert, ist der Link unterwegs.",
+    "sentHint": "Der Link ist eine Stunde lang gültig. Prüfe deinen Spam-Ordner, falls er nicht ankommt.",
+    "backToSignIn": "Zurück zur Anmeldung"
+  },
+  "reset": {
+    "title": "Neues Passwort festlegen",
+    "body": "Wähle ein neues Passwort. Dein Tagebuch bleibt, wie es ist.",
+    "newPasswordLabel": "Neues Passwort",
+    "submit": "Passwort festlegen",
+    "working": "Passwort wird festgelegt",
+    "failed": "Das Passwort konnte nicht festgelegt werden. Versuche den Link gleich noch einmal.",
+    "invalid": {
+      "title": "Dieser Link funktioniert nicht mehr",
+      "body": "Er wurde vielleicht schon genutzt oder ist abgelaufen. Fordere einen neuen an.",
+      "otherApp": "Dieser Link gehört zu einem anderen openplate. Öffne ihn stattdessen dort.",
+      "askAgain": "Schick mir einen neuen Link"
+    }
+  },
+  "account": {
+    "title": "Konto",
+    "name": {
+      "label": "Dein Name",
+      "hint": "Optional. Wird dir und einem Administrator angezeigt.",
+      "save": "Speichern",
+      "saved": "Gespeichert.",
+      "failed": "Der Name konnte nicht gespeichert werden."
+    },
+    "allowance": {
+      "title": "Foto-Schätzungen",
+      "body": "Heute {{used}} von {{limit}} genutzt.",
+      "none": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
+      "askAdmin": "Das legt deine Administration fest."
+    },
+    "devices": {
+      "title": "Deine Geräte",
+      "body": "Dein Tagebuch wird auf allen Geräten synchron gehalten, auf denen du angemeldet bist.",
+      "photosStayHere": "Fotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nie auf ein anderes Gerät kopiert."
+    },
+    "password": {
+      "title": "Passwort",
+      "body": "Ändere das Passwort, mit dem du dich anmeldest.",
+      "open": "Passwort ändern",
+      "currentLabel": "Aktuelles Passwort",
+      "newLabel": "Neues Passwort",
+      "submit": "Passwort ändern",
+      "done": "Passwort geändert.",
+      "failed": "Das Passwort konnte nicht geändert werden."
+    },
+    "danger": {
+      "title": "Abmelden und löschen",
+      "body": "Beides beendet dieses Konto auf allen Geräten."
+    },
+    "signOut": {
+      "cta": "Überall abmelden",
+      "note": "Meldet dieses Konto auf allen Geräten ab. Dein Tagebuch bleibt auf diesem Gerät erhalten."
+    },
+    "delete": {
+      "cta": "Konto löschen",
+      "confirmTitle": "Dieses Konto löschen?",
+      "confirmBody": "Alles, was für {{email}} gespeichert ist, wird gelöscht und kann nicht wiederhergestellt werden. Das Tagebuch auf diesem Gerät bleibt erhalten.",
+      "passwordLabel": "Dein Passwort",
+      "confirmCta": "Löschen",
+      "failed": "Das Konto konnte nicht gelöscht werden.",
+      "note": "Gib zur Bestätigung dein Passwort ein. Das kann nicht rückgängig gemacht werden."
+    },
+    "signedOut": {
+      "title": "Du bist abgemeldet",
+      "body": "Melde dich an, um dein Konto zu sehen.",
+      "signIn": "Anmelden"
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Lade Personen ein, lege fest, wie viele Fotos sie am Tag auswerten dürfen, und verwalte ihre Konten.",
+    "notAdmin": {
+      "title": "Du verwaltest diese Instanz nicht",
+      "body": "Diese Seite ist für die Personen gedacht, die diese Instanz verwalten. Wende dich an eine von ihnen, wenn du etwas an deinem Konto ändern möchtest.",
+      "back": "Zurück zu den Einstellungen"
+    },
+    "stats": {
+      "people": "Personen",
+      "admins": "Administratoren",
+      "pending": "Offene Einladungen",
+      "photosToday": "Heute ausgewertete Fotos"
+    },
+    "people": {
+      "title": "Personen",
+      "empty": "Hier hat noch niemand ein Konto.",
+      "loading": "Wird geladen",
+      "failed": "Die Liste konnte nicht geladen werden.",
+      "retry": "Erneut versuchen"
+    },
+    "columns": {
+      "person": "Person",
+      "role": "Rolle",
+      "allowance": "Fotos pro Tag",
+      "usedToday": "Heute genutzt",
+      "standing": "Status",
+      "joined": "Beigetreten",
+      "actions": "Aktionen"
+    },
+    "usage": "{{used}} von {{limit}}",
+    "usageNone": "Keine Fotos",
+    "role": {
+      "label": "Rolle",
+      "admin": "Administrator",
+      "standard": "Standard"
+    },
+    "standing": {
+      "active": "Aktiv",
+      "suspended": "Gesperrt"
+    },
+    "you": "Du",
+    "noName": "Kein Name",
+    "edit": {
+      "open": "Ändern",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "allowanceLabel": "Fotos pro Tag",
+      "allowanceHint": "0 schaltet Foto-Schätzungen für diese Person ab.",
+      "saved": "Gespeichert.",
+      "failed": "Die Änderung konnte nicht übernommen werden."
+    },
+    "suspend": {
+      "cta": "Sperren",
+      "confirmTitle": "{{email}} sperren?",
+      "confirmBody": "Die Person wird auf allen Geräten abgemeldet und kann sich erst wieder anmelden, wenn du sie wieder freischaltest. Ihr Tagebuch bleibt erhalten.",
+      "confirmCta": "Sperren"
+    },
+    "reactivate": {
+      "cta": "Reaktivieren"
+    },
+    "resetMail": {
+      "cta": "Link zum Zurücksetzen senden",
+      "sent": "Link zum Zurücksetzen an {{email}} gesendet.",
+      "noMail": "Diese Instanz versendet keine E-Mails. Gib den Link selbst an {{email}} weiter.",
+      "failed": "Der Link zum Zurücksetzen konnte nicht gesendet werden."
+    },
+    "delete": {
+      "cta": "Löschen",
+      "confirmTitle": "{{email}} löschen?",
+      "confirmBody": "Das Konto und alle dazu gespeicherten Daten werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "typeLabel": "Gib zur Bestätigung die Adresse ein",
+      "confirmCta": "Endgültig löschen",
+      "failed": "Das Konto konnte nicht gelöscht werden."
+    },
+    "invites": {
+      "title": "Offene Einladungen",
+      "empty": "Keine offenen Einladungen.",
+      "expires": "Gültig bis {{date}}",
+      "resend": "Erneut senden",
+      "resent": "Eine neue Einladung ging an {{email}}.",
+      "revoke": "Zurückziehen",
+      "revokeConfirmTitle": "Einladung für {{email}} zurückziehen?",
+      "revokeConfirmBody": "Der Link verliert seine Gültigkeit. Du kannst die Person jederzeit erneut einladen.",
+      "revokeConfirmCta": "Zurückziehen",
+      "failed": "Das hat nicht geklappt."
+    },
+    "invite": {
+      "cta": "Jemanden einladen",
+      "title": "Jemanden einladen",
+      "body": "Die Person erhält eine E-Mail mit einem Link, legt ein Passwort fest und ist direkt in der App.",
+      "emailLabel": "E-Mail-Adresse",
+      "emailRequired": "Eine E-Mail-Adresse ist erforderlich.",
+      "nameLabel": "Name",
+      "nameHint": "Optional. Wird der Person und dir in der Liste angezeigt.",
+      "allowanceLabel": "Fotos pro Tag",
+      "allowanceHint": "Wie viele Teller-Fotos pro Tag ausgewertet werden dürfen. 0 schaltet es ab.",
+      "expiryLabel": "Der Link bleibt gültig für",
+      "expiryHint": "In Tagen. Maximal 30.",
+      "submit": "Einladung senden",
+      "sending": "Wird gesendet",
+      "sentTitle": "Einladung an {{email}} gesendet",
+      "sentBody": "Die Person kann ein Passwort festlegen und direkt loslegen.",
+      "linkTitle": "Einladung bereit für {{email}}",
+      "linkBody": "Diese Instanz versendet keine E-Mails, leite den Link daher selbst weiter. Jeder mit dem Link kann das Konto eröffnen; sende ihn also so, wie du ein Passwort senden würdest.",
+      "linkCopy": "Link kopieren",
+      "linkCopied": "Kopiert",
+      "again": "Weitere Person einladen",
+      "failed": "Die Einladung konnte nicht erstellt werden.",
+      "exists": "{{email}} hat hier bereits ein Konto.",
+      "back": "Zurück zur Liste"
+    }
   }
 }

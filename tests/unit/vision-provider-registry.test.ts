@@ -25,7 +25,7 @@ import {
 } from '../../app/services/vision/registry';
 
 const ADAPTERS = new Set(['openai-compatible', 'anthropic']);
-const PLACEMENTS = new Set(['primary', 'advanced']);
+const PLACEMENTS = new Set(['primary', 'advanced', 'derived']);
 const AUTH_METHODS = new Set(['manual', 'oauth-pkce']);
 
 describe('PROVIDER_REGISTRY — exhaustiveness', () => {
@@ -43,7 +43,14 @@ describe('PROVIDER_REGISTRY — exhaustiveness', () => {
     for (const id of PROVIDER_IDS) {
       const definition = PROVIDER_REGISTRY[id];
       assert.ok(definition.labelKey.length > 0, `${id} has no labelKey`);
-      assert.ok(definition.authMethods.length > 0, `${id} supports no auth method`);
+      // A `derived` provider takes NO auth method, and the empty tuple is the
+      // honest answer rather than a gap: `managed`'s bearer is the account's
+      // own access token, so there is nothing for a person to hand it (M192).
+      assert.strictEqual(
+        definition.authMethods.length > 0,
+        definition.placement !== 'derived',
+        `${id}: only a derived provider may support no auth method`,
+      );
       for (const method of definition.authMethods) {
         assert.ok(AUTH_METHODS.has(method), `${id} has an unknown auth method: ${method}`);
       }
@@ -139,13 +146,32 @@ describe('getProviderDefinition', () => {
 });
 
 describe('getProvidersByPlacement', () => {
-  it('splits the registry into the primary and advanced groups, losing nobody', () => {
+  it('splits the registry into three groups, losing nobody', () => {
     const primary = getProvidersByPlacement('primary');
     const advanced = getProvidersByPlacement('advanced');
-    assert.strictEqual(primary.length + advanced.length, PROVIDER_IDS.length);
+    const derived = getProvidersByPlacement('derived');
+    assert.strictEqual(primary.length + advanced.length + derived.length, PROVIDER_IDS.length);
     assert.deepStrictEqual(
-      [...primary, ...advanced].map((definition) => definition.id).toSorted(),
+      [...primary, ...advanced, ...derived].map((definition) => definition.id).toSorted(),
       PROVIDER_IDS.toSorted(),
+    );
+  });
+
+  // `derived` means NOWHERE on the settings page: `managed`'s endpoint, model
+  // and bearer all come from the open session, so it is not something a person
+  // picks. A test that only counted the two visible groups would pass with it
+  // silently rendered in one of them.
+  it('offers a derived provider in neither picker group', () => {
+    for (const group of ['primary', 'advanced'] as const) {
+      assert.equal(
+        getProvidersByPlacement(group).some((definition) => definition.placement === 'derived'),
+        false,
+        group,
+      );
+    }
+    assert.deepStrictEqual(
+      getProvidersByPlacement('derived').map((definition) => definition.id),
+      ['managed'],
     );
   });
 

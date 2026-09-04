@@ -1,54 +1,54 @@
 /**
- * The Conform/Zod schema for the sync RECOVERY form — sign-in name, recovery
- * code, and the new passphrase it sets.
+ * The Conform/Zod schema for the mailed PASSWORD RESET form — the new password
+ * and its confirmation, and nothing else.
+ *
+ * ── What M192 removed, and why the file kept its name ────────────────────
+ *
+ * It used to ask for a sign-in name AND a recovery code. Both are gone. The
+ * reset token in the mailed link identifies the account, and the service hands
+ * the client the escrowed recovery code when that token is spent — so there is
+ * nothing left for a person to remember or to retype, which was the entire
+ * point of the change.
+ *
+ * The file is still `recovery-schema.ts` because the CEREMONY underneath is
+ * still the recovery one (`recoverSyncAccount`): the code proves the account
+ * and unwraps the DEK. Renaming it to `reset-schema.ts` would suggest the
+ * mailed reset of M128 came back, and that one restored a login to data it
+ * could not open.
  *
  * The new passphrase IS held to the signup floor
- * ({@link validateSyncPassphrase}): unlike the sign-in form, this field is a
- * person choosing a passphrase, and the one this replaces protected data that
- * nobody can recover for them.
- *
- * The recovery code is only checked for emptiness. Its grouping and
- * capitalisation are forgiving by design (`sync.recover.codeHint`), and
- * whether a given code belongs to a given account is a question only the
- * service can answer — deliberately with one indistinguishable `401`, so this
- * form cannot be used to find out which half was wrong.
+ * ({@link validateSyncPassphrase}): this field is a person CHOOSING a
+ * password, and the one it replaces protected data.
  */
 import { z } from 'zod';
-import { describeHandleProblem } from './handle';
 import { validateSyncPassphrase, type Translate } from './setup-flow';
 
 /**
- * The recovery schema.
+ * The reset schema.
  *
  * @param t - the caller's translator.
- * @returns a Zod object schema over the three raw form fields.
+ * @returns a Zod object schema over the two raw form fields.
  */
 export function makeSyncRecoverySchema(t: Translate) {
   return z
     .object({
-      handle: z.string().default(''),
-      recoveryCode: z.string().default(''),
       passphrase: z.string().default(''),
+      confirmPassphrase: z.string().default(''),
     })
     .superRefine((value, ctx) => {
-      // An EMPTY field gets its own sentence here. The signup copy ("choose a
-      // sign-in name, or let us suggest one") belongs to a form with a suggest
-      // button next to the box; on this one there is nothing to suggest, and
-      // the name being asked for already exists.
-      const handleProblem =
-        value.handle.trim() === '' ? t('sync.signIn.handleRequired') : describeHandleProblem(value.handle, t);
-      if (handleProblem !== null) ctx.addIssue({ code: 'custom', path: ['handle'], message: handleProblem });
-
-      if (value.recoveryCode.trim() === '') {
-        ctx.addIssue({ code: 'custom', path: ['recoveryCode'], message: t('sync.recover.codeRequired') });
-      }
-
       const passphraseProblem = validateSyncPassphrase(value.passphrase, t);
       if (passphraseProblem !== null) {
         ctx.addIssue({ code: 'custom', path: ['passphrase'], message: passphraseProblem });
       }
+
+      // Under CONFIRM, not under the passphrase: the field the person is asked
+      // to change is the second one, and an error over the first reads as
+      // "your password is wrong".
+      if (value.passphrase !== value.confirmPassphrase) {
+        ctx.addIssue({ code: 'custom', path: ['confirmPassphrase'], message: t('sync.setup.passphraseMismatch') });
+      }
     });
 }
 
-/** The three raw field values a valid recovery submission carries. */
+/** The two raw field values a valid reset submission carries. */
 export type SyncRecoveryValues = z.infer<ReturnType<typeof makeSyncRecoverySchema>>;
