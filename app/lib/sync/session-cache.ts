@@ -50,6 +50,7 @@ import { createSyncStateStore, deviceStorage, resolveDeviceId } from './sync-sta
 import {
   closeSyncSession,
   getSyncSessionSnapshot,
+  getSyncVault,
   openSyncSession,
   writeAccountHint,
   type SyncSessionSnapshot,
@@ -271,7 +272,65 @@ export async function cacheOpenSession(vault: SyncVault): Promise<void> {
 }
 
 /**
+ * The one resume attempt currently running, or `null` when none is.
+ *
+ * WHY THIS EXISTS (M192, 0.10.1 walk defect 1). `resumeSyncSession` has one
+ * caller — `SyncController`'s boot effect — but that effect can genuinely run
+ * twice before the first attempt has opened the vault: a quick bounce out of
+ * `_personal` and back (the layout unmounts, and nothing here cancels the
+ * async attempt already in flight) mounts a second `SyncController`, whose own
+ * bootstrap sees `getSyncVault() === null` — because the first attempt has not
+ * finished yet — and starts a SECOND `SyncAuthClient` against the SAME cached
+ * refresh token. Both attempts then call `/v1/auth/refresh` with the same
+ * value; the server sees the loser's copy as a REUSED refresh token — the
+ * theft signal — and revokes the whole family (`PROTOCOL.md` §4.2), signing
+ * the device out of the session the winner had just opened.
+ *
+ * The fix is the ordinary one for "don't spend a single-use resource twice":
+ * memoize the in-flight promise, and hand every caller — the first and any
+ * that arrive while it is running — the SAME one. There is still exactly one
+ * `SyncAuthClient` and exactly one `/v1/auth/refresh` call per resume, no
+ * matter how many times this function is invoked while it is running.
+ *
+ * This guards ONE JS realm (one browser tab). Two separate tabs are two
+ * separate module instances and cannot share a promise — `withSyncOrchestratorLock`
+ * (`sync-lock.ts`) is the cross-tab answer for the sync cycle itself; nothing
+ * here claims to extend that lock over the resume step too.
+ */
+let resumeInFlight: Promise<SyncSessionSnapshot> | null = null;
+
+/**
  * Rebuilds the session from this device's cache — the reload path.
+ *
+ * SINGLE-FLIGHT (see {@link resumeInFlight}): a call that arrives while an
+ * attempt is already running awaits that SAME attempt rather than starting a
+ * second `SyncAuthClient` against the same cached refresh token. A call that
+ * arrives once a vault is already open — whether THIS attempt opened it or
+ * something else did (a manual sign-in landing while this was still in
+ * flight) — is answered from the open session, with no client built and no
+ * request made.
+ */
+export async function resumeSyncSession({ serverUrl }: { serverUrl: string }): Promise<SyncSessionSnapshot> {
+  if (resumeInFlight !== null) return resumeInFlight;
+  // Already open — a resume that ran to completion (by this call or another
+  // caller) while this one waited its turn. Building a second client here
+  // would spend the same cached refresh token a second time for nothing.
+  if (getSyncVault() !== null) return getSyncSessionSnapshot();
+
+  const attempt = performResume({ serverUrl });
+  resumeInFlight = attempt;
+  try {
+    return await attempt;
+  } finally {
+    // Only this attempt may clear the slot — a slower CALLER awaiting the
+    // same promise must never race a NEWER attempt's cleanup.
+    if (resumeInFlight === attempt) resumeInFlight = null;
+  }
+}
+
+/**
+ * The resume attempt itself, run at most once per {@link resumeInFlight}
+ * window.
  *
  * ── The order, and why each step is where it is ──────────────────────────
  *
@@ -282,7 +341,10 @@ export async function cacheOpenSession(vault: SyncVault): Promise<void> {
  *     instead of a 401 and then two. A REFUSED refresh — `401` from a revoked
  *     family, `403` from a suspended account — clears the cache and leaves the
  *     app signed out. That is the whole of the "an admin suspended you" and
- *     "you changed your password elsewhere" story on this path.
+ *     "you changed your password elsewhere" story on this path — UNLESS the
+ *     vault has already moved on to a different session while this refresh
+ *     was in flight, in which case the failure is stale and must not undo
+ *     what replaced it (see {@link endStaleAttempt}).
  *  3. Read the account. `dailyAiLimit`, `aiUsedToday` and `suspendedAt` all
  *     move on the server between visits, so a resumed session that trusted a
  *     cached copy of them would offer a scan button to a suspended account.
@@ -292,7 +354,7 @@ export async function cacheOpenSession(vault: SyncVault): Promise<void> {
  * correct response to any failure here is a signed-out app — not an error
  * screen on top of a diary that works perfectly offline.
  */
-export async function resumeSyncSession({ serverUrl }: { serverUrl: string }): Promise<SyncSessionSnapshot> {
+async function performResume({ serverUrl }: { serverUrl: string }): Promise<SyncSessionSnapshot> {
   const cached = await readSessionCache();
   if (cached === null) return getSyncSessionSnapshot();
   if (cached.serverUrl !== serverUrl) {
@@ -315,13 +377,13 @@ export async function resumeSyncSession({ serverUrl }: { serverUrl: string }): P
   try {
     const refreshed = await authClient.refreshAccessToken();
     if (refreshed === null) {
-      await clearSessionCache();
+      await endStaleAttempt(cached.refreshToken);
       return getSyncSessionSnapshot();
     }
     await authClient.getAccount();
   } catch (cause) {
     if (isSessionEnded(cause)) {
-      await clearSessionCache();
+      await endStaleAttempt(cached.refreshToken);
       return getSyncSessionSnapshot();
     }
     // Offline, a 500, a service mid-deploy. The cache is KEPT: this device is
@@ -346,6 +408,26 @@ export async function resumeSyncSession({ serverUrl }: { serverUrl: string }): P
     privateStoreKek: cached.compartment.passphraseKek,
   });
   return getSyncSessionSnapshot();
+}
+
+/**
+ * Clears the cache for a refused refresh — UNLESS the vault has already moved
+ * on to a session this attempt knows nothing about.
+ *
+ * The single-flight guard above closes the in-tab race that used to produce
+ * this exact situation, but it guards only ONE caller of `resumeSyncSession`
+ * at a time; it cannot see a vault opened by an entirely different flow (a
+ * manual sign-in that lands while a slow resume is still waiting on the
+ * network). If that has happened, THIS refusal is stale — it is answering for
+ * a token pair nothing depends on any more — and clearing the cache here would
+ * throw away the session that replaced it.
+ */
+async function endStaleAttempt(startedWithRefreshToken: string): Promise<void> {
+  const vault = getSyncVault();
+  const vaultHasMovedOn =
+    vault !== null && vault.authClient.getSession()?.tokens.refreshToken !== startedWithRefreshToken;
+  if (vaultHasMovedOn) return;
+  await clearSessionCache();
 }
 
 /** Whether a failure means "this session is over", as opposed to "we could not tell". */

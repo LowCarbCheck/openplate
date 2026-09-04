@@ -2,6 +2,34 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.10.1 - 2026-09-04
+
+- You stay signed in when you open the app again. After following an
+  invitation, opening any page in a new tab showed the sign-in screen and
+  offered to sign you in to the account you were already using. The app now
+  waits for your session to open before it decides where to send you.
+- An invitation now lands you in the app. It used to finish on the public
+  home page, which describes the app to somebody who does not have it yet.
+- The invitation screen no longer shows the code from your link. It asked you
+  to look at a long string you did not type, could not check and should not
+  change. It now asks for a password and nothing else. If the link turns out
+  to be dead, the field appears so you can paste another one.
+- A photo estimate that fails now says why, in one sentence. It used to fail
+  in silence: nothing on screen, and the same photo sent twice. A photo that
+  is too large, a used up daily allowance, an account with no allowance and a
+  suspended account each say what they are and what to do.
+- Your account page shows how many photo estimates you have used today, and
+  how many you have.
+- After a password reset you land in your diary, with your entries already
+  there. The reset used to finish on the public home page before your diary had
+  been downloaded, so an account with months of entries was shown the first run
+  questionnaire.
+- Administrators can reach the administration pages again after resetting
+  their password. The page used to say they were not an administrator,
+  without checking their role.
+- Fixed an issue where opening the app in two places right after a password
+  reset could sign you out again.
+
 ## 0.10.0 - 2026-09-04
 
 - You sign in with your email address and a password. The made up sign-in

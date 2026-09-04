@@ -16,6 +16,7 @@
  */
 import { getLocalProfileGoals, hasEverHadData, listLocalFoodLogs } from '#app/lib/local-store';
 import { resolveOnboardingGate, type OnboardingGateOutcome } from '#app/lib/onboarding-gate';
+import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 
 /**
  * Reads the on-device store and returns the gate's verdict.
@@ -27,10 +28,17 @@ export async function readOnboardingGateKind(): Promise<OnboardingGateOutcome['k
   const hasProfile = profile !== null;
   const hasCompletedOnboarding = profile?.onboardingCompletedAt != null;
   const logCount = hasProfile && hasCompletedOnboarding ? 0 : (await listLocalFoodLogs()).length;
+  // The SNAPSHOT, not the vault. Both callers of this function have just
+  // finished signing in, so the session is open and settled and neither of the
+  // two session branches can fire for them; reading it anyway is what keeps
+  // this the single reader (M192/06 fix).
+  const session = getSyncSessionSnapshot();
   return resolveOnboardingGate({
     hasProfile,
     hasCompletedOnboarding,
     logCount,
     hasEverHadData: await hasEverHadData(),
+    hasSyncAccount: session.account !== null,
+    isResumingSession: session.isResuming,
   }).kind;
 }

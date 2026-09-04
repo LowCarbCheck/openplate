@@ -42,7 +42,7 @@ const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const HTTP_CLIENT_ERROR_START = 400;
 const HTTP_SERVER_ERROR_START = 500;
 /** Statuses that mean "this exact request can never succeed by resending it" — never retried. */
-const NON_RETRYABLE_CLIENT_ERROR_STATUSES: ReadonlySet<number> = new Set([401, 402, 403, 429]);
+const NON_RETRYABLE_CLIENT_ERROR_STATUSES: ReadonlySet<number> = new Set([401, 402, 403, 413, 429]);
 
 /**
  * How this adapter authenticates: a fixed key, or a function that produces the
@@ -140,9 +140,14 @@ function isClientErrorStatus(status: number): boolean {
 /**
  * True only for the 4xx statuses presumed to be a custom server rejecting
  * the `response_format` parameter — the sole case worth retrying without it.
- * Excludes `NON_RETRYABLE_CLIENT_ERROR_STATUSES` (401/402/403/429): those
+ * Excludes `NON_RETRYABLE_CLIENT_ERROR_STATUSES` (401/402/403/413/429): those
  * mean the request itself can never succeed by resending it unchanged, so
  * retrying would only double-bill the user and re-upload their photo.
+ *
+ * `413` JOINED THAT SET IN M192/06. It is a 4xx and it was therefore read as a
+ * server rejecting `response_format`, so the adapter uploaded the same
+ * oversized photo a second time. Dropping a body field cannot make a photo
+ * smaller, and the second upload is the larger cost of the two.
  */
 function isStructuredOutputRejection(status: number): boolean {
   return isClientErrorStatus(status) && !NON_RETRYABLE_CLIENT_ERROR_STATUSES.has(status);
@@ -279,7 +284,9 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
 
     if (!response.ok) {
       const classification = await classifyVisionHttpFailure(response);
-      throw new VisionProviderFailure(classification.cause, classification.message);
+      throw new VisionProviderFailure(classification.cause, classification.message, {
+        retryAfterSeconds: classification.retryAfterSeconds,
+      });
     }
 
     const payload = await readChatCompletionsEnvelope(response);

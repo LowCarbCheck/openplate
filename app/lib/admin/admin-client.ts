@@ -28,7 +28,7 @@ import {
   ADMIN_API_PREFIX,
   accountListSchema,
   accountResponseSchema,
-  adminStatsSchema,
+  adminStatsResponseSchema,
   deliverySchema,
   inviteCreatedSchema,
   inviteListSchema,
@@ -42,6 +42,10 @@ import {
 import type { AuthorizedMethod } from '../sync/engine/client/auth-client';
 import type { JsonValue } from '../sync/engine/protocol';
 import { isSyncRequestError } from '../sync/engine/client/sync-error';
+import { createComponentLogger } from '../logger';
+import { z } from 'zod';
+
+const log = createComponentLogger('admin-client');
 
 /**
  * What this client needs from a session, and nothing more.
@@ -88,15 +92,26 @@ export class AdminClient {
     this.transport = transport;
   }
 
-  /** Everybody on this instance. Paged by the service; the page asks for one large page and shows what it gets. */
-  async listAccounts(input: { limit?: number; offset?: number } = {}): Promise<
-    AdminOutcome<{ accounts: AdminAccountView[]; total: number }>
-  > {
-    return this.send({
-      path: `${ADMIN_API_PREFIX}/accounts${query(input)}`,
-      method: 'GET',
-      parse: (body) => accountListSchema.parse(body),
+  /**
+   * Everybody on this instance, in one array, however many pages that takes.
+   *
+   * THE PAGING IS THIS CLIENT'S BUSINESS, not the console's. It used to ask
+   * for `limit=500` and show whatever came back; the service caps `limit` at
+   * 200 (`PROTOCOL.md` §5.20) and answered `400`, so the whole admin page
+   * rendered its error card while `/stats` and `/account` returned `200` two
+   * lines away. A caller that has to know a server's page ceiling is a caller
+   * that will get it wrong the next time the ceiling moves.
+   */
+  async listAccounts(): Promise<AdminOutcome<{ accounts: AdminAccountView[]; total: number }>> {
+    const outcome = await this.collectPages({
+      path: `${ADMIN_API_PREFIX}/accounts`,
+      readPage: (body) => {
+        const page = accountListSchema.parse(body);
+        return { items: page.accounts, total: page.total };
+      },
     });
+    if (outcome.status === 'forbidden') return outcome;
+    return { status: 'ok', value: { accounts: outcome.value.items, total: outcome.value.total } };
   }
 
   /** One account, read fresh. Used after an edit so the row shows what the service stored, not what was typed. */
@@ -160,15 +175,17 @@ export class AdminClient {
     });
   }
 
-  /** Every invitation the service knows about, in every state. The page shows the pending ones. */
-  async listInvites(input: { limit?: number; offset?: number } = {}): Promise<
-    AdminOutcome<{ invites: InviteView[]; total: number }>
-  > {
-    return this.send({
-      path: `${ADMIN_API_PREFIX}/invites${query(input)}`,
-      method: 'GET',
-      parse: (body) => inviteListSchema.parse(body),
+  /** Every invitation the service knows about, in every state, across every page. The console shows the pending ones. */
+  async listInvites(): Promise<AdminOutcome<{ invites: InviteView[]; total: number }>> {
+    const outcome = await this.collectPages({
+      path: `${ADMIN_API_PREFIX}/invites`,
+      readPage: (body) => {
+        const page = inviteListSchema.parse(body);
+        return { items: page.invites, total: page.total };
+      },
     });
+    if (outcome.status === 'forbidden') return outcome;
+    return { status: 'ok', value: { invites: outcome.value.items, total: outcome.value.total } };
   }
 
   /** Withdraws an invitation. The link in the mail stops working; a redeemed invite `404`s and throws. */
@@ -195,13 +212,47 @@ export class AdminClient {
     });
   }
 
-  /** The four counts across the top of the page. */
+  /** The four counts across the top of the page, unwrapped from the `{"stats": …}` envelope. */
   async stats(): Promise<AdminOutcome<AdminStats>> {
     return this.send({
       path: `${ADMIN_API_PREFIX}/stats`,
       method: 'GET',
-      parse: (body) => adminStatsSchema.parse(body),
+      parse: (body) => adminStatsResponseSchema.parse(body).stats,
     });
+  }
+
+  /**
+   * Follows `offset` until the whole list is in hand.
+   *
+   * THE LOOP IS BOUNDED THREE WAYS, and each bound is a real failure rather
+   * than defensive noise: `total` is the service's own answer, an empty page
+   * stops it (a service that reports a total it will not serve would otherwise
+   * spin for ever), and {@link MAX_ADMIN_PAGES} is the ceiling for a `total`
+   * that grows faster than the pages are read. Any of the three ends it.
+   *
+   * A `forbidden` on page two ends the whole read: being demoted between two
+   * requests is the case, and half a list is worse than none.
+   */
+  private async collectPages<T>(input: {
+    path: string;
+    readPage: (body: JsonValue) => { items: T[]; total: number };
+  }): Promise<AdminOutcome<{ items: T[]; total: number }>> {
+    const items: T[] = [];
+    let total = 0;
+    for (let page = 0; page < MAX_ADMIN_PAGES; page += 1) {
+      const offset = page * ADMIN_PAGE_SIZE;
+      const outcome = await this.send({
+        path: `${input.path}${query({ limit: ADMIN_PAGE_SIZE, offset })}`,
+        method: 'GET',
+        parse: input.readPage,
+      });
+      if (outcome.status === 'forbidden') return outcome;
+      total = outcome.value.total;
+      items.push(...outcome.value.items);
+      if (outcome.value.items.length === 0) break;
+      if (items.length >= total) break;
+    }
+    return { status: 'ok', value: { items, total } };
   }
 
   /**
@@ -228,10 +279,38 @@ export class AdminClient {
       if (isSyncRequestError(error) && (error.kind === 'forbidden' || error.kind === 'suspended')) {
         return { status: 'forbidden' };
       }
+      // A SHAPE MISMATCH IS NEVER SILENT AGAIN. The only two things inside the
+      // try are the request and the parse, so anything here that is not a
+      // `SyncRequestError` came from zod — and a `{"stats": …}` envelope this
+      // client did not expect cost an afternoon precisely because it looked
+      // like three successful requests and an empty console.
+      if (error instanceof z.ZodError) {
+        log.error('an admin response did not match its schema', {
+          path: input.path,
+          issues: summarizeZodIssues(error),
+        });
+      }
       throw error;
     }
   }
 }
+
+/**
+ * The service's own ceiling on `limit`, transcribed from `PROTOCOL.md` §5.20.
+ *
+ * Asking for more is a `400`, not a truncated page, which is why the console
+ * showed an error card rather than a short list.
+ */
+const ADMIN_PAGE_SIZE = 200;
+
+/**
+ * The most pages one read will follow.
+ *
+ * 50 pages is 10,000 accounts, far past any instance this is for, and it is
+ * the bound that keeps a service reporting an unreachable `total` from turning
+ * a page load into an endless request loop.
+ */
+const MAX_ADMIN_PAGES = 50;
 
 /** `?limit=&offset=`, or nothing at all when neither was asked for. */
 function query(input: { limit?: number; offset?: number }): string {
@@ -280,4 +359,15 @@ function inviteBody(draft: InviteDraft): JsonValue {
     dailyAiLimit: draft.dailyAiLimit,
     expiresInDays: draft.expiresInDays,
   });
+}
+
+/**
+ * A zod failure as one readable line.
+ *
+ * The PATHS and MESSAGES only. A zod error also carries the value it refused,
+ * and an admin response holds email addresses; a log line is the wrong place
+ * for them.
+ */
+function summarizeZodIssues(error: z.ZodError): string {
+  return error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`).join('; ');
 }

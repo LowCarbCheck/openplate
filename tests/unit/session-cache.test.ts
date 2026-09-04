@@ -31,6 +31,7 @@ import 'fake-indexeddb/auto';
 
 import {
   clearSessionCache,
+  openSyncVault,
   readSessionCache,
   resumeSyncSession,
   writeSessionCache,
@@ -38,6 +39,8 @@ import {
 } from '../../app/lib/sync/session-cache';
 import { closeSyncSession, getSyncSessionSnapshot, getSyncVault } from '../../app/lib/sync/sync-session';
 import { deriveAesKeyViaHkdf, HKDF_INFO } from '../../app/lib/sync/engine/crypto/hkdf';
+import { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
+import { SyncHttpClient } from '../../app/lib/sync/engine/client/http-client';
 
 const SERVER_URL = 'https://sync.example.test';
 
@@ -190,6 +193,84 @@ test('a cached session resumes into a real vault, with the rotated tokens writte
   }
 });
 
+// ---------------------------------------------------------------------------
+// Role — not a guessed default (0.10.1 walk defect 2)
+// ---------------------------------------------------------------------------
+
+test('a session opened once the real AccountView has been read carries the true role', async () => {
+  const restore = withFetch(async (input) => {
+    const path = new URL(String(input)).pathname;
+    if (path.endsWith('/auth/account')) return json({ account: { ...ACCOUNT, role: 'admin' } });
+    return json({ error: 'unexpected route' }, 404);
+  });
+  try {
+    const authClient = new SyncAuthClient({ baseUrl: SERVER_URL });
+    authClient.restoreSession({
+      account: { id: ACCOUNT.id, email: ACCOUNT.email },
+      tokens: {
+        accessToken: 'access-old',
+        accessTokenExpiresAt: '2026-09-04T10:15:00.000Z',
+        refreshToken: 'refresh-old',
+        refreshTokenExpiresAt: '2026-10-04T10:00:00.000Z',
+      },
+    });
+    // The reset ceremony's own account read — `recover-rotate`'s response
+    // already carries the full view (`openplate-sync` `toAccountView`), and
+    // `resumeSyncSession` reaches the same state via `getAccount()`.
+    await authClient.getAccount();
+    const http = new SyncHttpClient({ baseUrl: SERVER_URL, tokens: authClient });
+
+    openSyncVault({
+      authClient,
+      http,
+      serverUrl: SERVER_URL,
+      accountId: ACCOUNT.id,
+      email: ACCOUNT.email,
+      dek: new Uint8Array(32).fill(1),
+      privateStoreKek: await compartmentKey(),
+    });
+
+    assert.equal(getSyncSessionSnapshot().account?.role, 'admin');
+  } finally {
+    restore();
+    closeSyncSession();
+  }
+});
+
+test('a session opened before the real AccountView lands has role: null, not "member"', async () => {
+  const authClient = new SyncAuthClient({ baseUrl: SERVER_URL });
+  // `restoreSession` is what `resumeSyncSession` calls BEFORE its own
+  // `getAccount()` read — a placeholder carrying only id and email. Opening a
+  // vault straight from this (the shape a defensive default used to paper
+  // over) must publish "not known yet", never an invented standing.
+  authClient.restoreSession({
+    account: { id: ACCOUNT.id, email: ACCOUNT.email },
+    tokens: {
+      accessToken: 'access-old',
+      accessTokenExpiresAt: '2026-09-04T10:15:00.000Z',
+      refreshToken: 'refresh-old',
+      refreshTokenExpiresAt: '2026-10-04T10:00:00.000Z',
+    },
+  });
+  const http = new SyncHttpClient({ baseUrl: SERVER_URL, tokens: authClient });
+
+  openSyncVault({
+    authClient,
+    http,
+    serverUrl: SERVER_URL,
+    accountId: ACCOUNT.id,
+    email: ACCOUNT.email,
+    dek: new Uint8Array(32).fill(1),
+    privateStoreKek: await compartmentKey(),
+  });
+
+  const account = getSyncSessionSnapshot().account;
+  assert.equal(account?.role, null, 'an administrator must never be read as "member" for a fact not yet in hand');
+  assert.equal(account?.dailyAiLimit, null);
+  assert.equal(account?.aiUsedToday, null);
+  closeSyncSession();
+});
+
 test('nothing cached means nothing dialled', async () => {
   let calls = 0;
   const restore = withFetch(async () => {
@@ -293,6 +374,144 @@ test('a 500 from the account read keeps the cache too', async () => {
   try {
     assert.equal((await resumeSyncSession({ serverUrl: SERVER_URL })).account, null);
     assert.notEqual(await readSessionCache(), null);
+  } finally {
+    restore();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Single-flight (0.10.1 walk defect 1)
+// ---------------------------------------------------------------------------
+
+test('two concurrent resumes make exactly one refresh request, and both resolve to the same open session', async () => {
+  await writeSessionCache(await cachedRecord());
+  let refreshCalls = 0;
+  const restore = withFetch(async (input) => {
+    const path = new URL(String(input)).pathname;
+    if (path.endsWith('/auth/refresh')) {
+      refreshCalls += 1;
+      return json({
+        tokens: {
+          accessToken: 'access-new',
+          accessTokenExpiresAt: '2026-09-04T10:30:00.000Z',
+          refreshToken: 'refresh-new',
+          refreshTokenExpiresAt: '2026-10-04T10:00:00.000Z',
+        },
+      });
+    }
+    if (path.endsWith('/auth/account')) return json({ account: ACCOUNT });
+    return json({ error: 'unexpected route' }, 404);
+  });
+  try {
+    // Two `SyncController` mounts racing — the exact shape of the 0.10.1 walk
+    // defect: a quick bounce out of `_personal` and back starts a second
+    // `resumeSyncSession` before the first has opened the vault.
+    const [first, second] = await Promise.all([
+      resumeSyncSession({ serverUrl: SERVER_URL }),
+      resumeSyncSession({ serverUrl: SERVER_URL }),
+    ]);
+
+    assert.equal(refreshCalls, 1, 'the cached refresh token must be spent exactly once');
+    assert.equal(first.account?.email, ACCOUNT.email);
+    assert.deepEqual(first, second, 'both callers must see the same settled session');
+    assert.notEqual(getSyncVault(), null);
+  } finally {
+    restore();
+  }
+});
+
+test('a caller arriving after the resume already settled makes no request at all', async () => {
+  await writeSessionCache(await cachedRecord());
+  let refreshCalls = 0;
+  const restore = withFetch(async (input) => {
+    const path = new URL(String(input)).pathname;
+    if (path.endsWith('/auth/refresh')) {
+      refreshCalls += 1;
+      return json({
+        tokens: {
+          accessToken: 'access-new',
+          accessTokenExpiresAt: '2026-09-04T10:30:00.000Z',
+          refreshToken: 'refresh-new',
+          refreshTokenExpiresAt: '2026-10-04T10:00:00.000Z',
+        },
+      });
+    }
+    if (path.endsWith('/auth/account')) return json({ account: ACCOUNT });
+    return json({ error: 'unexpected route' }, 404);
+  });
+  try {
+    await resumeSyncSession({ serverUrl: SERVER_URL });
+    assert.equal(refreshCalls, 1);
+
+    // A second `SyncController` mount, well after the first one settled — the
+    // vault is already open, so this must be answered from it, not rebuilt.
+    const again = await resumeSyncSession({ serverUrl: SERVER_URL });
+
+    assert.equal(refreshCalls, 1, 'a resume with an open vault must make no request');
+    assert.equal(again.account?.email, ACCOUNT.email);
+  } finally {
+    restore();
+  }
+});
+
+test('a stale 401 arriving after a successful refresh does not clear the session cache', async () => {
+  await writeSessionCache(await cachedRecord());
+  // The executor runs synchronously, so this is assigned before the line below reads it.
+  let releaseRefresh!: () => void;
+  const refreshGate = new Promise<void>((resolve) => {
+    releaseRefresh = resolve;
+  });
+  const restore = withFetch(async (input) => {
+    const path = new URL(String(input)).pathname;
+    if (path.endsWith('/auth/refresh')) {
+      // Held open until the test releases it, so a session can open from
+      // elsewhere WHILE this refresh is still in flight.
+      await refreshGate;
+      return json({ error: 'refresh token reuse detected' }, 401);
+    }
+    return json({ error: 'unexpected route' }, 404);
+  });
+  try {
+    const resuming = resumeSyncSession({ serverUrl: SERVER_URL });
+
+    // A totally different flow — a manual sign-in, say — opens a session of
+    // its own while the stale attempt above is still waiting on the network.
+    const freshAuthClient = new SyncAuthClient({ baseUrl: SERVER_URL });
+    freshAuthClient.restoreSession({
+      account: { id: ACCOUNT.id, email: ACCOUNT.email },
+      tokens: {
+        accessToken: 'access-fresh',
+        accessTokenExpiresAt: '2026-09-04T11:00:00.000Z',
+        refreshToken: 'refresh-fresh',
+        refreshTokenExpiresAt: '2026-10-04T11:00:00.000Z',
+      },
+    });
+    const freshHttp = new SyncHttpClient({ baseUrl: SERVER_URL, tokens: freshAuthClient });
+    openSyncVault({
+      authClient: freshAuthClient,
+      http: freshHttp,
+      serverUrl: SERVER_URL,
+      accountId: ACCOUNT.id,
+      email: ACCOUNT.email,
+      dek: new Uint8Array(32).fill(9),
+      privateStoreKek: await compartmentKey(),
+    });
+
+    // Now let the stale refresh's 401 land.
+    releaseRefresh();
+    await resuming;
+
+    assert.notEqual(getSyncVault(), null, 'the fresh session must still be open');
+    assert.equal(
+      getSyncVault()?.authClient.getSession()?.tokens.refreshToken,
+      'refresh-fresh',
+      'the stale attempt must not have touched the fresh vault',
+    );
+    assert.notEqual(
+      await readSessionCache(),
+      null,
+      'a refusal that arrived after the vault moved on must not clear the cache',
+    );
   } finally {
     restore();
   }

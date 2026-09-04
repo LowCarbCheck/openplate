@@ -112,6 +112,9 @@ export type ScanFailureReason =
   | 'invalid-request'
   | 'transient'
   | 'genuinely-no-food'
+  | 'photo-too-large'
+  | 'ai-not-allowed'
+  | 'account-suspended'
   // Not provider causes: the photo never reached a provider at all.
   | 'no-provider'
   | 'unreadable-image'

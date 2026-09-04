@@ -62,6 +62,8 @@ import { signOutOfSync } from '#app/lib/sync/sync-actions';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { readSyncInvite, type SyncInviteDetails } from '#app/lib/sync/sync-actions';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
+import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -194,13 +196,32 @@ export default function Join() {
               serverUrl={configuredSyncUrl}
               initialInvite={phase.inviteToken}
               onAlreadyRegistered={() => setPhase({ status: 'already-registered', email: phase.invite.email })}
-              onCeremonyComplete={() => void navigate('/')}
+              onCeremonyComplete={() => void landAfterJoin(navigate)}
             />
           </CardContent>
         )}
       </Card>
     </main>
   );
+}
+
+/**
+ * Where a finished invitation lands: exactly where a finished sign-in lands.
+ *
+ * IT USED TO BE `/`, and `/` is the marketing landing page. Walking 0.10.0 on
+ * 2026-09-04, somebody who had just created an account was shown "No account"
+ * and "Photo scans use your own AI key" — a page written for a stranger, about
+ * an instance they were not on. The home hint would have carried them into the
+ * app on the NEXT visit, which is no help on this one.
+ *
+ * The two flows ask the same question ("does this account already hold a
+ * diary?") and must not answer it twice, so this calls the same pair
+ * `/sign-in` does: read the gate, resolve the destination.
+ *
+ * @param navigate - the router's navigate, passed in so this stays testable.
+ */
+async function landAfterJoin(navigate: (path: string) => void): Promise<void> {
+  navigate(resolveSignInDestination({ gate: await readOnboardingGateKind() }));
 }
 
 /** The origin of a link's address, or `''` when it is not parseable — the card words the two differently. */

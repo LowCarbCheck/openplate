@@ -51,7 +51,7 @@ describe('classifyVisionHttpFailure', () => {
     assert.strictEqual(result.cause, 'rate-limit');
   });
 
-  it('never echoes the response body\'s free-text message into the thrown message (key material could be embedded there)', async () => {
+  it("never echoes the response body's free-text message into the thrown message (key material could be embedded there)", async () => {
     const result = await classifyVisionHttpFailure(
       jsonResponse(401, { error: { message: 'Incorrect API key provided: sk-secret-fragment-1234' } }),
     );
@@ -74,18 +74,30 @@ describe('classifyVisionHttpFailure', () => {
     assert.match(result.message, /different model/i);
   });
 
-  // 400/413/422 (and any other unmatched 4xx) can never succeed by resending
+  // 400/422 (and any other unmatched 4xx) can never succeed by resending
   // the identical request — they must NOT fall into `transient`, whose own
   // doc promises "can succeed if retried later" (the reported bug: retry
   // logic keyed on `transient` would burn real money re-uploading the photo
   // forever for a request that can never succeed).
-  for (const status of [400, 413, 422]) {
+  //
+  // 413 LEFT THIS LIST IN M192/06. It is still not `transient`, and the
+  // argument above still holds for it; what changed is that it now has its own
+  // cause, because "check your model and connection settings" is no advice at
+  // all for a photo that is simply too big — and none at all on an instance
+  // with no settings page. See `scan-failure-copy.test.ts`.
+  for (const status of [400, 422]) {
     it(`classifies ${status} as invalid-request, not transient, with the status in the message`, async () => {
       const result = await classifyVisionHttpFailure(jsonResponse(status));
       assert.strictEqual(result.cause, 'invalid-request');
       assert.match(result.message, new RegExp(String(status)));
     });
   }
+
+  it('classifies 413 as photo-too-large, and says so without mentioning settings', async () => {
+    const result = await classifyVisionHttpFailure(jsonResponse(413));
+    assert.strictEqual(result.cause, 'photo-too-large');
+    assert.doesNotMatch(result.message, /settings/i);
+  });
 
   it('classifies an unmatched 4xx (e.g. 406) as invalid-request too', async () => {
     const result = await classifyVisionHttpFailure(jsonResponse(406));

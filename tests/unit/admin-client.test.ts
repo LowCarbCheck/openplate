@@ -22,10 +22,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { z } from 'zod';
+
 import { AdminClient, type AdminTransport } from '../../app/lib/admin/admin-client';
+import { adminStatsResponseSchema } from '../../app/lib/admin/admin-wire';
 import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import type { AuthorizedMethod } from '../../app/lib/sync/engine/client/auth-client';
-import type { JsonValue } from '../../app/lib/sync/engine/protocol';
+import type { JsonObject, JsonValue } from '../../app/lib/sync/engine/protocol';
 
 /** One request as the client made it. The shape of these is the contract this file pins. */
 interface RecordedRequest {
@@ -34,7 +37,7 @@ interface RecordedRequest {
   body: JsonValue | undefined;
 }
 
-const ACCOUNT: JsonValue = {
+const ACCOUNT: JsonObject = {
   id: 7,
   email: 'anna@example.org',
   displayName: 'Anna',
@@ -45,7 +48,7 @@ const ACCOUNT: JsonValue = {
   createdAt: '2026-09-01T09:00:00.000Z',
 };
 
-const INVITE: JsonValue = {
+const INVITE: JsonObject = {
   id: 12,
   email: 'bea@example.org',
   displayName: null,
@@ -90,6 +93,33 @@ function clientAnswering(body: JsonValue): RecordedClient {
   return { client: new AdminClient({ transport }), requests };
 }
 
+/** A client that answers each successive request with the next canned page, body or refusal. */
+function clientPaging(pages: readonly FakeAnswer[]): RecordedClient {
+  const requests: RecordedRequest[] = [];
+  let index = 0;
+  const transport: AdminTransport = {
+    requestAsAccount(input) {
+      requests.push({ path: input.path, method: input.method, body: input.body });
+      const answer = pages[index] ?? pages.at(-1);
+      index += 1;
+      if (answer === undefined) return Promise.resolve(null);
+      if (answer.kind === 'error') return Promise.reject(answer.error);
+      return Promise.resolve(answer.body);
+    },
+  };
+  return { client: new AdminClient({ transport }), requests };
+}
+
+/** One page of a list, as the transport hands it back. */
+function page(body: JsonValue): FakeAnswer {
+  return { kind: 'body', body };
+}
+
+/** `count` accounts with ids starting one past `from`. Only the id has to differ. */
+function accountsNumbered(from: number, count: number): JsonValue[] {
+  return Array.from({ length: count }, (_item, index) => ({ ...ACCOUNT, id: from + index + 1 }));
+}
+
 function clientFailingWith(error: SyncRequestError): AdminClient {
   return new AdminClient({ transport: fakeTransport({ kind: 'error', error }).transport });
 }
@@ -103,11 +133,14 @@ function refusing(kind: 'forbidden' | 'suspended'): AdminClient {
 // Reading
 // ---------------------------------------------------------------------------
 
-test('listAccounts asks for one page of people and parses them', async () => {
+test('listAccounts asks for a page the service will serve, and parses it', async () => {
   const { client, requests } = clientAnswering({ accounts: [ACCOUNT], total: 1 });
-  const outcome = await client.listAccounts({ limit: 500 });
+  const outcome = await client.listAccounts();
 
-  assert.deepEqual(requests, [{ path: '/v1/admin/accounts?limit=500', method: 'GET', body: undefined }]);
+  // 200, NOT 500. The service caps `limit` at 200 (`PROTOCOL.md` §5.20) and
+  // answers `400` above it, which is how the whole admin page rendered its
+  // error card while `/stats` beside it returned 200.
+  assert.deepEqual(requests, [{ path: '/v1/admin/accounts?limit=200&offset=0', method: 'GET', body: undefined }]);
   assert.equal(outcome.status, 'ok');
   if (outcome.status !== 'ok') return;
   assert.equal(outcome.value.total, 1);
@@ -115,12 +148,73 @@ test('listAccounts asks for one page of people and parses them', async () => {
   assert.equal(outcome.value.accounts[0]?.aiUsedToday, 3);
 });
 
-test('a paging call with neither bound asks for no query string at all', async () => {
-  // An empty `?` is a different URL, and a service that logs or caches by URL
-  // sees two of them for one request.
+test('a list longer than one page is followed to the end and concatenated', async () => {
+  const { client, requests } = clientPaging([
+    page({ accounts: accountsNumbered(0, 200), total: 250 }),
+    page({ accounts: accountsNumbered(200, 50), total: 250 }),
+  ]);
+  const outcome = await client.listAccounts();
+
+  assert.deepEqual(
+    requests.map((request) => request.path),
+    ['/v1/admin/accounts?limit=200&offset=0', '/v1/admin/accounts?limit=200&offset=200'],
+    'the second request follows `offset`, and there is no third',
+  );
+  assert.equal(outcome.status, 'ok');
+  if (outcome.status !== 'ok') return;
+  assert.equal(outcome.value.accounts.length, 250);
+  assert.equal(outcome.value.total, 250);
+  assert.equal(outcome.value.accounts[0]?.id, 1, 'the first page comes first');
+  assert.equal(outcome.value.accounts[249]?.id, 250, 'and the second is appended, not substituted');
+});
+
+test('an empty instance is one request and an empty array', async () => {
   const { client, requests } = clientAnswering({ accounts: [], total: 0 });
-  await client.listAccounts();
-  assert.equal(requests[0]?.path, '/v1/admin/accounts');
+  const outcome = await client.listAccounts();
+
+  assert.equal(requests.length, 1, 'a total of 0 is already the whole list');
+  assert.equal(outcome.status === 'ok' && outcome.value.accounts.length, 0);
+  assert.equal(outcome.status === 'ok' && outcome.value.total, 0);
+});
+
+test('a page that comes back empty stops the read, whatever the total claims', async () => {
+  // A service reporting a total it will not serve would otherwise spin until
+  // the page cap, 50 requests later.
+  const { client, requests } = clientPaging([
+    page({ accounts: accountsNumbered(0, 200), total: 10_000 }),
+    page({ accounts: [], total: 10_000 }),
+  ]);
+  const outcome = await client.listAccounts();
+
+  assert.equal(requests.length, 2);
+  assert.equal(outcome.status === 'ok' && outcome.value.accounts.length, 200);
+});
+
+test('a refusal on the second page ends the whole read', async () => {
+  // Being demoted between two requests is the case, and half a list is worse
+  // than none.
+  const { client, requests } = clientPaging([
+    page({ accounts: accountsNumbered(0, 200), total: 250 }),
+    { kind: 'error', error: new SyncRequestError({ kind: 'forbidden', message: 'forbidden', status: 403 }) },
+  ]);
+  const outcome = await client.listAccounts();
+
+  assert.equal(outcome.status, 'forbidden');
+  assert.equal(requests.length, 2, 'and it stops there');
+});
+
+test('listInvites is paged the same way', async () => {
+  const { client, requests } = clientPaging([
+    page({ invites: Array.from({ length: 200 }, (_item, index) => ({ ...INVITE, id: index + 1 })), total: 205 }),
+    page({ invites: Array.from({ length: 5 }, (_item, index) => ({ ...INVITE, id: index + 201 })), total: 205 }),
+  ]);
+  const outcome = await client.listInvites();
+
+  assert.deepEqual(
+    requests.map((request) => request.path),
+    ['/v1/admin/invites?limit=200&offset=0', '/v1/admin/invites?limit=200&offset=200'],
+  );
+  assert.equal(outcome.status === 'ok' && outcome.value.invites.length, 205);
 });
 
 test('getAccount unwraps the envelope', async () => {
@@ -133,21 +227,64 @@ test('getAccount unwraps the envelope', async () => {
 
 test('listInvites parses an invitation, including the fields only an admin sees', async () => {
   const { client, requests } = clientAnswering({ invites: [INVITE], total: 1 });
-  const outcome = await client.listInvites({ limit: 500, offset: 0 });
+  const outcome = await client.listInvites();
 
-  assert.equal(requests[0]?.path, '/v1/admin/invites?limit=500&offset=0');
+  assert.equal(requests[0]?.path, '/v1/admin/invites?limit=200&offset=0');
   assert.equal(outcome.status, 'ok');
   if (outcome.status !== 'ok') return;
   assert.equal(outcome.value.invites[0]?.status, 'pending');
   assert.equal(outcome.value.invites[0]?.expiresAt, '2026-09-11T09:00:00.000Z');
 });
 
-test('stats parses the four counts the console shows', async () => {
-  const { client, requests } = clientAnswering({ accounts: 4, admins: 1, pendingInvites: 2, aiRequestsToday: 11 });
+/**
+ * The stats body EXACTLY as `openplate-sync` 0.6.0 sends it, transcribed from
+ * the network log of the 2026-09-04 walk.
+ *
+ * Wrapped in `stats`, like every other admin response, and carrying four
+ * operator metrics this client has no use for. Reading the counts at the top
+ * level is what made the whole console render its retry card behind three
+ * `200`s.
+ */
+const STATS_BODY: JsonValue = {
+  stats: {
+    accounts: 2,
+    accountsWithBlob: 2,
+    blobVersions: 5,
+    keyRecords: 4,
+    blobBytes: 1803,
+    pendingInvites: 0,
+    admins: 2,
+    aiRequestsToday: 1,
+  },
+};
+
+test('stats reads the four counts out of the `stats` envelope', async () => {
+  const { client, requests } = clientAnswering(STATS_BODY);
   const outcome = await client.stats();
 
   assert.equal(requests[0]?.path, '/v1/admin/stats');
-  assert.equal(outcome.status === 'ok' && outcome.value.pendingInvites, 2);
+  assert.equal(outcome.status, 'ok');
+  if (outcome.status !== 'ok') return;
+  assert.deepEqual(outcome.value, { accounts: 2, admins: 2, pendingInvites: 0, aiRequestsToday: 1 });
+});
+
+test('stats tolerates the operator metrics it does not use', () => {
+  // `accountsWithBlob`, `blobVersions`, `keyRecords` and `blobBytes` are in the
+  // body above and must not be in the result, nor cause a refusal: a schema
+  // that rejected unknown fields would turn every new server metric into a
+  // broken admin page.
+  const parsed = adminStatsResponseSchema.parse(STATS_BODY);
+  assert.deepEqual(
+    Object.keys(parsed.stats).toSorted(),
+    ['aiRequestsToday', 'accounts', 'admins', 'pendingInvites'].toSorted(),
+  );
+});
+
+test('an unwrapped stats body is refused, which is what the defect looked like', async () => {
+  // The shape this client used to expect. It must not silently parse as
+  // something, and it must not be mistaken for a permission problem.
+  const { client } = clientAnswering({ accounts: 4, admins: 1, pendingInvites: 2, aiRequestsToday: 11 });
+  await assert.rejects(() => client.stats(), z.ZodError);
 });
 
 // ---------------------------------------------------------------------------

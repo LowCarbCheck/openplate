@@ -37,19 +37,16 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
 
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { FirstPullStatus } from '#app/components/first-pull-status';
 import { SignInPanel } from '#app/components/sign-in-panel';
-import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useFirstPull, type FirstPullPhase } from '#app/hooks/use-first-pull';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { consumeSyncInvite } from '#app/lib/join-link';
-import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
-import { completeSignIn, resolveSignInDestination, type SignInDestination } from '#app/lib/sign-in-flow';
-import { describeErrorForUser } from '#app/lib/sync/error-text';
-import { syncNow } from '#app/lib/sync/sync-actions';
+import type { SignInDestination } from '#app/lib/sign-in-flow';
 import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -58,52 +55,33 @@ export { RouteErrorBoundary as ErrorBoundary };
 // seam every other route uses.
 export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.signIn') }];
 
-/** What the screen is doing. The form is the door; the other two are the pull. */
-type Phase =
-  | { status: 'form' }
-  | { status: 'pulling' }
-  /** Signed in, snapshot missing. `message` is what went wrong, in the person's language. */
-  | { status: 'pull-failed'; message: string };
-
-/**
- * Reads the freshly pulled store and asks both authorities where this device
- * belongs: the onboarding gate, and the pending join slot.
- *
- * The gate read itself lives in `read-onboarding-gate.ts` now (M187 spec 03),
- * because `/join` ends a managed ceremony with the same question and two
- * readers would be two chances to read a different set of facts.
- */
-async function readDestination(): Promise<SignInDestination> {
-  return resolveSignInDestination({
-    gate: await readOnboardingGateKind(),
-  });
-}
-
 export default function SignIn() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const serverUrl = useSyncServerUrl();
-  const [phase, setPhase] = useState<Phase>({ status: 'form' });
+  // THE PULL, and its two screens, shared with `/reset` (M192/06 fix). Both
+  // routes open a session and then have to wait for the same snapshot; the
+  // rule that they must wait lives in the hook, not in either of them.
+  const { phase, start: startFirstPull } = useFirstPull({
+    onArrived: useCallback(
+      (path: SignInDestination) => {
+        // A SIGN-IN SPENDS THE PARKED INVITE, whatever the destination.
+        // Somebody who followed an invitation and turned out to already have
+        // an account has answered the invitation; leaving it parked would
+        // offer them the signup screen again on the next visit, for an account
+        // that exists. `/reset` has no invitation to spend, which is why this
+        // is a callback rather than part of the hook.
+        consumeSyncInvite();
+        void navigate(path);
+      },
+      [navigate],
+    ),
+  });
   // The remembered sign-in name, or `''`. Read in an effect: `localStorage`
   // does not exist during SSR. It also seeds an uncontrolled Conform field, so
   // clearing it has to REMOUNT the panel — see the `key` below.
   const [knownEmail, setKnownEmail] = useState('');
   useEffect(() => setKnownEmail(readAccountHint() ?? ''), []);
-
-  const startFirstPull = useCallback(async (): Promise<void> => {
-    setPhase({ status: 'pulling' });
-    const outcome = await completeSignIn({ pull: syncNow, readDestination });
-    if (outcome.status === 'pull-failed') {
-      setPhase({ status: 'pull-failed', message: describeErrorForUser(outcome.cause, t('signIn.pullFailedBody')) });
-      return;
-    }
-    // A SIGN-IN SPENDS THE PARKED INVITE, whatever the destination. Somebody
-    // who followed an invitation and turned out to already have an account has
-    // answered the invitation; leaving it parked would offer them the signup
-    // screen again on the next visit, for an account that exists.
-    consumeSyncInvite();
-    void navigate(outcome.path);
-  }, [navigate, t]);
 
   /**
    * The repair ceremony finishing is also a finished sign-in.
@@ -119,7 +97,7 @@ export default function SignIn() {
    * code — the same defect that hit `/settings/sync` on 2026-09-04.
    */
   const handleCeremonyComplete = useCallback((): void => {
-    void startFirstPull();
+    startFirstPull();
   }, [startFirstPull]);
 
   return (
@@ -141,9 +119,9 @@ export default function SignIn() {
                 clearAccountHint();
                 setKnownEmail('');
               }}
-              onSignedIn={() => void startFirstPull()}
+              onSignedIn={startFirstPull}
               onCeremonyComplete={handleCeremonyComplete}
-              onRetryPull={() => void startFirstPull()}
+              onRetryPull={startFirstPull}
             />
           }
         </CardContent>
@@ -163,7 +141,7 @@ function SignedOutBody({
   onCeremonyComplete,
   onRetryPull,
 }: {
-  phase: Phase;
+  phase: FirstPullPhase;
   serverUrl: string;
   knownEmail: string;
   onForgot: () => void;
@@ -172,28 +150,7 @@ function SignedOutBody({
   onCeremonyComplete: () => void;
   onRetryPull: () => void;
 }) {
-  const { t } = useTranslation();
-
-  if (phase.status === 'pulling') {
-    return (
-      <div className="flex flex-col items-center gap-3 py-6 text-center" aria-busy="true">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">{t('signIn.pulling')}</p>
-      </div>
-    );
-  }
-
-  if (phase.status === 'pull-failed') {
-    return (
-      <div className="space-y-3">
-        <p className="text-sm font-medium">{t('signIn.pullFailedTitle')}</p>
-        <p className="text-sm text-muted-foreground">{phase.message}</p>
-        <Button type="button" className="h-11 w-full" onClick={onRetryPull}>
-          {t('errors.tryAgain')}
-        </Button>
-      </div>
-    );
-  }
+  if (phase.status !== 'idle') return <FirstPullStatus phase={phase} onRetry={onRetryPull} />;
 
   return (
     <SignInPanel

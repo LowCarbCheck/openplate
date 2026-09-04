@@ -89,7 +89,14 @@ export type Delivery = z.infer<typeof deliverySchema>;
 export const inviteCreatedSchema = deliverySchema.extend({ invite: inviteViewSchema });
 export type InviteCreated = z.infer<typeof inviteCreatedSchema>;
 
-/** `GET /v1/admin/stats`. Only the four counts this page shows are required of it. */
+/**
+ * The four counts the console shows.
+ *
+ * UNKNOWN FIELDS ARE TOLERATED, by zod's default stripping. The service sends
+ * `accountsWithBlob`, `blobVersions`, `keyRecords` and `blobBytes` beside
+ * these, and it will send more: a schema that refused them would turn every
+ * new operator metric into a broken admin page.
+ */
 export const adminStatsSchema = z.object({
   accounts: z.number().int(),
   admins: z.number().int(),
@@ -97,3 +104,16 @@ export const adminStatsSchema = z.object({
   aiRequestsToday: z.number().int(),
 });
 export type AdminStats = z.infer<typeof adminStatsSchema>;
+
+/**
+ * `GET /v1/admin/stats` — WRAPPED, like every other admin response.
+ *
+ * The body is `{"stats": {...}}`, as the 0.5.0 admin API always sent it. This
+ * client read the counts at the top level, so the parse failed, the throw
+ * escaped `Promise.all`, and the console rendered its retry card with three
+ * `200`s in the network log and nothing in the browser console. The lists next
+ * to it are wrapped the same way (`{"accounts": [...]}`) and were right; this
+ * one was transcribed from the milestone's summary table rather than from a
+ * body.
+ */
+export const adminStatsResponseSchema = z.object({ stats: adminStatsSchema });

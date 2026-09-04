@@ -87,10 +87,21 @@ describe('completeSignIn', () => {
 
 describe('/sign-in wiring', () => {
   const route = readFileSync(new URL('../../app/routes/sign-in.tsx', import.meta.url), 'utf8');
+  const pullHook = readFileSync(new URL('../../app/hooks/use-first-pull.ts', import.meta.url), 'utf8');
 
-  it('runs a real sync cycle and asks the real gate', () => {
-    assert.match(route, /syncNow/);
-    assert.match(route, /resolveOnboardingGate/);
+  it('runs the pull through the shared hook rather than its own copy', () => {
+    // The pull MOVED (M192/06 fix). `/reset` had no pull at all and handed a
+    // returning person the first-run questionnaire while their diary sat on
+    // the server; two screens with one rule between them is one screen too
+    // many, so the rule lives in one place and both call it.
+    assert.match(route, /useFirstPull/);
+    assert.doesNotMatch(route, /completeSignIn/, 'the route no longer runs the cycle itself');
+  });
+
+  it('and that hook is the one running a real sync cycle and asking the real gate', () => {
+    assert.match(pullHook, /syncNow/);
+    assert.match(pullHook, /readOnboardingGateKind/);
+    assert.match(pullHook, /resolveSignInDestination/);
   });
 
   it('prefills the remembered name and can disown it', () => {
@@ -108,6 +119,7 @@ describe('/sign-in wiring', () => {
 
   it('keeps a failed pull signed in', () => {
     assert.doesNotMatch(route, /signOutOfSync/);
+    assert.doesNotMatch(pullHook, /signOutOfSync/, 'and the hook it moved into does not either');
   });
 
   it('has no server loader: nothing it reads is any of the server business', () => {

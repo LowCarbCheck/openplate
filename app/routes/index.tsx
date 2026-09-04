@@ -24,6 +24,7 @@ import { z } from 'zod';
 import PublicWrapper from '#app/components/public-wrapper';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { NewsletterSignup } from '#app/components/newsletter-signup';
+import { useManagedInstance } from '#app/hooks/use-public-config';
 import { REPO_URL } from '#app/lib/brand';
 import { CONFIG } from '#app/config';
 import { NEWSLETTER_SOURCE, toNewsletterPublicConfig } from '#app/config/newsletter';
@@ -1015,6 +1016,11 @@ export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   useHomeHintRepair();
   const { syncEnabled, newsletter, analyticsEnabled } = loaderData;
+  // THE TWO SPOTS THAT DESCRIBE THE AI (M192/06). Everything else on this page
+  // is true of both kinds of instance; these two said "bring your own key",
+  // which on a managed instance is a promise its visitors cannot act on and a
+  // description of a product they are not being offered.
+  const managed = useManagedInstance();
 
   return (
     <PublicWrapper wide>
@@ -1131,7 +1137,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               No `whitespace-nowrap`: at 320px this wraps to two lines, and a
               wrapped line is better than the horizontal scroll that forcing it
               onto one would produce on the narrowest phones. */}
-          <p className="mt-4 text-xs text-muted-foreground">{t('landing.hero.ticks')}</p>
+          <p className="mt-4 text-xs text-muted-foreground">
+            {managed ? t('landing.hero.ticksManaged') : t('landing.hero.ticks')}
+          </p>
         </div>
         <HeroShot />
       </div>
@@ -1161,7 +1169,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           <HowStep
             icon={Camera}
             title={t('landing.how.scan.title')}
-            body={t('landing.how.scan.body')}
+            body={managed ? t('landing.how.scan.bodyManaged') : t('landing.how.scan.body')}
             shotDark="/landing/scan-mobile-dark.webp"
             shotLight="/landing/scan-mobile-light.webp"
             shotAlt={t('landing.how.scan.shotAlt')}

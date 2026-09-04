@@ -22,10 +22,19 @@
  * on `/join`: this client sets a password on the server its own operator
  * configured, and a link cannot redirect that.
  *
+ * ── It ends where a sign-in ends ─────────────────────────────────────────
+ *
+ * A finished reset pulls the diary and then asks the onboarding gate, exactly
+ * as `/sign-in` does and through the same hook (`use-first-pull.ts`). It used
+ * to navigate to `/` the moment the ceremony returned, which is the marketing
+ * page, and it arrived before the diary: on the 2026-09-04 walk an account
+ * with a diary was handed the first-run questionnaire, and the entries turned
+ * up afterwards behind the answers.
+ *
  * CLIENT-ONLY and TOP-LEVEL. No loader could read the fragment even if one
  * existed.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -34,16 +43,19 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import { Loader2 } from 'lucide-react';
 
 import { FieldError } from '#app/components/field-error';
+import { FirstPullStatus } from '#app/components/first-pull-status';
 import { Link } from '#app/components/link';
 import { PasswordFields } from '#app/components/password-fields';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useFirstPull } from '#app/hooks/use-first-pull';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { consumeResetToken, isForeignSyncServer, takeResetLinkFromUrl } from '#app/lib/join-link';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
+import type { SignInDestination } from '#app/lib/sign-in-flow';
 import { resetSyncPassphrase } from '#app/lib/sync/sync-actions';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -65,6 +77,15 @@ type Phase =
   | { status: 'foreign-server' }
   | { status: 'form'; resetToken: string }
   | { status: 'working'; resetToken: string }
+  /**
+   * The password is set and the session is open; the diary is on its way.
+   *
+   * A SEPARATE PHASE, and the one this route was missing. Without it the reset
+   * ended the moment the ceremony did, and the gate was asked where to send
+   * somebody whose profile row was still inside an undownloaded snapshot: it
+   * answered "the first-run questionnaire", to an account with a diary.
+   */
+  | { status: 'pulling' }
   | { status: 'invalid-token' }
   | { status: 'failed'; resetToken: string; message: string };
 
@@ -73,6 +94,12 @@ export default function Reset() {
   const navigate = useNavigate();
   const serverUrl = useSyncServerUrl();
   const [phase, setPhase] = useState<Phase>({ status: 'reading' });
+  // THE SAME PULL `/sign-in` RUNS, from the same hook: wait for the snapshot,
+  // then ask the gate. There is no parked invitation to spend here, which is
+  // the only difference between the two call sites.
+  const firstPull = useFirstPull({
+    onArrived: useCallback((path: SignInDestination) => void navigate(path), [navigate]),
+  });
 
   useEffect(() => {
     const link = takeResetLinkFromUrl({ configuredSyncUrl: serverUrl });
@@ -96,10 +123,13 @@ export default function Reset() {
         setPhase({ status: 'invalid-token' });
         return;
       }
-      // The reset OPENS the session, so there is nothing else to ask for. `/`
-      // is behind the onboarding gate, which sends a returning person to their
-      // diary and a brand-new one to the questionnaire.
-      void navigate('/');
+      // THE RESET OPENS THE SESSION, and that is only half of getting back in.
+      // The profile row travels inside the encrypted snapshot, so the pull has
+      // to finish before anything can ask where this person belongs. Landing
+      // on `/` was doubly wrong: it is the marketing page, and it arrived
+      // before the diary did.
+      setPhase({ status: 'pulling' });
+      firstPull.start();
     } catch (cause) {
       setPhase({ status: 'failed', resetToken, message: describeErrorForUser(cause, t('reset.failed')) });
     }
@@ -123,6 +153,13 @@ export default function Reset() {
             <output className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t('reset.working')}
             </output>
+          )}
+          {/* The pull, and its retry, in the same words `/sign-in` uses. A
+              failed pull leaves the new password in place and the session
+              open: only the download failed, so the retry repeats the download
+              and never asks for a password again. */}
+          {phase.status === 'pulling' && firstPull.phase.status !== 'idle' && (
+            <FirstPullStatus phase={firstPull.phase} onRetry={firstPull.start} />
           )}
           {(phase.status === 'no-token' || phase.status === 'invalid-token' || phase.status === 'foreign-server') && (
             <InvalidTokenCard reason={phase.status} />

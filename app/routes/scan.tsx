@@ -346,6 +346,8 @@ type IdentifyResult =
       modelId?: string;
       /** Set only for a typed `VisionProviderFailure` — drives cause-specific alert copy (see `UploadForm`). */
       failureCause?: VisionFailureCause;
+      /** The server's `Retry-After` in seconds, when it sent one. Only ever set on a `rate-limit`. */
+      retryAfterSeconds?: number | null;
       /** The configured provider at the time of this attempt — lets `UploadForm` phrase a `rate-limit` failure with OpenRouter-specific "free tier resets daily" copy without `failure-cause.ts` (the provider-neutral adapter layer) knowing about any one provider. */
       provider?: AiProviderType;
     };
@@ -699,6 +701,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   } catch (error) {
     const usage = error instanceof VisionProviderError ? error.usage : undefined;
     const failureCause = error instanceof VisionProviderFailure ? error.failureCause : undefined;
+    const retryAfterSeconds = error instanceof VisionProviderFailure ? error.retryAfterSeconds : undefined;
     // A `VisionProviderError`'s own message is authored in the provider-neutral
     // vision adapter layer (`app/services/vision/failure-cause.ts`), which this
     // route can't translate from here — see `describeFailureBody`, which
@@ -722,6 +725,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       usage,
       modelId: model,
       failureCause,
+      retryAfterSeconds,
       provider,
     };
   }
@@ -1126,6 +1130,8 @@ function ScanFlow({
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  /** A dispatch that came back with neither a result nor a message. See the settle effect. */
+  const [didSettleWithNothing, setDidSettleWithNothing] = useState(false);
   // The fetcher keeps its last result during a resubmit; suppress the result
   // that belonged to a superseded pick so a stale error/success can't cling to
   // a freshly-picked photo. Compared by reference — a new response is a new object.
@@ -1174,6 +1180,7 @@ function ScanFlow({
     if (!file) return;
     if (lastSubmittedDispatchId.current === state.dispatchId) return;
     lastSubmittedDispatchId.current = state.dispatchId;
+    setDidSettleWithNothing(false);
     const formData = new FormData();
     formData.append('_intent', 'identify');
     formData.append('mode', mode);
@@ -1190,10 +1197,17 @@ function ScanFlow({
   useEffect(() => {
     const wasActive = prevFetcherState.current !== 'idle';
     prevFetcherState.current = fetcher.state;
-    if (wasActive && fetcher.state === 'idle') {
-      dispatch({ type: 'settled' });
-    }
-  }, [fetcher.state]);
+    if (!wasActive || fetcher.state !== 'idle') return;
+    dispatch({ type: 'settled' });
+    // THE SILENT FAILURE NET (M192/06). Every failure the action can SEE comes
+    // back as `{ error }`, and the alert renders it. What has no owner is the
+    // request that never reached the action at all — a body the dev server
+    // refused, a navigation that cancelled the submission, a runtime that threw
+    // before the handler. Walking 0.10.0 that produced a button that did
+    // nothing: no toast, no card, nothing in the console. A round trip that
+    // ends with neither a result nor a message is a failure, and this says so.
+    setDidSettleWithNothing(fetcher.data === undefined);
+  }, [fetcher.state, fetcher.data]);
 
   // Drive the staged status copy off an elapsed timer while a request is in
   // flight; reset once it settles.
@@ -1342,6 +1356,8 @@ function ScanFlow({
     activeData !== undefined && activeData.intent === 'identify' && 'reading' in activeData ? activeData : undefined;
   const failedIdentify =
     activeData !== undefined && activeData.intent === 'identify' && 'error' in activeData ? activeData : undefined;
+  // See the settle effect above: a dispatch that came back with nothing at all.
+  const silentFailure = didSettleWithNothing ? t('scan.errors.identifyFailed') : undefined;
 
   // A read panel (or a failed label confirm) swaps to the label form. Checked
   // before the plate branch: the two results are separate arms of the same
@@ -1388,8 +1404,9 @@ function ScanFlow({
       isProcessing={isProcessing}
       selectionError={selectionError}
       elapsedSeconds={elapsedSeconds}
-      error={failedIdentify?.error}
+      error={failedIdentify?.error ?? silentFailure}
       failureCause={failedIdentify?.failureCause}
+      retryAfterSeconds={failedIdentify?.retryAfterSeconds}
       provider={failedIdentify?.provider}
       usage={failedIdentify?.usage}
       modelId={failedIdentify?.modelId}
@@ -1419,6 +1436,9 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   'model-not-found': 'scan.errors.titles.modelNotFound',
   'invalid-request': 'scan.errors.titles.invalidRequest',
   transient: 'scan.errors.titles.transient',
+  'photo-too-large': 'scan.errors.titles.photoTooLarge',
+  'ai-not-allowed': 'scan.errors.titles.aiNotAllowed',
+  'account-suspended': 'scan.errors.titles.accountSuspended',
 } satisfies Record<Exclude<VisionFailureCause, 'genuinely-no-food'>, string>;
 
 /** The alert headline for a given failure cause — see `FAILURE_TITLE_KEY_BY_CAUSE`. */
@@ -1455,11 +1475,23 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
   credit: 'scan.errors.provider.credit',
   'rate-limit': 'scan.errors.provider.rateLimit',
   'model-not-found': 'scan.errors.provider.modelNotFound',
+  // THE THREE A MANAGED INSTANCE ANSWERS WITH (M192/06). Each is a single
+  // fixed sentence in `failure-cause.ts`, so each restates cleanly here.
+  'photo-too-large': 'scan.errors.provider.photoTooLarge',
+  'ai-not-allowed': 'scan.errors.provider.aiNotAllowed',
+  'account-suspended': 'scan.errors.provider.accountSuspended',
   // The remaining causes deliberately keep the adapter's own English (see above).
   'invalid-request': undefined,
   transient: undefined,
   'genuinely-no-food': undefined,
 } satisfies Record<VisionFailureCause, string | undefined>;
+
+/**
+ * Under a minute, a `429` is a burst limit and the advice is "in a moment".
+ * At or over it, the allowance is spent for the day and telling somebody to
+ * wait a moment is simply false.
+ */
+const RATE_LIMIT_MINUTE_SECONDS = 60;
 
 /** The alert body for a given failure — see `FAILURE_BODY_KEY_BY_CAUSE`. */
 export function describeFailureBody(
@@ -1467,10 +1499,23 @@ export function describeFailureBody(
     failureCause?: VisionFailureCause;
     provider?: AiProviderType;
     error?: string;
+    /** The server's own `Retry-After`, in seconds, when it sent one. */
+    retryAfterSeconds?: number | null;
   },
   t: Translate,
 ): string | undefined {
   if (params.failureCause === 'rate-limit' && params.provider === 'openrouter') return t(OPENROUTER_RATE_LIMIT_KEY);
+  // A MANAGED 429 IS TWO DIFFERENT SENTENCES, and only the header tells them
+  // apart: a burst limit clears within the minute, a spent daily allowance
+  // does not clear until tomorrow. Saying "wait a moment" for the second is
+  // the failure this branch exists to avoid.
+  if (params.failureCause === 'rate-limit') {
+    const retryAfter = params.retryAfterSeconds;
+    if (retryAfter !== null && retryAfter !== undefined && retryAfter < RATE_LIMIT_MINUTE_SECONDS) {
+      return t('scan.errors.provider.rateLimitMinute');
+    }
+    if (retryAfter !== null && retryAfter !== undefined) return t('scan.errors.provider.allowanceSpent');
+  }
   const bodyKey = params.failureCause ? FAILURE_BODY_KEY_BY_CAUSE[params.failureCause] : undefined;
   if (bodyKey) return t(bodyKey);
   return params.error;
@@ -1492,6 +1537,7 @@ function UploadForm({
   elapsedSeconds,
   error,
   failureCause,
+  retryAfterSeconds,
   provider,
   usage,
   modelId,
@@ -1514,6 +1560,8 @@ function UploadForm({
   error?: string;
   /** Machine-readable reason `error` happened — picks the alert's headline (see `getFailureAlertTitle`). */
   failureCause?: VisionFailureCause;
+  /** The server's `Retry-After` in seconds — tells a burst limit from a spent daily allowance. */
+  retryAfterSeconds?: number | null;
   /** The provider active for this attempt — phrases a `rate-limit` failure (see below) and keys the failed attempt's pricing lookup; never branches the alert's headline or any other cause. */
   provider?: AiProviderType;
   usage?: ScanTokenUsage;
@@ -1727,7 +1775,7 @@ function UploadForm({
                       // — showing it as the main body, not a muted afterthought.
                       // `describeFailureBody` additionally swaps in OpenRouter-
                       // specific free-tier copy for a `rate-limit` failure.
-                    : describeFailureBody({ failureCause, provider, error }, t)
+                    : describeFailureBody({ failureCause, provider, error, retryAfterSeconds }, t)
                   }
                 </AlertDescription>
               </Alert>

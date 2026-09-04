@@ -918,14 +918,16 @@
       "shotAlt": "The openplate diary on a laptop: a progress ring for the day, with breakfast, lunch and dinner listed beneath it and each meal's carbs, protein, fat and calories alongside.",
       "shotCaption": "A sample day, not your data.",
       "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands.",
-      "ticks": "No account · Installs like an app · Works offline · Photo scans use your own AI key"
+      "ticks": "No account · Installs like an app · Works offline · Photo scans use your own AI key",
+      "ticksManaged": "Invitation only · Installs like an app · Works offline · Photo estimates included"
     },
     "how": {
       "eyebrow": "Every day",
       "scan": {
         "body": "Your own AI provider reads the photo and estimates what's on it. You check the numbers before anything is saved.",
         "shotAlt": "The scan screen on a phone, offering a one-click connect to OpenRouter.",
-        "title": "Photograph your plate"
+        "title": "Photograph your plate",
+        "bodyManaged": "The photo estimate is included with your account. You check the numbers before anything is saved."
       },
       "search": {
         "body": "Type what you ate. Foods come from the curated lowcarbcheck.org database, and anything you log often becomes a one-tap chip.",
@@ -1560,7 +1562,12 @@
         "credit": "Your provider account is out of credit. Add credit with your provider and try again.",
         "modelNotFound": "The provider doesn't recognize that model. Pick a different model in AI settings and try again.",
         "rateLimit": "The provider is rate-limiting requests right now. Wait a moment and try again.",
-        "reconsentRequired": "This gateway's privacy settings changed, so it stopped accepting this device. Ask whoever invited you for a new invite link."
+        "reconsentRequired": "This gateway's privacy settings changed, so it stopped accepting this device. Ask whoever invited you for a new invite link.",
+        "photoTooLarge": "The photo is too large for this server. Try a smaller one.",
+        "aiNotAllowed": "Photo estimates are not switched on for your account. Ask your administrator.",
+        "accountSuspended": "Your account is suspended. Ask your administrator.",
+        "rateLimitMinute": "That was a few photos in quick succession. Try again in a minute.",
+        "allowanceSpent": "You have used today's photo estimates. Try again tomorrow."
       },
       "readPhoto": "Failed to read that photo. Try another.",
       "titles": {
@@ -1571,7 +1578,10 @@
         "noLuck": "No luck with that photo",
         "rateLimit": "Too many requests right now",
         "reconsentRequired": "That gateway needs a new invite",
-        "transient": "The provider had trouble responding"
+        "transient": "The provider had trouble responding",
+        "photoTooLarge": "That photo is too big",
+        "aiNotAllowed": "Photo estimates are off",
+        "accountSuspended": "Your account is suspended"
       }
     },
     "labelScan": {
@@ -2093,8 +2103,6 @@
       "inviteLabel": "Invite code",
       "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
       "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
-      "inviteChange": "Change",
-      "inviteFromLink": "Invite code taken from your link, ready to use.",
       "inviteMissing": "Paste your invite code, or open the invite link you were sent.",
       "inviteMalformed": "That does not look like an invite code. They start with {{prefix}}.",
       "accountExists": "That address already has an account here. Sign in instead."
@@ -2407,7 +2415,8 @@
       "title": "Photo estimates",
       "body": "{{used}} of {{limit}} used today.",
       "none": "Photo estimates are not switched on for this account.",
-      "askAdmin": "Your administrator sets this."
+      "askAdmin": "Your administrator sets this.",
+      "today": "Photo estimates today: {{used}} of {{limit}}"
     },
     "devices": {
       "title": "Your devices",

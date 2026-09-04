@@ -918,14 +918,16 @@
       "shotAlt": "Das openplate-Tagebuch auf einem Laptop: ein Tagesring, darunter Frühstück, Mittag- und Abendessen, und neben jeder Mahlzeit ihre Kohlenhydrate, ihr Eiweiß, ihr Fett und ihre Kalorien.",
       "shotCaption": "Ein Beispieltag, nicht deine Daten.",
       "tagline": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das auf deinem Gerät bleibt: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht.",
-      "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline · Foto-Scans laufen über deinen eigenen KI-Schlüssel"
+      "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline · Foto-Scans laufen über deinen eigenen KI-Schlüssel",
+      "ticksManaged": "Nur auf Einladung · Lässt sich wie eine App installieren · Funktioniert offline · Foto-Schätzungen inklusive"
     },
     "how": {
       "eyebrow": "Jeden Tag",
       "scan": {
         "body": "Dein eigener KI-Anbieter liest das Foto und schätzt, was darauf ist. Du prüfst die Werte, bevor etwas gespeichert wird.",
         "shotAlt": "Der Scan-Bildschirm auf einem Telefon, mit der Ein-Klick-Verbindung zu OpenRouter.",
-        "title": "Fotografier deinen Teller"
+        "title": "Fotografier deinen Teller",
+        "bodyManaged": "Die Foto-Schätzung ist in deinem Konto enthalten. Du prüfst die Werte, bevor etwas gespeichert wird."
       },
       "search": {
         "body": "Tipp ein, was du gegessen hast. Die Lebensmittel kommen aus der kuratierten Datenbank von lowcarbcheck.org, und was du oft einträgst, wird zum Chip für einen Tipp.",
@@ -1560,7 +1562,12 @@
         "credit": "Dein Guthaben beim Anbieter ist aufgebraucht. Lade Guthaben bei deinem Anbieter auf und versuche es erneut.",
         "modelNotFound": "Der Anbieter erkennt dieses Modell nicht. Wähle ein anderes Modell in den KI-Einstellungen und versuche es erneut.",
         "rateLimit": "Der Anbieter begrenzt gerade die Anzahl der Anfragen. Warte einen Moment und versuche es erneut.",
-        "reconsentRequired": "Die Datenschutzeinstellungen dieses Gateways haben sich geändert, weshalb dieses Gerät nicht mehr akzeptiert wird. Bitte die Person, die dich eingeladen hat, um einen neuen Einladungslink."
+        "reconsentRequired": "Die Datenschutzeinstellungen dieses Gateways haben sich geändert, weshalb dieses Gerät nicht mehr akzeptiert wird. Bitte die Person, die dich eingeladen hat, um einen neuen Einladungslink.",
+        "photoTooLarge": "Das Foto ist zu groß für diesen Server. Versuch es mit einem kleineren.",
+        "aiNotAllowed": "Foto-Schätzungen sind für dein Konto nicht aktiviert. Wende dich an deinen Administrator.",
+        "accountSuspended": "Dein Konto ist gesperrt. Wende dich an deinen Administrator.",
+        "rateLimitMinute": "Das waren einige Fotos kurz hintereinander. Versuch es in einer Minute noch einmal.",
+        "allowanceSpent": "Du hast deine heutigen Foto-Schätzungen aufgebraucht. Versuch es morgen wieder."
       },
       "readPhoto": "Das Foto konnte nicht gelesen werden. Versuche es mit einem anderen.",
       "titles": {
@@ -1571,7 +1578,10 @@
         "noLuck": "Mit diesem Foto hat es nicht geklappt",
         "rateLimit": "Gerade zu viele Anfragen",
         "reconsentRequired": "Dieses Gateway braucht eine neue Einladung",
-        "transient": "Der Anbieter hatte Probleme mit der Antwort"
+        "transient": "Der Anbieter hatte Probleme mit der Antwort",
+        "photoTooLarge": "Das Foto ist zu groß",
+        "aiNotAllowed": "Foto-Schätzungen sind deaktiviert",
+        "accountSuspended": "Dein Konto ist gesperrt"
       }
     },
     "labelScan": {
@@ -2093,8 +2103,6 @@
       "inviteLabel": "Einladungscode",
       "inviteHint": "Dieser Server ist nur mit Einladung nutzbar. Füge den Code ein, den du bekommen hast, oder öffne den Einladungslink.",
       "inviteRequired": "Diese Einladung ist ungültig. Sie wurde vielleicht schon benutzt oder ist abgelaufen. Bitte um eine neue.",
-      "inviteChange": "Ändern",
-      "inviteFromLink": "Einladungscode aus deinem Link übernommen, alles bereit.",
       "inviteMissing": "Füge deinen Einladungscode ein oder öffne den Einladungslink, den du erhalten hast.",
       "inviteMalformed": "Das sieht nicht nach einem Einladungscode aus. Sie beginnen mit {{prefix}}.",
       "accountExists": "Für diese Adresse gibt es hier schon ein Konto. Melde dich stattdessen an."
@@ -2407,7 +2415,8 @@
       "title": "Foto-Schätzungen",
       "body": "Heute {{used}} von {{limit}} genutzt.",
       "none": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
-      "askAdmin": "Das legt deine Administration fest."
+      "askAdmin": "Das legt deine Administration fest.",
+      "today": "Foto-Schätzungen heute: {{used}} von {{limit}}"
     },
     "devices": {
       "title": "Deine Geräte",

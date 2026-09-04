@@ -31,7 +31,7 @@
  * visitor sees a sign-in form with their address filled in rather than a blank
  * one that makes them wonder whether their data is gone.
  */
-import type { SyncAuthClient } from './engine/client/auth-client';
+import { isPendingAccountView, type SyncAuthClient } from './engine/client/auth-client';
 import type { SyncHttpClient } from './engine/client/http-client';
 import type { PrivateStoreSession } from './private-store';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
@@ -69,14 +69,26 @@ export interface SyncSessionSnapshot {
    * from it (`managed-ai-settings.ts`), and a screen may only read the
    * SNAPSHOT — the vault is off limits to React. `aiUsedToday` rides with it
    * so the same read answers "and how much is left".
+   *
+   * `role`, `dailyAiLimit` and `aiUsedToday` are `null` UNTIL a real
+   * `AccountView` has been read from the service — never a guessed default
+   * (0.10.1 walk defect 2). Before M192/06 `openSyncSession` filled them with
+   * `role: account?.role ?? 'member'` for whatever session opened the vault,
+   * including `resumeSyncSession`'s `restoreSession` step, which hands it a
+   * PLACEHOLDER account carrying only `id` and `email` while the real read is
+   * still in flight. `?? 'member'` turned "not known yet" into "definitely
+   * not an administrator", and `/admin` (which has no other source for the
+   * role) believed it. `null` is the honest third answer: not yet a member,
+   * not yet an admin, simply unread — and every reader below must treat it as
+   * a LOADING state, not a refusal.
    */
   account: {
     id: number;
     email: string;
     displayName: string | null;
-    role: 'admin' | 'member';
-    dailyAiLimit: number;
-    aiUsedToday: number;
+    role: 'admin' | 'member' | null;
+    dailyAiLimit: number | null;
+    aiUsedToday: number | null;
   } | null;
   /**
    * True while this device may still be reopening a session it already had.
@@ -185,18 +197,27 @@ export function updateSyncSession(patch: Partial<SyncSessionSnapshot>): void {
  * arguments: the client already holds the `AccountView` the service returned,
  * and copying it through a second set of parameters is how the snapshot ends
  * up describing a different account than the one the vault is talking to.
+ *
+ * `role`, `dailyAiLimit` and `aiUsedToday` are `null` whenever the auth client
+ * is still carrying its PENDING placeholder (`isPendingAccountView`) rather
+ * than a real `AccountView` (0.10.1 walk defect 2). Every production caller
+ * awaits `getAccount()` before opening a vault, so this is a belt on top of
+ * that braces rather than the everyday case — but a fake `'member'` shown to
+ * a genuine administrator is exactly the failure a defensive default here
+ * would reintroduce, so there is no `?? 'member'` / `?? 0` left to write one.
  */
 export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number | null }): void {
   vault = next;
   const account = next.authClient.getSession()?.account ?? null;
+  const knownAccount = account !== null && !isPendingAccountView(account) ? account : null;
   publish({
     account: {
       id: next.accountId,
       email: next.email,
-      displayName: account?.displayName ?? null,
-      role: account?.role ?? 'member',
-      dailyAiLimit: account?.dailyAiLimit ?? 0,
-      aiUsedToday: account?.aiUsedToday ?? 0,
+      displayName: knownAccount?.displayName ?? null,
+      role: knownAccount?.role ?? null,
+      dailyAiLimit: knownAccount?.dailyAiLimit ?? null,
+      aiUsedToday: knownAccount?.aiUsedToday ?? null,
     },
     isResuming: false,
     phase: 'idle',

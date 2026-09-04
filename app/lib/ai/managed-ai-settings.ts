@@ -113,6 +113,12 @@ export function resolveEffectiveAiSettings({
   if (instance.syncServerUrl === null) return null;
   const account = session.account;
   if (account === null) return null;
+  // `null` is "not read yet" (0.10.1 walk defect 2), not "no allowance" — a
+  // session opened before the real `AccountView` landed must read the same as
+  // no session at all, never as a working scan button for a limit of `0`, and
+  // never as a refusal for an administrator whose real limit just hasn't
+  // arrived.
+  if (account.dailyAiLimit === null) return null;
   // AN ALLOWANCE OF ZERO IS THE DEFAULT for a new account, not an error state:
   // an admin decides who gets AI and how much. So "signed in, no AI" is an
   // ordinary standing, and the screen for it says "ask your administrator"

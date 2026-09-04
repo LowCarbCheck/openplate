@@ -2,10 +2,13 @@ import { z } from 'zod';
 import type { Route } from './+types/_personal';
 import type { BaseHandle } from '#types/base';
 import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
 import {
   useMatches,
   Outlet,
   isRouteErrorResponse,
+  useLoaderData,
+  useRevalidator,
   useRouteError,
   redirect,
   type ShouldRevalidateFunctionArgs,
@@ -18,6 +21,9 @@ import { AppLoading } from '#app/components/app-loading';
 import { OutboxSyncController } from '#app/components/outbox-sync-controller';
 import { SyncController } from '#app/components/sync-controller';
 import { ErrorFallback } from '#app/components/route-error-boundary';
+import { useSyncSession } from '#app/components/sync-status';
+import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 
 /**
  * The onboarding gate — the only gate this layout still runs, and it is purely
@@ -65,7 +71,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // The routes this gate never tests: `/settings/preferences`, the way out of
   // the instance's default language, `/settings/sync`, where an emailed invite
   // link lands, and the gate's own two destinations. See `isOnboardingGateExempt`.
-  if (isOnboardingGateExempt(new URL(request.url).pathname)) return null;
+  if (isOnboardingGateExempt(new URL(request.url).pathname)) return { isWaitingForSession: false };
   const profile = await getLocalProfileGoals();
   const hasProfile = profile !== null;
   const hasCompletedOnboarding = profile?.onboardingCompletedAt != null;
@@ -74,14 +80,29 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // because the resolver's first branch returns before `logCount` is read. So
   // the hot path (every app boot of an onboarded device) skips it entirely.
   const logCount = hasProfile && hasCompletedOnboarding ? 0 : (await listLocalFoodLogs()).length;
+  // THE SNAPSHOT, READ SYNCHRONOUSLY. On a cold boot it says `isResuming`,
+  // because `SyncController` (which settles it) is rendered by this layout and
+  // therefore has not mounted yet. That is not a race to paper over: it is the
+  // honest state, and the gate answers `wait` for it.
+  const session = getSyncSessionSnapshot();
   const outcome = resolveOnboardingGate({
     hasProfile,
     hasCompletedOnboarding,
     logCount,
     hasEverHadData: await hasEverHadData(),
+    hasSyncAccount: session.account !== null,
+    isResumingSession: session.isResuming,
   });
 
+  // NOT A REDIRECT. This layout renders the loading screen and mounts the
+  // controller that reopens the session, then revalidates. A redirect here
+  // would unmount the only thing that can settle the question.
+  if (outcome.kind === 'wait') return { isWaitingForSession: true };
   if (outcome.kind === 'recover') throw redirect('/recover');
+  // SIGNED IN WITH NO DIARY: the questionnaire, not the door. This is what a
+  // freshly joined account hits on its first full navigation, and sending it
+  // to `/welcome` asked somebody to sign in who just had (M192/06).
+  if (outcome.kind === 'onboard') throw redirect(resolveSignInDestination({ gate: 'onboard' }));
   // NOT `/onboarding` any more (M183 spec 02). A device with no local profile
   // is not necessarily a new person: a returning user's profile row rides in
   // the encrypted sync snapshot and lands only after they sign in. `/welcome`
@@ -89,7 +110,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   if (outcome.kind === 'welcome') throw redirect('/welcome');
   if (outcome.kind === 'self-heal') await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
   writeHomeHint();
-  return null;
+  return { isWaitingForSession: false };
 }
 clientLoader.hydrate = true as const;
 
@@ -114,7 +135,18 @@ export function HydrateFallback() {
 // loader's own self-heal on first entry into the layout — never a revalidation
 // of an already-mounted route). A plain GET nav's parent `.data` fetch fails
 // unhandled offline, so skip it; keep default revalidation after a submission.
-export function shouldRevalidate({ formMethod, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs): boolean {
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs): boolean {
+  // THE GATE RE-ASKING ITSELF. When the loader answered `wait`, the layout
+  // revalidates once the session has settled, and a revalidation keeps the
+  // same url. That cannot be the plain GET nav the rule below suppresses,
+  // which is by definition a nav to a DIFFERENT url — so this branch buys the
+  // second look without giving back the offline failure it was added to avoid.
+  if (currentUrl.href === nextUrl.href) return true;
   return formMethod ? defaultShouldRevalidate : false;
 }
 
@@ -128,6 +160,7 @@ const leafBackToSchema = z.object({ backTo: z.string() });
  */
 export default function PersonalLayout() {
   const { t } = useTranslation();
+  const { isWaitingForSession } = useLoaderData<typeof clientLoader>();
   const matches = useMatches();
   const leafMatch = matches[matches.length - 1];
   // SAFETY: every route under this layout declares a `handle` matching
@@ -147,11 +180,43 @@ export default function PersonalLayout() {
       {/* Flushes queued offline writes on app start / reconnect / focus; renders nothing. */}
       <OutboxSyncController />
       {/* Drives E2EE sync on boot / reconnect / after local writes; renders
-          nothing, and attaches nothing at all unless `SYNC_SERVER_URL` is set. */}
+          nothing, and attaches nothing at all unless `SYNC_SERVER_URL` is set.
+          MOUNTED EVEN WHILE WAITING, because it is what ends the wait. */}
       <SyncController />
-      <Outlet />
+      {isWaitingForSession ?
+        <SessionResumeGate />
+      : <Outlet />}
     </AppWrapper>
   );
+}
+
+/**
+ * The screen a returning device sees for the moment its session takes to
+ * reopen, and the one thing it does when that moment ends.
+ *
+ * WHY A SCREEN AND NOT A REDIRECT (M192/06). A cached session survives a
+ * reload now, but it is reopened asynchronously, and until it has been the
+ * device looks exactly like one that has never signed in. Deciding then sent a
+ * person who had joined minutes earlier to `/welcome`, where they were offered
+ * a sign-in for the account they were already signed into.
+ *
+ * It revalidates rather than navigating, so the gate above answers a second
+ * time with the settled facts and every branch of it stays in one place. The
+ * effect fires once: after the revalidation the loader no longer answers
+ * `wait`, so this component unmounts.
+ */
+function SessionResumeGate() {
+  const { t } = useTranslation();
+  const session = useSyncSession();
+  const revalidator = useRevalidator();
+
+  useEffect(() => {
+    if (session.isResuming) return;
+    if (revalidator.state !== 'idle') return;
+    void revalidator.revalidate();
+  }, [session.isResuming, revalidator]);
+
+  return <AppLoading label={t('chrome.loading')} />;
 }
 
 export function ErrorBoundary() {

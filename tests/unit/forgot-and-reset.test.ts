@@ -18,8 +18,11 @@
  *  - A dead token is one card pointing back at `/forgot`, covering unknown,
  *    spent and expired as one outcome — the service refuses to say which, and
  *    saying which would report whether a forwarded link had been used.
- *  - Success SIGNS THE PERSON IN. The reset ceremony opens the session, so
- *    there is nothing left to ask for and the screen goes to the diary.
+ *  - Success SIGNS THE PERSON IN, PULLS THE DIARY, and only then decides where
+ *    to go. The last two are what 0.10.1 was missing: the ceremony opened the
+ *    session and navigated to `/` immediately, so an account with a diary was
+ *    handed the first-run questionnaire while its entries were still on the
+ *    server.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -207,12 +210,44 @@ describe('/reset asks for a new password and nothing else', () => {
     assert.doesNotMatch(effectBody, /consumeResetToken/);
   });
 
-  it('signs the person in on success and goes to the diary', () => {
-    // `resetSyncPassphrase` opens the session, so there is nothing left to ask
-    // for. `/` is behind the onboarding gate, which routes a returning person
-    // to their diary and a brand-new one to the questionnaire.
-    assert.match(resetRoute, /navigate\('\/'\)/);
+  it('pulls the diary before it decides anywhere to send anybody', () => {
+    // THE DEFECT, in one line. Walking 0.10.1: the escrow worked, the password
+    // was set, the session opened, and an account with a diary was handed the
+    // first-run questionnaire, because the gate was asked while the profile
+    // row was still inside an undownloaded snapshot. The salad turned up
+    // afterwards, behind the answers.
+    const submitBody = resetRoute.slice(resetRoute.indexOf('async function submit'));
+    assert.match(submitBody, /firstPull\.start\(\)/, 'a finished reset runs the first pull');
+    assert.doesNotMatch(submitBody, /navigate\(/, 'and the ceremony itself navigates nowhere');
+  });
+
+  it('lands exactly where a sign-in lands, never on the marketing page', () => {
+    // `useFirstPull` reads the gate and hands back a path; the route follows
+    // it. `/` is the landing page, which describes the app to somebody who
+    // does not have it.
+    assert.match(resetRoute, /useFirstPull/);
+    assert.match(resetRoute, /onArrived:.*navigate\(path\)/s);
+    assert.doesNotMatch(resetRoute, /navigate\('\/'\)/, 'the marketing page is not a destination');
     assert.doesNotMatch(resetRoute, /navigate\('\/sign-in'\)/, 'a completed reset must not ask for a password again');
+  });
+
+  it('shows the retry card on a failed pull, and keeps the new password', () => {
+    // The session is OPEN and the password IS set: only the download failed.
+    // Signing out here, or falling through to `/onboarding`, is the bug M183
+    // spec 03 exists to kill.
+    assert.match(resetRoute, /FirstPullStatus/);
+    assert.match(resetRoute, /onRetry=\{firstPull\.start\}/);
+    assert.doesNotMatch(resetRoute, /signOutOfSync/);
+  });
+
+  it('runs the SAME pull as /sign-in, not a second copy of it', () => {
+    // Two screens with one rule between them is one screen too many. `/reset`
+    // had no pull at all until this fix, and a copied one would have been the
+    // next thing to drift.
+    const pullHook = readFileSync(new URL('../../app/hooks/use-first-pull.ts', import.meta.url), 'utf8');
+    assert.match(pullHook, /syncNow/);
+    assert.match(pullHook, /readOnboardingGateKind/);
+    assert.doesNotMatch(resetRoute, /completeSignIn|syncNow/, 'the route runs no cycle of its own');
   });
 
   it('sends a dead token back to /forgot rather than to an error screen', () => {

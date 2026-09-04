@@ -17,6 +17,14 @@
  * `role` can be refused, and a stale row is how somebody gets suspended twice
  * because the first one looked as though it had not worked.
  *
+ * ── One list, no pager ───────────────────────────────────────────────────
+ *
+ * The screen shows everybody at once. The SERVICE pages, at 200 a request,
+ * and `AdminClient` follows that itself, so nothing here knows about a page
+ * ceiling; an organization that outgrows one screen is a different product
+ * decision than a "next" button, and a silently truncated list is worse than
+ * either.
+ *
  * ── A 403 replaces the page, it does not blank it ────────────────────────
  *
  * Being demoted, or suspended, mid-session is ordinary. `AdminClient` returns
@@ -60,10 +68,18 @@ export default function AdminConsole() {
       return;
     }
     try {
+      // The client follows the service's paging itself: these two resolve with
+      // the whole list however many round trips that took (M192/06 fix).
+      //
+      // THE COUNTS CANNOT BREAK THIS PAGE, and until now that was only a
+      // comment: `client.stats()` sat inside the same `Promise.all` as the
+      // lists, so a throw from it took the whole load down and the page said
+      // "try again" for the one thing it was written to do without. Catching
+      // it here is what makes the sentence below true.
       const [stats, accounts, invites] = await Promise.all([
-        client.stats(),
-        client.listAccounts({ limit: LIST_PAGE_SIZE }),
-        client.listInvites({ limit: LIST_PAGE_SIZE }),
+        client.stats().catch(() => null),
+        client.listAccounts(),
+        client.listInvites(),
       ]);
       if (accounts.status === 'forbidden' || invites.status === 'forbidden') {
         setState({ kind: 'forbidden' });
@@ -72,8 +88,9 @@ export default function AdminConsole() {
       setState({
         kind: 'ready',
         // The counts are the one thing this page can do without. An instance
-        // whose `/stats` is slow or absent still shows its people.
-        stats: stats.status === 'ok' ? stats.value : null,
+        // whose `/stats` is slow, absent or newer than this client still shows
+        // its people.
+        stats: stats !== null && stats.status === 'ok' ? stats.value : null,
         people: accounts.value.accounts,
         invites: invites.value.invites,
       });
@@ -219,15 +236,6 @@ export default function AdminConsole() {
     </div>
   );
 }
-
-/**
- * One page of people, and one of invitations.
- *
- * No pager, because an organization that outgrows this is a different product
- * decision than a "next" button, and a silently truncated list is worse than
- * either. 500 is far beyond any instance this milestone is for.
- */
-const LIST_PAGE_SIZE = 500;
 
 /** The four counts, across the top. Read-only, and the fastest answer to "is this instance healthy". */
 function StatsRow({ stats }: { stats: AdminStats }) {

@@ -17,9 +17,23 @@ import assert from 'node:assert/strict';
 
 import { isOnboardingGateExempt, resolveOnboardingGate, type OnboardingGateInput } from '../../app/lib/onboarding-gate';
 
-/** A device that has never been written to: the only shape with no marker. */
+/**
+ * A device that has never been written to: the only shape with no marker.
+ *
+ * The two SESSION fields default to "nobody is signed in and the question is
+ * settled", which is what an open instance with no server looks like for ever.
+ * The cases that turn them on are grouped at the bottom of this file.
+ */
 function newDevice(overrides: Partial<OnboardingGateInput> = {}): OnboardingGateInput {
-  return { hasProfile: false, hasCompletedOnboarding: false, logCount: 0, hasEverHadData: false, ...overrides };
+  return {
+    hasProfile: false,
+    hasCompletedOnboarding: false,
+    logCount: 0,
+    hasEverHadData: false,
+    hasSyncAccount: false,
+    isResumingSession: false,
+    ...overrides,
+  };
 }
 
 describe('resolveOnboardingGate', () => {
@@ -147,5 +161,66 @@ describe('isOnboardingGateExempt', () => {
   it('does not exempt a route that merely starts with an exempt path', () => {
     assert.equal(isOnboardingGateExempt('/settings/preferences-export'), false);
     assert.equal(isOnboardingGateExempt('/settings/sync-debug'), false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The session dimension (M192/06)
+// ---------------------------------------------------------------------------
+
+describe('a session that is still reopening', () => {
+  // THE DEFECT, in one line. Walking 0.10.0: join an instance, then open
+  // /scan in a fresh tab, and the app offered "Sign in as walker@example.org"
+  // to somebody whose session was in IndexedDB and halfway open. `account ===
+  // null` is what a resume looks like from outside, and the gate read it as
+  // "signed out".
+  it('waits instead of showing the door, on a managed instance', () => {
+    assert.deepEqual(
+      resolveOnboardingGate(newDevice({ hasSyncAccount: false, isResumingSession: true })),
+      { kind: 'wait' },
+      'a resume in flight is not an answer',
+    );
+  });
+
+  // The rule is about the SESSION, not about the instance. There is no
+  // `managed` input because a managed instance changes nothing here: an open
+  // instance with a server resumes the same way, and one without a server
+  // settles the flag before this can fire.
+  it('waits the same way on an open instance', () => {
+    assert.deepEqual(resolveOnboardingGate(newDevice({ isResumingSession: true })), { kind: 'wait' });
+  });
+
+  it('holds the wait ahead of the data-loss warning, because a resume can bring the tables back', () => {
+    assert.deepEqual(
+      resolveOnboardingGate(newDevice({ hasEverHadData: true, isResumingSession: true })),
+      { kind: 'wait' },
+      'telling somebody their data is gone while it is on its way is the false positive to avoid',
+    );
+  });
+
+  it('lets a device that already has a diary straight through, resume or not', () => {
+    // Nothing a resume brings can make an onboarded profile falser, so the two
+    // branches above it win and the person never sees a loading screen.
+    assert.deepEqual(
+      resolveOnboardingGate(newDevice({ hasProfile: true, hasCompletedOnboarding: true, isResumingSession: true })),
+      { kind: 'pass' },
+    );
+    assert.deepEqual(resolveOnboardingGate(newDevice({ logCount: 3, isResumingSession: true })), {
+      kind: 'self-heal',
+    });
+  });
+
+  it('sends a settled account with no diary to the questionnaire, never to the door', () => {
+    assert.deepEqual(
+      resolveOnboardingGate(newDevice({ hasSyncAccount: true })),
+      { kind: 'onboard' },
+      'they have signed in; the welcome screen would ask them to do it again',
+    );
+  });
+
+  it('and only reaches welcome once the resume has settled with no account', () => {
+    assert.deepEqual(resolveOnboardingGate(newDevice({ hasSyncAccount: false, isResumingSession: false })), {
+      kind: 'welcome',
+    });
   });
 });

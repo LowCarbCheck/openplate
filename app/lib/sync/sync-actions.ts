@@ -853,6 +853,40 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
 }
 
 /**
+ * Re-reads the account from the service and publishes it to the snapshot.
+ *
+ * WHAT MOVES ON THE SERVER while a tab is open: `aiUsedToday` on every scan,
+ * `dailyAiLimit` and `suspendedAt` whenever an administrator touches the row.
+ * The snapshot is a photograph taken at sign-in, and the account page is the
+ * one screen whose whole job is to show those three (M192/06). Every other
+ * surface is content with the sign-in snapshot, so this is called from there
+ * and nowhere else.
+ *
+ * FAIL-OPEN. A refused or unreachable refresh leaves the previous numbers on
+ * screen, which are stale rather than wrong, and an error card on the account
+ * page would be a worse answer than a slightly old count.
+ */
+export async function refreshSyncAccount(): Promise<void> {
+  const vault = getSyncVault();
+  if (vault === null) return;
+  try {
+    const account = await vault.authClient.getAccount();
+    updateSyncSession({
+      account: {
+        id: account.id,
+        email: account.email,
+        displayName: account.displayName,
+        role: account.role,
+        dailyAiLimit: account.dailyAiLimit,
+        aiUsedToday: account.aiUsedToday,
+      },
+    });
+  } catch {
+    // Offline, or a service mid-deploy. The numbers already on screen stay.
+  }
+}
+
+/**
  * Asks the instance to mail a password-reset link.
  *
  * RESOLVES THE SAME WAY WHATEVER HAPPENS, and the caller must show the same

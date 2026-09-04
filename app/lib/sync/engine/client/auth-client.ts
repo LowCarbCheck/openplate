@@ -103,6 +103,23 @@ export interface SyncAuthSession {
  * between "we have tokens" and "we have read who they belong to". It exists
  * only so the bearer header can be attached to that one request; nothing
  * outside that method ever observes it.
+ *
+ * ITS FIELDS ARE NOT DATA — `role: 'member'`, `dailyAiLimit: 0`, and the rest
+ * are filler that satisfies `AccountViewWire`'s type, not an answer to "does
+ * this account administer" or "how much allowance is left". Every reader that
+ * copies a `SyncAuthSession`'s account into somewhere React can see (M192,
+ * `sync-session.ts`) must run it through {@link isPendingAccountView} first —
+ * treating this object's fields as real is exactly the 0.10.1 walk defect 2
+ * bug (an administrator's `role` read as `'member'` because a session was
+ * published before the real `AccountView` had come back).
+ *
+ * `createdAt: ''` IS THE SENTINEL, not `id`: {@link SyncAuthClient.restoreSession}
+ * spreads this object over the CACHED account's real `id` and `email` — the
+ * one placeholder that ever reaches `openSyncSession` with a real-looking id
+ * — so a check keyed on `id` would miss exactly the case this exists to
+ * catch. `createdAt` is the one field neither `restoreSession` nor anything
+ * else overwrites before a real read replaces the whole object, and the
+ * service never issues an account with an empty `createdAt`.
  */
 const PENDING_ACCOUNT: AccountViewWire = {
   id: -1,
@@ -114,6 +131,11 @@ const PENDING_ACCOUNT: AccountViewWire = {
   suspendedAt: null,
   createdAt: '',
 };
+
+/** True for {@link PENDING_ACCOUNT} and any session still carrying its placeholder — see that constant's header. */
+export function isPendingAccountView(account: AccountViewWire): boolean {
+  return account.createdAt === PENDING_ACCOUNT.createdAt;
+}
 
 export class SyncAuthClient implements SyncTokenProvider {
   private readonly baseUrl: string;

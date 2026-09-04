@@ -59,20 +59,52 @@ export type VisionFailureCause =
   | 'model-not-found'
   | 'invalid-request'
   | 'transient'
-  | 'genuinely-no-food';
+  | 'genuinely-no-food'
+  /**
+   * `413` — the photo is bigger than this server will accept.
+   *
+   * SPLIT OUT OF `invalid-request` (M192/06). That bucket's message points at
+   * the model and connection settings, which is the right advice for a 400 and
+   * useless for a 413: nothing in settings makes a photo smaller, and on a
+   * managed instance there are no settings to look at. The person needs to
+   * know it is the SIZE.
+   */
+  | 'photo-too-large'
+  /**
+   * `403 {"error":"ai-not-allowed"}` — this account's daily allowance is zero.
+   *
+   * Not `auth`: the credential is perfectly good and the person has nothing to
+   * fix. Only an administrator can change it, and that is the whole message.
+   */
+  | 'ai-not-allowed'
+  /**
+   * `403 {"error":"account-suspended"}` — an administrator suspended this
+   * account, and this is the same refusal every other authenticated call gets.
+   */
+  | 'account-suspended';
 
 /** Thrown by a vision adapter with a machine-readable `failureCause` alongside the display `message`. */
 export class VisionProviderFailure extends VisionProviderError {
   readonly failureCause: VisionFailureCause;
+  /**
+   * The server's own `Retry-After`, in seconds, or `null`.
+   *
+   * Carried so a screen can tell "wait a minute" from "wait until tomorrow"
+   * without guessing: a managed instance answers `429` for both a per-minute
+   * burst limit and a spent daily allowance, and only this header separates
+   * them.
+   */
+  readonly retryAfterSeconds: number | null;
 
   constructor(
     failureCause: VisionFailureCause,
     message: string,
-    options?: { cause?: unknown; usage?: ScanTokenUsage },
+    options?: { cause?: unknown; usage?: ScanTokenUsage; retryAfterSeconds?: number | null },
   ) {
     super(message, options);
     this.name = 'VisionProviderFailure';
     this.failureCause = failureCause;
+    this.retryAfterSeconds = options?.retryAfterSeconds ?? null;
   }
 }
 
@@ -138,9 +170,29 @@ async function is429CreditExhaustion(response: Response): Promise<boolean> {
 /** The gateway's `{"error":"reconsent_required"}` marker on a 403 — see `VisionFailureCause`. */
 const RECONSENT_REQUIRED_CODE = 'reconsent_required';
 
-async function isReconsentRequired(response: Response): Promise<boolean> {
-  const body = await readErrorBody(response);
-  return body?.error?.code === RECONSENT_REQUIRED_CODE;
+/**
+ * The two markers a managed instance puts on a `403`, transcribed from M192's
+ * contract table.
+ *
+ * Read as CODES, not as prose: `PROTOCOL.md` §4 forbids branching on a
+ * server's message text, and these are the enum-like values the same body
+ * carries for every other endpoint (`sync-error.ts` reads the suspended one
+ * the same way).
+ */
+const AI_NOT_ALLOWED_CODE = 'ai-not-allowed';
+const ACCOUNT_SUSPENDED_CODE = 'account-suspended';
+
+/**
+ * The code on a `403` body, read ONCE.
+ *
+ * A `Response` body is a stream and can only be consumed once, so the three
+ * markers below cannot each ask for it: the first read wins and every later
+ * one throws into `readErrorBody`'s catch and answers `null`. That is exactly
+ * how the two managed refusals were classified as ordinary key rejections
+ * while a passing test suite watched (M192/06).
+ */
+async function readForbiddenCode(response: Response): Promise<string | undefined> {
+  return (await readErrorBody(response))?.error?.code;
 }
 
 const RECONSENT_MESSAGE =
@@ -151,12 +203,28 @@ const RATE_LIMIT_MESSAGE = 'The provider is rate-limiting requests right now —
 const SERVER_UNAVAILABLE_MESSAGE = 'The provider is temporarily unavailable — try again in a moment.';
 const MODEL_NOT_FOUND_MESSAGE =
   "The provider doesn't recognize that model — pick a different model in AI settings and try again.";
+const PHOTO_TOO_LARGE_MESSAGE = 'The photo is too large for this server. Try a smaller one.';
+const AI_NOT_ALLOWED_MESSAGE = 'Photo estimates are not switched on for your account. Ask your administrator.';
+const ACCOUNT_SUSPENDED_MESSAGE = 'Your account is suspended. Ask your administrator.';
+
+/** `413`, as its own status rather than a member of the unmatched-4xx bucket. */
+const HTTP_PAYLOAD_TOO_LARGE = 413;
 
 const HTTP_SERVER_ERROR_START = 500;
 
 export interface HttpFailureClassification {
   cause: VisionFailureCause;
   message: string;
+  /** The server's `Retry-After` in seconds, when it sent one. Only ever set on a `rate-limit`. */
+  retryAfterSeconds?: number | null;
+}
+
+/** `Retry-After` as a number of seconds, or `null` for an absent or unparseable header. */
+function readRetryAfterSeconds(response: Response): number | null {
+  const raw = response.headers.get('Retry-After');
+  if (raw === null) return null;
+  const seconds = Number.parseInt(raw, 10);
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 }
 
 /**
@@ -175,12 +243,21 @@ function buildInvalidRequestMessage(status: number): string {
  * status and, for 429s, a machine-readable error code.
  */
 export async function classifyVisionHttpFailure(response: Response): Promise<HttpFailureClassification> {
-  // Checked BEFORE the generic 401/403 branch: a gateway's reconsent refusal is
-  // a 403 whose fix has nothing to do with the key (see `VisionFailureCause`).
-  if (response.status === 403 && (await isReconsentRequired(response))) {
-    return { cause: 'reconsent-required', message: RECONSENT_MESSAGE };
+  // ONE 403 BRANCH, one body read. Three different refusals wear this status
+  // and only the code tells them apart: a gateway withdrawing consent, an
+  // account with no allowance, and a suspended account. None of the three is
+  // fixed by touching an API key, which is what the `auth` message asks for,
+  // and on a managed instance there is no key and no settings page to ask
+  // about (M192/06).
+  if (response.status === 403) {
+    const code = await readForbiddenCode(response);
+    if (code === RECONSENT_REQUIRED_CODE) return { cause: 'reconsent-required', message: RECONSENT_MESSAGE };
+    if (code === ACCOUNT_SUSPENDED_CODE) return { cause: 'account-suspended', message: ACCOUNT_SUSPENDED_MESSAGE };
+    if (code === AI_NOT_ALLOWED_CODE) return { cause: 'ai-not-allowed', message: AI_NOT_ALLOWED_MESSAGE };
+    // A provider refusing a pasted key: the open instance's ordinary case.
+    return { cause: 'auth', message: AUTH_MESSAGE };
   }
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     return { cause: 'auth', message: AUTH_MESSAGE };
   }
   if (response.status === 402) {
@@ -193,7 +270,12 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
     const isCreditExhaustion = await is429CreditExhaustion(response);
     return isCreditExhaustion ?
         { cause: 'credit', message: CREDIT_MESSAGE }
-      : { cause: 'rate-limit', message: RATE_LIMIT_MESSAGE };
+        // The header rides along so the screen can say "in a minute" or "try
+        // tomorrow" from the server's own advice rather than from a guess.
+      : { cause: 'rate-limit', message: RATE_LIMIT_MESSAGE, retryAfterSeconds: readRetryAfterSeconds(response) };
+  }
+  if (response.status === HTTP_PAYLOAD_TOO_LARGE) {
+    return { cause: 'photo-too-large', message: PHOTO_TOO_LARGE_MESSAGE };
   }
   if (response.status >= HTTP_SERVER_ERROR_START) {
     return { cause: 'transient', message: SERVER_UNAVAILABLE_MESSAGE };

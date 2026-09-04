@@ -140,7 +140,9 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Visi
 
     if (!response.ok) {
       const classification = await classifyVisionHttpFailure(response);
-      throw new VisionProviderFailure(classification.cause, classification.message);
+      throw new VisionProviderFailure(classification.cause, classification.message, {
+        retryAfterSeconds: classification.retryAfterSeconds,
+      });
     }
 
     const payload = await readAnthropicEnvelope(response);

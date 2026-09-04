@@ -27,7 +27,7 @@
  * derivation, encryption and every request happen in the browser and never
  * touch this server (AGENTS.md, "Sync Architecture").
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLoaderData } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -63,6 +63,7 @@ import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import {
   changeSyncPassphrase,
   deleteSyncAccount,
+  refreshSyncAccount,
   setSyncDisplayName,
   signOutOfSync,
   syncNow,
@@ -92,6 +93,13 @@ export default function SettingsAccount() {
   const managed = useManagedInstance();
   const account = session.account;
 
+  // ON OPEN, ONCE. The allowance and the count move on the SERVER while a tab
+  // sits here, and this page is the one that shows them; the sign-in snapshot
+  // would be a photograph of whatever they were that morning.
+  useEffect(() => {
+    void refreshSyncAccount();
+  }, []);
+
   return (
     <div className="mx-auto max-w-xl space-y-6">
       {/* The operator's notice, above everything: it is the one message on
@@ -101,8 +109,23 @@ export default function SettingsAccount() {
       {account === null ?
         <SignedOutCard />
       : <>
-          <IdentityCard email={account.email} displayName={account.displayName} />
-          {managed && <AllowanceCard dailyLimit={account.dailyAiLimit} usedToday={account.aiUsedToday} />}
+          <IdentityCard
+            email={account.email}
+            displayName={account.displayName}
+            // `null` on an open instance AND while the real numbers are still
+            // in flight (0.10.1 walk defect 2): a session opened before the
+            // `AccountView` read must never show a borrowed `0` as this
+            // account's allowance. The `useEffect` above refreshes on open,
+            // so this is a loading flicker, not a dead end.
+            allowance={
+              managed && account.dailyAiLimit !== null && account.aiUsedToday !== null ?
+                { usedToday: account.aiUsedToday, dailyLimit: account.dailyAiLimit }
+              : null
+            }
+          />
+          {managed && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
+            <AllowanceCard dailyLimit={account.dailyAiLimit} usedToday={account.aiUsedToday} />
+          )}
           <Card>
             <CardHeader>
               <CardTitle>{t('account.devices.title')}</CardTitle>
@@ -149,7 +172,16 @@ function SignedOutCard() {
  * changing it would silently move an account away from the person the
  * organization invited.
  */
-function IdentityCard({ email, displayName }: { email: string; displayName: string | null }) {
+function IdentityCard({
+  email,
+  displayName,
+  allowance,
+}: {
+  email: string;
+  displayName: string | null;
+  /** `null` on an open instance, where there is no allowance to have. */
+  allowance: { usedToday: number; dailyLimit: number } | null;
+}) {
   const { t } = useTranslation();
   const [name, setName] = useState(displayName ?? '');
   const [isBusy, setIsBusy] = useState(false);
@@ -179,6 +211,15 @@ function IdentityCard({ email, displayName }: { email: string; displayName: stri
           <UserRound className="h-5 w-5 text-primary" aria-hidden="true" /> {t('account.title')}
         </CardTitle>
         <CardDescription>{email}</CardDescription>
+        {/* UNDER THE ADDRESS, because it is the second fact about this account
+            and the first one somebody comes looking for when a scan stops
+            working. `AllowanceCard` below explains it; this line is the
+            number (M192/06). */}
+        {allowance !== null && allowance.dailyLimit > 0 && (
+          <CardDescription>
+            {t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>

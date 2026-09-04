@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Loader2 } from 'lucide-react';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
@@ -120,10 +120,6 @@ export function SyncSetupFlow({
    * Conform's `lastResult` expects.
    */
   const lastSubmissionRef = useRef<SyncSignupSubmission | null>(null);
-  // The invite arrived ready to use, so it starts read-only. Held HERE rather
-  // than in the details form, which unmounts during provisioning: a person who
-  // pressed "Change" must not find the box locked again on the way back.
-  const [isInviteUnlocked, setIsInviteUnlocked] = useState(false);
 
   // Reported from an effect, never during render — the parent turns this into
   // state, and a render-phase parent update is a React error. Releasing on
@@ -213,8 +209,7 @@ export function SyncSetupFlow({
     return (
       <DetailsStep
         invite={invite}
-        isInviteUnlocked={isInviteUnlocked || isInviteRejected(state.serverError)}
-        onUnlockInvite={() => setIsInviteUnlocked(true)}
+        isInviteRevealed={isInviteRejected(state.serverError)}
         lastResult={detailsResult}
         onSubmit={handleDetailsSubmit}
       />
@@ -233,7 +228,18 @@ export function SyncSetupFlow({
 export type SyncSetupInvite = {
   /** The token an `#invite=…` link supplied, already taken out of the URL, or `''`. */
   initialValue: string;
-  /** It came from a link, so it needs no action: shown read-only, with a check and a "Change" action. */
+  /**
+   * It came from a link, so the form does not mention it at all: the token
+   * rides along in a hidden field and the person sees the address it was
+   * written to instead.
+   *
+   * IT USED TO BE A READ-ONLY BOX with a check mark, a "Change" button and a
+   * sentence saying the code was ready to use. Walking 0.10.0 on 2026-09-04:
+   * that is four pieces of furniture around a value nobody typed, nobody can
+   * verify and nobody should change, on the one screen where a person is
+   * supposed to think about a password. The only reason to edit it is a
+   * refusal, and a refusal reveals the box.
+   */
   isFromLink: boolean;
   /** This instance refuses signups without one, so an empty box is worth saying so before the round trip. */
   isRequired: boolean;
@@ -242,7 +248,7 @@ export type SyncSetupInvite = {
 /** The shape `parseWithZod` hands back for this form, and the shape `lastResult` is built from. */
 type SyncSignupSubmission = Submission<SyncSignupValues, string[], SyncSignupValues>;
 
-/** A service refusal the person answers by editing the invite, so the box has to be editable again. */
+/** A service refusal the person answers by editing the invite, so the box has to appear. */
 function isInviteRejected(serverError: SyncSetupServerError | null): boolean {
   return serverError !== null && serverError.field === 'invite';
 }
@@ -255,14 +261,13 @@ function inviteRule(invite: SyncSetupInvite | undefined): SyncInviteRule {
 
 function DetailsStep({
   invite,
-  isInviteUnlocked,
-  onUnlockInvite,
+  isInviteRevealed,
   lastResult,
   onSubmit,
 }: {
   invite?: SyncSetupInvite;
-  isInviteUnlocked: boolean;
-  onUnlockInvite: () => void;
+  /** The service refused the token: the box appears so it can be corrected or replaced. */
+  isInviteRevealed: boolean;
   lastResult: ReturnType<SyncSignupSubmission['reply']> | undefined;
   onSubmit: (submission: SyncSignupSubmission) => void;
 }) {
@@ -290,35 +295,23 @@ function DetailsStep({
     },
   });
 
-  const isInviteReadOnly = invite?.isFromLink === true && !isInviteUnlocked;
+  // HIDDEN when it came from a link and the service has not refused it. See
+  // `SyncSetupInvite.isFromLink` for why this is not a read-only box.
+  const isInviteHidden = invite?.isFromLink === true && !isInviteRevealed;
 
   return (
     <form {...getFormProps(form)} className="space-y-4">
-      {invite !== undefined && (
+      {invite !== undefined && isInviteHidden && <input {...getInputProps(fields.invite, { type: 'hidden' })} />}
+      {invite !== undefined && !isInviteHidden && (
         <div className="space-y-2">
           <Label htmlFor={fields.invite.id}>{t('sync.create.inviteLabel')}</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              {...getInputProps(fields.invite, { type: 'text' })}
-              autoComplete="off"
-              spellCheck={false}
-              readOnly={isInviteReadOnly}
-              className={isInviteReadOnly ? 'h-11 bg-muted text-muted-foreground' : 'h-11'}
-            />
-            {isInviteReadOnly && (
-              <>
-                <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                <span className="sr-only">{t('sync.create.inviteFromLink')}</span>
-                <Button type="button" variant="ghost" className="h-11 shrink-0" onClick={onUnlockInvite}>
-                  {t('sync.create.inviteChange')}
-                </Button>
-              </>
-            )}
-          </div>
-          {/* The "this instance is invite-only" hint is for someone who has to
-              find a code. Once one is sitting in the box, ready to use, it is
-              an instruction to do something already done. */}
-          {!isInviteReadOnly && <p className="text-xs text-muted-foreground">{t('sync.create.inviteHint')}</p>}
+          <Input
+            {...getInputProps(fields.invite, { type: 'text' })}
+            autoComplete="off"
+            spellCheck={false}
+            className="h-11"
+          />
+          <p className="text-xs text-muted-foreground">{t('sync.create.inviteHint')}</p>
           <FieldError id={fields.invite.errorId} errors={fields.invite.errors} />
         </div>
       )}

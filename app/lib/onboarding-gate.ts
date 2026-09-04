@@ -23,6 +23,26 @@ export type OnboardingGateOutcome =
   | { kind: 'self-heal' }
   /** Probable data loss: block, and offer a restore. NEVER the onboarding wizard. */
   | { kind: 'recover' }
+  /**
+   * DECIDE NOTHING YET: this device is still reopening a session it already
+   * had, and the diary that answers every question below is inside it.
+   *
+   * The caller renders the app's loading screen and asks again once the resume
+   * has settled. Before M192 there was no such state, because a session did
+   * not survive a reload and an empty store really did mean an empty device.
+   * Now it does survive, and a gate that read `account === null` as "signed
+   * out" showed the sign-in door to somebody who was signed in, once per
+   * reload.
+   */
+  | { kind: 'wait' }
+  /**
+   * Signed in, settled, and no diary here: the first-run questionnaire.
+   *
+   * DISTINCT FROM `welcome`, which offers a door to somebody who has not come
+   * through one. Offering it to an account holder is the same defect from the
+   * other side: they have signed in, and the screen asks them to sign in.
+   */
+  | { kind: 'onboard' }
   /** A device with nothing on it: the welcome screen, which offers both doors. */
   | { kind: 'welcome' };
 
@@ -36,6 +56,16 @@ export interface OnboardingGateInput {
   logCount: number;
   /** The `firstDataAt` marker, read from the values partition — survives a tables wipe. */
   hasEverHadData: boolean;
+  /**
+   * Is a session open on this device right now?
+   *
+   * Read from the session SNAPSHOT, never from the vault: this decision is
+   * made in a loader and rendered by React, and neither may touch key
+   * material.
+   */
+  hasSyncAccount: boolean;
+  /** Is this device still reopening a cached session? `SyncSessionSnapshot.isResuming`. */
+  isResumingSession: boolean;
 }
 
 /**
@@ -58,6 +88,16 @@ export interface OnboardingGateInput {
  *    writes sets the marker — would be told their data was lost the moment they
  *    navigated into an app route mid-flow. That false positive is both far more
  *    common than the fault and far more alarming, so the narrower test wins.
+ * 3.5 **Still resuming → decide nothing.** Inserted BEFORE the recovery check
+ *    and not after it, because a resume can bring back the very tables that
+ *    check is about: warning somebody about data loss while their data is on
+ *    its way is the false positive branch 3 already exists to avoid, one layer
+ *    up. It sits AFTER the two branches that prove a diary is present, because
+ *    those two are already true and no resume can make them falser.
+ * 3.6 **Signed in, settled, no diary → the questionnaire, not the door.** The
+ *    welcome screen's whole content is two doors, and this person has already
+ *    come through one. This is what a freshly joined account hits on its first
+ *    full navigation.
  * 4. **Otherwise the welcome screen**, for a device with no marker at all.
  *    This branch used to go straight to the first-run wizard (M183 spec 02).
  *    It does not any more, because "no local profile" is not the same as "new
@@ -71,10 +111,14 @@ export function resolveOnboardingGate({
   hasCompletedOnboarding,
   logCount,
   hasEverHadData,
+  hasSyncAccount,
+  isResumingSession,
 }: OnboardingGateInput): OnboardingGateOutcome {
   if (hasProfile && hasCompletedOnboarding) return { kind: 'pass' };
   if (logCount > 0) return { kind: 'self-heal' };
+  if (isResumingSession) return { kind: 'wait' };
   if (!hasProfile && hasEverHadData) return { kind: 'recover' };
+  if (hasSyncAccount) return { kind: 'onboard' };
   return { kind: 'welcome' };
 }
 
