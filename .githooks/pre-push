@@ -7,7 +7,7 @@
 # typecheck + unit tests: neither runs `react-router build`, so the
 # PRODUCTION BUILD is part of this gate.
 #
-# Runs: lint -> typecheck -> unit tests -> integration tests -> production build.
+# Runs: docs manifest -> lint -> typecheck -> unit tests -> integration tests -> production build.
 #
 # The integration project joined the gate 2026-08-28 (M163/04). It is the only
 # place a COMPOSITION ROOT is exercised — the real actions, over real HTTP,
@@ -37,6 +37,15 @@ if [ "$has_content" = "0" ]; then
   echo "▶ pre-push: deletion-only push, no tests to run"
   exit 0
 fi
+
+# ── FIRST TIER: the documentation manifest ──────────────────────────────────
+# No network, no node, no install: POSIX shell over the README's `##
+# Documentation` table and the `docs/` directory. It is first because it is the
+# cheapest, and because openplate.de reads that table as its manifest — a broken
+# row here fails a workflow in another repository, hours later, with nobody
+# watching. M193 spec 05.
+echo "▶ pre-push: the README Documentation table against docs/"
+./scripts/check-docs-manifest.sh
 
 # TS commands need the ts-dev toolbox (the host lacks native build tools), but
 # must run bare when the hook itself is already executing inside a container.
