@@ -91,24 +91,26 @@ Run any subset. Only the first one is required.
 | **openplate** (this repo)                                                     | The app. Accountless, local-first, stateless, boots with no secrets.                          | Yes — it is the product.                                         |
 | **[openplate-sync](https://github.com/LowCarbCheck/openplate-sync)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address and ciphertext it holds no key for. It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
 | **[openplate-inference](https://github.com/LowCarbCheck/openplate-inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint — open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
-| **[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway)**    | A small multi-tenant proxy: one upstream AI key shared across several people, with a per-member token and a daily quota, invite-based onboarding and an optional audited organization mode. | No, and probably not — provider sub-keys solve most of this. |
+| ~~openplate-gateway~~                                                         | Archived 2026-09-04 (M192), merged into openplate-sync: a managed instance's own account now carries the AI allowance, so the separate proxy is gone. | — |
 
 ## Documentation
 
-- [docs/self-hosting.md](docs/self-hosting.md) — compose walkthroughs, first run, HTTPS,
-  backups, upgrading.
-- [docs/configuration.md](docs/configuration.md) — every environment variable, the
-  Content-Security-Policy, custom and instance-provided AI endpoints, the OpenRouter flow.
-- [docs/sync.md](docs/sync.md) — enabling sync across devices and how the encryption works.
-- [docs/family-setup.md](docs/family-setup.md) — sharing one AI bill across a household, with
-  a spend limit and revocation per person.
-- [`.adr/`](.adr/) — architecture decision records. Start with
-  [ADR-0006](.adr/0006-the-app-server-holds-no-accounts.md) for why this server has no
-  accounts.
-- [`AGENTS.md`](AGENTS.md) — coding guidelines for this repo; [`CLAUDE.md`](CLAUDE.md) imports
-  it.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to send a pull request.
-- [`SECURITY.md`](SECURITY.md) — reporting a vulnerability.
+| Guide | What it covers |
+| --- | --- |
+| [**Architecture**](./docs/architecture.md) | The four programs, what each one stores, and how they compose |
+| [**Self-hosting**](./docs/self-hosting.md) | Compose walkthroughs, first run, HTTPS, backups, upgrading |
+| [**Configuration**](./docs/configuration.md) | Every environment variable, the Content-Security-Policy, custom and instance-provided AI endpoints |
+| [**Sync**](./docs/sync.md) | Enabling sync across devices, the encryption, and the operator's escrowed recovery key |
+| [**Topologies**](./docs/topologies.md) | What to run, from a browser-only install up to a self-hosted household |
+| [**Family setup**](./docs/family-setup.md) | Sharing one AI bill across a household, with a spend limit and revocation per person |
+| [**Legal review**](./docs/legal-review.md) | Status of the German legal text, machine-translated and awaiting a lawyer |
+
+Repository-level specifications live at the root: [`.adr/`](.adr/) — architecture decision
+records. Start with
+[ADR-0006](.adr/0006-the-app-server-holds-no-accounts.md) for why this server has no
+accounts. Also [`AGENTS.md`](AGENTS.md) — coding guidelines for this repo;
+[`CLAUDE.md`](CLAUDE.md) imports it. [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to send a
+pull request. [`SECURITY.md`](SECURITY.md) — reporting a vulnerability.
 
 ## Development
 

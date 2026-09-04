@@ -28,7 +28,8 @@ const appUrl = CONFIG.app.url;
 | `VITE_ALLOWED_HOSTS`        | unset                       | Dev only. Comma-separated extra hostnames Vite should accept (for example your tailnet MagicDNS name).                                                                                          |
 | `FOOD_DB_API_URL`           | `https://lowcarbcheck.org`  | Curated nutrition data and food images for identified foods. Only food **names** are sent — never photos, never anything about you — and the lookup fails open. Set to an empty string to disable it entirely. |
 | `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-sync](https://github.com/LowCarbCheck/openplate-sync) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
-| `GATEWAY_URL`               | unset (open instance)       | Base URL of an [openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway) this instance hands out with its accounts. Setting it declares a **managed instance** — see [Managed instances](#managed-instances) below. Requires `SYNC_SERVER_URL`. Its origin is added to the production CSP automatically. |
+| `INSTANCE_MODE`             | `open`                      | `open` or `managed`. Setting `managed` declares a **managed instance**, see [Managed instances](#managed-instances) below. Requires `SYNC_SERVER_URL`. Any other value stops the boot on purpose. |
+| `GATEWAY_URL`               | must be unset                | Retired by M192 (September 2026): the sync server took over the AI proxy that openplate-gateway used to provide. A non-empty `GATEWAY_URL` fails the boot. Use `INSTANCE_MODE=managed` instead. |
 | `DEFAULT_INFERENCE_BASE_URL`| unset                       | An OpenAI-compatible vision endpoint this instance offers to every visitor. See [Instance-provided AI](#instance-provided-ai) below.                                                            |
 | `DEFAULT_INFERENCE_API_KEY` | unset                       | Optional key for that endpoint. **Read the security warning below before setting it.**                                                                                                         |
 | `DEFAULT_INFERENCE_MODEL`   | `openplate-plate-1`         | Model name to request from that endpoint. Blank or unset falls back to `openplate-plate-1`.                                                                                                                                                      |
@@ -49,33 +50,32 @@ ships a strict Content-Security-Policy. Its `connect-src` allows:
 - the built-in providers' own origins (OpenRouter, Mistral, Anthropic), derived automatically
   from the provider registry — see [ADR-0007](../.adr/0007-byok-provider-registry.md)
 - `localhost`, `127.0.0.1` and `[::1]` on any port
-- your `SYNC_SERVER_URL`, `DEFAULT_INFERENCE_BASE_URL` and `GATEWAY_URL`, if set
+- your `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL`, if set
 - anything in `CSP_CONNECT_EXTRA`
 
 That allowlist is what stops an injected script from exfiltrating a key that lives in the
 page. Widen it deliberately.
 
-- A gateway joined via an invite link (`/join`, and `/connect-gateway`, which redirects into it, see [family-setup.md](family-setup.md#the-other-alternative-run-openplate-gateway))
-  is a remote endpoint like any other and is subject to the same `connect-src` allowlist: on a
-  hosted/public instance, the operator must add the gateway's origin to `CSP_CONNECT_EXTRA`
-  before a member can join. Loopback origins (`http://localhost:*` and `http://127.0.0.1:*`) are already allowed, so a
-  gateway on the same box needs nothing extra. A **tailnet address or MagicDNS hostname is
-  not a loopback origin** — it is a remote origin and needs `CSP_CONNECT_EXTRA` set to it.
-  The gateway's address arrives inside somebody's link, so this app cannot allow it for you and
-  will not widen the policy at runtime: a blocked join says which origin to add, and to whom.
-  A gateway you configured yourself with `GATEWAY_URL` is the exception, and only because it is
-  no longer arriving in a link: it is known at boot, so its origin is added to `connect-src`
-  automatically and must NOT be repeated in `CSP_CONNECT_EXTRA`.
+On a managed instance the AI proxy is the sync server the client already talks to, so its
+origin is `SYNC_SERVER_URL`, already in the list above. There is no second remote endpoint to
+allow and nothing extra to add to `CSP_CONNECT_EXTRA` for it.
 
 ## Managed instances
 
-An instance that sets `GATEWAY_URL` is a **managed instance**: it hands out an account and an AI
-connection together, through one invite link (`/join`, minted by whoever runs the instance). This is
-what openplate.de is, and it is off by default — a self-hoster who sets nothing gets the open app.
+An instance that sets `INSTANCE_MODE=managed` is a **managed instance**: an administrator
+invites people by email, and each account carries a daily AI allowance, so signing in gives a
+person both the diary and the AI in one step. This is what openplate.de is, and it is off by
+default — a self-hoster who sets nothing gets the open app.
 
-`GATEWAY_URL` requires `SYNC_SERVER_URL`. A gateway gives a person AI; the account is what carries
-that connection to their second device and holds the diary it produces. Setting one without the
-other stops the boot rather than half-enabling anything.
+`INSTANCE_MODE=managed` requires `SYNC_SERVER_URL`. The account is what carries the diary and
+the allowance together; declaring `managed` without a sync server stops the boot rather than
+half-enabling anything.
+
+An administrator invites people from the app itself, at `/admin`, or from a terminal through
+openplate-sync's `sync-api` CLI (see the workspace's admin notes). The invite is mailed, never
+printed to a console. A forgotten password is reset by a mailed link; the server holds an
+escrowed recovery code that unwraps the data key after the reset (see
+[sync.md](sync.md#encryption-and-what-the-operator-holds)).
 
 What changes when it is set:
 
@@ -83,16 +83,17 @@ What changes when it is set:
   pasted link and hands it to `/join`). There is no "Start".
 - `/onboarding` redirects to `/welcome` for a device with neither a local diary nor an account. The
   anonymous local-only path is closed, not merely hidden — on a managed instance it leads nowhere,
-  because there is no AI without the gateway and no diary that survives the device without the
-  account. A device that already holds a diary is never thrown out.
-- `/join` runs one ceremony: create the account, then the gateway half is redeemed in the same flow.
+  because there is no AI without an account and no diary that survives the device without one.
+  A device that already holds a diary is never thrown out.
+- `/join` runs one ceremony: the invite is redeemed by the signup request itself, in one
+  transaction, and the account carries both the diary and the allowance from that point on.
   The "Skip, I already have an account" action is gone, because on such an instance the person
   offered it has neither.
 - **Settings → Sync**, signed out, offers signing in and says that accounts here come from an invite
   link. There is no "create an account" button.
 
-Everything above is unchanged on an instance with no `GATEWAY_URL`, and a test pins both variants
-side by side.
+Everything above is unchanged on an open instance (`INSTANCE_MODE` unset or `open`), and a test
+pins both variants side by side.
 
 ## Custom AI endpoints
 
@@ -148,11 +149,11 @@ Three rules:
 A malformed `DEFAULT_INFERENCE_BASE_URL` fails the boot deliberately, so a typo cannot look
 like "the button just never appeared".
 
-This instance preset (`connectedVia: 'preset'`) and the gateway invite flow
-(`connectedVia: 'invite'`, see [family-setup.md](family-setup.md#the-other-alternative-run-openplate-gateway))
-are the two "someone else configured my provider row" paths — the difference is scope: a
-preset is set by this instance's own operator for every visitor, an invite is issued
-per-member by a gateway operator.
+This instance preset (`connectedVia: 'preset'`) is set by this instance's own operator for
+every visitor. `connectedVia: 'invite'` is a related, now-legacy value: it marked an AI
+settings row handed out by the old openplate-gateway invite flow, retired in M192. A managed
+instance no longer writes that row at all: the account itself carries the allowance, and the
+AI proxy is reached through `SYNC_SERVER_URL`, not a separate settings entry.
 
 ## Connecting with OpenRouter
 

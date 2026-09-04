@@ -55,13 +55,13 @@ and top it up deliberately.
 programmatically, which is worth knowing about if you are provisioning for more than a
 handful of people. For a family, the dashboard is faster than writing the script.
 
-## The other alternative: run openplate-gateway
+## The other alternative: a managed openplate-sync instance
 
 If your provider will not issue capped sub-keys — Mistral, most direct provider APIs — the
-sub-key recipe above has nothing to work with. That is what
-[openplate-gateway](https://github.com/LowCarbCheck/openplate-gateway) is for: a small
-OpenAI-compatible proxy that holds your one upstream key and issues each member their own
-`opk_…` token with a hard daily request quota.
+sub-key recipe above has nothing to work with. That is what a **managed** openplate-sync
+instance is for: set `INSTANCE_MODE=managed` (requires `SYNC_SERVER_URL`), and the account
+service your household already uses for sync also becomes the AI proxy, with a daily request
+allowance per account.
 
 **Pick it over provider sub-keys when:**
 
@@ -69,40 +69,31 @@ OpenAI-compatible proxy that holds your one upstream key and issues each member 
 - You want a **daily request** cap per person rather than a credit balance per person.
 - You are putting the household in front of your own
   [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) box, where there
-  is no provider dashboard at all — the gateway adds the per-person quotas and usage the
-  `API_KEYS` allowlist below does not have.
-- You want revocation to be one line in a file rather than a shared key everyone re-pastes.
+  is no provider dashboard at all, a managed instance adds the per-person allowance and usage
+  the `API_KEYS` allowlist below does not have.
+- You want revocation to be one action in the admin screen rather than a shared key everyone
+  re-pastes.
 
 **Stay with provider sub-keys when you can.** If you are on OpenRouter, you are already done
-five minutes ago and there is no container to keep alive. The gateway's own README opens by
-talking you out of running it, and it is right to.
+five minutes ago and there is no service to keep alive.
 
-Setup is in the [gateway README quickstart](https://github.com/LowCarbCheck/openplate-gateway#quickstart):
-set `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`, `GATEWAY_ADMIN_TOKEN`, `GATEWAY_PUBLIC_URL` and
-`CLIENT_BASE_URL`, and bring up the compose file. The last two are what give an invite a link
-to send; without both, the invite is created but carries none. From there it's all in the browser at `/admin/ui`: sign in with the admin
-token, create an invite (with its daily quota), and send the member the link it gives you.
-The member opens it, taps to join, and openplate configures itself — no fields to type, no
-file to paste into. If your household's openplate is **hosted** rather than one you run, its
-operator must first add the gateway's origin to `CSP_CONNECT_EXTRA`, or the browser blocks the
-connection and the join screen reports the gateway unreachable. Revocation is one click in `/admin/ui` (or a `DELETE
-/admin/members/:id`), takes effect immediately, and needs no restart. See the gateway repo's
-own [docs/family-setup.md](https://github.com/LowCarbCheck/openplate-gateway/blob/main/docs/family-setup.md)
-for the full walkthrough, including what the invite link and the join screen actually show.
+Setup: bring up openplate-sync (see [sync.md](sync.md) and
+[topologies.md](topologies.md#rung-2--add-sync)), and set `INSTANCE_MODE=managed` on the
+openplate app. From there, invite people at `/admin` in the app, or from a terminal with
+openplate-sync's `sync-api` CLI, giving each account a daily allowance. The invite is mailed
+to the person; the link is never printed to a console. Each person signs in and their account
+already carries the AI connection — there is no separate step and nothing to paste in.
+Suspending or reactivating an account is the same admin screen, and takes effect immediately.
 
-Two things worth knowing before you rely on it. The quota counts **requests, not currency**,
-so keep a hard spend cap on the upstream key at the provider as well — only the provider can
-stop the money. And a member with no `dailyLimit` gets zero rather than unlimited, which is
-the failure mode you want.
+Two things worth knowing before you rely on it. The allowance counts **requests, not
+currency**, so keep a hard spend cap on the upstream key at the provider as well — only the
+provider can stop the money. And a person's allowance is set explicitly per account; there is
+no unlimited default.
 
-Nothing about this shares a diary either. The gateway carries AI requests only; it has no
-sync route and no access to anyone's food log.
-
-A member who joins by invite gets a settings row marked `connectedVia: 'invite'` — the same
-"someone else configured this for me" shape as an instance preset (`connectedVia: 'preset'`),
-just scoped per-member instead of instance-wide. See
-[configuration.md#instance-provided-ai](configuration.md#instance-provided-ai) for that
-comparison.
+Sync and the AI proxy are the same service now, so a managed instance's server does see more
+than an unmanaged one: an email address, ciphertext it holds no key for, and, for a scan, the
+photo, read once and not stored. It still never sees a diary entry in the clear. See
+[architecture.md](architecture.md) for the full picture of what each component holds.
 
 ## The alternative: a shared inference box
 
