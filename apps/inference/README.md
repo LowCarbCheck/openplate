@@ -190,15 +190,15 @@ card.
 
 ## Documentation
 
-| | |
-|---|---|
-| [Bring your own runtime](docs/runtimes.md) | Point this at an llama.cpp / Ollama / vLLM you already run. Support matrix, the grammar-enforcement requirement and how to test for it, per-runtime setup traps. |
-| [Configuration](docs/configuration.md) | Every environment variable, and the food-database (`FOOD_SOURCE`) options. |
-| [Hardware & measured latency](docs/hardware.md) | Profiles, measured GPU and CPU numbers, VRAM and RAM floors, minimum box. |
-| [API](docs/api.md) | Endpoints, request and response shape, status codes, CORS. |
-| [Troubleshooting](docs/troubleshooting.md) | Boot stages, symptom table, offline / pre-seeded install. |
-| [Licensing](docs/licensing.md) | Model weight licences, the `lite` revenue cap, and the Apache-2.0 swap-in. |
-| [Privacy](docs/privacy.md) | What happens to a photo, and what never leaves the container. |
+| Guide | What it covers |
+| --- | --- |
+| [**Hardware and measured latency**](./docs/hardware.md) | Profiles, measured GPU and CPU numbers, VRAM and RAM floors, minimum box |
+| [**Bring your own runtime**](./docs/runtimes.md) | Point this at an llama.cpp, Ollama or vLLM you already run, the grammar-enforcement requirement, per-runtime setup traps |
+| [**Configuration**](./docs/configuration.md) | Every environment variable, and the food-database (`FOOD_SOURCE`) options |
+| [**API**](./docs/api.md) | Endpoints, request and response shape, status codes, CORS |
+| [**Privacy**](./docs/privacy.md) | What happens to a photo, and what never leaves the container |
+| [**Licensing**](./docs/licensing.md) | Model weight licences, the `lite` revenue cap, and the Apache-2.0 swap-in |
+| [**Troubleshooting**](./docs/troubleshooting.md) | Boot stages, symptom table, offline / pre-seeded install |
 
 Benchmark harness, gold set, and every number quoted in these docs:
 [`eval/`](eval/).
