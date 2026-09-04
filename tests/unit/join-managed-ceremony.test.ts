@@ -92,9 +92,16 @@ async function redemptionWith({ refuses }: { refuses: boolean }): Promise<Redemp
     invite: { gatewayUrl: 'https://gw.example.test', inviteToken: 'gi_managed' },
     deps: {
       redeem: async () =>
-        refuses ? null : (
-          { memberId: 'm', memberToken: 'mt_x', gateway: { name: 'Haus', model: null, auditEnabled: false } }
-        ),
+        refuses ?
+          ({ status: 'refused' } as const)
+        : ({
+            status: 'redeemed',
+            redeemed: {
+              memberId: 'm',
+              memberToken: 'mt_x',
+              gateway: { name: 'Haus', model: null, auditEnabled: false },
+            },
+          } as const),
       putAiSettings: async () => undefined,
       putGatewayConnection: async () => undefined,
       now: () => 0,
@@ -146,15 +153,23 @@ describe('the managed ceremony runs without a detour', () => {
 
   it('comes back from the account ceremony by itself, only when a half is parked', () => {
     const handler = settingsSyncSource.slice(
-      settingsSyncSource.indexOf('const handleCeremonyActiveChange = useCallback('),
-      settingsSyncSource.indexOf('[managed, navigate],'),
+      settingsSyncSource.indexOf('const handleCeremonyComplete = useCallback('),
+      settingsSyncSource.indexOf('[managed, navigate]);'),
     );
-    assert.ok(handler.length > 0, 'the ceremony-edge handler has been renamed or restructured');
-    // The `false` this callback also receives on mount and on unmount must not
-    // navigate anywhere — only a true→false edge is a ceremony that ended.
-    assert.match(handler, /wasCeremonyActive\.current/);
-    assert.match(handler, /if \(!managed \|\| readPendingGatewayJoin\(\) === null\) return;/);
+    assert.ok(handler.length > 0, 'the ceremony-completion handler has been renamed or restructured');
+    assert.match(handler, /resolveCeremonyHandoff\(/);
+    assert.match(handler, /readPendingGatewayJoin\(\) !== null/);
     assert.match(handler, /navigate\('\/join'\)/);
+  });
+
+  it('hangs the handoff on the ceremony COMPLETING, never on the active flag going false', () => {
+    // The 2026-09-04 production defect. `onCeremonyActiveChange` is re-fired by
+    // an effect cleanup whenever the callback identity changes, so its `false`
+    // arrives while provisioning is still running. A route that navigates on
+    // it leaves before the account card, which is the only display of the
+    // recovery code there will ever be.
+    assert.match(settingsSyncSource, /onCeremonyComplete=\{handleCeremonyComplete\}/);
+    assert.doesNotMatch(settingsSyncSource, /wasCeremonyActive/);
   });
 
   it('lands the person in the app rather than in settings', () => {

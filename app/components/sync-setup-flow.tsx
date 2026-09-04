@@ -74,6 +74,7 @@ import { Label } from '#app/components/ui/label';
 export function SyncSetupFlow({
   provision,
   onCeremonyActiveChange,
+  onCeremonyComplete,
   resume,
   invite,
 }: {
@@ -89,6 +90,20 @@ export function SyncSetupFlow({
    * `isSyncSetupCeremonyActive` and `resolveSyncScreen` for the rule.
    */
   onCeremonyActiveChange?: (isActive: boolean) => void;
+  /**
+   * The ceremony is OVER: the account exists, the card has been shown, and the
+   * person has ticked "I saved it" and pressed on.
+   *
+   * A separate event from `onCeremonyActiveChange` because the `false` edge of
+   * that flag is NOT the end of the ceremony, and reading it as one shipped a
+   * production bug on 2026-09-04: the effect below re-fires whenever its own
+   * identity changes, so the caller saw `false` while provisioning was still
+   * running, navigated away, and the account card, the only display of the
+   * recovery code there will ever be, was never rendered. This fires once,
+   * from the reducer's `complete` state, which is unreachable until the card
+   * has been seen and acknowledged (`setup-flow.ts`).
+   */
+  onCeremonyComplete?: () => void;
   /** Skips the details form and provisions immediately with an already-known handle and passphrase. */
   resume?: { handle: string; passphrase: string };
   /** Omitted when this instance neither wants nor was given an invite — then no invite field is rendered at all. */
@@ -119,6 +134,17 @@ export function SyncSetupFlow({
     onCeremonyActiveChange?.(isCeremonyActive);
     return () => onCeremonyActiveChange?.(false);
   }, [isCeremonyActive, onCeremonyActiveChange]);
+
+  // The one report of a FINISHED ceremony. Guarded by a ref rather than by the
+  // effect's dependencies: an unstable callback identity re-runs the effect,
+  // and firing a second handoff would send the caller somewhere twice.
+  const hasReportedCompleteRef = useRef(false);
+  const isComplete = state.kind === 'complete';
+  useEffect(() => {
+    if (!isComplete || hasReportedCompleteRef.current) return;
+    hasReportedCompleteRef.current = true;
+    onCeremonyComplete?.();
+  }, [isComplete, onCeremonyComplete]);
 
   /** The provisioning round trip, shared by the form submit and the `resume` entry point. */
   const runProvision = useCallback(

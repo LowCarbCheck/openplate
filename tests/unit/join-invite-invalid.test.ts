@@ -60,7 +60,7 @@ async function refusedRedemption(): Promise<RedemptionOutcome> {
   return redeemAndPark({
     invite: { gatewayUrl: 'https://gw.example.test', inviteToken: 'gi_refused' },
     deps: {
-      redeem: async () => null,
+      redeem: async () => ({ status: 'refused' }) as const,
       putAiSettings: async () => assert.fail('a refused invite must write nothing'),
       putGatewayConnection: async () => assert.fail('a refused invite must write nothing'),
       now: () => 0,
@@ -88,8 +88,8 @@ describe('the redemption, when the gateway refuses the invite', () => {
     // of the route: the slot is emptied inside the redemption, which returns
     // before `/join` sees an outcome at all.
     const branch = redemptionSource.slice(
-      redemptionSource.indexOf('if (redeemed === null) {'),
-      redemptionSource.indexOf('const parked: ParkedGatewayRedemption'),
+      redemptionSource.indexOf("if (attempt.status === 'refused') {"),
+      redemptionSource.indexOf("if (attempt.status === 'unreachable') {"),
     );
     assert.match(branch, /consumeGatewayInvite\(\)/);
     assert.match(branch, /status: 'invite-invalid'/);

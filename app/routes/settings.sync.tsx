@@ -17,7 +17,7 @@
  * this server, which is the property the whole design rests on (AGENTS.md,
  * "Sync Architecture").
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLoaderData, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +30,7 @@ import { SignInPanel } from '#app/components/sign-in-panel';
 import { useManagedInstance } from '#app/hooks/use-public-config';
 import { takeInviteFromUrl } from '#app/lib/sync/invite-link';
 import { readPendingGatewayJoin } from '#app/lib/join-link';
+import { resolveCeremonyHandoff } from '#app/lib/sync/ceremony-handoff';
 import { Link } from '#app/components/link';
 import { ServerNoticeBanner } from '#app/components/sync-notice-banner';
 import { SyncRecoveryFlow } from '#app/components/sync-recovery-flow';
@@ -98,24 +99,25 @@ export default function SettingsSync() {
    * app. Without this, the one ceremony ends on a settings page with a
    * sentence asking the person to go and finish it.
    *
-   * A ref, because this callback also receives `false` on mount and on
-   * unmount: only a true→false EDGE is a ceremony that ended.
+   * ── Why this is no longer the `false` EDGE of the active flag ────────────
+   *
+   * It was, and that shipped the 2026-09-04 production bug: the flag is
+   * reported from an effect whose cleanup runs whenever its own identity
+   * changes, so a `false` arrived while provisioning was still in flight. The
+   * route navigated to `/join` seconds before the account existed, `/join`
+   * read a signed-out session and asked the person to sign in, and the account
+   * card — the one and only display of the recovery code — was never rendered.
+   *
+   * `onCeremonyComplete` fires once, from the wizard's `complete` state, which
+   * the reducer refuses to enter until the card has been shown and the person
+   * has confirmed saving it. So the handoff cannot outrun the card, by
+   * construction rather than by timing.
    */
-  const wasCeremonyActive = useRef(false);
-  const handleCeremonyActiveChange = useCallback(
-    (isActive: boolean): void => {
-      setIsCeremonyActive(isActive);
-      if (isActive) {
-        wasCeremonyActive.current = true;
-        return;
-      }
-      if (!wasCeremonyActive.current) return;
-      wasCeremonyActive.current = false;
-      if (!managed || readPendingGatewayJoin() === null) return;
-      void navigate('/join');
-    },
-    [managed, navigate],
-  );
+  const handleCeremonyComplete = useCallback((): void => {
+    const handoff = resolveCeremonyHandoff({ managed, hasPendingGatewayJoin: readPendingGatewayJoin() !== null });
+    if (handoff === 'stay') return;
+    void navigate('/join');
+  }, [managed, navigate]);
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -130,7 +132,8 @@ export default function SettingsSync() {
       : <SignedOutPanel
           serverUrl={syncServerUrl}
           managed={managed}
-          onCeremonyActiveChange={handleCeremonyActiveChange}
+          onCeremonyActiveChange={setIsCeremonyActive}
+          onCeremonyComplete={handleCeremonyComplete}
         />
       }
     </div>
@@ -185,11 +188,14 @@ function SignedOutPanel({
   serverUrl,
   managed,
   onCeremonyActiveChange,
+  onCeremonyComplete,
 }: {
   serverUrl: string;
   /** `PublicConfig.managed` — `false` renders exactly the panel this page had before. */
   managed: boolean;
   onCeremonyActiveChange: (isActive: boolean) => void;
+  /** The ceremony finished and its card was acknowledged — see the route's handler. */
+  onCeremonyComplete: () => void;
 }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<SignedOutMode>('choose');
@@ -268,6 +274,7 @@ function SignedOutPanel({
             initialInvite={invite}
             onCancel={() => setMode('choose')}
             onCeremonyActiveChange={onCeremonyActiveChange}
+            onCeremonyComplete={onCeremonyComplete}
           />
         )}
         {mode === 'sign-in' && (
@@ -277,6 +284,7 @@ function SignedOutPanel({
             onCancel={() => setMode('choose')}
             onForgot={() => setMode('forgot')}
             onCeremonyActiveChange={onCeremonyActiveChange}
+            onCeremonyComplete={onCeremonyComplete}
           />
         )}
         {mode === 'forgot' && (

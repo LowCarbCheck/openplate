@@ -51,6 +51,7 @@ export function SignInPanel({
   onForgetName,
   onSignedIn,
   onCeremonyActiveChange,
+  onCeremonyComplete,
 }: {
   serverUrl: string;
   initialHandle: string;
@@ -68,7 +69,22 @@ export function SignInPanel({
    * failure on the form the person is still looking at.
    */
   onSignedIn?: () => void;
-  onCeremonyActiveChange: (isActive: boolean) => void;
+  /**
+   * Reports the repair wizard holding something the person must still see, so
+   * a surrounding screen can refuse to swap it out. Optional: `/sign-in` is a
+   * page of its own with nothing to swap in, and passes nothing.
+   */
+  onCeremonyActiveChange?: (isActive: boolean) => void;
+  /**
+   * The repair ceremony FINISHED: its account card was shown and
+   * acknowledged.
+   *
+   * Separate from the flag above, and for the reason recorded in
+   * `sync-setup-flow.tsx`: the flag's `false` is re-fired by an effect cleanup
+   * and is not an end-of-ceremony signal. A caller that treats it as one acts
+   * while the recovery code is still on its way to the screen.
+   */
+  onCeremonyComplete?: () => void;
 }) {
   const { t } = useTranslation();
   const [isBusy, setIsBusy] = useState(false);
@@ -133,6 +149,7 @@ export function SignInPanel({
         <SyncSetupFlow
           resume={{ handle: repair.handle, passphrase: repair.passphrase }}
           onCeremonyActiveChange={onCeremonyActiveChange}
+          onCeremonyComplete={onCeremonyComplete}
           provision={async (input) => {
             const outcome = await repair.completeSetup({ passphrase: input.passphrase });
             // Fired, never awaited — same reason as the create path: a network

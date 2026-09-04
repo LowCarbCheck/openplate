@@ -74,14 +74,42 @@ export interface CapturedInvite {
 }
 
 /**
+ * How a single `POST /v1/invites/redeem` ended.
+ *
+ * THE TWO FAILURES ARE NOT ONE FAILURE, and collapsing them cost a production
+ * join on 2026-09-04. A `refused` is the gateway's own verdict on the token:
+ * the token is dead, and the tab's slot must be emptied so the same dead token
+ * does not follow the person through every later screen. An `unreachable` is
+ * no verdict at all — the request never produced an answer, so the invite may
+ * well be untouched, and emptying the slot on it throws away a live capability
+ * because of a dropped connection.
+ *
+ * A 5xx counts as `unreachable` for the same reason: it says something broke
+ * at the gateway, not that this invite is spent.
+ */
+export type RedeemAttempt =
+  | { status: 'redeemed'; redeemed: GatewayRedeemResponse }
+  /** The gateway answered, and the answer was no. The invite is gone either way. */
+  | { status: 'refused' }
+  /** No usable answer: the request threw, timed out, or came back as something this client cannot read. */
+  | { status: 'unreachable' };
+
+/**
  * What a redemption attempt leaves the screen to say.
  *
  * `save-failed` is the state this module exists for: the invite is SPENT and
  * the answer is parked, so the only honest thing to offer is a retry of the
  * local half. It is emphatically not "the join failed".
+ *
+ * `gateway-unreachable` is the other half of that idea, one step earlier: the
+ * invite is NOT spent as far as anyone here can tell, so the honest offer is
+ * to try the whole redemption again, and the slot keeps its token.
  */
 export type RedemptionOutcome =
-  { status: 'joined'; gatewayName: string } | { status: 'invite-invalid' } | { status: 'save-failed' };
+  | { status: 'joined'; gatewayName: string }
+  | { status: 'invite-invalid' }
+  | { status: 'gateway-unreachable' }
+  | { status: 'save-failed' };
 
 /** The two local writes, injected — production passes the local store, tests pass recorders. */
 export interface RedemptionSaveDeps {
@@ -91,17 +119,22 @@ export interface RedemptionSaveDeps {
 
 /** Everything a full redemption needs from outside itself: the network, the stores, the clock. */
 export interface RedemptionDeps extends RedemptionSaveDeps {
-  redeem: (invite: CapturedInvite) => Promise<GatewayRedeemResponse | null>;
+  redeem: (invite: CapturedInvite) => Promise<RedeemAttempt>;
   now: () => number;
 }
 
 /**
- * `POST /v1/invites/redeem`, or `null` for any failure.
+ * `POST /v1/invites/redeem`, told apart from a request that never arrived.
  *
- * ONE null for every failure on purpose. The gateway answers an invalid,
- * expired or already-used invite with a generic 400, and this client keeps it
- * generic: telling someone which of the three it was tells an attacker holding
- * a guessed token the same thing.
+ * ONE `refused` for every gateway verdict on purpose. The gateway answers an
+ * invalid, expired or already-used invite with a generic 400, and this client
+ * keeps it generic: telling someone which of the three it was tells an attacker
+ * holding a guessed token the same thing.
+ *
+ * But a request that produced NO verdict is reported as `unreachable` rather
+ * than folded into the same answer. Only a verdict may burn the tab's invite,
+ * and a thrown `fetch`, a timeout, a 5xx or a body this client cannot read are
+ * all "we do not know" — see {@link RedeemAttempt}.
  *
  * `fetchImpl` is a parameter rather than a global read so the call is testable
  * without a network, and so the one place that counts redeem attempts is a
@@ -111,7 +144,7 @@ export async function redeemInvite({
   gatewayUrl,
   inviteToken,
   fetchImpl = globalThis.fetch,
-}: CapturedInvite & { fetchImpl?: typeof fetch }): Promise<GatewayRedeemResponse | null> {
+}: CapturedInvite & { fetchImpl?: typeof fetch }): Promise<RedeemAttempt> {
   let response: Response;
   try {
     response = await fetchImpl(`${gatewayUrl}${GATEWAY_REDEEM_PATH}`, {
@@ -121,14 +154,19 @@ export async function redeemInvite({
       signal: AbortSignal.timeout(GATEWAY_REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
-    // Never carries the token: `reportError` receives the fetch failure only,
+    // No response object at all: a CSP block, a dead host, a DNS miss or a
+    // timeout. `reportError` receives the fetch failure only, never the token,
     // and this module logs nothing itself.
     reportError(error, { boundary: 'join-gateway-redeem' });
-    return null;
+    return { status: 'unreachable' };
   }
-  if (!response.ok) return null;
+  // 4xx is the gateway judging this token; 5xx is the gateway failing, which
+  // says nothing about the token and must not spend it.
+  if (response.status >= 500) return { status: 'unreachable' };
+  if (!response.ok) return { status: 'refused' };
   const parsed = gatewayRedeemResponseSchema.safeParse(await response.json().catch(() => null));
-  return parsed.success ? parsed.data : null;
+  // A 200 this client cannot read is a broken or wrong server, not a refusal.
+  return parsed.success ? { status: 'redeemed', redeemed: parsed.data } : { status: 'unreachable' };
 }
 
 /**
@@ -145,23 +183,33 @@ export async function redeemAndPark({
   invite: CapturedInvite;
   deps: RedemptionDeps;
 }): Promise<RedemptionOutcome> {
-  const redeemed = await deps.redeem(invite);
-  if (redeemed === null) {
+  const attempt = await deps.redeem(invite);
+  if (attempt.status === 'refused') {
     // A rejected token is spent for this tab too: empty the slot before the
     // caller puts an error card up. The slot outlives that screen, and
     // `sign-in-flow.ts` sends a signed-in tab back to `/join` whenever gateway
     // business is parked there — so leaving a dead token behind turns one bad
     // link into every later sign-in in this tab failing the same way. The sync
     // half is not touched, exactly as on the success path.
+    //
+    // ONLY here. This is the gateway's own verdict, and a verdict is the one
+    // thing allowed to burn the slot.
     consumeGatewayInvite();
     return { status: 'invite-invalid' };
+  }
+  if (attempt.status === 'unreachable') {
+    // Nothing is known and therefore nothing is spent: the token stays parked,
+    // and the caller offers the whole redemption again. A retry that turns out
+    // to be a second post of a token the gateway did in fact burn comes back
+    // `refused`, and the branch above empties the slot then — on a verdict.
+    return { status: 'gateway-unreachable' };
   }
 
   // Before either write, and this is the fix: the invite is gone from the slot
   // and its answer is in the slot's place. From here on nothing can re-redeem.
   const parked: ParkedGatewayRedemption = {
     gatewayUrl: invite.gatewayUrl,
-    redeemed,
+    redeemed: attempt.redeemed,
     redeemedAt: deps.now(),
   };
   parkGatewayRedemption(parked);

@@ -23,7 +23,7 @@
  * of the form once provisioning starts — an invite box beside an account card
  * is asking a question that has already been answered.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SyncSetupFlow } from '#app/components/sync-setup-flow';
@@ -40,15 +40,36 @@ export function CreateAccountPanel({
   initialInvite,
   onCancel,
   onCeremonyActiveChange,
+  onCeremonyComplete,
 }: {
   serverUrl: string;
   /** The token from an `#invite=…` link, already taken out of the URL by the caller, or `''`. */
   initialInvite: string;
   onCancel: () => void;
   onCeremonyActiveChange: (isActive: boolean) => void;
+  /** Fired once, when the account card has been shown and acknowledged. */
+  onCeremonyComplete?: () => void;
 }) {
   const { t } = useTranslation();
   const [isCeremonyActive, setIsCeremonyActive] = useState(false);
+
+  /**
+   * A `useCallback`, and that is load-bearing rather than tidiness.
+   *
+   * An inline arrow here is a NEW function on every render of this panel, and
+   * this panel re-renders on every one of its own `setIsCeremonyActive` calls.
+   * `SyncSetupFlow` reports the flag from an effect that lists the callback in
+   * its dependencies, so a fresh identity re-runs that effect — and its
+   * CLEANUP reports `false` first. That is the loop that, on 2026-09-04, told
+   * `/settings/sync` the ceremony had ended while it was still provisioning.
+   */
+  const handleCeremonyActiveChange = useCallback(
+    (isActive: boolean): void => {
+      setIsCeremonyActive(isActive);
+      onCeremonyActiveChange(isActive);
+    },
+    [onCeremonyActiveChange],
+  );
 
   // `null` while unknown — an older service, or one that could not be reached.
   // The form stays usable either way; this only decides whether the invite
@@ -81,10 +102,8 @@ export function CreateAccountPanel({
             { initialValue: initialInvite, isFromLink: initialInvite !== '', isRequired: signupMode === 'invite' }
           : undefined
         }
-        onCeremonyActiveChange={(isActive) => {
-          setIsCeremonyActive(isActive);
-          onCeremonyActiveChange(isActive);
-        }}
+        onCeremonyActiveChange={handleCeremonyActiveChange}
+        onCeremonyComplete={onCeremonyComplete}
         provision={async ({ handle: accountHandle, passphrase, invite }) => {
           // The person has acted on the prefilled code, so the pending slot
           // has done its job and is emptied HERE rather than on mount: until

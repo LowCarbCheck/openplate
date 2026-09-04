@@ -112,9 +112,10 @@ import {
 } from '#app/lib/join-link';
 import { useManagedInstance, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { resolveGatewayStep } from '#app/lib/managed-join';
+import { waitForAccount } from '#app/lib/sync/await-account';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
 import { resolveSignInDestination } from '#app/lib/sign-in-flow';
-import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { getSyncSessionSnapshot, subscribeSyncSession } from '#app/lib/sync/sync-session';
 import { getLocalAiSettings, putLocalAiSettings, putLocalGatewayConnection } from '#app/lib/local-store';
 import { syncNow } from '#app/lib/sync/sync-actions';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -157,6 +158,29 @@ type Phase =
    * parked answer and dials nothing — see `app/lib/gateway-redemption.ts`.
    */
   | { status: 'save-retry'; parked: ParkedGatewayRedemption; isSaving: boolean };
+
+/**
+ * How long `/join` waits for a session that the same tab is in the middle of
+ * opening.
+ *
+ * The managed ceremony hands over from `/settings/sync` the moment the account
+ * card is acknowledged, and `createSyncAccount` opens the session on that same
+ * screen — but "already opened" is a race, not a guarantee. Without this wait
+ * a snapshot read on the wrong side of that millisecond answered
+ * `sign-in-first`: a card asking somebody to sign in to the account they had
+ * created seconds earlier, on a device where the session then opened and
+ * nothing looked again.
+ *
+ * It ends on the first session notification, so the ordinary cost is zero; the
+ * ceiling only matters to a genuinely signed-out device, which spends it on
+ * the same "checking that gateway" spinner it was already showing.
+ */
+const ACCOUNT_ARRIVAL_TIMEOUT_MS = 8_000;
+
+/** Is a sync session open on this device? The one read `/join` makes of it. */
+function hasSyncAccount(): boolean {
+  return getSyncSessionSnapshot().account !== null;
+}
 
 /** Why an info probe produced no gateway — `blocked` means `fetch` threw, i.e. no response at all. */
 type InfoProbeResult = { ok: true; info: GatewayInfo } | { ok: false; kind: 'blocked' | 'network' };
@@ -546,7 +570,29 @@ export default function Join() {
    * done" is one function.
    */
   const applyOutcome = useCallback(
-    async (outcome: RedemptionOutcome, parked: ParkedGatewayRedemption | null): Promise<void> => {
+    async (
+      outcome: RedemptionOutcome,
+      parked: ParkedGatewayRedemption | null,
+      offer: GatewayOffer | null,
+    ): Promise<void> => {
+      if (outcome.status === 'gateway-unreachable') {
+        // NOTHING was spent: the gateway gave no verdict, so the invite is
+        // still in the slot and the honest offer is the same one again. Back
+        // to the confirm card when there is one to go back to, and to the
+        // unreachable explanation when the redemption ran by itself and the
+        // person never saw a card.
+        if (offer === null) {
+          setPhase({
+            status: 'unreachable',
+            reason: 'network',
+            gatewayOrigin: originOf(inviteRef.current?.gatewayUrl ?? null),
+          });
+          return;
+        }
+        setPhase({ status: 'confirm', ...offer });
+        toast.error(t('connectGateway.unreachable.body'));
+        return;
+      }
       if (outcome.status === 'invite-invalid') {
         // The slot was emptied by the redemption itself, before this ran.
         setPhase({ status: 'invite-invalid' });
@@ -596,7 +642,7 @@ export default function Join() {
       const invite = inviteRef.current;
       if (invite === null) return;
       setPhase({ status: 'joining', ...offer });
-      await applyOutcome(await redeemAndPark({ invite, deps: LIVE_REDEMPTION_DEPS }), null);
+      await applyOutcome(await redeemAndPark({ invite, deps: LIVE_REDEMPTION_DEPS }), null, offer);
     },
     [applyOutcome],
   );
@@ -612,7 +658,7 @@ export default function Join() {
   const saveRedeemed = useCallback(
     async (parked: ParkedGatewayRedemption): Promise<void> => {
       setPhase({ status: 'save-retry', parked, isSaving: true });
-      await applyOutcome(await savePendingRedemption({ parked, deps: LIVE_REDEMPTION_DEPS }), parked);
+      await applyOutcome(await savePendingRedemption({ parked, deps: LIVE_REDEMPTION_DEPS }), parked, null);
     },
     [applyOutcome],
   );
@@ -646,14 +692,27 @@ export default function Join() {
         return;
       }
 
-      const step = resolveGatewayStep({
-        managed,
-        hasAccount: getSyncSessionSnapshot().account !== null,
-        auditRequired: isAuditDisclosureRequired(probe.info),
-      });
+      const auditRequired = isAuditDisclosureRequired(probe.info);
+      let step = resolveGatewayStep({ managed, hasAccount: hasSyncAccount(), auditRequired });
       if (step === 'sign-in-first') {
-        setPhase({ status: 'sign-in-first' });
-        return;
+        // WAIT for it rather than asking for it. The account this link needs is
+        // very often being created in this very tab, one screen ago.
+        const arrived = await waitForAccount({
+          deps: {
+            hasAccount: hasSyncAccount,
+            subscribe: subscribeSyncSession,
+            schedule: (callback, delayMs) => {
+              const timer = globalThis.setTimeout(callback, delayMs);
+              return () => globalThis.clearTimeout(timer);
+            },
+          },
+          timeoutMs: ACCOUNT_ARRIVAL_TIMEOUT_MS,
+        });
+        if (!arrived) {
+          setPhase({ status: 'sign-in-first' });
+          return;
+        }
+        step = resolveGatewayStep({ managed, hasAccount: true, auditRequired });
       }
       // Read the existing connection only once the gateway is real, so a dead
       // link never touches the settings store at all.

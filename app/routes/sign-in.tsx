@@ -33,7 +33,7 @@
  * registered outside `_personal` because that layout's gate redirects here,
  * and a route nested inside it would be redirected away from itself in a loop.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -113,23 +113,17 @@ export default function SignIn() {
    *
    * An account with no key records is completed by `SignInPanel`'s own
    * `SyncSetupFlow`, which ends on the account card. Without this the person
-   * saves their recovery code and is left standing on the sign-in page. The
-   * ref is what distinguishes "the ceremony ended" from the `false` this
-   * callback also receives on mount and on unmount.
+   * saves their recovery code and is left standing on the sign-in page.
+   *
+   * Driven by the wizard's COMPLETE event rather than by the `false` edge of
+   * its active flag: that flag is re-reported by an effect cleanup whenever
+   * the callback's identity changes, so the edge can arrive while the card is
+   * still on screen. Acting on it would pull the person off their recovery
+   * code — the same defect that hit `/settings/sync` on 2026-09-04.
    */
-  const wasCeremonyActive = useRef(false);
-  const handleCeremonyActiveChange = useCallback(
-    (isActive: boolean): void => {
-      if (isActive) {
-        wasCeremonyActive.current = true;
-        return;
-      }
-      if (!wasCeremonyActive.current) return;
-      wasCeremonyActive.current = false;
-      void startFirstPull();
-    },
-    [startFirstPull],
-  );
+  const handleCeremonyComplete = useCallback((): void => {
+    void startFirstPull();
+  }, [startFirstPull]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
@@ -152,7 +146,7 @@ export default function SignIn() {
                 setKnownHandle('');
               }}
               onSignedIn={() => void startFirstPull()}
-              onCeremonyActiveChange={handleCeremonyActiveChange}
+              onCeremonyComplete={handleCeremonyComplete}
               onRetryPull={() => void startFirstPull()}
             />
           }
@@ -171,7 +165,7 @@ function SignedOutBody({
   onBackToForm,
   onForgetName,
   onSignedIn,
-  onCeremonyActiveChange,
+  onCeremonyComplete,
   onRetryPull,
 }: {
   phase: Phase;
@@ -181,7 +175,7 @@ function SignedOutBody({
   onBackToForm: () => void;
   onForgetName: () => void;
   onSignedIn: () => void;
-  onCeremonyActiveChange: (isActive: boolean) => void;
+  onCeremonyComplete: () => void;
   onRetryPull: () => void;
 }) {
   const { t } = useTranslation();
@@ -224,7 +218,7 @@ function SignedOutBody({
       onForgot={onForgot}
       onForgetName={onForgetName}
       onSignedIn={onSignedIn}
-      onCeremonyActiveChange={onCeremonyActiveChange}
+      onCeremonyComplete={onCeremonyComplete}
     />
   );
 }
