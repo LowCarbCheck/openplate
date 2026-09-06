@@ -1,36 +1,77 @@
 /**
- * The pair of affordances that start a log: a prominent primary link into the
- * search-first `/add` flow, with a secondary icon button into `/scan` so search
- * and scan are always one tap apart.
+ * The one hierarchy for starting a log: **photograph first, then type or
+ * speak.**
  *
- * Extracted from `diary.tsx`, where it was module-private, so `/dashboard`'s
- * today hero offers the SAME two buttons — same labels, same order, same
- * geometry — rather than a second pair that drifts.
+ * The primary opens the camera. It is a `Button`, not a `Link`, because a
+ * navigation cannot open a camera: a browser only honours a programmatic
+ * `input.click()` inside the gesture that asked for it, so the tap has to do
+ * the work itself. The gesture lives in `useCameraCapture`, which the tab
+ * bar's raised launcher shares. One decision, four surfaces, no drift.
  *
- * Both destinations are passed in: `/diary` carries the viewed day when it
- * isn't today (so a back-dated log lands on the day the user is looking at),
- * while `/dashboard` is always today and passes the bare paths.
+ * The two quiet buttons beside it are the other ways in, visible rather than
+ * hidden behind the photo path. "Speak" renders only where a recogniser
+ * exists (Firefox has none), so nobody sees a dead control.
+ *
+ * BOTH destinations are passed in, and both carry the viewed day. `/diary`
+ * sends `/add?date=...` and `/scan?date=...` when the user is not looking at
+ * today, so a back-dated log, typed OR photographed, lands on the day in front
+ * of them. `/dashboard` is always today and takes the defaults. The speak
+ * destination is `addTo` with `speak=1`, which arms the microphone on the add
+ * screen without ever starting it.
  */
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Camera, Keyboard, Mic } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Button } from '#app/components/ui/button';
-import { Camera, Plus } from 'lucide-react';
+import { useCameraCapture } from '#app/components/add/use-camera-capture';
+import { useSpeechInputAvailable } from '#app/components/add/speech-input-button';
+import { cn } from '#app/lib/utils';
 
-export function AddFoodActions({ addTo, scanTo }: { addTo: string; scanTo: string }): ReactElement {
+/** `addTo` with `speak=1` added, whether or not it already carries a query. */
+export function speakHref(addTo: string): string {
+  const [path = addTo, query = ''] = addTo.split('?');
+  const params = new URLSearchParams(query);
+  params.set('speak', '1');
+  return `${path}?${params.toString()}`;
+}
+
+export function AddFoodActions({
+  addTo,
+  scanTo = '/scan',
+  className,
+}: {
+  addTo: string;
+  scanTo?: string;
+  className?: string;
+}): ReactElement {
   const { t } = useTranslation();
+  const { captureWith, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
+  const canSpeak = useSpeechInputAvailable() === true;
+
   return (
-    <div className="flex gap-2">
-      <Button asChild className="h-11 flex-1">
-        <Link to={addTo}>
-          <Plus className="h-4 w-4" /> {t('diary.actions.addFood')}
-        </Link>
+    <div className={cn('flex w-full flex-col gap-2', className)}>
+      <Button ref={triggerRef} type="button" className="h-11 w-full" onClick={() => captureWith('plate')}>
+        <Camera className="h-4 w-4" aria-hidden="true" /> {t('diary.actions.photograph')}
       </Button>
-      <Button asChild variant="outline" size="icon" className="h-11 w-11 shrink-0">
-        <Link to={scanTo} aria-label={t('diary.actions.scanPlate')}>
-          <Camera className="h-5 w-5" />
-        </Link>
-      </Button>
+      <div className="flex gap-2">
+        <Button asChild variant="outline" className="h-11 flex-1">
+          <Link to={addTo}>
+            <Keyboard className="h-4 w-4" aria-hidden="true" /> {t('launcher.type')}
+          </Link>
+        </Button>
+        {canSpeak && (
+          <Button asChild variant="outline" className="h-11 flex-1">
+            <Link to={speakHref(addTo)}>
+              <Mic className="h-4 w-4" aria-hidden="true" /> {t('launcher.speak')}
+            </Link>
+          </Button>
+        )}
+      </div>
+      {/* The hidden capture input, outside every conditional above: the
+          element whose `click()` is on the gesture stack must not be able to
+          unmount while the camera is opening. */}
+      <input ref={inputRef} {...inputProps} />
     </div>
   );
 }

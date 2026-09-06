@@ -89,7 +89,7 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '#app/components/ui/popover';
 import { Calendar as CalendarPicker } from '#app/components/ui/calendar';
-import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Copy, Plus } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -2225,18 +2225,8 @@ function FirstEverEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
           <h3 className="text-lg font-semibold">{t('diary.empty.firstEver.title')}</h3>
           <p className="text-sm text-muted-foreground">{t('diary.empty.firstEver.subtitle')}</p>
         </div>
-        <div className="flex flex-col items-center gap-2">
-          <Button asChild className="h-11 w-full sm:w-auto sm:min-w-52">
-            <Link to={addTo}>
-              <Plus className="h-4 w-4" /> {t('diary.empty.firstEver.cta')}
-            </Link>
-          </Button>
-          <Link
-            to={scanTo}
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            {t('diary.empty.firstEver.scanLink')}
-          </Link>
+        <div className="flex flex-col items-center">
+          <AddFoodActions addTo={addTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
         {/*
           `Trans` rather than three sentence fragments glued around two links:
@@ -2271,7 +2261,7 @@ function FirstEverEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
 }
 
 /** Returning-after-a-gap empty state: a warm fresh start, no backfill prompts, no guilt. */
-function WelcomeBackEmpty({ addTo }: { addTo: string }) {
+function WelcomeBackEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
   const { t } = useTranslation();
   return (
     <Card>
@@ -2280,12 +2270,8 @@ function WelcomeBackEmpty({ addTo }: { addTo: string }) {
           <h3 className="text-lg font-semibold">{t('diary.empty.welcomeBack.title')}</h3>
           <p className="text-sm text-muted-foreground">{t('diary.empty.welcomeBack.subtitle')}</p>
         </div>
-        <div className="flex justify-center">
-          <Button asChild className="h-11 w-full sm:w-auto sm:min-w-52">
-            <Link to={addTo}>
-              <Plus className="h-4 w-4" /> {t('diary.actions.addFood')}
-            </Link>
-          </Button>
+        <div className="flex flex-col items-center">
+          <AddFoodActions addTo={addTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2305,18 +2291,8 @@ function OrdinaryEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
       <CardContent className="flex flex-col items-center gap-5 px-6 py-10 text-center">
         <PlateGlyph className="h-16 w-16 text-primary/60" />
         <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>
-        <div className="flex w-full flex-col items-center gap-2">
-          <Button asChild className="h-11 w-full sm:w-auto sm:min-w-52">
-            <Link to={addTo}>
-              <Plus className="h-4 w-4" /> {t('diary.actions.addFood')}
-            </Link>
-          </Button>
-          <Link
-            to={scanTo}
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            {t('diary.empty.ordinary.scanLink')}
-          </Link>
+        <div className="flex w-full flex-col items-center">
+          <AddFoodActions addTo={addTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2392,8 +2368,9 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     crossedTargetOnLatest: false,
   });
   const hasLogs = logs.length > 0;
-  // Carry the viewed day into the add/scan flows only when it isn't today, so a
-  // back-dated log returns to the day the user is looking at (not "today").
+  // Carry the viewed day into the add and scan flows only when it isn't today,
+  // so a back-dated log, typed or photographed, returns to the day the user is
+  // looking at (not "today").
   const addTo = isToday ? '/add' : `/add?date=${date}`;
   const scanTo = isToday ? '/scan' : `/scan?date=${date}`;
   const emptyState: DiaryEmptyState = resolveDiaryEmptyState({
@@ -2458,7 +2435,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
       )}
 
       {!hasLogs && emptyState === 'first-ever' && <FirstEverEmpty addTo={addTo} scanTo={scanTo} />}
-      {!hasLogs && emptyState === 'returning-after-gap' && <WelcomeBackEmpty addTo={addTo} />}
+      {!hasLogs && emptyState === 'returning-after-gap' && <WelcomeBackEmpty addTo={addTo} scanTo={scanTo} />}
       {!hasLogs && emptyState === 'ordinary' && <OrdinaryEmpty addTo={addTo} scanTo={scanTo} />}
 
       {hasLogs && <AddFoodActions addTo={addTo} scanTo={scanTo} />}

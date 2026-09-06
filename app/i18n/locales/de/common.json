@@ -364,8 +364,7 @@
   },
   "diary": {
     "actions": {
-      "addFood": "Essen eintragen",
-      "scanPlate": "Teller scannen",
+      "photograph": "Essen fotografieren",
       "undo": "Rückgängig"
     },
     "caveat": {
@@ -404,16 +403,13 @@
     },
     "empty": {
       "firstEver": {
-        "cta": "Trag dein erstes Essen ein",
         "noData": "Noch keine Daten auf diesem Gerät. Hast du openplate schon woanders genutzt? <backup>Importiere ein Backup</backup> oder <sync>aktiviere die Synchronisierung</sync>, um Daten von einem anderen Gerät zu laden.",
         "noDataBackupOnly": "Noch keine Daten auf diesem Gerät. Hast du openplate schon woanders genutzt? <backup>Importiere ein Backup</backup>, um deine Daten zu übertragen.",
-        "scanLink": "oder einen Teller fotografieren",
-        "subtitle": "Suche nach einem Lebensmittel, um es hinzuzufügen. Keine Einrichtung erforderlich.",
+        "subtitle": "Richte die Kamera auf deinen Teller oder tippe ein, was du gegessen hast.",
         "title": "Trag dein erstes Essen ein"
       },
       "ordinary": {
-        "line": "Noch nichts auf dem Teller.",
-        "scanLink": "oder einen Teller scannen"
+        "line": "Noch nichts auf dem Teller."
       },
       "welcomeBack": {
         "subtitle": "Heute fängt neu an.",

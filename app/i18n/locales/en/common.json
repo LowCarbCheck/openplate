@@ -364,8 +364,7 @@
   },
   "diary": {
     "actions": {
-      "addFood": "Add food",
-      "scanPlate": "Scan a plate",
+      "photograph": "Photograph food",
       "undo": "Undo"
     },
     "caveat": {
@@ -404,16 +403,13 @@
     },
     "empty": {
       "firstEver": {
-        "cta": "Log your first food",
         "noData": "No data on this device yet. Already used openplate elsewhere? <backup>Import a backup</backup> or <sync>enable sync</sync> to pull data from another device.",
         "noDataBackupOnly": "No data on this device yet. Already used openplate elsewhere? <backup>Import a backup</backup> to bring it over.",
-        "scanLink": "or snap a plate",
-        "subtitle": "Search a food to add it, no setup needed.",
+        "subtitle": "Point the camera at your plate, or type what you ate.",
         "title": "Log your first food"
       },
       "ordinary": {
-        "line": "Empty plate so far.",
-        "scanLink": "or scan a plate"
+        "line": "Empty plate so far."
       },
       "welcomeBack": {
         "subtitle": "Today’s a fresh start.",

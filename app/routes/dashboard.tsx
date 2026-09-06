@@ -252,7 +252,7 @@ function TodayHeroCard({
 
   const actions = (
     <div className="space-y-3">
-      <AddFoodActions addTo="/add" scanTo="/scan" />
+      <AddFoodActions addTo="/add" />
       <Link to="/diary" className={HANDOFF_LINK_CLASS}>
         {t('dashboard.today.openDiary')}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
