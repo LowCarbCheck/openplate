@@ -150,7 +150,7 @@ ensure_file() {
   pretty=$(human "$bytes")
 
   if [ -f "$dest" ]; then
-    printf '▶ [%s] %s — already present, verifying sha256 (%s)...\n' "$role" "$filename" "$pretty"
+    printf '▶ [%s] %s: already present, verifying sha256 (%s)...\n' "$role" "$filename" "$pretty"
     got=$(sha_of "$dest")
     if [ "$got" = "$want" ]; then
       echo "✅ [$role] $filename verified, skipping download."
@@ -195,7 +195,7 @@ ensure_file() {
   for url in $urls; do
     printf '▶ [%s] downloading %s (%s) from %s\n' \
       "$role" "$filename" "$pretty" "$(echo "$url" | cut -d'?' -f1)"
-    echo "   This is a one-time download into $MODELS_DIR. It is resumable —"
+    echo "   This is a one-time download into $MODELS_DIR. It is resumable:"
     echo "   restarting the container continues where it stopped."
     if download_from "$url" "$dest"; then
       ok=1
@@ -262,7 +262,7 @@ for b in $(echo "$entries" | cut -d'|' -f4); do
 done
 
 echo "═══════════════════════════════════════════════════════════════════════"
-echo "  openplate-inference — weights for MODEL_PROFILE=$MODEL_PROFILE"
+echo "  openplate-inference: weights for MODEL_PROFILE=$MODEL_PROFILE"
 echo "  destination: $MODELS_DIR   total: $(human "$total")"
 if [ -n "$WEIGHTS_MIRROR_BASE" ]; then
   echo "  mirror:      $WEIGHTS_MIRROR_BASE (Hugging Face as fallback)"

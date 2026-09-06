@@ -1,9 +1,6 @@
 # openplate-inference
 
-**A plate-photo scanner you run yourself.** Point your phone at dinner, get back
-a list of foods with portion estimates in grams — computed on your hardware, from
-open-weight models, with no account, no API key from anybody, and no photo
-leaving your network.
+**A plate-photo scanner you run yourself.** Point your phone at dinner, get back a list of foods with portion estimates in grams, computed on your hardware, from open-weight models, with no account, no API key from anybody, and no photo leaving your network.
 
 It speaks the OpenAI chat-completions protocol, so [openplate](https://github.com/LowCarbCheck/openplate)
 connects to it as a normal "OpenAI-compatible" provider. One container, one port.
@@ -23,8 +20,7 @@ connects to it as a normal "OpenAI-compatible" provider. One container, one port
   HTTP service ship together. Weights download on first boot into a volume.
 - **A harness for a runtime you already have.** If you run llama.cpp, Ollama, or
   vLLM-on-GPU today, set `MODEL_PROFILE=external` and this downloads nothing and
-  starts no second model. Check the [support matrix](docs/runtimes.md#support-matrix)
-  first — vLLM's **CPU** build cannot run this.
+  starts no second model. Check the [support matrix](docs/runtimes.md#support-matrix) first: vLLM's **CPU** build cannot run this.
 - **CPU-viable.** A machine with no GPU runs the `lite` profile, slowly. See
   [Hardware & measured latency](docs/hardware.md).
 - **OpenAI-protocol compatible**, so anything that can talk to an
@@ -32,9 +28,7 @@ connects to it as a normal "OpenAI-compatible" provider. One container, one port
 
 **It is not:**
 
-- **Not a macro guesser.** The model identifies foods and estimates grams. The
-  carbs/protein/fat/kcal numbers come from a **food database**, resolved by
-  name — they are looked up, never invented by the language model. See
+- **Not a macro guesser.** The model identifies foods and estimates grams. The carbs/protein/fat/kcal numbers come from a **food database**, resolved by name: they are looked up, never invented by the language model. See
   [Food data](docs/configuration.md#food-data-foodsource).
 - **Not an account system.** There are no users, no sessions, no cookies. Auth is
   one bearer key. Restart it and you have lost nothing.
@@ -60,9 +54,7 @@ docker run -d --name openplate-inference \
   ghcr.io/lowcarbcheck/openplate-inference:latest
 ```
 
-That is the whole CPU install. On a machine with an NVIDIA GPU, add `--gpus all`
-and use the CUDA image — the container detects the GPU and offloads every layer
-by itself, there is no flag to set:
+That is the whole CPU install. On a machine with an NVIDIA GPU, add `--gpus all` and use the CUDA image. The container detects the GPU and offloads every layer by itself, there is no flag to set:
 
 ```bash
 docker run -d --name openplate-inference \
@@ -82,13 +74,10 @@ docker build -t openplate-inference .                                           
 docker build -t openplate-inference --build-arg BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda .   # GPU
 ```
 
-The build is a couple of minutes and roughly 400 MB of image (compressed) — the
-heavy half (llama.cpp and its BLAS/CUDA stack) is the official upstream
-`llama.cpp:server` image, not something we compile. Then substitute `openplate-inference` for
+The build is a couple of minutes and roughly 400 MB of image (compressed): the heavy half (llama.cpp and its BLAS/CUDA stack) is the official upstream `llama.cpp:server` image, not something we compile. Then substitute `openplate-inference` for
 `ghcr.io/lowcarbcheck/openplate-inference:latest` in the commands above.
 
-**First boot downloads the weights** — about **2.0 GiB** for `lite`, **5.8 GiB**
-for `quality` — into the `/models` volume, checksum-verified. It is resumable: if
+**First boot downloads the weights** (about **2.0 GiB** for `lite`, **5.8 GiB** for `quality`) into the `/models` volume, checksum-verified. It is resumable: if
 it dies at 80 %, restarting the container continues from 80 %. It only ever
 happens once per volume.
 
@@ -102,7 +91,7 @@ docker logs openplate-inference | grep -A4 'generated a temporary key'
 
 ```
 ========================================================================
-  No API_KEYS configured — generated a temporary key for this process:
+  No API_KEYS configured, generated a temporary key for this process:
 
     opk_7Qb3xR2mKpLv9dTfWs4nYhAe1cJgZuMo
 
@@ -132,7 +121,7 @@ and a scan will actually run. `/healthz` only means the process is alive.
 
 Two paths. Pick whichever matches who is using the instance.
 
-#### Path A — the instance preset (recommended: everyone gets one tap)
+#### Path A: the instance preset (recommended: everyone gets one tap)
 
 Set three environment variables on **openplate**, and every browser using that
 instance gets a *"This openplate provides its own AI"* card on the AI settings
@@ -145,7 +134,7 @@ DEFAULT_INFERENCE_MODEL=openplate-plate-1
 ```
 
 > **The base URL must be reachable from the browser, not from the openplate
-> container.** The photo goes from the device straight to this endpoint —
+> container.** The photo goes from the device straight to this endpoint:
 > openplate's server is never in the middle, which is what keeps the scan
 > private. So `http://inference:8300/v1` does not work even though the two
 > containers can reach each other that way. Use this host's LAN address, or a
@@ -154,15 +143,13 @@ DEFAULT_INFERENCE_MODEL=openplate-plate-1
 > **`DEFAULT_INFERENCE_API_KEY` is public.** It is embedded in the HTML every
 > browser loads; anyone who can open your openplate can read it with view-source.
 > That is fine for a household, a LAN, or a tailnet. It is *not* fine on an
-> instance exposed to the open internet with no VPN or auth proxy in front of it
-> — there, leave it unset and use Path B.
+> instance exposed to the open internet with no VPN or auth proxy in front of it,
+> there, leave it unset and use Path B.
 
-A ready-to-edit two-service compose file — openplate and this service wired
-together — lives in the openplate repo at
-[`docker/topologies/compose.inference.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.inference.yml).
+A ready-to-edit two-service compose file (openplate and this service wired together) lives in the openplate repo at [`docker/topologies/compose.inference.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.inference.yml).
 To run this service on its own, use [`docker/compose.yml`](docker/compose.yml).
 
-#### Path B — bring your own key (per person, nothing on the server)
+#### Path B: bring your own key (per person, nothing on the server)
 
 In openplate: **Settings → AI → OpenAI-compatible**, then fill in
 
@@ -224,8 +211,7 @@ llama-server -m LFM2.5-VL-1.6B-Q8_0.gguf --mmproj mmproj-LFM2.5-VL-1.6b-F16.gguf
 MODEL_RUNTIME_URL=http://127.0.0.1:8080 pnpm dev
 ```
 
-The full CPU integration check — builds the image, boots it with no GPU, scans a
-real photo, asserts the response shape:
+The full CPU integration check (builds the image, boots it with no GPU, scans a real photo, asserts the response shape):
 
 ```bash
 ./scripts/smoke-lite.sh          # first run downloads ~2.0 GiB
@@ -246,5 +232,4 @@ git config core.hooksPath .githooks
 
 ## Licence
 
-Code: MIT ([LICENSE](LICENSE)). Model weights are third-party works with their
-own terms — see [Licensing](docs/licensing.md).
+Code: MIT ([LICENSE](LICENSE)). Model weights are third-party works with their own terms: see [Licensing](docs/licensing.md).

@@ -6,19 +6,19 @@
 rather than shipped inside the image, and each carries its own licence. Those
 terms attach to you, the operator.
 
-## Qwen3-VL-8B-Instruct — `quality` profile
+## Qwen3-VL-8B-Instruct: `quality` profile
 
 **Apache-2.0.** No revenue cap, no field-of-use restriction, commercial use fine.
 Source:
 [`Qwen/Qwen3-VL-8B-Instruct-GGUF`](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF).
 This is the recommended path for commercial use.
 
-## Qwen3-VL-2B-Instruct — `lite-apache` profile
+## Qwen3-VL-2B-Instruct: `lite-apache` profile
 
 **Apache-2.0.** Source:
 [`Qwen/Qwen3-VL-2B-Instruct-GGUF`](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF).
 
-## LFM2.5-VL-1.6B — `lite` profile — revenue-capped
+## LFM2.5-VL-1.6B: `lite` profile, revenue-capped
 
 `lite` uses **LiquidAI LFM2.5-VL-1.6B** under the **LFM Open License v1.0**
 ([licence text, in the model repo](https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-GGUF/blob/main/LICENSE)).
@@ -46,8 +46,7 @@ parents, subsidiaries and anything under common control.
 
 **The $10M revenue cap binds the operator, not this project:**
 
-- Running `lite` at home, for a household, or for research: no cap issue — that
-  is not Commercial Use.
+- Running `lite` at home, for a household, or for research: no cap issue, that is not Commercial Use.
 - A company under **$10M annual revenue** using it commercially: permitted.
 - A company at or over **$10M annual revenue**: **`lite` is not licensed to
   you.** Nothing in this repository changes that; the condition attaches to your
@@ -64,7 +63,7 @@ Every model slot has an Apache-2.0 alternative:
 
 | slot | revenue-capped default | Apache-2.0 alternative |
 |---|---|---|
-| `quality` (GPU flagship) | — | already Apache-2.0 (Qwen3-VL-8B-Instruct) |
+| `quality` (GPU flagship) | none | already Apache-2.0 (Qwen3-VL-8B-Instruct) |
 | `lite` (small/CPU) | LFM2.5-VL-1.6B | **Qwen3-VL-2B-Instruct** → `MODEL_PROFILE=lite-apache` |
 
 ```bash
@@ -80,7 +79,7 @@ we have not proven it. If accuracy matters more than the small-model convenience
 
 ## Other components
 
-llama.cpp (MIT) — used as the official upstream container image, not vendored.
+llama.cpp (MIT): used as the official upstream container image, not vendored.
 
 Food data licences: USDA FoodData Central is public domain; Open Food Facts is
 ODbL and share-alike; the lowcarbcheck API is remote-only because BLS 4.0 forbids

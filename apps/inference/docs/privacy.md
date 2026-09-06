@@ -5,14 +5,10 @@
 - **Never written to disk.** There is no upload directory, no temp file, no
   cache. The image is decoded, downscaled in memory, sent to the model runtime on
   the container's loopback interface, and dropped when the request ends.
-- **Never logged.** Not the image, not the base64, not a hash of it. The logs
-  carry request metadata — status, timing, a key *fingerprint*, never a key — and
-  the log formatter scrubs values that could carry payload or credentials. This
+- **Never logged.** Not the image, not the base64, not a hash of it. The logs carry request metadata (status, timing, a key *fingerprint*, never a key), and the log formatter scrubs values that could carry payload or credentials. This
   includes the error paths: error responses and error logs are scrubbed, and that
   behaviour is covered by the unit test suite.
-- **Never sent anywhere.** The service makes exactly two kinds of outbound
-  request: one-time weight downloads at first boot, and — only if you enable a
-  networked `FOOD_SOURCE` — a *text* food-name lookup. No image ever leaves the
+- **Never sent anywhere.** The service makes exactly two kinds of outbound request: one-time weight downloads at first boot, and (only if you enable a networked `FOOD_SOURCE`) a *text* food-name lookup. No image ever leaves the
   container, under any configuration.
 - **No accounts, no cookies, no history.** The service stores nothing between
   requests. There is nothing to export, breach, or subpoena.

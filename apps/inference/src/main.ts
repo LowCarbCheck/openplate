@@ -50,7 +50,7 @@ function resolveApiKeys(config: ServiceConfig): string[] {
     [
       '',
       '='.repeat(72),
-      '  No API_KEYS configured — generated a temporary key for this process:',
+      '  No API_KEYS configured, generated a temporary key for this process:',
       '',
       `    ${generated}`,
       '',

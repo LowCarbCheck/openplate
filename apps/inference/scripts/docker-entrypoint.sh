@@ -179,12 +179,12 @@ THREADS="${LLAMA_THREADS:-$(default_threads)}"
 TOTAL_CONTEXT=$((CONTEXT_SIZE * CONCURRENCY))
 
 echo "═══════════════════════════════════════════════════════════════════════"
-echo "  Starting llama-server (this loads the model — expect 5–60 s)"
+echo "  Starting llama-server (this loads the model, expect 5 to 60 s)"
 echo "    profile:  $MODEL_PROFILE"
 echo "    model:    $MODEL_PATH"
 echo "    mmproj:   $MMPROJ_PATH"
 if [ "$NGL" = "0" ]; then
-  echo "    GPU:      none detected — CPU only (-ngl 0, -t $THREADS)"
+  echo "    GPU:      none detected, CPU only (-ngl 0, -t $THREADS)"
 else
   echo "    GPU:      detected — offloading layers (-ngl $NGL)"
 fi
