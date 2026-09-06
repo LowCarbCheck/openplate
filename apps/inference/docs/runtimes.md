@@ -10,6 +10,32 @@ OpenAI compatibility delivers it. llama.cpp, Ollama and **vLLM on a GPU** are al
 measured working. **vLLM's CPU build crashes on the first scan** — same version,
 no accelerator, dead worker.
 
+The path a scan takes is short, and the grammar sits in the middle of it. The browser posts
+one photo to this service, which checks the key, admits the request, downscales the image and
+makes a single vision call under a JSON schema. Your runtime is the only thing that enforces
+that schema, which is why the matrix below is about enforcement rather than about speed. What
+comes back is names and grams; the macros are looked up afterwards, from the configured food
+source, and the model never writes one.
+
+```mermaid
+%% alt: The browser posts a photo to this service, which calls your runtime once under a JSON schema, then looks the macros up before answering.
+flowchart LR
+  browser["Browser"]
+  subgraph svc["openplate-inference"]
+    gate["Key, rate limit, admission"]
+    prep["Downscale to 896 px"]
+    vision["One vision call, json_schema"]
+    macros["Look up macros, food source"]
+  end
+  runtime["Your model runtime"]
+
+  browser -->|"photo, POST /v1/chat/completions"| gate
+  gate --> prep --> vision
+  vision -->|"grammar constrained decoding"| runtime
+  runtime -->|"names and grams, no macros"| macros
+  macros -->|"one plate, as JSON"| browser
+```
+
 ```bash
 docker run -d --name openplate-inference \
   -p 8300:8300 \
