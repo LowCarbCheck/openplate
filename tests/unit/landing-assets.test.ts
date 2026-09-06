@@ -35,13 +35,19 @@ const ROUTE_URL = new URL('../../app/routes/index.tsx', import.meta.url);
 const PUBLIC_DIR = new URL('../../public/', import.meta.url);
 
 /**
- * Every `/landing/….webp` URL mentioned anywhere in the landing route — `src`,
- * `srcSet` (where two live in one comma-separated string), or anything else.
- * Deduplicated, because the diary captures are referenced more than once.
+ * Every `/landing/<locale>/….webp` URL mentioned anywhere in the landing route,
+ * `src`, `srcSet` (where two live in one comma-separated string), or anything
+ * else. Deduplicated, because the diary captures are referenced more than once.
+ *
+ * The locale segment is REQUIRED by this pattern, not optional. The captures
+ * moved from a flat `public/landing/` into one directory per locale when the
+ * capture script learned to take a language argument, and a pattern that
+ * accepted both shapes would keep passing for a page that had silently fallen
+ * back to the flat path, which resolves to nothing on disk.
  */
 function referencedLandingAssets(): string[] {
   const source = readFileSync(fileURLToPath(ROUTE_URL), 'utf8');
-  const matches = source.match(/\/landing\/[A-Za-z0-9._-]+\.webp/g) ?? [];
+  const matches = source.match(/\/landing\/[a-z]{2}\/[A-Za-z0-9._-]+\.webp/g) ?? [];
   return [...new Set(matches)].toSorted();
 }
 
@@ -58,6 +64,19 @@ describe('landing screenshots', () => {
       referencedLandingAssets().length >= 12,
       `expected at least 12 landing assets to be referenced, found ${referencedLandingAssets().length}`,
     );
+  });
+
+  it('puts every referenced asset under a locale directory', () => {
+    // The regex above already refuses a flat `/landing/x.webp`, so on its own
+    // it would answer a page that dropped the locale segment with an empty
+    // list and a vacuous pass. This case is the other half of that guard: it
+    // greps the route for EVERY `/landing/` mention, however shaped, and
+    // insists each one carries a locale. A future edit that reverts to the
+    // flat path fails here rather than in production.
+    const source = readFileSync(fileURLToPath(ROUTE_URL), 'utf8');
+    const mentions = source.match(/\/landing\/[A-Za-z0-9._/-]+\.webp/g) ?? [];
+    const flat = mentions.filter((mention) => !/^\/landing\/[a-z]{2}\//.test(mention));
+    assert.deepEqual(flat, [], `landing assets referenced without a locale directory: ${flat.join(', ')}`);
   });
 
   it('has a file in public/ for every asset the route references', () => {

@@ -425,14 +425,14 @@ function HeroShot(): ReactElement {
       <div className="surface-brand overflow-hidden rounded-2xl border border-primary/55 bg-card p-1.5 shadow-2xl shadow-primary/20 ring-1 ring-inset ring-black/5 dark:border-primary/40 dark:shadow-primary/10 dark:ring-white/5 sm:p-2">
         <HeroPicture
           themeClassName="hidden dark:block"
-          mobileSrc="/landing/diary-mobile-dark.webp"
-          desktopSrcSet="/landing/diary-desktop-dark-1080.webp 1080w, /landing/diary-desktop-dark.webp 2160w"
+          mobileSrc="/landing/en/diary-mobile-dark.webp"
+          desktopSrcSet="/landing/en/diary-desktop-dark-1080.webp 1080w, /landing/en/diary-desktop-dark.webp 2160w"
           alt={alt}
         />
         <HeroPicture
           themeClassName="block dark:hidden"
-          mobileSrc="/landing/diary-mobile-light.webp"
-          desktopSrcSet="/landing/diary-desktop-light-1080.webp 1080w, /landing/diary-desktop-light.webp 2160w"
+          mobileSrc="/landing/en/diary-mobile-light.webp"
+          desktopSrcSet="/landing/en/diary-desktop-light-1080.webp 1080w, /landing/en/diary-desktop-light.webp 2160w"
           alt={alt}
         />
       </div>
@@ -471,11 +471,19 @@ const SHOT_FRAME = 'rounded-xl border border-primary/25 bg-card p-1 shadow-md sh
 /**
  * The one rendered shape every "how it works" step shot is drawn into.
  *
- * `13/24` is 780×1440 reduced — the exact aspect ratio of the SHORTEST of the
- * three captures. See `StepShot` for why the box owns the height instead of
- * the image.
+ * `39/56` is 780×1120 reduced: the exact ratio of the SHORTEST of the three
+ * captures, which is the scan shot (`scripts/capture-landing.ts`'s manifest,
+ * where `scan` is a 390×560 viewport at scale 2). That rule is the whole
+ * design. The shortest capture fills its box exactly and is never scaled up,
+ * while the two taller ones, both 780×1688, are cropped at the bottom by
+ * `object-cover object-top`, which is the end they continue past anyway.
+ *
+ * So a change to that view's height in the manifest belongs HERE too. If the
+ * scan screen grows past the add and diary captures, the ratio moves to
+ * whichever capture is then the shortest. See `StepShot` for why the box owns
+ * the height instead of the image.
  */
-const STEP_SHOT_ASPECT = 'aspect-[13/24]';
+const STEP_SHOT_ASPECT = 'aspect-[39/56]';
 
 /**
  * The page's TWO secondary actions — "See how it works" and "Set up sync" —
@@ -645,12 +653,16 @@ function ThemedShot({
  *
  * They started as the constants 780×1688 and "always fade", which is right for
  * a capture of a screen that scrolls: the frame ends mid-list and the fade says
- * "this continues". It is exactly wrong for a screen whose content ENDS — the
- * scan screen and the sync screen both fit inside one phone viewport, so a
- * 1688-tall capture of either spent its last third on empty page and then faded
- * that emptiness out, which reads as a picture that failed to load. Those two
- * are captured at the height their content actually occupies and rendered with
- * no fade at all; nothing is cut, so there is nothing to soften.
+ * "this continues". It is exactly wrong for a screen whose content ENDS. The
+ * sync shot is the case that proves it: `/settings/account` fills well under a
+ * phone viewport, so a full-height capture of it spent its bottom half on empty
+ * page and then faded that emptiness out, which reads as a picture that failed
+ * to load. It is captured at the height its content actually occupies
+ * (780×860) and rendered with no fade at all; nothing is cut, so there is
+ * nothing to soften. It is the only caller that needs it: every other phone
+ * shot is a 780×1688 capture rendered at its own height or inside a shorter
+ * box, and both of those genuinely continue past the frame. `StepShot` has its
+ * own caller for the same reason, the scan step; see `STEP_SHOT_ASPECT`.
  */
 function PhoneShot({
   srcDark,
@@ -689,33 +701,38 @@ function PhoneShot({
  *
  * ── Why this is not three `PhoneShot`s ───────────────────────────────────
  *
- * `PhoneShot` renders a capture at its own aspect ratio. The three steps are
- * captured at two different ones — the scan screen fits in a viewport
- * (780×1440), the add and diary screens scroll and are cropped at 780×1688 —
- * so at one column width the first picture came out ~76px shorter than the
- * other two. Everything under a picture starts where that picture ends, so
- * the icon chips, the titles and the paragraphs of the three steps each began
- * at a different height: three ragged columns of what is meant to read as one
- * row of parallel steps.
+ * `PhoneShot` renders a capture at its own aspect ratio, and an aspect ratio
+ * that came from a capture is a layout the next re-capture can change. The
+ * three steps were once taken at two different viewport heights, so at one
+ * column width the first picture came out ~76px shorter than the other two.
+ * Everything under a picture starts where that picture ends, so the icon
+ * chips, the titles and the paragraphs of the three steps each began at a
+ * different height: three ragged columns of what is meant to read as one row
+ * of parallel steps. They still differ, 780×1120 for scan against 780×1688 for
+ * the other two, and the box below is what keeps the baseline.
  *
  * ── The box, not the image, decides the height ───────────────────────────
  *
  * Every step gets the same aspect-ratio box and the image fills it with
- * `object-cover object-top`. The ratio is the SHORTEST capture's — 780×1440,
- * i.e. exactly `13/24` — so the scan shot is shown whole and untouched, and
- * the two taller ones are cropped at the bottom, which is the end they were
- * already cropped at. The columns of the grid are equal width, so one ratio
- * is one rendered height, and the three captions share a baseline at every
- * viewport rather than only at the one that was checked.
+ * `object-cover object-top`. The ratio is the SHORTEST capture's, `39/56`,
+ * i.e. exactly 780×1120, so the scan shot is shown whole and untouched and the
+ * two taller ones are cropped at the bottom, which is the end they were already
+ * continuing past. Never the other way round: a ratio TALLER than a capture
+ * makes `object-cover` scale that capture up and take the overflow off its
+ * sides, which is a blurrier picture of less of the screen. The columns of the
+ * grid are equal width, so one ratio is one rendered height, and the three
+ * captions share a baseline at every viewport rather than only at the one that
+ * was checked.
  *
  * A ratio rather than a literal `h-[…]`: the column is ~187px wide at `sm`
  * and ~240px on a laptop, and a fixed height would have `object-cover` crop
  * the SIDES off the narrow one to fill it. The ratio tracks the width, and
  * uniform width plus uniform ratio is uniform height by construction.
  *
- * The fade stays per-step for the reason it always was (see `PhoneShot`): the
- * cropped captures continue past the frame and say so, the scan capture ends
- * where its content ends and has nothing to soften.
+ * The fade stays per-step, and follows from the ratio rule above: the two
+ * captures the box crops say so with a fade, and the shortest one, which fills
+ * its box whole, has nothing continuing past the frame and takes no fade. That
+ * is what `cropped={false}` is for, and the scan step is its one caller.
  */
 function StepShot({
   srcDark,
@@ -1161,35 +1178,44 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             larger than that or a picture belongs to neither. From `sm` the
             three steps are side by side and the vertical gap stops mattering. */}
         <div className="mt-8 grid gap-14 sm:grid-cols-3 sm:gap-6">
-          {/* The scan capture is a WHOLE screen (780×1440), not a crop. The
-              previous one was a 1688-tall frame of a screen whose content ends
-              at about 1290, so its last quarter was empty page — and then the
-              crop fade dissolved that emptiness, which made the picture look
-              like it had failed to load rather than like it continued. */}
+          {/* The scan capture is a WHOLE screen (780×1120). Unlike the add and
+              diary shots it is not taken at the standard 390×844 viewport: the
+              scan screen's content ends at 429 CSS px, so it is captured at
+              390×560, the height its own content needs plus the bottom nav bar.
+              A copy change is what moves that number, so empty background under
+              this shot means re-measure the screen and re-capture, never crop
+              the file. `STEP_SHOT_ASPECT` follows this capture, so that
+              re-measure lands there too.
+
+              `shotCropped={false}` because it is the capture the shared box is
+              shaped around: it fills that box exactly, nothing is cut, so there
+              is nothing for a fade to soften and a fade here would dissolve
+              real content. Its two neighbours ARE cropped by the box and do
+              take the fade. */}
           <HowStep
             icon={Camera}
             title={t('landing.how.scan.title')}
             body={managed ? t('landing.how.scan.bodyManaged') : t('landing.how.scan.body')}
-            shotDark="/landing/scan-mobile-dark.webp"
-            shotLight="/landing/scan-mobile-light.webp"
+            shotDark="/landing/en/scan-mobile-dark.webp"
+            shotLight="/landing/en/scan-mobile-light.webp"
             shotAlt={t('landing.how.scan.shotAlt')}
-            shotHeight={1440}
+            shotHeight={1120}
             shotCropped={false}
           />
           <HowStep
             icon={Search}
             title={t('landing.how.search.title')}
             body={t('landing.how.search.body')}
-            shotDark="/landing/add-mobile-dark.webp"
-            shotLight="/landing/add-mobile-light.webp"
+            shotDark="/landing/en/add-mobile-dark.webp"
+            shotLight="/landing/en/add-mobile-light.webp"
             shotAlt={t('landing.how.search.shotAlt')}
           />
           <HowStep
             icon={Gauge}
             title={t('landing.how.see.title')}
             body={t('landing.how.see.body')}
-            shotDark="/landing/diary-mobile-dark.webp"
-            shotLight="/landing/diary-mobile-light.webp"
+            shotDark="/landing/en/diary-mobile-dark.webp"
+            shotLight="/landing/en/diary-mobile-light.webp"
             shotAlt={t('landing.how.see.shotAlt')}
           />
         </div>
@@ -1254,8 +1280,8 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           {/* What step 3 ends in, so the list finishes on a picture of the
               result rather than on a promise about it. */}
           <PhoneShot
-            srcDark="/landing/overview-mobile-dark.webp"
-            srcLight="/landing/overview-mobile-light.webp"
+            srcDark="/landing/en/overview-mobile-dark.webp"
+            srcLight="/landing/en/overview-mobile-light.webp"
             alt={t('landing.setup.shotAlt')}
             className="mx-auto mt-10 w-full max-w-[15rem] sm:mt-0"
           />
@@ -1373,8 +1399,8 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           title={t('landing.goals.title')}
           media={
             <PhoneShot
-              srcDark="/landing/goals-mobile-dark.webp"
-              srcLight="/landing/goals-mobile-light.webp"
+              srcDark="/landing/en/goals-mobile-dark.webp"
+              srcLight="/landing/en/goals-mobile-light.webp"
               alt={t('landing.goals.shotAlt')}
               className="mx-auto w-full max-w-[16rem]"
             />
@@ -1392,20 +1418,24 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         {/* Rung 3 — keep it. Renders ONLY where the loader said sync exists; on
             every other instance there is no card, no heading and no mention.
 
-            The shot is `/settings/sync` as this instance actually draws it —
-            the one screen on which the claim in this card is either true or
-            not. It is a WHOLE screen (780×1320), so it carries no crop fade;
-            see `PhoneShot`. */}
+            The shot is `/settings/account` as this instance actually draws
+            it, the one screen on which the claim in this card is either true
+            or not (`/settings/sync` has been a server redirect to it since
+            M192). It is a WHOLE screen (780×860), captured at the height its
+            content needs rather than a phone viewport, because that content
+            ends at 235 CSS px. So it carries no crop fade; see `PhoneShot`. A
+            copy change is what moves that height, so empty background under
+            this shot means re-measure and re-capture, never crop the file. */}
         {syncEnabled && (
           <LadderCard
             icon={RefreshCw}
             title={t('landing.sync.title')}
             media={
               <PhoneShot
-                srcDark="/landing/sync-mobile-dark.webp"
-                srcLight="/landing/sync-mobile-light.webp"
+                srcDark="/landing/en/sync-mobile-dark.webp"
+                srcLight="/landing/en/sync-mobile-light.webp"
                 alt={t('landing.sync.shotAlt')}
-                height={1320}
+                height={860}
                 cropped={false}
                 className="mx-auto w-full max-w-[16rem]"
               />
