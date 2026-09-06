@@ -93,6 +93,7 @@ const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account
  */
 const MANAGED_BRANCH_KEYS = [
   'onboarding.firstFood.managedNote',
+  'onboarding.localFirstManaged',
   'scan.setup.managed.description',
   'scan.setup.managedMissing.body',
   'scan.setup.managedMissing.askAdmin',

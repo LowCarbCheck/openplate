@@ -870,12 +870,17 @@
       "readSource": "Oder lies den Quellcode, MIT-lizenziert",
       "readSourcePlain": "Quellcode ansehen, MIT-lizenziert",
       "tryIt": "Jetzt ausprobieren, komplett kostenlos",
-      "tryItFree": "Ausprobieren, kostenlos, ohne Account"
+      "tryItFree": "Ausprobieren, kostenlos, ohne Account",
+      "tryItFreeManaged": "Anmelden"
     },
     "features": {
       "byok": {
         "body": "Verbinde selbst einen KI-Anbieter: OpenRouter, Mistral, Anthropic oder jeden OpenAI-kompatiblen Endpunkt. Der Schlüssel bleibt auf diesem Gerät und das Foto geht direkt von deinem Browser an den Anbieter. Die Abrechnung erfolgt direkt über sie, nicht über uns.",
         "title": "Fotos werden zu Nährwerten, mit deinem eigenen Schlüssel"
+      },
+      "byokManaged": {
+        "body": "KI-Scans sind direkt in deinem Konto enthalten. Du musst weder Schlüssel konfigurieren noch einen Anbieter bezahlen. Dein Foto wird an den Server dieser Instanz gesendet, der es an den KI-Dienst weiterleitet. Der Server speichert keine Kopie.",
+        "title": "Fotos zu Nährwerten, ganz ohne Schlüssel"
       },
       "eyebrow": "Das bekommst du",
       "install": {
@@ -987,6 +992,7 @@
     },
     "sync": {
       "body": "Trage dein Mittagessen auf dem Smartphone ein und schau dir die Woche auf dem Laptop an. Die Synchronisation ist optional und Ende-zu-Ende-verschlüsselt: Die verschlüsselten Daten liegen auf einem openplate-sync-Server (unserem oder deinem eigenen). Der Server hat keinen Schlüssel dazu, denn der Schlüssel entsteht aus einem Passwort, das er nie zu Gesicht bekommt.",
+      "bodyManaged": "Trage dein Mittagessen auf dem Smartphone ein und analysiere deine Woche auf dem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird auf deinem Gerät verschlüsselt, und der Server speichert lediglich die verschlüsselten Daten. Der Betreiber speichert zudem einen Wiederherstellungsschlüssel. Mit diesem Schlüssel kannst du dein Tagebuch nach dem Zurücksetzen des Passworts wiederherstellen. Dadurch kann der Betreiber deine Daten technisch gesehen auch entschlüsseln.",
       "link": "Konto erstellen",
       "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",
       "shotAlt": "Die Konto-Ansicht auf einem Smartphone mit den Optionen, sich anzumelden oder ein Konto zu erstellen, sowie dem Hinweis, dass Fotos vom Teller nie hochgeladen werden.",
@@ -1263,6 +1269,7 @@
     },
     "loading": "Wird geladen…",
     "localFirst": "Deine Daten liegen auf <strong>diesem Gerät</strong>. Wir sehen sie niemals. Das Tagebuch, das du gleich beginnst, bleibt immer lokal.",
+    "localFirstManaged": "Dein Tagebuch liegt auf <strong>diesem Gerät</strong> und synchronisiert sich verschlüsselt mit dem Server. Der Betreiber verwaltet die KI, daher werden für Schätzungen versendete Fotos bei der Übertragung über diesen Server geleitet. Die Datenschutzerklärung beschreibt im Detail, worauf der Betreiber Zugriff hat.",
     "step": {
       "body": {
         "description": "Optional. Damit können wir Nährstoff-Referenzwerte anpassen und eine Kalorienmenge vorschlagen. Wie alles andere bleiben auch diese Angaben auf diesem Gerät.",
@@ -1710,8 +1717,6 @@
       "unnamedFood": "Lebensmittel ohne Namen"
     },
     "setup": {
-      "body": "Dieser Schritt ist optional. Manuelles Eintragen und alle anderen Funktionen klappen auch ohne ihn. openplate betreibt keine KI und bietet keine Testversion. Du richtest in wenigen Minuten dein eigenes, kostenpflichtiges KI-Konto ein. Dein Anbieter stellt dir weniger als einen Cent pro Foto in Rechnung, nicht openplate. Fotos gehen zum Auslesen direkt an deinen Anbieter. Sie bleiben auf diesem Gerät, bis du sie in den Einstellungen löschst, niemals auf Servern von openplate.",
-      "bodyPreset": "Dieser Schritt ist optional. Manuelles Eintragen und alle anderen Funktionen klappen auch ohne ihn. Verbinde die KI dieses openplate mit einem Fingertipp, ganz ohne persönliches Konto oder Schlüssel. Fotos gehen zum Auslesen direkt von diesem Gerät an diese KI. Sie bleiben auf diesem Gerät, bis du sie in den Einstellungen löschst, niemals auf openplate.org oder anderswo.",
       "connectOpenRouter": "Mit OpenRouter verbinden",
       "crisp": {
         "selfHosted": "Verbinde eine KI, um deine Fotos zu lesen. Dein Foto geht nur an diese KI.",

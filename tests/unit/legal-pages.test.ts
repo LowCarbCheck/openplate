@@ -63,7 +63,7 @@ describe('Privacy policy — plate-photo honesty', () => {
     assert.match(html, /Profile page/);
   });
 
-  it('still states the true, strong claim: the photo never passes through openplate\'s servers', () => {
+  it("still states the true, strong claim: the photo never passes through openplate's servers", () => {
     const html = renderPrivacy();
     assert.match(html, /never pass through our servers/);
   });
@@ -204,6 +204,66 @@ describe('Privacy policy — the analytics section tracks reality', () => {
     assert.match(html, /Art\. 6\(1\)\(f\)/);
     assert.match(html, /Do Not Track/);
     assert.doesNotMatch(html, /This instance measures nothing/);
+  });
+});
+
+describe('Legal pages — the managed instance says what the operator can see (M196)', () => {
+  it('privacy: the lead does not promise that nothing reaches our servers', () => {
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, { managed: true }));
+    assert.match(managed, /Your account keeps an encrypted copy of them on our server/);
+    assert.doesNotMatch(managed, /not on our servers/);
+  });
+
+  it('privacy: section 4 says the proxy once, not twice', () => {
+    // `s4ManagedBody` is the aside an OPEN instance's policy carries for a
+    // reader who may also use somebody's managed instance. On a managed one
+    // the main paragraph covers it, so the aside would repeat it.
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, { managed: true }));
+    assert.doesNotMatch(managed, /On an instance run for you by an organization, your plate photo/);
+    assert.match(renderPrivacy(), /On an instance run for you by an organization, your plate photo/);
+  });
+
+  it('privacy: an instance with accounts does not claim to have none', () => {
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, { managed: true }));
+    assert.match(managed, /This instance uses invitation-only accounts/);
+    assert.doesNotMatch(managed, /The app itself has no accounts and no sign-in/);
+  });
+
+  it("privacy: the photo goes through the operator's server, not straight to a provider you chose", () => {
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, { managed: true }));
+    assert.match(managed, /you do not need an AI provider or an API key/);
+    assert.doesNotMatch(managed, /supply your own API key/);
+    // The retention constant still substitutes on the managed twin — a `{{days}}`
+    // printed literally is exactly what a forgotten interpolation looks like.
+    assert.doesNotMatch(managed, /\{\{days\}\}/);
+    assert.match(managed, new RegExp(`expires automatically after${'\\s*'}${PHOTO_RETENTION_DAYS} days`));
+  });
+
+  it('privacy: the diary does reach the server there, as ciphertext', () => {
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, { managed: true }));
+    assert.match(managed, /encrypted copy of them on our server/);
+    assert.doesNotMatch(managed, /This data is not sent to us and we cannot see it/);
+  });
+
+  it('terms: no bring-your-own-key promise on an instance where nobody brings one', () => {
+    const managed = renderToStaticMarkup(createElement(TermsContent, { managed: true }));
+    assert.doesNotMatch(managed, /bring-your-own-key/i);
+    assert.doesNotMatch(managed, /BYOK/);
+    assert.match(managed, /included with your account/);
+    // The lead still carries its interpolation and its link.
+    assert.match(managed, /href="\/imprint"/);
+    assert.doesNotMatch(managed, /\{\{operator\}\}/);
+  });
+
+  it('leaves every one of those paragraphs alone on an open instance', () => {
+    const privacy = renderPrivacy();
+    const terms = renderTerms();
+    assert.match(privacy, /The app itself has no accounts and no sign-in/);
+    assert.match(privacy, /This data is not sent to us and we cannot see it/);
+    assert.match(privacy, /supply your own API key/);
+    assert.match(privacy, /not on our servers/);
+    assert.match(terms, /bring-your-own-key/i);
+    assert.doesNotMatch(privacy, /This instance has accounts, handed out by invitation/);
   });
 });
 

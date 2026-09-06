@@ -870,7 +870,8 @@
       "readSource": "Or read the source, MIT licensed",
       "readSourcePlain": "Read the source, MIT licensed",
       "tryIt": "Try it now, it's completely free",
-      "tryItFree": "Try it, free, no account"
+      "tryItFree": "Try it, free, no account",
+      "tryItFreeManaged": "Sign in"
     },
     "features": {
       "byok": {
@@ -901,7 +902,11 @@
         "title": "Open source, under the MIT License"
       },
       "subtitle": "None of these is a roadmap item. Every one of them is in the repository today.",
-      "title": "Six claims you can check in the source"
+      "title": "Six claims you can check in the source",
+      "byokManaged": {
+        "title": "Photos become macros, no key needed",
+        "body": "AI scanning comes with your account. You do not need to configure keys or pay a provider. Your photo is sent to the server for this instance, which forwards it to the AI service. The server does not keep a copy."
+      }
     },
     "goals": {
       "body": "Choose a daily net-carb ceiling, a protein floor, a calorie target, or none at all. openplate never invents a target you didn't set.",
@@ -990,7 +995,8 @@
       "link": "Create an account",
       "photos": "Plate photos stay where they are. They are never part of a sync blob.",
       "shotAlt": "The account screen on a phone, offering to sign in or create an account, with a note that plate photos are never uploaded.",
-      "title": "Two devices, one diary"
+      "title": "Two devices, one diary",
+      "bodyManaged": "Log lunch on your phone, then review your week on your laptop. Every account works this way by default. Your diary is encrypted on your device, and the server stores only the ciphertext. The operator also keeps a recovery key. This key lets you restore your diary after a password reset, and it means the operator can technically decrypt your data."
     }
   },
   "launcher": {
@@ -1293,7 +1299,8 @@
       "target": "Target weight",
       "unitToggleLabel": "Weight unit",
       "units": "Units"
-    }
+    },
+    "localFirstManaged": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator manages the AI, so photos sent for estimates pass through that server in transit. The privacy policy details what the operator can access."
   },
   "preferences": {
     "cardDescription": "Theme and language, kept on this device.",
@@ -1710,8 +1717,6 @@
       "unnamedFood": "Unnamed food"
     },
     "setup": {
-      "body": "This step is optional. Hand logging and all other features work without it. openplate runs no AI and offers no trial. You set up your own paid AI account in minutes. Your provider bills you under a cent per photo, not openplate. Photos go straight to your provider to be read. They stay on this device until cleared in Settings, never on openplate servers.",
-      "bodyPreset": "This step is optional. Hand logging and all other features work without it. Connect this openplate's AI in one tap, with no personal account or key. Photos go straight from this device to that AI to be read. They stay on this device until cleared in Settings, never on openplate.org or anywhere else.",
       "connectOpenRouter": "Connect with OpenRouter",
       "crisp": {
         "selfHosted": "Connect an AI to read your photos. Your photo goes only to that AI.",

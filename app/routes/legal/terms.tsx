@@ -2,6 +2,7 @@ import { H1, H2, P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import type { MetaFunction } from 'react-router';
 import { Trans, useTranslation } from 'react-i18next';
+import { useManagedInstance } from '#app/hooks/use-public-config';
 import { OPERATOR } from './operator';
 import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
 import '#app/i18n/i18n';
@@ -17,7 +18,20 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
  * the authenticated user via `useOptionalUser`, which requires a data router; this
  * component has no such dependency (plain `<a>` tags only, no `Link`/`NavLink`).
  */
-export function TermsContent() {
+export interface TermsContentProps {
+  /**
+   * `true` on an instance an organization runs for its people (M196).
+   *
+   * Three paragraphs here describe the open instance: no account record, an
+   * optional sync of your own, and bring-your-own-key AI you pay a provider
+   * for. On a managed instance all three are false, so each has a `*Managed`
+   * twin. A prop rather than a hook, for the same reason `PrivacyContent`
+   * takes one: this content renders with no data router in the unit tests.
+   */
+  managed?: boolean;
+}
+
+export function TermsContent({ managed = false }: TermsContentProps) {
   const { t, i18n } = useTranslation('legal');
   return (
     <article className="prose prose-zinc dark:prose-invert max-w-none">
@@ -31,7 +45,7 @@ export function TermsContent() {
 
       <P variant="lead" className="mb-8">
         <Trans
-          i18nKey="legal:terms.lead"
+          i18nKey={managed ? 'legal:terms.leadManaged' : 'legal:terms.lead'}
           values={{ operator: OPERATOR.legalName }}
           components={{ imprint: <a href="/imprint">imprint</a> }}
         />
@@ -46,7 +60,7 @@ export function TermsContent() {
 
       <section className="mb-8">
         <H2 variant="default">{t('terms.s2Heading')}</H2>
-        <P>{t('terms.s2Body')}</P>
+        <P>{t(managed ? 'terms.s2BodyManaged' : 'terms.s2Body')}</P>
       </section>
 
       <section className="mb-8">
@@ -56,7 +70,7 @@ export function TermsContent() {
 
       <section className="mb-8">
         <H2 variant="default">{t('terms.s4Heading')}</H2>
-        <P>{t('terms.s4Body')}</P>
+        <P>{t(managed ? 'terms.s4BodyManaged' : 'terms.s4Body')}</P>
       </section>
 
       <section className="mb-8">
@@ -132,9 +146,12 @@ export function TermsContent() {
 }
 
 export default function Terms() {
+  // The route reads the fact; `TermsContent` takes it as a prop, exactly as
+  // `Privacy` does — see the note on `TermsContentProps`.
+  const managed = useManagedInstance();
   return (
     <PublicWrapper>
-      <TermsContent />
+      <TermsContent managed={managed} />
     </PublicWrapper>
   );
 }

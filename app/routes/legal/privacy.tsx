@@ -2,7 +2,7 @@ import { H1, H2, P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import { PHOTO_RETENTION_DAYS } from '#app/lib/local-store/photo-policy';
 import type { MetaFunction } from 'react-router';
-import { usePublicConfig } from '#app/hooks/use-public-config';
+import { useManagedInstance, usePublicConfig } from '#app/hooks/use-public-config';
 import { Trans, useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
 import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
@@ -37,9 +37,20 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
 export interface PrivacyContentProps {
   /** `false` unless the operator configured Matomo. The self-host default. */
   analyticsEnabled?: boolean;
+  /**
+   * `true` on an instance an organization runs for its people (M196).
+   *
+   * Three paragraphs of this policy were written for the open instance and are
+   * false on a managed one: it HAS accounts, the diary does reach the server
+   * (as ciphertext), and the plate photo goes through the operator's own proxy
+   * under the operator's key rather than straight to a provider the person
+   * picked. A prop for the same reason `analyticsEnabled` is one: the content
+   * stays renderable with no data router.
+   */
+  managed?: boolean;
 }
 
-export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps) {
+export function PrivacyContent({ analyticsEnabled = false, managed = false }: PrivacyContentProps) {
   const { t, i18n } = useTranslation('legal');
   const days = PHOTO_RETENTION_DAYS;
   return (
@@ -53,14 +64,14 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
       </P>
 
       <P variant="lead" className="mb-8">
-        {t('privacy.lead')}
+        {t(managed ? 'privacy.leadManaged' : 'privacy.lead')}
       </P>
 
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s1Heading')}</H2>
         <ul className="mt-4">
           <li>{t('privacy.s1Item1')}</li>
-          <li>{t('privacy.s1Item2')}</li>
+          <li>{t(managed ? 'privacy.s1Item2Managed' : 'privacy.s1Item2')}</li>
           <li>{t('privacy.s1Item3')}</li>
           <li>{t(analyticsEnabled ? 'privacy.s1Item4Analytics' : 'privacy.s1Item4NoAnalytics')}</li>
         </ul>
@@ -68,7 +79,7 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
 
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s2Heading')}</H2>
-        <P>{t('privacy.s2Body1')}</P>
+        <P>{t(managed ? 'privacy.s2Body1Managed' : 'privacy.s2Body1')}</P>
         <P className="mt-4">{t('privacy.s2Body2', { days })}</P>
       </section>
 
@@ -89,11 +100,17 @@ export function PrivacyContent({ analyticsEnabled = false }: PrivacyContentProps
 
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s4Heading')}</H2>
-        <P>{t('privacy.s4Body', { days })}</P>
-        {/* The photo's RECIPIENT differs by instance, and this is the page
-            that has to say so: on a managed instance it is the organization's
-            own proxy rather than a provider the person picked. */}
-        <P className="mt-4">{t('privacy.s4ManagedBody')}</P>
+        {/* `s4BodyOnManaged`, NOT `s4BodyManaged`: the section already ends
+            with `s4ManagedBody` below, and two keys a letter apart in the same
+            section is how a swap lands on the wrong paragraph. */}
+        <P>{t(managed ? 'privacy.s4BodyOnManaged' : 'privacy.s4Body', { days })}</P>
+        {/* The ASIDE, for a reader of an OPEN instance's policy who may also
+            use an instance an organization runs: there, the photo goes to that
+            organization's proxy rather than to a provider they picked. On a
+            managed instance the paragraph above already says exactly that
+            about THIS instance, so repeating it here said the same thing
+            twice (M196). */}
+        {!managed && <P className="mt-4">{t('privacy.s4ManagedBody')}</P>}
       </section>
 
       <section className="mb-8">
@@ -227,9 +244,10 @@ export default function Privacy() {
   // what keeps the content renderable by `renderToStaticMarkup` with no data
   // router, which `tests/unit/legal-pages.test.ts` depends on.
   const analytics = usePublicConfig()?.analytics ?? null;
+  const managed = useManagedInstance();
   return (
     <PublicWrapper>
-      <PrivacyContent analyticsEnabled={analytics !== null} />
+      <PrivacyContent analyticsEnabled={analytics !== null} managed={managed} />
     </PublicWrapper>
   );
 }

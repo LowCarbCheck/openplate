@@ -1,6 +1,6 @@
 import type { Route } from './+types/settings.ai';
 import { useState } from 'react';
-import { Form, useNavigate, useSearchParams } from 'react-router';
+import { Form, redirect, useNavigate, useSearchParams } from 'react-router';
 import { Link } from '#app/components/link';
 import { Trans, useTranslation } from 'react-i18next';
 // The singleton, not the hook: `clientAction` and the pure helpers it reaches
@@ -21,6 +21,8 @@ import {
   putLocalAiSettings,
 } from '#app/lib/local-store';
 import type { LocalAiSettings } from '#app/lib/local-store';
+import { CONFIG } from '#app/config';
+import { shouldFallbackOffline } from '#app/lib/local-store/offline-fallback';
 import { resolveSettingsReturnPath } from '#app/lib/settings-return';
 import { syncNow } from '#app/lib/sync/sync-actions';
 import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
@@ -97,9 +99,20 @@ function providerLabel({ provider, t }: { provider: string; t: Translate }): str
 }
 
 /**
+ * ONE fact, and it is about the instance rather than the person: is this a
+ * managed instance? The key, the provider and the model still live only in the
+ * local store (M117/02) and are read in `clientLoader` below; this cannot,
+ * because it comes from this server's own environment. Same shape as
+ * `onboarding.tsx`'s loader, for the same reason.
+ */
+export async function loader() {
+  return { managed: CONFIG.instance.managed };
+}
+
+/**
  * Shown while the client loader reads the on-device BYOK settings (M117/02).
- * This route has no server `loader` at all — the key/provider/model live only
- * in the local store, so there is nothing meaningful a server render could
+ * The server `loader` above returns one instance-level boolean and nothing
+ * about the person, so there is still nothing meaningful a server render could
  * show; React Router requires this fallback for any route whose data comes
  * solely from a `clientLoader`.
  */
@@ -281,7 +294,18 @@ type AiSettingsSubmission = z.infer<ReturnType<typeof createAiSettingsSchema>>;
  * entirely in the local store since M117/02 — there is no server `loader` for
  * this route (see `HydrateFallback` above for why `hydrate` must be true).
  */
-export async function clientLoader(): Promise<{ settings: LocalAiSettings | null; monthlyUsage: MonthlyAiUsage }> {
+export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs, 'serverLoader'>): Promise<{
+  settings: LocalAiSettings | null;
+  monthlyUsage: MonthlyAiUsage;
+}> {
+  // THE PAGE IS FALSE ON A MANAGED INSTANCE (M196), so the address is closed
+  // rather than merely unlinked. `settings._index.tsx` hides the row there;
+  // this whole screen is about choosing a provider and paying it, and on a
+  // managed instance there is no key to bring and the estimates come with the
+  // account. Leaving the URL open would send somebody to a page that cannot
+  // help them and that contradicts the privacy policy they were shown.
+  const managed = await readManagedInstance(serverLoader);
+  if (managed) throw redirect('/settings');
   const [settings, monthlyUsage] = await Promise.all([getLocalAiSettings(), getLocalMonthlyAiUsage()]);
   // THE degradation point for an unrecognised stored provider (M130/01). The
   // settings row is an opaque JSON blob with no schema behind it, so an
@@ -294,6 +318,24 @@ export async function clientLoader(): Promise<{ settings: LocalAiSettings | null
   return { settings: isKnownProvider ? settings : null, monthlyUsage };
 }
 clientLoader.hydrate = true as const;
+
+/**
+ * The instance's shape, from the server loader, failing OPEN — the same
+ * reasoning (and the same helper) as `onboarding.tsx`. On a hard load
+ * `clientLoader.hydrate` means the data already came with the document; only
+ * an in-app navigation fetches, and offline that fetch rejects. Answering
+ * `false` there shows the person their own on-device settings instead of
+ * bouncing them off a page because the network is down, and a managed
+ * instance is unreachable offline anyway.
+ */
+async function readManagedInstance(serverLoader: () => Promise<{ managed: boolean }>): Promise<boolean> {
+  try {
+    return (await serverLoader()).managed;
+  } catch (cause) {
+    if (shouldFallbackOffline(cause)) return false;
+    throw cause;
+  }
+}
 
 /**
  * Skips the live provider check when the user only changed the model and

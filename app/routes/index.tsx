@@ -1280,7 +1280,16 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             title={t('landing.features.local.title')}
             body={t('landing.features.local.body')}
           />
-          <FeatureCard icon={Key} title={t('landing.features.byok.title')} body={t('landing.features.byok.body')} />
+          {/* The AI card, and it is a different product on each kind of
+              instance (M196). The open card describes a key you bring and a
+              provider that bills you; a managed instance offers neither, and
+              the photo's route there runs through the operator's own server
+              rather than straight from the browser. */}
+          <FeatureCard
+            icon={Key}
+            title={t(managed ? 'landing.features.byokManaged.title' : 'landing.features.byok.title')}
+            body={t(managed ? 'landing.features.byokManaged.body' : 'landing.features.byok.body')}
+          />
           <FeatureCard
             icon={Smartphone}
             title={t('landing.features.install.title')}
@@ -1322,7 +1331,13 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             page look like it is asking three times. */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
           <Button asChild variant="outline" size="lg">
-            <Link to="/dashboard">{t('landing.cta.tryItFree')}</Link>
+            {/* "No account" is the offer on an open instance and a false one
+                on a managed instance, where an account is the only way in.
+                The destination changes with the label: `/dashboard` bounces to
+                `/welcome` there anyway, and naming the real door is honest. */}
+            <Link to={managed ? '/welcome' : '/dashboard'}>
+              {managed ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryItFree')}
+            </Link>
           </Button>
           <SourceLink label={t('landing.cta.readSourcePlain')} />
         </div>
@@ -1396,7 +1411,13 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               />
             }
           >
-            <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.body')}</p>
+            {/* On a managed instance this is not an opt-in extra, it is how
+                the account works, and the operator holds a recovery key that
+                can in principle open a diary. Same fact as
+                `legal.privacy.s6Body3`, said where somebody is deciding. */}
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {managed ? t('landing.sync.bodyManaged') : t('landing.sync.body')}
+            </p>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.photos')}</p>
             <Link to="/settings/account" className={SECONDARY_ACTION}>
               {t('landing.sync.link')}

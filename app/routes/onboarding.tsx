@@ -440,6 +440,12 @@ function OnboardingHeader({ step }: { step: OnboardingStep }) {
  * the diary itself never leaves the device.
  */
 function LocalFirstExplainer() {
+  // MANAGED CHANGES THE FACT, not the tone (M196). "We never see it" is true
+  // where there is no server holding anything; on an instance an organization
+  // runs, the diary is on the server as ciphertext and the plate photo passes
+  // through that same server on its way to the AI. Saying so on the first
+  // screen is the point of this card.
+  const managed = useManagedInstance();
   return (
     <div className="mt-6 space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
       <p className="flex items-start gap-2">
@@ -448,7 +454,10 @@ function LocalFirstExplainer() {
           {/* <Trans> rather than a plain t(): the emphasis sits mid-sentence, and
               splitting the sentence into three keys around it would force every
               translation into English word order. */}
-          <Trans i18nKey="onboarding.localFirst" components={{ strong: <strong /> }} />
+          <Trans
+            i18nKey={managed ? 'onboarding.localFirstManaged' : 'onboarding.localFirst'}
+            components={{ strong: <strong /> }}
+          />
         </span>
       </p>
     </div>
