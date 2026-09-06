@@ -4,25 +4,31 @@ Four programs, one of which is the product and three of which are optional attac
 page is about which one holds what, and — more importantly — which one is standing in the
 path of your data.
 
-```
-                      ┌──────────────────────────────────────────┐
-   your device        │  browser                                 │
-                      │    diary  ──►  IndexedDB (plaintext,     │
-                      │                          never leaves)   │
-                      └───┬───────────────────┬──────────────────┘
-                          │                   │
-              ciphertext  │                   │  photo + your key
-                          ▼                   ▼
-                 ┌─────────────────┐   ┌──────────────────────────┐
-                 │ openplate-sync  │   │ your AI provider,   OR   │
-                 │ email + opaque  │   │ openplate-inference      │
-                 │ bytes, no key   │   │ on your own hardware     │
-                 └─────────────────┘   └──────────────────────────┘
+The drawing below is the whole system. Follow the two arrows that leave the device: the
+diary leaves as ciphertext for openplate-sync, and the photo leaves for whichever AI
+endpoint you configured. The app server is on neither of them. The dotted arrows are the
+one exception, a managed instance, where the sync server forwards the photo for an account
+that has an allowance.
 
-                 ┌─────────────────┐
-                 │ openplate app   │   serves HTML and JS. Holds nothing.
-                 │ server          │   Not on either arrow above.
-                 └─────────────────┘
+```mermaid
+%% alt: The diary leaves the device as ciphertext for the sync server, and the photo goes straight to an AI endpoint, never through the sync server.
+flowchart LR
+  app["openplate app server, holds nothing"]
+  subgraph device["Your device"]
+    diary["Diary, plaintext, never leaves"]
+    photo["Plate photo"]
+  end
+  sync["openplate-sync, email and ciphertext"]
+  inf["openplate-inference, your hardware"]
+  cloud["Cloud AI provider"]
+
+  app -->|"HTML and JS"| device
+  diary -->|"ciphertext, no key sent"| sync
+  photo -->|"photo"| inf
+  photo -->|"photo and your key"| cloud
+  photo -.->|"managed instances only"| sync
+  sync -.->|"managed instances only"| inf
+  sync -.->|"managed instances only"| cloud
 ```
 
 ## The client is the product

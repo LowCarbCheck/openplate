@@ -24,6 +24,17 @@ provider key into **Settings → AI**. There is no sign-up. Your diary lives in 
 storage and never reaches the instance's server, so "using someone else's instance" gives
 that operator far less than the phrase suggests — see [architecture.md](architecture.md).
 
+Nothing on this rung is yours to run. The browser holds the diary, the browser calls the
+provider with the key you pasted into it, and the operator's server only sends the page.
+
+```mermaid
+%% alt: On rung zero the browser holds the diary and calls a cloud provider directly with your key.
+flowchart LR
+  host["Someone else's instance"] -->|"HTML and JS"| browser["Your browser"]
+  browser --- diary["Diary in this browser"]
+  browser -->|"photo and your key"| cloud["Cloud AI provider"]
+```
+
 **You gain:** the whole product, in one minute, for the cost of your own AI usage.
 **You operate:** nothing.
 
@@ -36,6 +47,17 @@ the JSON export from **Profile → Your data** regularly, or move to rung 1.
 ```bash
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
 docker compose -f compose.yml up -d
+```
+
+Rung 1 changes one box. The page comes from a container you run, and the photo path is
+exactly the one above.
+
+```mermaid
+%% alt: On rung one the page comes from your own stateless container, and the photo path is unchanged.
+flowchart LR
+  app["openplate app, your box"] -->|"HTML and JS"| browser["Your browser"]
+  browser --- diary["Diary in this browser"]
+  browser -->|"photo and your key"| cloud["Cloud AI provider"]
 ```
 
 **You gain:** the app on hardware you control, upgradeable on your schedule, with no
@@ -56,6 +78,21 @@ devices** — a phone and a laptop that stay in agreement. Families are the *sec
 weaker one: sync is per account, so two people sharing one account share one diary rather
 than getting one each. Two people who want separate diaries want two accounts, or simply two
 rung-1 devices and no sync at all.
+
+Rung 2 adds a second server and a database behind it. Each device pushes the same encrypted
+blob and pulls the other device's, and the photo still leaves each device for the provider.
+
+```mermaid
+%% alt: On rung two both devices push one encrypted blob to the sync server, and the photo still goes straight to the provider.
+flowchart LR
+  app["openplate app"] -->|"HTML and JS"| phone["Phone"]
+  app -->|"HTML and JS"| laptop["Laptop"]
+  phone -->|"ciphertext"| sync["openplate-sync"]
+  laptop -->|"ciphertext"| sync
+  sync --> db[("Postgres")]
+  phone -->|"photo and your key"| cloud["Cloud AI provider"]
+  laptop -->|"photo and your key"| cloud
+```
 
 **You operate:** the app, an account service, and a Postgres. That is a real step up: an
 account service has a database worth backing up, a `SERVER_SECRET` worth keeping, and users
@@ -86,7 +123,34 @@ proxy — no separate service, no separate invite link. See
 [family-setup.md](family-setup.md) for when this is worth turning on instead of provider
 sub-keys.
 
+On a managed instance that same server also carries the scan. A signed-in member posts the
+photo to the AI proxy, the server counts it against that account's daily allowance, and it
+forwards the request to whatever the operator pointed it at.
+
+```mermaid
+%% alt: On a managed instance the signed-in member scans through the sync server's AI proxy, which counts the request against a daily allowance.
+flowchart LR
+  browser["Member's browser"] -->|"ciphertext"| sync["openplate-sync, managed"]
+  browser -->|"photo"| sync
+  sync --- quota["Daily allowance per account"]
+  sync -->|"photo"| upstream["Cloud provider, or inference"]
+```
+
 ## Rung 3 — add self-hosted inference
+
+Rung 3 moves the scan onto your hardware. The photo goes from the browser to the inference
+container, which is why that container needs an address your browsers can resolve. The model
+names the foods and estimates grams; the macros are read out of the bundled dataset.
+
+```mermaid
+%% alt: On rung three the browser sends the photo to your own inference container, which looks the macros up in a bundled dataset.
+flowchart LR
+  app["openplate app"] -->|"HTML and JS"| browser["Your browser"]
+  browser --- diary["Diary in this browser"]
+  browser -->|"photo, browser reachable address"| inf["openplate-inference"]
+  inf --- weights["Model runtime and weights"]
+  inf --- usda["Bundled USDA food data"]
+```
 
 **You gain:** plate scans with no cloud AI account, no per-scan cost, and no photo leaving
 your network. Macros come from a bundled USDA FoodData Central extract, so they are looked up
@@ -135,6 +199,20 @@ with no hardware. Either way, the same sync server also carries the diary: sync 
 proxy are one service now, not two ([architecture.md](architecture.md)).
 
 ## Rung 4 — everything
+
+Rung 4 is the two rungs above, drawn together. Nothing new appears on it.
+
+```mermaid
+%% alt: Rung four is rungs two and three together, one diary on every device and scans on your own hardware.
+flowchart LR
+  app["openplate app"] -->|"HTML and JS"| phone["Phone"]
+  app -->|"HTML and JS"| laptop["Laptop"]
+  phone -->|"ciphertext"| sync["openplate-sync"]
+  laptop -->|"ciphertext"| sync
+  sync --> db[("Postgres")]
+  phone -->|"photo"| inf["openplate-inference"]
+  laptop -->|"photo"| inf
+```
 
 **You gain:** rung 2 and rung 3 together — your diary on every device, scanned on your own
 hardware, with nothing going to any third party.
