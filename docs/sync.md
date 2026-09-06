@@ -2,8 +2,8 @@
 
 openplate is a local app by default: your diary lives in the browser's IndexedDB on the
 device you use, and nothing leaves it. Moving that diary between devices is the one thing
-that needs an account, so it lives in a separate service —
-[openplate-sync](https://github.com/LowCarbCheck/openplate-sync) — with its own image,
+that needs an account, so it lives in a separate service,
+[openplate-sync](https://github.com/LowCarbCheck/openplate-sync), with its own image,
 database and secrets.
 
 Sync is entirely optional. Unset, openplate loses no feature.
@@ -13,7 +13,7 @@ Sync is entirely optional. Unset, openplate loses no feature.
 - A running **openplate-sync** instance: either the hosted one, your own, or any third-party
   server implementing [the protocol](https://github.com/LowCarbCheck/openplate-sync/blob/main/PROTOCOL.md).
   To run your own, use
-  [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml) — see
+  [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml): see
   [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).
 - `SYNC_SERVER_URL` set on the app, pointing at that service.
 
@@ -24,7 +24,7 @@ Sync is entirely optional. Unset, openplate loses no feature.
 - **Unset** (the default): no sync interface renders anywhere, and no sync request ever
   leaves the app.
 - **Set**: the sync screens appear and talk to that URL. Its origin is added to the
-  production CSP's `connect-src` automatically — you do not need `CSP_CONNECT_EXTRA` for it.
+  production CSP's `connect-src` automatically: you do not need `CSP_CONNECT_EXTRA` for it.
 
 Restart the app after changing it. Unset it again and the sync screens disappear and the app
 stops reaching out. Your local diary is untouched either way.
@@ -34,7 +34,7 @@ email address and password you used on the first one. That is the whole procedur
 has to be copied off the first device.
 
 It must be an address a **browser** can reach. The sync client runs in the page, so a compose
-hostname like `http://sync:3000` does not work — use the public URL your users' devices
+hostname like `http://sync:3000` does not work: use the public URL your users' devices
 resolve. A malformed value stops the boot on purpose, so a typo cannot look like "sync is
 quietly off".
 
@@ -42,7 +42,7 @@ quietly off".
 
 The app always carries a `/study` route, and it is inert on an ordinary instance. It comes to
 life only when the sync service it talks to has `SYNC_RESEARCH=true`, which is **off by
-default** — an instance you stand up without touching that flag runs no study, holds no study
+default**: an instance you stand up without touching that flag runs no study, holds no study
 graph, and offers nothing to enrol in. Read `openplate-sync`'s `.env.example` before turning it
 on: it makes the server hold health-adjacent personal data, which is a different undertaking
 from holding ciphertext it cannot read.

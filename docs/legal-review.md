@@ -1,4 +1,4 @@
-# German legal text — review record
+# German legal text: review record
 
 ## Status: AWAITING REVIEW
 
@@ -17,8 +17,8 @@ fact is written down somewhere other than a commit message.
 
 ## What is and is not machine-produced
 
-**Not translated, and cannot be:** the operator's identity — company name,
-address, managing director, register number and court, VAT id. Those live in
+**Not translated, and cannot be:** the operator's identity (company name,
+address, managing director, register number and court, VAT id). Those live in
 `app/routes/legal/operator.ts` and are rendered from one copy in both languages,
 so the two documents cannot name different companies. The tool never saw them.
 
@@ -31,19 +31,19 @@ right. That is what the review is for.
 
 ## What a reviewer should look at first
 
-1. **Datenschutzerklärung §3 and §6** — the split between the app server, which
+1. **Datenschutzerklärung §3 and §6**: the split between the app server, which
    stores nothing, and the separate sync service, which holds an account. This
    distinction is new in the English as of 2026-09-01 and is the part most
    likely to have been flattened in translation.
-2. **§9 Cookies** — the four preference cookies. Whether the German supports
+2. **§9 Cookies**: the four preference cookies. Whether the German supports
    the position that §25 TTDSG is not engaged.
-3. **§9a** — only rendered when the instance actually runs analytics. It is
+3. **§9a**: only rendered when the instance actually runs analytics. It is
    currently NOT rendered in production. Review it anyway; it appears the moment
    `MATOMO_URL` is set.
-4. **Nutzungsbedingungen §7** — the sync terms, including the claim that
+4. **Nutzungsbedingungen §7**: the sync terms, including the claim that
    deletion is immediate with no grace period. Confirm that matches what the
    product does before relying on it.
-5. **Nutzungsbedingungen §11** — Governing law, and whether the German phrasing
+5. **Nutzungsbedingungen §11**: Governing law, and whether the German phrasing
    preserves the consumer-protection carve-out.
 
 ## How to change the German

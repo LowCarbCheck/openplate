@@ -1,7 +1,7 @@
 # Architecture
 
 Four programs, one of which is the product and three of which are optional attachments. This
-page is about which one holds what, and — more importantly — which one is standing in the
+page is about which one holds what, and, more importantly, which one is standing in the
 path of your data.
 
 The drawing below is the whole system. Follow the two arrows that leave the device: the
@@ -33,20 +33,21 @@ flowchart LR
 
 ## The client is the product
 
-Everything a user owns — food logs, weights, personal foods, goals, the AI settings — is
+Everything a user owns (food logs, weights, personal foods, goals, the AI settings) is
 written to the browser's IndexedDB on the device it was entered on (`app/lib/local-store/`).
 It is stored in the clear there, because it is *your* device, and it never leaves it except
 in two forms you choose: a JSON export you download, or an encrypted sync blob.
 
 The app server is a single stateless container. No database, no ORM, no migrations, no
 secret read from the environment. Destroying it loses nothing. That is not thrift, it is the
-whole promise — see [ADR-0006](../.adr/0006-the-app-server-holds-no-accounts.md).
+whole promise: see [ADR-0006](../.adr/0006-the-app-server-holds-no-accounts.md).
 
 ## Sync is identity, beside the photo path and never inside it
 
-openplate-sync exists to move a diary between devices, and to hold the separate accounts the
-optional study console uses (ADR-0008). Those are the only things that need an account. It is a separate deployable with its own image, database and secret, and the browser
-talks to it directly. The app server proxies nothing on its behalf and serves no sync route.
+openplate-sync exists to move a diary between devices, and that is the only thing that
+needs an account. It is a separate deployable with its own image, database and secret, and
+the browser talks to it directly. The app server proxies nothing on its behalf and serves
+no sync route.
 
 **It cannot read your entries.** The client serializes the local store, gzips it, encrypts it
 with AES-256-GCM under a key derived from your passphrase, and uploads the result as one
@@ -61,7 +62,11 @@ an email address, blob size, write frequency and timing, version numbers, and KD
 Not what you ate.
 
 The cost is equally plain: forget the passphrase and lose the recovery code, and the data is
-gone — to you and to us. An email reset restores the *login*, never the *data*.
+gone, to you and to us. An email reset restores the *login*, never the *data*.
+
+The optional study console keeps its own, separate accounts on the same server.
+[Sync](sync.md#the-research-console-study) says when it is on, and
+[ADR-0008](../.adr/0008-the-study-console-lives-in-openplate.md) says why it lives in the app.
 
 ## Inference is compute, and the photo goes to it directly
 
@@ -73,7 +78,7 @@ exports and from sync payloads alike.
 
 That endpoint is either a cloud provider you pay (the BYOK path) or your own
 openplate-inference container. In the self-hosted case the model names the foods on the plate
-and estimates grams — and then the **macros are looked up, not invented**: carbs, protein,
+and estimates grams, and then the **macros are looked up, not invented**: carbs, protein,
 fat and kcal are resolved by name against a bundled extract of USDA FoodData Central (8,041
 generic foods shipped inside the image, no network call, public domain). The language model
 never authors a number.
@@ -119,7 +124,7 @@ invite link, and no second credential to hand out.
 
 With no inference container at all, the browser calls a cloud provider directly with a key
 you entered on that device. The key is stored in the device's local store, excluded from the
-JSON export, and never sent to the openplate server — there is no server-side copy, encrypted
+JSON export, and never sent to the openplate server: there is no server-side copy, encrypted
 or otherwise, and no server-side proxy of the call.
 
 The production Content-Security-Policy is part of that promise rather than decoration: the
@@ -134,5 +139,5 @@ injected script exfiltrating a key that lives in the page. See
 | **Your browser** | The whole diary, in the clear, in IndexedDB. Your AI key. Cached plate photos. | Everything. It is your device. |
 | **openplate app server** | Nothing. No database, no secrets, no state. | HTML and JS requests. Never a photo, never a key, never a diary entry, never a sync blob. |
 | **openplate-sync** (optional) | An email address, an authentication verifier, KDF parameters, and ciphertext it holds no key for. On a managed instance (`INSTANCE_MODE=managed`), also each account's daily allowance and usage count. | Blob size, write timing, session metadata. On a managed instance, also the photo forwarded to the AI proxy, for as long as it takes to forward it, read once, not stored. Not the diary contents. |
-| **openplate-inference** (optional) | Nothing per user — no accounts, no sessions, no cookies. Model weights and a food dataset. | The photo you sent it, for as long as the request takes. It makes no outbound call except the one-time weight download. |
+| **openplate-inference** (optional) | Nothing per user: no accounts, no sessions, no cookies. Model weights and a food dataset. | The photo you sent it, for as long as the request takes. It makes no outbound call except the one-time weight download. |
 | **Cloud AI provider** (BYOK path) | Whatever their policy says. | The photo, and your key. Their terms apply, not ours. |
