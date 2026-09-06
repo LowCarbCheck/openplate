@@ -44,10 +44,10 @@ whole promise: see [ADR-0006](../.adr/0006-the-app-server-holds-no-accounts.md).
 
 ## Sync is identity, beside the photo path and never inside it
 
-openplate-sync exists to move a diary between devices, and that is the only thing that
-needs an account. It is a separate deployable with its own image, database and secret, and
-the browser talks to it directly. The app server proxies nothing on its behalf and serves
-no sync route.
+openplate-sync moves a diary between devices. It is the only service in openplate that holds
+accounts at all. It is a separate deployable with its own image, database and secret, and the
+browser talks to it directly. The app server proxies nothing on its behalf and serves no sync
+route.
 
 **It cannot read your entries.** The client serializes the local store, gzips it, encrypts it
 with AES-256-GCM under a key derived from your passphrase, and uploads the result as one
