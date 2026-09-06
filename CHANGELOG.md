@@ -2,6 +2,18 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.10.3 - 2026-09-06
+
+- On an instance run for you by an organization, the app now says what that
+  operator can see. A plate photo passes through the operator's server on its
+  way to the AI, the AI key is the operator's, every user has an invited
+  account, and the operator holds a recovery key. The landing page, the first
+  onboarding screen, the terms and the privacy policy said the opposite; they
+  described an instance you run alone. An instance you run yourself keeps the
+  old wording, which is true there.
+- The AI provider settings page is closed on such an instance. It described a
+  key nobody brings there.
+
 ## 0.10.2 - 2026-09-05
 
 - Search engines no longer index the app. The project site at openplate.de
