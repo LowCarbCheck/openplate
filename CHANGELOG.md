@@ -2,6 +2,30 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.11.0 - 2026-09-07
+
+- Adding food inside the app now opens the camera directly on tap, matching the
+  tab bar button. Typing and speaking sit beside it as dedicated buttons
+  instead of a small link. On a device without an AI provider connected, the
+  tap still opens the scan screen to explain what to connect, so it never asks
+  for a camera permission the device cannot use. A photo taken while viewing an
+  earlier day logs to that day, not to today.
+- Changed the final onboarding step to lead with "Photograph food", and moved
+  the search button beside it. Ending the first run on "Find a food"
+  contradicted what every add-food screen does later. The button now uses the
+  same label shown in the diary and the dashboard.
+- The architecture and topology guides now include diagrams. The topology
+  drawing shows which arrows leaving your device carry a photo and which carry
+  ciphertext, so the claim the project rests on is visible without reading six
+  sections first.
+- The architecture guide no longer contradicts itself about accounts. One
+  section previously stated the sync server was the only component that needed
+  an account, while the same section stated the study console keeps its own.
+- The published guides were reworded to remove every em dash and en dash. No
+  claim changed.
+- A script now captures the product screenshots on the landing page in German
+  and in English, so they can be regenerated when a screen changes.
+
 ## 0.10.3 - 2026-09-06
 
 - On an instance run for you by an organization, the app now says what that
