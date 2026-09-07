@@ -1032,30 +1032,34 @@ function FirstFoodStep() {
       <Form method="post" className="space-y-3">
         <TimezoneField />
         <input type="hidden" name="_intent" value={INTENT.FINISH} />
-        <SubmitButton
-          name="destination"
-          value="/add"
-          pending={isBusy && destination === '/add'}
-          pendingLabel={t('onboarding.firstFood.opening')}
-          disabled={isBusy}
-          size="lg"
-          className="h-11 w-full"
-        >
-          <Search className="h-4 w-4" />
-          {t('onboarding.firstFood.find')}
-        </SubmitButton>
+        {/* The photo leads here too, but this step still submits FINISH with
+            a destination rather than opening the camera directly on tap: the
+            Form has to stamp onboarding completion before the user lands
+            anywhere, unlike every other add-food surface. */}
         <SubmitButton
           name="destination"
           value="/scan"
           pending={isBusy && destination === '/scan'}
           pendingLabel={t('onboarding.firstFood.opening')}
           disabled={isBusy}
-          variant="outline"
           size="lg"
           className="h-11 w-full"
         >
           <Camera className="h-4 w-4" />
           {t('onboarding.firstFood.scan')}
+        </SubmitButton>
+        <SubmitButton
+          name="destination"
+          value="/add"
+          pending={isBusy && destination === '/add'}
+          pendingLabel={t('onboarding.firstFood.opening')}
+          disabled={isBusy}
+          variant="outline"
+          size="lg"
+          className="h-11 w-full"
+        >
+          <Search className="h-4 w-4" />
+          {t('onboarding.firstFood.find')}
         </SubmitButton>
         <div className="pt-1 text-center">
           <Button
