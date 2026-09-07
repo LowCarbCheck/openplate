@@ -2,6 +2,37 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.15.0 - 2026-09-08
+
+This release is about instances that an organization runs and invites people
+to. If you self-host openplate for yourself, nothing here changes for you.
+
+- Signing out is now one tap from the menu at the top right, instead of being
+  the last button in the danger zone of the account screen, next to "delete
+  account". After you sign out, this device no longer shows the diary, and
+  reloading the page no longer puts you back in it as though you were still
+  signed in.
+
+- You can also erase the diary from the device as you sign out. It is a
+  checkbox, off unless you tick it, and it tells you first how many entries
+  have not reached the server yet, because erasing loses those.
+
+- On an instance you need an invitation for, the front page now says so. There
+  is a "sign in" button where there used to be only a link to the source code,
+  and a "request access" button that explains an administrator issues the
+  invitations. The rest of that page no longer offers a free trial, an account
+  you can create yourself, or an AI key you bring, because none of those exist
+  on an instance like that.
+
+- Administrators can open a person in the admin console and see when they last
+  signed in and how many photos were read for them on each of the last ninety
+  days. Daily counts older than ninety days are deleted.
+
+- If you use an instance somebody else runs, your account screen now lists
+  exactly what its administrator can see about you, and what they cannot. Your
+  diary is encrypted on this device before any copy of it leaves, so it is not
+  on those pages.
+
 ## 0.14.0 - 2026-09-07
 
 - If a photo estimate comes out wrong, you can now tell us. There is a button at
