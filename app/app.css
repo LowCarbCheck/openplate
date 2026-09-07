@@ -539,3 +539,90 @@
     animation-delay: 0.32s;
   }
 }
+
+/*
+ * ===========================================================================
+ * Ways-to-log animations (onboarding, M200 spec 01)
+ * ===========================================================================
+ * Three small inline SVGs, one per way a food gets into the diary. The markup
+ * lives in `app/components/onboarding/ways-to-log-animation.tsx`, which is a
+ * lazily imported chunk; the rules live here because reduced motion has ONE
+ * switch in this app and splitting it across files is how a second switch gets
+ * invented (see the view-transition block above).
+ *
+ * SAME OPT-IN DISCIPLINE as the waiting vocabulary: nothing below the media
+ * query is needed to READ the drawing. The base rules are the static first
+ * frame, every keyframe returns to it at 0% and 100%, and a person who asked
+ * for less motion gets exactly that frame and nothing else. No SMIL, no
+ * animation runtime, no dependency.
+ */
+.wtl-focus,
+.wtl-scanline {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes wtl-shutter {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+  95% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes wtl-focus {
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+  }
+  85% {
+    transform: scale(0.9);
+  }
+}
+
+@keyframes wtl-scan {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(24px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The plate card: the viewfinder pulls focus, then the shutter fires. One
+     cycle every three seconds, which is slow enough to read as a gesture
+     rather than a blink. */
+  .wtl-focus {
+    animation: wtl-focus 3s ease-in-out infinite;
+  }
+
+  .wtl-flash {
+    animation: wtl-shutter 3s ease-in-out infinite;
+  }
+
+  /* The label card: one bar travels down the printed panel and back. */
+  .wtl-scanline {
+    animation: wtl-scan 3s ease-in-out infinite;
+  }
+
+  /* The search card: three result rows settling in sequence. Keyframe and
+     timing borrowed from `loading-dots` above, phase-shifted the same way, so
+     the two read as one idiom. */
+  .wtl-row {
+    animation: pulse-soft 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .wtl-row-2 {
+    animation-delay: 0.18s;
+  }
+
+  .wtl-row-3 {
+    animation-delay: 0.36s;
+  }
+}

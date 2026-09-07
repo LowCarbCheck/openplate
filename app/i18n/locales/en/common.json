@@ -773,11 +773,16 @@
     },
     "loading": "Loading goals…",
     "protein": {
+      "basis": {
+        "height": "your height and sex",
+        "weight": "your latest weigh-in"
+      },
       "hint": "Protein helps you feel full and hold onto muscle, which matters more the fewer carbs or calories you eat. This is an amount to aim for, in grams. Going under it isn't a failure.",
       "label": "Daily protein goal",
-      "noWeightHint": "Log a weight below and we can suggest an amount based on it.",
+      "method": "This is an estimate, worked out from {{basis}}. Type your own amount if you have one.",
       "placeholder": "e.g. 100",
-      "recommended": "Use my recommended amount ({{grams}} g)"
+      "recommended": "Use this estimate ({{grams}} g)",
+      "suggestionUnavailable": "Add your height and sex below, or log a weight, and we can suggest an amount."
     },
     "save": "Save goals",
     "saving": "Saving…",
@@ -1001,7 +1006,7 @@
     "moreOptions": "More ways to add food",
     "sheetTitle": "Add food",
     "platePhoto": "Plate photo",
-    "labelPhoto": "Label photo",
+    "labelPhoto": "Nutrition panel photo",
     "speak": "Speak",
     "type": "Type"
   },
@@ -1237,13 +1242,11 @@
       }
     },
     "firstFood": {
-      "find": "Find a food",
       "finishing": "Finishing…",
       "keyNote": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device too, just like your diary.",
       "keyNoteLink": "Set it up anytime in Settings.",
       "later": "I'll do it later",
       "opening": "Opening…",
-      "scan": "Photograph food",
       "managedNote": "Photo estimates are included. Take a photo of a plate and the carbs are worked out for you."
     },
     "focus": {
@@ -1274,11 +1277,11 @@
         "title": "A bit about you?"
       },
       "firstFood": {
-        "description": "You're all set. Add something you ate today to see openplate in action.",
+        "description": "You're all set. There are three ways to get food into your diary. Pick one to start.",
         "title": "Log your first food"
       },
       "focus": {
-        "description": "Pick what matters most to you. You can change this anytime in Settings.",
+        "description": "Pick one or both, or just log what you eat. You can change this anytime in Settings.",
         "title": "What do you track?"
       },
       "weight": {
@@ -1287,6 +1290,21 @@
       }
     },
     "stepOf": "Step {{current}} of {{total}}",
+    "waysToLog": {
+      "dictationNote": "The search screen also has a microphone in browsers that support it. It fills the search box with what you say, and never logs a food by itself.",
+      "label": {
+        "description": "For anything in a package. The printed numbers are read off the panel, not estimated.",
+        "title": "Photograph a nutrition panel"
+      },
+      "plate": {
+        "description": "Take a photo of your meal and get an estimate of what is in it.",
+        "title": "Photograph your plate"
+      },
+      "search": {
+        "description": "Type a name and pick your food from the list.",
+        "title": "Search for a food"
+      }
+    },
     "weight": {
       "current": "Current weight",
       "errors": {
@@ -1531,13 +1549,13 @@
       "chooseLibrary": "Choose from library",
       "description": "Your photo is sent directly to your own AI provider to identify what's on your plate. Afterward it's kept only on this device (not on openplate's server) so you can see it again on the entry, turn that off or clear it anytime under Data & backup in settings.",
       "emptyHint": "Analyzed by your own AI provider, then kept only on this device.",
-      "emptyTitle": "Take a photo or choose an image",
-      "labelPhoto": "Label photo",
+      "emptyTitle": "Photograph your plate or choose an image",
+      "labelPhoto": "Photograph a nutrition panel",
       "photoLabel": "Plate photo",
       "preparing": "Preparing your photo…",
-      "previewAlt": "Selected plate",
-      "takePhoto": "Take photo",
-      "title": "Identify foods from a photo",
+      "previewAlt": "Selected plate photo",
+      "takePhoto": "Photograph your plate",
+      "title": "Identify foods from a plate photo",
       "managedDescription": "Your photo is read once to work out what is on your plate, and is not kept. Afterwards it stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings."
     },
     "errors": {
@@ -1595,9 +1613,9 @@
         "description": "Photograph the nutrition panel on the package. Your photo goes straight to your own AI provider, which reads the printed numbers: nothing is estimated. Afterward the photo is kept only on this device.",
         "emptyHint": "Hold the package flat and let the panel fill the frame.",
         "emptyTitle": "Photograph the nutrition panel",
-        "photoLabel": "Label photo",
-        "previewAlt": "Selected package label",
-        "title": "Read a package label"
+        "photoLabel": "Nutrition panel photo",
+        "previewAlt": "Selected nutrition panel photo",
+        "title": "Read the nutrition panel on a package"
       },
       "mode": {
         "label": "A package label",

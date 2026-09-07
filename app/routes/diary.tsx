@@ -74,7 +74,8 @@ import { AddFoodActions } from '#app/components/add-food-actions';
 import { BackupNudgeBanner } from '#app/components/backup-nudge-banner';
 import { HabitStrip } from '#app/components/habit-strip';
 import { RingProgress } from '#app/components/ring-progress';
-import { HeroStat, formatHeroStat, formatHeroValue } from '#app/components/hero-stat';
+import type { HeroStat as HeroStatData } from '#app/components/hero-stat';
+import { HeroStat, formatHeroRings, formatHeroStats, formatHeroValue } from '#app/components/hero-stat';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { SectionEyebrow } from '#app/components/typography';
 import {
@@ -1471,11 +1472,11 @@ export function formatMacroBreakdownLine(summary: DaySummary, t: Translate, lang
  * `DayDrillDown`, where it's joined by the thing the old hero never offered —
  * a per-target GAP view and foods that would close it.
  *
- * The ring tracks whichever budget the user actually set: their net-carb
- * ceiling, or — for someone who tracks calories instead — their calorie
- * target. With neither, there is no budget to draw, so the card falls back to
- * a left-aligned absolute headline. `formatHeroStat` owns which of those five
- * framings applies and every word in it.
+ * There is one ring per goal the person actually set: their net-carb ceiling,
+ * their calorie target, or both together (M200 spec 02). With neither, there
+ * is no budget to draw, so the card falls back to a left-aligned absolute
+ * headline. `formatHeroStats` owns which framings apply and every word in
+ * them, and `formatHeroRings` pairs each one with the arc it belongs to.
  */
 function DaySummaryCard({
   summary,
@@ -1502,7 +1503,7 @@ function DaySummaryCard({
   const details = useDayDetails();
   const kcalHedged = summary.hasEstimates || summary.hasUnknowns;
 
-  const heroStat = formatHeroStat({
+  const heroInput = {
     netCarbs: summary.netCarbs,
     netCarbsCeiling: goals.netCarbsCeiling,
     kcal: summary.kcal,
@@ -1510,32 +1511,36 @@ function DaySummaryCard({
     hasEstimates: summary.hasEstimates,
     t,
     language: i18n.language,
-  });
+  };
+  // One ring per goal the person actually set (M200 spec 02): both when they
+  // track carbs AND calories, nothing at all when they set neither, because a
+  // ring against an invented target would be a fabricated goal. The stats list
+  // is in the same order as the rings, so index 0 is the carb goal whenever
+  // there is one.
+  const heroStats = formatHeroStats(heroInput);
+  const heroRings = formatHeroRings(heroInput);
+  const isSingleRing = heroRings.length === 1;
 
-  // The ring tracks the budget the hero is framing — carbs when there's a
-  // ceiling, calories for a calorie-only tracker, nothing at all when the user
-  // set neither (a ring against an invented target would be a fabricated goal).
-  const budget =
-    goals.netCarbsCeiling !== null && goals.netCarbsCeiling > 0 ?
-      { consumed: summary.netCarbs, max: goals.netCarbsCeiling }
-    : goals.kcalTarget !== null && goals.kcalTarget > 0 ? { consumed: summary.kcal, max: goals.kcalTarget }
-    : null;
+  // ONE tweened scalar per goal drives both that goal's headline and its arc:
+  // the hero counts the remaining (or over-by) figure, and the arc's position
+  // is derived back out of it, so the two can never drift apart mid-animation.
+  // Keyed by day + framing so switching days or goal modes resets instead of
+  // tweening across. Two fixed calls rather than one per ring, because the
+  // number of rings changes with the person's goals and a hook may not.
+  const primaryStat = heroStats[0];
+  const secondaryStat = heroStats.at(1) ?? null;
+  const animatedPrimary = useCountUp(primaryStat.numericValue, `${date}:${primaryStat.mode}`);
+  const animatedSecondary = useCountUp(secondaryStat?.numericValue ?? 0, `${date}:${secondaryStat?.mode ?? 'none'}`);
+  const animatedFigures = [animatedPrimary, animatedSecondary];
 
-  // ONE tweened scalar drives both the headline and the arc: the hero counts
-  // the remaining (or over-by) figure, and the arc's position is derived back
-  // out of it, so the two can never drift apart mid-animation. Keyed by day +
-  // framing so switching days or goal modes resets instead of tweening across.
-  const animatedFigure = useCountUp(heroStat.numericValue, `${date}:${heroStat.mode}`);
-  const animatedConsumed =
-    budget === null ? summary.netCarbs
-    : heroStat.isOver ? budget.max + animatedFigure
-    : budget.max - animatedFigure;
-  const heroValue = formatHeroValue({
-    numericValue: animatedFigure,
-    mode: heroStat.mode,
-    hasEstimates: summary.hasEstimates,
-    language: i18n.language,
-  });
+  /** The tier-1 string for a ring, formatted from its own tweened figure. */
+  const heroValueFor = (stat: HeroStatData, animatedFigure: number): string =>
+    formatHeroValue({
+      numericValue: animatedFigure,
+      mode: stat.mode,
+      hasEstimates: summary.hasEstimates,
+      language: i18n.language,
+    });
 
   // The calorie line is composed here (it needs the goals) but RENDERS inside
   // the drill-down — calories are exactly the kind of secondary figure the
@@ -1588,7 +1593,7 @@ function DaySummaryCard({
     celebrating && 'motion-safe:animate-celebrate',
   );
 
-  if (budget === null) {
+  if (heroRings.length === 0) {
     return (
       <Card className={heroCardClass}>
         <CardContent className="space-y-5 p-5 sm:p-6">
@@ -1601,7 +1606,7 @@ function DaySummaryCard({
           */}
           <div className="space-y-1.5">
             <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
-            <HeroStat stat={heroStat} value={heroValue} size="headline" />
+            <HeroStat stat={primaryStat} value={heroValueFor(primaryStat, animatedPrimary)} size="headline" />
           </div>
           <div className="space-y-4">
             {renderGlance(false)}
@@ -1628,20 +1633,44 @@ function DaySummaryCard({
           lines, which is why the ring now reads as the hero of its own card
           rather than as a decoration beside a wall of text.
         */}
-        <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-8">
-          <RingProgress
-            value={budget.consumed}
-            animatedValue={animatedConsumed}
-            max={budget.max}
-            size={136}
-            strokeWidth={11}
-            className="[--ring-box:120px] sm:[--ring-box:136px]"
-            trackClassName="text-primary/20"
-            progressClassName={heroStat.isOver ? 'text-accent-amber' : 'text-primary'}
-            label={heroStat.srLabel}
-          >
-            <HeroStat stat={heroStat} value={heroValue} />
-          </RingProgress>
+        <div
+          className={cn(
+            'flex flex-col items-center gap-5',
+            isSingleRing && 'sm:flex-row sm:items-center sm:gap-8',
+          )}
+        >
+          {/*
+            One goal keeps the full-size ring it has always had, beside the
+            glance. Two goals stack the pair above the glance instead, so the
+            second ring is ADDED rather than paid for by shrinking the first.
+          */}
+          <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6">
+            {heroRings.map((ring, index) => {
+              const animatedFigure = animatedFigures[index];
+              const animatedConsumed =
+                ring.stat.isOver ? ring.max + animatedFigure : ring.max - animatedFigure;
+              return (
+                <RingProgress
+                  key={ring.metric}
+                  value={ring.consumed}
+                  animatedValue={animatedConsumed}
+                  max={ring.max}
+                  size={isSingleRing ? 136 : 116}
+                  strokeWidth={isSingleRing ? 11 : 10}
+                  className={
+                    isSingleRing ?
+                      '[--ring-box:120px] sm:[--ring-box:136px]'
+                    : '[--ring-box:100px] sm:[--ring-box:116px]'
+                  }
+                  trackClassName="text-primary/20"
+                  progressClassName={ring.stat.isOver ? 'text-accent-amber' : 'text-primary'}
+                  label={ring.stat.srLabel}
+                >
+                  <HeroStat stat={ring.stat} value={heroValueFor(ring.stat, animatedFigure)} />
+                </RingProgress>
+              );
+            })}
+          </div>
           {/*
             The right-hand column holds the glance AND the disclosure trigger.
             On a phone that stacks under the ring exactly as before; on a wide

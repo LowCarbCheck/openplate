@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import type { Route } from './+types/onboarding';
 import type { MetaFunction } from 'react-router';
 import { Form, redirect, useNavigation } from 'react-router';
 import { Trans, useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import type { TrackingFocusType } from '#types/enums';
 import {
   getLocalBodyMetrics,
   getLocalProfileGoals,
@@ -32,15 +31,14 @@ import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import {
   CARB_PRESETS,
   ONBOARDING_STEPS,
-  carbCeilingForPreset,
   hasWeightStepErrors,
+  initialFocusSwitches,
   nextOnboardingStep,
   onboardingStepNumber,
-  parseKcalTarget,
   parseOnboardingStep,
-  parseTrackingFocus,
   presetIdForCeiling,
   resolveExitDestination,
+  resolveFocusStep,
   resolveOnboardingTimezone,
   validateWeightStep,
 } from '#app/lib/onboarding';
@@ -54,6 +52,8 @@ import {
   toWeightSubmitValue,
 } from '#app/lib/weight-units';
 import type { WeightUnit } from '#app/lib/weight-units';
+import { WAYS_TO_LOG, WAYS_TO_LOG_DICTATION_KEY } from '#app/lib/ways-to-log';
+import type { WayToLog } from '#app/lib/ways-to-log';
 import { FieldError } from '#app/components/field-error';
 import { cn } from '#app/lib/utils';
 import { ProgressBar } from '#app/components/progress-bar';
@@ -63,13 +63,25 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
-import { Camera, Key, Search, ShieldCheck } from 'lucide-react';
+import { Key, ShieldCheck } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import {
   trackOnboardingCompleted,
   trackOnboardingStepCompleted,
   trackOnboardingStepSkipped,
 } from '#app/lib/matomo-events';
+
+/**
+ * The three cards' drawings, kept OUT of the main bundle.
+ *
+ * A returning person never reaches this step, so an offline-first PWA has no
+ * business shipping first-run decoration in the chunk that boots the diary.
+ * `lazy` defers the `import()` until `FirstFoodStep` actually renders, which is
+ * after the step check, so the module is not fetched on `?step=focus`.
+ * `tests/unit/ways-to-log-bundle.test.ts` fails the push if this becomes a
+ * static import again.
+ */
+const WayToLogAnimation = lazy(() => import('#app/components/onboarding/ways-to-log-animation'));
 
 // Title via the pure `meta-title` seam, with the language read off the ROOT
 // loader through `matches` — never the i18next singleton (see `meta-title.ts`
@@ -99,36 +111,38 @@ interface OnboardingStepErrors {
 const NO_STEP_ERRORS: OnboardingStepErrors = { weight: {}, body: {} };
 
 /**
- * The three tracking focuses and the i18n keys for the copy on their tappable
- * cards (this is module scope, so there is no `t` here — the card component
- * resolves the keys). Descriptions spell out what each term means in plain
- * words — a first-run
- * visitor should be able to pick one without already knowing what "net
- * carbs" is (see the usability-overhaul audience note: never assume the
- * reader has heard these terms before).
+ * The two daily goals, as independent switches, and the i18n keys for the copy
+ * on their tappable cards (this is module scope, so there is no `t` here, and
+ * the card component resolves the keys). Descriptions spell out what each
+ * term means in plain words, because a first-run visitor should be able to
+ * pick one without already knowing what "net carbs" is (see the usability-overhaul
+ * audience note: never assume the reader has heard these terms before).
+ *
+ * They are checkboxes, not radios (M200 spec 02): a person can watch carbs and
+ * calories at once, and the old radio group was the only thing that made them
+ * exclusive. `field` is the form field each one submits; an unchecked box
+ * submits nothing, which the action reads as "off".
  */
-const FOCUS_OPTIONS: readonly {
-  value: TrackingFocusType;
+/** The form field each goal switch submits, named once so the action reads back what the form wrote. */
+const TRACK_NET_CARBS_FIELD = 'trackNetCarbs';
+const TRACK_CALORIES_FIELD = 'trackCalories';
+
+const GOAL_OPTIONS: readonly {
+  field: string;
   labelKey: string;
   descriptionKey: string;
   recommended: boolean;
 }[] = [
   {
-    value: 'net-carbs',
+    field: TRACK_NET_CARBS_FIELD,
     labelKey: 'onboarding.focus.netCarbs.label',
     descriptionKey: 'onboarding.focus.netCarbs.description',
     recommended: true,
   },
   {
-    value: 'calories',
+    field: TRACK_CALORIES_FIELD,
     labelKey: 'onboarding.focus.calories.label',
     descriptionKey: 'onboarding.focus.calories.description',
-    recommended: false,
-  },
-  {
-    value: 'habit',
-    labelKey: 'onboarding.focus.habit.label',
-    descriptionKey: 'onboarding.focus.habit.description',
     recommended: false,
   },
 ];
@@ -347,17 +361,37 @@ async function applyBrowserTimezone(formData: FormData): Promise<void> {
   await patchLocalProfileGoals({ timezone: resolveOnboardingTimezone(raw) });
 }
 
-/** Persists the chosen tracking focus and its matching goal (net-carb ceiling or kcal target). */
+/**
+ * Persists the focus step: both goal values, and the one focus value the
+ * store has room for.
+ *
+ * Net carbs and calories are independent switches now (M200 spec 02), so both
+ * goals are written on every save, including as `null`, which is how turning
+ * a metric off actually clears its target. `resolveFocusStep` owns every one
+ * of those decisions; this function only reads the form.
+ */
 async function saveFocus(formData: FormData): Promise<void> {
-  const focus = parseTrackingFocus(readField(formData, 'trackingFocus'));
-  const patch: Parameters<typeof patchLocalProfileGoals>[0] = { trackingFocus: focus };
-  if (focus === 'net-carbs') {
-    patch.goalNetCarbsCeilingG = carbCeilingForPreset(readField(formData, 'carbPreset'));
-  }
-  if (focus === 'calories') {
-    patch.goalKcalTarget = parseKcalTarget(readField(formData, 'kcalTarget'));
-  }
-  await patchLocalProfileGoals(patch);
+  const submission = resolveFocusStep({
+    trackNetCarbs: isChecked(formData, TRACK_NET_CARBS_FIELD),
+    trackCalories: isChecked(formData, TRACK_CALORIES_FIELD),
+    carbPresetId: readField(formData, 'carbPreset'),
+    kcalTarget: readField(formData, 'kcalTarget'),
+  });
+  await patchLocalProfileGoals({
+    // Both a person's targets are stored today and always were. What is new is
+    // that both are WRITTEN here, so the derived rings and the stored numbers
+    // cannot disagree. `trackingFocus` still carries only one metric on
+    // purpose: an older build on another device reads it and renders the hero
+    // it already renders, which is why nothing about the stored shape moves.
+    trackingFocus: submission.trackingFocus,
+    goalNetCarbsCeilingG: submission.goalNetCarbsCeilingG,
+    goalKcalTarget: submission.goalKcalTarget,
+  });
+}
+
+/** Whether a checkbox was submitted. An unchecked box sends no field at all. */
+function isChecked(formData: FormData, name: string): boolean {
+  return readField(formData, name) !== null;
 }
 
 /**
@@ -561,48 +595,68 @@ const DEFAULT_CARB_PRESET_ID = 'moderate';
 
 function FocusStep({ loaderData }: { loaderData: OnboardingLoaderData }) {
   const { t } = useTranslation();
-  const [focus, setFocus] = useState<TrackingFocusType>(loaderData.trackingFocus ?? 'net-carbs');
+  const initial = initialFocusSwitches(loaderData);
+  const [trackNetCarbs, setTrackNetCarbs] = useState(initial.trackNetCarbs);
+  const [trackCalories, setTrackCalories] = useState(initial.trackCalories);
   const [carbPreset, setCarbPreset] = useState(
     loaderData.goalNetCarbsCeilingG === null ?
       DEFAULT_CARB_PRESET_ID
     : presetIdForCeiling(loaderData.goalNetCarbsCeilingG),
   );
+  // "Just the habit" is not a fourth piece of state, it IS both switches
+  // being off. Modelling it that way is what keeps it exclusive: there is no
+  // second source of truth that could disagree with the two boxes.
+  const isHabitOnly = !trackNetCarbs && !trackCalories;
+  const clearBothGoals = () => {
+    setTrackNetCarbs(false);
+    setTrackCalories(false);
+  };
   return (
     <StepShell title={t('onboarding.step.focus.title')} description={t('onboarding.step.focus.description')}>
       <Form method="post" className="space-y-6">
         <TimezoneField />
         <div className="space-y-3">
-          {FOCUS_OPTIONS.map((option) => (
-            <FocusOptionCard
-              key={option.value}
-              option={option}
-              isSelected={focus === option.value}
-              onSelect={() => setFocus(option.value)}
-            />
-          ))}
+          <GoalOptionCard
+            option={GOAL_OPTIONS[0]}
+            isSelected={trackNetCarbs}
+            onToggle={() => setTrackNetCarbs(!trackNetCarbs)}
+          />
+          <GoalOptionCard
+            option={GOAL_OPTIONS[1]}
+            isSelected={trackCalories}
+            onToggle={() => setTrackCalories(!trackCalories)}
+          />
+          <HabitOptionCard isSelected={isHabitOnly} onSelect={clearBothGoals} />
         </div>
-        {focus === 'net-carbs' && <CarbPresetPicker selected={carbPreset} onSelect={setCarbPreset} />}
-        {focus === 'calories' && <KcalTargetField defaultValue={loaderData.goalKcalTarget} />}
+        {trackNetCarbs && <CarbPresetPicker selected={carbPreset} onSelect={setCarbPreset} />}
+        {trackCalories && <KcalTargetField defaultValue={loaderData.goalKcalTarget} />}
         <StepActions primaryIntent={INTENT.SAVE_FOCUS} primaryPendingLabel={t('onboarding.actions.saving')} />
       </Form>
     </StepShell>
   );
 }
 
-function FocusOptionCard({
+/**
+ * One goal switch. A real checkbox carries the state, so the browser submits
+ * it and assistive tech announces "checked" rather than "selected". The two
+ * boxes are genuinely independent now and must not read as a choice between
+ * them.
+ */
+function GoalOptionCard({
   option,
   isSelected,
-  onSelect,
+  onToggle,
 }: {
-  option: (typeof FOCUS_OPTIONS)[number];
+  option: (typeof GOAL_OPTIONS)[number];
   isSelected: boolean;
-  onSelect: () => void;
+  onToggle: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <label
-      // The radio's own name: the visible description and "recommended" badge
-      // stay on screen but would otherwise be read out as part of every option.
+      // The checkbox's own name: the visible description and "recommended"
+      // badge stay on screen but would otherwise be read out as part of every
+      // option.
       aria-label={t(option.labelKey)}
       className={cn(
         'flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all',
@@ -610,11 +664,10 @@ function FocusOptionCard({
       )}
     >
       <input
-        type="radio"
-        name="trackingFocus"
-        value={option.value}
+        type="checkbox"
+        name={option.field}
         checked={isSelected}
-        onChange={onSelect}
+        onChange={onToggle}
         className="mt-1 accent-primary"
       />
       <span className="flex-1 space-y-0.5">
@@ -625,6 +678,33 @@ function FocusOptionCard({
         <span className="block text-sm text-muted-foreground">{t(option.descriptionKey)}</span>
       </span>
     </label>
+  );
+}
+
+/**
+ * "Just the habit": no daily number at all.
+ *
+ * It submits no field, because it is the absence of the other two rather than
+ * a value of its own, so it is a button rather than an input. Pressing it
+ * clears both goals, which is also what the action writes.
+ */
+function HabitOptionCard({ isSelected, onSelect }: { isSelected: boolean; onSelect: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      aria-pressed={isSelected}
+      onClick={onSelect}
+      className={cn(
+        'flex min-h-11 w-full cursor-pointer items-start gap-3 rounded-lg border p-4 text-left transition-all',
+        focusCardClass(isSelected),
+      )}
+    >
+      <span className="flex-1 space-y-0.5">
+        <span className="block font-medium">{t('onboarding.focus.habit.label')}</span>
+        <span className="block text-sm text-muted-foreground">{t('onboarding.focus.habit.description')}</span>
+      </span>
+    </button>
   );
 }
 
@@ -1028,6 +1108,20 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
 // Step 4 — first food (exit paths)
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * The wizard's last step, which is also the only lesson in the flow.
+ *
+ * It teaches the THREE ways a food gets into the diary, one card each, and
+ * every card starts the real action instead of demonstrating it (M200 spec 01).
+ * The teaching sits here rather than in a carousel in front of the wizard for
+ * one reason: a carousel makes the first run longer before anyone has logged
+ * anything, and the screen most likely to be skipped is the one nobody has
+ * invested in yet. `ONBOARDING_STEPS` does not grow.
+ *
+ * Every card submits FINISH with a destination rather than opening the camera
+ * on tap: the Form has to stamp onboarding completion before the user lands
+ * anywhere, unlike every other add-food surface.
+ */
 function FirstFoodStep() {
   const { t } = useTranslation();
   const navigation = useNavigation();
@@ -1040,35 +1134,13 @@ function FirstFoodStep() {
       <Form method="post" className="space-y-3">
         <TimezoneField />
         <input type="hidden" name="_intent" value={INTENT.FINISH} />
-        {/* The photo leads here too, but this step still submits FINISH with
-            a destination rather than opening the camera directly on tap: the
-            Form has to stamp onboarding completion before the user lands
-            anywhere, unlike every other add-food surface. */}
-        <SubmitButton
-          name="destination"
-          value="/scan"
-          pending={isBusy && destination === '/scan'}
-          pendingLabel={t('onboarding.firstFood.opening')}
-          disabled={isBusy}
-          size="lg"
-          className="h-11 w-full"
-        >
-          <Camera className="h-4 w-4" />
-          {t('onboarding.firstFood.scan')}
-        </SubmitButton>
-        <SubmitButton
-          name="destination"
-          value="/add"
-          pending={isBusy && destination === '/add'}
-          pendingLabel={t('onboarding.firstFood.opening')}
-          disabled={isBusy}
-          variant="outline"
-          size="lg"
-          className="h-11 w-full"
-        >
-          <Search className="h-4 w-4" />
-          {t('onboarding.firstFood.find')}
-        </SubmitButton>
+        {WAYS_TO_LOG.map((way) => (
+          <WayToLogCard key={way.id} way={way} isBusy={isBusy} activeDestination={destination} />
+        ))}
+        {/* Directly under the search card, because that is the only thing the
+            microphone does: it types. See `ways-to-log.ts` for why dictation is
+            not a fourth card and must never be described as sending anything. */}
+        <p className="text-xs text-muted-foreground">{t(WAYS_TO_LOG_DICTATION_KEY)}</p>
         <div className="pt-1 text-center">
           <Button
             type="submit"
@@ -1084,6 +1156,46 @@ function FirstFoodStep() {
       </Form>
       <FirstFoodKeyNote />
     </StepShell>
+  );
+}
+
+/**
+ * One way in: its drawing, its name, and one plain line saying what it does.
+ *
+ * The whole card is the submit button, so there is no "learn more" step
+ * between reading about a way and using it.
+ */
+function WayToLogCard({
+  way,
+  isBusy,
+  activeDestination,
+}: {
+  way: WayToLog;
+  isBusy: boolean;
+  /** The destination the in-flight submit carries, so only the tapped card spins. */
+  activeDestination: FormDataEntryValue | null | undefined;
+}) {
+  const { t } = useTranslation();
+  return (
+    <SubmitButton
+      name="destination"
+      value={way.destination}
+      pending={isBusy && activeDestination === way.destination}
+      pendingLabel={t('onboarding.firstFood.opening')}
+      disabled={isBusy}
+      variant="outline"
+      className="h-auto w-full justify-start gap-4 whitespace-normal px-4 py-3 text-left"
+    >
+      {/* The drawing is decoration around the label, so its absence while the
+          chunk loads must not move the text: the fallback reserves the box. */}
+      <Suspense fallback={<span className="size-10 shrink-0" aria-hidden="true" />}>
+        <WayToLogAnimation way={way.id} />
+      </Suspense>
+      <span className="flex flex-col gap-0.5">
+        <span className="text-sm font-medium">{t(way.titleKey)}</span>
+        <span className="text-xs font-normal text-muted-foreground">{t(way.descriptionKey)}</span>
+      </span>
+    </SubmitButton>
   );
 }
 

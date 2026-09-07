@@ -91,6 +91,7 @@ import {
   type PickSource,
 } from '#app/lib/scan-analyze';
 import { takePickedFile } from '#app/lib/scan-handoff';
+import { requestedScanMode } from '#app/lib/scan-mode-param';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
@@ -1296,6 +1297,20 @@ function ScanFlow({
     processHandoffRef.current = (handedFile: File, scanMode: VisionMode) =>
       void processSelectedFile({ picked: handedFile, source: 'camera', scanMode });
   });
+
+  // A caller that already knows which scanner it wants says so in the URL
+  // (`/scan?mode=label`, used by onboarding's ways-to-log lesson). Applied on
+  // mount rather than as the initial state on purpose: `useState('plate')` is
+  // what makes `Scan / mode-chosen` mean "a person went looking for the other
+  // scanner and found it", so an arrival must not fire it. A direct `setMode`
+  // fires nothing, exactly like the hand-off below. Declared BEFORE that effect
+  // so a parked photo's own mode still wins.
+  useEffect(() => {
+    if (globalThis.window === undefined) return;
+    const asked = requestedScanMode(window.location.search);
+    if (asked === null) return;
+    setMode(asked);
+  }, []);
 
   // The tab bar's launcher opened the camera itself and parked the photo for
   // us (`scan-handoff.ts`). Feed it into the SAME pipeline a capture taken on

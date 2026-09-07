@@ -15,7 +15,14 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import i18next from '../../app/i18n/i18n';
-import { HeroStat, formatHeroStat, formatHeroValue, type Translate } from '../../app/components/hero-stat';
+import {
+  HeroStat,
+  formatHeroRings,
+  formatHeroStat,
+  formatHeroStats,
+  formatHeroValue,
+  type Translate,
+} from '../../app/components/hero-stat';
 
 /**
  * The REAL catalog, not a stub. These assertions are about the exact wording,
@@ -110,6 +117,13 @@ describe('formatHeroStat — calorie tracking', () => {
     const stat = formatHeroStat({ netCarbsCeiling: 50, kcalTarget: 1800, hasEstimates: false, netCarbs: 20, kcal: 900, t, language: 'en' });
     assert.equal(stat.mode, 'carbs-remaining');
   });
+
+  it('still returns the CALORIE stat when only calories are set, unchanged by the list export beside it', () => {
+    const stat = formatHeroStat({ netCarbsCeiling: null, kcalTarget: 1800, hasEstimates: false, netCarbs: 42, kcal: 1180, t, language: 'en' });
+    assert.equal(stat.mode, 'kcal-remaining');
+    assert.equal(stat.value, '620');
+    assert.equal(stat.unitLabel, 'calories');
+  });
 });
 
 describe('formatHeroStat — no goal at all', () => {
@@ -133,6 +147,87 @@ describe('formatHeroStat — no goal at all', () => {
       assert.ok(!stat.context.includes('NaN'), `context was "${stat.context}"`);
       assert.equal(Number.isFinite(stat.numericValue), true);
     }
+  });
+});
+
+describe('formatHeroStats, one stat per goal the person set', () => {
+  it('returns BOTH stats when both targets are set, which is the defect this list export exists to fix', () => {
+    const stats = formatHeroStats({
+      netCarbsCeiling: 50,
+      kcalTarget: 1800,
+      hasEstimates: false,
+      netCarbs: 20,
+      kcal: 900,
+      t,
+      language: 'en',
+    });
+    assert.equal(stats.length, 2);
+    assert.deepEqual(
+      stats.map((stat) => stat.mode),
+      ['carbs-remaining', 'kcal-remaining'],
+    );
+    assert.equal(stats[0].context, 'g left of 50');
+    assert.equal(stats[1].context, 'left of 1800');
+  });
+
+  it('grades each goal on its own: over on carbs while still under on calories', () => {
+    const stats = formatHeroStats({
+      netCarbsCeiling: 50,
+      kcalTarget: 1800,
+      hasEstimates: false,
+      netCarbs: 62,
+      kcal: 900,
+      t,
+      language: 'en',
+    });
+    assert.deepEqual(
+      stats.map((stat) => stat.isOver),
+      [true, false],
+    );
+  });
+
+  it('returns the single carb stat when only a ceiling is set', () => {
+    const stats = formatHeroStats({ ...NO_GOALS, netCarbs: 42.1, netCarbsCeiling: 50, kcal: 0 });
+    assert.equal(stats.length, 1);
+    assert.deepEqual(stats[0], formatHeroStat({ ...NO_GOALS, netCarbs: 42.1, netCarbsCeiling: 50, kcal: 0 }));
+  });
+
+  it('returns the single calorie stat when only a target is set', () => {
+    const input = { netCarbsCeiling: null, kcalTarget: 1800, hasEstimates: false, netCarbs: 42, kcal: 1180, t, language: 'en' };
+    const stats = formatHeroStats(input);
+    assert.equal(stats.length, 1);
+    assert.deepEqual(stats[0], formatHeroStat(input));
+  });
+
+  it('falls back to the absolute framing, alone, when no target is set', () => {
+    const stats = formatHeroStats({ ...NO_GOALS, netCarbs: 42.1, kcal: 900 });
+    assert.equal(stats.length, 1);
+    assert.equal(stats[0].mode, 'carbs-absolute');
+  });
+});
+
+describe('formatHeroRings, each stat paired with its own arc', () => {
+  it('pairs each goal with the numbers its own arc is drawn from', () => {
+    const rings = formatHeroRings({
+      netCarbsCeiling: 50,
+      kcalTarget: 1800,
+      hasEstimates: false,
+      netCarbs: 20,
+      kcal: 900,
+      t,
+      language: 'en',
+    });
+    assert.deepEqual(
+      rings.map((ring) => ({ metric: ring.metric, consumed: ring.consumed, max: ring.max })),
+      [
+        { metric: 'net-carbs', consumed: 20, max: 50 },
+        { metric: 'calories', consumed: 900, max: 1800 },
+      ],
+    );
+  });
+
+  it('draws no ring at all when the person set no target', () => {
+    assert.deepEqual(formatHeroRings({ ...NO_GOALS, netCarbs: 42.1, kcal: 900 }), []);
   });
 });
 

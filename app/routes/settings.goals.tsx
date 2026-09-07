@@ -12,6 +12,7 @@ import { formatMacroNumber, formatMacroNumberIn } from '#app/lib/format-macro-nu
 import { todayInTimezone } from '#app/lib/user-days';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { trackGoalsSaved, trackWeightLogged } from '#app/lib/matomo-events';
+import { selectGoalRings, storedTrackingFocusFor } from '#app/lib/goal-rings';
 import { cn } from '#app/lib/utils';
 import {
   formatKgForDisplay,
@@ -38,8 +39,9 @@ import {
   bodyMetricsFormKey,
   hasAnyBodyMetric,
   suggestDailyKcal,
+  suggestProteinFloor,
 } from '#app/models/body-metrics';
-import type { BodyMetrics } from '#app/models/body-metrics';
+import type { BodyMetrics, ProteinFloorSuggestion } from '#app/models/body-metrics';
 import { CARB_PRESETS as ONBOARDING_CARB_PRESETS, type CarbPreset } from '#app/lib/onboarding';
 import { makeBodyMetricsSchema } from '#app/lib/body-metrics-schema';
 import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
@@ -73,8 +75,6 @@ export const handle = {
 
 /** Rows shown in the recent-weigh-ins list. */
 const RECENT_ENTRY_DISPLAY_LIMIT = 30;
-/** Rule-of-thumb protein target — offered as a one-tap "use my recommended amount" button, never auto-filled. */
-const PROTEIN_PER_KG = 1.6;
 
 /** Form intents multiplexed onto the single route action. Goals is the default (no intent). */
 const INTENT = {
@@ -196,9 +196,19 @@ export async function clientLoader() {
     currentYear: new Date().getFullYear(),
   });
 
+  // The protein figure and the NAME of the method behind it, computed here for
+  // the same reason as the calorie suggestion above: the component stays pure
+  // arithmetic-free. Height and sex first, the latest weigh-in as the fallback,
+  // `null` when neither basis has anything to work from (M200 spec 03).
+  const proteinSuggestion = suggestProteinFloor({
+    heightCm: bodyMetrics.heightCm,
+    biologicalSex: bodyMetrics.biologicalSex,
+    latestWeighInKg: currentWeightKg,
+  });
+
   // No chart data here: the weight TREND lives on `/trends` now (one home per
   // idea). This page owns entering, listing and deleting weigh-ins.
-  return { goals, weighIns, currentWeightKg, todayWeightKg, bodyMetrics, suggestedKcalTarget };
+  return { goals, weighIns, todayWeightKg, bodyMetrics, suggestedKcalTarget, proteinSuggestion };
 }
 clientLoader.hydrate = true as const;
 
@@ -224,7 +234,18 @@ async function _saveGoals(formData: FormData) {
   const submission = parseWithZod(formData, { schema: makeGoalsSchema(actionT) });
   if (submission.status !== 'success') return submission.reply();
   const value = submission.value;
+  // The stored focus follows the numbers on this page (M200 spec 02). Both
+  // targets can be set here at once, and the rings are derived from the values,
+  // but `trackingFocus` still has to say something an OLDER build can render:
+  // `storedTrackingFocusFor` is the one place that reduces both goals down to
+  // the single value the store has room for. Without this write, someone who
+  // adds a carb ceiling here would keep a stale `calories` focus, and their
+  // food list would stay ordered for a metric they no longer track.
+  const trackingFocus = storedTrackingFocusFor(
+    selectGoalRings({ netCarbsCeiling: value.goalNetCarbsCeilingG, kcalTarget: value.goalKcalTarget }),
+  );
   await patchLocalProfileGoals({
+    trackingFocus,
     goalNetCarbsCeilingG: value.goalNetCarbsCeilingG,
     goalProteinFloorG: value.goalProteinFloorG,
     goalKcalTarget: value.goalKcalTarget,
@@ -354,12 +375,12 @@ function suggestionChipClass(isSelected: boolean): string {
 
 function GoalsCard({
   goals,
-  currentWeightKg,
+  proteinSuggestion,
   weightUnit,
   suggestedKcalTarget,
 }: {
   goals: Route.ComponentProps['loaderData']['goals'];
-  currentWeightKg: number | null;
+  proteinSuggestion: ProteinFloorSuggestion | null;
   weightUnit: WeightUnit;
   suggestedKcalTarget: number | null;
 }) {
@@ -409,9 +430,8 @@ function GoalsCard({
   const carbNumber = trimmedCarb === '' ? null : Number(trimmedCarb);
   const isCustomSelected =
     carbNumber !== null && Number.isFinite(carbNumber) && !CARB_PRESETS.some((preset) => preset.ceiling === carbNumber);
-  const recommendedProteinG = currentWeightKg !== null ? Math.round(PROTEIN_PER_KG * currentWeightKg) : null;
-  const isRecommendedProteinSelected =
-    recommendedProteinG !== null && proteinFloor.trim() !== '' && Number(proteinFloor.trim()) === recommendedProteinG;
+  const isSuggestedProteinSelected =
+    proteinSuggestion !== null && proteinFloor.trim() !== '' && Number(proteinFloor.trim()) === proteinSuggestion.grams;
   const isSuggestedKcalSelected =
     suggestedKcalTarget !== null && kcalTarget.trim() !== '' && Number(kcalTarget.trim()) === suggestedKcalTarget;
   // Kilograms when the typed text reads as a weight, the raw text when it
@@ -486,21 +506,26 @@ function GoalsCard({
           <div className="space-y-2">
             <Label htmlFor={fields.goalProteinFloorG.id}>{t('goals.protein.label')}</Label>
             <p className="text-xs text-muted-foreground">{t('goals.protein.hint')}</p>
-            {recommendedProteinG !== null ?
-              <button
-                type="button"
-                aria-pressed={isRecommendedProteinSelected}
-                onClick={() => setProteinFloor(String(recommendedProteinG))}
-                className={cn(
-                  'inline-flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-                  isRecommendedProteinSelected ?
-                    'border-primary bg-primary text-primary-foreground'
-                  : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground',
-                )}
-              >
-                {t('goals.protein.recommended', { grams: recommendedProteinG })}
-              </button>
-            : <p className="text-xs text-muted-foreground">{t('goals.protein.noWeightHint')}</p>}
+            {/* A suggestion the person taps, never an auto-fill, and never an
+                unnamed number: the line under the chip says which of the two
+                methods produced it and that it is an estimate, so a target that
+                changes because the basis changed is visible rather than silent
+                (M200 spec 03). No chip at all when neither method can answer. */}
+            {proteinSuggestion !== null ?
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  aria-pressed={isSuggestedProteinSelected}
+                  onClick={() => setProteinFloor(String(proteinSuggestion.grams))}
+                  className={cn(suggestionChipClass(isSuggestedProteinSelected), 'tabular-nums')}
+                >
+                  {t('goals.protein.recommended', { grams: proteinSuggestion.grams })}
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  {t('goals.protein.method', { basis: t(`goals.protein.basis.${proteinSuggestion.method}`) })}
+                </p>
+              </div>
+            : <p className="text-xs text-muted-foreground">{t('goals.protein.suggestionUnavailable')}</p>}
             <Input
               id={fields.goalProteinFloorG.id}
               name={fields.goalProteinFloorG.name}
@@ -890,7 +915,7 @@ function AiSettingsLinkCard() {
 }
 
 export default function SettingsGoals({ loaderData }: Route.ComponentProps) {
-  const { goals, weighIns, currentWeightKg, todayWeightKg, bodyMetrics, suggestedKcalTarget } = loaderData;
+  const { goals, weighIns, todayWeightKg, bodyMetrics, suggestedKcalTarget, proteinSuggestion } = loaderData;
   // Device-local display preference only (not synced), SHARED with the Progress
   // page's weight card — one storage key, one reader (see
   // `#app/lib/weight-unit-preference`), so the two screens can't disagree.
@@ -904,7 +929,7 @@ export default function SettingsGoals({ loaderData }: Route.ComponentProps) {
     <div className="mx-auto max-w-2xl space-y-6">
       <GoalsCard
         goals={goals}
-        currentWeightKg={currentWeightKg}
+        proteinSuggestion={proteinSuggestion}
         weightUnit={weightUnit}
         suggestedKcalTarget={suggestedKcalTarget}
       />

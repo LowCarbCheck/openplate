@@ -23,9 +23,11 @@
  * 2. **Never a NaN, never a placeholder target.** A user with no ceiling and no
  *    calorie target gets their absolute net carbs and nothing invented on their
  *    behalf — the same discipline `#app/lib/macro-gaps` holds.
- * 3. **Carbs win when both goals exist.** Net carbs is openplate's tracked
- *    metric; the calorie framing is the fallback for someone who tracks
- *    calories INSTEAD, not a second hero competing with the first.
+ * 3. **One stat, or one per goal.** `formatHeroStat` returns a SINGLE stat and
+ *    carbs win it when both goals exist, which is what a caller with room for
+ *    exactly one figure needs. `formatHeroStats` (M200 spec 02) returns one
+ *    stat per goal the person actually set, so carbs and calories can be
+ *    tracked together instead of one silently hiding the other.
  *
  * The formatter lives beside the markup deliberately: these strings are the
  * component's whole substance, and splitting them one directory away is how
@@ -35,7 +37,9 @@
  * by a unit test rather than by a screenshot.
  */
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
-import { isOverCarbGoal } from '#app/lib/goal-progress';
+import { isOverCarbGoal, isOverKcalGoal } from '#app/lib/goal-progress';
+import type { GoalRing } from '#app/lib/goal-rings';
+import { selectGoalRings } from '#app/lib/goal-rings';
 import { cn } from '#app/lib/utils';
 
 /**
@@ -113,82 +117,183 @@ export function formatHeroValue({
 }
 
 /**
- * Resolves the day into its remaining-first hero stat.
- *
- * @param input - the day's totals and the user's targets.
- * @returns the three display tiers, the over-goal flag, the raw figure, and a spoken sentence.
+ * Builds the shared parts of a stat: the over-goal flag follows from the mode,
+ * and the tier-1 string is formatted exactly once, here.
  */
-export function formatHeroStat({
-  netCarbs,
-  netCarbsCeiling,
-  kcal,
-  kcalTarget,
-  hasEstimates,
-  t,
-  language,
-}: HeroStatInput): HeroStat {
-  const build = (parts: Omit<HeroStat, 'value' | 'isOver'>): HeroStat => ({
+function buildStat(
+  parts: Omit<HeroStat, 'value' | 'isOver'>,
+  { hasEstimates, language }: Pick<HeroStatInput, 'hasEstimates' | 'language'>,
+): HeroStat {
+  return {
     ...parts,
     isOver: parts.mode === 'carbs-over' || parts.mode === 'kcal-over',
     value: formatHeroValue({ numericValue: parts.numericValue, mode: parts.mode, hasEstimates, language }),
-  });
+  };
+}
 
-  if (netCarbsCeiling !== null && netCarbsCeiling > 0) {
-    const ceiling = Math.round(netCarbsCeiling);
-    // Over/under is decided by the SHARED rounded comparison, so the hero can
-    // never say "over today" while the habit-strip dot for the same day reads
-    // as met (`#app/lib/goal-progress`'s whole point).
-    if (isOverCarbGoal({ netCarbs, ceiling: netCarbsCeiling })) {
-      const overBy = netCarbs - netCarbsCeiling;
-      return build({
+/** The net-carb framing, under or over. `ceiling` is passed separately because it is known non-null here. */
+function carbStat(input: HeroStatInput, netCarbsCeiling: number): HeroStat {
+  const { netCarbs, t, language } = input;
+  const ceiling = Math.round(netCarbsCeiling);
+  // Over/under is decided by the SHARED rounded comparison, so the hero can
+  // never say "over today" while the habit-strip dot for the same day reads
+  // as met (`#app/lib/goal-progress`'s whole point).
+  if (isOverCarbGoal({ netCarbs, ceiling: netCarbsCeiling })) {
+    const overBy = netCarbs - netCarbsCeiling;
+    return buildStat(
+      {
         mode: 'carbs-over',
         context: t('diary.hero.overToday'),
         unitLabel: t('diary.hero.netCarbs'),
         numericValue: overBy,
         srLabel: t('diary.hero.srCarbsOver', { value: formatMacroNumberIn(language, overBy), ceiling }),
-      });
-    }
-    // `Math.max(0, …)` is belt-and-braces: sub-half-gram spillover reads as
-    // "not over" above, and would otherwise land here as a negative remainder.
-    const left = Math.max(0, netCarbsCeiling - netCarbs);
-    return build({
+      },
+      input,
+    );
+  }
+  // `Math.max(0, …)` is belt-and-braces: sub-half-gram spillover reads as
+  // "not over" above, and would otherwise land here as a negative remainder.
+  const left = Math.max(0, netCarbsCeiling - netCarbs);
+  return buildStat(
+    {
       mode: 'carbs-remaining',
       context: t('diary.hero.leftOf', { ceiling }),
       unitLabel: t('diary.hero.netCarbs'),
       numericValue: left,
       srLabel: t('diary.hero.srCarbsLeft', { value: formatMacroNumberIn(language, left), ceiling }),
-    });
-  }
+    },
+    input,
+  );
+}
 
-  if (kcalTarget !== null && kcalTarget > 0) {
-    const target = Math.round(kcalTarget);
-    if (Math.round(kcal) > target) {
-      const overBy = kcal - kcalTarget;
-      return build({
+/** The calorie framing, under or over. Same shape as `carbStat`, in whole calories. */
+function kcalStat(input: HeroStatInput, kcalTarget: number): HeroStat {
+  const { kcal, t } = input;
+  const target = Math.round(kcalTarget);
+  // The same shared verdict the carb arm uses, for the same reason: the
+  // calorie line in the drill-down and this hero must never disagree.
+  if (isOverKcalGoal({ kcal, target: kcalTarget })) {
+    const overBy = kcal - kcalTarget;
+    return buildStat(
+      {
         mode: 'kcal-over',
         context: t('diary.hero.kcalOverToday'),
         unitLabel: t('diary.hero.calories'),
         numericValue: overBy,
         srLabel: t('diary.hero.srKcalOver', { value: Math.round(overBy), target }),
-      });
-    }
-    const left = Math.max(0, kcalTarget - kcal);
-    return build({
+      },
+      input,
+    );
+  }
+  const left = Math.max(0, kcalTarget - kcal);
+  return buildStat(
+    {
       mode: 'kcal-remaining',
       context: t('diary.hero.kcalLeftOf', { target }),
       unitLabel: t('diary.hero.calories'),
       numericValue: left,
       srLabel: t('diary.hero.srKcalLeft', { value: Math.round(left), target }),
-    });
-  }
+    },
+    input,
+  );
+}
 
-  return build({
-    mode: 'carbs-absolute',
-    context: t('diary.hero.absolute'),
-    unitLabel: null,
-    numericValue: netCarbs,
-    srLabel: t('diary.hero.srAbsolute', { value: formatMacroNumberIn(language, netCarbs) }),
-  });
+/** The no-goal framing: the day's absolute net carbs, with nothing invented to measure them against. */
+function absoluteStat(input: HeroStatInput): HeroStat {
+  const { netCarbs, t, language } = input;
+  return buildStat(
+    {
+      mode: 'carbs-absolute',
+      context: t('diary.hero.absolute'),
+      unitLabel: null,
+      numericValue: netCarbs,
+      srLabel: t('diary.hero.srAbsolute', { value: formatMacroNumberIn(language, netCarbs) }),
+    },
+    input,
+  );
+}
+
+/**
+ * Resolves the day into ONE remaining-first hero stat: the single-stat
+ * framing, unchanged since M129/03 and still what a caller that wants exactly
+ * one figure gets. Carbs win when both goals exist; that ordering is this
+ * function's contract, not an accident, and `formatHeroStats` below is where a
+ * caller goes for the second goal instead.
+ *
+ * @param input - the day's totals and the user's targets.
+ * @returns the three display tiers, the over-goal flag, the raw figure, and a spoken sentence.
+ */
+export function formatHeroStat(input: HeroStatInput): HeroStat {
+  const { netCarbsCeiling, kcalTarget } = input;
+  if (netCarbsCeiling !== null && netCarbsCeiling > 0) return carbStat(input, netCarbsCeiling);
+  if (kcalTarget !== null && kcalTarget > 0) return kcalStat(input, kcalTarget);
+  return absoluteStat(input);
+}
+
+/**
+ * Resolves the day into one stat PER VISIBLE RING (M200 spec 02), so carbs
+ * and calories can be shown together for someone who set both targets.
+ *
+ * Which rings are visible comes from `#app/lib/goal-rings`, which reads the
+ * goal values and never the stored `trackingFocus`. Rule 3 in this file's
+ * header ("carbs win when both goals exist") still holds for `formatHeroStat`;
+ * it was never a statement about what a person tracks, only about which single
+ * figure fits in one ring.
+ *
+ * @param input - the day's totals and the user's targets.
+ * @returns one stat per visible ring, carbs first; the absolute framing alone when no target is set.
+ */
+export function formatHeroStats(input: HeroStatInput): HeroStat[] {
+  const { netCarbsCeiling, kcalTarget } = input;
+  const stats: HeroStat[] = [];
+  for (const ring of selectGoalRings({ netCarbsCeiling, kcalTarget })) {
+    // The null re-checks are what the selector already guarantees, spelled out
+    // so this reads without a type assertion.
+    if (ring === 'net-carbs' && netCarbsCeiling !== null) stats.push(carbStat(input, netCarbsCeiling));
+    if (ring === 'calories' && kcalTarget !== null) stats.push(kcalStat(input, kcalTarget));
+  }
+  if (stats.length === 0) return [absoluteStat(input)];
+  return stats;
+}
+
+/** Carb goal modes draw their arc against the ceiling; the absolute framing draws no arc at all. */
+function isCarbGoalMode(mode: HeroStatMode): boolean {
+  return mode === 'carbs-remaining' || mode === 'carbs-over';
+}
+
+/** One visible ring: which metric it is, the stat inside it, and the two numbers its arc is drawn from. */
+export interface HeroRing {
+  metric: GoalRing;
+  stat: HeroStat;
+  /** What the day has used of the budget, the arc's numerator. */
+  consumed: number;
+  /** The budget itself. Always positive: `selectGoalRings` refuses a non-positive target. */
+  max: number;
+}
+
+/**
+ * The rings to draw for the day, one per goal the person set.
+ *
+ * The stat inside a ring and the arc around it are resolved together here so
+ * they cannot come from different goals. A ring drawn against the calorie
+ * target with the carb figure inside it would be a fabricated number, and
+ * keeping the pairing in one function is what makes that unrepresentable.
+ *
+ * @param input - the day's totals and the user's targets.
+ * @returns one ring per goal, carbs first; empty when the person set no target.
+ */
+export function formatHeroRings(input: HeroStatInput): HeroRing[] {
+  const { netCarbs, netCarbsCeiling, kcal, kcalTarget } = input;
+  const rings: HeroRing[] = [];
+  for (const stat of formatHeroStats(input)) {
+    if (isCarbGoalMode(stat.mode) && netCarbsCeiling !== null) {
+      rings.push({ metric: 'net-carbs', stat, consumed: netCarbs, max: netCarbsCeiling });
+    }
+    if (isKcalMode(stat.mode) && kcalTarget !== null) {
+      rings.push({ metric: 'calories', stat, consumed: kcal, max: kcalTarget });
+    }
+  }
+  return rings;
 }
 
 /**

@@ -11,7 +11,6 @@ import {
   parseOnboardingStep,
   nextOnboardingStep,
   onboardingStepNumber,
-  parseTrackingFocus,
   carbCeilingForPreset,
   presetIdForCeiling,
   parseKcalTarget,
@@ -20,6 +19,8 @@ import {
   resolveExitDestination,
   validateWeightStep,
   hasWeightStepErrors,
+  initialFocusSwitches,
+  resolveFocusStep,
   WEIGHT_NOT_A_NUMBER_KEY,
 } from '../../app/lib/onboarding';
 
@@ -56,21 +57,6 @@ describe('onboardingStepNumber', () => {
     assert.equal(onboardingStepNumber('weight'), 2);
     assert.equal(onboardingStepNumber('body'), 3);
     assert.equal(onboardingStepNumber('first-food'), 4);
-  });
-});
-
-describe('parseTrackingFocus', () => {
-  it('accepts the three valid focuses', () => {
-    assert.equal(parseTrackingFocus('net-carbs'), 'net-carbs');
-    assert.equal(parseTrackingFocus('calories'), 'calories');
-    assert.equal(parseTrackingFocus('habit'), 'habit');
-  });
-
-  it('returns null for anything unrecognized', () => {
-    assert.equal(parseTrackingFocus('protein'), null);
-    assert.equal(parseTrackingFocus(''), null);
-    assert.equal(parseTrackingFocus(null), null);
-    assert.equal(parseTrackingFocus(undefined), null);
   });
 });
 
@@ -195,6 +181,10 @@ describe('resolveExitDestination', () => {
     assert.equal(resolveExitDestination('/scan'), '/scan');
   });
 
+  it('keeps the label scanner, which is a way to log and not a settings detour (M200/01)', () => {
+    assert.equal(resolveExitDestination('/scan?mode=label'), '/scan?mode=label');
+  });
+
   it('keeps the settings-connect exit (finishes onboarding, then returns to the diary)', () => {
     assert.equal(resolveExitDestination('/settings/ai?next=diary'), '/settings/ai?next=diary');
   });
@@ -205,5 +195,109 @@ describe('resolveExitDestination', () => {
     assert.equal(resolveExitDestination('https://evil.example'), '/diary');
     assert.equal(resolveExitDestination(null), '/diary');
     assert.equal(resolveExitDestination(undefined), '/diary');
+  });
+});
+
+describe('resolveFocusStep', () => {
+  it('writes BOTH goal values when both metrics are chosen', () => {
+    const submission = resolveFocusStep({
+      trackNetCarbs: true,
+      trackCalories: true,
+      carbPresetId: 'keto',
+      kcalTarget: '1800',
+    });
+    assert.equal(submission.goalNetCarbsCeilingG, 20);
+    assert.equal(submission.goalKcalTarget, 1800);
+  });
+
+  it('stores net-carbs for both, so an older build renders the carb hero it already renders', () => {
+    const submission = resolveFocusStep({
+      trackNetCarbs: true,
+      trackCalories: true,
+      carbPresetId: 'low-carb',
+      kcalTarget: '2000',
+    });
+    assert.equal(submission.trackingFocus, 'net-carbs');
+  });
+
+  it('clears the other goal when only one metric is chosen, rather than leaving a stale target', () => {
+    const carbsOnly = resolveFocusStep({
+      trackNetCarbs: true,
+      trackCalories: false,
+      carbPresetId: 'keto',
+      kcalTarget: '1800',
+    });
+    assert.deepEqual(carbsOnly, { trackingFocus: 'net-carbs', goalNetCarbsCeilingG: 20, goalKcalTarget: null });
+
+    const caloriesOnly = resolveFocusStep({
+      trackNetCarbs: false,
+      trackCalories: true,
+      carbPresetId: 'keto',
+      kcalTarget: '1800',
+    });
+    assert.deepEqual(caloriesOnly, { trackingFocus: 'calories', goalNetCarbsCeilingG: null, goalKcalTarget: 1800 });
+  });
+
+  it('reads "just the habit" as both switches off, and clears both targets', () => {
+    const submission = resolveFocusStep({
+      trackNetCarbs: false,
+      trackCalories: false,
+      carbPresetId: 'keto',
+      kcalTarget: '1800',
+    });
+    assert.deepEqual(submission, { trackingFocus: 'habit', goalNetCarbsCeilingG: null, goalKcalTarget: null });
+  });
+
+  it('keeps the carb focus when the person picks "decide later", so their food list stays carb-forward', () => {
+    const submission = resolveFocusStep({
+      trackNetCarbs: true,
+      trackCalories: false,
+      carbPresetId: 'later',
+      kcalTarget: null,
+    });
+    assert.equal(submission.trackingFocus, 'net-carbs');
+    assert.equal(submission.goalNetCarbsCeilingG, null);
+  });
+
+  it('never fabricates a target from an unreadable kcal field', () => {
+    const submission = resolveFocusStep({
+      trackNetCarbs: false,
+      trackCalories: true,
+      carbPresetId: null,
+      kcalTarget: 'abc',
+    });
+    assert.equal(submission.goalKcalTarget, null);
+  });
+});
+
+describe('initialFocusSwitches', () => {
+  it('turns BOTH switches on for someone who already has both targets', () => {
+    assert.deepEqual(
+      initialFocusSwitches({ trackingFocus: 'net-carbs', goalNetCarbsCeilingG: 20, goalKcalTarget: 1800 }),
+      { trackNetCarbs: true, trackCalories: true },
+    );
+  });
+
+  it('turns a switch on from its stored VALUE, even when the stored focus names the other metric', () => {
+    // The case someone reaches by setting a calorie target in Settings: the
+    // focus still says net-carbs, but the number is the honest evidence.
+    assert.deepEqual(
+      initialFocusSwitches({ trackingFocus: 'net-carbs', goalNetCarbsCeilingG: null, goalKcalTarget: 1800 }),
+      { trackNetCarbs: true, trackCalories: true },
+    );
+  });
+
+  it('leaves both switches off for a stored habit focus', () => {
+    assert.deepEqual(initialFocusSwitches({ trackingFocus: 'habit', goalNetCarbsCeilingG: 20, goalKcalTarget: 1800 }), {
+      trackNetCarbs: false,
+      trackCalories: false,
+    });
+  });
+
+  it('starts a first-run visitor on net carbs, the recommended option', () => {
+    assert.deepEqual(initialFocusSwitches({ trackingFocus: null, goalNetCarbsCeilingG: null, goalKcalTarget: null }), {
+      trackNetCarbs: true,
+      trackCalories: false,
+    });
   });
 });

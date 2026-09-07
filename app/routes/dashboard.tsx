@@ -56,7 +56,7 @@ import type { WeightGlance } from '#app/models/dashboard';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { FastStrip } from '#app/components/fast-strip';
 import { HabitStrip } from '#app/components/habit-strip';
-import { HeroStat, formatHeroStat } from '#app/components/hero-stat';
+import { HeroStat, formatHeroRings, formatHeroStat } from '#app/components/hero-stat';
 import { RingProgress } from '#app/components/ring-progress';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
@@ -213,7 +213,7 @@ function TodayHeroCard({
     t,
   });
 
-  const heroStat = formatHeroStat({
+  const heroInput = {
     netCarbs: summary.netCarbs,
     netCarbsCeiling: goals.netCarbsCeiling,
     kcal: summary.kcal,
@@ -221,16 +221,14 @@ function TodayHeroCard({
     hasEstimates: summary.hasEstimates,
     t,
     language: i18n.language,
-  });
-
-  // The ring tracks whichever budget the user actually set — carbs first,
-  // calories for someone who tracks those instead, nothing at all when they set
-  // neither (a ring against an invented target would be a fabricated goal).
-  const budget =
-    goals.netCarbsCeiling !== null && goals.netCarbsCeiling > 0 ?
-      { consumed: summary.netCarbs, max: goals.netCarbsCeiling }
-    : goals.kcalTarget !== null && goals.kcalTarget > 0 ? { consumed: summary.kcal, max: goals.kcalTarget }
-    : null;
+  };
+  // One ring per goal the person actually set (M200 spec 02): both when they
+  // track carbs AND calories, and none at all when they set neither, because a
+  // ring against an invented target would be a fabricated goal. The budget-less
+  // headline below is what someone with no target gets instead.
+  const heroRings = formatHeroRings(heroInput);
+  const headlineStat = formatHeroStat(heroInput);
+  const isSingleRing = heroRings.length === 1;
 
   /**
    * The verdict + protein pair, or the empty line.
@@ -265,27 +263,43 @@ function TodayHeroCard({
   return (
     <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
       <CardContent className="space-y-5 p-5 sm:p-6">
-        {budget === null ?
+        {heroRings.length === 0 ?
           <div className="space-y-5">
             <div className="space-y-1.5">
               <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
-              <HeroStat stat={heroStat} value={heroStat.value} size="headline" />
+              <HeroStat stat={headlineStat} value={headlineStat.value} size="headline" />
             </div>
             {renderGlance(false)}
           </div>
-        : <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-8">
-            <RingProgress
-              value={budget.consumed}
-              max={budget.max}
-              size={120}
-              strokeWidth={10}
-              className="[--ring-box:104px] sm:[--ring-box:120px]"
-              trackClassName="text-primary/20"
-              progressClassName={heroStat.isOver ? 'text-accent-amber' : 'text-primary'}
-              label={heroStat.srLabel}
-            >
-              <HeroStat stat={heroStat} value={heroStat.value} />
-            </RingProgress>
+          // One goal keeps the layout it has always had: the full-size ring
+          // beside the glance. Two goals stack the pair above the glance
+          // instead, so the second ring is added rather than paid for by
+          // shrinking the first.
+        : <div
+            className={cn(
+              'flex flex-col items-center gap-5',
+              isSingleRing && 'sm:flex-row sm:items-center sm:gap-8',
+            )}
+          >
+            <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6">
+              {heroRings.map((ring) => (
+                <RingProgress
+                  key={ring.metric}
+                  value={ring.consumed}
+                  max={ring.max}
+                  size={isSingleRing ? 120 : 108}
+                  strokeWidth={isSingleRing ? 10 : 9}
+                  className={
+                    isSingleRing ? '[--ring-box:104px] sm:[--ring-box:120px]' : '[--ring-box:96px] sm:[--ring-box:108px]'
+                  }
+                  trackClassName="text-primary/20"
+                  progressClassName={ring.stat.isOver ? 'text-accent-amber' : 'text-primary'}
+                  label={ring.stat.srLabel}
+                >
+                  <HeroStat stat={ring.stat} value={ring.stat.value} />
+                </RingProgress>
+              ))}
+            </div>
             <div className="w-full min-w-0 flex-1 space-y-3">{renderGlance(true)}</div>
           </div>
         }

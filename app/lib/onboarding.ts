@@ -1,4 +1,6 @@
 import type { TrackingFocusType } from '#types/enums';
+import type { GoalRing } from '#app/lib/goal-rings';
+import { storedTrackingFocusFor } from '#app/lib/goal-rings';
 import { isValidTimeZone } from '#app/lib/user-days';
 import { parseDisplayWeightToKg } from '#app/lib/weight-units';
 
@@ -60,24 +62,6 @@ export function nextOnboardingStep(step: OnboardingStep): OnboardingStep | null 
  */
 export function onboardingStepNumber(step: OnboardingStep): number {
   return ONBOARDING_STEPS.indexOf(step) + 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Tracking focus
-////////////////////////////////////////////////////////////////////////////////
-
-/** Selectable tracking-focus values (mirrors `TrackingFocusType`). */
-export const TRACKING_FOCUS_VALUES = ['net-carbs', 'calories', 'habit'] as const;
-
-/**
- * Narrows a raw form value to a valid tracking focus, or `null` when the user
- * made no valid choice (so an absent focus stays "unchosen", never guessed).
- *
- * @param raw - the raw form value.
- * @returns a valid `TrackingFocusType`, or `null`.
- */
-export function parseTrackingFocus(raw: string | null | undefined): TrackingFocusType | null {
-  return TRACKING_FOCUS_VALUES.find((focus) => focus === raw) ?? null;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -211,6 +195,109 @@ export function parseWeightKg(raw: string | null | undefined): number | null {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Focus step
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * What the focus step submits: two independent switches, plus the target each
+ * one collects.
+ *
+ * Net carbs and calories are INDEPENDENT (M200 spec 02), so a person can
+ * track one, the other, or both. "Just the habit" is not a third switch: it is what
+ * both switches being off means, which is how it stays exclusive with no
+ * fourth state to keep in step.
+ */
+export interface FocusStepInput {
+  /** True when the person wants a daily net-carb ceiling. */
+  trackNetCarbs: boolean;
+  /** True when the person wants a daily calorie target. */
+  trackCalories: boolean;
+  /** The chosen carb preset id, read only when `trackNetCarbs` is true. */
+  carbPresetId: string | null;
+  /** The raw kcal field, read only when `trackCalories` is true. */
+  kcalTarget: string | null;
+}
+
+/** The profile patch the focus step writes: the stored focus, plus both targets. */
+export interface FocusStepSubmission {
+  trackingFocus: TrackingFocusType;
+  goalNetCarbsCeilingG: number | null;
+  goalKcalTarget: number | null;
+}
+
+/**
+ * Resolves the focus step into the three values it persists.
+ *
+ * Both targets are always written, including as `null`, so switching a metric
+ * off actually clears its goal rather than leaving a stale number behind that
+ * would keep drawing a ring nobody asked for. "Just the habit" is both
+ * switches off, and it therefore clears both.
+ *
+ * The stored `trackingFocus` is reduced from the SWITCHES by
+ * `#app/lib/goal-rings`, not from the numbers: someone who picks net carbs and
+ * then taps "decide later" has still told us what they track, and the food
+ * list they get should stay carb-forward (`#app/lib/nutrient-reference`) while
+ * they think about the number.
+ *
+ * @param input - the two switches and the two raw target fields.
+ * @returns the focus value and both goal values to persist.
+ */
+export function resolveFocusStep({
+  trackNetCarbs,
+  trackCalories,
+  carbPresetId,
+  kcalTarget,
+}: FocusStepInput): FocusStepSubmission {
+  const chosen: GoalRing[] = [];
+  if (trackNetCarbs) chosen.push('net-carbs');
+  if (trackCalories) chosen.push('calories');
+  return {
+    trackingFocus: storedTrackingFocusFor(chosen),
+    goalNetCarbsCeilingG: trackNetCarbs ? carbCeilingForPreset(carbPresetId) : null,
+    goalKcalTarget: trackCalories ? parseKcalTarget(kcalTarget) : null,
+  };
+}
+
+/** The two switches, as the focus step's form starts out. */
+export interface FocusSwitches {
+  trackNetCarbs: boolean;
+  trackCalories: boolean;
+}
+
+/**
+ * How the focus step's switches start for a returning visitor.
+ *
+ * A stored goal VALUE is the strongest evidence that a person tracks that
+ * metric, so either target being set turns its switch on. That is what lets
+ * somebody who set a calorie target in Settings come back here and find it
+ * still on rather than silently discarded. The stored focus is the fallback
+ * for the case with no number yet ("decide later").
+ *
+ * `'habit'` means no daily number at all, so it wins outright. A first-run
+ * visitor, with nothing stored, starts on net carbs: it is the recommended
+ * option and the app's tracked metric, which is exactly where this step has
+ * always started.
+ *
+ * @param profile - the stored focus and both stored targets.
+ * @returns the initial state of the two switches.
+ */
+export function initialFocusSwitches({
+  trackingFocus,
+  goalNetCarbsCeilingG,
+  goalKcalTarget,
+}: {
+  trackingFocus: TrackingFocusType | null;
+  goalNetCarbsCeilingG: number | null;
+  goalKcalTarget: number | null;
+}): FocusSwitches {
+  if (trackingFocus === 'habit') return { trackNetCarbs: false, trackCalories: false };
+  const trackNetCarbs = goalNetCarbsCeilingG !== null || trackingFocus === 'net-carbs';
+  const trackCalories = goalKcalTarget !== null || trackingFocus === 'calories';
+  if (!trackNetCarbs && !trackCalories) return { trackNetCarbs: true, trackCalories: false };
+  return { trackNetCarbs, trackCalories };
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Weight step validation
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -300,8 +387,21 @@ export function resolveOnboardingTimezone(candidate: string | null | undefined):
  * routes through the `finish` intent (stamping completion) so the user clears
  * the `_personal` onboarding gate before landing on settings, then flows on to
  * the diary once connected (see `settings.ai.tsx`'s `?next=` return).
+ *
+ * `/scan?mode=label` was added for the ways-to-log lesson (M200 spec 01) and is
+ * a DELIBERATE widening, not a convenience: the label scanner is a way to log
+ * in its own right, and a card that says "photograph a nutrition panel" has to
+ * land on that scanner rather than on the plate default. It is the same route
+ * with a mode named in the query (`scan-mode-param.ts`), so nothing about the
+ * open-redirect guarantee changes: the list is still closed literals.
  */
-export const ONBOARDING_EXIT_DESTINATIONS = ['/diary', '/add', '/scan', '/settings/ai?next=diary'] as const;
+export const ONBOARDING_EXIT_DESTINATIONS = [
+  '/diary',
+  '/add',
+  '/scan',
+  '/scan?mode=label',
+  '/settings/ai?next=diary',
+] as const;
 
 export type OnboardingExitDestination = (typeof ONBOARDING_EXIT_DESTINATIONS)[number];
 

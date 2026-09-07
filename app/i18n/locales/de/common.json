@@ -773,11 +773,16 @@
     },
     "loading": "Ziele werden geladen…",
     "protein": {
+      "basis": {
+        "height": "deiner Größe und deinem Geschlecht",
+        "weight": "deinem letzten Wiegen"
+      },
       "hint": "Protein sorgt für ein gutes Sättigungsgefühl und hilft, Muskeln zu erhalten, was umso wichtiger ist, je weniger Kohlenhydrate oder Kalorien du zu dir nimmst. Dies ist ein Zielwert in Gramm. Darunter zu bleiben ist kein Misserfolg.",
       "label": "Eiweißziel pro Tag",
-      "noWeightHint": "Trag unten ein Gewicht ein, dann können wir dir einen Wert vorschlagen.",
+      "method": "Das ist ein Schätzwert, berechnet anhand von {{basis}}. Trage deinen eigenen Wert ein, wenn du einen hast.",
       "placeholder": "z. B. 100",
-      "recommended": "Vorschlag übernehmen ({{grams}} g)"
+      "recommended": "Schätzwert nutzen ({{grams}} g)",
+      "suggestionUnavailable": "Gib unten Größe und Geschlecht an oder erfasse dein Gewicht, damit wir einen Wert vorschlagen können."
     },
     "save": "Ziele speichern",
     "saving": "Wird gespeichert…",
@@ -1001,7 +1006,7 @@
     "moreOptions": "Weitere Möglichkeiten, Essen einzutragen",
     "sheetTitle": "Essen eintragen",
     "platePhoto": "Tellerfoto",
-    "labelPhoto": "Etikettenfoto",
+    "labelPhoto": "Foto der Nährwerttabelle",
     "speak": "Sprechen",
     "type": "Tippen"
   },
@@ -1237,13 +1242,11 @@
       }
     },
     "firstFood": {
-      "find": "Lebensmittel suchen",
       "finishing": "Gleich fertig…",
       "keyNote": "Das Scannen von Fotos ist optional. Es verbindet sich mit einem KI-Dienst, den du selbst einrichtest, wie z. B. OpenAI. Diese Verbindung bleibt ebenfalls auf diesem Gerät, genau wie dein Tagebuch.",
       "keyNoteLink": "Du kannst das jederzeit in den Einstellungen einrichten.",
       "later": "Mach ich später",
       "opening": "Wird geöffnet…",
-      "scan": "Essen fotografieren",
       "managedNote": "Foto-Schätzungen sind enthalten. Fotografiere einen Teller und die Kohlenhydrate werden für dich berechnet."
     },
     "focus": {
@@ -1275,11 +1278,11 @@
         "title": "Ein paar Angaben zu dir?"
       },
       "firstFood": {
-        "description": "Fertig eingerichtet. Trag etwas ein, das du heute gegessen hast, und sieh openplate in Aktion.",
+        "description": "Alles bereit. Es gibt drei Wege, Mahlzeiten in dein Tagebuch einzutragen. Wähle einen aus.",
         "title": "Trag dein erstes Essen ein"
       },
       "focus": {
-        "description": "Wähle aus, was dir am wichtigsten ist. Du kannst dies jederzeit in den Einstellungen ändern.",
+        "description": "Wähle eins oder beides, oder trage einfach dein Essen ein. Du kannst das in den Einstellungen jederzeit ändern.",
         "title": "Worauf achtest du?"
       },
       "weight": {
@@ -1288,6 +1291,21 @@
       }
     },
     "stepOf": "Schritt {{current}} von {{total}}",
+    "waysToLog": {
+      "dictationNote": "Die Suche hat in unterstützten Browsern auch ein Mikrofon. Es füllt das Suchfeld mit dem, was du sagst, und trägt nie selbstständig etwas ein.",
+      "label": {
+        "description": "Für alles Verpackte. Die gedruckten Zahlen werden von der Tabelle abgelesen und nicht geschätzt.",
+        "title": "Nährwerttabelle fotografieren"
+      },
+      "plate": {
+        "description": "Nimm ein Teller-Foto auf und lass schätzen, was darin enthalten ist.",
+        "title": "Teller-Foto aufnehmen"
+      },
+      "search": {
+        "description": "Tippe einen Namen ein und wähle dein Lebensmittel aus der Liste.",
+        "title": "Lebensmittel suchen"
+      }
+    },
     "weight": {
       "current": "Aktuelles Gewicht",
       "errors": {
@@ -1531,13 +1549,13 @@
       "chooseLibrary": "Aus der Galerie wählen",
       "description": "Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, um zu erkennen, was auf deinem Teller liegt. Danach wird es nur auf diesem Gerät gespeichert (nicht auf den Servern von openplate), damit du es im Eintrag wiedersehen kannst. Du kannst dies jederzeit unter „Daten & Backup“ in den Einstellungen deaktivieren oder löschen.",
       "emptyHint": "Wird von deinem eigenen KI-Anbieter analysiert und bleibt danach nur auf diesem Gerät.",
-      "emptyTitle": "Mach ein Foto oder wähl ein Bild aus",
-      "labelPhoto": "Etikettenfoto",
+      "emptyTitle": "Teller-Foto aufnehmen oder Bild wählen",
+      "labelPhoto": "Nährwerttabelle fotografieren",
       "photoLabel": "Teller-Foto",
       "preparing": "Dein Foto wird vorbereitet…",
-      "previewAlt": "Ausgewählter Teller",
-      "takePhoto": "Foto aufnehmen",
-      "title": "Lebensmittel per Foto erkennen",
+      "previewAlt": "Ausgewähltes Teller-Foto",
+      "takePhoto": "Teller-Foto aufnehmen",
+      "title": "Lebensmittel aus einem Teller-Foto erkennen",
       "managedDescription": "Dein Foto wird einmal ausgelesen, um zu erkennen, was auf deinem Teller liegt, und nicht gespeichert. Danach bleibt es nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst das unter „Daten und Backup“ in den Einstellungen jederzeit ausschalten oder löschen."
     },
     "errors": {
@@ -1595,9 +1613,9 @@
         "description": "Fotografiere die Nährwerttabelle auf der Verpackung. Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, der die gedruckten Zahlen liest: Es wird nichts geschätzt. Danach bleibt das Foto ausschließlich auf diesem Gerät gespeichert.",
         "emptyHint": "Halte die Verpackung flach und lass die Tabelle das Bild ausfüllen.",
         "emptyTitle": "Fotografiere die Nährwerttabelle",
-        "photoLabel": "Etikettenfoto",
-        "previewAlt": "Ausgewähltes Verpackungsetikett",
-        "title": "Ein Verpackungsetikett lesen"
+        "photoLabel": "Foto der Nährwerttabelle",
+        "previewAlt": "Ausgewähltes Foto der Nährwerttabelle",
+        "title": "Nährwerttabelle auf einer Packung erfassen"
       },
       "mode": {
         "label": "Ein Verpackungsetikett",

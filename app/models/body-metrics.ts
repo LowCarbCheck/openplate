@@ -21,7 +21,7 @@
  * ── The estimate is a suggestion, never a verdict ──────────────────────────
  *
  * `suggestDailyKcal` exists to fill a field the person then owns, the way
- * `PROTEIN_PER_KG` already does on the goals page. It is an estimate of energy
+ * `estimateProteinFloorG` does for the protein floor. It is an estimate of energy
  * expenditure, not a prescription, and DESIGN.md §10.1 forbids copy that turns
  * it into one. Pregnancy and lactation deliberately do NOT adjust it: those are
  * clinical adjustments and this is a food log, not a blood panel (M135's locked
@@ -466,4 +466,135 @@ export function suggestDailyKcal(input: EnergyEstimateInput): number | null {
   const tdee = computeTdeeKcal(input);
   if (tdee === null) return null;
   return Math.round(tdee / KCAL_SUGGESTION_STEP) * KCAL_SUGGESTION_STEP;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Protein floor
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Grams of protein per kilogram of REFERENCE mass. The factor is unchanged from
+ * the day the goals page first offered a protein chip; what changed in M200 is
+ * only the mass it multiplies, so the constant moved here, next to the equation
+ * that now supplies that mass, and stays a single named value.
+ */
+export const PROTEIN_PER_KG = 1.6;
+
+/**
+ * Devine ideal body weight, in metric:
+ *   idealWeightKg = base + 2.3 x (heightCm - 152.4) / 2.54
+ *   base = 50.0 kg for male, 45.5 kg for female
+ *
+ * Source: Devine BJ, "Gentamicin therapy", Drug Intelligence and Clinical
+ * Pharmacy 1974;8:650-655.
+ *
+ * It is honestly a 1974 drug-dosing formula rather than a nutrition one, and
+ * nothing here pretends otherwise. What earns it a place is narrower and
+ * sufficient: it is a published, sex-segmented mapping from height to a
+ * reference mass, it is the mapping clinicians already reach for when they want
+ * a basis that does not move with fat mass, and it is arithmetic a person can
+ * check by hand.
+ *
+ * Why a reference mass at all: a protein floor scaled by TOTAL body weight
+ * rises with fat mass, so the heavier a person is the more protein the app
+ * demands, which is the opposite of what the number is for.
+ */
+const DEVINE_BASE_KG = { male: 50, female: 45.5 } satisfies Record<BiologicalSex, number>;
+
+/** Five feet in centimetres: the height at which Devine is exactly the base mass. */
+const DEVINE_BASE_HEIGHT_CM = 152.4;
+
+/** One inch in centimetres, the unit Devine's slope is written in. */
+const CM_PER_INCH = 2.54;
+
+/** Kilograms Devine adds per inch of height above the base height. */
+const DEVINE_KG_PER_INCH = 2.3;
+
+/** The two optional profile fields Devine needs. Either one missing means no answer. */
+export interface IdealWeightInput {
+  heightCm: number | null;
+  biologicalSex: BiologicalSex | null;
+}
+
+/**
+ * Devine ideal body weight in kilograms, or `null` when it cannot be computed.
+ *
+ * Below `DEVINE_BASE_HEIGHT_CM` the formula degrades: it trends toward, and
+ * eventually past, zero. It is deliberately NOT extrapolated down there. A
+ * shorter person gets `null`, and the caller's honest fallback, rather than a
+ * figure the equation was never fitted for.
+ *
+ * @param input - height in centimetres and biological sex, either possibly null.
+ * @returns kilograms, unrounded, or `null`.
+ */
+export function computeDevineIdealWeightKg(input: IdealWeightInput): number | null {
+  const { heightCm, biologicalSex } = input;
+  if (heightCm === null || !Number.isFinite(heightCm)) return null;
+  if (biologicalSex === null) return null;
+  if (heightCm < DEVINE_BASE_HEIGHT_CM) return null;
+  const idealWeightKg =
+    DEVINE_BASE_KG[biologicalSex] + (DEVINE_KG_PER_INCH * (heightCm - DEVINE_BASE_HEIGHT_CM)) / CM_PER_INCH;
+  if (!Number.isFinite(idealWeightKg) || idealWeightKg <= 0) return null;
+  return idealWeightKg;
+}
+
+/** Devine's inputs, plus the g/kg factor, which a caller may override. */
+export interface ProteinFloorInput extends IdealWeightInput {
+  gramsPerKg?: number;
+}
+
+/**
+ * The suggested daily protein floor in grams, from height and sex, or `null`
+ * when height or sex is missing or the height is outside Devine's range.
+ *
+ * `null` is a real answer here, not a failure to produce one: there is no
+ * default height, no assumed sex and no fallback number inside this function.
+ * Saying "I cannot" is the whole reason it can be trusted when it does answer.
+ *
+ * @param input - height, sex, and optionally a g/kg factor other than 1.6.
+ * @returns grams per day rounded to a whole number, or `null`.
+ */
+export function estimateProteinFloorG(input: ProteinFloorInput): number | null {
+  const idealWeightKg = computeDevineIdealWeightKg(input);
+  if (idealWeightKg === null) return null;
+  const gramsPerKg = input.gramsPerKg ?? PROTEIN_PER_KG;
+  if (!Number.isFinite(gramsPerKg) || gramsPerKg <= 0) return null;
+  return Math.round(idealWeightKg * gramsPerKg);
+}
+
+/**
+ * Which basis produced a protein suggestion. The screen NAMES this, so a change
+ * of method is visible to the person rather than a target that silently moved.
+ */
+export type ProteinFloorMethod = 'height' | 'weight';
+
+/** A protein suggestion and the method behind it. There is no unnamed number. */
+export interface ProteinFloorSuggestion {
+  grams: number;
+  method: ProteinFloorMethod;
+}
+
+/** Everything the goals chip has to work from: the two profile fields, and the last weigh-in. */
+export interface ProteinFloorSuggestionInput extends IdealWeightInput {
+  latestWeighInKg: number | null;
+}
+
+/**
+ * The protein figure the goals chip offers, with its method, or `null` when
+ * neither basis has anything to work from.
+ *
+ * Height and sex are preferred because they do not move with fat mass. The
+ * weigh-in rule is the one this page has always used, kept as the fallback so
+ * that nobody who has a working suggestion today loses it by declining to give
+ * a height or a sex, both of which the app deliberately lets a person skip.
+ *
+ * @param input - height, sex and the most recent weigh-in, each possibly null.
+ * @returns the grams and the method, or `null` for "no suggestion at all".
+ */
+export function suggestProteinFloor(input: ProteinFloorSuggestionInput): ProteinFloorSuggestion | null {
+  const fromHeight = estimateProteinFloorG(input);
+  if (fromHeight !== null) return { grams: fromHeight, method: 'height' };
+  const { latestWeighInKg } = input;
+  if (latestWeighInKg === null || !Number.isFinite(latestWeighInKg) || latestWeighInKg <= 0) return null;
+  return { grams: Math.round(PROTEIN_PER_KG * latestWeighInKg), method: 'weight' };
 }

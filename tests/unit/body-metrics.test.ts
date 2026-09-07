@@ -16,8 +16,11 @@ import {
   BODY_HEIGHT_INVALID_KEY,
   EMPTY_BODY_METRICS,
   LIGHTLY_ACTIVE_FACTOR,
+  PROTEIN_PER_KG,
   computeBmrKcal,
+  computeDevineIdealWeightKg,
   computeTdeeKcal,
+  estimateProteinFloorG,
   deriveAgeYears,
   hasAnyBodyMetric,
   hasBodyMetricsErrors,
@@ -30,6 +33,7 @@ import {
   resolveAgeBandForBirthYear,
   resolveRdaAgeBand,
   suggestDailyKcal,
+  suggestProteinFloor,
   validateBodyMetricsForm,
   bodyMetricsFormKey,
   type BodyMetrics,
@@ -371,5 +375,47 @@ describe('computeTdeeKcal / suggestDailyKcal', () => {
       currentYear: CURRENT_YEAR,
     });
     assert.equal(suggestion, 1840);
+  });
+});
+
+describe('the protein floor, from height and sex', () => {
+  it('is Devine ideal weight times 1.6 g/kg, worked through for a male at 180 cm', () => {
+    // 180 - 152.4 = 27.6 cm = 10.8661417 in; x 2.3 = 24.9921260; + 50 =
+    // 74.9921260 kg; x 1.6 = 119.9874016 g, rounded to 120.
+    const idealWeightKg = computeDevineIdealWeightKg({ heightCm: 180, biologicalSex: 'male' });
+    assert.ok(idealWeightKg !== null);
+    assert.ok(Math.abs(idealWeightKg - 74.992126) < 1e-6);
+    assert.equal(estimateProteinFloorG({ heightCm: 180, biologicalSex: 'male' }), 120);
+    assert.equal(PROTEIN_PER_KG, 1.6);
+  });
+
+  it('is sex-segmented: the same height gives a lower floor for a female', () => {
+    // 165 cm female: 45.5 + 11.4094488 = 56.9094488 kg; x 1.6 = 91.0551181 g.
+    assert.equal(estimateProteinFloorG({ heightCm: 165, biologicalSex: 'female' }), 91);
+    assert.equal(estimateProteinFloorG({ heightCm: 165, biologicalSex: 'male' }), 98);
+  });
+
+  it('offers no floor whenever height or sex is missing, or the height is out of range', () => {
+    assert.equal(estimateProteinFloorG({ heightCm: null, biologicalSex: 'male' }), null);
+    assert.equal(estimateProteinFloorG({ heightCm: 180, biologicalSex: null }), null);
+    assert.equal(estimateProteinFloorG({ heightCm: 150, biologicalSex: 'male' }), null);
+  });
+
+  it('does not move with body weight, which is the reason the basis changed', () => {
+    // The energy estimate above takes a weight; this one does not, by design.
+    // `ProteinFloorInput` has no weight field at all, so a weigh-in physically
+    // cannot reach the equation.
+    const light = suggestProteinFloor({ heightCm: 180, biologicalSex: 'male', latestWeighInKg: 70 });
+    const heavy = suggestProteinFloor({ heightCm: 180, biologicalSex: 'male', latestWeighInKg: 130 });
+    assert.deepEqual(light, heavy);
+    assert.deepEqual(light, { grams: 120, method: 'height' });
+  });
+
+  it('keeps the weigh-in rule as the fallback, so an unset profile still gets a number', () => {
+    assert.deepEqual(suggestProteinFloor({ heightCm: null, biologicalSex: null, latestWeighInKg: 82 }), {
+      grams: 131,
+      method: 'weight',
+    });
+    assert.equal(suggestProteinFloor({ heightCm: null, biologicalSex: null, latestWeighInKg: null }), null);
   });
 });
