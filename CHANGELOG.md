@@ -2,6 +2,36 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.13.0 - 2026-09-07
+
+- The first run now teaches. The last step of setup shows the three ways to get
+  food into your diary, one card each, and every card starts the real thing
+  rather than showing you a demo of it. It is still skippable, and setup did not
+  get any longer. The drawings hold still if your system asks for reduced
+  motion.
+- You can track net carbs and calories at the same time. Setup used to make you
+  pick one. Now each goal you set draws its own ring on the overview and in the
+  diary, and if you set only one it looks exactly as it did before. "Just the
+  habit" is still there for anybody who wants a streak and no daily number.
+- The suggested daily protein amount is now worked out from your height and sex
+  instead of your body weight. A target scaled by total weight climbs as your
+  weight does, which is the opposite of what that number is for. The screen says
+  which method produced the figure and calls it an estimate. If you have not
+  entered a height or a sex, it says so and falls back to the old suggestion
+  rather than inventing one.
+- The two camera buttons now say what they photograph. One reads "Photograph
+  your plate", the other "Photograph a nutrition panel". Reading the printed
+  panel on a package has worked for a long time, but the button said "Label
+  photo", which never said what it was for, so people did not know the feature
+  was there. The same button in the add-food sheet said the same thing and has
+  been fixed too.
+- The app records which features get used, behind a level the operator of your
+  instance sets. It never records anything from your diary. See the privacy
+  page for what is counted and what is not.
+- The openplate mark is now installed from the brand repository rather than
+  being kept by hand, and a local check re-hashes it, so a hand-edited icon
+  cannot ship by accident.
+
 ## 0.12.0 - 2026-09-07
 
 - The sidebar and the mobile drawer now link to the administrator area for the
