@@ -39,6 +39,11 @@ import {
   supportsOauthPkce,
 } from '#app/services/vision/registry';
 import { providersForDisplay, recommendedProviderFor } from '#app/models/ai-provider-recommendation';
+import {
+  trackAiKeyCheckFailed,
+  trackAiProviderConnected,
+  trackAiProviderDisconnected,
+} from '#app/lib/matomo-events';
 import { verifyProviderKey } from '#app/services/vision/verify-key';
 import type { KeyVerificationResult } from '#app/services/vision/verify-key';
 import type { Toast } from '#app/utils/toast.server';
@@ -392,6 +397,7 @@ export async function clientAction({ request }: Route.ClientActionArgs): Promise
     return { id: randomUuid(), type: 'message', description: translate('settingsAi.toast.nothingToDisconnect') };
   }
   await deleteLocalAiSettings();
+  trackAiProviderDisconnected();
   // NO TOMBSTONE ANY MORE (M192). A disconnect used to also write a stamped
   // `gatewayConnection: 'disconnected'` row, because the settings row it
   // deleted was synced across the account's devices and an absence carries no
@@ -974,6 +980,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
       try {
         const verification = await verifyKeyUnlessModelOnlyChange({ data, hasExistingSettings: Boolean(settings) });
         if (verification.status === 'rejected') {
+          trackAiKeyCheckFailed('rejected');
           setLastResult(submission.reply({ formErrors: [t('settingsAi.errors.keyRejected')] }));
           return;
         }
@@ -1005,10 +1012,15 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
         // A "saved but couldn't verify" result stays on the page (the user may
         // need to fix a CSP/CORS issue) — it never sweeps them onward.
         if (verification.status === 'unverified') {
+          trackAiKeyCheckFailed('unverified');
           toast.success(buildUnverifiedSaveMessage({ provider: data.provider, t }));
           return;
         }
 
+        // Only a submission that carried a key is a connect. A model-only
+        // re-save reaches here with an 'ok' verification it never ran, and
+        // counting that would report a connect on every model change.
+        if (data.apiKey) trackAiProviderConnected('manual');
         toast.success(t('settingsAi.toast.saved'));
         // On a verified save: return to the caller's `?next=` target, or the
         // diary on a first connect. A re-save with no return token stays put.

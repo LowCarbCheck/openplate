@@ -66,6 +66,7 @@ import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
+import { trackCustomFoodDeleted, trackCustomFoodEdited, trackFoodLogged } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
@@ -820,6 +821,7 @@ async function handleLog({
       createdAtMs: Date.now(),
     }),
   );
+  trackFoodLogged('add-search');
   return addedToastRedirect({ name: data.name, mealType: data.mealType ?? null, dayKey, activeDate, returnTo });
 }
 
@@ -950,6 +952,7 @@ async function handleManual({
     // and would suppress the day's `hasUnknowns` caveat when they left fibre
     // blank.
   });
+  trackFoodLogged('add-manual');
   return addedToastRedirect({ name: data.name, mealType: data.mealType ?? null, dayKey, activeDate, returnTo });
 }
 
@@ -959,6 +962,7 @@ async function handleDeleteFood({ formData }: { formData: FormData }): Promise<D
   if (submission.status !== 'success') throw new Response('Invalid delete payload', { status: 400 });
   const existing = await getLocalFood(submission.value.foodId);
   await deleteLocalFood(submission.value.foodId);
+  trackCustomFoodDeleted();
   return {
     intent: 'deleteFood',
     foodId: submission.value.foodId,
@@ -1018,6 +1022,7 @@ async function handleEditFood({ formData }: { formData: FormData }): Promise<Edi
     netCarbsPer100g,
     carbBasis: carbBasis ?? undefined,
   });
+  trackCustomFoodEdited();
   return { intent: 'editFood', ok: true, name: data.name };
 }
 

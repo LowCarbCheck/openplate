@@ -39,7 +39,12 @@ right. That is what the review is for.
    the position that §25 TTDSG is not engaged.
 3. **§9a**: only rendered when the instance actually runs analytics. It is
    currently NOT rendered in production. Review it anyway; it appears the moment
-   `MATOMO_URL` is set.
+   `MATOMO_URL` is set. Its CONTENT then varies with `MATOMO_EVENT_LEVEL`: at
+   `pageviews` the "what is recorded" paragraph says no feature use is counted,
+   at `product` it says feature use is counted, and every level that is on
+   carries a paragraph stating that the amount recorded is a setting. The
+   `research` level adds a further paragraph naming the health-behaviour and
+   study events. Review all three, not just the default.
 4. **Nutzungsbedingungen §7**: the sync terms, including the claim that
    deletion is immediate with no grace period. Confirm that matches what the
    product does before relying on it.

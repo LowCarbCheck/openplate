@@ -34,6 +34,9 @@ const appUrl = CONFIG.app.url;
 | `DEFAULT_INFERENCE_API_KEY` | unset                       | Optional key for that endpoint. **Read the security warning below before setting it.**                                                                                                         |
 | `DEFAULT_INFERENCE_MODEL`   | `openplate-plate-1`         | Model name to request from that endpoint. Blank or unset falls back to `openplate-plate-1`.                                                                                                                                                      |
 | `CSP_CONNECT_EXTRA`         | unset                       | Space-separated extra origins for the production CSP's `connect-src`. Needed when your own AI endpoint is a **remote** host. See [Custom AI endpoints](#custom-ai-endpoints).                    |
+| `MATOMO_URL`                | unset (analytics off)       | Base URL of a [Matomo](https://matomo.org) install you run yourself. Unset, the default, means no analytics script, no request and an unchanged CSP header. See [Analytics](#analytics). |
+| `MATOMO_SITE_ID`            | unset (analytics off)       | The Matomo site id this instance reports as. Set both this and `MATOMO_URL`, or neither. Setting one alone stops the boot on purpose. |
+| `MATOMO_EVENT_LEVEL`        | `product`                   | How much the instance reports: `pageviews`, `product` or `research`. Applies only when analytics are on. See [What a level decides](#what-a-level-decides). |
 
 Provider API keys are never read from the environment. A user's key is entered in the
 browser, stored on the device and sent browser → provider directly; the server has no copy.
@@ -59,6 +62,97 @@ page. Widen it deliberately.
 On a managed instance the AI proxy is the sync server the client already talks to, so its
 origin is `SYNC_SERVER_URL`, already in the list above. There is no second remote endpoint to
 allow and nothing extra to add to `CSP_CONNECT_EXTRA` for it.
+
+## Analytics
+
+openplate can count how it is used. It counts nothing until you configure it, and it never
+counts what you eat.
+
+Set `MATOMO_URL` and `MATOMO_SITE_ID` to point an instance at a [Matomo](https://matomo.org)
+install you run yourself. Leave both unset, which is the default, and the instance loads no
+analytics script, sends no request, and serves the same Content-Security-Policy header it
+served before analytics existed. Set one without the other and the boot fails on purpose: an
+operator who believes they have analytics and does not is worse off than one who sees an
+error.
+
+The tracker runs with cookies disabled. It stores nothing on the device, so there is no
+consent banner to build.
+
+### What a level decides
+
+`MATOMO_EVENT_LEVEL` decides how much the instance is allowed to report. It applies only
+when analytics are already on.
+
+| Level | What it counts |
+| ----------- | ------------------------------------------------------------------------------- |
+| `pageviews` | Page views only. No feature event ever fires. |
+| `product`   | Page views plus software use. The default. |
+| `research`  | Everything, including fasting, weight, clinician sharing and study participation. |
+
+Unset means `product`. An unrecognised value stops the boot. A level set on an instance with
+no Matomo configured also stops the boot, for the same reason a half-configured pair does.
+
+### What `product` counts
+
+36 events, all of them about the software rather than about the person.
+
+| Area | Events |
+| ------------ | ------------------------------------------------------------------------------------ |
+| Onboarding   | completed, step completed (focus, weight, body), step skipped |
+| Scan         | succeeded, failed (with a fixed failure category), found nothing, mode chosen, started from a shared photo |
+| Diary        | logged (with the input path: search, manual, plate scan, label scan, chip, copy day, log again, saved meal), entry edited, entry deleted, entry restored, meal saved |
+| Custom foods | edited, deleted |
+| AI provider  | connected (manual, OAuth, instance preset), key check failed, disconnected |
+| Preferences  | changed (theme or language) |
+| Backup       | exported, imported, CSV exported, photo cache cleared |
+| Account      | created, deleted, password changed, password reset requested, password reset completed, setup completed |
+| Invitations  | link pasted, join completed |
+| App install  | install prompt shown, installed, offline page view |
+| Landing page | newsletter subscribed, call to action clicked |
+
+### What `research` adds
+
+12 more events. Each one says something about a person's health or their participation in a
+study, which is why they are off unless you ask for them.
+
+| Area              | Events |
+| ----------------- | -------------------------------------------------------------- |
+| Fasting           | fast started (now or scheduled), fast ended |
+| Goals and weight  | goals saved (targets or body metrics), weight logged |
+| Clinician sharing | share granted, revoked, key rotated, identity created, shared diary opened |
+| Research studies  | enrolled, withdrawn, contribution sent |
+
+These carry no values. A fast event does not carry its length, and a weight event does not
+carry a weight. But the events are timestamped, as every analytics event is, so a start and
+an end together give a duration by subtraction, and a share event says the person has a
+clinician. Study participation is special-category data under Art. 9 GDPR.
+
+That is the whole reason the level exists. A researcher running a study on their own
+instance needs these numbers and can lawfully collect them from consenting participants. A
+general-purpose instance should not collect them, and by default does not.
+
+If you turn on `research`, say so in your own privacy policy. openplate's policy describes
+openplate's hosted instances, not yours.
+
+### What is never counted, at any level
+
+- Anything from a diary. No food name, no weight, no goal, no photo, no meal time, no study
+  id.
+- Any number measured off a person. Events carry a fixed label or nothing at all.
+- Any identifier. No account id, no email address, no device id.
+- Query strings and URL fragments, which are dropped whole before a page view is reported.
+  openplate puts single-use tokens there.
+- Identifiers in a path. `/diary/entry/<id>` and `/shared/<account id>` are replaced with a
+  placeholder before the page view is reported.
+
+The rules are enforced by types rather than by review. Every event function in
+`app/lib/matomo-events.ts` takes either nothing or one value from a fixed list, so a food
+name cannot be passed without a compile error. `tests/unit/no-telemetry-wiring.test.ts`
+fails the build if any other file reaches for the tracker directly, or if a Matomo host or
+site id is written into the source, which is what would make a self-hosted instance report
+into somebody else's account.
+
+See [ADR-0010](../.adr/0010-hosted-analytics.md) for the decision and its reasoning.
 
 ## Managed instances
 

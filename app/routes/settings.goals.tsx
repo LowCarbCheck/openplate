@@ -11,6 +11,7 @@ import { ChevronRight, Sparkles } from 'lucide-react';
 import { formatMacroNumber, formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { todayInTimezone } from '#app/lib/user-days';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
+import { trackGoalsSaved, trackWeightLogged } from '#app/lib/matomo-events';
 import { cn } from '#app/lib/utils';
 import {
   formatKgForDisplay,
@@ -229,6 +230,7 @@ async function _saveGoals(formData: FormData) {
     goalKcalTarget: value.goalKcalTarget,
     targetWeightKg: value.targetWeightKg,
   });
+  trackGoalsSaved('targets');
   return redirectWithLocalToast('/settings/goals', { type: 'success', description: actionT('goals.toast.saved') });
 }
 
@@ -238,6 +240,7 @@ async function _logWeight(formData: FormData) {
   const profile = await getLocalProfileGoals();
   const measuredAt = todayInTimezone(resolveLocalTimezone(profile));
   await upsertLocalWeightEntryForDay({ dayKey: measuredAt, weightKg: submission.value.weightKg });
+  trackWeightLogged();
   return redirectWithLocalToast('/settings/goals', {
     type: 'success',
     description: actionT('goals.toast.weightLogged'),
@@ -273,6 +276,7 @@ async function _saveBodyMetrics(formData: FormData) {
   });
   if (submission.status !== 'success') return submission.reply();
   await putLocalBodyMetrics(submission.value);
+  trackGoalsSaved('body-metrics');
   return redirectWithLocalToast('/settings/goals', {
     type: 'success',
     description: actionT('bodyMetrics.toast.saved'),

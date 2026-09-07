@@ -68,6 +68,7 @@ import {
   selectLocalFrequentChips,
 } from '#app/lib/local-store';
 import type { LocalDailyTotals, LocalFoodLog, LocalFrequentChip, LocalRecentFood } from '#app/lib/local-store';
+import { trackEntryRestored, trackFoodLogged, trackMealSaved } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { BackupNudgeBanner } from '#app/components/backup-nudge-banner';
@@ -460,6 +461,9 @@ async function handleRestore(formData: FormData, timezone: string): Promise<Resp
   await putLocalFoodLog(
     buildRestoredEntry({ value, id: randomUuid(), loggedAtMs, dayKey: entryDate, createdAtMs: Date.now() }),
   );
+  // Restoring an entry the user just deleted is not a new log, so no
+  // `trackFoodLogged` here.
+  trackEntryRestored();
 
   // Land the user on the day the restored entry belongs to (which may not be
   // the day they were viewing when they hit Undo).
@@ -562,6 +566,7 @@ async function handleLogRecent(
       createdAtMs: now.getTime(),
     }),
   );
+  trackFoodLogged('diary-chip');
   const totals = await readDayCarbTotals(value.date);
   return {
     intent: 'log-recent',
@@ -711,6 +716,9 @@ async function handleCopyYesterday(
       }),
     );
   }
+  // Once per copy batch, outside the loop. The empty-source path returns above
+  // without writing anything, so it never reaches this line.
+  trackFoodLogged('diary-copy-day');
   const totals = await readDayCarbTotals(targetDate);
   return {
     intent: 'copy-yesterday',
@@ -749,6 +757,7 @@ async function handleSaveMeal(formData: FormData): Promise<{ intent: 'save-meal'
   if (logs.length === 0) throw new Response('No matching entries to save', { status: 400 });
   const meal = buildSavedMealFromLogs({ logs, name, id: randomUuid(), createdAtMs: Date.now() });
   await putLocalSavedMeal(meal);
+  trackMealSaved();
   return { intent: 'save-meal', name: meal.name, count: meal.items.length };
 }
 

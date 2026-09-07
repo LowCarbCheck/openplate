@@ -36,6 +36,7 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackPasswordResetRequested } from '#app/lib/matomo-events';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import { makeSyncSignInSchema } from '#app/lib/sync/sign-in-schema';
 import { requestSyncPasswordReset } from '#app/lib/sync/sync-actions';
@@ -97,6 +98,14 @@ function ForgotForm({ serverUrl }: { serverUrl: string }) {
       void requestSyncPasswordReset({ serverUrl, email: canonicalizeEmail(submission.value.email) }).catch(
         () => undefined,
       );
+      // The event is named "requested", not "sent": this screen never learns
+      // anything past the 202, which the service returns whether or not the
+      // address has an account, so there is no later moment that tells it
+      // more than the submit already did. Firing here counts exactly what
+      // the event claims to count, and keeps the property the test pins,
+      // that nothing sits between the submit and the confirmation which
+      // could inspect an answer and render differently.
+      trackPasswordResetRequested();
       setIsSent(true);
     },
   });

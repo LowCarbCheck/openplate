@@ -35,6 +35,7 @@ import {
   resolveLocalTimezone,
 } from '#app/lib/local-store';
 import type { LocalSavedMeal } from '#app/lib/local-store';
+import { trackFoodLogged } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent } from '#app/components/ui/card';
@@ -121,6 +122,8 @@ async function handleLogMeal(formData: FormData): Promise<Response> {
     createdAtMs: now,
   });
   for (const log of logs) await putLocalFoodLog(log);
+  // Once per meal, outside the per-item loop: the batch is one log action.
+  trackFoodLogged('saved-meal');
 
   return redirectWithLocalToast('/diary', {
     type: 'success',

@@ -65,7 +65,11 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Camera, Key, Search, ShieldCheck } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
-import { trackOnboardingCompleted } from '#app/lib/matomo-events';
+import {
+  trackOnboardingCompleted,
+  trackOnboardingStepCompleted,
+  trackOnboardingStepSkipped,
+} from '#app/lib/matomo-events';
 
 // Title via the pure `meta-title` seam, with the language read off the ROOT
 // loader through `matches` — never the i18next singleton (see `meta-title.ts`
@@ -270,6 +274,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 
   if (intent === INTENT.SAVE_FOCUS) {
     await saveFocus(formData);
+    trackOnboardingStepCompleted('focus');
     return redirect(nextStepUrl(step));
   }
   if (intent === INTENT.SAVE_WEIGHT) {
@@ -281,6 +286,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
     // is the user's to fix, and silently skipping it is the bug this guards.
     if (hasWeightStepErrors(submission)) return { errors: { ...NO_STEP_ERRORS, weight: submission.errors } };
     await saveWeight(submission.values);
+    trackOnboardingStepCompleted('weight');
     return redirect(nextStepUrl(step));
   }
   if (intent === INTENT.SAVE_BODY) {
@@ -297,9 +303,11 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
     // can't be read, rather than advancing having quietly dropped it.
     if (hasBodyMetricsErrors(submission)) return { errors: { ...NO_STEP_ERRORS, body: submission.errors } };
     await putLocalBodyMetrics(submission.values);
+    trackOnboardingStepCompleted('body');
     return redirect(nextStepUrl(step));
   }
   if (intent === INTENT.SKIP) {
+    trackOnboardingStepSkipped();
     return redirect(nextStepUrl(step));
   }
   if (intent === INTENT.FINISH) {

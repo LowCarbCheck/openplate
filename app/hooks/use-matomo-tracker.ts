@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 
 import type { AnalyticsConfig } from '#app/config/analytics';
-import { trackOfflinePageview } from '#app/lib/matomo-events';
+import { setAnalyticsEventLevel, trackOfflinePageview } from '#app/lib/matomo-events';
 import { sanitizeAnalyticsUrl } from '#app/lib/matomo-url';
 
 /**
@@ -34,6 +34,15 @@ import { sanitizeAnalyticsUrl } from '#app/lib/matomo-url';
  *    here would have posted live email-verification tokens, password-reset
  *    tokens and OAuth codes to Matomo. This is the difference that matters —
  *    read `matomo-url.ts` before changing either push below.
+ *
+ * 5. **This hook owns the event LEVEL.** `matomo-events.ts` starts at
+ *    `pageviews` and fires nothing until it is told the instance's level, so
+ *    the call below is what turns custom events on at all. It happens before
+ *    the script is inserted, so no event can slip out under the wrong level,
+ *    and `eventLevel` is an effect dependency for the same reason `matomoUrl`
+ *    and `siteId` are: an operator changing the level must not need a second
+ *    deploy to have it take effect. `null` config means analytics are off and
+ *    leaves the module at `pageviews`.
  */
 let hasRun = false;
 
@@ -48,8 +57,14 @@ export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
 
   const matomoUrl = config?.matomoUrl ?? null;
   const siteId = config?.siteId ?? null;
+  const eventLevel = config?.eventLevel ?? null;
 
   useEffect(() => {
+    // Before the gate below, and before the script: the events module has to
+    // know the level even on a re-render that the `hasRun` guard exits early
+    // from, or a level change would never reach it.
+    setAnalyticsEventLevel(eventLevel);
+
     // The whole feature gate. No config → no script tag, no request, no
     // globals touched.
     if (matomoUrl === null || siteId === null) return;
@@ -75,7 +90,7 @@ export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
     s.parentNode?.insertBefore(g, s);
 
     hasRun = true;
-  }, [matomoUrl, siteId]);
+  }, [matomoUrl, siteId, eventLevel]);
 
   // SPA navigations. openplate is a single-page app after the first load, so
   // without this every session would report exactly one pageview.

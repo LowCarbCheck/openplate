@@ -62,6 +62,7 @@ import { signOutOfSync } from '#app/lib/sync/sync-actions';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { readSyncInvite, type SyncInviteDetails } from '#app/lib/sync/sync-actions';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackJoinCompleted } from '#app/lib/matomo-events';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
 import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 
@@ -221,6 +222,9 @@ export default function Join() {
  * @param navigate - the router's navigate, passed in so this stays testable.
  */
 async function landAfterJoin(navigate: (path: string) => void): Promise<void> {
+  // The ceremony reports completion once, so this runs once per redeemed
+  // invitation rather than once per render of the panel.
+  trackJoinCompleted();
   navigate(resolveSignInDestination({ gate: await readOnboardingGateKind() }));
 }
 

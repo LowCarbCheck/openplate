@@ -1,6 +1,6 @@
 # 0010 — Analytics on the hosted instance, off everywhere else
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by [ADR-0011](0011-analytics-levels.md) on 2026-09-07
 - **Date:** 2026-08-31
 - **Deciders:** Altan, with architecture review
 
@@ -30,7 +30,9 @@ Three prior constraints bounded any answer:
 
 3. **No diary content, enforced by types.** `app/lib/matomo-events.ts` exposes functions that take either nothing or a literal-union label. A food name, weight, goal, photo or study id cannot be passed without a type error. This is stricter than the sibling SelfHostedWorld implementation, which tracks software slugs — those name rows in a public catalogue; openplate has no such thing.
 
-4. **No numeric values.** Two drafted events carried them — a scan item count and a fasting duration — and both were cut at review. Each is a number measured off the person rather than off the software, and D9 bars values outright. A literal-union `name` was read as a finite family of distinct event names, which carries no content and satisfies D9; numeric values remain barred and go to M120's legal review if ever wanted.
+4. **No numeric values.** (Amended by [ADR-0011](0011-analytics-levels.md): the no-value rule stands, but two events at the new `research` level subtract into a duration, and that is now named rather than avoided.)
+
+    Two drafted events carried them — a scan item count and a fasting duration — and both were cut at review. Each is a number measured off the person rather than off the software, and D9 bars values outright. A literal-union `name` was read as a finite family of distinct event names, which carries no content and satisfies D9; numeric values remain barred and go to M120's legal review if ever wanted.
 
 5. **The URL is scrubbed before it is reported.** `app/lib/matomo-url.ts` drops the query string and fragment wholesale and replaces id path segments. This is not defensive tidiness: openplate puts single-use tokens in query strings (`/verify-email?token=`, `/reset-passphrase?token=`, `/oauth/openrouter/callback?code=`) and a per-person account id in `/shared/:grantorAccountId` for clinician health-data shares. A straight port of the SelfHostedWorld hook, which reports `window.location.href`, would have written live credentials into Matomo's visitor log. The referrer is scrubbed the same way.
 

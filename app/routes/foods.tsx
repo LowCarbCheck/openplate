@@ -35,6 +35,7 @@ import { deleteLocalFood, getLocalFood, listLocalFoods, putLocalFood } from '#ap
 import type { DeleteFoodResult, EditFoodResult } from '#app/components/add/manage-custom-foods';
 import { CustomFoodsList } from '#app/components/add/manage-custom-foods';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { trackCustomFoodDeleted, trackCustomFoodEdited } from '#app/lib/matomo-events';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -100,6 +101,7 @@ async function handleDeleteFood({ formData }: { formData: FormData }): Promise<D
   if (submission.status !== 'success') throw new Response('Invalid delete payload', { status: 400 });
   const existing = await getLocalFood(submission.value.foodId);
   await deleteLocalFood(submission.value.foodId);
+  trackCustomFoodDeleted();
   return { intent: 'deleteFood', foodId: submission.value.foodId, name: existing?.name ?? '' };
 }
 
@@ -136,6 +138,7 @@ async function handleEditFood({ formData }: { formData: FormData }): Promise<Edi
     netCarbsPer100g,
     carbBasis: carbBasis ?? undefined,
   });
+  trackCustomFoodEdited();
   return { intent: 'editFood', ok: true, name: data.name };
 }
 

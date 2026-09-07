@@ -110,7 +110,14 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { AlertTriangle, Camera, Check, ChevronDown, Loader2, X } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
-import { trackScanFailed, trackScanFoundNothing, trackScanSucceeded } from '#app/lib/matomo-events';
+import {
+  trackFoodLogged,
+  trackScanFailed,
+  trackScanFoundNothing,
+  trackScanModeChosen,
+  trackScanStartedFromShare,
+  trackScanSucceeded,
+} from '#app/lib/matomo-events';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -937,6 +944,10 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
   // four-item confirm is ONE action, not four (M129/03). The running total is
   // read after every entry is written, so it reports the day the user is about
   // to land on rather than a mid-write figure.
+  // Once per confirmation, outside the per-item loop: a four-item plate is one
+  // log action, exactly as the single toast below treats it.
+  trackFoodLogged('scan-plate');
+
   const redirectTo = activeDate ? `/diary?date=${activeDate}` : '/diary';
   const totals = await readDayCarbTotals(dayKey);
   showFoodAddedToast({
@@ -1017,6 +1028,7 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
       createdAtMs: now,
     }),
   );
+  trackFoodLogged('scan-label');
 
   const redirectTo = activeDate ? `/diary?date=${activeDate}` : '/diary';
   const totals = await readDayCarbTotals(dayKey);
@@ -1316,7 +1328,12 @@ function ScanFlow({
     void (async () => {
       try {
         const sharedFile = await readSharedPhoto(window.caches);
-        if (sharedFile) processSharedRef.current(sharedFile);
+        // Inside the ref guard above, and only once a photo was actually read:
+        // an empty or unreadable cache slot is not an arrival.
+        if (sharedFile) {
+          trackScanStartedFromShare();
+          processSharedRef.current(sharedFile);
+        }
       } catch {
         // A missing/unreadable shared photo just leaves the normal picker in place.
       }
@@ -1341,6 +1358,9 @@ function ScanFlow({
    */
   const handleModeChange = (nextMode: VisionMode) => {
     if (nextMode === mode) return;
+    // After the no-op guard, so only a real switch by the user is counted. The
+    // initial mode, and the tab bar hand-off's `setMode`, fire nothing.
+    trackScanModeChosen(nextMode);
     setMode(nextMode);
     setSuppressedData(fetcher.data);
     setSelectionError(null);

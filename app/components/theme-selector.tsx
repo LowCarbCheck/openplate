@@ -16,6 +16,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { trackPreferenceChanged } from '#app/lib/matomo-events';
 import { cn } from '#app/lib/utils';
 
 export type Theme = 'system' | 'light' | 'dark';
@@ -112,6 +113,10 @@ export function useThemePreference(): ThemePreference {
     setTheme(next);
     localStorage.setItem('theme', next);
     window.__applyTheme?.();
+    // Only this function, which nothing but an explicit pick calls. The boot
+    // effect and the system-preference listener above both apply a theme
+    // without going through it, and neither is a choice the person made.
+    trackPreferenceChanged('theme');
   }
 
   return { theme, hydrated, selectTheme };

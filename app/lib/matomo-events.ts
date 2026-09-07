@@ -32,6 +32,36 @@
  * pass a food name without a type error, which is the only form of this rule
  * that survives a hurried change six months from now.
  *
+ * ── The two TIERS, and what the second one is for ────────────────────────
+ *
+ * Every function below declares a tier, `product` or `research`, and fires
+ * only when the instance's `MATOMO_EVENT_LEVEL` permits it. The levels are
+ * ordered, `pageviews` < `product` < `research`, and the default is `product`.
+ *
+ * The tiers exist because a content-free event is not automatically a harmless
+ * one. Two timestamps can be subtracted into a duration, and two events can be
+ * correlated into a health fact. A `Fasting / started` followed by a
+ * `Fasting / ended` is a fasting duration whether or not anybody wrote the
+ * number down, and a `Sharing / granted` says the person has a clinician. That
+ * is exactly the reasoning architecture review used on 2026-08-31 when it cut
+ * the drafted scan count and fasting duration.
+ *
+ * What has changed since is the ANSWER, not the reasoning. These events now
+ * ship behind a level an operator must opt into, rather than not shipping at
+ * all, because a researcher who runs their own instance genuinely needs them
+ * and is the only person who can consent on their own users' behalf. Making
+ * them switchable and saying so is better than omitting them and having every
+ * researcher patch the file.
+ *
+ * An instance running at `product`, which is what an operator gets for turning
+ * analytics on and configuring nothing else, is UNCHANGED from before this
+ * file gained tiers: the same events, the same shapes, nothing extra. An
+ * instance at `pageviews` fires no custom event at all.
+ *
+ * The numeric-value ban and the no-diary-content rule are NOT tiered. They
+ * hold at every level, including `research`. The research tier widens WHICH
+ * events fire, never what an event may carry.
+ *
  * ── Safe when analytics are off ──────────────────────────────────────────
  *
  * `_paq` is a plain array that Matomo drains when its script loads. On an
@@ -40,6 +70,7 @@
  * sites therefore never need to ask whether analytics are configured — which
  * is what keeps the feature flag out of forty components.
  */
+import type { AnalyticsEventLevel } from '#app/config/analytics';
 
 declare global {
   interface Window {
@@ -47,21 +78,56 @@ declare global {
   }
 }
 
+/** Which level an event needs. There is no `pageviews` tier: that level fires nothing. */
+type EventTier = 'product' | 'research';
+
+/** How much each level permits. A tier fires when its rank is at most the level's. */
+const LEVEL_RANK = { pageviews: 0, product: 1, research: 2 } satisfies Record<AnalyticsEventLevel, number>;
+const TIER_RANK = { product: 1, research: 2 } satisfies Record<EventTier, number>;
+
 /**
- * Push a custom event to Matomo.
+ * The level this instance runs at.
+ *
+ * `pageviews` until the tracker hook says otherwise, deliberately. The config
+ * arrives with the root loader, so there is a window at boot in which nothing
+ * has told this module anything, and the safe answer in that window is to fire
+ * nothing rather than to guess the default.
+ */
+let currentLevel: AnalyticsEventLevel = 'pageviews';
+
+/**
+ * Sets the level from the instance config.
+ *
+ * Called by `use-matomo-tracker.ts` and by nothing else. `null` means the
+ * instance has no analytics at all, which keeps the level at `pageviews`.
+ */
+export function setAnalyticsEventLevel(level: AnalyticsEventLevel | null): void {
+  currentLevel = level ?? 'pageviews';
+}
+
+/** Test seam: puts the level back to its pre-hook default. Never called by app code. */
+export function __resetAnalyticsEventLevelForTests(): void {
+  currentLevel = 'pageviews';
+}
+
+/**
+ * Push a custom event to Matomo, if this instance's level permits its tier.
  *
  * Safe to call before the tracker loads (`_paq` buffers), and safe to call on
  * an instance with analytics off (nothing ever drains the buffer). Returns
  * early during SSR, where there is no `window`.
+ *
+ * There is no `value` parameter. The numeric-value ban is easier to keep when
+ * the argument does not exist.
  */
-function trackEvent(category: string, action: string, name?: string, value?: number): void {
+function trackEvent(tier: EventTier, category: string, action: string, name?: string): void {
   // `globalThis.window === undefined` rather than a `typeof` check — the same
   // SSR guard idiom `app/lib/sync/sync-state.ts` uses for `localStorage`.
   if (globalThis.window === undefined) return;
+  if (LEVEL_RANK[currentLevel] < TIER_RANK[tier]) return;
   const _paq = (window._paq = window._paq || []);
   const args: unknown[] = ['trackEvent', category, action];
   if (name !== undefined) args.push(name);
-  if (value !== undefined) args.push(value);
   _paq.push(args);
 }
 
@@ -69,12 +135,53 @@ function trackEvent(category: string, action: string, name?: string, value?: num
 // The funnel that decides whether an install becomes a user at all.
 
 export function trackOnboardingCompleted(): void {
-  trackEvent('Onboarding', 'completed');
+  trackEvent('product', 'Onboarding', 'completed');
+}
+
+/**
+ * WHICH step of onboarding a person finished, as a fixed step name.
+ *
+ * The step name says what the screen asked for, never what was answered. That
+ * a person passed the weight step is a fact about the funnel; the weight is
+ * diary content and stays on the device.
+ */
+export type OnboardingStepName = 'focus' | 'weight' | 'body';
+
+export function trackOnboardingStepCompleted(step: OnboardingStepName): void {
+  trackEvent('product', 'Onboarding', 'step-completed', step);
+}
+
+export function trackOnboardingStepSkipped(): void {
+  trackEvent('product', 'Onboarding', 'step-skipped');
 }
 
 // ─── AI provider setup ───────────────────────────────────────────────────────
 // openplate is BYOK, so "connected a provider" is the single most load-bearing
 // conversion in the product: nothing can be scanned before it happens.
+
+/** HOW a provider was connected. Never WHICH provider, and never the key. */
+export type AiConnectMethod = 'manual' | 'oauth' | 'preset';
+
+export function trackAiProviderConnected(method: AiConnectMethod): void {
+  trackEvent('product', 'AI', 'connected', method);
+}
+
+/**
+ * A key check that did not pass, as a fixed outcome.
+ *
+ * `rejected` is the provider saying no. `unverified` is openplate not getting
+ * an answer it could read. Never the provider's error text: those strings quote
+ * the request, and a quoted request can contain the key itself.
+ */
+export type AiKeyCheckOutcome = 'rejected' | 'unverified';
+
+export function trackAiKeyCheckFailed(outcome: AiKeyCheckOutcome): void {
+  trackEvent('product', 'AI', 'key-check-failed', outcome);
+}
+
+export function trackAiProviderDisconnected(): void {
+  trackEvent('product', 'AI', 'disconnected');
+}
 
 // ─── Plate scan ──────────────────────────────────────────────────────────────
 // The flagship feature. Success rate here is the product's health metric.
@@ -90,7 +197,7 @@ export function trackOnboardingCompleted(): void {
  * through this file.
  */
 export function trackScanSucceeded(): void {
-  trackEvent('Scan', 'succeeded');
+  trackEvent('product', 'Scan', 'succeeded');
 }
 
 /**
@@ -121,7 +228,7 @@ export type ScanFailureReason =
   | 'unknown';
 
 export function trackScanFailed(reason: ScanFailureReason): void {
-  trackEvent('Scan', 'failed', reason);
+  trackEvent('product', 'Scan', 'failed', reason);
 }
 
 /**
@@ -131,50 +238,275 @@ export function trackScanFailed(reason: ScanFailureReason): void {
  * enough — the app already bills tokens for it.
  */
 export function trackScanFoundNothing(): void {
-  trackEvent('Scan', 'found-nothing');
+  trackEvent('product', 'Scan', 'found-nothing');
+}
+
+/** WHICH scanner a person chose. A plate photo and a label photo are different features. */
+export type ScanMode = 'plate' | 'label';
+
+export function trackScanModeChosen(mode: ScanMode): void {
+  trackEvent('product', 'Scan', 'mode-chosen', mode);
+}
+
+export function trackScanStartedFromShare(): void {
+  trackEvent('product', 'Scan', 'started-from-share');
 }
 
 // ─── Diary ───────────────────────────────────────────────────────────────────
 // What gets logged is private. HOW it got logged tells us which input path is
 // worth improving, and carries nothing about the person.
 
-// ─── Fasting ─────────────────────────────────────────────────────────────────
+/**
+ * The INPUT PATH a log entry arrived by, never the entry.
+ *
+ * This is the whole point of the Diary category: it says which of eight ways
+ * into the diary a person used, so the weak ones can be improved. It says
+ * nothing about the food, the amount, the meal or the time.
+ */
+export type LogInputPath =
+  | 'add-search'
+  | 'add-manual'
+  | 'scan-plate'
+  | 'scan-label'
+  | 'diary-chip'
+  | 'diary-copy-day'
+  | 'entry-log-again'
+  | 'saved-meal';
 
-// ─── Sync ────────────────────────────────────────────────────────────────────
-// Never an email, an account id, or a device id — the sync server itself is
-// designed not to learn what it stores, and this must not be the leak.
+export function trackFoodLogged(path: LogInputPath): void {
+  trackEvent('product', 'Diary', 'logged', path);
+}
+
+export function trackEntryEdited(): void {
+  trackEvent('product', 'Diary', 'entry-edited');
+}
+
+export function trackEntryDeleted(): void {
+  trackEvent('product', 'Diary', 'entry-deleted');
+}
+
+export function trackEntryRestored(): void {
+  trackEvent('product', 'Diary', 'entry-restored');
+}
+
+export function trackMealSaved(): void {
+  trackEvent('product', 'Diary', 'meal-saved');
+}
+
+// ─── Foods ───────────────────────────────────────────────────────────────────
+// A person's own food library. That they curate it is a product fact; what is
+// in it is diary content.
+
+export function trackCustomFoodEdited(): void {
+  trackEvent('product', 'Foods', 'edited');
+}
+
+export function trackCustomFoodDeleted(): void {
+  trackEvent('product', 'Foods', 'deleted');
+}
+
+// ─── Preferences ─────────────────────────────────────────────────────────────
+// WHICH setting was changed, never the value it was changed to. The chosen
+// language would be an identifying attribute; that it was changed is not.
+
+export type PreferenceName = 'theme' | 'language';
+
+export function trackPreferenceChanged(setting: PreferenceName): void {
+  trackEvent('product', 'Preferences', 'changed', setting);
+}
 
 // ─── Backup ──────────────────────────────────────────────────────────────────
 // The local-first safety net. If exports are rare, the nudge is not working.
 
 export function trackBackupExported(): void {
-  trackEvent('Backup', 'exported');
+  trackEvent('product', 'Backup', 'exported');
 }
 
 export function trackBackupImported(): void {
-  trackEvent('Backup', 'imported');
+  trackEvent('product', 'Backup', 'imported');
 }
 
 export function trackCsvExported(): void {
-  trackEvent('Backup', 'csv-exported');
+  trackEvent('product', 'Backup', 'csv-exported');
+}
+
+export function trackPhotoCacheCleared(): void {
+  trackEvent('product', 'Backup', 'photo-cache-cleared');
+}
+
+// ─── Account ─────────────────────────────────────────────────────────────────
+// The sync account, which is the one account in the system. Never an email,
+// an account id or a device id: the sync server is designed not to learn what
+// it stores, and this must not be the leak.
+
+export function trackAccountCreated(): void {
+  trackEvent('product', 'Account', 'created');
+}
+
+export function trackAccountDeleted(): void {
+  trackEvent('product', 'Account', 'deleted');
+}
+
+export function trackPasswordChanged(): void {
+  trackEvent('product', 'Account', 'password-changed');
+}
+
+export function trackPasswordResetRequested(): void {
+  trackEvent('product', 'Account', 'password-reset-requested');
+}
+
+export function trackPasswordResetCompleted(): void {
+  trackEvent('product', 'Account', 'password-reset-completed');
+}
+
+export function trackSetupCeremonyCompleted(): void {
+  trackEvent('product', 'Account', 'setup-completed');
+}
+
+// ─── Join ────────────────────────────────────────────────────────────────────
+// The invite flow. NEVER the invite token or any part of it: the token is a
+// credential, and this server never sees it either.
+
+export function trackInviteLinkPasted(): void {
+  trackEvent('product', 'Join', 'link-pasted');
+}
+
+export function trackJoinCompleted(): void {
+  trackEvent('product', 'Join', 'completed');
 }
 
 // ─── PWA ─────────────────────────────────────────────────────────────────────
 
 export function trackInstallPromptShown(): void {
-  trackEvent('PWA', 'install-prompt-shown');
+  trackEvent('product', 'PWA', 'install-prompt-shown');
 }
 
 export function trackInstalled(): void {
-  trackEvent('PWA', 'installed');
+  trackEvent('product', 'PWA', 'installed');
 }
 
 export function trackOfflinePageview(): void {
-  trackEvent('PWA', 'offline-pageview');
+  trackEvent('product', 'PWA', 'offline-pageview');
 }
 
 // ─── Landing ─────────────────────────────────────────────────────────────────
 
 export function trackNewsletterSubscribed(): void {
-  trackEvent('Landing', 'newsletter-subscribed');
+  trackEvent('product', 'Landing', 'newsletter-subscribed');
+}
+
+/** WHICH of the four calls to action a visitor used. A page position, not a person. */
+export type LandingCta = 'hero' | 'setup' | 'mid' | 'footer';
+
+export function trackLandingCtaClicked(cta: LandingCta): void {
+  trackEvent('product', 'Landing', 'cta-clicked', cta);
+}
+
+// ─── Fasting (RESEARCH tier) ─────────────────────────────────────────────────
+//
+// What this reveals: that the person fasts, and for how long. The duration is
+// never sent, but a `started` and an `ended` are two timestamps in the same
+// visit, and one subtracted from the other IS the fasting duration. That is
+// the exact reasoning that cut the drafted fasting-hours value on 2026-08-31,
+// and it applies to the pair as much as to the number.
+//
+// Why the tier and not omission: intermittent fasting is what a nutrition
+// researcher running their own instance is most likely to be studying, and the
+// events are useless to them if the software does not have them. An operator
+// who sets `research` is answering for their own users; the default answers
+// for everyone else.
+
+/** WHETHER a fast began now or was scheduled. Never the schedule, and never the target. */
+export type FastStartMode = 'now' | 'scheduled';
+
+export function trackFastStarted(mode: FastStartMode): void {
+  trackEvent('research', 'Fasting', 'started', mode);
+}
+
+export function trackFastEnded(): void {
+  trackEvent('research', 'Fasting', 'ended');
+}
+
+// ─── Goals and body metrics (RESEARCH tier) ──────────────────────────────────
+//
+// What this reveals: that the person is actively managing their body, and how
+// often they weigh themselves. The weight is never sent. A weekly rhythm of
+// `weight-logged` is still a behavioural health fact about one visitor, and
+// frequency alone distinguishes casual use from a weight-loss attempt.
+//
+// Why the tier and not omission: adherence is the outcome variable in most
+// dietary studies, and a study that cannot see whether people kept measuring
+// cannot report anything. The default keeps it off for instances that are not
+// running a study.
+
+/** WHICH half of the goals screen was saved. Never a target and never a measurement. */
+export type GoalsSection = 'targets' | 'body-metrics';
+
+export function trackGoalsSaved(section: GoalsSection): void {
+  trackEvent('research', 'Goals', 'saved', section);
+}
+
+export function trackWeightLogged(): void {
+  trackEvent('research', 'Goals', 'weight-logged');
+}
+
+// ─── Clinician sharing (RESEARCH tier) ───────────────────────────────────────
+//
+// What this reveals: that the person has a clinician. A share is granted TO
+// somebody, and in openplate that somebody is a doctor, a dietitian or a
+// therapist. "Is under professional care" is a health fact about the person on
+// its own, before anything in the diary is looked at, and `key-rotated` or
+// `revoked` traces the shape of that relationship over time.
+//
+// Why the tier and not omission: whether people can complete the share
+// ceremony at all is the only way to tell if clinician sharing works, and it
+// is the feature most likely to fail silently. An operator running a clinic's
+// own instance already knows their users have clinicians; the default assumes
+// the operator does not.
+
+/** WHERE a share was granted from. A screen, never the recipient. */
+export type ShareGrantEntry = 'settings' | 'clinician-link';
+
+export function trackShareGranted(entry: ShareGrantEntry): void {
+  trackEvent('research', 'Sharing', 'granted', entry);
+}
+
+export function trackShareRevoked(): void {
+  trackEvent('research', 'Sharing', 'revoked');
+}
+
+export function trackShareKeyRotated(): void {
+  trackEvent('research', 'Sharing', 'key-rotated');
+}
+
+export function trackShareIdentityCreated(): void {
+  trackEvent('research', 'Sharing', 'identity-created');
+}
+
+export function trackSharedDiaryOpened(): void {
+  trackEvent('research', 'Sharing', 'diary-opened');
+}
+
+// ─── Study participation (RESEARCH tier) ─────────────────────────────────────
+//
+// What this reveals: that the person takes part in a health study. Under Art. 9
+// GDPR that is special-category data about them, on its own and with no study
+// named, because the study is a health study. A `withdrawn` says more still.
+//
+// Why the tier and not omission: the study console cannot be operated blind,
+// and the instance firing these events is by definition the one running the
+// study, whose participants have already consented to it in writing. That is
+// the narrow case where these events have a lawful home, and the level is what
+// keeps them out of every other instance.
+
+export function trackStudyEnrolled(): void {
+  trackEvent('research', 'Research', 'enrolled');
+}
+
+export function trackStudyWithdrawn(): void {
+  trackEvent('research', 'Research', 'withdrawn');
+}
+
+export function trackContributionSent(): void {
+  trackEvent('research', 'Research', 'contribution-sent');
 }

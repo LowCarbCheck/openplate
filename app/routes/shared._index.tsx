@@ -29,6 +29,7 @@ import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackShareIdentityCreated } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
   dropSharedWithMe,
@@ -81,7 +82,11 @@ export default function SharedIndex() {
     setIsBusy(true);
     setError(null);
     try {
+      // `ensureShareIdentity` hands an existing pair back untouched, so the
+      // event is gated on there not having been one rather than on the call.
+      const isFirstIdentity = identity === null;
       setIdentity(await ensureShareIdentity());
+      if (isFirstIdentity) trackShareIdentityCreated();
     } catch (caught) {
       setError(describeErrorForUser(caught, t('sharing.identity.failed')));
     } finally {

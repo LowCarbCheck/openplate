@@ -24,6 +24,7 @@ import { beginConnect, exchangeCode, OAuthPkceError, OPENROUTER_OAUTH_CONFIG } f
 import type { OAuthPkceErrorCode } from '#app/lib/oauth-pkce';
 import { getLocalAiSettings, putLocalAiSettings } from '#app/lib/local-store';
 import { verifyProviderKey } from '#app/services/vision/verify-key';
+import { trackAiProviderConnected } from '#app/lib/matomo-events';
 import { reportError } from '#app/lib/report-error';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 
@@ -107,6 +108,11 @@ async function runOAuthCallback(params: { code: string | null; state: string }):
       connectedVia: 'oauth',
       updatedAt: Date.now(),
     });
+    // Here rather than in the component: this function runs once per callback
+    // (the mount effect guards it with a ref), while the success card renders
+    // on every re-render. The key is stored, so the connect has happened,
+    // whatever the verification below then says.
+    trackAiProviderConnected('oauth');
     const verification = await verifyProviderKey({ provider: 'openrouter', apiKey });
     return { status: 'connected', verified: verification.status !== 'rejected' };
   } catch (error) {

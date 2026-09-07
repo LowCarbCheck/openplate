@@ -60,6 +60,7 @@ import { Label } from '#app/components/ui/label';
 import { useManagedInstance } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { buildJoinFragment, isJoinLinkEmpty, parseJoinLinkInput } from '#app/lib/join-link';
+import { trackInviteLinkPasted } from '#app/lib/matomo-events';
 import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
 import { resolveWelcomeHint, type WelcomeHintInput, type WelcomeHint } from '#app/lib/welcome-hint';
 
@@ -231,6 +232,7 @@ function PasteInviteLink({ onCancel }: { onCancel: () => void }) {
       setIsRejected(true);
       return;
     }
+    trackInviteLinkPasted();
     globalThis.window.location.assign(`/join${buildJoinFragment(link)}`);
   }
 

@@ -52,6 +52,7 @@ import {
   AlertDialogTrigger,
 } from '#app/components/ui/alert-dialog';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackContributionSent, trackStudyWithdrawn } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
   loadResearchEnrolments,
@@ -171,6 +172,7 @@ function EnrolmentsSection({
       const result = await withdrawFromStudyAction(studyAccountId);
       // A dark lane withdrew NOTHING and kept the pin, so it must not read as
       // a success — `research/withdraw.ts` is where that distinction is made.
+      if (result.status === 'withdrawn') trackStudyWithdrawn();
       setMessage(result.status === 'withdrawn' ? t('research.withdrawal.done') : t('research.withdrawal.unavailable'));
       onChanged();
     } catch (caught) {
@@ -326,7 +328,10 @@ function SendWindowSection({ studyAccountId, onSubmitted }: { studyAccountId: nu
       setOutcome(submitOutcomeCopy({ result, window }));
       // Only an accepted submission changed anything worth re-reading: the pin
       // now carries the window, and the server row a new version.
-      if (result.status === 'submitted') onSubmitted();
+      if (result.status === 'submitted') {
+        trackContributionSent();
+        onSubmitted();
+      }
     } catch (caught) {
       setFailure(describeErrorForUser(caught, t('research.submit.failed')));
     } finally {

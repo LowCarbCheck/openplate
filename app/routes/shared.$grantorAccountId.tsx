@@ -16,7 +16,7 @@
  * share must not confirm that an account exists). This screen therefore says
  * one thing for all of them, and does not invent a distinction it cannot make.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
@@ -29,6 +29,7 @@ import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackSharedDiaryOpened } from '#app/lib/matomo-events';
 import { openSharedPatientDiary } from '#app/lib/sync/share-actions';
 import type { OpenSharedDiaryResult } from '#app/lib/sync/sharing';
 
@@ -50,12 +51,28 @@ export default function SharedPatientDiary() {
 
   const grantorAccountId = Number.parseInt(params.grantorAccountId ?? '', 10);
 
+  /**
+   * The diary this screen has already counted, so one opening is one event.
+   *
+   * The effect below re-runs whenever the session object's identity changes,
+   * which re-decrypts the same diary, and a second event would count one
+   * consultation twice. The id lives in this ref and is NEVER passed to the
+   * event: it is a per-person account id, which is exactly what the analytics
+   * URL scrubber exists to keep out of Matomo.
+   */
+  const countedDiaryRef = useRef<number | null>(null);
+
   useEffect(() => {
     let isCancelled = false;
     void (async () => {
       if (session.account === null || !Number.isSafeInteger(grantorAccountId)) return;
       const opened = await openSharedPatientDiary(grantorAccountId);
-      if (!isCancelled) setResult(opened);
+      if (isCancelled) return;
+      setResult(opened);
+      if (opened.status === 'opened' && countedDiaryRef.current !== grantorAccountId) {
+        countedDiaryRef.current = grantorAccountId;
+        trackSharedDiaryOpened();
+      }
     })();
     return () => {
       isCancelled = true;

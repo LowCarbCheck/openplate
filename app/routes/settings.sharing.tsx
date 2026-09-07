@@ -48,6 +48,7 @@ import {
   AlertDialogTrigger,
 } from '#app/components/ui/alert-dialog';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackShareGranted, trackShareKeyRotated, trackShareRevoked } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
   grantShare,
@@ -162,6 +163,9 @@ function GrantsSection({ grants, onChanged }: { grants: readonly ShareGrantView[
         label: draft.label.trim() === '' ? null : draft.label.trim(),
         typedFingerprint: draft.typedFingerprint,
       });
+      // Only a `granted` result wrote a share; every other status is a refusal
+      // the ceremony reports through the same sentence.
+      if (result.status === 'granted') trackShareGranted('settings');
       setMessage(describeCeremony(result, t));
       onChanged();
     } catch (caught) {
@@ -175,6 +179,7 @@ function GrantsSection({ grants, onChanged }: { grants: readonly ShareGrantView[
     setRevoking(granteeAccountId);
     try {
       await revokeShare(granteeAccountId);
+      trackShareRevoked();
       onChanged();
     } catch (caught) {
       setMessage(describeErrorForUser(caught, t('sharing.grants.revokeFailed')));
@@ -249,6 +254,7 @@ function RotationCard({ onRotated }: { onRotated: () => void }) {
     setError(null);
     try {
       setOutcome(await rotateSyncDek({ passphrase }));
+      trackShareKeyRotated();
       onRotated();
     } catch (caught) {
       setError(describeErrorForUser(caught, t('sharing.rotate.failed')));

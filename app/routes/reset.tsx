@@ -53,6 +53,7 @@ import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useFirstPull } from '#app/hooks/use-first-pull';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { consumeResetToken, isForeignSyncServer, takeResetLinkFromUrl } from '#app/lib/join-link';
+import { trackPasswordResetCompleted } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import type { SignInDestination } from '#app/lib/sign-in-flow';
@@ -128,6 +129,7 @@ export default function Reset() {
       // to finish before anything can ask where this person belongs. Landing
       // on `/` was doubly wrong: it is the marketing page, and it arrived
       // before the diary did.
+      trackPasswordResetCompleted();
       setPhase({ status: 'pulling' });
       firstPull.start();
     } catch (cause) {

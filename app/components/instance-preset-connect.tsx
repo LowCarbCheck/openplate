@@ -23,6 +23,7 @@ import { Button } from '#app/components/ui/button';
 import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
 import { buildPresetAiSettings } from '#app/lib/instance-preset';
 import { putLocalAiSettings } from '#app/lib/local-store';
+import { trackAiProviderConnected } from '#app/lib/matomo-events';
 import { reportError } from '#app/lib/report-error';
 import { cn } from '#app/lib/utils';
 import { verifyProviderKey } from '#app/services/vision/verify-key';
@@ -53,6 +54,10 @@ export function InstancePresetConnect({ onConnected, className }: InstancePreset
     } finally {
       setIsConnecting(false);
     }
+
+    // Past the catch above, so the settings row is written. The probe below
+    // may still downgrade the toast, but the connect itself has happened.
+    trackAiProviderConnected('preset');
 
     // Tell the caller first: the connection IS saved at this point, and the
     // probe below is a courtesy. A slow or unreachable endpoint must never

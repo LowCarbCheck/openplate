@@ -19,6 +19,7 @@ import { computeWeeklyRecap } from '#app/lib/trend-recap';
 import { computeWeeklyWeightChange } from '#app/lib/trend-weight';
 import { computeEatingWindow } from '#app/lib/trend-eating-window';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
+import { trackWeightLogged } from '#app/lib/matomo-events';
 import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
 import { readStoredWeightUnit } from '#app/lib/weight-unit-preference';
 import type { WeightUnit } from '#app/lib/weight-units';
@@ -242,6 +243,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   const profile = await getLocalProfileGoals();
   const dayKey = todayInTimezone(resolveLocalTimezone(profile));
   await upsertLocalWeightEntryForDay({ dayKey, weightKg: submission.value.weightKg });
+  trackWeightLogged();
   return redirectWithLocalToast('/trends', {
     type: 'success',
     description: actionT('goals.toast.weightLogged'),

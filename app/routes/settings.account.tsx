@@ -58,6 +58,7 @@ import { getFormProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { useManagedInstance } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackAccountDeleted, trackPasswordChanged } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import {
@@ -312,6 +313,7 @@ function ChangePasswordCard() {
     setMessage(null);
     try {
       await changeSyncPassphrase({ currentPassphrase: current, newPassphrase: next });
+      trackPasswordChanged();
       setCurrent('');
       setIsOpen(false);
       setMessage({ kind: 'ok', text: t('account.password.done') });
@@ -393,6 +395,7 @@ function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
     setError(null);
     try {
       await deleteSyncAccount({ passphrase });
+      trackAccountDeleted();
     } catch (caught) {
       setError(describeErrorForUser(caught, t('account.delete.failed')));
     } finally {

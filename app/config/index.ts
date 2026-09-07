@@ -283,10 +283,18 @@ export const CONFIG = {
    * "no third-party script on an unconfigured instance". A half-configured pair
    * throws at boot rather than degrading, exactly as the newsletter pair does —
    * see `app/config/analytics.ts` for why silence would be worse here.
+   *
+   * `MATOMO_EVENT_LEVEL` decides how much the custom events may say once the
+   * pair is set: `pageviews`, `product` (the default) or `research`. The
+   * research level counts fasting, weight, clinician sharing and study
+   * participation, which is why an operator has to name it rather than get it
+   * by turning analytics on. A level set with no pair throws, for the same
+   * reason a half-configured pair does.
    */
   analytics: parseAnalyticsConfig({
     matomoUrl: process.env.MATOMO_URL,
     siteId: process.env.MATOMO_SITE_ID,
+    eventLevel: process.env.MATOMO_EVENT_LEVEL,
   }),
 
   /**

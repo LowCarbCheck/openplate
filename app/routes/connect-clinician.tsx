@@ -56,6 +56,7 @@ import {
   type ClinicianInvite,
   type ClinicianLinkParse,
 } from '#app/lib/clinician-link';
+import { trackShareGranted } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { grantShare } from '#app/lib/sync/share-actions';
 
@@ -192,20 +193,19 @@ function ConnectSection({ invite }: { invite: ClinicianInvite }) {
     setIsSubmitting(true);
     setFailure(null);
     try {
-      setPhase(
-        ceremonyPhaseFor(
-          await grantShare({
-            granteeAccountId: invite.accountId,
-            // The bytes THIS DEVICE received, not anything the form re-typed.
-            publicKeyBase64: invite.publicKeyBase64,
-            label: draft.label.trim() === '' ? invite.claimedLabel : draft.label.trim(),
-            typedFingerprint: draft.typedFingerprint,
-            // True only from the phase the person reached by being shown that
-            // the key changed. It never skips the typed check.
-            acceptsKeyChange: acceptsKeyChangeIn(phase),
-          }),
-        ),
-      );
+      const result = await grantShare({
+        granteeAccountId: invite.accountId,
+        // The bytes THIS DEVICE received, not anything the form re-typed.
+        publicKeyBase64: invite.publicKeyBase64,
+        label: draft.label.trim() === '' ? invite.claimedLabel : draft.label.trim(),
+        typedFingerprint: draft.typedFingerprint,
+        // True only from the phase the person reached by being shown that
+        // the key changed. It never skips the typed check.
+        acceptsKeyChange: acceptsKeyChangeIn(phase),
+      });
+      // Only a `granted` result wrote a share; the other statuses are refusals.
+      if (result.status === 'granted') trackShareGranted('clinician-link');
+      setPhase(ceremonyPhaseFor(result));
     } catch (caught) {
       setFailure(describeErrorForUser(caught, t('sharing.grant.failed')));
     } finally {

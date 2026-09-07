@@ -26,6 +26,7 @@ import {
   type LanguageCode,
 } from '#app/i18n/language-prefs';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { trackPreferenceChanged } from '#app/lib/matomo-events';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -44,7 +45,13 @@ function LanguageRow({ code, isActive }: { code: LanguageCode; isActive: boolean
   return (
     <button
       type="button"
-      onClick={() => selectLanguage(code)}
+      onClick={() => {
+        // Before the call, not after: `selectLanguage` reloads the document,
+        // and a push queued behind that reload may never be sent. Its two
+        // writes cannot fail, so this is still only counted on a real change.
+        if (!isActive) trackPreferenceChanged('language');
+        selectLanguage(code);
+      }}
       aria-current={isActive ? 'true' : undefined}
       className={cn(
         'flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors',

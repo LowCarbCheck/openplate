@@ -199,11 +199,43 @@ describe('Privacy policy — the analytics section tracks reality', () => {
   });
 
   it('makes the full Article 13 disclosure when analytics is on', () => {
-    const html = renderToStaticMarkup(createElement(PrivacyContent, { analyticsEnabled: true }));
+    const html = renderToStaticMarkup(createElement(PrivacyContent, { analyticsLevel: 'product' }));
     assert.match(html, /Matomo/);
     assert.match(html, /Art\. 6\(1\)\(f\)/);
     assert.match(html, /Do Not Track/);
     assert.doesNotMatch(html, /This instance measures nothing/);
+  });
+
+  // The three levels below are the reason the section stopped being keyed on a
+  // boolean. Each assertion is a sentence that would be FALSE on the instance
+  // it is asserted against if the level were ignored.
+  it('does not claim feature tracking on an instance that counts only pageviews', () => {
+    const html = renderToStaticMarkup(createElement(PrivacyContent, { analyticsLevel: 'pageviews' }));
+    assert.match(html, /It does not record which features you use/);
+    assert.match(html, /What is never recorded:<\/strong> the features you used/);
+    assert.doesNotMatch(html, /for example that a plate was scanned/);
+  });
+
+  it('discloses the health-behaviour events on an instance that records them', () => {
+    const html = renderToStaticMarkup(createElement(PrivacyContent, { analyticsLevel: 'research' }));
+    assert.match(html, /This instance also records research measurements/);
+    assert.match(html, /when you start or end a fast/);
+    assert.match(html, /openplate has three analytics levels/);
+  });
+
+  it('keeps the research paragraph off the two lower levels', () => {
+    for (const analyticsLevel of ['pageviews', 'product'] as const) {
+      const html = renderToStaticMarkup(createElement(PrivacyContent, { analyticsLevel }));
+      assert.doesNotMatch(html, /This instance also records research measurements/);
+      // The level itself is still disclosed, at every level that is on.
+      assert.match(html, /openplate has three analytics levels/);
+    }
+  });
+
+  it('says nothing about levels at all when analytics are off', () => {
+    const html = renderToStaticMarkup(createElement(PrivacyContent));
+    assert.doesNotMatch(html, /openplate has three analytics levels/);
+    assert.doesNotMatch(html, /This instance also records research measurements/);
   });
 });
 

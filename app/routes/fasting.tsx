@@ -34,6 +34,7 @@ import { Trash2 } from 'lucide-react';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { formatClockTime } from '#app/lib/format-clock-time';
 import { formatDayLabel } from '#app/lib/format-day-label';
+import { trackFastEnded, trackFastStarted } from '#app/lib/matomo-events';
 import { todayInTimezone } from '#app/lib/user-days';
 import { cn } from '#app/lib/utils';
 import {
@@ -288,6 +289,9 @@ async function _startFast(formData: FormData) {
   }
 
   const isScheduled = plannedStartAt !== null && plannedStartAt > nowMs;
+  // The same flag the toast reads, not the submitted `startMode`: a BACKDATED
+  // `later` start is already running, so it is a 'now' fast, not a scheduled one.
+  trackFastStarted(isScheduled ? 'scheduled' : 'now');
   return redirectWithLocalToast('/fasting', {
     type: 'success',
     description: actionT(isScheduled ? 'fasting.toast.scheduled' : 'fasting.toast.started'),
@@ -328,6 +332,7 @@ async function _endFast(formData: FormData) {
   const id = requireFastId(formData);
   const endedAt = Date.now();
   const ended = await endLocalFast(id, { endedAt });
+  trackFastEnded();
   return redirectWithLocalToast('/fasting', {
     type: 'success',
     description: actionT('fasting.toast.ended', {

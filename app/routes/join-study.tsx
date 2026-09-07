@@ -53,6 +53,7 @@ import {
   type StudyInvite,
   type StudyLinkParse,
 } from '#app/lib/study-link';
+import { trackStudyEnrolled } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { enrolInStudyAction } from '#app/lib/sync/research-actions';
 
@@ -186,15 +187,16 @@ function JoinSection({ invite }: { invite: StudyInvite }) {
     setIsSubmitting(true);
     setFailure(null);
     try {
-      setPhase(
-        await enrolInStudyAction({
-          studyAccountId: invite.studyAccountId,
-          // The bytes THIS DEVICE received, not anything the form re-typed.
-          publicKeyBase64: invite.publicKeyBase64,
-          typedFingerprint: draft.typedFingerprint,
-          label: draft.label.trim() === '' ? invite.claimedLabel : draft.label.trim(),
-        }),
-      );
+      const result = await enrolInStudyAction({
+        studyAccountId: invite.studyAccountId,
+        // The bytes THIS DEVICE received, not anything the form re-typed.
+        publicKeyBase64: invite.publicKeyBase64,
+        typedFingerprint: draft.typedFingerprint,
+        label: draft.label.trim() === '' ? invite.claimedLabel : draft.label.trim(),
+      });
+      // Nothing about the study travels with it: the export takes no argument.
+      if (result.status === 'enrolled') trackStudyEnrolled();
+      setPhase(result);
     } catch (caught) {
       setFailure(describeErrorForUser(caught, t('research.join.failed')));
     } finally {

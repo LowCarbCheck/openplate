@@ -200,7 +200,7 @@ describe('legal pages — the German render', () => {
 
   it('honours the analytics switch in German too', () => {
     const off = render(createElement(PrivacyContent, {}), 'de');
-    const on = render(createElement(PrivacyContent, { analyticsEnabled: true }), 'de');
+    const on = render(createElement(PrivacyContent, { analyticsLevel: 'product' }), 'de');
     // NOT a bare /Matomo/ check on the off branch: both branches name Matomo,
     // because both tell a self-hoster what the default is. What distinguishes
     // them is whether the full Article 13 disclosure is made — the legal basis,
@@ -219,7 +219,28 @@ describe('legal pages — the German render', () => {
   });
 
   it('says DSGVO, not GDPR: a German policy naming the English regulation reads as a translation', () => {
-    const on = render(createElement(PrivacyContent, { analyticsEnabled: true }), 'de');
+    const on = render(createElement(PrivacyContent, { analyticsLevel: 'product' }), 'de');
     assert.doesNotMatch(on, /GDPR/);
+  });
+
+  it('varies section 9a by level in German, not only by on and off', () => {
+    // The German bundle carries its own four claims. A missing one would render
+    // the English fallback inside a German policy, which reads as a page that
+    // was half translated and is a false disclosure in the language the reader
+    // is actually being addressed in.
+    const pageviews = render(createElement(PrivacyContent, { analyticsLevel: 'pageviews' }), 'de');
+    const product = render(createElement(PrivacyContent, { analyticsLevel: 'product' }), 'de');
+    const research = render(createElement(PrivacyContent, { analyticsLevel: 'research' }), 'de');
+
+    assert.match(pageviews, /Es wird nicht erfasst, welche Funktionen Sie nutzen/);
+    assert.match(research, /Diese Instanz erfasst auch Messwerte zu Forschungszwecken/);
+    assert.doesNotMatch(product, /Diese Instanz erfasst auch Messwerte zu Forschungszwecken/);
+    assert.doesNotMatch(pageviews, /Diese Instanz erfasst auch Messwerte zu Forschungszwecken/);
+
+    for (const html of [pageviews, product, research]) {
+      assert.match(html, /openplate verf\u00fcgt \u00fcber drei Analysestufen/);
+      // English leaking through a missing German key is the failure this guards.
+      assert.doesNotMatch(html, /three analytics levels/);
+    }
   });
 });

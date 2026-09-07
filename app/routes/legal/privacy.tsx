@@ -3,6 +3,7 @@ import PublicWrapper from '#app/components/public-wrapper';
 import { PHOTO_RETENTION_DAYS } from '#app/lib/local-store/photo-policy';
 import type { MetaFunction } from 'react-router';
 import { useManagedInstance, usePublicConfig } from '#app/hooks/use-public-config';
+import type { AnalyticsEventLevel } from '#app/config/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
 import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
@@ -20,7 +21,7 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
  * component has no such dependency (plain `<a>` tags only, no `Link`/`NavLink`).
  */
 /**
- * Whether THIS instance actually runs analytics.
+ * HOW MUCH this instance actually measures, not merely whether it measures.
  *
  * §9a used to be written unconditionally, on the reasoning that the whole
  * document describes "the hosted instance we operate". That reasoning broke on
@@ -30,13 +31,24 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
  * their privacy, but it is still a false statement in a legally operative
  * document, and a reader cannot tell which of the other sections are stale too.
  *
+ * The boolean that fixed that is itself no longer enough. `MATOMO_EVENT_LEVEL`
+ * (see `app/config/analytics.ts`) gives three levels, so "analytics are on" now
+ * covers three different disclosures. A policy that describes feature tracking
+ * on an instance running at `pageviews`, which counts no feature at all, states
+ * something that is not true of that instance. A policy that omits the
+ * health-behaviour events on an instance running at `research`, which counts
+ * fasting, weight, clinician sharing and study participation, omits precisely
+ * the processing a reader most needs to know about. Neither is stale copy;
+ * both are false disclosure in a document the operator is legally answerable
+ * for. So §9a is keyed on the LEVEL, and `null` means analytics are off.
+ *
  * A PROP rather than `usePublicConfig()`: this component is deliberately
  * renderable by `renderToStaticMarkup` with no data router (see the header
  * below), and a hook would take that away. The route passes the real value.
  */
 export interface PrivacyContentProps {
-  /** `false` unless the operator configured Matomo. The self-host default. */
-  analyticsEnabled?: boolean;
+  /** `null` unless the operator configured Matomo. The self-host default. */
+  analyticsLevel?: AnalyticsEventLevel | null;
   /**
    * `true` on an instance an organization runs for its people (M196).
    *
@@ -44,13 +56,27 @@ export interface PrivacyContentProps {
    * false on a managed one: it HAS accounts, the diary does reach the server
    * (as ciphertext), and the plate photo goes through the operator's own proxy
    * under the operator's key rather than straight to a provider the person
-   * picked. A prop for the same reason `analyticsEnabled` is one: the content
+   * picked. A prop for the same reason `analyticsLevel` is one: the content
    * stays renderable with no data router.
    */
   managed?: boolean;
 }
 
-export function PrivacyContent({ analyticsEnabled = false, managed = false }: PrivacyContentProps) {
+/**
+ * The Section 1 one-liner, one claim per level.
+ *
+ * A `Record` over the union rather than a chain of ternaries: a fourth level
+ * added to `AnalyticsEventLevel` fails to compile HERE, which is the point. A
+ * ternary chain would keep compiling and would quietly make one of these three
+ * claims about an instance that does something else.
+ */
+const S1_ITEM4_KEY_BY_LEVEL = {
+  pageviews: 'privacy.s1Item4Pageviews',
+  product: 'privacy.s1Item4Analytics',
+  research: 'privacy.s1Item4Research',
+} satisfies Record<AnalyticsEventLevel, string>;
+
+export function PrivacyContent({ analyticsLevel = null, managed = false }: PrivacyContentProps) {
   const { t, i18n } = useTranslation('legal');
   const days = PHOTO_RETENTION_DAYS;
   return (
@@ -73,7 +99,7 @@ export function PrivacyContent({ analyticsEnabled = false, managed = false }: Pr
           <li>{t('privacy.s1Item1')}</li>
           <li>{t(managed ? 'privacy.s1Item2Managed' : 'privacy.s1Item2')}</li>
           <li>{t('privacy.s1Item3')}</li>
-          <li>{t(analyticsEnabled ? 'privacy.s1Item4Analytics' : 'privacy.s1Item4NoAnalytics')}</li>
+          <li>{t(analyticsLevel === null ? 'privacy.s1Item4NoAnalytics' : S1_ITEM4_KEY_BY_LEVEL[analyticsLevel])}</li>
         </ul>
       </section>
 
@@ -168,21 +194,42 @@ export function PrivacyContent({ analyticsEnabled = false, managed = false }: Pr
         section appears when analytics does and disappears when it does not, on
         the hosted instance and on a self-hosted one alike, with no second edit.
 
+        Since MATOMO_EVENT_LEVEL exists, presence is not the only fact: the
+        CONTENT below is keyed on the level too. See the props doc block for why
+        a boolean stopped being a true statement about a `pageviews` or a
+        `research` instance.
+
         No consent banner accompanies this, deliberately and on advice: the tracker
         is loaded with cookies disabled and stores nothing on the device, so §25
         TTDSG is not engaged and the legal basis is Art. 6(1)(f). If anyone ever
         switches cookies back on in use-matomo-tracker.ts, that reasoning dies
         with the change and a banner becomes mandatory.
       */}
-      {analyticsEnabled ?
+      {analyticsLevel !== null ?
         <section className="mb-8">
           <H2 variant="default">{t('privacy.s9aOnHeading')}</H2>
           <P>
             <Trans i18nKey="legal:privacy.s9aOnBody1" components={{ b: <strong /> }} />
           </P>
+          {/* The "what is recorded" list differs by level: `s9aOnBody2` names
+              the features used, which an instance at `pageviews` never counts,
+              so that instance gets the paragraph that says so instead. */}
           <P className="mt-4">
-            <Trans i18nKey="legal:privacy.s9aOnBody2" components={{ b: <strong /> }} />
+            <Trans
+              i18nKey={analyticsLevel === 'pageviews' ? 'legal:privacy.s9aPageviewsBody2' : 'legal:privacy.s9aOnBody2'}
+              components={{ b: <strong /> }}
+            />
           </P>
+          {/* The level itself, disclosed at every level: a reader cannot judge
+              the paragraph above without knowing that its scope is a setting. */}
+          <P className="mt-4">
+            <Trans i18nKey="legal:privacy.s9aLevelBody" components={{ b: <strong /> }} />
+          </P>
+          {analyticsLevel === 'research' && (
+            <P className="mt-4">
+              <Trans i18nKey="legal:privacy.s9aResearchBody" components={{ b: <strong /> }} />
+            </P>
+          )}
           <P className="mt-4">
             <Trans i18nKey="legal:privacy.s9aOnBody3" components={{ b: <strong /> }} />
           </P>
@@ -247,7 +294,7 @@ export default function Privacy() {
   const managed = useManagedInstance();
   return (
     <PublicWrapper>
-      <PrivacyContent analyticsEnabled={analytics !== null} managed={managed} />
+      <PrivacyContent analyticsLevel={analytics?.eventLevel ?? null} managed={managed} />
     </PublicWrapper>
   );
 }

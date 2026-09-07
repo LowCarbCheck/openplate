@@ -36,6 +36,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { dateLabelLocale } from '#app/i18n/date-locale';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { getFirstDataAt, restoreBackup } from '#app/lib/local-store';
+import { trackBackupImported } from '#app/lib/matomo-events';
 import { reportError } from '#app/lib/report-error';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -100,6 +101,9 @@ function RestoreFromBackup() {
       setStatus('failed');
       return;
     }
+    // The same act as an import from settings, on a device whose store was
+    // wiped, so it reuses that event rather than inventing a second one.
+    trackBackupImported();
     window.location.assign(AFTER_RESTORE_PATH);
   }
 

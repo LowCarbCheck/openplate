@@ -27,11 +27,13 @@ import { NewsletterSignup } from '#app/components/newsletter-signup';
 import { useManagedInstance } from '#app/hooks/use-public-config';
 import { REPO_URL } from '#app/lib/brand';
 import { CONFIG } from '#app/config';
+import type { AnalyticsEventLevel } from '#app/config/analytics';
 import { NEWSLETTER_SOURCE, toNewsletterPublicConfig } from '#app/config/newsletter';
 import { readNewsletterResponse, type NewsletterOutcome } from '#app/lib/newsletter-outcome';
 import { NEWSLETTER_RATE_LIMIT, newsletterRateLimitKey } from '#app/lib/newsletter-rate-limit.server';
 import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.server';
 import { createComponentLogger } from '#app/lib/logger';
+import { trackLandingCtaClicked } from '#app/lib/matomo-events';
 import { SectionEyebrow } from '#app/components/typography';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent } from '#app/components/ui/card';
@@ -144,20 +146,58 @@ function landingSections() {
     /** `NEWSLETTER_SUBSCRIBE_URL` + `NEWSLETTER_TURNSTILE_SITE_KEY` — off by default. */
     newsletter: toNewsletterPublicConfig(CONFIG.newsletter),
     /**
-     * `MATOMO_URL` + `MATOMO_SITE_ID` — off by default, including on every
-     * self-host.
+     * `MATOMO_EVENT_LEVEL` on an instance that set `MATOMO_URL` +
+     * `MATOMO_SITE_ID`, and `null` when analytics are off, which is the
+     * default, including on every self-host.
      *
-     * A BOOLEAN, not the config: this decides which of two tracking claims the
-     * page makes, and the card needs no URL or site id to say it. Keeping the
-     * value out of this payload also means the landing page carries no Matomo
-     * address on an instance that has one, which is one fewer thing for a
-     * scraper to collect.
+     * THE LEVEL, not a boolean, and still not the config. It used to be
+     * `analyticsEnabled`, which was honest while every configured instance
+     * counted the same things. It stopped being honest when the level landed:
+     * a `research` instance counts more than the "visits and feature use"
+     * claim admits, and a `pageviews` one counts less. The card is a product
+     * claim (.adr/0010-hosted-analytics.md), so both directions are wrong,
+     * and under-claiming is the worse one.
+     *
+     * The URL and the site id still do not cross. The landing page carries no
+     * Matomo address on an instance that has one, which is one fewer thing for
+     * a scraper to collect, and a level name discloses nothing an operator has
+     * not already chosen to say on the card itself.
      */
-    analyticsEnabled: CONFIG.analytics !== null,
+    analyticsLevel: CONFIG.analytics?.eventLevel ?? null,
   };
 }
 
 const logger = createComponentLogger('landing');
+
+/**
+ * The "No ads, no tracking" body string, one per analytics level.
+ *
+ * KEYED ON THE LEVEL, and a total `Record` rather than a chain of ternaries,
+ * because this card is a public product claim rather than a feature blurb
+ * (.adr/0010-hosted-analytics.md, .adr/0011-analytics-levels.md). A claim that
+ * counts LESS than the instance does is a false statement about the visitor's
+ * data, not stale copy: the `product` sentence on a `research` instance denies
+ * counting exactly the health-adjacent events that instance is counting.
+ *
+ * So a fourth `AnalyticsEventLevel` must fail to compile here. `satisfies
+ * Record<AnalyticsEventLevel, string>` makes it fail with "property is
+ * missing", and the person adding the level is made to write the sentence. A
+ * ternary chain would instead fall through to whichever branch came last and
+ * ship a false claim in silence, which is the failure this shape exists to
+ * prevent. `satisfies` and not an annotation: the lint rule wants the literal
+ * types kept, and the check is identical for the purpose above.
+ */
+const NO_TRACKING_BODY_KEYS = {
+  pageviews: 'landing.features.noTracking.bodyPageviews',
+  product: 'landing.features.noTracking.bodyAnalytics',
+  research: 'landing.features.noTracking.bodyResearch',
+} satisfies Record<AnalyticsEventLevel, string>;
+
+/** The body key for this instance. `null` is analytics off, the self-host default. */
+function noTrackingBodyKey(level: AnalyticsEventLevel | null): string {
+  if (level === null) return 'landing.features.noTracking.body';
+  return NO_TRACKING_BODY_KEYS[level];
+}
 
 /** What the newsletter form submits. Parsed, never trusted — it arrives from a public page. */
 const subscriptionSchema = z.object({
@@ -1032,7 +1072,7 @@ function LadderCard({
 export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   useHomeHintRepair();
-  const { syncEnabled, newsletter, analyticsEnabled } = loaderData;
+  const { syncEnabled, newsletter, analyticsLevel } = loaderData;
   // THE TWO SPOTS THAT DESCRIBE THE AI (M192/06). Everything else on this page
   // is true of both kinds of instance; these two said "bring your own key",
   // which on a managed instance is a promise its visitors cannot act on and a
@@ -1128,7 +1168,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               no third thing to sell. */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" className="h-12 px-7 text-base shadow-lg shadow-primary/20">
-              <Link to="/dashboard">{t('landing.cta.tryIt')}</Link>
+              <Link to="/dashboard" onClick={() => trackLandingCtaClicked('hero')}>
+                {t('landing.cta.tryIt')}
+              </Link>
             </Button>
             <a href="#how" className={SECONDARY_ACTION}>
               {t('landing.cta.howItWorks')}
@@ -1274,7 +1316,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               </ol>
             </div>
             <Button asChild variant="outline" size="lg" className="mt-6">
-              <Link to="/dashboard">{t('landing.setup.cta')}</Link>
+              <Link to="/dashboard" onClick={() => trackLandingCtaClicked('setup')}>
+                {t('landing.setup.cta')}
+              </Link>
             </Button>
           </div>
           {/* What step 3 ends in, so the list finishes on a picture of the
@@ -1331,19 +1375,22 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             title={t('landing.features.selfHost.title')}
             body={t('landing.features.selfHost.body')}
           />
-          {/* Two variants, chosen by whether THIS instance has analytics on.
-              A single string cannot be honest on both a hosted instance that
-              counts visits and a self-hosted one that counts nothing, and this
-              card is a promise rather than a feature blurb — see the ADR on
-              hosted analytics. */}
+          {/* FOUR bodies and TWO titles, and the asymmetry is deliberate.
+
+              The body has to name what this instance actually counts, so it
+              is chosen by the analytics LEVEL: off, pageviews, product,
+              research (see `noTrackingBodyKey` for why that is a lookup and
+              not a ternary chain). The title only claims the diary is not
+              tracked, which is true at every level, so it stays a two-way
+              choice between "analytics exist here" and "they do not". */}
           <FeatureCard
             icon={EyeOff}
             title={t(
-              analyticsEnabled ? 'landing.features.noTracking.titleAnalytics' : 'landing.features.noTracking.title',
+              analyticsLevel === null ?
+                'landing.features.noTracking.title'
+              : 'landing.features.noTracking.titleAnalytics',
             )}
-            body={t(
-              analyticsEnabled ? 'landing.features.noTracking.bodyAnalytics' : 'landing.features.noTracking.body',
-            )}
+            body={t(noTrackingBodyKey(analyticsLevel))}
           />
         </div>
         {/* The pair, restated where the six claims end. This is the one point
@@ -1361,7 +1408,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 on a managed instance, where an account is the only way in.
                 The destination changes with the label: `/dashboard` bounces to
                 `/welcome` there anyway, and naming the real door is honest. */}
-            <Link to={managed ? '/welcome' : '/dashboard'}>
+            <Link to={managed ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('mid')}>
               {managed ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryItFree')}
             </Link>
           </Button>
@@ -1500,7 +1547,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             or on wording — the only thing left to rank them by is weight, and
             the one above the fold has to win it. */}
         <Button asChild size="lg" className="mt-7 h-12 px-7 text-base shadow-md shadow-primary/20">
-          <Link to="/dashboard">{t('landing.cta.tryIt')}</Link>
+          <Link to="/dashboard" onClick={() => trackLandingCtaClicked('footer')}>
+            {t('landing.cta.tryIt')}
+          </Link>
         </Button>
         {/* Rung 5, now written as the same "or read the source" second action
             the hero and the feature grid carry, rather than as a small muted

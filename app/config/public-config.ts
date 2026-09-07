@@ -97,6 +97,13 @@ export interface PublicConfig {
    * It also drives the landing page's tracking card, so the claim a visitor
    * reads matches the instance they are reading it on rather than a hardcoded
    * string that is right on exactly one deployment.
+   *
+   * The event LEVEL (`MATOMO_EVENT_LEVEL`) rides along inside this object, and
+   * has to: the events module runs in the BROWSER, so the browser is the only
+   * place the gate can be applied at all. It is not a secret — it describes
+   * what this instance counts about the person reading it, which is the one
+   * fact they are most entitled to see. An operator who set `research` is
+   * telling their own users so, in a value they can read in the page source.
    */
   analytics: AnalyticsConfig | null;
   /**

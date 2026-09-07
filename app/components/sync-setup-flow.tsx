@@ -4,6 +4,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import type { Submission } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
+import { trackSetupCeremonyCompleted } from '#app/lib/matomo-events';
 import {
   initialSyncSetupState,
   isSyncSetupCeremonyActive,
@@ -147,6 +148,7 @@ export function SyncSetupFlow({
     async (chosen: { passphrase: string; invite: string; displayName: string }): Promise<void> => {
       try {
         await provision(chosen);
+        trackSetupCeremonyCompleted();
         dispatch({ type: 'setupSucceeded' });
       } catch (error) {
         // The underlying words wherever there are any — "that invitation is no

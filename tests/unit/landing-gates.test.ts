@@ -26,8 +26,11 @@ import { readNewsletterResponse } from '../../app/lib/newsletter-outcome';
 
 /** The landing loader's payload — the only thing that decides what renders. */
 interface LandingData {
-  /** `MATOMO_URL` + `MATOMO_SITE_ID` — a boolean, never the config itself. */
-  analyticsEnabled: boolean;
+  /**
+   * `MATOMO_EVENT_LEVEL`, or `null` when analytics are off. The LEVEL, never
+   * the config itself: no Matomo URL and no site id reach the browser.
+   */
+  analyticsLevel: 'pageviews' | 'product' | 'research' | null;
   syncEnabled: boolean;
   newsletter: { turnstileSiteKey: string } | null;
   /** `APP_URL`, trailing slash stripped — the absolute base for the OG tags. */
@@ -94,6 +97,12 @@ describe('landing loader — an empty environment renders neither optional rung'
     delete process.env.SYNC_SERVER_URL;
     delete process.env.NEWSLETTER_SUBSCRIBE_URL;
     delete process.env.NEWSLETTER_TURNSTILE_SITE_KEY;
+    // The analytics trio too: a developer with `MATOMO_EVENT_LEVEL` exported
+    // and nothing else would otherwise make `CONFIG` throw at import, and one
+    // with the whole trio set would read a level where this file asserts none.
+    delete process.env.MATOMO_URL;
+    delete process.env.MATOMO_SITE_ID;
+    delete process.env.MATOMO_EVENT_LEVEL;
     const imported: unknown = await import('../../app/routes/index');
     // SAFETY: `imported` is this repo's own route module. Its typed signature
     // takes React Router's full server-args object, but both functions read
@@ -122,20 +131,17 @@ describe('landing loader — an empty environment renders neither optional rung'
   it('emits nothing else at all — the payload is exactly the three gates plus the origin', async () => {
     // A new field here is a new thing the landing page publishes about the
     // instance. That is a deliberate act, so it fails this assertion first.
-    // `analyticsEnabled` joined on 2026-08-31 (.adr/0010-hosted-analytics.md):
-    // it is a BOOLEAN and not the Matomo config, so an instance with analytics
+    // `analyticsLevel` joined on 2026-08-31 as the boolean `analyticsEnabled`
+    // (.adr/0010-hosted-analytics.md) and became the level with ADR-0011: the
+    // card names what this instance counts, and a boolean can no longer say
+    // that. It is still not the Matomo config, so an instance with analytics
     // on still publishes no Matomo address on its landing page.
     // `siteOrigin` joined with the Open Graph tags: `og:url` and `og:image`
     // must be ABSOLUTE, and `meta()` also runs in the browser, where it cannot
     // read `CONFIG`. It publishes `APP_URL` — the address the visitor already
     // typed to get here, so it discloses nothing new about the instance.
     const payload = await loadLandingData();
-    assert.deepEqual(Object.keys(payload).toSorted(), [
-      'analyticsEnabled',
-      'newsletter',
-      'siteOrigin',
-      'syncEnabled',
-    ]);
+    assert.deepEqual(Object.keys(payload).toSorted(), ['analyticsLevel', 'newsletter', 'siteOrigin', 'syncEnabled']);
   });
 
   it('publishes the origin without a trailing slash, so `${origin}/` is not `//`', async () => {
@@ -145,7 +151,9 @@ describe('landing loader — an empty environment renders neither optional rung'
 
   it('reports analytics OFF on an empty environment — the self-host default the card promises', async () => {
     const payload = await loadLandingData();
-    assert.equal(payload.analyticsEnabled, false);
+    // `null`, not `'pageviews'`. The lowest level still counts page visits, so
+    // a level here would put the wrong claim on a self-hoster's front page.
+    assert.equal(payload.analyticsLevel, null);
   });
 
   it('exposes no POST target for the newsletter', async () => {

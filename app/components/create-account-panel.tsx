@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 
 import { SyncSetupFlow } from '#app/components/sync-setup-flow';
 import { Button } from '#app/components/ui/button';
+import { trackAccountCreated } from '#app/lib/matomo-events';
 import { consumePendingInvite } from '#app/lib/sync/invite-link';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { SyncFieldError, type SyncRefusal } from '#app/lib/sync/form-field-error';
@@ -89,12 +90,14 @@ export function CreateAccountPanel({
           // and after it a later visit must not resurrect a spent one.
           consumePendingInvite();
           try {
-            return await createSyncAccount({
+            const account = await createSyncAccount({
               serverUrl,
               inviteToken: invite,
               passphrase,
               displayName: displayName === '' ? null : displayName,
             });
+            trackAccountCreated();
+            return account;
           } catch (error) {
             // Translated here rather than left to `describeErrorForUser`,
             // which would surface the SERVICE's own English sentence. §4 of

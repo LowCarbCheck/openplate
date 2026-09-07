@@ -23,6 +23,7 @@ import {
   type PhotoUsage,
 } from '#app/lib/local-store/photos';
 import { formatPhotoSize, PHOTO_RETENTION_DAYS } from '#app/lib/local-store/photo-policy';
+import { trackPhotoCacheCleared } from '#app/lib/matomo-events';
 import { ANONYMOUS_USER_ID } from '#app/lib/local-store/store';
 
 /**
@@ -75,9 +76,11 @@ export function PhotoCacheCard() {
     void setPhotoCaptureEnabled(next, ownerId).then(refreshUsage);
   };
 
-  const handleClear = (): void => {
+  const handleClear = async (): Promise<void> => {
     setClearOpen(false);
-    void clearAllPhotos(ownerId).then(refreshUsage);
+    await clearAllPhotos(ownerId);
+    trackPhotoCacheCleared();
+    refreshUsage();
   };
 
   // Singular/plural is i18next's `count` job, not a ternary here — German and
@@ -118,7 +121,7 @@ export function PhotoCacheCard() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t('settings.photos.cancel')}</AlertDialogCancel>
-                <Button variant="destructive" onClick={handleClear}>
+                <Button variant="destructive" onClick={() => void handleClear()}>
                   {t('settings.photos.clearAll')}
                 </Button>
               </AlertDialogFooter>

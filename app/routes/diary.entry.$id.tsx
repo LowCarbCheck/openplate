@@ -46,6 +46,7 @@ import type { Toast } from '#app/utils/toast.server';
 import { deletePlatePhoto } from '#app/lib/local-store/photos';
 import { usePlatePhoto } from '#app/hooks/use-plate-photo';
 import { cn } from '#app/lib/utils';
+import { trackEntryDeleted, trackEntryEdited, trackFoodLogged } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
@@ -494,6 +495,7 @@ export function HydrateFallback() {
 async function handleDelete(id: string, timezone: string): Promise<Response> {
   const existing = await getLocalFoodLog(id);
   await deleteLocalFoodLog(id);
+  trackEntryDeleted();
   // The client fires an optimistic sonner "Undo" toast (see the receipt), so
   // this just returns the user to their diary — no server-flashed toast.
   // Returns to the entry's own day (falling back to a bare `/diary` if the
@@ -514,6 +516,7 @@ async function handleLogAgain(id: string) {
     // Standalone entry — never inherits the original's batch grouping.
     logBatchId: null,
   });
+  trackFoodLogged('entry-log-again');
   return {
     id: randomUuid(),
     title: undefined,
@@ -589,6 +592,7 @@ async function handleSave(formData: FormData, id: string, timezone: string) {
     // provenance rule it mirrors. `undefined` drops the key on write.
     netCarbsPer100g,
   });
+  trackEntryEdited();
 
   return redirectWithLocalToast(`/diary/entry/${id}`, {
     type: 'success',
