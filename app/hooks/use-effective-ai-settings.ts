@@ -10,10 +10,11 @@
  * ── The handshake is fetched ONCE per server, and cached at module scope ──
  *
  * `/health` is a small, unauthenticated, unchanging document, and every screen
- * that can scan would otherwise ask for it on mount. A module-level cache
- * keyed on the server URL is enough: this app talks to exactly one server, an
- * operator moving it means a new document anyway, and the cache dies with the
- * tab.
+ * that can scan would otherwise ask for it on mount. That read and its cache
+ * live in `#app/hooks/use-server-instance` now, because the model is no longer
+ * the only thing the document answers: the consent step reads the retention
+ * window off the same body, and two caches would mean two requests for one
+ * document.
  *
  * FAILS OPEN, like the read underneath it: an unreachable service yields `null`
  * for the model, which the resolver turns into managed settings this build will
@@ -23,20 +24,9 @@ import { useEffect, useState } from 'react';
 
 import { usePublicConfig } from '#app/hooks/use-public-config';
 import { useSyncSession } from '#app/components/sync-status';
+import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { resolveEffectiveAiSettings, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
 import type { LocalAiSettings } from '#app/lib/local-store';
-import { readServerInstance } from '#app/lib/sync/sync-actions';
-
-/** One in-flight or settled `/health` read per server URL. Shared by every mount in the tab. */
-const instanceModelCache = new Map<string, Promise<string | null>>();
-
-function readInstanceModel(serverUrl: string): Promise<string | null> {
-  const cached = instanceModelCache.get(serverUrl);
-  if (cached !== undefined) return cached;
-  const pending = readServerInstance(serverUrl).then((instance) => instance?.ai?.model ?? null);
-  instanceModelCache.set(serverUrl, pending);
-  return pending;
-}
 
 /**
  * The AI this device may use right now, or `null` when it may use none.
@@ -59,8 +49,8 @@ export function useEffectiveAiSettings(storedSettings: LocalAiSettings | null): 
     const ask = async (): Promise<void> => {
       // `readServerInstance` fails open and never rejects, so there is nothing
       // here for a catch to do — an unreachable service IS the `null` result.
-      const next = await readInstanceModel(syncServerUrl);
-      if (isMounted) setModel(next);
+      const instance = await readCachedServerInstance(syncServerUrl);
+      if (isMounted) setModel(instance?.ai?.model ?? null);
     };
     void ask();
     return () => {

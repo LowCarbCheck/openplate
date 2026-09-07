@@ -45,6 +45,7 @@ import { redirectWithLocalToast } from '#app/lib/client-toast';
 import type { Toast } from '#app/utils/toast.server';
 import { deletePlatePhoto } from '#app/lib/local-store/photos';
 import { usePlatePhoto } from '#app/hooks/use-plate-photo';
+import { ReportEstimate } from '#app/components/report-estimate';
 import { cn } from '#app/lib/utils';
 import { trackEntryDeleted, trackEntryEdited, trackFoodLogged } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -1072,6 +1073,24 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
           <Trash2 className="h-4 w-4" /> {t('entry.action.delete')}
         </Button>
       </div>
+
+      {/* LAST, and quiet. Reporting a wrong figure is the only thing on this
+          page that sends anything anywhere, so it sits below every ordinary
+          action rather than beside them, and it renders nothing at all on an
+          instance with no account to send from. */}
+      <ReportEstimate
+        userId={userId}
+        logId={log.id}
+        logBatchId={log.logBatchId}
+        entry={{
+          name: log.name,
+          quantityGrams: grams,
+          loggedAt: log.loggedAt,
+          source: log.source,
+          aiEstimated: log.aiEstimated,
+          macros: snapshotMacros,
+        }}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { getPrimaryStore } from '#app/lib/local-store/persist';
 import { getSyncSessionSnapshot, getSyncVault, updateSyncSession } from '#app/lib/sync/sync-session';
 import { markSyncPending, syncNow } from '#app/lib/sync/sync-actions';
 import { resumeSyncSession } from '#app/lib/sync/session-cache';
+import { drainFeedbackOutboxOnce } from '#app/lib/local-store/feedback-outbox';
 import { createComponentLogger } from '#app/lib/logger';
 
 const log = createComponentLogger('sync-controller');
@@ -81,6 +82,17 @@ export function SyncController() {
         // The session snapshot already carries the user-visible error
         // (`describeSyncFailure`); this is the developer-facing half.
         log.warn('sync cycle failed', { error: error instanceof Error ? error.message : String(error) });
+      }
+      // AFTER the cycle, never inside it. A queued report of a bad estimate is
+      // not a sync artifact: it is not in the blob, it is not merged, and a
+      // report the service refuses must not be able to fail a diary push. It
+      // rides this trigger only because "the device has a connection again" is
+      // the same moment for both, and it is a no-op when nobody is signed in
+      // or the queue is empty.
+      try {
+        await drainFeedbackOutboxOnce();
+      } catch (error) {
+        log.warn('feedback drain failed', { error: error instanceof Error ? error.message : String(error) });
       }
     };
 

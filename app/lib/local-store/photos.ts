@@ -2,8 +2,16 @@
  * The on-device plate-photo cache — a TinyBase store wholly separate from the
  * mirror and outbox (its own IndexedDB database, see `store.ts`/`persist.ts`).
  * Photos are stored as the already-downscaled JPEG's base64 data-URL and are
- * DEVICE-LOCAL by definition: they are never uploaded, never mirrored, and
- * never enter any sync path.
+ * DEVICE-LOCAL: they are never mirrored, never backed up, and never enter the
+ * encrypted sync payload, because this database is outside `backup.ts`'s
+ * allowlist and that allowlist governs both.
+ *
+ * THERE IS EXACTLY ONE WAY OUT, and a person has to choose it.
+ * `#app/lib/feedback/feedback-photo-export`'s `exportPhotoForFeedback` reads
+ * one entry's photograph so it can be sent with a REPORTED bad estimate, after
+ * a separate consent step. Nothing else may read this database for that
+ * purpose, and no general "give me the bytes" helper may be added here: the
+ * isolation above is what a convenience function would quietly end.
  *
  * OWNER SCOPING: every row key is `${userId}::${logBatchId}` (see
  * `photo-policy.ts`'s `buildPhotoKey`/`parsePhotoKey`), and every

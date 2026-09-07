@@ -48,7 +48,10 @@ export const OUTBOX_DB_NAME = 'openplate-outbox';
 /**
  * IndexedDB database name for the on-device plate-photo cache. A dedicated DB
  * (separate from the primary/outbox) so clearing or evicting photos never
- * touches primary tracker data, and photos never enter any sync path.
+ * touches primary tracker data, and photos never enter a backup file or the
+ * encrypted sync payload. The one deliberate way a photograph leaves this
+ * database is a REPORTED bad estimate, through the single seam documented in
+ * `photos.ts`.
  */
 export const PHOTOS_DB_NAME = 'openplate-photos';
 /**
@@ -63,6 +66,21 @@ export const AI_DB_NAME = 'openplate-ai';
 export const OUTBOX_TABLE = 'outbox';
 /** Cell holding the JSON-serialized `OutboxRecord`. */
 export const OUTBOX_RECORD_CELL = 'record';
+
+/**
+ * Feedback-outbox table: one row per queued report of a bad estimate, keyed by
+ * the report's own idempotency key.
+ *
+ * A SECOND TABLE IN THE OUTBOX DATABASE, not a second database and not a
+ * second kind of row in `OUTBOX_TABLE`. It shares the outbox's durability and
+ * its "survive a reload, drain on reconnect" lifetime, which is the whole
+ * reason a report is queued rather than posted; it does not share the log
+ * outbox's STRICT ORDERING, because reports are independent of one another and
+ * a report parked behind an earlier one would be a report nobody sent.
+ */
+export const FEEDBACK_OUTBOX_TABLE = 'feedbackOutbox';
+/** Cell holding the JSON-serialized `FeedbackReportRecord`. */
+export const FEEDBACK_OUTBOX_RECORD_CELL = 'record';
 
 /** Photos table: one row per cached plate photo, keyed by its `logBatchId`. */
 export const PHOTOS_TABLE = 'photos';

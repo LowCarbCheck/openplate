@@ -157,6 +157,22 @@ export type InstanceDescriptor = {
   mail: boolean;
   /** The model the instance's AI proxy serves, or `null` when it has no upstream key. */
   ai: { model: string | null } | null;
+  /**
+   * What the instance promises about a reported photograph, or ABSENT when it
+   * accepts no reports.
+   *
+   * OPTIONAL, NOT NULLABLE, and the difference from `ai` above is the point.
+   * `ai: null` is a description every instance sends. This is a PROMISE, and a
+   * service with the feature off sends no key at all, which is what keeps it
+   * indistinguishable from one built before the field existed.
+   *
+   * THE CLIENT MAY NOT INVENT IT. Absent means this build does not know how
+   * long a photograph would be kept, so it says nothing about a window and
+   * offers no report, see `#app/components/report-estimate`. A number from a
+   * local default would be a promise no service made, printed at the moment a
+   * person is deciding whether to send a photograph of their food.
+   */
+  feedback?: { retentionDays: number };
 };
 
 /**
@@ -224,6 +240,18 @@ const instanceDescriptorSchema = z.object({
   language: z.string(),
   mail: z.boolean(),
   ai: z.object({ model: z.string().nullable() }).nullable(),
+  // `.optional()`, exactly like `instance` itself: a service older than the
+  // field, or one with reports switched off, sends no key here.
+  //
+  // `.catch(undefined)` because this block is all-or-nothing: a server that
+  // sent a nonsense window would otherwise fail the whole descriptor and take
+  // the AI model down with it. A window that is not a positive whole number of
+  // days is not a promise anybody can read, so it is dropped and the client
+  // treats the instance as having advertised none.
+  feedback: z
+    .object({ retentionDays: z.number().int().positive() })
+    .optional()
+    .catch(undefined),
 });
 
 /** The decoder for {@link ProtocolHandshake} — the health endpoint is an I/O boundary, so its body is parsed, not assumed. */

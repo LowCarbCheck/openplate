@@ -3,6 +3,7 @@ import PublicWrapper from '#app/components/public-wrapper';
 import { PHOTO_RETENTION_DAYS } from '#app/lib/local-store/photo-policy';
 import type { MetaFunction } from 'react-router';
 import { useManagedInstance, usePublicConfig } from '#app/hooks/use-public-config';
+import { useFeedbackRetentionDays } from '#app/hooks/use-server-instance';
 import type { AnalyticsEventLevel } from '#app/config/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
@@ -60,6 +61,26 @@ export interface PrivacyContentProps {
    * stays renderable with no data router.
    */
   managed?: boolean;
+  /**
+   * How long the sync server keeps a photograph somebody reported, in days, or
+   * `null` when it has advertised no window.
+   *
+   * A PROP, AND NOT A CONSTANT, which is the whole of M200 spec 06. This file
+   * used to import `FEEDBACK_RETENTION_DAYS` from the app's own consent module
+   * and publish that number as fact. The deletion happens in another
+   * repository, on another schedule, under another operator, and nothing tied
+   * the two together: a server whose window moved left this document stating a
+   * period nobody keeps. The number now comes off that server's `/health`
+   * handshake.
+   *
+   * `null` IS NOT A MISSING 30. It is "this app has not been told", which is
+   * the honest state for a self-hosted instance with no sync server, for a
+   * server with reports switched off, and for one older than the field. The
+   * policy then names the operator's period without inventing a length for it,
+   * because a legally operative document may not state a retention window on a
+   * guess.
+   */
+  reportRetentionDays?: number | null;
 }
 
 /**
@@ -76,9 +97,25 @@ const S1_ITEM4_KEY_BY_LEVEL = {
   research: 'privacy.s1Item4Research',
 } satisfies Record<AnalyticsEventLevel, string>;
 
-export function PrivacyContent({ analyticsLevel = null, managed = false }: PrivacyContentProps) {
+export function PrivacyContent({
+  analyticsLevel = null,
+  managed = false,
+  reportRetentionDays = null,
+}: PrivacyContentProps) {
   const { t, i18n } = useTranslation('legal');
+  // TWO WINDOWS, AND THEY ARE NOT THE SAME THING, AND THEY DO NOT COME FROM
+  // THE SAME PLACE. `days` is how long the on-device photo cache keeps a
+  // picture before evicting it: this app enforces that itself, so the sentence
+  // reads the constant the eviction acts on. `reportWindow` is how long the
+  // operator of the sync server keeps a photograph somebody deliberately
+  // reported: that deletion happens on their machine, so the sentence reads
+  // what THEY advertised, and says "the period the operator has set" when they
+  // have advertised nothing. Neither number is ever typed into the copy.
   const days = PHOTO_RETENTION_DAYS;
+  const reportWindow =
+    reportRetentionDays === null ?
+      t('privacy.reportWindowUnknown')
+    : t('privacy.reportWindowDays', { reportDays: reportRetentionDays });
   return (
     <article className="prose prose-zinc dark:prose-invert max-w-none">
       <H1 variant="default" className="mb-8">
@@ -98,7 +135,7 @@ export function PrivacyContent({ analyticsLevel = null, managed = false }: Priva
         <ul className="mt-4">
           <li>{t('privacy.s1Item1')}</li>
           <li>{t(managed ? 'privacy.s1Item2Managed' : 'privacy.s1Item2')}</li>
-          <li>{t('privacy.s1Item3')}</li>
+          <li>{t('privacy.s1Item3', { reportWindow })}</li>
           <li>{t(analyticsLevel === null ? 'privacy.s1Item4NoAnalytics' : S1_ITEM4_KEY_BY_LEVEL[analyticsLevel])}</li>
         </ul>
       </section>
@@ -106,7 +143,7 @@ export function PrivacyContent({ analyticsLevel = null, managed = false }: Priva
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s2Heading')}</H2>
         <P>{t(managed ? 'privacy.s2Body1Managed' : 'privacy.s2Body1')}</P>
-        <P className="mt-4">{t('privacy.s2Body2', { days })}</P>
+        <P className="mt-4">{t('privacy.s2Body2', { days, reportWindow })}</P>
       </section>
 
       <section className="mb-8">
@@ -121,7 +158,7 @@ export function PrivacyContent({ analyticsLevel = null, managed = false }: Priva
           <li>{t('privacy.s3Item3')}</li>
           <li>{t('privacy.s3Item4')}</li>
         </ul>
-        <P className="mt-4">{t('privacy.s3Outro')}</P>
+        <P className="mt-4">{t('privacy.s3Outro', { reportWindow })}</P>
       </section>
 
       <section className="mb-8">
@@ -129,7 +166,7 @@ export function PrivacyContent({ analyticsLevel = null, managed = false }: Priva
         {/* `s4BodyOnManaged`, NOT `s4BodyManaged`: the section already ends
             with `s4ManagedBody` below, and two keys a letter apart in the same
             section is how a swap lands on the wrong paragraph. */}
-        <P>{t(managed ? 'privacy.s4BodyOnManaged' : 'privacy.s4Body', { days })}</P>
+        <P>{t(managed ? 'privacy.s4BodyOnManaged' : 'privacy.s4Body', { days, reportWindow })}</P>
         {/* The ASIDE, for a reader of an OPEN instance's policy who may also
             use an instance an organization runs: there, the photo goes to that
             organization's proxy rather than to a provider they picked. On a
@@ -292,9 +329,19 @@ export default function Privacy() {
   // router, which `tests/unit/legal-pages.test.ts` depends on.
   const analytics = usePublicConfig()?.analytics ?? null;
   const managed = useManagedInstance();
+  // `null` until the sync server's `/health` answers, and for ever on an
+  // instance that has none. The paragraph reads sensibly either way, which is
+  // why this is not gated on a loading state: a policy that flickered between
+  // two different retention claims would be worse than one that names the
+  // operator's period.
+  const reportRetentionDays = useFeedbackRetentionDays();
   return (
     <PublicWrapper>
-      <PrivacyContent analyticsLevel={analytics?.eventLevel ?? null} managed={managed} />
+      <PrivacyContent
+        analyticsLevel={analytics?.eventLevel ?? null}
+        managed={managed}
+        reportRetentionDays={reportRetentionDays}
+      />
     </PublicWrapper>
   );
 }

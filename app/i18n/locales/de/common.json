@@ -634,6 +634,22 @@
       "removed": "{{name}} entfernt.",
       "undo": "Rückgängig",
       "updated": "Eintrag aktualisiert."
+    },
+    "report": {
+      "button": "Zahlen sehen falsch aus? Diesen Eintrag melden",
+      "queued": "Meldung eingereiht. Sie wird gesendet, sobald du das nächste Mal online bist.",
+      "failed": "Die Meldung konnte nicht eingereiht werden. Versuche es erneut.",
+      "sending": "Wird eingereiht…",
+      "consent": {
+        "title": "Diesen Eintrag an die Personen senden, die diesen Server betreiben",
+        "whatIsSentWithPhoto": "Du sendest das Teller-Foto und die Werte dieses Eintrags. Nichts anderes aus deinem Tagebuch wird mitgesendet. Eine Person mit Administratorrechten für diesen Server kann dieses Foto öffnen und diese Werte lesen.",
+        "whatIsSentFiguresOnly": "Dieser Eintrag enthält kein Foto, daher wird kein Foto gesendet. Du sendest die Werte dieses Eintrags und nichts anderes aus deinem Tagebuch. Eine Person mit Administratorrechten für diesen Server kann sie lesen.",
+        "retentionWithPhoto": "Das Foto und die Werte werden für {{days}} Tage aufbewahrt und danach gelöscht.",
+        "retentionFiguresOnly": "Die Werte werden für {{days}} Tage aufbewahrt und danach gelöscht.",
+        "unencrypted": "Alles andere, was du synchronisierst, wird auf diesem Gerät verschlüsselt, bevor es das Gerät verlässt. Diese eine Meldung ist es nicht. Sie ist das Einzige, was du sendest, das der Server lesen kann.",
+        "agree": "Einverstanden, senden",
+        "decline": "Nein, nicht senden"
+      }
     }
   },
   "errors": {

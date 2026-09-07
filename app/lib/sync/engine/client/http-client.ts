@@ -55,6 +55,7 @@ import { toRequestError } from './auth-client';
 import type { SyncTokenProvider } from './auth-client';
 import { SyncRequestError } from './sync-error';
 import { defaultFetchImpl } from './fetch-impl';
+import { FEEDBACK_API_PATH, type FeedbackWireBody } from '#app/lib/feedback/feedback-report';
 
 type FetchImpl = typeof fetch;
 
@@ -643,6 +644,29 @@ export class SyncHttpClient {
     // `ListStudyWithdrawalsResponse`; the 404 and every other non-2xx are handled above.
     const body = (await response.json()) as ListStudyWithdrawalsResponse;
     return { status: 'available', value: body.withdrawals.map(decodeStudyWithdrawal) };
+  }
+
+  // -------------------------------------------------------------------------
+  // Reported estimates
+  // -------------------------------------------------------------------------
+
+  /**
+   * Sends one report of a bad estimate (`POST /v1/feedback`).
+   *
+   * RETURNS THE STATUS, THROWS NOTHING. Every caller is the durable queue in
+   * `local-store/feedback-outbox.ts`, and the queue's whole job is to decide
+   * what a status means for a row it is holding: a `200` is a repeat of a
+   * report the server already has, a `404` is an instance whose operator never
+   * switched the feature on, a `429` is an account that has reported enough
+   * for today. Throwing here would collapse those into one `catch` and the
+   * queue would retry the ones it must not.
+   *
+   * OUTSIDE `SYNC_API_PREFIX`, exactly where the service mounts it: a report
+   * is not a sync artifact and does not participate in the CAS.
+   */
+  async submitFeedback(body: FeedbackWireBody): Promise<{ status: number }> {
+    const response = await this.send({ path: FEEDBACK_API_PATH, method: 'POST', body });
+    return { status: response.status };
   }
 
   // -------------------------------------------------------------------------

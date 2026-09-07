@@ -634,6 +634,22 @@
       "removed": "Removed {{name}}.",
       "undo": "Undo",
       "updated": "Entry updated."
+    },
+    "report": {
+      "button": "Numbers look wrong? Report this entry",
+      "queued": "Report queued. It goes out the next time you are online.",
+      "failed": "The report could not be queued. Try again.",
+      "sending": "Queueing…",
+      "consent": {
+        "title": "Send this entry to the people who run this server",
+        "whatIsSentWithPhoto": "You send the photo of this plate and the figures on this entry. Nothing else from your diary goes with it. An administrator of this server can open that photo and read those figures.",
+        "whatIsSentFiguresOnly": "This entry has no photo, so no photo is sent. You send the figures on this entry, and nothing else from your diary. An administrator of this server can read them.",
+        "retentionWithPhoto": "The photo and the figures are kept for {{days}} days and are then deleted.",
+        "retentionFiguresOnly": "The figures are kept for {{days}} days and are then deleted.",
+        "unencrypted": "Everything else you sync is encrypted on this device before it leaves. This one report is not. It is the only thing you send that the server can read.",
+        "agree": "I agree, send it",
+        "decline": "No, do not send"
+      }
     }
   },
   "errors": {

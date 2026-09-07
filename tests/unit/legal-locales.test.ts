@@ -86,6 +86,50 @@ function render(node: React.ReactElement, language: 'en' | 'de'): string {
   return renderToStaticMarkup(createElement(I18nextProvider, { i18n: instance }, node));
 }
 
+/**
+ * Markup, or a bundle string, reduced to plain text.
+ *
+ * `<b>` and `<imprint>` become a `<strong>` and an `<a>` on the way through
+ * `Trans`, so both sides are stripped of markup before they are compared.
+ */
+function plainText(value: string): string {
+  return value
+    .replaceAll(/<[^>]+>/g, '')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#x27;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&');
+}
+
+/**
+ * Asserts that the claim a bundle key makes is, or is not, in a render.
+ *
+ * WORDSMITH OWNS THE GERMAN and rephrases it whenever the copy goes through
+ * it again. So the claim is read out of the SHIPPED bundle rather than typed
+ * here: this cannot go stale on a rephrase, and it still fails on the defect
+ * it guards, which is a level that stops making its own claim. An options
+ * object because `key` and the message would otherwise be two strings in a
+ * row, and swapping them compiles.
+ */
+function assertClaim({
+  html,
+  bundle,
+  key,
+  present,
+  because,
+}: {
+  html: string;
+  bundle: FlatBundle;
+  key: string;
+  present: boolean;
+  because: string;
+}): void {
+  const claim = bundle[key];
+  assert.ok(claim !== undefined, `${key} is missing from the bundle`);
+  assert.equal(plainText(html).includes(plainText(claim)), present, `${key}: ${because}`);
+}
+
 describe('legal namespace — parity', () => {
   it('has the same keys in both languages, checked both ways', () => {
     // Both directions. A one-directional check passes when one bundle is a
@@ -205,17 +249,27 @@ describe('legal pages — the German render', () => {
     // because both tell a self-hoster what the default is. What distinguishes
     // them is whether the full Article 13 disclosure is made — the legal basis,
     // the retention window and the right to object.
-    assert.match(off, /erfasst keinerlei/i);
-    // Markers UNIQUE to the disclosure, and in the LANGUAGE being rendered.
-    // Not /90 Tage/ — the photo cache is 90 days too, so that matched the off
-    // branch. Not /Matomo/ — both branches name it, in both languages. And not
-    // the English citation form: correct German cites this as
-    // "Art. 6 Abs. 1 lit. f DSGVO", which is what a German lawyer expects.
-    assert.doesNotMatch(off, /Rechtsgrundlage/);
-    assert.doesNotMatch(off, /Do Not Track/);
-    assert.match(on, /Rechtsgrundlage/);
+    //
+    // STRUCTURAL, not textual: the two branches are different documents, and
+    // each paragraph of the disclosure is present in exactly one of them. The
+    // paragraphs are read out of the German bundle, so wordsmith may rewrite
+    // any of them without breaking this.
+    assert.notEqual(off, on, 'the German policy stopped varying with the analytics switch');
+    assertClaim({ html: off, bundle: DE, key: 'privacy.s9aOffBody1', present: true, because: 'the off branch must say nothing is measured' });
+    for (const key of [
+      'privacy.s9aOnBody1',
+      'privacy.s9aOnBody2',
+      'privacy.s9aOnBody3',
+      'privacy.s9aOnBody4',
+      'privacy.s9aOnBody5',
+    ]) {
+      assertClaim({ html: on, bundle: DE, key, present: true, because: 'the disclosure lost a paragraph' });
+      assertClaim({ html: off, bundle: DE, key, present: false, because: 'the off branch discloses measurement it does not do' });
+    }
+    // A CITATION, not prose: correct German cites this as
+    // "Art. 6 Abs. 1 lit. f DSGVO", which is what a German lawyer expects, and
+    // it is not wordsmith's to rephrase.
     assert.match(on, /Art\. 6 Abs\. 1 lit\. f DSGVO/);
-    assert.match(on, /Do Not Track/);
   });
 
   it('says DSGVO, not GDPR: a German policy naming the English regulation reads as a translation', () => {
@@ -232,15 +286,45 @@ describe('legal pages — the German render', () => {
     const product = render(createElement(PrivacyContent, { analyticsLevel: 'product' }), 'de');
     const research = render(createElement(PrivacyContent, { analyticsLevel: 'research' }), 'de');
 
-    assert.match(pageviews, /Es wird nicht erfasst, welche Funktionen Sie nutzen/);
-    assert.match(research, /Diese Instanz erfasst auch Messwerte zu Forschungszwecken/);
-    assert.doesNotMatch(product, /Diese Instanz erfasst auch Messwerte zu Forschungszwecken/);
-    assert.doesNotMatch(pageviews, /Diese Instanz erfasst auch Messwerte zu Forschungszwecken/);
+    // THE GUARANTEE THE TEST IS NAMED FOR, and it is structural: three levels,
+    // three DIFFERENT German documents. A level that stopped varying the page
+    // fails here whatever words the page is written in.
+    assert.notEqual(pageviews, product, 'pageviews and product render the same German policy');
+    assert.notEqual(product, research, 'product and research render the same German policy');
+    assert.notEqual(pageviews, research, 'pageviews and research render the same German policy');
+
+    // And each level makes its OWN claim. The claims are read out of the
+    // German bundle, never typed here: wordsmith owns this copy and rephrases
+    // it, and a phrase pinned in this file breaks on a rewrite that means the
+    // same thing.
+    const byLevel = {
+      pageviews: { html: pageviews, keys: ['privacy.s1Item4Pageviews', 'privacy.s9aPageviewsBody2'] },
+      product: { html: product, keys: ['privacy.s1Item4Analytics', 'privacy.s9aOnBody2'] },
+      research: { html: research, keys: ['privacy.s1Item4Research', 'privacy.s9aOnBody2', 'privacy.s9aResearchBody'] },
+    };
+    for (const [level, { html, keys }] of Object.entries(byLevel)) {
+      for (const key of keys) {
+        assertClaim({ html, bundle: DE, key, present: true, because: `${level} lost a claim it must make` });
+      }
+    }
+    // The research paragraph belongs to the highest level ALONE: on the other
+    // two it would disclose health-behaviour measurement that does not happen.
+    for (const html of [pageviews, product]) {
+      assertClaim({
+        html,
+        bundle: DE,
+        key: 'privacy.s9aResearchBody',
+        present: false,
+        because: 'a level below research discloses research measurement',
+      });
+    }
 
     for (const html of [pageviews, product, research]) {
-      assert.match(html, /openplate verf\u00fcgt \u00fcber drei Analysestufen/);
-      // English leaking through a missing German key is the failure this guards.
-      assert.doesNotMatch(html, /three analytics levels/);
+      assertClaim({ html, bundle: DE, key: 'privacy.s9aLevelBody', present: true, because: 'the level itself went undisclosed' });
+      // English leaking through a missing German key is the failure this
+      // guards, and the English is read out of its own bundle for the same
+      // reason the German is.
+      assertClaim({ html, bundle: EN, key: 'privacy.s9aLevelBody', present: false, because: 'the English fallback rendered inside a German policy' });
     }
   });
 });

@@ -126,6 +126,40 @@ test('the instance block is optional, so a service older than the field is still
   assert.equal(isProtocolHandshake({ ...base, instance: { name: 'openplate' } }), false);
 });
 
+test('the advertised retention window is read off the instance block, and never invented', () => {
+  // TRANSCRIBED FROM `openplate-sync/PROTOCOL.md` §5.6, like every other shape
+  // in this file: the two repositories cannot import each other, so this is
+  // the literal a conforming service sends.
+  const base = { protocolVersion: 2, envelopeVersion: 1, serviceVersion: '0.6.0' };
+  const keepsReports = {
+    ...base,
+    instance: { name: 'openplate', language: 'en', mail: true, ai: null, feedback: { retentionDays: 30 } },
+  };
+  assert.equal(isProtocolHandshake(keepsReports), true);
+  assert.deepEqual(readHandshakeInstance(keepsReports)?.feedback, { retentionDays: 30 });
+
+  // ABSENT, NOT NULL, on an instance that accepts no reports, and on every
+  // service older than the field. `undefined` is what the whole client-side
+  // rule keys on: no window advertised means no window stated, and no report
+  // offered. A default substituted anywhere on this path is the defect M200
+  // spec 06 repaired.
+  const noReports = { ...base, instance: { name: 'openplate', language: 'en', mail: false, ai: null } };
+  assert.equal(isProtocolHandshake(noReports), true);
+  assert.equal(readHandshakeInstance(noReports)?.feedback, undefined);
+
+  // A nonsense window is dropped rather than believed, and rather than taking
+  // the rest of the block down with it: an instance is still usable for AI
+  // even if it says something absurd about retention, but nothing may render
+  // "we keep it for -5 days".
+  const absurd = {
+    ...base,
+    instance: { name: 'openplate', language: 'en', mail: false, ai: { model: 'x' }, feedback: { retentionDays: -5 } },
+  };
+  assert.equal(isProtocolHandshake(absurd), true);
+  assert.equal(readHandshakeInstance(absurd)?.feedback, undefined);
+  assert.deepEqual(readHandshakeInstance(absurd)?.ai, { model: 'x' });
+});
+
 test('signupMode is gone from protocol 2, and a service that still sends one is unaffected', () => {
   // Protocol 2 has one way in: an invite addressed to an email. The field was
   // dropped rather than deprecated, so a stray value must be IGNORED — a
