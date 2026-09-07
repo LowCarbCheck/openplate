@@ -138,23 +138,19 @@ flowchart LR
 
 ## Rung 3: add self-hosted inference
 
-Rung 3 moves the scan onto your hardware. The photo goes from the browser to the inference
-container, which is why that container needs an address your browsers can resolve. The model
-names the foods and estimates grams; the macros are read out of the bundled dataset.
+Rung 3 runs the scan on your hardware. The browser sends photos directly to the inference container. Your browsers must resolve that container's address. The model identifies each food and estimates weight in grams. openplate-inference reads macros from your configured food source.
 
 ```mermaid
-%% alt: On rung three the browser sends the photo to your own inference container, which looks the macros up in a bundled dataset.
+%% alt: On rung three the browser sends the photo to your own inference container, which looks the macros up in its configured food source.
 flowchart LR
   app["openplate app"] -->|"HTML and JS"| browser["Your browser"]
   browser --- diary["Diary in this browser"]
   browser -->|"photo, browser reachable address"| inf["openplate-inference"]
   inf --- weights["Model runtime and weights"]
-  inf --- usda["Bundled USDA food data"]
+  inf --- usda["Configured food data, USDA by default"]
 ```
 
-**You gain:** plate scans with no cloud AI account, no per-scan cost, and no photo leaving
-your network. Macros come from a bundled USDA FoodData Central extract, so they are looked up
-rather than invented.
+**You gain:** local plate scans without a cloud AI account, per-scan fees, or outbound photo traffic. The container image bundles a USDA FoodData Central extract by default, so openplate-inference looks macros up instead of inventing them.
 **You operate:** a model runtime and a few gigabytes of weights, plus whatever it takes to
 make the endpoint reachable **from your browsers** (the photo goes device → endpoint, so a
 compose hostname does not work here).

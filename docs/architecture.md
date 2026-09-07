@@ -78,10 +78,10 @@ exports and from sync payloads alike.
 
 That endpoint is either a cloud provider you pay (the BYOK path) or your own
 openplate-inference container. In the self-hosted case the model names the foods on the plate
-and estimates grams, and then the **macros are looked up, not invented**: carbs, protein,
-fat and kcal are resolved by name against a bundled extract of USDA FoodData Central (8,041
-generic foods shipped inside the image, no network call, public domain). The language model
-never authors a number.
+and estimates grams, and then the **macros are looked up, not invented**: carbs, protein, fat and
+kcal are resolved by name against the configured food source, by default a bundled extract of USDA
+FoodData Central (8,041 generic foods shipped inside the image, no network call, public domain).
+The language model never authors a macro number.
 
 Because the browser makes that call, the endpoint must be an address a **browser** can reach.
 A compose hostname like `http://inference:8300/v1` will not work even though the two
