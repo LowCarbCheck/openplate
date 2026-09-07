@@ -57,7 +57,7 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
-import { useManagedInstance } from '#app/hooks/use-public-config';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { buildJoinFragment, isJoinLinkEmpty, parseJoinLinkInput } from '#app/lib/join-link';
 import { trackInviteLinkPasted } from '#app/lib/matomo-events';
@@ -269,8 +269,11 @@ function PasteInviteLink({ onCancel }: { onCancel: () => void }) {
 
 export default function Welcome() {
   const { t } = useTranslation();
-  const managed = useManagedInstance();
-  const { hint, forgetName } = useWelcomeHint(managed);
+  // The screen offers two doors instead of three because an account is the
+  // only way in here (M201/07). `resolveWelcomeHint` keeps the parameter name
+  // `managed`, so the question is answered once and handed over.
+  const { requiresAccount } = useInstancePolicy();
+  const { hint, forgetName } = useWelcomeHint(requiresAccount);
   const [isPastingLink, setIsPastingLink] = useState(false);
 
   return (
@@ -280,7 +283,7 @@ export default function Welcome() {
           <CardTitle>{t('welcome.title')}</CardTitle>
           {/* The open body offers starting a diary, which is not on offer
               here — so a managed instance says what its two doors are. */}
-          <CardDescription>{managed ? t('welcome.managed.body') : t('welcome.body')}</CardDescription>
+          <CardDescription>{requiresAccount ? t('welcome.managed.body') : t('welcome.body')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isPastingLink && <PasteInviteLink onCancel={() => setIsPastingLink(false)} />}

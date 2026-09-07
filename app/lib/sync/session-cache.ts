@@ -182,6 +182,29 @@ export async function readSessionCache(): Promise<SessionCacheRecord | null> {
   }
 }
 
+/**
+ * Does THIS DEVICE hold a session at all, open or merely cached?
+ *
+ * The question `/` has to ask before it sends anybody to `/dashboard` on a
+ * managed instance (M201 spec 01), and neither half of it answers alone. The
+ * SNAPSHOT is empty on a cold hard load, because `SyncController` lives under
+ * `_personal` and has not mounted while `/` is deciding, so reading it alone
+ * would show the marketing page to somebody who is signed in. The CACHE is
+ * the durable half and is exactly what a resume would find.
+ *
+ * It is deliberately a weaker claim than "signed in": a cached session whose
+ * refresh token the server has since revoked answers `true` here, and the
+ * resume that follows discovers otherwise and ends in a sign-in prompt. That
+ * is the right direction for a redirect between two screens the person may
+ * already open, and the wrong direction is the one this spec removed.
+ *
+ * @returns true when the vault is open or a cached record exists.
+ */
+export async function hasDeviceSyncSession(): Promise<boolean> {
+  if (getSyncSessionSnapshot().account !== null) return true;
+  return (await readSessionCache()) !== null;
+}
+
 /** Drops the cached session. Called on sign-out, on account deletion, and on any refused refresh. */
 export async function clearSessionCache(): Promise<void> {
   const db = await openSessionDb();

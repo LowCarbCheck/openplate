@@ -32,6 +32,7 @@ function newDevice(overrides: Partial<OnboardingGateInput> = {}): OnboardingGate
     hasEverHadData: false,
     hasSyncAccount: false,
     isResumingSession: false,
+    isDeviceLocked: false,
     ...overrides,
   };
 }
@@ -221,6 +222,51 @@ describe('a session that is still reopening', () => {
   it('and only reaches welcome once the resume has settled with no account', () => {
     assert.deepEqual(resolveOnboardingGate(newDevice({ hasSyncAccount: false, isResumingSession: false })), {
       kind: 'welcome',
+    });
+  });
+});
+
+/**
+ * The device lock (M201 spec 02): signing out on an instance where the diary
+ * belongs to the account, without erasing it.
+ *
+ * The rows are still on the device, so every other branch in this gate would
+ * happily wave them through. That is the point of testing it here rather than
+ * trusting the ordering to stay where it is.
+ */
+describe('the device lock', () => {
+  it('closes a fully onboarded diary after sign out, which every other branch would pass', () => {
+    const signedOut = newDevice({
+      hasProfile: true,
+      hasCompletedOnboarding: true,
+      logCount: 12,
+      hasEverHadData: true,
+      isDeviceLocked: true,
+    });
+    assert.deepEqual(resolveOnboardingGate(signedOut), { kind: 'welcome' });
+    // The same device without the marker is the pre-M201 behaviour, unchanged.
+    assert.deepEqual(resolveOnboardingGate({ ...signedOut, isDeviceLocked: false }), { kind: 'pass' });
+  });
+
+  it('waits rather than flashing the door while a cached session is still reopening', () => {
+    const outcome = resolveOnboardingGate(
+      newDevice({ hasProfile: true, hasCompletedOnboarding: true, isDeviceLocked: true, isResumingSession: true }),
+    );
+    assert.deepEqual(outcome, { kind: 'wait' });
+  });
+
+  it('is outranked by an open session, so a stale marker can never lock somebody who signed back in', () => {
+    const outcome = resolveOnboardingGate(
+      newDevice({ hasProfile: true, hasCompletedOnboarding: true, isDeviceLocked: true, hasSyncAccount: true }),
+    );
+    assert.deepEqual(outcome, { kind: 'pass' });
+  });
+
+  it('leaves an open instance untouched, because nothing there ever writes the marker', () => {
+    // Every case above the lock branch, with the marker off: the file's other
+    // ~20 assertions all run with `isDeviceLocked: false` for this reason.
+    assert.deepEqual(resolveOnboardingGate(newDevice({ hasProfile: true, hasCompletedOnboarding: true })), {
+      kind: 'pass',
     });
   });
 });

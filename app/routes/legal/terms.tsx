@@ -2,7 +2,7 @@ import { H1, H2, P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import type { MetaFunction } from 'react-router';
 import { Trans, useTranslation } from 'react-i18next';
-import { useManagedInstance } from '#app/hooks/use-public-config';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { OPERATOR } from './operator';
 import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
 import '#app/i18n/i18n';
@@ -147,11 +147,19 @@ export function TermsContent({ managed = false }: TermsContentProps) {
 
 export default function Terms() {
   // The route reads the fact; `TermsContent` takes it as a prop, exactly as
-  // `Privacy` does — see the note on `TermsContentProps`.
-  const managed = useManagedInstance();
+  // `Privacy` does, see the note on `TermsContentProps`.
+  //
+  // WHICH QUESTION (M201/07). The managed document rewrites three paragraphs,
+  // and each one is a different policy question: it has accounts
+  // (`requiresAccount`), the diary reaches the operator's server as ciphertext
+  // (`serverHoldsTheDiary`), and the plate photo goes through that server under
+  // the operator's key (`aiComesFromTheInstance`). All three answer alike, and
+  // the document is one bundle rather than three switches, so the route asks
+  // the question that changes the most of it and the prop selects the bundle.
+  const { serverHoldsTheDiary } = useInstancePolicy();
   return (
     <PublicWrapper>
-      <TermsContent managed={managed} />
+      <TermsContent managed={serverHoldsTheDiary} />
     </PublicWrapper>
   );
 }

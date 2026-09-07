@@ -25,6 +25,22 @@
  * decision than a "next" button, and a silently truncated list is worse than
  * either.
  *
+ * ── One person, opened, is a STATE and not a route ───────────────────────
+ *
+ * The detail view is this page showing one person instead of the lists, driven
+ * by an id in state. It could have been `/admin/people/:id`, and the reason it
+ * is not is that the person is already in hand: the list has the row, the only
+ * thing the detail needs on top of it is the activity strip, and a route would
+ * have re-read the account to render what was on screen a moment earlier.
+ * Closing it puts back the list that was already loaded, with no round trip.
+ *
+ * ── The strip is read once, when somebody is opened ──────────────────────
+ *
+ * It is not part of the `Promise.all` above, deliberately: ninety integers per
+ * person for everybody on the instance is a cost paid on every page load for a
+ * screen an operator opens now and then. A failed strip is its own retry inside
+ * the detail view and never takes the console down with it.
+ *
  * ── A 403 replaces the page, it does not blank it ────────────────────────
  *
  * Being demoted, or suspended, mid-session is ordinary. `AdminClient` returns
@@ -41,6 +57,7 @@ import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrat
 import { CopyableLink } from '#app/components/admin/invite-result';
 import { InviteTable } from '#app/components/admin/invite-table';
 import { PeopleTable } from '#app/components/admin/people-table';
+import { PersonDetail, type PersonActivityState } from '#app/components/admin/person-detail';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
@@ -60,6 +77,8 @@ export default function AdminConsole() {
   const session = useSyncSession();
   const [state, setState] = useState<ConsoleState>({ kind: 'loading' });
   const [resetLink, setResetLink] = useState<{ email: string; link: string } | null>(null);
+  const [openPersonId, setOpenPersonId] = useState<number | null>(null);
+  const [activity, setActivity] = useState<PersonActivityState>({ kind: 'loading' });
 
   const load = useCallback(async (): Promise<void> => {
     const client = currentAdminClient();
@@ -98,6 +117,40 @@ export default function AdminConsole() {
       setState({ kind: 'failed' });
     }
   }, []);
+
+  /**
+   * Reads one person's strip.
+   *
+   * A `forbidden` here is the same changed relationship the list reports, so it
+   * replaces the page rather than the strip. Anything else is a failed read of
+   * one card, and stays inside that card with its own retry.
+   */
+  const loadActivity = useCallback(async (id: number): Promise<void> => {
+    const client = currentAdminClient();
+    if (client === null) {
+      setState({ kind: 'forbidden' });
+      return;
+    }
+    setActivity({ kind: 'loading' });
+    try {
+      const outcome = await client.accountActivity({ id });
+      if (outcome.status === 'forbidden') {
+        setState({ kind: 'forbidden' });
+        return;
+      }
+      setActivity({ kind: 'ready', activity: outcome.value });
+    } catch {
+      setActivity({ kind: 'failed' });
+    }
+  }, []);
+
+  const openPerson = useCallback(
+    ({ id }: { id: number }): void => {
+      setOpenPersonId(id);
+      void loadActivity(id);
+    },
+    [loadActivity],
+  );
 
   useEffect(() => {
     void load();
@@ -181,6 +234,21 @@ export default function AdminConsole() {
     );
   }
 
+  // The row the detail view shows comes from the list this page already loaded,
+  // so a person deleted while their detail was open simply closes it rather
+  // than rendering a card about somebody who is gone.
+  const openedPerson = openPersonId === null ? undefined : state.people.find((person) => person.id === openPersonId);
+  if (openedPerson !== undefined) {
+    return (
+      <PersonDetail
+        person={openedPerson}
+        activity={activity}
+        onBack={() => setOpenPersonId(null)}
+        onRetryActivity={() => void loadActivity(openedPerson.id)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {state.stats !== null && <StatsRow stats={state.stats} />}
@@ -217,6 +285,7 @@ export default function AdminConsole() {
             onSetSuspended={({ id, suspended }) => apply((client) => client.patchAccount({ id, suspended }))}
             onSendResetMail={sendResetMail}
             onDelete={({ id }) => apply((client) => client.deleteAccount({ id }))}
+            onOpen={openPerson}
           />
         </CardContent>
       </Card>

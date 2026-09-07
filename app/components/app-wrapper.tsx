@@ -198,8 +198,11 @@ export default function AppWrapper({
 
 // Inner content component that can use useSidebar hook
 function InnerContent({ title, backTo, children }: { title?: string; backTo?: string; children: React.ReactNode }) {
-  // M128 spec 03: there are no accounts, so the top-right control is about the
-  // DEVICE, not a person — see `AvatarMenu`. Nothing to sign in or out of.
+  // The top-right control is `AvatarMenu`. It was device-only because M128 spec
+  // 03 says there are no accounts, and that premise is now conditional (M201):
+  // an instance running `INSTANCE_MODE=managed` has accounts, and the menu
+  // carries the door in or out for them. The menu asks the policy itself; this
+  // layout stays out of it.
   const { t } = useTranslation();
 
   return (

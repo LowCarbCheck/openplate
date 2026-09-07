@@ -66,11 +66,31 @@ export interface OnboardingGateInput {
   hasSyncAccount: boolean;
   /** Is this device still reopening a cached session? `SyncSessionSnapshot.isResuming`. */
   isResumingSession: boolean;
+  /**
+   * Has this device been signed out of an account whose diary it must stop
+   * showing? `isDeviceLocked()` in `sync/sync-state.ts` (M201 spec 02).
+   *
+   * Only ever `true` on an instance whose policy says
+   * `signOutErasesDevice`, because that is the only place the marker is
+   * written. On an open instance signing out of sync takes nothing away, so
+   * this is `false` there by construction and the gate below is unchanged.
+   */
+  isDeviceLocked: boolean;
 }
 
 /**
  * Decides what the gate does, in a fixed order.
  *
+ * 0. **A locked device decides nothing else.** Signing out on an instance where
+ *    the diary belongs to the account has to close the diary, and the rows are
+ *    still on the device (a wipe is opt-in, spec 02). So the lock is tested
+ *    FIRST, ahead of the branch that would otherwise wave a stamped profile
+ *    through, and it answers `welcome`, the screen with the door on it.
+ *    `isResumingSession` still wins over it, or every reload of a device that
+ *    is about to reopen its session would flash the sign-in screen; and an
+ *    OPEN session beats it outright, because signing in is what lifts the lock
+ *    and a lock left behind by a failed write must not outrank the session in
+ *    front of it.
  * 1. **Completed onboarding wins outright.** This is what keeps a legitimate
  *    day-one user — onboarded this morning, nothing logged yet — out of the
  *    recovery screen: their profile write stamped the marker, so they satisfy
@@ -113,7 +133,11 @@ export function resolveOnboardingGate({
   hasEverHadData,
   hasSyncAccount,
   isResumingSession,
+  isDeviceLocked,
 }: OnboardingGateInput): OnboardingGateOutcome {
+  if (isDeviceLocked && !hasSyncAccount) {
+    return isResumingSession ? { kind: 'wait' } : { kind: 'welcome' };
+  }
   if (hasProfile && hasCompletedOnboarding) return { kind: 'pass' };
   if (logCount > 0) return { kind: 'self-heal' };
   if (isResumingSession) return { kind: 'wait' };

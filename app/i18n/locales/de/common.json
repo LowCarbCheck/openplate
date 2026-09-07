@@ -232,6 +232,7 @@
     "back": "Zurück",
     "deviceMenuLabel": "Dieses Gerät, Menü öffnen",
     "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
+    "imprint": "Impressum",
     "installApp": "App installieren",
     "licence": "MIT-Lizenz",
     "licenceShort": "Lizenz",
@@ -241,11 +242,14 @@
     "openTracker": "Zum Tagebuch",
     "preferences": "Darstellung & Sprache",
     "privacy": "Datenschutz",
+    "requestAccess": "Zugang anfragen",
+    "requestAccessBody": "Konten werden hier mit einem Einladungslink erstellt. Eine Administration stellt diese Einladungen aus. Bitte die Person, die diese Instanz betreibt, um eine Einladung.",
+    "requestAccessClose": "Schließen",
+    "requestAccessTitle": "Diese Instanz erfordert eine Einladung",
+    "signIn": "Anmelden",
     "source": "Quellcode",
-    "sourceLabel": "openplate auf GitHub, öffnet in neuem Tab",
     "sourceShort": "Quellcode",
     "terms": "AGB",
-    "imprint": "Impressum",
     "thisDevice": "Dieses Gerät"
   },
   "clinicianLink": {
@@ -880,7 +884,8 @@
       "body": "Keine Registrierung, keine Konfiguration nötig. Trage ein Lebensmittel ein und openplate hat alles, was es braucht.",
       "eyebrow": "Jetzt anfangen",
       "star": "Oder gib dem Quellcode einen Stern auf GitHub, MIT-lizenziert",
-      "title": "Fang mit der ersten Mahlzeit von heute an"
+      "title": "Fang mit der ersten Mahlzeit von heute an",
+      "bodyManaged": "Nichts zu konfigurieren. Melde dich an, trage ein Lebensmittel ein, und openplate hat alles, was es braucht."
     },
     "cta": {
       "howItWorks": "So funktioniert es",
@@ -1003,19 +1008,27 @@
         },
         "scan": {
           "body": "Dein Anbieter liest das Foto und schlägt die Lebensmittel vor. Du prüfst die Zahlen, speicherst, und die Tagessumme bewegt sich.",
-          "title": "Ersten Teller fotografieren"
+          "title": "Ersten Teller fotografieren",
+          "bodyManaged": "Die KI dieser Instanz liest das Foto und schlägt die Lebensmittel vor. Du prüfst die Werte, speicherst, und die Tagessumme passt sich an."
+        },
+        "connectManaged": {
+          "title": "Die KI ist bereits für dich eingerichtet",
+          "body": "Die KI ist Teil dieser Instanz, du brauchst keinen Schlüssel und bezahlst keinen Anbieter. Dein Administrator legt fest, wie viele Fotos täglich für dich gelesen werden dürfen. Die Suche nach einem Lebensmittel zählt nie dazu, weil nur Fotos gelesen werden müssen."
         }
       },
       "subtitle": "Das machst du einmal und danach nie wieder. Drei Schritte, und nur der mittlere verlangt etwas von dir.",
-      "title": "In etwa einer Minute einsatzbereit"
+      "title": "In etwa einer Minute einsatzbereit",
+      "ctaManaged": "Zum Starten anmelden",
+      "subtitleManaged": "Das machst du einmal und dann nie wieder. Drei Schritte, und der mittlere ist für dich schon erledigt."
     },
     "sync": {
       "body": "Trage dein Mittagessen auf dem Smartphone ein und schau dir die Woche auf dem Laptop an. Die Synchronisation ist optional und Ende-zu-Ende-verschlüsselt: Die verschlüsselten Daten liegen auf einem openplate-sync-Server (unserem oder deinem eigenen). Der Server hat keinen Schlüssel dazu, denn der Schlüssel entsteht aus einem Passwort, das er nie zu Gesicht bekommt.",
       "bodyManaged": "Trage dein Mittagessen auf dem Smartphone ein und analysiere deine Woche auf dem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird auf deinem Gerät verschlüsselt, und der Server speichert lediglich die verschlüsselten Daten. Der Betreiber speichert zudem einen Wiederherstellungsschlüssel. Mit diesem Schlüssel kannst du dein Tagebuch nach dem Zurücksetzen des Passworts wiederherstellen. Dadurch kann der Betreiber deine Daten technisch gesehen auch entschlüsseln.",
       "link": "Konto erstellen",
       "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",
-      "shotAlt": "Die Konto-Ansicht auf einem Smartphone mit den Optionen, sich anzumelden oder ein Konto zu erstellen, sowie dem Hinweis, dass Fotos vom Teller nie hochgeladen werden.",
-      "title": "Zwei Geräte, ein Tagebuch"
+      "shotAlt": "Die Kontoansicht auf einem Smartphone, abgemeldet, mit einem Link zum Anmelden.",
+      "title": "Zwei Geräte, ein Tagebuch",
+      "linkManaged": "Bei deinem Konto anmelden"
     }
   },
   "launcher": {
@@ -1083,7 +1096,8 @@
     "forgot": "Passwort vergessen",
     "reset": "Neues Passwort festlegen",
     "account": "Konto",
-    "admin": "Administration"
+    "admin": "Administration",
+    "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht."
   },
   "nav": {
     "add": "Hinzufügen",
@@ -2492,6 +2506,20 @@
       "title": "Du bist abgemeldet",
       "body": "Melde dich an, um dein Konto zu sehen.",
       "signIn": "Anmelden"
+    },
+    "operatorSees": {
+      "title": "Was dein Administrator sehen kann",
+      "intro": "Eine Organisation betreibt diese Instanz für dich. Wer sie verwaltet, kann dein Konto öffnen und all das hier sehen:",
+      "email": "Deine E-Mail-Adresse.",
+      "displayName": "Den Namen, den du gewählt hast, falls du einen gewählt hast.",
+      "createdAt": "Den Tag, an dem dein Konto erstellt wurde.",
+      "lastSeenAt": "Wann du dich zuletzt angemeldet hast oder zuletzt ein Foto für dich ausgelesen wurde.",
+      "aiUsedToday": "Wie viele Fotos heute für dich ausgelesen wurden.",
+      "dailyAiLimit": "Wie viele Fotos pro Tag für dich ausgelesen werden dürfen.",
+      "role": "Ob du diese Instanz selbst verwalten darfst.",
+      "suspendedAt": "Ob dein Konto gesperrt ist.",
+      "activity": "Außerdem ist zu sehen, wie viele Fotos an jedem der letzten {{days}} Tage für dich ausgelesen wurden. Ältere Tageswerte werden gelöscht.",
+      "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann."
     }
   },
   "admin": {
@@ -2522,7 +2550,8 @@
       "usedToday": "Heute genutzt",
       "standing": "Status",
       "joined": "Beigetreten",
-      "actions": "Aktionen"
+      "actions": "Aktionen",
+      "lastSeen": "Letzte Anmeldung"
     },
     "usage": "{{used}} von {{limit}}",
     "usageNone": "Keine Fotos",
@@ -2605,6 +2634,40 @@
       "failed": "Die Einladung konnte nicht erstellt werden.",
       "exists": "{{email}} hat hier bereits ein Konto.",
       "back": "Zurück zur Liste"
+    },
+    "lastSeen": {
+      "never": "Nie angemeldet"
+    },
+    "person": {
+      "open": "Öffnen",
+      "back": "Zurück zur Liste",
+      "activityTitle": "Fotos gelesen pro Tag",
+      "activityWindow": "Die letzten {{days}} Tage, {{from}} bis {{to}}.",
+      "activityTotal": "In diesem Zeitraum gelesene Fotos: {{photos}}",
+      "activityQuiet": "In diesem Zeitraum wurde nichts gelesen.",
+      "activityLegend": "Ein Quadrat entspricht einem Tag. Ein leeres Quadrat bedeutet keine gelesenen Fotos. Tage vor diesem Zeitraum werden nicht aufbewahrt.",
+      "day": "{{day}}: {{photos}}",
+      "activityLoading": "Wird geladen",
+      "activityFailed": "Die Tageswerte konnten nicht geladen werden.",
+      "activityRetry": "Erneut versuchen",
+      "noDiary": "Das ist alles, was hier über die Nutzung dieser Person gespeichert ist. Ihr Tagebuch ist auf dem eigenen Gerät verschlüsselt und kann hier nicht gelesen werden."
     }
+  },
+  "signOut": {
+    "body": "Du bleibst abgemeldet, bis du dich wieder anmeldest. Dein Tagebuch bleibt auf diesem Gerät.",
+    "bodyManaged": "Dein Tagebuch gehört zu deinem Konto. Nach dem Abmelden zeigt dieses Gerät es erst wieder an, wenn du dich anmeldest.",
+    "confirm": "Abmelden",
+    "erase": {
+      "label": "Tagebuch ebenfalls von diesem Gerät löschen"
+    },
+    "eraseFailed": "Das Tagebuch konnte nicht gelöscht werden, weil openplate in einem anderen Tab geöffnet ist. Schließe ihn und versuche es erneut.",
+    "menuItem": "Abmelden",
+    "outbox": {
+      "counting": "Prüfen, was noch nicht gesendet wurde.",
+      "empty": "Alles auf diesem Gerät hat den Server erreicht.",
+      "waiting_one": "Ein Eintrag hat den Server noch nicht erreicht. Durch das Löschen geht er verloren.",
+      "waiting_other": "{{count}} Einträge haben den Server noch nicht erreicht. Durch das Löschen gehen sie verloren."
+    },
+    "title": "Abmelden"
   }
 }

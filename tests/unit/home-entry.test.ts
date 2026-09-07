@@ -20,6 +20,7 @@ import assert from 'node:assert/strict';
 import {
   hasEnteredApp,
   parseHomeHintCookie,
+  resolveClientLandingEntry,
   resolveLandingRedirect,
   wantsLandingPage,
   type LocalEntrySnapshot,
@@ -73,20 +74,83 @@ describe('wantsLandingPage', () => {
 });
 
 describe('resolveLandingRedirect', () => {
+  // The cookie means "signed in" only where the diary belongs to the device.
+  const openInstance = { homeCookieProvesSession: true };
+  const managedInstance = { homeCookieProvesSession: false };
+
   it('leaves a first-time visitor on the marketing page', () => {
-    assert.equal(resolveLandingRedirect({ hasHint: false, wantsLanding: false }), null);
+    assert.equal(resolveLandingRedirect({ hasHint: false, wantsLanding: false, ...openInstance }), null);
   });
 
-  it('bounces a device that has already entered the app', () => {
-    assert.equal(resolveLandingRedirect({ hasHint: true, wantsLanding: false }), '/dashboard');
+  it('bounces a device that has already entered the app on an open instance, with no account at all', () => {
+    assert.equal(resolveLandingRedirect({ hasHint: true, wantsLanding: false, ...openInstance }), '/dashboard');
   });
 
   it('lets the escape hatch beat the hint — this is what keeps the landing reachable', () => {
-    assert.equal(resolveLandingRedirect({ hasHint: true, wantsLanding: true }), null);
+    assert.equal(resolveLandingRedirect({ hasHint: true, wantsLanding: true, ...openInstance }), null);
   });
 
   it('is a no-op when the escape hatch is used without a hint', () => {
-    assert.equal(resolveLandingRedirect({ hasHint: false, wantsLanding: true }), null);
+    assert.equal(resolveLandingRedirect({ hasHint: false, wantsLanding: true, ...openInstance }), null);
+  });
+
+  it('refuses to send a managed device to /dashboard on the cookie, because a server cannot see a session', () => {
+    // THE FAULT THIS SPEC EXISTS FOR. The hint survives a sign-out and the
+    // server has no way to know that; the honest answer is to render the
+    // landing page and let the browser decide.
+    assert.equal(resolveLandingRedirect({ hasHint: true, wantsLanding: false, ...managedInstance }), null);
+  });
+});
+
+describe('resolveClientLandingEntry', () => {
+  const openInstance = { homeCookieProvesSession: true };
+  const managedInstance = { homeCookieProvesSession: false };
+
+  it('sends a returning device to the app on an open instance, with no session of any kind', () => {
+    assert.equal(
+      resolveClientLandingEntry({ wantsLanding: false, entered: true, hasSession: false, ...openInstance }),
+      'dashboard',
+    );
+  });
+
+  it('never sends a signed-out managed device to /dashboard, however much diary is on it', () => {
+    assert.equal(
+      resolveClientLandingEntry({ wantsLanding: false, entered: true, hasSession: false, ...managedInstance }),
+      'landing-clear-hint',
+    );
+  });
+
+  it('sends a managed device with a session to /dashboard', () => {
+    assert.equal(
+      resolveClientLandingEntry({ wantsLanding: false, entered: true, hasSession: true, ...managedInstance }),
+      'dashboard',
+    );
+  });
+
+  it('clears the hint on a wiped device, exactly as before', () => {
+    assert.equal(
+      resolveClientLandingEntry({ wantsLanding: false, entered: false, hasSession: false, ...openInstance }),
+      'landing-clear-hint',
+    );
+  });
+
+  it('keeps the hint when the escape hatch was typed, so ?landing= is not a sign-out', () => {
+    assert.equal(
+      resolveClientLandingEntry({ wantsLanding: true, entered: true, hasSession: true, ...managedInstance }),
+      'landing-keep-hint',
+    );
+  });
+
+  it('is unchanged on an open instance for every session value, which is the no-regression property', () => {
+    for (const hasSession of [false, true]) {
+      for (const entered of [false, true]) {
+        assert.equal(
+          resolveClientLandingEntry({ wantsLanding: false, entered, hasSession, ...openInstance }),
+          entered ? 'dashboard' : 'landing-clear-hint',
+          `an open instance must not read the session (entered=${String(entered)})`,
+        );
+      }
+    }
   });
 });
 
@@ -145,5 +209,57 @@ describe('gate parity — the loop-proof invariant', () => {
         );
       }
     }
+  });
+});
+
+/**
+ * The loop-proof invariant, restated for the session term (M201 spec 01).
+ *
+ * `_personal`'s gate got a session term too (the device lock), and the two
+ * gates have to stay opposite-polarity mirrors or a signed-out managed device
+ * bounces between `/` and `/dashboard` for ever. The property that rules that
+ * out is one-directional and simple: `/` sends nobody to the app that
+ * `_personal` would send straight back.
+ */
+describe('the two gates do not loop: a signed-out managed device settles', () => {
+  it('settles on the landing page, and every path in the matrix settles somewhere', () => {
+    for (const entered of [false, true]) {
+      for (const hasSession of [false, true]) {
+        for (const homeCookieProvesSession of [false, true]) {
+          const entry = resolveClientLandingEntry({
+            wantsLanding: false,
+            entered,
+            hasSession,
+            homeCookieProvesSession,
+          });
+          if (entry !== 'dashboard') continue;
+          // A redirect into the app still implies local data, so the gate on
+          // the other side passes rather than bouncing back.
+          assert.equal(entered, true, 'only a device that has entered the app may be sent to /dashboard');
+          assert.equal(personalGateWouldRedirect({ onboardingCompletedAt: 1_700_000_000_000, foodLogCount: 0 }), false);
+        }
+      }
+    }
+  });
+
+  it('settles the reported symptom: sign out, reload, and the browser stays on the landing page', () => {
+    // The device after a sign-out with no erase: rows on disk, no session, and
+    // the hint about to be cleared by this very decision.
+    const first = resolveClientLandingEntry({
+      wantsLanding: false,
+      entered: true,
+      hasSession: false,
+      homeCookieProvesSession: false,
+    });
+    assert.equal(first, 'landing-clear-hint');
+    // The reload after it reads the same facts and reaches the same answer, so
+    // there is no second state to oscillate with.
+    const second = resolveClientLandingEntry({
+      wantsLanding: false,
+      entered: true,
+      hasSession: false,
+      homeCookieProvesSession: false,
+    });
+    assert.equal(second, first);
   });
 });

@@ -1,12 +1,31 @@
 /**
  * avatar-menu.tsx — the header's top-right control, at every breakpoint.
  *
- * There are no accounts (AGENTS.md), so this is not an account menu: it is
- * about the DEVICE. It answers "whose diary is this, is it safe, and how does
- * it look" without leaving the page — the identity header names the device
- * (plus the sync account's email when one is connected), the sync row reports
- * the one piece of state that had no presence in the chrome at all, and the
- * theme row switches appearance in place.
+ * An OPEN instance has no account to put in a menu (AGENTS.md), so this is not
+ * an account menu there: it is about the DEVICE. It answers "whose diary is this,
+ * is it safe, and how does it look" without leaving the page, the identity
+ * header names the device (plus the sync account's email when one is
+ * connected), the sync row reports the one piece of state that had no presence
+ * in the chrome at all, and the theme row switches appearance in place.
+ *
+ * THAT PREMISE IS NOW CONDITIONAL (M201). `INSTANCE_MODE=managed` gives an
+ * instance accounts, and on one of those this menu is the menu a person
+ * already uses to leave, so the absence of a sign-out sent them three
+ * navigations deep into the Danger Zone of `/settings/account` to find one.
+ * The device-only reading still holds wherever the policy says so, and the
+ * question to ask is `useInstancePolicy()`, never the mode name; see
+ * `app/config/instance-policy.ts`.
+ *
+ * So the menu now carries an ACCOUNT DOOR, and there are three states of it,
+ * decided in `resolveAvatarMenuDoor` rather than by `&&`s in the JSX below:
+ * signed in (the way out), signed out on an instance that requires an account
+ * (the way in), and signed out on an instance where an account is an optional
+ * extra (the way to set one up). The third was the only one that existed, and
+ * it was shown in all three cases: a managed instance offered "Create account"
+ * to somebody who cannot create one, because accounts there come from an
+ * invitation an administrator sends. That is the same false promise the public
+ * header carried, and `resolveAvatarMenuDoor` documents why
+ * `requiresAccount` and "is sync configured" are not the same question.
  *
  * Why a menu and not the plain `/settings` link it briefly was: sync status and
  * the theme both belong in the chrome. Sync is the only thing in the app whose
@@ -23,7 +42,7 @@
  */
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Loader2, RefreshCw, Settings, User } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, LogIn, LogOut, RefreshCw, Settings, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
@@ -39,9 +58,15 @@ import {
 } from './ui/dropdown-menu';
 import { THEME_OPTIONS, useThemePreference, type Theme } from './theme-selector';
 import { useSyncSession } from './sync-status';
-import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { formatRelativeTime } from '#app/lib/relative-time';
-import { deriveSyncMenuState, type SyncMenuState } from '#app/lib/sync/sync-menu-state';
+import {
+  deriveSyncMenuState,
+  resolveAvatarMenuDoor,
+  type AvatarMenuDoor,
+  type SyncMenuState,
+} from '#app/lib/sync/sync-menu-state';
+import { SignOutDialog } from './sign-out-dialog';
 import { cn } from '#app/lib/utils';
 
 /** Narrows Radix's `string` callback value back to a theme. */
@@ -106,15 +131,17 @@ function SyncRow({ state }: { state: SyncMenuState }) {
   const status = useSyncStatusLine(state);
 
   if (state.status === 'hidden') return null;
-
-  const isSetUp = state.status !== 'not-set-up';
+  // "No account on this device yet" is now the DOOR's business, not a status
+  // line's: what to offer there depends on whether this instance lets anybody
+  // make an account, and this row only knows about syncing. See `AccountDoor`.
+  if (state.status === 'not-set-up') return null;
 
   return (
     <DropdownMenuItem asChild className="cursor-pointer py-2">
       <Link to="/settings/account">
         <SyncStateIcon state={state} />
         <span className="min-w-0 flex-1">
-          <span className="block">{isSetUp ? t('settings.rows.sync.title') : t('sync.profileCard.setUp')}</span>
+          <span className="block">{t('settings.rows.sync.title')}</span>
           {status !== null && (
             /* While a sync is actually in flight the status line breathes, so
                the row has a live quality even when the spinning icon is out of
@@ -128,6 +155,62 @@ function SyncRow({ state }: { state: SyncMenuState }) {
             </span>
           )}
         </span>
+      </Link>
+    </DropdownMenuItem>
+  );
+}
+
+/**
+ * The account door: one row, or none (M201 spec 02 and 03).
+ *
+ * The four states come from `resolveAvatarMenuDoor`, so which one shows is a
+ * tested decision rather than a chain of conditions in this file. Each is a
+ * plain menu item, none is styled as a danger action, and the sign-out one is
+ * the whole reason this component exists.
+ */
+function AccountDoor({ door }: { door: AvatarMenuDoor }) {
+  const { t } = useTranslation();
+
+  if (door === 'none') return null;
+
+  if (door === 'sign-out') {
+    return (
+      <SignOutDialog
+        trigger={
+          <DropdownMenuItem
+            // `preventDefault` keeps the menu mounted. Radix unmounts a closed
+            // dropdown's content, and the dialog's trigger lives inside it, so
+            // letting the select close the menu would tear the dialog down in
+            // the same frame it opened. The modal covers the menu anyway.
+            onSelect={(event) => event.preventDefault()}
+            className="cursor-pointer py-2"
+          >
+            <LogOut className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>{t('signOut.menuItem')}</span>
+          </DropdownMenuItem>
+        }
+      />
+    );
+  }
+
+  if (door === 'sign-in') {
+    return (
+      <DropdownMenuItem asChild className="cursor-pointer py-2">
+        <Link to="/sign-in">
+          <LogIn className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span>{t('signIn.title')}</span>
+        </Link>
+      </DropdownMenuItem>
+    );
+  }
+
+  // `create-account`, and it is honest here and only here: an OPEN instance
+  // with a sync server, where anybody may make one for themselves.
+  return (
+    <DropdownMenuItem asChild className="cursor-pointer py-2">
+      <Link to="/settings/account">
+        <RefreshCw className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <span>{t('sync.profileCard.setUp')}</span>
       </Link>
     </DropdownMenuItem>
   );
@@ -195,6 +278,15 @@ export function AvatarMenu() {
   // the sync row vanishes entirely (AGENTS.md).
   const syncServerUrl = useSyncServerUrl();
   const syncState = deriveSyncMenuState({ hasSyncServer: syncServerUrl !== null, session });
+  // `requiresAccount`, not the mode name: the question is whether a person
+  // needs an account to use this instance at all, and a self-hoster who turned
+  // sync on for themselves does not.
+  const { requiresAccount } = useInstancePolicy();
+  const door = resolveAvatarMenuDoor({
+    hasSyncServer: syncServerUrl !== null,
+    hasSession: session.account !== null,
+    requiresAccount,
+  });
 
   return (
     <DropdownMenu>
@@ -227,6 +319,7 @@ export function AvatarMenu() {
         </DropdownMenuLabel>
 
         <SyncRow state={syncState} />
+        <AccountDoor door={door} />
 
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="cursor-pointer py-2">

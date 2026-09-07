@@ -37,8 +37,58 @@ export const accountViewSchema = z.object({
   aiUsedToday: z.number().int(),
   suspendedAt: z.string().nullable(),
   createdAt: z.string(),
+  /**
+   * When this person last did something on purpose, or `null` if they never
+   * have.
+   *
+   * NULLABLE, AND IT STAYS NULLABLE. An invited account that has not signed in
+   * yet has no value at all, and the screen owes that person words rather than
+   * an epoch. The service writes it on a sign-in and on a proxied photo read,
+   * and deliberately not on a token refresh or a sync poll, so it means
+   * "somebody acted" and not "a client was running" (`PROTOCOL.md` §5.20).
+   *
+   * A TIMESTAMP, never a phrase. "3 days ago" is a rendering decision that
+   * depends on the reader's clock and the reader's language, and an API that
+   * made it would make it once for every client.
+   */
+  lastSeenAt: z.string().nullable(),
 });
 export type AdminAccountView = z.infer<typeof accountViewSchema>;
+
+/**
+ * One UTC day of somebody's photo reading. A count, never a log.
+ *
+ * The service keeps one integer per account per day and nothing else: no
+ * prompt, no model, no clock time inside the day. Days are the whole
+ * resolution that exists, on purpose (`openplate-sync/src/db/schema.ts:412`).
+ */
+export const activityDaySchema = z.object({ day: z.string(), count: z.number().int() });
+export type AdminActivityDay = z.infer<typeof activityDaySchema>;
+
+/**
+ * `GET /v1/admin/accounts/:id/activity`, one person's strip, unwrapped.
+ *
+ * UNLIKE THE LISTS, THIS BODY IS NOT IN AN ENVELOPE. It is the view itself, as
+ * `admin-routes.ts` sends it; transcribed from `PROTOCOL.md` §5.20 rather than
+ * from a summary table, which is the mistake `adminStatsResponseSchema` above
+ * records.
+ *
+ * `days` carries EVERY day of the window, in order, zero-filled by the
+ * service. That is what lets the strip draw a quiet day and refuse to draw a
+ * day it has no answer for: inside the window a missing entry cannot happen,
+ * so an absent square can only mean "outside the window".
+ *
+ * `window` reports the window the service actually drew, which is not always
+ * the one that was asked for: anything longer than the retention window is
+ * answered with the retention window.
+ */
+export const accountActivitySchema = z.object({
+  accountId: z.number().int(),
+  lastSeenAt: z.string().nullable(),
+  window: z.object({ days: z.number().int(), fromDay: z.string(), toDay: z.string() }),
+  days: z.array(activityDaySchema),
+});
+export type AdminAccountActivity = z.infer<typeof accountActivitySchema>;
 
 /**
  * Where an invitation is in its life.

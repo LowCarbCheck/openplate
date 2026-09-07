@@ -2,9 +2,10 @@ import { ProgressBar } from './progress-bar';
 import * as React from 'react';
 import { Link } from '#app/components/link';
 import { Trans, useTranslation } from 'react-i18next';
-import { Github } from 'lucide-react';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { cn } from '#app/lib/utils';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { InviteOnlyDialog } from '#app/components/invite-only-dialog';
 import { Button } from './ui/button';
 
 /**
@@ -41,6 +42,7 @@ export default function PublicWrapper({
   wide?: boolean;
 }) {
   const { t } = useTranslation();
+  const { headerOffersSignIn } = useInstancePolicy();
   const container = cn('container mx-auto w-full px-4', wide ? 'max-w-5xl' : 'max-w-3xl');
 
   return (
@@ -70,34 +72,45 @@ export default function PublicWrapper({
               </a>
             )}
           </div>
-          {/* Was an account menu / "Log in" button (M128 spec 03: there are no
-            accounts). The one thing a visitor on a public page actually wants
-            from this corner is the way INTO the tracker, so that's what it is. */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* The source link, icon-only and muted (M146 spec 01). Additive to
-              the button beside it, never competitive with it: teal carries
-              CTAs (DESIGN.md §1) and reading the code is not one, so this is
-              `text-muted-foreground` with a hover, never `--primary` and never
-              a filled button. Icon-only because the header is one 16px row —
-              the label lives in `aria-label` and in the footer.
+          {/* Was an account menu / "Log in" button. M128 spec 03 deleted it
+            because this app had no accounts at all, and the one thing a
+            visitor on a public page wants from this corner is the way INTO the
+            tracker, so that is what it became.
 
-              `h-10 w-10`, not `h-9 w-9`: this is a bare icon with no text
-              beside it to widen its hit area, so it carries the 40px tap
-              target on its own. */}
-            <a
-              href={REPO_URL}
-              target="_blank"
-              rel="noopener"
-              aria-label={t('chrome.sourceLabel')}
-              title={t('chrome.source')}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Github className="h-5 w-5" aria-hidden="true" />
-            </a>
+            THAT PREMISE IS NOW CONDITIONAL (M201). `INSTANCE_MODE=managed`
+            gives an instance accounts, and on one of those the deletion is
+            wrong: the corner offers a button that silently redirects to
+            `/welcome` and the page never says the words "sign in". The
+            decision above still holds wherever `headerOffersSignIn` is false,
+            which is every open instance and the self-host default. The
+            question is `useInstancePolicy().headerOffersSignIn`, never the
+            mode name; see `app/config/instance-policy.ts`.
+
+            What that conditional buys, in this corner (M201 spec 03): a
+            sign-in link where the button used to redirect, and beside it the
+            answer for a visitor holding no invite. Neither one renders on an
+            open instance, where there is nothing to sign in to and the offer
+            would be the mirror image of the same fault. */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* The source icon left this corner in M201/03. It was the SECOND
+                copy of a link the footer already carries as a labelled word,
+                and the row is one 16px band: on a managed instance the space
+                is spent on the two controls a visitor actually needs, and an
+                open instance keeps the one it always had. The footer's Source
+                link is untouched and is now the only one on the page. */}
+            {headerOffersSignIn && <InviteOnlyDialog />}
             {/* `h-10` overrides the `sm` size's 32px box: this is the header's
-                only real control on a phone and it has to be tappable. */}
+                only real control on a phone and it has to be tappable.
+
+                The destination changes WITH the label, the same trade the
+                landing page's mid-page call to action already made: on a
+                managed instance `/dashboard` bounces to `/welcome`, so a button
+                named for a destination is a redirect wearing that name. Naming
+                the real door is what makes the label true. */}
             <Button asChild variant="outline" size="sm" className="h-10 px-4">
-              <Link to="/dashboard">{t('chrome.openTracker')}</Link>
+              <Link to={headerOffersSignIn ? '/sign-in' : '/dashboard'}>
+                {headerOffersSignIn ? t('chrome.signIn') : t('chrome.openTracker')}
+              </Link>
             </Button>
           </div>
         </div>

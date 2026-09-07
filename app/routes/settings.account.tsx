@@ -38,6 +38,7 @@ import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { ServerNoticeBanner } from '#app/components/sync-notice-banner';
+import { OperatorVisibilityCard } from '#app/components/operator-visibility-card';
 import { PasswordFields } from '#app/components/password-fields';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
@@ -56,17 +57,17 @@ import {
 } from '#app/components/ui/alert-dialog';
 import { getFormProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
-import { useManagedInstance } from '#app/hooks/use-public-config';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackAccountDeleted, trackPasswordChanged } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
+import { SignOutDialog } from '#app/components/sign-out-dialog';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import {
   changeSyncPassphrase,
   deleteSyncAccount,
   refreshSyncAccount,
   setSyncDisplayName,
-  signOutOfSync,
   syncNow,
 } from '#app/lib/sync/sync-actions';
 
@@ -91,7 +92,13 @@ export default function SettingsAccount() {
   const { t } = useTranslation();
   const { syncServerUrl } = useLoaderData<typeof loader>();
   const session = useSyncSession();
-  const managed = useManagedInstance();
+  // The allowance card exists because the photo estimates are the instance's,
+  // billed to this account. That is the question, not the mode name (M201/07).
+  // `operatorSeesActivity` is the second question this page asks, and it is a
+  // different one: an instance could in principle bill the photos without an
+  // operator who reads per-person activity, and the sentence that tells
+  // somebody what an administrator sees must be gated on the seeing.
+  const { aiComesFromTheInstance, operatorSeesActivity } = useInstancePolicy();
   const account = session.account;
 
   // ON OPEN, ONCE. The allowance and the count move on the SERVER while a tab
@@ -119,12 +126,12 @@ export default function SettingsAccount() {
             // account's allowance. The `useEffect` above refreshes on open,
             // so this is a loading flicker, not a dead end.
             allowance={
-              managed && account.dailyAiLimit !== null && account.aiUsedToday !== null ?
+              aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null ?
                 { usedToday: account.aiUsedToday, dailyLimit: account.dailyAiLimit }
               : null
             }
           />
-          {managed && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
+          {aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
             <AllowanceCard dailyLimit={account.dailyAiLimit} usedToday={account.aiUsedToday} />
           )}
           <Card>
@@ -139,6 +146,13 @@ export default function SettingsAccount() {
               </p>
             </CardContent>
           </Card>
+          {/* AFTER the devices card and before the password one, because it
+              is a fact about this account rather than an action on it, and it
+              answers the question the two cards above raise: this instance
+              keeps a copy and reads photos for you, so who looks at that.
+              Nothing renders on an open instance, which has no operator and
+              nobody for the sentence to be about (M201/06). */}
+          {operatorSeesActivity && <OperatorVisibilityCard />}
           <ChangePasswordCard />
           <DangerZoneCard accountEmail={account.email} />
         </>
@@ -411,18 +425,20 @@ function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
         <CardDescription>{t('account.danger.body')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* SIGN OUT EVERYWHERE is what this button does, and the copy says so:
-            `signOutOfSync` revokes the token family server-side, so a session
-            left open on a lost phone ends here. The diary on THIS device
-            stays; signing out is not a wipe. */}
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 w-full sm:w-auto"
-          onClick={() => void signOutOfSync().catch(() => undefined)}
-        >
-          <LogOut className="h-4 w-4" aria-hidden="true" /> {t('account.signOut.cta')}
-        </Button>
+        {/* THE OLD DOOR, KEPT (M201 spec 02). The header menu is where sign-out
+            belongs and now is, and this one stays: a person who has learned to
+            look here must not find the control gone. What changed is that both
+            open the SAME dialog, so the erase choice and the confirmation
+            cannot mean one thing in the chrome and another on this page.
+            Signing out still revokes the token family server-side, which is
+            what ends a session left open on a lost phone. */}
+        <SignOutDialog
+          trigger={
+            <Button type="button" variant="outline" className="h-11 w-full sm:w-auto">
+              <LogOut className="h-4 w-4" aria-hidden="true" /> {t('account.signOut.cta')}
+            </Button>
+          }
+        />
         <p className="text-xs text-muted-foreground">{t('account.signOut.note')}</p>
 
         <AlertDialog>

@@ -27,6 +27,58 @@ export type SyncMenuState =
   | { status: 'never-synced' };
 
 /**
+ * The ACCOUNT DOOR the header menu offers, if any (M201 spec 02 and 03).
+ *
+ * Three states, named, because the menu had one and let the other two fall
+ * through it. A managed instance signed out showed "Create account", which on
+ * an invite-only instance is a promise nobody can keep; signed in it showed no
+ * way out at all, which is what sent people into the Danger Zone of
+ * `/settings/account` looking for one.
+ */
+export type AvatarMenuDoor =
+  /** No sync on this instance: no account, no door, nothing to say (AGENTS.md). */
+  | 'none'
+  /** A session is open: the way out. */
+  | 'sign-out'
+  /** No session, and this instance requires one: the way in. */
+  | 'sign-in'
+  /** No session, and accounts here are an optional extra somebody may switch on. */
+  | 'create-account';
+
+/**
+ * Which door the menu shows.
+ *
+ * ── The two questions this must not conflate ─────────────────────────────
+ *
+ * `hasSyncServer` is "may any sync UI render here" and `requiresAccount` is
+ * "does a person need an account to use this instance at all". They are
+ * genuinely different, and the difference is a real deployment: a self-hoster
+ * who sets `SYNC_SERVER_URL` on an OPEN instance has sync, no accounts, and an
+ * anonymous diary that works. On that instance "Create account" is honest and
+ * is what this returns. `app/config/instance-policy.ts` documents the trap.
+ *
+ * @param hasSyncServer - `useSyncServerUrl() !== null`.
+ * @param hasSession - is somebody signed in on this device right now?
+ * @param requiresAccount - `InstancePolicy.requiresAccount`.
+ */
+export function resolveAvatarMenuDoor({
+  hasSyncServer,
+  hasSession,
+  requiresAccount,
+}: {
+  hasSyncServer: boolean;
+  hasSession: boolean;
+  requiresAccount: boolean;
+}): AvatarMenuDoor {
+  // FIRST, and unconditionally: an instance with no sync server mentions no
+  // account anywhere. A managed instance always has one (`isManagedInstance`
+  // refuses to boot without it), so this branch can never hide a needed door.
+  if (!hasSyncServer) return 'none';
+  if (hasSession) return 'sign-out';
+  return requiresAccount ? 'sign-in' : 'create-account';
+}
+
+/**
  * @param hasSyncServer - whether the instance is configured for sync at all (`useSyncServerUrl() !== null`).
  * @param session - the live session snapshot.
  */

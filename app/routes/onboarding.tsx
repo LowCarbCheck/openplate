@@ -25,8 +25,8 @@ import { todayInTimezone } from '#app/lib/user-days';
 import { clearHomeHint, writeHomeHint } from '#app/lib/home-entry';
 import { CONFIG } from '#app/config';
 import { isAnonymousStartAllowed } from '#app/lib/onboarding-gate';
-import { useManagedInstance } from '#app/hooks/use-public-config';
-import { shouldFallbackOffline } from '#app/lib/local-store/offline-fallback';
+import { readInstancePolicy } from '#app/lib/read-instance-policy';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import {
   CARB_PRESETS,
@@ -193,8 +193,14 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   // keep. A device with a profile row, or with a session open — which is what
   // the create-account flow arrives here with — is never turned away. The rule
   // itself is pure and lives with the gate it belongs to.
+  // `requiresAccount` IS the question this gate asks, and it is asked of the
+  // policy rather than of the mode name (M201 spec 07). The parameter is still
+  // called `managed` in `onboarding-gate.ts`; the value handed to it is the
+  // answer to "does a person need an account before they can use this
+  // instance at all", which is exactly what the branch below means.
+  const { requiresAccount } = await readInstancePolicy(serverLoader);
   const isAllowed = isAnonymousStartAllowed({
-    managed: await readManagedInstance(serverLoader),
+    managed: requiresAccount,
     hasProfile: profile !== null,
     hasSyncAccount: getSyncSessionSnapshot().account !== null,
   });
@@ -222,25 +228,6 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   };
 }
 clientLoader.hydrate = true as const;
-
-/**
- * The instance's shape, from the server loader, failing OPEN.
- *
- * On a hard load this costs nothing: `clientLoader.hydrate` means the server
- * loader already ran and `serverLoader()` hands back the data that came with
- * the document. Only an in-app navigation fetches, and offline that fetch
- * rejects — so it answers `false`, the open behaviour. Locking somebody out of
- * their own first-run screen because the network is down would be the worse
- * failure by far, and a managed instance is unreachable offline anyway.
- */
-async function readManagedInstance(serverLoader: () => Promise<{ managed: boolean }>): Promise<boolean> {
-  try {
-    return (await serverLoader()).managed;
-  } catch (cause) {
-    if (shouldFallbackOffline(cause)) return false;
-    throw cause;
-  }
-}
 
 /**
  * Shown while the client loader reads onboarding state from the on-device
@@ -487,7 +474,7 @@ function LocalFirstExplainer() {
   // runs, the diary is on the server as ciphertext and the plate photo passes
   // through that same server on its way to the AI. Saying so on the first
   // screen is the point of this card.
-  const managed = useManagedInstance();
+  const { serverHoldsTheDiary } = useInstancePolicy();
   return (
     <div className="mt-6 space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
       <p className="flex items-start gap-2">
@@ -497,7 +484,7 @@ function LocalFirstExplainer() {
               splitting the sentence into three keys around it would force every
               translation into English word order. */}
           <Trans
-            i18nKey={managed ? 'onboarding.localFirstManaged' : 'onboarding.localFirst'}
+            i18nKey={serverHoldsTheDiary ? 'onboarding.localFirstManaged' : 'onboarding.localFirst'}
             components={{ strong: <strong /> }}
           />
         </span>
@@ -1217,7 +1204,9 @@ function WayToLogCard({
  */
 function FirstFoodKeyNote() {
   const { t } = useTranslation();
-  const managed = useManagedInstance();
+  // There is nothing to go and set up when the estimates come with the
+  // account, so the question is where the AI comes from (M201/07).
+  const { aiComesFromTheInstance } = useInstancePolicy();
   const navigation = useNavigation();
   const isBusy = navigation.state !== 'idle';
   const isOpening = isBusy && navigation.formData?.get('destination') === '/settings/ai?next=diary';
@@ -1233,7 +1222,7 @@ function FirstFoodKeyNote() {
           one sentence and no link: there is nothing to go and set up, and the
           old copy sent people to a settings page whose whole content is a
           provider they do not need. */}
-      {managed ?
+      {aiComesFromTheInstance ?
         <span>{t('onboarding.firstFood.managedNote')}</span>
       : <span>
           {t('onboarding.firstFood.keyNote')}{' '}

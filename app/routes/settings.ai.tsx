@@ -22,7 +22,7 @@ import {
 } from '#app/lib/local-store';
 import type { LocalAiSettings } from '#app/lib/local-store';
 import { CONFIG } from '#app/config';
-import { shouldFallbackOffline } from '#app/lib/local-store/offline-fallback';
+import { readInstancePolicy } from '#app/lib/read-instance-policy';
 import { resolveSettingsReturnPath } from '#app/lib/settings-return';
 import { syncNow } from '#app/lib/sync/sync-actions';
 import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
@@ -39,11 +39,7 @@ import {
   supportsOauthPkce,
 } from '#app/services/vision/registry';
 import { providersForDisplay, recommendedProviderFor } from '#app/models/ai-provider-recommendation';
-import {
-  trackAiKeyCheckFailed,
-  trackAiProviderConnected,
-  trackAiProviderDisconnected,
-} from '#app/lib/matomo-events';
+import { trackAiKeyCheckFailed, trackAiProviderConnected, trackAiProviderDisconnected } from '#app/lib/matomo-events';
 import { verifyProviderKey } from '#app/services/vision/verify-key';
 import type { KeyVerificationResult } from '#app/services/vision/verify-key';
 import type { Toast } from '#app/utils/toast.server';
@@ -309,8 +305,12 @@ export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs
   // managed instance there is no key to bring and the estimates come with the
   // account. Leaving the URL open would send somebody to a page that cannot
   // help them and that contradicts the privacy policy they were shown.
-  const managed = await readManagedInstance(serverLoader);
-  if (managed) throw redirect('/settings');
+  // `aiComesFromTheInstance` is the question, not the mode name (M201 spec
+  // 07): this page is where a person brings a provider key and pays for it,
+  // and on an instance whose estimates come from the operator's own proxy
+  // there is no key to bring.
+  const { aiComesFromTheInstance } = await readInstancePolicy(serverLoader);
+  if (aiComesFromTheInstance) throw redirect('/settings');
   const [settings, monthlyUsage] = await Promise.all([getLocalAiSettings(), getLocalMonthlyAiUsage()]);
   // THE degradation point for an unrecognised stored provider (M130/01). The
   // settings row is an opaque JSON blob with no schema behind it, so an
@@ -323,24 +323,6 @@ export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs
   return { settings: isKnownProvider ? settings : null, monthlyUsage };
 }
 clientLoader.hydrate = true as const;
-
-/**
- * The instance's shape, from the server loader, failing OPEN — the same
- * reasoning (and the same helper) as `onboarding.tsx`. On a hard load
- * `clientLoader.hydrate` means the data already came with the document; only
- * an in-app navigation fetches, and offline that fetch rejects. Answering
- * `false` there shows the person their own on-device settings instead of
- * bouncing them off a page because the network is down, and a managed
- * instance is unreachable offline anyway.
- */
-async function readManagedInstance(serverLoader: () => Promise<{ managed: boolean }>): Promise<boolean> {
-  try {
-    return (await serverLoader()).managed;
-  } catch (cause) {
-    if (shouldFallbackOffline(cause)) return false;
-    throw cause;
-  }
-}
 
 /**
  * Skips the live provider check when the user only changed the model and

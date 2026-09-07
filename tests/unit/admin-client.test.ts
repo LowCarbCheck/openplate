@@ -46,6 +46,24 @@ const ACCOUNT: JsonObject = {
   aiUsedToday: 3,
   suspendedAt: null,
   createdAt: '2026-09-01T09:00:00.000Z',
+  lastSeenAt: '2026-09-06T18:30:00.000Z',
+};
+
+/**
+ * One person's strip, transcribed from `PROTOCOL.md` §5.20's own example body.
+ *
+ * UNWRAPPED, unlike every list next to it. That asymmetry is the shape of
+ * defect this file exists to catch, so the fixture is copied from the document
+ * rather than from the client's schema.
+ */
+const ACTIVITY: JsonObject = {
+  accountId: 7,
+  lastSeenAt: '2026-09-06T18:30:00.000Z',
+  window: { days: 90, fromDay: '2026-06-10', toDay: '2026-09-07' },
+  days: [
+    { day: '2026-06-10', count: 0 },
+    { day: '2026-06-11', count: 3 },
+  ],
 };
 
 const INVITE: JsonObject = {
@@ -225,6 +243,40 @@ test('getAccount unwraps the envelope', async () => {
   assert.equal(outcome.status === 'ok' && outcome.value.email, 'anna@example.org');
 });
 
+test('an account view carries the last-seen instant, and keeps it null when there is none', async () => {
+  const seen = clientAnswering({ account: ACCOUNT });
+  const withSeen = await seen.client.getAccount({ id: 7 });
+  assert.equal(withSeen.status === 'ok' && withSeen.value.lastSeenAt, '2026-09-06T18:30:00.000Z');
+
+  // An invited account that has never signed in. A schema that dropped the
+  // field, or defaulted it, would hand the screen an epoch to render.
+  const never = clientAnswering({ account: { ...ACCOUNT, lastSeenAt: null } });
+  const withoutSeen = await never.client.getAccount({ id: 7 });
+  assert.equal(withoutSeen.status === 'ok' && withoutSeen.value.lastSeenAt, null);
+});
+
+test('accountActivity asks the account for its own strip, and names no window', async () => {
+  const { client, requests } = clientAnswering(ACTIVITY);
+  const outcome = await client.accountActivity({ id: 7 });
+
+  // NO `?days=`: the cap is the service's retention window and this client
+  // does not carry a second copy of that number.
+  assert.equal(requests[0]?.path, '/v1/admin/accounts/7/activity');
+  assert.equal(requests[0]?.method, 'GET');
+  assert.equal(outcome.status === 'ok' && outcome.value.window.days, 90);
+  assert.equal(outcome.status === 'ok' && outcome.value.window.fromDay, '2026-06-10');
+  // The zero day survives the parse as a zero, not as an absence.
+  assert.deepEqual(outcome.status === 'ok' ? outcome.value.days : null, [
+    { day: '2026-06-10', count: 0 },
+    { day: '2026-06-11', count: 3 },
+  ]);
+});
+
+test('an activity body read out of an envelope that is not there fails at the boundary', async () => {
+  const { client } = clientAnswering({ activity: ACTIVITY });
+  await assert.rejects(() => client.accountActivity({ id: 7 }));
+});
+
 test('listInvites parses an invitation, including the fields only an admin sees', async () => {
   const { client, requests } = clientAnswering({ invites: [INVITE], total: 1 });
   const outcome = await client.listInvites();
@@ -385,8 +437,9 @@ test('EVERY method turns a 403 into a typed outcome instead of throwing', async 
       client.revokeInvite({ id: 12 }),
       client.resendInvite({ id: 12 }),
       client.stats(),
+      client.accountActivity({ id: 7 }),
     ]);
-    assert.equal(outcomes.length, 10, 'every endpoint on the contract is covered');
+    assert.equal(outcomes.length, 11, 'every endpoint on the contract is covered');
     for (const outcome of outcomes) assert.equal(outcome.status, 'forbidden', `${kind} must not throw`);
   }
 });

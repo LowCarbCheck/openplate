@@ -26,6 +26,7 @@
  */
 import {
   ADMIN_API_PREFIX,
+  accountActivitySchema,
   accountListSchema,
   accountResponseSchema,
   adminStatsResponseSchema,
@@ -33,6 +34,7 @@ import {
   inviteCreatedSchema,
   inviteListSchema,
   type AccountRole,
+  type AdminAccountActivity,
   type AdminAccountView,
   type AdminStats,
   type Delivery,
@@ -120,6 +122,28 @@ export class AdminClient {
       path: `${ADMIN_API_PREFIX}/accounts/${input.id}`,
       method: 'GET',
       parse: (body) => accountResponseSchema.parse(body).account,
+    });
+  }
+
+  /**
+   * One person's activity: when they last did something, and one count per UTC
+   * day over a bounded window.
+   *
+   * THE WINDOW IS NOT THIS CLIENT'S TO CHOOSE. It asks for nothing and takes
+   * what the service draws, because the cap is the service's retention window
+   * and a caller that names its own number would either duplicate that number
+   * or ask for a strip made entirely of zeroes for rows that have been pruned.
+   * The response says which window it drew and the screen reads it from there.
+   *
+   * A `404` for an unknown id THROWS, like every other read of one account: it
+   * is a person the list showed a moment ago and no longer exists, which is a
+   * failure to report rather than an outcome to render.
+   */
+  async accountActivity(input: { id: number }): Promise<AdminOutcome<AdminAccountActivity>> {
+    return this.send({
+      path: `${ADMIN_API_PREFIX}/accounts/${input.id}/activity`,
+      method: 'GET',
+      parse: (body) => accountActivitySchema.parse(body),
     });
   }
 

@@ -241,8 +241,12 @@
     "openTracker": "Open the tracker",
     "preferences": "Preferences",
     "privacy": "Privacy",
+    "requestAccess": "Request access",
+    "requestAccessBody": "Accounts here are created with an invite link. An administrator issues those invitations, so ask whoever runs this instance to send you one.",
+    "requestAccessClose": "Close",
+    "requestAccessTitle": "This instance is invite-only",
+    "signIn": "Sign in",
     "source": "Source code",
-    "sourceLabel": "openplate on GitHub, opens in a new tab",
     "sourceShort": "Source",
     "terms": "Terms",
     "imprint": "Imprint",
@@ -878,6 +882,7 @@
   "landing": {
     "close": {
       "body": "Nothing to sign up for, nothing to configure. Log one food and openplate has everything it needs.",
+      "bodyManaged": "Nothing to configure. Sign in, log one food, and openplate has everything it needs.",
       "eyebrow": "Start now",
       "star": "Or star the source on GitHub, MIT licensed",
       "title": "Start with today's first meal"
@@ -990,6 +995,7 @@
     },
     "setup": {
       "cta": "Start with step one",
+      "ctaManaged": "Sign in to start",
       "eyebrow": "One-time setup",
       "shotAlt": "The overview screen on a phone, with the day ring, the last seven days and the latest weigh-in.",
       "steps": {
@@ -997,25 +1003,32 @@
           "body": "One click connects OpenRouter: you approve it there, and the key comes back to this device and stays on it. Any OpenAI-compatible endpoint works too. Reading a plate typically costs well under a cent per photo, and your provider bills you directly. Skip this and search still works: a key is only needed to read a photo.",
           "title": "Connect a provider, or skip it"
         },
+        "connectManaged": {
+          "body": "The AI comes with this instance, so you bring no key and pay no provider. Your administrator sets how many photos may be read for you each day. Searching for a food never counts against that number, because only a photo has to be read.",
+          "title": "The AI is already set up for you"
+        },
         "open": {
           "body": "The diary is created on this device the moment you log the first food.",
           "title": "Open the tracker"
         },
         "scan": {
           "body": "Your provider reads the photo and proposes the foods. You check the numbers, save, and the day’s total moves.",
-          "title": "Photograph your first plate"
+          "title": "Photograph your first plate",
+          "bodyManaged": "This instance’s AI reads the photo and proposes the foods. You check the numbers, save, and the day’s total moves."
         }
       },
       "subtitle": "You do this once, and then never again. Three steps, and only the middle one asks anything of you.",
+      "subtitleManaged": "You do this once, and then never again. Three steps, and the middle one is already done for you.",
       "title": "Working in about a minute"
     },
     "sync": {
       "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server (ours, or one you run yourself) and that server has no key to it, because the key is made from a password it never sees.",
       "link": "Create an account",
       "photos": "Plate photos stay where they are. They are never part of a sync blob.",
-      "shotAlt": "The account screen on a phone, offering to sign in or create an account, with a note that plate photos are never uploaded.",
+      "shotAlt": "The account screen on a phone, signed out, with a link to sign in.",
       "title": "Two devices, one diary",
-      "bodyManaged": "Log lunch on your phone, then review your week on your laptop. Every account works this way by default. Your diary is encrypted on your device, and the server stores only the ciphertext. The operator also keeps a recovery key. This key lets you restore your diary after a password reset, and it means the operator can technically decrypt your data."
+      "bodyManaged": "Log lunch on your phone, then review your week on your laptop. Every account works this way by default. Your diary is encrypted on your device, and the server stores only the ciphertext. The operator also keeps a recovery key. This key lets you restore your diary after a password reset, and it means the operator can technically decrypt your data.",
+      "linkManaged": "Sign in to your account"
     }
   },
   "launcher": {
@@ -1083,7 +1096,8 @@
     "forgot": "Forgot password",
     "reset": "Set a new password",
     "account": "Account",
-    "admin": "Administration"
+    "admin": "Administration",
+    "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance is invitation only, and your diary is encrypted on this device before a copy reaches the server."
   },
   "nav": {
     "add": "Add",
@@ -2118,6 +2132,23 @@
     "unavailable": "Accounts are turned off on this server.",
     "forgot": "Forgot password?"
   },
+  "signOut": {
+    "menuItem": "Sign out",
+    "title": "Sign out",
+    "body": "You stay signed out until you sign in again. Your diary stays on this device.",
+    "bodyManaged": "Your diary belongs to your account. After you sign out, this device does not show it again until you sign in.",
+    "confirm": "Sign out",
+    "erase": {
+      "label": "Also erase the diary from this device"
+    },
+    "outbox": {
+      "counting": "Checking what is still waiting to be sent.",
+      "empty": "Everything on this device has reached the server.",
+      "waiting_one": "One entry has not reached the server yet. Erasing loses it.",
+      "waiting_other": "{{count}} entries have not reached the server yet. Erasing loses them."
+    },
+    "eraseFailed": "The diary could not be erased, because openplate is open in another tab. Close it and try again."
+  },
   "sync": {
     "cancel": "Cancel",
     "changePassphrase": {
@@ -2461,6 +2492,20 @@
       "body": "Your diary is kept in step across every device you sign in on.",
       "photosStayHere": "Photos stay on the device that took them. They are never copied to another device."
     },
+    "operatorSees": {
+      "title": "What your administrator can see",
+      "intro": "An organization runs this instance for you. Whoever administers it can open your account and see all of this:",
+      "email": "Your email address.",
+      "displayName": "The name you chose, if you chose one.",
+      "createdAt": "The day your account was created.",
+      "lastSeenAt": "When you last signed in, or last had a photo read.",
+      "aiUsedToday": "How many photos were read for you today.",
+      "dailyAiLimit": "How many photos may be read for you each day.",
+      "role": "Whether you may administer this instance yourself.",
+      "suspendedAt": "Whether your account is suspended.",
+      "activity": "They can also see how many photos were read for you on each of the last {{days}} days. Older daily counts are deleted.",
+      "notTheDiary": "What you eat is not on those pages. Your diary is encrypted on this device before any copy of it leaves, so it cannot be read there."
+    },
     "password": {
       "title": "Password",
       "body": "Change the password you sign in with.",
@@ -2521,11 +2566,29 @@
       "allowance": "Photos per day",
       "usedToday": "Used today",
       "standing": "Standing",
+      "lastSeen": "Last sign-in",
       "joined": "Joined",
       "actions": "Actions"
     },
     "usage": "{{used}} of {{limit}}",
     "usageNone": "No photos",
+    "lastSeen": {
+      "never": "Never signed in"
+    },
+    "person": {
+      "open": "Open",
+      "back": "Back to the list",
+      "activityTitle": "Photos read per day",
+      "activityWindow": "The last {{days}} days, {{from}} to {{to}}.",
+      "activityTotal": "Photos read in this window: {{photos}}",
+      "activityQuiet": "Nothing has been read in this window.",
+      "activityLegend": "One square is one day. An empty square is a day with nothing read. Days before this window are not kept.",
+      "day": "{{day}}: {{photos}}",
+      "activityLoading": "Loading",
+      "activityFailed": "The daily counts could not be loaded.",
+      "activityRetry": "Try again",
+      "noDiary": "This is everything kept here about how this person uses the instance. Their diary is encrypted on their own device and cannot be read here."
+    },
     "role": {
       "label": "Role",
       "admin": "Administrator",

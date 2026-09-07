@@ -22,7 +22,7 @@
  */
 import { useEffect, useState } from 'react';
 
-import { usePublicConfig } from '#app/hooks/use-public-config';
+import { useInstancePolicy, usePublicConfig } from '#app/hooks/use-public-config';
 import { useSyncSession } from '#app/components/sync-status';
 import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { resolveEffectiveAiSettings, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
@@ -36,7 +36,12 @@ import type { LocalAiSettings } from '#app/lib/local-store';
 export function useEffectiveAiSettings(storedSettings: LocalAiSettings | null): EffectiveAiSettings | null {
   const config = usePublicConfig();
   const session = useSyncSession();
-  const managed = config?.managed === true;
+  // THE POLICY, not `config.managed` (M201/07). This was the one reader that
+  // opened the config object and compared the flag itself, which is exactly
+  // how a second definition of "managed" gets born. The question it wants is
+  // whether the AI comes from the instance; `ManagedInstanceFacts.managed`
+  // keeps its name because that resolver is about the AI and nothing else.
+  const { aiComesFromTheInstance: managed } = useInstancePolicy();
   const syncServerUrl = config?.syncServerUrl ?? null;
   const [model, setModel] = useState<string | null>(null);
 

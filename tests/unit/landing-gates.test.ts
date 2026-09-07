@@ -140,8 +140,19 @@ describe('landing loader — an empty environment renders neither optional rung'
     // must be ABSOLUTE, and `meta()` also runs in the browser, where it cannot
     // read `CONFIG`. It publishes `APP_URL` — the address the visitor already
     // typed to get here, so it discloses nothing new about the instance.
+    // `managed` joined in M201/01: `/`'s CLIENT loader decides the redirect
+    // into the app on a managed instance, because the server deliberately
+    // cannot (the session is in IndexedDB), and a client loader can call no
+    // hook. It discloses nothing either: it is already in the root loader's
+    // public config on every route in the app.
     const payload = await loadLandingData();
-    assert.deepEqual(Object.keys(payload).toSorted(), ['analyticsLevel', 'newsletter', 'siteOrigin', 'syncEnabled']);
+    assert.deepEqual(Object.keys(payload).toSorted(), [
+      'analyticsLevel',
+      'managed',
+      'newsletter',
+      'siteOrigin',
+      'syncEnabled',
+    ]);
   });
 
   it('publishes the origin without a trailing slash, so `${origin}/` is not `//`', async () => {

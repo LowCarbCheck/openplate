@@ -24,6 +24,7 @@ import { PrivacyContent } from '../../app/routes/legal/privacy';
 import { TermsContent } from '../../app/routes/legal/terms';
 import { ImprintContent } from '../../app/routes/legal/imprint';
 import { PHOTO_RETENTION_DAYS } from '../../app/lib/local-store/photo-policy';
+import { USAGE_COUNTER_RETENTION_DAYS } from '../../app/lib/admin/operator-visibility';
 
 function renderPrivacy(): string {
   return renderToStaticMarkup(createElement(PrivacyContent));
@@ -275,6 +276,28 @@ describe('Legal pages — the managed instance says what the operator can see (M
     const managed = renderToStaticMarkup(createElement(PrivacyContent, { managed: true }));
     assert.match(managed, /encrypted copy of them on our server/);
     assert.doesNotMatch(managed, /This data is not sent to us and we cannot see it/);
+  });
+
+  it('privacy: section 6 names every field an administrator can read (M201/06)', () => {
+    // The SAME facts the app states at `account.operatorSees.*`, in this
+    // document's register rather than the app's, and gated on the question
+    // that makes them true rather than on the mode name.
+    const seen = renderToStaticMarkup(createElement(PrivacyContent, { managed: true, operatorSeesActivity: true }));
+    for (const field of ['your email address', 'the day the account was created', 'when you last signed in']) {
+      assert.ok(seen.includes(field), `section 6 must name ${field}`);
+    }
+    assert.match(seen, new RegExp(`last${'\\s*'}${USAGE_COUNTER_RETENTION_DAYS} days`));
+    assert.doesNotMatch(seen, /\{\{usageDays\}\}/);
+    // And the half that matters more: none of it is the diary.
+    assert.match(seen, /Your diary itself is not on those pages/);
+  });
+
+  it('privacy: an instance with no operator keeps the shorter claim and gains no paragraph', () => {
+    // `operatorSeesActivity` defaults to `false`, which is the open instance
+    // and also the error-boundary render with no config.
+    const open = renderPrivacy();
+    assert.match(open, /The only account-linked information the server can see/);
+    assert.doesNotMatch(open, /Your diary itself is not on those pages/);
   });
 
   it('terms: no bring-your-own-key promise on an instance where nobody brings one', () => {

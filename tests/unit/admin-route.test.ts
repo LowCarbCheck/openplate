@@ -34,7 +34,13 @@ import { NotAnAdministratorCard } from '../../app/components/admin/not-an-admini
 import { InviteResult } from '../../app/components/admin/invite-result';
 import { InviteTable } from '../../app/components/admin/invite-table';
 import { PeopleTable } from '../../app/components/admin/people-table';
-import type { AdminAccountView, InviteView } from '../../app/lib/admin/admin-wire';
+import { PersonDetail } from '../../app/components/admin/person-detail';
+import type {
+  AdminAccountActivity,
+  AdminAccountView,
+  AdminActivityDay,
+  InviteView,
+} from '../../app/lib/admin/admin-wire';
 
 function render(element: ReactElement): string {
   return renderToStaticMarkup(createElement(MemoryRouter, null, withI18n(element)));
@@ -49,6 +55,7 @@ const ADMIN: AdminAccountView = {
   aiUsedToday: 12,
   suspendedAt: null,
   createdAt: '2026-08-01T09:00:00.000Z',
+  lastSeenAt: '2026-09-06T18:30:00.000Z',
 };
 
 const SUSPENDED_PERSON: AdminAccountView = {
@@ -60,6 +67,36 @@ const SUSPENDED_PERSON: AdminAccountView = {
   aiUsedToday: 7,
   suspendedAt: '2026-09-03T09:00:00.000Z',
   createdAt: '2026-08-20T09:00:00.000Z',
+  lastSeenAt: '2026-09-05T07:15:00.000Z',
+};
+
+/** Somebody who was invited and never arrived. `lastSeenAt` is null and the screen owes them a sentence. */
+const NEVER_ARRIVED: AdminAccountView = {
+  id: 3,
+  email: 'carla@example.org',
+  displayName: 'Carla',
+  role: 'member',
+  dailyAiLimit: 200,
+  aiUsedToday: 0,
+  suspendedAt: null,
+  createdAt: '2026-09-05T09:00:00.000Z',
+  lastSeenAt: null,
+};
+
+/** A window of `days` days ending on 2026-09-07, with the counts given for the days named. */
+function activityDays(days: number, counted: Readonly<Record<string, number>>): AdminActivityDay[] {
+  const end = Date.parse('2026-09-07T00:00:00.000Z');
+  return Array.from({ length: days }, (_entry, index) => {
+    const day = new Date(end - (days - 1 - index) * 86_400_000).toISOString().slice(0, 10);
+    return { day, count: counted[day] ?? 0 };
+  });
+}
+
+const ACTIVITY: AdminAccountActivity = {
+  accountId: 2,
+  lastSeenAt: '2026-09-05T07:15:00.000Z',
+  window: { days: 90, fromDay: '2026-06-10', toDay: '2026-09-07' },
+  days: activityDays(90, { '2026-09-05': 4, '2026-09-06': 0, '2026-09-07': 1 }),
 };
 
 const PENDING_INVITE: InviteView = {
@@ -80,6 +117,9 @@ const NEVER = {
   onSetSuspended: () => Promise.reject(new Error('a render must not suspend')),
   onSendResetMail: () => Promise.reject(new Error('a render must not send mail')),
   onDelete: () => Promise.reject(new Error('a render must not delete')),
+  onOpen: () => {
+    throw new Error('a render must not open anybody');
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -117,6 +157,9 @@ test('the list shows two people, their usage and their standing', () => {
 test('your own row carries no controls, because the service would refuse them', () => {
   const alone = render(createElement(PeopleTable, { people: [ADMIN], currentAccountId: 1, ...NEVER }));
   assert.match(alone, /You/);
+  // Opening is a `GET` and locks nobody out, so it survives on your own row
+  // while everything that writes does not.
+  assert.match(alone, />Open</, 'an administrator may look at their own activity');
   assert.doesNotMatch(alone, /Suspend/, 'the last administrator must not be able to lock themselves out');
   assert.doesNotMatch(alone, /Delete/);
 
@@ -229,4 +272,92 @@ test('a server that reports mail AND hands back a link is treated as the link ca
 
   assert.match(html, /Invitation ready for/);
   assert.match(html, /Copy the link/);
+});
+
+// ---------------------------------------------------------------------------
+// 5. Last sign-in, in the list and in the detail view
+// ---------------------------------------------------------------------------
+
+test('the list answers who has gone quiet without a click', () => {
+  const html = render(createElement(PeopleTable, { people: [ADMIN, NEVER_ARRIVED], currentAccountId: 99, ...NEVER }));
+
+  assert.match(html, /Last sign-in/);
+  assert.match(html, new RegExp(new Date(ADMIN.lastSeenAt ?? '').toLocaleDateString().replace(/\./g, '\\.')));
+});
+
+test('an account that has never signed in renders words, not an epoch', () => {
+  const html = render(createElement(PeopleTable, { people: [NEVER_ARRIVED], currentAccountId: 99, ...NEVER }));
+
+  assert.match(html, /Never signed in/);
+  assert.doesNotMatch(html, /1970/, 'a null timestamp is not the first of January 1970');
+});
+
+test('the detail view shows the four facts and no diary content', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'ready', activity: ACTIVITY },
+      onBack: () => undefined,
+      onRetryActivity: () => undefined,
+    }),
+  );
+
+  assert.match(html, /anna@example\.org/);
+  assert.match(html, /Last sign-in/);
+  assert.match(html, /Joined/);
+  assert.match(html, /7 of 200/, "today's usage is shown against the allowance, as in the list");
+  assert.match(html, /Photos read per day/);
+  assert.match(html, /The last 90 days, 2026-06-10 to 2026-09-07/, 'the window is stated, in day keys');
+  assert.match(html, /encrypted on their own device/, 'the absence of diary content is said, not left to be assumed');
+});
+
+test('the strip draws one square per day the service sent, and a quiet day is one of them', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'ready', activity: ACTIVITY },
+      onBack: () => undefined,
+      onRetryActivity: () => undefined,
+    }),
+  );
+
+  assert.equal((html.match(/<li /g) ?? []).length, 90, 'ninety days in the window, ninety squares');
+  // A quiet day carries its own reading, so it can never be confused with a
+  // day that is simply not in the answer.
+  assert.match(html, /2026-09-06: 0/);
+  assert.match(html, /2026-09-05: 4/);
+  assert.match(html, /Photos read in this window: 5/);
+});
+
+test('a window with nothing in it says so rather than showing an empty box', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: NEVER_ARRIVED,
+      activity: {
+        kind: 'ready',
+        activity: { ...ACTIVITY, accountId: 3, lastSeenAt: null, days: activityDays(90, {}) },
+      },
+      onBack: () => undefined,
+      onRetryActivity: () => undefined,
+    }),
+  );
+
+  assert.match(html, /Never signed in/);
+  assert.match(html, /Nothing has been read in this window/);
+  assert.equal((html.match(/<li /g) ?? []).length, 90, 'the days still exist, they are just all zero');
+});
+
+test('a failed strip offers its own retry and does not take the person with it', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'failed' },
+      onBack: () => undefined,
+      onRetryActivity: () => undefined,
+    }),
+  );
+
+  assert.match(html, /anna@example\.org/, 'the facts already in hand stay on screen');
+  assert.match(html, /The daily counts could not be loaded/);
+  assert.match(html, /Try again/);
 });

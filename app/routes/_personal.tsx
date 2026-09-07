@@ -23,6 +23,7 @@ import { SyncController } from '#app/components/sync-controller';
 import { ErrorFallback } from '#app/components/route-error-boundary';
 import { useSyncSession } from '#app/components/sync-status';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { isDeviceLocked } from '#app/lib/sync/sync-state';
 import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 
 /**
@@ -92,6 +93,12 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     hasEverHadData: await hasEverHadData(),
     hasSyncAccount: session.account !== null,
     isResumingSession: session.isResuming,
+    // THE LOCK (M201 spec 02). Read synchronously from `localStorage`, which is
+    // why it is a marker and not the instance policy: this layout has no server
+    // loader, so it cannot learn its instance's mode before it has to decide,
+    // and it must decide offline too. The marker is written at sign-out, where
+    // the policy IS known.
+    isDeviceLocked: isDeviceLocked(),
   });
 
   // NOT A REDIRECT. This layout renders the loading screen and mounts the

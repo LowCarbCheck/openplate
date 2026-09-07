@@ -44,7 +44,7 @@ import {
 } from '#app/services/food-resolution/apply-match';
 import { fetchFoodMatches } from '#app/lib/food-matches-client';
 import { randomUuid } from '#app/lib/uuid';
-import { useInstanceInferencePreset, useManagedInstance } from '#app/hooks/use-public-config';
+import { useInstanceInferencePreset, useInstancePolicy } from '#app/hooks/use-public-config';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { managedAiCredential, type ManagedAiSettings } from '#app/lib/ai/managed-ai-settings';
 import { OAuthConnectButton } from '#app/components/oauth-connect-button';
@@ -1623,7 +1623,9 @@ function UploadForm({
   // never fix a rejected API key.
   const isPhotoQualityFailure = failureCause === undefined || failureCause === 'genuinely-no-food';
   const isLabelMode = mode === 'label';
-  const managed = useManagedInstance();
+  // WHO RECEIVES THE PHOTOGRAPH, which is the only reason this screen asks
+  // anything about the instance (M201/07).
+  const { aiComesFromTheInstance } = useInstancePolicy();
   // COPY ONLY. Every task-specific behaviour (prompt, schema, parse, capture
   // resolution) is on the scan-task descriptor; what changes here is what the
   // sentences say, because "no foods on that plate" is not "couldn't read that
@@ -1636,7 +1638,7 @@ function UploadForm({
   // shutter is deciding who sees the photo.
   const captureDescription =
     isLabelMode ? t('scan.labelScan.capture.description')
-    : managed ? t('scan.capture.managedDescription')
+    : aiComesFromTheInstance ? t('scan.capture.managedDescription')
     : t('scan.capture.description');
   const emptyTitle = isLabelMode ? t('scan.labelScan.capture.emptyTitle') : t('scan.capture.emptyTitle');
   const photoLabel = isLabelMode ? t('scan.labelScan.capture.photoLabel') : t('scan.capture.photoLabel');
@@ -1945,9 +1947,12 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
   // its own cannot say openplate runs none, because on this instance it does.
   // TWO ways an instance can: its own inference endpoint (M138 spec 06), or by
   // being a managed instance whose server proxies AI for its accounts (M192).
-  const managed = useManagedInstance();
+  const { aiComesFromTheInstance } = useInstancePolicy();
   const instancePreset = useInstanceInferencePreset();
-  const variant = resolveConnectCardVariant({ managed, presetBaseUrl: instancePreset?.baseUrl ?? null });
+  const variant = resolveConnectCardVariant({
+    managed: aiComesFromTheInstance,
+    presetBaseUrl: instancePreset?.baseUrl ?? null,
+  });
   return (
     <Card>
       <CardHeader>

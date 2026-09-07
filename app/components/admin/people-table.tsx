@@ -16,6 +16,13 @@
  * can undo it. Rather than offer the buttons and explain the refusal, the row
  * is marked as yours and the controls are simply absent.
  *
+ * ── Opening somebody is a READ, so your own row offers it ────────────────
+ *
+ * The rule above is about changes the service refuses, not about looking. An
+ * administrator may open their own detail view, because a `GET` of their own
+ * activity locks nobody out and is the one row they can check the numbers
+ * against. Everything that writes stays absent on your own row.
+ *
  * ── Usage is shown as "used of limit" ────────────────────────────────────
  *
  * The number by itself answers nothing: 40 is heavy use against a limit of 50
@@ -27,6 +34,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
+import { LastSeenValue } from '#app/components/admin/last-seen';
 import { Badge } from '#app/components/ui/badge';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
@@ -49,6 +57,8 @@ export interface PeopleActions {
   onSetSuspended: (input: { id: number; suspended: boolean }) => Promise<void>;
   onSendResetMail: (input: { id: number }) => Promise<void>;
   onDelete: (input: { id: number }) => Promise<void>;
+  /** Opens one person's detail view. The only action here that reads rather than writes, and the only one a row offers on itself. */
+  onOpen: (input: { id: number }) => void;
 }
 
 export interface PeopleTableProps extends PeopleActions {
@@ -123,6 +133,12 @@ function PersonRow({ person, isSelf, ...actions }: { person: AdminAccountView; i
           </dd>
         </div>
         <div>
+          <dt className="text-xs text-muted-foreground">{t('admin.columns.lastSeen')}</dt>
+          <dd>
+            <LastSeenValue lastSeenAt={person.lastSeenAt} />
+          </dd>
+        </div>
+        <div>
           <dt className="text-xs text-muted-foreground">{t('admin.columns.joined')}</dt>
           <dd>{new Date(person.createdAt).toLocaleDateString()}</dd>
         </div>
@@ -131,48 +147,58 @@ function PersonRow({ person, isSelf, ...actions }: { person: AdminAccountView; i
       {error !== null && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {isEditing ?
-        <PersonEditor person={person} isBusy={isBusy} onCancel={() => setIsEditing(false)} onSave={(next) => run(() => actions.onSave({ id: person.id, ...next }))} />
-      : !isSelf && (
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-              {t('admin.edit.open')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => void run(() => actions.onSendResetMail({ id: person.id }))}
-            >
-              {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              {t('admin.resetMail.cta')}
-            </Button>
-            {isSuspended ?
+        <PersonEditor
+          person={person}
+          isBusy={isBusy}
+          onCancel={() => setIsEditing(false)}
+          onSave={(next) => run(() => actions.onSave({ id: person.id, ...next }))}
+        />
+      : <div className="flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => actions.onOpen({ id: person.id })}>
+            {t('admin.person.open')}
+          </Button>
+          {!isSelf && (
+            <>
+              <Button type="button" size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+                {t('admin.edit.open')}
+              </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 disabled={isBusy}
-                onClick={() => void run(() => actions.onSetSuspended({ id: person.id, suspended: false }))}
+                onClick={() => void run(() => actions.onSendResetMail({ id: person.id }))}
               >
-                {t('admin.reactivate.cta')}
+                {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                {t('admin.resetMail.cta')}
               </Button>
-            : <ConfirmButton
-                label={t('admin.suspend.cta')}
-                title={t('admin.suspend.confirmTitle', { email: person.email })}
-                body={t('admin.suspend.confirmBody')}
-                confirmLabel={t('admin.suspend.confirmCta')}
+              {isSuspended ?
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isBusy}
+                  onClick={() => void run(() => actions.onSetSuspended({ id: person.id, suspended: false }))}
+                >
+                  {t('admin.reactivate.cta')}
+                </Button>
+              : <ConfirmButton
+                  label={t('admin.suspend.cta')}
+                  title={t('admin.suspend.confirmTitle', { email: person.email })}
+                  body={t('admin.suspend.confirmBody')}
+                  confirmLabel={t('admin.suspend.confirmCta')}
+                  isBusy={isBusy}
+                  onConfirm={() => void run(() => actions.onSetSuspended({ id: person.id, suspended: true }))}
+                />
+              }
+              <DeletePersonButton
+                email={person.email}
                 isBusy={isBusy}
-                onConfirm={() => void run(() => actions.onSetSuspended({ id: person.id, suspended: true }))}
+                onConfirm={() => void run(() => actions.onDelete({ id: person.id }))}
               />
-            }
-            <DeletePersonButton
-              email={person.email}
-              isBusy={isBusy}
-              onConfirm={() => void run(() => actions.onDelete({ id: person.id }))}
-            />
-          </div>
-        )
+            </>
+          )}
+        </div>
       }
     </li>
   );

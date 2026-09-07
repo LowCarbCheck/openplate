@@ -27,22 +27,34 @@ function readRoute(name: string): string {
   return readFileSync(fileURLToPath(new URL(`../../app/routes/${name}`, import.meta.url)), 'utf8');
 }
 
-/** `managed ? …` followed by the managed key, i.e. the twin is on the managed branch. */
-function assertChosenByManaged(source: string, managedKey: string): void {
-  assert.match(source, new RegExp(`managed \\?[\\s\\S]{0,80}${managedKey.replaceAll('.', '\\.')}`));
+/**
+ * `<question> ? …` followed by the managed key, i.e. the twin is on the branch
+ * that policy question turns on.
+ *
+ * The question is NAMED by the caller since M201 spec 07. It used to be the
+ * literal `managed`, one boolean for every branch, which is the arrangement
+ * that let a managed instance keep three false sentences: nothing said WHY a
+ * given branch cared, so nothing said which other branch should have existed.
+ * Naming it here means this wiring check also pins the reason.
+ */
+function assertChosenByPolicy(source: string, question: string, managedKey: string): void {
+  assert.match(source, new RegExp(`${question} \\?[\\s\\S]{0,80}${managedKey.replaceAll('.', '\\.')}`));
 }
 
 describe('landing page — the three claims that are false on a managed instance', () => {
   const source = readRoute('index.tsx');
 
-  for (const [openKey, managedKey] of [
-    ['landing.features.byok.title', 'landing.features.byokManaged.title'],
-    ['landing.features.byok.body', 'landing.features.byokManaged.body'],
-    ['landing.cta.tryItFree', 'landing.cta.tryItFreeManaged'],
-    ['landing.sync.body', 'landing.sync.bodyManaged'],
+  // Three different questions, one per claim (M201/07): the AI cards are about
+  // where the estimate comes from, the call to action is about whether an
+  // account is the only way in, and the sync card is about who holds the copy.
+  for (const [question, openKey, managedKey] of [
+    ['aiComesFromTheInstance', 'landing.features.byok.title', 'landing.features.byokManaged.title'],
+    ['aiComesFromTheInstance', 'landing.features.byok.body', 'landing.features.byokManaged.body'],
+    ['requiresAccount', 'landing.cta.tryItFree', 'landing.cta.tryItFreeManaged'],
+    ['serverHoldsTheDiary', 'landing.sync.body', 'landing.sync.bodyManaged'],
   ]) {
     it(`renders ${managedKey} on a managed instance and keeps ${openKey} on an open one`, () => {
-      assertChosenByManaged(source, managedKey);
+      assertChosenByPolicy(source, question, managedKey);
       assert.ok(source.includes(openKey), `${openKey} must still be the open instance's string`);
     });
   }
@@ -50,13 +62,13 @@ describe('landing page — the three claims that are false on a managed instance
   it('sends the closing call to action to the sign-in door rather than the anonymous one', () => {
     // `/dashboard` bounces to `/welcome` on a managed instance anyway; naming
     // the real door is what makes the button's label true.
-    assert.match(source, /managed \? '\/welcome' : '\/dashboard'/);
+    assert.match(source, /requiresAccount \? '\/welcome' : '\/dashboard'/);
   });
 });
 
 describe('onboarding — the first-run trust card', () => {
   it('swaps the local-first promise for the managed one', () => {
-    assertChosenByManaged(readRoute('onboarding.tsx'), 'onboarding.localFirstManaged');
+    assertChosenByPolicy(readRoute('onboarding.tsx'), 'serverHoldsTheDiary', 'onboarding.localFirstManaged');
   });
 
   it('keeps the emphasis tag the open string carries, so the <Trans> components still land', () => {

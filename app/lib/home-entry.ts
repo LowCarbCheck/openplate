@@ -85,22 +85,98 @@ export function wantsLandingPage(search: string | URLSearchParams): boolean {
 }
 
 /**
- * SERVER + CLIENT, PURE: the redirect decision for `/`.
+ * SERVER, PURE: the redirect decision for `/`, from what a SERVER can see.
  *
  * The escape hatch beats the hint, unconditionally. That ordering is the whole
  * reason the marketing page stays reachable for a device that lives in the app.
+ *
+ * ── What the server is allowed to conclude (M201 spec 01) ────────────────
+ *
+ * Exactly one thing: that this browser has been in the app before. The cookie
+ * is the only signal available while the first byte of HTML is produced, and
+ * it says nothing about an account. The session lives in IndexedDB
+ * (`app/lib/sync/session-cache.ts`), which the server cannot read at all, and
+ * there is no second cookie standing in for it because there must not be: a
+ * cookie the server could read would be a bearer credential for a diary this
+ * server deliberately never holds.
+ *
+ * So where the cookie DOES prove what the redirect means, an open instance
+ * where the diary belongs to the device, the server redirects and a returning
+ * visitor never renders one frame of marketing. Where it does not
+ * (`homeCookieProvesSession: false`, a managed instance, whose diary belongs
+ * to an ACCOUNT), the server declines to decide and returns the landing page,
+ * and {@link resolveClientLandingEntry} carries the rest in the browser, where
+ * the session actually is. That costs a managed instance one frame of
+ * marketing on a hard load, and it is the honest price of not pretending the
+ * server knows who is holding the device.
  *
  * @returns `'/dashboard'` when this visit should be bounced into the app, else null.
  */
 export function resolveLandingRedirect({
   hasHint,
   wantsLanding,
+  homeCookieProvesSession,
 }: {
   hasHint: boolean;
   wantsLanding: boolean;
+  /** `InstancePolicy.homeCookieProvesSession`, false on a managed instance. */
+  homeCookieProvesSession: boolean;
 }): '/dashboard' | null {
   if (wantsLanding) return null;
+  if (!homeCookieProvesSession) return null;
   return hasHint ? '/dashboard' : null;
+}
+
+/**
+ * What `/` does in the BROWSER, where both the local diary and the session can
+ * be read.
+ *
+ * `landing-clear-hint` is not a tidy-up: it is what stops the server loader
+ * deciding wrongly on the NEXT hard load, on an instance where the cookie no
+ * longer means what the server reads it as.
+ */
+export type ClientLandingEntry = 'dashboard' | 'landing-keep-hint' | 'landing-clear-hint';
+
+/**
+ * CLIENT, PURE: the decision behind `/`'s client loader AND its hard-load
+ * repair effect (M201 spec 01).
+ *
+ * ONE function for both, deliberately. The two paths differ only in when they
+ * run, and the reported symptom of this milestone was that one of the three
+ * `/` paths had been fixed and the other two had not. A shared decision makes
+ * "all three agree" a property rather than a review.
+ *
+ * The session term is a CONJUNCTION added on top of the local-row term, never
+ * a replacement for it. That is what keeps this gate the opposite-polarity
+ * mirror of `_personal`'s (see {@link hasEnteredApp}): a redirect to
+ * `/dashboard` still implies `entered`, so `_personal` still cannot bounce
+ * back, and the managed instance simply redirects strictly less often.
+ * `tests/unit/home-entry.test.ts` asserts that as a property over the whole
+ * matrix.
+ *
+ * @param entered - {@link hasEnteredApp} over this device's local store.
+ * @param hasSession - is a sync session open or cached on THIS device?
+ * @param homeCookieProvesSession - `InstancePolicy.homeCookieProvesSession`.
+ */
+export function resolveClientLandingEntry({
+  wantsLanding,
+  entered,
+  hasSession,
+  homeCookieProvesSession,
+}: {
+  wantsLanding: boolean;
+  entered: boolean;
+  hasSession: boolean;
+  homeCookieProvesSession: boolean;
+}): ClientLandingEntry {
+  if (wantsLanding) return 'landing-keep-hint';
+  if (!entered) return 'landing-clear-hint';
+  if (homeCookieProvesSession || hasSession) return 'dashboard';
+  // Local rows, no session, and an instance where local rows are somebody's
+  // account rather than this device's diary. The hint goes with the decision:
+  // leaving it would let the server loader wave the next hard load straight
+  // through, which is the exact fault this spec exists for.
+  return 'landing-clear-hint';
 }
 
 /** The two local facts that decide whether this device is already "in the app". */

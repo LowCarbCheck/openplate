@@ -17,6 +17,7 @@
 import { getLocalProfileGoals, hasEverHadData, listLocalFoodLogs } from '#app/lib/local-store';
 import { resolveOnboardingGate, type OnboardingGateOutcome } from '#app/lib/onboarding-gate';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { isDeviceLocked } from '#app/lib/sync/sync-state';
 
 /**
  * Reads the on-device store and returns the gate's verdict.
@@ -40,5 +41,10 @@ export async function readOnboardingGateKind(): Promise<OnboardingGateOutcome['k
     hasEverHadData: await hasEverHadData(),
     hasSyncAccount: session.account !== null,
     isResumingSession: session.isResuming,
+    // Both callers have just signed in, and opening a session lifts the lock
+    // (`openSyncSession`), so this is `false` for them. Read anyway, because
+    // this is the single reader and a gate input it silently defaulted would
+    // be the one place the two readers could disagree.
+    isDeviceLocked: isDeviceLocked(),
   }).kind;
 }

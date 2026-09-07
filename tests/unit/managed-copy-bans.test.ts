@@ -83,15 +83,25 @@ const DE = flatten(loadCatalog('de'));
 const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account.', 'admin.'];
 
 /**
- * The managed BRANCHES of two shared namespaces.
+ * The managed BRANCHES of three shared namespaces.
  *
- * `onboarding.*` and `scan.setup.*` are drawn on both kinds of instance, and
- * the open branch legitimately names OpenRouter. Only the keys a managed
- * instance actually renders are banned, and they are listed by name rather
- * than by prefix so that adding a managed key is a deliberate act that has to
- * appear here too.
+ * `onboarding.*`, `scan.setup.*` and `chrome.*` are drawn on both kinds of
+ * instance, and the open branch legitimately names OpenRouter. Only the keys a
+ * managed instance actually renders are banned, and they are listed by name
+ * rather than by prefix so that adding a managed key is a deliberate act that
+ * has to appear here too.
+ *
+ * The `chrome.*` entries are the public header's two doors (M201 spec 03),
+ * which render only where `headerOffersSignIn` is true. They are the words a
+ * visitor to a managed instance reads FIRST, so they are the last place a
+ * self-hoster's vocabulary should survive.
  */
 const MANAGED_BRANCH_KEYS = [
+  'chrome.signIn',
+  'chrome.requestAccess',
+  'chrome.requestAccessTitle',
+  'chrome.requestAccessBody',
+  'chrome.requestAccessClose',
   'onboarding.firstFood.managedNote',
   'onboarding.localFirstManaged',
   'scan.setup.managed.description',

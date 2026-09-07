@@ -24,7 +24,7 @@ import { z } from 'zod';
 import PublicWrapper from '#app/components/public-wrapper';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { NewsletterSignup } from '#app/components/newsletter-signup';
-import { useManagedInstance } from '#app/hooks/use-public-config';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { REPO_URL } from '#app/lib/brand';
 import { CONFIG } from '#app/config';
 import type { AnalyticsEventLevel } from '#app/config/analytics';
@@ -44,10 +44,14 @@ import {
   hasEnteredApp,
   parseHomeHintCookie,
   readHomeHint,
+  resolveClientLandingEntry,
   resolveLandingRedirect,
   wantsLandingPage,
   writeHomeHint,
 } from '#app/lib/home-entry';
+import { instancePolicyForMode } from '#app/config/instance-policy';
+import { readInstancePolicy } from '#app/lib/read-instance-policy';
+import { hasDeviceSyncSession } from '#app/lib/sync/session-cache';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 // Title AND description via the pure `meta-title` seam, with the language read
@@ -58,7 +62,25 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 export const meta: Route.MetaFunction = ({ matches, loaderData }) => {
   const language = metaLanguage(matches);
   const title = metaTitle(language, 'meta.landing');
-  const description = metaTitle(language, 'meta.landingDescription');
+  // THE DESCRIPTION FOLLOWS THE POLICY TOO (M201/08). The open sentence ends
+  // "Free, no account, and everything you log stays on your device", and on a
+  // managed instance both halves of that are wrong: there IS an account, and
+  // the diary reaches the operator's server as ciphertext. This string is the
+  // `<meta name="description">`, so those two claims are what a search engine
+  // and a link preview quote for beta.openplate.de.
+  //
+  // `meta()` runs outside the React tree, so there is no `useInstancePolicy()`
+  // here. The mode comes off THIS route's own loader data, the same
+  // request-scoped channel `siteOrigin` below already uses, rather than from
+  // `CONFIG` (which `meta()` cannot read in the browser) or from a second
+  // environment lookup. Missing loader data resolves to the OPEN policy, which
+  // is the direction `getInstancePolicy` and `readInstancePolicy` both take.
+  const managed = loaderData?.managed ?? false;
+  const { requiresAccount } = instancePolicyForMode(managed ? 'managed' : 'open');
+  const description = metaTitle(
+    language,
+    requiresAccount ? 'meta.landingDescriptionManaged' : 'meta.landingDescription',
+  );
   // The share card. Absolute URLs are not a style choice: every scraper
   // resolves `og:image` and `og:url` against nothing, so a root-relative path
   // is simply dropped. The origin rides in on the loader (`siteOrigin`) rather
@@ -102,6 +124,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   const target = resolveLandingRedirect({
     hasHint: parseHomeHintCookie(request.headers.get('cookie')),
     wantsLanding: wantsLandingPage(url.search),
+    // WHAT THIS SERVER MAY CONCLUDE (M201 spec 01): that this browser has been
+    // here, and nothing more. The session is one row in an IndexedDB database
+    // in the browser (`sync/session-cache.ts`) and no request carries it, so
+    // on an instance where the hint does not mean "signed in" this loader
+    // declines to redirect and `clientLoader` below decides where the session
+    // actually is. See `resolveLandingRedirect` for the full argument.
+    homeCookieProvesSession: instancePolicyForMode(CONFIG.instance.mode).homeCookieProvesSession,
   });
   // `Vary: Cookie` on BOTH branches: this response now differs by cookie, and
   // an intermediary that cached the 302 for a cookie-less visitor would trap
@@ -164,6 +193,17 @@ function landingSections() {
      * not already chosen to say on the card itself.
      */
     analyticsLevel: CONFIG.analytics?.eventLevel ?? null,
+    /**
+     * `INSTANCE_MODE=managed`, for the CLIENT loader's half of the entry
+     * decision (M201 spec 01).
+     *
+     * It crosses because the client loader runs before any component and so
+     * cannot call `useInstancePolicy()`, and because the decision it makes is
+     * the one the server loader deliberately refused to make. It discloses
+     * nothing: `managed` is already in the root loader's public config and is
+     * visible in the page source on every route.
+     */
+    managed: CONFIG.instance.managed,
   };
 }
 
@@ -354,14 +394,30 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   // visitor arrived.
   if (wantsLandingPage(new URL(request.url).search)) return await serverLoader();
 
+  // The policy rides in on that same fetch, so this costs no extra request.
+  // It fails OPEN offline, which is the pre-M201 behaviour and the safe
+  // direction: this redirect only ever moves somebody between two screens
+  // they may already open.
+  const { homeCookieProvesSession } = await readInstancePolicy(serverLoader);
   const [profile, logs] = await Promise.all([getLocalProfileGoals(), listLocalFoodLogs()]);
-  const entered = hasEnteredApp({
-    onboardingCompletedAt: profile?.onboardingCompletedAt ?? null,
-    foodLogCount: logs.length,
+  // ASKED ONLY WHERE THE ANSWER CAN CHANGE THE DECISION, so an open instance
+  // never opens the session database from its marketing page and its landing
+  // path is byte-for-byte what it was.
+  const hasSession = homeCookieProvesSession ? false : await hasDeviceSyncSession();
+  const entry = resolveClientLandingEntry({
+    wantsLanding: false,
+    entered: hasEnteredApp({
+      onboardingCompletedAt: profile?.onboardingCompletedAt ?? null,
+      foodLogCount: logs.length,
+    }),
+    hasSession,
+    homeCookieProvesSession,
   });
 
-  if (!entered) {
-    clearHomeHint(); // stale hint on a wiped device — repair downward
+  if (entry !== 'dashboard') {
+    // A wiped device, or a signed-out one on an instance where local rows are
+    // an account's rather than this device's, repair downward either way.
+    if (entry === 'landing-clear-hint') clearHomeHint();
     return await serverLoader();
   }
   writeHomeHint(); // repair upward (evicted cookie)
@@ -379,20 +435,44 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
  */
 function useHomeHintRepair(): void {
   const navigate = useNavigate();
+  // The THIRD of the three paths (M201 spec 01). A fix to one of them is not a
+  // fix: this one runs on exactly the hard loads the other two do not decide,
+  // and it shares their decision function rather than restating it.
+  const { homeCookieProvesSession } = useInstancePolicy();
 
   useEffect(() => {
     if (wantsLandingPage(window.location.search)) return;
-    if (readHomeHint()) return; // the server loader already handled it
+    // A present hint means the server loader has already redirected, but ONLY
+    // where the server was allowed to read the hint that way. On a managed
+    // instance it deliberately was not, so a present hint there is precisely
+    // the case this effect has to look at rather than skip.
+    if (homeCookieProvesSession && readHomeHint()) return;
 
     let cancelled = false;
     void (async () => {
-      const [profile, logs] = await Promise.all([getLocalProfileGoals(), listLocalFoodLogs()]);
+      const [profile, logs, hasSession] = await Promise.all([
+        getLocalProfileGoals(),
+        listLocalFoodLogs(),
+        homeCookieProvesSession ? Promise.resolve(false) : hasDeviceSyncSession(),
+      ]);
       if (cancelled) return;
-      const entered = hasEnteredApp({
-        onboardingCompletedAt: profile?.onboardingCompletedAt ?? null,
-        foodLogCount: logs.length,
+      const entry = resolveClientLandingEntry({
+        wantsLanding: false,
+        entered: hasEnteredApp({
+          onboardingCompletedAt: profile?.onboardingCompletedAt ?? null,
+          foodLogCount: logs.length,
+        }),
+        hasSession,
+        homeCookieProvesSession,
       });
-      if (!entered) return;
+      // A signed-out managed device that still carries the hint: drop it here,
+      // so the next hard load's server loader has nothing stale to read even
+      // before it reaches the question it is not allowed to answer.
+      if (entry === 'landing-clear-hint') {
+        clearHomeHint();
+        return;
+      }
+      if (entry !== 'dashboard') return;
       writeHomeHint();
       // `replace` so Back still leaves the app rather than bouncing here again.
       void navigate('/dashboard', { replace: true });
@@ -401,7 +481,7 @@ function useHomeHintRepair(): void {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, homeCookieProvesSession]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -810,6 +890,16 @@ function StepShot({
 // Section furniture
 ////////////////////////////////////////////////////////////////////////////////
 
+/** The capture a "how it works" step illustrates itself with. */
+interface HowStepShot {
+  readonly dark: string;
+  readonly light: string;
+  readonly alt: string;
+  /** Forwarded to `StepShot` — see its doc for when these stop being defaults. */
+  readonly height?: number;
+  readonly cropped?: boolean;
+}
+
 /**
  * One step of "how it works" — a screenshot, an icon, a title, a paragraph.
  * Deliberately NOT a `Card`: three boxes in a row would read as three separate
@@ -819,24 +909,62 @@ function HowStep({
   icon: Icon,
   title,
   body,
-  shotDark,
-  shotLight,
-  shotAlt,
-  shotHeight,
-  shotCropped,
+  shot,
 }: {
   icon: LucideIcon;
   title: string;
   body: string;
-  shotDark: string;
-  shotLight: string;
-  shotAlt: string;
-  /** Forwarded to `StepShot` — see its doc for when these stop being defaults. */
-  shotHeight?: number;
-  shotCropped?: boolean;
+  /**
+   * The capture that illustrates this step, or nothing.
+   *
+   * ONE optional object rather than five optional props, because the five are
+   * all-or-nothing: a `shotDark` without a `shotAlt` is not a state this
+   * component has an answer for, and the compiler should be the thing that
+   * says so rather than a truthiness check inside the render.
+   *
+   * It is optional at all for one reason, written down because it is meant to
+   * be temporary (M201/08): `scan-mobile-*.webp` shows the BYOK connect card,
+   * with "Connect with OpenRouter" on the button, and a managed instance
+   * offers no such thing. Sanitizing the alt text there would have described a
+   * picture that is not the one on the page, which is worse than no picture:
+   * it hides the defect from a screen reader and from a test. So the managed
+   * page shows no scan capture until a managed one is taken.
+   */
+  shot?: HowStepShot;
 }): ReactElement {
   return (
-    <div className="flex flex-col">
+    /*
+      ── The step is a SUBGRID from `sm` up, and that is the alignment ──────
+
+      Below `sm` this is one flex column and nothing here applies: copy first,
+      picture under it, exactly as before.
+
+      From `sm` the three steps stand side by side and the picture moves above
+      the copy, which is where a step with NO picture used to break the row.
+      Everything under a picture starts where that picture ends, so the managed
+      page, whose scan step shows no capture (see `shot` above), lifted that one
+      column's icon, title and paragraph about 15rem above its two neighbours'.
+      Three parallel steps read as one row or they read as a fault, and one
+      column starting a screen higher is a fault.
+
+      So the step no longer stacks its own two parts. The section's grid owns
+      TWO rows, every step spans both of them, and `grid-rows-subgrid` makes the
+      step's children land in the section's rows rather than in rows of their
+      own: the picture in row one, the copy in row two, placed by
+      `sm:row-start-*` rather than by document order. A step with no picture
+      leaves row one genuinely EMPTY, which is not the same as reserving a box:
+      there is no element, so there is nothing for a screen reader to announce
+      and nothing that can read as a picture that failed to load. The copy still
+      begins on the row every other step's copy begins on, because the row is
+      shared.
+
+      The `sm:gap-4` is the 1rem that used to be `sm:mt-4` on the copy. It is
+      stated here AND as the section grid's `sm:gap-y-4`, because a subgrid
+      takes its gutters from its parent in the subgridded axis and browsers have
+      not always agreed on whether its own `gap` may override them. Both values
+      are the same 1rem, so the rendered spacing is that 1rem either way.
+    */
+    <div className="flex flex-col sm:row-span-2 sm:grid sm:grid-rows-subgrid sm:gap-4">
       {/*
         The screenshot is BACK on phones, at a readable size and in the right
         place. It first sat beside the copy at `w-24` — 96 CSS pixels for a
@@ -864,10 +992,18 @@ function HowStep({
         the next step is wide (`gap-14` on the grid), which is the only thing
         that says which caption a picture illustrates.
       */}
-      <div className="order-2 mt-4 sm:order-1 sm:mt-0">
-        <StepShot srcDark={shotDark} srcLight={shotLight} alt={shotAlt} height={shotHeight} cropped={shotCropped} />
-      </div>
-      <div className="order-1 min-w-0 space-y-2 sm:order-2 sm:mt-4 sm:space-y-3">
+      {shot ?
+        <div className="order-2 mt-4 sm:order-1 sm:row-start-1 sm:mt-0">
+          <StepShot
+            srcDark={shot.dark}
+            srcLight={shot.light}
+            alt={shot.alt}
+            height={shot.height}
+            cropped={shot.cropped}
+          />
+        </div>
+      : null}
+      <div className="order-1 min-w-0 space-y-2 sm:order-2 sm:row-start-2 sm:mt-0 sm:space-y-3">
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
@@ -1047,7 +1183,9 @@ function LadderCard({
  * The page is a CONVERSION LADDER, ordered by what the visitor gets rather
  * than by what we get (M146 spec 02):
  *
- *   1. try it        — the hero. One primary CTA, one destination, `/dashboard`.
+ *   1. try it        — the hero. One primary CTA, one destination: `/dashboard`
+ *                     where anybody may walk in, `/welcome` where an account is
+ *                     the only way in (`requiresAccount`, M201/08).
  *   2. set it up     — what the first minute actually looks like.
  *   3. keep it       — sync across devices. Only on an instance that has sync.
  *   4. stay in touch — the newsletter. Only on an instance that has one.
@@ -1057,10 +1195,23 @@ function LadderCard({
  * can still convert on rung 5.
  *
  * THE RULE THIS PAGE IS IMPLEMENTED AGAINST: exactly one CTA destination may
- * be a filled primary button, and `/dashboard` is it. The closing button is
- * the same destination and the same label as the hero's — a restatement for a
- * reader who has finished scrolling, not a competing offer. Sync, the
- * newsletter and GitHub are outline buttons or plain links, always.
+ * be a filled primary button, and it is whichever of the two the instance's
+ * policy names. The closing button is the same destination and the same label
+ * as the hero's — a restatement for a reader who has finished scrolling, not a
+ * competing offer. Sync, the newsletter and GitHub are outline buttons or plain
+ * links, always.
+ *
+ * ── The body may not offer what the mode forbids (M201/08) ───────────────
+ *
+ * Every call to action on this page used to name a free trial and an immediate
+ * start, which is the product's real pitch on an open instance and a
+ * contradiction on a managed one, where the hero's own small print says
+ * "invitation only" and the header says an administrator has to invite you.
+ * The four of them ask `requiresAccount` and nothing else, and each pairs a
+ * label with the destination that label is true of. An OPEN instance keeps
+ * every string and every destination it always had; that is not a courtesy,
+ * it is the requirement, and `tests/unit/landing-doors.test.ts` renders both
+ * pages to hold it.
  *
  * ── Rhythm (this pass) ───────────────────────────────────────────────────
  *
@@ -1073,11 +1224,13 @@ export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   useHomeHintRepair();
   const { syncEnabled, newsletter, analyticsLevel } = loaderData;
-  // THE TWO SPOTS THAT DESCRIBE THE AI (M192/06). Everything else on this page
-  // is true of both kinds of instance; these two said "bring your own key",
-  // which on a managed instance is a promise its visitors cannot act on and a
-  // description of a product they are not being offered.
-  const managed = useManagedInstance();
+  // THREE DIFFERENT QUESTIONS, and this page used to ask one boolean for all
+  // of them (M201/07). The AI sentences said "bring your own key", which is a
+  // promise a managed instance's visitors cannot act on (M192/06). The mid-page
+  // call to action offers "no account", which is false where an account is the
+  // only way in. The sync card offers an opt-in extra, which is not what sync
+  // is once the account keeps the copy.
+  const { aiComesFromTheInstance, requiresAccount, serverHoldsTheDiary } = useInstancePolicy();
 
   return (
     <PublicWrapper wide>
@@ -1167,9 +1320,18 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               visitor either wants to try it or wants to read more, and there is
               no third thing to sell. */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            {/* AND THE OFFER IS CONDITIONAL (M201/08). "Try it now, it's
+                completely free" sat about a hundred pixels above the hero's own
+                "Invitation only" small print, over a header saying an
+                administrator has to invite you, pointing at a `/dashboard` that
+                bounces to `/welcome`. Same trade the mid-page call to action
+                below already made: the label and the destination change
+                together, because a button named for a destination it never
+                reaches is a redirect wearing that name. The question is
+                `requiresAccount`, never the mode name. */}
             <Button asChild size="lg" className="h-12 px-7 text-base shadow-lg shadow-primary/20">
-              <Link to="/dashboard" onClick={() => trackLandingCtaClicked('hero')}>
-                {t('landing.cta.tryIt')}
+              <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('hero')}>
+                {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryIt')}
               </Link>
             </Button>
             <a href="#how" className={SECONDARY_ACTION}>
@@ -1197,7 +1359,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               wrapped line is better than the horizontal scroll that forcing it
               onto one would produce on the narrowest phones. */}
           <p className="mt-4 text-xs text-muted-foreground">
-            {managed ? t('landing.hero.ticksManaged') : t('landing.hero.ticks')}
+            {aiComesFromTheInstance ? t('landing.hero.ticksManaged') : t('landing.hero.ticks')}
           </p>
         </div>
         <HeroShot />
@@ -1218,8 +1380,12 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             breathing room, it is the grouping cue: each shot is `mt-4` under
             its own caption, so the gap to the NEXT step has to be visibly
             larger than that or a picture belongs to neither. From `sm` the
-            three steps are side by side and the vertical gap stops mattering. */}
-        <div className="mt-8 grid gap-14 sm:grid-cols-3 sm:gap-6">
+            three steps are side by side and the vertical gap stops mattering,
+            except as the gutter BETWEEN a step's picture and its own copy: from
+            `sm` this grid has two rows and every step spans both of them, so the
+            row gap is that 1rem and the column gap is the 1.5rem it always was.
+            See `HowStep` for why the step is a subgrid rather than a stack. */}
+        <div className="mt-8 grid gap-14 sm:grid-cols-3 sm:grid-rows-[auto_auto] sm:gap-x-6 sm:gap-y-4">
           {/* The scan capture is a WHOLE screen (780×1120). Unlike the add and
               diary shots it is not taken at the standard 390×844 viewport: the
               scan screen's content ends at 429 CSS px, so it is captured at
@@ -1234,31 +1400,53 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               is nothing for a fade to soften and a fade here would dissolve
               real content. Its two neighbours ARE cropped by the box and do
               take the fade. */}
+          {/* NO CAPTURE on a managed instance, and this is the one place on
+              the page where the fix is a missing picture rather than a
+              branched string (M201/08). The capture shows the BYOK connect
+              card, "Connect with OpenRouter" on its primary button, which is a
+              screen a managed visitor will never see. The alt text described
+              it accurately and so carried the offer onto the managed page in
+              the one form no ternary over copy could remove: rewriting the
+              alt to drop the provider's name would have described a different
+              picture than the one rendered, which is a worse defect than no
+              picture at all. A managed capture is a design task, not a string
+              change; when it lands, this step takes a `shot` in both modes and
+              the branch goes away. */}
           <HowStep
             icon={Camera}
             title={t('landing.how.scan.title')}
-            body={managed ? t('landing.how.scan.bodyManaged') : t('landing.how.scan.body')}
-            shotDark="/landing/en/scan-mobile-dark.webp"
-            shotLight="/landing/en/scan-mobile-light.webp"
-            shotAlt={t('landing.how.scan.shotAlt')}
-            shotHeight={1120}
-            shotCropped={false}
+            body={aiComesFromTheInstance ? t('landing.how.scan.bodyManaged') : t('landing.how.scan.body')}
+            shot={
+              aiComesFromTheInstance ? undefined : (
+                {
+                  dark: '/landing/en/scan-mobile-dark.webp',
+                  light: '/landing/en/scan-mobile-light.webp',
+                  alt: t('landing.how.scan.shotAlt'),
+                  height: 1120,
+                  cropped: false,
+                }
+              )
+            }
           />
           <HowStep
             icon={Search}
             title={t('landing.how.search.title')}
             body={t('landing.how.search.body')}
-            shotDark="/landing/en/add-mobile-dark.webp"
-            shotLight="/landing/en/add-mobile-light.webp"
-            shotAlt={t('landing.how.search.shotAlt')}
+            shot={{
+              dark: '/landing/en/add-mobile-dark.webp',
+              light: '/landing/en/add-mobile-light.webp',
+              alt: t('landing.how.search.shotAlt'),
+            }}
           />
           <HowStep
             icon={Gauge}
             title={t('landing.how.see.title')}
             body={t('landing.how.see.body')}
-            shotDark="/landing/en/diary-mobile-dark.webp"
-            shotLight="/landing/en/diary-mobile-light.webp"
-            shotAlt={t('landing.how.see.shotAlt')}
+            shot={{
+              dark: '/landing/en/diary-mobile-dark.webp',
+              light: '/landing/en/diary-mobile-light.webp',
+              alt: t('landing.how.see.shotAlt'),
+            }}
           />
         </div>
       </section>
@@ -1277,7 +1465,13 @@ export default function Index({ loaderData }: Route.ComponentProps) {
       <section className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.setup.eyebrow')}</SectionEyebrow>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.setup.title')}</h2>
-        <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.setup.subtitle')}</p>
+        {/* "only the middle one asks anything of you" was true of the ladder
+            below it until step two stopped asking for a key (M201/08). Same
+            question as the step it describes, because it is a claim ABOUT that
+            step and nothing else. */}
+        <p className="mt-3 max-w-2xl text-muted-foreground">
+          {aiComesFromTheInstance ? t('landing.setup.subtitleManaged') : t('landing.setup.subtitle')}
+        </p>
         {/* `sm:items-start`, and the shot's top now sits on the `<ol>`'s top.
             The previous pass centred the two columns against each other, which
             is what a picture and a paragraph want — but this left column is a
@@ -1303,21 +1497,47 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                   title={t('landing.setup.steps.open.title')}
                   body={t('landing.setup.steps.open.body')}
                 />
+                {/* Step two is the whole of BYOK on an open instance: connect
+                    a provider, keep the key here, pay the provider. On a
+                    managed one the operator runs the AI, nobody brings a key
+                    and nobody is billed, so the paragraph AND its title are
+                    false there (M201/08). `aiComesFromTheInstance` is the
+                    question, the same one the hero ticks, the scan step and
+                    the BYOK feature card already ask. */}
                 <SetupStep
                   step={2}
-                  title={t('landing.setup.steps.connect.title')}
-                  body={t('landing.setup.steps.connect.body')}
+                  title={t(
+                    aiComesFromTheInstance ?
+                      'landing.setup.steps.connectManaged.title'
+                    : 'landing.setup.steps.connect.title',
+                  )}
+                  body={t(
+                    aiComesFromTheInstance ?
+                      'landing.setup.steps.connectManaged.body'
+                    : 'landing.setup.steps.connect.body',
+                  )}
                 />
+                {/* The title holds in both modes; the body does not. "Your
+                    provider" names a thing nobody brings on a managed
+                    instance, where the operator's own AI reads the photo. Body
+                    only, so the branch sits under the same key rather than in
+                    a second step object, matching `landing.how.scan`. */}
                 <SetupStep
                   step={3}
                   title={t('landing.setup.steps.scan.title')}
-                  body={t('landing.setup.steps.scan.body')}
+                  body={t(
+                    aiComesFromTheInstance ? 'landing.setup.steps.scan.bodyManaged' : 'landing.setup.steps.scan.body',
+                  )}
                 />
               </ol>
             </div>
+            {/* Step one is "open the tracker" on an open instance and "sign
+                in" on a managed one, so this button cannot keep one label for
+                both (M201/08). Its own key rather than the hero's: this one
+                names a step in the list above it. */}
             <Button asChild variant="outline" size="lg" className="mt-6">
-              <Link to="/dashboard" onClick={() => trackLandingCtaClicked('setup')}>
-                {t('landing.setup.cta')}
+              <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('setup')}>
+                {requiresAccount ? t('landing.setup.ctaManaged') : t('landing.setup.cta')}
               </Link>
             </Button>
           </div>
@@ -1357,8 +1577,8 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               rather than straight from the browser. */}
           <FeatureCard
             icon={Key}
-            title={t(managed ? 'landing.features.byokManaged.title' : 'landing.features.byok.title')}
-            body={t(managed ? 'landing.features.byokManaged.body' : 'landing.features.byok.body')}
+            title={t(aiComesFromTheInstance ? 'landing.features.byokManaged.title' : 'landing.features.byok.title')}
+            body={t(aiComesFromTheInstance ? 'landing.features.byokManaged.body' : 'landing.features.byok.body')}
           />
           <FeatureCard
             icon={Smartphone}
@@ -1408,8 +1628,8 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 on a managed instance, where an account is the only way in.
                 The destination changes with the label: `/dashboard` bounces to
                 `/welcome` there anyway, and naming the real door is honest. */}
-            <Link to={managed ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('mid')}>
-              {managed ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryItFree')}
+            <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('mid')}>
+              {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryItFree')}
             </Link>
           </Button>
           <SourceLink label={t('landing.cta.readSourcePlain')} />
@@ -1493,11 +1713,15 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 can in principle open a diary. Same fact as
                 `legal.privacy.s6Body3`, said where somebody is deciding. */}
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {managed ? t('landing.sync.bodyManaged') : t('landing.sync.body')}
+              {serverHoldsTheDiary ? t('landing.sync.bodyManaged') : t('landing.sync.body')}
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('landing.sync.photos')}</p>
-            <Link to="/settings/account" className={SECONDARY_ACTION}>
-              {t('landing.sync.link')}
+            {/* "Create an account" is an action an invite-only instance
+                cannot honour, and `/settings/account` is behind a door the
+                visitor has not opened yet (M201/08). On a managed instance the
+                link names the door instead. */}
+            <Link to={requiresAccount ? '/welcome' : '/settings/account'} className={SECONDARY_ACTION}>
+              {requiresAccount ? t('landing.sync.linkManaged') : t('landing.sync.link')}
             </Link>
           </LadderCard>
         )}
@@ -1541,14 +1765,20 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             `max-w-5xl` container is the same over-long measure the cards had,
             and centring makes it worse — every line starts in a different
             place, so the eye has nothing to return to. */}
-        <p className="mx-auto mt-3 max-w-[65ch] text-muted-foreground">{t('landing.close.body')}</p>
+        {/* "Nothing to sign up for" is the hero's promise restated, and it is
+            the same falsehood here (M201/08): the managed line drops the clause
+            about signing up and keeps the rest, because the rest is true on
+            both kinds of instance. */}
+        <p className="mx-auto mt-3 max-w-[65ch] text-muted-foreground">
+          {requiresAccount ? t('landing.close.bodyManaged') : t('landing.close.body')}
+        </p>
         {/* `shadow-md`, where the hero's CTA has `shadow-lg`. Both are the same
             label and the same destination, so the two cannot compete on colour
             or on wording — the only thing left to rank them by is weight, and
             the one above the fold has to win it. */}
         <Button asChild size="lg" className="mt-7 h-12 px-7 text-base shadow-md shadow-primary/20">
-          <Link to="/dashboard" onClick={() => trackLandingCtaClicked('footer')}>
-            {t('landing.cta.tryIt')}
+          <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('footer')}>
+            {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryIt')}
           </Link>
         </Button>
         {/* Rung 5, now written as the same "or read the source" second action

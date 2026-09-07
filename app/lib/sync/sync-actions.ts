@@ -70,6 +70,7 @@ import {
   type SyncVault,
 } from './sync-session';
 import { cacheOpenSession, closeAndForgetSyncSession, openSyncVault } from './session-cache';
+import { clearHomeHint } from '#app/lib/home-entry';
 
 /** Overridable seams. Production passes none of these; tests pass all of them. */
 export interface SyncActionOptions {
@@ -678,8 +679,18 @@ export function markSyncPending(): void {
  * Signs out: revokes THIS device's token family server-side and drops the
  * local session.
  *
- * The device's synced data stays on the device — signing out of sync is not a
+ * The device's synced data stays on the device: signing out of sync is not a
  * wipe, and treating it as one would make it a terrifying button to press.
+ *
+ * THAT PREMISE IS NOW CONDITIONAL (M201). It was written for an instance where
+ * the diary belongs to the DEVICE and sync is an extra somebody switched on
+ * for themselves, and it is still right there. Where the diary belongs to an
+ * ACCOUNT (`INSTANCE_MODE=managed`), a sign-out that leaves the whole diary
+ * readable in `openplate-primary` defeats the point of the account, and on a
+ * device shared inside a household or a study group it hands one person's
+ * record to the next. The question is `signOutErasesDevice` in
+ * `app/config/instance-policy.ts`, asked by the caller: this function performs
+ * one step and has no opinion about the instance.
  * The baseline is kept too, so signing back in does not re-upload everything.
  * The remembered address stays too (M183 spec 04): it is not a credential, and
  * keeping it is what turns the next visit into a sign-in instead of a dead
@@ -694,6 +705,17 @@ export async function signOutOfSync(): Promise<void> {
   if (vault === null) return;
   await vault.authClient.logout();
   await closeAndForgetSyncSession();
+  // THE HOME HINT GOES WITH THE SESSION (M201 spec 01). `openplate-home` is
+  // not a credential and never was, but on a managed instance `/`'s server
+  // loader has no other signal at all, so a hint that survives a sign-out is
+  // the stale value that would otherwise be read first. Clearing it here means
+  // every sign-out path clears it, including `/join`'s and the settings page's.
+  //
+  // On an OPEN instance this costs one frame of the marketing page on the next
+  // hard load and repairs itself immediately: `/`'s client loader finds local
+  // rows, rewrites the hint and redirects, exactly as it does for a cookie
+  // WebKit evicted. Nothing is lost, because the hint was only ever a shortcut.
+  clearHomeHint();
 }
 
 // ---------------------------------------------------------------------------

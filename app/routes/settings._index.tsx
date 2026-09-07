@@ -46,7 +46,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { InstallCard } from '#app/components/install-card';
 import { SectionEyebrow } from '#app/components/typography';
 import { THEME_LABEL_KEYS, getStoredTheme, type Theme } from '#app/components/theme-selector';
-import { useManagedInstance, useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useSyncSession } from '#app/components/sync-status';
 import { DEFAULT_LANGUAGE, LANGUAGE_LABELS, isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -177,7 +177,10 @@ export default function SettingsIndex() {
   // sync row renders NOTHING — no row, no mention (AGENTS.md: unset means no
   // sync UI anywhere).
   const syncServerUrl = useSyncServerUrl();
-  const managed = useManagedInstance();
+  // The provider row is a page about choosing and paying an AI provider, so
+  // the question is where the AI comes from, not what the mode is called
+  // (M201/07).
+  const { aiComesFromTheInstance } = useInstancePolicy();
   const session = useSyncSession();
 
   return (
@@ -188,7 +191,7 @@ export default function SettingsIndex() {
           choosing and paying a provider. Offering it would send somebody to a
           screen that cannot help them and reads as "your connection is
           missing". The allowance lives on `/settings/account` instead. */}
-      {!managed && (
+      {!aiComesFromTheInstance && (
         <SettingsGroup label={t('settings.groups.scanning')}>
           <SettingsRow to="/settings/ai" icon={Sparkles} title={t('settings.rows.ai.title')} status={aiStatus} />
         </SettingsGroup>

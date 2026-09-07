@@ -62,6 +62,25 @@ export function emptySyncState(): PersistedSyncState {
 }
 
 /**
+ * The one place the per-account baseline key is spelled (M201 spec 02).
+ *
+ * It is exported because a SECOND module has to reach it: erasing the diary
+ * from a device must take this key with it, and a hand-built
+ * `openplate.sync.state.v1:${id}` somewhere else is how the two drift apart.
+ * The whole trap is written out at `eraseDeviceData` in
+ * `app/lib/local-store/device-erase.ts`, and it is worth restating here
+ * because this is the value that springs it: the baseline tells the next
+ * sign-in how far this account already got, so a device whose diary is gone
+ * and whose baseline is not downloads nothing and shows an EMPTY diary with no
+ * error at all.
+ *
+ * @param accountId - the sync account this device is signed into.
+ */
+export function syncBaselineStorageKey(accountId: number): string {
+  return `${STATE_KEY_PREFIX}:${accountId}`;
+}
+
+/**
  * State is keyed BY ACCOUNT.
  *
  * Signing into a different account on the same device must not inherit the
@@ -76,7 +95,7 @@ export function createSyncStateStore({
   storage: KeyValueStorage;
   accountId: number;
 }): SyncStateStore {
-  const key = `${STATE_KEY_PREFIX}:${accountId}`;
+  const key = syncBaselineStorageKey(accountId);
   return {
     load(): PersistedSyncState {
       const raw = storage.getItem(key);
@@ -185,6 +204,73 @@ const fallbackStorage = createMemoryStorage();
 /** The device's key-value storage: `localStorage` where it exists, one shared in-memory store where it doesn't. */
 export function deviceStorage(): KeyValueStorage {
   return browserStorage() ?? fallbackStorage;
+}
+
+// ---------------------------------------------------------------------------
+// The device lock
+// ---------------------------------------------------------------------------
+
+/**
+ * Set while this device has been signed out of an account whose diary it must
+ * not keep showing.
+ *
+ * Deliberately not versioned into the state above: it has to be readable
+ * SYNCHRONOUSLY, before any store opens, by `_personal.tsx`'s gate.
+ */
+const DEVICE_LOCK_KEY = 'openplate.device-locked';
+const DEVICE_LOCK_VALUE = 'locked';
+
+/**
+ * LOCKING IS THE GUARANTEE; ERASING IS THE EXTRA (M201 spec 02).
+ *
+ * ── The problem this solves ──────────────────────────────────────────────
+ *
+ * Signing out revokes the tokens and zeroes the key, which is the half an
+ * operator can verify. The half a PERSON can see is the diary, and it is
+ * plaintext rows in `openplate-primary` that no server-side act can reach. The
+ * counsel refused a wipe-by-default, and rightly: a research participant's
+ * unsynced week is not recoverable and a diary left on a device is. So
+ * sign-out has to close the diary without destroying it, and this marker is
+ * how, on the instances where the diary belongs to an account rather than to
+ * the device (`InstancePolicy.signOutErasesDevice`).
+ *
+ * ── Why a marker and not the policy ──────────────────────────────────────
+ *
+ * The gate that reads this runs in `_personal.tsx`'s `clientLoader`, which has
+ * no server loader and therefore no way to read `INSTANCE_MODE` before it
+ * decides. The policy IS available at the moment of sign-out, in React, where
+ * the person pressed the button. So the decision is taken once, there, and
+ * recorded as a device-local fact the gate can read synchronously on every
+ * later boot, offline included. It is not a credential and it protects
+ * nothing from an attacker with the device: it stops the NEXT person who opens
+ * the app reading the last one's diary, which is what an account on a shared
+ * device is for.
+ *
+ * @param storage - defaults to this device's storage; injected in tests.
+ */
+export function lockDevice(storage: KeyValueStorage = deviceStorage()): void {
+  storage.setItem(DEVICE_LOCK_KEY, DEVICE_LOCK_VALUE);
+}
+
+/**
+ * Clears the lock. Called from {@link openSyncSession}, so signing back in is
+ * the ONLY way a locked device becomes readable again, and every path that
+ * opens a session gets it without remembering to.
+ */
+export function unlockDevice(storage: KeyValueStorage = deviceStorage()): void {
+  storage.removeItem(DEVICE_LOCK_KEY);
+}
+
+/**
+ * Is this device locked?
+ *
+ * Exact value match rather than truthiness, for the same reason
+ * `parseHomeHintCookie` is exact: an unrecognisable value means "not locked",
+ * and locking somebody out of their own diary on a half-written string would
+ * be the worse failure of the two.
+ */
+export function isDeviceLocked(storage: KeyValueStorage = deviceStorage()): boolean {
+  return storage.getItem(DEVICE_LOCK_KEY) === DEVICE_LOCK_VALUE;
 }
 
 /** An in-memory {@link KeyValueStorage}, for tests and for the SSR/no-storage fallback. */

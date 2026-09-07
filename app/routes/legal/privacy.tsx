@@ -1,8 +1,9 @@
 import { H1, H2, P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import { PHOTO_RETENTION_DAYS } from '#app/lib/local-store/photo-policy';
+import { USAGE_COUNTER_RETENTION_DAYS } from '#app/lib/admin/operator-visibility';
 import type { MetaFunction } from 'react-router';
-import { useManagedInstance, usePublicConfig } from '#app/hooks/use-public-config';
+import { useInstancePolicy, usePublicConfig } from '#app/hooks/use-public-config';
 import { useFeedbackRetentionDays } from '#app/hooks/use-server-instance';
 import type { AnalyticsEventLevel } from '#app/config/analytics';
 import { Trans, useTranslation } from 'react-i18next';
@@ -81,6 +82,25 @@ export interface PrivacyContentProps {
    * guess.
    */
   reportRetentionDays?: number | null;
+  /**
+   * `true` where an operator can open one person and read their account row,
+   * their last sign-in and their photo counts (M201 spec 06).
+   *
+   * A SECOND PROP RATHER THAN A SIXTH USE OF `managed`, and the reason is the
+   * one the previous round left open. `managed` above is fed by
+   * `serverHoldsTheDiary` and gates three paragraphs that state three
+   * different things: that accounts exist, that the diary reaches this server
+   * as ciphertext, and that the plate photo passes through it. All three
+   * questions answer alike in both modes today, so splitting the EXISTING
+   * paragraphs would rename call sites and change nothing a reader sees, and
+   * `privacy.leadManaged` states all three in one paragraph and could not be
+   * split at all without rewriting it. What is worth having is the rule going
+   * forward: a NEW claim gets the prop for the question it actually depends
+   * on. This one is that question, and it is genuinely distinct, because an
+   * instance could hold the ciphertext without an operator who reads
+   * per-person activity, and this is the paragraph that would then be false.
+   */
+  operatorSeesActivity?: boolean;
 }
 
 /**
@@ -101,6 +121,7 @@ export function PrivacyContent({
   analyticsLevel = null,
   managed = false,
   reportRetentionDays = null,
+  operatorSeesActivity = false,
 }: PrivacyContentProps) {
   const { t, i18n } = useTranslation('legal');
   // TWO WINDOWS, AND THEY ARE NOT THE SAME THING, AND THEY DO NOT COME FROM
@@ -191,7 +212,25 @@ export function PrivacyContent({
             return somebody's data. A promise nobody can keep is worse than the
             honest sentence. */}
         <P className="mt-4">{t('privacy.s6Body3')}</P>
-        <P className="mt-4">{t('privacy.s6Body4')}</P>
+        {/* THE "ONLY" IN `s6Body4` IS FALSE ON A MANAGED INSTANCE, which is
+            why this is a twin and not an extra paragraph. Since M201 spec 04
+            an operator also reads a last sign-in and ninety days of daily
+            photo counts, so a document that still called the address, the blob
+            size and the storage time the only account-linked information would
+            be understating what an administrator sees. The twin names the same
+            fields `account.operatorSees.*` names in the app, in this
+            document's register rather than the app's. */}
+        <P className="mt-4">
+          {t(operatorSeesActivity ? 'privacy.s6Body4Managed' : 'privacy.s6Body4', {
+            usageDays: USAGE_COUNTER_RETENTION_DAYS,
+          })}
+        </P>
+        {/* And the other half, which is the more important one: none of that
+            is the diary. It stops short of "the operator can never read it",
+            because `s6Body3` above says the opposite about the escrowed
+            recovery key and a policy that contradicted itself two paragraphs
+            apart would be worse than one that says less. */}
+        {operatorSeesActivity && <P className="mt-4">{t('privacy.s6Body5Managed')}</P>}
       </section>
 
       <section className="mb-8">
@@ -328,7 +367,17 @@ export default function Privacy() {
   // what keeps the content renderable by `renderToStaticMarkup` with no data
   // router, which `tests/unit/legal-pages.test.ts` depends on.
   const analytics = usePublicConfig()?.analytics ?? null;
-  const managed = useManagedInstance();
+  // WHICH QUESTION (M201/07). Same bundle argument as `Terms`: the managed
+  // policy states that an account record exists, that the diary reaches this
+  // operator's server as ciphertext, and that the plate photo passes through
+  // it. The three questions answer alike and the document is one bundle, so
+  // the route asks the one that changes the most paragraphs.
+  // TWO QUESTIONS, because §6 now makes two claims. `serverHoldsTheDiary`
+  // still chooses the paragraphs about accounts, ciphertext and the proxy;
+  // `operatorSeesActivity` chooses the two that say what an administrator may
+  // read about one person. The prop doc block records why the older bundle was
+  // left as it is.
+  const { serverHoldsTheDiary, operatorSeesActivity } = useInstancePolicy();
   // `null` until the sync server's `/health` answers, and for ever on an
   // instance that has none. The paragraph reads sensibly either way, which is
   // why this is not gated on a loading state: a policy that flickered between
@@ -339,8 +388,9 @@ export default function Privacy() {
     <PublicWrapper>
       <PrivacyContent
         analyticsLevel={analytics?.eventLevel ?? null}
-        managed={managed}
+        managed={serverHoldsTheDiary}
         reportRetentionDays={reportRetentionDays}
+        operatorSeesActivity={operatorSeesActivity}
       />
     </PublicWrapper>
   );

@@ -12,11 +12,11 @@ import { useRouteLoaderData } from 'react-router';
 import type { loader as rootLoader } from '#app/root';
 import {
   getInstanceInferencePreset,
-  isManagedInstanceConfig,
   isSyncConfigured,
   type InstanceInferencePreset,
   type PublicConfig,
 } from '#app/config/public-config';
+import { getInstancePolicy, type InstancePolicy } from '#app/config/instance-policy';
 
 /** The root loader's public config, or `undefined` when the root loader hasn't run (error boundaries). */
 export function usePublicConfig(): PublicConfig | undefined {
@@ -50,15 +50,19 @@ export function useInstanceInferencePreset(): InstanceInferencePreset | null {
 }
 
 /**
- * Whether this instance is managed (M187 spec 03, redefined by M192) — an
- * instance an organization runs for its people, where an admin invites by
- * email and the server supplies the AI.
+ * WHAT THIS INSTANCE'S MODE CHANGES, as named questions (M201 spec 07).
  *
- * Same contract as the two hooks above: one hook, so "is this a managed
- * instance" has exactly one answer per render and cannot be true on the
- * welcome screen and false on the join screen. `false` is the self-host
- * default and is today's app in full.
+ * Replaces `useManagedInstance()`, which handed every screen the same bare
+ * boolean and left each one to work out for itself what the mode implied. The
+ * questions and their answers live in `#app/config/instance-policy`, which is
+ * pure, and the reasons are written there.
+ *
+ * Same contract as the hooks above: one hook, so the policy has exactly one
+ * answer per render and cannot be one thing on the welcome screen and another
+ * on the join screen. A screen that only wants to know whether any sync UI may
+ * render asks `useSyncServerUrl()` instead, because a self-hoster can configure
+ * sync on an OPEN instance and the two questions differ there.
  */
-export function useManagedInstance(): boolean {
-  return isManagedInstanceConfig(usePublicConfig());
+export function useInstancePolicy(): InstancePolicy {
+  return getInstancePolicy(usePublicConfig());
 }

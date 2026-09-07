@@ -129,7 +129,10 @@ describe('the two screens actually consult the rules', () => {
   const onboardingSource = readFileSync(new URL('../../app/routes/onboarding.tsx', import.meta.url), 'utf8');
 
   it('welcome reads the instance shape and offers the paste box from the resolver', () => {
-    assert.match(welcomeSource, /useManagedInstance/);
+    // The named question, not the mode name (M201/07): `/welcome` cares
+    // because an account is the only way into this instance.
+    assert.match(welcomeSource, /useInstancePolicy/);
+    assert.match(welcomeSource, /requiresAccount/);
     assert.match(welcomeSource, /welcome\.managed\.haveInvite/);
   });
 
