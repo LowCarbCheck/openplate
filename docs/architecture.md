@@ -4,32 +4,23 @@ Four programs, one of which is the product and three of which are optional attac
 page is about which one holds what, and, more importantly, which one is standing in the
 path of your data.
 
-The drawing below is the whole system. Follow the two arrows that leave the device: the
-diary leaves as ciphertext for openplate-sync, and the photo leaves for whichever AI
-endpoint you configured. The app server is on neither of them. The dotted arrows are the
-one exception, a managed instance, where the sync server forwards the photo for an account
-that has an allowance.
+The drawing below is the whole system in three arrows. Your device holds the diary and the
+plate photo. The diary leaves encrypted, for openplate-sync, which never gets the key. The
+photo leaves for whichever AI endpoint you configured. The app server sends the page and
+stands on neither path.
 
 ```mermaid
-%% alt: The diary leaves the device as ciphertext for the sync server, and the photo goes straight to an AI endpoint, never through the sync server.
+%% alt: The device holds the diary and the photo, the diary leaves encrypted for the sync server, and the photo goes to the AI endpoint you configured.
 flowchart LR
-  app["openplate app server, holds nothing"]
-  subgraph device["Your device"]
-    diary["Diary, plaintext, never leaves"]
-    photo["Plate photo"]
-  end
-  sync["openplate-sync, email and ciphertext"]
-  inf["openplate-inference, your hardware"]
-  cloud["Cloud AI provider"]
-
-  app -->|"HTML and JS"| device
-  diary -->|"ciphertext, no key sent"| sync
-  photo -->|"photo"| inf
-  photo -->|"photo and your key"| cloud
-  photo -.->|"managed instances only"| sync
-  sync -.->|"managed instances only"| inf
-  sync -.->|"managed instances only"| cloud
+  app["openplate app server"] -->|"the page"| device["Your device"]
+  device -->|"diary, encrypted"| sync["openplate-sync"]
+  device -->|"photo"| ai["Your AI endpoint"]
 ```
+
+Three things fit behind "your AI endpoint": a cloud provider you hold a key with, an
+openplate-inference box on your own hardware, or, on a managed instance, the sync server
+itself, which forwards the photo and counts it against your allowance.
+[topologies.md](topologies.md) draws all four ways to run openplate, one small picture each.
 
 ## The client is the product
 
