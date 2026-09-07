@@ -2,6 +2,19 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.12.0 - 2026-09-07
+
+- The sidebar and the mobile drawer now link to the administrator area for the
+  accounts that have one. The page existed before, but only somebody who
+  already knew the address could reach it.
+- The drawing at the top of the architecture guide is simpler. It was five
+  boxes, a box inside a box and seven arrows, three of them dotted exceptions.
+  It is now the app server, your device, and the two things that leave your
+  device: the diary, encrypted, and the plate photo. The cases that used to be
+  dotted arrows, a cloud provider, your own inference box, and a managed
+  instance, are named in the paragraph under the drawing, and the topology
+  guide draws each of them on its own.
+
 ## 0.11.1 - 2026-09-07
 
 - Clarified in the architecture and topology guides that the food source is
