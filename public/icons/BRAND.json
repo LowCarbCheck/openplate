@@ -1,0 +1,16 @@
+{
+  "note": "Written by `pnpm sync:brand`. Do not hand-edit, and do not hand-edit the icons it names.",
+  "repo": "git@github.com:LowCarbCheck/openplate-brand.git",
+  "ref": "v0.1.0",
+  "commit": "598213c2e64c12e31d6b94b93591adaac76803df",
+  "producedBy": "openplate-brand, scripts/ship.ts",
+  "markTeal": "#069A9D",
+  "files": {
+    "favicon.ico": "4bf919086bc4309c29db42ad660e45c0e92c33ec22a05ab190d3ebdf30becb41",
+    "icons/apple-touch-icon.png": "bbdd5010ef811ce707118a86f33a8549458d3aca27b12ff6b6a593ff5db9e18a",
+    "icons/icon-192.png": "32937158ef92bb964ffc85f610046abaebb94b2a7065c1758e9a76dfbc11349d",
+    "icons/icon-512.png": "417401aff144fef6480ec1f77ade95a8a20665b5c7f0c52e5d3b72b2bfd31bb6",
+    "icons/icon-maskable-192.png": "7580ac5bb50f2bf1e7ad5240569e7facd4e6d81e31e35c1916855716265e7be1",
+    "icons/icon-maskable-512.png": "e96749f17b545aa31e713bd115e5e4cbfd0121acd3f0aca9e70f55a7b689e90d"
+  }
+}
