@@ -2,6 +2,25 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.14.0 - 2026-09-07
+
+- If a photo estimate comes out wrong, you can now tell us. There is a button at
+  the bottom of a logged entry. It asks you to agree first, in a separate step
+  that says exactly what is sent, who can look at it, and how long it is kept,
+  and it has a plain "no, do not send" beside the agree button. If the entry has
+  no photo, it says so and sends only the figures. If you never report an entry,
+  we never receive a photo.
+- The privacy policy now says all of that, in both languages. It used to say
+  your on-device photo copy "is never uploaded anywhere", in five places. That
+  is no longer true once you can report an entry, so every one of those
+  sentences was rewritten to say what actually happens rather than deleted.
+- A report waits if you are offline and sends when you are back. Reporting the
+  same entry twice creates one report, not two.
+- How long a report is kept is set by whoever runs the sync server you use, and
+  the app now asks that server and shows its real answer. If the server does not
+  say, the app does not offer to report at all rather than promise you a number
+  nobody is keeping.
+
 ## 0.13.0 - 2026-09-07
 
 - The first run now teaches. The last step of setup shows the three ways to get
