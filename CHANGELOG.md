@@ -2,6 +2,15 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.11.1 - 2026-09-07
+
+- Clarified in the architecture and topology guides that the food source is
+  configurable. The bundled USDA FoodData Central extract is the default, not
+  the only option. Updated the label inside the rung 3 diagram to match.
+- Updated the architecture guide to clarify numeric output rules. The language
+  model generates gram estimates, but it never authors macro numbers. The
+  documentation now states this rule directly.
+
 ## 0.11.0 - 2026-09-07
 
 - Adding food inside the app now opens the camera directly on tap, matching the
