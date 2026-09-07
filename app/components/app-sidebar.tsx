@@ -4,6 +4,7 @@ import {
   LayoutGrid,
   Plus,
   Settings,
+  ShieldCheck,
   Sprout,
   Target,
   Timer,
@@ -28,6 +29,7 @@ import {
 } from '#app/components/ui/sidebar';
 import { useLocation } from 'react-router';
 import { Link } from '#app/components/link';
+import { useSyncSession } from '#app/components/sync-status';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -111,6 +113,21 @@ export const personalNavigationItems: NavigationItem[] = [
   // profile page. The hub lists all of them with their current values.
   { labelKey: 'nav.settings', to: '/settings', icon: Settings, group: 'footer' },
 ];
+
+/**
+ * The administrator entry, deliberately OUTSIDE `personalNavigationItems`.
+ * The catalog is static: it is filtered into the mobile tab bar and pinned by
+ * a unit test, while this row appears only for an account whose role is
+ * `admin`. It still lives here, as one shared object, because the drawer and
+ * the sidebar have to render the same label and the same href, two literals
+ * in two files is the drift the catalog comment above exists to prevent.
+ */
+export const adminNavigationItem: NavigationItem = {
+  labelKey: 'nav.admin',
+  to: '/admin',
+  icon: ShieldCheck,
+  group: 'footer',
+};
 
 /** The day-to-day destinations, in catalog order — the top block of the drawer and the sidebar. */
 export const primaryNavigationItems: NavigationItem[] = personalNavigationItems.filter(
@@ -197,12 +214,19 @@ function NavigationRow({ item, isActive }: { item: NavigationItem; isActive: boo
 }
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  // No session read at all (M128 spec 03). The superadmin groups that used to
-  // sit above and below the tracker nav went with `/super/*` and the account
-  // system itself — this is now one flat list of the app's own destinations.
+  // The superadmin groups that used to sit above and below the tracker nav
+  // went with `/super/*` and the account system itself (M128 spec 03), so the
+  // catalog below is one flat list of the app's own destinations. The one
+  // session read left is the sync session, and only to decide whether to show
+  // the administrator row: `/admin` shows everybody else a card saying they
+  // are not an administrator, so this is discoverability, not access control.
   const location = useLocation();
   const { t } = useTranslation();
+  const session = useSyncSession();
   const activeHref = activeNavigationHref(location.pathname);
+  // Matched against the admin entry alone, so the catalog's own winner is
+  // untouched: `/admin` is outside the catalog and would otherwise never win.
+  const adminActiveHref = activeNavigationHref(location.pathname, [adminNavigationItem]);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -229,6 +253,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           sits below a rule at the bottom of the rail rather than as a sixth
           equal row — the same separation the mobile drawer draws. */}
       <SidebarFooter>
+        {session.account?.role === 'admin' && (
+          <>
+            <SidebarSeparator className="mx-0" />
+            <SidebarMenu>
+              <NavigationRow item={adminNavigationItem} isActive={adminActiveHref === adminNavigationItem.to} />
+            </SidebarMenu>
+          </>
+        )}
         <SidebarSeparator className="mx-0" />
         <SidebarMenu>
           {footerNavigationItems.map((item) => (

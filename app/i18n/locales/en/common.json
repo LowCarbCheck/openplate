@@ -1064,6 +1064,7 @@
   },
   "nav": {
     "add": "Add",
+    "admin": "Administration",
     "dashboard": "Overview",
     "diary": "Diary",
     "fasting": "Fasting",

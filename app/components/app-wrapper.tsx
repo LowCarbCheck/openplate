@@ -5,10 +5,12 @@ import { ArrowLeft, Download, Share } from 'lucide-react';
 import {
   AppSidebar,
   activeNavigationHref,
+  adminNavigationItem,
   footerNavigationItems,
   primaryNavigationItems,
   type NavigationItem,
 } from './app-sidebar';
+import { useSyncSession } from './sync-status';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
 import { ProgressBar } from './progress-bar';
@@ -110,7 +112,11 @@ function NavDrawer() {
   const location = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
   const close = (): void => setIsOpen(false);
+  const session = useSyncSession();
   const activeHref = activeNavigationHref(location.pathname);
+  // Matched against the admin entry alone, so the catalog's own winner is
+  // untouched: `/admin` is outside the catalog and would otherwise never win.
+  const adminActiveHref = activeNavigationHref(location.pathname, [adminNavigationItem]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -143,6 +149,19 @@ function NavDrawer() {
           {primaryNavigationItems.map((item) => (
             <DrawerRow key={item.to} item={item} isActive={activeHref === item.to} onNavigate={close} />
           ))}
+          {/* The administrator row, on the same terms as the sidebar's: shown
+              only to an account whose role is `admin`, and for discoverability
+              rather than access control. */}
+          {session.account?.role === 'admin' && (
+            <>
+              <Separator className="my-2" />
+              <DrawerRow
+                item={adminNavigationItem}
+                isActive={adminActiveHref === adminNavigationItem.to}
+                onNavigate={close}
+              />
+            </>
+          )}
           {/* Same footer separation the desktop sidebar draws: configuration
               sits below a rule, not among the places you go every day. */}
           <Separator className="my-2" />
@@ -225,7 +244,10 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                   "openplate" is a literal, lowercase brand string, deliberately
                   outside i18n — same convention as `APP_NAME` elsewhere here.
                   Decorative: the `h1` below names the page for assistive tech. */}
-              <span aria-hidden="true" className="font-display text-xs font-semibold leading-none text-primary md:hidden">
+              <span
+                aria-hidden="true"
+                className="font-display text-xs font-semibold leading-none text-primary md:hidden"
+              >
                 {APP_NAME}
               </span>
               {/* `truncate` because the longest titles ("Sync across devices",
