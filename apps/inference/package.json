@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "tsx scripts/build.ts",
+    "check:doc-claims": "tsx scripts/check-doc-claims.ts",
     "dev": "node --import tsx --watch src/main.ts",
     "food-data:fdc": "tsx scripts/food-data/build-fdc-dataset.ts",
     "lint": "oxlint --max-warnings 0",

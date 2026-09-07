@@ -4,7 +4,7 @@
 # There is no cloud CI: pushes from the workstation are what trigger the
 # build/deploy, so the tests belong in front of the push rather than after it.
 #
-# Runs: docs manifest -> lint -> typecheck -> unit tests -> production build.
+# Runs: docs manifest -> lint -> typecheck -> doc claims -> unit tests -> build.
 #
 # The build is a REQUIRED gate, not a formality: `pnpm build` bundles with
 # esbuild and asserts the bundle contains no dynamic-require shim (see
@@ -65,6 +65,14 @@ run pnpm lint
 
 echo "▶ pre-push: typecheck"
 run pnpm typecheck
+
+# The published docs against the schema. It needs node, so it cannot sit in the
+# first tier beside the manifest check, but it belongs before the unit suite for
+# the same reason that one does: a wrong sentence in README.md or docs/*.md is
+# republished by openplate.de in three languages, and nothing downstream can
+# notice. M199 spec 01; the header of the script says what it cannot check.
+echo "▶ pre-push: the published docs against the schema"
+run pnpm check:doc-claims
 
 # `--run` is load-bearing: bare `vitest` starts a watcher and the hook hangs
 # forever with no output.

@@ -24,7 +24,7 @@ unfenced JSON:
 }
 ```
 
-Each food also carries a `provenance` field (`"corpus"` or `"model"`) and an `attribution` string where the food source requires one: see [Food data](configuration.md#food-data-foodsource).
+This service sets `provenance` to `"corpus"` on a food record when the food database supplies its macros. It adds an `attribution` string when the source requires one, see [Food data](configuration.md#food-data-foodsource). When nothing resolves the item, both fields are omitted and `macrosPer100g` is null. This service never emits `"model"`, as the shared contract reserves that value for a cloud provider.
 
 The service accepts one image and answers one question. Your prompt is read for
 the image and otherwise discarded.

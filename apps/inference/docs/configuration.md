@@ -51,10 +51,7 @@ The model identifies foods and estimates grams. **Macros are resolved from a foo
 -e EMBEDDING_RUNTIME_URL=http://…          # optional; enables hybrid re-ranking
 ```
 
-**Resolved macros are labelled.** Every food in the response carries a
-`provenance` of `"corpus"` (looked up in the food database) or `"model"`, plus an
-`attribution` string where the source requires one. openplate surfaces that, so a
-user can tell a looked-up number from an estimated one.
+**Resolved macros are labelled.** Foods matched against the database include a `provenance` of `"corpus"`, plus an `attribution` string when required by the source. Unmatched foods omit both fields, and `macrosPer100g` is null. openplate exposes these values, so users can separate confirmed database entries from items with no macro data.
 
 **A missing food database does not stop scans.** If `FDC_DATASET_PATH` points at
 nothing, the service logs a warning, disables resolution, and keeps identifying
