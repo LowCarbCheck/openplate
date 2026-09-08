@@ -2,6 +2,13 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.18.1 - 2026-09-08
+
+- Punctuation only. The terms, the privacy policy and the age range labels used
+  long dashes, which the project's own writing rules ban. They are now full
+  stops, commas, colons or brackets. No wording changed, so nothing either
+  document says has changed.
+
 ## 0.18.0 - 2026-09-08
 
 - The lesson after the first run now tells you that openplate installs on a
