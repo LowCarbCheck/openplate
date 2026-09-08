@@ -11,18 +11,18 @@
       "built": "Erstellt",
       "checkNow": "Jetzt prüfen",
       "checking": "Wird geprüft",
-      "description": "Was diese Instanz ausführt und was das Projekt veröffentlicht hat.",
+      "description": "Was auf dieser Instanz läuft und was vom Projekt veröffentlicht wurde.",
       "disabled": "Prüfung deaktiviert",
-      "disabledHint": "Diese Instanz fragt bei GitHub nicht nach neuen Versionen. Der Betreiber hat das abgeschaltet.",
+      "disabledHint": "Diese Instanz fragt GitHub nicht nach neuen Releases. Der Betreiber hat das deaktiviert.",
       "lastChecked": "Zuletzt geprüft",
-      "latest": "Neueste Version",
+      "latest": "Neuestes Release",
       "never": "Noch nicht",
-      "releaseLink": "Release-Notes",
-      "reload": "Neu laden und aktualisieren",
-      "reloadHint": "Dieser Server liefert eine neuere Version der App aus, als diese Seite gerade ausführt.",
-      "running": "Läuft hier",
-      "selfHostHint": "Der Server selbst wird über ein neues Image aktualisiert, nicht über einen Knopf an dieser Stelle.",
-      "throttled": "Gerade eben geprüft. Die nächste Prüfung ist ab {{when}} möglich.",
+      "releaseLink": "Versionshinweise",
+      "reload": "Neu laden zum Aktualisieren",
+      "reloadHint": "Dieser Server liefert eine neuere Version der App aus, als auf dieser Seite läuft.",
+      "running": "Installiert",
+      "selfHostHint": "Den Server selbst aktualisierst du über ein neues Image, nicht über einen Button hier.",
+      "throttled": "Gerade eben geprüft. Die nächste Prüfung ist um {{when}} möglich.",
       "title": "Updates"
     },
     "version": "Version"
@@ -272,11 +272,11 @@
     "thisDevice": "Dieses Gerät",
     "update": {
       "badge": "Update",
-      "bundleReady": "Eine neuere Version dieser Seite ist bereit",
+      "bundleReady": "Eine neuere Version dieser Seite ist verfügbar",
       "dismiss": "Ausblenden",
       "releaseAvailable": "openplate {{version}} ist verfügbar",
       "reload": "Neu laden",
-      "view": "Was sich geändert hat"
+      "view": "Änderungen ansehen"
     }
   },
   "clinicianLink": {
