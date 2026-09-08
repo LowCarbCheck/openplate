@@ -2,6 +2,14 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.18.2 - 2026-09-08
+
+- The device menu in the header now offers a way to sign in when you are
+  signed out. On an instance where anybody can make an account it offered only
+  "Create account", so somebody who already had one, and had been signed out,
+  had no way back in from that menu. It now shows both, sign in first. This
+  never affected the hosted instance, where the menu already said "Sign in".
+
 ## 0.18.1 - 2026-09-08
 
 - Punctuation only. The terms, the privacy policy and the age range labels used
