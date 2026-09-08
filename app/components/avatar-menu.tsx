@@ -16,16 +16,17 @@
  * question to ask is `useInstancePolicy()`, never the mode name; see
  * `app/config/instance-policy.ts`.
  *
- * So the menu now carries an ACCOUNT DOOR, and there are three states of it,
+ * So the menu now carries an ACCOUNT DOOR, and there are four states of it,
  * decided in `resolveAvatarMenuDoor` rather than by `&&`s in the JSX below:
  * signed in (the way out), signed out on an instance that requires an account
- * (the way in), and signed out on an instance where an account is an optional
- * extra (the way to set one up). The third was the only one that existed, and
- * it was shown in all three cases: a managed instance offered "Create account"
- * to somebody who cannot create one, because accounts there come from an
- * invitation an administrator sends. That is the same false promise the public
- * header carried, and `resolveAvatarMenuDoor` documents why
- * `requiresAccount` and "is sync configured" are not the same question.
+ * (the way in), signed out on an open instance with a sync server (the way in
+ * AND the way to make an account), and no sync server at all (nothing). The
+ * "make one" row was the only one that ever existed, and it was shown in every
+ * case: a managed instance offered "Create account" to somebody who cannot
+ * create one, because accounts there come from an invitation an administrator
+ * sends. That is the same false promise the public header carried, and
+ * `resolveAvatarMenuDoor` documents why `requiresAccount` and "is sync
+ * configured" are not the same question.
  *
  * Why a menu and not the plain `/settings` link it briefly was: sync status and
  * the theme both belong in the chrome. Sync is the only thing in the app whose
@@ -161,51 +162,86 @@ function SyncRow({ state }: { state: SyncMenuState }) {
 }
 
 /**
- * The account door: one row, or none (M201 spec 02 and 03).
+ * The account door: the rows the menu offers about the account, if any
+ * (M201 spec 02 and 03).
  *
- * The four states come from `resolveAvatarMenuDoor`, so which one shows is a
- * tested decision rather than a chain of conditions in this file. Each is a
- * plain menu item, none is styled as a danger action, and the sign-out one is
- * the whole reason this component exists.
+ * NOT "one row, or none", which is what it was and what the defect was made
+ * of. Signing in and creating an account are not alternatives: on an instance
+ * where anybody may make an account, a returning person may also sign in, so
+ * that state carries BOTH rows and this component renders both. Reported from
+ * a real screen, where a signed-out open instance offered creation only and
+ * had no route to sign in at all, while `/settings/account` behind the menu
+ * offered the link the menu was hiding.
+ *
+ * Which state applies comes from `resolveAvatarMenuDoor`, so it stays a tested
+ * decision rather than a chain of conditions in this file. Each row is a plain
+ * menu item, none is styled as a danger action, and the sign-out one is the
+ * whole reason this component exists.
+ *
+ * SIGN IN COMES FIRST wherever both show. Opening this menu signed out is far
+ * more often "let me back in" than "let me start an account here", and making
+ * an account is the rarer and heavier act of the two.
+ *
+ * Exported for `tests/unit/avatar-menu-door.test.ts`, which renders it.
  */
-function AccountDoor({ door }: { door: AvatarMenuDoor }) {
+export function AccountDoor({ door }: { door: AvatarMenuDoor }) {
+  if (door === 'none') return null;
+  if (door === 'sign-out') return <SignOutRow />;
+
+  return (
+    <>
+      <SignInRow />
+      {door === 'sign-in-or-create' && <CreateAccountRow />}
+    </>
+  );
+}
+
+/** The way out, behind the shared confirm dialog `/settings/account` also opens. */
+function SignOutRow() {
   const { t } = useTranslation();
 
-  if (door === 'none') return null;
+  return (
+    <SignOutDialog
+      trigger={
+        <DropdownMenuItem
+          // `preventDefault` keeps the menu mounted. Radix unmounts a closed
+          // dropdown's content, and the dialog's trigger lives inside it, so
+          // letting the select close the menu would tear the dialog down in
+          // the same frame it opened. The modal covers the menu anyway.
+          onSelect={(event) => event.preventDefault()}
+          className="cursor-pointer py-2"
+        >
+          <LogOut className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span>{t('signOut.menuItem')}</span>
+        </DropdownMenuItem>
+      }
+    />
+  );
+}
 
-  if (door === 'sign-out') {
-    return (
-      <SignOutDialog
-        trigger={
-          <DropdownMenuItem
-            // `preventDefault` keeps the menu mounted. Radix unmounts a closed
-            // dropdown's content, and the dialog's trigger lives inside it, so
-            // letting the select close the menu would tear the dialog down in
-            // the same frame it opened. The modal covers the menu anyway.
-            onSelect={(event) => event.preventDefault()}
-            className="cursor-pointer py-2"
-          >
-            <LogOut className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>{t('signOut.menuItem')}</span>
-          </DropdownMenuItem>
-        }
-      />
-    );
-  }
+/** The way back in, on every instance that has accounts at all. */
+function SignInRow() {
+  const { t } = useTranslation();
 
-  if (door === 'sign-in') {
-    return (
-      <DropdownMenuItem asChild className="cursor-pointer py-2">
-        <Link to="/sign-in">
-          <LogIn className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          <span>{t('signIn.title')}</span>
-        </Link>
-      </DropdownMenuItem>
-    );
-  }
+  return (
+    <DropdownMenuItem asChild className="cursor-pointer py-2">
+      <Link to="/sign-in">
+        <LogIn className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <span>{t('signIn.title')}</span>
+      </Link>
+    </DropdownMenuItem>
+  );
+}
 
-  // `create-account`, and it is honest here and only here: an OPEN instance
-  // with a sync server, where anybody may make one for themselves.
+/**
+ * The way to make one, and it is honest here and only here: an OPEN instance
+ * with a sync server, where anybody may make an account for themselves. A
+ * managed instance hands accounts out by invitation, so this row never shows
+ * there.
+ */
+function CreateAccountRow() {
+  const { t } = useTranslation();
+
   return (
     <DropdownMenuItem asChild className="cursor-pointer py-2">
       <Link to="/settings/account">

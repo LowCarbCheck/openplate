@@ -29,21 +29,30 @@ export type SyncMenuState =
 /**
  * The ACCOUNT DOOR the header menu offers, if any (M201 spec 02 and 03).
  *
- * Three states, named, because the menu had one and let the other two fall
- * through it. A managed instance signed out showed "Create account", which on
- * an invite-only instance is a promise nobody can keep; signed in it showed no
+ * Four states, named, because the menu had one and let the others fall through
+ * it. A managed instance signed out showed "Create account", which on an
+ * invite-only instance is a promise nobody can keep; signed in it showed no
  * way out at all, which is what sent people into the Danger Zone of
  * `/settings/account` looking for one.
+ *
+ * The fourth was the same fault one level down. Signing in and creating an
+ * account are not alternatives: on an OPEN instance with a sync server ANYBODY
+ * may make an account, AND somebody who already has one and was signed out
+ * needs the way back in. Offering only creation there left a returning person
+ * with no route to sign in from this menu at all, while the screen behind it
+ * (`/settings/account`) offered the link the menu was hiding. So that case is
+ * its own state carrying BOTH rows, rather than a single door this menu has to
+ * guess at.
  */
 export type AvatarMenuDoor =
   /** No sync on this instance: no account, no door, nothing to say (AGENTS.md). */
   | 'none'
   /** A session is open: the way out. */
   | 'sign-out'
-  /** No session, and this instance requires one: the way in. */
+  /** No session, and this instance requires one: the way in, and only that. */
   | 'sign-in'
-  /** No session, and accounts here are an optional extra somebody may switch on. */
-  | 'create-account';
+  /** No session on an instance where accounts are open to all: the way in, and the way to make one. */
+  | 'sign-in-or-create';
 
 /**
  * Which door the menu shows.
@@ -54,8 +63,9 @@ export type AvatarMenuDoor =
  * "does a person need an account to use this instance at all". They are
  * genuinely different, and the difference is a real deployment: a self-hoster
  * who sets `SYNC_SERVER_URL` on an OPEN instance has sync, no accounts, and an
- * anonymous diary that works. On that instance "Create account" is honest and
- * is what this returns. `app/config/instance-policy.ts` documents the trap.
+ * anonymous diary that works. On that instance "Create account" is honest, and
+ * so is "Sign in", so this returns the state that carries both.
+ * `app/config/instance-policy.ts` documents the trap.
  *
  * @param hasSyncServer - `useSyncServerUrl() !== null`.
  * @param hasSession - is somebody signed in on this device right now?
@@ -75,7 +85,10 @@ export function resolveAvatarMenuDoor({
   // refuses to boot without it), so this branch can never hide a needed door.
   if (!hasSyncServer) return 'none';
   if (hasSession) return 'sign-out';
-  return requiresAccount ? 'sign-in' : 'create-account';
+  // Both are true on an open instance, so the answer is both rows and not a
+  // choice between them; `requiresAccount` only removes the creation one.
+  if (requiresAccount) return 'sign-in';
+  return 'sign-in-or-create';
 }
 
 /**
