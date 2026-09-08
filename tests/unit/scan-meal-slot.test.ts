@@ -29,14 +29,7 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import { withI18n } from './trends-i18n-harness';
 
 import { mealTypeForCapture, resolveCaptureInstant } from '../../app/lib/scan-capture-time';
-import {
-  ConfirmDraftForm,
-  ConfirmDraftSchema,
-  LabelConfirmForm,
-  LabelConfirmSchema,
-  buildConfirmedBatch,
-} from '../../app/routes/scan';
-import { buildLabelScanEntry } from '../../app/lib/label-scan-confirm';
+import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedBatch } from '../../app/routes/scan';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '../../app/lib/meal-choice';
 import type { PlateIdentification } from '../../app/services/vision/types';
 import type { MealType } from '../../types/enums';
@@ -145,11 +138,42 @@ describe('resolveCaptureInstant, an unusable file timestamp falls back to the cl
   });
 });
 
-/** Two foods on one plate: the batch case the owner's complaint is really about. */
+/**
+ * Two foods and one packet on one plate: the batch case the owner's complaint
+ * is really about, plus the item that used to need a whole second scan.
+ *
+ * The third item is a TRANSCRIBED PANEL sitting in the same list as two
+ * estimates (amends ADR-0005, 2026-09-08). One meal slot has to reach all
+ * three, and the three must not be written the same way, which is what the
+ * second describe below checks.
+ */
 const AI_IDENTIFICATION: PlateIdentification = {
+  unreadable: false,
   foods: [
-    { name: 'Grilled salmon', estimatedGrams: 150, confidence: 'high', macrosPer100g: { carbs: 0, protein: 20 } },
-    { name: 'Green salad', estimatedGrams: 80, confidence: 'medium', macrosPer100g: { carbs: 3, protein: 1 } },
+    {
+      name: 'Grilled salmon',
+      estimatedGrams: 150,
+      confidence: 'high',
+      macroSource: 'estimated',
+      macrosPer100g: { carbs: 0, protein: 20 },
+    },
+    {
+      name: 'Green salad',
+      estimatedGrams: 80,
+      confidence: 'medium',
+      macroSource: 'estimated',
+      macrosPer100g: { carbs: 3, protein: 1 },
+    },
+    {
+      name: 'Crispbread',
+      estimatedGrams: 20,
+      confidence: 'high',
+      macroSource: 'label',
+      brand: 'Test',
+      servingSize: { asPrinted: '1 slice (20 g)', grams: 20 },
+      carbBasis: 'available',
+      macrosPer100g: { carbs: 60, fiber: 15 },
+    },
   ],
 };
 
@@ -170,6 +194,9 @@ function renderUnderRouter(element: ReturnType<typeof createElement>): string {
 function renderPlateConfirm(defaultMealType: MealType | null): string {
   return renderUnderRouter(
     createElement(ConfirmDraftForm, {
+      // The intake this draft arrived by. A photograph here: these tests are
+      // about what the plate path writes, not about which way in produced it.
+      intakeSource: 'photo',
       identification: AI_IDENTIFICATION,
       modelId: 'test-model',
       lastResult: undefined,
@@ -219,42 +246,47 @@ describe('the plate confirm step posts the preselected slot', () => {
   });
 });
 
+/** The real submission a rendered confirm step produces, parsed by the real schema. */
+function submitPlate(defaultMealType: MealType | null) {
+  const posted = emittedMealType(renderPlateConfirm(defaultMealType));
+  const formData = new FormData();
+  formData.set('mealType', posted);
+  AI_IDENTIFICATION.foods.forEach((food, index) => {
+    formData.set(`items[${index}].include`, 'on');
+    formData.set(`items[${index}].name`, food.name);
+    formData.set(`items[${index}].estimatedGrams`, String(food.estimatedGrams));
+    formData.set(`items[${index}].macros.carbs`, String(food.macrosPer100g?.carbs ?? 0));
+    // The two fields the merged draft carries per item, posted here exactly
+    // as the rendered form posts them.
+    formData.set(`items[${index}].macroSource`, food.macroSource);
+    if (food.brand !== undefined) formData.set(`items[${index}].brand`, food.brand);
+    if (food.carbBasis !== undefined) formData.set(`items[${index}].carbBasis`, food.carbBasis);
+  });
+  const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
+  assert.equal(submission.status, 'success', 'ConfirmDraftSchema rejected the confirm-step submission');
+  if (submission.status !== 'success') throw new Error('unreachable');
+  return submission.value;
+}
+
+/** The write payload, built exactly as `handleConfirm` builds it. */
+function writtenBatch(defaultMealType: MealType | null) {
+  const value = submitPlate(defaultMealType);
+  let counter = 0;
+  return buildConfirmedBatch({
+    items: value.items,
+    mealType: value.mealType ?? null,
+    loggedAtMs: NOW_MS,
+    dayKey: '2026-09-08',
+    createdAtMs: NOW_MS,
+    logBatchId: 'batch-1',
+    newId: () => `id-${(counter += 1)}`,
+  });
+}
+
 describe('a confirmed plate scan writes the chosen slot onto EVERY entry in the batch', () => {
-  /** The real submission a rendered confirm step produces, parsed by the real schema. */
-  function submitPlate(defaultMealType: MealType | null) {
-    const posted = emittedMealType(renderPlateConfirm(defaultMealType));
-    const formData = new FormData();
-    formData.set('mealType', posted);
-    AI_IDENTIFICATION.foods.forEach((food, index) => {
-      formData.set(`items[${index}].include`, 'on');
-      formData.set(`items[${index}].name`, food.name);
-      formData.set(`items[${index}].estimatedGrams`, String(food.estimatedGrams));
-      formData.set(`items[${index}].macros.carbs`, String(food.macrosPer100g?.carbs ?? 0));
-    });
-    const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
-    assert.equal(submission.status, 'success', 'ConfirmDraftSchema rejected the confirm-step submission');
-    if (submission.status !== 'success') throw new Error('unreachable');
-    return submission.value;
-  }
-
-  /** The write payload, built exactly as `handleConfirm` builds it. */
-  function writtenBatch(defaultMealType: MealType | null) {
-    const value = submitPlate(defaultMealType);
-    let counter = 0;
-    return buildConfirmedBatch({
-      items: value.items,
-      mealType: value.mealType ?? null,
-      loggedAtMs: NOW_MS,
-      dayKey: '2026-09-08',
-      createdAtMs: NOW_MS,
-      logBatchId: 'batch-1',
-      newId: () => `id-${(counter += 1)}`,
-    });
-  }
-
-  it('is one plate at one sitting: both foods carry the same slot', () => {
+  it('is one plate at one sitting: every item carries the same slot', () => {
     const written = writtenBatch('dinner');
-    assert.equal(written.length, 2);
+    assert.equal(written.length, 3);
     for (const { entry } of written) assert.equal(entry.mealType, 'dinner');
   });
 
@@ -266,55 +298,69 @@ describe('a confirmed plate scan writes the chosen slot onto EVERY entry in the 
     const written = writtenBatch('lunch');
     assert.deepEqual(
       written.map(({ food }) => food.name),
-      ['Grilled salmon', 'Green salad'],
+      ['Grilled salmon', 'Green salad', 'Crispbread'],
     );
     for (const { entry, food } of written) assert.equal(entry.foodId, food.id);
   });
 });
 
-describe('the label scan gets the same treatment, it writes by the same route', () => {
-  it('emits the preselected slot in its own hidden field', () => {
-    const html = renderUnderRouter(
-      createElement(LabelConfirmForm, {
-        reading: {
-          unreadable: false,
-          productName: 'Crispbread',
-          brand: 'Test',
-          servingSize: { asPrinted: '1 slice (20 g)', grams: 20 },
-          macrosPer100g: { carbs: 60, fiber: 15 },
-        },
-        modelId: 'test-model',
-        lastResult: undefined,
-        logDate: null,
-        logDateLabel: null,
-        defaultMealType: 'breakfast',
-      }),
-    );
-    assert.equal(emittedMealType(html), 'breakfast');
+/**
+ * The label item's own facts, on the same plate as two estimates.
+ *
+ * These used to be a whole second confirm step with its own schema, its own
+ * form and its own pair of row builders. A label item is an ordinary item on
+ * the plate draft now, so what has to be proved is not that a second path
+ * still works but that the ONE path keeps the three items apart where they
+ * genuinely differ.
+ */
+describe('a label item is an ordinary item on the same plate', () => {
+  /** The write payload again, with the batch helpers above reused verbatim. */
+  function batch() {
+    const built = writtenBatch('breakfast');
+    assert.equal(built.length, 3);
+    return built;
+  }
+
+  it('is stored as the manufacturer own figure, with its brand and its basis', () => {
+    const crispbread = batch()[2];
+
+    // `'user'`, not `'plate_ai'`: nothing was estimated from a photograph of
+    // food. The figures are the manufacturer's, read off the package and then
+    // confirmed on an editable form, which is the same provenance as typing
+    // the panel in by hand. The brand is what makes the saved food findable by
+    // the name on the packet.
+    assert.equal(crispbread.food.source, 'user');
+    assert.equal(crispbread.food.brand, 'Test');
+    // The EU crispbread's fibre legitimately exceeds its carbohydrate. Without
+    // its own `available` basis reaching the write, that is both a false
+    // sanity warning and a wrong net carb.
+    assert.equal(crispbread.food.carbBasis, 'available');
   });
 
-  it('parses the posted slot and puts it on the written entry', () => {
-    const formData = new FormData();
-    formData.set('name', 'Crispbread');
-    formData.set('quantityGrams', '20');
-    formData.set('macros.carbs', '60');
-    formData.set('mealType', 'breakfast');
-    const submission = parseWithZod(formData, { schema: LabelConfirmSchema });
-    assert.equal(submission.status, 'success');
-    if (submission.status !== 'success') throw new Error('unreachable');
+  it('leaves the two estimates beside it untouched', () => {
+    const [salmon] = batch();
 
-    const entry = buildLabelScanEntry({
-      name: submission.value.name,
-      quantityGrams: submission.value.quantityGrams,
-      macrosPer100g: { carbs: 60, fiber: null, sugars: null, polyols: null, protein: null, fat: null, kcal: null },
-      carbBasis: null,
-      mealType: submission.value.mealType ?? null,
-      foodId: 'food-1',
-      id: 'entry-1',
-      loggedAtMs: NOW_MS,
-      dayKey: '2026-09-08',
-      createdAtMs: NOW_MS,
-    });
-    assert.equal(entry.mealType, 'breakfast');
+    assert.equal(salmon.food.source, 'plate_ai');
+    assert.equal(salmon.food.brand, null);
+    assert.equal(salmon.food.carbBasis, undefined);
+  });
+
+  it('offers the printed serving as a portion chip, in the panel own words', () => {
+    const html = renderPlateConfirm('breakfast');
+
+    // The chip is the ONLY place the printed serving reaches the person, and
+    // it goes no further: nothing persists a serving, because
+    // `LocalPersonalFood` has no field for one.
+    assert.match(html, /1 slice \(20 g\)/, 'the panel serving is no longer offered as a portion chip');
+  });
+
+  it("carries the item's own panel convention into the confirm", () => {
+    const html = renderPlateConfirm('breakfast');
+
+    assert.match(
+      html,
+      /name="items\[2\]\.carbBasis"[^>]*value="available"/,
+      "the label item's own carbBasis no longer reaches the confirm",
+    );
   });
 });

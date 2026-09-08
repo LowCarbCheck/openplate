@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronUp, Keyboard, Mic, ScanBarcode, Camera } from 'lucide-react';
+import { ChevronUp, Keyboard, Mic, Camera } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
 import { useCameraCapture } from '#app/components/add/use-camera-capture';
 import { hasMovedBeyondPressTolerance, LONG_PRESS_MS, type PointerPosition } from '#app/lib/long-press';
-import type { VisionMode } from '#app/services/vision';
 import type { NavigationItem } from './app-sidebar';
 
 /** One sheet row: full width, 44px of hit area, no decoration competing with the label. */
@@ -31,7 +30,7 @@ const LAUNCHER_ITEM_CLASS =
 export function AddLauncher({ tab }: { tab: NavigationItem }) {
   const { t } = useTranslation();
   const location = useLocation();
-  const { captureWith, triggerRef, inputRef, inputProps } = useCameraCapture();
+  const { capture, triggerRef, inputRef, inputProps } = useCameraCapture();
   const pressStartRef = useRef<PointerPosition | null>(null);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Set when a long press already opened the sheet, so the click that follows it does not also open the camera. */
@@ -53,7 +52,7 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
       longPressFiredRef.current = false;
       return;
     }
-    captureWith('plate');
+    capture();
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -72,8 +71,8 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
     if (hasMovedBeyondPressTolerance({ start, current: { x: event.clientX, y: event.clientY } })) clearPressTimer();
   };
 
-  const openSheetItem = (mode: VisionMode) => {
-    captureWith(mode);
+  const capturePhotoFromSheet = () => {
+    capture();
     setIsSheetOpen(false);
   };
 
@@ -144,13 +143,13 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
           <SheetTitle>{t('launcher.sheetTitle')}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-1 px-4 pb-4">
-          <button type="button" onClick={() => openSheetItem('plate')} className={LAUNCHER_ITEM_CLASS}>
+          {/* ONE photo row. There used to be a second for a nutrition panel,
+              which asked the person to classify their own photograph before
+              taking it; the model classifies each item now (amends ADR-0005,
+              2026-09-08), so a packet, a plate and a panel are all this row. */}
+          <button type="button" onClick={capturePhotoFromSheet} className={LAUNCHER_ITEM_CLASS}>
             <Camera className="h-5 w-5 shrink-0" aria-hidden="true" />
-            {t('launcher.platePhoto')}
-          </button>
-          <button type="button" onClick={() => openSheetItem('label')} className={LAUNCHER_ITEM_CLASS}>
-            <ScanBarcode className="h-5 w-5 shrink-0" aria-hidden="true" />
-            {t('launcher.labelPhoto')}
+            {t('launcher.photoAnything')}
           </button>
           {/* Navigations stay links: `SheetClose` closes the sheet, the link
               does the travelling. `?speak=1` is what arms `/add`'s microphone. */}

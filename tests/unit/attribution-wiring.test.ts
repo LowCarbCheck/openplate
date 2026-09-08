@@ -198,11 +198,15 @@ describe('a credited food logged from the add flow keeps its credit', () => {
 ////////////////////////////////////////////////////////////////////////////////
 
 const AI_IDENTIFICATION = {
+  // Every photograph now answers whether it could be read at all
+  // (amends ADR-0005, 2026-09-08). This one could.
+  unreadable: false,
   foods: [
     {
       name: 'Wheat bran',
       estimatedGrams: SERVING_GRAMS,
       confidence: 'high' as const,
+      macroSource: 'estimated' as const,
       macrosPer100g: { kcal: 200, protein: 10, fat: 4, carbs: 30, fiber: 5 },
     },
   ],
@@ -225,6 +229,9 @@ function confirmFormData(overrides: { curatedSource?: string; macros?: MacroForm
 function renderConfirmStep(formData: FormData): string {
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
+    // The intake this draft arrived by. A photograph here: these tests are
+    // about what the plate path writes, not about which way in produced it.
+    intakeSource: 'photo',
     identification: AI_IDENTIFICATION,
     modelId: 'test-model',
     matches: [[creditedMatch()]],

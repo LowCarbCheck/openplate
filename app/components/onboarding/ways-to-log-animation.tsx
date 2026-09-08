@@ -21,6 +21,7 @@
  * illustration.
  */
 import type { ReactNode } from 'react';
+import { Mic } from 'lucide-react';
 
 import type { WayToLogId } from '#app/lib/ways-to-log';
 
@@ -43,8 +44,17 @@ function Glyph({ children }: { children: ReactNode }) {
   );
 }
 
-/** A plate inside a viewfinder that pulls focus, then a shutter flash. */
-function PlateGlyph() {
+/**
+ * A viewfinder pulling focus on a plate, then a shutter flash.
+ *
+ * It teaches ANY photograph now, not only a plate: the label mode was merged
+ * into the one photo path on 2026-09-08 (amends ADR-0005), so the card that
+ * used to sit under this one, a package panel with a bar travelling down it,
+ * is gone along with its `wtl-scanline` keyframe. A viewfinder is the right
+ * drawing for all three subjects, which is why this one was kept rather than
+ * redrawn.
+ */
+function PhotoGlyph() {
   return (
     <Glyph>
       <g className="wtl-focus">
@@ -71,32 +81,14 @@ function PlateGlyph() {
   );
 }
 
-/** A package's printed panel, with one bar travelling down it. */
-function LabelGlyph() {
-  return (
-    <Glyph>
-      <rect x="12" y="4" width="24" height="40" rx="3" />
-      <path d="M17 14h14" />
-      <path d="M17 21h14" />
-      <path d="M17 28h9" />
-      <path d="M17 35h14" />
-      <rect
-        className="wtl-scanline"
-        x="13"
-        y="10"
-        width="22"
-        height="2"
-        rx="1"
-        fill="currentColor"
-        stroke="none"
-        opacity="0.45"
-      />
-    </Glyph>
-  );
-}
-
-/** A search field over three result rows that settle in sequence. */
-function SearchGlyph() {
+/**
+ * A search field over three result rows that settle in sequence.
+ *
+ * It teaches WRITING now rather than searching: the same box takes a whole
+ * meal in one line and the rows underneath are still the database results, so
+ * the drawing was kept and only its name and its card changed.
+ */
+function TypeGlyph() {
   return (
     <Glyph>
       <rect x="4" y="5" width="40" height="13" rx="6.5" />
@@ -111,13 +103,27 @@ function SearchGlyph() {
 }
 
 /**
+ * The microphone, borrowed from lucide rather than drawn.
+ *
+ * Every other surface that offers speech already uses this exact icon
+ * (`add-food-actions.tsx`, `add-launcher.tsx`, `speech-input-button.tsx`), so
+ * a hand-drawn second microphone would be a new asset that taught the person
+ * a symbol they then would not recognise on the screen the card sends them to.
+ * It carries no `wtl-` class, so it has nothing to animate and nothing to turn
+ * off, which is a complete drawing at rest exactly like the other two.
+ */
+function SpeakGlyph() {
+  return <Mic className="size-10 shrink-0 text-primary" strokeWidth={2} aria-hidden="true" focusable="false" />;
+}
+
+/**
  * The drawing for one way in.
  *
  * @param way - which of the three ways this card teaches.
  * @returns the card's glyph.
  */
 export default function WayToLogAnimation({ way }: { way: WayToLogId }) {
-  if (way === 'plate') return <PlateGlyph />;
-  if (way === 'label') return <LabelGlyph />;
-  return <SearchGlyph />;
+  if (way === 'photo') return <PhotoGlyph />;
+  if (way === 'speak') return <SpeakGlyph />;
+  return <TypeGlyph />;
 }

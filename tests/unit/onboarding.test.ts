@@ -181,8 +181,16 @@ describe('resolveExitDestination', () => {
     assert.equal(resolveExitDestination('/scan'), '/scan');
   });
 
-  it('keeps the label scanner, which is a way to log and not a settings detour (M200/01)', () => {
-    assert.equal(resolveExitDestination('/scan?mode=label'), '/scan?mode=label');
+  it('keeps the armed microphone, which is a way to log and not a settings detour', () => {
+    assert.equal(resolveExitDestination('/add?speak=1'), '/add?speak=1');
+  });
+
+  it('no longer allows the label scanner, because there is no second scanner', () => {
+    // It was allowlisted for the ways-to-log lesson's third card until
+    // 2026-09-08, when the two photo tasks merged (amends ADR-0005). A
+    // destination that still resolved would send somebody to a mode nothing
+    // reads, which is a dead URL that looks alive.
+    assert.equal(resolveExitDestination('/scan?mode=label'), '/diary');
   });
 
   it('keeps the settings-connect exit (finishes onboarding, then returns to the diary)', () => {

@@ -8,10 +8,10 @@
  */
 import { z } from 'zod';
 
-import type { PlateImageInput, ScanResultBase, ScanTokenUsage, VisionProvider } from './types';
+import type { IntakeInput, PlateImageInput, ScanResultBase, ScanTokenUsage, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
-import type { ScanTaskDescriptor } from './task';
+import type { IntakeTaskDescriptor } from './task';
 import { attachScanUsage } from './task';
 // The auth headers live in `./constants` (M130/01), not here: the live key
 // check in `./verify-key` sends byte-identical headers, and a second copy is
@@ -74,18 +74,48 @@ function toMalformedOutputFailure(cause: unknown, usage: ScanTokenUsage | undefi
   );
 }
 
+/** One block of the user message: the task's instruction, then the thing being read. */
+type AnthropicContentBlock =
+  { type: 'text'; text: string } | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } };
+
+/**
+ * The user message's blocks for one intake.
+ *
+ * Same two-block layout whichever kind of intake it is — instruction, then
+ * payload — so nothing below this function branches on the input. See the
+ * OpenAI adapter's twin for the reason the person's words get their own block.
+ */
+function buildUserContentBlocks({
+  userPrompt,
+  input,
+}: {
+  userPrompt: string;
+  input: IntakeInput;
+}): AnthropicContentBlock[] {
+  if (input.kind === 'text') {
+    return [
+      { type: 'text', text: userPrompt },
+      { type: 'text', text: input.text },
+    ];
+  }
+  return [
+    { type: 'text', text: userPrompt },
+    { type: 'image', source: { type: 'base64', media_type: input.image.mimeType, data: input.image.base64 } },
+  ];
+}
+
 /**
  * Builds the Messages request body with forced tool-use. Pure — no `fetch` —
  * so the tools + `tool_choice` shape is unit-testable without mocking network.
  */
 export function buildAnthropicRequestBody({
   model,
-  image,
+  input,
   task,
 }: {
   model: string;
-  image: PlateImageInput;
-  task: ScanTaskDescriptor<ScanResultBase>;
+  input: IntakeInput;
+  task: IntakeTaskDescriptor<ScanResultBase>;
 }) {
   return {
     model,
@@ -99,28 +129,18 @@ export function buildAnthropicRequestBody({
       },
     ],
     tool_choice: { type: 'tool', name: task.toolName },
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: task.userPrompt },
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: image.mimeType, data: image.base64 },
-          },
-        ],
-      },
-    ],
+    messages: [{ role: 'user', content: buildUserContentBlocks({ userPrompt: task.userPrompt, input }) }],
   };
 }
 
 export function createAnthropicProvider(options: AnthropicProviderOptions): VisionProvider {
-  async function runScan<TResult extends ScanResultBase>({
+  /** ONE TRANSPORT FOR EVERY INTAKE — see the OpenAI adapter's `runIntake` for why. */
+  async function runIntake<TResult extends ScanResultBase>({
     task,
-    image,
+    input,
   }: {
-    task: ScanTaskDescriptor<TResult>;
-    image: PlateImageInput;
+    task: IntakeTaskDescriptor<TResult>;
+    input: IntakeInput;
   }): Promise<TResult> {
     let response: Response;
     try {
@@ -130,7 +150,7 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Visi
           'Content-Type': 'application/json',
           ...getAnthropicAuthHeaders({ apiKey: options.apiKey }),
         },
-        body: JSON.stringify(buildAnthropicRequestBody({ model: options.model, image, task })),
+        body: JSON.stringify(buildAnthropicRequestBody({ model: options.model, input, task })),
       });
     } catch (error) {
       // Network-level failure — nothing was billed, and it may well
@@ -185,5 +205,20 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Visi
     return attachScanUsage(result, usage);
   }
 
-  return { runScan };
+  return {
+    runScan: <TResult extends ScanResultBase>({
+      task,
+      image,
+    }: {
+      task: IntakeTaskDescriptor<TResult>;
+      image: PlateImageInput;
+    }) => runIntake({ task, input: { kind: 'photo', image } }),
+    runTextIntake: <TResult extends ScanResultBase>({
+      task,
+      text,
+    }: {
+      task: IntakeTaskDescriptor<TResult>;
+      text: string;
+    }) => runIntake({ task, input: { kind: 'text', text } }),
+  };
 }

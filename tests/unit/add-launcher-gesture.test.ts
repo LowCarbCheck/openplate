@@ -38,7 +38,7 @@ function extractHandlerBody(declaration: string): string {
 }
 
 describe('the capture gesture', () => {
-  const body = extractHandlerBody('const captureWith = (mode: VisionMode) => {');
+  const body = extractHandlerBody('const capture = () => {');
 
   it('opens the camera', () => {
     assert.match(body, /inputRef\.current\?\.click\(\)/);
@@ -70,7 +70,15 @@ describe('the capture hook', () => {
   });
 
   it('hands the photo over rather than re-picking it on the other side', () => {
-    assert.match(source, /offerPickedFile\(picked, modeRef\.current\)/);
+    assert.match(source, /offerPickedFile\(picked\)/);
+  });
+
+  it('hands over the photo and nothing about what it shows', () => {
+    // The capture used to carry the scan the person had chosen for it before
+    // the shutter. One photo path reads a plate, an item or a printed panel
+    // now (amends ADR-0005, 2026-09-08), so there is no mode to get wrong and
+    // no ref holding one.
+    assert.doesNotMatch(source, /modeRef/, 'the capture hook holds a scan mode again');
   });
 });
 

@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { buildOpenAiCompatibleRequestBody } from '../../app/services/vision/openai-compatible';
 import { buildAnthropicRequestBody } from '../../app/services/vision/anthropic';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA } from '../../app/services/vision/schema';
-import { PLATE_SCAN_TASK } from '../../app/services/vision/task';
+import { PHOTO_INTAKE_TASK } from '../../app/services/vision/task';
 
 /*
  * The builders return an untyped wire body (`Record<string, unknown>`), so the
@@ -49,8 +49,8 @@ describe('buildOpenAiCompatibleRequestBody', () => {
   it('attaches the derived json_schema response_format when structured output is enabled', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
-      dataUrl: 'data:image/png;base64,AAAA',
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
       useStructuredOutput: true,
     });
 
@@ -66,8 +66,8 @@ describe('buildOpenAiCompatibleRequestBody', () => {
   it('omits response_format entirely for the retry-without-it variant', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
-      dataUrl: 'data:image/png;base64,AAAA',
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
       useStructuredOutput: false,
     });
 
@@ -79,8 +79,8 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     // photo needs none of it — the tokens would bill at the completion rate.
     const body = buildOpenAiCompatibleRequestBody({
       model: 'openai/gpt-5.6-luna',
-      dataUrl: 'data:image/png;base64,AAAA',
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
       useStructuredOutput: true,
       disableReasoning: true,
     });
@@ -93,16 +93,16 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     // Mistral and self-hosted endpoints that reject unknown body fields.
     const withoutFlag = buildOpenAiCompatibleRequestBody({
       model: 'llama3',
-      dataUrl: 'data:image/png;base64,AAAA',
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
       useStructuredOutput: true,
     });
     assert.ok(!('reasoning' in withoutFlag));
 
     const explicitlyFalse = buildOpenAiCompatibleRequestBody({
       model: 'llama3',
-      dataUrl: 'data:image/png;base64,AAAA',
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
       useStructuredOutput: false,
       disableReasoning: false,
     });
@@ -112,8 +112,8 @@ describe('buildOpenAiCompatibleRequestBody', () => {
   it('carries the image as an image_url data URL in the user message', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
-      dataUrl: 'data:image/png;base64,AAAA',
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
       useStructuredOutput: true,
     });
 
@@ -129,8 +129,8 @@ describe('buildAnthropicRequestBody', () => {
   it('forces tool-use of record_plate_identification with the derived input schema', () => {
     const body = buildAnthropicRequestBody({
       model: 'claude-sonnet-5',
-      image: { base64: 'AAAA', mimeType: 'image/png' },
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
     });
 
     assert.strictEqual(body.model, 'claude-sonnet-5');
@@ -145,8 +145,8 @@ describe('buildAnthropicRequestBody', () => {
   it('sends the image as a base64 source block', () => {
     const body = buildAnthropicRequestBody({
       model: 'claude-sonnet-5',
-      image: { base64: 'AAAA', mimeType: 'image/png' },
-      task: PLATE_SCAN_TASK,
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
+      task: PHOTO_INTAKE_TASK,
     });
 
     const messages = listSchema.parse(body.messages);

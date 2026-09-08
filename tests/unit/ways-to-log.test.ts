@@ -4,10 +4,21 @@
  * ── Why this file exists ─────────────────────────────────────────────────
  *
  * The label scanner shipped in M123/10 and the product's own owner did not
- * know it existed. Teaching it on the first run is half the point of M200/01,
- * and a lesson that quietly drops back to two ways, or points a card at a
- * screen that does not run the scanner it names, would look completely normal
- * in review. So the three ways and their destinations are executed here.
+ * know it existed. Teaching every way in on the first run is half the point of
+ * M200/01, and a lesson that quietly drops back to two ways, or points a card
+ * at a screen that does not do the thing it names, would look completely
+ * normal in review. So the three ways and their destinations are executed
+ * here.
+ *
+ * WHICH THREE CHANGED ON 2026-09-08, and the reason is worth keeping. The
+ * label photo stopped being a way of its own when the two photo tasks merged
+ * (amends ADR-0005): one photo path reads a plate, a single item or a printed
+ * panel, so "photograph a nutrition panel" is the same card as "photograph
+ * your plate". Speaking took the vacated slot because it stopped being a way
+ * to TYPE: a finished transcript now runs the same AI intake a typed sentence
+ * does. The old lesson's footnote said speaking never logs a food, and by the
+ * end of that day it was a false sentence in the one place a person has
+ * nothing to check it against.
  *
  * ── What is EXECUTED and what is READ ────────────────────────────────────
  *
@@ -24,8 +35,7 @@ import { fileURLToPath } from 'node:url';
 
 import { ONBOARDING_STEPS, resolveExitDestination } from '../../app/lib/onboarding';
 import { WAYS_TO_LOG, WAY_TO_LOG_IDS, waysToLogCopyKeys } from '../../app/lib/ways-to-log';
-import { SCAN_TASK_BY_MODE, VISION_MODES } from '../../app/services/vision/task';
-import { requestedScanMode } from '../../app/lib/scan-mode-param';
+import { INTAKE_MODES } from '../../app/services/vision/task';
 
 const ONBOARDING_ROUTE = readFileSync(
   fileURLToPath(new URL('../../app/routes/onboarding.tsx', import.meta.url)),
@@ -34,8 +44,8 @@ const ONBOARDING_ROUTE = readFileSync(
 const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/scan.tsx', import.meta.url)), 'utf8');
 
 describe('the lesson is three ways, inside the wizard that already existed', () => {
-  it('teaches exactly three ways: the plate, the package panel, and the search', () => {
-    assert.deepEqual([...WAY_TO_LOG_IDS], ['plate', 'label', 'search']);
+  it('teaches exactly three ways: photograph it, write it, say it', () => {
+    assert.deepEqual([...WAY_TO_LOG_IDS], ['photo', 'type', 'speak']);
     assert.equal(WAYS_TO_LOG.length, 3);
   });
 
@@ -63,43 +73,44 @@ describe('each card starts the real action', () => {
     }
   });
 
-  it('sends the plate card to the plate scanner', () => {
+  it('sends the photo card to the one photo path', () => {
+    assert.equal(WAYS_TO_LOG[0]?.id, 'photo');
     assert.equal(WAYS_TO_LOG[0]?.destination, '/scan');
   });
 
-  it('sends the label card to the LABEL scanner, not to the plate default', () => {
-    const label = WAYS_TO_LOG[1];
-    assert.equal(label?.id, 'label');
-    assert.equal(label?.destination, '/scan?mode=label');
-    // The destination is only true if the scan screen honours it.
-    assert.equal(requestedScanMode('?mode=label'), 'label');
-    assert.match(
-      SCAN_ROUTE,
-      /const asked = requestedScanMode\(window\.location\.search\);/,
-      'scan.tsx stopped reading the mode out of the URL',
+  it('sends the type card to /add', () => {
+    assert.equal(WAYS_TO_LOG[1]?.id, 'type');
+    assert.equal(WAYS_TO_LOG[1]?.destination, '/add');
+  });
+
+  it('sends the speak card to the ARMED microphone, never to a listening one', () => {
+    const speak = WAYS_TO_LOG[2];
+    assert.equal(speak?.id, 'speak');
+    assert.equal(speak?.destination, '/add?speak=1');
+    // Arming is focus, not a session. An app that opened a microphone on
+    // navigation is an app nobody can trust with one, so the button's own
+    // guarantee is read here rather than assumed.
+    const button = readFileSync(
+      fileURLToPath(new URL('../../app/components/add/speech-input-button.tsx', import.meta.url)),
+      'utf8',
     );
-    assert.match(SCAN_ROUTE, /setMode\(asked\);/, 'scan.tsx reads the requested mode but no longer applies it');
+    assert.match(button, /NO AUTO-START, EVER/, 'the microphone button dropped its no-auto-start guarantee');
   });
 
-  it('names a scanner that actually exists, so the label card is not a dead URL', () => {
-    assert.ok(VISION_MODES.includes('label'));
-    assert.equal(SCAN_TASK_BY_MODE.label.mode, 'label');
-  });
-
-  it('sends the search card to /add', () => {
-    assert.equal(WAYS_TO_LOG[2]?.destination, '/add');
+  it('teaches no scanner that no longer exists', () => {
+    // There is one photo task. A card pointing at a second scanner would be a
+    // dead URL that still rendered, which is exactly how the old label card
+    // would have failed after the merge.
+    assert.deepEqual([...INTAKE_MODES], ['photo', 'text']);
+    for (const way of WAYS_TO_LOG) {
+      assert.ok(!way.destination.includes('mode='), `the ${way.id} card still names a scan mode`);
+    }
+    assert.doesNotMatch(SCAN_ROUTE, /requestedScanMode/, 'scan.tsx still reads a scan mode out of the URL');
   });
 
   it('gives every card its own destination, so no two teach the same thing', () => {
     const destinations = WAYS_TO_LOG.map((way) => way.destination);
     assert.equal(new Set(destinations).size, destinations.length);
-  });
-
-  it('ignores a mode nobody asked for, so a hand-typed /scan URL cannot invent a scanner', () => {
-    assert.equal(requestedScanMode(''), null);
-    assert.equal(requestedScanMode('?mode=barcode'), null);
-    assert.equal(requestedScanMode('?shared=1'), null);
-    assert.equal(requestedScanMode('?mode=plate'), 'plate');
   });
 });
 
@@ -130,16 +141,16 @@ describe('the cards are wired to the catalog, not hand-copied beside it', () => 
 });
 
 describe('every string the lesson renders is named once', () => {
-  it('covers the lead, the dictation note, and both lines of every card', () => {
+  it('covers the lead, the speech privacy note, and both lines of every card', () => {
     assert.deepEqual(waysToLogCopyKeys(), [
       'onboarding.step.firstFood.description',
-      'onboarding.waysToLog.dictationNote',
-      'onboarding.waysToLog.plate.title',
-      'onboarding.waysToLog.plate.description',
-      'onboarding.waysToLog.label.title',
-      'onboarding.waysToLog.label.description',
-      'onboarding.waysToLog.search.title',
-      'onboarding.waysToLog.search.description',
+      'onboarding.waysToLog.speechPrivacyNote',
+      'onboarding.waysToLog.photo.title',
+      'onboarding.waysToLog.photo.description',
+      'onboarding.waysToLog.type.title',
+      'onboarding.waysToLog.type.description',
+      'onboarding.waysToLog.speak.title',
+      'onboarding.waysToLog.speak.description',
     ]);
   });
 });

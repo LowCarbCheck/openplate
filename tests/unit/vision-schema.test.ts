@@ -14,12 +14,18 @@ import {
 import { VisionProviderError } from '../../app/services/vision/types';
 
 const VALID_PAYLOAD = {
+  unreadable: false,
+  unreadableReason: null,
   foods: [
     {
       name: 'grilled chicken breast',
       estimatedGrams: 150,
       confidence: 'high',
       portionHint: 'about half the plate',
+      macroSource: 'estimated',
+      brand: null,
+      servingSize: null,
+      carbBasis: null,
       macrosPer100g: {
         carbs: 0,
         fiber: null,
@@ -69,7 +75,21 @@ describe('parsePlateIdentificationJson', () => {
 
   it('normalizes a null portionHint to undefined', () => {
     const payload = {
-      foods: [{ name: 'apple', estimatedGrams: 100, confidence: 'high', portionHint: null, macrosPer100g: null }],
+      unreadable: false,
+      unreadableReason: null,
+      foods: [
+        {
+          name: 'apple',
+          estimatedGrams: 100,
+          confidence: 'high',
+          portionHint: null,
+          macroSource: 'estimated',
+          brand: null,
+          servingSize: null,
+          carbBasis: null,
+          macrosPer100g: null,
+        },
+      ],
       notes: null,
     };
 
@@ -80,7 +100,20 @@ describe('parsePlateIdentificationJson', () => {
 
   it('rejects a food missing the required portionHint field', () => {
     const payload = {
-      foods: [{ name: 'apple', estimatedGrams: 100, confidence: 'high', macrosPer100g: null }],
+      unreadable: false,
+      unreadableReason: null,
+      foods: [
+        {
+          name: 'apple',
+          estimatedGrams: 100,
+          confidence: 'high',
+          macroSource: 'estimated',
+          brand: null,
+          servingSize: null,
+          carbBasis: null,
+          macrosPer100g: null,
+        },
+      ],
       notes: null,
     };
 
@@ -100,7 +133,21 @@ describe('parsePlateIdentificationJson', () => {
 
   it('leaves macrosPer100g undefined when the model returned null for the whole object', () => {
     const payload = {
-      foods: [{ name: 'mystery item', estimatedGrams: 80, confidence: 'low', portionHint: null, macrosPer100g: null }],
+      unreadable: false,
+      unreadableReason: null,
+      foods: [
+        {
+          name: 'mystery item',
+          estimatedGrams: 80,
+          confidence: 'low',
+          portionHint: null,
+          macroSource: 'estimated',
+          brand: null,
+          servingSize: null,
+          carbBasis: null,
+          macrosPer100g: null,
+        },
+      ],
       notes: 'could not estimate macros confidently',
     };
 
@@ -128,7 +175,11 @@ describe('validatePlateIdentification', () => {
   });
 
   it('throws a VisionProviderError on a shape mismatch', () => {
-    assert.throws(() => validatePlateIdentification({ foods: 'not an array', notes: null }), VisionProviderError);
+    assert.throws(
+      () =>
+        validatePlateIdentification({ foods: 'not an array', notes: null, unreadable: false, unreadableReason: null }),
+      VisionProviderError,
+    );
   });
 
   it('throws a VisionProviderError on a non-object value', () => {
@@ -144,20 +195,44 @@ describe('PLATE_IDENTIFICATION_JSON_SCHEMA', () => {
   it('is a strict object: additionalProperties false, all top-level keys required', () => {
     assert.strictEqual(PLATE_IDENTIFICATION_JSON_SCHEMA.type, 'object');
     assert.strictEqual(PLATE_IDENTIFICATION_JSON_SCHEMA.additionalProperties, false);
-    assert.deepStrictEqual((PLATE_IDENTIFICATION_JSON_SCHEMA.required ?? []).toSorted(), ['foods', 'notes']);
+    // `unreadable`/`unreadableReason` joined the top level when the label
+    // mode merged in (amends ADR-0005, 2026-09-08): the escape hatch is a
+    // statement about the whole picture, not about one food on it.
+    assert.deepStrictEqual((PLATE_IDENTIFICATION_JSON_SCHEMA.required ?? []).toSorted(), [
+      'foods',
+      'notes',
+      'unreadable',
+      'unreadableReason',
+    ]);
   });
 
-  it('requires every per-food field including portionHint', () => {
+  it('requires every per-food field, including the four the label merge added', () => {
     const foodSchema = PLATE_IDENTIFICATION_JSON_SCHEMA.properties?.foods?.items;
     assert.ok(foodSchema, 'expected foods.items schema');
     assert.strictEqual(foodSchema.additionalProperties, false);
+    // ALL REQUIRED, with nullable standing in for "not applicable". That is
+    // what keeps the merged schema strict-mode compatible: `macroSource`,
+    // `brand`, `servingSize` and `carbBasis` describe a printed panel, and an
+    // estimated item answers them with `null` rather than by omitting them.
     assert.deepStrictEqual((foodSchema.required ?? []).toSorted(), [
+      'brand',
+      'carbBasis',
       'confidence',
       'estimatedGrams',
+      'macroSource',
       'macrosPer100g',
       'name',
       'portionHint',
+      'servingSize',
     ]);
+  });
+
+  it('marks the nested serving block strict as well', () => {
+    const foodSchema = PLATE_IDENTIFICATION_JSON_SCHEMA.properties?.foods?.items;
+    const servingObject = foodSchema?.properties?.servingSize?.anyOf?.find((branch) => branch.type === 'object');
+    assert.ok(servingObject, 'expected the object branch of the nullable serving schema');
+    assert.strictEqual(servingObject.additionalProperties, false);
+    assert.deepStrictEqual((servingObject.required ?? []).toSorted(), ['asPrinted', 'grams']);
   });
 
   it('marks nested macro objects strict as well', () => {
@@ -203,6 +278,8 @@ describe('per-item provenance and attribution', () => {
 
   it('preserves both values through parsePlateIdentificationJson when present', () => {
     const payload = {
+      unreadable: false,
+      unreadableReason: null,
       foods: [
         {
           name: 'boiled potatoes',
@@ -210,6 +287,10 @@ describe('per-item provenance and attribution', () => {
           confidence: 'high',
           portionHint: null,
           macrosPer100g: null,
+          macroSource: 'estimated',
+          brand: null,
+          servingSize: null,
+          carbBasis: null,
           provenance: 'corpus',
           attribution: 'Bundeslebensmittelschlüssel (BLS), CC BY 4.0',
         },
@@ -219,6 +300,10 @@ describe('per-item provenance and attribution', () => {
           confidence: 'low',
           portionHint: null,
           macrosPer100g: null,
+          macroSource: 'estimated',
+          brand: null,
+          servingSize: null,
+          carbBasis: null,
           provenance: 'model',
           attribution: null,
         },
@@ -237,6 +322,8 @@ describe('per-item provenance and attribution', () => {
 
   it('rejects a provenance value outside the enum rather than passing it through', () => {
     const payload = {
+      unreadable: false,
+      unreadableReason: null,
       foods: [
         {
           name: 'rice',
@@ -244,6 +331,10 @@ describe('per-item provenance and attribution', () => {
           confidence: 'high',
           portionHint: null,
           macrosPer100g: null,
+          macroSource: 'estimated',
+          brand: null,
+          servingSize: null,
+          carbBasis: null,
           provenance: 'vibes',
         },
       ],
@@ -263,15 +354,23 @@ describe('per-item provenance and attribution', () => {
     assert.ok(!serialized.includes('attribution'), 'attribution must not appear in the generation schema');
   });
 
-  it('still lists exactly the five asked-for per-food fields as required', () => {
+  it('still lists exactly the asked-for per-food fields as required, and neither of these two', () => {
     const foodSchema = PLATE_IDENTIFICATION_JSON_SCHEMA.properties?.foods?.items;
     assert.ok(foodSchema, 'expected foods.items schema');
+    // The four the label merge added (amends ADR-0005, 2026-09-08) ARE asked
+    // for, because every item has to declare which kind of number it is.
+    // `provenance` and `attribution` still are not: they are tolerated on the
+    // way in and never demanded on the way out.
     assert.deepStrictEqual((foodSchema.required ?? []).toSorted(), [
+      'brand',
+      'carbBasis',
       'confidence',
       'estimatedGrams',
+      'macroSource',
       'macrosPer100g',
       'name',
       'portionHint',
+      'servingSize',
     ]);
   });
 });

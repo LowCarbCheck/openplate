@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { createOpenAiCompatibleProvider } from '../../app/services/vision/openai-compatible';
 import { createAnthropicProvider } from '../../app/services/vision/anthropic';
 import { VisionProviderFailure } from '../../app/services/vision/failure-cause';
-import { PLATE_SCAN_TASK } from '../../app/services/vision/task';
+import { PHOTO_INTAKE_TASK } from '../../app/services/vision/task';
 
 const originalFetch = globalThis.fetch;
 
@@ -51,7 +51,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     try {
       const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-bad' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(callCount, 1, 'auth failures must not be retried — retrying doubles cost for nothing');
       assert.strictEqual(failure.failureCause, 'auth');
@@ -70,7 +70,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     try {
       const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(callCount, 1);
       assert.strictEqual(failure.failureCause, 'credit');
@@ -89,7 +89,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     try {
       const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(callCount, 1);
       assert.strictEqual(failure.failureCause, 'rate-limit');
@@ -109,7 +109,15 @@ describe('openai-compatible adapter — retry narrowing', () => {
         return new Response(null, { status: 400 });
       }
       return new Response(
-        JSON.stringify({ choices: [{ message: { content: JSON.stringify({ foods: [], notes: null }) } }] }),
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ foods: [], notes: null, unreadable: false, unreadableReason: null }),
+              },
+            },
+          ],
+        }),
         { status: 200 },
       );
     });
@@ -117,7 +125,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     try {
       const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'llama3' });
       const result = await provider.runScan({
-        task: PLATE_SCAN_TASK,
+        task: PHOTO_INTAKE_TASK,
         image: { base64: 'AAAA', mimeType: 'image/png' },
       });
       assert.strictEqual(callCount, 2, 'a 400 should trigger exactly one retry without response_format');
@@ -138,7 +146,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     try {
       const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'llama3' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(callCount, 2);
       assert.strictEqual(failure.failureCause, 'invalid-request');
@@ -155,7 +163,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     try {
       const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(failure.failureCause, 'transient');
       assert.strictEqual(failure.usage, undefined);
@@ -170,7 +178,7 @@ describe('openai-compatible adapter — retry narrowing', () => {
     try {
       const provider = createOpenAiCompatibleProvider({ credential: { apiKey: 'sk-test' }, model: 'gpt-5o' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(failure.failureCause, 'genuinely-no-food');
     } finally {
@@ -186,7 +194,7 @@ describe('anthropic adapter — failure classification', () => {
     try {
       const provider = createAnthropicProvider({ apiKey: 'sk-ant-bad', model: 'claude-sonnet-5' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(failure.failureCause, 'auth');
     } finally {
@@ -200,7 +208,7 @@ describe('anthropic adapter — failure classification', () => {
     try {
       const provider = createAnthropicProvider({ apiKey: 'sk-ant-test', model: 'claude-sonnet-5' });
       const failure = await expectVisionProviderFailure(
-        provider.runScan({ task: PLATE_SCAN_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
+        provider.runScan({ task: PHOTO_INTAKE_TASK, image: { base64: 'AAAA', mimeType: 'image/png' } }),
       );
       assert.strictEqual(failure.failureCause, 'transient');
     } finally {

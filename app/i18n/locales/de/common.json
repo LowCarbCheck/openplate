@@ -175,7 +175,7 @@
       "hint": "Tippen und sprechen",
       "consent": {
         "title": "Sprachsuche nutzen",
-        "body": "Dein Browser sendet deine Stimme an Google oder Apple, um sie in Text umzuwandeln. Deine Audiodaten werden nicht an openplate oder deinen KI-Anbieter gesendet.",
+        "body": "Dein Browser schickt deine Sprachaufnahme an Google oder Apple, um sie in Text umzuwandeln. openplate und dein KI-Anbieter erhalten immer nur den Text, nie deine Aufnahme.",
         "continue": "Weiter",
         "cancel": "Abbrechen"
       },
@@ -190,7 +190,13 @@
         "many": "{{n}} Lebensmittel für {{transcript}} gefunden."
       }
     },
-    "title": "Essen eintragen"
+    "title": "Essen eintragen",
+    "aiIntake": {
+      "submit": "Mit KI eintragen",
+      "hint": "Schreib eine ganze Mahlzeit auf einmal, zum Beispiel 3 Eier, 2 Scheiben Toast, ein Glas Orangensaft.",
+      "needsProvider": "Verbinde einen KI-Anbieter, um eine ganze Mahlzeit in einem Satz einzutragen. Die Suche funktioniert auch ohne.",
+      "connect": "KI einrichten"
+    }
   },
   "banners": {
     "backupDismiss": "Backup-Hinweis ausblenden",
@@ -1072,9 +1078,10 @@
     "moreOptions": "Weitere Möglichkeiten, Essen einzutragen",
     "sheetTitle": "Essen eintragen",
     "platePhoto": "Tellerfoto",
-    "labelPhoto": "Foto der Nährwerttabelle",
     "speak": "Sprechen",
-    "type": "Tippen"
+    "type": "Tippen",
+    "photo": "Foto",
+    "photoAnything": "Essen fotografieren"
   },
   "meals": {
     "description": "Mahlzeiten, die du als Bündel gespeichert hast. Mit einem Tap eintragen oder hier entfernen.",
@@ -1345,7 +1352,7 @@
         "title": "Ein paar Angaben zu dir?"
       },
       "firstFood": {
-        "description": "Alles bereit. Es gibt drei Wege, Mahlzeiten in dein Tagebuch einzutragen. Wähle einen aus.",
+        "description": "Alles bereit. Es gibt drei Wege, Essen in dein Tagebuch einzutragen. Wähle einen aus, um zu starten.",
         "title": "Trag dein erstes Essen ein"
       },
       "focus": {
@@ -1359,19 +1366,19 @@
     },
     "stepOf": "Schritt {{current}} von {{total}}",
     "waysToLog": {
-      "dictationNote": "Die Suche hat in unterstützten Browsern auch ein Mikrofon. Es füllt das Suchfeld mit dem, was du sagst, und trägt nie selbstständig etwas ein.",
-      "label": {
-        "description": "Für alles Verpackte. Die gedruckten Zahlen werden von der Tabelle abgelesen und nicht geschätzt.",
-        "title": "Nährwerttabelle fotografieren"
+      "photo": {
+        "title": "Fotografieren",
+        "description": "Ein ganzer Teller, eine Zutat oder die Nährwerttabelle auf der Packung. Kamera draufhalten, openplate erledigt den Rest."
       },
-      "plate": {
-        "description": "Nimm ein Teller-Foto auf und lass schätzen, was darin enthalten ist.",
-        "title": "Teller-Foto aufnehmen"
+      "type": {
+        "title": "Eintippen",
+        "description": "Tippe eine ganze Mahlzeit in eine Zeile, zum Beispiel 3 Eier und 2 Scheiben Toast. Oder suche nach einzelnen Lebensmitteln."
       },
-      "search": {
-        "description": "Tippe einen Namen ein und wähle dein Lebensmittel aus der Liste.",
-        "title": "Lebensmittel suchen"
-      }
+      "speak": {
+        "title": "Einsprechen",
+        "description": "Sprich ein, was du gegessen hast, und prüfe die Einträge vor dem Speichern. Praktisch, wenn du keine Hand frei hast."
+      },
+      "speechPrivacyNote": "Dein Browser wandelt Sprache in Text um, bei Chrome über Google, bei Safari über Apple. Nur der Text erreicht openplate und deinen KI-Anbieter."
     },
     "weight": {
       "current": "Aktuelles Gewicht",
@@ -1617,7 +1624,6 @@
       "description": "Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, um zu erkennen, was auf deinem Teller liegt. Danach wird es nur auf diesem Gerät gespeichert (nicht auf den Servern von openplate), damit du es im Eintrag wiedersehen kannst. Du kannst dies jederzeit unter „Daten & Backup“ in den Einstellungen deaktivieren oder löschen.",
       "emptyHint": "Wird von deinem eigenen KI-Anbieter analysiert und bleibt danach nur auf diesem Gerät.",
       "emptyTitle": "Teller-Foto aufnehmen oder Bild wählen",
-      "labelPhoto": "Nährwerttabelle fotografieren",
       "photoLabel": "Teller-Foto",
       "preparing": "Dein Foto wird vorbereitet…",
       "previewAlt": "Ausgewähltes Teller-Foto",
@@ -1631,13 +1637,6 @@
       "connectProvider": "Verbinde in den Einstellungen deinen KI-Anbieter, bevor du Fotos erkennen lässt.",
       "endpointUnreachable": "Der Endpunkt konnte vom Browser aus nicht erreicht werden. Wahrscheinlich blockiert die Content Security Policy eine Base-URL außerhalb von localhost oder der Endpunkt lässt keine Browser-Anfragen (CORS) zu. Details findest du in den KI-Einstellungen.",
       "identifyFailed": "Die Lebensmittel auf dem Foto konnten nicht erkannt werden.",
-      "label": {
-        "noMacros": "Auf diesem Foto wurde keine Nährwerttabelle gefunden. Fotografiere die gedruckte Wertetabelle, die sich meist auf der Rückseite der Packung befindet.",
-        "photoQualityBody": "Halte die Verpackung flach, fülle das Bild mit der Tabelle und halte das Licht von glänzenden Stellen fern.",
-        "title": "Diese Tabelle war nicht lesbar",
-        "unreadable": "Die Nährwerttabelle konnte nicht gelesen werden. Versuche es noch einmal frontal, näher dran und so, dass die Tabelle das Bild ausfüllt.",
-        "unreadableWithReason": "Die Nährwerttabelle konnte nicht gelesen werden ({{reason}}). Versuche es noch einmal frontal, näher dran und so, dass die Tabelle das Bild ausfüllt."
-      },
       "missingBaseUrl": "Dieser Verbindung fehlt eine Base-URL. Öffne die KI-Einstellungen und lege eine fest, oder wechsle zu OpenRouter.",
       "noFoods": "Auf diesem Foto konnten keine Lebensmittel erkannt werden. Versuche es mit einer deutlicheren Aufnahme.",
       "openrouterRateLimit": "Du hast das Nutzungslimit des Anbieters erreicht. Kostenlose Scans werden täglich zurückgesetzt, oder lade Guthaben bei OpenRouter auf, um mehr Scans zu erhalten. Jedes aufgeladene Guthaben geht direkt an OpenRouter (nicht an openplate), ist vollkommen optional und ist ein verbrauchbares Prepaid-Guthaben, kein Abonnement.",
@@ -1645,7 +1644,9 @@
         "empty": "Wähl ein Foto zum Hochladen aus.",
         "tooLarge": "Das Foto ist zu groß (max. 8 MB).",
         "undecodableFormat": "Dieses Format funktioniert in diesem Browser nicht, ein JPEG oder PNG hingegen schon.",
-        "unsupportedType": "Dieses Bildformat geht nicht. Nimm JPEG, PNG, WEBP oder HEIC."
+        "unsupportedType": "Dieses Bildformat geht nicht. Nimm JPEG, PNG, WEBP oder HEIC.",
+        "unreadable": "Das Foto war nicht lesbar. Versuch es noch mal mit besserem Licht, näher dran und halte still.",
+        "unreadableWithReason": "Das Foto war nicht lesbar ({{reason}}). Versuch es noch mal mit besserem Licht, näher dran und halte still."
       },
       "photoQualityBody": "Magst du es nochmal versuchen? Gutes Licht und ein Blick von oben helfen.",
       "provider": {
@@ -1673,44 +1674,11 @@
         "photoTooLarge": "Das Foto ist zu groß",
         "aiNotAllowed": "Foto-Schätzungen sind deaktiviert",
         "accountSuspended": "Dein Konto ist gesperrt"
-      }
-    },
-    "labelScan": {
-      "capture": {
-        "description": "Fotografiere die Nährwerttabelle auf der Verpackung. Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, der die gedruckten Zahlen liest: Es wird nichts geschätzt. Danach bleibt das Foto ausschließlich auf diesem Gerät gespeichert.",
-        "emptyHint": "Halte die Verpackung flach und lass die Tabelle das Bild ausfüllen.",
-        "emptyTitle": "Fotografiere die Nährwerttabelle",
-        "photoLabel": "Foto der Nährwerttabelle",
-        "previewAlt": "Ausgewähltes Foto der Nährwerttabelle",
-        "title": "Nährwerttabelle auf einer Packung erfassen"
       },
-      "mode": {
-        "label": "Ein Verpackungsetikett",
-        "labelHint": "Die Nährwerttabelle auf einer Verpackung: Wir lesen die Zahlen genau so ab, wie sie aufgedruckt sind, einschließlich mehrwertiger Alkohole.",
-        "legend": "Was fotografierst du?",
-        "plate": "Einen Teller Essen",
-        "plateHint": "Eine Mahlzeit auf einem Teller: Wir ermitteln, welche Lebensmittel darauf liegen."
-      },
-      "review": {
-        "basisPer100g": "Aus der Spalte „pro 100 g“ des Etiketts übernommen.",
-        "basisPerServing": "Aus der Spalte „pro Portion“ des Etiketts umgerechnet ({{grams}} g pro Portion).",
-        "brandLabel": "Marke (optional)",
-        "carbBasis": {
-          "available": "EU-Stil (Kohlenhydrate ohne Ballaststoffe)",
-          "hint": "US-Etiketten zählen Ballaststoffe zu den „Total Carbohydrate“ dazu; EU-Etiketten weisen Ballaststoffe in einer eigenen Zeile aus und rechnen sie schon heraus. Die richtige Angabe verhindert, dass Ballaststoffe doppelt abgezogen werden.",
-          "legend": "Wie dieses Etikett Kohlenhydrate zählt",
-          "notSure": "Nicht sicher",
-          "total": "US-Stil (Kohlenhydrate inkl. Ballaststoffe)"
-        },
-        "gramsLabel": "Menge zum Eintragen (g)",
-        "heading": "Das steht auf dem Etikett. Überprüfe die Angaben, bevor du sie einträgst.",
-        "macrosPer100gNote": "Die Werte gelten pro 100 g. Ein leeres Feld bedeutet, dass diese Zeile auf dem Etikett nicht angegeben war. Lass es lieber leer, anstatt 0 einzutragen.",
-        "modelNote": "Hinweis aus der Auswertung: {{note}}",
-        "nameLabel": "Produkt",
-        "savedAsCustomFood": "Beim Speichern kommt das Produkt zu deinen Lebensmitteln. Beim nächsten Mal genügt ein Tippen, ganz ohne Foto.",
-        "servingPrinted": "Portion laut Etikett: {{serving}}",
-        "subheading": "Alle Zahlen stammen aus deinem Foto. Korrigiere alles, was nicht stimmt.",
-        "unverified": "Aus deinem Foto abgelesen, nicht verifiziert. Kleingedrucktes auf gewölbten oder spiegelnden Verpackungen kann falsch erkannt werden. Bitte prüfe die Zahlen."
+      "text": {
+        "empty": "Schreib zuerst, was du gegessen hast.",
+        "title": "Mit dieser Beschreibung hat es nicht geklappt",
+        "qualityBody": "Daraus konnten keine Lebensmittel erkannt werden. Nenne am besten jedes Lebensmittel und die Menge, zum Beispiel 3 Eier, 2 Scheiben Toast."
       }
     },
     "loading": "Scan wird geladen…",
@@ -1798,7 +1766,8 @@
       "saving": "Wird gespeichert…",
       "seeOtherMatches": "Passt nicht? Andere Treffer ansehen",
       "subheading": "Tippe auf eine Portion, um sie anzupassen, oder nimm unten Feineinstellungen vor.",
-      "unnamedFood": "Lebensmittel ohne Namen"
+      "unnamedFood": "Lebensmittel ohne Namen",
+      "fromLabel": "Vom Etikett"
     },
     "setup": {
       "connectOpenRouter": "Mit OpenRouter verbinden",
@@ -1824,7 +1793,13 @@
         "description": "Fotografiere deinen Teller und die Kohlenhydrate werden für dich berechnet."
       }
     },
-    "title": "Teller scannen"
+    "title": "Teller scannen",
+    "textIntake": {
+      "title": "Deine Eingabe wird gelesen",
+      "label": "Deine Eingabe",
+      "description": "Deine Eingabe geht direkt an deinen eigenen KI-Anbieter, der daraus Einträge macht, die du vor dem Speichern prüfst.",
+      "managedDescription": "Deine Eingabe geht an die KI deiner Instanz, die daraus Einträge macht, die du vor dem Speichern prüfst."
+    }
   },
   "settings": {
     "data": {
