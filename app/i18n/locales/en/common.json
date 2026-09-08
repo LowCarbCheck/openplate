@@ -399,6 +399,18 @@
       "since": "{{delta}} over the last 7 days"
     }
   },
+  "describe": {
+    "title": "Describe your meal",
+    "lead": "Write what you ate. The AI works out the food from your words, the same way it works it out from a photo. You check every entry before anything is saved.",
+    "label": "What did you eat?",
+    "placeholder": "2 fried eggs, a slice of toast with butter, black coffee",
+    "send": "Send",
+    "sendHint": "Enter sends. Shift and Enter start a new line.",
+    "speakHint": "Tap the microphone, then say what you ate.",
+    "needsProvider": "Describing a meal needs an AI connection on this device.",
+    "connect": "Connect a provider",
+    "searchInstead": "Search the food database instead"
+  },
   "diary": {
     "actions": {
       "photograph": "Photograph food",
@@ -1114,6 +1126,7 @@
     "connectGateway": "Join a gateway · openplate",
     "dashboard": "Overview · openplate",
     "data": "Data & backup · openplate",
+    "describe": "Describe a meal · openplate",
     "diary": "Diary · openplate",
     "entry": "Edit entry · openplate",
     "error": "Something went wrong · openplate",
@@ -1379,7 +1392,7 @@
       },
       "type": {
         "title": "Write it",
-        "description": "Type a whole meal in one line, like 3 eggs and 2 slices of toast. Or search for one food at a time."
+        "description": "Type a whole meal in one line, like 3 eggs and 2 slices of toast. The AI works it out from your words, the same as from a photo. Searching the food database is still there for one exact item."
       },
       "speak": {
         "title": "Say it",
@@ -1621,8 +1634,9 @@
   "scan": {
     "analyzing": {
       "analyzing": "Analyzing your plate…",
+      "analyzingText": "Working out the foods…",
       "starting": "Starting analysis…",
-      "stillWorking": "Still working, complex plates take a moment…",
+      "stillWorking": "Still working, this can take a moment…",
       "uploading": "Uploading photo…",
       "sendingText": "Sending your words…"
     },
@@ -1644,11 +1658,13 @@
     "errors": {
       "attemptCost": "This attempt used {{amount}} of your API credit. It's recorded in your usage.",
       "attemptRecorded": "This attempt is recorded in your usage.",
-      "connectProvider": "Connect your AI provider in settings before using photo identification.",
+      "connectProvider": "Connect your AI provider in settings before it can identify food for you.",
       "endpointUnreachable": "Could not reach that endpoint from the browser, likely the content-security policy blocking a non-localhost base URL, or the endpoint not allowing browser (CORS) requests. See AI settings for details.",
       "identifyFailed": "Failed to identify foods from the photo.",
+      "identifyFailedText": "Failed to identify foods from your description.",
       "missingBaseUrl": "This connection is missing a base URL. Open AI settings and set one, or switch to OpenRouter.",
       "noFoods": "Couldn't identify any foods in that photo. Try a clearer shot.",
+      "noFoodsText": "Couldn't identify any foods in that description. Try naming each food and how much of it.",
       "openrouterRateLimit": "You've hit the provider's rate limit. Free-tier scans reset daily, or add credits on OpenRouter for more. Any credits you add go straight to OpenRouter (not openplate), are entirely optional, and are a spend-down balance, not a subscription.",
       "photo": {
         "empty": "Please choose a photo to upload.",
@@ -1666,10 +1682,10 @@
         "rateLimit": "The provider is rate-limiting requests right now. Wait a moment and try again.",
         "reconsentRequired": "This gateway's privacy settings changed, so it stopped accepting this device. Ask whoever invited you for a new invite link.",
         "photoTooLarge": "The photo is too large for this server. Try a smaller one.",
-        "aiNotAllowed": "Photo estimates are not switched on for your account. Ask your administrator.",
+        "aiNotAllowed": "AI estimates are not switched on for your account. Ask your administrator.",
         "accountSuspended": "Your account is suspended. Ask your administrator.",
-        "rateLimitMinute": "That was a few photos in quick succession. Try again in a minute.",
-        "allowanceSpent": "You have used today's photo estimates. Try again tomorrow."
+        "rateLimitMinute": "That was a few requests in quick succession. Try again in a minute.",
+        "allowanceSpent": "You have used today's AI estimates. Try again tomorrow."
       },
       "readPhoto": "Failed to read that photo. Try another.",
       "titles": {
@@ -1682,7 +1698,7 @@
         "reconsentRequired": "That gateway needs a new invite",
         "transient": "The provider had trouble responding",
         "photoTooLarge": "That photo is too big",
-        "aiNotAllowed": "Photo estimates are off",
+        "aiNotAllowed": "AI estimates are off",
         "accountSuspended": "Your account is suspended"
       },
       "text": {

@@ -2133,7 +2133,7 @@ function CopyEntryPicker({
  * User review): it names the alternative plainly and links both ways out, so
  * a blank diary never reads as a bug.
  */
-function FirstEverEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
+function FirstEverEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: string }) {
   const { t } = useTranslation();
   const syncServerUrl = useSyncServerUrl();
   return (
@@ -2144,7 +2144,7 @@ function FirstEverEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
           <p className="text-sm text-muted-foreground">{t('diary.empty.firstEver.subtitle')}</p>
         </div>
         <div className="flex flex-col items-center">
-          <AddFoodActions addTo={addTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddFoodActions describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
         {/*
           `Trans` rather than three sentence fragments glued around two links:
@@ -2179,7 +2179,7 @@ function FirstEverEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
 }
 
 /** Returning-after-a-gap empty state: a warm fresh start, no backfill prompts, no guilt. */
-function WelcomeBackEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
+function WelcomeBackEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: string }) {
   const { t } = useTranslation();
   return (
     <Card>
@@ -2189,7 +2189,7 @@ function WelcomeBackEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) 
           <p className="text-sm text-muted-foreground">{t('diary.empty.welcomeBack.subtitle')}</p>
         </div>
         <div className="flex flex-col items-center">
-          <AddFoodActions addTo={addTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddFoodActions describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2197,7 +2197,7 @@ function WelcomeBackEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) 
 }
 
 /** Ordinary empty day: neutral copy plus the add affordances. Copy-from-yesterday now renders as its own always-available section (item 5), not nested in here. */
-function OrdinaryEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
+function OrdinaryEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: string }) {
   const { t } = useTranslation();
   return (
     // The empty day is the one screen with nothing to look at, so it carries
@@ -2210,7 +2210,7 @@ function OrdinaryEmpty({ addTo, scanTo }: { addTo: string; scanTo: string }) {
         <PlateGlyph className="h-16 w-16 text-primary/60" />
         <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>
         <div className="flex w-full flex-col items-center">
-          <AddFoodActions addTo={addTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddFoodActions describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2286,9 +2286,15 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     crossedTargetOnLatest: false,
   });
   const hasLogs = logs.length > 0;
-  // Carry the viewed day into the add and scan flows only when it isn't today,
-  // so a back-dated log, typed or photographed, returns to the day the user is
-  // looking at (not "today").
+  // Carry the viewed day into the compose, search and scan flows only when it
+  // isn't today, so a back-dated log, typed or photographed, returns to the day
+  // the user is looking at (not "today").
+  //
+  // TWO DESTINATIONS, not one. `/describe` is where a person writes or says a
+  // meal; `/add` is the database SEARCH, and it is still what a food
+  // SUGGESTION links to, because a suggestion already names one exact food and
+  // rides in on `?q=`.
+  const describeTo = isToday ? '/describe' : `/describe?date=${date}`;
   const addTo = isToday ? '/add' : `/add?date=${date}`;
   const scanTo = isToday ? '/scan' : `/scan?date=${date}`;
   const emptyState: DiaryEmptyState = resolveDiaryEmptyState({
@@ -2352,11 +2358,11 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
-      {!hasLogs && emptyState === 'first-ever' && <FirstEverEmpty addTo={addTo} scanTo={scanTo} />}
-      {!hasLogs && emptyState === 'returning-after-gap' && <WelcomeBackEmpty addTo={addTo} scanTo={scanTo} />}
-      {!hasLogs && emptyState === 'ordinary' && <OrdinaryEmpty addTo={addTo} scanTo={scanTo} />}
+      {!hasLogs && emptyState === 'first-ever' && <FirstEverEmpty describeTo={describeTo} scanTo={scanTo} />}
+      {!hasLogs && emptyState === 'returning-after-gap' && <WelcomeBackEmpty describeTo={describeTo} scanTo={scanTo} />}
+      {!hasLogs && emptyState === 'ordinary' && <OrdinaryEmpty describeTo={describeTo} scanTo={scanTo} />}
 
-      {hasLogs && <AddFoodActions addTo={addTo} scanTo={scanTo} />}
+      {hasLogs && <AddFoodActions describeTo={describeTo} scanTo={scanTo} />}
     </div>
   );
 }

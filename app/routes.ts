@@ -143,6 +143,14 @@ export default [
     route('/diary/entry/:id', 'routes/diary.entry.$id.tsx'),
     route('/scan', 'routes/scan.tsx'),
     route('/add', 'routes/add.tsx'),
+    // The meal composer (M203): a message box, and nothing else. `/add` is the
+    // database SEARCH, and the two are different screens on purpose — the
+    // launcher's "Type" and "Speak" rows used to open the search form, which
+    // handed somebody who wanted to write a sentence a field that wants one
+    // noun. Client-only like every tracker surface: `?date=` and `?speak=1`
+    // are read off the URL and the words go to `/scan` in a module slot, so
+    // there is nothing here for a loader to do.
+    route('/describe', 'routes/describe.tsx'),
     route('/trends', 'routes/trends.tsx'),
     // "Your foods" (M123/07 item 5): lists/edits/deletes personal custom
     // foods, hosting the same list `/add`'s "Your foods" sheet already used

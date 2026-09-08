@@ -209,8 +209,10 @@ test('the route treats a round trip that returns nothing as a failure', () => {
   // as it was, which is what "the button does nothing" looked like.
   const route = readFileSync(new URL('../../app/routes/scan.tsx', import.meta.url), 'utf8');
   assert.match(route, /setDidSettleWithNothing\(fetcher\.data === undefined\)/);
-  assert.match(route, /const silentFailure = didSettleWithNothing \? t\('scan\.errors\.identifyFailed'\)/);
+  assert.match(route, /const silentFailure =\s*\n?\s*didSettleWithNothing \? t\(identifyFailedErrorKey\(/);
   assert.ok(EN.has('scan.errors.identifyFailed'), 'and the sentence exists');
+  // Its twin, for the intake with no photograph in it.
+  assert.ok(EN.has('scan.errors.identifyFailedText'), 'the typed intake lost its own sentence');
 });
 
 test('413 is not retried', () => {

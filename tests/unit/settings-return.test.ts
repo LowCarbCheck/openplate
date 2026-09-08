@@ -13,6 +13,9 @@ describe('resolveSettingsReturnPath', () => {
     assert.equal(resolveSettingsReturnPath('diary'), '/diary');
     assert.equal(resolveSettingsReturnPath('scan'), '/scan');
     assert.equal(resolveSettingsReturnPath('add'), '/add');
+    // The composer, so connecting a provider from there returns there rather
+    // than dropping the person on the diary with their meal unwritten.
+    assert.equal(resolveSettingsReturnPath('describe'), '/describe');
   });
 
   it('returns null for an unknown, empty, or missing token (no fabricated redirect)', () => {

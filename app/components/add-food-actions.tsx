@@ -22,11 +22,16 @@
  * with a hole in it.
  *
  * BOTH destinations are passed in, and both carry the viewed day. `/diary`
- * sends `/add?date=...` and `/scan?date=...` when the user is not looking at
- * today, so a back-dated log, typed OR photographed, lands on the day in front
- * of them. `/dashboard` is always today and takes the defaults. The speak
- * destination is `addTo` with `speak=1`, which arms the microphone on the add
- * screen without ever starting it.
+ * sends `/describe?date=...` and `/scan?date=...` when the user is not looking
+ * at today, so a back-dated log, typed OR photographed, lands on the day in
+ * front of them. `/dashboard` is always today and takes the defaults. The
+ * speak destination is `describeTo` with `speak=1`, which arms the microphone
+ * on the composer without ever starting it.
+ *
+ * TYPE AND SPEAK GO TO `/describe`, not to `/add`. `/add` is the database
+ * search, which answers "which food is this" for one item; these two buttons
+ * are for a person who wants to write or say a whole meal, and handing them a
+ * search field was the defect. The search keeps its own place in the nav.
  */
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,9 +42,9 @@ import { useCameraCapture } from '#app/components/add/use-camera-capture';
 import { useSpeechInputAvailable } from '#app/components/add/speech-input-button';
 import { cn } from '#app/lib/utils';
 
-/** `addTo` with `speak=1` added, whether or not it already carries a query. */
-export function speakHref(addTo: string): string {
-  const [path = addTo, query = ''] = addTo.split('?');
+/** A destination with `speak=1` added, whether or not it already carries a query. */
+export function speakHref(destination: string): string {
+  const [path = destination, query = ''] = destination.split('?');
   const params = new URLSearchParams(query);
   params.set('speak', '1');
   return `${path}?${params.toString()}`;
@@ -53,11 +58,12 @@ export function speakHref(addTo: string): string {
 const ACTION_CLASS = 'h-14 flex-1 flex-col gap-1 px-2 text-xs font-medium';
 
 export function AddFoodActions({
-  addTo,
+  describeTo,
   scanTo = '/scan',
   className,
 }: {
-  addTo: string;
+  /** The composer, carrying the viewed day. Typing goes here; speaking goes here with the microphone armed. */
+  describeTo: string;
   scanTo?: string;
   className?: string;
 }): ReactElement {
@@ -76,14 +82,14 @@ export function AddFoodActions({
             the same action at the same rank, and a grey pair beside a filled
             button would read as "or, if you must". */}
         <Button asChild variant="outline" className={cn(ACTION_CLASS, 'border-primary/50 text-primary')}>
-          <Link to={addTo}>
+          <Link to={describeTo}>
             <Keyboard className="h-5 w-5" aria-hidden="true" />
             {t('launcher.type')}
           </Link>
         </Button>
         {canSpeak && (
           <Button asChild variant="outline" className={cn(ACTION_CLASS, 'border-primary/50 text-primary')}>
-            <Link to={speakHref(addTo)}>
+            <Link to={speakHref(describeTo)}>
               <Mic className="h-5 w-5" aria-hidden="true" />
               {t('launcher.speak')}
             </Link>

@@ -182,7 +182,14 @@ describe('resolveExitDestination', () => {
   });
 
   it('keeps the armed microphone, which is a way to log and not a settings detour', () => {
+    assert.equal(resolveExitDestination('/describe?speak=1'), '/describe?speak=1');
+    // The search screen's own armed microphone still resolves: M203 moved the
+    // lesson onto the composer, it did not delete the other screen.
     assert.equal(resolveExitDestination('/add?speak=1'), '/add?speak=1');
+  });
+
+  it('keeps the meal composer, which is where the type card now lands', () => {
+    assert.equal(resolveExitDestination('/describe'), '/describe');
   });
 
   it('no longer allows the label scanner, because there is no second scanner', () => {

@@ -121,8 +121,8 @@ describe('a back-dated day survives the photo path', () => {
 
   it('each empty state takes it as a prop rather than inventing one', () => {
     for (const state of ['FirstEverEmpty', 'WelcomeBackEmpty', 'OrdinaryEmpty']) {
-      assert.match(diary, new RegExp(`function ${state}\\(\\{ addTo, scanTo \\}`));
-      assert.match(diary, new RegExp(`<${state} addTo=\\{addTo\\} scanTo=\\{scanTo\\} />`));
+      assert.match(diary, new RegExp(`function ${state}\\(\\{ describeTo, scanTo \\}`));
+      assert.match(diary, new RegExp(`<${state} describeTo=\\{describeTo\\} scanTo=\\{scanTo\\} />`));
     }
   });
 
