@@ -2581,7 +2581,6 @@
       "never": "Never signed in"
     },
     "person": {
-      "open": "Open",
       "back": "Back to the list",
       "activityTitle": "Photos read per day",
       "activityWindow": "The last {{days}} days, {{from}} to {{to}}.",
@@ -2592,7 +2591,9 @@
       "activityLoading": "Loading",
       "activityFailed": "The daily counts could not be loaded.",
       "activityRetry": "Try again",
-      "noDiary": "This is everything kept here about how this person uses the instance. Their diary is encrypted on their own device and cannot be read here."
+      "noDiary": "This is everything kept here about how this person uses the instance. Their diary is encrypted on their own device and cannot be read here.",
+      "selfNote": "This is your own account. Suspending and deleting it are not offered here, so that the last person who can administer this instance cannot lock themselves out.",
+      "notFound": "There is nobody at this address."
     },
     "role": {
       "label": "Role",
@@ -2647,7 +2648,8 @@
       "revokeConfirmTitle": "Withdraw the invitation for {{email}}?",
       "revokeConfirmBody": "Their link stops working. You can invite them again whenever you like.",
       "revokeConfirmCta": "Withdraw",
-      "failed": "That did not go through."
+      "failed": "That did not go through.",
+      "loadFailed": "The invitations could not be loaded."
     },
     "invite": {
       "cta": "Invite someone",
@@ -2673,6 +2675,32 @@
       "failed": "The invitation could not be created.",
       "exists": "{{email}} already has an account here.",
       "back": "Back to the list"
+    },
+    "tabs": {
+      "label": "Console sections",
+      "people": "People",
+      "invitations": "Invitations",
+      "activity": "Activity"
+    },
+    "filter": {
+      "searchLabel": "Search",
+      "searchPlaceholder": "Name or email address",
+      "groupLabel": "Show",
+      "everybody": "Everybody",
+      "active": "Active",
+      "suspended": "Suspended",
+      "administrators": "Administrators",
+      "noneQuery": "Nobody here matches \"{{query}}\".",
+      "noneGroup": "Nobody here is in \"{{group}}\".",
+      "noneBoth": "Nobody in \"{{group}}\" matches \"{{query}}\"."
+    },
+    "activity": {
+      "title": "Who is still using it",
+      "body": "One line per person, most recently here first.",
+      "windowLabel": "Window",
+      "windowDays": "{{days}} days",
+      "total": "{{photos}} read",
+      "failed": "The daily counts could not be loaded. The people are still listed."
     }
   }
 }

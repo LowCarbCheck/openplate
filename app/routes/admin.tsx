@@ -31,6 +31,13 @@
  * once and renders the same loading copy `isResuming` does; the deny card
  * below is reached only once `role` is the known `'member'`.
  *
+ * ── The frame: the counts, then the tabs ─────────────────────────────────
+ *
+ * Once the role is granted, this layout draws the instance's four counts and a
+ * tab bar over the three lists (`admin-tabs.tsx`). The counts sit ABOVE the
+ * tabs because they describe the instance rather than whichever list is open,
+ * and they are read here once rather than once per tab.
+ *
  * ── Client-only past the loader ──────────────────────────────────────────
  *
  * The loader answers one question, "does this instance have a server at all",
@@ -38,13 +45,17 @@
  * that server: this app's own server never sees an administrator's token and
  * has no admin endpoints of its own.
  */
-import { useEffect } from 'react';
-import { Outlet, useLoaderData } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
+import { Outlet, useLoaderData, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
 
 import { CONFIG } from '#app/config';
+import { AdminTabs } from '#app/components/admin/admin-tabs';
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
+import { StatsRow } from '#app/components/admin/stats-row';
+import { currentAdminClient } from '#app/lib/admin/admin-session';
+import type { AdminStats } from '#app/lib/admin/admin-wire';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useSyncSession } from '#app/components/sync-status';
 import { refreshSyncAccount } from '#app/lib/sync/sync-actions';
@@ -129,12 +140,53 @@ export default function AdminLayout() {
     );
   }
 
+  return <AdminChrome />;
+}
+
+/**
+ * The console around the tabs: the title, the counts, the tab bar, and
+ * whichever tab is open.
+ *
+ * ── The counts live HERE, above the tabs ─────────────────────────────────
+ *
+ * They describe the instance, not a list, so they belong to the frame rather
+ * than to the people tab, and reading them once in the layout is also one
+ * request instead of one per tab an operator opens.
+ *
+ * ── They still cannot break the page ─────────────────────────────────────
+ *
+ * A failed `/stats` leaves `stats` at `null` and draws nothing where the row
+ * would be. That was true when this lived on the people tab and it has to stay
+ * true here, where a throw would take all three tabs down instead of one.
+ *
+ * It is a component of its own rather than a branch inside `AdminLayout`
+ * because the hooks below must not run for the three states above, where there
+ * is no session to read anything with.
+ */
+function AdminChrome() {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const [stats, setStats] = useState<AdminStats | null>(null);
+
+  const loadStats = useCallback(async (): Promise<void> => {
+    const client = currentAdminClient();
+    if (client === null) return;
+    const outcome = await client.stats().catch(() => null);
+    setStats(outcome !== null && outcome.status === 'ok' ? outcome.value : null);
+  }, []);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">{t('admin.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('admin.subtitle')}</p>
       </header>
+      {stats !== null && <StatsRow stats={stats} />}
+      <AdminTabs pathname={location.pathname} />
       <Outlet />
     </div>
   );

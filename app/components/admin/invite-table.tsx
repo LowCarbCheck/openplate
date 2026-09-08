@@ -22,7 +22,7 @@ import { Loader2 } from 'lucide-react';
 
 import { Badge } from '#app/components/ui/badge';
 import { Button } from '#app/components/ui/button';
-import { ConfirmButton } from './people-table';
+import { ConfirmButton } from './person-actions';
 import type { InviteView } from '#app/lib/admin/admin-wire';
 
 export interface InviteTableProps {

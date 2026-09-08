@@ -1,5 +1,5 @@
 /**
- * What the administration page PUTS ON SCREEN, in the four states that matter.
+ * What the administration console PUTS ON SCREEN, in the states that matter.
  *
  * ── Rendered, not inspected ──────────────────────────────────────────────
  *
@@ -9,19 +9,26 @@
  * sentence belongs. The components are presentational by construction, which
  * is what makes this possible without a session, a server or a network.
  *
- * ── The four states ──────────────────────────────────────────────────────
+ * ── What the console became ──────────────────────────────────────────────
+ *
+ * Three tabs over one layout, a list whose rows are links and carry nothing
+ * dangerous, and a page per person that carries every action. The tests below
+ * are ordered the way an operator meets those screens.
  *
  *  1. NOT AN ADMINISTRATOR. One card, no data, and a way out. This is what a
  *     signed-out visitor, an ordinary account and a just-demoted administrator
  *     all see, and it must never be a blank page.
- *  2. THE LIST, with two people and one invitation. Pins the row's contents:
- *     usage as "used of limit", your own row without controls, a suspended row
- *     marked as such.
- *  3. THE INVITE RESULT WITH MAIL. The address, and NO link: on an instance
- *     with mail the link exists in one place, the mailbox.
- *  4. THE INVITE RESULT WITHOUT MAIL. The link, plus the sentence that says
- *     what it is. An administrator who reads it as a convenience pastes it
- *     into a group chat.
+ *  2. THE TABS. Which one is lit, including on a person's page, which is
+ *     somewhere the people list leads rather than a fourth place.
+ *  3. THE PEOPLE LIST. Compact rows that are links, a filter that narrows
+ *     them, and an empty result that names the filter that emptied it.
+ *  4. THE STRIPS. Seven squares beside a row, and a list that still renders
+ *     when the batch activity request failed.
+ *  5. THE PERSON PAGE. Every action, and the two the service would refuse on
+ *     your own account, which are absent rather than explained.
+ *  6. THE INVITATIONS TAB. The pending invitations that used to sit under the
+ *     people list.
+ *  7. THE INVITE RESULT, with and without mail.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,11 +37,14 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
+import { AdminTabs } from '../../app/components/admin/admin-tabs';
 import { NotAnAdministratorCard } from '../../app/components/admin/not-an-administrator';
 import { InviteResult } from '../../app/components/admin/invite-result';
 import { InviteTable } from '../../app/components/admin/invite-table';
 import { PeopleTable } from '../../app/components/admin/people-table';
 import { PersonDetail } from '../../app/components/admin/person-detail';
+import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '../../app/lib/admin/people-filter';
+import type { ActivityByAccount } from '../../app/lib/admin/activity-strip';
 import type {
   AdminAccountActivity,
   AdminAccountView,
@@ -99,6 +109,12 @@ const ACTIVITY: AdminAccountActivity = {
   days: activityDays(90, { '2026-09-05': 4, '2026-09-06': 0, '2026-09-07': 1 }),
 };
 
+/** The seven day strips the people list draws beside its rows. */
+const WEEK_BY_ACCOUNT: ActivityByAccount = new Map([
+  [ADMIN.id, activityDays(7, { '2026-09-07': 3 })],
+  [SUSPENDED_PERSON.id, activityDays(7, {})],
+]);
+
 const PENDING_INVITE: InviteView = {
   id: 12,
   email: 'bea@example.org',
@@ -111,15 +127,33 @@ const PENDING_INVITE: InviteView = {
   redeemedAccountId: null,
 };
 
+/** The people list with no strips and no filter set, which is what it looks like on a first load. */
+function peopleList(input: {
+  people: AdminAccountView[];
+  currentAccountId?: number;
+  activity?: ActivityByAccount | null;
+  filter?: PeopleFilter;
+}): string {
+  return render(
+    createElement(PeopleTable, {
+      people: input.people,
+      currentAccountId: input.currentAccountId ?? 99,
+      activity: input.activity ?? null,
+      filter: input.filter ?? EMPTY_PEOPLE_FILTER,
+      onFilterChange: () => {
+        throw new Error('a render must not change the filter');
+      },
+    }),
+  );
+}
+
 /** Callbacks that would fail the test if a render triggered one. Nothing here should call the network. */
-const NEVER = {
+const NEVER_ACTS = {
   onSave: () => Promise.reject(new Error('a render must not save')),
   onSetSuspended: () => Promise.reject(new Error('a render must not suspend')),
   onSendResetMail: () => Promise.reject(new Error('a render must not send mail')),
   onDelete: () => Promise.reject(new Error('a render must not delete')),
-  onOpen: () => {
-    throw new Error('a render must not open anybody');
-  },
+  onRetryActivity: () => undefined,
 };
 
 // ---------------------------------------------------------------------------
@@ -136,11 +170,38 @@ test('the not-an-administrator card says what to do, and names no status code', 
 });
 
 // ---------------------------------------------------------------------------
-// 2. The list
+// 2. The tabs
+// ---------------------------------------------------------------------------
+
+test('the three tabs are links, and the people tab is the one lit at /admin', () => {
+  const html = render(createElement(AdminTabs, { pathname: '/admin' }));
+
+  // The attributes come out in React's order, `aria-current` before `href`.
+  assert.match(html, /aria-current="page"[^>]*href="\/admin"/, 'a tab is a link, not a widget with state');
+  assert.match(html, /href="\/admin\/invitations"/);
+  assert.match(html, /href="\/admin\/activity"/);
+  assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1, 'exactly one tab is current');
+});
+
+test("a person's page lights the people tab, because it is where the list leads", () => {
+  const html = render(createElement(AdminTabs, { pathname: '/admin/people/2' }));
+
+  assert.match(html, /aria-current="page"[^>]*href="\/admin"/);
+  assert.doesNotMatch(html, /aria-current="page"[^>]*href="\/admin\/activity"/);
+});
+
+test('the invitation form lights the invitations tab rather than nothing at all', () => {
+  const html = render(createElement(AdminTabs, { pathname: '/admin/invite' }));
+
+  assert.match(html, /aria-current="page"[^>]*href="\/admin\/invitations"/);
+});
+
+// ---------------------------------------------------------------------------
+// 3. The people list
 // ---------------------------------------------------------------------------
 
 test('the list shows two people, their usage and their standing', () => {
-  const html = render(createElement(PeopleTable, { people: [ADMIN, SUSPENDED_PERSON], currentAccountId: 1, ...NEVER }));
+  const html = peopleList({ people: [ADMIN, SUSPENDED_PERSON] });
 
   assert.match(html, /owner@example\.org/);
   assert.match(html, /anna@example\.org/);
@@ -148,47 +209,244 @@ test('the list shows two people, their usage and their standing', () => {
   assert.match(html, /12 of 500/);
   assert.match(html, /7 of 200/);
   assert.match(html, /Administrator/);
-  assert.match(html, /Standard/);
-  assert.match(html, /Suspended/);
+  assert.match(html, /Last sign-in|Never signed in|\d/);
   // A person with no name is not a blank cell.
   assert.match(html, /No name/);
 });
 
-test('your own row carries no controls, because the service would refuse them', () => {
-  const alone = render(createElement(PeopleTable, { people: [ADMIN], currentAccountId: 1, ...NEVER }));
-  assert.match(alone, /You/);
-  // Opening is a `GET` and locks nobody out, so it survives on your own row
-  // while everything that writes does not.
-  assert.match(alone, />Open</, 'an administrator may look at their own activity');
-  assert.doesNotMatch(alone, /Suspend/, 'the last administrator must not be able to lock themselves out');
-  assert.doesNotMatch(alone, /Delete/);
+test('a row is a real link to that person, and carries nothing that changes them', () => {
+  const html = peopleList({ people: [ADMIN, SUSPENDED_PERSON] });
 
-  const somebodyElse = render(createElement(PeopleTable, { people: [ADMIN], currentAccountId: 99, ...NEVER }));
-  assert.match(somebodyElse, /Suspend/, 'and the same row DOES carry them for somebody else');
-  assert.match(somebodyElse, /Send a reset link/);
+  assert.match(html, /href="\/admin\/people\/1"/, 'middle click and the back button need a real link');
+  assert.match(html, /href="\/admin\/people\/2"/);
+  // EVERY action left the row. A button in the list would also be a click
+  // target nested inside the link that wraps the row.
+  assert.doesNotMatch(html, /<button/, 'a list is for finding somebody, not for acting on them');
+  assert.doesNotMatch(html, /Send a reset link|Delete|Bring back/);
 });
 
-test('a suspended row offers to bring them back rather than to suspend them again', () => {
-  const html = render(createElement(PeopleTable, { people: [SUSPENDED_PERSON], currentAccountId: 1, ...NEVER }));
+test('an account that has never signed in renders words, not an epoch', () => {
+  const html = peopleList({ people: [NEVER_ARRIVED] });
 
-  assert.match(html, /Bring back/);
-  assert.doesNotMatch(html, />Suspend</);
+  assert.match(html, /Never signed in/);
+  assert.doesNotMatch(html, /1970/, 'a null timestamp is not the first of January 1970');
 });
 
 test('an allowance of zero is its own sentence, not "0 of 0"', () => {
-  const noAi: AdminAccountView = { ...SUSPENDED_PERSON, dailyAiLimit: 0, aiUsedToday: 0 };
-  const html = render(createElement(PeopleTable, { people: [noAi], currentAccountId: 1, ...NEVER }));
+  const html = peopleList({ people: [{ ...SUSPENDED_PERSON, dailyAiLimit: 0, aiUsedToday: 0 }] });
 
   assert.match(html, /No photos/);
   assert.doesNotMatch(html, /0 of 0/);
 });
 
 test('an empty instance says so instead of rendering an empty box', () => {
-  const html = render(createElement(PeopleTable, { people: [], currentAccountId: 1, ...NEVER }));
-  assert.match(html, /Nobody has an account here yet/);
+  assert.match(peopleList({ people: [] }), /Nobody has an account here yet/);
 });
 
-test('the invitation list shows the one that is pending, with its expiry', () => {
+test('the search narrows the rows to the people it matches, by name or by address', () => {
+  const people = [ADMIN, SUSPENDED_PERSON, NEVER_ARRIVED];
+
+  const byAddress = peopleList({ people, filter: { query: '  ANNA ', group: 'everybody' } });
+  assert.match(byAddress, /anna@example\.org/, 'trimmed and case insensitive');
+  assert.doesNotMatch(byAddress, /owner@example\.org/);
+  assert.doesNotMatch(byAddress, /carla@example\.org/);
+
+  const byName = peopleList({ people, filter: { query: 'carl', group: 'everybody' } });
+  assert.match(byName, /carla@example\.org/);
+  assert.doesNotMatch(byName, /owner@example\.org/);
+});
+
+test('the group control narrows the rows to a standing or to a role', () => {
+  const people = [ADMIN, SUSPENDED_PERSON, NEVER_ARRIVED];
+
+  const suspended = peopleList({ people, filter: { query: '', group: 'suspended' } });
+  assert.match(suspended, /anna@example\.org/);
+  assert.doesNotMatch(suspended, /owner@example\.org|carla@example\.org/);
+
+  const active = peopleList({ people, filter: { query: '', group: 'active' } });
+  assert.match(active, /owner@example\.org/);
+  assert.doesNotMatch(active, /anna@example\.org/);
+
+  const admins = peopleList({ people, filter: { query: '', group: 'administrators' } });
+  assert.match(admins, /owner@example\.org/);
+  assert.doesNotMatch(admins, /carla@example\.org/);
+});
+
+test('a filter that matches nobody names the filter, and never says only "no results"', () => {
+  const people = [ADMIN, SUSPENDED_PERSON];
+
+  const byQuery = peopleList({ people, filter: { query: 'zoe', group: 'everybody' } });
+  assert.match(byQuery, /Nobody here matches &quot;zoe&quot;\./, 'the search term is quoted back');
+  assert.doesNotMatch(byQuery, /Nobody has an account here yet/, 'an instance with people is not an empty instance');
+
+  const byGroup = peopleList({ people: [ADMIN], filter: { query: '', group: 'suspended' } });
+  assert.match(
+    byGroup,
+    /Nobody here is in &quot;Suspended&quot;\./,
+    'the group is named, because it is easy to forget',
+  );
+
+  const byBoth = peopleList({ people, filter: { query: 'zoe', group: 'administrators' } });
+  assert.match(byBoth, /Nobody in &quot;Administrators&quot; matches &quot;zoe&quot;\./);
+});
+
+// ---------------------------------------------------------------------------
+// 4. The strips beside a row
+// ---------------------------------------------------------------------------
+
+test('a row draws seven squares, and a quiet day is one of them', () => {
+  const html = peopleList({ people: [ADMIN], activity: WEEK_BY_ACCOUNT });
+
+  assert.match(html, /2026-09-07: 3/, 'the square carries its day and its count as text');
+  assert.match(html, /2026-09-06: 0/, 'a quiet day is drawn, not skipped');
+  // One `<li>` for the row, seven for the week.
+  assert.equal((html.match(/<li/g) ?? []).length, 8);
+});
+
+test('a failed activity request costs the strips and never the list', () => {
+  // This is what an instance whose server predates the batch endpoint looks
+  // like: the request 404s, the route catches it, and `activity` is null.
+  const html = peopleList({ people: [ADMIN, SUSPENDED_PERSON], activity: null });
+
+  assert.match(html, /owner@example\.org/, 'the people are the page; the squares are an ornament on it');
+  assert.match(html, /anna@example\.org/);
+  assert.match(html, /12 of 500/);
+  assert.doesNotMatch(html, /2026-09-/, 'no strip is drawn at all');
+  assert.equal((html.match(/<li/g) ?? []).length, 2, 'two rows, and no squares');
+});
+
+// ---------------------------------------------------------------------------
+// 5. One person's page
+// ---------------------------------------------------------------------------
+
+test("a person's page carries every action that left the row", () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'ready', activity: ACTIVITY },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+
+  assert.match(html, /anna@example\.org/);
+  assert.match(html, />Change</, 'role and allowance');
+  assert.match(html, /Send a reset link/);
+  assert.match(html, /Bring back/, 'a suspended person is brought back rather than suspended again');
+  assert.match(html, /Delete/);
+  assert.match(html, /href="\/admin"/, 'and a way back to the list');
+});
+
+test('an active person is offered suspension, and a suspended one is not offered it twice', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: NEVER_ARRIVED,
+      activity: { kind: 'loading' },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+
+  assert.match(html, />Suspend</);
+  assert.doesNotMatch(html, /Bring back/);
+});
+
+test('your own page refuses the two changes that could lock you out, and says nothing false about the rest', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: ADMIN,
+      activity: { kind: 'ready', activity: ACTIVITY },
+      isSelf: true,
+      ...NEVER_ACTS,
+    }),
+  );
+
+  assert.match(html, /owner@example\.org/);
+  assert.match(html, />You</, 'the page says whose it is');
+  assert.doesNotMatch(html, />Suspend</, 'the last administrator must not be able to lock themselves out');
+  assert.doesNotMatch(html, /Delete/);
+  // Looking is not changing, and neither is a reset link an administrator
+  // sends to their own mailbox.
+  assert.match(html, />Change</);
+  assert.match(html, /Send a reset link/);
+  assert.match(html, /cannot lock themselves out/, 'an absent button is explained rather than merely missing');
+});
+
+test('the detail view shows the four facts and no diary content', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'ready', activity: ACTIVITY },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+
+  assert.match(html, /Last sign-in/);
+  assert.match(html, /Joined/);
+  assert.match(html, /7 of 200/, "today's usage is shown against the allowance, as in the list");
+  assert.match(html, /Photos read per day/);
+  assert.match(html, /The last 90 days, 2026-06-10 to 2026-09-07/, 'the window is stated, in day keys');
+  assert.match(html, /encrypted on their own device/, 'the absence of diary content is said, not left to be assumed');
+});
+
+test('the strip draws one square per day the service sent, and a quiet day is one of them', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'ready', activity: ACTIVITY },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+
+  assert.equal((html.match(/<li /g) ?? []).length, 90, 'ninety days in the window, ninety squares');
+  // A quiet day carries its own reading, so it can never be confused with a
+  // day that is simply not in the answer.
+  assert.match(html, /2026-09-06: 0/);
+  assert.match(html, /2026-09-05: 4/);
+  assert.match(html, /Photos read in this window: 5/);
+});
+
+test('a window with nothing in it says so rather than showing an empty box', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: NEVER_ARRIVED,
+      activity: {
+        kind: 'ready',
+        activity: { ...ACTIVITY, accountId: 3, lastSeenAt: null, days: activityDays(90, {}) },
+      },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+
+  assert.match(html, /Never signed in/);
+  assert.match(html, /Nothing has been read in this window/);
+  assert.equal((html.match(/<li /g) ?? []).length, 90, 'the days still exist, they are just all zero');
+});
+
+test('a failed strip offers its own retry and does not take the person with it', () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'failed' },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+
+  assert.match(html, /anna@example\.org/, 'the facts already in hand stay on screen');
+  assert.match(html, /The daily counts could not be loaded/);
+  assert.match(html, /Try again/);
+  assert.match(html, /Delete/, 'and the actions are still there');
+});
+
+// ---------------------------------------------------------------------------
+// 6. The invitations tab
+// ---------------------------------------------------------------------------
+
+test('the invitations tab shows the one that is pending, with its expiry', () => {
   const html = render(
     createElement(InviteTable, {
       invites: [PENDING_INVITE],
@@ -222,7 +480,7 @@ test('a redeemed or revoked invitation is not listed: it is a person, or it is n
 });
 
 // ---------------------------------------------------------------------------
-// 3 and 4. The invite result
+// 7. The invite result
 // ---------------------------------------------------------------------------
 
 test('with mail configured the result names the address and shows NO link', () => {
@@ -272,92 +530,4 @@ test('a server that reports mail AND hands back a link is treated as the link ca
 
   assert.match(html, /Invitation ready for/);
   assert.match(html, /Copy the link/);
-});
-
-// ---------------------------------------------------------------------------
-// 5. Last sign-in, in the list and in the detail view
-// ---------------------------------------------------------------------------
-
-test('the list answers who has gone quiet without a click', () => {
-  const html = render(createElement(PeopleTable, { people: [ADMIN, NEVER_ARRIVED], currentAccountId: 99, ...NEVER }));
-
-  assert.match(html, /Last sign-in/);
-  assert.match(html, new RegExp(new Date(ADMIN.lastSeenAt ?? '').toLocaleDateString().replace(/\./g, '\\.')));
-});
-
-test('an account that has never signed in renders words, not an epoch', () => {
-  const html = render(createElement(PeopleTable, { people: [NEVER_ARRIVED], currentAccountId: 99, ...NEVER }));
-
-  assert.match(html, /Never signed in/);
-  assert.doesNotMatch(html, /1970/, 'a null timestamp is not the first of January 1970');
-});
-
-test('the detail view shows the four facts and no diary content', () => {
-  const html = render(
-    createElement(PersonDetail, {
-      person: SUSPENDED_PERSON,
-      activity: { kind: 'ready', activity: ACTIVITY },
-      onBack: () => undefined,
-      onRetryActivity: () => undefined,
-    }),
-  );
-
-  assert.match(html, /anna@example\.org/);
-  assert.match(html, /Last sign-in/);
-  assert.match(html, /Joined/);
-  assert.match(html, /7 of 200/, "today's usage is shown against the allowance, as in the list");
-  assert.match(html, /Photos read per day/);
-  assert.match(html, /The last 90 days, 2026-06-10 to 2026-09-07/, 'the window is stated, in day keys');
-  assert.match(html, /encrypted on their own device/, 'the absence of diary content is said, not left to be assumed');
-});
-
-test('the strip draws one square per day the service sent, and a quiet day is one of them', () => {
-  const html = render(
-    createElement(PersonDetail, {
-      person: SUSPENDED_PERSON,
-      activity: { kind: 'ready', activity: ACTIVITY },
-      onBack: () => undefined,
-      onRetryActivity: () => undefined,
-    }),
-  );
-
-  assert.equal((html.match(/<li /g) ?? []).length, 90, 'ninety days in the window, ninety squares');
-  // A quiet day carries its own reading, so it can never be confused with a
-  // day that is simply not in the answer.
-  assert.match(html, /2026-09-06: 0/);
-  assert.match(html, /2026-09-05: 4/);
-  assert.match(html, /Photos read in this window: 5/);
-});
-
-test('a window with nothing in it says so rather than showing an empty box', () => {
-  const html = render(
-    createElement(PersonDetail, {
-      person: NEVER_ARRIVED,
-      activity: {
-        kind: 'ready',
-        activity: { ...ACTIVITY, accountId: 3, lastSeenAt: null, days: activityDays(90, {}) },
-      },
-      onBack: () => undefined,
-      onRetryActivity: () => undefined,
-    }),
-  );
-
-  assert.match(html, /Never signed in/);
-  assert.match(html, /Nothing has been read in this window/);
-  assert.equal((html.match(/<li /g) ?? []).length, 90, 'the days still exist, they are just all zero');
-});
-
-test('a failed strip offers its own retry and does not take the person with it', () => {
-  const html = render(
-    createElement(PersonDetail, {
-      person: SUSPENDED_PERSON,
-      activity: { kind: 'failed' },
-      onBack: () => undefined,
-      onRetryActivity: () => undefined,
-    }),
-  );
-
-  assert.match(html, /anna@example\.org/, 'the facts already in hand stay on screen');
-  assert.match(html, /The daily counts could not be loaded/);
-  assert.match(html, /Try again/);
 });

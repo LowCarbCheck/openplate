@@ -1,84 +1,76 @@
 /**
- * `/admin` — the console: everybody here, and everybody invited.
+ * `/admin` — the people tab: everybody here, filterable, one row each.
  *
  * ── The container half ───────────────────────────────────────────────────
  *
- * This file owns the admin client, the load, and the reload after every
- * change. The two lists are presentational components that take data and
- * callbacks and know nothing about a session or a server, which is what lets
- * the render test put two people and one invitation on screen with no network
- * at all.
+ * This file owns the admin client and the load. The list is a presentational
+ * component that takes data and knows nothing about a session or a server,
+ * which is what lets the render test put people on screen with no network at
+ * all.
  *
- * ── Every change re-reads the list ───────────────────────────────────────
+ * ── ONE PERSON IS A ROUTE, and it used to be a state ─────────────────────
  *
- * No optimistic update, deliberately. An allowance change is one request an
- * administrator makes every few weeks, and the value that matters is what the
- * SERVICE stored, not what was typed: `suspended` also revokes sessions,
- * `role` can be refused, and a stale row is how somebody gets suspended twice
- * because the first one looked as though it had not worked.
+ * The detail view was this page showing one person instead of the list, driven
+ * by an id in state, and the argument for that was that the row was already in
+ * hand so a route would re-read what was on screen a moment earlier. That
+ * argument lost, for four reasons that are all about the person using this and
+ * not about a round trip: the row is a link, so middle click and the back
+ * button have to work; an operator wants to send a colleague the address of a
+ * person; a reload has to land on the same person rather than back at the top
+ * of the list; and the detail page now carries every action, so it is a place
+ * somebody stays rather than glances at. `/admin/people/:id` re-reads the
+ * account, which is one request and is also the fresher answer.
  *
- * ── One list, no pager ───────────────────────────────────────────────────
+ * ── The filter runs in the browser ───────────────────────────────────────
  *
- * The screen shows everybody at once. The SERVICE pages, at 200 a request,
- * and `AdminClient` follows that itself, so nothing here knows about a page
- * ceiling; an organization that outgrows one screen is a different product
- * decision than a "next" button, and a silently truncated list is worse than
- * either.
+ * The whole list is already here: `AdminClient.listAccounts` follows the
+ * service's paging itself, so nothing on this page knows about a page ceiling.
+ * A request per keystroke against a list already in memory would buy nothing.
  *
- * ── One person, opened, is a STATE and not a route ───────────────────────
+ * ── The strips are one request, and they are allowed to fail ─────────────
  *
- * The detail view is this page showing one person instead of the lists, driven
- * by an id in state. It could have been `/admin/people/:id`, and the reason it
- * is not is that the person is already in hand: the list has the row, the only
- * thing the detail needs on top of it is the activity strip, and a route would
- * have re-read the account to render what was on screen a moment earlier.
- * Closing it puts back the list that was already loaded, with no round trip.
- *
- * ── The strip is read once, when somebody is opened ──────────────────────
- *
- * It is not part of the `Promise.all` above, deliberately: ninety integers per
- * person for everybody on the instance is a cost paid on every page load for a
- * screen an operator opens now and then. A failed strip is its own retry inside
- * the detail view and never takes the console down with it.
+ * `listActivity` reads a seven day strip for everybody in one paged call. A
+ * service older than this client has no such endpoint and answers 404, so the
+ * call throws and `activity` stays `null` and the rows are drawn WITHOUT
+ * strips. A list of people must never be broken by an ornament on it.
  *
  * ── A 403 replaces the page, it does not blank it ────────────────────────
  *
  * Being demoted, or suspended, mid-session is ordinary. `AdminClient` returns
- * that as a value rather than throwing, and the whole console becomes the
+ * that as a value rather than throwing, and the whole tab becomes the
  * not-an-administrator card.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Loader2, UserPlus } from 'lucide-react';
 
 import { Link } from '#app/components/link';
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
-import { CopyableLink } from '#app/components/admin/invite-result';
-import { InviteTable } from '#app/components/admin/invite-table';
 import { PeopleTable } from '#app/components/admin/people-table';
-import { PersonDetail, type PersonActivityState } from '#app/components/admin/person-detail';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
-import type { AdminClient } from '#app/lib/admin/admin-client';
-import type { AdminAccountView, AdminStats, InviteView } from '#app/lib/admin/admin-wire';
+import type { ActivityByAccount } from '#app/lib/admin/activity-strip';
+import type { AdminOutcome } from '#app/lib/admin/admin-client';
+import type { AdminAccountView, AdminActivityDay, AdminActivityList } from '#app/lib/admin/admin-wire';
+import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '#app/lib/admin/people-filter';
 
-/** What the console is showing. One `kind`, so a loading spinner and an error can never be on screen together. */
-type ConsoleState =
+/** How many days the strip beside a row covers. A week is what "are they still here" looks like at a glance. */
+const ROW_STRIP_DAYS = 7;
+
+/** What the tab is showing. One `kind`, so a loading spinner and an error can never be on screen together. */
+type PeopleState =
   | { kind: 'loading' }
   | { kind: 'forbidden' }
   | { kind: 'failed' }
-  | { kind: 'ready'; stats: AdminStats | null; people: AdminAccountView[]; invites: InviteView[] };
+  | { kind: 'ready'; people: AdminAccountView[]; activity: ActivityByAccount | null };
 
-export default function AdminConsole() {
+export default function AdminPeople() {
   const { t } = useTranslation();
   const session = useSyncSession();
-  const [state, setState] = useState<ConsoleState>({ kind: 'loading' });
-  const [resetLink, setResetLink] = useState<{ email: string; link: string } | null>(null);
-  const [openPersonId, setOpenPersonId] = useState<number | null>(null);
-  const [activity, setActivity] = useState<PersonActivityState>({ kind: 'loading' });
+  const [state, setState] = useState<PeopleState>({ kind: 'loading' });
+  const [filter, setFilter] = useState<PeopleFilter>(EMPTY_PEOPLE_FILTER);
 
   const load = useCallback(async (): Promise<void> => {
     const client = currentAdminClient();
@@ -87,126 +79,27 @@ export default function AdminConsole() {
       return;
     }
     try {
-      // The client follows the service's paging itself: these two resolve with
-      // the whole list however many round trips that took (M192/06 fix).
-      //
-      // THE COUNTS CANNOT BREAK THIS PAGE, and until now that was only a
-      // comment: `client.stats()` sat inside the same `Promise.all` as the
-      // lists, so a throw from it took the whole load down and the page said
-      // "try again" for the one thing it was written to do without. Catching
-      // it here is what makes the sentence below true.
-      const [stats, accounts, invites] = await Promise.all([
-        client.stats().catch(() => null),
+      // THE STRIPS ARE CAUGHT, THE LIST IS NOT. A failed activity read is a
+      // missing ornament; a failed accounts read is a page that cannot do its
+      // job. Keeping them in one `Promise.all` with one catch would have made
+      // an instance without the batch endpoint render the retry card.
+      const [accounts, activity] = await Promise.all([
         client.listAccounts(),
-        client.listInvites(),
+        client.listActivity({ days: ROW_STRIP_DAYS }).catch(() => null),
       ]);
-      if (accounts.status === 'forbidden' || invites.status === 'forbidden') {
+      if (accounts.status === 'forbidden') {
         setState({ kind: 'forbidden' });
         return;
       }
-      setState({
-        kind: 'ready',
-        // The counts are the one thing this page can do without. An instance
-        // whose `/stats` is slow, absent or newer than this client still shows
-        // its people.
-        stats: stats !== null && stats.status === 'ok' ? stats.value : null,
-        people: accounts.value.accounts,
-        invites: invites.value.invites,
-      });
+      setState({ kind: 'ready', people: accounts.value.accounts, activity: stripsByAccount(activity) });
     } catch {
       setState({ kind: 'failed' });
     }
   }, []);
 
-  /**
-   * Reads one person's strip.
-   *
-   * A `forbidden` here is the same changed relationship the list reports, so it
-   * replaces the page rather than the strip. Anything else is a failed read of
-   * one card, and stays inside that card with its own retry.
-   */
-  const loadActivity = useCallback(async (id: number): Promise<void> => {
-    const client = currentAdminClient();
-    if (client === null) {
-      setState({ kind: 'forbidden' });
-      return;
-    }
-    setActivity({ kind: 'loading' });
-    try {
-      const outcome = await client.accountActivity({ id });
-      if (outcome.status === 'forbidden') {
-        setState({ kind: 'forbidden' });
-        return;
-      }
-      setActivity({ kind: 'ready', activity: outcome.value });
-    } catch {
-      setActivity({ kind: 'failed' });
-    }
-  }, []);
-
-  const openPerson = useCallback(
-    ({ id }: { id: number }): void => {
-      setOpenPersonId(id);
-      void loadActivity(id);
-    },
-    [loadActivity],
-  );
-
   useEffect(() => {
     void load();
   }, [load]);
-
-  /**
-   * One change, then a reload.
-   *
-   * RETHROWS, so the row that asked shows its own message beside itself
-   * rather than replacing the page with an error. The one exception it turns
-   * into a page-level state is `forbidden`, which is not a failed change but a
-   * changed relationship with the instance.
-   */
-  const apply = useCallback(
-    async (change: (client: AdminClient) => Promise<{ status: 'ok' | 'forbidden' }>): Promise<void> => {
-      const client = currentAdminClient();
-      if (client === null) {
-        setState({ kind: 'forbidden' });
-        return;
-      }
-      const outcome = await change(client);
-      if (outcome.status === 'forbidden') {
-        setState({ kind: 'forbidden' });
-        return;
-      }
-      await load();
-    },
-    [load],
-  );
-
-  const sendResetMail = useCallback(
-    async ({ id }: { id: number }): Promise<void> => {
-      const client = currentAdminClient();
-      if (client === null) {
-        setState({ kind: 'forbidden' });
-        return;
-      }
-      const person = state.kind === 'ready' ? state.people.find((candidate) => candidate.id === id) : undefined;
-      const email = person?.email ?? '';
-      const outcome = await client.sendResetMail({ id });
-      if (outcome.status === 'forbidden') {
-        setState({ kind: 'forbidden' });
-        return;
-      }
-      // THE LINK IS SHOWN, never toasted: a toast disappears, and on an
-      // instance with no mail this link is the only way that person gets back
-      // into their account.
-      if (outcome.value.link !== null) {
-        setResetLink({ email, link: outcome.value.link });
-        return;
-      }
-      setResetLink(null);
-      toast(t('admin.resetMail.sent', { email }));
-    },
-    [state, t],
-  );
 
   if (state.kind === 'forbidden') return <NotAnAdministratorCard />;
 
@@ -234,25 +127,8 @@ export default function AdminConsole() {
     );
   }
 
-  // The row the detail view shows comes from the list this page already loaded,
-  // so a person deleted while their detail was open simply closes it rather
-  // than rendering a card about somebody who is gone.
-  const openedPerson = openPersonId === null ? undefined : state.people.find((person) => person.id === openPersonId);
-  if (openedPerson !== undefined) {
-    return (
-      <PersonDetail
-        person={openedPerson}
-        activity={activity}
-        onBack={() => setOpenPersonId(null)}
-        onRetryActivity={() => void loadActivity(openedPerson.id)}
-      />
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {state.stats !== null && <StatsRow stats={state.stats} />}
-
+    <div className="space-y-4">
       <div className="flex justify-end">
         <Button asChild className="h-11">
           <Link to="/admin/invite">
@@ -260,18 +136,6 @@ export default function AdminConsole() {
           </Link>
         </Button>
       </div>
-
-      {resetLink !== null && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.resetMail.cta')}</CardTitle>
-            <CardDescription>{t('admin.resetMail.noMail', { email: resetLink.email })}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CopyableLink link={resetLink.link} />
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
@@ -281,24 +145,9 @@ export default function AdminConsole() {
           <PeopleTable
             people={state.people}
             currentAccountId={session.account?.id ?? -1}
-            onSave={({ id, role, dailyAiLimit }) => apply((client) => client.patchAccount({ id, role, dailyAiLimit }))}
-            onSetSuspended={({ id, suspended }) => apply((client) => client.patchAccount({ id, suspended }))}
-            onSendResetMail={sendResetMail}
-            onDelete={({ id }) => apply((client) => client.deleteAccount({ id }))}
-            onOpen={openPerson}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.invites.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InviteTable
-            invites={state.invites}
-            onResend={({ id }) => apply((client) => client.resendInvite({ id }))}
-            onRevoke={({ id }) => apply((client) => client.revokeInvite({ id }))}
+            activity={state.activity}
+            filter={filter}
+            onFilterChange={setFilter}
           />
         </CardContent>
       </Card>
@@ -306,23 +155,14 @@ export default function AdminConsole() {
   );
 }
 
-/** The four counts, across the top. Read-only, and the fastest answer to "is this instance healthy". */
-function StatsRow({ stats }: { stats: AdminStats }) {
-  const { t } = useTranslation();
-  const cells: { label: string; value: number }[] = [
-    { label: t('admin.stats.people'), value: stats.accounts },
-    { label: t('admin.stats.admins'), value: stats.admins },
-    { label: t('admin.stats.pending'), value: stats.pendingInvites },
-    { label: t('admin.stats.photosToday'), value: stats.aiRequestsToday },
-  ];
-  return (
-    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {cells.map((cell) => (
-        <div key={cell.label} className="rounded-lg border p-3">
-          <dt className="text-xs text-muted-foreground">{cell.label}</dt>
-          <dd className="text-2xl font-semibold tabular-nums">{cell.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
+/**
+ * The batch answer, keyed by account.
+ *
+ * `null` in, `null` out, deliberately: a read that never happened must not
+ * become an empty map, which would draw everybody as though the service had
+ * answered "nothing" for them.
+ */
+function stripsByAccount(outcome: AdminOutcome<AdminActivityList> | null): ActivityByAccount | null {
+  if (outcome === null || outcome.status === 'forbidden') return null;
+  return new Map(outcome.value.accounts.map((row): [number, readonly AdminActivityDay[]] => [row.accountId, row.days]));
 }

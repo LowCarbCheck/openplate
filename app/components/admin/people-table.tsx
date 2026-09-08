@@ -1,371 +1,227 @@
 /**
- * Everybody on this instance, and everything an administrator does to them.
+ * Everybody on this instance: a filter, and one compact row each.
  *
- * ── Presentational: it asks, it never calls ──────────────────────────────
+ * ── A list is for finding somebody ───────────────────────────────────────
  *
- * Every action is a callback. The route owns the admin client, the refresh
- * after each change, and the toasts; this file owns the shape. That split is
- * what lets the render test put two people and a suspended one on screen
- * without a session, a server or a network.
+ * It used to be a stack of fat cards carrying five buttons apiece, so an
+ * operator with twenty people could not see them at once and every dangerous
+ * action was one click away from a scroll. Every action moved to
+ * `/admin/people/:id`. What is left is the smallest set of facts that answers
+ * "which of these is the person I am looking for, and are they all right":
+ * name, address, standing, today's usage against the allowance, last sign in,
+ * and a seven day strip.
  *
- * ── Your own row has no controls ─────────────────────────────────────────
+ * ── The whole row is a real link ─────────────────────────────────────────
  *
- * The service refuses an administrator's changes to their own account with
- * `400 self-change`, and the reason is worth keeping visible: an instance
- * whose last administrator demoted or suspended themselves has nobody left who
- * can undo it. Rather than offer the buttons and explain the refusal, the row
- * is marked as yours and the controls are simply absent.
+ * An `<a>`, not a div with an `onClick`, so middle click opens a second tab,
+ * the back button returns to the list, and the address is one an operator can
+ * send to a colleague. That is also why the row carries no button any more:
+ * a button inside a link is a target that swallows the click it is nested in.
  *
- * ── Opening somebody is a READ, so your own row offers it ────────────────
+ * ── The filter runs here, on the list already in hand ────────────────────
  *
- * The rule above is about changes the service refuses, not about looking. An
- * administrator may open their own detail view, because a `GET` of their own
- * activity locks nobody out and is the one row they can check the numbers
- * against. Everything that writes stays absent on your own row.
+ * `AdminClient.listAccounts` pages internally and resolves with everybody, so
+ * there is nothing to fetch per keystroke. The decision worth being careful
+ * about is what an empty result says, and that lives in `people-filter.ts`
+ * where a test can reach it without a render.
  *
- * ── Usage is shown as "used of limit" ────────────────────────────────────
+ * ── A missing strip is not a quiet one ───────────────────────────────────
  *
- * The number by itself answers nothing: 40 is heavy use against a limit of 50
- * and nothing at all against 500. An allowance of 0 is its own sentence rather
- * than "0 of 0", because it is not a person who has run out, it is one who was
- * never given any.
+ * `activity` is `null` when the batch request failed, which is what an
+ * instance whose service predates the endpoint looks like. The rows are drawn
+ * without strips. Drawing empty strips instead would tell an operator that
+ * everybody had stopped.
  */
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 
+import { ActivityStrip } from '#app/components/admin/activity-strip';
 import { LastSeenValue } from '#app/components/admin/last-seen';
+import { Link } from '#app/components/link';
 import { Badge } from '#app/components/ui/badge';
-import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
+import type { ActivityByAccount } from '#app/lib/admin/activity-strip';
+import type { AdminAccountView, AdminActivityDay } from '#app/lib/admin/admin-wire';
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '#app/components/ui/alert-dialog';
-import type { AccountRole, AdminAccountView } from '#app/lib/admin/admin-wire';
+  emptyReasonFor,
+  filterPeople,
+  PEOPLE_GROUPS,
+  type PeopleFilter,
+  type PeopleGroup,
+} from '#app/lib/admin/people-filter';
 
-/** What a row can ask the route to do. Each resolves when the change has been stored and the list re-read. */
-export interface PeopleActions {
-  onSave: (input: { id: number; role: AccountRole; dailyAiLimit: number }) => Promise<void>;
-  onSetSuspended: (input: { id: number; suspended: boolean }) => Promise<void>;
-  onSendResetMail: (input: { id: number }) => Promise<void>;
-  onDelete: (input: { id: number }) => Promise<void>;
-  /** Opens one person's detail view. The only action here that reads rather than writes, and the only one a row offers on itself. */
-  onOpen: (input: { id: number }) => void;
-}
-
-export interface PeopleTableProps extends PeopleActions {
+export interface PeopleTableProps {
   people: AdminAccountView[];
-  /** The signed-in administrator. Their own row is marked and carries no controls. */
+  /** The signed-in administrator. Their own row is marked, and it links to the same detail page as any other. */
   currentAccountId: number;
+  /** Everybody's seven day strip, or `null` when this client could not read them. */
+  activity: ActivityByAccount | null;
+  filter: PeopleFilter;
+  onFilterChange: (next: PeopleFilter) => void;
 }
 
-export function PeopleTable({ people, currentAccountId, ...actions }: PeopleTableProps) {
-  const { t } = useTranslation();
-
-  if (people.length === 0) return <p className="text-sm text-muted-foreground">{t('admin.people.empty')}</p>;
+export function PeopleTable({ people, currentAccountId, activity, filter, onFilterChange }: PeopleTableProps) {
+  const visible = filterPeople({ people, filter });
+  const reason = emptyReasonFor({ people, filter, visible });
 
   return (
-    <ul className="divide-y rounded-lg border">
-      {people.map((person) => (
-        <PersonRow key={person.id} person={person} isSelf={person.id === currentAccountId} {...actions} />
-      ))}
-    </ul>
+    <div className="space-y-3">
+      <PeopleFilterBar filter={filter} onFilterChange={onFilterChange} />
+      {reason === 'not-empty' ?
+        <ul className="divide-y rounded-lg border">
+          {visible.map((person) => (
+            <PersonRow
+              key={person.id}
+              person={person}
+              isSelf={person.id === currentAccountId}
+              days={activity?.get(person.id) ?? null}
+            />
+          ))}
+        </ul>
+      : <EmptyList filter={filter} reason={reason} />}
+    </div>
   );
 }
 
-/** One person: who they are, what they may do, and what has been done with it today. */
-function PersonRow({ person, isSelf, ...actions }: { person: AdminAccountView; isSelf: boolean } & PeopleActions) {
-  const { t } = useTranslation();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isBusy, setIsBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const isSuspended = person.suspendedAt !== null;
-
-  async function run(action: () => Promise<void>): Promise<void> {
-    setIsBusy(true);
-    setError(null);
-    try {
-      await action();
-      setIsEditing(false);
-    } catch {
-      // The message is deliberately ours rather than the server's: `PROTOCOL.md`
-      // §4 forbids branching on its prose, and showing it would put an English
-      // sentence from another codebase into a German page.
-      setError(t('admin.edit.failed'));
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
-  return (
-    <li className="space-y-3 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate font-medium">{person.displayName ?? t('admin.noName')}</p>
-          <p className="truncate text-sm text-muted-foreground">{person.email}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {isSelf && <Badge variant="outline">{t('admin.you')}</Badge>}
-          <Badge variant={person.role === 'admin' ? 'default' : 'secondary'}>
-            {person.role === 'admin' ? t('admin.role.admin') : t('admin.role.standard')}
-          </Badge>
-          <Badge variant={isSuspended ? 'destructive' : 'outline'}>
-            {isSuspended ? t('admin.standing.suspended') : t('admin.standing.active')}
-          </Badge>
-        </div>
-      </div>
-
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
-        <div>
-          <dt className="text-xs text-muted-foreground">{t('admin.columns.usedToday')}</dt>
-          <dd>
-            {person.dailyAiLimit === 0 ?
-              t('admin.usageNone')
-            : t('admin.usage', { used: person.aiUsedToday, limit: person.dailyAiLimit })}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">{t('admin.columns.lastSeen')}</dt>
-          <dd>
-            <LastSeenValue lastSeenAt={person.lastSeenAt} />
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">{t('admin.columns.joined')}</dt>
-          <dd>{new Date(person.createdAt).toLocaleDateString()}</dd>
-        </div>
-      </dl>
-
-      {error !== null && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-
-      {isEditing ?
-        <PersonEditor
-          person={person}
-          isBusy={isBusy}
-          onCancel={() => setIsEditing(false)}
-          onSave={(next) => run(() => actions.onSave({ id: person.id, ...next }))}
-        />
-      : <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => actions.onOpen({ id: person.id })}>
-            {t('admin.person.open')}
-          </Button>
-          {!isSelf && (
-            <>
-              <Button type="button" size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-                {t('admin.edit.open')}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={isBusy}
-                onClick={() => void run(() => actions.onSendResetMail({ id: person.id }))}
-              >
-                {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                {t('admin.resetMail.cta')}
-              </Button>
-              {isSuspended ?
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={isBusy}
-                  onClick={() => void run(() => actions.onSetSuspended({ id: person.id, suspended: false }))}
-                >
-                  {t('admin.reactivate.cta')}
-                </Button>
-              : <ConfirmButton
-                  label={t('admin.suspend.cta')}
-                  title={t('admin.suspend.confirmTitle', { email: person.email })}
-                  body={t('admin.suspend.confirmBody')}
-                  confirmLabel={t('admin.suspend.confirmCta')}
-                  isBusy={isBusy}
-                  onConfirm={() => void run(() => actions.onSetSuspended({ id: person.id, suspended: true }))}
-                />
-              }
-              <DeletePersonButton
-                email={person.email}
-                isBusy={isBusy}
-                onConfirm={() => void run(() => actions.onDelete({ id: person.id }))}
-              />
-            </>
-          )}
-        </div>
-      }
-    </li>
-  );
-}
-
-/** Role and allowance, edited in place. Both are sent together so one save is one change to one row. */
-function PersonEditor({
-  person,
-  isBusy,
-  onCancel,
-  onSave,
+/** The search box and the group control, above the rows. Both are controlled; the route owns the values. */
+function PeopleFilterBar({
+  filter,
+  onFilterChange,
 }: {
-  person: AdminAccountView;
-  isBusy: boolean;
-  onCancel: () => void;
-  onSave: (next: { role: AccountRole; dailyAiLimit: number }) => void;
+  filter: PeopleFilter;
+  onFilterChange: (next: PeopleFilter) => void;
 }) {
   const { t } = useTranslation();
-  const [role, setRole] = useState<AccountRole>(person.role);
-  const [limit, setLimit] = useState(String(person.dailyAiLimit));
 
   return (
-    <div className="space-y-3 rounded-lg bg-muted/30 p-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor={`role-${person.id}`}>{t('admin.role.label')}</Label>
-          <select
-            id={`role-${person.id}`}
-            className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
-            value={role}
-            onChange={(event) => setRole(event.target.value === 'admin' ? 'admin' : 'member')}
-          >
-            <option value="member">{t('admin.role.standard')}</option>
-            <option value="admin">{t('admin.role.admin')}</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor={`limit-${person.id}`}>{t('admin.edit.allowanceLabel')}</Label>
-          <Input
-            id={`limit-${person.id}`}
-            type="number"
-            min={0}
-            step={1}
-            className="h-11"
-            value={limit}
-            onChange={(event) => setLimit(event.target.value)}
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+      <div className="flex-1 space-y-1">
+        <Label htmlFor="admin-people-search">{t('admin.filter.searchLabel')}</Label>
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
           />
-          <p className="text-xs text-muted-foreground">{t('admin.edit.allowanceHint')}</p>
+          <Input
+            id="admin-people-search"
+            type="search"
+            autoComplete="off"
+            className="h-11 pl-9"
+            placeholder={t('admin.filter.searchPlaceholder')}
+            value={filter.query}
+            onChange={(event) => onFilterChange({ ...filter, query: event.target.value })}
+          />
         </div>
       </div>
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          size="sm"
-          disabled={isBusy}
-          onClick={() => onSave({ role, dailyAiLimit: readAllowance(limit) })}
+      <div className="space-y-1 sm:w-52">
+        <Label htmlFor="admin-people-group">{t('admin.filter.groupLabel')}</Label>
+        <select
+          id="admin-people-group"
+          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+          value={filter.group}
+          onChange={(event) => onFilterChange({ ...filter, group: readGroup(event.target.value) })}
         >
-          {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-          {t('admin.edit.save')}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-          {t('admin.edit.cancel')}
-        </Button>
+          {PEOPLE_GROUPS.map((group) => (
+            <option key={group} value={group}>
+              {t(GROUP_LABEL_KEY[group])}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );
 }
 
 /**
- * The typed field turned into an allowance.
+ * What an empty list says.
  *
- * A blank or unparseable field becomes `0`, which is the SAFE direction: it
- * turns photo reading off rather than granting an accidental allowance, and
- * the person's next scan says so plainly instead of the operator finding out
- * from a bill.
+ * NEVER A BARE "NO RESULTS". Four different facts end here, and the sentence
+ * names which one: an instance with nobody on it, a search that matched
+ * nobody, a group nobody is in, or both together. An operator who has
+ * forgotten that a group is still selected is exactly the person this sentence
+ * is for.
  */
-function readAllowance(raw: string): number {
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+function EmptyList({ filter, reason }: { filter: PeopleFilter; reason: 'nobody-here' | 'query' | 'group' | 'both' }) {
+  const { t } = useTranslation();
+  const group = t(GROUP_LABEL_KEY[filter.group]);
+  const query = filter.query.trim();
+
+  if (reason === 'nobody-here') return <p className="text-sm text-muted-foreground">{t('admin.people.empty')}</p>;
+
+  return (
+    <p className="text-sm text-muted-foreground">
+      {reason === 'query' && t('admin.filter.noneQuery', { query })}
+      {reason === 'group' && t('admin.filter.noneGroup', { group })}
+      {reason === 'both' && t('admin.filter.noneBoth', { query, group })}
+    </p>
+  );
 }
 
-/** A destructive action behind one confirmation. Suspension and invitation withdrawal both use it. */
-export function ConfirmButton({
-  label,
-  title,
-  body,
-  confirmLabel,
-  isBusy,
-  onConfirm,
+/** One person, compact, and the whole thing is the link to their page. */
+function PersonRow({
+  person,
+  isSelf,
+  days,
 }: {
-  label: string;
-  title: string;
-  body: string;
-  confirmLabel: string;
-  isBusy: boolean;
-  onConfirm: () => void;
+  person: AdminAccountView;
+  isSelf: boolean;
+  days: readonly AdminActivityDay[] | null;
 }) {
   const { t } = useTranslation();
+  const isSuspended = person.suspendedAt !== null;
+
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button type="button" size="sm" variant="outline" disabled={isBusy}>
-          {label}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{body}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isBusy}>{t('admin.edit.cancel')}</AlertDialogCancel>
-          <Button variant="destructive" disabled={isBusy} onClick={onConfirm}>
-            {confirmLabel}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <li>
+      <Link
+        to={`/admin/people/${person.id}`}
+        className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-muted/50 focus-visible:bg-muted/50"
+      >
+        <div className="min-w-0 flex-1 basis-56">
+          <p className="flex items-center gap-2 truncate font-medium">
+            <span className="truncate">{person.displayName ?? t('admin.noName')}</span>
+            {isSelf && (
+              <Badge variant="outline" className="shrink-0">
+                {t('admin.you')}
+              </Badge>
+            )}
+            {person.role === 'admin' && <Badge className="shrink-0">{t('admin.role.admin')}</Badge>}
+            {isSuspended && (
+              <Badge variant="destructive" className="shrink-0">
+                {t('admin.standing.suspended')}
+              </Badge>
+            )}
+          </p>
+          <p className="truncate text-sm text-muted-foreground">{person.email}</p>
+        </div>
+
+        {days !== null && <ActivityStrip days={days} size="row" />}
+
+        <div className="text-right text-sm tabular-nums">
+          <p>
+            {person.dailyAiLimit === 0 ?
+              t('admin.usageNone')
+            : t('admin.usage', { used: person.aiUsedToday, limit: person.dailyAiLimit })}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <LastSeenValue lastSeenAt={person.lastSeenAt} />
+          </p>
+        </div>
+      </Link>
+    </li>
   );
 }
 
-/**
- * Deletion, behind the address typed out in full.
- *
- * A confirm dialog is muscle memory and gets clicked through. Typing the
- * address is the one gesture that cannot be made by accident, and it is the
- * same gesture the person's own account page asks of them — deliberately, so
- * that "irreversible" always looks the same in this app.
- */
-function DeletePersonButton({ email, isBusy, onConfirm }: { email: string; isBusy: boolean; onConfirm: () => void }) {
-  const { t } = useTranslation();
-  const [typed, setTyped] = useState('');
+/** The copy key for each group, used both by the control and by the sentence an empty list shows. */
+const GROUP_LABEL_KEY = {
+  everybody: 'admin.filter.everybody',
+  active: 'admin.filter.active',
+  suspended: 'admin.filter.suspended',
+  administrators: 'admin.filter.administrators',
+} satisfies Record<PeopleGroup, string>;
 
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button type="button" size="sm" variant="destructive" disabled={isBusy}>
-          {t('admin.delete.cta')}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t('admin.delete.confirmTitle', { email })}</AlertDialogTitle>
-          <AlertDialogDescription>{t('admin.delete.confirmBody')}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="space-y-2">
-          <Label htmlFor={`confirm-${email}`}>{t('admin.delete.typeLabel')}</Label>
-          <Input
-            id={`confirm-${email}`}
-            type="email"
-            autoComplete="off"
-            className="h-11"
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-          />
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isBusy}>{t('admin.edit.cancel')}</AlertDialogCancel>
-          <Button
-            variant="destructive"
-            disabled={isBusy || typed.trim().toLowerCase() !== email.toLowerCase()}
-            onClick={onConfirm}
-          >
-            {t('admin.delete.confirmCta')}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
+/** A `<select>` value read back as a group. Anything unrecognised is "everybody", which hides nobody. */
+function readGroup(raw: string): PeopleGroup {
+  const found = PEOPLE_GROUPS.find((group) => group === raw);
+  return found ?? 'everybody';
 }

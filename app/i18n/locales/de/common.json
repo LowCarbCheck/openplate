@@ -2613,7 +2613,8 @@
       "revokeConfirmTitle": "Einladung für {{email}} zurückziehen?",
       "revokeConfirmBody": "Der Link verliert seine Gültigkeit. Du kannst die Person jederzeit erneut einladen.",
       "revokeConfirmCta": "Zurückziehen",
-      "failed": "Das hat nicht geklappt."
+      "failed": "Das hat nicht geklappt.",
+      "loadFailed": "Die Einladungen konnten nicht geladen werden."
     },
     "invite": {
       "cta": "Jemanden einladen",
@@ -2644,7 +2645,6 @@
       "never": "Nie angemeldet"
     },
     "person": {
-      "open": "Öffnen",
       "back": "Zurück zur Liste",
       "activityTitle": "Fotos gelesen pro Tag",
       "activityWindow": "Die letzten {{days}} Tage, {{from}} bis {{to}}.",
@@ -2655,7 +2655,35 @@
       "activityLoading": "Wird geladen",
       "activityFailed": "Die Tageswerte konnten nicht geladen werden.",
       "activityRetry": "Erneut versuchen",
-      "noDiary": "Das ist alles, was hier über die Nutzung dieser Person gespeichert ist. Ihr Tagebuch ist auf dem eigenen Gerät verschlüsselt und kann hier nicht gelesen werden."
+      "noDiary": "Das ist alles, was hier über die Nutzung dieser Person gespeichert ist. Ihr Tagebuch ist auf dem eigenen Gerät verschlüsselt und kann hier nicht gelesen werden.",
+      "selfNote": "Das ist dein eigenes Konto. Sperren und Löschen werden hier nicht angeboten, damit sich die letzte Person mit Verwaltungsrechten nicht selbst aussperren kann.",
+      "notFound": "Unter dieser Adresse ist niemand."
+    },
+    "tabs": {
+      "label": "Bereiche",
+      "people": "Personen",
+      "invitations": "Einladungen",
+      "activity": "Aktivität"
+    },
+    "filter": {
+      "searchLabel": "Suche",
+      "searchPlaceholder": "Name oder E-Mail-Adresse",
+      "groupLabel": "Anzeigen",
+      "everybody": "Alle",
+      "active": "Aktiv",
+      "suspended": "Gesperrt",
+      "administrators": "Administratoren",
+      "noneQuery": "Hier passt niemand zu \"{{query}}\".",
+      "noneGroup": "In \"{{group}}\" ist hier niemand.",
+      "noneBoth": "In \"{{group}}\" passt niemand zu \"{{query}}\"."
+    },
+    "activity": {
+      "title": "Wer nutzt es noch",
+      "body": "Eine Zeile pro Person, zuletzt aktive zuerst.",
+      "windowLabel": "Zeitraum",
+      "windowDays": "{{days}} Tage",
+      "total": "{{photos}} gelesen",
+      "failed": "Die Tageswerte konnten nicht geladen werden. Die Personen stehen weiterhin in der Liste."
     }
   },
   "signOut": {

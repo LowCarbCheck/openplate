@@ -204,7 +204,17 @@ export default [
     // set, like every account screen: an instance with no server has nobody to
     // administer. The layout renders the not-an-administrator card for
     // everybody else, so being ROUTABLE here is not being allowed here.
-    route('/admin', 'routes/admin.tsx', [index('routes/admin._index.tsx'), route('invite', 'routes/admin.invite.tsx')]),
+    // Three tabs under one layout (M201): people at the index, invitations and
+    // activity beside it, and one person at `people/:id`. The detail is a ROUTE
+    // rather than a state on the list because the row is a link: the back
+    // button, a second tab and a shared address all have to work.
+    route('/admin', 'routes/admin.tsx', [
+      index('routes/admin._index.tsx'),
+      route('invitations', 'routes/admin.invitations.tsx'),
+      route('activity', 'routes/admin.activity.tsx'),
+      route('people/:id', 'routes/admin.people.$id.tsx'),
+      route('invite', 'routes/admin.invite.tsx'),
+    ]),
     // Resource route: server-proxied LCC food-name lookup for the client-side
     // scan flow (M117/02) — see app/routes/api.food-matches.ts.
     route('/api/food-matches', 'routes/api.food-matches.ts'),
