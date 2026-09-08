@@ -1,7 +1,7 @@
 /**
  * The brand constants (`app/lib/brand.ts`) — M146 spec 01.
  *
- * Three properties, each of which fails silently in production if it drifts:
+ * Two properties, each of which fails silently in production if it drifts:
  *
  * 1. **The repository URL is written down exactly once in `app/`.** A fork is
  *    supposed to be one edit; a second hand-written `github.com/...` in a
@@ -9,10 +9,12 @@
  *    a surface they never found. Nothing else in the repo can catch that.
  * 2. **The licence URL is derived from the repository URL**, so the same one
  *    edit moves it.
- * 3. **`APP_VERSION` equals `package.json`'s `version`.** It is a hand-copied
- *    string (importing the manifest would inline every dependency name into the
- *    browser bundle to read one field), so it needs a guard: a stale version on
- *    `/settings/about` makes every bug report point at the wrong build.
+ *
+ * A third one used to live here: `APP_VERSION` equals `package.json`'s
+ * `version`. That pin is gone with the literal it pinned (M203). The version is
+ * injected by the build now (`app/lib/build-info.ts`), read straight out of the
+ * manifest by `vite.config.ts`, so there is no second copy left to drift.
+ * `tests/unit/build-info.test.ts` covers what replaced it.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,9 +22,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
-import { z } from 'zod';
-
-import { APP_VERSION, REPO_LICENSE_URL, REPO_URL } from '../../app/lib/brand';
+import { REPO_LICENSE_URL, REPO_URL } from '../../app/lib/brand';
 
 const APP_DIR = fileURLToPath(new URL('../../app', import.meta.url));
 
@@ -51,14 +51,5 @@ describe('REPO_URL', () => {
   it('derives the licence URL, so the fork edit carries it too', () => {
     assert.ok(REPO_LICENSE_URL.startsWith(`${REPO_URL}/`));
     assert.match(REPO_LICENSE_URL, /\/LICENSE$/);
-  });
-});
-
-describe('APP_VERSION', () => {
-  it('matches package.json — the version shown on /settings/about is the build', () => {
-    const manifest = z
-      .object({ version: z.string() })
-      .parse(JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')));
-    assert.equal(APP_VERSION, manifest.version);
   });
 });

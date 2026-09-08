@@ -37,3 +37,4 @@ ADRs are immutable once Accepted. To change a decision, write a new ADR that sup
 | [0009](0009-a-compartment-carries-its-kind.md)         | A compartment carries its kind, and a wrong kind is refused       | Accepted   |
 | [0010](0010-hosted-analytics.md)                      | Analytics on the hosted instance, off everywhere else            | Amended    |
 | [0011](0011-analytics-levels.md)                      | Analytics levels, and the research tier ADR-0010 refused         | Accepted   |
+| [0012](0012-the-server-asks-github-about-releases.md) | The server asks GitHub about releases, and it asks by default     | Accepted   |

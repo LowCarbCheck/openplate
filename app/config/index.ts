@@ -138,6 +138,27 @@ export function parseDefaultUiLanguage(raw: string | undefined): LanguageCode {
 }
 
 /**
+ * Parses `UPDATE_CHECK` (M203).
+ *
+ * ON by default, which is a deliberate choice and not an oversight: an instance
+ * that never says a newer version exists is an instance that quietly runs an old
+ * one, and the person who set it up is usually the only person who could notice.
+ * See ADR-0012 for what leaves the box and why the browser is not the caller.
+ *
+ * `off` (or `false`) turns it off completely: no timer is started, no request is
+ * ever made, and `/api/update-status` answers `enabled: false`. Anything else,
+ * including an unset variable, leaves it on. Deliberately NOT a boot failure on
+ * a typo, unlike the analytics pair: a misspelt value here leaves the default
+ * behaviour, which is the same behaviour the operator had before they touched
+ * anything, and stopping an instance from booting over a version banner would be
+ * out of all proportion.
+ */
+export function parseUpdateCheck(raw: string | undefined): boolean {
+  const value = raw?.trim().toLowerCase();
+  return value !== 'off' && value !== 'false';
+}
+
+/**
  * What KIND of instance this is, decided once before `CONFIG` is built.
  *
  * `managed` is derived from BOTH values, so they are read here rather than
@@ -344,6 +365,18 @@ export const CONFIG = {
     subscribeUrl: process.env.NEWSLETTER_SUBSCRIBE_URL,
     turnstileSiteKey: process.env.NEWSLETTER_TURNSTILE_SITE_KEY,
   }),
+
+  /**
+   * The release check (M203)
+   *
+   * `checkEnabled` is the single switch behind `UPDATE_CHECK`. It gates the boot
+   * timer, the six-hourly one, and the manual button alike, so `off` means no
+   * request to GitHub can originate here by any path. See
+   * `app/lib/update-check.server.ts` for what the request contains.
+   */
+  updates: {
+    checkEnabled: parseUpdateCheck(process.env.UPDATE_CHECK),
+  },
 
   /**
    * Feature Flags
