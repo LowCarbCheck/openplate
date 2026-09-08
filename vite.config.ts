@@ -1,13 +1,116 @@
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { z } from 'zod';
+
+/**
+ * ── THE BUILD STAMP (M203) ────────────────────────────────────────────────
+ *
+ * One object, computed once here, delivered two ways:
+ *
+ *  1. `define` replaces `__OPENPLATE_BUILD__` in the browser and SSR bundles,
+ *     so `app/lib/build-info.ts` reads a literal with no runtime lookup. See
+ *     `types/build-info.d.ts` for why it is a bare identifier.
+ *  2. `build/build-info.json`, written once when a bundle closes, so the Express
+ *     entrypoint can read the SAME numbers. `pnpm start` runs `tsx ./server.ts`
+ *     directly, outside Vite, so no `define` ever reaches it; a file on disk
+ *     next to the bundle it describes is the smallest thing that works for
+ *     `pnpm build` then `pnpm start`, and it needs no git in the image.
+ *
+ * "The same object" is load-bearing and was not free. `react-router build` runs
+ * a client pass and an SSR pass and re-evaluates this file for each, in one
+ * process, so computing the stamp here gave the bundles one `builtAt` and the
+ * JSON another 300 ms later. `buildStamp` parks the first pass's answer on
+ * `globalThis` and the second pass reuses it. The same object carries the
+ * write-once flag, since `closeBundle` also fires per pass.
+ *
+ * The sha is the one value that is not free. `.git` is excluded by
+ * `.dockerignore` and the alpine images carry no git binary, so inside a
+ * container `git rev-parse` cannot answer. `OPENPLATE_BUILD_SHA` is the
+ * override the Dockerfiles take as a build argument and the release workflow
+ * fills from `github.sha`. Local builds fall back to git, and a build with
+ * neither says `unknown` rather than guessing.
+ */
+
+/** The one field of `package.json` this file needs. */
+const manifestSchema = z.object({ version: z.string() });
+
+/** `package.json`'s `version`, parsed rather than asserted. */
+function packageVersion(): string {
+  const manifest = manifestSchema.safeParse(
+    JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')),
+  );
+  return manifest.success ? manifest.data.version : '0.0.0';
+}
+
+/** The short commit sha of the working tree, or null when git cannot answer. */
+function gitShortSha(): string | null {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: import.meta.dirname,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    // No git binary, or not a repository. Both are ordinary inside an image.
+    return null;
+  }
+}
+
+/**
+ * The one stamp this build uses, computed on the first pass and reused by the
+ * second. See `types/build-info.d.ts` for why it lives on `globalThis`.
+ */
+function buildStamp(buildShaOverride: string | undefined): OpenplateBuildStamp {
+  const existing = globalThis.__openplateBuildStamp;
+  if (existing !== undefined) return existing;
+
+  const override = buildShaOverride?.trim();
+  const stamp: OpenplateBuildStamp = {
+    build: {
+      version: packageVersion(),
+      sha: override === undefined || override === '' ? (gitShortSha() ?? 'unknown') : override.slice(0, 7),
+      builtAt: new Date().toISOString(),
+    },
+    hasWrittenFile: false,
+  };
+  globalThis.__openplateBuildStamp = stamp;
+  return stamp;
+}
+
+/** Writes the stamp beside the bundle, once per build, for the Express entrypoint to read. */
+function buildInfoFilePlugin(stamp: OpenplateBuildStamp): Plugin {
+  return {
+    name: 'openplate-build-info-file',
+    // `closeBundle` fires for the client pass and again for the SSR pass. Both
+    // would write identical bytes now that the stamp is shared, but writing once
+    // says so: a second write would be the only place left that could disagree.
+    closeBundle() {
+      if (stamp.hasWrittenFile) return;
+      stamp.hasWrittenFile = true;
+      const directory = resolve(import.meta.dirname, 'build');
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(resolve(directory, 'build-info.json'), `${JSON.stringify(stamp.build, null, 2)}\n`, 'utf8');
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const serverPort = env.PORT ? parseInt(env.PORT, 10) : 3000;
 
+  // `loadEnv` with an empty prefix already merges `process.env`, so the
+  // Dockerfiles' build argument arrives here without a second env read.
+  const stamp = buildStamp(env.OPENPLATE_BUILD_SHA);
+
   return {
-    plugins: [tailwindcss(), reactRouter()],
+    plugins: [tailwindcss(), reactRouter(), buildInfoFilePlugin(stamp)],
+    define: {
+      __OPENPLATE_BUILD__: JSON.stringify(stamp.build),
+    },
     resolve: {
       tsconfigPaths: true,
     },

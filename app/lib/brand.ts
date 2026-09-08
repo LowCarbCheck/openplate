@@ -27,14 +27,10 @@ export const REPO_URL = 'https://github.com/LowCarbCheck/openplate';
  */
 export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 
-/**
- * The shipped version, shown on `/settings/about` so a user can say which
- * build they are on in a bug report.
- *
- * Mirrors `package.json`'s `version` by hand rather than importing it: the
- * about page is a client route, and importing `package.json` would inline the
- * whole manifest — every dependency and dev dependency — into the browser
- * bundle to read one string. `tests/unit/brand.test.ts` asserts the two stay
- * equal, so the copy cannot drift silently.
+/*
+ * `APP_VERSION` used to live here: a hand-copied mirror of `package.json`'s
+ * `version`, with a unit test to stop it drifting. It is gone. The version now
+ * arrives from the build itself (`app/lib/build-info.ts`, injected by Vite's
+ * `define`), which reads the manifest at build time, so there is no second copy
+ * left to drift and nothing left to pin. Import `BUILD` from there.
  */
-export const APP_VERSION = '0.18.3';

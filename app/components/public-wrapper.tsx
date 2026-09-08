@@ -3,6 +3,8 @@ import * as React from 'react';
 import { Link } from '#app/components/link';
 import { Trans, useTranslation } from 'react-i18next';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
+import { BUILD, formatBuildLabel } from '#app/lib/build-info';
+import { BuildStamp } from '#app/components/build-stamp';
 import { cn } from '#app/lib/utils';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { InviteOnlyDialog } from '#app/components/invite-only-dialog';
@@ -205,6 +207,22 @@ export default function PublicWrapper({
               {t('chrome.imprint')}
             </Link>
           </nav>
+        </div>
+        {/* The build, on the public chrome too: a visitor reporting something
+            from the landing page or the privacy text can name the build without
+            opening the tracker.
+
+            A SECOND ROW rather than a third item in the row above. That row is a
+            `justify-between` pair whose two halves are tuned against each other
+            (see the five-link note), and a third child would redistribute both.
+            This is also the correct reading order: the version is the least
+            important thing in the footer.
+
+            No update marker here, deliberately. The public pages are read by
+            people who may never open the tracker, and an update prompt on a
+            marketing page is addressed to nobody. */}
+        <div className={cn(container, 'flex justify-center pb-6 sm:justify-end')}>
+          <BuildStamp label={formatBuildLabel(BUILD)} hasUpdate={false} />
         </div>
       </footer>
     </div>

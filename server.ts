@@ -15,6 +15,17 @@ import { createRobotsTagMiddleware } from '#app/lib/robots-tag.server';
 import { resolveServerBind } from '#app/lib/server-bind';
 import { createWwwRedirectMiddleware } from '#app/lib/www-redirect.server';
 import { PROVIDER_REGISTRY } from '#app/services/vision/registry';
+import { SERVER_BUILD } from '#app/lib/build-info.server';
+import { BUILD_HEADER } from '#app/lib/update-status';
+import {
+  createUpdateChecker,
+  isSameOriginRequest,
+  releaseUrlFor,
+  repoSlug,
+  startUpdateCheckSchedule,
+  toUpdateStatus,
+} from '#app/lib/update-check.server';
+import { REPO_URL } from '#app/lib/brand';
 
 const logger = createComponentLogger('server');
 
@@ -86,6 +97,109 @@ const CONTENT_SECURITY_POLICY = buildContentSecurityPolicy({
   analyticsOrigin: analyticsCspOrigin(CONFIG.analytics),
 });
 
+/**
+ * The release check (M203).
+ *
+ * Built here rather than inside the module so the production instance is the one
+ * object the whole process shares: the boot timer, the six-hourly one and the
+ * manual endpoint all drive the same cache and the same in-flight promise. A
+ * per-request checker would turn one question into one request per caller,
+ * against an endpoint that rate limits by IP.
+ *
+ * `enabled` is `UPDATE_CHECK` (see `app/config/index.ts`). When it is off nothing
+ * is scheduled and nothing is fetched, by any path.
+ */
+const updateChecker = createUpdateChecker({
+  enabled: CONFIG.updates.checkEnabled,
+  currentVersion: SERVER_BUILD.version,
+  repo: repoSlug(REPO_URL),
+  releaseUrlFor,
+  fetchImpl: fetch,
+  now: () => Date.now(),
+});
+
+/**
+ * Stamps every response with the commit this server is serving.
+ *
+ * The browser compares it against the commit compiled into its own bundle (see
+ * `app/lib/bundle-freshness.ts`) and, after two consecutive mismatches, offers a
+ * reload. It carries nothing about the caller, so it is safe on a 301, on a
+ * static asset and on an error response alike, which is why it is mounted above
+ * everything that can produce a body.
+ */
+function createBuildHeaderMiddleware() {
+  return (_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(BUILD_HEADER, SERVER_BUILD.sha);
+    next();
+  };
+}
+
+/**
+ * The two update endpoints.
+ *
+ * Plain Express rather than React Router resource routes: the checker is process
+ * state that must not be re-created per request, and mounting it here keeps the
+ * GitHub call provably out of the client module graph.
+ *
+ * `GET` never fetches; it reports the cache, which the timers keep warm, and is
+ * open to anything. `POST` may fetch, at most once a minute across the whole
+ * instance, says so in the body when it did not, and is same-origin only: it is
+ * the one path by which an outside page could drive a request out of this
+ * instance's IP. See `isSameOriginRequest` for the rule and what it refuses.
+ *
+ * Neither reads a request body, so no parser is mounted and the "first JSON
+ * parser wins, globally" hazard does not arise.
+ */
+function mountUpdateStatusRoutes(): void {
+  const enabled = CONFIG.updates.checkEnabled;
+
+  app.get('/api/update-status', (_req: Request, res: Response) => {
+    res.json(toUpdateStatus({ enabled, state: updateChecker.read(), throttled: false, nextCheckAllowedAt: null }));
+  });
+
+  app.post('/api/update-status/check', (req: Request, res: Response) => {
+    // `req.protocol` and the `Host` header, which is what the browser used to
+    // build its own `Origin`. Both follow `X-Forwarded-*` because `trust proxy`
+    // is set above, so this is the public origin behind Traefik and not the
+    // container's port.
+    const allowed = isSameOriginRequest({
+      secFetchSite: req.get('sec-fetch-site') ?? null,
+      origin: req.get('origin') ?? null,
+      requestOrigin: `${req.protocol}://${req.get('host') ?? ''}`,
+    });
+    if (!allowed) {
+      // No body: a cross-site caller learns nothing it did not already know, and
+      // there is no message here worth writing for a caller that cannot act on it.
+      res.status(403).end();
+      return;
+    }
+
+    updateChecker
+      .checkNow()
+      .then((outcome) => {
+        res.json(
+          toUpdateStatus({
+            enabled,
+            state: outcome.state,
+            throttled: outcome.throttled,
+            nextCheckAllowedAt: outcome.nextCheckAllowedAt,
+          }),
+        );
+        return undefined;
+      })
+      .catch((error) => {
+        // `checkNow` is fail-soft and should not reject. If it ever does, answer
+        // the cache rather than leaving the request hanging: the button on the
+        // other end has no timeout of its own.
+        logger.warn('Manual update check threw, answering from the cache', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        res.json(toUpdateStatus({ enabled, state: updateChecker.read(), throttled: false, nextCheckAllowedAt: null }));
+        return undefined;
+      });
+  });
+}
+
 function createContentSecurityPolicyMiddleware() {
   return (_req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Content-Security-Policy', CONTENT_SECURITY_POLICY);
@@ -151,6 +265,11 @@ app.set('trust proxy', CONFIG.server.trustProxy);
 app.use(compression());
 app.disable('x-powered-by');
 
+// Above everything that can serve a body, for the same reason the robots header
+// is: a header changes no status code, so it cannot break a probe, and it lands
+// on the canonical-host redirect, the static files and error responses too.
+app.use(createBuildHeaderMiddleware());
+
 // Keep the app out of search results, before anything below can serve a body.
 // It sits ABOVE the two rules that follow on purpose. Unlike the CSP it is not
 // gated on production, because a self-hosted instance is a private tool on
@@ -201,6 +320,9 @@ app.use(express.static('build/client', { maxAge: '1h' }));
 // its own origin (`SYNC_SERVER_URL`, M128 spec 04). Nothing sync-related
 // belongs in this file again.
 
+// The update endpoints sit above the React Router handler, which owns `*`.
+mountUpdateStatusRoutes();
+
 // handle SSR requests
 app.all('*', remixHandler);
 
@@ -216,6 +338,11 @@ const { host, url } = resolveServerBind({ env: process.env, port });
 server.listen({ port, host }, () => {
   logServerStart(port, { url });
 });
+
+// Both timers are unref'ed, so they never hold the process open. The first check
+// is deliberately late: a version banner has no business competing with the
+// first requests after a deploy.
+startUpdateCheckSchedule(updateChecker, CONFIG.updates.checkEnabled);
 
 // Graceful shutdown
 // Timeline: SIGTERM → app cleanup (0-8s) → force exit (8s) → Docker SIGKILL (10s)

@@ -138,6 +138,37 @@ export function parseDefaultUiLanguage(raw: string | undefined): LanguageCode {
 }
 
 /**
+ * Parses `OPENPLATE_BUILD_SHA` into the seven characters a short sha has, or
+ * `null` when it is unset. Trimmed and truncated exactly as `vite.config.ts`
+ * does, so the two readings of one variable cannot differ.
+ */
+export function parseBuildShaOverride(raw: string | undefined): string | null {
+  const value = raw?.trim();
+  return value === undefined || value === '' ? null : value.slice(0, 7);
+}
+
+/**
+ * Parses `UPDATE_CHECK` (M203).
+ *
+ * ON by default, which is a deliberate choice and not an oversight: an instance
+ * that never says a newer version exists is an instance that quietly runs an old
+ * one, and the person who set it up is usually the only person who could notice.
+ * See ADR-0012 for what leaves the box and why the browser is not the caller.
+ *
+ * `off` (or `false`) turns it off completely: no timer is started, no request is
+ * ever made, and `/api/update-status` answers `enabled: false`. Anything else,
+ * including an unset variable, leaves it on. Deliberately NOT a boot failure on
+ * a typo, unlike the analytics pair: a misspelt value here leaves the default
+ * behaviour, which is the same behaviour the operator had before they touched
+ * anything, and stopping an instance from booting over a version banner would be
+ * out of all proportion.
+ */
+export function parseUpdateCheck(raw: string | undefined): boolean {
+  const value = raw?.trim().toLowerCase();
+  return value !== 'off' && value !== 'false';
+}
+
+/**
  * What KIND of instance this is, decided once before `CONFIG` is built.
  *
  * `managed` is derived from BOTH values, so they are read here rather than
@@ -344,6 +375,37 @@ export const CONFIG = {
     subscribeUrl: process.env.NEWSLETTER_SUBSCRIBE_URL,
     turnstileSiteKey: process.env.NEWSLETTER_TURNSTILE_SITE_KEY,
   }),
+
+  /**
+   * Build-time identity (M203)
+   *
+   * `OPENPLATE_BUILD_SHA` is the commit the image was built from. It is a DOCKER
+   * BUILD ARGUMENT first and foremost, read by `vite.config.ts` and baked into
+   * the bundles, because `.dockerignore` excludes `.git` and the alpine base has
+   * no git binary, so the build cannot work it out for itself.
+   *
+   * It is read here as well, and only the DEV server consults the result
+   * (`app/lib/build-info.server.ts`). Vite prefers the override over git when it
+   * stamps the bundle, so a developer who sets the variable and did not get the
+   * same preference on the server side would see the bundle and the server
+   * disagree, which renders as a permanent and false "a newer version of this
+   * page is ready". `null` when unset, which is every normal case.
+   */
+  build: {
+    shaOverride: parseBuildShaOverride(process.env.OPENPLATE_BUILD_SHA),
+  },
+
+  /**
+   * The release check (M203)
+   *
+   * `checkEnabled` is the single switch behind `UPDATE_CHECK`. It gates the boot
+   * timer, the six-hourly one, and the manual button alike, so `off` means no
+   * request to GitHub can originate here by any path. See
+   * `app/lib/update-check.server.ts` for what the request contains.
+   */
+  updates: {
+    checkEnabled: parseUpdateCheck(process.env.UPDATE_CHECK),
+  },
 
   /**
    * Feature Flags

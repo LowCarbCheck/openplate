@@ -7,7 +7,24 @@
     "source": "Source code",
     "sourceValue": "{{appName}} on GitHub",
     "title": "About openplate",
-    "version": "Version"
+    "updates": {
+      "built": "Built",
+      "checkNow": "Check now",
+      "checking": "Checking",
+      "description": "What this instance is running, and what the project has published.",
+      "disabled": "Checks disabled",
+      "disabledHint": "This instance does not ask GitHub about new releases. The operator turned that off.",
+      "lastChecked": "Last checked",
+      "latest": "Latest release",
+      "never": "Not yet",
+      "releaseLink": "Release notes",
+      "reload": "Reload to update",
+      "reloadHint": "This server is serving a newer version of the app than this page is running.",
+      "running": "Running",
+      "selfHostHint": "Updating the server itself is a new image, not a button here.",
+      "throttled": "Checked a moment ago. The next check is allowed at {{when}}.",
+      "title": "Updates"
+    }
   },
   "add": {
     "custom": {
@@ -230,8 +247,10 @@
   },
   "chrome": {
     "back": "Back",
+    "buildStamp": "Build {{label}}",
     "deviceMenuLabel": "This device, open menu",
     "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker that stays on your device",
+    "imprint": "Imprint",
     "installApp": "Install app",
     "licence": "MIT licence",
     "licenceShort": "Licence",
@@ -249,8 +268,15 @@
     "source": "Source code",
     "sourceShort": "Source",
     "terms": "Terms",
-    "imprint": "Imprint",
-    "thisDevice": "This device"
+    "thisDevice": "This device",
+    "update": {
+      "badge": "Update",
+      "bundleReady": "A newer version of this page is ready",
+      "dismiss": "Dismiss",
+      "releaseAvailable": "openplate {{version}} is available",
+      "reload": "Reload",
+      "view": "What changed"
+    }
   },
   "clinicianLink": {
     "copied": "Copied",

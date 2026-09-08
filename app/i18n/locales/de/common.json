@@ -7,7 +7,24 @@
     "source": "Quellcode",
     "sourceValue": "{{appName}} auf GitHub",
     "title": "Über openplate",
-    "version": "Version"
+    "updates": {
+      "built": "Erstellt",
+      "checkNow": "Jetzt prüfen",
+      "checking": "Wird geprüft",
+      "description": "Was auf dieser Instanz läuft und was vom Projekt veröffentlicht wurde.",
+      "disabled": "Prüfung deaktiviert",
+      "disabledHint": "Diese Instanz fragt GitHub nicht nach neuen Releases. Der Betreiber hat das deaktiviert.",
+      "lastChecked": "Zuletzt geprüft",
+      "latest": "Neuestes Release",
+      "never": "Noch nicht",
+      "releaseLink": "Versionshinweise",
+      "reload": "Neu laden zum Aktualisieren",
+      "reloadHint": "Dieser Server liefert eine neuere Version der App aus, als auf dieser Seite läuft.",
+      "running": "Installiert",
+      "selfHostHint": "Den Server selbst aktualisierst du über ein neues Image, nicht über einen Button hier.",
+      "throttled": "Gerade eben geprüft. Die nächste Prüfung ist um {{when}} möglich.",
+      "title": "Updates"
+    }
   },
   "add": {
     "custom": {
@@ -230,6 +247,7 @@
   },
   "chrome": {
     "back": "Zurück",
+    "buildStamp": "Build {{label}}",
     "deviceMenuLabel": "Dieses Gerät, Menü öffnen",
     "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "imprint": "Impressum",
@@ -250,7 +268,15 @@
     "source": "Quellcode",
     "sourceShort": "Quellcode",
     "terms": "AGB",
-    "thisDevice": "Dieses Gerät"
+    "thisDevice": "Dieses Gerät",
+    "update": {
+      "badge": "Update",
+      "bundleReady": "Eine neuere Version dieser Seite ist verfügbar",
+      "dismiss": "Ausblenden",
+      "releaseAvailable": "openplate {{version}} ist verfügbar",
+      "reload": "Neu laden",
+      "view": "Änderungen ansehen"
+    }
   },
   "clinicianLink": {
     "copied": "Kopiert",
