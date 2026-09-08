@@ -72,6 +72,7 @@ import { isConfidentTier, matchTier, matchTierChipClass, type MatchTier } from '
 import { ALLOWED_MIME_TYPES, downscaleToJpeg, validatePhoto } from '#app/lib/photo-constraints';
 import { buildUrlWithoutSharedParam, hasSharedPhotoFlag, readSharedPhoto } from '#app/lib/shared-photo';
 import { savePlatePhoto } from '#app/lib/local-store/photos';
+import { dropPlatePhoto, offerPlatePhoto, takePlatePhoto } from '#app/lib/plate-photo-handoff';
 import {
   analyzeReducer,
   initialAnalyzeState,
@@ -1132,6 +1133,22 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
     await putLocalFoodLog(entry);
   }
 
+  // The photograph, on the same signal as the rows and under the same batch
+  // id. It is handed over by the review screen through a one-shot slot
+  // (`plate-photo-handoff.ts`) because an in-memory `File` cannot ride a form.
+  //
+  // NOT from navigation state, which is where this used to live: a local
+  // action resolves inside one React batch, so the confirm never renders a
+  // `submitting` state and the effect that waited for one never fired.
+  //
+  // Fire-and-forget, and unreachable from a validation failure: the guards
+  // above return before this line, so nothing is taken and nothing is saved.
+  // A typed or spoken intake has no photograph, so the slot is simply empty.
+  const offeredPhoto = takePlatePhoto(logBatchId);
+  if (offeredPhoto !== null) {
+    void savePlatePhoto({ userId: offeredPhoto.userId, logBatchId, file: offeredPhoto.file });
+  }
+
   // One toast for the whole plate, through the app's shared add-toast id — a
   // four-item confirm is ONE action, not four (M129/03). The running total is
   // read after every entry is written, so it reports the day the user is about
@@ -1312,7 +1329,7 @@ function ScanFlow({
   // Creating the URL in the effect keeps it revoked on both replacement and
   // unmount and survives StrictMode remounts — this in-tab preview URL itself
   // is never written anywhere (the confirmed photo, separately, IS cached to
-  // this device on save — see `ConfirmDraftForm`'s `savePlatePhoto` call).
+  // this device on save — see `handleConfirm`'s `savePlatePhoto` call).
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -2597,7 +2614,7 @@ export function ConfirmDraftForm({
   logDateLabel: string | null;
   /** The in-memory downscaled JPEG, saved device-locally on a successful confirm. */
   photoFile: File | null;
-  /** Owner for the device-local photo cache — scopes the saved row to this account. */
+  /** Owner for the device-local photo cache, offered to the confirm action with the file. */
   userId: number;
   /**
    * The slot read off the PHOTO's own timestamp (see `#app/lib/scan-capture-time`),
@@ -2624,33 +2641,22 @@ export function ConfirmDraftForm({
     setClientLogBatchId(randomUuid());
   }, []);
 
-  // Save the downscaled JPEG on the one confirm-success signal, tracked in two
-  // phases so it never depends on `formData` surviving into the redirect's load:
-  //   1. remember a confirm POST while it's submitting (formData is present);
-  //   2. on the load that follows, a SUCCESS redirects off /scan (to the diary),
-  //      while a validation failure reloads /scan in place.
-  // Once-only and fire-and-forget — a photo-save failure must never touch
-  // logging; cancelled/failed scans never reach this branch, so they store nothing.
-  const photoSavedRef = useRef(false);
-  const confirmSubmittingRef = useRef(false);
+  // Hand the downscaled JPEG to the confirm action, keyed by the same batch id
+  // the hidden field above posts. The action saves it right after it writes the
+  // diary rows (see `handleConfirm`), so the photo is kept on exactly the
+  // signal that kept the entries.
+  //
+  // This replaced a `useNavigation()` effect that armed on a `submitting`
+  // render and saved on the `loading` render after it. That render never
+  // happens: the confirm is local IndexedDB work that resolves inside one
+  // React batch, so the component never sees a `submitting` state and no photo
+  // was ever cached. A typed or spoken intake has no `photoFile`, so it offers
+  // nothing and the action finds the slot empty, which is the right answer.
   useEffect(() => {
-    if (navigation.state === 'submitting') {
-      if (navigation.formData?.get('_intent') === 'confirm') confirmSubmittingRef.current = true;
-      return;
-    }
-    if (navigation.state === 'loading' && confirmSubmittingRef.current) {
-      confirmSubmittingRef.current = false;
-      const succeeded = navigation.location !== undefined && !navigation.location.pathname.startsWith('/scan');
-      if (succeeded && !photoSavedRef.current && photoFile !== null && clientLogBatchId !== null) {
-        photoSavedRef.current = true;
-        void savePlatePhoto({ userId, logBatchId: clientLogBatchId, file: photoFile });
-      }
-      return;
-    }
-    // Idle with a stale flag (no load phase happened): clear it so a later,
-    // unrelated navigation can't be mistaken for a confirm success.
-    if (navigation.state === 'idle') confirmSubmittingRef.current = false;
-  }, [navigation.state, navigation.formData, navigation.location, photoFile, clientLogBatchId, userId]);
+    if (photoFile === null || clientLogBatchId === null) return;
+    offerPlatePhoto({ logBatchId: clientLogBatchId, userId, file: photoFile });
+    return () => dropPlatePhoto(clientLogBatchId);
+  }, [photoFile, clientLogBatchId, userId]);
 
   const usage = identification?.usage;
   const scanCostUsd = usage && modelId && provider ? estimateScanCostUsd(provider, modelId, usage) : undefined;
