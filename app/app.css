@@ -236,7 +236,7 @@
        (`bg-accent-amber-surface`, `border-accent-amber-border`), not with an
        alpha modifier — they are already the blended result.
 
-       `day-drill-down.tsx`'s gap-severity chips used to be the one exception
+       `day-summary-details.tsx`'s gap-severity chips used to be the one exception
        — they washed with `bg-accent-amber/12` + `border-accent-amber/35` and
        went muddy grey in light mode for exactly the reason above. Converted
        2026-08-04 to the surface/border pair; no known opacity-wash holdouts

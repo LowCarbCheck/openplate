@@ -73,19 +73,12 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { BackupNudgeBanner } from '#app/components/backup-nudge-banner';
 import { HabitStrip } from '#app/components/habit-strip';
-import { RingProgress } from '#app/components/ring-progress';
-import type { HeroStat as HeroStatData } from '#app/components/hero-stat';
-import { HeroStat, formatHeroRings, formatHeroStats, formatHeroValue } from '#app/components/hero-stat';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { SectionEyebrow } from '#app/components/typography';
-import {
-  CarbImpactChip,
-  DayDetailsButton,
-  DayDetailsPanel,
-  DayDrillDown,
-  HeroProteinFigure,
-  useDayDetails,
-} from '#app/components/day-drill-down';
+import { DayBudgetRows } from '#app/components/day-budget-rows';
+import { buildDayBudgetRows, formatBudgetHeadline } from '#app/lib/day-budget-rows';
+import type { AnimatedHeadlines } from '#app/lib/day-budget-rows';
+import { CarbImpactChip, SuggestionsDisclosure, WhatYouAte } from '#app/components/day-summary-details';
 import { Button } from '#app/components/ui/button';
 import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
@@ -1425,19 +1418,6 @@ interface DiaryGoals {
   kcalTarget: number | null;
 }
 
-/** Hedged calorie-target line — whole numbers, "~" when estimates/unknowns are involved. Never "remaining". */
-function KcalGoalLine({ kcal, target, hedged }: { kcal: number; target: number; hedged: boolean }) {
-  const { t } = useTranslation();
-  return (
-    <p className="text-sm text-muted-foreground tabular-nums">
-      {/* The "~" stays outside the catalog string: it hedges the FIGURE, and a
-          translator moving it would detach it from the number it qualifies. */}
-      {hedged ? '~' : ''}
-      {t('diary.kcal.ofTarget', { value: Math.round(kcal), target: Math.round(target) })}
-    </p>
-  );
-}
-
 /**
  * Pure formatter for the day's full macro-breakdown line. Two defects fixed
  * here: (1) Carbs/Fiber/Protein/Fat now share the headline's own one-decimal
@@ -1458,25 +1438,20 @@ export function formatMacroBreakdownLine(summary: DaySummary, t: Translate, lang
 }
 
 /**
- * The day summary — openplate's most-looked-at surface, recomposed
- * novice-first in M129/06.
+ * The day summary, openplate's most-looked-at surface, recomposed as BUDGET
+ * ROWS.
  *
- * What it USED to show at a glance: a ring, a macro ratio bar, four macro
- * figures, a protein line, a calorie line, a net-carb definition, and a
- * caveat. That is nine pieces of information for someone whose actual
- * question is "how did today go?".
+ * M129/06 made this card novice-first and M200 spec 02 gave it one ring per
+ * goal the person set; this pass drops the rings. A ring carries one metric
+ * per circle and a phone fits two of them, so protein and fiber stayed buried
+ * in a "Day details" drawer while two circles fought over the top of the card.
+ * Four rows say the same thing in less height than two rings, and what was in
+ * the drawer is simply on the card now.
  *
- * What it shows now (M129/03 reframed the number itself): what's LEFT of the
- * day's budget, one qualitative carb-impact chip, one protein figure, and a
- * "Day details" button. Everything else lives behind that button in
- * `DayDrillDown`, where it's joined by the thing the old hero never offered —
- * a per-target GAP view and foods that would close it.
- *
- * There is one ring per goal the person actually set: their net-carb ceiling,
- * their calorie target, or both together (M200 spec 02). With neither, there
- * is no budget to draw, so the card falls back to a left-aligned absolute
- * headline. `formatHeroStats` owns which framings apply and every word in
- * them, and `formatHeroRings` pairs each one with the arc it belongs to.
+ * Top to bottom: the qualitative carb verdict, the budget rows, what the day
+ * was made of, and one collapsed offer of foods that would close the day's
+ * dominant gap. `buildDayBudgetRows` owns which rows exist and every word in
+ * them, so nothing about the day is decided here.
  */
 function DaySummaryCard({
   summary,
@@ -1500,86 +1475,64 @@ function DaySummaryCard({
     t,
   });
   const hasAnyGoal = goals.netCarbsCeiling !== null || goals.proteinFloor !== null || goals.kcalTarget !== null;
-  const details = useDayDetails();
-  const kcalHedged = summary.hasEstimates || summary.hasUnknowns;
 
-  const heroInput = {
-    netCarbs: summary.netCarbs,
-    netCarbsCeiling: goals.netCarbsCeiling,
-    kcal: summary.kcal,
-    kcalTarget: goals.kcalTarget,
-    hasEstimates: summary.hasEstimates,
+  const rows = buildDayBudgetRows({
+    totals: {
+      netCarbs: summary.netCarbs,
+      kcal: summary.kcal,
+      protein: summary.protein,
+      fiber: summary.fiber,
+      hasEstimates: summary.hasEstimates,
+    },
+    goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget: goals.kcalTarget },
+    gaps,
     t,
     language: i18n.language,
-  };
-  // One ring per goal the person actually set (M200 spec 02): both when they
-  // track carbs AND calories, nothing at all when they set neither, because a
-  // ring against an invented target would be a fabricated goal. The stats list
-  // is in the same order as the rings, so index 0 is the carb goal whenever
-  // there is one.
-  const heroStats = formatHeroStats(heroInput);
-  const heroRings = formatHeroRings(heroInput);
-  const isSingleRing = heroRings.length === 1;
+  });
+  // Net carbs always leads the list (`buildDayBudgetRows`' contract); the
+  // calorie row exists only for someone who set a calorie target.
+  const netCarbsRow = rows[0];
+  const caloriesRow = rows.find((row) => row.key === 'calories') ?? null;
 
-  // ONE tweened scalar per goal drives both that goal's headline and its arc:
-  // the hero counts the remaining (or over-by) figure, and the arc's position
-  // is derived back out of it, so the two can never drift apart mid-animation.
-  // Keyed by day + framing so switching days or goal modes resets instead of
-  // tweening across. Two fixed calls rather than one per ring, because the
-  // number of rings changes with the person's goals and a hook may not.
-  const primaryStat = heroStats[0];
-  const secondaryStat = heroStats.at(1) ?? null;
-  const animatedPrimary = useCountUp(primaryStat.numericValue, `${date}:${primaryStat.mode}`);
-  const animatedSecondary = useCountUp(secondaryStat?.numericValue ?? 0, `${date}:${secondaryStat?.mode ?? 'none'}`);
-  const animatedFigures = [animatedPrimary, animatedSecondary];
-
-  /** The tier-1 string for a ring, formatted from its own tweened figure. */
-  const heroValueFor = (stat: HeroStatData, animatedFigure: number): string =>
-    formatHeroValue({
-      numericValue: animatedFigure,
-      mode: stat.mode,
+  // ONE tweened scalar per BUDGET row: the headline counts toward its own
+  // figure and the meter follows the settled fraction. Keyed by day + framing
+  // so switching days or goal modes resets instead of tweening across. Two
+  // fixed calls rather than one per row, because the number of rows changes
+  // with the person's goals and a hook may not.
+  const animatedNetCarbs = useCountUp(netCarbsRow.headlineNumeric ?? 0, `${date}:${netCarbsRow.headlineMode ?? 'none'}`);
+  const animatedCalories = useCountUp(
+    caloriesRow?.headlineNumeric ?? 0,
+    `${date}:${caloriesRow?.headlineMode ?? 'none'}`,
+  );
+  const animatedHeadlines: AnimatedHeadlines = {
+    netCarbs: formatBudgetHeadline({
+      row: netCarbsRow,
+      numericValue: animatedNetCarbs,
       hasEstimates: summary.hasEstimates,
       language: i18n.language,
-    });
+      t,
+    }),
+    calories:
+      caloriesRow === null ? null : (
+        formatBudgetHeadline({
+          row: caloriesRow,
+          numericValue: animatedCalories,
+          hasEstimates: summary.hasEstimates,
+          language: i18n.language,
+          t,
+        })
+      ),
+  };
 
-  // The calorie line is composed here (it needs the goals) but RENDERS inside
-  // the drill-down — calories are exactly the kind of secondary figure the
-  // novice-first hero exists to get out of the way.
+  // The absolute calorie figure is a "What you ate" fact, and only for someone
+  // with no calorie target. With a target, the calorie BUDGET row above
+  // already carries the same number, framed as an answer.
   const kcalLine =
-    goals.kcalTarget !== null ?
-      <KcalGoalLine kcal={summary.kcal} target={goals.kcalTarget} hedged={kcalHedged} />
-    : <p className="text-sm text-muted-foreground tabular-nums">
+    caloriesRow !== null ? null : (
+      <p className="text-sm text-muted-foreground tabular-nums">
         {t('diary.kcal.absolute', { value: Math.round(summary.kcal) })}
-      </p>;
-
-  /**
-   * The two lines that survive at hero level: the verdict, and the one macro
-   * people chase. `centered` follows the RING: in the ring variant the glance
-   * sits under a centered circle on a phone and beside it on desktop, so it
-   * centers then left-aligns; in the ceiling-less variant there is no ring and
-   * the card leads with a left-aligned headline, so the glance stays left at
-   * every width (centering it there left the card reading as two unrelated
-   * halves).
-   */
-  const renderGlance = (centered: boolean) => (
-    <div className={cn('flex flex-col gap-2.5', centered ? 'items-center sm:items-start' : 'items-start')}>
-      <CarbImpactChip impact={gaps.impact} />
-      <HeroProteinFigure gap={gaps.protein} />
-    </div>
-  );
-
-  const drillDown = (
-    <DayDetailsPanel {...details}>
-      <DayDrillDown
-        summary={summary}
-        gaps={gaps}
-        addBase={addBase}
-        hasAnyGoal={hasAnyGoal}
-        caveat={getSummaryCaveat(summary, t)}
-        kcalLine={kcalLine}
-      />
-    </DayDetailsPanel>
-  );
+      </p>
+    );
 
   // Brand hero surface (M129/01, recomposed in the soul pass): this is the
   // diary's single most-looked-at card, so it gets the directional teal wash
@@ -1593,97 +1546,24 @@ function DaySummaryCard({
     celebrating && 'motion-safe:animate-celebrate',
   );
 
-  if (heroRings.length === 0) {
-    return (
-      <Card className={heroCardClass}>
-        <CardContent className="space-y-5 p-5 sm:p-6">
-          {/*
-            The budget-less variant's headline stat. Deliberately NOT
-            `font-display`: this is a live figure, and the Fraunces subset has
-            no tabular figures, so the number would jitter in width as it
-            changes (see app.css). The brand voice on this card is carried by
-            the eyebrow above it, which is fixed text.
-          */}
-          <div className="space-y-1.5">
-            <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
-            <HeroStat stat={primaryStat} value={heroValueFor(primaryStat, animatedPrimary)} size="headline" />
-          </div>
-          <div className="space-y-4">
-            {renderGlance(false)}
-            <DayDetailsButton {...details} />
-          </div>
-          {drillDown}
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card className={heroCardClass}>
       <CardContent className="space-y-5 p-5 sm:p-6">
-        {/*
-          Ring left of the glance on wide screens, stacked above it on narrow
-          ones. `items-center` on the row plus a real `gap-8` gutter centers
-          the two columns against each other and gives the circle air on all
-          four sides; the ring itself steps 120px -> 136px purely through the
-          `--ring-box` custom property (see RingProgress) — one component, one
-          geometry, two sizes.
-
-          M129/06 shrank the right-hand column from a seven-line block to two
-          lines, which is why the ring now reads as the hero of its own card
-          rather than as a decoration beside a wall of text.
-        */}
-        <div
-          className={cn(
-            'flex flex-col items-center gap-5',
-            isSingleRing && 'sm:flex-row sm:items-center sm:gap-8',
+        {/* No eyebrow here: the date navigation directly above already names
+            the day this card describes. */}
+        <CarbImpactChip impact={gaps.impact} />
+        <div className="space-y-3">
+          <DayBudgetRows rows={rows} animatedHeadlines={animatedHeadlines} />
+          {!hasAnyGoal && (
+            <Link to="/settings/goals" className="inline-block text-xs text-primary underline-offset-4 hover:underline">
+              {t('diary.drilldown.setTargets')}
+            </Link>
           )}
-        >
-          {/*
-            One goal keeps the full-size ring it has always had, beside the
-            glance. Two goals stack the pair above the glance instead, so the
-            second ring is ADDED rather than paid for by shrinking the first.
-          */}
-          <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6">
-            {heroRings.map((ring, index) => {
-              const animatedFigure = animatedFigures[index];
-              const animatedConsumed =
-                ring.stat.isOver ? ring.max + animatedFigure : ring.max - animatedFigure;
-              return (
-                <RingProgress
-                  key={ring.metric}
-                  value={ring.consumed}
-                  animatedValue={animatedConsumed}
-                  max={ring.max}
-                  size={isSingleRing ? 136 : 116}
-                  strokeWidth={isSingleRing ? 11 : 10}
-                  className={
-                    isSingleRing ?
-                      '[--ring-box:120px] sm:[--ring-box:136px]'
-                    : '[--ring-box:100px] sm:[--ring-box:116px]'
-                  }
-                  trackClassName="text-primary/20"
-                  progressClassName={ring.stat.isOver ? 'text-accent-amber' : 'text-primary'}
-                  label={ring.stat.srLabel}
-                >
-                  <HeroStat stat={ring.stat} value={heroValueFor(ring.stat, animatedFigure)} />
-                </RingProgress>
-              );
-            })}
-          </div>
-          {/*
-            The right-hand column holds the glance AND the disclosure trigger.
-            On a phone that stacks under the ring exactly as before; on a wide
-            screen it's what stops the novice-first hero's two short lines from
-            leaving a void beside the ring. The expanded panel still spans the
-            card's full width (see `DayDetailsPanel`) — its macro grid needs it.
-          */}
-          <div className="w-full min-w-0 flex-1 space-y-4">
-            {renderGlance(true)}
-            <DayDetailsButton {...details} />
-          </div>
         </div>
-        {drillDown}
+        <div className="border-t border-primary/15 pt-4">
+          <WhatYouAte summary={summary} caveat={getSummaryCaveat(summary, t)} kcalLine={kcalLine} />
+        </div>
+        <SuggestionsDisclosure gaps={gaps} addBase={addBase} />
       </CardContent>
     </Card>
   );
