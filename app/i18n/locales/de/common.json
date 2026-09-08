@@ -2648,18 +2648,18 @@
     },
     "person": {
       "back": "Zurück zur Liste",
-      "activityTitle": "Fotos gelesen pro Tag",
+      "activityTitle": "Gelesene Fotos pro Tag",
       "activityWindow": "Die letzten {{days}} Tage, {{from}} bis {{to}}.",
       "activityTotal": "In diesem Zeitraum gelesene Fotos: {{photos}}",
       "activityQuiet": "In diesem Zeitraum wurde nichts gelesen.",
-      "activityLegend": "Ein Quadrat entspricht einem Tag. Ein leeres Quadrat bedeutet keine gelesenen Fotos. Tage vor diesem Zeitraum werden nicht aufbewahrt.",
+      "activityLegend": "Ein Quadrat steht für einen Tag. Ein leeres Quadrat bedeutet, dass nichts gelesen wurde. Tage vor diesem Zeitraum werden nicht gespeichert.",
       "day": "{{day}}: {{photos}}",
       "activityLoading": "Wird geladen",
-      "activityFailed": "Die Tageswerte konnten nicht geladen werden.",
+      "activityFailed": "Die täglichen Zahlen konnten nicht geladen werden.",
       "activityRetry": "Erneut versuchen",
-      "noDiary": "Das ist alles, was hier über die Nutzung dieser Person gespeichert ist. Ihr Tagebuch ist auf dem eigenen Gerät verschlüsselt und kann hier nicht gelesen werden.",
-      "selfNote": "Das ist dein eigenes Konto. Sperren und Löschen werden hier nicht angeboten, damit sich die letzte Person mit Verwaltungsrechten nicht selbst aussperren kann.",
-      "notFound": "Unter dieser Adresse ist niemand."
+      "noDiary": "Das ist alles, was hier über die Nutzung dieser Instanz durch die Person gespeichert wird. Ihr Tagebuch ist auf ihrem eigenen Gerät verschlüsselt und kann hier nicht gelesen werden.",
+      "selfNote": "Das ist dein eigenes Konto. Sperren und Löschen werden hier nicht angeboten, damit sich die letzte Person, die diese Instanz verwalten kann, nicht selbst aussperren kann.",
+      "notFound": "Unter dieser Adresse gibt es niemanden."
     },
     "tabs": {
       "label": "Bereiche",
@@ -2675,16 +2675,16 @@
       "active": "Aktiv",
       "suspended": "Gesperrt",
       "administrators": "Administratoren",
-      "noneQuery": "Hier passt niemand zu \"{{query}}\".",
-      "noneGroup": "In \"{{group}}\" ist hier niemand.",
-      "noneBoth": "In \"{{group}}\" passt niemand zu \"{{query}}\"."
+      "noneQuery": "Niemand hier passt zu \"{{query}}\".",
+      "noneGroup": "Niemand hier gehört zu \"{{group}}\".",
+      "noneBoth": "Niemand in \"{{group}}\" passt zu \"{{query}}\"."
     },
     "activity": {
-      "title": "Wer nutzt es noch",
+      "title": "Wer es noch nutzt",
       "body": "Eine Zeile pro Person, zuletzt aktive zuerst.",
       "windowLabel": "Zeitraum",
       "windowDays": "{{days}} Tage",
-      "failed": "Die Tageswerte konnten nicht geladen werden. Die Personen stehen weiterhin in der Liste."
+      "failed": "Die täglichen Zahlen konnten nicht geladen werden. Die Personen werden weiterhin aufgeführt."
     }
   },
   "signOut": {
