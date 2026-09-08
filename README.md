@@ -140,6 +140,38 @@ pnpm build          # react-router build (NODE_ENV=production)
 pnpm start          # tsx ./server.ts (NODE_ENV=production)
 ```
 
+### Seeding a test device
+
+A fresh browser holds no diary, so every review of a screen starts on an empty app, and there
+is no login on this server to sign in with. `pnpm seed:test-account` fixes both:
+
+```bash
+pnpm seed:test-account --diary-only          # just the diary file, no network at all
+```
+
+That writes `seed-diary.json`, a deterministic three-week diary with days over, at and under
+the carb ceiling, days with nothing logged, entries in every meal slot and in none, typed
+entries beside photographed ones, a weight series and goals. Open `/settings/data` on a device
+and upload it. A fresh browser has to be walked past onboarding first, or `/settings/data` is
+unreachable.
+
+With an `openplate-sync` instance running, the same command also creates an account you can
+sign in as, and pushes the diary to it, so a fresh device pulls a populated diary on its first
+sign-in:
+
+```bash
+ADMIN_TOKEN=... SEED_PASSPHRASE=... pnpm seed:test-account --url http://localhost:3000
+```
+
+`ADMIN_TOKEN` mints the invite and `SEED_PASSPHRASE` becomes the account's password. Neither
+has a flag: a credential in argv is a credential in your shell history. The default target is
+localhost and any other host needs `--allow-remote`, because **the account this creates is a
+real account** on whatever instance you point it at, and nothing removes it for you. Delete it
+when you are done, with `pnpm sync-api accounts delete <id> --yes` in `openplate-sync`.
+
+`pnpm seed:test-account --help` lists the rest: `--weeks`, `--seed`, `--end-day`,
+`--timezone`, `--out`, `--email`, `--no-push`.
+
 Built with React Router v8, Express, and IndexedDB in the browser. Every environment variable
 is optional tuning: copy `.env.example` to `.env` if you want to change one. The image is
 built from `Dockerfile.pnpm`; its entrypoint just starts the server, with no migration or

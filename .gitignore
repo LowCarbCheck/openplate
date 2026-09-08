@@ -21,3 +21,6 @@ node_modules
 
 # Local tooling artifacts that land in the repo root
 /--full-page
+
+# The default output of `pnpm seed:test-account`. A test fixture, never a commit.
+/seed-diary.json
