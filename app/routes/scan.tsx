@@ -102,8 +102,10 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
 import { SubmitButton } from '#app/components/submit-button';
+import { useSyncSession } from '#app/components/sync-status';
 import { FieldError } from '#app/components/field-error';
 import { Button } from '#app/components/ui/button';
+import type { SyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '#app/components/ui/alert';
@@ -158,6 +160,17 @@ function currentLanguage(): string {
  * `clientLoader.hydrate` is true.
  */
 export function HydrateFallback() {
+  return <ScanLoading />;
+}
+
+/**
+ * The screen's one "not yet" state, shared by two waits: the client loader
+ * reading the device (above), and a managed instance still reopening its
+ * session (`ConnectCard`). Both are the same fact to the person in front of
+ * it, the answer has not arrived, and a card that guessed at one of them
+ * would be wrong for a second.
+ */
+function ScanLoading() {
   const { t } = useTranslation();
   return (
     <output className="mx-auto block max-w-2xl py-16 text-center text-sm text-muted-foreground" aria-live="polite">
@@ -1901,22 +1914,67 @@ function useKeylessSharedPhotoPreview(): string | null {
  * - `instance-ai`: this instance runs an inference endpoint of its own (M138
  *   spec 06), and the recipient is NAMED — a person deciding whether to press
  *   the shutter is deciding who sees the photo.
- * - `managed-missing`: a managed instance (M187 spec 03, M192), where AI comes
- *   from the account and never from a button on this card. It wins over a
- *   preset: a person here brings no key of their own, and the answer to a
- *   missing connection is their administrator rather than a provider signup.
+ * - `managed-missing`: a managed instance (M187 spec 03, M192) with a session
+ *   OPEN, where AI comes from the account and never from a button on this
+ *   card. It wins over a preset: a person here brings no key of their own, and
+ *   the answer to a missing connection is their administrator rather than a
+ *   provider signup.
+ * - `managed-signed-out`: the same instance with NO session. The card must not
+ *   name an administrator here, the account is very probably fine, and the
+ *   only true sentence is that this device is signed out.
+ * - `resuming`: the same instance while the session is still being reopened.
+ *   Not a card at all; `ConnectCard` renders the screen's loading placeholder,
+ *   because the two managed answers above are opposite and one of them would
+ *   be wrong for the second the resume takes.
+ *
+ * ── The incident this third argument exists for (0.10.3) ─────────────────
+ *
+ * A managed instance signed people out silently: a spent refresh token in the
+ * device's cache was read by the service as theft and the whole family was
+ * revoked. This screen then told them their account was not switched on for
+ * photo estimates and to ask their administrator, of an account with a limit
+ * of 200 that was never suspended and whose owner had done nothing. The rule
+ * (`resolveEffectiveAiSettings`) was right to answer `null` for all three
+ * cases; naming them is the SCREEN's job, and this is the screen.
  */
 export type ConnectCardVariant =
-  { kind: 'self-hosted' } | { kind: 'instance-ai'; host: string } | { kind: 'managed-missing' };
+  | { kind: 'self-hosted' }
+  | { kind: 'instance-ai'; host: string }
+  | { kind: 'managed-missing' }
+  | { kind: 'managed-signed-out' }
+  | { kind: 'resuming' };
+
+/** Whether this device holds a session, as this card has to ask it. */
+export type ConnectSessionState = 'resuming' | 'signed-out' | 'signed-in';
+
+/**
+ * Reads the session snapshot as the three answers this card distinguishes.
+ *
+ * `account === null` alone is NOT "signed out": it is also every moment
+ * between a reload and the end of the resume, which is why `isResuming` is
+ * asked first (`SyncSessionSnapshot.isResuming`).
+ */
+export function resolveConnectSessionState(session: SyncSessionSnapshot): ConnectSessionState {
+  if (session.isResuming) return 'resuming';
+  return session.account === null ? 'signed-out' : 'signed-in';
+}
 
 export function resolveConnectCardVariant({
   managed,
   presetBaseUrl,
+  sessionState,
 }: {
   managed: boolean;
   presetBaseUrl: string | null;
+  sessionState: ConnectSessionState;
 }): ConnectCardVariant {
-  if (managed) return { kind: 'managed-missing' };
+  if (managed) {
+    if (sessionState === 'resuming') return { kind: 'resuming' };
+    if (sessionState === 'signed-out') return { kind: 'managed-signed-out' };
+    return { kind: 'managed-missing' };
+  }
+  // An open instance's card does not depend on a session at all: the key is
+  // the device's own, and there may be no account anywhere on this instance.
   if (presetBaseUrl === null) return { kind: 'self-hosted' };
   return { kind: 'instance-ai', host: new URL(presetBaseUrl).host };
 }
@@ -1939,20 +1997,51 @@ export function resolveConnectCardVariant({
  * `scan-connect-card.test.ts`, which renders both shapes.
  */
 export function ConnectCard({ logDate }: { logDate: string | null }) {
-  const { t } = useTranslation();
-  const revalidator = useRevalidator();
-  const addHref = logDate ? `/add?date=${logDate}` : '/add';
-  const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
   // Which instance this is decides the whole card. An instance that runs AI of
   // its own cannot say openplate runs none, because on this instance it does.
   // TWO ways an instance can: its own inference endpoint (M138 spec 06), or by
   // being a managed instance whose server proxies AI for its accounts (M192).
   const { aiComesFromTheInstance } = useInstancePolicy();
   const instancePreset = useInstanceInferencePreset();
+  // AND WHETHER THIS DEVICE IS SIGNED IN, which on a managed instance decides
+  // between two opposite sentences. See `resolveConnectCardVariant`.
+  const session = useSyncSession();
   const variant = resolveConnectCardVariant({
     managed: aiComesFromTheInstance,
     presetBaseUrl: instancePreset?.baseUrl ?? null,
+    sessionState: resolveConnectSessionState(session),
   });
+  // NOT A CARD YET. The resume is still running and the two managed answers
+  // are opposite, so the screen waits rather than picking one and correcting
+  // itself a moment later.
+  if (variant.kind === 'resuming') return <ScanLoading />;
+  return <ConnectCardView variant={variant} logDate={logDate} />;
+}
+
+/**
+ * The card itself, given its variant.
+ *
+ * SPLIT FROM THE HOOKS ABOVE so every shape can be rendered in a test. The
+ * session snapshot is read through `useSyncExternalStore`, whose server
+ * snapshot is a constant signed-out session, so a static render of the
+ * container can only ever produce the signed-out shape, and the other two
+ * would have no test at all.
+ */
+export function ConnectCardView({
+  variant,
+  logDate,
+}: {
+  variant: Exclude<ConnectCardVariant, { kind: 'resuming' }>;
+  logDate: string | null;
+}) {
+  const { t } = useTranslation();
+  const revalidator = useRevalidator();
+  const addHref = logDate ? `/add?date=${logDate}` : '/add';
+  const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
+  // BOTH MANAGED SHAPES SUPPRESS THE SAME BUTTONS. There is no key to bring on
+  // a managed instance whether or not anybody is signed in, so the OAuth
+  // button, the preset and the manual settings link are wrong in both.
+  const isManaged = variant.kind === 'managed-missing' || variant.kind === 'managed-signed-out';
   return (
     <Card>
       <CardHeader>
@@ -1960,7 +2049,7 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
           <Camera className="h-5 w-5" /> {t('scan.setup.title')}
         </CardTitle>
         <CardDescription>
-          {variant.kind === 'managed-missing' ? t('scan.setup.managed.description') : t('scan.setup.description')}
+          {isManaged ? t('scan.setup.managed.description') : t('scan.setup.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1998,6 +2087,18 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
             <p>{t('scan.setup.managedMissing.askAdmin')}</p>
           </div>
         )}
+        {/* AND THE OPPOSITE ANSWER, for the same instance with no session open.
+            No administrator is named here: the account is very probably fine
+            and nothing about it has to change. What is missing is the session,
+            and the door to it is on this card rather than three taps away. */}
+        {variant.kind === 'managed-signed-out' && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{t('scan.setup.managedSignedOut.body')}</p>
+            <Button asChild className="h-11 w-full">
+              <Link to="/sign-in">{t('scan.setup.managedSignedOut.cta')}</Link>
+            </Button>
+          </div>
+        )}
         {/* One tap, no key to go and get — renders nothing at all when this
             instance provides no AI of its own. Above the BYOK buttons because
             on such an instance it is the whole answer; `revalidate` re-runs
@@ -2007,9 +2108,7 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
             is suppressed outright on a managed one: a preset button there would
             offer a second way in beside the account, which is not how the
             answer arrives. */}
-        {variant.kind !== 'managed-missing' && (
-          <InstancePresetConnect onConnected={() => void revalidator.revalidate()} />
-        )}
+        {!isManaged && <InstancePresetConnect onConnected={() => void revalidator.revalidate()} />}
         {sharedPhotoPreviewUrl && (
           <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
             <img
@@ -2027,7 +2126,7 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
               instance: a user there never brings a key of their own, so
               offering one reads as "your OpenRouter connection is missing"
               when the real answer is a new invite link. */}
-          {variant.kind !== 'managed-missing' && supportsOauthPkce('openrouter') && (
+          {!isManaged && supportsOauthPkce('openrouter') && (
             <OAuthConnectButton className="h-11 w-full sm:flex-1">
               {t('scan.setup.connectOpenRouter')}
             </OAuthConnectButton>
@@ -2036,7 +2135,7 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
             <Link to={addHref}>{t('scan.capture.addWithoutPhoto')}</Link>
           </Button>
         </div>
-        {variant.kind !== 'managed-missing' && (
+        {!isManaged && (
           <div className="text-center">
             {/* `?next=scan` returns the user here once their key is connected.
                 Dropped on a managed instance for the same reason as the OAuth

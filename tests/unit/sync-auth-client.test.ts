@@ -15,7 +15,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
+import { SyncAuthClient, type SessionTokenStore } from '../../app/lib/sync/engine/client/auth-client';
 import { deriveCredentialsFromPassphrase } from '../../app/lib/sync/engine/client/derive-credentials';
 import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engine/crypto/argon2';
 import { createMemoryStorage } from '../../app/lib/sync/sync-state';
@@ -24,6 +24,7 @@ import type {
   KdfDescriptorResponse,
   RefreshResponseWire,
   SessionResponseWire,
+  SessionTokensWire,
 } from '../../app/lib/sync/engine/client/auth-wire';
 
 const BASE_URL = 'https://sync.example.test';
@@ -311,4 +312,202 @@ test('the handshake fails CLOSED when the service is unreachable or mismatched',
 
   const unreadable = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl: garbageFetch });
   assert.equal((await unreadable.handshake()).status, 'incompatible');
+});
+
+// ---------------------------------------------------------------------------
+// The token store (M201, the 0.10.3 silent sign-out)
+// ---------------------------------------------------------------------------
+
+/**
+ * A `SessionTokenStore` that remembers what it was told.
+ *
+ * The real one is `session-cache.ts`'s IndexedDB row; what this file checks is
+ * the CLIENT's half of the contract, that a rotation is reported at all, that
+ * a newer pair is adopted instead of spending a spent token, and that a client
+ * with no store attached behaves exactly as it did before the interface
+ * existed.
+ */
+function recordingStore(initial: SessionTokensWire | null = null) {
+  const rotations: SessionTokensWire[] = [];
+  const state = { latest: initial, rotations, locks: 0 };
+  const store: SessionTokenStore = {
+    latest: async () => state.latest,
+    onRotated: async (tokens) => {
+      state.rotations.push(tokens);
+      state.latest = tokens;
+    },
+    withLock: async (task) => {
+      state.locks += 1;
+      return task();
+    },
+  };
+  return { store, state };
+}
+
+test('a mid-life refresh reports the rotated pair to the store', async () => {
+  const { fetchImpl } = stubService();
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+  await client.login({ email: 'anna@example.org', authHash: 'AAAA' });
+  const { store, state } = recordingStore();
+  client.setTokenStore(store);
+
+  assert.equal(await client.refreshAccessToken(), 'access-3');
+
+  // THE WHOLE INCIDENT IN ONE ASSERTION. Before M201 this rotation happened in
+  // memory and nothing wrote it down, so the device's cached copy went on
+  // holding `refresh-2`, a token the service had already revoked, and which it
+  // reads as theft on the next reload.
+  assert.equal(state.rotations.length, 1, 'a rotation nobody records is a spent token left on disk');
+  assert.equal(state.rotations[0]?.refreshToken, 'refresh-3');
+  assert.equal(state.rotations[0]?.accessToken, 'access-3');
+  assert.equal(state.locks, 1, 'the refresh must run under the device lock');
+});
+
+/**
+ * The three refresh-token expiries this file orders pairs by.
+ *
+ * `refreshTokenExpiresAt` IS the ordering: the service mints a fresh one on
+ * every rotation and it only moves forward within a family, so later means
+ * minted later. A test that used the same expiry for two different tokens
+ * would be asserting a tie, which is its own case below.
+ */
+const HELD_REFRESH_EXPIRY = '2026-10-04T10:00:00.000Z';
+const NEWER_REFRESH_EXPIRY = '2026-11-04T10:00:00.000Z';
+const OLDER_REFRESH_EXPIRY = '2026-09-01T10:00:00.000Z';
+
+/** A client holding one pair, with a stub that fails any request it must not make. */
+function clientHoldingR1(onRefresh: () => void) {
+  const fetchImpl: typeof fetch = async (input) => {
+    if (String(input).endsWith('/v1/auth/refresh')) onRefresh();
+    return respond({ error: 'the client must not have asked' }, 500);
+  };
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+  client.restoreSession({
+    account: { id: 1, email: 'anna@example.org' },
+    tokens: {
+      accessToken: 'a1',
+      accessTokenExpiresAt: 'x',
+      refreshToken: 'r1',
+      refreshTokenExpiresAt: HELD_REFRESH_EXPIRY,
+    },
+  });
+  return client;
+}
+
+test('a refresh adopts a NEWER pair from the store and spends nothing', async () => {
+  let refreshCalls = 0;
+  const client = clientHoldingR1(() => {
+    refreshCalls += 1;
+  });
+  // Another context rotated while this client was not looking, and left a pair
+  // with real life in its access token.
+  const { store } = recordingStore({
+    accessToken: 'a2',
+    accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
+    refreshToken: 'r2',
+    refreshTokenExpiresAt: NEWER_REFRESH_EXPIRY,
+  });
+  client.setTokenStore(store);
+
+  assert.equal(await client.refreshAccessToken(), 'a2');
+  assert.equal(refreshCalls, 0, 'spending r1 here is the theft signal that revokes the family');
+  assert.equal(client.getSession()?.tokens.refreshToken, 'r2', 'the whole pair is adopted, not just the access token');
+});
+
+test('an OLDER pair in the store is NOT adopted, because a write-back can fail', async () => {
+  // THE HOLE THIS CLOSES. `reportRotation` is best effort by design, so a
+  // failed `onRotated` leaves the store holding the pair BEFORE the rotation
+  // while this client holds the one after it. A test of mere inequality would
+  // read that as "somebody rotated", adopt `r0`, and spend a token the
+  // rotation already revoked, which revokes the family on every device.
+  const { fetchImpl, captured } = stubService();
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+  await client.login({ email: 'anna@example.org', authHash: 'AAAA' });
+  const { store, state } = recordingStore({
+    accessToken: 'a0',
+    accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
+    refreshToken: 'r0-already-revoked',
+    refreshTokenExpiresAt: OLDER_REFRESH_EXPIRY,
+  });
+  client.setTokenStore(store);
+  // NON-VACUITY: the stored pair really is older than the one the login left
+  // in hand. Written as an assertion because both sides are fixtures, and a
+  // fixture drifting the wrong way would silently make this test pass for the
+  // wrong reason.
+  assert.ok(
+    Date.parse(OLDER_REFRESH_EXPIRY) < Date.parse(client.getSession()?.tokens.refreshTokenExpiresAt ?? ''),
+    'the stale pair must genuinely predate the one in hand',
+  );
+
+  assert.equal(await client.refreshAccessToken(), 'access-3');
+
+  const refreshes = captured.filter((call) => call.url.endsWith('/v1/auth/refresh'));
+  assert.equal(refreshes.length, 1, 'the pair in hand is the current one, so it is the one to spend');
+  assert.ok(refreshes[0]?.body?.includes('refresh-2'), 'and NOT the stale token the failed write left behind');
+  assert.ok(!(refreshes[0]?.body?.includes('r0-already-revoked') ?? false));
+  // And the write that failed last time is retried by this rotation, so the
+  // store catches up rather than staying stale forever.
+  assert.equal(state.latest?.refreshToken, 'refresh-3');
+});
+
+test('a TIE is not adopted: same expiry, different token, keep the pair in hand', async () => {
+  // WHY THE TIE GOES TO THE PAIR IN HAND. Two different refresh tokens sharing
+  // a `refreshTokenExpiresAt` are not ordered by anything this client can see,
+  // so "newer" is unprovable, and the two possible mistakes are not the same
+  // size. Declining to adopt a pair that really was newer costs one refused
+  // refresh, which ends the session VISIBLY (`endSessionRefused`) and asks the
+  // person to sign in. Adopting one that was not newer spends a revoked token
+  // and revokes the family on every device the account has. So the tie is
+  // resolved towards the smaller failure, and it is the same answer this code
+  // gives when either timestamp will not parse.
+  let refreshCalls = 0;
+  const client = clientHoldingR1(() => {
+    refreshCalls += 1;
+  });
+  const { store } = recordingStore({
+    accessToken: 'a-tied',
+    accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
+    refreshToken: 'r-tied',
+    refreshTokenExpiresAt: HELD_REFRESH_EXPIRY,
+  });
+  client.setTokenStore(store);
+
+  // The stub answers every refresh with a 500, so this throws rather than
+  // adopting, which is the observable difference: an adoption would have
+  // returned `a-tied` without a request at all.
+  await assert.rejects(client.refreshAccessToken());
+  assert.equal(refreshCalls, 1, 'it spent its own token rather than one it cannot prove is newer');
+  assert.equal(client.getSession()?.tokens.refreshToken, 'r1', 'and it still holds its own pair');
+});
+
+test('an adopted pair whose access token is nearly spent is refreshed rather than used', async () => {
+  const { fetchImpl } = stubService();
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+  await client.login({ email: 'anna@example.org', authHash: 'AAAA' });
+  // `refresh-2` is what this client holds; the store has moved on to a NEWER
+  // pair whose access token expires in five seconds, which is not enough to
+  // send a request with.
+  const { store, state } = recordingStore({
+    accessToken: 'nearly-spent',
+    accessTokenExpiresAt: new Date(Date.now() + 5_000).toISOString(),
+    refreshToken: 'refresh-newer',
+    refreshTokenExpiresAt: NEWER_REFRESH_EXPIRY,
+  });
+  client.setTokenStore(store);
+
+  assert.equal(await client.refreshAccessToken(), 'access-3');
+  assert.equal(state.rotations.length, 1);
+});
+
+test('with NO store attached the client refreshes exactly as it did before', async () => {
+  const { fetchImpl, captured } = stubService();
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+  await client.login({ email: 'anna@example.org', authHash: 'AAAA' });
+
+  assert.equal(await client.refreshAccessToken(), 'access-3');
+
+  const refreshes = captured.filter((call) => call.url.endsWith('/v1/auth/refresh'));
+  assert.equal(refreshes.length, 1, 'one request, the same one');
+  assert.ok(refreshes[0]?.body?.includes('refresh-2'), 'and it spends the pair this client holds');
+  assert.equal(client.getSession()?.tokens.refreshToken, 'refresh-3');
 });

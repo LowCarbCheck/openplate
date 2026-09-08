@@ -69,7 +69,7 @@ import {
   type SyncErrorReason,
   type SyncVault,
 } from './sync-session';
-import { cacheOpenSession, closeAndForgetSyncSession, openSyncVault } from './session-cache';
+import { cacheOpenSession, closeAndForgetSyncSession, endSessionRefused, openSyncVault } from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
 
 /** Overridable seams. Production passes none of these; tests pass all of them. */
@@ -541,7 +541,12 @@ export async function syncNow(): Promise<void> {
     // copy behind would let the next reload resume a session the service has
     // ended, fail again, and keep doing so — a device that looks signed in and
     // has not sent a byte since the day it was suspended.
-    if (failure.reason === 'reauth-required') await closeAndForgetSyncSession();
+    //
+    // `endSessionRefused` AND NOT `closeAndForgetSyncSession`: the second one
+    // publishes the plain signed-out snapshot, whose `error` is `null`, which
+    // wiped the failure set one line above and made `sync.status.error.reauth-required`
+    // unreachable copy. The person was signed out and told nothing.
+    if (failure.reason === 'reauth-required') await endSessionRefused(failure);
     throw error;
   }
 }

@@ -40,18 +40,26 @@
  * other database. This one is not in it and cannot be added to it by accident:
  * there is no code path from the exporter to this file.
  */
-import { SyncAuthClient } from './engine/client/auth-client';
+import { SyncAuthClient, type SessionTokenStore } from './engine/client/auth-client';
 import { SyncHttpClient } from './engine/client/http-client';
 import { SyncRequestError } from './engine/client/sync-error';
 import type { SessionTokensWire } from './engine/client/auth-wire';
 import { createPrivateStoreSession, type PrivateStoreSession } from './private-store';
 import type { EstablishedPrivateStore } from './engine/crypto/private-store';
-import { createSyncStateStore, deviceStorage, resolveDeviceId } from './sync-state';
+import {
+  createSyncStateStore,
+  deviceStorage,
+  lockDevice,
+  lockDeviceWhenSessionEnds,
+  resolveDeviceId,
+} from './sync-state';
+import { createDeviceLock, SYNC_SESSION_TOKEN_LOCK_NAME } from './sync-lock';
 import {
   closeSyncSession,
   getSyncSessionSnapshot,
   getSyncVault,
   openSyncSession,
+  updateSyncSession,
   writeAccountHint,
   type SyncSessionSnapshot,
   type SyncVault,
@@ -226,6 +234,72 @@ export async function clearSessionCache(): Promise<void> {
 }
 
 /**
+ * The device's durable token store, as the auth client wants to see it
+ * (`SessionTokenStore`).
+ *
+ * ── The bug this closes (0.10.3, beta.openplate.de) ──────────────────────
+ *
+ * `/v1/auth/refresh` rotates: the new pair is minted and the old refresh token
+ * is revoked in the same act. The client rotated in memory and nothing wrote
+ * the pair back, so from the FIRST mid-life refresh, any 401 after the access
+ * token's fifteen minutes, the record below still held the spent token. The
+ * next reload presented it, the service read an already revoked token as theft
+ * and revoked the whole family (`PROTOCOL.md` §4.2), and the person was signed
+ * out with no act of their own. One tab was enough; two tabs racing is a
+ * second, rarer path through the same door.
+ *
+ * ── A SINGLETON, so attaching it twice is attaching the same thing ───────
+ *
+ * `setTokenStore` compares by identity to stay idempotent, and both attach
+ * points below run on the same resume. A factory that minted a new object per
+ * call would defeat that check.
+ *
+ * ── It takes ONE lock and nothing else ───────────────────────────────────
+ *
+ * The token lock, named in `sync-lock.ts`, which that file's ordering rule
+ * places after the orchestrator lock and before nothing. `latest` and
+ * `onRotated` go straight to IndexedDB through this module's own two
+ * functions, which take no lock at all.
+ */
+const withSessionTokenLock = createDeviceLock(SYNC_SESSION_TOKEN_LOCK_NAME);
+
+const DEVICE_TOKEN_STORE: SessionTokenStore = {
+  async latest(): Promise<SessionTokensWire | null> {
+    const record = await readSessionCache();
+    if (record === null) return null;
+    return {
+      accessToken: record.accessToken,
+      accessTokenExpiresAt: record.accessTokenExpiresAt,
+      refreshToken: record.refreshToken,
+      refreshTokenExpiresAt: record.refreshTokenExpiresAt,
+    };
+  },
+  async onRotated(tokens: SessionTokensWire): Promise<void> {
+    // READ, PATCH, WRITE, never a fresh record. The DEK and `K_pp` are in
+    // this row too, and only a session that HELD them may write it. No
+    // record means no session was cached on this device, and minting one
+    // here would produce a row that resumes into a vault with no keys.
+    const record = await readSessionCache();
+    if (record === null) return;
+    await writeSessionCache({
+      ...record,
+      accessToken: tokens.accessToken,
+      accessTokenExpiresAt: tokens.accessTokenExpiresAt,
+      refreshToken: tokens.refreshToken,
+      refreshTokenExpiresAt: tokens.refreshTokenExpiresAt,
+    });
+  },
+  withLock<T>(task: () => Promise<T>): Promise<T> {
+    return withSessionTokenLock(task);
+  },
+};
+
+/** This device's token store. One object, so `setTokenStore` stays idempotent. */
+export function deviceTokenStore(): SessionTokenStore {
+  return DEVICE_TOKEN_STORE;
+}
+
+/**
  * Assembles the vault, publishes the session, and remembers it on this device.
  *
  * THE ONE PLACE A SESSION OPENS. `sync-actions.ts` calls it after a signup, a
@@ -270,6 +344,10 @@ export function openSyncVault(input: {
     state,
     serverUrl: input.serverUrl,
   };
+  // EVERY SESSION GETS THE STORE, because this is the one place a session
+  // opens. A client that rotates without one leaves the row below holding a
+  // spent refresh token, which is the 0.10.3 silent sign-out.
+  input.authClient.setTokenStore(deviceTokenStore());
   writeAccountHint(input.email, storage);
   openSyncSession(vault, { lastSyncedAt: state.load().lastSyncedAt });
   void cacheOpenSession(vault);
@@ -396,6 +474,10 @@ async function performResume({ serverUrl }: { serverUrl: string }): Promise<Sync
     refreshTokenExpiresAt: cached.refreshTokenExpiresAt,
   };
   authClient.restoreSession({ account: { id: cached.accountId, email: cached.email }, tokens });
+  // BEFORE the refresh below, not after: that refresh is itself a rotation,
+  // and its new pair has to reach the row this attempt just read. `openSyncVault`
+  // attaches the same singleton again further down, which is a no-op.
+  authClient.setTokenStore(deviceTokenStore());
 
   try {
     const refreshed = await authClient.refreshAccessToken();
@@ -450,7 +532,44 @@ async function endStaleAttempt(startedWithRefreshToken: string): Promise<void> {
   const vaultHasMovedOn =
     vault !== null && vault.authClient.getSession()?.tokens.refreshToken !== startedWithRefreshToken;
   if (vaultHasMovedOn) return;
+  await endSessionRefused({ reason: 'reauth-required', message: REFUSED_SESSION_MESSAGE });
+}
+
+/** The developer-facing half of a refusal, under the translated headline the status surface shows. */
+const REFUSED_SESSION_MESSAGE = 'The sync service refused this device\u2019s session, so it has to be opened again.';
+
+/**
+ * Ends a session the SERVER ended, VISIBLY.
+ *
+ * ── What was wrong before (0.10.3) ───────────────────────────────────────
+ *
+ * Both paths that reach here used to clear the cache and publish the plain
+ * signed-out snapshot, whose `error` is `null` by construction
+ * (`closeSyncSession`). `syncNow` even set `reauth-required` one line earlier
+ * and then wiped it, which is why `sync.status.error.reauth-required` had been
+ * shipped, translated and unreachable. The diary kept rendering from the local
+ * store, so the app looked signed in until the person tried to scan and was
+ * told to ask their administrator about an account that was working fine.
+ *
+ * So this does the three things a sign-out does, and in the same order:
+ *
+ *  1. closes the vault and drops the cached copy, so no reload resumes a
+ *     session the service has ended;
+ *  2. publishes the signed-out snapshot CARRYING the reason, which is what
+ *     `/welcome` and the status surface read;
+ *  3. locks the device where the instance asks for it, the same marker
+ *     `runSignOut` writes (`sync-state.ts`), because a session the server
+ *     ended must not leave one person's diary open to the next.
+ *
+ * The lock is LAST and conditional. On an open instance the diary belongs to
+ * the device, and shutting somebody out of their own rows because a token
+ * expired would be the worse of the two failures.
+ */
+export async function endSessionRefused(failure: NonNullable<SyncSessionSnapshot['error']>): Promise<void> {
+  closeSyncSession();
   await clearSessionCache();
+  updateSyncSession({ error: failure });
+  if (lockDeviceWhenSessionEnds()) lockDevice();
 }
 
 /** Whether a failure means "this session is over", as opposed to "we could not tell". */

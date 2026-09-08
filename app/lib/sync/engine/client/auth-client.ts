@@ -39,6 +39,13 @@
  * user out (§4.2). Two tabs racing look exactly like an attacker; the cross-tab
  * half of that is handled by the orchestrator's single-writer lock, and this
  * promise handles the in-tab half.
+ *
+ * AND THE ROTATED PAIR IS WRITTEN BACK (M201, the 0.10.3 silent sign-out). The
+ * memoized promise above serializes refreshes but did not RECORD them: a
+ * mid-life rotation replaced the pair in this object and left the device's
+ * cached copy holding the spent refresh token, which the next reload presented
+ * as its own. See {@link SessionTokenStore} for the whole failure and the seam
+ * that closes it.
  */
 import {
   AUTH_API_PREFIX,
@@ -77,8 +84,90 @@ import {
   type ProtocolCompatibility,
 } from '../protocol';
 import { z } from 'zod';
+import { createComponentLogger } from '#app/lib/logger';
+
+const log = createComponentLogger('sync-auth-client');
 
 type FetchImpl = typeof fetch;
+
+/**
+ * Where the token pair lives BETWEEN refreshes, and the lock that keeps two
+ * spenders apart.
+ *
+ * WHY THIS INTERFACE EXISTS (the 0.10.3 silent sign-out). Rotation is
+ * single-use: `/v1/auth/refresh` mints a new pair and revokes the old one. Up
+ * to M201 this class rotated in MEMORY and nothing wrote the new pair back, so
+ * the device's cached copy still held the SPENT refresh token from the moment
+ * of the first mid-life refresh. The next reload resumed with it, the service
+ * read an already revoked token as theft, and the whole family was revoked
+ * (`PROTOCOL.md` §4.2, §1225: never reuse a spent token, serialize refreshes).
+ * One tab was enough.
+ *
+ * The client OWNS this interface rather than importing a concrete store: the
+ * durable copy is `session-cache.ts`'s IndexedDB row, which is one layer up
+ * and knows about vaults, sessions and React. `session-cache.ts` implements
+ * it; nothing here depends on that.
+ *
+ * WITH NO STORE ATTACHED THE CLIENT BEHAVES EXACTLY AS BEFORE, one in-memory
+ * rotation, no lock, no read-back. Every sign-in path that builds a client and
+ * hands it straight to a vault gets the store from `openSyncVault`, and the
+ * tests that drive this class without one are testing the same code they were.
+ */
+export interface SessionTokenStore {
+  /**
+   * The pair this device currently holds, or `null` when there is none to read
+   * (no cached record, no storage, an unreadable database).
+   *
+   * `null` means "proceed with the pair you already have", never "you are
+   * signed out". A storage failure must not end a live session. What comes
+   * back is not assumed to be newer than what the caller holds, because
+   * `onRotated` may have failed: see `adoptNewerTokens`.
+   */
+  latest(): Promise<SessionTokensWire | null>;
+  /** Records a pair this client just minted. Best effort: a failed write costs a reload, not a session. */
+  onRotated(tokens: SessionTokensWire): Promise<void>;
+  /** Runs `task` as the device's only refresher. See `sync-lock.ts` for the ordering rule. */
+  withLock<T>(task: () => Promise<T>): Promise<T>;
+}
+
+/**
+ * How much life an ADOPTED access token must have left before it is used as
+ * is, instead of being refreshed.
+ *
+ * The margin exists because the request this token is about to authorize has
+ * not been sent yet. A token with two seconds left would be adopted, sent, and
+ * answered `401`, which sends the caller straight back here, having spent
+ * nothing and learned nothing.
+ */
+const ADOPTED_ACCESS_TOKEN_MARGIN_MS = 30_000;
+
+/** True when this access token has more than {@link ADOPTED_ACCESS_TOKEN_MARGIN_MS} left to live. */
+function hasUsableAccessToken(tokens: SessionTokensWire): boolean {
+  const expiresAt = Date.parse(tokens.accessTokenExpiresAt);
+  // An unparseable expiry is treated as expired: refreshing one time too often
+  // costs a round trip, and trusting one costs the session.
+  if (Number.isNaN(expiresAt)) return false;
+  return expiresAt - Date.now() > ADOPTED_ACCESS_TOKEN_MARGIN_MS;
+}
+
+/**
+ * Is `candidate` a LATER pair than `held`?
+ *
+ * `refreshTokenExpiresAt` is the clock: the service mints a fresh one on every
+ * rotation and it moves only forward within a token family, so a later value
+ * is exactly "minted after". Two different refresh tokens with the SAME expiry
+ * are not ordered by anything this client can see.
+ *
+ * `false` for an unparseable timestamp on either side, and for a tie, both for
+ * the reason `adoptNewerTokens` sets out: a wrong "no" costs one visible
+ * re-authentication, a wrong "yes" revokes the family.
+ */
+function isStrictlyNewerPair({ candidate, held }: { candidate: SessionTokensWire; held: SessionTokensWire }): boolean {
+  const candidateExpiry = Date.parse(candidate.refreshTokenExpiresAt);
+  const heldExpiry = Date.parse(held.refreshTokenExpiresAt);
+  if (Number.isNaN(candidateExpiry) || Number.isNaN(heldExpiry)) return false;
+  return candidateExpiry > heldExpiry;
+}
 
 export interface SyncAuthClientOptions {
   baseUrl: string;
@@ -142,10 +231,23 @@ export class SyncAuthClient implements SyncTokenProvider {
   private readonly fetchImpl: FetchImpl;
   private session: SyncAuthSession | null = null;
   private refreshInFlight: Promise<string | null> | null = null;
+  private tokenStore: SessionTokenStore | null = null;
 
   constructor({ baseUrl, fetchImpl = defaultFetchImpl }: SyncAuthClientOptions) {
     this.baseUrl = baseUrl.replace(/\/+$/, '');
     this.fetchImpl = fetchImpl;
+  }
+
+  /**
+   * Attaches the device's durable token store (see {@link SessionTokenStore}).
+   *
+   * IDEMPOTENT: `session-cache.ts` attaches the same singleton twice on the
+   * resume path, once before the refresh that reopens the session, once when
+   * `openSyncVault` runs, and the second call must change nothing.
+   */
+  setTokenStore(store: SessionTokenStore): void {
+    if (this.tokenStore === store) return;
+    this.tokenStore = store;
   }
 
   // -------------------------------------------------------------------------
@@ -503,7 +605,88 @@ export class SyncAuthClient implements SyncTokenProvider {
     return this.refreshInFlight;
   }
 
+  /**
+   * One refresh, under the device's lock and after a last look at what
+   * somebody else may have written.
+   *
+   * ── ADOPT BEFORE YOU SPEND ───────────────────────────────────────────────
+   *
+   * Inside the lock, the store is asked what pair this device actually holds.
+   * If it is STRICTLY NEWER than the one in hand, another context (another
+   * tab, a second client in this one) rotated while this call waited its turn,
+   * and the token in hand is spent. Spending it is the theft signal. So the
+   * newer pair is adopted whole, and the request is skipped entirely when its
+   * access token still has real life left, which is the common case, because
+   * the context that just rotated did so seconds ago. "Newer" is a comparison,
+   * not an inequality; {@link SyncAuthClient.adoptNewerTokens} says why.
+   *
+   * `null` from `latest()` is "carry on with your own pair", never "sign out":
+   * a device with no storage at all must still be able to refresh.
+   *
+   * WITH NO STORE this is the pre-M201 path exactly: no lock, no read, one
+   * request.
+   */
   private async performRefresh(refreshToken: string): Promise<string | null> {
+    const store = this.tokenStore;
+    if (store === null) return this.spendRefreshToken(refreshToken);
+    return store.withLock(async () => {
+      const adopted = await this.adoptNewerTokens(store);
+      if (adopted !== null && hasUsableAccessToken(adopted)) return adopted.accessToken;
+      return this.spendRefreshToken(adopted?.refreshToken ?? refreshToken);
+    });
+  }
+
+  /**
+   * Reads the store and takes over a pair STRICTLY NEWER than the one this
+   * client holds.
+   *
+   * ── Different is not newer ───────────────────────────────────────────────
+   *
+   * The first version of this compared the two refresh tokens for inequality,
+   * which is wrong in one direction that matters. `reportRotation` is best
+   * effort by design, so a failed write leaves the store holding the OLDER
+   * pair while this client holds the newer one in memory. Inequality would
+   * then read that older pair as "somebody rotated" and adopt it, spending a
+   * token the rotation whose write failed has already revoked. That is the
+   * family revocation this whole change exists to prevent, reached through a
+   * different door and rare enough to be very hard to diagnose.
+   *
+   * `refreshTokenExpiresAt` is the ordering: the service mints it fresh on
+   * every rotation and it only moves forward within a family, so LATER is
+   * exactly NEWER.
+   *
+   * ── Ties and unreadable timestamps do not adopt ──────────────────────────
+   *
+   * Both are "we cannot prove the stored pair is newer", and the two mistakes
+   * are not the same size. Declining to adopt a pair that really was newer
+   * costs one refused refresh, which now ends the session VISIBLY
+   * (`endSessionRefused`) and asks the person to sign in. Adopting a pair that
+   * was not newer spends a revoked token and revokes the family on every
+   * device the account has. So the tie goes to the pair in hand.
+   *
+   * @returns the adopted pair, or `null` when there is nothing newer to adopt.
+   */
+  private async adoptNewerTokens(store: SessionTokenStore): Promise<SessionTokensWire | null> {
+    const session = this.session;
+    if (session === null) return null;
+    let latest: SessionTokensWire | null;
+    try {
+      latest = await store.latest();
+    } catch (cause) {
+      // An unreadable store is not a refused session. Fall through to the
+      // ordinary refresh with the pair this client already holds.
+      log.warn('could not read the stored session tokens before refreshing', {
+        error: cause instanceof Error ? cause.message : String(cause),
+      });
+      return null;
+    }
+    if (latest === null) return null;
+    if (!isStrictlyNewerPair({ candidate: latest, held: session.tokens })) return null;
+    this.session = { account: session.account, tokens: latest };
+    return latest;
+  }
+
+  private async spendRefreshToken(refreshToken: string): Promise<string | null> {
     const request: RefreshRequestWire = { refreshToken };
     let response: RefreshResponseWire;
     try {
@@ -528,7 +711,28 @@ export class SyncAuthClient implements SyncTokenProvider {
     const account = this.session?.account;
     if (account === undefined) return null;
     this.session = { account, tokens: response.tokens };
+    await this.reportRotation(response.tokens);
     return response.tokens.accessToken;
+  }
+
+  /**
+   * Tells the store about a pair this client just minted.
+   *
+   * NEVER FAILS THE REFRESH. The pair is already in hand and already valid;
+   * a store that could not record it costs a reload, which is exactly where
+   * this app stood before the session cache existed. Throwing here would turn
+   * a successful rotation into a signed-out app.
+   */
+  private async reportRotation(tokens: SessionTokensWire): Promise<void> {
+    const store = this.tokenStore;
+    if (store === null) return;
+    try {
+      await store.onRotated(tokens);
+    } catch (cause) {
+      log.warn('could not record the rotated session tokens on this device', {
+        error: cause instanceof Error ? cause.message : String(cause),
+      });
+    }
   }
 
   /** Revokes this device's token family server-side and drops local state. Other devices keep their sessions. */

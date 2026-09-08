@@ -262,6 +262,36 @@ export function unlockDevice(storage: KeyValueStorage = deviceStorage()): void {
 }
 
 /**
+ * Does a session the SERVER ended lock this device, the way pressing sign out
+ * does?
+ *
+ * ── Why a setting and not a read ─────────────────────────────────────────
+ *
+ * The question is `InstancePolicy.signOutErasesDevice`, and the policy arrives
+ * through the root loader's public config, which is React and is asynchronous.
+ * `session-cache.ts` is neither: it runs on boot, from a controller effect,
+ * and it has to decide the moment a refresh comes back refused. So the policy
+ * is pushed DOWN here, once, by `SyncController`, synchronously, in its
+ * effect, before the resume that can produce the refusal.
+ *
+ * DEFAULT `false`, which is the open instance: the diary belongs to the
+ * device there, and locking somebody out of their own rows because a token
+ * expired would be the worse failure of the two. An instance that wants the
+ * lock says so, on every boot, before anything can end a session.
+ */
+let lockOnSessionEnd = false;
+
+/** Told to this module by `SyncController`; see {@link lockDeviceWhenSessionEnds}. */
+export function setLockDeviceWhenSessionEnds(value: boolean): void {
+  lockOnSessionEnd = value;
+}
+
+/** Whether a refused session should leave this device locked. See {@link setLockDeviceWhenSessionEnds}. */
+export function lockDeviceWhenSessionEnds(): boolean {
+  return lockOnSessionEnd;
+}
+
+/**
  * Is this device locked?
  *
  * Exact value match rather than truthiness, for the same reason

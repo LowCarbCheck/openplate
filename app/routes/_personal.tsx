@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Route } from './+types/_personal';
 import type { BaseHandle } from '#types/base';
 import { useTranslation } from 'react-i18next';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   useMatches,
   Outlet,
@@ -168,6 +168,7 @@ const leafBackToSchema = z.object({ backTo: z.string() });
 export default function PersonalLayout() {
   const { t } = useTranslation();
   const { isWaitingForSession } = useLoaderData<typeof clientLoader>();
+  useRevalidateWhenTheSessionEnds();
   const matches = useMatches();
   const leafMatch = matches[matches.length - 1];
   // SAFETY: every route under this layout declares a `handle` matching
@@ -195,6 +196,37 @@ export default function PersonalLayout() {
       : <Outlet />}
     </AppWrapper>
   );
+}
+
+/**
+ * Asks the gate again the moment a session ENDS under the app's feet.
+ *
+ * WHY IT IS NEEDED (0.10.3). A session the SERVER ends, a revoked token
+ * family, a suspension, used to change nothing on screen: the diary carries
+ * on rendering from the local store, because it is device data and does not
+ * need a session. On a managed instance that is precisely wrong. `sync-actions`
+ * now locks the device on that refusal (`endSessionRefused`), and this is what
+ * makes the lock take effect without a reload: `clientLoader` above reads the
+ * marker synchronously and its `isDeviceLocked && !hasSyncAccount` branch sends
+ * the person to `/welcome`, which is the screen with the door.
+ *
+ * ON THE TRANSITION ONLY, not on `account === null`. That is also the state of
+ * every device that has never signed in, and revalidating for it would re-run
+ * the gate on every boot of an open instance for nothing.
+ */
+function useRevalidateWhenTheSessionEnds(): void {
+  const session = useSyncSession();
+  const revalidator = useRevalidator();
+  const hadAccount = useRef(session.account !== null);
+
+  useEffect(() => {
+    const hasAccount = session.account !== null;
+    const ended = hadAccount.current && !hasAccount;
+    hadAccount.current = hasAccount;
+    if (!ended) return;
+    if (revalidator.state !== 'idle') return;
+    void revalidator.revalidate();
+  }, [session.account, revalidator]);
 }
 
 /**

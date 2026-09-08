@@ -31,6 +31,7 @@ import 'fake-indexeddb/auto';
 
 import {
   clearSessionCache,
+  deviceTokenStore,
   openSyncVault,
   readSessionCache,
   resumeSyncSession,
@@ -38,6 +39,7 @@ import {
   type SessionCacheRecord,
 } from '../../app/lib/sync/session-cache';
 import { closeSyncSession, getSyncSessionSnapshot, getSyncVault } from '../../app/lib/sync/sync-session';
+import { isDeviceLocked, setLockDeviceWhenSessionEnds, unlockDevice } from '../../app/lib/sync/sync-state';
 import { deriveAesKeyViaHkdf, HKDF_INFO } from '../../app/lib/sync/engine/crypto/hkdf';
 import { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
 import { SyncHttpClient } from '../../app/lib/sync/engine/client/http-client';
@@ -130,6 +132,10 @@ const healthyService: typeof fetch = async (input) => {
 beforeEach(async () => {
   closeSyncSession();
   await clearSessionCache();
+  // The device lock and the policy that writes it are module state, shared by
+  // every test in this file. An open instance is the default everywhere else.
+  setLockDeviceWhenSessionEnds(false);
+  unlockDevice();
 });
 
 after(() => {
@@ -533,6 +539,222 @@ test('signing out drops the cached copy, or the next reload would undo it', asyn
     assert.equal(getSyncVault(), null);
     assert.equal(getSyncSessionSnapshot().account, null);
     assert.equal(await readSessionCache(), null, 'a sign-out that left the cache would be undone by a reload');
+  } finally {
+    restore();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// The rotated pair is written back (M201, the 0.10.3 silent sign-out)
+// ---------------------------------------------------------------------------
+
+/**
+ * A refresh-token expiry LATER than the one every fixture in this file starts
+ * from (`2026-10-04T10:00:00.000Z`).
+ *
+ * It is the ordering, not decoration. `adoptNewerTokens` adopts a stored pair
+ * only when its `refreshTokenExpiresAt` is strictly later than the one in
+ * hand, so a rotation that minted the same expiry would correctly not be
+ * adopted, and a test that wanted an adoption would quietly stop testing one.
+ */
+const LATER_REFRESH_EXPIRY = '2026-11-04T10:00:00.000Z';
+
+/** A `/refresh` stub that hands out a named pair and counts how often it is asked. */
+function rotatingService(pair: { access: string; refresh: string }, counter: { calls: number }): typeof fetch {
+  return async (input) => {
+    const path = new URL(String(input)).pathname;
+    if (path.endsWith('/auth/refresh')) {
+      counter.calls += 1;
+      return json({
+        tokens: {
+          accessToken: pair.access,
+          accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
+          refreshToken: pair.refresh,
+          refreshTokenExpiresAt: LATER_REFRESH_EXPIRY,
+        },
+      });
+    }
+    if (path.endsWith('/auth/account')) return json({ account: ACCOUNT });
+    return json({ error: 'unexpected route' }, 404);
+  };
+}
+
+test('a refresh AFTER the resume writes the rotated pair back to the cache', async () => {
+  // THIS TEST IS THE INCIDENT. The resume rotated `refresh-old` to `refresh-new`
+  // and cached it, that part always worked, because `openSyncVault` writes the
+  // record. The SECOND rotation, the ordinary mid-life one that follows any 401
+  // once the fifteen-minute access token has expired, went unrecorded: the row
+  // kept `refresh-new`, the service had already revoked it, and the next reload
+  // presented a spent token, which §4.2 reads as theft and answers by revoking
+  // the whole family. Nobody had done anything.
+  await writeSessionCache(await cachedRecord());
+  const restore = withFetch(healthyService);
+  try {
+    await resumeSyncSession({ serverUrl: SERVER_URL });
+    assert.equal((await readSessionCache())?.refreshToken, 'refresh-new');
+  } finally {
+    restore();
+  }
+
+  const counter = { calls: 0 };
+  const restoreSecond = withFetch(rotatingService({ access: 'access-2nd', refresh: 'refresh-2nd' }, counter));
+  try {
+    const vault = getSyncVault();
+    assert.ok(vault !== null);
+    assert.equal(await vault.authClient.refreshAccessToken(), 'access-2nd');
+    assert.equal(counter.calls, 1, 'the pair it held was current, so it must have been spent');
+
+    const written = await readSessionCache();
+    assert.equal(written?.refreshToken, 'refresh-2nd', 'the cache must follow every rotation, not just the first');
+    assert.equal(written?.accessToken, 'access-2nd');
+  } finally {
+    restoreSecond();
+  }
+});
+
+test('the record keeps its keys through a rotation, only the four token fields move', async () => {
+  await writeSessionCache(await cachedRecord());
+  const restore = withFetch(healthyService);
+  try {
+    await resumeSyncSession({ serverUrl: SERVER_URL });
+  } finally {
+    restore();
+  }
+
+  const counter = { calls: 0 };
+  const restoreSecond = withFetch(rotatingService({ access: 'access-2nd', refresh: 'refresh-2nd' }, counter));
+  try {
+    await getSyncVault()?.authClient.refreshAccessToken();
+  } finally {
+    restoreSecond();
+  }
+
+  const written = await readSessionCache();
+  assert.ok(written !== null);
+  // A rotation that rebuilt the row from the tokens alone would resume into a
+  // vault with no DEK and no compartment door, a session that opens and
+  // decrypts nothing.
+  assert.deepEqual([...written.dek], [...new Uint8Array(32).fill(4)]);
+  assert.equal(written.compartment.passphraseKek.extractable, false);
+  assert.equal(written.serverUrl, SERVER_URL);
+  assert.equal(written.accountId, ACCOUNT.id);
+});
+
+test('a refresh ADOPTS a newer pair another context wrote, and spends nothing', async () => {
+  await writeSessionCache(await cachedRecord());
+  const restore = withFetch(healthyService);
+  try {
+    await resumeSyncSession({ serverUrl: SERVER_URL });
+  } finally {
+    restore();
+  }
+
+  // Another tab rotated and wrote its pair to the shared row while this vault
+  // was idle. The token this client holds (`refresh-new`) is now spent.
+  const current = await readSessionCache();
+  assert.ok(current !== null);
+  await writeSessionCache({
+    ...current,
+    accessToken: 'access-from-the-other-tab',
+    accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
+    refreshToken: 'refresh-from-the-other-tab',
+    // LATER than what this vault holds, which is what makes it newer. A pair
+    // that merely DIFFERS is not adopted, because a failed write-back leaves
+    // an OLDER pair in the row and adopting that spends a revoked token.
+    refreshTokenExpiresAt: LATER_REFRESH_EXPIRY,
+  });
+
+  const counter = { calls: 0 };
+  const restoreSecond = withFetch(rotatingService({ access: 'nope', refresh: 'nope' }, counter));
+  try {
+    const accessToken = await getSyncVault()?.authClient.refreshAccessToken();
+    assert.equal(accessToken, 'access-from-the-other-tab', 'the pair in the row is the one this device holds');
+    assert.equal(counter.calls, 0, 'spending an already rotated token is the theft signal');
+  } finally {
+    restoreSecond();
+  }
+});
+
+test('two clients sharing the store make ONE request and end holding the same pair', async () => {
+  await writeSessionCache(await cachedRecord());
+  const counter = { calls: 0 };
+  const restore = withFetch(rotatingService({ access: 'access-shared', refresh: 'refresh-shared' }, counter));
+  try {
+    // Two tabs, two module instances, one device row. They cannot share the
+    // in-tab `refreshInFlight` promise, which is exactly why the lock and the
+    // read-back exist.
+    const tokens = {
+      accessToken: 'access-old',
+      accessTokenExpiresAt: '2026-09-04T10:15:00.000Z',
+      refreshToken: 'refresh-old',
+      refreshTokenExpiresAt: '2026-10-04T10:00:00.000Z',
+    };
+    const clients = [new SyncAuthClient({ baseUrl: SERVER_URL }), new SyncAuthClient({ baseUrl: SERVER_URL })];
+    for (const client of clients) {
+      client.restoreSession({ account: { id: ACCOUNT.id, email: ACCOUNT.email }, tokens });
+      client.setTokenStore(deviceTokenStore());
+    }
+
+    const results = await Promise.all(clients.map((client) => client.refreshAccessToken()));
+
+    assert.equal(counter.calls, 1, 'the cached refresh token must be spent exactly once');
+    assert.deepEqual(results, ['access-shared', 'access-shared']);
+    for (const client of clients) {
+      assert.equal(client.getSession()?.tokens.refreshToken, 'refresh-shared');
+    }
+    assert.equal((await readSessionCache())?.refreshToken, 'refresh-shared');
+  } finally {
+    restore();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// A refused session is VISIBLE (M201, fix B)
+// ---------------------------------------------------------------------------
+
+test('a refused resume publishes reauth-required rather than a silent sign-out', async () => {
+  await writeSessionCache(await cachedRecord());
+  const restore = withFetch(async () => json({ error: 'refresh token reuse detected' }, 401));
+  try {
+    await resumeSyncSession({ serverUrl: SERVER_URL });
+
+    // The snapshot used to say nothing at all: `closeSyncSession` publishes an
+    // error of `null`, so the app looked signed in until the person tried to
+    // scan and was told to ask their administrator.
+    assert.equal(getSyncSessionSnapshot().error?.reason, 'reauth-required');
+    assert.equal(getSyncSessionSnapshot().account, null);
+  } finally {
+    restore();
+  }
+});
+
+test('a refused resume LOCKS the device where the instance asks for it', async () => {
+  setLockDeviceWhenSessionEnds(true);
+  await writeSessionCache(await cachedRecord());
+  const restore = withFetch(async () => json({ error: 'account-suspended' }, 403));
+  try {
+    await resumeSyncSession({ serverUrl: SERVER_URL });
+
+    // The same marker sign-out writes. On a managed instance the diary belongs
+    // to the account, so a session the server ended must close it to whoever
+    // opens the app next.
+    assert.equal(isDeviceLocked(), true);
+  } finally {
+    restore();
+  }
+});
+
+test('on an OPEN instance a refused session leaves the device unlocked', async () => {
+  await writeSessionCache(await cachedRecord());
+  const restore = withFetch(async () => json({ error: 'refresh token reuse detected' }, 401));
+  try {
+    await resumeSyncSession({ serverUrl: SERVER_URL });
+
+    // Here the diary belongs to the DEVICE and sync is an extra. Shutting
+    // somebody out of their own rows because a token expired would be the
+    // worse of the two failures.
+    assert.equal(isDeviceLocked(), false);
+    assert.equal(getSyncSessionSnapshot().error?.reason, 'reauth-required', 'and it is still said out loud');
   } finally {
     restore();
   }

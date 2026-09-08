@@ -107,6 +107,8 @@ const MANAGED_BRANCH_KEYS = [
   'scan.setup.managed.description',
   'scan.setup.managedMissing.body',
   'scan.setup.managedMissing.askAdmin',
+  'scan.setup.managedSignedOut.body',
+  'scan.setup.managedSignedOut.cta',
   'scan.capture.managedDescription',
   'account.allowance.title',
   'account.allowance.body',

@@ -13,9 +13,10 @@
  *
  * `app/lib/local-store/persist.ts` already holds a Web Locks lock, named
  * `openplate-local-store-save:<db>`, that serializes IndexedDB writes across
- * tabs. This one has a DIFFERENT NAME on purpose, and the two are acquired in
- * exactly ONE order:
+ * tabs. This one has a DIFFERENT NAME on purpose, and the locks in this app are
+ * acquired in exactly ONE order:
  *
+ *     orchestrator lock  ──►  token lock  ──►  nothing
  *     orchestrator lock  ──►  (snapshot / apply)  ──►  persist.ts save lock
  *
  * The orchestrator takes its lock, then reads and writes the store through
@@ -25,6 +26,13 @@
  * lock first and then ask for this one — and nothing in sync should write to
  * IndexedDB by any path other than `local-store`'s own functions, which is
  * what keeps that guarantee checkable by reading the imports.
+ *
+ * THE TOKEN LOCK ({@link SYNC_SESSION_TOKEN_LOCK_NAME}) is the second one, and
+ * it is a LEAF: `session-cache.ts` holds it around one refresh and takes no
+ * other lock inside it. A sync cycle can reach it, the orchestrator holds its
+ * own lock while an HTTP 401 sends the auth client through a refresh, which is
+ * why the order above puts it second and why nothing under it may ever ask for
+ * the orchestrator lock back.
  *
  * ── Fallback ──────────────────────────────────────────────────────────────
  *
@@ -39,12 +47,54 @@
 /** Deliberately distinct from `persist.ts`'s `openplate-local-store-save:` prefix. Never reuse that name. */
 export const SYNC_ORCHESTRATOR_LOCK_NAME = 'openplate-sync-orchestrator';
 
+/**
+ * The token lock: one refresh at a time, across every tab on this device.
+ *
+ * A refresh token is single-use, and two contexts spending the same one is the
+ * theft signal that revokes the whole family (`PROTOCOL.md` §4.2). Held by
+ * `session-cache.ts`'s token store, which is the only thing that may take it.
+ */
+export const SYNC_SESSION_TOKEN_LOCK_NAME = 'openplate-sync-session-tokens';
+
 function canUseWebLocks(): boolean {
   return globalThis.navigator !== undefined && navigator.locks?.request !== undefined;
 }
 
-/** Serializes the fallback path within one JS context. Chained rather than pooled — sync cycles are rare and ordered. */
-let fallbackChain: Promise<unknown> = Promise.resolve();
+/** Runs one task at a time under one lock name. See {@link createDeviceLock}. */
+export type DeviceLock = <T>(task: () => Promise<T>) => Promise<T>;
+
+/**
+ * A named device-wide lock: Web Locks where the browser has them, an
+ * in-process promise chain where it does not.
+ *
+ * The FALLBACK CHAIN IS PER NAME, held in this closure. One shared chain would
+ * make every lock in the app serialize against every other, a token refresh
+ * waiting behind a sync cycle that is itself waiting for that refresh, which
+ * is a deadlock the Web Locks path would never have.
+ *
+ * Without the Web Locks API (older Safari, `node:test`) this is still correct
+ * within one tab and no longer coordinated across tabs. `persist.ts` makes the
+ * same trade for the same reason.
+ */
+export function createDeviceLock(name: string): DeviceLock {
+  // Chained rather than pooled, the tasks under these locks are rare and ordered.
+  let fallbackChain: Promise<unknown> = Promise.resolve();
+  return async <T>(task: () => Promise<T>): Promise<T> => {
+    if (canUseWebLocks()) {
+      // SAFETY: `LockManager.request` is typed `Promise<any>` because it forwards
+      // whatever the callback returns; the callback here IS `task`, so what it
+      // resolves with is exactly `T`.
+      return navigator.locks.request(name, task) as Promise<T>;
+    }
+    const run = fallbackChain.then(task, task);
+    // Swallow on the CHAIN only, the returned promise still rejects for the
+    // caller. Without this, one failed task would reject every future one.
+    fallbackChain = run.catch(() => undefined);
+    return run;
+  };
+}
+
+const orchestratorLock = createDeviceLock(SYNC_ORCHESTRATOR_LOCK_NAME);
 
 /**
  * Runs `task` as the device's only sync orchestrator.
@@ -55,15 +105,5 @@ let fallbackChain: Promise<unknown> = Promise.resolve();
  * at most a duplicated no-op cycle.
  */
 export async function withSyncOrchestratorLock<T>(task: () => Promise<T>): Promise<T> {
-  if (canUseWebLocks()) {
-    // SAFETY: `LockManager.request` is typed `Promise<any>` because it forwards
-    // whatever the callback returns; the callback here IS `task`, so what it
-    // resolves with is exactly `T`.
-    return navigator.locks.request(SYNC_ORCHESTRATOR_LOCK_NAME, task) as Promise<T>;
-  }
-  const run = fallbackChain.then(task, task);
-  // Swallow on the CHAIN only — the returned promise still rejects for the
-  // caller. Without this, one failed cycle would reject every future one.
-  fallbackChain = run.catch(() => undefined);
-  return run;
+  return orchestratorLock(task);
 }

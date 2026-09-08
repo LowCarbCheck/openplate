@@ -1779,6 +1779,10 @@
         "body": "Photo estimates are not switched on for this account.",
         "askAdmin": "Ask your administrator to switch them on. You can add food without a photo in the meantime."
       },
+      "managedSignedOut": {
+        "body": "You are signed out on this device, so photo estimates are off. Sign in again to use them.",
+        "cta": "Sign in"
+      },
       "managed": {
         "description": "Take a photo of your plate and the carbs are worked out for you."
       }

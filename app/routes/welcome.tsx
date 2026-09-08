@@ -57,6 +57,7 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
+import { useSyncSession } from '#app/components/sync-status';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { buildJoinFragment, isJoinLinkEmpty, parseJoinLinkInput } from '#app/lib/join-link';
@@ -275,6 +276,13 @@ export default function Welcome() {
   const { requiresAccount } = useInstancePolicy();
   const { hint, forgetName } = useWelcomeHint(requiresAccount);
   const [isPastingLink, setIsPastingLink] = useState(false);
+  // WHY THEY ARE HERE, when the app ended their session rather than they did
+  // (0.10.3). `endSessionRefused` publishes the reason on the signed-out
+  // snapshot and `_personal`'s gate sends a locked device to this screen, so
+  // this is where the sentence lands. The copy has existed and been translated
+  // since M117 and was unreachable until now: the old sign-out path published
+  // a snapshot whose `error` is `null` and wiped it.
+  const session = useSyncSession();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
@@ -285,7 +293,12 @@ export default function Welcome() {
               here — so a managed instance says what its two doors are. */}
           <CardDescription>{requiresAccount ? t('welcome.managed.body') : t('welcome.body')}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {session.error?.reason === 'reauth-required' && (
+            <p className="rounded-lg border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
+              {t('sync.status.error.reauth-required')}
+            </p>
+          )}
           {isPastingLink && <PasteInviteLink onCancel={() => setIsPastingLink(false)} />}
           {!isPastingLink && hint === null && (
             <div className="flex justify-center py-4" aria-busy="true">

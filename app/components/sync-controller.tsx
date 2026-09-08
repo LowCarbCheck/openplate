@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
-import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { getPrimaryStore } from '#app/lib/local-store/persist';
 import { getSyncSessionSnapshot, getSyncVault, updateSyncSession } from '#app/lib/sync/sync-session';
 import { markSyncPending, syncNow } from '#app/lib/sync/sync-actions';
 import { resumeSyncSession } from '#app/lib/sync/session-cache';
+import { setLockDeviceWhenSessionEnds } from '#app/lib/sync/sync-state';
 import { drainFeedbackOutboxOnce } from '#app/lib/local-store/feedback-outbox';
 import { createComponentLogger } from '#app/lib/logger';
 
@@ -61,8 +62,17 @@ const PUSH_DEBOUNCE_MS = 3_000;
  */
 export function SyncController() {
   const serverUrl = useSyncServerUrl();
+  // WHAT A REFUSED SESSION COSTS, pushed down before anything can produce one.
+  // `session-cache.ts` decides it on a boot path that cannot read React, and
+  // the policy is only knowable here, see `setLockDeviceWhenSessionEnds`.
+  const { signOutErasesDevice } = useInstancePolicy();
 
   useEffect(() => {
+    // FIRST, and before the resume below: the refusal it can produce is the
+    // thing this answers, and a policy that arrived afterwards would leave the
+    // first refused boot of every session unlocked.
+    setLockDeviceWhenSessionEnds(signOutErasesDevice);
+
     // Sync is off on this instance. Attach nothing, request nothing. The
     // resume flag is still settled: no session will ever be reopened here, and
     // a screen left waiting for one would wait forever.
@@ -151,7 +161,7 @@ export function SyncController() {
       window.removeEventListener('online', runCycle);
       unlisten?.();
     };
-  }, [serverUrl]);
+  }, [serverUrl, signOutErasesDevice]);
 
   return null;
 }
