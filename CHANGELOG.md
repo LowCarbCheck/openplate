@@ -2,6 +2,18 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.20.1 - 2026-09-08
+
+- On a managed instance the message box at /describe and the "Log with AI"
+  button on the search page were always disabled, because both only looked
+  for an AI key stored on the device, and a managed instance keeps none. Both
+  now ask the same question the scan screen asks: signed in, with an AI
+  allowance. The notice for a person without AI names the right door: sign
+  in on a managed instance, connect a provider on an open one, or ask the
+  administrator when the account has no allowance.
+- The review screen after a typed or spoken meal now shows the words you
+  sent above the food list, so you can check the estimate against them.
+
 ## 0.20.0 - 2026-09-08
 
 - Type and Speak now open a message box at /describe. Write or say what you
