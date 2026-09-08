@@ -2196,10 +2196,6 @@
       "setUp": "Konto erstellen"
     },
     "promise": "Der Server speichert nur verschlüsselte Daten, die er nicht lesen kann.",
-    "recover": {
-      "failed": "Das hat nicht geklappt. Es wurde nichts geändert.",
-      "rejected": "Dieser Anmeldename und dieser Wiederherstellungscode passen nicht zusammen. Überprüfe beides und versuche es erneut."
-    },
     "setup": {
       "complete": "Dein Konto ist auf diesem Gerät eingerichtet.",
       "confirmLabel": "Passwort bestätigen",
@@ -2214,8 +2210,8 @@
     },
     "signIn": {
       "cta": "Anmelden",
-      "ctaKnown": "Als {{handle}} anmelden",
-      "failed": "Das hat nicht geklappt. Prüfe Anmeldename sowie Passwort und versuche es erneut.",
+      "emailHint": "Die Adresse, mit der dein Konto erstellt wurde. Groß- und Kleinschreibung spielt keine Rolle.",
+      "failed": "Das hat nicht geklappt. Prüfe die E-Mail-Adresse und das Passwort, dann versuche es erneut.",
       "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Holen wir das jetzt nach. Am Ende erhältst du einen Wiederherstellungscode, mit dem du dich auf einem anderen Gerät anmelden kannst, auch wenn die Anmeldung bei diesem Konto nur mit seinem Passwort möglich ist.",
       "forgot": "Ich habe mein Passwort vergessen",
       "intro": "Gib dein Passwort ein, um dich auf diesem Gerät anzumelden. Du bleibst angemeldet, bis du dich abmeldest.",
@@ -2223,10 +2219,6 @@
       "working": "Wird angemeldet…",
       "passphraseRequired": "Gib dein Passwort ein.",
       "notYou": "Nicht du?"
-    },
-    "signOut": {
-      "cta": "Auf diesem Gerät abmelden",
-      "note": "Meldet nur dieses Gerät ab. Dein Tagebuch bleibt darauf, andere Geräte synchronisieren weiter und dieses Gerät merkt sich deinen Anmeldenamen, damit du dich einfach wieder anmelden kannst."
     },
     "status": {
       "error": {

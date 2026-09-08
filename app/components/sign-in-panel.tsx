@@ -154,6 +154,16 @@ export function SignInPanel({
     }
   }
 
+  // The hint under the email field, and the id it shares with that field's
+  // `aria-describedby`. It exists because someone who set a password via an
+  // invite link goes looking for a username afterwards: there is none, the
+  // email address is the only identifier, and its letter case makes no
+  // difference (`canonicalizeEmail` lowercases it before the server ever
+  // sees it).
+  const emailHintId = `${fields.email.id}-hint`;
+  const emailInputProps = getInputProps(fields.email, { type: 'email' });
+  const emailDescribedBy = [emailInputProps['aria-describedby'], emailHintId].filter(Boolean).join(' ');
+
   if (repair !== null) {
     return (
       <div className="space-y-4">
@@ -183,14 +193,21 @@ export function SignInPanel({
         {/* Conform owns the field: id, name, seeded value and the
             `aria-invalid`/`aria-describedby` pair all come from the same
             metadata `FieldError` reads. No `required` — the browser's native
-            popup would intercept the submit with untranslated copy. */}
+            popup would intercept the submit with untranslated copy. The hint
+            below exists because people who set a password via an invite link
+            go looking for a username afterwards: the email address is the
+            only identifier, and its letter case makes no difference. */}
         <Input
-          {...getInputProps(fields.email, { type: 'email' })}
+          {...emailInputProps}
+          aria-describedby={emailDescribedBy}
           autoComplete="username"
           spellCheck={false}
           autoCapitalize="none"
           className="h-11"
         />
+        <p id={emailHintId} className="text-xs text-muted-foreground">
+          {t('sync.signIn.emailHint')}
+        </p>
         <FieldError id={fields.email.errorId} errors={fields.email.errors} />
         {/* Beside the prefilled address, because that is the thing it disowns.
             The device remembers an address so a returning person does not have

@@ -2213,10 +2213,6 @@
       "setUp": "Create account"
     },
     "promise": "The server only stores encrypted data it cannot read.",
-    "recover": {
-      "failed": "That did not work. Nothing has been changed.",
-      "rejected": "That sign-in name and recovery code do not go together. Check both and try again."
-    },
     "setup": {
       "complete": "Your account is set up on this device.",
       "confirmLabel": "Confirm password",
@@ -2231,8 +2227,8 @@
     },
     "signIn": {
       "cta": "Sign in",
-      "ctaKnown": "Sign in as {{handle}}",
-      "failed": "That did not work. Check the sign-in name and password and try again.",
+      "emailHint": "The address your account was created with. Capital letters make no difference.",
+      "failed": "That did not work. Check the email address and the password, then try again.",
       "finishSetup": "This account was created but its keys were never finished. Let us do that now. It ends with a recovery code that lets you sign in on another device, though this account can only be signed in to with its password.",
       "forgot": "I have forgotten my password",
       "intro": "Enter your password once to sign in on this device. You stay signed in until you sign out.",
@@ -2240,10 +2236,6 @@
       "working": "Signing in…",
       "passphraseRequired": "Enter your password.",
       "notYou": "Not you?"
-    },
-    "signOut": {
-      "cta": "Sign out on this device",
-      "note": "Signs this device out only. Your diary stays on it, other devices keep syncing, and this device remembers your sign-in name so you can easily sign back in."
     },
     "status": {
       "error": {
