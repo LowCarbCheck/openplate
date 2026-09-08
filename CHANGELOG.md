@@ -2,6 +2,15 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.19.1 - 2026-09-08
+
+- On a managed instance the page title, the footer, the front page and the
+  recovery screen no longer say the diary stays only on this device. The
+  account keeps an encrypted copy on the operator's server, so the copy now
+  says what is still true there: only you can read it. The recovery screen
+  offers a sign-in link, because on such an instance signing in is what
+  brings the diary back. Nothing changes on an open instance.
+
 ## 0.19.0 - 2026-09-08
 
 - The diary and the overview show the day as budget rows for net carbs,
