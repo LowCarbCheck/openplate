@@ -364,6 +364,21 @@ test('a row looks like it goes somewhere: a chevron at its end, and a hover back
   assert.match(html, /hover:bg-muted\/50/, 'the background the app already uses for a hovered list row');
 });
 
+test('the chevron is hidden below sm, where a fixed-width flex child would land alone on its own line', () => {
+  // Below `sm` the row wraps onto stacked lines, and the chevron, being the
+  // last and only fixed-width item with nothing left to sit beside, would
+  // wrap onto a line of its own at the bottom left, pointing at nothing. The
+  // whole row is already the link at every width, so the chevron is a hint,
+  // never the only affordance, and hiding it there costs nothing.
+  const html = peopleList({ people: [ADMIN] });
+
+  assert.match(
+    html,
+    /class="lucide lucide-chevron-right hidden h-4 w-4 shrink-0 text-muted-foreground sm:block"/,
+    'hidden by default, shown again at sm and up once the row no longer wraps',
+  );
+});
+
 test('the activity list names the date under each name, at every width', () => {
   const html = render(
     createElement(ActivityOverview, {

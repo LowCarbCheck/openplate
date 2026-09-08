@@ -295,8 +295,15 @@ function PersonRow({
 
         {/* A row that goes somewhere has to look like it does. The hover
             background is the one the app's own list rows use; this is the part
-            of it a pointerless screen can also see. */}
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            of it a pointerless screen can also see.
+
+            Hidden below `sm`: the row wraps onto several lines there, and a
+            fixed-width chevron at the end of a flex-wrap row lands alone on
+            its own line, at the bottom left, pointing at nothing. The row is
+            already the whole link at every width, so the chevron is a hint,
+            never the only affordance, and hiding it below the breakpoint
+            where it cannot sit on the row's line loses nothing. */}
+        <ChevronRight className="hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
       </Link>
     </li>
   );
