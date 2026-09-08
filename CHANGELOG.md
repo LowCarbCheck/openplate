@@ -2,6 +2,29 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.20.0 - 2026-09-08
+
+- Type and Speak now open a message box at /describe. Write or say what you
+  ate, send it, and the AI works out the food from your words the same way it
+  does from a photo, on the same review screen, into the same diary. The
+  launcher sheet, the dashboard, the diary's empty states and the first-run
+  lesson all lead there. The food database search stays at /add for one exact
+  item.
+- The scan screen's messages no longer talk about a photo when you described
+  the meal in words: the waiting text, the "nothing found" text and the
+  failure text each have a version for a description.
+- Administrators get a Reports tab. It lists every reported estimate, when it
+  arrived and when it deletes itself, and opens one report with the model's
+  figures and the photo, if there was one. A report can be deleted now
+  instead of at the end of the window.
+- A scanned plate photo is now saved on this device when you confirm the
+  scan. It never was: the save waited for a page state that a local save
+  never produces. The device copy the AI settings promise is now kept, and a
+  report of a bad estimate can carry the picture.
+- On a managed instance the offline page and the data settings no longer say
+  the diary is only on this device. They say the server holds an encrypted
+  copy it cannot read.
+
 ## 0.19.1 - 2026-09-08
 
 - On a managed instance the page title, the footer, the front page and the
