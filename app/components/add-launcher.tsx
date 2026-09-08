@@ -156,7 +156,7 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
               microphone.
 
               BOTH ROWS POINT AT `/describe` NOW, not at `/add`. Speaking and
-              typing are the same act here — words about a meal — and `/add` is
+              typing are the same act here, words about a meal, and `/add` is
               the database SEARCH, which answers a different question. Sending
               somebody who tapped "Type" to a search field was handing them a
               box that wants one noun when they came to write a sentence. The

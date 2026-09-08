@@ -144,7 +144,7 @@ export default [
     route('/scan', 'routes/scan.tsx'),
     route('/add', 'routes/add.tsx'),
     // The meal composer (M203): a message box, and nothing else. `/add` is the
-    // database SEARCH, and the two are different screens on purpose — the
+    // database SEARCH, and the two are different screens on purpose: the
     // launcher's "Type" and "Speak" rows used to open the search form, which
     // handed somebody who wanted to write a sentence a field that wants one
     // noun. Client-only like every tracker surface: `?date=` and `?speak=1`

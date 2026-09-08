@@ -1,5 +1,5 @@
 /**
- * `/describe` — a message box for a meal, and nothing else.
+ * `/describe`, a message box for a meal, and nothing else.
  *
  * ── Why this screen exists ───────────────────────────────────────────────
  *

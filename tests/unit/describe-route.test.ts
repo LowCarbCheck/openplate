@@ -1,5 +1,5 @@
 /**
- * `/describe` — the composer, and the pipeline it hands off to.
+ * `/describe`, the composer and the pipeline it hands off to.
  *
  * ── The defect ───────────────────────────────────────────────────────────
  *
