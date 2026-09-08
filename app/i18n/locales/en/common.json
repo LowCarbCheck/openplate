@@ -256,6 +256,7 @@
     "buildStamp": "Build {{label}}",
     "deviceMenuLabel": "This device, open menu",
     "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker that stays on your device",
+    "footerTaglineManaged": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker only you can read",
     "imprint": "Imprint",
     "installApp": "Install app",
     "licence": "MIT licence",
@@ -950,15 +951,20 @@
       },
       "local": {
         "body": "Every food you log is written to this browser’s own storage. The server keeps no copy: it has no database at all, so there is nothing of yours on it to leak. Export the lot as a file whenever you like.",
-        "title": "The diary lives on this device"
+        "bodyManaged": "Every food you log is written to this browser’s own storage. The server keeps a copy it cannot read. It keeps a ciphertext copy in a database, but the key never travels with the diary. Export the lot as a file whenever you like.",
+        "title": "The diary lives on this device",
+        "titleManaged": "The diary lives on this device, and the server's copy is locked"
       },
       "noTracking": {
         "body": "There is no analytics, no advertising and no tracking pixel in openplate. Nothing you do in the app is counted, and nothing about it is sent anywhere.",
         "title": "No ads, no tracking",
         "titleAnalytics": "No ads, and no tracking of your diary",
         "bodyAnalytics": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary stays on this device. Run openplate yourself and nothing is counted at all.",
+        "bodyAnalyticsManaged": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary is encrypted on this device before a copy reaches the server. Run openplate yourself and nothing is counted at all.",
         "bodyPageviews": "openplate contains no advertising. This instance counts page visits with its own cookie-free Matomo. It does not record which features you use. It is never told what you eat, weigh, or log. Your diary stays on this device. Run openplate yourself, and nothing is counted at all.",
-        "bodyResearch": "openplate contains no advertising. This instance runs its own cookie-free Matomo at the research level. On top of visits and feature use, it counts that a fast, a weight entry, a clinician share, or a study contribution happened. It is never told what you eat, weigh, or log. Your diary stays on this device. Run openplate yourself, and nothing is counted at all."
+        "bodyPageviewsManaged": "openplate contains no advertising. This instance counts page visits with its own cookie-free Matomo. It does not record which features you use. It is never told what you eat, weigh, or log. Your diary is encrypted on this device before a copy reaches the server. Run openplate yourself, and nothing is counted at all.",
+        "bodyResearch": "openplate contains no advertising. This instance runs its own cookie-free Matomo at the research level. On top of visits and feature use, it counts that a fast, a weight entry, a clinician share, or a study contribution happened. It is never told what you eat, weigh, or log. Your diary stays on this device. Run openplate yourself, and nothing is counted at all.",
+        "bodyResearchManaged": "openplate contains no advertising. This instance runs its own cookie-free Matomo at the research level. On top of visits and feature use, it counts that a fast, a weight entry, a clinician share, or a study contribution happened. It is never told what you eat, weigh, or log. Your diary is encrypted on this device before a copy reaches the server. Run openplate yourself, and nothing is counted at all."
       },
       "selfHost": {
         "body": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",
@@ -990,6 +996,7 @@
       "shotAlt": "The openplate diary on a laptop: a progress ring for the day, with breakfast, lunch and dinner listed beneath it and each meal's carbs, protein, fat and calories alongside.",
       "shotCaption": "A sample day, not your data.",
       "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands.",
+      "taglineManaged": "openplate is a carb-first food diary that keeps an end-to-end-encrypted copy on the operator's server: photograph your plate or search for what you ate, and see where the day stands.",
       "ticks": "No account · Installs like an app · Works offline · Photo scans use your own AI key",
       "ticksManaged": "Invitation only · Installs like an app · Works offline · Photo estimates included"
     },
@@ -1117,6 +1124,7 @@
     "join": "Join · openplate",
     "joinStudy": "Join a study · openplate",
     "landing": "openplate, a food tracker that stays on your device",
+    "landingManaged": "openplate, a food tracker only you can read",
     "landingDescription": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
     "meals": "Saved meals · openplate",
     "notFound": "Page not found · openplate",
@@ -1433,6 +1441,7 @@
   "recover": {
     "firstDataAt": "This device first stored data on {{date}}.",
     "lead": "This device has stored openplate data before, but the copy in this browser is empty right now. openplate keeps everything on your device and sends nothing to a server, so there is no other copy for us to fetch.",
+    "leadManaged": "This device has stored openplate data before, but the copy in this browser is empty right now. Your diary is also held on the server for this instance, encrypted so that only you can open it. Sign in again and this device brings it back.",
     "noBackupBody": "Then there is nothing left to bring back, and we're sorry, that is the honest answer. You can start a fresh diary from here, and if a backup does turn up later you can still restore it on top.",
     "noBackupHeading": "If you have no backup",
     "restoreBody": "If you have downloaded an openplate backup (a .json file), open it here. Everything in it comes back onto this device.",

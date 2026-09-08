@@ -98,6 +98,7 @@ const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account
  */
 const MANAGED_BRANCH_KEYS = [
   'chrome.signIn',
+  'chrome.footerTaglineManaged',
   'chrome.requestAccess',
   'chrome.requestAccessTitle',
   'chrome.requestAccessBody',

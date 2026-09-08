@@ -41,7 +41,12 @@ describe('the public header on a managed instance', () => {
   it('reads the named policy question rather than the mode name', () => {
     // `managed === true` says nothing about why this corner cares, which is
     // the arrangement that let the deletion below outlive its premise.
-    assert.match(HEADER, /const \{ headerOffersSignIn \} = useInstancePolicy\(\);/);
+    // The destructure may carry more than one question now: the footer
+    // tagline also reads `serverHoldsTheDiary` off this same call (M196/02).
+    assert.match(
+      HEADER,
+      /const \{ (?:\w+, )*headerOffersSignIn(?:, \w+)* \} = useInstancePolicy\(\);/,
+    );
     assert.ok(!HEADER.includes('useManagedInstance'), 'the bare boolean hook is gone');
   });
 

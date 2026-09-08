@@ -125,7 +125,10 @@ const FROZEN: FrozenAnswer[] = [
       'Whether a copy of the diary reaches a server the operator runs. `false` on an open instance EVEN ' +
       'WITH `SYNC_SERVER_URL` set, because sync there is an opt-in somebody may never touch. It selects ' +
       'the managed terms and privacy documents, the promise on the first onboarding screen, and the ' +
-      'landing sync card.',
+      'landing sync card. It also owns every remaining sentence that names the device as the diary\u2019s ' +
+      'only address: the landing page title, the footer tagline on every public page, the trust card body ' +
+      'at each of the three analytics levels, and the recovery screen, which on a managed instance says ' +
+      'the copy exists and offers the sign-in door that fetches it.',
   },
 ];
 

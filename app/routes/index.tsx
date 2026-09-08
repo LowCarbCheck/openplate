@@ -61,7 +61,6 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 // is the page search engines and link previews actually quote.
 export const meta: Route.MetaFunction = ({ matches, loaderData }) => {
   const language = metaLanguage(matches);
-  const title = metaTitle(language, 'meta.landing');
   // THE DESCRIPTION FOLLOWS THE POLICY TOO (M201/08). The open sentence ends
   // "Free, no account, and everything you log stays on your device", and on a
   // managed instance both halves of that are wrong: there IS an account, and
@@ -76,7 +75,16 @@ export const meta: Route.MetaFunction = ({ matches, loaderData }) => {
   // environment lookup. Missing loader data resolves to the OPEN policy, which
   // is the direction `getInstancePolicy` and `readInstancePolicy` both take.
   const managed = loaderData?.managed ?? false;
-  const { requiresAccount } = instancePolicyForMode(managed ? 'managed' : 'open');
+  const { requiresAccount, serverHoldsTheDiary } = instancePolicyForMode(managed ? 'managed' : 'open');
+  // TWO HALVES, TWO QUESTIONS, and they are not the same question (M196/02).
+  // The title's open form ends "a food tracker that stays on your device",
+  // which is a claim about WHERE THE DIARY LIVES, so it is wrong exactly where
+  // `serverHoldsTheDiary` is true. The description's open form ends "Free, no
+  // account, and everything you log stays on your device", and the half that
+  // makes it wrong first is "no account", so it asks `requiresAccount`. Asking
+  // one question for both would tie the title to whether an account exists,
+  // which is not what the sentence says.
+  const title = metaTitle(language, serverHoldsTheDiary ? 'meta.landingManaged' : 'meta.landing');
   const description = metaTitle(
     language,
     requiresAccount ? 'meta.landingDescriptionManaged' : 'meta.landingDescription',
@@ -220,23 +228,58 @@ const logger = createComponentLogger('landing');
  * counting exactly the health-adjacent events that instance is counting.
  *
  * So a fourth `AnalyticsEventLevel` must fail to compile here. `satisfies
- * Record<AnalyticsEventLevel, string>` makes it fail with "property is
- * missing", and the person adding the level is made to write the sentence. A
+ * Record<AnalyticsEventLevel, NoTrackingBodyKeys>` makes it fail with
+ * "property is missing", and the person adding the level is made to write BOTH
+ * sentences, the device-local one and the managed one, because the level says
+ * nothing about where the diary lives and both have to be true. A
  * ternary chain would instead fall through to whichever branch came last and
  * ship a false claim in silence, which is the failure this shape exists to
  * prevent. `satisfies` and not an annotation: the lint rule wants the literal
  * types kept, and the check is identical for the purpose above.
  */
-const NO_TRACKING_BODY_KEYS = {
-  pageviews: 'landing.features.noTracking.bodyPageviews',
-  product: 'landing.features.noTracking.bodyAnalytics',
-  research: 'landing.features.noTracking.bodyResearch',
-} satisfies Record<AnalyticsEventLevel, string>;
+interface NoTrackingBodyKeys {
+  /** Where the diary stays on the device, so the sentence may say exactly that. */
+  readonly open: string;
+  /** Where a copy reaches the operator's server, encrypted on this device first. */
+  readonly managed: string;
+}
 
-/** The body key for this instance. `null` is analytics off, the self-host default. */
-function noTrackingBodyKey(level: AnalyticsEventLevel | null): string {
+const NO_TRACKING_BODY_KEYS = {
+  pageviews: {
+    open: 'landing.features.noTracking.bodyPageviews',
+    managed: 'landing.features.noTracking.bodyPageviewsManaged',
+  },
+  product: {
+    open: 'landing.features.noTracking.bodyAnalytics',
+    managed: 'landing.features.noTracking.bodyAnalyticsManaged',
+  },
+  research: {
+    open: 'landing.features.noTracking.bodyResearch',
+    managed: 'landing.features.noTracking.bodyResearchManaged',
+  },
+} satisfies Record<AnalyticsEventLevel, NoTrackingBodyKeys>;
+
+/**
+ * The body key for this instance.
+ *
+ * TWO ANSWERS PER LEVEL, not one plus a special case (M196/02). All three
+ * level sentences end "your diary stays on this device", which is the same
+ * false claim on a managed instance whatever the counting level is, so each
+ * one carries its managed twin and the branch is the same at every level.
+ *
+ * `null` is analytics off, the self-host default, and it is the one entry with
+ * no managed twin ON PURPOSE: that sentence says only that nothing is counted
+ * and nothing is sent about what you do in the app. It makes no claim about
+ * where the diary lives, so a managed instance can say it word for word.
+ *
+ * @param level - what this instance counts, or `null` when it counts nothing.
+ * @param serverHoldsTheDiary - the policy question, never the mode name.
+ * @returns the catalog key for the sentence this instance may actually make.
+ */
+function noTrackingBodyKey(level: AnalyticsEventLevel | null, serverHoldsTheDiary: boolean): string {
   if (level === null) return 'landing.features.noTracking.body';
-  return NO_TRACKING_BODY_KEYS[level];
+  const keys = NO_TRACKING_BODY_KEYS[level];
+  return serverHoldsTheDiary ? keys.managed : keys.open;
 }
 
 /** What the newsletter form submits. Parsed, never trusted — it arrives from a public page. */
@@ -1303,8 +1346,16 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               piece of furniture that turns "a heading with paragraphs under
               it" into a composed masthead. */}
           <span aria-hidden="true" className="mt-5 block h-1 w-16 rounded-full bg-primary" />
+          {/* THE HERO PARAGRAPH, and the first sentence a visitor reads. It
+              said the diary "lives on your device", which was the THIRD
+              occurrence of one false claim on one page: the title above it and
+              the footer tagline below it made the same promise, and none of
+              them holds where the account keeps an encrypted copy on the
+              operator's server. The managed twin names the copy instead of
+              denying it. Same question as the other two, never the mode
+              name. */}
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-foreground sm:text-xl">
-            {t('landing.hero.tagline')}
+            {t(serverHoldsTheDiary ? 'landing.hero.taglineManaged' : 'landing.hero.tagline')}
           </p>
           {/* Two full paragraphs used to stand here — one on installing, one
               on privacy and BYOK — and both were the feature grid's own cards
@@ -1565,10 +1616,22 @@ export default function Index({ loaderData }: Route.ComponentProps) {
         </h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.features.subtitle')}</p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
+          {/* DIFFERENT IN KIND from the other strings this page branches
+              (M196/02). The hero, the footer tagline and the analytics bodies
+              made a promise that goes stale on a managed instance; this body
+              makes a specific, checkable claim about the operator's
+              infrastructure, "it has no database at all", and on a managed
+              instance that claim is simply false: `openplate-sync` runs a
+              Postgres and stores the ciphertext blob in it. It also
+              contradicts the sync card three cards down this same page, which
+              discloses that copy and the operator's recovery key, so on one
+              screen the reader gets two opposite facts about the same server.
+              The managed twin keeps the device first and then names the copy
+              and where the key is not. */}
           <FeatureCard
             icon={HardDrive}
-            title={t('landing.features.local.title')}
-            body={t('landing.features.local.body')}
+            title={t(serverHoldsTheDiary ? 'landing.features.local.titleManaged' : 'landing.features.local.title')}
+            body={t(serverHoldsTheDiary ? 'landing.features.local.bodyManaged' : 'landing.features.local.body')}
           />
           {/* The AI card, and it is a different product on each kind of
               instance (M196). The open card describes a key you bring and a
@@ -1595,14 +1658,18 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             title={t('landing.features.selfHost.title')}
             body={t('landing.features.selfHost.body')}
           />
-          {/* FOUR bodies and TWO titles, and the asymmetry is deliberate.
+          {/* SEVEN bodies and TWO titles, and the asymmetry is deliberate.
 
               The body has to name what this instance actually counts, so it
               is chosen by the analytics LEVEL: off, pageviews, product,
               research (see `noTrackingBodyKey` for why that is a lookup and
-              not a ternary chain). The title only claims the diary is not
-              tracked, which is true at every level, so it stays a two-way
-              choice between "analytics exist here" and "they do not". */}
+              not a ternary chain). Each of the three counting levels also
+              states where the diary lives, so each has a managed twin and the
+              lookup takes `serverHoldsTheDiary` as well; the off sentence
+              makes no such claim and is the same one in both modes. The title
+              only claims the diary is not tracked, which is true at every
+              level and in both modes, so it stays a two-way choice between
+              "analytics exist here" and "they do not". */}
           <FeatureCard
             icon={EyeOff}
             title={t(
@@ -1610,7 +1677,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 'landing.features.noTracking.title'
               : 'landing.features.noTracking.titleAnalytics',
             )}
-            body={t(noTrackingBodyKey(analyticsLevel))}
+            body={t(noTrackingBodyKey(analyticsLevel, serverHoldsTheDiary))}
           />
         </div>
         {/* The pair, restated where the six claims end. This is the one point

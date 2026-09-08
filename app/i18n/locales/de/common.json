@@ -256,6 +256,7 @@
     "buildStamp": "Build {{label}}",
     "deviceMenuLabel": "Dieses Gerät, Menü öffnen",
     "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
+    "footerTaglineManaged": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das nur du lesen kannst",
     "imprint": "Impressum",
     "installApp": "App installieren",
     "licence": "MIT-Lizenz",
@@ -954,15 +955,20 @@
       },
       "local": {
         "body": "Jedes eingetragene Lebensmittel wird im lokalen Speicher dieses Browsers abgelegt. Der Server speichert keine Kopie: Er hat überhaupt keine Datenbank, also kann dort auch nichts von dir nach außen dringen. Exportiere jederzeit alles als Datei.",
-        "title": "Das Tagebuch bleibt auf diesem Gerät"
+        "bodyManaged": "Jedes eingetragene Lebensmittel wird im lokalen Speicher dieses Browsers abgelegt. Der Server speichert eine Kopie, die er nicht lesen kann: In seiner Datenbank liegt eine verschlüsselte Kopie, aber der Schlüssel wird niemals mit dem Tagebuch übertragen. Exportiere jederzeit alles als Datei.",
+        "title": "Das Tagebuch bleibt auf diesem Gerät",
+        "titleManaged": "Das Tagebuch liegt auf diesem Gerät, und die Serverkopie ist verschlüsselt"
       },
       "noTracking": {
         "body": "In openplate steckt keine Analyse, keine Werbung und kein Zählpixel. Was du in der App tust, wird nicht gezählt, und es wird nichts darüber verschickt.",
         "title": "Keine Werbung, kein Tracking",
         "titleAnalytics": "Keine Werbung, kein Tracking deines Tagebuchs",
         "bodyAnalytics": "openplate enthält keine Werbung. Diese Instanz zählt Besuche und Funktionsnutzung mit einem eigenen, cookielosen Matomo, aber niemals was du isst, wiegst oder einträgst; dein Tagebuch bleibt auf diesem Gerät. Wenn du openplate selbst betreibst, wird überhaupt nichts erfasst.",
+        "bodyAnalyticsManaged": "openplate enthält keine Werbung. Diese Instanz zählt Besuche und Funktionsnutzung mit einem eigenen, cookielosen Matomo, aber niemals was du isst, wiegst oder einträgst; dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht. Wenn du openplate selbst betreibst, wird überhaupt nichts erfasst.",
         "bodyPageviews": "openplate enthält keine Werbung. Diese Instanz zählt Besuche mit einem eigenen, cookielosen Matomo. Welche Funktionen du nutzt, wird nicht erfasst. Sie erfährt niemals, was du isst, wiegst oder einträgst. Dein Tagebuch bleibt auf diesem Gerät. Betreibe openplate selbst, und es wird überhaupt nichts gezählt.",
-        "bodyResearch": "openplate enthält keine Werbung. Diese Instanz nutzt ein eigenes, cookieloses Matomo auf Forschungsstufe. Zusätzlich zu Besuchen und Funktionsnutzung zählt sie, dass ein Fasten, ein Gewichtseintrag, das Teilen mit Behandelnden oder ein Studienbeitrag stattgefunden hat. Sie erfährt niemals, was du isst, wiegst oder einträgst. Dein Tagebuch bleibt auf diesem Gerät. Betreibe openplate selbst, und es wird überhaupt nichts gezählt."
+        "bodyPageviewsManaged": "openplate enthält keine Werbung. Diese Instanz zählt Seitenaufrufe mit einem eigenen, cookielosen Matomo. Sie erfasst nicht, welche Funktionen du nutzt. Sie erfährt niemals, was du isst, wiegst oder einträgst. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht. Wenn du openplate selbst betreibst, wird überhaupt nichts erfasst.",
+        "bodyResearch": "openplate enthält keine Werbung. Diese Instanz nutzt ein eigenes, cookieloses Matomo auf Forschungsstufe. Zusätzlich zu Besuchen und Funktionsnutzung zählt sie, dass ein Fasten, ein Gewichtseintrag, das Teilen mit Behandelnden oder ein Studienbeitrag stattgefunden hat. Sie erfährt niemals, was du isst, wiegst oder einträgst. Dein Tagebuch bleibt auf diesem Gerät. Betreibe openplate selbst, und es wird überhaupt nichts gezählt.",
+        "bodyResearchManaged": "openplate enthält keine Werbung. Diese Instanz nutzt ein eigenes, cookieloses Matomo auf Forschungsebene. Zusätzlich zu Besuchen und Funktionsnutzung zählt sie, dass ein Fasten, ein Gewichtseintrag, eine Freigabe für Behandelnde oder ein Studienbeitrag stattgefunden hat. Sie erfährt niemals, was du isst, wiegst oder einträgst. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht. Wenn du openplate selbst betreibst, wird überhaupt nichts erfasst."
       },
       "selfHost": {
         "body": "Ein zustandsloser Container, keine Datenbank zu betreiben und kein Geheimnis einzurichten. Die Compose-Datei liegt im Repository: ein Download und ein Befehl.",
@@ -990,6 +996,7 @@
       "shotAlt": "Das openplate-Tagebuch auf einem Laptop: ein Tagesring, darunter Frühstück, Mittag- und Abendessen, und neben jeder Mahlzeit ihre Kohlenhydrate, ihr Eiweiß, ihr Fett und ihre Kalorien.",
       "shotCaption": "Ein Beispieltag, nicht deine Daten.",
       "tagline": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das auf deinem Gerät bleibt: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht.",
+      "taglineManaged": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das eine Ende-zu-Ende-verschlüsselte Kopie auf dem Server des Betreibers speichert: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht.",
       "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline · Foto-Scans laufen über deinen eigenen KI-Schlüssel",
       "ticksManaged": "Nur auf Einladung · Lässt sich wie eine App installieren · Funktioniert offline · Foto-Schätzungen inklusive"
     },
@@ -1117,6 +1124,7 @@
     "join": "Beitreten · openplate",
     "joinStudy": "Bei einer Studie mitmachen · openplate",
     "landing": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
+    "landingManaged": "openplate, ein Ernährungstagebuch, das nur du lesen kannst",
     "landingDescription": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir in Sekundenschnelle die Kohlenhydrate und vergleicht sie mit deinem festgelegten Tagesziel. Kostenlos, ohne Account, und alles, was du einträgst, bleibt auf deinem Gerät.",
     "meals": "Gespeicherte Mahlzeiten · openplate",
     "notFound": "Seite nicht gefunden · openplate",
@@ -1433,6 +1441,7 @@
   "recover": {
     "firstDataAt": "Dieses Gerät hat am {{date}} zum ersten Mal Daten gespeichert.",
     "lead": "Auf diesem Gerät wurden bereits openplate-Daten gespeichert, aber die Kopie in diesem Browser ist gerade leer. openplate speichert alles auf deinem Gerät und sendet nichts an einen Server, daher gibt es keine andere Kopie, die wir abrufen könnten.",
+    "leadManaged": "Auf diesem Gerät wurden schon einmal openplate-Daten gespeichert, aber die Kopie in diesem Browser ist im Moment leer. Dein Tagebuch liegt auch auf dem Server dieser Instanz, so verschlüsselt, dass nur du es öffnen kannst. Melde dich wieder an, und dieses Gerät holt es zurück.",
     "noBackupBody": "Dann lässt sich leider nichts wiederherstellen, und so ehrlich müssen wir sein. Du kannst hier ein neues Tagebuch beginnen, und falls später doch noch ein Backup auftaucht, kannst du es nachträglich einspielen.",
     "noBackupHeading": "Wenn du keine Sicherung hast",
     "restoreBody": "Wenn du eine openplate-Sicherung heruntergeladen hast (eine .json-Datei), öffne sie hier. Alles darin kommt zurück auf dieses Gerät.",

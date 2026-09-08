@@ -14,8 +14,17 @@
  * marker in the surviving partition and sends that device HERE instead. This
  * page says only what is actually known — this device has held data, the local
  * copy is not readable — offers the one real remedy (restore a backup file),
- * and does not promise recovery openplate cannot deliver. There is no server
- * copy to fetch, and saying so plainly is part of the job.
+ * and does not promise recovery openplate cannot deliver. Where
+ * `serverHoldsTheDiary` is false there is no server copy to fetch, and saying
+ * so plainly is part of the job.
+ *
+ * ON A MANAGED INSTANCE THAT IS THE OPPOSITE OF THE TRUTH (M196/02). The
+ * account keeps an end-to-end-encrypted copy on the operator's server, so a
+ * screen telling that person nothing was ever sent anywhere gives them the
+ * wrong advice at the worst moment. There, the lead says the copy exists and
+ * the page offers the door that fetches it, a sign-in link above the backup
+ * section. Restoring from a file stays available in both modes, because a
+ * person who has one should not have to sign in first.
  *
  * CLIENT-ONLY and TOP-LEVEL, deliberately. It exports no loader, action or
  * `clientLoader`: the backup file is read in the browser and restored straight
@@ -36,6 +45,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { dateLabelLocale } from '#app/i18n/date-locale';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { getFirstDataAt, restoreBackup } from '#app/lib/local-store';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { trackBackupImported } from '#app/lib/matomo-events';
 import { reportError } from '#app/lib/report-error';
 
@@ -146,6 +156,10 @@ function RestoreFromBackup() {
 export default function Recover() {
   const { t } = useTranslation();
   const firstDataLabel = useFirstDataLabel();
+  // The question is what this page can honestly say and offer, not the mode
+  // name: a copy of the diary on the operator's server is the whole reason the
+  // lead changes and the reason there is a door to offer at all.
+  const { serverHoldsTheDiary } = useInstancePolicy();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
@@ -153,9 +167,21 @@ export default function Recover() {
         <CardHeader>
           <AlertTriangle className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
           <CardTitle>{t('recover.title')}</CardTitle>
-          <CardDescription>{t('recover.lead')}</CardDescription>
+          <CardDescription>{t(serverHoldsTheDiary ? 'recover.leadManaged' : 'recover.lead')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* THE DOOR THE MANAGED LEAD NAMES. That sentence ends "Sign in
+              again and this device brings it back", and a page that says it
+              without offering the link makes the reader hunt for a route they
+              were just told to take. It is the page's primary action here,
+              above the backup section, because it is the remedy that actually
+              exists on this instance. An open instance renders nothing: there
+              is no account and no second copy to sign in to. */}
+          {serverHoldsTheDiary && (
+            <Button asChild className="h-11 w-full justify-center sm:w-auto">
+              <Link to="/sign-in">{t('chrome.signIn')}</Link>
+            </Button>
+          )}
           {firstDataLabel !== null && (
             <p className="text-sm text-muted-foreground">{t('recover.firstDataAt', { date: firstDataLabel })}</p>
           )}

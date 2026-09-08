@@ -25,6 +25,15 @@
  *     it is correct there. Every string and every destination is pinned by
  *     name below, so a "tidy-up" that leaks the managed wording onto a
  *     self-host fails here.
+ *
+ * M196/02 ADDED A SECOND FALSE CLAIM to the same page. Spec 08 was about doors
+ * the instance does not have; this one is about the diary's ADDRESS. The page
+ * title, the footer tagline and all three analytics bodies said the diary
+ * stays on the device, which is false wherever `serverHoldsTheDiary` is true.
+ * Two of those had never been rendered by this file at all: the `<title>` is a
+ * `meta()` descriptor and not markup, and the three level bodies only appear
+ * when the loader reports an analytics level, which `renderLanding` used to
+ * pin at `null`. Both gaps are closed below.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,6 +47,7 @@ import { withI18n } from './trends-i18n-harness';
 import Index, { meta } from '../../app/routes/index';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import type { PublicConfig } from '../../app/config/public-config';
+import type { AnalyticsEventLevel } from '../../app/config/analytics';
 
 /** The landing loader's payload, with sync on so the account link renders at all. */
 const LOADER_DATA = {
@@ -67,15 +77,24 @@ function publicConfig(managed: boolean): PublicConfig {
  * is never pending during a synchronous render, the same arrangement
  * `scan-connect-card.test.ts` uses. Effects do not run under
  * `renderToStaticMarkup`, so the hard-load repair effect stays out of the way.
+ *
+ * `analyticsLevel` defaults to `null`, the self-host default and the level
+ * every assertion written before M196/02 was written against. The three
+ * counting levels are rendered separately, because the trust card's body is
+ * chosen by the level and the level-off sentence is the one body of the four
+ * that is NOT mode-dependent.
+ *
+ * @param managed - the instance mode this render's public config reports.
+ * @param analyticsLevel - what the loader says this instance counts.
  */
-function renderLanding(managed: boolean): string {
+function renderLanding(managed: boolean, analyticsLevel: AnalyticsEventLevel | null = null): string {
   const config = publicConfig(managed);
   // SAFETY: `Route.ComponentProps` also carries `params`, `matches`, `actionData`
   // and `loaderData` typed by the generated route module, and this page reads
   // exactly the four fields of `loaderData` supplied above and nothing else.
   // The cast is the harness admitting it is not the router, not a claim about
   // the component.
-  const page = withI18n(createElement(Index as never, { loaderData: LOADER_DATA } as never));
+  const page = withI18n(createElement(Index as never, { loaderData: { ...LOADER_DATA, analyticsLevel } } as never));
   const router = createMemoryRouter(
     [
       {
@@ -133,6 +152,9 @@ function hrefCount(html: string, path: string): number {
 
 const MANAGED = renderLanding(true);
 const OPEN = renderLanding(false);
+
+/** Every counting level, so the trust card's three mode-dependent bodies are all exercised. */
+const ANALYTICS_LEVELS: readonly AnalyticsEventLevel[] = ['pageviews', 'product', 'research'];
 
 describe('the landing page on a managed instance', () => {
   it('leaves no dashboard link anywhere on the page', () => {
@@ -222,6 +244,18 @@ const MANAGED_FALSE_CLAIMS = [
   { phrase: 'sign up', why: 'there is no self-service signup to point at' },
   { phrase: 'nothing to sign up for', why: 'there is: an administrator has to invite you' },
   { phrase: 'bills you', why: 'nobody is billed by a provider here' },
+  {
+    phrase: 'stays on your device',
+    why: 'the account keeps an encrypted copy on the server, so the device is not the only place it is',
+  },
+  {
+    phrase: 'lives on your device',
+    why: 'the hero says where the diary lives, and on a managed instance it lives in two places',
+  },
+  {
+    phrase: 'no database at all',
+    why: 'openplate-sync runs a Postgres and keeps the ciphertext diary in it',
+  },
 ];
 
 /** The markup with its tags removed and its whitespace collapsed. */
@@ -447,6 +481,25 @@ describe('the landing copy this spec added is fit to be a managed label', () => 
  */
 const DESCRIPTION_TAG = z.object({ name: z.literal('description'), content: z.string() });
 
+/** The document title descriptor, which carries no `name` and no `property`. */
+const TITLE_TAG = z.object({ title: z.string() });
+
+/**
+ * Every head tag this route serves, for a given mode.
+ *
+ * @param managed - the mode this route's loader reported, or `undefined` when
+ *   the loader never ran.
+ * @returns the descriptor list, undecoded.
+ */
+function landingMetaTags(managed: boolean | undefined): unknown[] {
+  const loaderData = managed === undefined ? undefined : { ...LOADER_DATA, managed };
+  // SAFETY: `Route.MetaArgs` also carries `params`, `location`, `error` and a
+  // fully typed match union. `meta()` reads the root match's language and two
+  // fields of its own loader data, which is exactly what this object supplies;
+  // the cast is the harness admitting it is not the router.
+  return [...meta({ matches: [{ id: 'root', loaderData: { language: 'en' } }], loaderData } as never)];
+}
+
 /**
  * The page's `<meta name="description">`, produced the way the router produces
  * it: the ROOT match carries the language, this route's own loader data
@@ -457,17 +510,30 @@ const DESCRIPTION_TAG = z.object({ name: z.literal('description'), content: z.st
  *   the error-boundary case where the loader never ran at all.
  */
 function landingDescription(managed: boolean | undefined): string {
-  const loaderData = managed === undefined ? undefined : { ...LOADER_DATA, managed };
-  // SAFETY: `Route.MetaArgs` also carries `params`, `location`, `error` and a
-  // fully typed match union. `meta()` reads the root match's language and two
-  // fields of its own loader data, which is exactly what this object supplies;
-  // the cast is the harness admitting it is not the router.
-  const tags = meta({ matches: [{ id: 'root', loaderData: { language: 'en' } }], loaderData } as never);
-  for (const tag of tags) {
+  for (const tag of landingMetaTags(managed)) {
     const parsed = DESCRIPTION_TAG.safeParse(tag);
     if (parsed.success) return parsed.data.content;
   }
   throw new Error('the landing page served no description tag at all');
+}
+
+/**
+ * The `<title>` descriptor, found the same way and for the same reason.
+ *
+ * A title descriptor is `{ title }` and nothing else, so it is decoded with
+ * its own schema rather than taken from position 0. `meta()` returns thirteen
+ * tags here and three of them carry the title's text; only one of the three is
+ * the document title.
+ *
+ * @param managed - the mode this route's loader reported, or `undefined` for
+ *   the error-boundary case where the loader never ran at all.
+ */
+function landingTitle(managed: boolean | undefined): string {
+  for (const tag of landingMetaTags(managed)) {
+    const parsed = TITLE_TAG.safeParse(tag);
+    if (parsed.success) return parsed.data.title;
+  }
+  throw new Error('the landing page served no title at all');
 }
 
 describe('the setup ladder on a managed instance', () => {
@@ -534,5 +600,260 @@ describe('the description a search engine quotes follows the policy', () => {
     // answers with the open policy, the same direction `getInstancePolicy` and
     // `readInstancePolicy` both take.
     assert.equal(landingDescription(undefined), enCommon.meta.landingDescription);
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// Where the diary lives: the title, the footer, and the trust card (M196/02)
+////////////////////////////////////////////////////////////////////////////////
+
+describe('the title a tab and a link preview show follows the policy', () => {
+  it('does not tell a managed visitor the diary stays on their device', () => {
+    // The open title ends "a food tracker that stays on your device". On a
+    // managed instance the account keeps an encrypted copy on the operator's
+    // server, so this is the claim, not the wording, that is wrong.
+    const title = landingTitle(true);
+    assert.ok(!title.includes('stays on your device'), title);
+    assert.notEqual(title, enCommon.meta.landing);
+  });
+
+  it('serves the managed title instead', () => {
+    assert.equal(landingTitle(true), enCommon.meta.landingManaged);
+    assert.ok(!/[–—]/.test(enCommon.meta.landingManaged));
+  });
+
+  it('serves the open title word for word on an open instance', () => {
+    assert.equal(landingTitle(false), enCommon.meta.landing);
+  });
+
+  it('falls open when the loader never ran', () => {
+    // The error-boundary case, answered the way `getInstancePolicy` answers it.
+    assert.equal(landingTitle(undefined), enCommon.meta.landing);
+  });
+});
+
+/**
+ * The part of the footer tagline that survives `<Trans>` as one run of text.
+ *
+ * The catalog entry is `{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food
+ * tracker …`, and `<Trans>` splits it around the anchor, so the whole string
+ * is never contiguous in the markup. The TAIL after the closing tag is, and it
+ * is the half that carries the claim about where the diary lives. Sliced out
+ * of the catalog rather than typed here, so a rewrite of the sentence moves
+ * this with it instead of failing for a stale copy.
+ *
+ * @param key - `footerTagline` or its managed twin.
+ * @returns everything after the anchor, including the leading comma.
+ */
+function taglineTail(key: 'footerTagline' | 'footerTaglineManaged'): string {
+  const line = enCommon.chrome[key];
+  const anchorEnd = line.indexOf('</lcc>');
+  assert.ok(anchorEnd !== -1, `${key} lost its <lcc> anchor, so this slice means nothing`);
+  const tail = line.slice(anchorEnd + '</lcc>'.length);
+  assert.ok(tail.trim().length > 0, `${key} says nothing after the anchor`);
+  return tail;
+}
+
+describe('the footer tagline follows the policy on every public page', () => {
+  it('promises a managed visitor only what is true there', () => {
+    assert.ok(rendersCopy(MANAGED, taglineTail('footerTaglineManaged')), MANAGED.slice(0, 400));
+    assert.ok(!rendersCopy(MANAGED, taglineTail('footerTagline')), 'the device-only tagline survived');
+  });
+
+  it('keeps the device-only tagline on an open instance, where it is true', () => {
+    assert.ok(rendersCopy(OPEN, taglineTail('footerTagline')), OPEN.slice(0, 400));
+    assert.ok(!rendersCopy(OPEN, taglineTail('footerTaglineManaged')), 'the managed tagline reached a self-host');
+  });
+
+  it('states two different things, so the pair cannot drift into one sentence', () => {
+    // WITHOUT THIS the two assertions above pass on a "fix" that points both
+    // keys at the same words: each page would render its own tail and neither
+    // would render the other, because there would be nothing to tell apart.
+    assert.notEqual(taglineTail('footerTagline'), taglineTail('footerTaglineManaged'));
+    assert.match(taglineTail('footerTagline'), /stays on your device/);
+    assert.ok(!/stays on your device/.test(taglineTail('footerTaglineManaged')));
+  });
+});
+
+/** The trust card body each counting level renders, in each mode. */
+interface NoTrackingBodies {
+  /** The sentence where the diary stays on this device and nowhere else. */
+  readonly open: string;
+  /** The sentence where it is encrypted here before a copy reaches the server. */
+  readonly managed: string;
+}
+
+/**
+ * The three mode-dependent bodies of "No ads, no tracking", by level.
+ *
+ * The level-off body is deliberately absent: it claims only that nothing is
+ * counted and nothing is sent about what you do, which is true in both modes,
+ * so it has no managed twin to pin. `satisfies` keeps a fourth level failing
+ * to compile here the same way it fails in the route.
+ */
+const NO_TRACKING_BODIES = {
+  pageviews: {
+    open: enCommon.landing.features.noTracking.bodyPageviews,
+    managed: enCommon.landing.features.noTracking.bodyPageviewsManaged,
+  },
+  product: {
+    open: enCommon.landing.features.noTracking.bodyAnalytics,
+    managed: enCommon.landing.features.noTracking.bodyAnalyticsManaged,
+  },
+  research: {
+    open: enCommon.landing.features.noTracking.bodyResearch,
+    managed: enCommon.landing.features.noTracking.bodyResearchManaged,
+  },
+} satisfies Record<AnalyticsEventLevel, NoTrackingBodies>;
+
+/** The managed page as each counting level renders it. */
+const MANAGED_AT = {
+  pageviews: renderLanding(true, 'pageviews'),
+  product: renderLanding(true, 'product'),
+  research: renderLanding(true, 'research'),
+} satisfies Record<AnalyticsEventLevel, string>;
+
+/** The open page as each counting level renders it. */
+const OPEN_AT = {
+  pageviews: renderLanding(false, 'pageviews'),
+  product: renderLanding(false, 'product'),
+  research: renderLanding(false, 'research'),
+} satisfies Record<AnalyticsEventLevel, string>;
+
+describe('the trust card names where the diary lives at every analytics level', () => {
+  // THE BODIES NOBODY HAD EVER RENDERED. Every assertion in this file was
+  // written against `analyticsLevel: null`, which is the one body of the four
+  // that makes no claim about where the diary lives. The three that do were
+  // invisible here, and all three said "your diary stays on this device".
+  for (const level of ANALYTICS_LEVELS) {
+    it(`says the managed sentence at the ${level} level`, () => {
+      assert.ok(rendersCopy(MANAGED_AT[level], NO_TRACKING_BODIES[level].managed), MANAGED_AT[level].slice(0, 400));
+      assert.ok(!rendersCopy(MANAGED_AT[level], NO_TRACKING_BODIES[level].open), `the ${level} device-only body survived`);
+    });
+
+    it(`keeps the device-only sentence at the ${level} level on an open instance`, () => {
+      assert.ok(rendersCopy(OPEN_AT[level], NO_TRACKING_BODIES[level].open), OPEN_AT[level].slice(0, 400));
+      assert.ok(!rendersCopy(OPEN_AT[level], NO_TRACKING_BODIES[level].managed), `the ${level} managed body reached a self-host`);
+    });
+  }
+
+  it('leaves the level-off body alone, because it claims nothing about the device', () => {
+    // Analytics off is the self-host default and the one body with no managed
+    // twin. It is pinned as SHARED rather than left unmentioned, so a later
+    // pass that branches it has to say why.
+    for (const page of [MANAGED, OPEN]) {
+      assert.ok(rendersCopy(page, enCommon.landing.features.noTracking.body), page.slice(0, 400));
+    }
+    assert.ok(!/this device|your device/i.test(enCommon.landing.features.noTracking.body));
+  });
+});
+
+/**
+ * The false claim that only exists at a counting level.
+ *
+ * It is kept out of `MANAGED_FALSE_CLAIMS` on purpose: that sweep's control
+ * case asserts the OPEN page says every phrase, and the open page at
+ * `analyticsLevel: null` does not say this one. Weakening the control to make
+ * it fit would cost more than the entry is worth, so the phrase is swept over
+ * the renders that can actually carry it.
+ */
+const MANAGED_FALSE_CLAIMS_AT_A_COUNTING_LEVEL = [
+  { phrase: 'stays on this device', why: 'an encrypted copy reaches the server the operator runs, as a matter of course' },
+];
+
+describe('no counting level lets a managed page claim the device keeps the diary', () => {
+  for (const { phrase, why } of MANAGED_FALSE_CLAIMS_AT_A_COUNTING_LEVEL) {
+    for (const level of ANALYTICS_LEVELS) {
+      it(`never says "${phrase}" at the ${level} level, because ${why}`, () => {
+        assert.ok(!saysPhrase(MANAGED_AT[level], phrase), `"${phrase}" is on the managed page at ${level}`);
+      });
+    }
+  }
+});
+
+describe('that ban is real, because the open page says it at every level', () => {
+  // The same non-vacuity proof the sweep above carries: the phrase is the
+  // product's actual promise where the diary belongs to the device, so its
+  // presence here is what makes its absence opposite mean anything.
+  for (const { phrase } of MANAGED_FALSE_CLAIMS_AT_A_COUNTING_LEVEL) {
+    for (const level of ANALYTICS_LEVELS) {
+      it(`still says "${phrase}" at the ${level} level`, () => {
+        assert.ok(saysPhrase(OPEN_AT[level], phrase), `"${phrase}" left the open page, so the managed ban proves nothing`);
+      });
+    }
+  }
+});
+
+describe('the hero paragraph says where the diary lives, and it is right twice', () => {
+  // THE FIRST SENTENCE A VISITOR READS, and the third occurrence of one false
+  // claim on one page. The title, this paragraph and the footer tagline all
+  // promised the device and nothing else, which is why the sweep above matters
+  // more than any of the three: naming one of them only ever fixes one.
+  it('names the encrypted copy on a managed instance', () => {
+    assert.ok(rendersCopy(MANAGED, enCommon.landing.hero.taglineManaged), MANAGED.slice(0, 400));
+    assert.ok(!rendersCopy(MANAGED, enCommon.landing.hero.tagline), 'the device-only hero survived');
+  });
+
+  it('keeps the device-only hero on an open instance, where it is true', () => {
+    assert.ok(rendersCopy(OPEN, enCommon.landing.hero.tagline), OPEN.slice(0, 400));
+    assert.ok(!rendersCopy(OPEN, enCommon.landing.hero.taglineManaged), 'the managed hero reached a self-host');
+  });
+
+  it('states two different things, so the pair cannot drift into one sentence', () => {
+    assert.notEqual(enCommon.landing.hero.tagline, enCommon.landing.hero.taglineManaged);
+    assert.match(enCommon.landing.hero.tagline, /lives on your device/);
+    assert.ok(!/lives on your device/.test(enCommon.landing.hero.taglineManaged));
+  });
+});
+
+/**
+ * The half of the managed card title the open title does not already contain.
+ *
+ * "The diary lives on this device" is a strict PREFIX of "The diary lives on
+ * this device, and the server's copy is locked", so `!renders(open title)` on
+ * the managed page can never fail: the managed page renders the open title as
+ * part of its own. The TAIL after the shared opening is what actually tells
+ * the two cards apart, and it is sliced out of the catalog rather than typed
+ * here, so a rewrite of either string moves this with it.
+ */
+function localTitleTail(): string {
+  const open = enCommon.landing.features.local.title;
+  const managed = enCommon.landing.features.local.titleManaged;
+  assert.ok(managed.startsWith(open), 'the managed title no longer opens with the open one, so this slice is wrong');
+  const tail = managed.slice(open.length);
+  assert.ok(tail.trim().length > 0, 'the two titles are the same words, so nothing tells the cards apart');
+  return tail;
+}
+
+describe('the storage card describes the storage this instance actually has', () => {
+  // THE STRONGEST FALSE CLAIM ON THE PAGE, and different in kind from the
+  // other five this file pins. The hero and the footer tagline made a promise
+  // that a managed instance cannot keep; this card asserts a fact about the
+  // operator's machines, "it has no database at all", and `openplate-sync`
+  // runs a Postgres with the ciphertext diary in it. Worse, the sync card
+  // three cards down the same grid discloses that copy and the operator's
+  // recovery key, so before this branch a managed visitor read two opposite
+  // facts about one server without scrolling.
+  it('names the locked copy on a managed instance', () => {
+    assert.ok(rendersCopy(MANAGED, enCommon.landing.features.local.titleManaged), MANAGED.slice(0, 400));
+    assert.ok(rendersCopy(MANAGED, enCommon.landing.features.local.bodyManaged), MANAGED.slice(0, 400));
+    assert.ok(!rendersCopy(MANAGED, enCommon.landing.features.local.body), 'the no-database body survived');
+  });
+
+  it('keeps the no-database card on an open instance, where it is true', () => {
+    assert.ok(rendersCopy(OPEN, enCommon.landing.features.local.title), OPEN.slice(0, 400));
+    assert.ok(rendersCopy(OPEN, enCommon.landing.features.local.body), OPEN.slice(0, 400));
+    assert.ok(!rendersCopy(OPEN, localTitleTail()), 'the managed title reached a self-host');
+    assert.ok(!rendersCopy(OPEN, enCommon.landing.features.local.bodyManaged), 'the managed body reached a self-host');
+  });
+
+  it('states two different things, so the pair cannot drift into one sentence', () => {
+    // WITHOUT THIS the assertions above pass on a "fix" that points both body
+    // keys at the same words. The claim being branched is named here by hand,
+    // because it is the sentence that was false rather than the whole
+    // paragraph that carried it.
+    assert.notEqual(enCommon.landing.features.local.body, enCommon.landing.features.local.bodyManaged);
+    assert.match(enCommon.landing.features.local.body, /no database at all/);
+    assert.ok(!/no database at all/.test(enCommon.landing.features.local.bodyManaged));
   });
 });

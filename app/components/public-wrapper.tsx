@@ -44,7 +44,7 @@ export default function PublicWrapper({
   wide?: boolean;
 }) {
   const { t } = useTranslation();
-  const { headerOffersSignIn } = useInstancePolicy();
+  const { headerOffersSignIn, serverHoldsTheDiary } = useInstancePolicy();
   const container = cn('container mx-auto w-full px-4', wide ? 'max-w-5xl' : 'max-w-3xl');
 
   return (
@@ -127,12 +127,20 @@ export default function PublicWrapper({
             'flex flex-col items-center justify-between gap-4 py-6 text-sm text-muted-foreground sm:flex-row sm:gap-6',
           )}
         >
-          {/* Attribution + the device-local promise as ONE sentence, one
+          {/* Attribution + the promise about the diary as ONE sentence, one
               catalog entry: the "by X" clause and the tagline sit either side
-              of the em dash in English and in German, and a translator needs
-              the whole line to reorder it. `<Trans>` carries the inline link
-              so the anchor can move within the sentence per language; the
-              domain itself is a proper noun and stays untranslated.
+              of a comma in English and in German, and a translator needs the
+              whole line to reorder it. `<Trans>` carries the inline link so
+              the anchor can move within the sentence per language; the domain
+              itself is a proper noun and stays untranslated.
+
+              THE PROMISE FOLLOWS THE MODE (M196/02). The open tagline ends "a
+              food tracker that stays on your device", which is false on an
+              instance whose account keeps an encrypted copy on the operator's
+              server, and this line is on EVERY public page. The managed twin
+              claims what is still true there, that only this person can read
+              it. The question is `serverHoldsTheDiary`, never the mode name;
+              see `app/config/instance-policy.ts`.
 
               A plain do-follow anchor on purpose — this is a real credit to
               the project openplate came out of, not a paid or untrusted link,
@@ -140,7 +148,7 @@ export default function PublicWrapper({
               because it opens in a new tab. */}
           <span className="text-center sm:text-left">
             <Trans
-              i18nKey="chrome.footerTagline"
+              i18nKey={serverHoldsTheDiary ? 'chrome.footerTaglineManaged' : 'chrome.footerTagline'}
               values={{ appName: APP_NAME }}
               components={{
                 lcc: (
