@@ -1149,7 +1149,8 @@
     "reset": "Neues Passwort festlegen",
     "account": "Konto",
     "admin": "Administration",
-    "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht."
+    "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
+    "describe": "Mahlzeit beschreiben · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -1380,7 +1381,7 @@
       },
       "type": {
         "title": "Eintippen",
-        "description": "Tippe eine ganze Mahlzeit in eine Zeile, zum Beispiel 3 Eier und 2 Scheiben Toast. Oder suche nach einzelnen Lebensmitteln."
+        "description": "Tippe eine ganze Mahlzeit in eine Zeile, etwa 3 Eier und 2 Scheiben Toast. Die KI erkennt das Essen aus deinen Worten, genau wie bei einem Foto. Für einzelne Lebensmittel kannst du weiterhin die Datenbank durchsuchen."
       },
       "speak": {
         "title": "Einsprechen",
@@ -1622,9 +1623,10 @@
     "analyzing": {
       "analyzing": "Dein Teller wird analysiert…",
       "starting": "Analyse startet…",
-      "stillWorking": "Wird noch analysiert, komplexe Teller dauern einen Moment…",
+      "stillWorking": "Noch in Arbeit, das kann einen Moment dauern…",
       "uploading": "Foto wird hochgeladen…",
-      "sendingText": "Deine Worte werden gesendet…"
+      "sendingText": "Deine Worte werden gesendet…",
+      "analyzingText": "Lebensmittel werden erkannt…"
     },
     "capture": {
       "addWithoutPhoto": "Essen ohne Foto eintragen",
@@ -1644,7 +1646,7 @@
     "errors": {
       "attemptCost": "Dieser Versuch hat {{amount}} deines API-Guthabens verbraucht. Es wurde in deinen Nutzungsdaten erfasst.",
       "attemptRecorded": "Dieser Versuch steht in deiner Nutzung.",
-      "connectProvider": "Verbinde in den Einstellungen deinen KI-Anbieter, bevor du Fotos erkennen lässt.",
+      "connectProvider": "Verbinde deinen KI-Anbieter in den Einstellungen, damit Lebensmittel für dich erkannt werden können.",
       "endpointUnreachable": "Der Endpunkt konnte vom Browser aus nicht erreicht werden. Wahrscheinlich blockiert die Content Security Policy eine Base-URL außerhalb von localhost oder der Endpunkt lässt keine Browser-Anfragen (CORS) zu. Details findest du in den KI-Einstellungen.",
       "identifyFailed": "Die Lebensmittel auf dem Foto konnten nicht erkannt werden.",
       "missingBaseUrl": "Dieser Verbindung fehlt eine Base-URL. Öffne die KI-Einstellungen und lege eine fest, oder wechsle zu OpenRouter.",
@@ -1666,10 +1668,10 @@
         "rateLimit": "Der Anbieter begrenzt gerade die Anzahl der Anfragen. Warte einen Moment und versuche es erneut.",
         "reconsentRequired": "Die Datenschutzeinstellungen dieses Gateways haben sich geändert, weshalb dieses Gerät nicht mehr akzeptiert wird. Bitte die Person, die dich eingeladen hat, um einen neuen Einladungslink.",
         "photoTooLarge": "Das Foto ist zu groß für diesen Server. Versuch es mit einem kleineren.",
-        "aiNotAllowed": "Foto-Schätzungen sind für dein Konto nicht aktiviert. Wende dich an deinen Administrator.",
+        "aiNotAllowed": "KI-Schätzungen sind für dein Konto nicht aktiviert. Wende dich an deinen Administrator.",
         "accountSuspended": "Dein Konto ist gesperrt. Wende dich an deinen Administrator.",
-        "rateLimitMinute": "Das waren einige Fotos kurz hintereinander. Versuch es in einer Minute noch einmal.",
-        "allowanceSpent": "Du hast deine heutigen Foto-Schätzungen aufgebraucht. Versuch es morgen wieder."
+        "rateLimitMinute": "Das waren zu viele Anfragen kurz hintereinander. Versuch es in einer Minute noch einmal.",
+        "allowanceSpent": "Du hast deine heutigen KI-Schätzungen aufgebraucht. Versuch es morgen wieder."
       },
       "readPhoto": "Das Foto konnte nicht gelesen werden. Versuche es mit einem anderen.",
       "titles": {
@@ -1682,14 +1684,16 @@
         "reconsentRequired": "Dieses Gateway braucht eine neue Einladung",
         "transient": "Der Anbieter hatte Probleme mit der Antwort",
         "photoTooLarge": "Das Foto ist zu groß",
-        "aiNotAllowed": "Foto-Schätzungen sind deaktiviert",
+        "aiNotAllowed": "KI-Schätzungen sind deaktiviert",
         "accountSuspended": "Dein Konto ist gesperrt"
       },
       "text": {
         "empty": "Schreib zuerst, was du gegessen hast.",
         "title": "Mit dieser Beschreibung hat es nicht geklappt",
         "qualityBody": "Daraus konnten keine Lebensmittel erkannt werden. Nenne am besten jedes Lebensmittel und die Menge, zum Beispiel 3 Eier, 2 Scheiben Toast."
-      }
+      },
+      "identifyFailedText": "Lebensmittel konnten anhand deiner Beschreibung nicht erkannt werden.",
+      "noFoodsText": "In dieser Beschreibung wurden keine Lebensmittel erkannt. Nenne am besten jedes Lebensmittel und die Menge dazu."
     },
     "loading": "Scan wird geladen…",
     "offline": "Du bist offline. Das Scannen von Tellern erfordert eine Internetverbindung. Durchsuche deine kürzlich genutzten Lebensmittel, um jetzt etwas einzutragen.",
@@ -2716,5 +2720,17 @@
       "waiting_other": "{{count}} Einträge haben den Server noch nicht erreicht. Durch das Löschen gehen sie verloren."
     },
     "title": "Abmelden"
+  },
+  "describe": {
+    "title": "Beschreibe deine Mahlzeit",
+    "lead": "Schreib auf, was du gegessen hast. Die KI erkennt das Essen aus deinen Worten, genau wie bei einem Foto. Du prüfst jeden Eintrag, bevor etwas gespeichert wird.",
+    "label": "Was hast du gegessen?",
+    "placeholder": "2 Spiegeleier, eine Scheibe Toast mit Butter, schwarzer Kaffee",
+    "send": "Senden",
+    "sendHint": "Enter sendet. Shift und Enter beginnen eine neue Zeile.",
+    "speakHint": "Tippe auf das Mikrofon und sprich dann, was du gegessen hast.",
+    "needsProvider": "Mahlzeiten beschreiben erfordert eine KI-Verbindung auf diesem Gerät.",
+    "connect": "Anbieter verbinden",
+    "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen"
   }
 }
