@@ -185,7 +185,7 @@ test('the report page draws the figures beside the photograph, and names what wa
   assert.match(html, /Carbs/);
   assert.match(html, /2\.5 g/, 'the figure, in its own unit');
   assert.match(html, /310 kcal/, 'and calories are not grams');
-  assert.match(html, /Estimated from a photo by the model/);
+  assert.match(html, /Estimated by the model/);
   assert.match(html, /<img/, 'the photograph is drawn from the object URL the route owns');
   assert.match(html, /src="blob:local"/);
   assert.match(html, /What was agreed to/);

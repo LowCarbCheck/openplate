@@ -2740,7 +2740,7 @@
       "grams": "{{value}} g",
       "calories": "{{value}} kcal",
       "figureNone": "None given",
-      "aiEstimated": "Estimated from a photo by the model",
+      "aiEstimated": "Estimated by the model",
       "notAiEstimated": "Not estimated by the model",
       "source": "Entered from {{source}}",
       "consentTitle": "What was agreed to",

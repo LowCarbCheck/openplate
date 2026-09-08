@@ -2678,7 +2678,8 @@
       "label": "Bereiche",
       "people": "Personen",
       "invitations": "Einladungen",
-      "activity": "Aktivität"
+      "activity": "Aktivität",
+      "feedback": "Meldungen"
     },
     "filter": {
       "searchLabel": "Suche",
@@ -2698,6 +2699,41 @@
       "windowLabel": "Zeitraum",
       "windowDays": "{{days}} Tage",
       "failed": "Die täglichen Zahlen konnten nicht geladen werden. Die Personen werden weiterhin aufgeführt."
+    },
+    "feedback": {
+      "title": "Gemeldete Schätzungen",
+      "body": "Was gemeldet wurde, wenn ein Wert falsch aussah. Jede Meldung löscht sich {{days}} Tage nach Eingang selbst.",
+      "empty": "Bisher wurde nichts gemeldet.",
+      "loading": "Wird geladen",
+      "failed": "Die Meldungen konnten nicht geladen werden.",
+      "retry": "Erneut versuchen",
+      "reportTitle": "Meldung {{id}}",
+      "person": "Account {{id}}",
+      "reportedAt": "Gemeldet am {{date}}",
+      "deletesAt": "Löscht sich am {{date}}",
+      "hasPhoto": "Mit Foto",
+      "noPhoto": "Ohne Foto, Mahlzeit eingetippt",
+      "photoAlt": "Das mit Meldung {{id}} gesendete Foto",
+      "photoLoading": "Foto wird geladen",
+      "photoGone": "Das Foto wurde bereits gelöscht.",
+      "photoFailed": "Das Foto konnte nicht geladen werden.",
+      "back": "Zurück zu den Meldungen",
+      "notFound": "Unter dieser Adresse gibt es nichts.",
+      "noName": "Dieser Eintrag hatte keinen Namen.",
+      "grams": "{{value}} g",
+      "calories": "{{value}} kcal",
+      "figureNone": "Keine Angabe",
+      "aiEstimated": "Vom Modell geschätzt",
+      "notAiEstimated": "Nicht vom Modell geschätzt",
+      "source": "Eingegeben über {{source}}",
+      "consentTitle": "Worin eingewilligt wurde",
+      "consentAgreed": "Zugestimmt am {{date}}",
+      "consentWording": "Wortlaut {{version}}",
+      "deleteCta": "Jetzt löschen",
+      "deleteConfirmTitle": "Meldung {{id}} löschen?",
+      "deleteConfirmBody": "Die Werte und das Foto werden sofort gelöscht, nicht erst nach Ablauf der Frist. Das kann nicht rückgängig gemacht werden.",
+      "deleteConfirmCta": "Endgültig löschen",
+      "deleteFailed": "Die Meldung konnte nicht gelöscht werden."
     }
   },
   "signOut": {
