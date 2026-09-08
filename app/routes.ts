@@ -214,6 +214,15 @@ export default [
       route('activity', 'routes/admin.activity.tsx'),
       route('people/:id', 'routes/admin.people.$id.tsx'),
       route('invite', 'routes/admin.invite.tsx'),
+      // Reported estimates (M200 spec 06). A SECOND gate on top of the
+      // layout's: both routes 404 on an instance whose server accepts no
+      // reports, because the service answers 404 on that whole subtree and an
+      // empty queue here would tell an operator the feature merely sleeps.
+      // The queue and one report are two routes for the reason people/:id is
+      // one: the figures arrive only on the detail read, and an address for
+      // one report has to survive a reload and a colleague.
+      route('feedback', 'routes/admin.feedback.tsx'),
+      route('feedback/:id', 'routes/admin.feedback.$id.tsx'),
     ]),
     // Resource route: server-proxied LCC food-name lookup for the client-side
     // scan flow (M117/02) — see app/routes/api.food-matches.ts.

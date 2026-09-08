@@ -207,3 +207,75 @@ export type AdminStats = z.infer<typeof adminStatsSchema>;
  * body.
  */
 export const adminStatsResponseSchema = z.object({ stats: adminStatsSchema });
+
+// ─── Reported estimates ─────────────────────────────────────────────────────
+//
+// `GET /v1/admin/feedback`, `GET /v1/admin/feedback/:id` and
+// `DELETE /v1/admin/feedback/:id`, transcribed from
+// `openplate-sync/src/server/admin-feedback-routes.ts`: `toSummaryView` at
+// `:79`, `toDetailView` at `:97`, the list envelope at `:183` and the detail
+// envelope at `:209`.
+//
+// A SUMMARY CARRIES NO FIGURES, AND THAT IS THE SERVICE'S DECISION, not an
+// omission this client should route around by reading every row.
+// `feedback-admin-store.ts` says why in its header: the list is the queue an
+// operator scans, so a screenshot of it carries nothing out of anybody's
+// diary, and the figures belong to the one report they opened. That is why
+// there is a detail screen at all.
+
+/** One report in the operator's queue. Everything needed to decide whether to open it, and nothing from a diary. */
+export const feedbackReportSummarySchema = z.object({
+  id: z.number().int(),
+  accountId: z.number().int(),
+  /** `false` is a typed meal, or a photograph the person's device had already evicted. Never an error. */
+  hasImage: z.boolean(),
+  consentWordingVersion: z.string(),
+  createdAt: z.string(),
+});
+export type AdminFeedbackReport = z.infer<typeof feedbackReportSummarySchema>;
+
+/**
+ * The figures the model produced for the reported entry.
+ *
+ * TOLERANT, FIELD BY FIELD, and deliberately so. The service stores
+ * `measurements` verbatim and has no opinion about it
+ * (`admin-feedback-routes.ts:90-96`), so a report written by an older or a
+ * newer build of this app is a body this screen still has to draw. A strict
+ * object would turn one missing macro into an unreadable report, and the
+ * reviewer would lose the six figures that did arrive.
+ *
+ * The field list is `FeedbackMeasurements` in
+ * `#app/lib/feedback/feedback-report`, which is the writer.
+ *
+ * THERE IS NO NOTE AND NO MODEL NAME HERE. The writer sends neither, on
+ * purpose: the report is the entry, not a message. `source` and `aiEstimated`
+ * are as close as this wire comes to naming where the figures came from.
+ */
+export const reportedMeasurementsSchema = z.object({
+  name: z.string().catch(''),
+  quantityGrams: z.number().nullable().catch(null),
+  loggedAt: z.string().catch(''),
+  source: z.string().catch(''),
+  aiEstimated: z.boolean().catch(false),
+  carbs: z.number().nullable().catch(null),
+  fiber: z.number().nullable().catch(null),
+  sugars: z.number().nullable().catch(null),
+  polyols: z.number().nullable().catch(null),
+  protein: z.number().nullable().catch(null),
+  fat: z.number().nullable().catch(null),
+  kcal: z.number().nullable().catch(null),
+});
+export type ReportedMeasurements = z.infer<typeof reportedMeasurementsSchema>;
+
+/** One opened report: the summary, the figures, and the consent record that let them be kept. */
+export const feedbackReportDetailSchema = feedbackReportSummarySchema.extend({
+  measurements: reportedMeasurementsSchema,
+  consent: z.object({ agreedAt: z.string(), wordingVersion: z.string() }),
+});
+export type AdminFeedbackReportDetail = z.infer<typeof feedbackReportDetailSchema>;
+
+export const feedbackListSchema = z.object({
+  reports: z.array(feedbackReportSummarySchema),
+  total: z.number().int(),
+});
+export const feedbackReportResponseSchema = z.object({ report: feedbackReportDetailSchema });
