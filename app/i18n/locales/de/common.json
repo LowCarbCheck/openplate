@@ -2774,6 +2774,6 @@
   "aiIntake": {
     "signedOut": "Du bist auf diesem Gerät abgemeldet, daher kann keine KI lesen, was du schreibst. Melde dich an, um sie wieder zu nutzen.",
     "signIn": "Anmelden",
-    "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deine Administration, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne."
+    "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie."
   }
 }
