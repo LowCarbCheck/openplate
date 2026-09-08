@@ -951,7 +951,7 @@
       },
       "local": {
         "body": "Every food you log is written to this browser’s own storage. The server keeps no copy: it has no database at all, so there is nothing of yours on it to leak. Export the lot as a file whenever you like.",
-        "bodyManaged": "Every food you log is written to this browser’s own storage. The server keeps a copy it cannot read. It keeps a ciphertext copy in a database, but the key never travels with the diary. Export the lot as a file whenever you like.",
+        "bodyManaged": "Every food you log is written to this browser’s own storage. The server keeps an encrypted copy in a database and cannot read it, because the key never travels with the diary. Export the lot as a file whenever you like.",
         "title": "The diary lives on this device",
         "titleManaged": "The diary lives on this device, and the server's copy is locked"
       },
@@ -1294,6 +1294,7 @@
   "offline": {
     "heading": "No connection right now",
     "body": "Your diary, and everything you've already logged, lives on this device and still works with no connection. This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like scanning a photo). Try again once you're back online.",
+    "bodyManaged": "Your diary, and everything you've already logged, lives on this device and still works with no connection. The server holds an encrypted copy it cannot read, because the key never leaves this device. This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like scanning a photo). Try again once you're back online.",
     "cta": "Go to your diary"
   },
   "onboarding": {
@@ -1814,6 +1815,7 @@
   "settings": {
     "data": {
       "description": "Your diary lives on this device: download a full copy anytime, no lock-in, no request-and-wait.",
+      "descriptionManaged": "Your diary lives on this device, and the server holds an encrypted copy it cannot read: the key never leaves this device. Download a full copy anytime, no lock-in, no request-and-wait.",
       "downloadCsv": "Download diary (CSV)",
       "downloadJson": "Download everything (JSON)",
       "exportTitle": "Your data",

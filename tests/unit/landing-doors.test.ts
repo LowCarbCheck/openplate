@@ -855,5 +855,15 @@ describe('the storage card describes the storage this instance actually has', ()
     assert.notEqual(enCommon.landing.features.local.body, enCommon.landing.features.local.bodyManaged);
     assert.match(enCommon.landing.features.local.body, /no database at all/);
     assert.ok(!/no database at all/.test(enCommon.landing.features.local.bodyManaged));
+    // And the managed body has to state the fact it exists to state, which is
+    // three things at once: there IS a copy, it is encrypted, and the server
+    // cannot open it. Asserted as meaning rather than as the sentence, because
+    // the sentence has already been rewritten once: it arrived as two clauses
+    // saying the same thing twice and was merged into one.
+    const managed = enCommon.landing.features.local.bodyManaged;
+    assert.match(managed, /\bserver\b/i);
+    assert.match(managed, /encrypted/i);
+    assert.match(managed, /cannot read it/i);
+    assert.ok(!/keeps no copy/i.test(managed), 'the managed body denies the copy it exists to announce');
   });
 });

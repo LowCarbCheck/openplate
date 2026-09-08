@@ -955,7 +955,7 @@
       },
       "local": {
         "body": "Jedes eingetragene Lebensmittel wird im lokalen Speicher dieses Browsers abgelegt. Der Server speichert keine Kopie: Er hat überhaupt keine Datenbank, also kann dort auch nichts von dir nach außen dringen. Exportiere jederzeit alles als Datei.",
-        "bodyManaged": "Jedes eingetragene Lebensmittel wird im lokalen Speicher dieses Browsers abgelegt. Der Server speichert eine Kopie, die er nicht lesen kann: In seiner Datenbank liegt eine verschlüsselte Kopie, aber der Schlüssel wird niemals mit dem Tagebuch übertragen. Exportiere jederzeit alles als Datei.",
+        "bodyManaged": "Jedes Lebensmittel, das du einträgst, landet direkt im Speicher dieses Browsers. Der Server speichert eine verschlüsselte Kopie in einer Datenbank und kann sie nicht lesen, weil der Schlüssel nie übertragen wird. Du kannst jederzeit alles als Datei exportieren.",
         "title": "Das Tagebuch bleibt auf diesem Gerät",
         "titleManaged": "Das Tagebuch liegt auf diesem Gerät, und die Serverkopie ist verschlüsselt"
       },
@@ -1294,6 +1294,7 @@
   "offline": {
     "heading": "Gerade keine Verbindung",
     "body": "Dein Tagebuch und alles, was du bereits erfasst hast, liegt auf diesem Gerät und funktioniert auch ohne Verbindung. Nur diese eine Seite kann noch nicht geladen werden: Entweder ist sie neu auf diesem Gerät oder sie benötigt Internetzugriff (wie beim Scannen eines Fotos). Versuche es erneut, sobald du wieder online bist.",
+    "bodyManaged": "Dein Tagebuch und alle bisherigen Einträge liegen auf diesem Gerät und funktionieren auch ohne Verbindung. Der Server speichert eine verschlüsselte Kopie, die er nicht lesen kann, weil der Schlüssel dieses Gerät nie verlässt. Nur diese eine Seite lässt sich noch nicht laden: Entweder ist sie neu auf diesem Gerät, oder sie benötigt eine Internetverbindung (wie das Scannen eines Fotos). Versuch es wieder, sobald du online bist.",
     "cta": "Zu deinem Tagebuch"
   },
   "onboarding": {
@@ -1814,6 +1815,7 @@
   "settings": {
     "data": {
       "description": "Dein Tagebuch wird auf diesem Gerät gespeichert: Lade dir jederzeit eine vollständige Kopie herunter, ohne Bindung, ohne Wartezeit.",
+      "descriptionManaged": "Dein Tagebuch liegt auf diesem Gerät, und der Server speichert eine verschlüsselte Kopie, die er nicht lesen kann: Der Schlüssel verlässt dieses Gerät nie. Lade jederzeit eine vollständige Kopie herunter, ohne Lock-in, ohne Anfragen und Warten.",
       "downloadCsv": "Tagebuch laden (CSV)",
       "downloadJson": "Alles laden (JSON)",
       "exportTitle": "Deine Daten",

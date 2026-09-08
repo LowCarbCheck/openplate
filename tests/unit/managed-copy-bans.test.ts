@@ -95,6 +95,11 @@ const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account
  * which render only where `headerOffersSignIn` is true. They are the words a
  * visitor to a managed instance reads FIRST, so they are the last place a
  * self-hoster's vocabulary should survive.
+ *
+ * `offline.bodyManaged` and `settings.data.descriptionManaged` are the two
+ * device-only claims the M196 sweep did not reach. What each one must SAY is
+ * checked in `device-only-managed-copy.test.ts`; what it may not say is here,
+ * with every other managed string.
  */
 const MANAGED_BRANCH_KEYS = [
   'chrome.signIn',
@@ -115,6 +120,8 @@ const MANAGED_BRANCH_KEYS = [
   'account.allowance.body',
   'account.allowance.none',
   'account.allowance.askAdmin',
+  'offline.bodyManaged',
+  'settings.data.descriptionManaged',
 ];
 
 /**

@@ -34,6 +34,7 @@ import {
 import { todayInTimezone } from '#app/lib/user-days';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { PhotoCacheCard } from '#app/components/photo-cache-card';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -228,13 +229,21 @@ function DownloadButtons() {
 
 export default function SettingsData() {
   const { t } = useTranslation();
+  // The card's description is a claim about WHERE the diary is (M196 class).
+  // "Your diary lives on this device" is the whole truth on an open instance
+  // and half of it on a managed one, where the account also keeps an
+  // end-to-end-encrypted copy on the operator's server. The download offer
+  // below is identical either way; only the sentence above it changes.
+  const { serverHoldsTheDiary } = useInstancePolicy();
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <Card id="your-data">
         <CardHeader>
           <CardTitle>{t('settings.data.exportTitle')}</CardTitle>
-          <CardDescription>{t('settings.data.description')}</CardDescription>
+          <CardDescription>
+            {t(serverHoldsTheDiary ? 'settings.data.descriptionManaged' : 'settings.data.description')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <DownloadButtons />

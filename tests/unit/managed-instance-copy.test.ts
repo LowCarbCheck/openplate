@@ -66,6 +66,21 @@ describe('landing page — the three claims that are false on a managed instance
   });
 });
 
+describe('the two screens M196 first missed', () => {
+  // Both are RENDERED, both ways, in `device-only-managed-copy.test.ts`. What
+  // is pinned here is the NAME of the question each one asks: a branch on the
+  // bare mode would render the same two screens correctly and teach the next
+  // screen nothing (M201 spec 07).
+  for (const [route, managedKey] of [
+    ['offline.tsx', 'offline.bodyManaged'],
+    ['settings.data.tsx', 'settings.data.descriptionManaged'],
+  ]) {
+    it(`${route} chooses ${managedKey} by asking who holds the diary`, () => {
+      assertChosenByPolicy(readRoute(route), 'serverHoldsTheDiary', managedKey);
+    });
+  }
+});
+
 describe('onboarding — the first-run trust card', () => {
   it('swaps the local-first promise for the managed one', () => {
     assertChosenByPolicy(readRoute('onboarding.tsx'), 'serverHoldsTheDiary', 'onboarding.localFirstManaged');
