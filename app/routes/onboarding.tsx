@@ -63,7 +63,11 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
-import { Key, ShieldCheck } from 'lucide-react';
+import { InstallAffordanceAction } from '#app/components/install-card';
+import { useInstallAffordance } from '#app/hooks/use-install-affordance';
+import type { InstallAffordanceControls } from '#app/hooks/use-install-affordance';
+import { APP_NAME } from '#app/lib/brand';
+import { Download, Key, ShieldCheck } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import {
   trackOnboardingCompleted,
@@ -1108,8 +1112,13 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
  * Every card submits FINISH with a destination rather than opening the camera
  * on tap: the Form has to stamp onboarding completion before the user lands
  * anywhere, unlike every other add-food surface.
+ *
+ * Exported (it takes no props and touches no loader data) so
+ * `tests/unit/first-food-install.test.ts` can render it for real through
+ * `renderToStaticMarkup` and prove the install footnote's position against
+ * actual markup rather than the route's source text.
  */
-function FirstFoodStep() {
+export function FirstFoodStep() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const isBusy = navigation.state !== 'idle';
@@ -1142,6 +1151,7 @@ function FirstFoodStep() {
         </div>
       </Form>
       <FirstFoodKeyNote />
+      <FirstFoodInstallNote />
     </StepShell>
   );
 }
@@ -1238,5 +1248,63 @@ function FirstFoodKeyNote() {
         </span>
       }
     </Form>
+  );
+}
+
+/**
+ * The lesson's last footnote: an offer to install the app, placed after
+ * `FirstFoodKeyNote` so it reads as the quietest thing on the screen — the
+ * three cards above are the lesson, this is a bonus for the platforms that
+ * can act on it. First-run is where teaching an install matters most: a
+ * returning person who already knows the three ways never sees this step,
+ * so the settings hub's `InstallCard` is their only other chance to be told.
+ *
+ * Renders nothing at all for `affordance === 'none'` — a desktop browser, or
+ * a device that already has the app installed, both the common case — so
+ * there is no empty box and no leftover spacing when there is nothing to
+ * offer.
+ *
+ * Reuses `InstallAffordanceAction`, `InstallCard`'s own prompt-vs-iOS body,
+ * and the same `install.*` copy already shipped for the settings hub, so the
+ * platform branching is written in exactly one place and this component only
+ * supplies its own quiet layout — matching `FirstFoodKeyNote`'s muted box
+ * rather than the settings hub's bordered `Card`, which read as too heavy
+ * stacked directly under three cards that are already boxed.
+ *
+ * Split into this thin hook-reading shell and the exported, prop-driven
+ * `FirstFoodInstallFootnote` below, for exactly one reason: `useInstallAffordance`
+ * reads browser globals that `renderToStaticMarkup` cannot exercise (no
+ * `useEffect`, and `useSyncExternalStore` always takes the server snapshot),
+ * so a test that wants real rendered markup for the `'prompt'` and
+ * `'ios-instructions'` cases has to render the presentational half directly
+ * with explicit props. See `tests/unit/first-food-install.test.ts`.
+ */
+function FirstFoodInstallNote() {
+  const { affordance, promptInstall } = useInstallAffordance();
+  return <FirstFoodInstallFootnote affordance={affordance} promptInstall={promptInstall} />;
+}
+
+/**
+ * The footnote's actual markup, taking the hook's own return shape as props.
+ * Renders nothing at all for `affordance === 'none'` — the common case, a
+ * desktop browser or an already-installed device — so there is no empty box
+ * and no leftover spacing when there is nothing to offer.
+ */
+export function FirstFoodInstallFootnote({ affordance, promptInstall }: InstallAffordanceControls) {
+  const { t } = useTranslation();
+
+  if (affordance === 'none') return null;
+
+  return (
+    <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+      <Download className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+      <div className="flex flex-col items-start gap-2">
+        <p>
+          <span className="font-medium text-foreground">{t('install.title', { appName: APP_NAME })}</span>{' '}
+          {t('install.description', { appName: APP_NAME })}
+        </p>
+        <InstallAffordanceAction affordance={affordance} promptInstall={promptInstall} />
+      </div>
+    </div>
   );
 }
