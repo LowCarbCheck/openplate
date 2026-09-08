@@ -198,7 +198,7 @@ describe('the guard is what disables the button, not the renderer', () => {
   });
 
   it('the same button inside CredentialSubmitButton renders DISABLED', () => {
-    const markup = renderToStaticMarkup(createElement(CredentialSubmitButton, { children: 'go' }));
+    const markup = renderToStaticMarkup(createElement(CredentialSubmitButton, null, 'go'));
     assert.ok(isDisabled(markup), markup);
     assert.ok(markup.includes(GUARD_MARKER), markup);
   });
