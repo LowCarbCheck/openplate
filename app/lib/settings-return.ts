@@ -9,7 +9,7 @@
  */
 
 /** The `?next=` tokens a connect flow can return the user to. */
-export const SETTINGS_RETURN_TOKENS = ['diary', 'scan', 'add'] as const;
+export const SETTINGS_RETURN_TOKENS = ['diary', 'scan', 'add', 'describe'] as const;
 
 export type SettingsReturnToken = (typeof SETTINGS_RETURN_TOKENS)[number];
 
@@ -18,6 +18,7 @@ const RETURN_PATH_BY_TOKEN = {
   diary: '/diary',
   scan: '/scan',
   add: '/add',
+  describe: '/describe',
 } satisfies Record<SettingsReturnToken, string>;
 
 /**

@@ -27,6 +27,13 @@
  * So: PHOTO, TYPE, SPEAK. One card per way, no footnote, and each card starts
  * the action it describes.
  *
+ * 3. Typing and speaking got a screen of their own (M203). Both cards used to
+ *    land on `/add`, which is the database SEARCH: a box that wants one noun,
+ *    shown to somebody who was just told to write a whole meal. They land on
+ *    `/describe` now, which is the composer the lesson describes. The search is
+ *    still in the product and the type card's copy still names it, as the way
+ *    to add one exact item.
+ *
  * WHAT IS STILL TRUE ABOUT SPEECH, and must stay in the copy: the AUDIO never
  * reaches openplate and never reaches the AI provider. `app/lib/speech-input.ts`
  * wraps the browser's own Web Speech API, so the recording goes to the
@@ -76,8 +83,8 @@ function destinationFor(id: WayToLogId): OnboardingExitDestination {
   // ARMS the microphone and focuses it. It never starts listening: that is the
   // button's own guarantee, and an app that opened a microphone on navigation
   // is an app nobody can trust with one.
-  if (id === 'speak') return '/add?speak=1';
-  return '/add';
+  if (id === 'speak') return '/describe?speak=1';
+  return '/describe';
 }
 
 /**

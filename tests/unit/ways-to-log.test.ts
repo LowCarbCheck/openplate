@@ -78,15 +78,19 @@ describe('each card starts the real action', () => {
     assert.equal(WAYS_TO_LOG[0]?.destination, '/scan');
   });
 
-  it('sends the type card to /add', () => {
+  it('sends the type card to the composer, never to the database search', () => {
     assert.equal(WAYS_TO_LOG[1]?.id, 'type');
-    assert.equal(WAYS_TO_LOG[1]?.destination, '/add');
+    assert.equal(WAYS_TO_LOG[1]?.destination, '/describe');
+    // The defect M203 fixed: the card teaches "write a whole meal in one
+    // line" and used to land on `/add`, a search field that wants one noun.
+    assert.notEqual(WAYS_TO_LOG[1]?.destination, '/add');
   });
 
   it('sends the speak card to the ARMED microphone, never to a listening one', () => {
     const speak = WAYS_TO_LOG[2];
     assert.equal(speak?.id, 'speak');
-    assert.equal(speak?.destination, '/add?speak=1');
+    assert.equal(speak?.destination, '/describe?speak=1');
+    assert.notEqual(speak?.destination, '/add?speak=1');
     // Arming is focus, not a session. An app that opened a microphone on
     // navigation is an app nobody can trust with one, so the button's own
     // guarantee is read here rather than assumed.

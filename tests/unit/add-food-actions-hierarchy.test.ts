@@ -45,14 +45,21 @@ describe('the add-food actions', () => {
     assert.doesNotMatch(primary[0], /asChild/);
   });
 
+  it('sends typing and speaking to the composer, never to the database search', () => {
+    // The defect this route exists for: "Type" used to open `/add`, a search
+    // field, for a person who came to write a sentence.
+    assert.match(source, /describeTo: string;/);
+    assert.doesNotMatch(source, /to="\/add"/, 'an action still points straight at the database search');
+  });
+
   it('keeps typing and speaking beside it, in the same row', () => {
     assert.match(source, /t\('launcher\.type'\)/);
     assert.match(source, /t\('launcher\.speak'\)/);
-    assert.match(source, /<Link to=\{addTo\}>/);
-    assert.match(source, /<Link to=\{speakHref\(addTo\)\}>/);
+    assert.match(source, /<Link to=\{describeTo\}>/);
+    assert.match(source, /<Link to=\{speakHref\(describeTo\)\}>/);
     // One flex row holds all three, so they share the width rather than
     // stacking the two quiet ones under a full-width primary.
-    assert.match(source, /<div className="flex gap-2">[\s\S]*onClick=\{capture\}[\s\S]*speakHref\(addTo\)/);
+    assert.match(source, /<div className="flex gap-2">[\s\S]*onClick=\{capture\}[\s\S]*speakHref\(describeTo\)/);
   });
 
   it('gives all three the same generous target', () => {
@@ -84,14 +91,14 @@ describe('the add-food actions', () => {
 
 describe('speakHref', () => {
   it('adds speak=1 to a bare destination', () => {
-    assert.equal(speakHref('/add'), '/add?speak=1');
+    assert.equal(speakHref('/describe'), '/describe?speak=1');
   });
 
   it('keeps a query the destination already carries', () => {
-    assert.equal(speakHref('/add?date=2026-09-07'), '/add?date=2026-09-07&speak=1');
+    assert.equal(speakHref('/describe?date=2026-09-07'), '/describe?date=2026-09-07&speak=1');
   });
 
   it('does not add a second speak=1', () => {
-    assert.equal(speakHref('/add?speak=1'), '/add?speak=1');
+    assert.equal(speakHref('/describe?speak=1'), '/describe?speak=1');
   });
 });

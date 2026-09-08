@@ -181,6 +181,40 @@ function ScanLoading() {
 const NO_FOODS_ERROR_KEY = 'scan.errors.noFoods';
 
 /**
+ * Which SUBJECT a message on this screen is about: the photograph, or the
+ * person's own words.
+ *
+ * Three ways in, two subjects. A spoken meal and a typed one are the same
+ * sentence by the time any of this copy renders, and only the photo path has a
+ * picture to talk about. Every sentence that names one of them has to branch
+ * here or it is simply false half the time: "Couldn't identify any foods in
+ * that photo. Try a clearer shot." is advice nobody can follow about a
+ * sentence they typed.
+ */
+export type IntakeSubject = 'photo' | 'text';
+
+/** The subject to describe, for an intake that started one of the three ways. */
+export function intakeSubjectOf(source: IntakeSource): IntakeSubject {
+  return source === 'photo' ? 'photo' : 'text';
+}
+
+/**
+ * The "we billed tokens and found nothing" message, per subject. The KEY is
+ * what the failure UI compares against (see `showSpecificError`), so the
+ * comparison survives translation, and the twin has to be resolved the same
+ * way on both sides or a typed meal would show its friendly headline with the
+ * same sentence repeated underneath it.
+ */
+export function noFoodsErrorKey(subject: IntakeSubject): string {
+  return subject === 'text' ? 'scan.errors.noFoodsText' : NO_FOODS_ERROR_KEY;
+}
+
+/** The generic "that did not work" message, per subject. */
+export function identifyFailedErrorKey(subject: IntakeSubject): string {
+  return subject === 'text' ? 'scan.errors.identifyFailedText' : 'scan.errors.identifyFailed';
+}
+
+/**
  * The schemas are FACTORIES, not module constants: a Zod message is baked in
  * when the schema is built, so a module-level schema would freeze whatever
  * language happened to be active at import time. Each parse site builds its own
@@ -579,7 +613,7 @@ async function completePlateIntake({
     await recordAttempt({ usage, outcome: 'no_foods' });
     return {
       intent: 'identify',
-      error: translate(NO_FOODS_ERROR_KEY),
+      error: translate(noFoodsErrorKey(intakeSubjectOf(intakeSource))),
       usage,
       modelId,
       provider: providerType,
@@ -809,7 +843,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     // route can't translate from here — see `describeFailureBody`, which
     // substitutes localized copy for every typed cause it recognizes.
     const fallbackMessage =
-      error instanceof VisionProviderError ? error.message : translate('scan.errors.identifyFailed');
+      error instanceof VisionProviderError ? error.message : translate(identifyFailedErrorKey(intakeKind));
     const message = refineIdentifyErrorMessage({ provider, error, fallback: fallbackMessage });
     await recordAttempt({ usage, outcome: 'error' });
     // The reason, not just the fact. The machine-readable cause lives on
@@ -1212,27 +1246,29 @@ function formatFileSize(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / BYTES_PER_KB))} KB`;
 }
 
-/** Which intake the staged status copy is describing. */
-type IntakeStageKind = 'photo' | 'text';
-
 /**
  * Elapsed-time-staged status copy for the in-flight identify call
  * (DESIGN.md §7).
  *
- * ONLY THE FIRST STAGE DIFFERS. A photograph is genuinely being uploaded in
+ * TWO OF THE THREE STAGES DIFFER. A photograph is genuinely being uploaded in
  * those first seconds and a sentence is not, so a typed meal used to be told
- * "Uploading photo…" over a quote block with no photo in it. Once the call is
- * actually in flight, "Analyzing…" and "Still working…" are true of both, and
- * a second pair of near-identical strings would only be two more things to
- * keep in step.
+ * "Uploading photo…" over a quote block with no photo in it. The second stage
+ * had the same defect one sentence later: "Analyzing your plate…" names a
+ * plate nobody photographed. The LAST stage is shared, because "still working"
+ * is true of both and a second near-identical string would only be one more
+ * thing to keep in step.
  *
  * `kind` is REQUIRED rather than defaulted to `'photo'`: defaulting is exactly
  * how the wrong copy reached the text path, and a new call site should have to
  * say which intake it is showing.
  */
-function getIdentifyStageMessage(elapsedSeconds: number, t: Translate, kind: IntakeStageKind): string {
+function getIdentifyStageMessage(elapsedSeconds: number, t: Translate, kind: IntakeSubject): string {
+  // The LAST stage is the one sentence that is true of both, and it says so:
+  // "still working" names no photograph and no plate.
   if (elapsedSeconds >= STAGE_STILL_WORKING_SECONDS) return t('scan.analyzing.stillWorking');
-  if (elapsedSeconds >= STAGE_ANALYZING_SECONDS) return t('scan.analyzing.analyzing');
+  if (elapsedSeconds >= STAGE_ANALYZING_SECONDS) {
+    return kind === 'text' ? t('scan.analyzing.analyzingText') : t('scan.analyzing.analyzing');
+  }
   return kind === 'text' ? t('scan.analyzing.sendingText') : t('scan.analyzing.uploading');
 }
 
@@ -1560,7 +1596,8 @@ function ScanFlow({
   const failedIdentify =
     activeData !== undefined && activeData.intent === 'identify' && 'error' in activeData ? activeData : undefined;
   // See the settle effect above: a dispatch that came back with nothing at all.
-  const silentFailure = didSettleWithNothing ? t('scan.errors.identifyFailed') : undefined;
+  const silentFailure =
+    didSettleWithNothing ? t(identifyFailedErrorKey(typedText === null ? 'photo' : 'text')) : undefined;
 
   // A returned identification (or a confirm-step re-validation) swaps to the
   // draft. Passing both keeps the plate's portion chips + curated matches alive
@@ -1814,7 +1851,7 @@ export function UploadForm({
   // worth showing below the friendly headline (the plain NO_FOODS_ERROR case
   // has nothing more specific to add). A non-photo-quality failure shows
   // `error` as its main body instead — see the Alert render below.
-  const showSpecificError = error !== undefined && error !== t(NO_FOODS_ERROR_KEY);
+  const showSpecificError = error !== undefined && error !== t(noFoodsErrorKey(isTextIntake ? 'text' : 'photo'));
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);

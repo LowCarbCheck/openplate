@@ -152,15 +152,24 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
             {t('launcher.photoAnything')}
           </button>
           {/* Navigations stay links: `SheetClose` closes the sheet, the link
-              does the travelling. `?speak=1` is what arms `/add`'s microphone. */}
+              does the travelling. `?speak=1` is what arms the composer's
+              microphone.
+
+              BOTH ROWS POINT AT `/describe` NOW, not at `/add`. Speaking and
+              typing are the same act here, words about a meal, and `/add` is
+              the database SEARCH, which answers a different question. Sending
+              somebody who tapped "Type" to a search field was handing them a
+              box that wants one noun when they came to write a sentence. The
+              search is still one tap away, from the nav and from a link on the
+              composer itself. */}
           <SheetClose asChild>
-            <Link to="/add?speak=1" className={LAUNCHER_ITEM_CLASS}>
+            <Link to="/describe?speak=1" className={LAUNCHER_ITEM_CLASS}>
               <Mic className="h-5 w-5 shrink-0" aria-hidden="true" />
               {t('launcher.speak')}
             </Link>
           </SheetClose>
           <SheetClose asChild>
-            <Link to="/add" className={LAUNCHER_ITEM_CLASS}>
+            <Link to="/describe" className={LAUNCHER_ITEM_CLASS}>
               <Keyboard className="h-5 w-5 shrink-0" aria-hidden="true" />
               {t('launcher.type')}
             </Link>
