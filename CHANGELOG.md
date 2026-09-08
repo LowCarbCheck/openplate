@@ -2,6 +2,29 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.16.0 - 2026-09-08
+
+- Fixed a bug that signed people out without warning. The app renews your
+  sign-in in the background, but it failed to save the renewed one, so the next
+  time you opened the app it presented a sign-in the server had already
+  retired. That triggered a security check that signed you out on all your
+  devices. If this happened to you, you will need to sign in once more after
+  updating, and then the sign-outs stop.
+
+- When you are signed out of an account you were invited to, the photo scan
+  screen now says you are signed out and lets you sign back in. It used to
+  claim that photo estimates were turned off and told you to contact an
+  administrator, which was incorrect. If your account actually does not have
+  photo estimates, it still displays that notice.
+
+- If you get signed out while using the app, openplate now tells you right
+  away, instead of leaving your food diary on the screen as if you were still
+  signed in.
+
+- The setup screen on your first visit now shows you how to install openplate
+  on your phone, alongside the three ways to log a food. This instruction was
+  only in settings before.
+
 ## 0.15.0 - 2026-09-08
 
 This release is about instances that an organization runs and invites people
