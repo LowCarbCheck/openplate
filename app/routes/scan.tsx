@@ -102,7 +102,7 @@ import { Label } from '#app/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '#app/components/ui/alert';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
-import { AlertTriangle, Camera, Check, ChevronDown, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Camera, Check, ChevronDown, Loader2, Type as TypeIcon, X } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import {
   trackFoodLogged,
@@ -1195,11 +1195,28 @@ function formatFileSize(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / BYTES_PER_KB))} KB`;
 }
 
-/** Elapsed-time-staged status copy for the in-flight identify call (DESIGN.md §7). */
-function getIdentifyStageMessage(elapsedSeconds: number, t: Translate): string {
+/** Which intake the staged status copy is describing. */
+type IntakeStageKind = 'photo' | 'text';
+
+/**
+ * Elapsed-time-staged status copy for the in-flight identify call
+ * (DESIGN.md §7).
+ *
+ * ONLY THE FIRST STAGE DIFFERS. A photograph is genuinely being uploaded in
+ * those first seconds and a sentence is not, so a typed meal used to be told
+ * "Uploading photo…" over a quote block with no photo in it. Once the call is
+ * actually in flight, "Analyzing…" and "Still working…" are true of both, and
+ * a second pair of near-identical strings would only be two more things to
+ * keep in step.
+ *
+ * `kind` is REQUIRED rather than defaulted to `'photo'`: defaulting is exactly
+ * how the wrong copy reached the text path, and a new call site should have to
+ * say which intake it is showing.
+ */
+function getIdentifyStageMessage(elapsedSeconds: number, t: Translate, kind: IntakeStageKind): string {
   if (elapsedSeconds >= STAGE_STILL_WORKING_SECONDS) return t('scan.analyzing.stillWorking');
   if (elapsedSeconds >= STAGE_ANALYZING_SECONDS) return t('scan.analyzing.analyzing');
-  return t('scan.analyzing.uploading');
+  return kind === 'text' ? t('scan.analyzing.sendingText') : t('scan.analyzing.uploading');
 }
 
 /**
@@ -1676,11 +1693,17 @@ export function describeFailureBody(
 }
 
 /**
- * Presentational upload surface: preview, the two pickers, the grace/analysis
- * overlays, and the failure copy. Stateless beyond the two hidden file inputs it
- * owns — all decisions flow down as props from `ScanFlow`.
+ * Presentational capture surface: preview, the two pickers, the grace/analysis
+ * overlays, and the failure copy. Stateless beyond the two hidden file inputs
+ * it owns, all decisions flow down as props from `ScanFlow`.
+ *
+ * EXPORTED SO BOTH INTAKES CAN BE RENDERED IN A TEST. `ScanFlow` reads the
+ * hand-off slot in an effect, and `renderToStaticMarkup` never runs effects, so
+ * a text intake is unreachable through the container. Handing this component
+ * `typedText` directly is the only way to prove that a typed meal hides the
+ * photo controls and a photo intake still shows them.
  */
-function UploadForm({
+export function UploadForm({
   phase,
   file,
   typedText,
@@ -1800,7 +1823,10 @@ function UploadForm({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" /> {captureTitle}
+            {isTextIntake ?
+              <TypeIcon className="h-5 w-5" />
+            : <Camera className="h-5 w-5" />}{' '}
+            {captureTitle}
           </CardTitle>
           <CardDescription>{captureDescription}</CardDescription>
         </CardHeader>
@@ -1844,7 +1870,7 @@ function UploadForm({
                   {phase === 'dispatching' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 backdrop-blur">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p className="text-sm font-medium">{getIdentifyStageMessage(elapsedSeconds, t)}</p>
+                      <p className="text-sm font-medium">{getIdentifyStageMessage(elapsedSeconds, t, 'text')}</p>
                     </div>
                   )}
                 </figure>
@@ -1871,7 +1897,7 @@ function UploadForm({
                   {phase === 'dispatching' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/60 backdrop-blur">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p className="text-sm font-medium">{getIdentifyStageMessage(elapsedSeconds, t)}</p>
+                      <p className="text-sm font-medium">{getIdentifyStageMessage(elapsedSeconds, t, 'photo')}</p>
                     </div>
                   )}
                 </div>
@@ -1888,26 +1914,36 @@ function UploadForm({
                   nutrition panel, which asked the person to classify their own
                   photograph before taking it and could only be got wrong after
                   the paid call had been made. The model classifies each item
-                  now (amends ADR-0005, 2026-09-08). */}
-              <div className="flex flex-col gap-2">
-                <Button
-                  type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  disabled={pickDisabled}
-                  className="h-14 w-full text-base"
-                >
-                  <Camera className="h-5 w-5" /> {t('scan.capture.takePhoto')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => libraryInputRef.current?.click()}
-                  disabled={pickDisabled}
-                  className="h-11 w-full"
-                >
-                  {t('scan.capture.chooseLibrary')}
-                </Button>
-              </div>
+                  now (amends ADR-0005, 2026-09-08).
+
+                  HIDDEN OUTRIGHT for a typed or spoken meal, not merely
+                  disabled: these were rendering greyed out under the quote
+                  block, which reads as two things the person is being stopped
+                  from doing rather than as two things that do not apply. The
+                  hidden inputs above stay mounted either way, because the
+                  element whose `click()` lands on the gesture stack must not
+                  be able to unmount. */}
+              {!isTextIntake && (
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={pickDisabled}
+                    className="h-14 w-full text-base"
+                  >
+                    <Camera className="h-5 w-5" /> {t('scan.capture.takePhoto')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => libraryInputRef.current?.click()}
+                    disabled={pickDisabled}
+                    className="h-11 w-full"
+                  >
+                    {t('scan.capture.chooseLibrary')}
+                  </Button>
+                </div>
+              )}
 
               {isProcessing && (
                 <p className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1926,7 +1962,9 @@ function UploadForm({
 
             {error && (
               <Alert>
-                <Camera className="h-4 w-4" />
+                {isTextIntake ?
+                  <TypeIcon className="h-4 w-4" />
+                : <Camera className="h-4 w-4" />}
                 <AlertTitle>{alertTitle}</AlertTitle>
                 <AlertDescription>
                   {
@@ -1956,15 +1994,20 @@ function UploadForm({
               </Button>
             )}
 
-            {/* Search is always one tap from scan — keyless-friendly, carries the day. */}
-            <div className="pt-1 text-center">
-              <Link
-                to={addHref}
-                className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                {t('scan.capture.addWithoutPhoto')}
-              </Link>
-            </div>
+            {/* Search is always one tap from scan, keyless-friendly, carries
+                the day. Not offered during a typed or spoken intake: the
+                person came FROM that screen, and "add food without a photo" is
+                a description of what they already did. */}
+            {!isTextIntake && (
+              <div className="pt-1 text-center">
+                <Link
+                  to={addHref}
+                  className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  {t('scan.capture.addWithoutPhoto')}
+                </Link>
+              </div>
+            )}
           </div>
         </CardContent>
         {monthlyUsageLine && (

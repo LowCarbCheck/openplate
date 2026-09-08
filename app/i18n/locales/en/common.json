@@ -1614,7 +1614,8 @@
       "analyzing": "Analyzing your plate…",
       "starting": "Starting analysis…",
       "stillWorking": "Still working, complex plates take a moment…",
-      "uploading": "Uploading photo…"
+      "uploading": "Uploading photo…",
+      "sendingText": "Sending your words…"
     },
     "capture": {
       "addWithoutPhoto": "Add food without a photo",

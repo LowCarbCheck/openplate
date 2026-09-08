@@ -1614,7 +1614,8 @@
       "analyzing": "Dein Teller wird analysiert…",
       "starting": "Analyse startet…",
       "stillWorking": "Wird noch analysiert, komplexe Teller dauern einen Moment…",
-      "uploading": "Foto wird hochgeladen…"
+      "uploading": "Foto wird hochgeladen…",
+      "sendingText": "Deine Worte werden gesendet…"
     },
     "capture": {
       "addWithoutPhoto": "Essen ohne Foto eintragen",
