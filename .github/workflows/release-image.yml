@@ -4,7 +4,7 @@ name: Release Image
 # (moving `latest`) and on version tags (`v*`, e.g. `v1.2.0`).
 #
 # Public `docker pull` access is gated on this repo (and the resulting
-# package) being flipped to public visibility — see README "Self-hosting".
+# package) being flipped to public visibility, see README "Self-hosting".
 # Until then this workflow still runs and publishes to the private package;
 # it's ready to go the moment visibility flips, no workflow change needed.
 on:
