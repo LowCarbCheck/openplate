@@ -2,6 +2,24 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.19.0 - 2026-09-08
+
+- The diary and the overview show the day as budget rows for net carbs,
+  calories, protein and fiber instead of ring charts. The day's details sit
+  inline, and suggestions fold into one line you can open.
+- One way in for a meal. A photo is one task, and the model decides whether
+  it is looking at a plate or a nutrition label, so the separate label mode is
+  gone. A typed or spoken meal goes through the same AI review screen as a
+  photo. For speech, the browser's own engine transcribes; only the text
+  reaches openplate and the provider, and the consent copy says so. The first
+  run lessons were rewritten to match.
+- The app knows which build it is running. The About page has an Updates
+  section, the sidebar shows the build, and the server checks GitHub for a
+  newer tag every six hours (set UPDATE_CHECK=off to stop that). When one
+  exists a ribbon says so, and the service worker adopts the newest bundle.
+- The sign-in hint from 0.18.4 is unchanged; the version shown in the app now
+  comes from the build itself rather than a hand-copied constant.
+
 ## 0.18.4 - 2026-09-08
 
 - The sign-in form now says plainly that you sign in with the email address
