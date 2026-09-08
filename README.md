@@ -32,6 +32,14 @@ The app is reachable at `http://localhost:3000`.
 Upgrading is `docker compose -f compose.yml pull && docker compose -f compose.yml up -d`. There is no server-side state to
 migrate or lose.
 
+The app tells you when there is something to pull. Every six hours the server asks GitHub
+whether a newer openplate has been released and shows the answer under **Settings > About**,
+along with the exact version and commit you are running. The request goes from the server,
+not from anyone's browser, and carries nothing but your server's IP address. Set
+`UPDATE_CHECK=off` to stop it entirely; the About page then says checks are disabled and no
+request leaves the box. Details in
+[docs/configuration.md](docs/configuration.md#the-release-check).
+
 ### Pick a language
 
 openplate ships English and German. A visitor who has not chosen yet sees

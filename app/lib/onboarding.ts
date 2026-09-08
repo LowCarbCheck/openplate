@@ -388,18 +388,22 @@ export function resolveOnboardingTimezone(candidate: string | null | undefined):
  * the `_personal` onboarding gate before landing on settings, then flows on to
  * the diary once connected (see `settings.ai.tsx`'s `?next=` return).
  *
- * `/scan?mode=label` was added for the ways-to-log lesson (M200 spec 01) and is
- * a DELIBERATE widening, not a convenience: the label scanner is a way to log
- * in its own right, and a card that says "photograph a nutrition panel" has to
- * land on that scanner rather than on the plate default. It is the same route
- * with a mode named in the query (`scan-mode-param.ts`), so nothing about the
- * open-redirect guarantee changes: the list is still closed literals.
+ * `/add?speak=1` is the ways-to-log lesson's speak card. It ARMS the add
+ * screen's microphone and focuses it; it never starts listening, which the
+ * button itself guarantees (`speech-input-button.tsx`). It is the same route
+ * with a flag in the query, so nothing about the open-redirect guarantee
+ * changes: the list is still closed literals.
+ *
+ * `/scan?mode=label` was here for the same lesson's third card until
+ * 2026-09-08, when the label scan mode was merged into the one photo path
+ * (amends ADR-0005). There is no second scanner to land on any more, so the
+ * literal went with it.
  */
 export const ONBOARDING_EXIT_DESTINATIONS = [
   '/diary',
   '/add',
+  '/add?speak=1',
   '/scan',
-  '/scan?mode=label',
   '/settings/ai?next=diary',
 ] as const;
 

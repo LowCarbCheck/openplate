@@ -52,7 +52,7 @@ import {
   toWeightSubmitValue,
 } from '#app/lib/weight-units';
 import type { WeightUnit } from '#app/lib/weight-units';
-import { WAYS_TO_LOG, WAYS_TO_LOG_DICTATION_KEY } from '#app/lib/ways-to-log';
+import { WAYS_TO_LOG, WAYS_TO_LOG_SPEECH_PRIVACY_KEY } from '#app/lib/ways-to-log';
 import type { WayToLog } from '#app/lib/ways-to-log';
 import { FieldError } from '#app/components/field-error';
 import { cn } from '#app/lib/utils';
@@ -1133,10 +1133,12 @@ export function FirstFoodStep() {
         {WAYS_TO_LOG.map((way) => (
           <WayToLogCard key={way.id} way={way} isBusy={isBusy} activeDestination={destination} />
         ))}
-        {/* Directly under the search card, because that is the only thing the
-            microphone does: it types. See `ways-to-log.ts` for why dictation is
-            not a fourth card and must never be described as sending anything. */}
-        <p className="text-xs text-muted-foreground">{t(WAYS_TO_LOG_DICTATION_KEY)}</p>
+        {/* Directly under the speak card. Speaking IS a way to log now, so
+            this line is no longer about what the microphone cannot do; it is
+            the one privacy fact the card cannot carry in its own two lines,
+            that the recording goes to the browser's maker and only TEXT ever
+            leaves this app. See `ways-to-log.ts`. */}
+        <p className="text-xs text-muted-foreground">{t(WAYS_TO_LOG_SPEECH_PRIVACY_KEY)}</p>
         <div className="pt-1 text-center">
           <Button
             type="submit"

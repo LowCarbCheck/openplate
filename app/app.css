@@ -236,7 +236,7 @@
        (`bg-accent-amber-surface`, `border-accent-amber-border`), not with an
        alpha modifier — they are already the blended result.
 
-       `day-drill-down.tsx`'s gap-severity chips used to be the one exception
+       `day-summary-details.tsx`'s gap-severity chips used to be the one exception
        — they washed with `bg-accent-amber/12` + `border-accent-amber/35` and
        went muddy grey in light mode for exactly the reason above. Converted
        2026-08-04 to the surface/border pair; no known opacity-wash holdouts
@@ -556,8 +556,7 @@
  * for less motion gets exactly that frame and nothing else. No SMIL, no
  * animation runtime, no dependency.
  */
-.wtl-focus,
-.wtl-scanline {
+.wtl-focus {
   transform-box: fill-box;
   transform-origin: center;
 }
@@ -584,16 +583,6 @@
   }
 }
 
-@keyframes wtl-scan {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(24px);
-  }
-}
-
 @media (prefers-reduced-motion: no-preference) {
   /* The plate card: the viewfinder pulls focus, then the shutter fires. One
      cycle every three seconds, which is slow enough to read as a gesture
@@ -604,11 +593,6 @@
 
   .wtl-flash {
     animation: wtl-shutter 3s ease-in-out infinite;
-  }
-
-  /* The label card: one bar travels down the printed panel and back. */
-  .wtl-scanline {
-    animation: wtl-scan 3s ease-in-out infinite;
   }
 
   /* The search card: three result rows settling in sequence. Keyframe and

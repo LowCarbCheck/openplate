@@ -56,11 +56,11 @@ import type { WeightGlance } from '#app/models/dashboard';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { FastStrip } from '#app/components/fast-strip';
 import { HabitStrip } from '#app/components/habit-strip';
-import { HeroStat, formatHeroRings, formatHeroStat } from '#app/components/hero-stat';
-import { RingProgress } from '#app/components/ring-progress';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
-import { CarbImpactChip, HeroProteinFigure } from '#app/components/day-drill-down';
+import { DayBudgetRows } from '#app/components/day-budget-rows';
+import { buildDayBudgetRows } from '#app/lib/day-budget-rows';
+import { CarbImpactChip } from '#app/components/day-summary-details';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -191,10 +191,12 @@ export function HydrateFallback(): ReactElement {
 /**
  * Today at a glance, plus the two buttons that start a log.
  *
- * Deliberately NOT a second diary: no meal list, no drill-down, no macro grid,
- * and — unlike `/diary`'s hero — no count-up tween. The tween exists to show an
- * add landing; nothing is added on this screen, so there is no old→new value to
- * animate and `RingProgress` gets the true value with no `animatedValue`.
+ * The same budget rows `/diary` leads with, and nothing else: no meal list, no
+ * macro grid, no suggestions, and, unlike `/diary`'s card, no count-up
+ * tween. The tween exists to show an add landing; nothing is added on this
+ * screen, so `DayBudgetRows` gets the settled headlines. This page's budget is
+ * one phone screen with no scroll (see the module header), which is the
+ * standing argument against adding anything else here.
  */
 function TodayHeroCard({
   summary,
@@ -213,40 +215,19 @@ function TodayHeroCard({
     t,
   });
 
-  const heroInput = {
-    netCarbs: summary.netCarbs,
-    netCarbsCeiling: goals.netCarbsCeiling,
-    kcal: summary.kcal,
-    kcalTarget: goals.kcalTarget,
-    hasEstimates: summary.hasEstimates,
+  const rows = buildDayBudgetRows({
+    totals: {
+      netCarbs: summary.netCarbs,
+      kcal: summary.kcal,
+      protein: summary.protein,
+      fiber: summary.fiber,
+      hasEstimates: summary.hasEstimates,
+    },
+    goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget: goals.kcalTarget },
+    gaps,
     t,
     language: i18n.language,
-  };
-  // One ring per goal the person actually set (M200 spec 02): both when they
-  // track carbs AND calories, and none at all when they set neither, because a
-  // ring against an invented target would be a fabricated goal. The budget-less
-  // headline below is what someone with no target gets instead.
-  const heroRings = formatHeroRings(heroInput);
-  const headlineStat = formatHeroStat(heroInput);
-  const isSingleRing = heroRings.length === 1;
-
-  /**
-   * The verdict + protein pair, or the empty line.
-   *
-   * On an untouched plate the carb-impact chip resolves to "Low carb impact",
-   * which is true and useless — it grades a day nobody has eaten yet. So the
-   * whole glance is suppressed until something is logged, exactly as `/diary`
-   * withholds its summary card until then.
-   */
-  const renderGlance = (centered: boolean) =>
-    hasLoggedToday ?
-      <div className={cn('flex flex-col gap-2.5', centered ? 'items-center sm:items-start' : 'items-start')}>
-        <CarbImpactChip impact={gaps.impact} />
-        <HeroProteinFigure gap={gaps.protein} />
-      </div>
-    : <p className={cn('text-sm text-muted-foreground', centered && 'text-center sm:text-left')}>
-        {t('diary.empty.ordinary.line')}
-      </p>;
+  });
 
   const actions = (
     <div className="space-y-3">
@@ -263,46 +244,18 @@ function TodayHeroCard({
   return (
     <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
       <CardContent className="space-y-5 p-5 sm:p-6">
-        {heroRings.length === 0 ?
-          <div className="space-y-5">
-            <div className="space-y-1.5">
-              <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
-              <HeroStat stat={headlineStat} value={headlineStat.value} size="headline" />
-            </div>
-            {renderGlance(false)}
-          </div>
-          // One goal keeps the layout it has always had: the full-size ring
-          // beside the glance. Two goals stack the pair above the glance
-          // instead, so the second ring is added rather than paid for by
-          // shrinking the first.
-        : <div
-            className={cn(
-              'flex flex-col items-center gap-5',
-              isSingleRing && 'sm:flex-row sm:items-center sm:gap-8',
-            )}
-          >
-            <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6">
-              {heroRings.map((ring) => (
-                <RingProgress
-                  key={ring.metric}
-                  value={ring.consumed}
-                  max={ring.max}
-                  size={isSingleRing ? 120 : 108}
-                  strokeWidth={isSingleRing ? 10 : 9}
-                  className={
-                    isSingleRing ? '[--ring-box:104px] sm:[--ring-box:120px]' : '[--ring-box:96px] sm:[--ring-box:108px]'
-                  }
-                  trackClassName="text-primary/20"
-                  progressClassName={ring.stat.isOver ? 'text-accent-amber' : 'text-primary'}
-                  label={ring.stat.srLabel}
-                >
-                  <HeroStat stat={ring.stat} value={ring.stat.value} />
-                </RingProgress>
-              ))}
-            </div>
-            <div className="w-full min-w-0 flex-1 space-y-3">{renderGlance(true)}</div>
-          </div>
-        }
+        <div className="space-y-2.5">
+          <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
+          {/*
+            On an untouched plate the carb-impact chip resolves to "Low carb
+            impact", which is true and useless, because it grades a day nobody has
+            eaten yet. So the verdict is withheld until something is logged,
+            exactly as `/diary` withholds its summary card until then.
+          */}
+          {hasLoggedToday && <CarbImpactChip impact={gaps.impact} />}
+          {!hasLoggedToday && <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>}
+        </div>
+        <DayBudgetRows rows={rows} />
         {actions}
       </CardContent>
     </Card>

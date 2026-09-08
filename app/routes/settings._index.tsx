@@ -36,7 +36,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { APP_VERSION } from '#app/lib/brand';
+import { BUILD } from '#app/lib/build-info';
 import { getLocalProfileGoals } from '#app/lib/local-store';
 import type { LocalProfileGoals } from '#app/lib/local-store';
 // Shared with the header avatar menu's AI shortcut — one derivation of "which
@@ -279,7 +279,7 @@ export default function SettingsIndex() {
           to="/settings/about"
           icon={Info}
           title={t('settings.rows.about.title')}
-          status={t('settings.rows.about.status', { version: APP_VERSION })}
+          status={t('settings.rows.about.status', { version: BUILD.version })}
         />
       </SettingsGroup>
 

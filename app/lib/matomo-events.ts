@@ -241,12 +241,11 @@ export function trackScanFoundNothing(): void {
   trackEvent('product', 'Scan', 'found-nothing');
 }
 
-/** WHICH scanner a person chose. A plate photo and a label photo are different features. */
-export type ScanMode = 'plate' | 'label';
-
-export function trackScanModeChosen(mode: ScanMode): void {
-  trackEvent('product', 'Scan', 'mode-chosen', mode);
-}
+// `Scan / mode-chosen` was here until 2026-09-08. It counted a person
+// switching from the plate scanner to the label scanner, and it went when the
+// two merged (amends ADR-0005): there is one photo path now, so there is no
+// choice left to report and an event nobody can fire is a dead export
+// (`no-telemetry-wiring.test.ts` enforces that).
 
 export function trackScanStartedFromShare(): void {
   trackEvent('product', 'Scan', 'started-from-share');
@@ -259,15 +258,32 @@ export function trackScanStartedFromShare(): void {
 /**
  * The INPUT PATH a log entry arrived by, never the entry.
  *
- * This is the whole point of the Diary category: it says which of eight ways
+ * This is the whole point of the Diary category: it says which of the ways
  * into the diary a person used, so the weak ones can be improved. It says
  * nothing about the food, the amount, the meal or the time.
+ *
+ * `scan-text` and `scan-speech` are the AI intake reached by writing or
+ * saying what was eaten rather than photographing it. They are the same
+ * pipeline and the same review screen as `scan-plate` by design, which is
+ * exactly why they need their own names here: this is the only remaining
+ * place that can say which way in a person actually took, and whether a way
+ * in is worth improving is the one question this event exists to answer. It
+ * stays a fixed literal union, and it still carries no content.
+ *
+ * `scan-label` was a member until 2026-09-08 and is not one any more. It named
+ * the second scanner, which is gone (amends ADR-0005): one photo path now
+ * reads a plate, a single item or a printed panel, so photographing a packet
+ * is `scan-plate`. Whether an ITEM's macros were transcribed rather than
+ * estimated is a fact about the item, not about the way in, and this event has
+ * never carried facts about items. A member nothing can emit is a dead name
+ * that would quietly read as zero volume rather than as no such path.
  */
 export type LogInputPath =
   | 'add-search'
   | 'add-manual'
   | 'scan-plate'
-  | 'scan-label'
+  | 'scan-text'
+  | 'scan-speech'
   | 'diary-chip'
   | 'diary-copy-day'
   | 'entry-log-again'

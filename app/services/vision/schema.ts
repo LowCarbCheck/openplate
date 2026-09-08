@@ -19,14 +19,8 @@
  * objects below rather than one.
  */
 import { z } from 'zod';
-import type {
-  IdentifiedFood,
-  IdentifiedFoodMacros,
-  LabelReading,
-  LabelServingSize,
-  PlateIdentification,
-} from './types';
-import { MACRO_PROVENANCE_VALUES, VisionProviderError } from './types';
+import type { IdentifiedFood, IdentifiedFoodMacros, PlateIdentification, PrintedServingSize } from './types';
+import { MACRO_PROVENANCE_VALUES, MACRO_SOURCE_VALUES, VisionProviderError } from './types';
 import { CARB_BASES } from '#app/lib/net-carbs';
 
 const RawMacrosSchema = z.object({
@@ -40,12 +34,30 @@ const RawMacrosSchema = z.object({
 });
 
 /**
+ * The serving a panel prints, as the model reports it for a `'label'` item.
+ * `asPrinted` is not nullable because the whole block is: a serving with no
+ * printed text is not a serving, it is an absent one.
+ */
+const RawServingSizeSchema = z.object({
+  asPrinted: z.string(),
+  grams: z.number().nullable(),
+});
+
+/**
  * The item shape EVERY provider is ASKED to produce — the source of the
  * provider-facing `PLATE_IDENTIFICATION_JSON_SCHEMA` below. All-required, with
  * `.nullable()` for "don't know", so it survives OpenAI strict mode intact.
  *
  * Nothing optional may ever be added here; that's what
  * `RawIdentifiedFoodParseSchema` is for.
+ *
+ * ── The label merge (amends ADR-0005, 2026-09-08) ────────────────────────
+ *
+ * `macroSource`, `brand`, `servingSize` and `carbBasis` are what used to be a
+ * whole second schema (`LabelReadingSchema`) behind a mode the person had to
+ * choose before the shutter. One prompt now decides per ITEM, which is the
+ * only way a photograph of a packet standing beside a plate of food can be
+ * answered honestly, and the answer is always this one array.
  */
 const RawIdentifiedFoodSchema = z.object({
   name: z.string(),
@@ -54,6 +66,30 @@ const RawIdentifiedFoodSchema = z.object({
   /** Short everyday-size comparison ("about half the plate"); null when nothing natural fits. */
   portionHint: z.string().nullable(),
   macrosPer100g: RawMacrosSchema.nullable(),
+  /** Estimated from looking at food, or transcribed off a printed panel. */
+  macroSource: z.enum(MACRO_SOURCE_VALUES),
+  /** The manufacturer, when a package named one. Null for anything unbranded, and never invented. */
+  brand: z.string().nullable(),
+  /** The printed serving, for a label item. Null for an estimated one. */
+  servingSize: RawServingSizeSchema.nullable(),
+  /**
+   * Which printed-panel convention this item's carbs figure uses, see
+   * `IdentifiedFood.carbBasis`. Null for an estimated item, and null when a
+   * panel's layout does not decide it, never a guess.
+   *
+   * `.catch(null)` (carried over from the label schema it replaces): every
+   * other field here stays strict, because a response this schema cannot parse
+   * at all is not safely usable. This one is different. A provider that emits
+   * `"eu"` instead of `"available"` has clearly still read the panel and
+   * reported real macro numbers around it, and `null` already means exactly
+   * "not decided", a pre-existing, harmless state the rest of the app
+   * handles. Discarding tokens already spent and an otherwise-good reading
+   * over ONE enum mismatch, on the one field with a built-in "don't know",
+   * would be strictness with no payoff. `.catch()` only changes behaviour at
+   * PARSE time; `z.toJSONSchema` still emits the same `enum` constraint, so
+   * providers are still ASKED for exactly `"total" | "available" | null`.
+   */
+  carbBasis: z.enum(CARB_BASES).nullable().catch(null),
 });
 
 /**
@@ -63,6 +99,13 @@ const RawIdentifiedFoodSchema = z.object({
  */
 export const PlateIdentificationSchema = z.object({
   foods: z.array(RawIdentifiedFoodSchema),
+  /**
+   * The model's own "I could not read this photograph" answer. See
+   * `PlateIdentification.unreadable` for why it is a statement about the whole
+   * picture rather than about one item on it.
+   */
+  unreadable: z.boolean(),
+  unreadableReason: z.string().nullable(),
   notes: z.string().nullable(),
 });
 
@@ -94,6 +137,8 @@ const RawIdentifiedFoodParseSchema = RawIdentifiedFoodSchema.extend({
  */
 const PlateIdentificationParseSchema = z.object({
   foods: z.array(RawIdentifiedFoodParseSchema),
+  unreadable: z.boolean(),
+  unreadableReason: z.string().nullable(),
   notes: z.string().nullable(),
 });
 
@@ -127,6 +172,18 @@ function stripNullMacros(macros: RawMacros): IdentifiedFoodMacros {
  * the reason a cloud provider's response is byte-for-byte unaffected by their
  * existence.
  */
+/**
+ * One raw serving block → the app-facing shape. A null weight becomes an
+ * absent one, never a 0: a panel that printed "2 pieces" with no gram figure
+ * has told us the text and nothing else, and a 0 there would offer the person
+ * a portion chip that logs nothing.
+ */
+function normalizeServingSize(serving: z.infer<typeof RawServingSizeSchema>): PrintedServingSize {
+  const normalized: PrintedServingSize = { asPrinted: serving.asPrinted };
+  if (serving.grams !== null) normalized.grams = serving.grams;
+  return normalized;
+}
+
 function normalizeFood(food: RawIdentifiedFood): IdentifiedFood {
   const normalized: IdentifiedFood = {
     name: food.name,
@@ -134,7 +191,14 @@ function normalizeFood(food: RawIdentifiedFood): IdentifiedFood {
     confidence: food.confidence,
     portionHint: food.portionHint ?? undefined,
     macrosPer100g: food.macrosPer100g ? stripNullMacros(food.macrosPer100g) : undefined,
+    macroSource: food.macroSource,
   };
+  // NULL BECOMES ABSENT, the same convention every other field here uses. A
+  // brand of `''` or a `carbBasis` of `'total'` invented for an estimated item
+  // would each be a claim about a package that was never photographed.
+  if (food.brand !== null && food.brand.trim() !== '') normalized.brand = food.brand.trim();
+  if (food.servingSize !== null) normalized.servingSize = normalizeServingSize(food.servingSize);
+  if (food.carbBasis !== null) normalized.carbBasis = food.carbBasis;
   if (food.provenance !== undefined) normalized.provenance = food.provenance;
   if (food.attribution !== undefined && food.attribution !== null) normalized.attribution = food.attribution;
   return normalized;
@@ -143,6 +207,8 @@ function normalizeFood(food: RawIdentifiedFood): IdentifiedFood {
 export function normalizePlateIdentification(raw: RawPlateIdentification): PlateIdentification {
   return {
     foods: raw.foods.map(normalizeFood),
+    unreadable: raw.unreadable,
+    unreadableReason: raw.unreadableReason ?? undefined,
     notes: raw.notes ?? undefined,
   };
 }
@@ -264,157 +330,3 @@ function toStrictJsonSchema(schema: z.ZodType): JsonSchemaNode {
  * reasoning.
  */
 export const PLATE_IDENTIFICATION_JSON_SCHEMA: JsonSchemaNode = toStrictJsonSchema(PlateIdentificationSchema);
-
-////////////////////////////////////////////////////////////////////////////////
-// Label reading (M123/10)
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * The serving size a panel prints. `asPrinted` is the authority; `grams` is
- * filled only when the panel states a weight — the model is told never to
- * derive it, because per-serving → per-100g conversion is M123/06's job.
- */
-const RawLabelServingSizeSchema = z.object({
-  asPrinted: z.string().nullable(),
-  grams: z.number().nullable(),
-});
-
-/**
- * THE LABEL WIRE CONTRACT — the only schema `LABEL_READING_JSON_SCHEMA` is
- * derived from, and the same all-required-with-nullable discipline as
- * `PlateIdentificationSchema` (see this module's header: strict-mode
- * structured output demands every property be required, so "unknown" is
- * expressed as `null`, never as an optional field).
- *
- * Deliberately NOT a plate shape: no `foods[]`, no `estimatedGrams`, no
- * per-item confidence, no `portionHint`. The macro rows reuse
- * `RawMacrosSchema` so the macro vocabulary stays single-sourced with the
- * plate path — including `polyols`, which is the whole point of the feature.
- *
- * `unreadable` is a RESULT state, not a transport failure: the provider
- * answered 2xx and the model declared the panel illegible. It exists so the
- * model has somewhere honest to go instead of inventing numbers off a blurry
- * photo; `VisionFailureCause` stays mode-agnostic and gains nothing here.
- */
-export const LabelReadingSchema = z.object({
-  unreadable: z.boolean(),
-  unreadableReason: z.string().nullable(),
-  productName: z.string().nullable(),
-  brand: z.string().nullable(),
-  servingSize: RawLabelServingSizeSchema.nullable(),
-  servingsPerPackage: z.number().nullable(),
-  /** The per-serving column, exactly as printed. Null when the panel prints none. */
-  macrosPerServing: RawMacrosSchema.nullable(),
-  /** The per-100g column, exactly as printed. Null when the panel prints none. */
-  macrosPer100g: RawMacrosSchema.nullable(),
-  /**
-   * Which printed-panel convention the model saw — see
-   * `LabelReading.carbBasis`'s doc comment. `null` when the layout doesn't
-   * decide it, never a guess.
-   *
-   * `.catch(null)` (M123/13 second-review finding 4): every other field on
-   * this schema stays strict — a shape mismatch anywhere else correctly fails
-   * the WHOLE reading, because a plate/label response this schema can't parse
-   * at all is not safely usable. This one field is different: a provider that
-   * emits e.g. `"eu"` instead of `"available"` has clearly still read the
-   * panel and reported real macro numbers around it, and `null` already means
-   * exactly "the panel didn't decide it" — a pre-existing, harmless state the
-   * rest of the app already handles (see `LocalPersonalFood.carbBasis`'s
-   * UNKNOWN-means-`total` rule). Discarding tokens already spent and an
-   * otherwise-good reading over ONE enum mismatch on the one field with a
-   * built-in "don't know" escape hatch would be strictness with no payoff.
-   * `.catch()` only changes behaviour at PARSE time — `z.toJSONSchema` still
-   * emits the same `enum`-constrained schema for the provider's structured
-   * output (verified: `LABEL_READING_JSON_SCHEMA` is unchanged), so providers
-   * are still ASKED for exactly `"total" | "available" | null`; this is a
-   * client-side safety net for the ones that don't comply, not a loosening of
-   * the ask.
-   */
-  carbBasis: z.enum(CARB_BASES).nullable().catch(null),
-  notes: z.string().nullable(),
-});
-
-type RawLabelReading = z.infer<typeof LabelReadingSchema>;
-
-/**
- * One raw serving-size block → the app-facing shape. A null field becomes an
- * absent one, the same convention the plate path uses for "the model doesn't
- * know" — and the reason nothing downstream ever sees a fabricated 0.
- */
-function normalizeServingSize(serving: z.infer<typeof RawLabelServingSizeSchema>): LabelServingSize {
-  const normalized: LabelServingSize = {};
-  if (serving.asPrinted !== null) normalized.asPrinted = serving.asPrinted;
-  if (serving.grams !== null) normalized.grams = serving.grams;
-  return normalized;
-}
-
-/**
- * Raw label wire shape → the app-facing `LabelReading`.
- *
- * NULL STAYS NULL: `stripNullMacros` drops a null macro rather than coercing
- * it, so an unprinted or unreadable value arrives downstream as absent —
- * blank in the confirm form. A `?? 0` anywhere on this path would silently
- * report zero sugar alcohols for a maltitol-sweetened product, which is
- * precisely the bug this feature exists to kill.
- */
-export function normalizeLabelReading(raw: RawLabelReading): LabelReading {
-  const normalized: LabelReading = { unreadable: raw.unreadable };
-  if (raw.unreadableReason !== null) normalized.unreadableReason = raw.unreadableReason;
-  if (raw.productName !== null) normalized.productName = raw.productName;
-  if (raw.brand !== null) normalized.brand = raw.brand;
-  if (raw.servingSize !== null) normalized.servingSize = normalizeServingSize(raw.servingSize);
-  if (raw.servingsPerPackage !== null) normalized.servingsPerPackage = raw.servingsPerPackage;
-  if (raw.macrosPerServing !== null) normalized.macrosPerServing = stripNullMacros(raw.macrosPerServing);
-  if (raw.macrosPer100g !== null) normalized.macrosPer100g = stripNullMacros(raw.macrosPer100g);
-  if (raw.carbBasis !== null) normalized.carbBasis = raw.carbBasis;
-  if (raw.notes !== null) normalized.notes = raw.notes;
-  return normalized;
-}
-
-/**
- * Validates an already-parsed value (JSON text OR a provider's enforced
- * structured-output block) against the label schema. Pure — the label twin of
- * `validatePlateIdentification`, so both scan tasks funnel through one
- * validation style.
- *
- * @throws {VisionProviderError} when `value` doesn't match the expected shape.
- */
-export function validateLabelReading(value: UnvalidatedProviderJson): LabelReading {
-  const result = LabelReadingSchema.safeParse(value);
-  if (!result.success) {
-    throw new VisionProviderError('Vision provider response did not match the expected shape', {
-      cause: result.error,
-    });
-  }
-  return normalizeLabelReading(result.data);
-}
-
-/**
- * Parses raw LLM output text into a validated `LabelReading`, tolerating
- * markdown-fenced JSON. Pure — the universal fallback path for providers that
- * return free text instead of enforced output.
- *
- * @throws {VisionProviderError} on non-JSON input or a shape mismatch.
- */
-export function parseLabelReadingJson(rawText: string): LabelReading {
-  const jsonText = stripCodeFence(rawText);
-
-  let parsedJson: UnvalidatedProviderJson;
-  try {
-    parsedJson = JSON.parse(jsonText);
-  } catch (error) {
-    throw new VisionProviderError('Vision provider returned a response that was not valid JSON', {
-      cause: error,
-    });
-  }
-
-  return validateLabelReading(parsedJson);
-}
-
-/**
- * JSON Schema (draft 2020-12) derived from `LabelReadingSchema` for
- * provider-enforced structured output — the label twin of
- * `PLATE_IDENTIFICATION_JSON_SCHEMA`, built by the same `toStrictJsonSchema`
- * so both tasks obey identical strict-mode rules.
- */
-export const LABEL_READING_JSON_SCHEMA: JsonSchemaNode = toStrictJsonSchema(LabelReadingSchema);

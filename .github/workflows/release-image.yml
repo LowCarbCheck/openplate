@@ -126,6 +126,13 @@ jobs:
           file: ./Dockerfile.pnpm
           platforms: linux/amd64,linux/arm64
           push: true
+          # The commit the bundle is stamped with. The build cannot read it
+          # itself: `.dockerignore` excludes `.git` and the base image has no
+          # git. Use the resolved commit, not `github.sha`, for the same reason
+          # the concurrency group above does: an annotated tag's `github.sha` is
+          # the tag object, not the commit.
+          build-args: |
+            OPENPLATE_BUILD_SHA=${{ needs.resolve-commit.outputs.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

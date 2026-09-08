@@ -74,6 +74,9 @@ import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
 import { SearchResultRow } from '#app/components/add/search-result-row';
 import { SpeechInputButton, useSpeechInputAvailable } from '#app/components/add/speech-input-button';
+import { useAiConnection } from '#app/components/add/use-ai-connection';
+import { offerTypedText } from '#app/lib/scan-handoff';
+import { resolveSpeechIntakeAction, type TypedIntakeSource } from '#app/lib/intake-source';
 import { ManageCustomFoodsSheet } from '#app/components/add/manage-custom-foods';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { SubmitButton } from '#app/components/submit-button';
@@ -84,7 +87,7 @@ import { Label } from '#app/components/ui/label';
 import { SectionEyebrow } from '#app/components/typography';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
-import { Camera, ChevronDown, ChevronLeft, Search } from 'lucide-react';
+import { Camera, ChevronDown, ChevronLeft, Search, Sparkles } from 'lucide-react';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -1721,18 +1724,61 @@ function SearchStep({
     setSpokenQuery(null);
   }, [spokenQuery, query, candidates.length, t]);
 
-  const applyTranscript = useCallback((transcript: string): void => {
-    setSearchValue(transcript);
-    setSpokenQuery(transcript);
-    isCaretMovePending.current = true;
-  }, []);
+  // WHETHER THERE IS AN AI TO SEND WORDS TO. The same read the camera gesture
+  // makes (`useAiConnection`), so the two ways in on this screen can never
+  // disagree about what this device can do. `unknown` counts as no.
+  const aiConnection = useAiConnection();
+  const hasAiProvider = aiConnection === 'connected';
+  const scanHref = logContext.date ? `/scan?date=${logContext.date}` : '/scan';
+
+  /**
+   * Hand the words to `/scan` and go there.
+   *
+   * The intake rides the one-shot hand-off slot rather than a query parameter,
+   * for the same reason a photo does: `/scan` owns the analysis, the review
+   * screen and the confirm, and this screen owns only the words. A query
+   * parameter would additionally put what somebody ate into their browser
+   * history, which is diary content in the address bar.
+   */
+  const submitToAi = useCallback(
+    (text: string, source: TypedIntakeSource): void => {
+      const trimmed = text.trim();
+      if (trimmed === '') return;
+      offerTypedText(trimmed, source);
+      void navigate(scanHref);
+    },
+    [navigate, scanHref],
+  );
+
+  /**
+   * A finished transcript.
+   *
+   * It lands in the field either way, so the person always sees what was heard
+   * and the caret goes to its end for a correction. Whether it ALSO runs the
+   * AI intake is `resolveSpeechIntakeAction`'s call: somebody who tapped Speak
+   * meant to log, not to read a search list, but there is nothing to send when
+   * nothing was heard and nowhere to send it without a provider. Only the
+   * fill-only branch arms the spoken-results announcement, because only that
+   * branch stays on this screen to hear it.
+   */
+  const applyTranscript = useCallback(
+    (transcript: string): void => {
+      setSearchValue(transcript);
+      isCaretMovePending.current = true;
+      if (resolveSpeechIntakeAction({ transcript, hasAiProvider }) === 'submit') {
+        submitToAi(transcript, 'speech');
+        return;
+      }
+      setSpokenQuery(transcript);
+    },
+    [hasAiProvider, submitToAi],
+  );
 
   const disarmSpeak = useCallback((): void => {
     setSpeakArmed(false);
   }, []);
 
   const grouped = groupCandidatesBySource(candidates);
-  const scanHref = logContext.date ? `/scan?date=${logContext.date}` : '/scan';
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -1749,6 +1795,17 @@ function SearchStep({
               type="search"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
+              // ENTER SUBMITS THE SENTENCE, it does not merely search: the
+              // results below already update as you type, so a keystroke that
+              // did nothing but re-run them would be the one key on the
+              // keyboard with no effect. Suppressed without a provider, where
+              // there is nothing for it to do.
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return;
+                if (!hasAiProvider) return;
+                event.preventDefault();
+                submitToAi(searchValue, 'text');
+              }}
               placeholder={t('add.search.placeholder')}
               className="h-11 pl-9"
             />
@@ -1762,6 +1819,39 @@ function SearchStep({
             />
           )}
         </div>
+        {/* THE PRIMARY ACTION ON THIS SCREEN. A whole meal in one sentence
+            beats six searches, so it sits directly under the box, full width,
+            and the database rows keep rendering below for the person who wants
+            one exact entry in one tap. Disabled rather than hidden while the
+            box is empty: a button that appears as you type moves the layout
+            under your thumb. */}
+        {hasAiProvider && (
+          <>
+            <Button
+              type="button"
+              onClick={() => submitToAi(searchValue, 'text')}
+              disabled={searchValue.trim() === ''}
+              className="h-11 w-full"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" /> {t('add.aiIntake.submit')}
+            </Button>
+            <p className="text-xs text-muted-foreground">{t('add.aiIntake.hint')}</p>
+          </>
+        )}
+        {/* NO PROVIDER, so no button that cannot work. The search below is
+            unaffected and needs no AI at all, which is what this says before
+            it offers the way to get one. */}
+        {aiConnection === 'absent' && (
+          <p className="text-xs text-muted-foreground">
+            {t('add.aiIntake.needsProvider')}{' '}
+            <Link
+              to="/settings/ai?next=add"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              {t('add.aiIntake.connect')}
+            </Link>
+          </p>
+        )}
         {isSpeakArmed && <p className="text-xs text-muted-foreground">{t('add.speak.hint')}</p>}
         {/* One polite region for everything speech says back: the settled
             result count, and the three failure messages. `sr-only` because

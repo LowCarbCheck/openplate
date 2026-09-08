@@ -14,6 +14,7 @@ import { useSyncSession } from './sync-status';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
 import { ProgressBar } from './progress-bar';
+import { UpdateRibbon } from './update-ribbon';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from './ui/sidebar';
 import { Separator } from './ui/separator';
 import { useInstallAffordance } from '#app/hooks/use-install-affordance';
@@ -213,6 +214,9 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
   return (
     <>
       <ProgressBar />
+      {/* In flow and above the header, so it reserves space instead of covering
+          the page title. Renders nothing unless there is something to say. */}
+      <UpdateRibbon />
       {/* The chrome sits on `bg-card`, not `bg-background` — the header was
           previously the exact same fill as the page beneath it, so the only
           thing separating it from the date navigator was one hairline and the

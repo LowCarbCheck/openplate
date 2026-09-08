@@ -39,8 +39,7 @@ export const MISTRAL_KEYS_URL = 'https://console.mistral.ai/api-keys';
  * practice; the fallback only guards non-browser contexts like unit tests.
  */
 export function getOpenrouterAttributionHeaders() {
-  const origin =
-    globalThis.window === undefined ? 'https://github.com/openplate/openplate' : window.location.origin;
+  const origin = globalThis.window === undefined ? 'https://github.com/openplate/openplate' : window.location.origin;
   return {
     'HTTP-Referer': origin,
     'X-Title': 'openplate',

@@ -14,6 +14,9 @@
  * | over a kcal goal   | `120`   | `over today`     | `calories`  |
  * | no goal at all     | `42.1`  | `g net carbs`    | —           |
  *
+ * The tiers are the caller's to arrange; a budget row uses tier 1 plus its own
+ * template, and the accessible sentence, rather than stacking all three.
+ *
  * Three rules, all of them load-bearing:
  *
  * 1. **Remaining is never negative.** Going over flips the framing to "12 g
@@ -29,18 +32,20 @@
  *    stat per goal the person actually set, so carbs and calories can be
  *    tracked together instead of one silently hiding the other.
  *
- * The formatter lives beside the markup deliberately: these strings are the
- * component's whole substance, and splitting them one directory away is how
- * copy and layout drift apart. Since M129/05 the strings themselves live in
- * the `diary.hero.*` catalog and `formatHeroStat` takes a `t` — the function
- * stays PURE and provider-free, which is what keeps the five framings pinned
- * by a unit test rather than by a screenshot.
+ * This module is now formatters only. The three-tier `HeroStat` stack and
+ * `formatHeroRings`, which paired each stat with the arc it belonged to, went
+ * with the rings themselves when the diary moved to budget rows
+ * (`#app/lib/day-budget-rows`, which is this module's caller now). The
+ * framings survived the rings because they were never about a circle: they
+ * answer "how much have I got left?", and a row asks that question too.
+ *
+ * The strings live in the `diary.hero.*` catalog and every entry point takes a
+ * `t` (M129/05), so these functions stay PURE and provider-free, which is what
+ * keeps the five framings pinned by a unit test rather than by a screenshot.
  */
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { isOverCarbGoal, isOverKcalGoal } from '#app/lib/goal-progress';
-import type { GoalRing } from '#app/lib/goal-rings';
 import { selectGoalRings } from '#app/lib/goal-rings';
-import { cn } from '#app/lib/utils';
 
 /**
  * The i18next `t` shape this module needs, declared locally rather than
@@ -254,109 +259,4 @@ export function formatHeroStats(input: HeroStatInput): HeroStat[] {
   }
   if (stats.length === 0) return [absoluteStat(input)];
   return stats;
-}
-
-/** Carb goal modes draw their arc against the ceiling; the absolute framing draws no arc at all. */
-function isCarbGoalMode(mode: HeroStatMode): boolean {
-  return mode === 'carbs-remaining' || mode === 'carbs-over';
-}
-
-/** One visible ring: which metric it is, the stat inside it, and the two numbers its arc is drawn from. */
-export interface HeroRing {
-  metric: GoalRing;
-  stat: HeroStat;
-  /** What the day has used of the budget, the arc's numerator. */
-  consumed: number;
-  /** The budget itself. Always positive: `selectGoalRings` refuses a non-positive target. */
-  max: number;
-}
-
-/**
- * The rings to draw for the day, one per goal the person set.
- *
- * The stat inside a ring and the arc around it are resolved together here so
- * they cannot come from different goals. A ring drawn against the calorie
- * target with the carb figure inside it would be a fabricated number, and
- * keeping the pairing in one function is what makes that unrepresentable.
- *
- * @param input - the day's totals and the user's targets.
- * @returns one ring per goal, carbs first; empty when the person set no target.
- */
-export function formatHeroRings(input: HeroStatInput): HeroRing[] {
-  const { netCarbs, netCarbsCeiling, kcal, kcalTarget } = input;
-  const rings: HeroRing[] = [];
-  for (const stat of formatHeroStats(input)) {
-    if (isCarbGoalMode(stat.mode) && netCarbsCeiling !== null) {
-      rings.push({ metric: 'net-carbs', stat, consumed: netCarbs, max: netCarbsCeiling });
-    }
-    if (isKcalMode(stat.mode) && kcalTarget !== null) {
-      rings.push({ metric: 'calories', stat, consumed: kcal, max: kcalTarget });
-    }
-  }
-  return rings;
-}
-
-/**
- * The three-tier stack itself — used both inside the ring and, at a larger
- * size, as the goal-less card's headline.
- *
- * Tier 1 is the only number that changes minute to minute, so it carries all
- * the weight; tiers 2 and 3 are fixed context and step down hard. Each tier is
- * its own element, so there is exactly one possible line-break arrangement and
- * it's the one drawn here.
- *
- * The headline size steps down for long values ("1240", "142.1") so a six-
- * character figure can't run into the ring's arc. Digits are `tabular-nums`;
- * the display serif deliberately never comes near this number (its subset has
- * no tabular figures — see DESIGN.md §4).
- *
- * `value` is passed in rather than read off `stat` so the caller can feed it a
- * mid-tween figure from `useCountUp` while every other tier stays fixed.
- */
-export function HeroStat({
-  stat,
-  value,
-  size = 'ring',
-  className,
-}: {
-  stat: HeroStat;
-  /** The tier-1 string to render — usually `stat.value`, or a tweened one mid-animation. */
-  value: string;
-  /** `ring` sits inside the 120px ring; `headline` is the goal-less card's larger left-aligned stack. */
-  size?: 'ring' | 'headline';
-  className?: string;
-}) {
-  const isLongValue = value.length >= 5;
-  const valueSize =
-    size === 'headline' ? 'text-3xl'
-    : isLongValue ? 'text-2xl'
-    : 'text-3xl';
-  return (
-    <div className={cn('flex flex-col', size === 'ring' ? 'items-center text-center' : 'items-start', className)}>
-      <span
-        className={cn(
-          'font-semibold leading-none tracking-tight tabular-nums',
-          valueSize,
-          // Over-goal is amber and only amber. `--destructive` is off-limits
-          // here by design: the day describes the food, not the person.
-          stat.isOver ? 'text-accent-amber' : 'text-foreground',
-        )}
-      >
-        {value}
-      </span>
-      <span
-        className={cn(
-          'mt-1.5 text-xs font-medium leading-none tabular-nums',
-          stat.isOver ? 'text-accent-amber' : 'text-muted-foreground',
-        )}
-      >
-        {stat.context}
-      </span>
-      {stat.unitLabel && (
-        <span className="mt-1 text-[10px] font-medium uppercase leading-none tracking-[0.1em] text-muted-foreground">
-          {stat.unitLabel}
-        </span>
-      )}
-    </div>
-  );
 }

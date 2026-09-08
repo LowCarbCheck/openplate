@@ -30,6 +30,7 @@ import {
 import { useLocation } from 'react-router';
 import { Link } from '#app/components/link';
 import { useSyncSession } from '#app/components/sync-status';
+import { AppBuildStamp } from '#app/components/build-stamp';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -267,6 +268,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <NavigationRow key={item.to} item={item} isActive={activeHref === item.to} />
           ))}
         </SidebarMenu>
+        {/* Which build this is, readable without navigating. Hidden on the
+            collapsed icon rail, where there is no room for a version string and
+            the whole row would render as unreadable clipped text. */}
+        <div className="px-2 pb-1 group-data-[collapsible=icon]:hidden">
+          <AppBuildStamp />
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

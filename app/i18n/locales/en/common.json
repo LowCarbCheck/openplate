@@ -7,7 +7,24 @@
     "source": "Source code",
     "sourceValue": "{{appName}} on GitHub",
     "title": "About openplate",
-    "version": "Version"
+    "updates": {
+      "built": "Built",
+      "checkNow": "Check now",
+      "checking": "Checking",
+      "description": "What this instance is running, and what the project has published.",
+      "disabled": "Checks disabled",
+      "disabledHint": "This instance does not ask GitHub about new releases. The operator turned that off.",
+      "lastChecked": "Last checked",
+      "latest": "Latest release",
+      "never": "Not yet",
+      "releaseLink": "Release notes",
+      "reload": "Reload to update",
+      "reloadHint": "This server is serving a newer version of the app than this page is running.",
+      "running": "Running",
+      "selfHostHint": "Updating the server itself is a new image, not a button here.",
+      "throttled": "Checked a moment ago. The next check is allowed at {{when}}.",
+      "title": "Updates"
+    }
   },
   "add": {
     "custom": {
@@ -158,7 +175,7 @@
       "hint": "Tap to speak",
       "consent": {
         "title": "Use voice search",
-        "body": "Your browser sends your voice to Google or Apple to turn it into text. Your audio is not sent to openplate or your AI provider.",
+        "body": "Your browser sends your voice to Google or Apple to turn it into text. openplate and your AI provider only ever receive the text, never your recording.",
         "continue": "Continue",
         "cancel": "Cancel"
       },
@@ -173,7 +190,13 @@
         "many": "Found {{n}} foods for {{transcript}}."
       }
     },
-    "title": "Add food"
+    "title": "Add food",
+    "aiIntake": {
+      "submit": "Log with AI",
+      "hint": "Write a whole meal at once, like 3 eggs, 2 slices of toast, a glass of orange juice.",
+      "needsProvider": "Connect an AI provider to log a whole meal in one sentence. Search works without one.",
+      "connect": "Set up AI"
+    }
   },
   "banners": {
     "backupDismiss": "Dismiss backup reminder",
@@ -230,8 +253,10 @@
   },
   "chrome": {
     "back": "Back",
+    "buildStamp": "Build {{label}}",
     "deviceMenuLabel": "This device, open menu",
     "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker that stays on your device",
+    "imprint": "Imprint",
     "installApp": "Install app",
     "licence": "MIT licence",
     "licenceShort": "Licence",
@@ -249,8 +274,15 @@
     "source": "Source code",
     "sourceShort": "Source",
     "terms": "Terms",
-    "imprint": "Imprint",
-    "thisDevice": "This device"
+    "thisDevice": "This device",
+    "update": {
+      "badge": "Update",
+      "bundleReady": "A newer version of this page is ready",
+      "dismiss": "Dismiss",
+      "releaseAvailable": "openplate {{version}} is available",
+      "reload": "Reload",
+      "view": "What changed"
+    }
   },
   "clinicianLink": {
     "copied": "Copied",
@@ -371,6 +403,18 @@
       "photograph": "Photograph food",
       "undo": "Undo"
     },
+    "budget": {
+      "calories": "Calories",
+      "grams": "{{value}} g",
+      "gramsLeft": "{{value}} g left",
+      "gramsOver": "{{value}} g over",
+      "left": "{{value}} left",
+      "over": "{{value}} over",
+      "progress": "{{consumed}} of {{target}}",
+      "progressGrams": "{{consumed}} of {{target}} g",
+      "srRowGrams": "{{label}}: {{consumed}} of {{target}} g. {{status}}.",
+      "srRowNoTarget": "{{label}}: {{status}}."
+    },
     "caveat": {
       "estimates": "Includes AI estimates",
       "missingData": "Some items are missing data"
@@ -395,15 +439,11 @@
       "title": "Copy from yesterday"
     },
     "drilldown": {
-      "hide": "Hide day details",
       "netCarbsDefinition": "Net carbs = carbs minus fiber, minus any sugar alcohols.",
       "noTarget": "No target set",
-      "proteinReached": "Protein goal reached",
       "referenceTag": "reference",
       "setTargets": "Set your own targets",
-      "show": "Day details",
-      "whatYouAte": "What you ate",
-      "whereTheDayStands": "Where the day stands"
+      "whatYouAte": "What you ate"
     },
     "empty": {
       "firstEver": {
@@ -469,8 +509,7 @@
       "moderate": "Moderate carb impact"
     },
     "kcal": {
-      "absolute": "{{value}} calories",
-      "ofTarget": "{{value}} of {{target}} calories"
+      "absolute": "{{value}} calories"
     },
     "loading": "Loading your diary…",
     "macroRatio": {
@@ -518,10 +557,13 @@
     },
     "suggestions": {
       "attribution": "Nutrition data from lowcarbcheck.org.",
+      "disclosureFiber_one": "{{count}} food that would close the fiber gap",
+      "disclosureFiber_other": "{{count}} foods that would close the fiber gap",
+      "disclosureProtein_one": "{{count}} food that would close the protein gap",
+      "disclosureProtein_other": "{{count}} foods that would close the protein gap",
       "introFiber": "Fiber-dense foods that cost little of your remaining carbs.",
       "introProtein": "Protein-dense foods that cost little of your remaining carbs.",
-      "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g net carbs",
-      "title": "Ideas to close the gap"
+      "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g net carbs"
     },
     "title": "Diary",
     "toast": {
@@ -1036,9 +1078,10 @@
     "moreOptions": "More ways to add food",
     "sheetTitle": "Add food",
     "platePhoto": "Plate photo",
-    "labelPhoto": "Nutrition panel photo",
     "speak": "Speak",
-    "type": "Type"
+    "type": "Type",
+    "photo": "Photo",
+    "photoAnything": "Photograph food"
   },
   "meals": {
     "description": "Meals you've saved as a bundle. Log one in a single tap, or remove it here.",
@@ -1322,19 +1365,19 @@
     },
     "stepOf": "Step {{current}} of {{total}}",
     "waysToLog": {
-      "dictationNote": "The search screen also has a microphone in browsers that support it. It fills the search box with what you say, and never logs a food by itself.",
-      "label": {
-        "description": "For anything in a package. The printed numbers are read off the panel, not estimated.",
-        "title": "Photograph a nutrition panel"
+      "photo": {
+        "title": "Photograph it",
+        "description": "A whole plate, one item, or the printed panel on a package. Point the camera and openplate works out the rest."
       },
-      "plate": {
-        "description": "Take a photo of your meal and get an estimate of what is in it.",
-        "title": "Photograph your plate"
+      "type": {
+        "title": "Write it",
+        "description": "Type a whole meal in one line, like 3 eggs and 2 slices of toast. Or search for one food at a time."
       },
-      "search": {
-        "description": "Type a name and pick your food from the list.",
-        "title": "Search for a food"
-      }
+      "speak": {
+        "title": "Say it",
+        "description": "Say what you ate and check the entries before they are saved. Handy when your hands are busy."
+      },
+      "speechPrivacyNote": "Your browser turns speech into text, using Google on Chrome or Apple on Safari. Only the text reaches openplate and your AI provider."
     },
     "weight": {
       "current": "Current weight",
@@ -1571,7 +1614,8 @@
       "analyzing": "Analyzing your plate…",
       "starting": "Starting analysis…",
       "stillWorking": "Still working, complex plates take a moment…",
-      "uploading": "Uploading photo…"
+      "uploading": "Uploading photo…",
+      "sendingText": "Sending your words…"
     },
     "capture": {
       "addWithoutPhoto": "Add food without a photo",
@@ -1581,7 +1625,6 @@
       "description": "Your photo is sent directly to your own AI provider to identify what's on your plate. Afterward it's kept only on this device (not on openplate's server) so you can see it again on the entry, turn that off or clear it anytime under Data & backup in settings.",
       "emptyHint": "Analyzed by your own AI provider, then kept only on this device.",
       "emptyTitle": "Photograph your plate or choose an image",
-      "labelPhoto": "Photograph a nutrition panel",
       "photoLabel": "Plate photo",
       "preparing": "Preparing your photo…",
       "previewAlt": "Selected plate photo",
@@ -1595,13 +1638,6 @@
       "connectProvider": "Connect your AI provider in settings before using photo identification.",
       "endpointUnreachable": "Could not reach that endpoint from the browser, likely the content-security policy blocking a non-localhost base URL, or the endpoint not allowing browser (CORS) requests. See AI settings for details.",
       "identifyFailed": "Failed to identify foods from the photo.",
-      "label": {
-        "noMacros": "No nutrition panel was found in that photo. Photograph the printed table of values, usually on the back of the package.",
-        "photoQualityBody": "Hold the package flat, fill the frame with the panel, and keep the light off the shiny parts.",
-        "title": "Couldn't read that panel",
-        "unreadable": "The nutrition panel could not be read. Try again straight on, closer, with the panel filling the frame.",
-        "unreadableWithReason": "The nutrition panel could not be read ({{reason}}). Try again straight on, closer, with the panel filling the frame."
-      },
       "missingBaseUrl": "This connection is missing a base URL. Open AI settings and set one, or switch to OpenRouter.",
       "noFoods": "Couldn't identify any foods in that photo. Try a clearer shot.",
       "openrouterRateLimit": "You've hit the provider's rate limit. Free-tier scans reset daily, or add credits on OpenRouter for more. Any credits you add go straight to OpenRouter (not openplate), are entirely optional, and are a spend-down balance, not a subscription.",
@@ -1609,7 +1645,9 @@
         "empty": "Please choose a photo to upload.",
         "tooLarge": "Photo is too large (max 8MB).",
         "undecodableFormat": "That format won't work in this browser, a JPEG or PNG will.",
-        "unsupportedType": "Unsupported image type. Use JPEG, PNG, WEBP, or HEIC."
+        "unsupportedType": "Unsupported image type. Use JPEG, PNG, WEBP, or HEIC.",
+        "unreadable": "That photo could not be read. Try again in better light, closer, and hold still.",
+        "unreadableWithReason": "That photo could not be read ({{reason}}). Try again in better light, closer, and hold still."
       },
       "photoQualityBody": "Mind trying another? Good light and a top-down angle help.",
       "provider": {
@@ -1637,44 +1675,11 @@
         "photoTooLarge": "That photo is too big",
         "aiNotAllowed": "Photo estimates are off",
         "accountSuspended": "Your account is suspended"
-      }
-    },
-    "labelScan": {
-      "capture": {
-        "description": "Photograph the nutrition panel on the package. Your photo goes straight to your own AI provider, which reads the printed numbers: nothing is estimated. Afterward the photo is kept only on this device.",
-        "emptyHint": "Hold the package flat and let the panel fill the frame.",
-        "emptyTitle": "Photograph the nutrition panel",
-        "photoLabel": "Nutrition panel photo",
-        "previewAlt": "Selected nutrition panel photo",
-        "title": "Read the nutrition panel on a package"
       },
-      "mode": {
-        "label": "A package label",
-        "labelHint": "The nutrition panel printed on a package: we read the numbers exactly as printed, sugar alcohols included.",
-        "legend": "What are you photographing?",
-        "plate": "A plate of food",
-        "plateHint": "A meal on a plate: we work out which foods are on it."
-      },
-      "review": {
-        "basisPer100g": "Taken from the label's per-100 g column.",
-        "basisPerServing": "Worked out from the label's per-serving column ({{grams}} g per serving).",
-        "brandLabel": "Brand (optional)",
-        "carbBasis": {
-          "available": "EU style (carbs already exclude fibre)",
-          "hint": "US panels count fibre inside \"Total Carbohydrate\"; EU panels list fibre on its own row and already exclude it. Getting this right stops fibre being subtracted twice.",
-          "legend": "How this label counts carbs",
-          "notSure": "Not sure",
-          "total": "US style (carbs include fibre)"
-        },
-        "gramsLabel": "Amount to log (g)",
-        "heading": "Here's what the label says. Check it before you log it.",
-        "macrosPer100gNote": "Values are per 100 g. A blank box means the label did not print that row. Leave it blank rather than typing 0.",
-        "modelNote": "Note from the reading: {{note}}",
-        "nameLabel": "Product",
-        "savedAsCustomFood": "Saving adds this product to your foods, so next time it is one tap and no photo.",
-        "servingPrinted": "Serving on the label: {{serving}}",
-        "subheading": "Every number was read from your photo. Fix anything that looks wrong.",
-        "unverified": "Read from your photo, not verified. Small print on a curved or shiny package can be misread. Please check the numbers."
+      "text": {
+        "empty": "Write what you ate first.",
+        "title": "No luck with that description",
+        "qualityBody": "We could not turn that into foods. Try naming each food and how much, like 3 eggs, 2 slices of toast."
       }
     },
     "loading": "Loading scan…",
@@ -1762,7 +1767,8 @@
       "saving": "Saving…",
       "seeOtherMatches": "Not right? See other matches",
       "subheading": "Tap a portion to adjust, or fine-tune anything below.",
-      "unnamedFood": "Unnamed food"
+      "unnamedFood": "Unnamed food",
+      "fromLabel": "From the label"
     },
     "setup": {
       "connectOpenRouter": "Connect with OpenRouter",
@@ -1788,7 +1794,13 @@
         "description": "Take a photo of your plate and the carbs are worked out for you."
       }
     },
-    "title": "Scan plate"
+    "title": "Scan plate",
+    "textIntake": {
+      "title": "Reading what you wrote",
+      "label": "What you entered",
+      "description": "Your words go straight to your own AI provider, which turns them into entries you check before anything is saved.",
+      "managedDescription": "Your words go to the AI your instance runs, which turns them into entries you check before anything is saved."
+    }
   },
   "settings": {
     "data": {

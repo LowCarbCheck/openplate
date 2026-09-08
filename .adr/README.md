@@ -30,10 +30,11 @@ ADRs are immutable once Accepted. To change a decision, write a new ADR that sup
 | [0002](0002-data-migrations.md)                       | Data migrations alongside schema migrations                      | Superseded |
 | [0003](0003-app-enforced-multi-tenancy.md)            | App-enforced multi-tenancy (no RLS)                              | Superseded |
 | [0004](0004-custom-server-is-the-production-entry.md) | The custom `server.ts` is the production entrypoint              | Accepted   |
-| [0005](0005-label-scan-over-barcode-lookup.md)        | Packaged-food macros come from the label, not a barcode database | Accepted   |
+| [0005](0005-label-scan-over-barcode-lookup.md)        | Packaged-food macros come from the label, not a barcode database | Amended    |
 | [0006](0006-the-app-server-holds-no-accounts.md)      | The app server holds no accounts                                 | Accepted   |
 | [0007](0007-byok-provider-registry.md)                | BYOK providers are described once, in a provider registry        | Accepted   |
 | [0008](0008-the-study-console-lives-in-openplate.md)  | The study console lives in openplate, at `/study`                | Accepted   |
 | [0009](0009-a-compartment-carries-its-kind.md)         | A compartment carries its kind, and a wrong kind is refused       | Accepted   |
 | [0010](0010-hosted-analytics.md)                      | Analytics on the hosted instance, off everywhere else            | Amended    |
 | [0011](0011-analytics-levels.md)                      | Analytics levels, and the research tier ADR-0010 refused         | Accepted   |
+| [0012](0012-the-server-asks-github-about-releases.md) | The server asks GitHub about releases, and it asks by default     | Accepted   |

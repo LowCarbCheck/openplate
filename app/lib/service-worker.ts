@@ -15,6 +15,38 @@ import { useEffect, useState } from 'react';
 const UPDATE_CHECK_INTERVAL_MS = 60_000;
 
 /**
+ * How long `adoptNewestBundle` waits for a fresh worker to reach `activated`
+ * before it reloads anyway.
+ *
+ * Generous on purpose: the reload is what the person just asked for, so the
+ * failure mode to avoid is a button that appears to do nothing, not a slow one.
+ */
+const ACTIVATION_TIMEOUT_MS = 8_000;
+
+/**
+ * The live registration, kept so the manual "reload to update" path does not
+ * register a second time. Null in dev, and until the load event has fired.
+ */
+let currentRegistration: ServiceWorkerRegistration | null = null;
+
+/**
+ * Reloads at most once per page life, shared by the automatic
+ * `controllerchange` path and the manual one.
+ *
+ * Both can fire for the same update: posting `SKIP_WAITING` makes the new worker
+ * take control, which is exactly what the automatic listener is watching for. Two
+ * reloads in a row is a visible flash and, on a slow connection, a second one
+ * landing mid-load.
+ */
+let isRefreshing = false;
+
+function reloadOnce(): void {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  window.location.reload();
+}
+
+/**
  * Cache name prefixes owned by the openplate service worker (`public/sw.js`).
  * Kept in sync by hand — `sw.js` can't import this module (it's a separate,
  * non-bundled script) — deliberately excludes the unversioned `share-target`
@@ -70,6 +102,7 @@ function healDevBrowser(): void {
 async function registerAndWatchForUpdates(): Promise<void> {
   try {
     const registration = await navigator.serviceWorker.register('/sw.js');
+    currentRegistration = registration;
 
     // Check for updates every 60 seconds.
     setInterval(() => {
@@ -130,12 +163,9 @@ export function registerServiceWorker(): void {
     void registerAndWatchForUpdates();
 
     // Reload once the NEW service worker takes control (guarded so it fires once).
-    let isRefreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!wasAlreadyControlled) return;
-      if (isRefreshing) return;
-      isRefreshing = true;
-      window.location.reload();
+      reloadOnce();
     });
   };
 
@@ -145,6 +175,102 @@ export function registerServiceWorker(): void {
     doRegister();
   } else {
     window.addEventListener('load', doRegister);
+  }
+}
+
+/** Resolves when the given worker reaches `activated`, or immediately if it already has. */
+function whenActivated(worker: ServiceWorker): Promise<void> {
+  if (worker.state === 'activated') return Promise.resolve();
+  return new Promise((resolve) => {
+    worker.addEventListener('statechange', () => {
+      if (worker.state === 'activated') resolve();
+    });
+  });
+}
+
+/** A promise that resolves after `ms`, used as the losing half of a race. */
+function afterDelay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/**
+ * Adopt the newest bundle this server is serving, then reload onto it.
+ *
+ * ── WHAT "UPDATE NOW" CAN AND CANNOT MEAN HERE ──────────────────────────────
+ *
+ * openplate ships as one stateless container. The server cannot upgrade itself,
+ * and nothing in the browser can upgrade it either: a self-hoster pulls a new
+ * image, and the hosted instance is deployed by an operator. So the only update
+ * a button in this app can perform is the client-side one, adopting assets the
+ * server is ALREADY serving. A newer release on GitHub is reported as
+ * information with a link, never as a button that pretends to install it.
+ *
+ * ── THE SEQUENCE ───────────────────────────────────────────────────────────
+ *
+ * `update()` refetches `sw.js`. `public/sw.js` calls `skipWaiting()` in its own
+ * install handler, so a fresh worker usually goes straight from `installing` to
+ * `activated` and never sits in `waiting`; the message below is for the case
+ * where it does sit there anyway (an install that raced the previous worker).
+ * Both are watched, and the reload happens once either reaches `activated` or
+ * the timeout elapses.
+ *
+ * Reloading on the timeout rather than giving up is deliberate. Nothing here can
+ * distinguish "no new worker exists" from "the network is slow", and the plain
+ * reload is correct for the first and harmless for the second. The stuck case
+ * gets one extra step: unregistering first, so the reload bypasses a precache
+ * that is wedged on old assets rather than being served the same page again.
+ */
+export async function adoptNewestBundle(): Promise<void> {
+  if (globalThis.navigator === undefined || !('serviceWorker' in navigator)) {
+    // Dev, or a browser with no worker: there is no cache layer to get past.
+    reloadOnce();
+    return;
+  }
+
+  const registration = currentRegistration ?? (await navigator.serviceWorker.getRegistration()) ?? null;
+  if (registration === null) {
+    reloadOnce();
+    return;
+  }
+
+  try {
+    await registration.update();
+  } catch {
+    // A thrown `update()` is a network failure, not a wedged worker. Keep the
+    // precache, which is what an offline install has instead of a server.
+    reloadOnce();
+    return;
+  }
+
+  const waiting = registration.waiting;
+  if (waiting !== null) {
+    // oxlint-disable-next-line unicorn/require-post-message-target-origin -- `ServiceWorker.postMessage` has no target-origin parameter; its second argument is a transfer list.
+    waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+
+  const fresh = registration.installing ?? registration.waiting;
+  if (fresh === null) {
+    // `update()` succeeded and there was nothing to install, yet the caller was
+    // told this page is behind. The active worker is serving stale assets and
+    // will not replace itself, so drop it and reload past it.
+    await unregisterAll();
+    reloadOnce();
+    return;
+  }
+
+  await Promise.race([whenActivated(fresh), afterDelay(ACTIVATION_TIMEOUT_MS)]);
+  reloadOnce();
+}
+
+/** Drops every registration for this origin. Best effort, like the rest of this module. */
+async function unregisterAll(): Promise<void> {
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  } catch {
+    // Nothing actionable: the reload below still refetches the document.
   }
 }
 

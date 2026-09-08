@@ -37,12 +37,44 @@ const appUrl = CONFIG.app.url;
 | `MATOMO_URL`                | unset (analytics off)       | Base URL of a [Matomo](https://matomo.org) install you run yourself. Unset, the default, means no analytics script, no request and an unchanged CSP header. See [Analytics](#analytics). |
 | `MATOMO_SITE_ID`            | unset (analytics off)       | The Matomo site id this instance reports as. Set both this and `MATOMO_URL`, or neither. Setting one alone stops the boot on purpose. |
 | `MATOMO_EVENT_LEVEL`        | `product`                   | How much the instance reports: `pageviews`, `product` or `research`. Applies only when analytics are on. See [What a level decides](#what-a-level-decides). |
+| `UPDATE_CHECK`              | on                          | Set to `off` to stop the server asking GitHub whether a newer openplate exists. See [The release check](#the-release-check) below. |
 
 Provider API keys are never read from the environment. A user's key is entered in the
 browser, stored on the device and sent browser → provider directly; the server has no copy.
 `MISTRAL_API_KEY` / `OPENROUTER_API_KEY` in `.env.example` exist only so a developer can
 point verification scripts at a live provider. Setting them on a deployed instance does
 nothing.
+
+## The release check
+
+Every six hours the server asks `api.github.com` for the tag list of the openplate
+repository, compares the newest `vX.Y.Z` with the version it is running, and reports the
+answer at **Settings > About**. There is also a "Check now" button, which is limited to one
+real request a minute across the whole instance.
+
+The request is made by the **server**, not by the browser, and that is the point: adding
+`api.github.com` to the production `connect-src` would widen the one allowlist that stops an
+injected script exfiltrating a BYOK key. It carries no token, no instance identifier and no
+version number, so GitHub sees an IP address and a default user agent and nothing else. See
+[ADR-0012](../.adr/0012-the-server-asks-github-about-releases.md).
+
+```bash
+UPDATE_CHECK=off
+```
+
+turns it off completely: no timer is started, no request is ever made, and the About page
+says checks are disabled.
+
+The check only ever **reports**. openplate is a single stateless container and cannot replace
+its own image, so upgrading stays what it always was:
+
+```bash
+docker compose -f compose.yml pull && docker compose -f compose.yml up -d
+```
+
+The one button in the app that does change something is "Reload to update", which appears
+when the server is already serving a newer build than the open page is running. That reloads
+the browser onto assets the server has, and touches nothing on the host.
 
 ## The Content-Security-Policy
 

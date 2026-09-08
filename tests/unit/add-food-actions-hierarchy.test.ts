@@ -1,11 +1,20 @@
 /**
- * The add-food hierarchy: the primary photographs, the secondaries type and
- * speak.
+ * The add-food hierarchy: three equal ways in, side by side.
  *
  * `/diary`'s three empty states and `/dashboard`'s today hero all render
- * `AddFoodActions`, so this one component decides what "add food" means. The
- * primary used to be a link into the search screen. A future edit could put
- * that back without any test noticing, which is what this file exists to stop.
+ * `AddFoodActions`, so this one component decides what "add food" means.
+ *
+ * WHAT CHANGED. It used to be a full-width photograph button with typing and
+ * speaking shrunk underneath it. All three now reach the same AI review screen
+ * and write the same entries, so the layout says so: one row, equal widths,
+ * the same height, an icon over a label. A future edit that demotes typing or
+ * speaking back to a footnote, or that shrinks the tap target, would be
+ * invisible without this file.
+ *
+ * The one rank that survives is the FILL: photograph stays the filled primary
+ * because it is the action that costs a camera permission and is worth naming
+ * first. Typing and speaking are outlined in the primary colour, not in a
+ * neutral grey, so the row reads as one family.
  *
  * Source-level for the same reason as `add-launcher-gesture.test.ts`: the
  * component's behaviour is a browser gesture and a hook, not a return value.
@@ -18,26 +27,54 @@ import { speakHref } from '../../app/components/add-food-actions';
 
 const source = readFileSync(new URL('../../app/components/add-food-actions.tsx', import.meta.url), 'utf8');
 
+/** The one class every action shares. Read from the source, so the test cannot drift from it. */
+const ACTION_CLASS = /const ACTION_CLASS = '([^']+)';/.exec(source)?.[1] ?? '';
+
 describe('the add-food actions', () => {
   it('drives the camera through the shared hook', () => {
     assert.match(source, /import \{ useCameraCapture \} from '#app\/components\/add\/use-camera-capture'/);
-    assert.match(source, /const \{ captureWith, triggerRef, inputRef, inputProps \} = useCameraCapture\(/);
+    assert.match(source, /const \{ capture, triggerRef, inputRef, inputProps \} = useCameraCapture\(/);
   });
 
-  it('makes the primary a button that captures, not a link to the search screen', () => {
+  it('makes the photo action a button that captures, not a link to the search screen', () => {
     const primary = /<Button ref=\{triggerRef\}[\s\S]*?<\/Button>/.exec(source);
-    assert.ok(primary !== null, 'the primary button is gone from add-food-actions.tsx');
-    assert.match(primary[0], /onClick=\{\(\) => captureWith\('plate'\)\}/);
-    assert.match(primary[0], /t\('diary\.actions\.photograph'\)/);
+    assert.ok(primary !== null, 'the photo button is gone from add-food-actions.tsx');
+    assert.match(primary[0], /onClick=\{capture\}/);
+    assert.match(primary[0], /t\('launcher\.photo'\)/);
     assert.doesNotMatch(primary[0], /<Link/);
     assert.doesNotMatch(primary[0], /asChild/);
   });
 
-  it('keeps typing and speaking visible beside it', () => {
+  it('keeps typing and speaking beside it, in the same row', () => {
     assert.match(source, /t\('launcher\.type'\)/);
     assert.match(source, /t\('launcher\.speak'\)/);
     assert.match(source, /<Link to=\{addTo\}>/);
     assert.match(source, /<Link to=\{speakHref\(addTo\)\}>/);
+    // One flex row holds all three, so they share the width rather than
+    // stacking the two quiet ones under a full-width primary.
+    assert.match(source, /<div className="flex gap-2">[\s\S]*onClick=\{capture\}[\s\S]*speakHref\(addTo\)/);
+  });
+
+  it('gives all three the same generous target', () => {
+    assert.match(ACTION_CLASS, /\bh-14\b/, 'the shared action class is no longer at least h-14');
+    assert.match(ACTION_CLASS, /\bflex-1\b/, 'the three actions no longer share the width equally');
+    // Icon above label, which is what makes a short label legible at this size.
+    assert.match(ACTION_CLASS, /\bflex-col\b/);
+    // Every action carries it, so none of them can quietly shrink.
+    assert.strictEqual(
+      source.split('className={ACTION_CLASS').length - 1 + source.split('className={cn(ACTION_CLASS').length - 1,
+      3,
+      'one of the three actions no longer uses the shared geometry',
+    );
+  });
+
+  it('keeps typing and speaking in the primary colour, never a neutral grey', () => {
+    const outlined = source.match(/cn\(ACTION_CLASS, '([^']+)'\)/g) ?? [];
+    assert.strictEqual(outlined.length, 2, 'the two outlined actions are no longer a matched pair');
+    for (const className of outlined) {
+      assert.match(className, /border-primary/);
+      assert.match(className, /text-primary/);
+    }
   });
 
   it('hides speaking where no recogniser exists', () => {
