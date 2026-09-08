@@ -2,6 +2,21 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.18.4 - 2026-09-08
+
+- The sign-in form now says plainly that you sign in with the email address
+  your account was created with, and that capital letters in it do not
+  matter. The error after a rejected sign-in said "sign-in name", a leftover
+  from a version where accounts had a chosen name. There is no username; the
+  address is the only identifier.
+
+## 0.18.3 - 2026-09-08
+
+- A sign-in form submitted before the page had finished loading was sent as
+  a plain page request, so the password could land in the address bar and in
+  the browser history. The sign-in, reset and study forms now keep their
+  submit button disabled until the page is ready.
+
 ## 0.18.2 - 2026-09-08
 
 - The device menu in the header now offers a way to sign in when you are
