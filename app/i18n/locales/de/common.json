@@ -23,8 +23,7 @@
       "running": "Läuft hier",
       "selfHostHint": "Der Server selbst wird über ein neues Image aktualisiert, nicht über einen Knopf an dieser Stelle.",
       "throttled": "Gerade eben geprüft. Die nächste Prüfung ist ab {{when}} möglich.",
-      "title": "Updates",
-      "upToDate": "Aktuell"
+      "title": "Updates"
     },
     "version": "Version"
   },

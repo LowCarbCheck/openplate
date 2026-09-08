@@ -370,6 +370,58 @@ export function startUpdateCheckSchedule(checker: UpdateChecker, enabled: boolea
   };
 }
 
+/**
+ * Whether a manual check may run, judged on the request's own headers.
+ *
+ * ── WHY THE ENDPOINT NEEDS A GUARD AT ALL ───────────────────────────────────
+ *
+ * `POST /api/update-status/check` is a plain Express route, so React Router's
+ * CSRF check (which compares the browser `Origin` against the host it thinks it
+ * is serving) never sees it. Without this, any page on the internet could make a
+ * visitor's browser drive a GitHub request out of this instance's IP. The
+ * one-a-minute cooldown bounds the damage; it does not remove the cross-site
+ * path.
+ *
+ * ── THE TWO SIGNALS, IN ORDER ───────────────────────────────────────────────
+ *
+ * `Sec-Fetch-Site` is the one to trust when it is there: it is set by the
+ * browser, cannot be written by a script, and answers exactly this question.
+ * `same-origin` is the app's own fetch; `none` is a user-initiated load with no
+ * initiator at all. `cross-site` and `same-site` are both refused, the second
+ * because a sibling subdomain is not this app.
+ *
+ * `Origin` is the fallback for a client too old to send `Sec-Fetch-Site`, and it
+ * has to MATCH, not merely exist.
+ *
+ * ── WHAT THIS DELIBERATELY REFUSES ──────────────────────────────────────────
+ *
+ * Neither header present is a refusal, which means `curl -X POST` gets a 403.
+ * That is the intended reading and not an oversight: this endpoint exists for the
+ * button in the app, `GET /api/update-status` is open to anything and answers the
+ * same body, and an operator who wants to force a check has the six-hourly timer
+ * and a restart. Accepting "no headers at all" would have re-opened the hole for
+ * every non-browser caller, which is the population an attacker can most easily
+ * imitate.
+ *
+ * Pure, so `tests/unit/update-check.test.ts` covers it without a server.
+ *
+ * @param secFetchSite - the `Sec-Fetch-Site` header, or null when absent.
+ * @param origin - the `Origin` header, or null when absent.
+ * @param requestOrigin - the origin this server believes it is serving.
+ */
+export function isSameOriginRequest({
+  secFetchSite,
+  origin,
+  requestOrigin,
+}: {
+  secFetchSite: string | null;
+  origin: string | null;
+  requestOrigin: string;
+}): boolean {
+  if (secFetchSite !== null) return secFetchSite === 'same-origin' || secFetchSite === 'none';
+  return origin !== null && origin === requestOrigin;
+}
+
 /** The release page for a version, derived from the repository's one literal. */
 export function releaseUrlFor(version: string): string {
   return `${REPO_URL}/releases/tag/v${version}`;

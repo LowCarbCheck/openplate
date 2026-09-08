@@ -14,11 +14,18 @@ import { z } from 'zod';
  *  1. `define` replaces `__OPENPLATE_BUILD__` in the browser and SSR bundles,
  *     so `app/lib/build-info.ts` reads a literal with no runtime lookup. See
  *     `types/build-info.d.ts` for why it is a bare identifier.
- *  2. `build/build-info.json`, written when the bundle closes, so the Express
+ *  2. `build/build-info.json`, written once when a bundle closes, so the Express
  *     entrypoint can read the SAME numbers. `pnpm start` runs `tsx ./server.ts`
  *     directly, outside Vite, so no `define` ever reaches it; a file on disk
  *     next to the bundle it describes is the smallest thing that works for
  *     `pnpm build` then `pnpm start`, and it needs no git in the image.
+ *
+ * "The same object" is load-bearing and was not free. `react-router build` runs
+ * a client pass and an SSR pass and re-evaluates this file for each, in one
+ * process, so computing the stamp here gave the bundles one `builtAt` and the
+ * JSON another 300 ms later. `buildStamp` parks the first pass's answer on
+ * `globalThis` and the second pass reuses it. The same object carries the
+ * write-once flag, since `closeBundle` also fires per pass.
  *
  * The sha is the one value that is not free. `.git` is excluded by
  * `.dockerignore` and the alpine images carry no git binary, so inside a
@@ -53,17 +60,40 @@ function gitShortSha(): string | null {
   }
 }
 
-/** Writes the same stamp beside the bundle, for the Express entrypoint to read. */
-function buildInfoFilePlugin(build: OpenplateBuildInfo): Plugin {
+/**
+ * The one stamp this build uses, computed on the first pass and reused by the
+ * second. See `types/build-info.d.ts` for why it lives on `globalThis`.
+ */
+function buildStamp(buildShaOverride: string | undefined): OpenplateBuildStamp {
+  const existing = globalThis.__openplateBuildStamp;
+  if (existing !== undefined) return existing;
+
+  const override = buildShaOverride?.trim();
+  const stamp: OpenplateBuildStamp = {
+    build: {
+      version: packageVersion(),
+      sha: override === undefined || override === '' ? (gitShortSha() ?? 'unknown') : override.slice(0, 7),
+      builtAt: new Date().toISOString(),
+    },
+    hasWrittenFile: false,
+  };
+  globalThis.__openplateBuildStamp = stamp;
+  return stamp;
+}
+
+/** Writes the stamp beside the bundle, once per build, for the Express entrypoint to read. */
+function buildInfoFilePlugin(stamp: OpenplateBuildStamp): Plugin {
   return {
     name: 'openplate-build-info-file',
     // `closeBundle` fires for the client pass and again for the SSR pass. Both
-    // write identical bytes, so whichever runs last is still correct, and the
-    // file survives whatever either pass did to `build/` before it.
+    // would write identical bytes now that the stamp is shared, but writing once
+    // says so: a second write would be the only place left that could disagree.
     closeBundle() {
+      if (stamp.hasWrittenFile) return;
+      stamp.hasWrittenFile = true;
       const directory = resolve(import.meta.dirname, 'build');
       mkdirSync(directory, { recursive: true });
-      writeFileSync(resolve(directory, 'build-info.json'), `${JSON.stringify(build, null, 2)}\n`, 'utf8');
+      writeFileSync(resolve(directory, 'build-info.json'), `${JSON.stringify(stamp.build, null, 2)}\n`, 'utf8');
     },
   };
 }
@@ -74,17 +104,12 @@ export default defineConfig(({ mode }) => {
 
   // `loadEnv` with an empty prefix already merges `process.env`, so the
   // Dockerfiles' build argument arrives here without a second env read.
-  const buildSha = env.OPENPLATE_BUILD_SHA?.trim();
-  const build: OpenplateBuildInfo = {
-    version: packageVersion(),
-    sha: buildSha === undefined || buildSha === '' ? (gitShortSha() ?? 'unknown') : buildSha.slice(0, 7),
-    builtAt: new Date().toISOString(),
-  };
+  const stamp = buildStamp(env.OPENPLATE_BUILD_SHA);
 
   return {
-    plugins: [tailwindcss(), reactRouter(), buildInfoFilePlugin(build)],
+    plugins: [tailwindcss(), reactRouter(), buildInfoFilePlugin(stamp)],
     define: {
-      __OPENPLATE_BUILD__: JSON.stringify(build),
+      __OPENPLATE_BUILD__: JSON.stringify(stamp.build),
     },
     resolve: {
       tsconfigPaths: true,

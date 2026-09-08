@@ -14,6 +14,10 @@
  * 4. **The throttle.** The manual button is unauthenticated. Without a cooldown
  *    a loop on that endpoint turns one visitor into a request generator pointed
  *    at api.github.com from the instance's own IP.
+ * 5. **The same-origin rule.** The manual endpoint is a plain Express route, so
+ *    React Router's CSRF check never sees it. A wrong answer here is invisible:
+ *    the accepting cases are what an operator exercises by hand, and the
+ *    REFUSING case is the one nobody tries and the one that matters.
  *
  * The checker takes its `fetch` and its clock as parameters, so all of this runs
  * with no network and no waiting.
@@ -25,6 +29,7 @@ import {
   compareSemver,
   createUpdateChecker,
   isPrereleaseVersion,
+  isSameOriginRequest,
   MANUAL_CHECK_COOLDOWN_MS,
   parseVersion,
   repoSlug,
@@ -265,5 +270,68 @@ describe('the manual check throttle', () => {
     const later = await checker.checkNow();
     assert.equal(later.throttled, false);
     assert.equal(stub.calls.length, 2);
+  });
+});
+
+describe('isSameOriginRequest', () => {
+  const OWN = 'https://openplate.example';
+
+  it("accepts the app's own fetch", () => {
+    assert.equal(isSameOriginRequest({ secFetchSite: 'same-origin', origin: OWN, requestOrigin: OWN }), true);
+  });
+
+  it('accepts a user-initiated load with no initiator', () => {
+    // `none` is an address-bar navigation or a bookmark: there is no other site
+    // involved, so there is nothing to protect against.
+    assert.equal(isSameOriginRequest({ secFetchSite: 'none', origin: null, requestOrigin: OWN }), true);
+  });
+
+  it('REFUSES a cross-site POST, the attack this guard exists for', () => {
+    // evil.example runs `fetch('https://openplate.example/api/update-status/check',
+    // {method:'POST'})`. The browser sets `Sec-Fetch-Site: cross-site` and the
+    // script cannot change it.
+    assert.equal(
+      isSameOriginRequest({
+        secFetchSite: 'cross-site',
+        origin: 'https://evil.example',
+        requestOrigin: OWN,
+      }),
+      false,
+    );
+  });
+
+  it('refuses same-site too, because a sibling subdomain is not this app', () => {
+    assert.equal(
+      isSameOriginRequest({
+        secFetchSite: 'same-site',
+        origin: 'https://other.example.com',
+        requestOrigin: OWN,
+      }),
+      false,
+    );
+  });
+
+  it('ignores Origin entirely when Sec-Fetch-Site is present', () => {
+    // A forged `Origin` must not buy anything: the browser-set header wins, and
+    // a script cannot set `Sec-Fetch-Site` at all.
+    assert.equal(isSameOriginRequest({ secFetchSite: 'cross-site', origin: OWN, requestOrigin: OWN }), false);
+  });
+
+  it('falls back to a MATCHING Origin when Sec-Fetch-Site is absent', () => {
+    assert.equal(isSameOriginRequest({ secFetchSite: null, origin: OWN, requestOrigin: OWN }), true);
+  });
+
+  it('refuses a mismatched Origin on the fallback path', () => {
+    assert.equal(
+      isSameOriginRequest({ secFetchSite: null, origin: 'https://evil.example', requestOrigin: OWN }),
+      false,
+    );
+  });
+
+  it('refuses when neither header is present, so a bare curl POST cannot drive a check', () => {
+    // Deliberate. Accepting "no headers at all" would re-open the hole for every
+    // non-browser caller, which is the population easiest to imitate. `GET
+    // /api/update-status` stays open and answers the same body.
+    assert.equal(isSameOriginRequest({ secFetchSite: null, origin: null, requestOrigin: OWN }), false);
   });
 });

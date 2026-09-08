@@ -26,3 +26,25 @@ interface OpenplateBuildInfo {
 }
 
 declare const __OPENPLATE_BUILD__: OpenplateBuildInfo;
+
+/**
+ * The build stamp for ONE `pnpm build`, cached across the two passes.
+ *
+ * `react-router build` runs a client pass and an SSR pass, and it RE-EVALUATES
+ * `vite.config.ts` for each one in the same process (verified: same pid, two
+ * evaluations). A module-level constant therefore produces two different
+ * `builtAt` values, and the bundles ended up stamped 300 ms before the
+ * `build/build-info.json` that is supposed to describe them. The two stamps have
+ * to be one object, so the first pass parks it here and the second finds it.
+ *
+ * `hasWrittenFile` rides along for the same reason: `closeBundle` fires once per
+ * pass, and the file only needs writing once.
+ *
+ * Build-time only. Nothing in `app/` may read this, and nothing does.
+ */
+interface OpenplateBuildStamp {
+  build: OpenplateBuildInfo;
+  hasWrittenFile: boolean;
+}
+
+declare var __openplateBuildStamp: OpenplateBuildStamp | undefined;

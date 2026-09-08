@@ -18,6 +18,7 @@ import { SERVER_BUILD } from '#app/lib/build-info.server';
 import { BUILD_HEADER } from '#app/lib/update-status';
 import {
   createUpdateChecker,
+  isSameOriginRequest,
   releaseUrlFor,
   repoSlug,
   startUpdateCheckSchedule,
@@ -139,10 +140,14 @@ function createBuildHeaderMiddleware() {
  * state that must not be re-created per request, and mounting it here keeps the
  * GitHub call provably out of the client module graph.
  *
- * `GET` never fetches; it reports the cache, which the timers keep warm. `POST`
- * may fetch, at most once a minute across the whole instance, and says so in the
- * body when it did not. Neither reads a request body, so no parser is mounted
- * and the "first JSON parser wins, globally" hazard does not arise.
+ * `GET` never fetches; it reports the cache, which the timers keep warm, and is
+ * open to anything. `POST` may fetch, at most once a minute across the whole
+ * instance, says so in the body when it did not, and is same-origin only: it is
+ * the one path by which an outside page could drive a request out of this
+ * instance's IP. See `isSameOriginRequest` for the rule and what it refuses.
+ *
+ * Neither reads a request body, so no parser is mounted and the "first JSON
+ * parser wins, globally" hazard does not arise.
  */
 function mountUpdateStatusRoutes(): void {
   const enabled = CONFIG.updates.checkEnabled;
@@ -151,7 +156,23 @@ function mountUpdateStatusRoutes(): void {
     res.json(toUpdateStatus({ enabled, state: updateChecker.read(), throttled: false, nextCheckAllowedAt: null }));
   });
 
-  app.post('/api/update-status/check', (_req: Request, res: Response) => {
+  app.post('/api/update-status/check', (req: Request, res: Response) => {
+    // `req.protocol` and the `Host` header, which is what the browser used to
+    // build its own `Origin`. Both follow `X-Forwarded-*` because `trust proxy`
+    // is set above, so this is the public origin behind Traefik and not the
+    // container's port.
+    const allowed = isSameOriginRequest({
+      secFetchSite: req.get('sec-fetch-site') ?? null,
+      origin: req.get('origin') ?? null,
+      requestOrigin: `${req.protocol}://${req.get('host') ?? ''}`,
+    });
+    if (!allowed) {
+      // No body: a cross-site caller learns nothing it did not already know, and
+      // there is no message here worth writing for a caller that cannot act on it.
+      res.status(403).end();
+      return;
+    }
+
     updateChecker
       .checkNow()
       .then((outcome) => {
