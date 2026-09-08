@@ -13,9 +13,12 @@ import type { InstallAffordanceControls } from '#app/hooks/use-install-affordanc
  * the onboarding wizard's first-food lesson, `routes/onboarding.tsx`) reads
  * the hook exactly once and only supplies its own layout around this.
  *
- * Renders nothing for `affordance === 'none'` — callers that already guard on
- * that value never hit this branch, but a caller that forgets to guard still
- * degrades to nothing rather than an empty box.
+ * Renders nothing for the two states that have no action to offer,
+ * `'already-installed'` and `'cannot-install'`. This body is affordances only:
+ * the plain "it installs on a phone" sentence a `'cannot-install'` browser
+ * gets in onboarding is information, not something to press, so it belongs to
+ * the surface that chooses to teach it (`FirstFoodInstallFootnote`) rather
+ * than here, where every caller renders it.
  *
  * `type="button"` is explicit because a caller may render this inside a
  * `<form>` (the onboarding step does); without it a native `<button>` inside
@@ -70,7 +73,15 @@ export function InstallCard() {
   const { affordance, promptInstall } = useInstallAffordance();
   const { t } = useTranslation();
 
-  if (affordance === 'none') return null;
+  // Both silent states render nothing HERE, for two different reasons, and
+  // the split in `InstallAffordance` is what lets this card say so rather
+  // than guess. Already installed: nothing left to say. Cannot install: the
+  // settings hub is a list of things you can do on this device, and a card
+  // headed "Install openplate" whose body is a sentence about some other
+  // device is a control that isn't one. The onboarding lesson takes that
+  // sentence instead, because a lesson is where a fact belongs; a reader who
+  // opened settings came looking for a switch, not for teaching.
+  if (affordance === 'already-installed' || affordance === 'cannot-install') return null;
 
   return (
     <Card>

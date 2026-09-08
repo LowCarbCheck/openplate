@@ -840,6 +840,7 @@
     "action": "Install {{appName}}",
     "description": "Add {{appName}} to your home screen for a full-screen app that opens instantly and keeps working offline.",
     "iosInstructions": "Tap the <share>Share</share> button in Safari, then choose <addToHome>Add to Home Screen</addToHome>.",
+    "phoneNote": "You can install {{appName}} on a phone, where it opens like any other app instead of a browser tab.",
     "title": "Install {{appName}}"
   },
   "join": {

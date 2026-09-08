@@ -12,32 +12,25 @@
  * `withI18n` resolving real copy from the shipped English catalog. That is
  * used here for everything it CAN prove.
  *
- * One thing it cannot prove: `useInstallAffordance` reads `useEffect` (which
- * never runs under `react-dom/server`) and `useSyncExternalStore` (which, on
- * every `react-dom/server` renderer, always takes the `getServerSnapshot`
- * branch -- this is fixed by which renderer is calling it, not by any global
- * this file could set up). So a REAL render of the wired-up lesson step can
- * only ever exercise the `'none'` branch of the hook -- which happens to be
- * the common case (a desktop browser, or an already-installed device), and is
- * used below for exactly that, not faked. For the other two affordance
- * values, `FirstFoodStep` was split so the affordance-dependent MARKUP is a
- * separate, exported, prop-driven component (`FirstFoodInstallFootnote`,
- * mirroring `InstallAffordanceAction`'s own split in `install-card.tsx`) --
- * every content and branching claim below is proven by rendering THAT
- * directly with an explicit `affordance`, no hook, no mock.
+ * `useInstallAffordance` reads `useEffect` (which never runs under
+ * `react-dom/server`) and `useSyncExternalStore` (which, on every
+ * `react-dom/server` renderer, always takes the `getServerSnapshot` branch --
+ * this is fixed by which renderer is calling it, not by any global this file
+ * could set up). So a REAL render of the wired-up lesson step always resolves
+ * to `'cannot-install'`: not standalone, no captured prompt, not iOS. That is
+ * the state a desktop Firefox, a desktop Safari and a Chrome that has not
+ * fired `beforeinstallprompt` all land in, and it is exercised below for real.
  *
- * The one claim that is genuinely unreachable this way is the JSX POSITION of
- * the footnote relative to the cards and the AI key note: since the real step
- * can never be forced to show non-`'none'` content in this environment, there
- * is no rendered string in which "the install copy is after the cards" is an
- * observable fact for the `'prompt'`/`'ios-instructions'` cases. That single
- * fact is left as a narrow source assertion at the bottom, clearly marked as
- * a stand-in.
+ * The other three states (`'prompt'`, `'ios-instructions'`,
+ * `'already-installed'`) cannot be reached through the hook here, so
+ * `FirstFoodStep` was split: the affordance-dependent MARKUP is a separate,
+ * exported, prop-driven component (`FirstFoodInstallFootnote`, mirroring
+ * `InstallAffordanceAction`'s own split in `install-card.tsx`) -- every
+ * content and branching claim below is proven by rendering THAT directly with
+ * an explicit `affordance`, no hook, no mock.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -55,10 +48,12 @@ import type { PublicConfig } from '../../app/config/public-config';
 const INSTALL_TITLE_OR_ACTION = 'Install openplate';
 const INSTALL_DESCRIPTION_FRAGMENT = 'Add openplate to your home screen';
 const IOS_INSTRUCTION_FRAGMENT = 'Add to Home Screen';
+const PHONE_NOTE_FRAGMENT = 'install openplate on a phone';
 const WAY_TITLE_PLATE = 'Photograph your plate';
 const WAY_TITLE_LABEL = 'Photograph a nutrition panel';
 const WAY_TITLE_SEARCH = 'Search for a food';
 const DICTATION_FRAGMENT = 'never logs a food by itself';
+const KEY_NOTE_FRAGMENT = 'Photo scanning is optional';
 
 const noopPromptInstall = () => Promise.resolve();
 
@@ -73,9 +68,9 @@ function publicConfig(): PublicConfig {
  * supplies `publicConfig` for `useInstancePolicy` (the AI key note reads it),
  * and `FirstFoodStep` itself needs router context for `useNavigation`/`Form`.
  *
- * `useInstallAffordance()` resolves to `'none'` here FOR REAL -- see this
- * file's header -- so this is the render a desktop browser or an
- * already-installed device actually produces, not a stand-in for it.
+ * `useInstallAffordance()` resolves to `'cannot-install'` here FOR REAL -- see
+ * this file's header -- so this is the render a desktop browser actually
+ * produces, not a stand-in for it.
  */
 function renderFirstFoodStep(): string {
   const config = publicConfig();
@@ -121,12 +116,19 @@ describe('InstallAffordanceAction, rendered directly, is the one place the platf
     assert.ok(!markup.includes('<button'), 'the iOS case still renders an install button nobody can use');
   });
 
-  it('renders nothing at all when there is nothing to offer', () => {
-    assert.equal(renderAction('none'), '');
+  it('renders nothing on an already-installed device', () => {
+    assert.equal(renderAction('already-installed'), '');
+  });
+
+  it('renders nothing when the browser cannot install -- this body is actions only', () => {
+    // The plain sentence for this state is information, not an affordance, so
+    // it belongs to the surface that chooses to teach it, not to the shared
+    // action body every surface renders.
+    assert.equal(renderAction('cannot-install'), '');
   });
 });
 
-describe('FirstFoodInstallFootnote (the lesson footnote body) renders the same two shapes', () => {
+describe('FirstFoodInstallFootnote (the lesson footnote body) answers all four states', () => {
   it('for a captured prompt: shows the install title, the description, and the shared action button', () => {
     const markup = renderFootnote('prompt');
     assert.ok(markup.includes(INSTALL_TITLE_OR_ACTION), markup);
@@ -141,12 +143,28 @@ describe('FirstFoodInstallFootnote (the lesson footnote body) renders the same t
     assert.ok(!markup.includes('<button'), 'the footnote rendered a button nobody on this device can use');
   });
 
-  it('for none: renders nothing at all, an empty string -- not an empty box', () => {
-    assert.equal(renderFootnote('none'), '');
+  it('for an already-installed device: renders nothing at all, an empty string -- not an empty box', () => {
+    assert.equal(renderFootnote('already-installed'), '');
+  });
+
+  it('for a browser that cannot install: renders the plain sentence about phones', () => {
+    const markup = renderFootnote('cannot-install');
+    assert.ok(markup.includes(PHONE_NOTE_FRAGMENT), markup);
+  });
+
+  it('offers nothing to press in that sentence -- no button, no link', () => {
+    // A false promise is worse than silence: this browser cannot install, so
+    // anything clickable here either does nothing or lies about what it does.
+    const markup = renderFootnote('cannot-install');
+    assert.ok(!markup.includes('<button'), 'the cannot-install sentence grew a button this browser cannot honour');
+    assert.ok(!markup.includes('<a '), 'the cannot-install sentence grew a link');
+    assert.ok(!markup.includes(INSTALL_TITLE_OR_ACTION), 'the cannot-install sentence reads as an install offer');
+    assert.ok(!markup.includes(INSTALL_DESCRIPTION_FRAGMENT), 'the cannot-install sentence tells THIS browser to add it');
+    assert.ok(!markup.includes(IOS_INSTRUCTION_FRAGMENT), 'the cannot-install sentence leaked the iOS instructions');
   });
 });
 
-describe('the real first-food step offers nothing to install when there is nothing to offer', () => {
+describe('the real first-food step on a browser that cannot install', () => {
   const stepMarkup = renderFirstFoodStep();
 
   it('is a real render of the lesson: the three ways and the dictation note are present', () => {
@@ -156,57 +174,37 @@ describe('the real first-food step offers nothing to install when there is nothi
     assert.ok(stepMarkup.includes(DICTATION_FRAGMENT));
   });
 
-  it('carries none of the install copy -- the common desktop / already-installed case', () => {
-    assert.ok(!stepMarkup.includes(INSTALL_TITLE_OR_ACTION), 'the step shows install copy with nothing to install');
+  it('teaches that the app installs on a phone, instead of saying nothing at all', () => {
+    // The reported defect: this render used to carry no install copy of any
+    // kind, so the lesson taught nothing on the majority of browsers.
+    assert.ok(stepMarkup.includes(PHONE_NOTE_FRAGMENT), stepMarkup);
+  });
+
+  it('offers no install affordance this browser could not honour', () => {
+    assert.ok(!stepMarkup.includes(INSTALL_TITLE_OR_ACTION), 'the step offers an install action it cannot run');
     assert.ok(!stepMarkup.includes(INSTALL_DESCRIPTION_FRAGMENT));
-    assert.ok(!stepMarkup.includes(IOS_INSTRUCTION_FRAGMENT));
+    assert.ok(!stepMarkup.includes(IOS_INSTRUCTION_FRAGMENT), 'the step shows iOS instructions on a non-iOS browser');
   });
 
-  // The AI key note (`FirstFoodKeyNote`) renders unconditionally and uses the
-  // exact same quiet-box classes as the install footnote (`bg-muted/50`) --
-  // deliberately, they are meant to read as the same kind of aside. That
-  // makes the class itself a real, checkable stand-in for "did an empty box
-  // get emitted": if `FirstFoodInstallFootnote` ever rendered its wrapper
-  // `<div>` even with nothing inside it (instead of returning `null`), this
-  // count would go from 1 to 2. This is the render-based version of
-  // "compare against the same render with the install piece unreachable":
-  // the piece IS unreachable here (see this file's header), and this proves
-  // it contributed nothing, not an empty container.
-  it('emits no second quiet box -- only the AI key note carries this class', () => {
+  it('places the footnote after the three cards and after the AI key note', () => {
+    // Now an observable fact in real markup rather than a source read: the
+    // cannot-install state renders content, so its position is rendered too.
+    const searchCardIndex = stepMarkup.indexOf(WAY_TITLE_SEARCH);
+    const keyNoteIndex = stepMarkup.indexOf(KEY_NOTE_FRAGMENT);
+    const footnoteIndex = stepMarkup.indexOf(PHONE_NOTE_FRAGMENT);
+    assert.notEqual(searchCardIndex, -1, 'the search card is gone from the lesson');
+    assert.notEqual(keyNoteIndex, -1, 'the AI key note is gone from the lesson');
+    assert.notEqual(footnoteIndex, -1, 'the install footnote is gone from the lesson');
+    assert.ok(searchCardIndex < keyNoteIndex, 'the AI key note moved above the cards it is supposed to follow');
+    assert.ok(keyNoteIndex < footnoteIndex, 'the install footnote moved above the AI key note');
+  });
+
+  it('emits exactly two quiet boxes -- the AI key note and the install footnote', () => {
+    // `FirstFoodKeyNote` and the footnote share the same quiet-box classes
+    // (`bg-muted/50`) deliberately: they are meant to read as the same kind of
+    // aside. Counting them is how an EMPTY container gets caught -- a third
+    // box, or a box with nothing rendered inside it, moves this number.
     const occurrences = stepMarkup.match(/bg-muted\/50/g) ?? [];
-    assert.equal(
-      occurrences.length,
-      1,
-      'a second quiet box appeared in the step with nothing rendered inside it -- the install footnote emitted an empty container',
-    );
-  });
-});
-
-describe('the one fact rendered markup cannot prove in this environment', () => {
-  // Every claim above is proven by rendering real output. This is the single
-  // exception, and it is narrow on purpose: WHERE in FirstFoodStep's JSX the
-  // footnote sits. `useInstallAffordance` cannot be made to resolve to
-  // anything but `'none'` under `renderToStaticMarkup` (no jsdom, no module
-  // mocking -- see this file's header), so there is no rendered string in
-  // which the footnote's position relative to the cards is an observable
-  // fact for the `'prompt'`/`'ios-instructions'` cases. This is a stand-in
-  // for that one claim only.
-  const onboardingSource = readFileSync(
-    fileURLToPath(new URL('../../app/routes/onboarding.tsx', import.meta.url)),
-    'utf8',
-  );
-
-  it('places the footnote after the cards/dictation Form and after the AI key note in FirstFoodStep', () => {
-    const start = onboardingSource.indexOf('export function FirstFoodStep()');
-    assert.notEqual(start, -1, 'FirstFoodStep is gone or no longer exported');
-    const body = onboardingSource.slice(start, onboardingSource.indexOf('\nfunction WayToLogCard'));
-    const formCloseIndex = body.lastIndexOf('</Form>');
-    const keyNoteIndex = body.indexOf('<FirstFoodKeyNote />');
-    const installNoteIndex = body.indexOf('<FirstFoodInstallNote />');
-    assert.notEqual(formCloseIndex, -1, 'the cards/dictation Form is gone from FirstFoodStep');
-    assert.notEqual(keyNoteIndex, -1, 'the AI key note is gone from FirstFoodStep');
-    assert.notEqual(installNoteIndex, -1, 'the install footnote is gone from FirstFoodStep');
-    assert.ok(formCloseIndex < keyNoteIndex, 'the AI key note moved above the cards it is supposed to follow');
-    assert.ok(keyNoteIndex < installNoteIndex, 'the install footnote moved above the AI key note');
+    assert.equal(occurrences.length, 2, 'the quiet boxes in the lesson changed count');
   });
 });

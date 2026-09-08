@@ -50,8 +50,22 @@ describe('isIosDevice', () => {
 });
 
 describe('chooseInstallAffordance', () => {
-  it('shows nothing when already installed, even with a deferred prompt', () => {
-    assert.equal(chooseInstallAffordance({ isStandalone: true, hasDeferredPrompt: true, isIos: false }), 'none');
+  // The four states are four different answers, and the two that render
+  // nothing on some surfaces are NOT the same state: 'already-installed' means
+  // there is nothing left to say, 'cannot-install' means there is nothing this
+  // browser can do about a fact worth telling anyway.
+  it('reports already-installed when the app is running standalone, even with a deferred prompt', () => {
+    assert.equal(
+      chooseInstallAffordance({ isStandalone: true, hasDeferredPrompt: true, isIos: false }),
+      'already-installed',
+    );
+  });
+
+  it('reports already-installed on an installed iOS device, ahead of the iOS instructions', () => {
+    assert.equal(
+      chooseInstallAffordance({ isStandalone: true, hasDeferredPrompt: false, isIos: true }),
+      'already-installed',
+    );
   });
 
   it('prefers the native prompt when one was captured', () => {
@@ -65,7 +79,18 @@ describe('chooseInstallAffordance', () => {
     );
   });
 
-  it('shows nothing on a desktop browser that never fired beforeinstallprompt', () => {
-    assert.equal(chooseInstallAffordance({ isStandalone: false, hasDeferredPrompt: false, isIos: false }), 'none');
+  it('reports cannot-install on a browser that never fired beforeinstallprompt and is not iOS', () => {
+    assert.equal(
+      chooseInstallAffordance({ isStandalone: false, hasDeferredPrompt: false, isIos: false }),
+      'cannot-install',
+    );
+  });
+
+  it('never returns the same value for an installed device and a browser that cannot install', () => {
+    // The defect this split exists to stop: both used to be 'none', so every
+    // surface that guarded on 'none' stayed silent for both.
+    const installed = chooseInstallAffordance({ isStandalone: true, hasDeferredPrompt: false, isIos: false });
+    const cannot = chooseInstallAffordance({ isStandalone: false, hasDeferredPrompt: false, isIos: false });
+    assert.notEqual(installed, cannot);
   });
 });

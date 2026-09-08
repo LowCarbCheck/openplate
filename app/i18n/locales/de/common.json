@@ -840,6 +840,7 @@
     "action": "{{appName}} installieren",
     "description": "Füge {{appName}} zu deinem Startbildschirm hinzu, um eine Vollbild-App zu erhalten, die sofort öffnet und offline weiterfunktioniert.",
     "iosInstructions": "Tippe in Safari auf <share>Teilen</share> und wähle dann <addToHome>Zum Home-Bildschirm</addToHome>.",
+    "phoneNote": "Du kannst {{appName}} auf dem Smartphone installieren, wo sie sich wie jede andere App statt in einem Browser-Tab öffnet.",
     "title": "{{appName}} installieren"
   },
   "join": {

@@ -1259,10 +1259,11 @@ function FirstFoodKeyNote() {
  * returning person who already knows the three ways never sees this step,
  * so the settings hub's `InstallCard` is their only other chance to be told.
  *
- * Renders nothing at all for `affordance === 'none'` — a desktop browser, or
- * a device that already has the app installed, both the common case — so
- * there is no empty box and no leftover spacing when there is nothing to
- * offer.
+ * Renders nothing at all only for a device that ALREADY has the app
+ * installed, so there is no empty box and no leftover spacing when there is
+ * nothing left to say. A browser that simply cannot install (desktop Firefox,
+ * desktop Safari, Chrome before `beforeinstallprompt`) is a different state
+ * and gets the plain sentence instead: see `FirstFoodInstallFootnote`.
  *
  * Reuses `InstallAffordanceAction`, `InstallCard`'s own prompt-vs-iOS body,
  * and the same `install.*` copy already shipped for the settings hub, so the
@@ -1286,14 +1287,36 @@ function FirstFoodInstallNote() {
 
 /**
  * The footnote's actual markup, taking the hook's own return shape as props.
- * Renders nothing at all for `affordance === 'none'` — the common case, a
- * desktop browser or an already-installed device — so there is no empty box
- * and no leftover spacing when there is nothing to offer.
+ *
+ * Answers all four affordance states, because two of them look alike and are
+ * not (see `InstallAffordance`):
+ *
+ * - `'already-installed'`: nothing at all, an empty string rather than an
+ *   empty box. The reader is already using the installed app.
+ * - `'cannot-install'`: one plain sentence saying openplate installs on a
+ *   phone. It is INFORMATION, not an affordance, so it carries no button and
+ *   no link: this browser cannot install, and anything pressable here would
+ *   either do nothing or promise something it cannot deliver. Teaching that
+ *   the app installs is the entire point of this lesson, and desktop Firefox,
+ *   desktop Safari and a Chrome that has not fired `beforeinstallprompt` are
+ *   the majority of first runs. Saying nothing to them, which is what the
+ *   single old `'none'` value did, meant the lesson taught nothing at all.
+ * - `'prompt'` and `'ios-instructions'`: the shared `InstallAffordanceAction`
+ *   body, unchanged.
  */
 export function FirstFoodInstallFootnote({ affordance, promptInstall }: InstallAffordanceControls) {
   const { t } = useTranslation();
 
-  if (affordance === 'none') return null;
+  if (affordance === 'already-installed') return null;
+
+  if (affordance === 'cannot-install') {
+    return (
+      <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+        <Download className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <p>{t('install.phoneNote', { appName: APP_NAME })}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">

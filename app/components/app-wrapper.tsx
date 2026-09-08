@@ -36,7 +36,12 @@ function InstallDrawerItem({ onNavigate }: { onNavigate: () => void }) {
   const { affordance, promptInstall } = useInstallAffordance();
   const { t } = useTranslation();
 
-  if (affordance === 'none') return null;
+  // Nothing to offer in a nav drawer for either silent state: an installed
+  // app has nothing left to install, and a browser that cannot install has no
+  // row that would do anything. The plain "it installs on a phone" sentence
+  // for `'cannot-install'` is taught once, in the onboarding lesson, not
+  // repeated as a dead drawer item.
+  if (affordance === 'already-installed' || affordance === 'cannot-install') return null;
 
   if (affordance === 'ios-instructions') {
     return (

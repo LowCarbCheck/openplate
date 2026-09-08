@@ -7,8 +7,33 @@
  * `app/components/install-card.tsx` is the imperative shell around these.
  */
 
-/** Which install affordance the settings card should render. */
-export type InstallAffordance = 'none' | 'prompt' | 'ios-instructions';
+/**
+ * What a surface should say about installing, on THIS device, right now.
+ *
+ * Four states, not three, and the two silent-looking ones are deliberately
+ * separate because they are opposite facts:
+ *
+ * - `'already-installed'`: the app is running standalone. There is nothing
+ *   left to say, and every surface renders nothing.
+ * - `'prompt'`: a `beforeinstallprompt` was captured, so installing is one
+ *   button press away.
+ * - `'ios-instructions'`: an iOS device, which has no install API, so the
+ *   manual "Add to Home Screen" steps are the affordance.
+ * - `'cannot-install'`: this browser can offer no install at all and is not
+ *   iOS, meaning desktop Firefox, desktop Safari, and Chrome before or without
+ *   `beforeinstallprompt`. Installing openplate is still a real, useful fact
+ *   about the product, it just cannot be done from HERE.
+ *
+ * Why the difference matters: these two used to be one `'none'` value, and
+ * every caller guarded on it with `if (affordance === 'none') return null`.
+ * That is right for an installed device and wrong for a browser that cannot
+ * install, where it silenced the onboarding lesson whose whole job is to teach
+ * that openplate installs on a phone. Conflating them made "say nothing,
+ * correctly" and "say nothing, by accident" indistinguishable at every call
+ * site. A surface now answers each one on its own: a false promise is worse
+ * than silence, and silence is worse than a plain fact.
+ */
+export type InstallAffordance = 'already-installed' | 'prompt' | 'ios-instructions' | 'cannot-install';
 
 /**
  * True when the app is already running as an installed PWA — either the
@@ -38,18 +63,19 @@ export function isIosDevice(input: { userAgent: string; maxTouchPoints: number }
 }
 
 /**
- * Decides which install affordance to show. Pure: already-installed wins over
- * everything, then a captured native prompt, then iOS manual instructions,
- * otherwise nothing (e.g. a desktop browser that hasn't fired
- * `beforeinstallprompt`).
+ * Decides which install affordance applies. Pure: already-installed wins over
+ * everything (including a stale captured prompt), then a captured native
+ * prompt, then iOS manual instructions, and otherwise this browser simply
+ * cannot install, which is its own answer rather than the same one as
+ * "already installed". See `InstallAffordance` for why those two are separate.
  */
 export function chooseInstallAffordance(input: {
   isStandalone: boolean;
   hasDeferredPrompt: boolean;
   isIos: boolean;
 }): InstallAffordance {
-  if (input.isStandalone) return 'none';
+  if (input.isStandalone) return 'already-installed';
   if (input.hasDeferredPrompt) return 'prompt';
   if (input.isIos) return 'ios-instructions';
-  return 'none';
+  return 'cannot-install';
 }
