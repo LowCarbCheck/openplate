@@ -11,18 +11,9 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 
 import i18next from '../../app/i18n/i18n';
-import {
-  HeroStat,
-  formatHeroRings,
-  formatHeroStat,
-  formatHeroStats,
-  formatHeroValue,
-  type Translate,
-} from '../../app/components/hero-stat';
+import { formatHeroStat, formatHeroStats, formatHeroValue, type Translate } from '../../app/components/hero-stat';
 
 /**
  * The REAL catalog, not a stub. These assertions are about the exact wording,
@@ -206,31 +197,6 @@ describe('formatHeroStats, one stat per goal the person set', () => {
   });
 });
 
-describe('formatHeroRings, each stat paired with its own arc', () => {
-  it('pairs each goal with the numbers its own arc is drawn from', () => {
-    const rings = formatHeroRings({
-      netCarbsCeiling: 50,
-      kcalTarget: 1800,
-      hasEstimates: false,
-      netCarbs: 20,
-      kcal: 900,
-      t,
-      language: 'en',
-    });
-    assert.deepEqual(
-      rings.map((ring) => ({ metric: ring.metric, consumed: ring.consumed, max: ring.max })),
-      [
-        { metric: 'net-carbs', consumed: 20, max: 50 },
-        { metric: 'calories', consumed: 900, max: 1800 },
-      ],
-    );
-  });
-
-  it('draws no ring at all when the person set no target', () => {
-    assert.deepEqual(formatHeroRings({ ...NO_GOALS, netCarbs: 42.1, kcal: 900 }), []);
-  });
-});
-
 describe('formatHeroValue', () => {
   it('formats a mid-tween figure exactly as the settled one would be', () => {
     const stat = formatHeroStat({ ...NO_GOALS, netCarbs: 42.1, netCarbsCeiling: 50, kcal: 0 });
@@ -252,21 +218,5 @@ describe('formatHeroValue', () => {
   it('keeps the "~" hedge outside the localised figure', () => {
     const shared = { numericValue: 7.9, mode: 'carbs-remaining' as const, hasEstimates: true };
     assert.equal(formatHeroValue({ ...shared, language: 'de' }), '~7,9');
-  });
-});
-
-describe('HeroStat rendering', () => {
-  it('paints the over-goal figure amber, never destructive', () => {
-    const stat = formatHeroStat({ ...NO_GOALS, netCarbs: 62, netCarbsCeiling: 50, kcal: 0 });
-    const html = renderToStaticMarkup(createElement(HeroStat, { stat, value: stat.value }));
-    assert.match(html, /text-accent-amber/);
-    assert.ok(!html.includes('destructive'), 'over-goal must never use the destructive token');
-  });
-
-  it('omits the third tier when there is no unit label to show', () => {
-    const stat = formatHeroStat({ ...NO_GOALS, netCarbs: 42.1, kcal: 0 });
-    const html = renderToStaticMarkup(createElement(HeroStat, { stat, value: stat.value }));
-    assert.match(html, /g net carbs/);
-    assert.ok(!html.includes('uppercase'), 'the eyebrow tier should be absent in the absolute framing');
   });
 });

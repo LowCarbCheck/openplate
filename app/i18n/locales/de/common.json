@@ -371,6 +371,18 @@
       "photograph": "Essen fotografieren",
       "undo": "Rückgängig"
     },
+    "budget": {
+      "calories": "Kalorien",
+      "grams": "{{value}} g",
+      "gramsLeft": "{{value}} g übrig",
+      "gramsOver": "{{value}} g darüber",
+      "left": "{{value}} übrig",
+      "over": "{{value}} darüber",
+      "progress": "{{consumed}} von {{target}}",
+      "progressGrams": "{{consumed}} von {{target}} g",
+      "srRowGrams": "{{label}}: {{consumed}} von {{target}} g. {{status}}.",
+      "srRowNoTarget": "{{label}}: {{status}}."
+    },
     "caveat": {
       "estimates": "Enthält KI-Schätzungen",
       "missingData": "Bei einigen Einträgen fehlen Angaben"
@@ -395,15 +407,11 @@
       "title": "Von gestern übernehmen"
     },
     "drilldown": {
-      "hide": "Details ausblenden",
       "netCarbsDefinition": "Netto-Kohlenhydrate = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole.",
       "noTarget": "Kein Ziel gesetzt",
-      "proteinReached": "Eiweißziel erreicht",
       "referenceTag": "Richtwert",
       "setTargets": "Eigene Ziele festlegen",
-      "show": "Details zum Tag",
-      "whatYouAte": "Was du gegessen hast",
-      "whereTheDayStands": "Wie der Tag steht"
+      "whatYouAte": "Was du gegessen hast"
     },
     "empty": {
       "firstEver": {
@@ -469,8 +477,7 @@
       "moderate": "Mittel viele Kohlenhydrate"
     },
     "kcal": {
-      "absolute": "{{value}} Kalorien",
-      "ofTarget": "{{value}} von {{target}} Kalorien"
+      "absolute": "{{value}} Kalorien"
     },
     "loading": "Dein Tagebuch wird geladen…",
     "macroRatio": {
@@ -518,10 +525,13 @@
     },
     "suggestions": {
       "attribution": "Nährwertdaten von lowcarbcheck.org.",
+      "disclosureFiber_one": "{{count}} Lebensmittel, das die Ballaststofflücke schließen würde",
+      "disclosureFiber_other": "{{count}} Lebensmittel, die die Ballaststofflücke schließen würden",
+      "disclosureProtein_one": "{{count}} Lebensmittel, das die Eiweißlücke schließen würde",
+      "disclosureProtein_other": "{{count}} Lebensmittel, die die Eiweißlücke schließen würden",
       "introFiber": "Ballaststoffreiche Lebensmittel, die wenig von deinen restlichen Kohlenhydraten kosten.",
       "introProtein": "Eiweißreiche Lebensmittel, die wenig von deinen restlichen Kohlenhydraten kosten.",
-      "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g Netto-KH",
-      "title": "Ideen, um die Lücke zu schließen"
+      "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g Netto-KH"
     },
     "title": "Tagebuch",
     "toast": {

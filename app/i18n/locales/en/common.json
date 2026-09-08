@@ -371,6 +371,18 @@
       "photograph": "Photograph food",
       "undo": "Undo"
     },
+    "budget": {
+      "calories": "Calories",
+      "grams": "{{value}} g",
+      "gramsLeft": "{{value}} g left",
+      "gramsOver": "{{value}} g over",
+      "left": "{{value}} left",
+      "over": "{{value}} over",
+      "progress": "{{consumed}} of {{target}}",
+      "progressGrams": "{{consumed}} of {{target}} g",
+      "srRowGrams": "{{label}}: {{consumed}} of {{target}} g. {{status}}.",
+      "srRowNoTarget": "{{label}}: {{status}}."
+    },
     "caveat": {
       "estimates": "Includes AI estimates",
       "missingData": "Some items are missing data"
@@ -395,15 +407,11 @@
       "title": "Copy from yesterday"
     },
     "drilldown": {
-      "hide": "Hide day details",
       "netCarbsDefinition": "Net carbs = carbs minus fiber, minus any sugar alcohols.",
       "noTarget": "No target set",
-      "proteinReached": "Protein goal reached",
       "referenceTag": "reference",
       "setTargets": "Set your own targets",
-      "show": "Day details",
-      "whatYouAte": "What you ate",
-      "whereTheDayStands": "Where the day stands"
+      "whatYouAte": "What you ate"
     },
     "empty": {
       "firstEver": {
@@ -469,8 +477,7 @@
       "moderate": "Moderate carb impact"
     },
     "kcal": {
-      "absolute": "{{value}} calories",
-      "ofTarget": "{{value}} of {{target}} calories"
+      "absolute": "{{value}} calories"
     },
     "loading": "Loading your diary…",
     "macroRatio": {
@@ -518,10 +525,13 @@
     },
     "suggestions": {
       "attribution": "Nutrition data from lowcarbcheck.org.",
+      "disclosureFiber_one": "{{count}} food that would close the fiber gap",
+      "disclosureFiber_other": "{{count}} foods that would close the fiber gap",
+      "disclosureProtein_one": "{{count}} food that would close the protein gap",
+      "disclosureProtein_other": "{{count}} foods that would close the protein gap",
       "introFiber": "Fiber-dense foods that cost little of your remaining carbs.",
       "introProtein": "Protein-dense foods that cost little of your remaining carbs.",
-      "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g net carbs",
-      "title": "Ideas to close the gap"
+      "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g net carbs"
     },
     "title": "Diary",
     "toast": {
