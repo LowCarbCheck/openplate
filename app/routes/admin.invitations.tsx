@@ -5,8 +5,9 @@
  *
  * Two lists on one page meant an operator scrolled past everybody to reach the
  * invitations, and the counts at the top already answered "how many are open".
- * It is a tab of its own now, with the button that creates one on it, because
- * inviting somebody is the thing an operator comes here to do.
+ * It is a tab of its own now. The button that creates an invitation is not on
+ * it: it sits beside the console's heading in `admin.tsx`, where every tab can
+ * reach it, and where it no longer holds open an empty band above this list.
  *
  * ── The container half ───────────────────────────────────────────────────
  *
@@ -23,9 +24,8 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-import { Link } from '#app/components/link';
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
 import { InviteTable } from '#app/components/admin/invite-table';
 import { Button } from '#app/components/ui/button';
@@ -115,28 +115,23 @@ export default function AdminInvitations() {
     );
   }
 
+  // THE TITLE STAYS. It reads "Open invitations" under a tab labelled
+  // "Invitations", and the extra word is the whole rule this list follows:
+  // only the pending ones are here, because a redeemed invitation is a person
+  // and a revoked one is a thing that did not happen. That is not something
+  // the tab says.
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button asChild className="h-11">
-          <Link to="/admin/invite">
-            <UserPlus className="h-4 w-4" aria-hidden="true" /> {t('admin.invite.cta')}
-          </Link>
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.invites.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InviteTable
-            invites={state.invites}
-            onResend={({ id }) => apply((client) => client.resendInvite({ id }))}
-            onRevoke={({ id }) => apply((client) => client.revokeInvite({ id }))}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('admin.invites.title')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <InviteTable
+          invites={state.invites}
+          onResend={({ id }) => apply((client) => client.resendInvite({ id }))}
+          onRevoke={({ id }) => apply((client) => client.revokeInvite({ id }))}
+        />
+      </CardContent>
+    </Card>
   );
 }

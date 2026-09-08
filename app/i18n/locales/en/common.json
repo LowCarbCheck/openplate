@@ -2572,6 +2572,8 @@
       "usedToday": "Used today",
       "standing": "Standing",
       "lastSeen": "Last sign-in",
+      "recentDays": "Last {{days}} days",
+      "photosRead": "Photos read",
       "joined": "Joined",
       "actions": "Actions"
     },
@@ -2699,7 +2701,6 @@
       "body": "One line per person, most recently here first.",
       "windowLabel": "Window",
       "windowDays": "{{days}} days",
-      "total": "{{photos}} read",
       "failed": "The daily counts could not be loaded. The people are still listed."
     }
   }

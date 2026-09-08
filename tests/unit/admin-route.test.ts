@@ -24,6 +24,11 @@
  *     them, and an empty result that names the filter that emptied it.
  *  4. THE STRIPS. Seven squares beside a row, and a list that still renders
  *     when the batch activity request failed.
+ *  4b. THE NAMES OF THE VALUES. A row ends in two figures and a date, and no
+ *     width may leave any of them unlabelled: a header where the row is a row,
+ *     an inline label per value where it is not. The counts below are what
+ *     makes that falsifiable: one occurrence is a header alone, and the rows
+ *     underneath would be bare numbers again.
  *  5. THE PERSON PAGE. Every action, and the two the service would refuse on
  *     your own account, which are absent rather than explained.
  *  6. THE INVITATIONS TAB. The pending invitations that used to sit under the
@@ -41,6 +46,7 @@ import { AdminTabs } from '../../app/components/admin/admin-tabs';
 import { NotAnAdministratorCard } from '../../app/components/admin/not-an-administrator';
 import { InviteResult } from '../../app/components/admin/invite-result';
 import { InviteTable } from '../../app/components/admin/invite-table';
+import { ActivityOverview } from '../../app/components/admin/activity-overview';
 import { PeopleTable } from '../../app/components/admin/people-table';
 import { PersonDetail } from '../../app/components/admin/person-detail';
 import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '../../app/lib/admin/people-filter';
@@ -209,7 +215,6 @@ test('the list shows two people, their usage and their standing', () => {
   assert.match(html, /12 of 500/);
   assert.match(html, /7 of 200/);
   assert.match(html, /Administrator/);
-  assert.match(html, /Last sign-in|Never signed in|\d/);
   // A person with no name is not a blank cell.
   assert.match(html, /No name/);
 });
@@ -313,6 +318,88 @@ test('a failed activity request costs the strips and never the list', () => {
   assert.match(html, /12 of 500/);
   assert.doesNotMatch(html, /2026-09-/, 'no strip is drawn at all');
   assert.equal((html.match(/<li/g) ?? []).length, 2, 'two rows, and no squares');
+});
+
+// ---------------------------------------------------------------------------
+// 4b. Every value in a row has a name
+// ---------------------------------------------------------------------------
+
+/** How often a label appears in the markup. One header, plus one per row that carries the value. */
+function occurrences(html: string, label: string): number {
+  return (html.match(new RegExp(label, 'g')) ?? []).length;
+}
+
+test('the people list heads its columns, and every row still names its own values', () => {
+  const html = peopleList({ people: [ADMIN, SUSPENDED_PERSON], activity: WEEK_BY_ACCOUNT });
+
+  // The header, drawn once, for the widths that can carry it.
+  assert.match(html, /Person/, 'the column of names is named');
+  assert.match(html, /Last 7 days/, 'the strip says what window it covers');
+  assert.match(html, /Used today/, '"12 of 500" is not self-explanatory');
+  assert.match(html, /Last sign-in/, 'a bare date reads as a joining date just as easily');
+
+  // ONE OF EACH IS THE HEADER. The rows must carry their own labels too,
+  // because below the breakpoint the row reflows and a header over it would
+  // name nothing. Two people, so three of each: fail if a row loses its label.
+  assert.equal(occurrences(html, 'Used today'), 3, 'the header, and one label inside each of the two rows');
+  assert.equal(occurrences(html, 'Last sign-in'), 3);
+  assert.equal(occurrences(html, 'Last 7 days'), 3);
+});
+
+test('a list drawn without strips names no strip column', () => {
+  const html = peopleList({ people: [ADMIN], activity: null });
+
+  assert.doesNotMatch(html, /Last 7 days/, 'a heading over an absence is a promise the page is not keeping');
+  assert.equal(occurrences(html, 'Used today'), 2, 'the columns that are still drawn are still named');
+  assert.equal(occurrences(html, 'Last sign-in'), 2);
+});
+
+test('a row looks like it goes somewhere: a chevron at its end, and a hover background', () => {
+  const html = peopleList({ people: [ADMIN, SUSPENDED_PERSON] });
+
+  // The chevron is the part a pointerless screen can also see. `(hover: hover)`
+  // is false in a headless browser, so the hover class is asserted here rather
+  // than looked for in a screenshot.
+  assert.equal((html.match(/lucide-chevron-right/g) ?? []).length, 2, 'one per row, at the end of the row');
+  assert.match(html, /hover:bg-muted\/50/, 'the background the app already uses for a hovered list row');
+});
+
+test('the activity list names the date under each name, at every width', () => {
+  const html = render(
+    createElement(ActivityOverview, {
+      people: [ADMIN, SUSPENDED_PERSON],
+      state: {
+        kind: 'ready',
+        window: { days: 7, fromDay: '2026-09-01', toDay: '2026-09-07' },
+        activity: WEEK_BY_ACCOUNT,
+      },
+      requestedDays: 7,
+      onRequestDays: () => undefined,
+      onRetry: () => undefined,
+    }),
+  );
+
+  // This is the defect: the date under a name was the last sign in and said so
+  // nowhere. Three occurrences is the header plus one label per row.
+  assert.equal(occurrences(html, 'Last sign-in'), 3);
+  assert.equal(occurrences(html, 'Photos read'), 3, 'and the total beside it is a bare number without its name');
+  assert.equal(occurrences(html, 'Last 7 days'), 3);
+  assert.match(html, /Person/);
+});
+
+test('the activity list names no strip column while the strips are still loading', () => {
+  const html = render(
+    createElement(ActivityOverview, {
+      people: [ADMIN],
+      state: { kind: 'loading' },
+      requestedDays: 30,
+      onRequestDays: () => undefined,
+      onRetry: () => undefined,
+    }),
+  );
+
+  assert.doesNotMatch(html, /Photos read/, 'nothing is read on screen yet, so nothing is headed');
+  assert.equal(occurrences(html, 'Last sign-in'), 2, 'the one column that is drawn is still named');
 });
 
 // ---------------------------------------------------------------------------

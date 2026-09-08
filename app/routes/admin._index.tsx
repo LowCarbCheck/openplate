@@ -29,7 +29,8 @@
  *
  * ── The strips are one request, and they are allowed to fail ─────────────
  *
- * `listActivity` reads a seven day strip for everybody in one paged call. A
+ * `listActivity` reads a strip for everybody in one paged call, over the
+ * window `people-table.tsx` names in its column header. A
  * service older than this client has no such endpoint and answers 404, so the
  * call throws and `activity` stays `null` and the rows are drawn WITHOUT
  * strips. A list of people must never be broken by an ornament on it.
@@ -42,22 +43,18 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-import { Link } from '#app/components/link';
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
-import { PeopleTable } from '#app/components/admin/people-table';
+import { PeopleTable, ROW_STRIP_DAYS } from '#app/components/admin/people-table';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '#app/components/ui/card';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
 import type { ActivityByAccount } from '#app/lib/admin/activity-strip';
 import type { AdminOutcome } from '#app/lib/admin/admin-client';
 import type { AdminAccountView, AdminActivityDay, AdminActivityList } from '#app/lib/admin/admin-wire';
 import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '#app/lib/admin/people-filter';
-
-/** How many days the strip beside a row covers. A week is what "are they still here" looks like at a glance. */
-const ROW_STRIP_DAYS = 7;
 
 /** What the tab is showing. One `kind`, so a loading spinner and an error can never be on screen together. */
 type PeopleState =
@@ -127,31 +124,22 @@ export default function AdminPeople() {
     );
   }
 
+  // NO CARD TITLE. It read "People", directly under a tab labelled "People",
+  // and a heading that repeats the thing above it is a line an operator has to
+  // read to learn nothing. The activity tab keeps its title, because "Who is
+  // still using it" says something its tab does not.
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button asChild className="h-11">
-          <Link to="/admin/invite">
-            <UserPlus className="h-4 w-4" aria-hidden="true" /> {t('admin.invite.cta')}
-          </Link>
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.people.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PeopleTable
-            people={state.people}
-            currentAccountId={session.account?.id ?? -1}
-            activity={state.activity}
-            filter={filter}
-            onFilterChange={setFilter}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <PeopleTable
+          people={state.people}
+          currentAccountId={session.account?.id ?? -1}
+          activity={state.activity}
+          filter={filter}
+          onFilterChange={setFilter}
+        />
+      </CardContent>
+    </Card>
   );
 }
 

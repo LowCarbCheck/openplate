@@ -31,12 +31,17 @@
  * once and renders the same loading copy `isResuming` does; the deny card
  * below is reached only once `role` is the known `'member'`.
  *
- * ── The frame: the counts, then the tabs ─────────────────────────────────
+ * ── The frame: the heading and its one action, the counts, then the tabs ─
  *
  * Once the role is granted, this layout draws the instance's four counts and a
  * tab bar over the three lists (`admin-tabs.tsx`). The counts sit ABOVE the
  * tabs because they describe the instance rather than whichever list is open,
  * and they are read here once rather than once per tab.
+ *
+ * "Invite someone" sits beside the heading rather than on a tab. It was on two
+ * of them, alone in a wide empty band that pushed the list down, and inviting
+ * somebody is a thing an operator does from wherever they happen to be, not a
+ * property of whichever list is open.
  *
  * ── Client-only past the loader ──────────────────────────────────────────
  *
@@ -48,10 +53,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLoaderData, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { UserPlus } from 'lucide-react';
 import type { MetaFunction } from 'react-router';
 
 import { CONFIG } from '#app/config';
 import { AdminTabs } from '#app/components/admin/admin-tabs';
+import { Link } from '#app/components/link';
+import { Button } from '#app/components/ui/button';
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
 import { StatsRow } from '#app/components/admin/stats-row';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
@@ -181,9 +189,21 @@ function AdminChrome() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">{t('admin.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('admin.subtitle')}</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-2xl font-semibold">{t('admin.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('admin.subtitle')}</p>
+        </div>
+        {/* Everywhere but on the form itself: a call to action that leads to
+            the page already on screen is one more thing to read and dismiss.
+            EXACT, not a prefix: `/admin/invitations` starts with this path. */}
+        {location.pathname !== '/admin/invite' && (
+          <Button asChild className="h-11 shrink-0">
+            <Link to="/admin/invite">
+              <UserPlus className="h-4 w-4" aria-hidden="true" /> {t('admin.invite.cta')}
+            </Link>
+          </Button>
+        )}
       </header>
       {stats !== null && <StatsRow stats={stats} />}
       <AdminTabs pathname={location.pathname} />

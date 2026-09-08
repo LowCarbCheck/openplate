@@ -2556,7 +2556,9 @@
       "standing": "Status",
       "joined": "Beigetreten",
       "actions": "Aktionen",
-      "lastSeen": "Letzte Anmeldung"
+      "lastSeen": "Letzte Anmeldung",
+      "recentDays": "Letzte {{days}} Tage",
+      "photosRead": "Gelesene Fotos"
     },
     "usage": "{{used}} von {{limit}}",
     "usageNone": "Keine Fotos",
@@ -2682,7 +2684,6 @@
       "body": "Eine Zeile pro Person, zuletzt aktive zuerst.",
       "windowLabel": "Zeitraum",
       "windowDays": "{{days}} Tage",
-      "total": "{{photos}} gelesen",
       "failed": "Die Tageswerte konnten nicht geladen werden. Die Personen stehen weiterhin in der Liste."
     }
   },
