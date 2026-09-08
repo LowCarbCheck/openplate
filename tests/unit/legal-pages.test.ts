@@ -85,7 +85,10 @@ describe('Terms of service — plate-photo claims stay accurate', () => {
 
   it('scopes its "never passes through our servers" claim correctly (true: server pass-through, not persistence anywhere)', () => {
     const html = renderTerms();
-    assert.match(html, /neither the key nor the photo ever passes through our servers/);
+    // Case-insensitive: this clause can open a sentence ("Neither...") or sit
+    // mid-sentence ("...key — neither...") depending on how the copy is
+    // punctuated. Pin the wording, not the capitalisation of its first word.
+    assert.match(html, /neither the key nor the photo ever passes through our servers/i);
   });
 });
 
