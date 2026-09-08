@@ -12,6 +12,7 @@ import { inferenceConnectSrcOrigin, syncConnectSrcOrigin } from '#app/config/pub
 import { buildContentSecurityPolicy } from '#app/config/content-security-policy';
 import { analyticsCspOrigin } from '#app/config/analytics';
 import { createRobotsTagMiddleware } from '#app/lib/robots-tag.server';
+import { resolveServerBind } from '#app/lib/server-bind';
 import { createWwwRedirectMiddleware } from '#app/lib/www-redirect.server';
 import { PROVIDER_REGISTRY } from '#app/services/vision/registry';
 
@@ -203,9 +204,17 @@ app.use(express.static('build/client', { maxAge: '1h' }));
 // handle SSR requests
 app.all('*', remixHandler);
 
-const port = process.env.PORT || 3000;
-server.listen(port, () => {
-  logServerStart(Number(port), { url: `http://localhost:${port}` });
+const port = Number(process.env.PORT || 3000);
+
+// `HOST` is opt-in and unset binds every interface, which is what production
+// needs: the container sits behind Traefik and is reached over the container
+// network, never over loopback. Narrowing this default would take the site
+// down. A developer sets HOST=127.0.0.1 so that a dev instance, seeded data and
+// admin console included, is not reachable from the rest of the home network.
+// See `#app/lib/server-bind` for the rule and for why the url is derived.
+const { host, url } = resolveServerBind({ env: process.env, port });
+server.listen({ port, host }, () => {
+  logServerStart(port, { url });
 });
 
 // Graceful shutdown
