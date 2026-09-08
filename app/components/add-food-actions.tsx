@@ -62,13 +62,13 @@ export function AddFoodActions({
   className?: string;
 }): ReactElement {
   const { t } = useTranslation();
-  const { captureWith, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
+  const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
   const canSpeak = useSpeechInputAvailable() === true;
 
   return (
     <div className={cn('flex w-full flex-col gap-2', className)}>
       <div className="flex gap-2">
-        <Button ref={triggerRef} type="button" className={ACTION_CLASS} onClick={() => captureWith('plate')}>
+        <Button ref={triggerRef} type="button" className={ACTION_CLASS} onClick={capture}>
           <Camera className="h-5 w-5" aria-hidden="true" />
           {t('launcher.photo')}
         </Button>

@@ -79,7 +79,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0002](.adr/0002-data-migrations.md)                       | Data migrations alongside schema migrations                      | Superseded |
 | [0003](.adr/0003-app-enforced-multi-tenancy.md)            | App-enforced multi-tenancy (no RLS)                              | Superseded |
 | [0004](.adr/0004-custom-server-is-the-production-entry.md) | The custom `server.ts` is the production entrypoint              | Accepted   |
-| [0005](.adr/0005-label-scan-over-barcode-lookup.md)        | Packaged-food macros come from the label, not a barcode database | Accepted   |
+| [0005](.adr/0005-label-scan-over-barcode-lookup.md)        | Packaged-food macros come from the label, not a barcode database | Amended    |
 | [0006](.adr/0006-the-app-server-holds-no-accounts.md)      | The app server holds no accounts                                 | Accepted   |
 | [0007](.adr/0007-byok-provider-registry.md)                | BYOK providers are described once, in a provider registry        | Accepted   |
 | [0008](.adr/0008-the-study-console-lives-in-openplate.md)  | The study console lives in openplate, at `/study`                | Accepted   |

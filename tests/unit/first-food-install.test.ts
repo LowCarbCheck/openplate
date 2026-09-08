@@ -49,10 +49,18 @@ const INSTALL_TITLE_OR_ACTION = 'Install openplate';
 const INSTALL_DESCRIPTION_FRAGMENT = 'Add openplate to your home screen';
 const IOS_INSTRUCTION_FRAGMENT = 'Add to Home Screen';
 const PHONE_NOTE_FRAGMENT = 'install openplate on a phone';
-const WAY_TITLE_PLATE = 'Photograph your plate';
-const WAY_TITLE_LABEL = 'Photograph a nutrition panel';
-const WAY_TITLE_SEARCH = 'Search for a food';
-const DICTATION_FRAGMENT = 'never logs a food by itself';
+const WAY_TITLE_PHOTO = 'Photograph it';
+const WAY_TITLE_TYPE = 'Write it';
+const WAY_TITLE_SPEAK = 'Say it';
+/**
+ * The privacy note under the speak card.
+ *
+ * It used to be the dictation footnote, which said speaking "never logs a food
+ * by itself". Speaking runs the AI intake as of 2026-09-08, so that sentence
+ * became false and was replaced by the one fact the card cannot carry itself:
+ * only the TEXT ever travels onward.
+ */
+const SPEECH_PRIVACY_FRAGMENT = 'Only the text reaches openplate';
 const KEY_NOTE_FRAGMENT = 'Photo scanning is optional';
 
 const noopPromptInstall = () => Promise.resolve();
@@ -167,11 +175,11 @@ describe('FirstFoodInstallFootnote (the lesson footnote body) answers all four s
 describe('the real first-food step on a browser that cannot install', () => {
   const stepMarkup = renderFirstFoodStep();
 
-  it('is a real render of the lesson: the three ways and the dictation note are present', () => {
-    assert.ok(stepMarkup.includes(WAY_TITLE_PLATE), stepMarkup.slice(0, 400));
-    assert.ok(stepMarkup.includes(WAY_TITLE_LABEL));
-    assert.ok(stepMarkup.includes(WAY_TITLE_SEARCH));
-    assert.ok(stepMarkup.includes(DICTATION_FRAGMENT));
+  it('is a real render of the lesson: the three ways and the privacy note are present', () => {
+    assert.ok(stepMarkup.includes(WAY_TITLE_PHOTO), stepMarkup.slice(0, 400));
+    assert.ok(stepMarkup.includes(WAY_TITLE_TYPE));
+    assert.ok(stepMarkup.includes(WAY_TITLE_SPEAK));
+    assert.ok(stepMarkup.includes(SPEECH_PRIVACY_FRAGMENT));
   });
 
   it('teaches that the app installs on a phone, instead of saying nothing at all', () => {
@@ -189,13 +197,13 @@ describe('the real first-food step on a browser that cannot install', () => {
   it('places the footnote after the three cards and after the AI key note', () => {
     // Now an observable fact in real markup rather than a source read: the
     // cannot-install state renders content, so its position is rendered too.
-    const searchCardIndex = stepMarkup.indexOf(WAY_TITLE_SEARCH);
+    const lastCardIndex = stepMarkup.indexOf(WAY_TITLE_SPEAK);
     const keyNoteIndex = stepMarkup.indexOf(KEY_NOTE_FRAGMENT);
     const footnoteIndex = stepMarkup.indexOf(PHONE_NOTE_FRAGMENT);
-    assert.notEqual(searchCardIndex, -1, 'the search card is gone from the lesson');
+    assert.notEqual(lastCardIndex, -1, 'the last card is gone from the lesson');
     assert.notEqual(keyNoteIndex, -1, 'the AI key note is gone from the lesson');
     assert.notEqual(footnoteIndex, -1, 'the install footnote is gone from the lesson');
-    assert.ok(searchCardIndex < keyNoteIndex, 'the AI key note moved above the cards it is supposed to follow');
+    assert.ok(lastCardIndex < keyNoteIndex, 'the AI key note moved above the cards it is supposed to follow');
     assert.ok(keyNoteIndex < footnoteIndex, 'the install footnote moved above the AI key note');
   });
 

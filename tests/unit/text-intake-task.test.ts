@@ -15,13 +15,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  INTAKE_MODES,
-  INTAKE_TASK_BY_MODE,
-  PLATE_SCAN_TASK,
-  TEXT_INTAKE_TASK,
-  VISION_MODES,
-} from '../../app/services/vision/task';
+import { INTAKE_MODES, INTAKE_TASK_BY_MODE, PHOTO_INTAKE_TASK, TEXT_INTAKE_TASK } from '../../app/services/vision/task';
+import type { IntakeMode } from '../../app/services/vision/task';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA } from '../../app/services/vision/schema';
 import { TEXT_INTAKE_SYSTEM_PROMPT } from '../../app/services/vision/prompt';
 
@@ -35,25 +30,34 @@ describe('the text intake task', () => {
   });
 
   it('parses and validates through the plate path, so the results are one shape', () => {
-    assert.strictEqual(TEXT_INTAKE_TASK.parse, PLATE_SCAN_TASK.parse);
-    assert.strictEqual(TEXT_INTAKE_TASK.validate, PLATE_SCAN_TASK.validate);
+    assert.strictEqual(TEXT_INTAKE_TASK.parse, PHOTO_INTAKE_TASK.parse);
+    assert.strictEqual(TEXT_INTAKE_TASK.validate, PHOTO_INTAKE_TASK.validate);
   });
 
   it('carries no capture ceiling, because there is no capture', () => {
     assert.ok(!('captureMaxDimension' in TEXT_INTAKE_TASK));
   });
 
-  it('is not a photo mode, so no capture control can select it', () => {
-    assert.deepStrictEqual([...VISION_MODES], ['plate', 'label']);
-    assert.ok(!VISION_MODES.some((mode) => String(mode) === 'text'));
-    assert.ok(INTAKE_MODES.includes('text'));
+  it('leaves exactly two intakes: a picture, or words', () => {
+    // The third, `label`, went with the mode the person had to choose before
+    // the shutter (amends ADR-0005, 2026-09-08). A third member reappearing
+    // here would mean somebody is being asked to classify their own photo
+    // again.
+    assert.deepStrictEqual([...INTAKE_MODES], ['photo', 'text']);
   });
 
   it('has a task for every intake mode', () => {
     for (const mode of INTAKE_MODES) {
-      assert.ok(INTAKE_TASK_BY_MODE[mode] !== undefined, `no task for ${mode}`);
-      assert.strictEqual(INTAKE_TASK_BY_MODE[mode].mode, mode);
+      const task: { mode: IntakeMode } = INTAKE_TASK_BY_MODE[mode];
+      assert.strictEqual(task.mode, mode);
     }
+  });
+
+  it('neither photo task nor text task carries a capture ceiling any more', () => {
+    // There is one `MAX_IMAGE_DIMENSION` now, so a per-task ceiling would be a
+    // field that always answers the same thing: a drift trap wearing the look
+    // of a decision.
+    assert.ok(!('captureMaxDimension' in PHOTO_INTAKE_TASK));
   });
 });
 

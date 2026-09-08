@@ -123,26 +123,23 @@ describe('the level a default instance runs at admits Diary / logged', () => {
     setAnalyticsEventLevel(defaultInstanceLevel());
 
     trackFoodLogged('scan-plate');
-    trackFoodLogged('scan-label');
     trackFoodLogged('scan-text');
     trackFoodLogged('scan-speech');
 
     assert.deepEqual(paq, [
       ['trackEvent', 'Diary', 'logged', 'scan-plate'],
-      ['trackEvent', 'Diary', 'logged', 'scan-label'],
       ['trackEvent', 'Diary', 'logged', 'scan-text'],
       ['trackEvent', 'Diary', 'logged', 'scan-speech'],
     ]);
   });
 
-  it('keeps the four scan paths apart from the other six input paths', () => {
+  it('keeps the three scan paths apart from the other six input paths', () => {
     const paq = stubWindow();
     setAnalyticsEventLevel(defaultInstanceLevel());
     const paths: readonly LogInputPath[] = [
       'add-search',
       'add-manual',
       'scan-plate',
-      'scan-label',
       'scan-text',
       'scan-speech',
       'diary-chip',
@@ -153,7 +150,7 @@ describe('the level a default instance runs at admits Diary / logged', () => {
 
     for (const path of paths) trackFoodLogged(path);
 
-    // Ten distinct names and nothing else on the row: the event says HOW an
+    // Nine distinct names and nothing else on the row: the event says HOW an
     // entry arrived, never what the entry was. There is no value slot to leak
     // a carb count into, and there is no fourth field to leak a food name into.
     assert.deepEqual(
@@ -167,7 +164,7 @@ describe('the level a default instance runs at admits Diary / logged', () => {
     setAnalyticsEventLevel('pageviews');
 
     trackFoodLogged('scan-plate');
-    trackFoodLogged('scan-label');
+    trackFoodLogged('scan-text');
 
     assert.deepEqual(paq, []);
   });
@@ -179,10 +176,6 @@ describe('the chain from a confirmed scan to Diary / logged', () => {
       'handleConfirm',
       'trackFoodLogged(SCAN_LOG_PATH_BY_SOURCE[readIntakeSource(formData)]);',
     );
-  });
-
-  it('reports scan-label once the label confirm has written its entry', () => {
-    assertLoggedOnTheSuccessPath('handleConfirmLabel', "trackFoodLogged('scan-label');");
   });
 
   it('maps each of the three intakes onto its own input path, exhaustively', () => {

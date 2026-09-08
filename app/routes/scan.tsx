@@ -14,35 +14,16 @@ import type { MonthlyAiUsage } from '#app/models/ai-usage';
 import { createVisionProvider, VisionProviderError, VisionProviderFailure } from '#app/services/vision';
 import type {
   ConfidenceLevel,
-  LabelReading,
+  IdentifiedFood,
   PlateIdentification,
   ScanTokenUsage,
   VisionFailureCause,
-  VisionMode,
 } from '#app/services/vision';
-import {
-  LABEL_SCAN_TASK,
-  PLATE_SCAN_TASK,
-  SCAN_TASK_BY_MODE,
-  TEXT_INTAKE_TASK,
-  VISION_MODES,
-} from '#app/services/vision';
+import { MACRO_SOURCE_VALUES, PHOTO_INTAKE_TASK, TEXT_INTAKE_TASK } from '#app/services/vision';
 import type { PlateImageInput, VisionProvider } from '#app/services/vision';
 import { INTAKE_SOURCES } from '#app/lib/intake-source';
 import type { IntakeSource, TypedIntakeSource } from '#app/lib/intake-source';
-import {
-  buildLabelConfirmView,
-  buildLabelFoodName,
-  buildLabelScanEntry,
-  buildLabelScanFood,
-  collectLabelSanityIssues,
-  defaultLabelLogGrams,
-  toLabelMacroFieldValues,
-} from '#app/lib/label-scan-confirm';
-import type { LabelConfirmView } from '#app/lib/label-scan-confirm';
 import { parseCarbBasis } from '#app/lib/net-carbs';
-import type { CarbBasis } from '#app/lib/net-carbs';
-import { CarbBasisField, CARB_BASIS_NOT_SURE_VALUE } from '#app/components/carb-basis-field';
 import { estimateScanCostUsd, formatScanCost, formatTokenCount } from '#app/services/vision/cost';
 import type { FoodMatch } from '#app/services/food-resolution';
 import {
@@ -102,7 +83,6 @@ import { takeIntakeHandoff } from '#app/lib/scan-handoff';
 import { MEAL_LABEL_KEYS, mealTypeFormField } from '#app/lib/meal-choice';
 import { mealTypeForCapture } from '#app/lib/scan-capture-time';
 import { MealSelectField } from '#app/components/meal-select-field';
-import { requestedScanMode } from '#app/lib/scan-mode-param';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
@@ -128,7 +108,6 @@ import {
   trackFoodLogged,
   trackScanFailed,
   trackScanFoundNothing,
-  trackScanModeChosen,
   trackScanStartedFromShare,
   trackScanSucceeded,
 } from '#app/lib/matomo-events';
@@ -264,12 +243,65 @@ function makeConfirmItemSchema(t: Translate) {
      * unrecognised value decodes to "unknown" rather than throwing.
      */
     carbBasis: z.string().optional(),
+    /**
+     * Whether this item's macros were ESTIMATED from food or TRANSCRIBED off a
+     * printed panel (amends ADR-0005, 2026-09-08). It decides what the saved
+     * personal food claims to be: a transcription is the manufacturer's own
+     * figure and is stored `source: 'user'`, exactly as typing the panel in by
+     * hand would be, while an estimate stays `'plate_ai'`.
+     *
+     * Parsed leniently and defaulted by `readItemMacroSource`, not here: an
+     * absent or tampered value must read as the estimate, which is the weaker
+     * claim of the two.
+     */
+    macroSource: z.string().optional(),
+    /** The manufacturer, when the item came off a package. Blank for everything else. */
+    brand: z.string().optional(),
     macros: makeConfirmMacrosSchema(t),
   });
 }
 
 /** One parsed plate item — the schema is built per parse, so infer off the factory. */
 type ConfirmItem = z.infer<ReturnType<typeof makeConfirmItemSchema>>;
+
+/**
+ * Whether a confirmed item's macros came off a printed panel.
+ *
+ * `.catch('estimated')` rather than a strict parse: an absent or tampered
+ * value reads as the ESTIMATE, which is the weaker of the two claims. Getting
+ * this wrong in the other direction would file a guess in the diary as a
+ * manufacturer's own figure.
+ */
+const macroSourceFieldSchema = z.enum(MACRO_SOURCE_VALUES).catch('estimated');
+
+export function isLabelItem(item: Pick<ConfirmItem, 'macroSource'>): boolean {
+  return macroSourceFieldSchema.parse(item.macroSource) === 'label';
+}
+
+/** A printed serving the review screen can actually offer as a portion. */
+export interface PrintedServingChip {
+  asPrinted: string;
+  grams: number;
+}
+
+/**
+ * The panel's own serving, as a portion chip, or `null` when there is none to
+ * offer.
+ *
+ * TWO THINGS MUST BOTH BE TRUE: the panel printed a serving at all, and it
+ * printed a WEIGHT for it. "2 pieces" with no grams is a sentence rather than
+ * a portion, and a chip built from it would log nothing while looking like it
+ * logged something. A zero or negative weight is refused for the same reason.
+ *
+ * Pure, so the rule is provable without a form.
+ */
+export function readPrintedServingChip(food: IdentifiedFood | undefined): PrintedServingChip | null {
+  const serving = food?.servingSize;
+  if (serving === undefined) return null;
+  if (serving.grams === undefined || serving.grams <= 0) return null;
+  if (serving.asPrinted.trim() === '') return null;
+  return { asPrinted: serving.asPrinted.trim(), grams: serving.grams };
+}
 
 /**
  * Optional target day (`YYYY-MM-DD`) carried from the diary when a scan is
@@ -331,39 +363,9 @@ export function makeConfirmDraftSchema(t: Translate) {
  */
 export const ConfirmDraftSchema = makeConfirmDraftSchema(translate);
 
-/**
- * The label confirm's draft: ONE product, not a plate of items.
- *
- * `carbs` is required (via the shared macro schema) because a personal food
- * can't be stored without it; every other macro is optional and a BLANK one
- * stays blank all the way to the store — `undefined`, never `0`. That is the
- * whole trust posture of this feature in one line: a panel that printed no
- * polyols row must not produce a food claiming zero sugar alcohols.
- */
-export function makeLabelConfirmSchema(t: Translate) {
-  return z.object({
-    date: makeLogDateField(t),
-    name: z.string().min(1, t('scan.review.errors.nameRequired')),
-    brand: z.string().optional(),
-    quantityGrams: z.coerce.number().positive(t('scan.review.errors.gramsPositive')),
-    macros: makeConfirmMacrosSchema(t),
-    /** The meal slot for this product, preselected from the capture time (M202). */
-    mealType: mealTypeFormField,
-    // The three-state control's "not sure" chip submits '' — an unrecognised
-    // value here, exactly like a blank/absent field, so it can't fail this
-    // schema. `parseCarbBasis` (applied when building the stored rows, not
-    // here) is what turns it into the persisted absent state.
-    carbBasis: z.string().optional(),
-  });
-}
-
-/** Exported for direct schema-behavior testing — every real parse site builds its own with a live `t`. */
-export const LabelConfirmSchema = makeLabelConfirmSchema(translate);
-
 type IdentifyResult =
   | {
       intent: 'identify';
-      mode: 'plate';
       identification: PlateIdentification;
       /**
        * WHICH INTAKE produced this identification. A photo, a typed sentence
@@ -381,16 +383,6 @@ type IdentifyResult =
     }
   | {
       intent: 'identify';
-      mode: 'label';
-      /** The panel as read. Always a READABLE one — an unreadable answer is terminal and comes back on the failure arm below. */
-      reading: LabelReading;
-      provider: AiProviderType;
-      modelId: string;
-    }
-  | {
-      intent: 'identify';
-      /** Which scan the user asked for — the failure copy differs ("no foods on that plate" is not "couldn't read that panel"). */
-      mode: VisionMode;
       error: string;
       usage?: ScanTokenUsage;
       modelId?: string;
@@ -403,9 +395,6 @@ type IdentifyResult =
     };
 
 type ConfirmResult = { intent: 'confirm'; submission: SubmissionResult<string[]> };
-
-/** The label confirm's own re-validation result — a separate intent, so a failed plate confirm can never render the label form (or the reverse). */
-type LabelConfirmResult = { intent: 'confirm-label'; submission: SubmissionResult<string[]> };
 
 /**
  * No server loader at all (M128 spec 03): this route's only server-side input
@@ -476,19 +465,11 @@ function refineIdentifyErrorMessage(params: { provider: AiProviderType; error: u
 }
 
 /**
- * The scan the user picked, parsed off the submitted form rather than
- * asserted. `.catch('plate')` makes a missing or tampered value fall back to
- * the original scan — the cheaper one — instead of throwing.
- */
-const scanModeSchema = z.enum(VISION_MODES).catch('plate');
-
-/**
  * Whether this submission carries a photograph or words, parsed off the form
  * rather than inferred from which field happens to be present.
  *
- * `.catch('photo')` for the same reason as the mode above: a missing or
- * tampered value falls back to the original intake, whose own guards then
- * report an empty photo honestly.
+ * `.catch('photo')` so a missing or tampered value falls back to the original
+ * intake, whose own guards then report an empty photo honestly.
  */
 const intakeKindSchema = z.enum(['photo', 'text']).catch('photo');
 
@@ -570,13 +551,33 @@ async function completePlateIntake({
 }): Promise<IdentifyResult> {
   const { providerType, modelId, recordAttempt, intakeSource } = context;
   const usage = identification.usage;
+
+  // UNREADABLE IS CHECKED FIRST AND UNCONDITIONALLY. The wire schema does not
+  // forbid a response carrying `unreadable: true` AND stray foods, because a
+  // model that gave up halfway can send both; checking here means no such item
+  // can reach a form. It is terminal, and it is its own message: "we could not
+  // read that picture" is not "there was no food in it", and a person told the
+  // wrong one retries the wrong thing.
+  if (identification.unreadable) {
+    await recordAttempt({ usage, outcome: 'no_foods' });
+    return {
+      intent: 'identify',
+      error:
+        identification.unreadableReason ?
+          translate('scan.errors.photo.unreadableWithReason', { reason: identification.unreadableReason })
+        : translate('scan.errors.photo.unreadable'),
+      usage,
+      modelId,
+      provider: providerType,
+    };
+  }
+
   if (identification.foods.length === 0) {
     // The model billed tokens but found nothing — attribute that cost here
     // (this is the previously-lost case) rather than discarding the usage.
     await recordAttempt({ usage, outcome: 'no_foods' });
     return {
       intent: 'identify',
-      mode: 'plate',
       error: translate(NO_FOODS_ERROR_KEY),
       usage,
       modelId,
@@ -589,7 +590,6 @@ async function completePlateIntake({
   const { matches } = await fetchFoodMatches(identification.foods.map((food) => food.name));
   return {
     intent: 'identify',
-    mode: 'plate',
     intakeSource,
     identification,
     provider: providerType,
@@ -598,9 +598,16 @@ async function completePlateIntake({
   };
 }
 
-/** Photo of a plate → the foods worth logging, enriched with curated matches. */
-async function runPlateScan(context: ScanAttemptContext): Promise<IdentifyResult> {
-  const identification = await context.visionProvider.runScan({ task: PLATE_SCAN_TASK, image: context.image });
+/**
+ * A photograph → the foods worth logging, enriched with curated matches.
+ *
+ * ONE PHOTO RUNNER. A plate, a single item, a packet and a nutrition panel all
+ * come through here and all come back as `foods[]`, because the prompt sorts
+ * them out per item rather than the caller sorting them out per photograph
+ * (amends ADR-0005, 2026-09-08).
+ */
+async function runPhotoIntake(context: ScanAttemptContext): Promise<IdentifyResult> {
+  const identification = await context.visionProvider.runScan({ task: PHOTO_INTAKE_TASK, image: context.image });
   return completePlateIntake({ identification, context });
 }
 
@@ -614,54 +621,6 @@ async function runPlateScan(context: ScanAttemptContext): Promise<IdentifyResult
 async function runTextIntake(context: TextAttemptContext): Promise<IdentifyResult> {
   const identification = await context.visionProvider.runTextIntake({ task: TEXT_INTAKE_TASK, text: context.text });
   return completePlateIntake({ identification, context });
-}
-
-/**
- * Photo of a package nutrition panel → the manufacturer's printed figures.
- *
- * Two answers are terminal and never reach the confirm step, both routed
- * through the SAME failure arm the plate path uses (with label copy, not a new
- * `VisionFailureCause`):
- *  - the model declared the panel unreadable — checked first and
- *    unconditionally by `buildLabelConfirmView`, so a response carrying
- *    `unreadable: true` AND stray macros can never put a number on a form;
- *  - the panel was legible but held no macro column this app can use, which is
- *    "that isn't a nutrition panel", not a plate with no food on it.
- *
- * No curated-match lookup: the whole point of reading a package is that its
- * own printed figures beat any generic database record of the product.
- */
-async function runLabelScan(context: ScanAttemptContext): Promise<IdentifyResult> {
-  const { visionProvider, image, providerType, modelId, recordAttempt } = context;
-  // Always a photograph: there is no way to read a printed panel from a
-  // sentence, so this task is never reached by the text intake.
-  const reading = await visionProvider.runScan({ task: LABEL_SCAN_TASK, image });
-  const usage = reading.usage;
-  const view = buildLabelConfirmView(reading);
-  const failed = (error: string): IdentifyResult => ({
-    intent: 'identify',
-    mode: 'label',
-    error,
-    usage,
-    modelId,
-    provider: providerType,
-  });
-
-  if (view.kind === 'unreadable') {
-    await recordAttempt({ usage, outcome: 'no_foods' });
-    return failed(
-      view.reason ?
-        translate('scan.errors.label.unreadableWithReason', { reason: view.reason })
-      : translate('scan.errors.label.unreadable'),
-    );
-  }
-  if (view.basis === null) {
-    await recordAttempt({ usage, outcome: 'no_foods' });
-    return failed(translate('scan.errors.label.noMacros'));
-  }
-
-  await recordAttempt({ usage, outcome: 'identified' });
-  return { intent: 'identify', mode: 'label', reading, provider: providerType, modelId };
 }
 
 /**
@@ -718,7 +677,6 @@ export function readManagedAiFields(formData: FormData): ManagedAiSettings | nul
 }
 
 async function handleClientIdentify(formData: FormData): Promise<IdentifyResult> {
-  const mode = scanModeSchema.parse(formData.get('mode'));
   const intakeKind = intakeKindSchema.parse(formData.get('intake'));
   const intakeSource = intakeSourceSchema.parse(formData.get('intakeSource'));
 
@@ -728,15 +686,15 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   const text = intakeKind === 'text' ? intakeTextSchema.parse(formData.get('text')) : '';
   const photo = formData.get('photo');
   if (intakeKind === 'text' && text === '') {
-    return { intent: 'identify', mode, error: translate('scan.errors.text.empty') };
+    return { intent: 'identify', error: translate('scan.errors.text.empty') };
   }
   if (intakeKind === 'photo') {
     if (!(photo instanceof File)) {
-      return { intent: 'identify', mode, error: translate('scan.errors.photo.empty') };
+      return { intent: 'identify', error: translate('scan.errors.photo.empty') };
     }
     const validation = validatePhoto({ type: photo.type, size: photo.size }, translate);
     if (!validation.valid) {
-      return { intent: 'identify', mode, error: validation.error };
+      return { intent: 'identify', error: validation.error };
     }
   }
 
@@ -753,7 +711,6 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   if (managed === null && !settings) {
     return {
       intent: 'identify',
-      mode,
       error: translate('scan.errors.connectProvider'),
     };
   }
@@ -765,7 +722,6 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   if (settings?.provider === 'openai-compatible' && (!settings.baseUrl || settings.baseUrl.trim() === '')) {
     return {
       intent: 'identify',
-      mode,
       error: translate('scan.errors.missingBaseUrl'),
     };
   }
@@ -780,7 +736,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     // proxy passes the body through untouched, so there is no model id to
     // send, and inventing one would fail upstream with a message nobody on
     // this side could explain.
-    return { intent: 'identify', mode, error: translate('scan.errors.connectProvider') };
+    return { intent: 'identify', error: translate('scan.errors.connectProvider') };
   }
 
   // Records exactly one local usage row per outcome. `recordLocalAiUsageEvent`
@@ -816,7 +772,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     try {
       image = { base64: await fileToBase64(photo), mimeType: photo.type };
     } catch {
-      return { intent: 'identify', mode, error: translate('scan.errors.readPhoto') };
+      return { intent: 'identify', error: translate('scan.errors.readPhoto') };
     }
   }
 
@@ -837,14 +793,12 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       recordAttempt,
       intakeSource,
     };
-    // The ONE branch the three intakes need, and it is over the RESULT SHAPE:
-    // a panel returns one product's printed figures, while a plate photo AND a
-    // typed sentence both return items to portion and match. Everything the
-    // tasks DIFFER by as data — prompt, schema, parse, capture resolution — is
-    // on the descriptor and never branched on here (see `IntakeTaskDescriptor`).
+    // The ONE branch left, and it is over what the person actually produced: a
+    // picture, or words. What the picture SHOWS is no longer a branch at all
+    // (amends ADR-0005, 2026-09-08), and everything the two tasks differ by as
+    // data (prompt, schema, parse) is on the descriptor rather than here.
     if (image === null) return await runTextIntake({ ...attempt, text });
-    const context: ScanAttemptContext = { ...attempt, image };
-    return mode === 'label' ? await runLabelScan(context) : await runPlateScan(context);
+    return await runPhotoIntake({ ...attempt, image });
   } catch (error) {
     const usage = error instanceof VisionProviderError ? error.usage : undefined;
     const failureCause = error instanceof VisionProviderFailure ? error.failureCause : undefined;
@@ -867,7 +821,6 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     trackScanFailed(failureCause ?? 'unknown');
     return {
       intent: 'identify',
-      mode,
       error: message,
       usage,
       modelId: model,
@@ -997,9 +950,19 @@ export function buildConfirmedFood({
   return {
     id,
     name: item.name,
-    brand: null,
+    // THE MANUFACTURER, when the item came off a package. Hardcoded `null`
+    // while a label was a separate scan writing its own row; a label item is
+    // an ordinary item on this draft now, and dropping its brand here would
+    // make the saved food unfindable by the name on the packet.
+    brand: item.brand && item.brand.trim() !== '' ? item.brand.trim() : null,
     macrosPer100g: per100g,
-    source: 'plate_ai',
+    // `'user'` FOR A TRANSCRIBED PANEL, and that is a claim about provenance,
+    // not about care: nothing was estimated from a photograph of food, the
+    // figures are the manufacturer's own, read off the package and then
+    // confirmed by the person on an editable form. That is the same provenance
+    // as typing the panel in by hand, which is exactly what it replaces. An
+    // estimate stays `'plate_ai'`.
+    source: isLabelItem(item) ? 'user' : 'plate_ai',
     createdAt: createdAtMs,
     // The SAME figure the log gets, from the SAME upstream fact — see
     // `buildConfirmedEntry`. Present only for an applied curated match whose
@@ -1197,90 +1160,6 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
 }
 
 /**
- * Persists a confirmed label reading: the reusable CUSTOM FOOD first, then the
- * diary entry that references it.
- *
- * The food is the point. Reading a package costs one paid vision call; this row
- * means the next purchase of the same product is a one-tap re-log from /add's
- * "Your foods" and never a second call. It carries every macro the panel
- * printed — `polyols` included, which no generic food source in this app can
- * supply.
- *
- * The two builders are pure and live in `#app/lib/label-scan-confirm`, so the
- * "confirmed panel → stored rows" path is unit-testable without a store, a
- * clock or a form — the same split `buildConfirmedEntry`/`buildConfirmedFood`
- * already use for the plate path.
- */
-async function handleConfirmLabel(formData: FormData, timezone: string): Promise<LabelConfirmResult | Response> {
-  const submission = parseWithZod(formData, { schema: makeLabelConfirmSchema(translate) });
-  if (submission.status !== 'success') {
-    return { intent: 'confirm-label', submission: submission.reply() };
-  }
-  const data = submission.value;
-  // A blank macro field stays null, never 0 — see `makeLabelConfirmSchema`.
-  const macrosPer100g: Macros = {
-    carbs: data.macros.carbs,
-    fiber: data.macros.fiber ?? null,
-    sugars: data.macros.sugars ?? null,
-    polyols: data.macros.polyols ?? null,
-    protein: data.macros.protein ?? null,
-    fat: data.macros.fat ?? null,
-    kcal: data.macros.kcal ?? null,
-  };
-
-  const activeDate = data.date !== undefined && data.date !== todayInTimezone(timezone) ? data.date : null;
-  const loggedAtMs = (activeDate ? instantOnDate(activeDate, timezone) : new Date()).getTime();
-  const dayKey = todayInTimezone(timezone, new Date(loggedAtMs));
-  const now = Date.now();
-
-  const carbBasis = parseCarbBasis(data.carbBasis);
-  const mealType = data.mealType ?? null;
-
-  const foodId = randomUuid();
-  await putLocalFood(
-    buildLabelScanFood({
-      name: data.name,
-      brand: data.brand ?? null,
-      // `carbs` is required by the schema above, which is exactly the
-      // personal-food invariant — narrowed here rather than asserted.
-      macrosPer100g: { ...macrosPer100g, carbs: data.macros.carbs },
-      carbBasis,
-      id: foodId,
-      createdAtMs: now,
-    }),
-  );
-  await putLocalFoodLog(
-    buildLabelScanEntry({
-      name: data.name,
-      quantityGrams: data.quantityGrams,
-      macrosPer100g,
-      carbBasis,
-      mealType,
-      foodId,
-      id: randomUuid(),
-      loggedAtMs,
-      dayKey,
-      createdAtMs: now,
-    }),
-  );
-  trackFoodLogged('scan-label');
-
-  const redirectTo = activeDate ? `/diary?date=${activeDate}` : '/diary';
-  const totals = await readDayCarbTotals(dayKey);
-  showFoodAddedToast({
-    name: data.name,
-    t: translate,
-    count: 1,
-    mealLabel: mealType === null ? null : translate(MEAL_LABEL_KEYS[mealType]),
-    netCarbsTotal: totals.netCarbs,
-    hasEstimates: totals.hasEstimates,
-    dayLabel: activeDate === null ? null : formatDayLabel(activeDate, currentLanguage()),
-    language: currentLanguage(),
-  });
-  return redirect(redirectTo);
-}
-
-/**
  * Dispatches every submission entirely client-side (M117/03 — this route no
  * longer has a server `action`): `confirm` writes the food logs to the local
  * primary store, `identify` runs the browser -> provider vision call. Neither
@@ -1288,18 +1167,18 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
  */
 export async function clientAction({
   request,
-}: Route.ClientActionArgs): Promise<IdentifyResult | ConfirmResult | LabelConfirmResult | Response> {
+}: Route.ClientActionArgs): Promise<IdentifyResult | ConfirmResult | Response> {
   const formData = await request.formData();
   const intent = formData.get('_intent');
 
+  // ONE CONFIRM INTENT. There used to be a second for a nutrition panel, with
+  // its own schema, its own form and its own pair of row builders. A label
+  // item is an ordinary item on the plate draft now (amends ADR-0005,
+  // 2026-09-08), so a second intent would only be a second way to write the
+  // same two rows.
   if (intent === 'confirm') {
     const profile = await getLocalProfileGoals();
     return handleConfirm(formData, resolveLocalTimezone(profile));
-  }
-
-  if (intent === 'confirm-label') {
-    const profile = await getLocalProfileGoals();
-    return handleConfirmLabel(formData, resolveLocalTimezone(profile));
   }
 
   return handleClientIdentify(formData);
@@ -1348,7 +1227,6 @@ function ScanFlow({
   managedAi,
   monthlyUsage,
   confirmResult,
-  labelConfirmResult,
   logDate,
   logDateLabel,
   userId,
@@ -1358,8 +1236,6 @@ function ScanFlow({
   managedAi: ManagedAiSettings | null;
   monthlyUsage: MonthlyAiUsage;
   confirmResult?: SubmissionResult<string[]>;
-  /** Re-validation result of a failed LABEL confirm — keeps that form mounted with its errors. */
-  labelConfirmResult?: SubmissionResult<string[]>;
   logDate: string | null;
   logDateLabel: string | null;
   /** Owner for the device-local photo cache (see `ConfirmDraftForm`). */
@@ -1370,11 +1246,6 @@ function ScanFlow({
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
   const [state, dispatch] = useReducer(analyzeReducer, initialAnalyzeState);
-  // WHICH SCAN, chosen BEFORE the photo is taken. Choosing afterwards would
-  // mean discovering the wrong prompt ran only once the paid call had already
-  // been made — and the two captures aren't interchangeable anyway: a label is
-  // downscaled to a higher ceiling (`captureMaxDimension` on the task).
-  const [mode, setMode] = useState<VisionMode>('plate');
   const [file, setFile] = useState<File | null>(null);
   /**
    * The words this intake is about, or `null` when it is a photograph.
@@ -1413,7 +1284,7 @@ function ScanFlow({
   // Guards the once-only shared-photo pickup against a StrictMode double-mount.
   const sharedPhotoHandledRef = useRef(false);
   // Same pair for the tab-bar launcher's hand-off (see `scan-handoff.ts`).
-  const processHandoffRef = useRef<(file: File, scanMode: VisionMode) => void>(() => {});
+  const processHandoffRef = useRef<(file: File) => void>(() => {});
   /** Same pair again for a sentence handed over by `/add` (typed or spoken). */
   const processTextHandoffRef = useRef<(text: string, source: TypedIntakeSource) => void>(() => {});
   const handoffHandledRef = useRef(false);
@@ -1462,7 +1333,6 @@ function ScanFlow({
       formData.append('text', typedText);
     } else if (file !== null) {
       formData.append('intake', 'photo');
-      formData.append('mode', mode);
       formData.append('photo', file);
     }
     // WHICH AI, decided here where the config and the session are readable and
@@ -1470,7 +1340,7 @@ function ScanFlow({
     // `writeManagedAiFields`.
     writeManagedAiFields(formData, managedAi);
     void fetcher.submit(formData, { method: 'post', encType: 'multipart/form-data' });
-  }, [state.phase, state.dispatchId, file, typedText, intakeSource, fetcher, mode, managedAi]);
+  }, [state.phase, state.dispatchId, file, typedText, intakeSource, fetcher, managedAi]);
 
   // Settle the machine on the fetcher's active→idle edge (not merely "idle", which
   // is also the pre-submit state) so an in-flight dispatch is never cut short.
@@ -1506,22 +1376,11 @@ function ScanFlow({
   /**
    * The single entry to the capture pipeline: validate → downscale → arm.
    *
-   * `scanMode` is a parameter rather than a read of the `mode` state because
-   * the tab-bar launcher hands over a photo AND the scan it was taken for in
-   * the same tick (see `scan-handoff.ts`): `setMode` has not landed yet at
-   * that point, and reading the stale state would downscale a label capture to
-   * the plate ceiling — the exact detail loss the label task's higher ceiling
-   * exists to prevent.
+   * No scan to choose any more. Every photograph is downscaled to the one
+   * ceiling and sent to the one photo task, and what the picture shows is the
+   * model's problem (amends ADR-0005, 2026-09-08).
    */
-  const processSelectedFile = async ({
-    picked,
-    source,
-    scanMode = mode,
-  }: {
-    picked: File;
-    source: PickSource;
-    scanMode?: VisionMode;
-  }): Promise<void> => {
+  const processSelectedFile = async ({ picked, source }: { picked: File; source: PickSource }): Promise<void> => {
     const validation = validatePhoto({ type: picked.type, size: picked.size }, t);
     if (!validation.valid) {
       setSelectionError(validation.error);
@@ -1532,11 +1391,14 @@ function ScanFlow({
     setIsProcessing(true);
     let nextFile: File;
     try {
-      // The capture ceiling is a property of the SCAN TASK, read off the
-      // selected descriptor — not an `if (mode === 'label')` here. A panel's
-      // 6-point "of which polyols" row needs the detail; a plate does not, and
-      // would pay for it on every scan (see `ScanTaskDescriptor.captureMaxDimension`).
-      nextFile = await downscaleToJpeg(picked, { maxDimension: SCAN_TASK_BY_MODE[scanMode].captureMaxDimension });
+      // ONE CEILING, `MAX_IMAGE_DIMENSION`. There used to be a second, higher
+      // one for a nutrition panel, chosen by a mode the person picked before
+      // the shutter. Merging the two photo tasks forced one answer, and the
+      // operator took the cheaper one on 2026-09-08: every scan stays at
+      // today's cost on the person's own key, and a panel line too small to
+      // read comes back as `null` with a note rather than as a guess. See
+      // ADR-0005's amendment.
+      nextFile = await downscaleToJpeg(picked);
     } catch {
       // Decode failed (e.g. HEIC outside Safari). Send the original when the
       // browser will still accept it; otherwise ask for a friendlier format.
@@ -1593,24 +1455,10 @@ function ScanFlow({
   useEffect(() => {
     processSharedRef.current = (sharedFile: File) =>
       void processSelectedFile({ picked: sharedFile, source: 'library' });
-    processHandoffRef.current = (handedFile: File, scanMode: VisionMode) =>
-      void processSelectedFile({ picked: handedFile, source: 'camera', scanMode });
+    processHandoffRef.current = (handedFile: File) =>
+      void processSelectedFile({ picked: handedFile, source: 'camera' });
     processTextHandoffRef.current = (text: string, source: TypedIntakeSource) => processTypedText({ text, source });
   });
-
-  // A caller that already knows which scanner it wants says so in the URL
-  // (`/scan?mode=label`, used by onboarding's ways-to-log lesson). Applied on
-  // mount rather than as the initial state on purpose: `useState('plate')` is
-  // what makes `Scan / mode-chosen` mean "a person went looking for the other
-  // scanner and found it", so an arrival must not fire it. A direct `setMode`
-  // fires nothing, exactly like the hand-off below. Declared BEFORE that effect
-  // so a parked photo's own mode still wins.
-  useEffect(() => {
-    if (globalThis.window === undefined) return;
-    const asked = requestedScanMode(window.location.search);
-    if (asked === null) return;
-    setMode(asked);
-  }, []);
 
   // The tab bar's launcher opened the camera itself and parked the photo for
   // us (`scan-handoff.ts`). Feed it into the SAME pipeline a capture taken on
@@ -1630,8 +1478,7 @@ function ScanFlow({
       processTextHandoffRef.current(handed.text, handed.source);
       return;
     }
-    setMode(handed.mode);
-    processHandoffRef.current(handed.file, handed.mode);
+    processHandoffRef.current(handed.file);
   }, []);
 
   // Web Share Target v2: a photo shared into the app lands on /scan?shared=1. The
@@ -1672,53 +1519,14 @@ function ScanFlow({
     dispatch({ type: 'retry' });
   };
 
-  /**
-   * Switching scans discards any photo already prepared: it was downscaled to
-   * the OTHER task's ceiling, so sending it would quietly hand a label scan a
-   * plate-resolution image — the exact detail loss the higher ceiling exists to
-   * prevent. Nothing has been spent at this point; only a prepared file is lost.
-   */
-  const handleModeChange = (nextMode: VisionMode) => {
-    if (nextMode === mode) return;
-    // After the no-op guard, so only a real switch by the user is counted. The
-    // initial mode, and the tab bar hand-off's `setMode`, fire nothing.
-    trackScanModeChosen(nextMode);
-    setMode(nextMode);
-    setSuppressedData(fetcher.data);
-    setSelectionError(null);
-    setFile(null);
-    setTypedText(null);
-    setIntakeSource('photo');
-    dispatch({ type: 'reset' });
-  };
-
   const identifyResult =
     activeData !== undefined && activeData.intent === 'identify' && 'identification' in activeData ?
       activeData
     : undefined;
-  const labelResult =
-    activeData !== undefined && activeData.intent === 'identify' && 'reading' in activeData ? activeData : undefined;
   const failedIdentify =
     activeData !== undefined && activeData.intent === 'identify' && 'error' in activeData ? activeData : undefined;
   // See the settle effect above: a dispatch that came back with nothing at all.
   const silentFailure = didSettleWithNothing ? t('scan.errors.identifyFailed') : undefined;
-
-  // A read panel (or a failed label confirm) swaps to the label form. Checked
-  // before the plate branch: the two results are separate arms of the same
-  // fetcher, and a label reading has no `foods[]` for the plate draft to render.
-  if (labelResult || labelConfirmResult) {
-    return (
-      <LabelConfirmForm
-        reading={labelResult?.reading}
-        provider={labelResult?.provider}
-        modelId={labelResult?.modelId}
-        lastResult={labelConfirmResult}
-        logDate={logDate}
-        logDateLabel={logDateLabel}
-        defaultMealType={captureMealType}
-      />
-    );
-  }
 
   // A returned identification (or a confirm-step re-validation) swaps to the
   // draft. Passing both keeps the plate's portion chips + curated matches alive
@@ -1744,8 +1552,6 @@ function ScanFlow({
   return (
     <UploadForm
       phase={state.phase}
-      mode={mode}
-      onModeChange={handleModeChange}
       file={file}
       typedText={typedText}
       previewUrl={previewUrl}
@@ -1876,8 +1682,6 @@ export function describeFailureBody(
  */
 function UploadForm({
   phase,
-  mode,
-  onModeChange,
   file,
   typedText,
   previewUrl,
@@ -1898,9 +1702,6 @@ function UploadForm({
   onRetry,
 }: {
   phase: AnalyzePhase;
-  /** Which scan is armed. Branches COPY and UI only — every task-specific datum comes off the descriptor. */
-  mode: VisionMode;
-  onModeChange: (mode: VisionMode) => void;
   file: File | null;
   /** The sentence being analysed, or `null` for a photograph. Branches COPY and the preview only. */
   typedText: string | null;
@@ -1938,11 +1739,12 @@ function UploadForm({
   // accurate headline below instead — retrying with a different photo can
   // never fix a rejected API key.
   const isPhotoQualityFailure = failureCause === undefined || failureCause === 'genuinely-no-food';
-  // THREE SUBJECTS, three sets of sentences. "No foods on that plate" is not
-  // "couldn't read that panel", and neither is "we couldn't make food out of
-  // what you wrote" — a person told the wrong one retries the wrong thing.
+  // TWO SUBJECTS NOW, not three. A photograph is a photograph whatever it
+  // shows (amends ADR-0005, 2026-09-08), so the only copy branch left is
+  // between a picture and a sentence: "we could not read that picture" is not
+  // "we could not make food out of what you wrote", and a person told the
+  // wrong one retries the wrong thing.
   const isTextIntake = typedText !== null;
-  const isLabelMode = !isTextIntake && mode === 'label';
   // WHO RECEIVES THE PHOTOGRAPH, which is the only reason this screen asks
   // anything about the instance (M201/07).
   const { aiComesFromTheInstance } = useInstancePolicy();
@@ -1950,10 +1752,7 @@ function UploadForm({
   // resolution) is on the scan-task descriptor; what changes here is what the
   // sentences say, because "no foods on that plate" is not "couldn't read that
   // panel" and a user told the wrong one retries the wrong thing.
-  const captureTitle =
-    isTextIntake ? t('scan.textIntake.title')
-    : isLabelMode ? t('scan.labelScan.capture.title')
-    : t('scan.capture.title');
+  const captureTitle = isTextIntake ? t('scan.textIntake.title') : t('scan.capture.title');
   // THE RECIPIENT IS NAMED DIFFERENTLY on a managed instance (M192/05), and
   // that is the whole reason for the branch: "your own AI provider" is true on
   // an open instance and false here, where the photo goes to a proxy the
@@ -1963,23 +1762,14 @@ function UploadForm({
     isTextIntake ?
       aiComesFromTheInstance ? t('scan.textIntake.managedDescription')
       : t('scan.textIntake.description')
-    : isLabelMode ? t('scan.labelScan.capture.description')
     : aiComesFromTheInstance ? t('scan.capture.managedDescription')
     : t('scan.capture.description');
-  const emptyTitle = isLabelMode ? t('scan.labelScan.capture.emptyTitle') : t('scan.capture.emptyTitle');
-  const photoLabel =
-    isTextIntake ? t('scan.textIntake.label')
-    : isLabelMode ? t('scan.labelScan.capture.photoLabel')
-    : t('scan.capture.photoLabel');
-  const previewAlt = isLabelMode ? t('scan.labelScan.capture.previewAlt') : t('scan.capture.previewAlt');
+  const emptyTitle = t('scan.capture.emptyTitle');
+  const photoLabel = isTextIntake ? t('scan.textIntake.label') : t('scan.capture.photoLabel');
+  const previewAlt = t('scan.capture.previewAlt');
   const alertTitle =
-    isPhotoQualityFailure && isTextIntake ? t('scan.errors.text.title')
-    : isPhotoQualityFailure && isLabelMode ? t('scan.errors.label.title')
-    : getFailureAlertTitle(failureCause, t);
-  const photoQualityBody =
-    isTextIntake ? t('scan.errors.text.qualityBody')
-    : isLabelMode ? t('scan.errors.label.photoQualityBody')
-    : t('scan.errors.photoQualityBody');
+    isPhotoQualityFailure && isTextIntake ? t('scan.errors.text.title') : getFailureAlertTitle(failureCause, t);
+  const photoQualityBody = isTextIntake ? t('scan.errors.text.qualityBody') : t('scan.errors.photoQualityBody');
   // Only relevant for a photo-quality failure: whether there's extra detail
   // worth showing below the friendly headline (the plain NO_FOODS_ERROR case
   // has nothing more specific to add). A non-photo-quality failure shows
@@ -2094,35 +1884,19 @@ function UploadForm({
                 </div>
               )}
 
-              {/* The mode is still chosen BEFORE the shutter — it just is not a
-                  lobby any more. Each row picks its own scan and opens the
-                  camera in the same tap, which is what the tab bar's launcher
-                  does too; this screen is the direct-visit twin of it.
-                  `onModeChange` runs first and only re-renders — the click
-                  below is what stays inside the gesture. */}
+              {/* ONE shutter. There used to be a second button here for a
+                  nutrition panel, which asked the person to classify their own
+                  photograph before taking it and could only be got wrong after
+                  the paid call had been made. The model classifies each item
+                  now (amends ADR-0005, 2026-09-08). */}
               <div className="flex flex-col gap-2">
                 <Button
                   type="button"
-                  onClick={() => {
-                    onModeChange('plate');
-                    cameraInputRef.current?.click();
-                  }}
+                  onClick={() => cameraInputRef.current?.click()}
                   disabled={pickDisabled}
                   className="h-14 w-full text-base"
                 >
                   <Camera className="h-5 w-5" /> {t('scan.capture.takePhoto')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    onModeChange('label');
-                    cameraInputRef.current?.click();
-                  }}
-                  disabled={pickDisabled}
-                  className="h-11 w-full"
-                >
-                  {t('scan.capture.labelPhoto')}
                 </Button>
                 <Button
                   type="button"
@@ -2757,243 +2531,6 @@ const PORTION_SCALE_LABEL_KEY = new Map<number, string>([
   [2, 'scan.review.portionScale.double'],
 ]);
 
-/**
- * The confirm step for a LABEL scan: one product, its serving, and the seven
- * macro fields — every one of them editable, and presented as read-but-unverified.
- *
- * Three rules this form exists to hold:
- *  - A macro the panel didn't print renders BLANK, never `0`
- *    (`toLabelMacroFieldValues`). A zero here would be a claim, and for
- *    `polyols` specifically it is the claim that makes a maltitol-sweetened
- *    product look zero-carb.
- *  - The numbers are OCR off a curved, glossy package, so they are offered for
- *    correction rather than announced as fact — and the shared macro-sanity
- *    notes run on the live values, including the two-column cross-check that
- *    catches a misread digit (`collectLabelSanityIssues`).
- *  - Confirming saves a reusable custom food, which is why this is worth doing
- *    once per product instead of once per purchase.
- */
-export function LabelConfirmForm({
-  reading,
-  provider,
-  modelId,
-  lastResult,
-  logDate,
-  logDateLabel,
-  defaultMealType,
-}: {
-  reading?: LabelReading;
-  /** Provider of the attempt — pairs with `modelId` for the scan's cost estimate. */
-  provider?: AiProviderType;
-  modelId?: string;
-  lastResult?: SubmissionResult<string[]>;
-  logDate: string | null;
-  logDateLabel: string | null;
-  /**
-   * The slot read off the PHOTO's own timestamp (see `#app/lib/scan-capture-time`),
-   * or null when there is no picked file to read one from. Passed in rather
-   * than computed here so this form stays a pure render of what it was told.
-   */
-  defaultMealType: MealType | null;
-}) {
-  const { t, i18n } = useTranslation();
-  const navigation = useNavigation();
-  const isSaving = navigation.state === 'submitting' && navigation.formData?.get('_intent') === 'confirm-label';
-  const introHeadingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    introHeadingRef.current?.focus();
-  }, []);
-
-  const view: LabelConfirmView | undefined = reading ? buildLabelConfirmView(reading) : undefined;
-  // UNREADABLE IS TERMINAL. `runLabelScan` already routes such a reading to the
-  // failure alert, so this branch is unreachable in the normal flow — it is
-  // here so that no future caller can reach the macro fields through a reading
-  // the model disowned. Checked before anything reads a macro.
-  const panel = view?.kind === 'reading' ? view : undefined;
-
-  const [form, fields] = useForm({
-    id: 'confirm-label-draft',
-    lastResult,
-    onValidate({ formData }) {
-      return parseWithZod(formData, { schema: makeLabelConfirmSchema(t) });
-    },
-    defaultValue:
-      panel ?
-        {
-          name: buildLabelFoodName(panel),
-          brand: panel.brand ?? undefined,
-          quantityGrams: String(defaultLabelLogGrams(panel)),
-          macros: toLabelMacroFieldValues(panel.macrosPer100g),
-        }
-      : undefined,
-  });
-  const macrosFieldset = fields.macros.getFieldset();
-  // Pre-filled from the model's own report (spec 13, M123) — `null` (the
-  // panel's layout didn't decide it, or the model wasn't asked before this
-  // spec) starts the control on "not sure" rather than guessing a basis.
-  const [carbBasisValue, setCarbBasisValue] = useState<CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE>(
-    panel?.carbBasis ?? CARB_BASIS_NOT_SURE_VALUE,
-  );
-  // Seeded once, from the capture time. Editable: the preselection is a good
-  // guess off a proxy timestamp, never a claim about what the person ate when.
-  const [mealType, setMealType] = useState<string>(defaultMealType ?? '');
-
-  // Re-read from the live fields every render so the notes describe what the
-  // person is about to log, not what the model first returned.
-  const editedMacrosPer100g: Macros = {
-    carbs: parseNumericFieldValue(macrosFieldset.carbs.value),
-    fiber: parseNumericFieldValue(macrosFieldset.fiber.value),
-    sugars: parseNumericFieldValue(macrosFieldset.sugars.value),
-    polyols: parseNumericFieldValue(macrosFieldset.polyols.value),
-    protein: parseNumericFieldValue(macrosFieldset.protein.value),
-    fat: parseNumericFieldValue(macrosFieldset.fat.value),
-    kcal: parseNumericFieldValue(macrosFieldset.kcal.value),
-  };
-  // The LIVE selector value, not `panel.carbBasis` (the model's original
-  // report): a person who corrects "not sure" to "EU available" — or the
-  // reverse — must see the sanity notes recompute against their own answer,
-  // not keep flagging the model's first guess (M123/13 review finding).
-  const liveCarbBasis = carbBasisValue === CARB_BASIS_NOT_SURE_VALUE ? undefined : carbBasisValue;
-  const sanityIssues =
-    panel ?
-      collectLabelSanityIssues(
-        { ...panel, macrosPer100g: editedMacrosPer100g, carbBasis: liveCarbBasis ?? null },
-        t,
-        i18n.language,
-      )
-    : [];
-
-  const usage = reading?.usage;
-  const scanCostUsd = usage && modelId && provider ? estimateScanCostUsd(provider, modelId, usage) : undefined;
-  const scanCostLine =
-    usage && scanCostUsd !== undefined ?
-      t('scan.review.costLine', {
-        cost: formatScanCost(scanCostUsd),
-        inputTokens: formatTokenCount(usage.inputTokens, i18n.language),
-        outputTokens: formatTokenCount(usage.outputTokens, i18n.language),
-      })
-    : undefined;
-
-  return (
-    <Form method="post" {...getFormProps(form)} className="space-y-4 pb-8">
-      <input type="hidden" name="_intent" value="confirm-label" />
-      {logDate && <input type="hidden" name="date" value={logDate} />}
-      {logDate && logDateLabel && <LoggingToBanner label={logDateLabel} switchToTodayHref="/scan" />}
-
-      <div className="space-y-1">
-        <h2 ref={introHeadingRef} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">
-          {t('scan.labelScan.review.heading')}
-        </h2>
-        <p className="text-sm text-muted-foreground">{t('scan.labelScan.review.subheading')}</p>
-      </div>
-
-      {form.errors && form.errors.length > 0 && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{form.errors.join(', ')}</AlertDescription>
-        </Alert>
-      )}
-
-      <Card>
-        <CardContent className="space-y-3 p-4">
-          <p className="rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-xs text-accent-amber">
-            {t('scan.labelScan.review.unverified')}
-          </p>
-
-          {panel?.servingAsPrinted && (
-            <p className="text-sm text-muted-foreground">
-              {t('scan.labelScan.review.servingPrinted', { serving: panel.servingAsPrinted })}
-            </p>
-          )}
-          {panel?.basis === 'per100g' && (
-            <p className="text-xs text-muted-foreground">{t('scan.labelScan.review.basisPer100g')}</p>
-          )}
-          {panel?.basis === 'perServing' && panel.servingGrams !== null && (
-            <p className="text-xs text-muted-foreground">
-              {t('scan.labelScan.review.basisPerServing', {
-                grams: formatMacroNumberIn(i18n.language, panel.servingGrams),
-              })}
-            </p>
-          )}
-          {panel?.notes && (
-            <p className="text-xs text-muted-foreground">
-              {t('scan.labelScan.review.modelNote', { note: panel.notes })}
-            </p>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1">
-              <Label htmlFor={fields.name.id}>{t('scan.labelScan.review.nameLabel')}</Label>
-              <Input {...getInputProps(fields.name, { type: 'text' })} />
-              <FieldError id={fields.name.errorId} errors={fields.name.errors} />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor={fields.brand.id}>{t('scan.labelScan.review.brandLabel')}</Label>
-              <Input {...getInputProps(fields.brand, { type: 'text' })} />
-              <FieldError id={fields.brand.errorId} errors={fields.brand.errors} />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor={fields.quantityGrams.id}>{t('scan.labelScan.review.gramsLabel')}</Label>
-              <Input {...getInputProps(fields.quantityGrams, { type: 'number', step: '0.1' })} />
-              <FieldError id={fields.quantityGrams.errorId} errors={fields.quantityGrams.errors} />
-            </div>
-            <MealSelectField
-              id={fields.mealType.id}
-              name={fields.mealType.name}
-              label={t('add.portion.meal')}
-              value={mealType}
-              onChange={setMealType}
-              errorId={fields.mealType.errorId}
-              errors={fields.mealType.errors}
-              className="grid gap-1"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {MACRO_FIELD_LABEL_KEYS.map(([macroKey, labelKey]) => (
-              <div key={macroKey} className="grid gap-1">
-                <Label htmlFor={macrosFieldset[macroKey].id}>{t(labelKey)}</Label>
-                <Input {...getInputProps(macrosFieldset[macroKey], { type: 'number', step: '0.1' })} />
-                <FieldError id={macrosFieldset[macroKey].errorId} errors={macrosFieldset[macroKey].errors} />
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">{t('scan.labelScan.review.macrosPer100gNote')}</p>
-
-          <CarbBasisField
-            name="carbBasis"
-            legend={t('scan.labelScan.review.carbBasis.legend')}
-            hint={t('scan.labelScan.review.carbBasis.hint')}
-            selected={carbBasisValue}
-            onSelect={setCarbBasisValue}
-            totalLabel={t('scan.labelScan.review.carbBasis.total')}
-            availableLabel={t('scan.labelScan.review.carbBasis.available')}
-            notSureLabel={t('scan.labelScan.review.carbBasis.notSure')}
-          />
-
-          {sanityIssues.length > 0 && (
-            <div className="space-y-1 rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-xs text-accent-amber">
-              {sanityIssues.map((issue) => (
-                <p key={issue.code}>{issue.message}</p>
-              ))}
-            </div>
-          )}
-
-          <p className="text-xs text-muted-foreground">{t('scan.labelScan.review.savedAsCustomFood')}</p>
-        </CardContent>
-      </Card>
-
-      {scanCostLine && <p className="text-xs text-muted-foreground">{scanCostLine}</p>}
-
-      <SubmitButton pending={isSaving} pendingLabel={t('scan.review.saving')} className="w-full">
-        {t('scan.review.confirmAndLog')}
-      </SubmitButton>
-    </Form>
-  );
-}
-
 export function ConfirmDraftForm({
   identification,
   provider,
@@ -3128,6 +2665,11 @@ export function ConfirmDraftForm({
             estimatedGrams: String(food.estimatedGrams),
             confidence: food.confidence,
             curatedSource: undefined,
+            // Carried from the model's own answer so they survive the confirm
+            // round trip. A label item that lost these on the way to the store
+            // would be filed as an ordinary AI guess with no brand.
+            macroSource: food.macroSource,
+            brand: food.brand,
             macros: {
               carbs: food.macrosPer100g?.carbs !== undefined ? String(food.macrosPer100g.carbs) : undefined,
               fiber: food.macrosPer100g?.fiber !== undefined ? String(food.macrosPer100g.fiber) : undefined,
@@ -3213,6 +2755,17 @@ export function ConfirmDraftForm({
       // schema, which parses it with the `ConfidenceLevel` enum before it ever
       // reaches the form — an absent field is the `undefined` arm.
       confidence: itemFieldset.confidence.initialValue as ConfidenceLevel | undefined,
+      // The model's own answer for this item, for the three things only it
+      // knows: whether the numbers were read off a panel, what that panel
+      // printed as a serving, and which carb convention it used. Read from the
+      // identification rather than from a form field, because none of the
+      // three is editable and none of them should be.
+      identifiedFood: identification?.foods[index],
+      isFromLabel: identification?.foods[index]?.macroSource === 'label',
+      // Only offered when the panel stated a WEIGHT. A serving printed as
+      // "2 pieces" with no grams is a sentence, not a portion, and a chip that
+      // logged nothing would be worse than no chip.
+      printedServing: readPrintedServingChip(identification?.foods[index]),
       displayName:
         readStringFieldValue(itemFieldset.name.value) || readStringFieldValue(itemFieldset.name.initialValue),
       appliedCuratedSource: itemFieldset.curatedSource.value,
@@ -3291,11 +2844,24 @@ export function ConfirmDraftForm({
               <label className="-m-1 flex cursor-pointer items-start justify-between gap-3 rounded-md p-1 transition-colors hover:bg-muted/50">
                 <div className="min-w-0 space-y-1">
                   <p className="truncate text-sm font-medium">{view.displayName || t('scan.review.unnamedFood')}</p>
-                  {view.confidence === 'low' && (
-                    <span className="inline-flex w-fit items-center rounded-full bg-accent-amber-surface px-2 py-0.5 text-xs font-medium text-accent-amber">
-                      {t('scan.review.doubleCheck')}
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* WHERE THIS ITEM'S NUMBERS CAME FROM. A transcribed panel
+                        and an estimate off a photograph of food are not the
+                        same kind of number, and after the merge they sit in
+                        the same list, so the one that can be checked against
+                        the package in the person's hand says so. Text, not a
+                        colour: a tint alone would carry the whole meaning. */}
+                    {view.isFromLabel && (
+                      <span className="inline-flex w-fit items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        {t('scan.review.fromLabel')}
+                      </span>
+                    )}
+                    {view.confidence === 'low' && (
+                      <span className="inline-flex w-fit items-center rounded-full bg-accent-amber-surface px-2 py-0.5 text-xs font-medium text-accent-amber">
+                        {t('scan.review.doubleCheck')}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <span className="flex shrink-0 items-center gap-2 text-sm">
                   <input
@@ -3312,6 +2878,12 @@ export function ConfirmDraftForm({
               {/* Always-rendered hidden fields — kept outside the collapsible so they always submit. */}
               <input {...getInputProps(itemFieldset.confidence, { type: 'text' })} hidden readOnly />
               <input {...getInputProps(itemFieldset.curatedSource, { type: 'hidden' })} />
+              {/* What kind of number this is, and whose product it is. Both are
+                  the model's answer rather than the person's, so both are
+                  hidden fields rather than inputs, and both are outside the
+                  collapsible so they always submit. */}
+              <input {...getInputProps(itemFieldset.macroSource, { type: 'hidden' })} />
+              <input {...getInputProps(itemFieldset.brand, { type: 'hidden' })} />
               {/* The applied match's two snapshotted facts. DERIVED every render
                   from `curatedSource` + the live macro fields (never `form.update`d
                   like `curatedSource` is), so a later macro edit can withdraw the
@@ -3339,7 +2911,17 @@ export function ConfirmDraftForm({
               {/* Same "derived every render from `curatedSource`, never withdrawn by an
                   edit" treatment as `attribution` above, not `netCarbsPer100g`'s
                   clear-on-edit treatment — see `resolveAppliedMatchSnapshot`'s doc. */}
-              <input type="hidden" name={itemFieldset.carbBasis.name} value={view.appliedSnapshot.carbBasis ?? ''} />
+              {/* THE ITEM'S OWN PANEL CONVENTION WINS. `appliedSnapshot` only
+                  ever holds a curated match's basis, and a transcribed panel
+                  has one of its own that no match can improve on: an EU
+                  crispbread whose fibre legitimately exceeds its carbohydrate
+                  reads as a false sanity warning, and worse as a wrong net
+                  carb, without it. */}
+              <input
+                type="hidden"
+                name={itemFieldset.carbBasis.name}
+                value={view.identifiedFood?.carbBasis ?? view.appliedSnapshot.carbBasis ?? ''}
+              />
 
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
@@ -3350,33 +2932,67 @@ export function ConfirmDraftForm({
                     })
                   : t('scan.review.portionGrams', { grams: formatMacroNumberIn(i18n.language, view.currentGrams) })}
                 </p>
-                {view.hasChips && (
+                {(view.hasChips || view.printedServing !== null) && (
                   <div className="flex flex-wrap gap-2">
-                    {PORTION_SCALE_OPTIONS.map((option) => {
-                      const isSelected = view.selectedMultiplier === option.multiplier;
-                      const labelKey = PORTION_SCALE_LABEL_KEY.get(option.multiplier);
-                      return (
-                        <button
-                          key={option.multiplier}
-                          type="button"
-                          aria-pressed={isSelected}
-                          onClick={() =>
-                            form.update({
-                              name: itemFieldset.estimatedGrams.name,
-                              value: String(scalePortionGrams(view.baseGrams, option.multiplier)),
-                            })
-                          }
-                          className={cn(
-                            'inline-flex min-h-10 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-                            isSelected ?
-                              'border-primary bg-primary text-primary-foreground'
-                            : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
-                          )}
-                        >
-                          {labelKey ? t(labelKey) : option.label} ({option.hint})
-                        </button>
-                      );
-                    })}
+                    {/* THE PANEL'S OWN SERVING, first. It is the only portion on
+                        this screen that is a printed fact rather than an
+                        estimate, so it leads, and it is offered rather than
+                        forced: somebody eating half a bar should not have to
+                        undo a default. Rendered only when the panel actually
+                        stated a weight; "2 pieces" with no grams is text we
+                        cannot log against.
+                        The serving reaches the person HERE and goes no
+                        further. Nothing persists it, because
+                        `LocalPersonalFood` has no field for one and adding one
+                        would be a local-store version bump for a value that
+                        has already done its work by the time they confirm. */}
+                    {view.printedServing !== null && (
+                      <button
+                        key="printed-serving"
+                        type="button"
+                        aria-pressed={view.currentGrams === view.printedServing.grams}
+                        onClick={() =>
+                          form.update({
+                            name: itemFieldset.estimatedGrams.name,
+                            value: String(view.printedServing?.grams ?? view.currentGrams),
+                          })
+                        }
+                        className={cn(
+                          'inline-flex min-h-10 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
+                          view.currentGrams === view.printedServing.grams ?
+                            'border-primary bg-primary text-primary-foreground'
+                          : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
+                        )}
+                      >
+                        {view.printedServing.asPrinted}
+                      </button>
+                    )}
+                    {view.hasChips &&
+                      PORTION_SCALE_OPTIONS.map((option) => {
+                        const isSelected = view.selectedMultiplier === option.multiplier;
+                        const labelKey = PORTION_SCALE_LABEL_KEY.get(option.multiplier);
+                        return (
+                          <button
+                            key={option.multiplier}
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() =>
+                              form.update({
+                                name: itemFieldset.estimatedGrams.name,
+                                value: String(scalePortionGrams(view.baseGrams, option.multiplier)),
+                              })
+                            }
+                            className={cn(
+                              'inline-flex min-h-10 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
+                              isSelected ?
+                                'border-primary bg-primary text-primary-foreground'
+                              : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
+                            )}
+                          >
+                            {labelKey ? t(labelKey) : option.label} ({option.hint})
+                          </button>
+                        );
+                      })}
                   </div>
                 )}
               </div>
@@ -3551,7 +3167,6 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
   // The identify result now rides a fetcher inside `ScanFlow`; only confirm-step
   // re-validation failures come back through navigation `actionData`.
   const confirmResult = actionData?.intent === 'confirm' ? actionData.submission : undefined;
-  const labelConfirmResult = actionData?.intent === 'confirm-label' ? actionData.submission : undefined;
   return (
     <>
       {offlineNote}
@@ -3559,7 +3174,6 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
         managedAi={managedAi}
         monthlyUsage={loaderData.monthlyUsage}
         confirmResult={confirmResult}
-        labelConfirmResult={labelConfirmResult}
         logDate={loaderData.logDate}
         logDateLabel={loaderData.logDateLabel}
         userId={loaderData.userId}

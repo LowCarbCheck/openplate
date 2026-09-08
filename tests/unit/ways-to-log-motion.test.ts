@@ -67,7 +67,7 @@ function animatedWtlRulesOutsideOptIn(): string[] {
 describe('motion is opt-in, exactly as the house pattern already is', () => {
   it('declares every ways-to-log animation inside the no-preference block', () => {
     const block = noPreferenceBlock();
-    for (const selector of ['.wtl-focus', '.wtl-flash', '.wtl-scanline', '.wtl-row']) {
+    for (const selector of ['.wtl-focus', '.wtl-flash', '.wtl-row']) {
       assert.match(block, new RegExp(`\\${selector}\\s*\\{`), `${selector} lost its opt-in animation`);
     }
   });
@@ -100,7 +100,11 @@ describe('motion is opt-in, exactly as the house pattern already is', () => {
 });
 
 describe('each keyframe returns to the frame it started on', () => {
-  const KEYFRAMES = ['wtl-shutter', 'wtl-focus', 'wtl-scan'];
+  // `wtl-scan` went with the label card's panel drawing on 2026-09-08, when
+  // the two photo tasks merged (amends ADR-0005). The speak card that replaced
+  // it borrows lucide's microphone and animates nothing, which is a complete
+  // drawing at rest exactly like the other two.
+  const KEYFRAMES = ['wtl-shutter', 'wtl-focus'];
 
   for (const name of KEYFRAMES) {
     it(`${name} declares both 0% and 100%, so the loop cannot drift off the static frame`, () => {

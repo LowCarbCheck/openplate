@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { IntakeInput, PlateImageInput, ScanResultBase, ScanTokenUsage, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
-import type { IntakeTaskDescriptor, ScanTaskDescriptor } from './task';
+import type { IntakeTaskDescriptor } from './task';
 import { attachScanUsage } from './task';
 // The auth headers live in `./constants` (M130/01), not here: the live key
 // check in `./verify-key` sends byte-identical headers, and a second copy is
@@ -210,7 +210,7 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Visi
       task,
       image,
     }: {
-      task: ScanTaskDescriptor<TResult>;
+      task: IntakeTaskDescriptor<TResult>;
       image: PlateImageInput;
     }) => runIntake({ task, input: { kind: 'photo', image } }),
     runTextIntake: <TResult extends ScanResultBase>({

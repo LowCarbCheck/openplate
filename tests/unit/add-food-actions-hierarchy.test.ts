@@ -33,13 +33,13 @@ const ACTION_CLASS = /const ACTION_CLASS = '([^']+)';/.exec(source)?.[1] ?? '';
 describe('the add-food actions', () => {
   it('drives the camera through the shared hook', () => {
     assert.match(source, /import \{ useCameraCapture \} from '#app\/components\/add\/use-camera-capture'/);
-    assert.match(source, /const \{ captureWith, triggerRef, inputRef, inputProps \} = useCameraCapture\(/);
+    assert.match(source, /const \{ capture, triggerRef, inputRef, inputProps \} = useCameraCapture\(/);
   });
 
   it('makes the photo action a button that captures, not a link to the search screen', () => {
     const primary = /<Button ref=\{triggerRef\}[\s\S]*?<\/Button>/.exec(source);
     assert.ok(primary !== null, 'the photo button is gone from add-food-actions.tsx');
-    assert.match(primary[0], /onClick=\{\(\) => captureWith\('plate'\)\}/);
+    assert.match(primary[0], /onClick=\{capture\}/);
     assert.match(primary[0], /t\('launcher\.photo'\)/);
     assert.doesNotMatch(primary[0], /<Link/);
     assert.doesNotMatch(primary[0], /asChild/);
@@ -52,7 +52,7 @@ describe('the add-food actions', () => {
     assert.match(source, /<Link to=\{speakHref\(addTo\)\}>/);
     // One flex row holds all three, so they share the width rather than
     // stacking the two quiet ones under a full-width primary.
-    assert.match(source, /<div className="flex gap-2">[\s\S]*captureWith\('plate'\)[\s\S]*speakHref\(addTo\)/);
+    assert.match(source, /<div className="flex gap-2">[\s\S]*onClick=\{capture\}[\s\S]*speakHref\(addTo\)/);
   });
 
   it('gives all three the same generous target', () => {

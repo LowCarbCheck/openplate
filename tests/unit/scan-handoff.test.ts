@@ -32,8 +32,8 @@ describe('scan hand-off slot', () => {
     assert.equal(takeIntakeHandoff(), null);
   });
 
-  it('hands over the file and the scan it was captured for', () => {
-    offerPickedFile(photo('plate.jpg'), 'label');
+  it('hands over the file, and nothing about what it shows', () => {
+    offerPickedFile(photo('plate.jpg'));
 
     const handed = takeIntakeHandoff();
 
@@ -41,25 +41,28 @@ describe('scan hand-off slot', () => {
     assert.equal(handed.kind, 'photo');
     assert.ok(handed.kind === 'photo');
     assert.equal(handed.file.name, 'plate.jpg');
-    assert.equal(handed.mode, 'label');
+    // No mode rides along any more. A photo used to carry the scan the person
+    // had chosen for it before the shutter; one photo path reads a plate, an
+    // item or a printed panel now (amends ADR-0005, 2026-09-08), so there is
+    // nothing left for the launcher to have got wrong.
+    assert.ok(!('mode' in handed), 'a photo hand-off carries a scan mode again');
   });
 
   it('empties as it is read, so the same photo is never analysed twice', () => {
-    offerPickedFile(photo('plate.jpg'), 'plate');
+    offerPickedFile(photo('plate.jpg'));
 
     assert.ok(takeIntakeHandoff() !== null);
     assert.equal(takeIntakeHandoff(), null, 'a second read must find nothing');
   });
 
   it('keeps the newest capture when one is offered before the last was taken', () => {
-    offerPickedFile(photo('first.jpg'), 'plate');
-    offerPickedFile(photo('second.jpg'), 'label');
+    offerPickedFile(photo('first.jpg'));
+    offerPickedFile(photo('second.jpg'));
 
     const handed = takeIntakeHandoff();
 
     assert.ok(handed?.kind === 'photo');
     assert.equal(handed.file.name, 'second.jpg');
-    assert.equal(handed.mode, 'label');
     assert.equal(takeIntakeHandoff(), null, 'the replaced photo must not queue behind it');
   });
 
@@ -91,7 +94,7 @@ describe('scan hand-off slot', () => {
 
   it('replaces a parked sentence with a photo, leaving nothing of it behind', () => {
     offerTypedText('a banana', 'speech');
-    offerPickedFile(photo('plate.jpg'), 'plate');
+    offerPickedFile(photo('plate.jpg'));
 
     const handed = takeIntakeHandoff();
 

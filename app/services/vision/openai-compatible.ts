@@ -34,7 +34,7 @@ import { z } from 'zod';
 import type { IntakeInput, PlateImageInput, ScanResultBase, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
-import type { IntakeTaskDescriptor, ScanTaskDescriptor } from './task';
+import type { IntakeTaskDescriptor } from './task';
 import { attachScanUsage } from './task';
 import type { JsonSchemaNode } from './schema';
 
@@ -354,7 +354,7 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       task,
       image,
     }: {
-      task: ScanTaskDescriptor<TResult>;
+      task: IntakeTaskDescriptor<TResult>;
       image: PlateImageInput;
     }) => runIntake({ task, input: { kind: 'photo', image } }),
     runTextIntake: <TResult extends ScanResultBase>({

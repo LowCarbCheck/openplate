@@ -2,9 +2,19 @@
  * The microphone button beside the add screen's search field, plus the
  * one-time disclosure that gates it.
  *
- * WHAT THIS IS. A way to TYPE, not a way to log. Speech fills the search box
- * and nothing else: no entry is ever created from a spoken sentence, so a
- * misheard word costs one glance at the field, never a wrong meal in the diary.
+ * WHAT THIS IS. A way to LOG. It used to fill the search box and stop there,
+ * which meant somebody who tapped it, said their whole lunch and looked away
+ * had to look back, read a search list and pick rows out of it. A finished
+ * transcript now goes to the same AI intake a typed sentence does, and lands
+ * on the same review screen, where every item is checked before anything is
+ * saved. So a misheard word still costs a glance rather than a wrong meal, but
+ * the glance happens on the review screen instead of in the field.
+ *
+ * THIS BUTTON DOES NOT DECIDE THAT. It reports the transcript and nothing
+ * else; whether the words are submitted or only typed into the field is
+ * `resolveSpeechIntakeAction`'s call, at the call site (`app/routes/add.tsx`),
+ * because it depends on facts this button has no business reading, such as
+ * whether the device has an AI provider at all.
  *
  * THE DISCLOSURE IS THE POINT. `Web Speech` sends the recording to the
  * BROWSER'S maker — Google on Chrome, Apple on Safari — not to openplate and
@@ -13,6 +23,10 @@
  * too. So the first tap opens the dialog, and only a deliberate "Continue"
  * both remembers the consent and starts listening, inside that same gesture
  * (which is also what the microphone permission needs).
+ *
+ * The RECORDING still never leaves the browser's own recogniser. What the
+ * caller then does with the TEXT is an ordinary AI intake, exactly as if the
+ * person had typed it, and the consent copy says both halves.
  *
  * NO AUTO-START, EVER. `/add?speak=1` — the launcher's "Speak" entry — arms
  * this button and gives it focus. The person still presses it. An app that

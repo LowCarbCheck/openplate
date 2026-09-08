@@ -9,7 +9,7 @@
  * THE RULE. A browser only honours a programmatic `input.click()` while the
  * user gesture that caused it is still on the stack. An `await` anywhere
  * before it, a settings read, a navigation, a downscale, ends the gesture, and
- * the camera silently never opens. So `captureWith` is not `async` and awaits
+ * the camera silently never opens. So `capture` is not `async` and awaits
  * nothing: the connection state is read ONCE on mount and kept in state, and
  * the photo is handed to the scan screen afterwards through a one-shot module
  * slot (`scan-handoff.ts`) rather than fetched by the route.
@@ -27,11 +27,10 @@ import { useEffect, useRef, type ChangeEvent, type ComponentProps, type RefObjec
 import { useNavigate } from 'react-router';
 import { offerPickedFile } from '#app/lib/scan-handoff';
 import { useAiConnection } from '#app/components/add/use-ai-connection';
-import type { VisionMode } from '#app/services/vision';
 
 export type CameraCapture = {
-  /** Open the camera for this scan, synchronously, inside the tap that asked for it. */
-  captureWith: (mode: VisionMode) => void;
+  /** Open the camera, synchronously, inside the tap that asked for it. */
+  capture: () => void;
   /** The control that opens the camera. A dismissed camera returns focus here. */
   triggerRef: RefObject<HTMLButtonElement | null>;
   /** The hidden capture input every photo path goes through. */
@@ -44,8 +43,6 @@ export function useCameraCapture({ scanTo = '/scan' }: { scanTo?: string } = {})
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  /** The scan the pending capture was started for. A ref, so the tap handler needs no re-render. */
-  const modeRef = useRef<VisionMode>('plate');
   // Shared with `/add`'s "Log with AI" action, so the two surfaces can never
   // disagree about whether this device can analyse anything (`useAiConnection`).
   const aiConnection = useAiConnection();
@@ -66,14 +63,13 @@ export function useCameraCapture({ scanTo = '/scan' }: { scanTo?: string } = {})
    * module comment, and `tests/unit/add-launcher-gesture.test.ts`, which pins
    * exactly that.
    */
-  const captureWith = (mode: VisionMode) => {
+  const capture = () => {
     if (aiConnection !== 'connected') {
       // No provider (or not known yet): never a camera permission prompt for a
       // feature that cannot work. The scan screen shows the connect card.
       void navigate(scanTo, { viewTransition: true });
       return;
     }
-    modeRef.current = mode;
     inputRef.current?.click();
   };
 
@@ -82,12 +78,12 @@ export function useCameraCapture({ scanTo = '/scan' }: { scanTo?: string } = {})
     // Reset the trigger so re-taking the same photo fires `change` again.
     event.target.value = '';
     if (picked === null) return;
-    offerPickedFile(picked, modeRef.current);
+    offerPickedFile(picked);
     void navigate(scanTo, { viewTransition: true });
   };
 
   return {
-    captureWith,
+    capture,
     triggerRef,
     inputRef,
     inputProps: {

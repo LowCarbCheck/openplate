@@ -1,66 +1,60 @@
 /**
- * Scan-task descriptors — the seam that lets one vision service run two very
- * different jobs (M123/10).
+ * Intake-task descriptors, the seam that lets one vision service run two very
+ * different jobs from one transport.
  *
- * A task descriptor bundles everything that DIFFERS between a plate scan and a
- * label scan: the system prompt, the user prompt, the JSON Schema handed to the
- * provider for enforced structured output, and the two parse entry points (the
- * enforced-output validator and the free-text fallback). Everything an adapter
- * does around that — transport, the structured-output retry, HTTP failure
- * classification, token/cost accounting — is task-blind and shared.
+ * A task descriptor bundles everything that DIFFERS between reading a
+ * photograph and reading a person's own words: the system prompt, the user
+ * prompt, the JSON Schema handed to the provider for enforced structured
+ * output, and the two parse entry points (the enforced-output validator and
+ * the free-text fallback). Everything an adapter does around that, transport,
+ * the structured-output retry, HTTP failure classification, token and cost
+ * accounting, is task-blind and shared.
  *
- * WHY A DESCRIPTOR AND NOT A MODE STRING: both adapters hardcoded the plate
- * prompt AND the plate JSON schema AND the plate parse. Threading a bare
- * `'plate' | 'label'` would have grown three `if (mode === 'label')` branches
- * per adapter — two copies of the same drift-prone fork. With a descriptor
- * there is nothing left to branch on. If a future task seems to need a branch
- * inside an adapter, the descriptor is missing a field: add the field.
+ * WHY A DESCRIPTOR AND NOT A MODE STRING: both adapters used to hardcode the
+ * plate prompt AND the plate JSON schema AND the plate parse. Threading a bare
+ * mode string would have grown three `if` branches per adapter, two copies of
+ * the same drift-prone fork. With a descriptor there is nothing left to branch
+ * on. If a future task seems to need a branch inside an adapter, the
+ * descriptor is missing a field: add the field.
+ *
+ * ── Two tasks, not three (amends ADR-0005, 2026-09-08) ───────────────────
+ *
+ * There used to be a third, `label`, with its own prompt, its own schema, its
+ * own result type and its own capture resolution, selected by a mode the
+ * person picked before the shutter. It is gone: one photo prompt now decides
+ * per item whether it is estimating food or transcribing a printed panel, and
+ * both answers come back in the same `foods` array. What that removed is not
+ * only the second task but the whole idea of a task the CALLER has to choose
+ * between two photographs, which is why nothing here is keyed by a UI mode any
+ * more.
  */
-import type { LabelReading, PlateIdentification, ScanResultBase, ScanTokenUsage } from './types';
-import {
-  LABEL_READING_JSON_SCHEMA,
-  PLATE_IDENTIFICATION_JSON_SCHEMA,
-  parseLabelReadingJson,
-  parsePlateIdentificationJson,
-  validateLabelReading,
-  validatePlateIdentification,
-} from './schema';
+import type { PlateIdentification, ScanResultBase, ScanTokenUsage } from './types';
+import { PLATE_IDENTIFICATION_JSON_SCHEMA, parsePlateIdentificationJson, validatePlateIdentification } from './schema';
 import type { JsonSchemaNode, UnvalidatedProviderJson } from './schema';
-import { LABEL_MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION } from '#app/lib/photo-constraints';
 import {
-  LABEL_READING_SYSTEM_PROMPT,
   PLATE_IDENTIFICATION_SYSTEM_PROMPT,
   TEXT_INTAKE_SYSTEM_PROMPT,
-  buildLabelReadingUserPrompt,
   buildPlateIdentificationUserPrompt,
   buildTextIntakeUserPrompt,
 } from './prompt';
 
-/** The PHOTO tasks the service can run. Nameable at the call site; never branched on inside an adapter. */
-export const VISION_MODES = ['plate', 'label'] as const;
-export type VisionMode = (typeof VISION_MODES)[number];
-
 /**
- * Every intake job, photo or not.
+ * Every intake job the service can run.
  *
- * `VisionMode` stays the narrower photo-only set because it is what a CAPTURE
- * control can hold: a mode picked before the shutter, and the thing
- * `/scan?mode=` names. `text` is never one of those, so widening `VisionMode`
- * would have let a text task reach `SCAN_TASK_BY_MODE`, whose only reason to
- * exist is a capture ceiling a text task does not have.
+ * Two members, and neither is a control on a screen: a photograph goes to the
+ * photo task and words go to the text task, decided by which one the person
+ * produced rather than by anything they were asked to pick.
  */
-export const INTAKE_MODES = ['plate', 'label', 'text'] as const;
+export const INTAKE_MODES = ['photo', 'text'] as const;
 export type IntakeMode = (typeof INTAKE_MODES)[number];
 
 /**
- * One intake task, fully described, WITHOUT anything photo-specific. `TResult`
- * is the task's own result shape — `PlateIdentification` and `LabelReading`
- * share nothing but the optional `usage` an adapter attaches, which is exactly
- * what `ScanResultBase` pins down.
+ * One intake task, fully described. `TResult` is the task's own result shape.
  *
- * The split from `ScanTaskDescriptor` below is one field deep and deliberate:
- * `captureMaxDimension` is meaningless for words a person typed, and a task
- * that had to invent one would be lying about what it does.
+ * Both tasks answer with `PlateIdentification` today, and that is the point
+ * rather than an accident: one shape means one review screen. The generic
+ * stays because `ScanResultBase` is what the shared transport actually depends
+ * on, so a future task with its own result costs an adapter nothing.
  */
 export interface IntakeTaskDescriptor<TResult extends ScanResultBase> {
   readonly mode: IntakeMode;
@@ -80,74 +74,41 @@ export interface IntakeTaskDescriptor<TResult extends ScanResultBase> {
 }
 
 /**
- * One PHOTO task: an intake task plus the capture ceiling its subject needs.
+ * A photograph → the foods worth logging, whatever the photograph shows.
+ *
+ * ONE PHOTO TASK IS THE WHOLE POINT. A plate, a single apple, a packet and a
+ * nutrition panel all arrive here, and the prompt sorts them out per item. The
+ * capture resolution went with the second task: there is one ceiling now
+ * (`MAX_IMAGE_DIMENSION`), so there is nothing left for a descriptor to carry
+ * and a field that always answers the same thing would be a drift trap wearing
+ * the look of a decision.
  */
-export interface ScanTaskDescriptor<TResult extends ScanResultBase> extends IntakeTaskDescriptor<TResult> {
-  readonly mode: VisionMode;
-  /**
-   * Longest edge (px) the capture is downscaled to before it is sent, for THIS
-   * task (`downscaleToJpeg`'s per-call override in `#app/lib/photo-constraints`).
-   *
-   * It lives on the descriptor for the same reason the prompt and the schema
-   * do: how much detail a job needs is a property of the job. A plate needs
-   * shapes; a nutrition panel needs legible 6-point type. Putting it here means
-   * the route reads it off whichever task was selected — an
-   * `if (mode === 'label')` around the downscale call in `scan.tsx` would
-   * reintroduce, one layer up, exactly the fork this descriptor removed from
-   * the adapters.
-   */
-  readonly captureMaxDimension: number;
-}
-
-/** Photograph of a plate → the foods worth logging. The original task, unchanged. */
-export const PLATE_SCAN_TASK: ScanTaskDescriptor<PlateIdentification> = {
-  mode: 'plate',
+export const PHOTO_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
+  mode: 'photo',
   systemPrompt: PLATE_IDENTIFICATION_SYSTEM_PROMPT,
   userPrompt: buildPlateIdentificationUserPrompt(),
   jsonSchema: PLATE_IDENTIFICATION_JSON_SCHEMA,
   schemaName: 'plate_identification',
   toolName: 'record_plate_identification',
-  toolDescription: 'Record the foods identified on the plate.',
-  // The app-wide default: a plate is read from shapes and colours, so the extra
-  // pixels a panel needs would be paid for on every scan and buy nothing.
-  captureMaxDimension: MAX_IMAGE_DIMENSION,
+  toolDescription: 'Record the foods identified in the photo.',
   parse: parsePlateIdentificationJson,
   validate: validatePlateIdentification,
-};
-
-/** Photograph of a package nutrition panel → the manufacturer's printed figures. */
-export const LABEL_SCAN_TASK: ScanTaskDescriptor<LabelReading> = {
-  mode: 'label',
-  systemPrompt: LABEL_READING_SYSTEM_PROMPT,
-  userPrompt: buildLabelReadingUserPrompt(),
-  jsonSchema: LABEL_READING_JSON_SCHEMA,
-  schemaName: 'label_reading',
-  toolName: 'record_label_reading',
-  toolDescription: 'Record the nutrition panel printed on the package.',
-  // Small printed text: see `LABEL_MAX_IMAGE_DIMENSION` for why this is a
-  // second ceiling rather than a raise of the shared one.
-  captureMaxDimension: LABEL_MAX_IMAGE_DIMENSION,
-  parse: parseLabelReadingJson,
-  validate: validateLabelReading,
 };
 
 /**
  * The person's own words → the foods worth logging.
  *
- * SAME RESULT AS A PLATE PHOTO, on purpose: the same `PlateIdentificationSchema`,
- * the same `foods[]`, the same parse, so the review screen, the confirm action
- * and every downstream builder are reached unchanged. What differs is the
- * subject the model is reading, and that lives entirely in the prompt.
- *
- * No `captureMaxDimension`, which is the whole reason `IntakeTaskDescriptor`
- * exists: there is no capture.
+ * SAME RESULT AS A PHOTOGRAPH, on purpose: the same schema, the same
+ * `foods` array, the same parse, so the review screen, the confirm action and
+ * every downstream builder are reached unchanged. What differs is the subject
+ * the model is reading, and that lives entirely in the prompt.
  */
 export const TEXT_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
   mode: 'text',
   systemPrompt: TEXT_INTAKE_SYSTEM_PROMPT,
   userPrompt: buildTextIntakeUserPrompt(),
   jsonSchema: PLATE_IDENTIFICATION_JSON_SCHEMA,
-  // The SAME schema name and tool name the plate task uses, because it is the
+  // The SAME schema name and tool name the photo task uses, because it is the
   // same schema. A second name for one shape would only invite a second shape.
   schemaName: 'plate_identification',
   toolName: 'record_plate_identification',
@@ -157,36 +118,18 @@ export const TEXT_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
 };
 
 /**
- * Every intake task, keyed by its mode. The single pairing of prompt with
- * schema, widened to cover text; `SCAN_TASK_BY_MODE` below stays the
- * photo-only view of it, because only a photo has a capture ceiling to read.
- */
-export const INTAKE_TASK_BY_MODE = {
-  plate: PLATE_SCAN_TASK,
-  label: LABEL_SCAN_TASK,
-  text: TEXT_INTAKE_TASK,
-} satisfies Record<IntakeMode, IntakeTaskDescriptor<ScanResultBase>>;
-
-/**
- * Every scan task, keyed by its mode — the one place a `VisionMode` (which is
- * what a UI control can actually hold) is turned back into the task that mode
- * names.
- *
- * It exists so no caller ever writes `mode === 'label' ? … : …` to reach a
- * task's DATA. A route selects the task once, then reads whatever it needs off
- * the descriptor (`captureMaxDimension`, and the prompt/schema/parse the
- * adapter reads). Adding a third task means adding a member here and nowhere
- * else.
+ * Every intake task, keyed by its mode: the single pairing of prompt with
+ * schema, and the one place a mode is turned back into the task it names.
  *
  * `satisfies`, not an annotation: the constraint checks that every mode has a
- * task, while the inferred type keeps each key's OWN result type — annotating
- * it as `Record<VisionMode, ScanTaskDescriptor<ScanResultBase>>` would erase
+ * task, while the inferred type keeps each key's OWN result type. Annotating
+ * it as `Record<IntakeMode, IntakeTaskDescriptor<ScanResultBase>>` would erase
  * which task returns which shape at every read site.
  */
-export const SCAN_TASK_BY_MODE = {
-  plate: PLATE_SCAN_TASK,
-  label: LABEL_SCAN_TASK,
-} satisfies Record<VisionMode, ScanTaskDescriptor<ScanResultBase>>;
+export const INTAKE_TASK_BY_MODE = {
+  photo: PHOTO_INTAKE_TASK,
+  text: TEXT_INTAKE_TASK,
+} satisfies Record<IntakeMode, IntakeTaskDescriptor<ScanResultBase>>;
 
 /**
  * Copies a result with the call's token usage attached, or returns it

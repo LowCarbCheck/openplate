@@ -27,14 +27,18 @@
  * `/scan` can never re-analyse (and re-charge for) an intake that was already
  * handed over.
  */
-import type { VisionMode } from '#app/services/vision';
 import type { TypedIntakeSource } from '#app/lib/intake-source';
 
-/** A photo captured outside `/scan`, with the scan it was captured for. */
+/**
+ * A photo captured outside `/scan`.
+ *
+ * No mode rides with it any more: there is one photo task, and what the
+ * picture shows is the model's problem rather than something the person had to
+ * declare before the shutter (amends ADR-0005, 2026-09-08).
+ */
 export interface PhotoHandoff {
   kind: 'photo';
   file: File;
-  mode: VisionMode;
 }
 
 /** Words captured outside `/scan`, with how the person produced them. */
@@ -57,8 +61,8 @@ let pending: ScanHandoff | null = null;
  * surfacing on some later visit. The same rule holds across kinds: a photo
  * offered after a sentence replaces the sentence.
  */
-export function offerPickedFile(file: File, mode: VisionMode): void {
-  pending = { kind: 'photo', file, mode };
+export function offerPickedFile(file: File): void {
+  pending = { kind: 'photo', file };
 }
 
 /** Parks what a person typed or spoke, for `/scan` to run the text task with. */
