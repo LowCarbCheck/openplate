@@ -2,6 +2,15 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.17.0 - 2026-09-08
+
+- A meal you photograph now goes into breakfast, lunch, dinner or snack, the
+  same as one you type in. The meal is chosen from the time the photo was
+  taken, not the time you get around to confirming it, and you can change it
+  before you log. Every food on the plate goes into the same meal. Photographed
+  meals used to land outside the meal groups in your diary, and the only way to
+  fix that was to open each entry afterwards.
+
 ## 0.16.0 - 2026-09-08
 
 - Fixed a bug that signed people out without warning. The app renews your
