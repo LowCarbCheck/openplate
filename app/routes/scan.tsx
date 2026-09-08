@@ -8,7 +8,7 @@ import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import type { FieldMetadata } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import type { SubmissionResult } from '@conform-to/react';
-import type { AiProviderType } from '#types/enums';
+import type { AiProviderType, MealType } from '#types/enums';
 import { formatMonthlyUsageLine } from '#app/models/ai-usage';
 import type { MonthlyAiUsage } from '#app/models/ai-usage';
 import { createVisionProvider, VisionProviderError, VisionProviderFailure } from '#app/services/vision';
@@ -91,6 +91,9 @@ import {
   type PickSource,
 } from '#app/lib/scan-analyze';
 import { takePickedFile } from '#app/lib/scan-handoff';
+import { MEAL_LABEL_KEYS, mealTypeFormField } from '#app/lib/meal-choice';
+import { mealTypeForCapture } from '#app/lib/scan-capture-time';
+import { MealSelectField } from '#app/components/meal-select-field';
 import { requestedScanMode } from '#app/lib/scan-mode-param';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
@@ -301,6 +304,12 @@ export function makeConfirmDraftSchema(t: Translate) {
   return z.object({
     date: makeLogDateField(t),
     clientLogBatchId: makeClientLogBatchIdField(t),
+    /**
+     * The meal slot for the WHOLE plate (M202). One scan is one sitting, so
+     * this is a single field beside `items[]` rather than one per item. See
+     * `buildConfirmedBatch`, which stamps it onto every entry it builds.
+     */
+    mealType: mealTypeFormField,
     items: z.array(makeConfirmItemSchema(t)).min(1),
   });
 }
@@ -329,6 +338,8 @@ export function makeLabelConfirmSchema(t: Translate) {
     brand: z.string().optional(),
     quantityGrams: z.coerce.number().positive(t('scan.review.errors.gramsPositive')),
     macros: makeConfirmMacrosSchema(t),
+    /** The meal slot for this product, preselected from the capture time (M202). */
+    mealType: mealTypeFormField,
     // The three-state control's "not sure" chip submits '' — an unrecognised
     // value here, exactly like a blank/absent field, so it can't fail this
     // schema. `parseCarbBasis` (applied when building the stored rows, not
@@ -404,7 +415,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const rawDate = parseDateParam(new URL(request.url).searchParams.get('date'));
   const logDate = rawDate !== null && rawDate !== today ? rawDate : null;
   const logDateLabel = logDate ? formatDayLabel(logDate, currentLanguage()) : null;
-  return { userId: ANONYMOUS_USER_ID, settings, monthlyUsage, logDate, logDateLabel };
+  // The zone travels because the confirm step reads a meal slot off the
+  // PHOTO's timestamp, and a slot is a local wall-clock fact (M202).
+  return { userId: ANONYMOUS_USER_ID, settings, monthlyUsage, logDate, logDateLabel, timezone };
 }
 clientLoader.hydrate = true as const;
 
@@ -762,6 +775,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
  *
  * @param options.item - one successfully parsed confirm-draft item.
  * @param options.per100g - the item's per-100g macros (already narrowed from the schema's optionals).
+ * @param options.mealType - the slot the whole plate goes into, or null for "no meal".
  * @param options.id - the client-generated entry id / idempotency key.
  * @param options.foodId - the personal food created for this item.
  * @param options.loggedAtMs - the instant the entry is logged against.
@@ -773,6 +787,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
 export function buildConfirmedEntry({
   item,
   per100g,
+  mealType,
   id,
   foodId,
   loggedAtMs,
@@ -782,6 +797,7 @@ export function buildConfirmedEntry({
 }: {
   item: ConfirmItem;
   per100g: Macros;
+  mealType: MealType | null;
   id: string;
   foodId: string;
   loggedAtMs: number;
@@ -798,7 +814,10 @@ export function buildConfirmedEntry({
     name: item.name,
     quantityGrams: item.estimatedGrams,
     macros: scaleMacrosPer100gToServing(per100g, item.estimatedGrams),
-    mealType: null,
+    // The slot the person chose on the confirm screen, preselected from when
+    // the photo was taken. This was a hardcoded `null` until M202, which put
+    // every photographed food outside the diary's meal groups for good.
+    mealType,
     source: 'plate_ai',
     // Curated macros aren't AI-guessed, so `aiEstimated` is false whenever a
     // match was applied (even if the user then tweaked the numbers — they're
@@ -893,6 +912,74 @@ export function buildConfirmedFood({
 }
 
 /**
+ * Turns the confirmed items of ONE scan into the exact rows that scan writes:
+ * a personal food and a food log per item, paired.
+ *
+ * It exists so the whole write payload is reachable without a store, a clock or
+ * a form. `handleConfirm` below is then a loop that persists what this
+ * returned, which is what makes a plate-wide field like `mealType` provable
+ * rather than merely present: a value that reaches zero of these rows passes
+ * every type check while every screen stays wrong, and that is precisely the
+ * shape the `mealType: null` defect had.
+ *
+ * EVERY ITEM TAKES THE SAME SLOT. One scan is one plate at one sitting, so the
+ * meal is a property of the batch, not of a food within it.
+ *
+ * @param options.items - the included, successfully parsed confirm-draft items.
+ * @param options.mealType - the slot the whole plate goes into, or null for "no meal".
+ * @param options.loggedAtMs - the instant every entry is logged against.
+ * @param options.dayKey - the device-local calendar day every entry belongs to.
+ * @param options.createdAtMs - the instant the rows were created on-device.
+ * @param options.logBatchId - the id grouping every entry from this one scan.
+ * @param options.newId - mints a fresh id per row (`randomUuid` in production).
+ * @returns one food/entry pair per item, in the order the items came.
+ */
+export function buildConfirmedBatch({
+  items,
+  mealType,
+  loggedAtMs,
+  dayKey,
+  createdAtMs,
+  logBatchId,
+  newId,
+}: {
+  items: readonly ConfirmItem[];
+  mealType: MealType | null;
+  loggedAtMs: number;
+  dayKey: string;
+  createdAtMs: number;
+  logBatchId: string;
+  newId: () => string;
+}): { food: LocalPersonalFood; entry: LocalFoodLog }[] {
+  return items.map((item) => {
+    const per100g: Macros = {
+      carbs: item.macros.carbs,
+      fiber: item.macros.fiber ?? null,
+      sugars: item.macros.sugars ?? null,
+      polyols: item.macros.polyols ?? null,
+      protein: item.macros.protein ?? null,
+      fat: item.macros.fat ?? null,
+      kcal: item.macros.kcal ?? null,
+    };
+    const foodId = newId();
+    return {
+      food: buildConfirmedFood({ item, per100g, id: foodId, createdAtMs }),
+      entry: buildConfirmedEntry({
+        item,
+        per100g,
+        mealType,
+        id: newId(),
+        foodId,
+        loggedAtMs,
+        dayKey,
+        createdAtMs,
+        logBatchId,
+      }),
+    };
+  });
+}
+
+/**
  * Confirm now writes straight to the on-device primary store (M117/03) — the
  * confirmed food logs never transit the server at all; this route has no
  * server `action` anymore (see `clientAction` below).
@@ -926,32 +1013,21 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
   // validation; a missing/blank one falls back here.
   const logBatchId = submission.value.clientLogBatchId ?? randomUuid();
   const now = Date.now();
-  for (const item of includedItems) {
-    const per100g: Macros = {
-      carbs: item.macros.carbs,
-      fiber: item.macros.fiber ?? null,
-      sugars: item.macros.sugars ?? null,
-      polyols: item.macros.polyols ?? null,
-      protein: item.macros.protein ?? null,
-      fat: item.macros.fat ?? null,
-      kcal: item.macros.kcal ?? null,
-    };
-
-    const foodId = randomUuid();
-    await putLocalFood(buildConfirmedFood({ item, per100g, id: foodId, createdAtMs: now }));
-
-    await putLocalFoodLog(
-      buildConfirmedEntry({
-        item,
-        per100g,
-        id: randomUuid(),
-        foodId,
-        loggedAtMs,
-        dayKey,
-        createdAtMs: now,
-        logBatchId,
-      }),
-    );
+  // Blank ("No meal") decodes to `undefined` and is STORED as null. The two
+  // are the same fact here, unlike the macro fields above.
+  const mealType = submission.value.mealType ?? null;
+  const batch = buildConfirmedBatch({
+    items: includedItems,
+    mealType,
+    loggedAtMs,
+    dayKey,
+    createdAtMs: now,
+    logBatchId,
+    newId: randomUuid,
+  });
+  for (const { food, entry } of batch) {
+    await putLocalFood(food);
+    await putLocalFoodLog(entry);
   }
 
   // One toast for the whole plate, through the app's shared add-toast id — a
@@ -968,7 +1044,9 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
     name: includedItems[0]?.name ?? translate('scan.review.plateFallbackName'),
     t: translate,
     count: includedItems.length,
-    mealLabel: null,
+    // Say which slot it landed in, exactly as /add's toast does. The person
+    // asked for a meal, so the confirmation names it.
+    mealLabel: mealType === null ? null : translate(MEAL_LABEL_KEYS[mealType]),
     netCarbsTotal: totals.netCarbs,
     hasEstimates: totals.hasEstimates,
     dayLabel: activeDate === null ? null : formatDayLabel(activeDate, currentLanguage()),
@@ -1015,6 +1093,7 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
   const now = Date.now();
 
   const carbBasis = parseCarbBasis(data.carbBasis);
+  const mealType = data.mealType ?? null;
 
   const foodId = randomUuid();
   await putLocalFood(
@@ -1035,6 +1114,7 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
       quantityGrams: data.quantityGrams,
       macrosPer100g,
       carbBasis,
+      mealType,
       foodId,
       id: randomUuid(),
       loggedAtMs,
@@ -1050,7 +1130,7 @@ async function handleConfirmLabel(formData: FormData, timezone: string): Promise
     name: data.name,
     t: translate,
     count: 1,
-    mealLabel: null,
+    mealLabel: mealType === null ? null : translate(MEAL_LABEL_KEYS[mealType]),
     netCarbsTotal: totals.netCarbs,
     hasEstimates: totals.hasEstimates,
     dayLabel: activeDate === null ? null : formatDayLabel(activeDate, currentLanguage()),
@@ -1131,6 +1211,7 @@ function ScanFlow({
   logDate,
   logDateLabel,
   userId,
+  timezone,
 }: {
   /** The instance's own AI, when this screen resolved one. `null` for an ordinary BYOK scan. */
   managedAi: ManagedAiSettings | null;
@@ -1142,6 +1223,8 @@ function ScanFlow({
   logDateLabel: string | null;
   /** Owner for the device-local photo cache (see `ConfirmDraftForm`). */
   userId: number;
+  /** The device's IANA zone, because a meal slot is a local wall-clock fact. */
+  timezone: string;
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
@@ -1152,6 +1235,14 @@ function ScanFlow({
   // downscaled to a higher ceiling (`captureMaxDimension` on the task).
   const [mode, setMode] = useState<VisionMode>('plate');
   const [file, setFile] = useState<File | null>(null);
+  /**
+   * The meal slot the confirm step opens on, resolved AT PICK TIME rather than
+   * at render: the answer depends on `Date.now()`, and a value that moved every
+   * render would fight the person editing the select. Null until a photo is
+   * picked, which is also the honest answer for a confirm step reached without
+   * one (a reload after a failed confirm): "No meal", never a guess.
+   */
+  const [captureMealType, setCaptureMealType] = useState<MealType | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1299,6 +1390,10 @@ function ScanFlow({
     // a library pick waits out the cancellable grace window.
     setSuppressedData(fetcher.data);
     setFile(nextFile);
+    // Read off the ORIGINAL picked file: `downscaleToJpeg` re-encodes through a
+    // canvas and the File it returns is stamped with the current time, so the
+    // downscaled copy has no memory of when the picture was taken.
+    setCaptureMealType(mealTypeForCapture({ fileLastModifiedMs: picked.lastModified, nowMs: Date.now(), timezone }));
     dispatch({ type: 'pick', source });
   };
 
@@ -1419,6 +1514,7 @@ function ScanFlow({
         lastResult={labelConfirmResult}
         logDate={logDate}
         logDateLabel={logDateLabel}
+        defaultMealType={captureMealType}
       />
     );
   }
@@ -1438,6 +1534,7 @@ function ScanFlow({
         logDateLabel={logDateLabel}
         photoFile={file}
         userId={userId}
+        defaultMealType={captureMealType}
       />
     );
   }
@@ -2439,6 +2536,7 @@ export function LabelConfirmForm({
   lastResult,
   logDate,
   logDateLabel,
+  defaultMealType,
 }: {
   reading?: LabelReading;
   /** Provider of the attempt — pairs with `modelId` for the scan's cost estimate. */
@@ -2447,6 +2545,12 @@ export function LabelConfirmForm({
   lastResult?: SubmissionResult<string[]>;
   logDate: string | null;
   logDateLabel: string | null;
+  /**
+   * The slot read off the PHOTO's own timestamp (see `#app/lib/scan-capture-time`),
+   * or null when there is no picked file to read one from. Passed in rather
+   * than computed here so this form stays a pure render of what it was told.
+   */
+  defaultMealType: MealType | null;
 }) {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
@@ -2488,6 +2592,9 @@ export function LabelConfirmForm({
   const [carbBasisValue, setCarbBasisValue] = useState<CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE>(
     panel?.carbBasis ?? CARB_BASIS_NOT_SURE_VALUE,
   );
+  // Seeded once, from the capture time. Editable: the preselection is a good
+  // guess off a proxy timestamp, never a claim about what the person ate when.
+  const [mealType, setMealType] = useState<string>(defaultMealType ?? '');
 
   // Re-read from the live fields every render so the notes describe what the
   // person is about to log, not what the model first returned.
@@ -2588,6 +2695,16 @@ export function LabelConfirmForm({
               <Input {...getInputProps(fields.quantityGrams, { type: 'number', step: '0.1' })} />
               <FieldError id={fields.quantityGrams.errorId} errors={fields.quantityGrams.errors} />
             </div>
+            <MealSelectField
+              id={fields.mealType.id}
+              name={fields.mealType.name}
+              label={t('add.portion.meal')}
+              value={mealType}
+              onChange={setMealType}
+              errorId={fields.mealType.errorId}
+              errors={fields.mealType.errors}
+              className="grid gap-1"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -2643,6 +2760,7 @@ export function ConfirmDraftForm({
   logDateLabel,
   photoFile,
   userId,
+  defaultMealType,
 }: {
   identification?: PlateIdentification;
   /** Provider of the attempt — pairs with `modelId` for the scan's cost estimate; without it there is no honest price to show. */
@@ -2656,6 +2774,12 @@ export function ConfirmDraftForm({
   photoFile: File | null;
   /** Owner for the device-local photo cache — scopes the saved row to this account. */
   userId: number;
+  /**
+   * The slot read off the PHOTO's own timestamp (see `#app/lib/scan-capture-time`),
+   * or null when there is no picked file to read one from. One value for the
+   * whole plate: a scan is one sitting.
+   */
+  defaultMealType: MealType | null;
 }) {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
@@ -2713,6 +2837,8 @@ export function ConfirmDraftForm({
   // curated suggestions they dismissed. Keyed by item index — the draft list is
   // fixed for the life of this view, so the index is stable.
   const [excludedIndexes, setExcludedIndexes] = useState<ReadonlySet<number>>(() => new Set<number>());
+  // Seeded once, from the capture time. Plate-wide, and editable. See the prop.
+  const [mealType, setMealType] = useState<string>(defaultMealType ?? '');
   const [dismissedIndexes, setDismissedIndexes] = useState<ReadonlySet<number>>(() => new Set<number>());
   const introHeadingRef = useRef<HTMLHeadingElement>(null);
 
@@ -2865,6 +2991,17 @@ export function ConfirmDraftForm({
         </h2>
         <p className="text-sm text-muted-foreground">{t('scan.review.subheading')}</p>
       </div>
+      {/* Plate-wide, and above the food cards: the person sees which slot the
+          photo landed in before they scroll, and changes it in one tap. */}
+      <MealSelectField
+        id={fields.mealType.id}
+        name={fields.mealType.name}
+        label={t('add.portion.meal')}
+        value={mealType}
+        onChange={setMealType}
+        errorId={fields.mealType.errorId}
+        errors={fields.mealType.errors}
+      />
       {form.errors && form.errors.length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -3172,6 +3309,7 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
         logDate={loaderData.logDate}
         logDateLabel={loaderData.logDateLabel}
         userId={loaderData.userId}
+        timezone={loaderData.timezone}
       />
     </>
   );

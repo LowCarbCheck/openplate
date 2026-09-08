@@ -256,6 +256,7 @@ describe('a confirmed label scan → the reusable custom food', () => {
       createdAtMs: 1_700_000_000_000,
     });
     const entry = buildLabelScanEntry({
+      mealType: null,
       name: food.name,
       quantityGrams: defaultLabelLogGrams(view),
       macrosPer100g: per100g,
@@ -302,6 +303,7 @@ describe('a confirmed label scan → the reusable custom food', () => {
     // "not sure" persists as absent — never a fabricated `'total'`.
     assert.equal(food.carbBasis, undefined);
     const entry = buildLabelScanEntry({
+      mealType: null,
       name: 'Bar',
       quantityGrams: 100,
       macrosPer100g: view.macrosPer100g,

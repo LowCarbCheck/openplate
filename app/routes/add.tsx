@@ -18,6 +18,8 @@ import { randomUuid } from '#app/lib/uuid';
 import type { FoodMatch } from '#app/services/food-resolution';
 import { scaleMacrosPer100gToServing, type Macros } from '#app/lib/macros';
 import { mealTypeForTime } from '#app/lib/meal-time';
+import { MEAL_LABEL_KEYS, mealTypeFormField } from '#app/lib/meal-choice';
+import { MealSelectField } from '#app/components/meal-select-field';
 import { instantOnDate, parseDateParam, todayInTimezone } from '#app/lib/user-days';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import {
@@ -82,7 +84,6 @@ import { Label } from '#app/components/ui/label';
 import { SectionEyebrow } from '#app/components/typography';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '#app/components/ui/select';
 import { Camera, ChevronDown, ChevronLeft, Search } from 'lucide-react';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -133,15 +134,6 @@ export const handle = {
   backTo: '/diary',
 };
 
-const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
-
-/**
- * Radix `<Select>` forbids an empty-string item value, so "no meal chosen"
- * rides on this sentinel in the UI and is normalized to `''` in the hidden
- * input (which the schema then maps to `undefined`).
- */
-const NO_MEAL_VALUE = 'none';
-
 /** The seven per-100g macro fields carried through the portion step, in order. */
 const MACRO_KEYS = ['carbs', 'fiber', 'sugars', 'polyols', 'protein', 'fat', 'kcal'] as const;
 
@@ -165,26 +157,12 @@ export const MACRO_FIELD_LABEL_KEYS: readonly (readonly [(typeof MACRO_KEYS)[num
 ];
 
 /**
- * Translation keys for the meal-type enum, plus the "no meal chosen" state.
- * Used for the dropdown options, the trigger's displayed value AND the
- * add-toast's meal clause — Radix's `<SelectValue>` mirrors the selected
- * `<SelectItem>`'s own text content, not a CSS `capitalize` class applied to
- * it, so relying on `className="capitalize"` around the raw lowercase enum
- * value (the old approach) capitalized the dropdown row but left the trigger
- * showing the raw "snack" (defect). A real label fixes both at once.
- *
- * `none` is here rather than translated at the toast call site so the select's
- * "No meal" row and the toast's meal clause can never drift apart — the same
- * reason `#app/lib/meal-time`'s `mealLabel` (which this replaces at every
- * call site in this route) held both.
+ * Re-exported so this route's own unit tests, and any reader who comes looking
+ * where these keys used to live, still find them here. The definition moved to
+ * `#app/lib/meal-choice` in M202 when the scan confirm step gained the same
+ * meal picker. See that module for why it is shared rather than copied.
  */
-export const MEAL_LABEL_KEYS = {
-  none: 'add.meal.none',
-  breakfast: 'add.meal.breakfast',
-  lunch: 'add.meal.lunch',
-  dinner: 'add.meal.dinner',
-  snack: 'add.meal.snack',
-} satisfies Record<(typeof MEAL_TYPES)[number] | 'none', string>;
+export { MEAL_LABEL_KEYS };
 
 /** Where a successful log returns to when no `?returnTo=` is supplied. */
 const DEFAULT_RETURN_TO = '/diary';
@@ -219,8 +197,6 @@ const STARTER_SEARCH_SUGGESTION_KEYS: readonly string[] = [
   'add.search.starters.rice',
   'add.search.starters.broccoli',
 ];
-
-const mealTypeField = z.preprocess((value) => (value === '' ? undefined : value), z.enum(MEAL_TYPES).optional());
 
 /**
  * Optional target day (`YYYY-MM-DD`) carried from the diary when back-dating a
@@ -284,7 +260,7 @@ export function createLogSchema(t: Translate) {
   return z.object({
     name: z.string().min(1, t('add.errors.nameRequired')),
     quantityGrams: createRequiredPositiveGramsSchema(t),
-    mealType: mealTypeField,
+    mealType: mealTypeFormField,
     date: logDateField,
     foodId: z.preprocess((value) => {
       const raw = z.string().safeParse(value);
@@ -363,7 +339,7 @@ export function createManualSchema(t: Translate) {
   return z.object({
     name: z.string().min(1, t('add.errors.nameRequired')),
     quantityGrams: createRequiredPositiveGramsSchema(t),
-    mealType: mealTypeField,
+    mealType: mealTypeFormField,
     date: logDateField,
     macroBasis: macroBasisField,
     servingGrams: createOptionalNonNegativeNumberSchema(),
@@ -1369,26 +1345,13 @@ export function PortionStep({
               </div>
             )}
 
-            <div className="grid gap-2">
-              <Label htmlFor={fields.mealType.id}>{t('add.portion.meal')}</Label>
-              <Select
-                value={mealType || NO_MEAL_VALUE}
-                onValueChange={(value) => setMealType(value === NO_MEAL_VALUE ? '' : value)}
-              >
-                <SelectTrigger id={fields.mealType.id} className="h-11 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_MEAL_VALUE}>{t(MEAL_LABEL_KEYS.none)}</SelectItem>
-                  {MEAL_TYPES.map((meal) => (
-                    <SelectItem key={meal} value={meal}>
-                      {t(MEAL_LABEL_KEYS[meal])}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <input type="hidden" name={fields.mealType.name} value={mealType} />
-            </div>
+            <MealSelectField
+              id={fields.mealType.id}
+              name={fields.mealType.name}
+              label={t('add.portion.meal')}
+              value={mealType}
+              onChange={setMealType}
+            />
 
             {candidate.url && (
               <a
@@ -1466,27 +1429,15 @@ function ManualAddForm({
               <Input {...getInputProps(fields.quantityGrams, { type: 'number', step: '0.1' })} className="h-11" />
               <FieldError id={fields.quantityGrams.errorId} errors={fields.quantityGrams.errors} />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor={fields.mealType.id}>{t('add.manual.mealOptional')}</Label>
-              <Select
-                value={mealType || NO_MEAL_VALUE}
-                onValueChange={(value) => setMealType(value === NO_MEAL_VALUE ? '' : value)}
-              >
-                <SelectTrigger id={fields.mealType.id} className="h-11 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_MEAL_VALUE}>{t(MEAL_LABEL_KEYS.none)}</SelectItem>
-                  {MEAL_TYPES.map((meal) => (
-                    <SelectItem key={meal} value={meal}>
-                      {t(MEAL_LABEL_KEYS[meal])}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <input type="hidden" name={fields.mealType.name} value={mealType} />
-              <FieldError id={fields.mealType.errorId} errors={fields.mealType.errors} />
-            </div>
+            <MealSelectField
+              id={fields.mealType.id}
+              name={fields.mealType.name}
+              label={t('add.manual.mealOptional')}
+              value={mealType}
+              onChange={setMealType}
+              errorId={fields.mealType.errorId}
+              errors={fields.mealType.errors}
+            />
           </div>
 
           <Collapsible>

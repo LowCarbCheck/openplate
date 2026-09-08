@@ -233,6 +233,7 @@ function renderConfirmStep(formData: FormData): string {
     logDateLabel: null,
     photoFile: null,
     userId: 0,
+    defaultMealType: null,
   });
   const router = createMemoryRouter([{ path: '/scan', element }], { initialEntries: ['/scan'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
@@ -272,6 +273,7 @@ function confirmedEntryFromScanFlow(formData: FormData): LocalFoodLog {
 
   return buildConfirmedEntry({
     item,
+    mealType: null,
     per100g: {
       carbs: item.macros.carbs,
       fiber: item.macros.fiber ?? null,

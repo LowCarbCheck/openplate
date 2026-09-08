@@ -32,6 +32,7 @@ import { resolveMacrosPer100gFromEntry } from './portions/serving-macros';
 import { checkLabelColumnAgreement, checkMacroSanity } from './macro-sanity';
 import type { MacroSanityIssue, Translate } from './macro-sanity';
 import type { CarbBasis } from './net-carbs';
+import type { MealType } from '#types/enums';
 
 /** Every macro key, in the order the confirm form renders them. */
 export const LABEL_MACRO_KEYS = ['carbs', 'fiber', 'sugars', 'polyols', 'protein', 'fat', 'kcal'] as const;
@@ -327,6 +328,7 @@ export function buildLabelScanFood({
  * @param options.quantityGrams - the amount being logged.
  * @param options.macrosPer100g - the confirmed per-100g macros.
  * @param options.carbBasis - the confirmed panel convention, or null for "not sure".
+ * @param options.mealType - the slot the person picked on the confirm step, or null for "no meal".
  * @param options.foodId - the custom food created for this panel, or null when it couldn't be (no carbs).
  * @param options.id - the client-generated entry id / idempotency key.
  * @param options.loggedAtMs - the instant the entry is logged against.
@@ -339,6 +341,7 @@ export function buildLabelScanEntry({
   quantityGrams,
   macrosPer100g,
   carbBasis,
+  mealType,
   foodId,
   id,
   loggedAtMs,
@@ -349,6 +352,7 @@ export function buildLabelScanEntry({
   quantityGrams: number;
   macrosPer100g: Macros;
   carbBasis: CarbBasis | null;
+  mealType: MealType | null;
   foodId: string | null;
   id: string;
   loggedAtMs: number;
@@ -360,7 +364,9 @@ export function buildLabelScanEntry({
     name,
     quantityGrams,
     macros: scaleMacrosPer100gToServing(macrosPer100g, quantityGrams),
-    mealType: null,
+    // Chosen on the confirm step, preselected from when the photo was taken.
+    // Hardcoded `null` until M202, same defect as the plate path had.
+    mealType,
     source: 'plate_ai',
     aiEstimated: true,
     curatedSource: null,

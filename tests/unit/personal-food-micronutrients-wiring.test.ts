@@ -169,6 +169,7 @@ function renderConfirmStep(formData: FormData): string {
     logDateLabel: null,
     photoFile: null,
     userId: 0,
+    defaultMealType: null,
   });
   const router = createMemoryRouter([{ path: '/scan', element }], { initialEntries: ['/scan'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
@@ -238,6 +239,7 @@ function scannedLog({ applyMatch }: { applyMatch: boolean }): LocalFoodLog {
   const item = confirmedItem({ applyMatch });
   return buildConfirmedEntry({
     item,
+    mealType: null,
     per100g: confirmedPer100g(item),
     id: 'scan-log-1',
     foodId: 'scan-food-1',
@@ -341,6 +343,7 @@ describe('a personal food created from an applied LCC match carries its micronut
     const food = buildConfirmedFood({ item, per100g, id: 'f', createdAtMs: AT_NOON });
     const log = buildConfirmedEntry({
       item,
+      mealType: null,
       per100g,
       id: 'l',
       foodId: 'f',
