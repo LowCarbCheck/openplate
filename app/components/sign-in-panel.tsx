@@ -28,6 +28,7 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
+import { CredentialSubmitButton } from '#app/components/credential-submit-button';
 import { FieldError } from '#app/components/field-error';
 import { SyncSetupFlow } from '#app/components/sync-setup-flow';
 import { Button } from '#app/components/ui/button';
@@ -216,10 +217,14 @@ export function SignInPanel({
       </div>
       <FieldError id={form.errorId} errors={form.errors} />
       <div className="flex flex-col gap-2">
-        <Button type="submit" className="h-11 w-full" disabled={isBusy}>
+        {/* NOT a plain submit button: it stays disabled in the server-rendered
+            markup, so a submit that lands before hydration cannot turn this
+            passphrase into a `?passphrase=…` in the address bar. See
+            `credential-submit-button.tsx`. */}
+        <CredentialSubmitButton className="h-11 w-full" disabled={isBusy}>
           {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {isBusy ? t('sync.signIn.working') : t('sync.signIn.submit')}
-        </Button>
+        </CredentialSubmitButton>
         <button
           type="button"
           onClick={onForgot}

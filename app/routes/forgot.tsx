@@ -27,10 +27,10 @@ import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { Check } from 'lucide-react';
 
+import { CredentialSubmitButton } from '#app/components/credential-submit-button';
 import { FieldError } from '#app/components/field-error';
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
@@ -138,9 +138,15 @@ function ForgotForm({ serverUrl }: { serverUrl: string }) {
         />
         <FieldError id={fields.email.errorId} errors={fields.email.errors} />
       </div>
-      <Button type="submit" className="h-11 w-full">
-        {t('forgot.submit')}
-      </Button>
+      {/* Disabled in the server-rendered markup, like every other credential
+          form's submit. This one carries no passphrase, but the leak is the
+          same shape: a native pre-hydration GET puts the address in the bar,
+          in history and in the next `Referer`, on the one page whose whole
+          design is to reveal nothing about who has an account. It would also
+          be a silent failure, because the request that mails the link is
+          fired from this browser and a native submit abandons it. See
+          `credential-submit-button.tsx`. */}
+      <CredentialSubmitButton className="h-11 w-full">{t('forgot.submit')}</CredentialSubmitButton>
       <Link
         to="/sign-in"
         className="block text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"

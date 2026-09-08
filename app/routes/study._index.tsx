@@ -40,6 +40,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { StudyCohortPanel } from '#app/components/study-cohort-panel';
 import { StudyKeyCard } from '#app/components/study-key-card';
 import { Alert, AlertDescription, AlertTitle } from '#app/components/ui/alert';
+import { CredentialSubmitButton } from '#app/components/credential-submit-button';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
@@ -275,10 +276,16 @@ function SignInCard({
               onChange={(event) => setPassphrase(event.target.value)}
             />
           </div>
-          <Button type="submit" className="h-11 w-full" disabled={isBusy || email === '' || passphrase === ''}>
+          {/* Disabled in the server-rendered markup as well as while the
+              boxes are empty. The empty-box check happens to hold the same
+              line before hydration, but only by accident: it is about a form
+              nobody has filled in, and it would stop holding the moment
+              somebody seeded a field. The guard that is ABOUT the leak lives
+              in `credential-submit-button.tsx`. */}
+          <CredentialSubmitButton className="h-11 w-full" disabled={isBusy || email === '' || passphrase === ''}>
             {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
             {t('research.console.signIn.signIn')}
-          </Button>
+          </CredentialSubmitButton>
           <Button
             type="button"
             variant="outline"
