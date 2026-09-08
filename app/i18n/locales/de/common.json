@@ -24,8 +24,7 @@
       "selfHostHint": "Den Server selbst aktualisierst du über ein neues Image, nicht über einen Button hier.",
       "throttled": "Gerade eben geprüft. Die nächste Prüfung ist um {{when}} möglich.",
       "title": "Updates"
-    },
-    "version": "Version"
+    }
   },
   "add": {
     "custom": {

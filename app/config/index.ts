@@ -138,6 +138,16 @@ export function parseDefaultUiLanguage(raw: string | undefined): LanguageCode {
 }
 
 /**
+ * Parses `OPENPLATE_BUILD_SHA` into the seven characters a short sha has, or
+ * `null` when it is unset. Trimmed and truncated exactly as `vite.config.ts`
+ * does, so the two readings of one variable cannot differ.
+ */
+export function parseBuildShaOverride(raw: string | undefined): string | null {
+  const value = raw?.trim();
+  return value === undefined || value === '' ? null : value.slice(0, 7);
+}
+
+/**
  * Parses `UPDATE_CHECK` (M203).
  *
  * ON by default, which is a deliberate choice and not an oversight: an instance
@@ -365,6 +375,25 @@ export const CONFIG = {
     subscribeUrl: process.env.NEWSLETTER_SUBSCRIBE_URL,
     turnstileSiteKey: process.env.NEWSLETTER_TURNSTILE_SITE_KEY,
   }),
+
+  /**
+   * Build-time identity (M203)
+   *
+   * `OPENPLATE_BUILD_SHA` is the commit the image was built from. It is a DOCKER
+   * BUILD ARGUMENT first and foremost, read by `vite.config.ts` and baked into
+   * the bundles, because `.dockerignore` excludes `.git` and the alpine base has
+   * no git binary, so the build cannot work it out for itself.
+   *
+   * It is read here as well, and only the DEV server consults the result
+   * (`app/lib/build-info.server.ts`). Vite prefers the override over git when it
+   * stamps the bundle, so a developer who sets the variable and did not get the
+   * same preference on the server side would see the bundle and the server
+   * disagree, which renders as a permanent and false "a newer version of this
+   * page is ready". `null` when unset, which is every normal case.
+   */
+  build: {
+    shaOverride: parseBuildShaOverride(process.env.OPENPLATE_BUILD_SHA),
+  },
 
   /**
    * The release check (M203)

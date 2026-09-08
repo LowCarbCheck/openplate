@@ -180,11 +180,12 @@ export default function SettingsAbout() {
           <CardTitle>{t('about.title')}</CardTitle>
           <CardDescription>{t('about.description')}</CardDescription>
         </CardHeader>
+        {/* No version row here. It used to be the only place the build was
+            readable, and it is now the first line of the Updates card directly
+            below, where it sits beside the build time and the latest release it
+            has to be read against. Two identical version strings a few pixels
+            apart read as a discrepancy the reader has to rule out. */}
         <CardContent className="pt-0">
-          <AboutRow icon={Tag} label={t('about.version')}>
-            {/* Tabular figures: this is a version string, not prose. */}
-            <span className="tabular-nums">{formatBuildLabel(BUILD)}</span>
-          </AboutRow>
           <AboutRow icon={Scale} label={t('about.licence')}>
             <a
               href={REPO_LICENSE_URL}

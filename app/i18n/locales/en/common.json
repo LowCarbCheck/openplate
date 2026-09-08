@@ -24,8 +24,7 @@
       "selfHostHint": "Updating the server itself is a new image, not a button here.",
       "throttled": "Checked a moment ago. The next check is allowed at {{when}}.",
       "title": "Updates"
-    },
-    "version": "Version"
+    }
   },
   "add": {
     "custom": {
