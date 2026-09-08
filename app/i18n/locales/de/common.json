@@ -158,7 +158,7 @@
       "hint": "Tippen und sprechen",
       "consent": {
         "title": "Sprachsuche nutzen",
-        "body": "Dein Browser sendet deine Stimme an Google oder Apple, um sie in Text umzuwandeln. openplate und dein KI-Anbieter erhalten immer nur den Text, nie deine Aufnahme.",
+        "body": "Dein Browser schickt deine Sprachaufnahme an Google oder Apple, um sie in Text umzuwandeln. openplate und dein KI-Anbieter erhalten immer nur den Text, nie deine Aufnahme.",
         "continue": "Weiter",
         "cancel": "Abbrechen"
       },
@@ -1316,7 +1316,7 @@
         "title": "Ein paar Angaben zu dir?"
       },
       "firstFood": {
-        "description": "Fertig. Es gibt drei Wege, Essen in dein Tagebuch zu bekommen. Wähle einen zum Start.",
+        "description": "Alles bereit. Es gibt drei Wege, Essen in dein Tagebuch einzutragen. Wähle einen aus, um zu starten.",
         "title": "Trag dein erstes Essen ein"
       },
       "focus": {
@@ -1332,17 +1332,17 @@
     "waysToLog": {
       "photo": {
         "title": "Fotografieren",
-        "description": "Ein ganzer Teller, ein einzelnes Lebensmittel oder die Nährwerttabelle auf einer Packung. Halte die Kamera drauf, den Rest macht openplate."
+        "description": "Ein ganzer Teller, eine Zutat oder die Nährwerttabelle auf der Packung. Kamera draufhalten, openplate erledigt den Rest."
       },
       "type": {
-        "title": "Aufschreiben",
-        "description": "Schreib eine ganze Mahlzeit in einer Zeile, zum Beispiel 3 Eier und 2 Scheiben Toast. Oder suche einzelne Lebensmittel."
+        "title": "Eintippen",
+        "description": "Tippe eine ganze Mahlzeit in eine Zeile, zum Beispiel 3 Eier und 2 Scheiben Toast. Oder suche nach einzelnen Lebensmitteln."
       },
       "speak": {
-        "title": "Sprechen",
-        "description": "Sag, was du gegessen hast, und prüfe die Einträge, bevor sie gespeichert werden. Praktisch, wenn die Hände voll sind."
+        "title": "Einsprechen",
+        "description": "Sprich ein, was du gegessen hast, und prüfe die Einträge vor dem Speichern. Praktisch, wenn du keine Hand frei hast."
       },
-      "speechPrivacyNote": "Dein Browser wandelt Sprache in Text um, auf Chrome über Google, auf Safari über Apple. Nur der Text erreicht openplate und deinen KI-Anbieter."
+      "speechPrivacyNote": "Dein Browser wandelt Sprache in Text um, bei Chrome über Google, bei Safari über Apple. Nur der Text erreicht openplate und deinen KI-Anbieter."
     },
     "weight": {
       "current": "Aktuelles Gewicht",
@@ -1609,8 +1609,8 @@
         "tooLarge": "Das Foto ist zu groß (max. 8 MB).",
         "undecodableFormat": "Dieses Format funktioniert in diesem Browser nicht, ein JPEG oder PNG hingegen schon.",
         "unsupportedType": "Dieses Bildformat geht nicht. Nimm JPEG, PNG, WEBP oder HEIC.",
-        "unreadable": "Dieses Foto war nicht lesbar. Versuch es noch einmal bei besserem Licht, näher dran und ruhig gehalten.",
-        "unreadableWithReason": "Dieses Foto war nicht lesbar ({{reason}}). Versuch es noch einmal bei besserem Licht, näher dran und ruhig gehalten."
+        "unreadable": "Das Foto war nicht lesbar. Versuch es noch mal mit besserem Licht, näher dran und halte still.",
+        "unreadableWithReason": "Das Foto war nicht lesbar ({{reason}}). Versuch es noch mal mit besserem Licht, näher dran und halte still."
       },
       "photoQualityBody": "Magst du es nochmal versuchen? Gutes Licht und ein Blick von oben helfen.",
       "provider": {
@@ -1640,9 +1640,9 @@
         "accountSuspended": "Dein Konto ist gesperrt"
       },
       "text": {
-        "empty": "Schreib zuerst auf, was du gegessen hast.",
+        "empty": "Schreib zuerst, was du gegessen hast.",
         "title": "Mit dieser Beschreibung hat es nicht geklappt",
-        "qualityBody": "Daraus konnten wir keine Lebensmittel machen. Nenne jedes Lebensmittel und die Menge, zum Beispiel 3 Eier, 2 Scheiben Toast."
+        "qualityBody": "Daraus konnten keine Lebensmittel erkannt werden. Nenne am besten jedes Lebensmittel und die Menge, zum Beispiel 3 Eier, 2 Scheiben Toast."
       }
     },
     "loading": "Scan wird geladen…",
@@ -1731,7 +1731,7 @@
       "seeOtherMatches": "Passt nicht? Andere Treffer ansehen",
       "subheading": "Tippe auf eine Portion, um sie anzupassen, oder nimm unten Feineinstellungen vor.",
       "unnamedFood": "Lebensmittel ohne Namen",
-      "fromLabel": "Von der Verpackung"
+      "fromLabel": "Vom Etikett"
     },
     "setup": {
       "connectOpenRouter": "Mit OpenRouter verbinden",
@@ -1759,10 +1759,10 @@
     },
     "title": "Teller scannen",
     "textIntake": {
-      "title": "Wir lesen, was du geschrieben hast",
-      "label": "Das hast du eingegeben",
-      "description": "Deine Worte gehen direkt an deinen eigenen KI-Anbieter. Daraus werden Einträge, die du prüfst, bevor etwas gespeichert wird.",
-      "managedDescription": "Deine Worte gehen an die KI, die deine Instanz betreibt. Daraus werden Einträge, die du prüfst, bevor etwas gespeichert wird."
+      "title": "Deine Eingabe wird gelesen",
+      "label": "Deine Eingabe",
+      "description": "Deine Eingabe geht direkt an deinen eigenen KI-Anbieter, der daraus Einträge macht, die du vor dem Speichern prüfst.",
+      "managedDescription": "Deine Eingabe geht an die KI deiner Instanz, die daraus Einträge macht, die du vor dem Speichern prüfst."
     }
   },
   "settings": {
