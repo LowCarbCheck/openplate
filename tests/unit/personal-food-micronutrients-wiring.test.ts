@@ -161,6 +161,9 @@ function confirmFormData({ applyMatch }: { applyMatch: boolean }): FormData {
 function renderConfirmStep(formData: FormData): string {
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
+    // The intake this draft arrived by. A photograph here: these tests are
+    // about what the plate path writes, not about which way in produced it.
+    intakeSource: 'photo',
     identification: AI_IDENTIFICATION,
     modelId: 'test-model',
     matches: [[spinachMatch()]],

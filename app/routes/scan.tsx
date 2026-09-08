@@ -20,8 +20,16 @@ import type {
   VisionFailureCause,
   VisionMode,
 } from '#app/services/vision';
-import { LABEL_SCAN_TASK, PLATE_SCAN_TASK, SCAN_TASK_BY_MODE, VISION_MODES } from '#app/services/vision';
+import {
+  LABEL_SCAN_TASK,
+  PLATE_SCAN_TASK,
+  SCAN_TASK_BY_MODE,
+  TEXT_INTAKE_TASK,
+  VISION_MODES,
+} from '#app/services/vision';
 import type { PlateImageInput, VisionProvider } from '#app/services/vision';
+import { INTAKE_SOURCES } from '#app/lib/intake-source';
+import type { IntakeSource, TypedIntakeSource } from '#app/lib/intake-source';
 import {
   buildLabelConfirmView,
   buildLabelFoodName,
@@ -90,7 +98,7 @@ import {
   type AnalyzePhase,
   type PickSource,
 } from '#app/lib/scan-analyze';
-import { takePickedFile } from '#app/lib/scan-handoff';
+import { takeIntakeHandoff } from '#app/lib/scan-handoff';
 import { MEAL_LABEL_KEYS, mealTypeFormField } from '#app/lib/meal-choice';
 import { mealTypeForCapture } from '#app/lib/scan-capture-time';
 import { MealSelectField } from '#app/components/meal-select-field';
@@ -124,6 +132,7 @@ import {
   trackScanStartedFromShare,
   trackScanSucceeded,
 } from '#app/lib/matomo-events';
+import type { LogInputPath } from '#app/lib/matomo-events';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -356,6 +365,15 @@ type IdentifyResult =
       intent: 'identify';
       mode: 'plate';
       identification: PlateIdentification;
+      /**
+       * WHICH INTAKE produced this identification. A photo, a typed sentence
+       * and a spoken one all land on this same arm with the same `foods[]`,
+       * which is the whole point — so the only thing left that can tell them
+       * apart is carried here, and its only reader is the diary's input-path
+       * event on the confirm (`SCAN_LOG_PATH_BY_SOURCE`). It says nothing
+       * about the food.
+       */
+      intakeSource: IntakeSource;
       /** Provider + model of the attempt, together — pricing resolves on the PAIR (`estimateScanCostUsd`), never on the id alone. */
       provider: AiProviderType;
       modelId: string;
@@ -465,6 +483,30 @@ function refineIdentifyErrorMessage(params: { provider: AiProviderType; error: u
 const scanModeSchema = z.enum(VISION_MODES).catch('plate');
 
 /**
+ * Whether this submission carries a photograph or words, parsed off the form
+ * rather than inferred from which field happens to be present.
+ *
+ * `.catch('photo')` for the same reason as the mode above: a missing or
+ * tampered value falls back to the original intake, whose own guards then
+ * report an empty photo honestly.
+ */
+const intakeKindSchema = z.enum(['photo', 'text']).catch('photo');
+
+/**
+ * How the intake started. Read here rather than derived, because a typed
+ * sentence and a spoken one are byte-identical by the time they reach this
+ * function — the difference is a fact about the person's tap, and only the
+ * screen that took it knows.
+ */
+const intakeSourceSchema = z.enum(INTAKE_SOURCES).catch('photo');
+
+/** The person's words, as the form carries them. Trimmed here so an all-space submission is refused rather than billed. */
+const intakeTextSchema = z
+  .string()
+  .transform((value) => value.trim())
+  .catch('');
+
+/**
  * Records exactly one local usage row per attempt outcome — see
  * `handleClientIdentify`. Fail-open by contract: the recorded row is never read
  * back by the caller, so the return is `void` rather than the store's own row.
@@ -490,19 +532,43 @@ function reportScanOutcome(outcome: 'identified' | 'no_foods' | 'error'): void {
   else if (outcome === 'no_foods') trackScanFoundNothing();
 }
 
-/** What both task runners below need to attribute and price an attempt. */
-interface ScanAttemptContext {
+/** What every task runner below needs to attribute and price an attempt. */
+interface IntakeAttemptContext {
   visionProvider: VisionProvider;
-  image: PlateImageInput;
   providerType: AiProviderType;
   modelId: string;
   recordAttempt: RecordScanAttempt;
+  /** How this intake started; carried onto the success arm and read only at confirm time. */
+  intakeSource: IntakeSource;
 }
 
-/** Photo of a plate → the foods worth logging, enriched with curated matches. */
-async function runPlateScan(context: ScanAttemptContext): Promise<IdentifyResult> {
-  const { visionProvider, image, providerType, modelId, recordAttempt } = context;
-  const identification = await visionProvider.runScan({ task: PLATE_SCAN_TASK, image });
+/** An attempt that carries a photograph. */
+interface ScanAttemptContext extends IntakeAttemptContext {
+  image: PlateImageInput;
+}
+
+/** An attempt that carries the person's own words. */
+interface TextAttemptContext extends IntakeAttemptContext {
+  text: string;
+}
+
+/**
+ * Everything that happens AFTER a provider answers with the plate shape,
+ * whichever intake asked it.
+ *
+ * A photo of a plate and a typed "3 eggs, 2 toast" come back as the same
+ * `foods[]`, so they get the same empty-result accounting, the same curated
+ * enrichment and the same result arm. Forking here would be the beginning of
+ * two review screens, which is exactly what this change exists to prevent.
+ */
+async function completePlateIntake({
+  identification,
+  context,
+}: {
+  identification: PlateIdentification;
+  context: IntakeAttemptContext;
+}): Promise<IdentifyResult> {
+  const { providerType, modelId, recordAttempt, intakeSource } = context;
   const usage = identification.usage;
   if (identification.foods.length === 0) {
     // The model billed tokens but found nothing — attribute that cost here
@@ -521,7 +587,33 @@ async function runPlateScan(context: ScanAttemptContext): Promise<IdentifyResult
   // Enrich with curated LowCarbCheck matches (names only, fail-open — never
   // blocks the draft). `matches` is parallel to `identification.foods` by index.
   const { matches } = await fetchFoodMatches(identification.foods.map((food) => food.name));
-  return { intent: 'identify', mode: 'plate', identification, provider: providerType, modelId, matches };
+  return {
+    intent: 'identify',
+    mode: 'plate',
+    intakeSource,
+    identification,
+    provider: providerType,
+    modelId,
+    matches,
+  };
+}
+
+/** Photo of a plate → the foods worth logging, enriched with curated matches. */
+async function runPlateScan(context: ScanAttemptContext): Promise<IdentifyResult> {
+  const identification = await context.visionProvider.runScan({ task: PLATE_SCAN_TASK, image: context.image });
+  return completePlateIntake({ identification, context });
+}
+
+/**
+ * The person's own words → the same foods, the same review screen.
+ *
+ * No photo is read, nothing is downscaled, and nothing else about the flow
+ * changes: the descriptor carries the one thing that differs (see
+ * `TEXT_INTAKE_TASK`), and the result rejoins the plate path immediately.
+ */
+async function runTextIntake(context: TextAttemptContext): Promise<IdentifyResult> {
+  const identification = await context.visionProvider.runTextIntake({ task: TEXT_INTAKE_TASK, text: context.text });
+  return completePlateIntake({ identification, context });
 }
 
 /**
@@ -541,6 +633,8 @@ async function runPlateScan(context: ScanAttemptContext): Promise<IdentifyResult
  */
 async function runLabelScan(context: ScanAttemptContext): Promise<IdentifyResult> {
   const { visionProvider, image, providerType, modelId, recordAttempt } = context;
+  // Always a photograph: there is no way to read a printed panel from a
+  // sentence, so this task is never reached by the text intake.
   const reading = await visionProvider.runScan({ task: LABEL_SCAN_TASK, image });
   const usage = reading.usage;
   const view = buildLabelConfirmView(reading);
@@ -625,13 +719,25 @@ export function readManagedAiFields(formData: FormData): ManagedAiSettings | nul
 
 async function handleClientIdentify(formData: FormData): Promise<IdentifyResult> {
   const mode = scanModeSchema.parse(formData.get('mode'));
+  const intakeKind = intakeKindSchema.parse(formData.get('intake'));
+  const intakeSource = intakeSourceSchema.parse(formData.get('intakeSource'));
+
+  // THE ONE PLACE THE TWO INTAKES DIFFER before the provider is even chosen:
+  // words are already usable, a photograph has to be validated and read. Both
+  // guards return the same failure arm, so everything below is shared.
+  const text = intakeKind === 'text' ? intakeTextSchema.parse(formData.get('text')) : '';
   const photo = formData.get('photo');
-  if (!(photo instanceof File)) {
-    return { intent: 'identify', mode, error: translate('scan.errors.photo.empty') };
+  if (intakeKind === 'text' && text === '') {
+    return { intent: 'identify', mode, error: translate('scan.errors.text.empty') };
   }
-  const validation = validatePhoto({ type: photo.type, size: photo.size }, translate);
-  if (!validation.valid) {
-    return { intent: 'identify', mode, error: validation.error };
+  if (intakeKind === 'photo') {
+    if (!(photo instanceof File)) {
+      return { intent: 'identify', mode, error: translate('scan.errors.photo.empty') };
+    }
+    const validation = validatePhoto({ type: photo.type, size: photo.size }, translate);
+    if (!validation.valid) {
+      return { intent: 'identify', mode, error: validation.error };
+    }
   }
 
   // WHICH AI, decided by the COMPONENT and carried in the form (M192).
@@ -702,11 +808,16 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     });
   };
 
-  let base64: string;
-  try {
-    base64 = await fileToBase64(photo);
-  } catch {
-    return { intent: 'identify', mode, error: translate('scan.errors.readPhoto') };
+  // Read only on the photo path. `photo instanceof File` was already proved by
+  // the guard above; narrowing it again here is what keeps that fact in the
+  // type system rather than in a comment.
+  let image: PlateImageInput | null = null;
+  if (intakeKind === 'photo' && photo instanceof File) {
+    try {
+      image = { base64: await fileToBase64(photo), mimeType: photo.type };
+    } catch {
+      return { intent: 'identify', mode, error: translate('scan.errors.readPhoto') };
+    }
   }
 
   try {
@@ -719,18 +830,20 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       // lasts fifteen minutes and a tab stays open for hours.
       credential: managed === null ? { apiKey: settings?.apiKey ?? '' } : managedAiCredential(),
     });
-    const context: ScanAttemptContext = {
+    const attempt: IntakeAttemptContext = {
       visionProvider,
-      image: { base64, mimeType: photo.type },
       providerType: provider,
       modelId: model,
       recordAttempt,
+      intakeSource,
     };
-    // The ONE branch the two scans need, and it is over the RESULT SHAPE: a
-    // plate returns items to portion and match, a panel returns one product's
-    // printed figures. Everything the two tasks DIFFER by as data — prompt,
-    // schema, parse, capture resolution — is on the descriptor and never
-    // branched on here (see `ScanTaskDescriptor`).
+    // The ONE branch the three intakes need, and it is over the RESULT SHAPE:
+    // a panel returns one product's printed figures, while a plate photo AND a
+    // typed sentence both return items to portion and match. Everything the
+    // tasks DIFFER by as data — prompt, schema, parse, capture resolution — is
+    // on the descriptor and never branched on here (see `IntakeTaskDescriptor`).
+    if (image === null) return await runTextIntake({ ...attempt, text });
+    const context: ScanAttemptContext = { ...attempt, image };
     return mode === 'label' ? await runLabelScan(context) : await runPlateScan(context);
   } catch (error) {
     const usage = error instanceof VisionProviderError ? error.usage : undefined;
@@ -980,6 +1093,32 @@ export function buildConfirmedBatch({
 }
 
 /**
+ * The diary's input path for each intake.
+ *
+ * A `Record` over `IntakeSource`, so a fourth way in is a compile error here
+ * rather than a batch of entries quietly filed under the photo path. The
+ * distinction is the whole reason `LogInputPath` exists: it says which way in
+ * is worth improving, and nothing about the food (see `matomo-events.ts`).
+ */
+const SCAN_LOG_PATH_BY_SOURCE = {
+  photo: 'scan-plate',
+  text: 'scan-text',
+  speech: 'scan-speech',
+} satisfies Record<IntakeSource, LogInputPath>;
+
+/**
+ * Which intake produced the batch being confirmed, read straight off the form.
+ *
+ * NOT part of the Conform schema: it is not a field the person edits and it
+ * carries no validation error they could act on. Same treatment as the managed
+ * AI descriptor above, and for the same reason. A missing or tampered value
+ * reads as a photo, which is the intake this screen has always had.
+ */
+export function readIntakeSource(formData: FormData): IntakeSource {
+  return intakeSourceSchema.parse(formData.get('intakeSource'));
+}
+
+/**
  * Confirm now writes straight to the on-device primary store (M117/03) — the
  * confirmed food logs never transit the server at all; this route has no
  * server `action` anymore (see `clientAction` below).
@@ -1035,8 +1174,10 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
   // read after every entry is written, so it reports the day the user is about
   // to land on rather than a mid-write figure.
   // Once per confirmation, outside the per-item loop: a four-item plate is one
-  // log action, exactly as the single toast below treats it.
-  trackFoodLogged('scan-plate');
+  // log action, exactly as the single toast below treats it. WHICH way in it
+  // was travels on the form, because a photo, a typed sentence and a spoken
+  // one all reach this same confirm and would otherwise be indistinguishable.
+  trackFoodLogged(SCAN_LOG_PATH_BY_SOURCE[readIntakeSource(formData)]);
 
   const redirectTo = activeDate ? `/diary?date=${activeDate}` : '/diary';
   const totals = await readDayCarbTotals(dayKey);
@@ -1236,6 +1377,17 @@ function ScanFlow({
   const [mode, setMode] = useState<VisionMode>('plate');
   const [file, setFile] = useState<File | null>(null);
   /**
+   * The words this intake is about, or `null` when it is a photograph.
+   *
+   * It is the discriminator for the whole screen: `null` means the capture
+   * surface, non-null means the quote block. Holding the text rather than a
+   * boolean is what lets the person SEE what is being analysed, which is the
+   * text path's equivalent of the photo preview.
+   */
+  const [typedText, setTypedText] = useState<string | null>(null);
+  /** How this intake started. Only ever read at confirm time; see `SCAN_LOG_PATH_BY_SOURCE`. */
+  const [intakeSource, setIntakeSource] = useState<IntakeSource>('photo');
+  /**
    * The meal slot the confirm step opens on, resolved AT PICK TIME rather than
    * at render: the answer depends on `Date.now()`, and a value that moved every
    * render would fight the person editing the select. Null until a photo is
@@ -1262,6 +1414,8 @@ function ScanFlow({
   const sharedPhotoHandledRef = useRef(false);
   // Same pair for the tab-bar launcher's hand-off (see `scan-handoff.ts`).
   const processHandoffRef = useRef<(file: File, scanMode: VisionMode) => void>(() => {});
+  /** Same pair again for a sentence handed over by `/add` (typed or spoken). */
+  const processTextHandoffRef = useRef<(text: string, source: TypedIntakeSource) => void>(() => {});
   const handoffHandledRef = useRef(false);
 
   const activeData = fetcher.data === suppressedData ? undefined : fetcher.data;
@@ -1294,20 +1448,29 @@ function ScanFlow({
   // the single point where provider spend is committed.
   useEffect(() => {
     if (state.phase !== 'dispatching') return;
-    if (!file) return;
+    // Either a prepared photograph or a sentence, never neither. The two are
+    // mutually exclusive by construction: each entry point clears the other.
+    if (file === null && typedText === null) return;
     if (lastSubmittedDispatchId.current === state.dispatchId) return;
     lastSubmittedDispatchId.current = state.dispatchId;
     setDidSettleWithNothing(false);
     const formData = new FormData();
     formData.append('_intent', 'identify');
-    formData.append('mode', mode);
-    formData.append('photo', file);
+    formData.append('intakeSource', intakeSource);
+    if (typedText !== null) {
+      formData.append('intake', 'text');
+      formData.append('text', typedText);
+    } else if (file !== null) {
+      formData.append('intake', 'photo');
+      formData.append('mode', mode);
+      formData.append('photo', file);
+    }
     // WHICH AI, decided here where the config and the session are readable and
     // carried into the action, which can read neither. See
     // `writeManagedAiFields`.
     writeManagedAiFields(formData, managedAi);
     void fetcher.submit(formData, { method: 'post', encType: 'multipart/form-data' });
-  }, [state.phase, state.dispatchId, file, fetcher, mode, managedAi]);
+  }, [state.phase, state.dispatchId, file, typedText, intakeSource, fetcher, mode, managedAi]);
 
   // Settle the machine on the fetcher's active→idle edge (not merely "idle", which
   // is also the pre-submit state) so an in-flight dispatch is never cut short.
@@ -1389,12 +1552,40 @@ function ScanFlow({
     // Drop any prior identify result, then arm: a camera capture dispatches now,
     // a library pick waits out the cancellable grace window.
     setSuppressedData(fetcher.data);
+    // A photograph REPLACES any sentence that was being analysed: the two are
+    // one screen's worth of state, and leaving both set would submit a form
+    // carrying an intake the action does not run.
+    setTypedText(null);
+    setIntakeSource('photo');
     setFile(nextFile);
     // Read off the ORIGINAL picked file: `downscaleToJpeg` re-encodes through a
     // canvas and the File it returns is stamped with the current time, so the
     // downscaled copy has no memory of when the picture was taken.
     setCaptureMealType(mealTypeForCapture({ fileLastModifiedMs: picked.lastModified, nowMs: Date.now(), timezone }));
     dispatch({ type: 'pick', source });
+  };
+
+  /**
+   * The text pipeline's single entry: hold the words, arm, dispatch.
+   *
+   * No validation, no downscale, no grace window. There is nothing to prepare
+   * and nothing to reconsider — the person read their own sentence back before
+   * they submitted it, which is exactly the confirmation the library-pick
+   * grace window exists to provide for a photo they may have picked by
+   * mistake. So it arms as a `'camera'` pick, which dispatches at once.
+   */
+  const processTypedText = ({ text, source }: { text: string; source: TypedIntakeSource }): void => {
+    setSelectionError(null);
+    setIsProcessing(false);
+    setSuppressedData(fetcher.data);
+    setFile(null);
+    setTypedText(text);
+    setIntakeSource(source);
+    // No photo timestamp to read a slot off, so the slot is "now" — which is
+    // what a person logging as they eat means anyway. Still editable on the
+    // confirm screen, exactly as a photo's preselection is.
+    setCaptureMealType(mealTypeForCapture({ fileLastModifiedMs: Date.now(), nowMs: Date.now(), timezone }));
+    dispatch({ type: 'pick', source: 'camera' });
   };
 
   // Keep the ref pointing at the current pipeline entry (no dep array — runs
@@ -1404,6 +1595,7 @@ function ScanFlow({
       void processSelectedFile({ picked: sharedFile, source: 'library' });
     processHandoffRef.current = (handedFile: File, scanMode: VisionMode) =>
       void processSelectedFile({ picked: handedFile, source: 'camera', scanMode });
+    processTextHandoffRef.current = (text: string, source: TypedIntakeSource) => processTypedText({ text, source });
   });
 
   // A caller that already knows which scanner it wants says so in the URL
@@ -1429,8 +1621,15 @@ function ScanFlow({
   useEffect(() => {
     if (handoffHandledRef.current) return;
     handoffHandledRef.current = true;
-    const handed = takePickedFile();
+    const handed = takeIntakeHandoff();
     if (handed === null) return;
+    // A SENTENCE ARRIVES THE SAME WAY A PHOTO DOES, through the same one-shot
+    // slot and the same once-only guard, so a remount can never re-run (and
+    // re-charge for) an intake that was already handled.
+    if (handed.kind === 'text') {
+      processTextHandoffRef.current(handed.text, handed.source);
+      return;
+    }
     setMode(handed.mode);
     processHandoffRef.current(handed.file, handed.mode);
   }, []);
@@ -1488,6 +1687,8 @@ function ScanFlow({
     setSuppressedData(fetcher.data);
     setSelectionError(null);
     setFile(null);
+    setTypedText(null);
+    setIntakeSource('photo');
     dispatch({ type: 'reset' });
   };
 
@@ -1535,6 +1736,7 @@ function ScanFlow({
         photoFile={file}
         userId={userId}
         defaultMealType={captureMealType}
+        intakeSource={identifyResult?.intakeSource ?? intakeSource}
       />
     );
   }
@@ -1545,6 +1747,7 @@ function ScanFlow({
       mode={mode}
       onModeChange={handleModeChange}
       file={file}
+      typedText={typedText}
       previewUrl={previewUrl}
       isProcessing={isProcessing}
       selectionError={selectionError}
@@ -1676,6 +1879,7 @@ function UploadForm({
   mode,
   onModeChange,
   file,
+  typedText,
   previewUrl,
   isProcessing,
   selectionError,
@@ -1698,6 +1902,8 @@ function UploadForm({
   mode: VisionMode;
   onModeChange: (mode: VisionMode) => void;
   file: File | null;
+  /** The sentence being analysed, or `null` for a photograph. Branches COPY and the preview only. */
+  typedText: string | null;
   previewUrl: string | null;
   isProcessing: boolean;
   selectionError: string | null;
@@ -1732,7 +1938,11 @@ function UploadForm({
   // accurate headline below instead — retrying with a different photo can
   // never fix a rejected API key.
   const isPhotoQualityFailure = failureCause === undefined || failureCause === 'genuinely-no-food';
-  const isLabelMode = mode === 'label';
+  // THREE SUBJECTS, three sets of sentences. "No foods on that plate" is not
+  // "couldn't read that panel", and neither is "we couldn't make food out of
+  // what you wrote" — a person told the wrong one retries the wrong thing.
+  const isTextIntake = typedText !== null;
+  const isLabelMode = !isTextIntake && mode === 'label';
   // WHO RECEIVES THE PHOTOGRAPH, which is the only reason this screen asks
   // anything about the instance (M201/07).
   const { aiComesFromTheInstance } = useInstancePolicy();
@@ -1740,22 +1950,36 @@ function UploadForm({
   // resolution) is on the scan-task descriptor; what changes here is what the
   // sentences say, because "no foods on that plate" is not "couldn't read that
   // panel" and a user told the wrong one retries the wrong thing.
-  const captureTitle = isLabelMode ? t('scan.labelScan.capture.title') : t('scan.capture.title');
+  const captureTitle =
+    isTextIntake ? t('scan.textIntake.title')
+    : isLabelMode ? t('scan.labelScan.capture.title')
+    : t('scan.capture.title');
   // THE RECIPIENT IS NAMED DIFFERENTLY on a managed instance (M192/05), and
   // that is the whole reason for the branch: "your own AI provider" is true on
   // an open instance and false here, where the photo goes to a proxy the
   // person's own organization runs. Somebody deciding whether to press the
   // shutter is deciding who sees the photo.
   const captureDescription =
-    isLabelMode ? t('scan.labelScan.capture.description')
+    isTextIntake ?
+      aiComesFromTheInstance ? t('scan.textIntake.managedDescription')
+      : t('scan.textIntake.description')
+    : isLabelMode ? t('scan.labelScan.capture.description')
     : aiComesFromTheInstance ? t('scan.capture.managedDescription')
     : t('scan.capture.description');
   const emptyTitle = isLabelMode ? t('scan.labelScan.capture.emptyTitle') : t('scan.capture.emptyTitle');
-  const photoLabel = isLabelMode ? t('scan.labelScan.capture.photoLabel') : t('scan.capture.photoLabel');
+  const photoLabel =
+    isTextIntake ? t('scan.textIntake.label')
+    : isLabelMode ? t('scan.labelScan.capture.photoLabel')
+    : t('scan.capture.photoLabel');
   const previewAlt = isLabelMode ? t('scan.labelScan.capture.previewAlt') : t('scan.capture.previewAlt');
   const alertTitle =
-    isLabelMode && isPhotoQualityFailure ? t('scan.errors.label.title') : getFailureAlertTitle(failureCause, t);
-  const photoQualityBody = isLabelMode ? t('scan.errors.label.photoQualityBody') : t('scan.errors.photoQualityBody');
+    isPhotoQualityFailure && isTextIntake ? t('scan.errors.text.title')
+    : isPhotoQualityFailure && isLabelMode ? t('scan.errors.label.title')
+    : getFailureAlertTitle(failureCause, t);
+  const photoQualityBody =
+    isTextIntake ? t('scan.errors.text.qualityBody')
+    : isLabelMode ? t('scan.errors.label.photoQualityBody')
+    : t('scan.errors.photoQualityBody');
   // Only relevant for a photo-quality failure: whether there's extra detail
   // worth showing below the friendly headline (the plain NO_FOODS_ERROR case
   // has nothing more specific to add). A non-photo-quality failure shows
@@ -1775,9 +1999,10 @@ function UploadForm({
   // Picks are blocked only while preparing a photo or during a committed request;
   // the free grace window still accepts a re-pick (which re-arms it).
   const pickDisabled = isProcessing || phase === 'dispatching';
-  // After a cancel or a failed attempt we rest at idle-with-photo and offer a
-  // manual, deliberately-quiet analyze — this app never nudges the user to spend.
-  const canAnalyze = phase === 'idle' && file !== null && !isProcessing;
+  // After a cancel or a failed attempt we rest at idle-with-an-intake and offer
+  // a manual, deliberately-quiet analyze — this app never nudges the user to
+  // spend. A sentence qualifies exactly as a prepared photo does.
+  const canAnalyze = phase === 'idle' && (file !== null || isTextIntake) && !isProcessing;
 
   return (
     <div className="space-y-4">
@@ -1816,7 +2041,26 @@ function UploadForm({
               {/* Caption only — picking is driven by the two buttons below. */}
               <Label>{photoLabel}</Label>
 
-              {file && previewUrl && (
+              {/* THE TEXT PATH'S PREVIEW. A photo intake shows the picture
+                  being analysed; a typed or spoken one shows the sentence, in
+                  the same slot and with the same in-flight overlay, so the
+                  person can see what is being read either way. A quote block
+                  and not an editable field: the analysis is already running,
+                  and a box you can type into while it does would be a promise
+                  the screen cannot keep. */}
+              {isTextIntake && (
+                <figure className="relative w-full rounded-lg border bg-muted/40 p-4">
+                  <blockquote className="text-sm break-words whitespace-pre-wrap">{typedText}</blockquote>
+                  {phase === 'dispatching' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 backdrop-blur">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <p className="text-sm font-medium">{getIdentifyStageMessage(elapsedSeconds, t)}</p>
+                    </div>
+                  )}
+                </figure>
+              )}
+
+              {!isTextIntake && file && previewUrl && (
                 <div className="relative aspect-video max-h-72 w-full overflow-hidden rounded-lg bg-zinc-100 sm:max-h-80 dark:bg-zinc-900">
                   <img src={previewUrl} alt={previewAlt} className="h-full w-full object-cover" />
                   {phase === 'grace' && (
@@ -1843,7 +2087,7 @@ function UploadForm({
                 </div>
               )}
 
-              {!file && (
+              {!isTextIntake && !file && (
                 <div className="flex aspect-video max-h-44 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-4 text-center">
                   <Camera className="h-8 w-8 text-muted-foreground" />
                   <p className="text-sm font-medium">{emptyTitle}</p>
@@ -1897,7 +2141,7 @@ function UploadForm({
                 </p>
               )}
 
-              {file && !isProcessing && (
+              {!isTextIntake && file && !isProcessing && (
                 <p className="min-w-0 truncate text-xs text-muted-foreground">
                   {file.name} · {formatFileSize(file.size)}
                 </p>
@@ -2761,6 +3005,7 @@ export function ConfirmDraftForm({
   photoFile,
   userId,
   defaultMealType,
+  intakeSource,
 }: {
   identification?: PlateIdentification;
   /** Provider of the attempt — pairs with `modelId` for the scan's cost estimate; without it there is no honest price to show. */
@@ -2780,6 +3025,12 @@ export function ConfirmDraftForm({
    * whole plate: a scan is one sitting.
    */
   defaultMealType: MealType | null;
+  /**
+   * Which way in produced this draft. Posted as a hidden field and read by
+   * `handleConfirm` for the diary's input-path event, which is its only reader
+   * — nothing on this screen looks or behaves differently because of it.
+   */
+  intakeSource: IntakeSource;
 }) {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
@@ -2980,6 +3231,9 @@ export function ConfirmDraftForm({
   return (
     <Form method="post" {...getFormProps(form)} className="space-y-4 pb-40 md:pb-28">
       <input type="hidden" name="_intent" value="confirm" />
+      {/* Which way in this draft arrived by. Outside every collapsible for the
+          same reason the date is: it must submit whatever the person expands. */}
+      <input type="hidden" name="intakeSource" value={intakeSource} />
       {/* Kept outside every collapsible so the back-dated day always submits. */}
       {logDate && <input type="hidden" name="date" value={logDate} />}
       {/* Client-minted batch id, so the device photo cache and the server agree. */}

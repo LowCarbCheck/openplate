@@ -259,15 +259,25 @@ export function trackScanStartedFromShare(): void {
 /**
  * The INPUT PATH a log entry arrived by, never the entry.
  *
- * This is the whole point of the Diary category: it says which of eight ways
+ * This is the whole point of the Diary category: it says which of the ways
  * into the diary a person used, so the weak ones can be improved. It says
  * nothing about the food, the amount, the meal or the time.
+ *
+ * `scan-text` and `scan-speech` are the AI intake reached by writing or
+ * saying what was eaten rather than photographing it. They are the same
+ * pipeline and the same review screen as `scan-plate` by design, which is
+ * exactly why they need their own names here: after the merge this is the
+ * only remaining place that can say which way in a person actually took, and
+ * whether a way in is worth improving is the one question this event exists
+ * to answer. It stays a fixed literal union, and it still carries no content.
  */
 export type LogInputPath =
   | 'add-search'
   | 'add-manual'
   | 'scan-plate'
   | 'scan-label'
+  | 'scan-text'
+  | 'scan-speech'
   | 'diary-chip'
   | 'diary-copy-day'
   | 'entry-log-again'

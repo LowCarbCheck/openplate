@@ -170,6 +170,9 @@ function renderUnderRouter(element: ReturnType<typeof createElement>): string {
 function renderPlateConfirm(defaultMealType: MealType | null): string {
   return renderUnderRouter(
     createElement(ConfirmDraftForm, {
+      // The intake this draft arrived by. A photograph here: these tests are
+      // about what the plate path writes, not about which way in produced it.
+      intakeSource: 'photo',
       identification: AI_IDENTIFICATION,
       modelId: 'test-model',
       lastResult: undefined,

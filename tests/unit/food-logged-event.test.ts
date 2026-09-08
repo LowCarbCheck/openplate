@@ -76,14 +76,23 @@ function topLevelFunctionBody(source: string, name: string): string {
   return source.slice(start, end);
 }
 
-/** Asserts the call is unconditional on the handler's success path, in the right place. */
-function assertLoggedOnTheSuccessPath(handler: string, path: LogInputPath): void {
+/**
+ * Asserts the call is unconditional on the handler's success path, in the
+ * right place.
+ *
+ * `call` is the WHOLE expression, not just the path, because the plate confirm
+ * no longer names its path as a literal: a photo, a typed sentence and a
+ * spoken one all reach that one handler, so the path is looked up from the
+ * intake the form carried (`SCAN_LOG_PATH_BY_SOURCE`). What this still pins is
+ * the property that matters, that the call sits at the handler's own top level
+ * rather than inside a branch that reports some logs and not others.
+ */
+function assertLoggedOnTheSuccessPath(handler: string, call: string): void {
   const body = topLevelFunctionBody(SCAN_ROUTE, handler);
-  const call = `trackFoodLogged('${path}');`;
 
   assert.match(
     body,
-    new RegExp(`^ {2}${call.replace(/[(){}'.]/g, '\\$&')}$`, 'm'),
+    new RegExp(`^ {2}${call.replace(/[(){}'.[\]]/g, '\\$&')}$`, 'm'),
     `${handler} no longer fires ${call} at its own top level. A call nested in a branch reports some logs and not others, which is worse than reporting none.`,
   );
 
@@ -115,14 +124,18 @@ describe('the level a default instance runs at admits Diary / logged', () => {
 
     trackFoodLogged('scan-plate');
     trackFoodLogged('scan-label');
+    trackFoodLogged('scan-text');
+    trackFoodLogged('scan-speech');
 
     assert.deepEqual(paq, [
       ['trackEvent', 'Diary', 'logged', 'scan-plate'],
       ['trackEvent', 'Diary', 'logged', 'scan-label'],
+      ['trackEvent', 'Diary', 'logged', 'scan-text'],
+      ['trackEvent', 'Diary', 'logged', 'scan-speech'],
     ]);
   });
 
-  it('keeps the two scans apart from the other six input paths', () => {
+  it('keeps the four scan paths apart from the other six input paths', () => {
     const paq = stubWindow();
     setAnalyticsEventLevel(defaultInstanceLevel());
     const paths: readonly LogInputPath[] = [
@@ -130,6 +143,8 @@ describe('the level a default instance runs at admits Diary / logged', () => {
       'add-manual',
       'scan-plate',
       'scan-label',
+      'scan-text',
+      'scan-speech',
       'diary-chip',
       'diary-copy-day',
       'entry-log-again',
@@ -138,7 +153,7 @@ describe('the level a default instance runs at admits Diary / logged', () => {
 
     for (const path of paths) trackFoodLogged(path);
 
-    // Eight distinct names and nothing else on the row: the event says HOW an
+    // Ten distinct names and nothing else on the row: the event says HOW an
     // entry arrived, never what the entry was. There is no value slot to leak
     // a carb count into, and there is no fourth field to leak a food name into.
     assert.deepEqual(
@@ -159,12 +174,23 @@ describe('the level a default instance runs at admits Diary / logged', () => {
 });
 
 describe('the chain from a confirmed scan to Diary / logged', () => {
-  it('reports scan-plate once the plate confirm has written its entries', () => {
-    assertLoggedOnTheSuccessPath('handleConfirm', 'scan-plate');
+  it('reports the way in once the plate confirm has written its entries', () => {
+    assertLoggedOnTheSuccessPath(
+      'handleConfirm',
+      'trackFoodLogged(SCAN_LOG_PATH_BY_SOURCE[readIntakeSource(formData)]);',
+    );
   });
 
   it('reports scan-label once the label confirm has written its entry', () => {
-    assertLoggedOnTheSuccessPath('handleConfirmLabel', 'scan-label');
+    assertLoggedOnTheSuccessPath('handleConfirmLabel', "trackFoodLogged('scan-label');");
+  });
+
+  it('maps each of the three intakes onto its own input path, exhaustively', () => {
+    // A `satisfies Record<IntakeSource, LogInputPath>` in the route, so a
+    // fourth way in is a compile error rather than a batch of entries quietly
+    // filed under the photo path.
+    assert.match(SCAN_ROUTE, /satisfies Record<IntakeSource, LogInputPath>/);
+    assert.match(SCAN_ROUTE, /photo: 'scan-plate',\s*\n\s*text: 'scan-text',\s*\n\s*speech: 'scan-speech',/);
   });
 
   it('reports a four-item plate ONCE, because a confirm is one log action', () => {

@@ -1,16 +1,25 @@
 /**
- * The one hierarchy for starting a log: **photograph first, then type or
- * speak.**
+ * The three ways to start a log, side by side and the same size: **photograph,
+ * type, speak.**
  *
- * The primary opens the camera. It is a `Button`, not a `Link`, because a
- * navigation cannot open a camera: a browser only honours a programmatic
- * `input.click()` inside the gesture that asked for it, so the tap has to do
- * the work itself. The gesture lives in `useCameraCapture`, which the tab
- * bar's raised launcher shares. One decision, four surfaces, no drift.
+ * THEY ARE EQUALS NOW. Photograph used to be a full-width primary with the
+ * other two shrunk underneath it, which said that typing was the consolation
+ * prize. All three reach the same AI review screen and produce the same
+ * entries, so all three get the same height, the same tap target and a label
+ * under an icon. Photograph keeps the filled fill because it is the one that
+ * costs a camera permission and is worth naming first; the other two are
+ * outlined in the same primary colour, so the row reads as one family rather
+ * than one action plus two links.
  *
- * The two quiet buttons beside it are the other ways in, visible rather than
- * hidden behind the photo path. "Speak" renders only where a recogniser
- * exists (Firefox has none), so nobody sees a dead control.
+ * The photo action is a `Button`, not a `Link`, because a navigation cannot
+ * open a camera: a browser only honours a programmatic `input.click()` inside
+ * the gesture that asked for it, so the tap has to do the work itself. The
+ * gesture lives in `useCameraCapture`, which the tab bar's raised launcher
+ * shares. One decision, four surfaces, no drift.
+ *
+ * "Speak" renders only where a recogniser exists (Firefox has none), so nobody
+ * sees a dead control. Without it the row is two columns rather than three
+ * with a hole in it.
  *
  * BOTH destinations are passed in, and both carry the viewed day. `/diary`
  * sends `/add?date=...` and `/scan?date=...` when the user is not looking at
@@ -36,6 +45,13 @@ export function speakHref(addTo: string): string {
   return `${path}?${params.toString()}`;
 }
 
+/**
+ * The shared geometry of one action. Tall enough (h-14) that the icon and its
+ * label both fit without crowding, and wide enough that a thumb hits the
+ * button rather than the gap beside it.
+ */
+const ACTION_CLASS = 'h-14 flex-1 flex-col gap-1 px-2 text-xs font-medium';
+
 export function AddFoodActions({
   addTo,
   scanTo = '/scan',
@@ -51,19 +67,25 @@ export function AddFoodActions({
 
   return (
     <div className={cn('flex w-full flex-col gap-2', className)}>
-      <Button ref={triggerRef} type="button" className="h-11 w-full" onClick={() => captureWith('plate')}>
-        <Camera className="h-4 w-4" aria-hidden="true" /> {t('diary.actions.photograph')}
-      </Button>
       <div className="flex gap-2">
-        <Button asChild variant="outline" className="h-11 flex-1">
+        <Button ref={triggerRef} type="button" className={ACTION_CLASS} onClick={() => captureWith('plate')}>
+          <Camera className="h-5 w-5" aria-hidden="true" />
+          {t('launcher.photo')}
+        </Button>
+        {/* Outlined in the primary colour rather than a neutral grey: these are
+            the same action at the same rank, and a grey pair beside a filled
+            button would read as "or, if you must". */}
+        <Button asChild variant="outline" className={cn(ACTION_CLASS, 'border-primary/50 text-primary')}>
           <Link to={addTo}>
-            <Keyboard className="h-4 w-4" aria-hidden="true" /> {t('launcher.type')}
+            <Keyboard className="h-5 w-5" aria-hidden="true" />
+            {t('launcher.type')}
           </Link>
         </Button>
         {canSpeak && (
-          <Button asChild variant="outline" className="h-11 flex-1">
+          <Button asChild variant="outline" className={cn(ACTION_CLASS, 'border-primary/50 text-primary')}>
             <Link to={speakHref(addTo)}>
-              <Mic className="h-4 w-4" aria-hidden="true" /> {t('launcher.speak')}
+              <Mic className="h-5 w-5" aria-hidden="true" />
+              {t('launcher.speak')}
             </Link>
           </Button>
         )}

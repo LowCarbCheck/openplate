@@ -173,7 +173,13 @@
         "many": "{{n}} Lebensmittel für {{transcript}} gefunden."
       }
     },
-    "title": "Essen eintragen"
+    "title": "Essen eintragen",
+    "aiIntake": {
+      "submit": "Mit KI eintragen",
+      "hint": "Schreib eine ganze Mahlzeit auf einmal, zum Beispiel 3 Eier, 2 Scheiben Toast, ein Glas Orangensaft.",
+      "needsProvider": "Verbinde einen KI-Anbieter, um eine ganze Mahlzeit in einem Satz einzutragen. Die Suche funktioniert auch ohne.",
+      "connect": "KI einrichten"
+    }
   },
   "banners": {
     "backupDismiss": "Backup-Hinweis ausblenden",
@@ -1038,7 +1044,8 @@
     "platePhoto": "Tellerfoto",
     "labelPhoto": "Foto der Nährwerttabelle",
     "speak": "Sprechen",
-    "type": "Tippen"
+    "type": "Tippen",
+    "photo": "Foto"
   },
   "meals": {
     "description": "Mahlzeiten, die du als Bündel gespeichert hast. Mit einem Tap eintragen oder hier entfernen.",
@@ -1637,6 +1644,11 @@
         "photoTooLarge": "Das Foto ist zu groß",
         "aiNotAllowed": "Foto-Schätzungen sind deaktiviert",
         "accountSuspended": "Dein Konto ist gesperrt"
+      },
+      "text": {
+        "empty": "Schreib zuerst auf, was du gegessen hast.",
+        "title": "Mit dieser Beschreibung hat es nicht geklappt",
+        "qualityBody": "Daraus konnten wir keine Lebensmittel machen. Nenne jedes Lebensmittel und die Menge, zum Beispiel 3 Eier, 2 Scheiben Toast."
       }
     },
     "labelScan": {
@@ -1788,7 +1800,13 @@
         "description": "Fotografiere deinen Teller und die Kohlenhydrate werden für dich berechnet."
       }
     },
-    "title": "Teller scannen"
+    "title": "Teller scannen",
+    "textIntake": {
+      "title": "Wir lesen, was du geschrieben hast",
+      "label": "Das hast du eingegeben",
+      "description": "Deine Worte gehen direkt an deinen eigenen KI-Anbieter. Daraus werden Einträge, die du prüfst, bevor etwas gespeichert wird.",
+      "managedDescription": "Deine Worte gehen an die KI, die deine Instanz betreibt. Daraus werden Einträge, die du prüfst, bevor etwas gespeichert wird."
+    }
   },
   "settings": {
     "data": {

@@ -49,7 +49,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
   it('attaches the derived json_schema response_format when structured output is enabled', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
-      dataUrl: 'data:image/png;base64,AAAA',
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
     });
@@ -66,7 +66,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
   it('omits response_format entirely for the retry-without-it variant', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
-      dataUrl: 'data:image/png;base64,AAAA',
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
       useStructuredOutput: false,
     });
@@ -79,7 +79,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     // photo needs none of it — the tokens would bill at the completion rate.
     const body = buildOpenAiCompatibleRequestBody({
       model: 'openai/gpt-5.6-luna',
-      dataUrl: 'data:image/png;base64,AAAA',
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
       disableReasoning: true,
@@ -93,7 +93,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
     // Mistral and self-hosted endpoints that reject unknown body fields.
     const withoutFlag = buildOpenAiCompatibleRequestBody({
       model: 'llama3',
-      dataUrl: 'data:image/png;base64,AAAA',
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
     });
@@ -101,7 +101,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
 
     const explicitlyFalse = buildOpenAiCompatibleRequestBody({
       model: 'llama3',
-      dataUrl: 'data:image/png;base64,AAAA',
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
       useStructuredOutput: false,
       disableReasoning: false,
@@ -112,7 +112,7 @@ describe('buildOpenAiCompatibleRequestBody', () => {
   it('carries the image as an image_url data URL in the user message', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
-      dataUrl: 'data:image/png;base64,AAAA',
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
       useStructuredOutput: true,
     });
@@ -129,7 +129,7 @@ describe('buildAnthropicRequestBody', () => {
   it('forces tool-use of record_plate_identification with the derived input schema', () => {
     const body = buildAnthropicRequestBody({
       model: 'claude-sonnet-5',
-      image: { base64: 'AAAA', mimeType: 'image/png' },
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
     });
 
@@ -145,7 +145,7 @@ describe('buildAnthropicRequestBody', () => {
   it('sends the image as a base64 source block', () => {
     const body = buildAnthropicRequestBody({
       model: 'claude-sonnet-5',
-      image: { base64: 'AAAA', mimeType: 'image/png' },
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: PLATE_SCAN_TASK,
     });
 

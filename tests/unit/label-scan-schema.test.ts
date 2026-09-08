@@ -257,7 +257,7 @@ describe('adapters parameterized by the label task', () => {
   it('sends the label json_schema, not the plate one (openai-compatible)', () => {
     const body = buildOpenAiCompatibleRequestBody({
       model: 'gpt-5o',
-      dataUrl: 'data:image/jpeg;base64,AAAA',
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/png' } },
       task: LABEL_SCAN_TASK,
       useStructuredOutput: true,
     });
@@ -271,7 +271,7 @@ describe('adapters parameterized by the label task', () => {
   it('forces the label tool with the label input schema (anthropic)', () => {
     const body = buildAnthropicRequestBody({
       model: 'claude-sonnet-5',
-      image: { base64: 'AAAA', mimeType: 'image/jpeg' },
+      input: { kind: 'photo', image: { base64: 'AAAA', mimeType: 'image/jpeg' } },
       task: LABEL_SCAN_TASK,
     });
 

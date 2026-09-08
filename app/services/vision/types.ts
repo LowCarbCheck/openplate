@@ -7,7 +7,7 @@
 // Type-only import: `./task` imports this module's values, so a value import
 // here would close a runtime cycle. The descriptor shape belongs beside the
 // task definitions, not in the domain types.
-import type { ScanTaskDescriptor } from './task';
+import type { IntakeTaskDescriptor, ScanTaskDescriptor } from './task';
 import type { CarbBasis } from '#app/lib/net-carbs';
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
@@ -133,16 +133,34 @@ export interface ScanResultBase {
   usage?: ScanTokenUsage;
 }
 
-/** The photo handed to a scan task. Named for the plate path it shipped with; every task uses it. */
+/** The photo handed to a scan task. Named for the plate path it shipped with; every photo task uses it. */
 export interface PlateImageInput {
   /** Raw image bytes, base64-encoded. Never written to disk. */
   base64: string;
   mimeType: string;
 }
 
+/**
+ * WHAT ONE INTAKE CALL CARRIES: a picture, or the person's own words.
+ *
+ * A union rather than two optional fields, so "both" and "neither" are
+ * unrepresentable. Both would be a request whose meaning depended on which
+ * branch an adapter read first; neither would be a paid call about nothing.
+ *
+ * It exists because the two are the SAME job from the model's side — describe
+ * the foods worth logging and return `foods[]` — and differ only in which
+ * content part the user message carries. Everything around that (transport,
+ * retry, failure classification, token accounting) is shared, exactly as it
+ * already is between the two photo tasks.
+ */
+export type IntakeInput =
+  | { kind: 'photo'; image: PlateImageInput }
+  /** Free text in any language, exactly as the person typed or spoke it. Never rewritten before it is sent. */
+  | { kind: 'text'; text: string };
+
 export interface VisionProvider {
   /**
-   * Runs one scan task against the provider. The task descriptor (see
+   * Runs one PHOTO task against the provider. The task descriptor (see
    * `./task`) carries the prompt, the JSON Schema and the parse; transport,
    * retry, failure classification and cost accounting here stay task-blind —
    * there is no mode branch inside an adapter, by design.
@@ -150,6 +168,15 @@ export interface VisionProvider {
   runScan<TResult extends ScanResultBase>(options: {
     task: ScanTaskDescriptor<TResult>;
     image: PlateImageInput;
+  }): Promise<TResult>;
+  /**
+   * Runs one TEXT task against the provider, with everything above shared.
+   * Takes the wider {@link IntakeTaskDescriptor} because a text task has no
+   * capture to downscale, which is the only field `ScanTaskDescriptor` adds.
+   */
+  runTextIntake<TResult extends ScanResultBase>(options: {
+    task: IntakeTaskDescriptor<TResult>;
+    text: string;
   }): Promise<TResult>;
 }
 

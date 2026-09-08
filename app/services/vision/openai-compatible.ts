@@ -31,10 +31,10 @@
  */
 import { z } from 'zod';
 
-import type { PlateImageInput, ScanResultBase, VisionProvider } from './types';
+import type { IntakeInput, PlateImageInput, ScanResultBase, VisionProvider } from './types';
 import { VisionProviderError } from './types';
 import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-cause';
-import type { ScanTaskDescriptor } from './task';
+import type { IntakeTaskDescriptor, ScanTaskDescriptor } from './task';
 import { attachScanUsage } from './task';
 import type { JsonSchemaNode } from './schema';
 
@@ -83,6 +83,35 @@ export interface OpenAiCompatibleProviderOptions {
 
 /** One part of a multimodal user message — text, or the plate photo as a data URL. */
 type ChatMessageContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
+
+/**
+ * The user message's content parts for one intake: the task's instruction
+ * first, then the thing being read.
+ *
+ * The two layouts are deliberately the same shape — instruction part, payload
+ * part — so nothing downstream of this function has to know which kind of
+ * intake it is handling. Keeping the person's words in their OWN part, rather
+ * than concatenated into the instruction, also keeps the instruction stable
+ * whatever they typed.
+ */
+function buildUserContentParts({
+  userPrompt,
+  input,
+}: {
+  userPrompt: string;
+  input: IntakeInput;
+}): ChatMessageContentPart[] {
+  if (input.kind === 'text') {
+    return [
+      { type: 'text', text: userPrompt },
+      { type: 'text', text: input.text },
+    ];
+  }
+  return [
+    { type: 'text', text: userPrompt },
+    { type: 'image_url', image_url: { url: `data:${input.image.mimeType};base64,${input.image.base64}` } },
+  ];
+}
 
 interface ChatCompletionsMessage {
   role: 'system' | 'user';
@@ -157,9 +186,12 @@ function isStructuredOutputRejection(status: number): boolean {
  * Builds the chat-completions request body. Pure — no `fetch` — so the enforced
  * and fallback shapes are unit-testable without mocking the network.
  *
- * @param task - the scan-task descriptor (see `./task`) supplying the prompts,
+ * @param task - the intake-task descriptor (see `./task`) supplying the prompts,
  *   the JSON Schema and its name. Everything else in this builder is identical
  *   for every task, which is why no branch on the mode appears here.
+ * @param input - the photo or the words this call is about; the one thing that
+ *   differs between a scan and a text intake, and it differs only in the user
+ *   message's content parts (see `buildUserContentParts`).
  * @param useStructuredOutput - when true, attaches the `json_schema`
  *   response_format that enforces the task's shape; when false, the body omits
  *   `response_format` entirely (for servers that reject it).
@@ -173,14 +205,14 @@ function isStructuredOutputRejection(status: number): boolean {
  */
 export function buildOpenAiCompatibleRequestBody({
   model,
-  dataUrl,
+  input,
   task,
   useStructuredOutput,
   disableReasoning = false,
 }: {
   model: string;
-  dataUrl: string;
-  task: ScanTaskDescriptor<ScanResultBase>;
+  input: IntakeInput;
+  task: IntakeTaskDescriptor<ScanResultBase>;
   useStructuredOutput: boolean;
   disableReasoning?: boolean;
 }): ChatCompletionsRequestBody {
@@ -188,13 +220,7 @@ export function buildOpenAiCompatibleRequestBody({
     model,
     messages: [
       { role: 'system', content: task.systemPrompt },
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: task.userPrompt },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      },
+      { role: 'user', content: buildUserContentParts({ userPrompt: task.userPrompt, input }) },
     ],
   };
   if (disableReasoning) {
@@ -224,15 +250,18 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
   const authorization = async (): Promise<string | null> =>
     isBearerProvider(credential) ? await credential.getBearer() : credential.apiKey;
 
-  async function runScan<TResult extends ScanResultBase>({
+  /**
+   * ONE TRANSPORT FOR EVERY INTAKE. Retry, the structured-output fallback, the
+   * bearer refresh, failure classification and usage accounting all sit here
+   * and know nothing about whether they are carrying a photo or a sentence.
+   */
+  async function runIntake<TResult extends ScanResultBase>({
     task,
-    image,
+    input,
   }: {
-    task: ScanTaskDescriptor<TResult>;
-    image: PlateImageInput;
+    task: IntakeTaskDescriptor<TResult>;
+    input: IntakeInput;
   }): Promise<TResult> {
-    const dataUrl = `data:${image.mimeType};base64,${image.base64}`;
-
     const sendRequest = async (useStructuredOutput: boolean, bearer: string | null): Promise<Response> => {
       const headers = new Headers({ 'Content-Type': 'application/json', ...options.extraHeaders });
       // A MISSING bearer is sent as no header at all rather than as
@@ -246,7 +275,7 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
           body: JSON.stringify(
             buildOpenAiCompatibleRequestBody({
               model: options.model,
-              dataUrl,
+              input,
               task,
               useStructuredOutput,
               disableReasoning: options.disableReasoning,
@@ -320,5 +349,20 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
     return attachScanUsage(result, usage);
   }
 
-  return { runScan };
+  return {
+    runScan: <TResult extends ScanResultBase>({
+      task,
+      image,
+    }: {
+      task: ScanTaskDescriptor<TResult>;
+      image: PlateImageInput;
+    }) => runIntake({ task, input: { kind: 'photo', image } }),
+    runTextIntake: <TResult extends ScanResultBase>({
+      task,
+      text,
+    }: {
+      task: IntakeTaskDescriptor<TResult>;
+      text: string;
+    }) => runIntake({ task, input: { kind: 'text', text } }),
+  };
 }

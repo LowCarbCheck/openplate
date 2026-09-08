@@ -23,23 +23,11 @@
  * it OUTSIDE any sheet, dialog or conditional: closing a sheet must not
  * unmount the element whose `click()` is still on the gesture stack.
  */
-import { useEffect, useRef, useState, type ChangeEvent, type ComponentProps, type RefObject } from 'react';
+import { useEffect, useRef, type ChangeEvent, type ComponentProps, type RefObject } from 'react';
 import { useNavigate } from 'react-router';
-import { getLocalAiSettings } from '#app/lib/local-store';
 import { offerPickedFile } from '#app/lib/scan-handoff';
+import { useAiConnection } from '#app/components/add/use-ai-connection';
 import type { VisionMode } from '#app/services/vision';
-
-/**
- * Whether the device already has an AI provider connected.
- *
- * `unknown` is its own member and is NOT treated as "connected": the read is
- * an IndexedDB round trip that only starts after hydration, and opening the
- * camera on a device that cannot analyse the photo would ask for a permission
- * the feature can never use. Until the answer is in, the trigger behaves
- * exactly as it does for an unconnected device, it goes to the scan screen,
- * which is where the connect card lives.
- */
-type AiConnection = 'unknown' | 'connected' | 'absent';
 
 export type CameraCapture = {
   /** Open the camera for this scan, synchronously, inside the tap that asked for it. */
@@ -58,20 +46,9 @@ export function useCameraCapture({ scanTo = '/scan' }: { scanTo?: string } = {})
   const triggerRef = useRef<HTMLButtonElement>(null);
   /** The scan the pending capture was started for. A ref, so the tap handler needs no re-render. */
   const modeRef = useRef<VisionMode>('plate');
-  const [aiConnection, setAiConnection] = useState<AiConnection>('unknown');
-
-  // Read the device's AI connection once, after hydration. The result gates
-  // whether a tap may open the camera at all (see `AiConnection`).
-  useEffect(() => {
-    let isMounted = true;
-    void (async () => {
-      const settings = await getLocalAiSettings();
-      if (isMounted) setAiConnection(settings === null ? 'absent' : 'connected');
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // Shared with `/add`'s "Log with AI" action, so the two surfaces can never
+  // disagree about whether this device can analyse anything (`useAiConnection`).
+  const aiConnection = useAiConnection();
 
   // A dismissed camera fires `cancel`, not `change`. Nothing visible should
   // happen, the user changed their mind, but the focus that went to the file

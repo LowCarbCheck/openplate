@@ -173,7 +173,13 @@
         "many": "Found {{n}} foods for {{transcript}}."
       }
     },
-    "title": "Add food"
+    "title": "Add food",
+    "aiIntake": {
+      "submit": "Log with AI",
+      "hint": "Write a whole meal at once, like 3 eggs, 2 slices of toast, a glass of orange juice.",
+      "needsProvider": "Connect an AI provider to log a whole meal in one sentence. Search works without one.",
+      "connect": "Set up AI"
+    }
   },
   "banners": {
     "backupDismiss": "Dismiss backup reminder",
@@ -1038,7 +1044,8 @@
     "platePhoto": "Plate photo",
     "labelPhoto": "Nutrition panel photo",
     "speak": "Speak",
-    "type": "Type"
+    "type": "Type",
+    "photo": "Photo"
   },
   "meals": {
     "description": "Meals you've saved as a bundle. Log one in a single tap, or remove it here.",
@@ -1637,6 +1644,11 @@
         "photoTooLarge": "That photo is too big",
         "aiNotAllowed": "Photo estimates are off",
         "accountSuspended": "Your account is suspended"
+      },
+      "text": {
+        "empty": "Write what you ate first.",
+        "title": "No luck with that description",
+        "qualityBody": "We could not turn that into foods. Try naming each food and how much, like 3 eggs, 2 slices of toast."
       }
     },
     "labelScan": {
@@ -1788,7 +1800,13 @@
         "description": "Take a photo of your plate and the carbs are worked out for you."
       }
     },
-    "title": "Scan plate"
+    "title": "Scan plate",
+    "textIntake": {
+      "title": "Reading what you wrote",
+      "label": "What you entered",
+      "description": "Your words go straight to your own AI provider, which turns them into entries you check before anything is saved.",
+      "managedDescription": "Your words go to the AI your instance runs, which turns them into entries you check before anything is saved."
+    }
   },
   "settings": {
     "data": {

@@ -53,6 +53,72 @@ export function buildPlateIdentificationUserPrompt(): string {
 }
 
 /**
+ * Text intake — the same job as the plate photo, from words instead of pixels.
+ *
+ * A person who types "3 eggs, 2 slices of toast, a glass of orange juice" has
+ * already done the identification the plate prompt asks a model to do, and has
+ * usually given the quantities too. So this prompt's work is different in one
+ * respect only: the amounts in the sentence are the person's OWN statement and
+ * must be honoured, not re-estimated. A model that quietly rounds "3 eggs" to
+ * a 100 g portion has thrown away the most reliable number in the whole app.
+ *
+ * ANY LANGUAGE IN, the app's macro vocabulary out. The text arrives exactly as
+ * it was typed or dictated, in whatever language the person speaks, and the
+ * item names come back in that same language so the diary reads the way they
+ * wrote it.
+ *
+ * NO INVENTED BRANDS. A bare "protein bar" is a low-confidence generic, never
+ * a named product whose macros the model half-remembers. That is the same rule
+ * ADR-0005 states for packaged food: a brand's numbers come from its printed
+ * panel, never from recall.
+ */
+export const TEXT_INTAKE_SYSTEM_PROMPT = `You are a nutrition assistant that turns a person's own description of a meal into a concise, useful food log.
+
+The text is what someone typed or said about what they ate. It may be in any language, it may be one word or a whole sentence, and it may be untidy. Read it as a list of foods.
+
+Log foods the way a person would, not the way a lab would:
+- One item per food they named. Do not split a named dish into ingredients, and do not merge two foods they listed separately.
+- Name each item in the SAME language the person used, in plain words, close to how they said it.
+- Ignore anything that is not a food: greetings, times of day, feelings, and words about how the meal was cooked when they do not change what was eaten.
+- If the text names no food at all, return an empty "foods" list rather than guessing at one.
+
+For each item:
+- The AMOUNT THE PERSON GAVE IS THE ANSWER. "3 eggs" is three eggs, "2 slices of toast" is two slices, "a glass of orange juice" is one glass. Convert their count or household measure into grams using ordinary everyday sizes, and put their own wording in "portionHint" ("3 eggs", "2 slices", "a glass").
+- Only when they gave no amount at all, estimate one ordinary serving in grams, be conservative, and write the serving you assumed into "portionHint".
+- Rate your confidence in the identification as "high", "medium", or "low". A food named plainly ("banana") is high. A vague or ambiguous one ("a bar", "some cheese") is low.
+- NEVER invent a brand or a specific product. If they named no brand, log the generic food. If they named a brand you are not sure about, log it as the generic food at low confidence rather than reporting numbers from memory.
+- Estimate macronutrients per 100g (carbs, fiber, sugars, polyols, protein, fat, kcal) ONLY when you are reasonably confident. If you are not confident about a specific macro field, set it to null, never guess a number, and never use 0 to mean "unknown". This matters most for fiber and sugar alcohols (polyols), which are easy to miss.
+
+Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary outside the JSON):
+
+{
+  "foods": [
+    {
+      "name": "string",
+      "estimatedGrams": 0,
+      "confidence": "high | medium | low",
+      "portionHint": "string or null",
+      "macrosPer100g": {
+        "carbs": 0,
+        "fiber": 0,
+        "sugars": 0,
+        "polyols": 0,
+        "protein": 0,
+        "fat": 0,
+        "kcal": 0
+      }
+    }
+  ],
+  "notes": "string or null"
+}
+
+Every field must be present. "portionHint" may be null when the person gave no amount and no ordinary serving fits. Each macro field must be present but may be null. "macrosPer100g" itself may be null if you cannot estimate any macros for that item. "notes" may be null if you have nothing to add.`;
+
+export function buildTextIntakeUserPrompt(): string {
+  return 'Here is what the person said they ate. Turn it into the JSON shape described in the system prompt, keeping the amounts they gave.';
+}
+
+/**
  * Label reading — the second scan task (M123/10). A packaged product's macros
  * are not visible in a photo of the food, so the plate prompt above is
  * structurally wrong for them; here the model transcribes the manufacturer's

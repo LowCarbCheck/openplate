@@ -30,22 +30,40 @@ import { LABEL_MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION } from '#app/lib/photo-c
 import {
   LABEL_READING_SYSTEM_PROMPT,
   PLATE_IDENTIFICATION_SYSTEM_PROMPT,
+  TEXT_INTAKE_SYSTEM_PROMPT,
   buildLabelReadingUserPrompt,
   buildPlateIdentificationUserPrompt,
+  buildTextIntakeUserPrompt,
 } from './prompt';
 
-/** The scan tasks the service can run. Nameable at the call site; never branched on inside an adapter. */
+/** The PHOTO tasks the service can run. Nameable at the call site; never branched on inside an adapter. */
 export const VISION_MODES = ['plate', 'label'] as const;
 export type VisionMode = (typeof VISION_MODES)[number];
 
 /**
- * One scan task, fully described. `TResult` is the task's own result shape —
- * `PlateIdentification` and `LabelReading` share nothing but the optional
- * `usage` an adapter attaches, which is exactly what `ScanResultBase` pins
- * down.
+ * Every intake job, photo or not.
+ *
+ * `VisionMode` stays the narrower photo-only set because it is what a CAPTURE
+ * control can hold: a mode picked before the shutter, and the thing
+ * `/scan?mode=` names. `text` is never one of those, so widening `VisionMode`
+ * would have let a text task reach `SCAN_TASK_BY_MODE`, whose only reason to
+ * exist is a capture ceiling a text task does not have.
  */
-export interface ScanTaskDescriptor<TResult extends ScanResultBase> {
-  readonly mode: VisionMode;
+export const INTAKE_MODES = ['plate', 'label', 'text'] as const;
+export type IntakeMode = (typeof INTAKE_MODES)[number];
+
+/**
+ * One intake task, fully described, WITHOUT anything photo-specific. `TResult`
+ * is the task's own result shape — `PlateIdentification` and `LabelReading`
+ * share nothing but the optional `usage` an adapter attaches, which is exactly
+ * what `ScanResultBase` pins down.
+ *
+ * The split from `ScanTaskDescriptor` below is one field deep and deliberate:
+ * `captureMaxDimension` is meaningless for words a person typed, and a task
+ * that had to invent one would be lying about what it does.
+ */
+export interface IntakeTaskDescriptor<TResult extends ScanResultBase> {
+  readonly mode: IntakeMode;
   readonly systemPrompt: string;
   readonly userPrompt: string;
   /** Provider-facing JSON Schema, derived from this task's Zod wire schema. */
@@ -55,6 +73,17 @@ export interface ScanTaskDescriptor<TResult extends ScanResultBase> {
   /** Anthropic forced-tool-use name + description for this task. */
   readonly toolName: string;
   readonly toolDescription: string;
+  /** Free-text fallback path: raw model output → result. */
+  readonly parse: (rawText: string) => TResult;
+  /** Enforced-structured-output path: an already-parsed JSON value → result. */
+  readonly validate: (value: UnvalidatedProviderJson) => TResult;
+}
+
+/**
+ * One PHOTO task: an intake task plus the capture ceiling its subject needs.
+ */
+export interface ScanTaskDescriptor<TResult extends ScanResultBase> extends IntakeTaskDescriptor<TResult> {
+  readonly mode: VisionMode;
   /**
    * Longest edge (px) the capture is downscaled to before it is sent, for THIS
    * task (`downscaleToJpeg`'s per-call override in `#app/lib/photo-constraints`).
@@ -68,10 +97,6 @@ export interface ScanTaskDescriptor<TResult extends ScanResultBase> {
    * the adapters.
    */
   readonly captureMaxDimension: number;
-  /** Free-text fallback path: raw model output → result. */
-  readonly parse: (rawText: string) => TResult;
-  /** Enforced-structured-output path: an already-parsed JSON value → result. */
-  readonly validate: (value: UnvalidatedProviderJson) => TResult;
 }
 
 /** Photograph of a plate → the foods worth logging. The original task, unchanged. */
@@ -105,6 +130,42 @@ export const LABEL_SCAN_TASK: ScanTaskDescriptor<LabelReading> = {
   parse: parseLabelReadingJson,
   validate: validateLabelReading,
 };
+
+/**
+ * The person's own words → the foods worth logging.
+ *
+ * SAME RESULT AS A PLATE PHOTO, on purpose: the same `PlateIdentificationSchema`,
+ * the same `foods[]`, the same parse, so the review screen, the confirm action
+ * and every downstream builder are reached unchanged. What differs is the
+ * subject the model is reading, and that lives entirely in the prompt.
+ *
+ * No `captureMaxDimension`, which is the whole reason `IntakeTaskDescriptor`
+ * exists: there is no capture.
+ */
+export const TEXT_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
+  mode: 'text',
+  systemPrompt: TEXT_INTAKE_SYSTEM_PROMPT,
+  userPrompt: buildTextIntakeUserPrompt(),
+  jsonSchema: PLATE_IDENTIFICATION_JSON_SCHEMA,
+  // The SAME schema name and tool name the plate task uses, because it is the
+  // same schema. A second name for one shape would only invite a second shape.
+  schemaName: 'plate_identification',
+  toolName: 'record_plate_identification',
+  toolDescription: 'Record the foods the person described eating.',
+  parse: parsePlateIdentificationJson,
+  validate: validatePlateIdentification,
+};
+
+/**
+ * Every intake task, keyed by its mode. The single pairing of prompt with
+ * schema, widened to cover text; `SCAN_TASK_BY_MODE` below stays the
+ * photo-only view of it, because only a photo has a capture ceiling to read.
+ */
+export const INTAKE_TASK_BY_MODE = {
+  plate: PLATE_SCAN_TASK,
+  label: LABEL_SCAN_TASK,
+  text: TEXT_INTAKE_TASK,
+} satisfies Record<IntakeMode, IntakeTaskDescriptor<ScanResultBase>>;
 
 /**
  * Every scan task, keyed by its mode — the one place a `VisionMode` (which is

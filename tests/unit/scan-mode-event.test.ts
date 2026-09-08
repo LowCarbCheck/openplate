@@ -166,7 +166,7 @@ describe('the four undercounts, pinned as deliberate', () => {
       'the tab-bar hand-off no longer calls setMode directly, if it now goes through handleModeChange it FIRES, and the event covers more people than this file says',
     );
     const handoff = SCAN_ROUTE.slice(
-      SCAN_ROUTE.indexOf('const handed = takePickedFile();'),
+      SCAN_ROUTE.indexOf('const handed = takeIntakeHandoff();'),
       SCAN_ROUTE.indexOf('// Web Share Target v2'),
     );
     assert.ok(handoff.length > 0, 'the tab-bar hand-off effect was not found');
@@ -181,7 +181,7 @@ describe('the four undercounts, pinned as deliberate', () => {
     );
     const urlHandoff = SCAN_ROUTE.slice(
       SCAN_ROUTE.indexOf('const asked = requestedScanMode(window.location.search);'),
-      SCAN_ROUTE.indexOf('const handed = takePickedFile();'),
+      SCAN_ROUTE.indexOf('const handed = takeIntakeHandoff();'),
     );
     assert.ok(urlHandoff.length > 0, 'the /scan?mode=label mount effect was not found');
     assert.doesNotMatch(
