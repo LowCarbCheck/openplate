@@ -32,6 +32,8 @@ import {
   accountResponseSchema,
   adminStatsResponseSchema,
   deliverySchema,
+  feedbackListSchema,
+  feedbackReportResponseSchema,
   inviteCreatedSchema,
   inviteListSchema,
   type AccountRole,
@@ -40,12 +42,14 @@ import {
   type AdminActivityList,
   type AdminActivityRow,
   type AdminActivityWindow,
+  type AdminFeedbackReport,
+  type AdminFeedbackReportDetail,
   type AdminStats,
   type Delivery,
   type InviteCreated,
   type InviteView,
 } from './admin-wire';
-import type { AuthorizedMethod } from '../sync/engine/client/auth-client';
+import type { AuthorizedBytes, AuthorizedMethod } from '../sync/engine/client/auth-client';
 import type { JsonValue } from '../sync/engine/protocol';
 import { isSyncRequestError } from '../sync/engine/client/sync-error';
 import { createComponentLogger } from '../logger';
@@ -63,6 +67,14 @@ const log = createComponentLogger('admin-client');
  */
 export interface AdminTransport {
   requestAsAccount(input: { path: string; method: AuthorizedMethod; body?: JsonValue }): Promise<JsonValue>;
+  /**
+   * The same credential, for a body that is not JSON.
+   *
+   * ONE PATH USES IT: a reported photograph. It is here rather than behind a
+   * second client because the token lifecycle is the reason this seam exists
+   * at all, and a photograph fetched outside it would refresh independently.
+   */
+  requestBytesAsAccount(input: { path: string }): Promise<AuthorizedBytes>;
 }
 
 /**
@@ -73,6 +85,22 @@ export interface AdminTransport {
  * this instance right now.
  */
 export type AdminOutcome<T> = { status: 'ok'; value: T } | { status: 'forbidden' };
+
+/**
+ * What a request for a reported photograph answered.
+ *
+ * `gone` IS A THIRD ANSWER, not a failure and not an empty success: the report
+ * may never have carried an image (a typed meal), or the retention sweep may
+ * already have taken it. The screen says different words for each of the
+ * three, so collapsing them here would take that distinction away from it.
+ */
+export type FeedbackImageOutcome =
+  | { status: 'ok'; image: AuthorizedBytes }
+  | { status: 'gone' }
+  | { status: 'forbidden' };
+
+/** The reported-estimate subtree, under {@link ADMIN_API_PREFIX}. One name, so no call site spells it twice. */
+const ADMIN_FEEDBACK_PATH = '/feedback';
 
 /** What an administrator may change about somebody. Every field optional; the service applies what it is sent. */
 export interface AccountPatch {
@@ -276,6 +304,90 @@ export class AdminClient {
       method: 'POST',
       parse: (body) => inviteCreatedSchema.parse(body),
     });
+  }
+
+  /**
+   * Every reported estimate, newest first, however many pages that takes.
+   *
+   * PAGED INSIDE THIS CLIENT, exactly like {@link listAccounts}, and for the
+   * same reason: the service caps `limit` and a caller that has to know the
+   * ceiling gets it wrong the next time it moves. The queue is bounded by the
+   * retention window rather than by the age of the instance, so there is no
+   * screen here that needs paging controls of its own.
+   */
+  async listFeedbackReports(): Promise<AdminOutcome<{ reports: AdminFeedbackReport[]; total: number }>> {
+    const outcome = await this.collectPages({
+      path: `${ADMIN_API_PREFIX}${ADMIN_FEEDBACK_PATH}`,
+      readPage: (body) => {
+        const page = feedbackListSchema.parse(body);
+        return { items: page.reports, total: page.total };
+      },
+    });
+    if (outcome.status === 'forbidden') return outcome;
+    return { status: 'ok', value: { reports: outcome.value.items, total: outcome.value.total } };
+  }
+
+  /**
+   * One report, with the figures the list deliberately withholds.
+   *
+   * A `404` THROWS, like every other read of one thing by id: it is a row the
+   * queue showed a moment ago, and a screen that rendered "nothing here" would
+   * hide a report that is still on the instance.
+   */
+  async getFeedbackReport(input: { id: number }): Promise<AdminOutcome<AdminFeedbackReportDetail>> {
+    return this.send({
+      path: `${ADMIN_API_PREFIX}${ADMIN_FEEDBACK_PATH}/${input.id}`,
+      method: 'GET',
+      parse: (body) => feedbackReportResponseSchema.parse(body).report,
+    });
+  }
+
+  /**
+   * The photograph, as bytes, over the administrator's own credential.
+   *
+   * NEVER A URL A BROWSER FETCHES BY ITSELF. The credential is a bearer token
+   * and the only ways to put one on an `<img>` request are a query string or a
+   * cookie, so the bytes are read here and the screen holds an object URL it
+   * created and revokes.
+   *
+   * A `404` IS `gone`, NOT AN ERROR, and the service says why
+   * (`admin-feedback-routes.ts:224-229`): a report that never had an image and
+   * one whose image has already been deleted get the same answer, and both are
+   * things this screen has to draw rather than fail on.
+   */
+  async feedbackImage(input: { id: number }): Promise<FeedbackImageOutcome> {
+    try {
+      const image = await this.transport.requestBytesAsAccount({
+        path: `${ADMIN_API_PREFIX}${ADMIN_FEEDBACK_PATH}/${input.id}/image`,
+      });
+      return { status: 'ok', image };
+    } catch (error) {
+      if (!isSyncRequestError(error)) throw error;
+      if (error.kind === 'forbidden' || error.kind === 'suspended') return { status: 'forbidden' };
+      if (error.kind === 'not-found') return { status: 'gone' };
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes one report now, rather than when its window runs out. The service
+   * deletes the image through its own store before it drops the row.
+   *
+   * A `404` RESOLVES rather than throws. "There is no such report" is the
+   * outcome this call asked for, and a second tab or a retention sweep getting
+   * there first is ordinary rather than a failure to report.
+   */
+  async deleteFeedbackReport(input: { id: number }): Promise<AdminOutcome<void>> {
+    try {
+      return await this.send({
+        path: `${ADMIN_API_PREFIX}${ADMIN_FEEDBACK_PATH}/${input.id}`,
+        method: 'DELETE',
+        parse: () => undefined,
+      });
+    } catch (error) {
+      if (isSyncRequestError(error) && error.kind === 'not-found') return { status: 'ok', value: undefined };
+      throw error;
+    }
   }
 
   /** The four counts across the top of the page, unwrapped from the `{"stats": …}` envelope. */

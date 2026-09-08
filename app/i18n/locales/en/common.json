@@ -2695,7 +2695,8 @@
       "label": "Console sections",
       "people": "People",
       "invitations": "Invitations",
-      "activity": "Activity"
+      "activity": "Activity",
+      "feedback": "Reports"
     },
     "filter": {
       "searchLabel": "Search",
@@ -2715,6 +2716,41 @@
       "windowLabel": "Window",
       "windowDays": "{{days}} days",
       "failed": "The daily counts could not be loaded. The people are still listed."
+    },
+    "feedback": {
+      "title": "Reported estimates",
+      "body": "What people sent in when a measurement looked wrong. Each report deletes itself {{days}} days after it arrives.",
+      "empty": "Nothing has been reported.",
+      "loading": "Loading",
+      "failed": "The reports could not be loaded.",
+      "retry": "Try again",
+      "reportTitle": "Report {{id}}",
+      "person": "Account {{id}}",
+      "reportedAt": "Reported {{date}}",
+      "deletesAt": "Deletes itself on {{date}}",
+      "hasPhoto": "With a photo",
+      "noPhoto": "No photo, typed meal",
+      "photoAlt": "The photo sent with report {{id}}",
+      "photoLoading": "Loading the photo",
+      "photoGone": "The photo has already been deleted.",
+      "photoFailed": "The photo could not be loaded.",
+      "back": "Back to the reports",
+      "notFound": "There is nothing at this address.",
+      "noName": "This entry had no name.",
+      "grams": "{{value}} g",
+      "calories": "{{value}} kcal",
+      "figureNone": "None given",
+      "aiEstimated": "Estimated from a photo by the model",
+      "notAiEstimated": "Not estimated by the model",
+      "source": "Entered from {{source}}",
+      "consentTitle": "What was agreed to",
+      "consentAgreed": "Agreed on {{date}}",
+      "consentWording": "Wording {{version}}",
+      "deleteCta": "Delete now",
+      "deleteConfirmTitle": "Delete report {{id}}?",
+      "deleteConfirmBody": "The figures and the photo go now, rather than when the window runs out. This cannot be undone.",
+      "deleteConfirmCta": "Delete for good",
+      "deleteFailed": "The report could not be deleted."
     }
   }
 }

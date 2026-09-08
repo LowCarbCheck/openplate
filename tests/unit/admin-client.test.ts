@@ -119,6 +119,9 @@ function fakeTransport(answer: FakeAnswer): FakeTransport {
       if (answer.kind === 'error') return Promise.reject(answer.error);
       return Promise.resolve(answer.body);
     },
+    requestBytesAsAccount() {
+      return Promise.reject(new Error('this fake answers no bytes: the JSON paths are what it is for'));
+    },
   };
   return { transport, requests };
 }
@@ -140,6 +143,9 @@ function clientPaging(pages: readonly FakeAnswer[]): RecordedClient {
       if (answer === undefined) return Promise.resolve(null);
       if (answer.kind === 'error') return Promise.reject(answer.error);
       return Promise.resolve(answer.body);
+    },
+    requestBytesAsAccount() {
+      return Promise.reject(new Error('this fake answers no bytes: the JSON paths are what it is for'));
     },
   };
   return { client: new AdminClient({ transport }), requests };

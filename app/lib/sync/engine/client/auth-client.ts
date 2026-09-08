@@ -906,11 +906,18 @@ export class SyncAuthClient implements SyncTokenProvider {
   // -------------------------------------------------------------------------
 
   /**
-   * One request, with §11's "on 401, refresh once and retry once; on a second
-   * 401, send the user to log in" rule implemented exactly once rather than at
-   * every call site.
+   * ONE request, with §11's "on 401, refresh once and retry once; on a second
+   * 401, send the user to log in" rule applied exactly once, and the raw
+   * {@link Response} handed back.
+   *
+   * SEPARATE FROM {@link requestJson} SO THE ONE RULE IS NOT COPIED. A second
+   * reader is needed for a body that is not JSON (an administrator opening a
+   * reported photograph), and the alternative was a second refresh loop. A
+   * reused refresh token is the theft signal that revokes the whole family, so
+   * a second loop is not a duplicated helper, it is a way to sign the person
+   * out.
    */
-  private async requestJson<T>({
+  private async sendWithRefresh({
     path,
     method,
     body,
@@ -920,7 +927,7 @@ export class SyncAuthClient implements SyncTokenProvider {
     method: AuthorizedMethod;
     body?: unknown;
     authenticated?: boolean;
-  }): Promise<T> {
+  }): Promise<Response> {
     const send = async (accessToken: string | null): Promise<Response> => {
       const headers: Record<string, string> = {};
       if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -945,6 +952,26 @@ export class SyncAuthClient implements SyncTokenProvider {
       if (refreshed !== null) response = await send(refreshed);
     }
     if (!response.ok) throw await toRequestError(response);
+    return response;
+  }
+
+  /**
+   * One request, with §11's "on 401, refresh once and retry once; on a second
+   * 401, send the user to log in" rule implemented exactly once rather than at
+   * every call site.
+   */
+  private async requestJson<T>({
+    path,
+    method,
+    body,
+    authenticated = false,
+  }: {
+    path: string;
+    method: AuthorizedMethod;
+    body?: unknown;
+    authenticated?: boolean;
+  }): Promise<T> {
+    const response = await this.sendWithRefresh({ path, method, body, authenticated });
     if (response.status === 204) {
       // SAFETY: a 204 carries no body by definition, and every call site that
       // can receive one asks for `T = void` (`logout`, `deleteAccount`).
@@ -984,9 +1011,45 @@ export class SyncAuthClient implements SyncTokenProvider {
     return body ?? null;
   }
 
+  /**
+   * ONE authenticated read whose body is NOT JSON: the bytes, and the type the
+   * service labelled them with.
+   *
+   * WHY THIS EXISTS: `/v1/admin/feedback/:id/image` answers a photograph, and
+   * an administrator's browser may not fetch it as an ordinary `<img src>`.
+   * The credential is a bearer token, so the only way to put one on that
+   * request without writing it into a URL, a query string or a browser history
+   * entry is to read the bytes here and hand the screen an object URL it owns
+   * and revokes.
+   *
+   * `GET` ONLY, and no body, because there is no other verb this reader is
+   * for. A `contentType` the service did not label is answered as an opaque
+   * stream rather than guessed: guessing is how a stored type becomes an
+   * executed one.
+   */
+  async requestBytesAsAccount(input: { path: string }): Promise<AuthorizedBytes> {
+    const response = await this.sendWithRefresh({ path: input.path, method: 'GET', authenticated: true });
+    try {
+      const bytes = await response.arrayBuffer();
+      return { contentType: response.headers.get('Content-Type') ?? 'application/octet-stream', bytes };
+    } catch (error) {
+      throw new SyncRequestError({
+        kind: 'transport',
+        message: error instanceof Error ? error.message : 'The sync server returned a body this app could not read.',
+        status: response.status,
+      });
+    }
+  }
+
   private adoptSession(response: SessionResponseWire): void {
     this.session = { account: response.account, tokens: response.tokens };
   }
+}
+
+/** The bytes of one authenticated resource, with the type the service labelled them with. */
+export interface AuthorizedBytes {
+  contentType: string;
+  bytes: ArrayBuffer;
 }
 
 /** The verbs an authenticated call may use. `PUT` is absent because the protocol has no `PUT`. */

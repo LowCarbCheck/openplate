@@ -180,7 +180,7 @@ test('the not-an-administrator card says what to do, and names no status code', 
 // ---------------------------------------------------------------------------
 
 test('the three tabs are links, and the people tab is the one lit at /admin', () => {
-  const html = render(createElement(AdminTabs, { pathname: '/admin' }));
+  const html = render(createElement(AdminTabs, { pathname: '/admin', hasFeedback: false }));
 
   // The attributes come out in React's order, `aria-current` before `href`.
   assert.match(html, /aria-current="page"[^>]*href="\/admin"/, 'a tab is a link, not a widget with state');
@@ -190,14 +190,14 @@ test('the three tabs are links, and the people tab is the one lit at /admin', ()
 });
 
 test("a person's page lights the people tab, because it is where the list leads", () => {
-  const html = render(createElement(AdminTabs, { pathname: '/admin/people/2' }));
+  const html = render(createElement(AdminTabs, { pathname: '/admin/people/2', hasFeedback: false }));
 
   assert.match(html, /aria-current="page"[^>]*href="\/admin"/);
   assert.doesNotMatch(html, /aria-current="page"[^>]*href="\/admin\/activity"/);
 });
 
 test('the invitation form lights the invitations tab rather than nothing at all', () => {
-  const html = render(createElement(AdminTabs, { pathname: '/admin/invite' }));
+  const html = render(createElement(AdminTabs, { pathname: '/admin/invite', hasFeedback: false }));
 
   assert.match(html, /aria-current="page"[^>]*href="\/admin\/invitations"/);
 });

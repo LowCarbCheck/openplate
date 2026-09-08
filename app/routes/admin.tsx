@@ -63,6 +63,8 @@ import { Button } from '#app/components/ui/button';
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
 import { StatsRow } from '#app/components/admin/stats-row';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
+import { hasFeedbackConsole } from '#app/lib/admin/feedback-console';
+import { useServerInstance } from '#app/hooks/use-server-instance';
 import type { AdminStats } from '#app/lib/admin/admin-wire';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useSyncSession } from '#app/components/sync-status';
@@ -175,6 +177,12 @@ function AdminChrome() {
   const { t } = useTranslation();
   const location = useLocation();
   const [stats, setStats] = useState<AdminStats | null>(null);
+  // WHICH TABS EXIST IS THE INSTANCE'S ANSWER, not this build's. A server that
+  // accepts no reported estimates advertises no retention window and answers
+  // 404 on that whole subtree, so the tab is not drawn rather than drawn and
+  // dead. The read is cached per tab (`use-server-instance`), so this costs no
+  // request the app was not already making.
+  const instance = useServerInstance();
 
   const loadStats = useCallback(async (): Promise<void> => {
     const client = currentAdminClient();
@@ -206,7 +214,7 @@ function AdminChrome() {
         )}
       </header>
       {stats !== null && <StatsRow stats={stats} />}
-      <AdminTabs pathname={location.pathname} />
+      <AdminTabs pathname={location.pathname} hasFeedback={hasFeedbackConsole(instance)} />
       <Outlet />
     </div>
   );
