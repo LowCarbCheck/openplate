@@ -18,7 +18,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemoryRouter } from 'react-router';
+import { RouterProvider, createMemoryRouter } from 'react-router';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -50,8 +50,16 @@ function hrefsOf(html: string): string[] {
   return [...html.matchAll(/href="([^"]*)"/g)].map((match) => match[1]);
 }
 
+/**
+ * A DATA router, not a `MemoryRouter`. The Add launcher reads this instance's
+ * policy through the root loader's public config (`usePublicConfig`), and that
+ * read throws outside a data router rather than answering `undefined`. No
+ * loader is registered here, so the policy resolves to the open-instance
+ * default, which is what this file's navigation assertions describe.
+ */
 function renderBottomNav(path = '/diary'): string {
-  return renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(BottomNav)));
+  const router = createMemoryRouter([{ path: '*', element: createElement(BottomNav) }], { initialEntries: [path] });
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
 describe('BottomNav', () => {

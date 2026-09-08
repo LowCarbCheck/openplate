@@ -52,15 +52,22 @@ describe('/add hands words to /scan', () => {
     assert.match(SUBMIT_TO_AI, /if \(trimmed === ''\) return;/);
   });
 
-  it('offers the AI action only once a provider is known to exist', () => {
-    assert.match(ADD_ROUTE, /import \{ useAiConnection \} from '#app\/components\/add\/use-ai-connection'/);
+  it('offers the AI action only once an AI is known to exist', () => {
+    assert.match(ADD_ROUTE, /import \{ useAiIntake \} from '#app\/components\/add\/use-ai-connection'/);
+    assert.match(ADD_ROUTE, /const \{ connection: aiConnection, door: aiDoor \} = useAiIntake\(\);/);
     assert.match(ADD_ROUTE, /const hasAiProvider = aiConnection === 'connected';/);
     assert.match(ADD_ROUTE, /\{hasAiProvider && \([\s\S]*?t\('add\.aiIntake\.submit'\)/);
   });
 
-  it('explains the gap and points at settings when there is no provider', () => {
-    assert.match(ADD_ROUTE, /\{aiConnection === 'absent' && \([\s\S]*?t\('add\.aiIntake\.needsProvider'\)/);
-    assert.match(ADD_ROUTE, /to="\/settings\/ai\?next=add"/);
+  it('explains the gap through the shared notice, which knows where the door is', () => {
+    // NEVER `/settings/ai` unconditionally (0.20.0 blocker): a managed
+    // instance redirects that page away and nobody there brings a provider.
+    // The BYOK sentence and its link are handed to the notice as the branch
+    // that is true only on an open instance.
+    assert.match(ADD_ROUTE, /\{aiConnection === 'absent' && \([\s\S]*?<NoAiIntakeNotice/);
+    assert.match(ADD_ROUTE, /door=\{aiDoor\}/);
+    assert.match(ADD_ROUTE, /byokMessage=\{t\('add\.aiIntake\.needsProvider'\)\}/);
+    assert.match(ADD_ROUTE, /byokHref="\/settings\/ai\?next=add"/);
   });
 
   it('keeps the database search rendering under the box either way', () => {

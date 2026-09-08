@@ -1,35 +1,151 @@
 /**
- * Whether this device has an AI provider connected, read once after hydration.
+ * CAN THIS DEVICE RUN AN AI INTAKE, asked once for every way in.
  *
- * IT IS A HOOK BECAUSE THE ANSWER IS AN INDEXEDDB ROUND TRIP, and every
- * add-food surface needs it before it can promise anything: the camera gesture
- * must not ask for a permission the feature cannot use
- * (`use-camera-capture.ts`), and the search screen must not offer "Log with AI"
- * to somebody who has no AI. One read, one rule, two surfaces.
+ * IT IS A HOOK BECAUSE THE ANSWER IS AN INDEXEDDB ROUND TRIP on an open
+ * instance, and every add-food surface needs it before it can promise
+ * anything: the camera gesture must not ask for a permission the feature
+ * cannot use (`use-camera-capture.ts`), the search screen must not offer "Log
+ * with AI" to somebody who has no AI, and `/describe` must not offer to send a
+ * sentence nothing will read. One read, one rule, three surfaces.
  *
  * `unknown` is its own member and is NEVER treated as connected. The read only
  * starts after hydration, and in that window the honest answer is that nobody
- * knows yet — so both callers behave exactly as they do for a device with no
- * provider, and correct themselves a moment later rather than promising first.
+ * knows yet, so every caller behaves exactly as it does for a device with no
+ * provider and corrects itself a moment later rather than promising first.
+ *
+ * ── WHY IT IS NOT THE BYOK ROW ANY MORE (0.20.0 blocker) ─────────────────
+ *
+ * This hook used to read `getLocalAiSettings()` and nothing else. A MANAGED
+ * instance stores no such row on purpose: the AI comes from the instance's own
+ * server on the account's allowance and is DERIVED from the session, never
+ * saved (`app/lib/ai/managed-ai-settings.ts`). So on production, which is
+ * managed, the row was absent for everybody, Send was disabled forever, and
+ * the notice under it pointed at `/settings/ai`, a page a managed instance
+ * redirects away from. `/scan` was right the whole time because it asks
+ * `resolveEffectiveAiSettings`; these screens asked a different question and
+ * got a different answer for the same device.
+ *
+ * So the question is now resolved by THE SAME RULE `/scan` builds its request
+ * from, and the BYOK row is only one of that rule's inputs. Two screens cannot
+ * disagree about a device again.
  */
 import { useEffect, useState } from 'react';
-import { getLocalAiSettings } from '#app/lib/local-store';
+import { getLocalAiSettings, type LocalAiSettings } from '#app/lib/local-store';
+import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useSyncSession } from '#app/components/sync-status';
+import type { EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
 
 export type AiConnection = 'unknown' | 'connected' | 'absent';
 
-export function useAiConnection(): AiConnection {
-  const [connection, setConnection] = useState<AiConnection>('unknown');
+/**
+ * Where a person with no AI is sent, which is not the same question as whether
+ * they have one.
+ *
+ * - `byok`: an open instance, where the answer is the person's own provider
+ *   and `/settings/ai` is the page that takes it.
+ * - `sign-in`: a managed instance with no session. The account is very
+ *   probably fine and nothing about it has to change; what is missing is the
+ *   session. The same sentence `/scan` shows on its `managed-signed-out` card.
+ * - `ask-admin`: a managed instance WITH a session and no allowance, which is
+ *   the default standing of a new account rather than an error. There is no
+ *   link for this one: the door is a person, not a URL. `/scan`'s
+ *   `managed-missing` card says exactly this.
+ */
+export type AiIntakeDoor = 'byok' | 'sign-in' | 'ask-admin';
+
+/** What a screen needs to decide whether to offer an AI intake, and what to say when it cannot. */
+export interface AiIntake {
+  connection: AiConnection;
+  /** Only read when `connection` is `absent`; the other two states show no notice at all. */
+  door: AiIntakeDoor;
+}
+
+/**
+ * THE PURE HALF. Given the settings rule's answer and the two loading facts,
+ * which of the three states this device is in.
+ *
+ * A managed instance never waits for the device row (the rule refuses it
+ * outright) and always waits for the RESUME, because a session being reopened
+ * looks exactly like no session at all and the two answers are opposite. An
+ * open instance is the mirror image: no session is involved, and the row is
+ * the whole answer, so it waits for the read.
+ */
+export function resolveAiConnection({
+  aiComesFromTheInstance,
+  isSessionResuming,
+  hasReadDeviceRow,
+  effectiveSettings,
+}: {
+  aiComesFromTheInstance: boolean;
+  isSessionResuming: boolean;
+  hasReadDeviceRow: boolean;
+  effectiveSettings: EffectiveAiSettings | null;
+}): AiConnection {
+  if (aiComesFromTheInstance) {
+    if (isSessionResuming) return 'unknown';
+    return effectiveSettings === null ? 'absent' : 'connected';
+  }
+  if (!hasReadDeviceRow) return 'unknown';
+  return effectiveSettings === null ? 'absent' : 'connected';
+}
+
+/**
+ * THE OTHER PURE HALF: which door the notice names.
+ *
+ * The resuming moment needs no answer here, because `resolveAiConnection`
+ * reports `unknown` for it and no notice is drawn at all.
+ */
+export function resolveAiIntakeDoor({
+  aiComesFromTheInstance,
+  isSignedIn,
+}: {
+  aiComesFromTheInstance: boolean;
+  isSignedIn: boolean;
+}): AiIntakeDoor {
+  if (!aiComesFromTheInstance) return 'byok';
+  return isSignedIn ? 'ask-admin' : 'sign-in';
+}
+
+/** Whether this device may run an AI intake right now, and where to send a person who may not. */
+export function useAiIntake(): AiIntake {
+  const { aiComesFromTheInstance } = useInstancePolicy();
+  const session = useSyncSession();
+  const [deviceRow, setDeviceRow] = useState<LocalAiSettings | null>(null);
+  const [hasReadDeviceRow, setHasReadDeviceRow] = useState(false);
 
   useEffect(() => {
+    // A managed instance refuses a BYOK row even when one exists, so opening
+    // the AI database there would be a second IndexedDB round trip for a value
+    // nothing reads.
+    if (aiComesFromTheInstance) return;
     let isMounted = true;
-    void (async () => {
+    const read = async (): Promise<void> => {
       const settings = await getLocalAiSettings();
-      if (isMounted) setConnection(settings === null ? 'absent' : 'connected');
-    })();
+      if (!isMounted) return;
+      setDeviceRow(settings);
+      setHasReadDeviceRow(true);
+    };
+    void read();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [aiComesFromTheInstance]);
 
-  return connection;
+  const effectiveSettings = useEffectiveAiSettings(deviceRow);
+
+  return {
+    connection: resolveAiConnection({
+      aiComesFromTheInstance,
+      isSessionResuming: session.isResuming,
+      hasReadDeviceRow,
+      effectiveSettings,
+    }),
+    door: resolveAiIntakeDoor({ aiComesFromTheInstance, isSignedIn: session.account !== null }),
+  };
+}
+
+/** The connection alone, for a caller with nothing to say when it is absent. */
+export function useAiConnection(): AiConnection {
+  return useAiIntake().connection;
 }

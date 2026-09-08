@@ -205,6 +205,8 @@ function renderPlateConfirm(defaultMealType: MealType | null): string {
       photoFile: null,
       userId: 0,
       defaultMealType,
+      // A photograph, so the review screen draws no quoted sentence.
+      typedText: null,
     }),
   );
 }

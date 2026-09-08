@@ -1606,6 +1606,7 @@ function ScanFlow({
     return (
       <ConfirmDraftForm
         identification={identifyResult?.identification}
+        typedText={typedText}
         provider={identifyResult?.provider}
         modelId={identifyResult?.modelId}
         matches={identifyResult?.matches}
@@ -2640,6 +2641,7 @@ export function ConfirmDraftForm({
   userId,
   defaultMealType,
   intakeSource,
+  typedText,
 }: {
   identification?: PlateIdentification;
   /** Provider of the attempt — pairs with `modelId` for the scan's cost estimate; without it there is no honest price to show. */
@@ -2665,6 +2667,17 @@ export function ConfirmDraftForm({
    * — nothing on this screen looks or behaves differently because of it.
    */
   intakeSource: IntakeSource;
+  /**
+   * The sentence this draft was read from, or `null` for a photograph.
+   *
+   * THE WORDS HAVE TO SURVIVE THE WAIT (0.20.0 walk finding 2). A photo intake
+   * carries its evidence into this screen: the plate is still on the device
+   * and the person remembers it. A typed one showed the sentence only on the
+   * waiting screen, blurred under the busy overlay, and by the time the food
+   * list arrived there was nothing left to check the estimate against. So the
+   * quote comes with it, above the list, exactly as `UploadForm` drew it.
+   */
+  typedText: string | null;
 }) {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
@@ -2884,6 +2897,20 @@ export function ConfirmDraftForm({
         </h2>
         <p className="text-sm text-muted-foreground">{t('scan.review.subheading')}</p>
       </div>
+      {/* WHAT THE ESTIMATE WAS READ FROM, for a typed or spoken meal. Quiet,
+          above the food list, and labelled with the same words the waiting
+          screen used, so the person checks the list against their own sentence
+          rather than against a memory of it. Nothing is rendered for a
+          photograph: `typedText` is null there, and the plate itself was the
+          evidence. */}
+      {typedText !== null && (
+        <figure className="space-y-1">
+          <figcaption className="text-xs text-muted-foreground">{t('scan.textIntake.label')}</figcaption>
+          <blockquote className="rounded-lg border bg-muted/40 p-3 text-sm break-words whitespace-pre-wrap">
+            {typedText}
+          </blockquote>
+        </figure>
+      )}
       {/* Plate-wide, and above the food cards: the person sees which slot the
           photo landed in before they scroll, and changes it in one tap. */}
       <MealSelectField

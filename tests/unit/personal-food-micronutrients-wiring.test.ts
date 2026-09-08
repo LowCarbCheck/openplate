@@ -177,6 +177,8 @@ function renderConfirmStep(formData: FormData): string {
     photoFile: null,
     userId: 0,
     defaultMealType: null,
+    // A photograph, so the review screen draws no quoted sentence.
+    typedText: null,
   });
   const router = createMemoryRouter([{ path: '/scan', element }], { initialEntries: ['/scan'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));

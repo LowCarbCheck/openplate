@@ -100,6 +100,11 @@ const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account
  * device-only claims the M196 sweep did not reach. What each one must SAY is
  * checked in `device-only-managed-copy.test.ts`; what it may not say is here,
  * with every other managed string.
+ *
+ * The `aiIntake.*` entries are what `/add` and `/describe` say to somebody who
+ * cannot run an AI intake (0.20.0). Both are drawn on either kind of instance,
+ * and only these two branches are managed: the third names the person's own
+ * provider and is true only where they bring one.
  */
 const MANAGED_BRANCH_KEYS = [
   'chrome.signIn',
@@ -122,6 +127,9 @@ const MANAGED_BRANCH_KEYS = [
   'account.allowance.askAdmin',
   'offline.bodyManaged',
   'settings.data.descriptionManaged',
+  'aiIntake.signedOut',
+  'aiIntake.signIn',
+  'aiIntake.noAllowance',
 ];
 
 /**

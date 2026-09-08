@@ -48,7 +48,7 @@ import {
   handOffDescription,
 } from '../../app/routes/describe';
 import { takeIntakeHandoff } from '../../app/lib/scan-handoff';
-import type { AiConnection } from '../../app/components/add/use-ai-connection';
+import type { AiConnection, AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import type { TypedIntakeSource } from '../../app/lib/intake-source';
 
 /** The shipped copy this file asserts on, so a renamed key fails here rather than shipping a raw `describe.send`. */
@@ -62,11 +62,19 @@ const describeCopySchema = z.object({
     connect: z.string(),
     searchInstead: z.string(),
   }),
+  /** The two sentences a managed instance shows instead, shared with `/add`. */
+  aiIntake: z.object({
+    signedOut: z.string(),
+    signIn: z.string(),
+    noAllowance: z.string(),
+  }),
 });
 
-const COPY = describeCopySchema.parse(
+const CATALOG = describeCopySchema.parse(
   JSON.parse(readFileSync(fileURLToPath(new URL('../../app/i18n/locales/en/common.json', import.meta.url)), 'utf8')),
-).describe;
+);
+const COPY = CATALOG.describe;
+const MANAGED_COPY = CATALOG.aiIntake;
 
 /** An exactly-matched boolean `disabled` attribute, never the `disabled:` class prefix the button's own styles carry. */
 const DISABLED_ATTRIBUTE = /\sdisabled=""/;
@@ -82,11 +90,13 @@ const noop = () => undefined;
 function renderComposer({
   text = '',
   aiConnection = 'connected',
+  door = 'byok',
   speechAvailable = false,
   speakArmed = false,
 }: {
   text?: string;
   aiConnection?: AiConnection;
+  door?: AiIntakeDoor;
   speechAvailable?: boolean | null;
   speakArmed?: boolean;
 } = {}): string {
@@ -98,6 +108,7 @@ function renderComposer({
     onNotice: noop,
     notice: '',
     aiConnection,
+    door,
     speechAvailable,
     speakArmed,
     onListenStart: noop,
@@ -176,6 +187,45 @@ describe('with no AI provider on this device', () => {
     const markup = renderComposer({ aiConnection: 'connected' });
     assert.ok(!markup.includes(COPY.needsProvider));
     assert.ok(!markup.includes(COPY.connect));
+  });
+});
+
+describe('on a managed instance, where nobody brings a provider', () => {
+  it('sends a signed-out person to sign in, never to a settings page that is not there', () => {
+    const markup = renderComposer({ aiConnection: 'absent', door: 'sign-in' });
+    assert.ok(markup.includes(MANAGED_COPY.signedOut), 'the screen does not say why nothing can be sent');
+    assert.ok(markup.includes(MANAGED_COPY.signIn), 'the way back in is gone');
+    assert.match(markup, /href="\/sign-in"/, 'the notice points nowhere');
+    // THE BLOCKER ITSELF. `/settings/ai` redirects to `/settings` on a managed
+    // instance, and `/settings` has no AI row: this link was a dead end.
+    assert.doesNotMatch(markup, /href="\/settings\/ai/, 'the notice still points at the BYOK settings page');
+    assert.ok(!markup.includes(COPY.connect), 'a managed instance still offers to connect a provider');
+  });
+
+  it('names the administrator once they are signed in, because no page raises an allowance', () => {
+    const markup = renderComposer({ aiConnection: 'absent', door: 'ask-admin' });
+    assert.ok(markup.includes(MANAGED_COPY.noAllowance), 'the account with no allowance is told nothing');
+    assert.doesNotMatch(markup, /href="\/settings\/ai/, 'a settings link appeared for an allowance');
+    assert.doesNotMatch(markup, /href="\/sign-in"/, 'a signed-in person is told to sign in');
+  });
+
+  it('still offers the provider settings on an open instance', () => {
+    // THE CONTROL for both cases above: without it, a notice that had simply
+    // dropped the BYOK branch would pass them and break every self-hoster.
+    const markup = renderComposer({ aiConnection: 'absent', door: 'byok' });
+    assert.match(markup, /href="\/settings\/ai\?next=describe"/);
+    assert.ok(markup.includes(COPY.needsProvider));
+    assert.ok(!markup.includes(MANAGED_COPY.signedOut), 'an open instance is told it is signed out of something');
+    assert.ok(!markup.includes(MANAGED_COPY.noAllowance), 'an open instance is sent to an administrator');
+  });
+
+  it('says none of it while the AI answer is still unknown', () => {
+    for (const door of ['byok', 'sign-in', 'ask-admin'] as const) {
+      const markup = renderComposer({ aiConnection: 'unknown', door });
+      assert.ok(!markup.includes(MANAGED_COPY.signedOut));
+      assert.ok(!markup.includes(MANAGED_COPY.noAllowance));
+      assert.ok(!markup.includes(COPY.needsProvider));
+    }
   });
 });
 

@@ -29,9 +29,10 @@
  *
  * There is nothing to load. The two inputs are `?date=` (which day the meal
  * belongs to, passed straight through to `/scan`) and `?speak=1` (arm the
- * microphone), and both are read off the URL in the browser. The provider
- * answer is an IndexedDB read behind `useAiConnection`, like every other
- * add-food surface.
+ * microphone), and both are read off the URL in the browser. Whether there is
+ * an AI to send the words to is `useAiIntake`'s answer, the same one `/scan`
+ * and the camera gesture use: a BYOK row on an open instance, the account's
+ * allowance on a managed one.
  */
 import type { Route } from './+types/describe';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -43,7 +44,8 @@ import { Button } from '#app/components/ui/button';
 import { Label } from '#app/components/ui/label';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SpeechInputButton, useSpeechInputAvailable } from '#app/components/add/speech-input-button';
-import { useAiConnection, type AiConnection } from '#app/components/add/use-ai-connection';
+import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/components/add/use-ai-connection';
+import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
 import { offerTypedText } from '#app/lib/scan-handoff';
 import { resolveSpeechIntakeAction, type TypedIntakeSource } from '#app/lib/intake-source';
 import { parseDateParam } from '#app/lib/user-days';
@@ -143,6 +145,11 @@ interface DescribeComposerProps {
   notice: string;
   /** Whether this device has an AI to send the words to. `unknown` counts as no. */
   aiConnection: AiConnection;
+  /**
+   * Where a person with no AI is sent. A prop, like everything else here, so
+   * the managed sentences can be rendered in a test at all.
+   */
+  door: AiIntakeDoor;
   /** `null` while hydration has not answered yet; the microphone renders only on `true`. */
   speechAvailable: boolean | null;
   /** `?speak=1`: focus the microphone. It never starts a session by itself. */
@@ -169,6 +176,7 @@ export function DescribeComposer({
   onNotice,
   notice,
   aiConnection,
+  door,
   speechAvailable,
   speakArmed,
   onListenStart,
@@ -212,16 +220,18 @@ export function DescribeComposer({
       {/* The composer sits at the BOTTOM of the content area, where a message
           box belongs and where a thumb already is. */}
       <div className="mt-auto grid gap-2">
-        {/* NO PROVIDER, so nothing here can work. Said before the box rather
-            than after the tap, with both ways out: connect one, or search the
-            database, which needs no AI at all. */}
+        {/* NO AI, so nothing here can work. Said before the box rather than
+            after the tap, and the way out depends on WHY: an own provider to
+            connect, a session to reopen, or an allowance only an administrator
+            can raise. The search link below is the second way out either way,
+            and it needs no AI at all. */}
         {aiConnection === 'absent' && (
-          <p className="text-xs text-muted-foreground">
-            {t('describe.needsProvider')}{' '}
-            <Link to="/settings/ai?next=describe" className="text-primary underline-offset-4 hover:underline">
-              {t('describe.connect')}
-            </Link>
-          </p>
+          <NoAiIntakeNotice
+            door={door}
+            byokMessage={t('describe.needsProvider')}
+            byokLinkLabel={t('describe.connect')}
+            byokHref="/settings/ai?next=describe"
+          />
         )}
 
         <Label htmlFor="describe-meal">{t('describe.label')}</Label>
@@ -295,7 +305,7 @@ export default function DescribeRoute() {
   const scanHref = describeScanHref(logDate);
   const searchHref = logDate === null ? '/add' : `/add?date=${logDate}`;
 
-  const aiConnection = useAiConnection();
+  const { connection: aiConnection, door } = useAiIntake();
   const speechAvailable = useSpeechInputAvailable();
   const hasAiProvider = aiConnection === 'connected';
 
@@ -331,6 +341,7 @@ export default function DescribeRoute() {
       onNotice={setNotice}
       notice={notice}
       aiConnection={aiConnection}
+      door={door}
       speechAvailable={speechAvailable}
       speakArmed={speakArmed}
       onListenStart={handleListenStart}

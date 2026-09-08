@@ -74,7 +74,8 @@ import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
 import { SearchResultRow } from '#app/components/add/search-result-row';
 import { SpeechInputButton, useSpeechInputAvailable } from '#app/components/add/speech-input-button';
-import { useAiConnection } from '#app/components/add/use-ai-connection';
+import { useAiIntake } from '#app/components/add/use-ai-connection';
+import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
 import { offerTypedText } from '#app/lib/scan-handoff';
 import { resolveSpeechIntakeAction, type TypedIntakeSource } from '#app/lib/intake-source';
 import { ManageCustomFoodsSheet } from '#app/components/add/manage-custom-foods';
@@ -1724,10 +1725,12 @@ function SearchStep({
     setSpokenQuery(null);
   }, [spokenQuery, query, candidates.length, t]);
 
-  // WHETHER THERE IS AN AI TO SEND WORDS TO. The same read the camera gesture
-  // makes (`useAiConnection`), so the two ways in on this screen can never
-  // disagree about what this device can do. `unknown` counts as no.
-  const aiConnection = useAiConnection();
+  // WHETHER THERE IS AN AI TO SEND WORDS TO, and where to send somebody who
+  // has none. The same answer the camera gesture and `/scan` use
+  // (`useAiIntake`), so no two surfaces can disagree about what this device
+  // can do: a BYOK row on an open instance, the account's allowance on a
+  // managed one. `unknown` counts as no.
+  const { connection: aiConnection, door: aiDoor } = useAiIntake();
   const hasAiProvider = aiConnection === 'connected';
   const scanHref = logContext.date ? `/scan?date=${logContext.date}` : '/scan';
 
@@ -1838,19 +1841,17 @@ function SearchStep({
             <p className="text-xs text-muted-foreground">{t('add.aiIntake.hint')}</p>
           </>
         )}
-        {/* NO PROVIDER, so no button that cannot work. The search below is
+        {/* NO AI, so no button that cannot work. The search below is
             unaffected and needs no AI at all, which is what this says before
-            it offers the way to get one. */}
+            it offers the way to get one, and which way out is offered depends
+            on why there is none. */}
         {aiConnection === 'absent' && (
-          <p className="text-xs text-muted-foreground">
-            {t('add.aiIntake.needsProvider')}{' '}
-            <Link
-              to="/settings/ai?next=add"
-              className="text-primary underline-offset-4 hover:underline"
-            >
-              {t('add.aiIntake.connect')}
-            </Link>
-          </p>
+          <NoAiIntakeNotice
+            door={aiDoor}
+            byokMessage={t('add.aiIntake.needsProvider')}
+            byokLinkLabel={t('add.aiIntake.connect')}
+            byokHref="/settings/ai?next=add"
+          />
         )}
         {isSpeakArmed && <p className="text-xs text-muted-foreground">{t('add.speak.hint')}</p>}
         {/* One polite region for everything speech says back: the settled
