@@ -525,10 +525,10 @@
     },
     "suggestions": {
       "attribution": "Nährwertdaten von lowcarbcheck.org.",
-      "disclosureFiber_one": "{{count}} Lebensmittel, das die Ballaststoff-Lücke schließt",
-      "disclosureFiber_other": "{{count}} Lebensmittel, die die Ballaststoff-Lücke schließen",
-      "disclosureProtein_one": "{{count}} Lebensmittel, das die Eiweiß-Lücke schließt",
-      "disclosureProtein_other": "{{count}} Lebensmittel, die die Eiweiß-Lücke schließen",
+      "disclosureFiber_one": "{{count}} Lebensmittel, das die Ballaststofflücke schließen würde",
+      "disclosureFiber_other": "{{count}} Lebensmittel, die die Ballaststofflücke schließen würden",
+      "disclosureProtein_one": "{{count}} Lebensmittel, das die Eiweißlücke schließen würde",
+      "disclosureProtein_other": "{{count}} Lebensmittel, die die Eiweißlücke schließen würden",
       "introFiber": "Ballaststoffreiche Lebensmittel, die wenig von deinen restlichen Kohlenhydraten kosten.",
       "introProtein": "Eiweißreiche Lebensmittel, die wenig von deinen restlichen Kohlenhydraten kosten.",
       "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g Netto-KH"
