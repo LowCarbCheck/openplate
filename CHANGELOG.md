@@ -2,6 +2,22 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.18.0 - 2026-09-08
+
+- The lesson after the first run now tells you that openplate installs on a
+  phone, where it opens like any other app. Previously, desktop browsers said
+  nothing, and only browsers that supported one-tap install showed the notice.
+  You now learn that the app installs, whichever browser you use, and you still
+  get the install button or the iPhone steps where those work.
+
+- For administrators, the console at /admin now divides into three tabs:
+  People, Invitations and Activity. The People list includes a search box and a
+  filter for active, suspended and administrators. Each row is compact, shows
+  the last seven days of photo reads, and opens a page for that person. The
+  buttons that change an allowance, send a reset link, suspend or delete now
+  live on this person page, which keeps the main list clean. The new Activity
+  tab lists everybody by who was here last, over seven, thirty or ninety days.
+
 ## 0.17.0 - 2026-09-08
 
 - A meal you photograph now goes into breakfast, lunch, dinner or snack, the
