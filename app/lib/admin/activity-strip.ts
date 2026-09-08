@@ -27,7 +27,7 @@
  * their busiest day changed, and would make two people's strips uncomparable
  * while looking exactly as though they could be compared.
  */
-import type { AdminActivityDay } from './admin-wire';
+import type { AdminAccountView, AdminActivityDay } from './admin-wire';
 
 /** How full one square is drawn. `0` is a day that happened and was quiet, and it is still drawn. */
 export type ActivityLevel = 0 | 1 | 2 | 3 | 4;
@@ -58,4 +58,58 @@ export function activityLevel(count: number): ActivityLevel {
 /** Everything read in the window. The strip's one summary number, and the reason an all-zero strip can say so. */
 export function activityTotal(days: readonly AdminActivityDay[]): number {
   return days.reduce((sum, entry) => sum + entry.count, 0);
+}
+
+/**
+ * The strips, keyed by the account they belong to.
+ *
+ * `null` IS ITS OWN ANSWER and the reason this exists: an instance whose
+ * service is older than this client has no batch activity endpoint, so the
+ * request fails and every row is drawn with no strip at all. That is a
+ * different picture from a quiet strip, and the two must never collapse, so
+ * the absence is carried as `null` rather than as an empty map that would draw
+ * every person as though they had stopped.
+ */
+export type ActivityByAccount = ReadonlyMap<number, readonly AdminActivityDay[]>;
+
+/** One account and its strip, ready to draw. `days` is null when this client never received one for them. */
+export interface AccountActivityRow {
+  account: AdminAccountView;
+  days: readonly AdminActivityDay[] | null;
+}
+
+/**
+ * Everybody, most recently active first, with the people who never arrived
+ * last.
+ *
+ * SORTED ON `lastSeenAt`, not on the strip. The strip is a window and the
+ * question the activity page answers, "is this study participant still using
+ * it", is asked about people whose last sign in may be older than any window
+ * the service keeps. Sorting on the strip would have put somebody who stopped
+ * four months ago in the same place as somebody who stopped yesterday, since
+ * both windows are all zeroes.
+ *
+ * `null` sorts last rather than first: an invited account that never arrived
+ * is a real state, and it is not news about somebody going quiet.
+ */
+export function orderByRecentActivity(input: {
+  people: readonly AdminAccountView[];
+  activity: ActivityByAccount | null;
+}): AccountActivityRow[] {
+  const ordered = input.people.toSorted((left, right) => {
+    const leftAt = lastSeenMs(left.lastSeenAt);
+    const rightAt = lastSeenMs(right.lastSeenAt);
+    if (leftAt === rightAt) return left.email.localeCompare(right.email);
+    return rightAt - leftAt;
+  });
+  return ordered.map((account) => ({ account, days: input.activity?.get(account.id) ?? null }));
+}
+
+/** A last-seen instant as a number, with "never" as the smallest value there is so it sorts last. */
+function lastSeenMs(lastSeenAt: string | null): number {
+  if (lastSeenAt === null) return Number.NEGATIVE_INFINITY;
+  const parsed = Date.parse(lastSeenAt);
+  // An unparseable instant is treated as "never" rather than thrown on: this
+  // function decides a row's position, which is not worth an operator's page.
+  return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
 }

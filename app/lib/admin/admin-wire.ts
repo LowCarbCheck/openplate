@@ -65,6 +65,10 @@ export type AdminAccountView = z.infer<typeof accountViewSchema>;
 export const activityDaySchema = z.object({ day: z.string(), count: z.number().int() });
 export type AdminActivityDay = z.infer<typeof activityDaySchema>;
 
+/** The window a strip covers: how many days, and the first and last day key in it. */
+export const activityWindowSchema = z.object({ days: z.number().int(), fromDay: z.string(), toDay: z.string() });
+export type AdminActivityWindow = z.infer<typeof activityWindowSchema>;
+
 /**
  * `GET /v1/admin/accounts/:id/activity`, one person's strip, unwrapped.
  *
@@ -85,10 +89,46 @@ export type AdminActivityDay = z.infer<typeof activityDaySchema>;
 export const accountActivitySchema = z.object({
   accountId: z.number().int(),
   lastSeenAt: z.string().nullable(),
-  window: z.object({ days: z.number().int(), fromDay: z.string(), toDay: z.string() }),
+  window: activityWindowSchema,
   days: z.array(activityDaySchema),
 });
 export type AdminAccountActivity = z.infer<typeof accountActivitySchema>;
+
+/**
+ * `GET /v1/admin/activity?days=&limit=&offset=` — everybody's strip in one
+ * read, paged exactly like `/v1/admin/accounts`.
+ *
+ * WHY A BATCH ENDPOINT AT ALL. The list draws a seven day strip beside every
+ * row, and one request per person would be one request per row on every load
+ * of the console. The service already holds one integer per account per day,
+ * so the join is cheaper there than the round trips are here.
+ *
+ * `accounts` carries EVERY account on the page, zero filled by the service and
+ * in the same order the accounts list returns, so an account with no reading
+ * at all arrives as a run of zeroes rather than as an absent entry. The screen
+ * relies on that in the same way the single-person strip does
+ * (`activity-strip.ts`), and an account this client never received simply has
+ * no strip drawn, which is a different picture from a quiet one.
+ *
+ * `window` is the window the SERVICE drew, which is not always the one that
+ * was asked for: anything longer than its retention window is answered with
+ * the retention window.
+ */
+export const activityRowSchema = z.object({ accountId: z.number().int(), days: z.array(activityDaySchema) });
+export type AdminActivityRow = z.infer<typeof activityRowSchema>;
+
+export const activityListSchema = z.object({
+  window: activityWindowSchema,
+  accounts: z.array(activityRowSchema),
+  total: z.number().int(),
+});
+
+/** Everybody's strip, collected across pages. `window` is the one the service reported on the first page. */
+export interface AdminActivityList {
+  window: AdminActivityWindow;
+  accounts: AdminActivityRow[];
+  total: number;
+}
 
 /**
  * Where an invitation is in its life.

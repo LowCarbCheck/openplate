@@ -11,7 +11,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { activityLevel, activityTotal } from '../../app/lib/admin/activity-strip';
+import { activityLevel, activityTotal, orderByRecentActivity } from '../../app/lib/admin/activity-strip';
+import type { AdminAccountView } from '../../app/lib/admin/admin-wire';
 
 test('a quiet day is level zero, which is a square and not an absence', () => {
   assert.equal(activityLevel(0), 0);
@@ -52,3 +53,81 @@ test('the total is everything read in the window, and an all-zero window totals 
   assert.equal(activityTotal([{ day: '2026-09-07', count: 0 }]), 0);
   assert.equal(activityTotal([]), 0);
 });
+
+// ---------------------------------------------------------------------------
+// The activity page's ordering
+// ---------------------------------------------------------------------------
+
+/**
+ * "Is this study participant still using it" is a question about ORDER, not
+ * about a square. The two rules worth pinning are that the most recently
+ * active person is first, and that somebody who never arrived is last rather
+ * than first, which is what a naive comparison over a nullable timestamp does.
+ */
+test('the activity page lists the most recently active first, and the never-arrived last', () => {
+  const rows = orderByRecentActivity({
+    people: [
+      quietPerson({ id: 1, email: 'old@example.org', lastSeenAt: '2026-06-01T09:00:00.000Z' }),
+      quietPerson({ id: 2, email: 'never@example.org', lastSeenAt: null }),
+      quietPerson({ id: 3, email: 'recent@example.org', lastSeenAt: '2026-09-07T09:00:00.000Z' }),
+    ],
+    activity: null,
+  });
+
+  assert.deepEqual(
+    rows.map((row) => row.account.id),
+    [3, 1, 2],
+  );
+});
+
+test('an unparseable last-seen instant sorts with the never-arrived rather than throwing', () => {
+  const rows = orderByRecentActivity({
+    people: [
+      quietPerson({ id: 1, email: 'broken@example.org', lastSeenAt: 'not a date' }),
+      quietPerson({ id: 2, email: 'fine@example.org', lastSeenAt: '2026-09-07T09:00:00.000Z' }),
+    ],
+    activity: null,
+  });
+
+  assert.deepEqual(
+    rows.map((row) => row.account.id),
+    [2, 1],
+  );
+});
+
+test('a strip nobody sent is null on the row, and is not an empty one', () => {
+  const people = [
+    quietPerson({ id: 1, email: 'seen@example.org', lastSeenAt: '2026-09-07T09:00:00.000Z' }),
+    quietPerson({ id: 2, email: 'unseen@example.org', lastSeenAt: '2026-09-06T09:00:00.000Z' }),
+  ];
+  const rows = orderByRecentActivity({
+    people,
+    activity: new Map([[1, [{ day: '2026-09-07', count: 2 }]]]),
+  });
+
+  assert.deepEqual(rows[0]?.days, [{ day: '2026-09-07', count: 2 }]);
+  assert.equal(rows[1]?.days, null, 'an account the batch answer skipped gets no strip, never a quiet one');
+});
+
+test('a whole failed read leaves every row without a strip, and still lists everybody', () => {
+  const rows = orderByRecentActivity({
+    people: [quietPerson({ id: 1, email: 'a@example.org', lastSeenAt: null })],
+    activity: null,
+  });
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.days, null);
+});
+
+/** An account with only the fields the ordering reads. The rest are filled with values that say nothing. */
+function quietPerson(overrides: { id: number; email: string; lastSeenAt: string | null }): AdminAccountView {
+  return {
+    displayName: null,
+    role: 'member',
+    dailyAiLimit: 200,
+    aiUsedToday: 0,
+    suspendedAt: null,
+    createdAt: '2026-08-01T09:00:00.000Z',
+    ...overrides,
+  };
+}

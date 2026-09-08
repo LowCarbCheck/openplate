@@ -28,6 +28,7 @@ import {
   ADMIN_API_PREFIX,
   accountActivitySchema,
   accountListSchema,
+  activityListSchema,
   accountResponseSchema,
   adminStatsResponseSchema,
   deliverySchema,
@@ -36,6 +37,9 @@ import {
   type AccountRole,
   type AdminAccountActivity,
   type AdminAccountView,
+  type AdminActivityList,
+  type AdminActivityRow,
+  type AdminActivityWindow,
   type AdminStats,
   type Delivery,
   type InviteCreated,
@@ -145,6 +149,44 @@ export class AdminClient {
       method: 'GET',
       parse: (body) => accountActivitySchema.parse(body),
     });
+  }
+
+  /**
+   * EVERYBODY's strip, in one paged read.
+   *
+   * The list draws a seven day strip beside every row, and the alternative is
+   * one request per person on every load of the console. The window IS named
+   * here, unlike {@link accountActivity}: the list asks for seven days and the
+   * activity page offers thirty and ninety, and the service answers with the
+   * window it actually drew, which is what the screen reports.
+   *
+   * A SERVICE THAT DOES NOT HAVE THIS ENDPOINT ANSWERS 404, AND THAT THROWS,
+   * like every other unexpected status. The caller degrades to rows without
+   * strips; it must never degrade to a broken list, because the strip is an
+   * ornament on a page whose job is to list people.
+   */
+  async listActivity(input: { days: number }): Promise<AdminOutcome<AdminActivityList>> {
+    // The window arrives on every page and is the same on all of them. It is
+    // caught on a holder rather than in a plain `let`, because a value only
+    // ever assigned inside a callback reads back as its initialiser to the
+    // compiler, and an explicit null check on a property does narrow.
+    const collected: ActivityWindowHolder = { window: null };
+    const outcome = await this.collectPages<AdminActivityRow>({
+      path: `${ADMIN_API_PREFIX}/activity`,
+      params: [{ name: 'days', value: input.days }],
+      readPage: (body) => {
+        const page = activityListSchema.parse(body);
+        collected.window = page.window;
+        return { items: page.accounts, total: page.total };
+      },
+    });
+    if (outcome.status === 'forbidden') return outcome;
+    const window = collected.window;
+    // Unreachable while `collectPages` reads at least one page, and a throw
+    // rather than a guessed window: a strip labelled with a window nobody
+    // reported would say something false about a study participant.
+    if (window === null) throw new Error('the activity list reported no window');
+    return { status: 'ok', value: { window, accounts: outcome.value.items, total: outcome.value.total } };
   }
 
   /**
@@ -259,6 +301,8 @@ export class AdminClient {
    */
   private async collectPages<T>(input: {
     path: string;
+    /** Anything the endpoint takes beyond the paging pair, in front of it in the query string. */
+    params?: readonly AdminQueryParam[];
     readPage: (body: JsonValue) => { items: T[]; total: number };
   }): Promise<AdminOutcome<{ items: T[]; total: number }>> {
     const items: T[] = [];
@@ -266,7 +310,11 @@ export class AdminClient {
     for (let page = 0; page < MAX_ADMIN_PAGES; page += 1) {
       const offset = page * ADMIN_PAGE_SIZE;
       const outcome = await this.send({
-        path: `${input.path}${query({ limit: ADMIN_PAGE_SIZE, offset })}`,
+        path: `${input.path}${query([
+          ...(input.params ?? []),
+          { name: 'limit', value: ADMIN_PAGE_SIZE },
+          { name: 'offset', value: offset },
+        ])}`,
         method: 'GET',
         parse: input.readPage,
       });
@@ -336,12 +384,21 @@ const ADMIN_PAGE_SIZE = 200;
  */
 const MAX_ADMIN_PAGES = 50;
 
-/** `?limit=&offset=`, or nothing at all when neither was asked for. */
-function query(input: { limit?: number; offset?: number }): string {
-  const parts: string[] = [];
-  if (input.limit !== undefined) parts.push(`limit=${input.limit}`);
-  if (input.offset !== undefined) parts.push(`offset=${input.offset}`);
-  return parts.length === 0 ? '' : `?${parts.join('&')}`;
+/** One numeric query parameter. Every parameter this API takes is a number, so nothing here needs escaping. */
+interface AdminQueryParam {
+  name: string;
+  value: number;
+}
+
+/** The holder {@link AdminClient.listActivity} catches the window on. Named, because an inline one reads back as null. */
+interface ActivityWindowHolder {
+  window: AdminActivityWindow | null;
+}
+
+/** `?days=&limit=&offset=`, in the order given, or nothing at all when nothing was asked for. */
+function query(params: readonly AdminQueryParam[]): string {
+  if (params.length === 0) return '';
+  return `?${params.map((param) => `${param.name}=${param.value}`).join('&')}`;
 }
 
 /**

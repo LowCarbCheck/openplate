@@ -66,6 +66,23 @@ const ACTIVITY: JsonObject = {
   ],
 };
 
+/**
+ * The batch strip, one page of it, transcribed from the endpoint's contract.
+ *
+ * WRAPPED with `window` and `total` beside `accounts`, unlike the single
+ * person's body above. Getting that asymmetry the wrong way round is exactly
+ * the defect this file exists to catch, so both fixtures are written out in
+ * full rather than derived from each other.
+ */
+const ACTIVITY_PAGE: JsonObject = {
+  window: { days: 7, fromDay: '2026-09-01', toDay: '2026-09-07' },
+  accounts: [
+    { accountId: 7, days: [{ day: '2026-09-01', count: 0 }] },
+    { accountId: 8, days: [{ day: '2026-09-01', count: 2 }] },
+  ],
+  total: 2,
+};
+
 const INVITE: JsonObject = {
   id: 12,
   email: 'bea@example.org',
@@ -136,6 +153,14 @@ function page(body: JsonValue): FakeAnswer {
 /** `count` accounts with ids starting one past `from`. Only the id has to differ. */
 function accountsNumbered(from: number, count: number): JsonValue[] {
   return Array.from({ length: count }, (_item, index) => ({ ...ACCOUNT, id: from + index + 1 }));
+}
+
+/** `count` activity rows with account ids starting one past `from`. Only the id has to differ. */
+function rowsNumbered(from: number, count: number): JsonValue[] {
+  return Array.from({ length: count }, (_item, index) => ({
+    accountId: from + index + 1,
+    days: [{ day: '2026-09-01', count: 0 }],
+  }));
 }
 
 function clientFailingWith(error: SyncRequestError): AdminClient {
@@ -275,6 +300,54 @@ test('accountActivity asks the account for its own strip, and names no window', 
 test('an activity body read out of an envelope that is not there fails at the boundary', async () => {
   const { client } = clientAnswering({ activity: ACTIVITY });
   await assert.rejects(() => client.accountActivity({ id: 7 }));
+});
+
+test('listActivity names the window it wants, and pages like every other list', async () => {
+  const { client, requests } = clientAnswering(ACTIVITY_PAGE);
+  const outcome = await client.listActivity({ days: 7 });
+
+  // `days` FIRST, then the paging pair the service caps: the batch endpoint is
+  // paged exactly like `/v1/admin/accounts`, and a `limit` above 200 is a 400
+  // there too.
+  assert.deepEqual(requests, [
+    { path: '/v1/admin/activity?days=7&limit=200&offset=0', method: 'GET', body: undefined },
+  ]);
+  assert.equal(outcome.status, 'ok');
+  if (outcome.status !== 'ok') return;
+  assert.equal(outcome.value.window.days, 7);
+  assert.equal(outcome.value.window.toDay, '2026-09-07');
+  assert.equal(outcome.value.accounts.length, 2);
+  // A quiet day survives the parse as a zero, not as an absence.
+  assert.deepEqual(outcome.value.accounts[0]?.days, [{ day: '2026-09-01', count: 0 }]);
+});
+
+test('a batch strip longer than one page keeps the window from the first page', async () => {
+  const { client, requests } = clientPaging([
+    page({ ...ACTIVITY_PAGE, accounts: rowsNumbered(0, 200), total: 250 }),
+    page({ ...ACTIVITY_PAGE, accounts: rowsNumbered(200, 50), total: 250 }),
+  ]);
+  const outcome = await client.listActivity({ days: 30 });
+
+  assert.deepEqual(
+    requests.map((request) => request.path),
+    ['/v1/admin/activity?days=30&limit=200&offset=0', '/v1/admin/activity?days=30&limit=200&offset=200'],
+  );
+  assert.equal(outcome.status, 'ok');
+  if (outcome.status !== 'ok') return;
+  assert.equal(outcome.value.accounts.length, 250);
+  // ASKED FOR 30, DREW 7. The window the SERVICE reported is what comes back,
+  // because a service keeping less than was asked for answers with its
+  // retention window and a page labelled with the request would say something
+  // false about a study participant.
+  assert.equal(outcome.value.window.days, 7);
+});
+
+test('a service with no batch endpoint throws, so the caller can drop the strips and keep the list', async () => {
+  // A 404 is not a 403. It is not an outcome an administrator can act on, so
+  // it stays an exception and the people page catches it and renders rows
+  // without squares.
+  const client = clientFailingWith(new SyncRequestError({ kind: 'not-found', message: 'nope', status: 404 }));
+  await assert.rejects(() => client.listActivity({ days: 7 }), SyncRequestError);
 });
 
 test('listInvites parses an invitation, including the fields only an admin sees', async () => {
@@ -438,8 +511,9 @@ test('EVERY method turns a 403 into a typed outcome instead of throwing', async 
       client.resendInvite({ id: 12 }),
       client.stats(),
       client.accountActivity({ id: 7 }),
+      client.listActivity({ days: 7 }),
     ]);
-    assert.equal(outcomes.length, 11, 'every endpoint on the contract is covered');
+    assert.equal(outcomes.length, 12, 'every endpoint on the contract is covered');
     for (const outcome of outcomes) assert.equal(outcome.status, 'forbidden', `${kind} must not throw`);
   }
 });
