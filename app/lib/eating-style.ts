@@ -226,6 +226,54 @@ export function effectiveEatingStyle(goals: EatingStyleGoals): EatingStyleId {
   return isEatingStyleId(goals.eatingStyle) ? goals.eatingStyle : deriveEatingStyle(goals);
 }
 
+/**
+ * The three stored numbers a reconcile reads. The stored style is passed
+ * separately, so a goals object that still carries one cannot be read by
+ * accident and quietly re-confirm the style being reconsidered.
+ */
+export type EatingStyleGoalNumbers = Omit<EatingStyleGoals, 'eatingStyle'>;
+
+/** What `reconcileEatingStyle` weighs up: the style on file, and the numbers about to replace the ones it was picked with. */
+export interface ReconcileEatingStyleInput {
+  /** The style stored today, `null` for a profile written before schema v20. */
+  storedStyle: EatingStyleId | null;
+  /** The numbers about to be stored, not the ones stored now. */
+  goals: EatingStyleGoalNumbers;
+}
+
+/**
+ * The style a GOALS save should leave behind, when the person edited the
+ * numbers directly rather than picking a style.
+ *
+ * Without this the two cards on `/settings/goals` disagree. A walk found it:
+ * with `low-kcal` stored and 1800 kcal on file, typing a 100 g carb limit into
+ * the goals card kept `low-kcal`, so the style card still read "Calories" and
+ * the day was still graded by the kcal lens although the person had just set a
+ * carb limit. The numbers said one thing and the stored style another, and the
+ * stored one won every reader.
+ *
+ * The rule is: a typed number re-derives the style, with ONE exception.
+ * `high-protein` is the only style whose lens cannot be read back out of the
+ * numbers beside a carb ceiling, because `deriveEatingStyle` answers the carb
+ * question first. It is also the only style a person can hold while typing a
+ * limit for a different macro. So a stored `high-protein` that still has its
+ * floor is kept: the protein lens is the person's own pick, and a carb limit
+ * typed beside it is information, not a change of lens. Clear the floor and the
+ * exception lapses, because there is no longer a protein goal to grade against.
+ *
+ * Every other case falls through to `deriveEatingStyle`, the same lossless
+ * table a pre-v20 account is read by, so a save through this route and a legacy
+ * account with identical numbers end up the same style.
+ *
+ * @param input - the stored style, and the numbers about to be stored.
+ * @returns the style to write alongside those numbers.
+ */
+export function reconcileEatingStyle({ storedStyle, goals }: ReconcileEatingStyleInput): EatingStyleId {
+  const hasProtein = goals.goalProteinFloorG !== null && goals.goalProteinFloorG !== undefined;
+  if (storedStyle === 'high-protein' && hasProtein) return 'high-protein';
+  return deriveEatingStyle(goals);
+}
+
 /** The four profile fields `applyEatingStyle` decides, ready to patch onto the profile. */
 export interface EatingStylePatch {
   goalNetCarbsCeilingG: number | null;

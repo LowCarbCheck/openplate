@@ -45,7 +45,7 @@ import {
 import type { BodyMetrics, ProteinFloorSuggestion } from '#app/models/body-metrics';
 import type { ReproductiveStatus } from '#app/lib/local-store/schema';
 import { CARB_PRESETS as ONBOARDING_CARB_PRESETS, type CarbPreset } from '#app/lib/onboarding';
-import { effectiveEatingStyle, styleCaution, type EatingStyleId } from '#app/lib/eating-style';
+import { effectiveEatingStyle, reconcileEatingStyle, styleCaution, type EatingStyleId } from '#app/lib/eating-style';
 import { makeEatingStyleSchema, planEatingStyleSave, CARB_SUB_PRESETS, styleNeedsWeight } from '#app/lib/eating-style-form';
 import { eatingStyleCardKey, goalsCardKey } from '#app/lib/goals-form-key';
 import { EatingStyleCautionNote, EatingStylePicker } from '#app/components/eating-style-picker';
@@ -284,12 +284,22 @@ async function _saveGoals(formData: FormData) {
   const trackingFocus = storedTrackingFocusFor(
     selectGoalRings({ netCarbsCeiling: value.goalNetCarbsCeilingG, kcalTarget: value.goalKcalTarget }),
   );
-  await patchLocalProfileGoals({
-    trackingFocus,
+  // The stored style follows the numbers too. Typing a carb limit here while
+  // `low-kcal` is stored used to leave the style card reading "Calories" and
+  // the day graded by the kcal lens; `reconcileEatingStyle` re-derives the
+  // style from the numbers about to be written, keeping `high-protein` only
+  // while its floor is still set (M210).
+  const current = await getLocalProfileGoals();
+  const nextGoals = {
     goalNetCarbsCeilingG: value.goalNetCarbsCeilingG,
     goalProteinFloorG: value.goalProteinFloorG,
     goalKcalTarget: value.goalKcalTarget,
+  };
+  await patchLocalProfileGoals({
+    trackingFocus,
+    ...nextGoals,
     targetWeightKg: value.targetWeightKg,
+    eatingStyle: reconcileEatingStyle({ storedStyle: current?.eatingStyle ?? null, goals: nextGoals }),
   });
   trackGoalsSaved('targets');
   return redirectWithLocalToast('/settings/goals', { type: 'success', description: actionT('goals.toast.saved') });

@@ -24,7 +24,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Fixed
 
-- **Goals in Settings shows the numbers a style save just wrote.** Saving an eating style cleared the goals it does not use, but the goal card underneath kept printing the old daily carb limit until you left the page and came back. Both cards now redraw from what is stored, in either direction: changing your goals also re-ticks the style card.
+- **Goals in Settings shows the numbers a style save just wrote.** Saving an eating style cleared the goals it does not use, but the goal card underneath kept printing the old daily carb limit until you left the page and came back. Both cards now redraw from what is stored, in either direction: changing your goals also re-ticks the style card. Your eating style follows those numbers too. Setting a daily carb limit while your style was calories left the style card saying calories and the day graded on calories alone; the style now moves to the one your numbers describe. A high protein style stays as it is while its protein goal is still set, because a carb limit typed beside it is extra information, not a new goal.
 
 ## [0.23.3] - 2026-09-09
 

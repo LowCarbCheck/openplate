@@ -23,10 +23,13 @@ import {
   eatingStyle,
   isEatingStyleId,
   lensForStyle,
+  reconcileEatingStyle,
   styleCaution,
+  type EatingStyleGoalNumbers,
   type EatingStyleGoals,
   type EatingStyleId,
   type EatingStyleLens,
+  type ReconcileEatingStyleInput,
 } from '../../app/lib/eating-style';
 import { migrateEnvelopeForward, parseBackupEnvelope } from '../../app/lib/local-store/backup';
 import { SCHEMA_VERSION } from '../../app/lib/local-store/schema';
@@ -34,6 +37,16 @@ import type { ReproductiveStatus } from '../../app/lib/local-store/schema';
 
 /** The three goal numbers, with everything unset unless a case says otherwise. */
 function goals(overrides: Partial<EatingStyleGoals> = {}): EatingStyleGoals {
+  return {
+    goalNetCarbsCeilingG: null,
+    goalKcalTarget: null,
+    goalProteinFloorG: null,
+    ...overrides,
+  };
+}
+
+/** The three numbers a reconcile reads, everything unset unless a case says otherwise. */
+function numbers(overrides: Partial<EatingStyleGoalNumbers> = {}): EatingStyleGoalNumbers {
   return {
     goalNetCarbsCeilingG: null,
     goalKcalTarget: null,
@@ -68,6 +81,25 @@ function saveOver(input: { currentGoals: EatingStyleGoals; style: EatingStyleId;
     latestWeightKg: 78,
     referenceProteinFloorG: 60,
   });
+}
+
+/**
+ * A deliberately wrong reconcile, used as the control below: it keeps whatever
+ * style is stored, which is exactly the behaviour the walk found on the goals
+ * card. It agrees with the real one on every case where the numbers still
+ * describe the stored style.
+ */
+function alwaysStored(input: ReconcileEatingStyleInput): EatingStyleId {
+  return input.storedStyle ?? deriveEatingStyle(input.goals);
+}
+
+/**
+ * The other deliberately wrong reconcile: it derives from the numbers every
+ * time, dropping a deliberate `high-protein` the moment a carb ceiling is typed
+ * beside its floor.
+ */
+function alwaysDerive(input: ReconcileEatingStyleInput): EatingStyleId {
+  return deriveEatingStyle(input.goals);
 }
 
 /** A deliberately over-eager caution rule, used as the control below: it ignores the style. */
@@ -231,6 +263,78 @@ describe('the style in effect', () => {
     // exercise the fallback.
     const alien: EatingStyleGoals = { ...goals({ goalKcalTarget: 1800 }), eatingStyle: 'carnivore' as EatingStyleId };
     assert.equal(effectiveEatingStyle(alien), 'low-kcal');
+  });
+});
+
+describe('reconciling the style with numbers typed on the goals card', () => {
+  it('turns a stored low-kcal into low-carb-low-kcal when a carb limit is typed beside the target', () => {
+    // The walk: 1800 kcal on file, a 100 g limit typed, and the style card went
+    // on saying "Calories" while the day was graded by the kcal lens.
+    assert.equal(
+      reconcileEatingStyle({
+        storedStyle: 'low-kcal',
+        goals: numbers({ goalKcalTarget: 1800, goalNetCarbsCeilingG: 100 }),
+      }),
+      'low-carb-low-kcal',
+    );
+  });
+
+  it('drops back to low-kcal when the ceiling is cleared again', () => {
+    assert.equal(
+      reconcileEatingStyle({ storedStyle: 'low-carb-low-kcal', goals: numbers({ goalKcalTarget: 1800 }) }),
+      'low-kcal',
+    );
+  });
+
+  it('keeps high-protein when a carb ceiling is typed beside a floor that is still set', () => {
+    // The one exception: the protein lens is the person's own pick, and
+    // `deriveEatingStyle` would answer the carb question first and lose it.
+    assert.equal(
+      reconcileEatingStyle({
+        storedStyle: 'high-protein',
+        goals: numbers({ goalProteinFloorG: 120, goalNetCarbsCeilingG: 100 }),
+      }),
+      'high-protein',
+    );
+  });
+
+  it('lets the high-protein exception lapse once the floor is cleared', () => {
+    assert.equal(
+      reconcileEatingStyle({ storedStyle: 'high-protein', goals: numbers({ goalNetCarbsCeilingG: 100 }) }),
+      'low-carb',
+    );
+  });
+
+  it('turns a stored just-track into low-carb the moment a ceiling is typed', () => {
+    assert.equal(
+      reconcileEatingStyle({ storedStyle: 'just-track', goals: numbers({ goalNetCarbsCeilingG: 100 }) }),
+      'low-carb',
+    );
+  });
+
+  it('derives from the numbers for a pre-v20 profile with no stored style', () => {
+    assert.equal(reconcileEatingStyle({ storedStyle: null, goals: numbers({ goalKcalTarget: 1800 }) }), 'low-kcal');
+  });
+
+  it('CONTROL: keeping the stored style fails the walk case, and always deriving fails the high-protein case', () => {
+    // Two wrong implementations, one on each side of the rule. Either passes a
+    // test file that only checks the other half, so both halves are pinned.
+    const walk: ReconcileEatingStyleInput = {
+      storedStyle: 'low-kcal',
+      goals: numbers({ goalKcalTarget: 1800, goalNetCarbsCeilingG: 100 }),
+    };
+    const keptFloor: ReconcileEatingStyleInput = {
+      storedStyle: 'high-protein',
+      goals: numbers({ goalProteinFloorG: 120, goalNetCarbsCeilingG: 100 }),
+    };
+
+    assert.throws(() => assert.equal(alwaysStored(walk), reconcileEatingStyle(walk)));
+    assert.throws(() => assert.equal(alwaysDerive(keptFloor), reconcileEatingStyle(keptFloor)));
+
+    // And each control agrees with the shipped rule on the case it does not
+    // break, so the two assertions above are the only thing separating them.
+    assert.equal(alwaysStored(keptFloor), reconcileEatingStyle(keptFloor));
+    assert.equal(alwaysDerive(walk), reconcileEatingStyle(walk));
   });
 });
 
