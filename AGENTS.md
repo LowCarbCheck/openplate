@@ -143,6 +143,34 @@ The core product promise is "your key, your provider, your data." **BYOK is full
 
 There is no server-side migration story any more — no schema migrations, no data migrations, no runner, no ledger. The only persisted shape the app owns is the IndexedDB store, and it versions itself: bump the version in `app/lib/local-store/schema.ts` and write the upgrade path there, so an existing device's data is transformed on its next load. A change that would need "run this once against production" is a signal you are persisting something on the server that should not be there.
 
+## Versioning and changelog
+
+openplate is SemVered. The version lives in **one** file, `package.json`, and it must equal the newest numbered `## [x.y.z]` heading in `CHANGELOG.md`. `## [Unreleased]` is not numbered and is not part of that agreement.
+
+**Two kinds of commit. A functional commit records; only the release commit bumps.** Never bump the version because you fixed something; the version moves once, when the release is cut.
+
+**Before committing any functional change**, in the SAME commit, add **one bullet** to the end of the `## [Unreleased]` list in `CHANGELOG.md`, so the list stays in landing order. The bullet sits under one of four level-3 headings, in this order and only where there is content: `### Added`, `### Changed`, `### Fixed`, `### Docs`. It opens with a short **bold lead sentence**, present tense, about ten words, with the period inside the `**`, and the detail follows in the same bullet:
+
+```
+### Fixed
+
+- **The lead sentence, about ten words.** The detail follows here.
+```
+
+Write it for the person running the instance, not for the person reading the diff. Add **no commit hash**: the hash does not exist yet, and the release commit adds it. Doc-only changes (`*.md`) and test-only changes (`*.test.ts`) ship nothing an operator can see, so neither needs a bullet.
+
+**The lead is what the GitHub Release page prints.** `scripts/release-notes.ts` reads that version's section out of `CHANGELOG.md` and builds the page from the leads, grouped, with a link into the changelog for the detail and a compare link against the previous tag. `tests/unit/release-notes.test.ts` runs the same checks over the real `CHANGELOG.md`, and `.githooks/pre-push` runs that file before lint, so a bullet the page could not print stops the push instead of the release. The checks are scoped to 0.20.0 and newer; the flat list below that is the record of what shipped and is left alone.
+
+**Cutting a release is one `chore(release): x.y.z, <one line saying what it is>` commit** that does this and nothing else:
+
+1. **Pick the axis** from the sum of the Unreleased entries. PATCH: nothing to learn. MINOR: something to learn, a new screen, a new setting, a changed default. MAJOR: the operator must change something, a renamed variable, a broken contract. When in doubt, pick patch.
+2. **Bump `version` in `package.json`** to that number.
+3. **Rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`**, using the release date. The group headings and their bullets come along as they are. **Append each bullet's short commit hash** as `([abc1234](https://github.com/LowCarbCheck/openplate/commit/abc1234))`. Merge or reorder lines as needed, and delete entries for work reverted before release.
+4. **Re-create an empty `## [Unreleased]` heading above it.**
+5. **Push, and push a matching annotated tag with it**: `git tag -a vX.Y.Z -m "openplate X.Y.Z" && git push --follow-tags`. `.github/workflows/release-image.yml` triggers on `v*` and nothing else builds the image or publishes the release page, so a cut version with no tag is not a release at all.
+
+**No em dashes and no en dashes** in the changelog, in a lead, or in a commit message. Use a comma.
+
 ## Commits
 
 Use Conventional Commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`

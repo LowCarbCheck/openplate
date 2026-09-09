@@ -7,7 +7,8 @@
 # typecheck + unit tests: neither runs `react-router build`, so the
 # PRODUCTION BUILD is part of this gate.
 #
-# Runs: docs manifest -> lint -> typecheck -> unit tests -> integration tests -> production build.
+# Runs: docs manifest -> changelog -> lint -> typecheck -> unit tests -> integration tests
+#       -> production build.
 #
 # The integration project joined the gate 2026-08-28 (M163/04). It is the only
 # place a COMPOSITION ROOT is exercised — the real actions, over real HTTP,
@@ -58,6 +59,17 @@ else
   echo "  Install the toolbox, or bypass once with: SKIP_TESTS=1 git push"
   exit 1
 fi
+
+# ── SECOND TIER: the changelog the release page is built from ───────────────
+# One test file, about a third of a second. The GitHub Release page's body is
+# generated from CHANGELOG.md by `scripts/release-notes.ts`, which refuses a
+# bullet with no bold lead, a bullet above every group heading, and an unknown
+# group. Without this stage that refusal lands at TAG TIME, when the release is
+# already being published and the only fix is a second push. Here it lands on
+# the commit that wrote the bullet. The same file runs again in the unit tier
+# below; running it twice costs less than one failed release.
+echo "▶ pre-push: the changelog the release page is built from"
+run pnpm exec node --import tsx --test tests/unit/release-notes.test.ts
 
 echo "▶ pre-push: lint"
 run pnpm lint

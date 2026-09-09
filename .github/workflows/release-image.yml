@@ -172,3 +172,102 @@ jobs:
             -f event_type=openplate-released \
             -f "client_payload[repo]=${GITHUB_REPOSITORY#*/}" \
             -f "client_payload[tag]=$GITHUB_REF_NAME"
+
+  # ── The GitHub Release page ────────────────────────────────────────────────
+  # The page an operator reads to decide whether to pin the new image tag. Its
+  # body is generated from CHANGELOG.md by `scripts/release-notes.ts`: the bold
+  # lead of every bullet in that version's section, under its group heading,
+  # then a link into the changelog for the detail and a compare link against the
+  # previous tag.
+  #
+  # NO `needs:`, and outside the build's concurrency group, for the same reason
+  # `dispatch-website` above is: the v0.10.0 and v0.10.1 tag runs both HUNG in
+  # "Build and push", and a release page waiting on that job would have been
+  # eaten by the hang. Nothing about publishing the notes depends on an image
+  # existing, and the image is found by tag whenever it lands.
+  #
+  # NO `--generate-notes`. GitHub's generated summary only knows merged pull
+  # requests, and almost all of this repository's history lands as direct
+  # commits, so that list reads as an almost empty release. CHANGELOG.md is the
+  # one record, and the page is built from it.
+  #
+  # There is deliberately no fallback body. The script exits 1 when the section
+  # cannot be read (no heading for this version, a bullet with no bold lead, a
+  # bullet above every group heading), and a release published without it would
+  # list nothing at all. `tests/unit/release-notes.test.ts` runs the same checks
+  # over this repository's real CHANGELOG.md in the pre-push gate, so this step
+  # failing means the tag was pushed past that gate. Fix CHANGELOG.md, push, and
+  # re-run this workflow.
+  release-notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Tags only. A push to `main` moves `latest` and publishes no release page.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    # The one job here that writes anything back to the repository.
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # The notes carry a compare link against the PREVIOUS tag, and the step
+          # below asks git for it with `git describe --tags`. A default checkout
+          # is one commit deep and carries no tags at all, so `describe` would
+          # answer nothing and the compare line would silently disappear from
+          # every release page.
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The script needs `tsx` and nothing else, and it runs no build, so the
+      # lifecycle scripts of the dependency tree are dead weight here.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Assemble the release notes from CHANGELOG.md
+        id: notes
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          notes="$RUNNER_TEMP/notes.md"
+          # The compare link's other end is a REAL TAG, asked of git, never
+          # derived from the CHANGELOG: a heading can exist for a version that
+          # was cut and never tagged, and a link built from it would 404.
+          # `describe` starts at the tagged commit's parent, so it names the tag
+          # before this one; an empty answer means no compare line.
+          previous=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          echo "compare base: ${previous:-<none>}"
+          args=(--version "$version" --repo "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME")
+          [ -z "$previous" ] || args+=(--previous-tag "$previous")
+          pnpm exec tsx scripts/release-notes.ts "${args[@]}" > "$notes"
+          cat "$notes"
+          echo "file=$notes" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the GitHub Release
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists, leaving it alone"
+            exit 0
+          fi
+          # GitHub does NOT infer "prerelease" from a semver hyphen: the API
+          # defaults to prerelease:false, which also moves the Latest badge. A
+          # `-beta` or `-rc` tag must never take that badge from the shipped
+          # line, so mark it explicitly.
+          flags=()
+          case "$GITHUB_REF_NAME" in *-*) flags=(--prerelease) ;; esac
+          # `--verify-tag` refuses to create the tag as a side effect: this job
+          # publishes a page for a tag that already exists, it never invents one.
+          gh release create "$GITHUB_REF_NAME" "${flags[@]}" \
+            --title "openplate $GITHUB_REF_NAME" \
+            --notes-file "${{ steps.notes.outputs.file }}" \
+            --verify-tag

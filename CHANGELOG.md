@@ -1,67 +1,64 @@
 # Changelog
 
-All notable user-facing changes to openplate are recorded here.
+All notable user-facing changes to openplate are recorded here, newest version first. From 0.20.0
+on, a version's changes are grouped under `### Added`, `### Changed`, `### Fixed` and `### Docs`,
+in that order and only where there is content, and every bullet opens with a short bold lead
+sentence. That lead is the line the GitHub Release page prints, so it is written as the sentence an
+operator reads there. Older versions carry a single flat list. Every entry links the commit it came
+from. The `## [Unreleased]` section holds merged work waiting for a release. The release commit
+renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and re-creates an empty
+`## [Unreleased]` above it. See [`AGENTS.md`](./AGENTS.md), _Versioning and changelog_.
 
-## 0.22.0 - 2026-09-09
+## [Unreleased]
 
-- The protein row on the dashboard and in the diary now shows a reference
-  floor when you have set no protein goal. It uses the same small
-  "reference" tag as the fiber row. The figure is EFSA's population
-  reference intake. It uses 0.83 g of protein per kilogram of body weight
-  from your latest weigh-in. Without a weigh-in, it uses your height and
-  sex. It falls back to 50 g when the app knows neither. Pregnancy adds
-  28 g, and breastfeeding adds 19 g. A goal you set yourself always wins.
-- The food suggestions for an open protein or fiber gap now change from day
-  to day. A food you already logged today is not suggested again.
+## [0.22.0] - 2026-09-09
 
-## 0.21.0 - 2026-09-09
+### Added
 
-- The message box at /describe now looks like a chat: one rounded box that
-  grows as you write, with a round Send button inside it. Enter still sends,
-  and Shift and Enter still start a new line.
-- The app's own microphone button is gone. On a phone it did nothing, and it
-  sent your voice to Google or Apple through the browser. Speak now opens the
-  message box with the field focused. Tap the microphone key on your keyboard
-  to dictate, then send.
-- Today's budget rows on the dashboard and in the diary now show fat, in
-  grams, between protein and fiber. Fat has no target.
+- **The protein row shows a reference floor when you set no goal.** It appears on the dashboard and in the diary, with the same small "reference" tag as the fiber row. The figure is EFSA's population reference intake. It uses 0.83 g of protein per kilogram of body weight from your latest weigh-in. Without a weigh-in, it uses your height and sex. It falls back to 50 g when the app knows neither. Pregnancy adds 28 g, and breastfeeding adds 19 g. A goal you set yourself always wins. ([3f3c66f](https://github.com/LowCarbCheck/openplate/commit/3f3c66f))
 
-## 0.20.1 - 2026-09-08
+### Changed
 
-- On a managed instance the message box at /describe and the "Log with AI"
-  button on the search page were always disabled, because both only looked
-  for an AI key stored on the device, and a managed instance keeps none. Both
-  now ask the same question the scan screen asks: signed in, with an AI
-  allowance. The notice for a person without AI names the right door: sign
-  in on a managed instance, connect a provider on an open one, or ask the
-  administrator when the account has no allowance.
-- The review screen after a typed or spoken meal now shows the words you
-  sent above the food list, so you can check the estimate against them.
+- **Food suggestions for an open gap change from day to day.** The suggestions for an open protein or fiber gap now vary with the date. A food you already logged today is not suggested again. ([1881eaf](https://github.com/LowCarbCheck/openplate/commit/1881eaf))
 
-## 0.20.0 - 2026-09-08
+## [0.21.0] - 2026-09-09
 
-- Type and Speak now open a message box at /describe. Write or say what you
-  ate, send it, and the AI works out the food from your words the same way it
-  does from a photo, on the same review screen, into the same diary. The
-  launcher sheet, the dashboard, the diary's empty states and the first-run
-  lesson all lead there. The food database search stays at /add for one exact
-  item.
-- The scan screen's messages no longer talk about a photo when you described
-  the meal in words: the waiting text, the "nothing found" text and the
-  failure text each have a version for a description.
-- Administrators get a Reports tab. It lists every reported estimate, when it
-  arrived and when it deletes itself, and opens one report with the model's
-  figures and the photo, if there was one. A report can be deleted now
-  instead of at the end of the window.
-- A scanned plate photo is now saved on this device when you confirm the
-  scan. It never was: the save waited for a page state that a local save
-  never produces. The device copy the AI settings promise is now kept, and a
-  report of a bad estimate can carry the picture.
-- On a managed instance the offline page and the data settings no longer say
-  the diary is only on this device. They say the server holds an encrypted
-  copy it cannot read.
+### Added
 
-## 0.19.1 - 2026-09-08
+- **Today's budget rows show fat, in grams.** On the dashboard and in the diary, fat sits between protein and fiber. Fat has no target. ([89324a5](https://github.com/LowCarbCheck/openplate/commit/89324a5))
+
+### Changed
+
+- **The message box at /describe looks like a chat.** One rounded box that grows as you write, with a round Send button inside it. Enter still sends, and Shift and Enter still start a new line. ([ff80af4](https://github.com/LowCarbCheck/openplate/commit/ff80af4))
+- **The app's own microphone button is gone.** On a phone it did nothing, and it sent your voice to Google or Apple through the browser. Speak now opens the message box with the field focused. Tap the microphone key on your keyboard to dictate, then send. ([ff80af4](https://github.com/LowCarbCheck/openplate/commit/ff80af4))
+
+## [0.20.1] - 2026-09-08
+
+### Added
+
+- **The review screen shows the words you sent.** After a typed or spoken meal, the words sit above the food list so you can check the estimate against them. ([860ae43](https://github.com/LowCarbCheck/openplate/commit/860ae43))
+
+### Fixed
+
+- **A managed instance can describe a meal with AI.** The message box at /describe and the "Log with AI" button on the search page were always disabled there, because both only looked for an AI key stored on the device, and a managed instance keeps none. Both now ask the same question the scan screen asks: signed in, with an AI allowance. The notice for a person without AI names the right door: sign in on a managed instance, connect a provider on an open one, or ask the administrator when the account has no allowance. ([860ae43](https://github.com/LowCarbCheck/openplate/commit/860ae43))
+
+## [0.20.0] - 2026-09-08
+
+### Added
+
+- **Type and Speak open a message box at /describe.** Write or say what you ate, send it, and the AI works out the food from your words the same way it does from a photo, on the same review screen, into the same diary. The launcher sheet, the dashboard, the diary's empty states and the first-run lesson all lead there. The food database search stays at /add for one exact item. ([d021dc9](https://github.com/LowCarbCheck/openplate/commit/d021dc9))
+- **Administrators get a Reports tab.** It lists every reported estimate, when it arrived and when it deletes itself, and opens one report with the model's figures and the photo, if there was one. A report can be deleted now instead of at the end of the window. ([e6cf401](https://github.com/LowCarbCheck/openplate/commit/e6cf401))
+
+### Changed
+
+- **The scan messages name a description, not a photo.** When you described the meal in words, the waiting text, the "nothing found" text and the failure text each have a version for a description. ([d021dc9](https://github.com/LowCarbCheck/openplate/commit/d021dc9))
+- **A managed instance no longer says the diary is only on this device.** The offline page and the data settings say instead that the server holds an encrypted copy it cannot read. ([660e83a](https://github.com/LowCarbCheck/openplate/commit/660e83a))
+
+### Fixed
+
+- **A scanned plate photo is saved on this device when you confirm.** It never was: the save waited for a page state that a local save never produces. The device copy the AI settings promise is now kept, and a report of a bad estimate can carry the picture. ([83da248](https://github.com/LowCarbCheck/openplate/commit/83da248))
+
+## [0.19.1] - 2026-09-08
 
 - On a managed instance the page title, the footer, the front page and the
   recovery screen no longer say the diary stays only on this device. The
@@ -70,7 +67,7 @@ All notable user-facing changes to openplate are recorded here.
   offers a sign-in link, because on such an instance signing in is what
   brings the diary back. Nothing changes on an open instance.
 
-## 0.19.0 - 2026-09-08
+## [0.19.0] - 2026-09-08
 
 - The diary and the overview show the day as budget rows for net carbs,
   calories, protein and fiber instead of ring charts. The day's details sit
@@ -88,7 +85,7 @@ All notable user-facing changes to openplate are recorded here.
 - The sign-in hint from 0.18.4 is unchanged; the version shown in the app now
   comes from the build itself rather than a hand-copied constant.
 
-## 0.18.4 - 2026-09-08
+## [0.18.4] - 2026-09-08
 
 - The sign-in form now says plainly that you sign in with the email address
   your account was created with, and that capital letters in it do not
@@ -96,14 +93,14 @@ All notable user-facing changes to openplate are recorded here.
   from a version where accounts had a chosen name. There is no username; the
   address is the only identifier.
 
-## 0.18.3 - 2026-09-08
+## [0.18.3] - 2026-09-08
 
 - A sign-in form submitted before the page had finished loading was sent as
   a plain page request, so the password could land in the address bar and in
   the browser history. The sign-in, reset and study forms now keep their
   submit button disabled until the page is ready.
 
-## 0.18.2 - 2026-09-08
+## [0.18.2] - 2026-09-08
 
 - The device menu in the header now offers a way to sign in when you are
   signed out. On an instance where anybody can make an account it offered only
@@ -111,14 +108,14 @@ All notable user-facing changes to openplate are recorded here.
   had no way back in from that menu. It now shows both, sign in first. This
   never affected the hosted instance, where the menu already said "Sign in".
 
-## 0.18.1 - 2026-09-08
+## [0.18.1] - 2026-09-08
 
 - Punctuation only. The terms, the privacy policy and the age range labels used
   long dashes, which the project's own writing rules ban. They are now full
   stops, commas, colons or brackets. No wording changed, so nothing either
   document says has changed.
 
-## 0.18.0 - 2026-09-08
+## [0.18.0] - 2026-09-08
 
 - The lesson after the first run now tells you that openplate installs on a
   phone, where it opens like any other app. Previously, desktop browsers said
@@ -134,7 +131,7 @@ All notable user-facing changes to openplate are recorded here.
   live on this person page, which keeps the main list clean. The new Activity
   tab lists everybody by who was here last, over seven, thirty or ninety days.
 
-## 0.17.0 - 2026-09-08
+## [0.17.0] - 2026-09-08
 
 - A meal you photograph now goes into breakfast, lunch, dinner or snack, the
   same as one you type in. The meal is chosen from the time the photo was
@@ -143,7 +140,7 @@ All notable user-facing changes to openplate are recorded here.
   meals used to land outside the meal groups in your diary, and the only way to
   fix that was to open each entry afterwards.
 
-## 0.16.0 - 2026-09-08
+## [0.16.0] - 2026-09-08
 
 - Fixed a bug that signed people out without warning. The app renews your
   sign-in in the background, but it failed to save the renewed one, so the next
@@ -166,7 +163,7 @@ All notable user-facing changes to openplate are recorded here.
   on your phone, alongside the three ways to log a food. This instruction was
   only in settings before.
 
-## 0.15.0 - 2026-09-08
+## [0.15.0] - 2026-09-08
 
 This release is about instances that an organization runs and invites people
 to. If you self-host openplate for yourself, nothing here changes for you.
@@ -197,7 +194,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   diary is encrypted on this device before any copy of it leaves, so it is not
   on those pages.
 
-## 0.14.0 - 2026-09-07
+## [0.14.0] - 2026-09-07
 
 - If a photo estimate comes out wrong, you can now tell us. There is a button at
   the bottom of a logged entry. It asks you to agree first, in a separate step
@@ -216,7 +213,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   say, the app does not offer to report at all rather than promise you a number
   nobody is keeping.
 
-## 0.13.0 - 2026-09-07
+## [0.13.0] - 2026-09-07
 
 - The first run now teaches. The last step of setup shows the three ways to get
   food into your diary, one card each, and every card starts the real thing
@@ -246,7 +243,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   being kept by hand, and a local check re-hashes it, so a hand-edited icon
   cannot ship by accident.
 
-## 0.12.0 - 2026-09-07
+## [0.12.0] - 2026-09-07
 
 - The sidebar and the mobile drawer now link to the administrator area for the
   accounts that have one. The page existed before, but only somebody who
@@ -259,7 +256,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   instance, are named in the paragraph under the drawing, and the topology
   guide draws each of them on its own.
 
-## 0.11.1 - 2026-09-07
+## [0.11.1] - 2026-09-07
 
 - Clarified in the architecture and topology guides that the food source is
   configurable. The bundled USDA FoodData Central extract is the default, not
@@ -268,7 +265,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   model generates gram estimates, but it never authors macro numbers. The
   documentation now states this rule directly.
 
-## 0.11.0 - 2026-09-07
+## [0.11.0] - 2026-09-07
 
 - Adding food inside the app now opens the camera directly on tap, matching the
   tab bar button. Typing and speaking sit beside it as dedicated buttons
@@ -292,7 +289,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
 - A script now captures the product screenshots on the landing page in German
   and in English, so they can be regenerated when a screen changes.
 
-## 0.10.3 - 2026-09-06
+## [0.10.3] - 2026-09-06
 
 - On an instance run for you by an organization, the app now says what that
   operator can see. A plate photo passes through the operator's server on its
@@ -304,7 +301,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
 - The AI provider settings page is closed on such an instance. It described a
   key nobody brings there.
 
-## 0.10.2 - 2026-09-05
+## [0.10.2] - 2026-09-05
 
 - Search engines no longer index the app. The project site at openplate.de
   describes openplate instead, and it is the page a search should lead to. An
@@ -313,7 +310,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   after every reload. You have stayed signed in until you sign out since
   0.10.0; only the text still said otherwise.
 
-## 0.10.1 - 2026-09-04
+## [0.10.1] - 2026-09-04
 
 - You stay signed in when you open the app again. After following an
   invitation, opening any page in a new tab showed the sign-in screen and
@@ -341,7 +338,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
 - Fixed an issue where opening the app in two places right after a password
   reset could sign you out again.
 
-## 0.10.0 - 2026-09-04
+## [0.10.0] - 2026-09-04
 
 - You sign in with your email address and a password. The made up sign-in
   name is gone. An address is something you already know, and it is what a
@@ -379,7 +376,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   invitation. Export a backup from each device before upgrading, and import
   it after signing in to the new account.
 
-## 0.9.3 - 2026-09-04
+## [0.9.3] - 2026-09-04
 
 - Invite links that create an account and connect the AI now run as one
   flow. Before, the app left the account screen too early. It never showed
@@ -390,7 +387,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
 - If the AI connection cannot be reached while the link is used, the link
   is kept and offered again. Before, a network error spent the link.
 
-## 0.9.2 - 2026-09-04
+## [0.9.2] - 2026-09-04
 
 - A failed save on the device no longer consumes the invite link. If
   saving the AI connection fails after the link is accepted, a retry card
@@ -404,7 +401,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
 - The sign-in step after an invite link now says the link belongs to an
   existing account, and that the rest is set up after signing in.
 
-## 0.9.1 - 2026-09-03
+## [0.9.1] - 2026-09-03
 
 - The camera opens on one tap from the tab bar. A chevron beside it opens a
   sheet with four ways in: plate photo, label photo, speak, and type.
@@ -425,7 +422,7 @@ to. If you self-host openplate for yourself, nothing here changes for you.
   GATEWAY_URL also allow lists the gateway origin, so operators no longer
   need CSP_CONNECT_EXTRA for it. Open instances are unchanged.
 
-## 0.9.0 - 2026-09-03
+## [0.9.0] - 2026-09-03
 
 - One account instead of a "sync" passphrase. The app now speaks in terms of
   an account and a password, not a technical sync passphrase.
