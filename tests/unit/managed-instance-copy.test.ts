@@ -170,7 +170,11 @@ describe('the legal pages ask which fact each paragraph depends on', () => {
     // `InstancePolicy` states that the mode is its only input, and two managed
     // instances answer this differently. It comes off `/health`, like the
     // feedback retention window beside it.
-    assert.match(readLegal('privacy.tsx'), /useServerInstance\(\)\?\.memberInvites \?\? false/);
+    // ONE READ, TWO QUESTIONS since M213 spec 07 put the plans fact beside it:
+    // the descriptor is read into a variable and asked twice, so the two
+    // paragraphs cannot come from two different reads of `/health`.
+    assert.match(readLegal('privacy.tsx'), /const instance = useServerInstance\(\);/);
+    assert.match(readLegal('privacy.tsx'), /instance\?\.memberInvites \?\? false/);
   });
 });
 
@@ -187,6 +191,7 @@ describe('no surface names an administrator where memberInvites is on', () => {
   it('says nothing about an administrator on an instance whose accounts invite each other', () => {
     const door = resolveAiIntakeDoor({
       aiComesFromTheInstance: true,
+      plansAvailable: false,
       allowance: { memberInvites: true, allowanceExpiresAt: null, now: NOW },
     });
     assert.doesNotMatch(renderNoAiNotice(door), /administrator/i);
@@ -195,6 +200,7 @@ describe('no surface names an administrator where memberInvites is on', () => {
   it('names the date instead, when the allowance ended on one', () => {
     const door = resolveAiIntakeDoor({
       aiComesFromTheInstance: true,
+      plansAvailable: false,
       allowance: { memberInvites: true, allowanceExpiresAt: '2026-09-01T00:00:00.000Z', now: NOW },
     });
     const markup = renderNoAiNotice(door);
@@ -209,6 +215,7 @@ describe('no surface names an administrator where memberInvites is on', () => {
     // stop telling anybody who can switch their allowance on.
     const door = resolveAiIntakeDoor({
       aiComesFromTheInstance: true,
+      plansAvailable: false,
       allowance: { memberInvites: false, allowanceExpiresAt: null, now: NOW },
     });
     assert.match(renderNoAiNotice(door), /administrator/i);
@@ -223,7 +230,11 @@ describe('no surface names an administrator where memberInvites is on', () => {
     // And both read the instance's own answer rather than the mode. The
     // account page has it in a variable of that name; the scan card reads the
     // descriptor inline.
-    assert.match(account, /useServerInstance\(\)\?\.memberInvites \?\? false/);
+    // The account page reads the descriptor into a variable and then asks it
+    // twice, since M213 spec 05 added the plans question beside this one, so
+    // the two facts cannot come from two different reads of `/health`.
+    assert.match(account, /const instance = useServerInstance\(\);/);
+    assert.match(account, /instance\?\.memberInvites \?\? false/);
     assert.match(scan, /memberInvites: instance\?\.memberInvites \?\? false/);
   });
 });

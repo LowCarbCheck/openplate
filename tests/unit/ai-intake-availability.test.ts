@@ -177,7 +177,7 @@ describe('the door a person with no AI is shown', () => {
   const ORGANIZATION = { memberInvites: false, allowanceExpiresAt: null, now: new Date('2026-09-09T10:00:00.000Z') };
 
   it('is the administrator on a managed instance, because there is no page that fixes an allowance', () => {
-    assert.deepEqual(resolveAiIntakeDoor({ aiComesFromTheInstance: true, allowance: ORGANIZATION }), {
+    assert.deepEqual(resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable: false, allowance: ORGANIZATION }), {
       kind: 'ask-admin',
     });
   });
@@ -186,12 +186,12 @@ describe('the door a person with no AI is shown', () => {
     // The control for the managed answer: a door that was always `byok` would
     // pass nothing above, and one that was never `byok` would send a
     // self-hoster to an administrator their instance does not have.
-    assert.deepEqual(resolveAiIntakeDoor({ aiComesFromTheInstance: false, allowance: ORGANIZATION }), {
+    assert.deepEqual(resolveAiIntakeDoor({ aiComesFromTheInstance: false, plansAvailable: false, allowance: ORGANIZATION }), {
       kind: 'byok',
     });
     assert.notDeepEqual(
-      resolveAiIntakeDoor({ aiComesFromTheInstance: true, allowance: ORGANIZATION }),
-      resolveAiIntakeDoor({ aiComesFromTheInstance: false, allowance: ORGANIZATION }),
+      resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable: false, allowance: ORGANIZATION }),
+      resolveAiIntakeDoor({ aiComesFromTheInstance: false, plansAvailable: false, allowance: ORGANIZATION }),
       'the door stopped depending on the instance at all',
     );
   });
@@ -204,6 +204,7 @@ describe('the door a person with no AI is shown', () => {
   it('names no administrator on an instance whose accounts invite each other', () => {
     const door = resolveAiIntakeDoor({
       aiComesFromTheInstance: true,
+      plansAvailable: false,
       allowance: { ...ORGANIZATION, memberInvites: true },
     });
     assert.deepEqual(door, { kind: 'not-switched-on' });
@@ -213,10 +214,65 @@ describe('the door a person with no AI is shown', () => {
     for (const memberInvites of [true, false]) {
       const door = resolveAiIntakeDoor({
         aiComesFromTheInstance: true,
+        plansAvailable: false,
         allowance: { ...ORGANIZATION, memberInvites, allowanceExpiresAt: '2026-09-01T00:00:00.000Z' },
       });
       assert.deepEqual(door, { kind: 'allowance-ended', endedAt: '2026-09-01T00:00:00.000Z' });
     }
+  });
+
+  // M213 spec 05. On an instance with a biller behind it there IS a page that
+  // fixes a missing allowance, so the two answers a payment would fix become
+  // one door that carries a link. `ask-admin` deliberately does not: an
+  // organization's deployment has somebody who switches the allowance on, and
+  // selling a plan there would be wrong even if that deployment also happened
+  // to have a biller.
+  describe('and the plans door, on an instance that sells one', () => {
+    const CONSUMER = { ...ORGANIZATION, memberInvites: true };
+
+    it('replaces the dateless not-switched-on answer, and keeps its datelessness', () => {
+      assert.deepEqual(
+        resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable: true, allowance: CONSUMER }),
+        { kind: 'plans', endedAt: null },
+      );
+      // THE CONTROL for the flag: one input changed, and the answer is the
+      // sentence that stops.
+      assert.deepEqual(
+        resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable: false, allowance: CONSUMER }),
+        { kind: 'not-switched-on' },
+      );
+    });
+
+    it('replaces the ended answer and CARRIES THE DATE, which is the fact M212 fought for', () => {
+      const expired = { ...CONSUMER, allowanceExpiresAt: '2026-09-01T00:00:00.000Z' };
+      assert.deepEqual(
+        resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable: true, allowance: expired }),
+        { kind: 'plans', endedAt: '2026-09-01T00:00:00.000Z' },
+      );
+      // THE CONTROL: without the flag the same account gets the same date on
+      // the older door, so this branch cannot be passing by losing the date.
+      assert.deepEqual(
+        resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable: false, allowance: expired }),
+        { kind: 'allowance-ended', endedAt: '2026-09-01T00:00:00.000Z' },
+      );
+    });
+
+    it('leaves an organization instance alone, biller or not', () => {
+      for (const plansAvailable of [true, false]) {
+        assert.deepEqual(
+          resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable, allowance: ORGANIZATION }),
+          { kind: 'ask-admin' },
+          'a plans door was offered where an administrator can switch the allowance on',
+        );
+      }
+    });
+
+    it('leaves an open instance alone, because nobody there is buying an allowance', () => {
+      assert.deepEqual(
+        resolveAiIntakeDoor({ aiComesFromTheInstance: false, plansAvailable: true, allowance: CONSUMER }),
+        { kind: 'byok' },
+      );
+    });
   });
 });
 
@@ -239,6 +295,12 @@ describe('the hook feeds those rules the real inputs', () => {
     // feature reaching zero call sites while every type still checked.
     assert.match(SOURCE, /memberInvites: instance\?\.memberInvites \?\? false/);
     assert.match(SOURCE, /allowanceExpiresAt: session\.account\?\.allowanceExpiresAt \?\? null/);
+    // M213 spec 05: the handshake's plans flag, threaded the same way and for
+    // the same reason. `PROTOCOL.md` §5.22 forbids probing the path, so this
+    // is the only input that may answer the question, and a hook that stopped
+    // passing it would leave the door at zero call sites while every type
+    // still checked.
+    assert.match(SOURCE, /plansAvailable: instance\?\.plans \?\? false/);
     // M204 spec 01: the door has no signed-out branch left to feed, because a
     // managed device with no session is locked out of `/describe` and `/add`
     // before either renders. A resolver handed the session again would be the

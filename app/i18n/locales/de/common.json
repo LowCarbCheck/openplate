@@ -1174,7 +1174,8 @@
     "account": "Konto",
     "admin": "Administration",
     "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
-    "describe": "Mahlzeit beschreiben · openplate"
+    "describe": "Mahlzeit beschreiben · openplate",
+    "plan": "Dein Tarif · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -2570,7 +2571,8 @@
       "askAdmin": "Das legt deine Administration fest.",
       "today": "Foto-Schätzungen heute: {{used}} von {{limit}}",
       "expires": "Foto-Schätzungen für dieses Konto laufen bis zum {{date}}.",
-      "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}."
+      "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}.",
+      "planLink": "Deinen Tarif ansehen"
     },
     "devices": {
       "title": "Deine Geräte",
@@ -2864,6 +2866,34 @@
   "aiIntake": {
     "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie.",
     "allowanceEnded": "KI-Einträge für dieses Konto endeten am {{date}}. Die Suche in der Lebensmittel-Datenbank funktioniert weiterhin.",
-    "notSwitchedOn": "KI-Einträge sind für dieses Konto nicht aktiviert. Die Suche in der Lebensmittel-Datenbank funktioniert auch ohne sie."
+    "notSwitchedOn": "KI-Einträge sind für dieses Konto nicht aktiviert. Die Suche in der Lebensmittel-Datenbank funktioniert auch ohne sie.",
+    "plansEnded": "Deine Testphase ist am {{date}} abgelaufen. Wähle einen Tarif, um KI-Einträge weiter zu nutzen. Die Suche in der Lebensmittel-Datenbank funktioniert weiterhin.",
+    "plansNotSwitchedOn": "KI-Einträge sind für dieses Konto noch nicht aktiviert. Wähle einen Tarif, um sie freizuschalten. Die Suche in der Lebensmittel-Datenbank funktioniert auch ohne sie.",
+    "plansLink": "Tarife ansehen"
+  },
+  "plan": {
+    "title": "Dein Tarif",
+    "loading": "Dein Tarif wird geladen.",
+    "unknown": "Dein Tarif wurde noch nicht geladen.",
+    "signedOut": "Melde dich an, um deinen Tarif zu sehen.",
+    "absent": "Auf dieser Instanz gibt es keine Tarife.",
+    "failed": "Dein Tarif konnte nicht geladen werden. Bitte versuche es gleich noch einmal.",
+    "actionFailed": "Konnte nicht geöffnet werden. Bitte versuche es gleich noch einmal.",
+    "status": {
+      "none": "Du nutzt die kostenlose Version von openplate.",
+      "trialing": "Deine Testphase läuft.",
+      "active": "Dein Tarif ist bezahlt und aktiv.",
+      "pastDue": "Deine letzte Zahlung hat nicht geklappt.",
+      "canceled": "Dein Tarif ist beendet."
+    },
+    "renewsOn": "Verlängert sich am {{date}}, solange du nicht kündigst.",
+    "endsOn": "Du hast gekündigt. Dein Zugriff läuft noch bis zum {{date}} und endet dann.",
+    "vatNote": "Preise enthalten die deutsche Mehrwertsteuer.",
+    "start": "Tarif wählen",
+    "manage": "Tarif verwalten",
+    "returned": {
+      "success": "Vielen Dank! Deine Zahlung war erfolgreich. Es kann einen Moment dauern, bis sie hier zu sehen ist.",
+      "cancelled": "Du hast die Bezahlseite geschlossen. Es wurde nichts berechnet."
+    }
   }
 }

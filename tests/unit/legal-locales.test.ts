@@ -28,6 +28,7 @@ import enLegal from '../../app/i18n/locales/en/legal.json';
 import deLegal from '../../app/i18n/locales/de/legal.json';
 import deCommon from '../../app/i18n/locales/de/common.json';
 import { OPERATOR } from '../../app/routes/legal/operator';
+import { LEGAL_LAST_UPDATED, formatLegalDate } from '../../app/routes/legal/last-updated';
 import { PrivacyContent } from '../../app/routes/legal/privacy';
 import { TermsContent } from '../../app/routes/legal/terms';
 import { ImprintContent } from '../../app/routes/legal/imprint';
@@ -226,8 +227,18 @@ describe('legal pages — the German render', () => {
   });
 
   it('uses the German date format for the same underlying date', () => {
-    assert.match(render(createElement(TermsContent), 'de'), /1\. September 2026/);
-    assert.match(render(createElement(TermsContent), 'en'), /September 1, 2026/);
+    // READ FROM THE CONSTANT, NOT TYPED. The date is bumped on every material
+    // change to these documents, and a literal here made that bump a failing
+    // test in a file that has nothing to do with the change. What must hold is
+    // that ONE date renders in TWO formats, which is what is asserted.
+    const de = formatLegalDate(LEGAL_LAST_UPDATED, 'de');
+    const en = formatLegalDate(LEGAL_LAST_UPDATED, 'en');
+    assert.notEqual(de, en, 'the two languages stopped formatting the date differently');
+    assert.ok(render(createElement(TermsContent), 'de').includes(de));
+    assert.ok(render(createElement(TermsContent), 'en').includes(en));
+    // The control on the formatter itself: German really is the day-first
+    // form, so the two strings above are not both English.
+    assert.match(de, /^\d{1,2}\. \w+ \d{4}$/);
   });
 
   it('keeps the links working in German', () => {

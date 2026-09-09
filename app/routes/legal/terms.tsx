@@ -3,6 +3,8 @@ import PublicWrapper from '#app/components/public-wrapper';
 import type { MetaFunction } from 'react-router';
 import { Trans, useTranslation } from 'react-i18next';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useServerInstance } from '#app/hooks/use-server-instance';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { OPERATOR } from './operator';
 import { LEGAL_LAST_UPDATED, formatLegalDate } from './last-updated';
 import '#app/i18n/i18n';
@@ -43,9 +45,42 @@ export interface TermsContentProps {
    * rename call sites and change nothing a reader sees.
    */
   aiComesFromTheInstance?: boolean;
+  /**
+   * `true` where a biller stands behind this instance, so a person here can be
+   * charged money (M213 spec 07).
+   *
+   * A THIRD NAMED QUESTION, and the same per-claim rule the two above wrote
+   * down. Section 4a states what is sold, at what price, how it renews, how it
+   * is cancelled and that a card is taken. Every one of those sentences is
+   * FALSE on a deployment with no biller, and false in the direction that
+   * matters: a self-hoster's terms would announce a subscription nobody can
+   * buy. It is not `managed` and not `aiComesFromTheInstance`, because two
+   * managed instances answer it differently, exactly as they do for
+   * `memberInvites`. It arrives on the sync server's `/health` handshake.
+   */
+  plans?: boolean;
+  /**
+   * The gross monthly price, already formatted with its currency, or `null`.
+   *
+   * `null` MEANS THE SENTENCE IS NOT DRAWN, and never an empty space where a
+   * number belongs. The Preisangabenverordnung requires a consumer to see a
+   * total price including VAT; a terms page printing "openplate Plus costs
+   * per month" would be worse than one that does not raise the subject. The
+   * figure is the owner's, it lives in the Stripe price object, and nothing in
+   * this repository may invent one.
+   */
+  price?: string | null;
+  /** The trial length in days, or `null`. Same rule as `price`: no number, no sentence. */
+  trialDays?: number | null;
 }
 
-export function TermsContent({ managed = false, aiComesFromTheInstance = false }: TermsContentProps) {
+export function TermsContent({
+  managed = false,
+  aiComesFromTheInstance = false,
+  plans = false,
+  price = null,
+  trialDays = null,
+}: TermsContentProps) {
   const { t, i18n } = useTranslation('legal');
   return (
     <article className="prose prose-zinc dark:prose-invert max-w-none">
@@ -97,6 +132,41 @@ export function TermsContent({ managed = false, aiComesFromTheInstance = false }
             ends itself is a term rather than a detail. */}
         {aiComesFromTheInstance && <P className="mt-4">{t('terms.s4AllowanceManaged')}</P>}
       </section>
+
+      {/* SECTION 4a, BETWEEN 4 AND 5, and numbered 4a rather than renumbering
+          the nine sections after it: those numbers are cited from the privacy
+          policy and from anything a reader saved, and a document that
+          silently renumbers itself breaks every one of those references.
+          Drawn only where somebody can actually be charged. */}
+      {plans && (
+        <section className="mb-8">
+          <H2 variant="default">{t('terms.s4aPaymentHeading')}</H2>
+          {/* The two sentences that carry a figure nobody in this repository
+              may invent. See `price` and `trialDays`. */}
+          {price !== null && <P>{t('terms.s4aPaymentPrice', { price })}</P>}
+          {trialDays !== null && <P className="mt-4">{t('terms.s4aPaymentTrial', { trialDays })}</P>}
+          <P className="mt-4">{t('terms.s4aPaymentRenewal')}</P>
+          <P className="mt-4">{t('terms.s4aPaymentFailed')}</P>
+          <P className="mt-4">
+            <Trans
+              i18nKey="legal:terms.s4aPaymentWithdrawal"
+              components={{ withdrawal: <a href="/withdrawal">withdrawal</a> }}
+            />
+          </P>
+          <P className="mt-4">{t('terms.s4aPaymentWithdrawalLoss')}</P>
+          <P className="mt-4">{t('terms.s4aPaymentProcessor')}</P>
+          <P className="mt-4">
+            {/* THE SELLER'S IDENTITY COMES FROM `operator.ts`, never from the
+                bundle: `legal-locales.test.ts` pins that arrangement so the
+                two languages cannot disagree about who is taking the money. */}
+            <Trans
+              i18nKey="legal:terms.s4aPaymentSeller"
+              values={{ operator: OPERATOR.legalName, vatId: OPERATOR.vatId }}
+              components={{ imprint: <a href="/imprint">imprint</a> }}
+            />
+          </P>
+        </section>
+      )}
 
       <section className="mb-8">
         <H2 variant="default">{t('terms.s5Heading')}</H2>
@@ -186,9 +256,26 @@ export default function Terms() {
   // older bundle; `aiComesFromTheInstance` chooses the three paragraphs about
   // the photo estimates, which is the question those actually depend on.
   const { serverHoldsTheDiary, aiComesFromTheInstance } = useInstancePolicy();
+  // THE THIRD QUESTION, AND IT IS NOT A POLICY ONE (M213 spec 07). Whether
+  // this deployment sells anything is a fact about the deployment, read off
+  // the sync server's handshake exactly as `memberInvites` is on `/privacy`.
+  // `false` for a service that has not answered, which draws no payment
+  // section, and that is the safe direction: an instance nobody can pay for
+  // must not publish terms describing a subscription.
+  const plans = hasPlansDoor(useServerInstance());
   return (
     <PublicWrapper>
-      <TermsContent managed={serverHoldsTheDiary} aiComesFromTheInstance={aiComesFromTheInstance} />
+      <TermsContent
+        managed={serverHoldsTheDiary}
+        aiComesFromTheInstance={aiComesFromTheInstance}
+        plans={plans}
+        // TODO(owner): the gross monthly price and the trial length. Neither
+        // is on the wire and neither may be invented here, so the two
+        // sentences that carry them stay unrendered until the owner supplies
+        // them. See `TermsContentProps`.
+        price={null}
+        trialDays={null}
+      />
     </PublicWrapper>
   );
 }

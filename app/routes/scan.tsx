@@ -96,6 +96,7 @@ import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
+import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import i18nSingleton from '#app/i18n/i18n';
 import type { Translate } from '#app/lib/macro-sanity';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -1332,6 +1333,11 @@ function ScanFlow({
   // `null` on an open instance and in the moments before the account view
   // lands, which is the dateless sentence, never a blank one.
   const allowanceEndsAt = useSyncSession().account?.allowanceExpiresAt ?? null;
+  // WHETHER THE REFUSAL HAS A DOOR (M213 spec 05). Read here for the same
+  // reason the date is, so `UploadForm` keeps no hooks and stays renderable in
+  // a test. `false` for an unreachable or older service, which leaves the
+  // refusal exactly as it was before plans existed.
+  const plansAvailable = hasPlansDoor(useServerInstance());
   const [state, dispatch] = useReducer(analyzeReducer, initialAnalyzeState);
   const [file, setFile] = useState<File | null>(null);
   /**
@@ -1651,6 +1657,7 @@ function ScanFlow({
       failureCause={failedIdentify?.failureCause}
       retryAfterSeconds={failedIdentify?.retryAfterSeconds}
       allowanceEndsAt={allowanceEndsAt}
+      plansAvailable={plansAvailable}
       provider={failedIdentify?.provider}
       usage={failedIdentify?.usage}
       modelId={failedIdentify?.modelId}
@@ -1742,6 +1749,23 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
 } satisfies Record<VisionFailureCause, string | undefined>;
 
 /**
+ * Whether the refusal a person is looking at has a page that fixes it.
+ *
+ * ONE CAUSE ONLY, and that is the whole rule. `allowance-expired` is the
+ * refusal a payment answers; `ai-not-allowed` is an account an administrator
+ * never switched on, and offering to sell a plan there would be an
+ * advertisement on a screen somebody opened to log a meal. The composer's
+ * notice draws the same distinction through `resolveAiIntakeDoor`, so the two
+ * surfaces cannot disagree about one account.
+ *
+ * PURE AND EXPORTED so the branch has a test with a control on both inputs; a
+ * link rendered from a `&&` inside the alert would have neither.
+ */
+export function shouldOfferPlansDoor(input: { failureCause?: VisionFailureCause; plansAvailable: boolean }): boolean {
+  return input.plansAvailable && input.failureCause === 'allowance-expired';
+}
+
+/**
  * Under a minute, a `429` is a burst limit and the advice is "in a moment".
  * At or over it, the allowance is spent for the day and telling somebody to
  * wait a moment is simply false.
@@ -1816,6 +1840,7 @@ export function UploadForm({
   failureCause,
   retryAfterSeconds,
   allowanceEndsAt,
+  plansAvailable,
   provider,
   usage,
   modelId,
@@ -1848,6 +1873,16 @@ export function UploadForm({
    * refusal that is about a date.
    */
   allowanceEndsAt?: string | null;
+  /**
+   * Whether this instance sells a plan, so the expiry refusal has somewhere to
+   * send a person (M213 spec 05).
+   *
+   * A PROP, LIKE THE DATE ABOVE, and defaulted to `false` here for the one
+   * reason a default is safe: an instance that sells nothing is what every
+   * deployment was before this milestone, and it draws exactly the sentence it
+   * drew then.
+   */
+  plansAvailable?: boolean;
   /** The provider active for this attempt — phrases a `rate-limit` failure (see below) and keys the failed attempt's pricing lookup; never branches the alert's headline or any other cause. */
   provider?: AiProviderType;
   usage?: ScanTokenUsage;
@@ -2093,6 +2128,19 @@ export function UploadForm({
                   }
                 </AlertDescription>
               </Alert>
+            )}
+
+            {/* THE DOOR, WHERE THERE IS ONE (M213 spec 05). A link under the
+                alert rather than a sentence inside it: `describeFailureBody`
+                answers a string, the date sentence is already written, and a
+                second copy of it carrying an anchor would be the two surfaces
+                drifting apart that `shouldOfferPlansDoor` exists to stop. */}
+            {error && shouldOfferPlansDoor({ failureCause, plansAvailable: plansAvailable ?? false }) && (
+              <p className="text-xs">
+                <Link to={PLAN_PAGE_HREF} className="text-primary underline-offset-4 hover:underline">
+                  {t('aiIntake.plansLink')}
+                </Link>
+              </p>
             )}
 
             {error && failedAttemptCreditLine && (

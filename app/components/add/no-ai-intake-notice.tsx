@@ -30,6 +30,13 @@
  * `resolveAllowanceDoor`, one module, so this notice, `/scan`'s connect card
  * and the account page cannot say three different things about one account.
  *
+ * ── AND A FOURTH BRANCH THAT DOES HAVE A DOOR (M213 spec 05) ────────────
+ *
+ * On an instance with a biller behind it, "no allowance" is not a sentence
+ * that stops: `/settings/plan` sells the thing that is missing. That branch is
+ * chosen by `resolveAiIntakeDoor` from the handshake, never here, so this
+ * component still says one thing per door and cannot disagree with `/scan`.
+ *
  * The BYOK copy is a PROP because it is the one branch whose wording is the
  * screen's own: `/add` promises a whole meal in one sentence, `/describe`
  * explains why the box is dead, and each returns to its own screen after the
@@ -38,6 +45,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import type { AiIntakeDoor } from '#app/components/add/use-ai-connection';
+import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 
 interface NoAiIntakeNoticeProps {
   door: AiIntakeDoor;
@@ -73,6 +81,23 @@ export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }:
   }
   if (door.kind === 'not-switched-on') {
     return <p className={NOTICE_CLASS}>{t('aiIntake.notSwitchedOn')}</p>;
+  }
+  // THE ONE ALLOWANCE ANSWER THAT HAS A PAGE (M213 spec 05). The three above
+  // carry no link because no page fixes any of them; this one names
+  // `/settings/plan`, which is exactly the door the `ask-admin` copy says does
+  // not exist. The date is kept where there is one, for the reason
+  // `allowance-ended` keeps it.
+  if (door.kind === 'plans') {
+    return (
+      <p className={NOTICE_CLASS}>
+        {door.endedAt === null ?
+          t('aiIntake.plansNotSwitchedOn')
+        : t('aiIntake.plansEnded', { date: new Date(door.endedAt).toLocaleDateString() })}{' '}
+        <Link to={PLAN_PAGE_HREF} className={LINK_CLASS}>
+          {t('aiIntake.plansLink')}
+        </Link>
+      </p>
+    );
   }
 
   return (

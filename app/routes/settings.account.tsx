@@ -60,6 +60,7 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
+import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import { canSendMemberInvites } from '#app/lib/sync/member-invites';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackAccountDeleted, trackPasswordChanged } from '#app/lib/matomo-events';
@@ -109,7 +110,8 @@ export default function SettingsAccount() {
   // managed, so it cannot be an `InstancePolicy` question: two managed
   // instances answer it differently. `false` while the handshake is in flight,
   // which draws no card and keeps the sentence that names an administrator.
-  const memberInvites = useServerInstance()?.memberInvites ?? false;
+  const instance = useServerInstance();
+  const memberInvites = instance?.memberInvites ?? false;
   // WHY the allowance is missing, in the words that are true here, resolved by
   // the same rule `/scan` and the composer's notice ask (M212 spec 04).
   const allowanceDoor = resolveAllowanceDoor({
@@ -117,6 +119,12 @@ export default function SettingsAccount() {
     allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
     now: new Date(),
   });
+  // AND WHETHER THERE IS A PAGE THAT CHANGES IT (M213 spec 05). The same
+  // handshake read, one line down: on an instance with a biller behind it the
+  // allowance is a thing a person buys, so the card that explains the
+  // allowance is where the link belongs. `false` while the read is in flight,
+  // which draws no link and promises nothing.
+  const plansAvailable = hasPlansDoor(instance);
 
   // ON OPEN, ONCE. The allowance and the count move on the SERVER while a tab
   // sits here, and this page is the one that shows them; the sign-in snapshot
@@ -154,6 +162,7 @@ export default function SettingsAccount() {
               usedToday={account.aiUsedToday}
               expiresAt={account.allowanceExpiresAt}
               door={allowanceDoor}
+              plansAvailable={plansAvailable}
             />
           )}
           {/* TWO GATES, AND BOTH ARE THE SERVICE'S ANSWER (M212 spec 04). The
@@ -308,6 +317,7 @@ function AllowanceCard({
   usedToday,
   expiresAt,
   door,
+  plansAvailable,
 }: {
   dailyLimit: number;
   usedToday: number;
@@ -321,6 +331,15 @@ function AllowanceCard({
   expiresAt: string | null;
   /** Why the allowance is missing, when it is. See `resolveAllowanceDoor`. */
   door: AllowanceDoor;
+  /**
+   * Whether this instance sells a plan, from the handshake (M213 spec 05).
+   *
+   * The link goes HERE and on no other card, because this is the card that
+   * states the allowance, and the plan is the thing that buys one. A row in
+   * the settings hub would advertise a purchase to somebody who opened
+   * settings to change the theme.
+   */
+  plansAvailable: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -353,6 +372,16 @@ function AllowanceCard({
             The ended case has something true left to say, and it is the
             date. */}
         {door.kind === 'ask-admin' && <p className="text-xs text-muted-foreground">{t('account.allowance.askAdmin')}</p>}
+        {/* THE PAGE THAT CHANGES IT, where there is one. Drawn whatever the
+            door says, because a person with a working allowance also has to
+            be able to reach the page that cancels it. */}
+        {plansAvailable && (
+          <p className="mt-2 text-xs">
+            <Link to={PLAN_PAGE_HREF} className="text-primary underline-offset-4 hover:underline">
+              {t('account.allowance.planLink')}
+            </Link>
+          </p>
+        )}
       </CardContent>
     </Card>
   );

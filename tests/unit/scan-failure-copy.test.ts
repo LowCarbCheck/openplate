@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import { classifyVisionHttpFailure } from '../../app/services/vision/failure-cause';
-import { describeFailureBody, getFailureAlertTitle } from '../../app/routes/scan';
+import { describeFailureBody, getFailureAlertTitle, shouldOfferPlansDoor } from '../../app/routes/scan';
 import type { Translate } from '../../app/lib/sync/setup-flow';
 import type { VisionFailureCause } from '../../app/services/vision/failure-cause';
 
@@ -225,6 +225,32 @@ test('the expired sentence names the date when the session knows it, and never a
   assert.notEqual(dated, undated);
   assert.doesNotMatch(String(undated), /\{\{date\}\}/);
   assert.doesNotMatch(String(undated), /ended on\s*\./);
+});
+
+// M213 spec 05. The expiry refusal is the one a payment answers, so on an
+// instance with a biller it gets a link to the plan page. Every other refusal,
+// and every instance without a biller, is unchanged: an advertisement on a
+// screen somebody opened to log a meal is the failure this branch must not be.
+test('the expiry refusal offers the plan page only where there is one to offer', () => {
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'allowance-expired', plansAvailable: true }), true);
+  // THE CONTROL ON THE INSTANCE. Same refusal, no biller, no door.
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'allowance-expired', plansAvailable: false }), false);
+});
+
+test('no other refusal grows a plan door, however many plans the instance sells', () => {
+  // THE CONTROL ON THE CAUSE. `ai-not-allowed` is an account an administrator
+  // never switched on, and `ai-instance-ceiling` is the operator out of
+  // capacity. Neither is fixed by paying us.
+  for (const cause of ['ai-not-allowed', 'ai-instance-ceiling', 'rate-limit', 'auth', undefined] satisfies (
+    | VisionFailureCause
+    | undefined
+  )[]) {
+    assert.equal(
+      shouldOfferPlansDoor({ failureCause: cause, plansAvailable: true }),
+      false,
+      `${String(cause)} was offered a plan door`,
+    );
+  }
 });
 
 test('a 429 under a minute says "in a minute", and one over it says "tomorrow"', () => {

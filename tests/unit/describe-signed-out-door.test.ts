@@ -98,8 +98,8 @@ describe('the composer has no signed-out AI door left to reach', () => {
     // the account, so neither answer is the M212 expiry door.
     const allowance = { memberInvites: false, allowanceExpiresAt: null, now: new Date('2026-09-09T10:00:00.000Z') };
     const doors: string[] = [
-      resolveAiIntakeDoor({ aiComesFromTheInstance: true, allowance }).kind,
-      resolveAiIntakeDoor({ aiComesFromTheInstance: false, allowance }).kind,
+      resolveAiIntakeDoor({ aiComesFromTheInstance: true, plansAvailable: false, allowance }).kind,
+      resolveAiIntakeDoor({ aiComesFromTheInstance: false, plansAvailable: false, allowance }).kind,
     ];
     assert.ok(!doors.includes('sign-in'), `the signed-out door came back: ${doors.join(', ')}`);
     // THE CONTROL. The two answers are still DIFFERENT, so the check above is
@@ -120,9 +120,10 @@ describe('the strings that door used are gone from every locale', () => {
         Object.keys(aiIntake).toSorted(),
         // The two M212 spec 04 sentences joined `noAllowance`: an allowance
         // that ended on a date, and an instance with no administrator to ask.
-        // The list is exhaustive on purpose, so a resurrected signed-out
-        // string still fails here.
-        ['allowanceEnded', 'noAllowance', 'notSwitchedOn'],
+        // M213 spec 05 added the three for the one door that HAS a page
+        // behind it. The list is exhaustive on purpose, so a resurrected
+        // signed-out string still fails here.
+        ['allowanceEnded', 'noAllowance', 'notSwitchedOn', 'plansEnded', 'plansLink', 'plansNotSwitchedOn'],
         `${locale} still carries copy for a door that cannot be reached`,
       );
     }

@@ -79,8 +79,12 @@ const DE = flatten(loadCatalog('de'));
  * `join`, `signIn`, `forgot`, `reset`, `account` and `admin` exist ONLY on an
  * instance with accounts, so every string under them is a managed-branch
  * string and the ban applies to all of them.
+ *
+ * `plan` joined them with M213 spec 05, and it is the narrowest of the seven:
+ * the page exists only where a biller stands behind the instance, which is a
+ * subset of the instances that have accounts at all.
  */
-const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account.', 'admin.'];
+const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account.', 'admin.', 'plan.'];
 
 /**
  * The managed BRANCHES of three shared namespaces.
@@ -136,6 +140,11 @@ const MANAGED_BRANCH_KEYS = [
   // an instance where there is nobody to ask.
   'aiIntake.allowanceEnded',
   'aiIntake.notSwitchedOn',
+  // M213 spec 05: the one allowance answer that has a page behind it, on an
+  // instance that sells a plan, plus the link that names it.
+  'aiIntake.plansEnded',
+  'aiIntake.plansNotSwitchedOn',
+  'aiIntake.plansLink',
 ];
 
 /**

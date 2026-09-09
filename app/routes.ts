@@ -182,6 +182,14 @@ export default [
     // delete me (M192/05). 404s unless `SYNC_SERVER_URL` is set — on an
     // instance with no server there are no accounts, so this is not a page.
     route('/settings/account', 'routes/settings.account.tsx'),
+    // The plan (M213 spec 05). TWO gates, both answering 404: no
+    // `SYNC_SERVER_URL` means no account to sell a plan to, and a handshake
+    // without `plans` means the sync server's own `/v1/plans` subtree answers
+    // 404, so this page says exactly what that service says. The biller sends
+    // a browser back here after a checkout and after the portal, so the
+    // address is also a return target and is spelled once, in
+    // `#app/lib/plans/plans-door`.
+    route('/settings/plan', 'routes/settings.plan.tsx'),
     // The address the account page used to live at. Kept as a REDIRECT because
     // it is in bookmarks and in every release note before M192; a 404 there
     // would read as "the feature was removed".

@@ -1186,7 +1186,8 @@
     "reset": "Set a new password",
     "account": "Account",
     "admin": "Administration",
-    "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance is invitation only, and your diary is encrypted on this device before a copy reaches the server."
+    "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance is invitation only, and your diary is encrypted on this device before a copy reaches the server.",
+    "plan": "Your plan · openplate"
   },
   "nav": {
     "add": "Add",
@@ -2599,7 +2600,8 @@
       "askAdmin": "Your administrator sets this.",
       "today": "Photo estimates today: {{used}} of {{limit}}",
       "expires": "Photo estimates for this account run until {{date}}.",
-      "expired": "Photo estimates for this account ended on {{date}}."
+      "expired": "Photo estimates for this account ended on {{date}}.",
+      "planLink": "See your plan"
     },
     "devices": {
       "title": "Your devices",
@@ -2864,6 +2866,34 @@
   "aiIntake": {
     "noAllowance": "AI entries are not switched on for this account. Ask your administrator to switch them on. Searching the food database works without them.",
     "allowanceEnded": "AI entries for this account ended on {{date}}. Searching the food database still works.",
-    "notSwitchedOn": "AI entries are not switched on for this account. Searching the food database works without them."
+    "notSwitchedOn": "AI entries are not switched on for this account. Searching the food database works without them.",
+    "plansEnded": "Your trial ended on {{date}}. Pick a plan to keep using AI entries. Searching the food database still works.",
+    "plansNotSwitchedOn": "AI entries are not switched on for this account yet. Pick a plan to switch them on. Searching the food database works without them.",
+    "plansLink": "See the plans"
+  },
+  "plan": {
+    "title": "Your plan",
+    "loading": "Reading your plan.",
+    "unknown": "Your plan has not been read yet.",
+    "signedOut": "Sign in to see your plan.",
+    "absent": "There are no plans on this instance.",
+    "failed": "Your plan could not be read. Try again in a moment.",
+    "actionFailed": "That could not be opened. Try again in a moment.",
+    "status": {
+      "none": "You are on the free part of openplate.",
+      "trialing": "Your trial is running.",
+      "active": "Your plan is paid and running.",
+      "pastDue": "Your last payment did not go through.",
+      "canceled": "Your plan has ended."
+    },
+    "renewsOn": "It renews on {{date}} until you cancel.",
+    "endsOn": "You cancelled. Your access runs to {{date}} and then stops.",
+    "vatNote": "Prices include German VAT.",
+    "start": "Start a plan",
+    "manage": "Manage your plan",
+    "returned": {
+      "success": "Thank you. Your payment went through. It can take a moment to show here.",
+      "cancelled": "You closed the payment page. Nothing was charged."
+    }
   }
 }

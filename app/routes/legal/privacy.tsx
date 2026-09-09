@@ -5,6 +5,7 @@ import { USAGE_COUNTER_RETENTION_DAYS } from '#app/lib/admin/operator-visibility
 import type { MetaFunction } from 'react-router';
 import { useInstancePolicy, usePublicConfig } from '#app/hooks/use-public-config';
 import { useFeedbackRetentionDays, useServerInstance } from '#app/hooks/use-server-instance';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import type { AnalyticsEventLevel } from '#app/config/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
@@ -143,6 +144,21 @@ export interface PrivacyContentProps {
    * paragraph saying their readers' addresses reach us that way.
    */
   memberInvites?: boolean;
+  /**
+   * `true` where a biller stands behind this instance, so a payment can happen
+   * at all (M213 spec 07).
+   *
+   * A NAMED QUESTION FOR ONE NEW SECTION, and the same per-claim rule the
+   * block above wrote down. Section 7a names a processor, says what it
+   * receives, and states a ten year retention that outlives an erased account.
+   * On a deployment with no biller every one of those is false, and it is the
+   * kind of false that matters in a document the operator is legally
+   * answerable for: it would disclose a recipient of personal data that does
+   * not exist. It is not `managed`, because two managed instances answer it
+   * differently. It arrives on the `/health` handshake, exactly as
+   * `memberInvites` does.
+   */
+  plans?: boolean;
 }
 
 /**
@@ -167,6 +183,7 @@ export function PrivacyContent({
   aiComesFromTheInstance = false,
   serverHoldsTheDiary = false,
   memberInvites = false,
+  plans = false,
 }: PrivacyContentProps) {
   const { t, i18n } = useTranslation('legal');
   // TWO WINDOWS, AND THEY ARE NOT THE SAME THING, AND THEY DO NOT COME FROM
@@ -310,6 +327,25 @@ export function PrivacyContent({
         <H2 variant="default">{t('privacy.s7Heading')}</H2>
         <P>{t('privacy.s7Body')}</P>
       </section>
+
+      {/* SECTION 7a, AFTER 7 AND BEFORE 8, numbered rather than renumbering
+          the six sections below it: those numbers are cited by the terms and
+          by section 7a itself, which names section 3. Drawn only where a
+          payment can happen, because a processor that receives nothing is not
+          a disclosure, it is a false one. */}
+      {plans && (
+        <section className="mb-8">
+          <H2 variant="default">{t('privacy.s7aPaymentHeading')}</H2>
+          <P>{t('privacy.s7aPaymentBody1')}</P>
+          <P className="mt-4">{t('privacy.s7aPaymentBody2')}</P>
+          {/* THE TEN YEARS, AND WHY AN INVOICE OUTLIVES AN ERASED ACCOUNT.
+              This is the one paragraph in the document that states a
+              retention LONGER than the account, so it says which law requires
+              it rather than asserting it. */}
+          <P className="mt-4">{t('privacy.s7aPaymentBody3')}</P>
+          <P className="mt-4">{t('privacy.s7aPaymentBody4')}</P>
+        </section>
+      )}
 
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s8Heading')}</H2>
@@ -464,7 +500,12 @@ export default function Privacy() {
   // OFF THE SAME HANDSHAKE as the retention window above, and `false` until it
   // answers. A paragraph about addresses a member hands us must not appear on
   // an instance where no member can hand us one.
-  const memberInvites = useServerInstance()?.memberInvites ?? false;
+  const instance = useServerInstance();
+  const memberInvites = instance?.memberInvites ?? false;
+  // The same handshake, one line down (M213 spec 07). `false` for a service
+  // that has not answered, which publishes no processor disclosure: the safe
+  // direction is to name no recipient rather than one that does not exist.
+  const plans = hasPlansDoor(instance);
   return (
     <PublicWrapper>
       <PrivacyContent
@@ -475,6 +516,7 @@ export default function Privacy() {
         aiComesFromTheInstance={aiComesFromTheInstance}
         serverHoldsTheDiary={serverHoldsTheDiary}
         memberInvites={memberInvites}
+        plans={plans}
       />
     </PublicWrapper>
   );

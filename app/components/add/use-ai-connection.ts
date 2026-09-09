@@ -76,7 +76,26 @@ export type AiConnection = 'unknown' | 'connected' | 'absent';
  * device the last person's rows, which is the one thing the lock exists to
  * stop.
  */
-export type AiIntakeDoor = { kind: 'byok' } | AllowanceDoor;
+export type AiIntakeDoor = { kind: 'byok' } | PlansDoor | AllowanceDoor;
+
+/**
+ * A CONSUMER INSTANCE THAT SELLS THE THING THAT IS MISSING (M213 spec 05).
+ *
+ * The three {@link AllowanceDoor} answers all end at a sentence, because none
+ * of them is fixed by a page. This one is: a biller stands behind the
+ * instance, `/v1/plans/*` exists, and `/settings/plan` is the page that opens
+ * a checkout. It is therefore the ONE door in this union that carries a link,
+ * and it replaces exactly the two allowance answers a payment would fix.
+ *
+ * `endedAt` KEEPS THE DATE M212 FOUGHT FOR. "Your access ended" is not
+ * checkable and a date is, and this door must not be the thing that takes that
+ * sentence away again. `null` is an account that never had an allowance at
+ * all, which is a true and dateless fact rather than a missing value.
+ */
+export interface PlansDoor {
+  kind: 'plans';
+  endedAt: string | null;
+}
 
 /** What a screen needs to decide whether to offer an AI intake, and what to say when it cannot. */
 export interface AiIntake {
@@ -127,9 +146,20 @@ export function resolveAiConnection({
  */
 export function resolveAiIntakeDoor({
   aiComesFromTheInstance,
+  plansAvailable,
   allowance,
 }: {
   aiComesFromTheInstance: boolean;
+  /**
+   * `InstanceDescriptor.plans`, whether a biller stands behind this instance.
+   *
+   * REQUIRED, WITH NO DEFAULT, for the same reason `allowance` is: a default
+   * of `false` would compile at every call site and silently keep the
+   * administrator sentence on the one instance that has a page which fixes it.
+   * `false` is still the answer for an unreachable or older service, and that
+   * decision is made where the handshake is read, not here.
+   */
+  plansAvailable: boolean;
   /**
    * The account and instance facts the three managed doors are told apart by.
    *
@@ -141,7 +171,15 @@ export function resolveAiIntakeDoor({
   allowance: { memberInvites: boolean; allowanceExpiresAt: string | null; now: Date };
 }): AiIntakeDoor {
   if (!aiComesFromTheInstance) return { kind: 'byok' };
-  return resolveAllowanceDoor(allowance);
+  const door = resolveAllowanceDoor(allowance);
+  if (!plansAvailable) return door;
+  // THE TWO ANSWERS A PAYMENT FIXES, and no others. An `ask-admin` instance
+  // has somebody who can switch the allowance on, and offering to sell a plan
+  // instead would be wrong on an organization's deployment even if that
+  // deployment also happened to have a biller.
+  if (door.kind === 'allowance-ended') return { kind: 'plans', endedAt: door.endedAt };
+  if (door.kind === 'not-switched-on') return { kind: 'plans', endedAt: null };
+  return door;
 }
 
 /** Whether this device may run an AI intake right now, and where to send a person who may not. */
@@ -183,6 +221,10 @@ export function useAiIntake(): AiIntake {
     }),
     door: resolveAiIntakeDoor({
       aiComesFromTheInstance,
+      // THE HANDSHAKE, AND NEVER A PROBE (`PROTOCOL.md` §5.22). An
+      // unreachable or older service reads `false`, which keeps whichever
+      // allowance sentence was true before plans existed.
+      plansAvailable: instance?.plans ?? false,
       allowance: {
         // The instance's own answer, never a guess: an unreachable or older
         // service reads `false`, which keeps the sentence that names an
