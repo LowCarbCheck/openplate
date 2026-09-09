@@ -11,11 +11,17 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-09-09
+
 ### Added
 
-- **An instance that sells a plan now has a plan page.** `/settings/plan` shows what your account pays for, when the paid period ends, whether it renews, and gives you the two buttons that start a plan and open the payment portal, where cancelling, changing a card and downloading an invoice live. It is reachable from the photo estimates card on your account page. On an instance with no biller behind it the address is not a page at all, which is what the server itself answers.
-- **A refusal that a plan would fix now points at the plan page.** When photo estimates stop because a trial ended, the notice under the composer and the message on the scan screen offer the plans, instead of naming an administrator who does not exist. An instance an organization runs is unchanged, and so is an instance that sells nothing.
-- **The terms and the privacy policy describe the payment.** Where an instance takes a card, the terms gain a section on what is sold, how it renews, how it is cancelled, what happens when a payment fails, and your right of withdrawal, and the privacy policy gains a section naming the payment processor, what it receives, and why an invoice is kept for ten years after an account is erased. Neither section appears on an instance with no biller.
+- **An instance that sells a plan now has a plan page.** `/settings/plan` shows what your account pays for, when the paid period ends, whether it renews, and gives you the two buttons that start a plan and open the payment portal, where cancelling, changing a card and downloading an invoice live. It is reachable from the photo estimates card on your account page. On an instance with no biller behind it the address is not a page at all, which is what the server itself answers. ([a2d0cbf](https://github.com/LowCarbCheck/openplate/commit/a2d0cbf))
+- **A refusal that a plan would fix now points at the plan page.** When photo estimates stop because a trial ended, the notice under the composer and the message on the scan screen offer the plans, instead of naming an administrator who does not exist. An instance an organization runs is unchanged, and so is an instance that sells nothing. ([a2d0cbf](https://github.com/LowCarbCheck/openplate/commit/a2d0cbf))
+- **The terms and the privacy policy describe the payment.** Where an instance takes a card, the terms gain a section on what is sold, how it renews, how it is cancelled, what happens when a payment fails, and your right of withdrawal, and the privacy policy gains a section naming the payment processor, what it receives, and why an invoice is kept for ten years after an account is erased. Neither section appears on an instance with no biller. ([a2d0cbf](https://github.com/LowCarbCheck/openplate/commit/a2d0cbf))
+
+### Fixed
+
+- **The German privacy policy's account section now speaks Sie, like the rest of the page.** Six sentences under "Your account and your devices" shipped in the du register on a page that otherwise addresses you formally. ([2747bef](https://github.com/LowCarbCheck/openplate/commit/2747bef))
 
 ## [0.25.0] - 2026-09-09
 
