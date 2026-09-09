@@ -155,6 +155,20 @@ export type InstanceDescriptor = {
   language: string;
   /** Whether the instance can send mail. `false` means an invite or a reset is a link somebody copies by hand. */
   mail: boolean;
+  /**
+   * Whether an ordinary account may invite people on this instance.
+   *
+   * DESCRIPTIVE, NEVER A GRANT, like every other field here. A client reads it
+   * to decide whether to draw an invite card at all, and never to decide
+   * whether it may mint: `false` means `POST /v1/auth/invites` answers the
+   * ordinary unknown-path `404`, and `true` still leaves the cap, the re-invite
+   * rule and the throttle to the service.
+   *
+   * NOT OPTIONAL HERE, because the decoder answers `false` for a service older
+   * than the field. An absent key and a service that says no are the same fact
+   * for every reader, so there is no third state worth carrying.
+   */
+  memberInvites: boolean;
   /** The model the instance's AI proxy serves, or `null` when it has no upstream key. */
   ai: { model: string | null } | null;
   /**
@@ -239,6 +253,13 @@ const instanceDescriptorSchema = z.object({
   name: z.string(),
   language: z.string(),
   mail: z.boolean(),
+  // TOLERANT OF AN OLDER SERVICE, and of a hostile one. A deployment built
+  // before member invites existed sends no key here, and requiring one would
+  // fail the whole descriptor and take the AI model down with it, which is the
+  // compatibility break `instance` itself is optional to avoid. `.catch(false)`
+  // answers the missing key and a non-boolean value alike: no invite card,
+  // which is the safe direction, because the service refuses the mint anyway.
+  memberInvites: z.boolean().catch(false),
   ai: z.object({ model: z.string().nullable() }).nullable(),
   // `.optional()`, exactly like `instance` itself: a service older than the
   // field, or one with reports switched off, sends no key here.

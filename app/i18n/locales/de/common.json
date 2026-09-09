@@ -1736,7 +1736,10 @@
         "aiNotAllowed": "KI-Schätzungen sind für dein Konto nicht aktiviert. Wende dich an deinen Administrator.",
         "accountSuspended": "Dein Konto ist gesperrt. Wende dich an deinen Administrator.",
         "rateLimitMinute": "Das waren zu viele Anfragen kurz hintereinander. Versuch es in einer Minute noch einmal.",
-        "allowanceSpent": "Du hast deine heutigen KI-Schätzungen aufgebraucht. Versuch es morgen wieder."
+        "allowanceSpent": "Du hast deine heutigen KI-Schätzungen aufgebraucht. Versuch es morgen wieder.",
+        "allowanceExpired": "Dein Kontingent für Foto-Schätzungen ist abgelaufen. Alles andere in openplate funktioniert weiterhin.",
+        "allowanceExpiredOn": "Dein Kontingent für Foto-Schätzungen endete am {{date}}. Alles andere in openplate funktioniert weiterhin.",
+        "instanceCeiling": "Diese Instanz hat heute so viele Fotos verarbeitet wie möglich. Versuch es morgen noch einmal. Mit deinem Konto ist alles in Ordnung."
       },
       "readPhoto": "Das Foto konnte nicht gelesen werden. Versuche es mit einem anderen.",
       "titles": {
@@ -1750,7 +1753,9 @@
         "transient": "Der Anbieter hatte Probleme mit der Antwort",
         "photoTooLarge": "Das Foto ist zu groß",
         "aiNotAllowed": "KI-Schätzungen sind deaktiviert",
-        "accountSuspended": "Dein Konto ist gesperrt"
+        "accountSuspended": "Dein Konto ist gesperrt",
+        "allowanceExpired": "Deine Foto-Schätzungen sind abgelaufen",
+        "instanceCeiling": "Diese Instanz hat heute keine Kapazitäten mehr"
       },
       "text": {
         "empty": "Schreib zuerst, was du gegessen hast.",
@@ -1862,7 +1867,8 @@
       "title": "Foto machen statt tippen",
       "managedMissing": {
         "body": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
-        "askAdmin": "Bitte deine Administration, sie zu aktivieren. In der Zwischenzeit kannst du Mahlzeiten ohne Foto eintragen."
+        "askAdmin": "Bitte deine Administration, sie zu aktivieren. In der Zwischenzeit kannst du Mahlzeiten ohne Foto eintragen.",
+        "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}. Du kannst Lebensmittel immer noch ohne Foto hinzufügen."
       },
       "managedSignedOut": {
         "body": "Du bist auf diesem Gerät abgemeldet, daher sind Foto-Schätzungen deaktiviert. Melde dich wieder an, um sie zu nutzen.",
@@ -2562,7 +2568,9 @@
       "body": "Heute {{used}} von {{limit}} genutzt.",
       "none": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
       "askAdmin": "Das legt deine Administration fest.",
-      "today": "Foto-Schätzungen heute: {{used}} von {{limit}}"
+      "today": "Foto-Schätzungen heute: {{used}} von {{limit}}",
+      "expires": "Foto-Schätzungen für dieses Konto laufen bis zum {{date}}.",
+      "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}."
     },
     "devices": {
       "title": "Deine Geräte",
@@ -2613,7 +2621,19 @@
       "role": "Ob du diese Instanz selbst verwalten darfst.",
       "suspendedAt": "Ob dein Konto gesperrt ist.",
       "activity": "Außerdem ist zu sehen, wie viele Fotos an jedem der letzten {{days}} Tage für dich ausgelesen wurden. Ältere Tageswerte werden gelöscht.",
-      "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann."
+      "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann.",
+      "allowanceExpiresAt": "Das Datum, an dem dein Kontingent abläuft.",
+      "invitesLeft": "Wie viele Einladungen du noch übrig hast."
+    },
+    "invites": {
+      "title": "Jemanden einladen",
+      "body": "Verschicke eine Einladung per E-Mail. Die eingeladene Person erhält ein eigenes Konto auf dieser Instanz mit einem eigenen Tagebuch.",
+      "label": "E-Mail-Adresse",
+      "left": "Deine verbleibenden Einladungen: {{left}}",
+      "none": "Du hast alle deine Einladungen aufgebraucht.",
+      "send": "Einladung senden",
+      "sent": "Wenn an diese Adresse eine Einladung gesendet werden kann, ist sie unterwegs. Wir antworten jedes Mal auf dieselbe Weise, damit niemand herausfinden kann, wer bereits registriert ist.",
+      "failed": "Die Einladung konnte nicht gesendet werden. Versuch es gleich noch einmal."
     }
   },
   "admin": {
@@ -2842,6 +2862,8 @@
     "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen"
   },
   "aiIntake": {
-    "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie."
+    "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie.",
+    "allowanceEnded": "KI-Einträge für dieses Konto endeten am {{date}}. Die Suche in der Lebensmittel-Datenbank funktioniert weiterhin.",
+    "notSwitchedOn": "KI-Einträge sind für dieses Konto nicht aktiviert. Die Suche in der Lebensmittel-Datenbank funktioniert auch ohne sie."
   }
 }

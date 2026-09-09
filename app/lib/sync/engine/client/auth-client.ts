@@ -58,6 +58,7 @@ import {
   type KdfDescriptorWire,
   type KeyRecordSubmissionWire,
   type LoginRequestWire,
+  type MemberInviteRequestWire,
   type PatchAccountRequestWire,
   type RefreshRequestWire,
   type RecoverRequestWire,
@@ -217,7 +218,14 @@ const PENDING_ACCOUNT: AccountViewWire = {
   role: 'member',
   dailyAiLimit: 0,
   aiUsedToday: 0,
+  // FILLER, like every field above it. `null` is the honest shape for both:
+  // "no end date" and "the invite cap is not about you" are what a reader of a
+  // real view sees for these, so a placeholder that said anything else would
+  // be a fact rather than a hole. Nothing publishes them from here anyway,
+  // because `isPendingAccountView` gates the copy into the snapshot.
+  allowanceExpiresAt: null,
   suspendedAt: null,
+  invitesLeft: null,
   createdAt: '',
 };
 
@@ -805,6 +813,35 @@ export class SyncAuthClient implements SyncTokenProvider {
     const tokens = this.session?.tokens;
     if (tokens !== undefined) this.session = { account: body.account, tokens };
     return body.account;
+  }
+
+  /**
+   * Invites somebody to this instance, as an ordinary account rather than as
+   * an operator (`PROTOCOL.md` §5.21).
+   *
+   * RETURNS NOTHING, AND MUST NOT. The service answers one fixed `202` with an
+   * empty body for a new address, for an address that already holds a pending
+   * invitation and for an address that already holds an account. That is the
+   * anti-enumeration rule of the reset endpoint below, applied to the one call
+   * a person points at somebody else's mailbox: a caller that branched on the
+   * answer would hand every account an oracle for who else is here. So there is
+   * nothing to return and the caller shows one sentence.
+   *
+   * A TRANSPORT failure still throws, because "we could not reach the server"
+   * is worth saying and says nothing about the address.
+   *
+   * The cap, the re-invite rule and the throttle all live on the service.
+   * `invitesLeft` is drawn, never trusted: this call may be refused after a
+   * client believed it had one left.
+   */
+  async createMemberInvite(input: { email: string }): Promise<void> {
+    const request: MemberInviteRequestWire = { email: input.email };
+    await this.requestJson<unknown>({
+      path: `${AUTH_API_PREFIX}/invites`,
+      method: 'POST',
+      body: request,
+      authenticated: true,
+    });
   }
 
   /**

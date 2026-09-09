@@ -42,6 +42,7 @@ import {
   type ConnectCardVariant,
 } from '../../app/routes/scan';
 import { resolveEffectiveAiSettings } from '../../app/lib/ai/managed-ai-settings';
+import type { AllowanceDoor } from '../../app/lib/ai/managed-ai-settings';
 import type { SyncSessionSnapshot } from '../../app/lib/sync/sync-session';
 import type { PublicConfig } from '../../app/config/public-config';
 
@@ -89,9 +90,23 @@ function render(config: PublicConfig): string {
   return renderElement(config, createElement(ConnectCard, { logDate: null }));
 }
 
-/** One shape of the card, given its variant. The only way to render a signed-in session statically. */
-function renderVariant(variant: Exclude<ConnectCardVariant, { kind: 'resuming' }>): string {
-  return renderElement(publicConfig({ managed: true }), createElement(ConnectCardView, { variant, logDate: null }));
+/**
+ * One shape of the card, given its variant. The only way to render a signed-in
+ * session statically.
+ *
+ * `allowanceDoor` defaults to the organization's answer, which is what every
+ * assertion written before M212 spec 04 was reading: an instance with an
+ * administrator to ask. The other two doors are passed explicitly by the tests
+ * that are about them.
+ */
+function renderVariant(
+  variant: Exclude<ConnectCardVariant, { kind: 'resuming' }>,
+  allowanceDoor: AllowanceDoor = { kind: 'ask-admin' },
+): string {
+  return renderElement(
+    publicConfig({ managed: true }),
+    createElement(ConnectCardView, { variant, logDate: null, allowanceDoor }),
+  );
 }
 
 /** A session snapshot, defaulted to the settled signed-out one. */
@@ -109,7 +124,16 @@ function snapshot(overrides: Partial<SyncSessionSnapshot> = {}): SyncSessionSnap
 
 /** A signed-in account, allowance included. `dailyAiLimit: 0` is the ordinary "no AI yet" standing. */
 function account(dailyAiLimit: number): NonNullable<SyncSessionSnapshot['account']> {
-  return { id: 7, email: 'anna@example.org', displayName: null, role: 'member', dailyAiLimit, aiUsedToday: 0 };
+  return {
+    id: 7,
+    email: 'anna@example.org',
+    displayName: null,
+    role: 'member',
+    dailyAiLimit,
+    aiUsedToday: 0,
+    allowanceExpiresAt: null,
+    invitesLeft: null,
+  };
 }
 
 describe('resolveConnectSessionState', () => {

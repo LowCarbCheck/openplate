@@ -88,6 +88,26 @@ export type EffectiveAiSettings = ManagedAiSettings | StoredAiSettings;
  * provider". Returning a reason from this function would put that copy
  * decision in a pure module and force every caller to re-map it.
  *
+ * ── THE EXPIRY IS DELIBERATELY NOT READ HERE (M212 spec 04) ─────────────
+ *
+ * `AccountView.allowanceExpiresAt` reaches the snapshot and this rule ignores
+ * it, so a person whose allowance ended still sees a working shutter and is
+ * refused when they press it. That is the lesser of two wrongs and the choice
+ * is written here rather than left to be inferred.
+ *
+ * The protocol is explicit that a client MAY RENDER the date and MUST NOT
+ * AUTHORIZE ON IT (`PROTOCOL.md` §5.15): the proxy refuses from the instant on,
+ * before anything leaves the host and before a usage row is written, so nothing
+ * is spent by letting the request go. What a local gate WOULD cost is a device
+ * whose clock runs a day fast, which would lose a working allowance with no way
+ * for its owner to tell why, and this rule is also read seconds after a reload,
+ * when the real view has not landed and the honest answer is "not known".
+ *
+ * The refusal is therefore answered where it arrives: `403 allowance-expired`
+ * has its own `VisionFailureCause` and its own sentence, which names the date.
+ * {@link resolveAllowanceDoor} is what every screen asks BEFORE a scan, so an
+ * account with no allowance at all is still told the truth without a clock.
+ *
  * BYOK IS REFUSED ON A MANAGED INSTANCE, even when a row exists. Such a row is
  * a leftover from before the instance was managed, or from a device that was
  * once on an open one, and honouring it would send somebody's plate photos to
@@ -130,6 +150,71 @@ export function resolveEffectiveAiSettings({
     baseUrl: `${instance.syncServerUrl}${MANAGED_AI_API_PREFIX}`,
     model: instance.model,
   };
+}
+
+/**
+ * WHY A PERSON CANNOT RUN A PHOTO ESTIMATE, in the words that are true of
+ * their account.
+ *
+ * Three answers, because there are three different facts and one of them used
+ * to be spoken as the other two. Until M212 every surface said "ask your
+ * administrator", which is right on an instance an organization runs and wrong
+ * on a consumer instance, where there is no administrator to ask and the real
+ * reason is that a trial ended on a date.
+ *
+ *  - `allowance-ended`: the account carries an end date and it has passed. The
+ *    sentence NAMES THE DATE, because a date is checkable and "your access
+ *    ended" is not.
+ *  - `not-switched-on`: the account has no allowance and this instance offers
+ *    invitations, so nobody is administering anybody. The sentence says photo
+ *    estimates are not switched on for this account and stops there.
+ *  - `ask-admin`: an organization's instance. Somebody can switch it on, and
+ *    saying so is the only useful next step there is.
+ */
+export type AllowanceDoor =
+  | { kind: 'ask-admin' }
+  | { kind: 'allowance-ended'; endedAt: string }
+  | { kind: 'not-switched-on' };
+
+/**
+ * Which of the three a person is looking at.
+ *
+ * PURE, AND THE CLOCK IS AN ARGUMENT. `now` is passed in so the boundary
+ * instant can be tested, and so this module keeps reading no clock of its own.
+ *
+ * `null` IS NOT EXPIRED, and this is the branch every reader gets wrong. An
+ * account with no end date sends `null`, an account whose real view has not
+ * been read yet reads `null` on the snapshot, and an unparseable value from a
+ * hostile server is treated the same way. All three mean "no date has passed".
+ *
+ * The expiry is asked FIRST and does not depend on the invitations, because a
+ * date that has passed is the true answer on either kind of instance.
+ *
+ * @param input.memberInvites - `InstanceDescriptor.memberInvites`, whether this
+ *   instance lets an account invite people. `false` is an organization's
+ *   instance, which has an administrator.
+ * @param input.allowanceExpiresAt - the account's end date, or `null`.
+ * @param input.now - the instant to compare against.
+ * @returns the door, with the date when there is one to name.
+ */
+export function resolveAllowanceDoor({
+  memberInvites,
+  allowanceExpiresAt,
+  now,
+}: {
+  memberInvites: boolean;
+  allowanceExpiresAt: string | null;
+  now: Date;
+}): AllowanceDoor {
+  if (allowanceExpiresAt !== null) {
+    const endsAt = Date.parse(allowanceExpiresAt);
+    // "Not after" is the protocol's comparison (`PROTOCOL.md` §5.19): the
+    // boundary instant refuses rather than allows, so the client says the same.
+    if (!Number.isNaN(endsAt) && endsAt <= now.getTime()) {
+      return { kind: 'allowance-ended', endedAt: allowanceExpiresAt };
+    }
+  }
+  return memberInvites ? { kind: 'not-switched-on' } : { kind: 'ask-admin' };
 }
 
 /**

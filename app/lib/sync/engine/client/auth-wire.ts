@@ -70,9 +70,49 @@ export interface AccountViewWire {
   dailyAiLimit: number;
   /** Requests spent so far on the current UTC day. */
   aiUsedToday: number;
+  /**
+   * When this account's AI allowance ends, or `null` for no end at all.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT (`PROTOCOL.md` §5.15). The rule lives in
+   * the proxy, which answers `403 allowance-expired` from the instant on, and a
+   * client that refused locally would take a working allowance away from
+   * anybody whose device clock runs fast. `null` is "no end date", which is
+   * what every self-hosted instance keeps, so no reader may read it as expired.
+   *
+   * IT GATES AI AND NOTHING ELSE. Sync keeps working past the date, because the
+   * diary belongs to the account and a new device must be able to pull it.
+   */
+  allowanceExpiresAt: IsoTimestamp | null;
   /** When an admin suspended this account, or `null`. A suspended account cannot log in, refresh, sync or scan. */
   suspendedAt: IsoTimestamp | null;
+  /**
+   * How many invitations this account may still cause through
+   * `POST /v1/auth/invites`, or `null` when that cap is not about it.
+   *
+   * `null` RATHER THAN `0`, AND THAT IS THE WHOLE SUBTLETY (`PROTOCOL.md`
+   * §5.15). `0` reads as "you have used them all"; an administrator has used
+   * none, because they mint through the admin API, which is exempt from the cap
+   * and from the re-invite rule. An instance with the feature off sends `null`
+   * for the same reason: there is no cap, because there is no route. So `null`
+   * means "no invite card", and only a number may draw one.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT. The service refuses a sixth mint whatever
+   * a client believes.
+   */
+  invitesLeft: number | null;
   createdAt: IsoTimestamp;
+}
+
+/**
+ * `POST /v1/auth/invites`, a member invites somebody (`PROTOCOL.md` §5.21).
+ *
+ * The address, and NOTHING else. `dailyAiLimit`, `role` and `expiresInDays` are
+ * body fields on the ADMIN mint and are not read here: the terms are the
+ * instance's, never the caller's, which is the difference between a member and
+ * an operator.
+ */
+export interface MemberInviteRequestWire {
+  email: string;
 }
 
 /**

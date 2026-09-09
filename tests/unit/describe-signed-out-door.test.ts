@@ -94,9 +94,12 @@ describe('the device lock has no exception for the add-food screens', () => {
 
 describe('the composer has no signed-out AI door left to reach', () => {
   it('names the administrator or the provider settings, and nothing else', () => {
+    // An organization's instance, and an open one. Neither has an end date on
+    // the account, so neither answer is the M212 expiry door.
+    const allowance = { memberInvites: false, allowanceExpiresAt: null, now: new Date('2026-09-09T10:00:00.000Z') };
     const doors: string[] = [
-      resolveAiIntakeDoor({ aiComesFromTheInstance: true }),
-      resolveAiIntakeDoor({ aiComesFromTheInstance: false }),
+      resolveAiIntakeDoor({ aiComesFromTheInstance: true, allowance }).kind,
+      resolveAiIntakeDoor({ aiComesFromTheInstance: false, allowance }).kind,
     ];
     assert.ok(!doors.includes('sign-in'), `the signed-out door came back: ${doors.join(', ')}`);
     // THE CONTROL. The two answers are still DIFFERENT, so the check above is
@@ -115,7 +118,11 @@ describe('the strings that door used are gone from every locale', () => {
     for (const { locale, aiIntake } of CATALOGS) {
       assert.deepEqual(
         Object.keys(aiIntake).toSorted(),
-        ['noAllowance'],
+        // The two M212 spec 04 sentences joined `noAllowance`: an allowance
+        // that ended on a date, and an instance with no administrator to ask.
+        // The list is exhaustive on purpose, so a resurrected signed-out
+        // string still fails here.
+        ['allowanceEnded', 'noAllowance', 'notSwitchedOn'],
         `${locale} still carries copy for a door that cannot be reached`,
       );
     }

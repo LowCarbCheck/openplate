@@ -70,7 +70,8 @@ export interface SyncSessionSnapshot {
    * SNAPSHOT — the vault is off limits to React. `aiUsedToday` rides with it
    * so the same read answers "and how much is left".
    *
-   * `role`, `dailyAiLimit` and `aiUsedToday` are `null` UNTIL a real
+   * `role`, `dailyAiLimit`, `aiUsedToday`, `allowanceExpiresAt` and
+   * `invitesLeft` are `null` UNTIL a real
    * `AccountView` has been read from the service — never a guessed default
    * (0.10.1 walk defect 2). Before M192/06 `openSyncSession` filled them with
    * `role: account?.role ?? 'member'` for whatever session opened the vault,
@@ -89,6 +90,25 @@ export interface SyncSessionSnapshot {
     role: 'admin' | 'member' | null;
     dailyAiLimit: number | null;
     aiUsedToday: number | null;
+    /**
+     * When this account's AI allowance ends, or `null`.
+     *
+     * `null` IS TWO THINGS HERE AND ONLY ONE OF THEM IS A DATE: an account with
+     * no end date at all, which is what every self-hosted and every open
+     * instance keeps, and an account whose real view has not been read yet.
+     * NEITHER of them is "expired". A reader that drew an ended-allowance
+     * banner for `null` would draw it for every open instance and for the first
+     * moments after every reload.
+     */
+    allowanceExpiresAt: string | null;
+    /**
+     * How many invitations this account may still send, or `null`.
+     *
+     * `null` is "the cap is not about this account" (an administrator, or an
+     * instance with no such route) AND "not read yet", and both mean the same
+     * thing to a screen: draw no invite card. Only a number draws one.
+     */
+    invitesLeft: number | null;
   } | null;
   /**
    * True while this device may still be reopening a session it already had.
@@ -224,6 +244,12 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       role: knownAccount?.role ?? null,
       dailyAiLimit: knownAccount?.dailyAiLimit ?? null,
       aiUsedToday: knownAccount?.aiUsedToday ?? null,
+      // `?? null` DOES TWO JOBS on these two. It answers the pending
+      // placeholder, like the three above it, and it also answers a service
+      // older than the fields, which sends no key at all and would otherwise
+      // put `undefined` where every reader tests for `null`.
+      allowanceExpiresAt: knownAccount?.allowanceExpiresAt ?? null,
+      invitesLeft: knownAccount?.invitesLeft ?? null,
     },
     isResuming: false,
     phase: 'idle',

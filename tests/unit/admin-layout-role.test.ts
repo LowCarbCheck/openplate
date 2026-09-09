@@ -34,6 +34,8 @@ test('a signed-in session with role: null is "unknown-role", never "denied"', ()
       role: null,
       dailyAiLimit: null,
       aiUsedToday: null,
+      allowanceExpiresAt: null,
+      invitesLeft: null,
     },
   });
   assert.equal(state, 'unknown-role', 'an unread role must never fall through to the deny card');
@@ -46,7 +48,16 @@ test('no session at all is "denied"', () => {
 test('a known role of "member" is "denied"', () => {
   const state = resolveAdminViewState({
     isResuming: false,
-    account: { id: 2, email: 'anna@example.org', displayName: null, role: 'member', dailyAiLimit: 200, aiUsedToday: 3 },
+    account: {
+      id: 2,
+      email: 'anna@example.org',
+      displayName: null,
+      role: 'member',
+      dailyAiLimit: 200,
+      aiUsedToday: 3,
+      allowanceExpiresAt: null,
+      invitesLeft: 5,
+    },
   });
   assert.equal(state, 'denied');
 });
@@ -54,7 +65,17 @@ test('a known role of "member" is "denied"', () => {
 test('a known role of "admin" is "granted"', () => {
   const state = resolveAdminViewState({
     isResuming: false,
-    account: { id: 1, email: 'owner@example.org', displayName: null, role: 'admin', dailyAiLimit: 500, aiUsedToday: 1 },
+    account: {
+      id: 1,
+      email: 'owner@example.org',
+      displayName: null,
+      role: 'admin',
+      dailyAiLimit: 500,
+      aiUsedToday: 1,
+      allowanceExpiresAt: null,
+      // `null` for an administrator, never `0`: the cap is not about them.
+      invitesLeft: null,
+    },
   });
   assert.equal(state, 'granted');
 });

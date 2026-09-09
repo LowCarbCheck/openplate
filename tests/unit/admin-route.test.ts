@@ -69,7 +69,9 @@ const ADMIN: AdminAccountView = {
   role: 'admin',
   dailyAiLimit: 500,
   aiUsedToday: 12,
+  allowanceExpiresAt: null,
   suspendedAt: null,
+  invitesLeft: null,
   createdAt: '2026-08-01T09:00:00.000Z',
   lastSeenAt: '2026-09-06T18:30:00.000Z',
 };
@@ -81,7 +83,9 @@ const SUSPENDED_PERSON: AdminAccountView = {
   role: 'member',
   dailyAiLimit: 200,
   aiUsedToday: 7,
+  allowanceExpiresAt: null,
   suspendedAt: '2026-09-03T09:00:00.000Z',
+  invitesLeft: null,
   createdAt: '2026-08-20T09:00:00.000Z',
   lastSeenAt: '2026-09-05T07:15:00.000Z',
 };
@@ -94,7 +98,9 @@ const NEVER_ARRIVED: AdminAccountView = {
   role: 'member',
   dailyAiLimit: 200,
   aiUsedToday: 0,
+  allowanceExpiresAt: null,
   suspendedAt: null,
+  invitesLeft: null,
   createdAt: '2026-09-05T09:00:00.000Z',
   lastSeenAt: null,
 };

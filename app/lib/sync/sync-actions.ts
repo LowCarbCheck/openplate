@@ -875,6 +875,8 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
       role: account.role,
       dailyAiLimit: account.dailyAiLimit,
       aiUsedToday: account.aiUsedToday,
+      allowanceExpiresAt: account.allowanceExpiresAt ?? null,
+      invitesLeft: account.invitesLeft ?? null,
     },
   });
 }
@@ -883,7 +885,9 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
  * Re-reads the account from the service and publishes it to the snapshot.
  *
  * WHAT MOVES ON THE SERVER while a tab is open: `aiUsedToday` on every scan,
- * `dailyAiLimit` and `suspendedAt` whenever an administrator touches the row.
+ * `invitesLeft` on every invitation this account sends, and `dailyAiLimit`,
+ * `allowanceExpiresAt` and `suspendedAt` whenever an administrator touches the
+ * row.
  * The snapshot is a photograph taken at sign-in, and the account page is the
  * one screen whose whole job is to show those three (M192/06). Every other
  * surface is content with the sign-in snapshot, so this is called from there
@@ -906,11 +910,41 @@ export async function refreshSyncAccount(): Promise<void> {
         role: account.role,
         dailyAiLimit: account.dailyAiLimit,
         aiUsedToday: account.aiUsedToday,
+        // BOTH MOVE ON THE SERVER TOO, which is why they ride this refresh:
+        // an administrator extends an allowance, and every invitation this
+        // account sends lowers the count by one.
+        allowanceExpiresAt: account.allowanceExpiresAt ?? null,
+        invitesLeft: account.invitesLeft ?? null,
       },
     });
   } catch {
     // Offline, or a service mid-deploy. The numbers already on screen stay.
   }
+}
+
+/**
+ * Invites somebody to this instance from an ordinary account.
+ *
+ * RESOLVES THE SAME WAY WHATEVER IS TRUE ABOUT THE ADDRESS, and the caller
+ * must show one sentence. A new address, an address that already holds an
+ * invitation and an address that already holds an account are one fixed `202`
+ * with an empty body (`PROTOCOL.md` §5.21), so a caller that branched on the
+ * answer would be building the oracle the endpoint exists to refuse: a person
+ * must not learn from this screen that their colleague is already here.
+ *
+ * A TRANSPORT failure still throws, exactly as the reset request below does:
+ * "we could not reach the server" is worth saying and says nothing about the
+ * address. So is a refusal, which is how the cap is enforced, and the sentence
+ * for it is the same neutral one, because the caller may not say which it was.
+ *
+ * `refreshSyncAccount` is the CALLER's job and the account screen does it: the
+ * count this changed is on the snapshot, and re-reading it here would put a
+ * second round trip inside an action whose whole answer is "nothing".
+ */
+export async function sendMemberInvite({ email }: { email: string }): Promise<void> {
+  const vault = getSyncVault();
+  if (vault === null) throw new Error('sendMemberInvite called without an open sync session');
+  await vault.authClient.createMemberInvite({ email });
 }
 
 /**

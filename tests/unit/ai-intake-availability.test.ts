@@ -58,7 +58,16 @@ const RESUMING: SyncSessionSnapshot = { ...SIGNED_OUT, isResuming: true };
 function signedIn({ dailyAiLimit = 200 }: { dailyAiLimit?: number | null } = {}): SyncSessionSnapshot {
   return {
     ...SIGNED_OUT,
-    account: { id: 7, email: 'anna@example.org', displayName: null, role: 'member', dailyAiLimit, aiUsedToday: 3 },
+    account: {
+      id: 7,
+      email: 'anna@example.org',
+      displayName: null,
+      role: 'member',
+      dailyAiLimit,
+      aiUsedToday: 3,
+      allowanceExpiresAt: null,
+      invitesLeft: null,
+    },
   };
 }
 
@@ -164,20 +173,50 @@ describe('an open instance, unchanged', () => {
 });
 
 describe('the door a person with no AI is shown', () => {
+  /** An organization's instance: nobody invites anybody, and the allowance has no end date. */
+  const ORGANIZATION = { memberInvites: false, allowanceExpiresAt: null, now: new Date('2026-09-09T10:00:00.000Z') };
+
   it('is the administrator on a managed instance, because there is no page that fixes an allowance', () => {
-    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: true }), 'ask-admin');
+    assert.deepEqual(resolveAiIntakeDoor({ aiComesFromTheInstance: true, allowance: ORGANIZATION }), {
+      kind: 'ask-admin',
+    });
   });
 
   it('is the provider settings on an open instance', () => {
     // The control for the managed answer: a door that was always `byok` would
     // pass nothing above, and one that was never `byok` would send a
     // self-hoster to an administrator their instance does not have.
-    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: false }), 'byok');
-    assert.notEqual(
-      resolveAiIntakeDoor({ aiComesFromTheInstance: true }),
-      resolveAiIntakeDoor({ aiComesFromTheInstance: false }),
+    assert.deepEqual(resolveAiIntakeDoor({ aiComesFromTheInstance: false, allowance: ORGANIZATION }), {
+      kind: 'byok',
+    });
+    assert.notDeepEqual(
+      resolveAiIntakeDoor({ aiComesFromTheInstance: true, allowance: ORGANIZATION }),
+      resolveAiIntakeDoor({ aiComesFromTheInstance: false, allowance: ORGANIZATION }),
       'the door stopped depending on the instance at all',
     );
+  });
+
+  // M212 spec 04. An instance that hands its accounts invitations has no
+  // administrator to send anybody to, so the sentence must stop being about a
+  // person. The three answers themselves are `resolveAllowanceDoor`'s, in
+  // `managed-ai-settings.test.ts`; what is checked here is that this door
+  // carries them rather than flattening them back into one.
+  it('names no administrator on an instance whose accounts invite each other', () => {
+    const door = resolveAiIntakeDoor({
+      aiComesFromTheInstance: true,
+      allowance: { ...ORGANIZATION, memberInvites: true },
+    });
+    assert.deepEqual(door, { kind: 'not-switched-on' });
+  });
+
+  it('names the date when the allowance ended, whatever kind of instance it is', () => {
+    for (const memberInvites of [true, false]) {
+      const door = resolveAiIntakeDoor({
+        aiComesFromTheInstance: true,
+        allowance: { ...ORGANIZATION, memberInvites, allowanceExpiresAt: '2026-09-01T00:00:00.000Z' },
+      });
+      assert.deepEqual(door, { kind: 'allowance-ended', endedAt: '2026-09-01T00:00:00.000Z' });
+    }
   });
 });
 
@@ -194,6 +233,12 @@ describe('the hook feeds those rules the real inputs', () => {
 
   it('reads the session for the half that needs it, and asks it nothing about the door', () => {
     assert.match(SOURCE, /isSessionResuming: session\.isResuming/);
+    // THREADED, NOT DEFAULTED (M212 spec 04). `resolveAiIntakeDoor` takes the
+    // instance's invitations and the account's end date as one required
+    // argument, and a hook that stopped passing them would be the whole
+    // feature reaching zero call sites while every type still checked.
+    assert.match(SOURCE, /memberInvites: instance\?\.memberInvites \?\? false/);
+    assert.match(SOURCE, /allowanceExpiresAt: session\.account\?\.allowanceExpiresAt \?\? null/);
     // M204 spec 01: the door has no signed-out branch left to feed, because a
     // managed device with no session is locked out of `/describe` and `/add`
     // before either renders. A resolver handed the session again would be the

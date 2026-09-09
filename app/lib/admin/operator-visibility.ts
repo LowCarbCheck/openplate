@@ -93,6 +93,13 @@ export const OPERATOR_VISIBILITY = {
   dailyAiLimit: { copyKey: 'account.operatorSees.dailyAiLimit' },
   role: { copyKey: 'account.operatorSees.role' },
   suspendedAt: { copyKey: 'account.operatorSees.suspendedAt' },
+  // THE TWO M212 FIELDS. Both are facts about this person's standing, both are
+  // on the operator's screen, and both therefore get a line rather than a
+  // reason: an allowance that ends on a date is the one thing somebody most
+  // wants to know an administrator can move, and a count of invitations left
+  // says how many addresses this account has already handed over.
+  allowanceExpiresAt: { copyKey: 'account.operatorSees.allowanceExpiresAt' },
+  invitesLeft: { copyKey: 'account.operatorSees.invitesLeft' },
   // THE ONE FIELD WITH NO LINE. It is the primary key of the account row: an
   // administrator does see it, and it says nothing about the person that the
   // address above it does not say better. A line for it would spend a

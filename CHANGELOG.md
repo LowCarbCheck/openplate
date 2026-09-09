@@ -11,6 +11,17 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **Your account page now shows when your photo estimates end.** An account whose allowance carries an end date sees that date beside the daily count, in your own date format. An account with no end date, which is what a self-hosted instance keeps, sees nothing new.
+- **An account can invite people, where the instance offers it.** A card on the account page takes an email address and says how many invitations you have left. The reply is the same sentence whatever is true about the address, on purpose: nobody can use it to find out who already has an account here. The instance decides whether the card appears at all, and the count you see is drawn, never trusted.
+- **The terms and the privacy policy now describe an instance that runs the AI for you.** Five sentences and two headings still promised that your plate photo goes to a provider you chose and never passes through our servers, which has been false on an instance run for you since it launched. Each one now has a version written for that instance. The terms state that the allowance ends on a date, and the privacy policy states that an address you type into an invitation reaches us and is kept until the invitation is redeemed, revoked or expires. Section 6 also names the two new things an administrator can see: when your allowance ends, and how many invitations you have left.
+
+### Fixed
+
+- **A refused photo estimate now says which of two things happened.** An allowance that ended on a date and an instance that has read all the photos it can today used to arrive as "the provider is temporarily unavailable, try again in a moment". The first was never temporary, and the second comes back tomorrow rather than in a moment. Each now has its own sentence, and the one about an ended allowance names the date.
+- **No screen tells you to ask an administrator who does not exist.** On an instance where accounts invite each other there is nobody to ask, so the three sentences that sent you to one now say what is true of your account instead: the date your allowance ended, or simply that photo estimates are not switched on for it. An instance an organization runs still names the administrator, who is a real person there.
+
 ## [0.24.0] - 2026-09-09
 
 ### Added

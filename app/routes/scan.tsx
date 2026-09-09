@@ -35,7 +35,13 @@ import { fetchFoodMatches } from '#app/lib/food-matches-client';
 import { randomUuid } from '#app/lib/uuid';
 import { useInstanceInferencePreset, useInstancePolicy } from '#app/hooks/use-public-config';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
-import { managedAiCredential, type ManagedAiSettings } from '#app/lib/ai/managed-ai-settings';
+import {
+  managedAiCredential,
+  resolveAllowanceDoor,
+  type AllowanceDoor,
+  type ManagedAiSettings,
+} from '#app/lib/ai/managed-ai-settings';
+import { useServerInstance } from '#app/hooks/use-server-instance';
 import { OAuthConnectButton } from '#app/components/oauth-connect-button';
 import { InstancePresetConnect } from '#app/components/instance-preset-connect';
 import { LoadingDots } from '#app/components/app-loading';
@@ -1321,6 +1327,11 @@ function ScanFlow({
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
+  // THE DATE THE REFUSAL WILL NAME, read here rather than in `UploadForm` so
+  // that surface keeps no hooks of its own and stays renderable in a test.
+  // `null` on an open instance and in the moments before the account view
+  // lands, which is the dateless sentence, never a blank one.
+  const allowanceEndsAt = useSyncSession().account?.allowanceExpiresAt ?? null;
   const [state, dispatch] = useReducer(analyzeReducer, initialAnalyzeState);
   const [file, setFile] = useState<File | null>(null);
   /**
@@ -1639,6 +1650,7 @@ function ScanFlow({
       error={failedIdentify?.error ?? silentFailure}
       failureCause={failedIdentify?.failureCause}
       retryAfterSeconds={failedIdentify?.retryAfterSeconds}
+      allowanceEndsAt={allowanceEndsAt}
       provider={failedIdentify?.provider}
       usage={failedIdentify?.usage}
       modelId={failedIdentify?.modelId}
@@ -1671,6 +1683,11 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   'photo-too-large': 'scan.errors.titles.photoTooLarge',
   'ai-not-allowed': 'scan.errors.titles.aiNotAllowed',
   'account-suspended': 'scan.errors.titles.accountSuspended',
+  // THE TWO M212 REFUSALS. Neither is about the person's key or their photo:
+  // one is a date that passed on their account, the other is the operator out
+  // of capacity for the day.
+  'allowance-expired': 'scan.errors.titles.allowanceExpired',
+  'ai-instance-ceiling': 'scan.errors.titles.instanceCeiling',
 } satisfies Record<Exclude<VisionFailureCause, 'genuinely-no-food'>, string>;
 
 /** The alert headline for a given failure cause — see `FAILURE_TITLE_KEY_BY_CAUSE`. */
@@ -1712,6 +1729,12 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
   'photo-too-large': 'scan.errors.provider.photoTooLarge',
   'ai-not-allowed': 'scan.errors.provider.aiNotAllowed',
   'account-suspended': 'scan.errors.provider.accountSuspended',
+  // THE DATELESS FORM of the expired sentence, which is the one this map can
+  // answer: the date is not in the classification, so `describeFailureBody`
+  // swaps in `allowanceExpiredOn` when the session knows it, exactly as it
+  // swaps the two rate-limit sentences on `Retry-After`.
+  'allowance-expired': 'scan.errors.provider.allowanceExpired',
+  'ai-instance-ceiling': 'scan.errors.provider.instanceCeiling',
   // The remaining causes deliberately keep the adapter's own English (see above).
   'invalid-request': undefined,
   transient: undefined,
@@ -1733,10 +1756,27 @@ export function describeFailureBody(
     error?: string;
     /** The server's own `Retry-After`, in seconds, when it sent one. */
     retryAfterSeconds?: number | null;
+    /**
+     * The account's allowance end date, when this device has read one.
+     *
+     * `null` FOR TWO REASONS AND THE SENTENCE IS THE SAME FOR BOTH: an open
+     * instance has no such date, and a session whose account view has not
+     * landed has not read it yet. Neither may print an empty date, so the
+     * dateless sentence is the fallback rather than an interpolated blank.
+     */
+    allowanceEndsAt?: string | null;
   },
   t: Translate,
 ): string | undefined {
   if (params.failureCause === 'rate-limit' && params.provider === 'openrouter') return t(OPENROUTER_RATE_LIMIT_KEY);
+  // THE DATE, WHEN THERE IS ONE. "Your access ended" is not checkable and a
+  // date is, which is the whole reason this refusal is its own cause.
+  if (params.failureCause === 'allowance-expired') {
+    const endsAt = params.allowanceEndsAt;
+    if (endsAt !== null && endsAt !== undefined) {
+      return t('scan.errors.provider.allowanceExpiredOn', { date: new Date(endsAt).toLocaleDateString() });
+    }
+  }
   // A MANAGED 429 IS TWO DIFFERENT SENTENCES, and only the header tells them
   // apart: a burst limit clears within the minute, a spent daily allowance
   // does not clear until tomorrow. Saying "wait a moment" for the second is
@@ -1775,6 +1815,7 @@ export function UploadForm({
   error,
   failureCause,
   retryAfterSeconds,
+  allowanceEndsAt,
   provider,
   usage,
   modelId,
@@ -1798,6 +1839,15 @@ export function UploadForm({
   failureCause?: VisionFailureCause;
   /** The server's `Retry-After` in seconds — tells a burst limit from a spent daily allowance. */
   retryAfterSeconds?: number | null;
+  /**
+   * The account's allowance end date, or `null`.
+   *
+   * A PROP RATHER THAN A HOOK, like everything else on this component: the
+   * container reads the session snapshot and this surface stays renderable by
+   * `renderToStaticMarkup` (see the header). It names the date on the one
+   * refusal that is about a date.
+   */
+  allowanceEndsAt?: string | null;
   /** The provider active for this attempt — phrases a `rate-limit` failure (see below) and keys the failed attempt's pricing lookup; never branches the alert's headline or any other cause. */
   provider?: AiProviderType;
   usage?: ScanTokenUsage;
@@ -2039,7 +2089,7 @@ export function UploadForm({
                       // — showing it as the main body, not a muted afterthought.
                       // `describeFailureBody` additionally swaps in OpenRouter-
                       // specific free-tier copy for a `rate-limit` failure.
-                    : describeFailureBody({ failureCause, provider, error, retryAfterSeconds }, t)
+                    : describeFailureBody({ failureCause, provider, error, retryAfterSeconds, allowanceEndsAt }, t)
                   }
                 </AlertDescription>
               </Alert>
@@ -2225,6 +2275,16 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
   // AND WHETHER THIS DEVICE IS SIGNED IN, which on a managed instance decides
   // between two opposite sentences. See `resolveConnectCardVariant`.
   const session = useSyncSession();
+  // AND WHY, when the answer is "this account has no allowance". Three
+  // different facts wear that one variant, and only one of them is "ask your
+  // administrator" (M212 spec 04). Resolved by the shared rule, so this card,
+  // the composer's notice and the account page cannot disagree.
+  const instance = useServerInstance();
+  const allowanceDoor = resolveAllowanceDoor({
+    memberInvites: instance?.memberInvites ?? false,
+    allowanceExpiresAt: session.account?.allowanceExpiresAt ?? null,
+    now: new Date(),
+  });
   const variant = resolveConnectCardVariant({
     managed: aiComesFromTheInstance,
     presetBaseUrl: instancePreset?.baseUrl ?? null,
@@ -2234,7 +2294,7 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
   // are opposite, so the screen waits rather than picking one and correcting
   // itself a moment later.
   if (variant.kind === 'resuming') return <ScanLoading />;
-  return <ConnectCardView variant={variant} logDate={logDate} />;
+  return <ConnectCardView variant={variant} logDate={logDate} allowanceDoor={allowanceDoor} />;
 }
 
 /**
@@ -2249,9 +2309,19 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
 export function ConnectCardView({
   variant,
   logDate,
+  allowanceDoor,
 }: {
   variant: Exclude<ConnectCardVariant, { kind: 'resuming' }>;
   logDate: string | null;
+  /**
+   * Why the allowance is missing, read only by the `managed-missing` shape.
+   *
+   * REQUIRED, with no default. A default of `{ kind: 'ask-admin' }` would keep
+   * the sentence that names an administrator on the one instance where there is
+   * none, and it would compile, which is how a correctness argument reaches
+   * zero call sites.
+   */
+  allowanceDoor: AllowanceDoor;
 }) {
   const { t } = useTranslation();
   const revalidator = useRevalidator();
@@ -2303,7 +2373,20 @@ export function ConnectCardView({
         {variant.kind === 'managed-missing' && (
           <div className="space-y-1 text-sm text-muted-foreground">
             <p>{t('scan.setup.managedMissing.body')}</p>
-            <p>{t('scan.setup.managedMissing.askAdmin')}</p>
+            {/* THE SECOND SENTENCE IS THE ONE THAT USED TO LIE. It named an
+                administrator on every managed instance, and a consumer
+                instance has none: there the truth is either a date that
+                passed, or nothing more to say than the line above, which
+                already says photo estimates are not switched on for this
+                account. */}
+            {allowanceDoor.kind === 'ask-admin' && <p>{t('scan.setup.managedMissing.askAdmin')}</p>}
+            {allowanceDoor.kind === 'allowance-ended' && (
+              <p>
+                {t('scan.setup.managedMissing.expired', {
+                  date: new Date(allowanceDoor.endedAt).toLocaleDateString(),
+                })}
+              </p>
+            )}
           </div>
         )}
         {/* AND THE OPPOSITE ANSWER, for the same instance with no session open.

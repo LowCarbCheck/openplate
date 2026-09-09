@@ -131,6 +131,47 @@ test('a 5xx is still transient, and a 400 is still the settings bucket', async (
 });
 
 // ---------------------------------------------------------------------------
+// The two M212 refusals
+// ---------------------------------------------------------------------------
+
+test('403 allowance-expired is its own cause, not the one about an allowance nobody gave you', async () => {
+  // `PROTOCOL.md` §5.19 keeps the two codes apart on purpose: "your operator
+  // never gave you AI" and "your time ran out" are different sentences with
+  // different next steps, and folding them together tells somebody whose
+  // trial ended to ask for an allowance they already had.
+  const expired = await classifyVisionHttpFailure(refusal({ status: 403, body: { error: 'allowance-expired' } }));
+  assert.equal(expired.cause, 'allowance-expired');
+  assert.doesNotMatch(expired.message, /API key|AI settings/i);
+  // THE CONTROL, and the defect this branch exists for: the OTHER 403 marker
+  // still classifies as itself, so the two have not been merged.
+  const notAllowed = await classifyVisionHttpFailure(refusal({ status: 403, body: { error: 'ai-not-allowed' } }));
+  assert.equal(notAllowed.cause, 'ai-not-allowed');
+  assert.notEqual(expired.message, notAllowed.message);
+});
+
+test('503 ai-instance-ceiling is read before the 5xx fall-through, and keeps its Retry-After', async () => {
+  // It used to land in `transient`, whose sentence is "try again in a moment"
+  // about a refusal that lasts until the next UTC day, and the header was
+  // thrown away on the way.
+  const ceiling = await classifyVisionHttpFailure(
+    refusal({ status: 503, body: { error: 'ai-instance-ceiling' }, retryAfter: '43200' }),
+  );
+  assert.equal(ceiling.cause, 'ai-instance-ceiling');
+  assert.equal(ceiling.retryAfterSeconds, 43_200);
+  assert.doesNotMatch(ceiling.message, /moment/i, 'the capacity comes back tomorrow, not in a moment');
+});
+
+test('a plain 503 with no marker is still transient, which is the control on the branch above', async () => {
+  // Without this, a branch that classified every 503 as the ceiling would pass
+  // the test above and tell everybody with a restarting server to come back
+  // tomorrow.
+  const plain = await classifyVisionHttpFailure(refusal({ status: 503 }));
+  assert.equal(plain.cause, 'transient');
+  const other = await classifyVisionHttpFailure(refusal({ status: 500, body: { error: 'ai-instance-ceiling' } }));
+  assert.equal(other.cause, 'transient', 'the marker only means the ceiling on the status that carries it');
+});
+
+// ---------------------------------------------------------------------------
 // The sentence a person reads
 // ---------------------------------------------------------------------------
 
@@ -151,6 +192,39 @@ test('every managed failure has a translated sentence in BOTH locales', () => {
     assert.ok(german !== undefined && !german.includes('scan.errors'), `${cause} is missing in German`);
     assert.notEqual(german, english);
   }
+});
+
+test('the two M212 refusals each have their own sentence, in both locales', () => {
+  const expected = [
+    { cause: 'allowance-expired', banned: /moment/i },
+    { cause: 'ai-instance-ceiling', banned: /API key|AI settings/i },
+  ] as const satisfies readonly { cause: VisionFailureCause; banned: RegExp }[];
+  for (const { cause, banned } of expected) {
+    const english = describeFailureBody({ failureCause: cause }, t);
+    assert.ok(english !== undefined, `${cause} has no body`);
+    assert.doesNotMatch(english, banned);
+    const german = describeFailureBody({ failureCause: cause }, tDe);
+    assert.ok(german !== undefined && !german.includes('scan.errors'), `${cause} is missing in German`);
+    assert.notEqual(german, english);
+  }
+  // AND THEY ARE NOT ONE SENTENCE. An operator out of capacity and a trial
+  // that ended are the two refusals a person could most easily be told the
+  // wrong one about, and only the second is about them.
+  assert.notEqual(
+    describeFailureBody({ failureCause: 'allowance-expired' }, t),
+    describeFailureBody({ failureCause: 'ai-instance-ceiling' }, t),
+  );
+});
+
+test('the expired sentence names the date when the session knows it, and never a blank', () => {
+  const dated = describeFailureBody({ failureCause: 'allowance-expired', allowanceEndsAt: '2026-09-01T00:00:00.000Z' }, t);
+  assert.match(String(dated), new RegExp(new Date('2026-09-01T00:00:00.000Z').toLocaleDateString()));
+  // THE CONTROL. With no date read yet, the dateless sentence is used rather
+  // than an interpolated empty string, and the two really are different.
+  const undated = describeFailureBody({ failureCause: 'allowance-expired' }, t);
+  assert.notEqual(dated, undated);
+  assert.doesNotMatch(String(undated), /\{\{date\}\}/);
+  assert.doesNotMatch(String(undated), /ended on\s*\./);
 });
 
 test('a 429 under a minute says "in a minute", and one over it says "tomorrow"', () => {
@@ -186,6 +260,8 @@ test('every cause has a headline, in both locales', () => {
     'photo-too-large',
     'ai-not-allowed',
     'account-suspended',
+    'allowance-expired',
+    'ai-instance-ceiling',
   ] as const;
   for (const cause of causes) {
     for (const [locale, translate] of [

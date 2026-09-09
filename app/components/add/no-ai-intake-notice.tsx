@@ -22,6 +22,14 @@
  * before either one renders. The reasoning, and the lock exception that was
  * refused instead, are in `AiIntakeDoor`.
  *
+ * ── THE MANAGED BRANCH IS THREE SENTENCES NOW (M212 spec 04) ─────────────
+ *
+ * "Ask your administrator" is true on an instance an organization runs and
+ * false on a consumer instance, which has no administrator and whose real
+ * reason is a date that passed. The three answers are told apart by
+ * `resolveAllowanceDoor`, one module, so this notice, `/scan`'s connect card
+ * and the account page cannot say three different things about one account.
+ *
  * The BYOK copy is a PROP because it is the one branch whose wording is the
  * screen's own: `/add` promises a whole meal in one sentence, `/describe`
  * explains why the box is dead, and each returns to its own screen after the
@@ -47,11 +55,24 @@ const LINK_CLASS = 'text-primary underline-offset-4 hover:underline';
 export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }: NoAiIntakeNoticeProps) {
   const { t } = useTranslation();
 
-  // NO ALLOWANCE, which is what a new account looks like until an
-  // administrator raises it. There is no link because there is no page that
-  // fixes it.
-  if (door === 'ask-admin') {
+  // NO ALLOWANCE, in whichever of the three ways is true of this account. None
+  // of them carries a link, because no page fixes any of them: on an
+  // organization's instance a person does, and on a consumer instance the
+  // sentence stops at what is true (M212 spec 04).
+  if (door.kind === 'ask-admin') {
     return <p className={NOTICE_CLASS}>{t('aiIntake.noAllowance')}</p>;
+  }
+  // THE DATE, not "recently" and not "in 3 days": the instant is rendered in
+  // the reader's own locale, so one sentence is right in every language.
+  if (door.kind === 'allowance-ended') {
+    return (
+      <p className={NOTICE_CLASS}>
+        {t('aiIntake.allowanceEnded', { date: new Date(door.endedAt).toLocaleDateString() })}
+      </p>
+    );
+  }
+  if (door.kind === 'not-switched-on') {
+    return <p className={NOTICE_CLASS}>{t('aiIntake.notSwitchedOn')}</p>;
   }
 
   return (

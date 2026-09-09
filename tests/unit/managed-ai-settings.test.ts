@@ -31,6 +31,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   MANAGED_AI_API_PREFIX,
+  resolveAllowanceDoor,
   resolveEffectiveAiSettings,
   type ManagedInstanceFacts,
 } from '../../app/lib/ai/managed-ai-settings';
@@ -38,6 +39,9 @@ import type { LocalAiSettings } from '../../app/lib/local-store/ai-settings';
 import type { SyncSessionSnapshot } from '../../app/lib/sync/sync-session';
 
 const SERVER_URL = 'https://sync.example.test';
+
+/** One fixed instant, so a boundary case is a boundary case and not a race with the clock. */
+const NOW = new Date('2026-09-09T10:00:00.000Z');
 
 const MANAGED: ManagedInstanceFacts = { managed: true, syncServerUrl: SERVER_URL, model: 'fake/vision-1' };
 const OPEN: ManagedInstanceFacts = { managed: false, syncServerUrl: null, model: null };
@@ -51,7 +55,7 @@ const SIGNED_OUT: SyncSessionSnapshot = {
   error: null,
 };
 
-function signedIn(overrides: { dailyAiLimit?: number } = {}): SyncSessionSnapshot {
+function signedIn(overrides: { dailyAiLimit?: number; allowanceExpiresAt?: string } = {}): SyncSessionSnapshot {
   return {
     ...SIGNED_OUT,
     account: {
@@ -61,6 +65,8 @@ function signedIn(overrides: { dailyAiLimit?: number } = {}): SyncSessionSnapsho
       role: 'member',
       dailyAiLimit: overrides.dailyAiLimit ?? 200,
       aiUsedToday: 3,
+      allowanceExpiresAt: overrides.allowanceExpiresAt ?? null,
+      invitesLeft: null,
     },
   };
 }
@@ -195,4 +201,90 @@ test('the managed settings carry no key material for anything to persist', () =>
   // credential a screen could put in React state.
   assert.equal('apiKey' in effective, false);
   assert.equal(JSON.stringify(effective).includes('Bearer'), false);
+});
+
+// ---------------------------------------------------------------------------
+// The allowance door (M212 spec 04)
+// ---------------------------------------------------------------------------
+//
+// WHY IT LIVES BESIDE THE RULE ABOVE. Both answer "can this person scan", from
+// the same two objects, and the pair only makes sense read together: the rule
+// deliberately IGNORES the end date, so this is the function that tells
+// somebody about it before they press the shutter.
+
+test('an allowance with no end date is not an ended allowance', () => {
+  // THE BRANCH EVERY READER GETS WRONG. `null` is an account with no end date,
+  // which is what every self-hosted instance keeps, and it is also the moment
+  // after a reload before the account view has been read. Neither may draw an
+  // ended banner, so neither may be `allowance-ended`.
+  for (const memberInvites of [true, false]) {
+    const door = resolveAllowanceDoor({ memberInvites, allowanceExpiresAt: null, now: NOW });
+    assert.notEqual(door.kind, 'allowance-ended');
+  }
+});
+
+test('a date in the future is not an ended allowance either, which is the control', () => {
+  // Without this the assertion above would pass against a function that never
+  // answered `allowance-ended` at all.
+  const future = resolveAllowanceDoor({
+    memberInvites: true,
+    allowanceExpiresAt: '2026-10-01T00:00:00.000Z',
+    now: NOW,
+  });
+  assert.deepEqual(future, { kind: 'not-switched-on' });
+
+  const past = resolveAllowanceDoor({
+    memberInvites: true,
+    allowanceExpiresAt: '2026-09-01T00:00:00.000Z',
+    now: NOW,
+  });
+  assert.deepEqual(past, { kind: 'allowance-ended', endedAt: '2026-09-01T00:00:00.000Z' });
+});
+
+test('the boundary instant refuses rather than allows, as the proxy does', () => {
+  // `PROTOCOL.md` §5.19 compares as "not after": the instant itself is
+  // expired. A client that read it the other way would show a working shutter
+  // for the one second the service is already refusing.
+  const exact = resolveAllowanceDoor({
+    memberInvites: true,
+    allowanceExpiresAt: NOW.toISOString(),
+    now: NOW,
+  });
+  assert.deepEqual(exact, { kind: 'allowance-ended', endedAt: NOW.toISOString() });
+});
+
+test('an unparseable date is read as no date, never as expired', () => {
+  // Hostile input: this value comes off the wire. Refusing somebody because
+  // their server sent nonsense would be the worst reading of it.
+  const door = resolveAllowanceDoor({ memberInvites: false, allowanceExpiresAt: 'yesterday', now: NOW });
+  assert.deepEqual(door, { kind: 'ask-admin' });
+});
+
+test('an instance that hands out invitations never sends anybody to an administrator', () => {
+  assert.deepEqual(resolveAllowanceDoor({ memberInvites: true, allowanceExpiresAt: null, now: NOW }), {
+    kind: 'not-switched-on',
+  });
+  // THE CONTROL. An organization's instance still names the administrator,
+  // who is a real person there and the only one who can switch it on.
+  assert.deepEqual(resolveAllowanceDoor({ memberInvites: false, allowanceExpiresAt: null, now: NOW }), {
+    kind: 'ask-admin',
+  });
+});
+
+test('the rule deliberately does not gate on the expiry, and says so in its own file', () => {
+  // THE DECISION, ASSERTED (M212 spec 04). The protocol says a client may
+  // render the date and must not authorize on it, so an expired account still
+  // resolves working settings and is refused by the proxy, which is where the
+  // rule lives. A device with a fast clock would otherwise lose a working
+  // allowance for a day with nothing to show its owner.
+  const expired = resolveEffectiveAiSettings({
+    instance: MANAGED,
+    session: signedIn({ allowanceExpiresAt: '2020-01-01T00:00:00.000Z' }),
+    storedSettings: null,
+  });
+  assert.ok(expired !== null, 'the client must not refuse a scan on its own clock');
+  assert.equal(expired.source, 'managed');
+  // And the reason is written where the next reader will look for it.
+  const source = readFileSync(new URL('../../app/lib/ai/managed-ai-settings.ts', import.meta.url), 'utf8');
+  assert.match(source, /EXPIRY IS DELIBERATELY NOT READ HERE/);
 });

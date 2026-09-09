@@ -297,6 +297,7 @@ const INSTANCE_WITHOUT_REPORTS: InstanceDescriptor = {
   name: 'openplate',
   language: 'en',
   mail: true,
+  memberInvites: false,
   ai: { model: 'a-model' },
 };
 

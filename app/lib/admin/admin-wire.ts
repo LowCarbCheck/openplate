@@ -35,7 +35,28 @@ export const accountViewSchema = z.object({
   role: accountRoleSchema,
   dailyAiLimit: z.number().int(),
   aiUsedToday: z.number().int(),
+  /**
+   * When this account's AI allowance ends, or `null` for no end at all.
+   *
+   * `.catch(null)` RATHER THAN A HARD FAILURE, which is the opposite of the
+   * choice `aiUsedToday` above makes, and the difference is what a wrong answer
+   * would say. A missing count renders `undefined / 200` and reads as "nobody
+   * scanned today", so it must fail at the boundary. A missing end date has a
+   * true reading already: `null` IS "no end date", which is what a service
+   * built before this field means, so degrading to it states a fact rather than
+   * inventing one.
+   */
+  allowanceExpiresAt: z.string().nullable().catch(null),
   suspendedAt: z.string().nullable(),
+  /**
+   * How many invitations this account may still send, or `null` when the cap is
+   * not about it.
+   *
+   * `null`, NEVER `0`, for an administrator and for an instance with the route
+   * switched off (`PROTOCOL.md` §5.15). `.catch(null)` for the same reason as
+   * the end date above: an older service means exactly "there is no cap here".
+   */
+  invitesLeft: z.number().int().nullable().catch(null),
   createdAt: z.string(),
   /**
    * When this person last did something on purpose, or `null` if they never

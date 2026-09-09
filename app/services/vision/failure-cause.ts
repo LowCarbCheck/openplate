@@ -81,7 +81,30 @@ export type VisionFailureCause =
    * `403 {"error":"account-suspended"}` — an administrator suspended this
    * account, and this is the same refusal every other authenticated call gets.
    */
-  | 'account-suspended';
+  | 'account-suspended'
+  /**
+   * `403 {"error":"allowance-expired"}`, the account's AI allowance ended on
+   * a date that has passed (`PROTOCOL.md` §5.19).
+   *
+   * SEPARATE FROM `ai-not-allowed`, and the protocol says why: "your operator
+   * never gave you AI" and "your time ran out" are different sentences with
+   * different next steps, and folding them together tells somebody whose trial
+   * ended to ask for an allowance they already had. Nothing is spent: the
+   * refusal happens before the reservation, so no usage row is written.
+   */
+  | 'allowance-expired'
+  /**
+   * `503 {"error":"ai-instance-ceiling"}`, the whole instance has spent its
+   * daily ceiling, and every account is refused until the next UTC day.
+   *
+   * NOT `transient`, WHICH IS WHERE IT USED TO LAND. Every status at or above
+   * 500 fell through to that bucket, whose message is "try again in a moment"
+   * about a thing that will refuse for the rest of the day, and it dropped the
+   * `Retry-After` the service sends. It is also not about the person reading
+   * it: their own allowance may be untouched, and the operator is the one out
+   * of capacity.
+   */
+  | 'ai-instance-ceiling';
 
 /** Thrown by a vision adapter with a machine-readable `failureCause` alongside the display `message`. */
 export class VisionProviderFailure extends VisionProviderError {
@@ -181,6 +204,10 @@ const RECONSENT_REQUIRED_CODE = 'reconsent_required';
  */
 const AI_NOT_ALLOWED_CODE = 'ai-not-allowed';
 const ACCOUNT_SUSPENDED_CODE = 'account-suspended';
+const ALLOWANCE_EXPIRED_CODE = 'allowance-expired';
+
+/** The marker on the instance-wide `503`, see `VisionFailureCause`. */
+const AI_INSTANCE_CEILING_CODE = 'ai-instance-ceiling';
 
 /**
  * The code on a `403` body, read ONCE.
@@ -206,16 +233,25 @@ const MODEL_NOT_FOUND_MESSAGE =
 const PHOTO_TOO_LARGE_MESSAGE = 'The photo is too large for this server. Try a smaller one.';
 const AI_NOT_ALLOWED_MESSAGE = 'Photo estimates are not switched on for your account. Ask your administrator.';
 const ACCOUNT_SUSPENDED_MESSAGE = 'Your account is suspended. Ask your administrator.';
+// Neither of these names a date or a person. This module has no `t` and no
+// account, so the DATE is added by the screen, which has both; the sentence
+// here is the true one that needs neither (`scan.tsx`, `describeFailureBody`).
+const ALLOWANCE_EXPIRED_MESSAGE = 'Your allowance for photo estimates has ended. Everything else keeps working.';
+const AI_INSTANCE_CEILING_MESSAGE =
+  'This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.';
 
 /** `413`, as its own status rather than a member of the unmatched-4xx bucket. */
 const HTTP_PAYLOAD_TOO_LARGE = 413;
 
 const HTTP_SERVER_ERROR_START = 500;
 
+/** `503`, read for its body BEFORE the 5xx fall-through: the ceiling wears this status. */
+const HTTP_SERVICE_UNAVAILABLE = 503;
+
 export interface HttpFailureClassification {
   cause: VisionFailureCause;
   message: string;
-  /** The server's `Retry-After` in seconds, when it sent one. Only ever set on a `rate-limit`. */
+  /** The server's `Retry-After` in seconds, when it sent one. Set on a `rate-limit` and on the instance ceiling. */
   retryAfterSeconds?: number | null;
 }
 
@@ -254,6 +290,7 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
     if (code === RECONSENT_REQUIRED_CODE) return { cause: 'reconsent-required', message: RECONSENT_MESSAGE };
     if (code === ACCOUNT_SUSPENDED_CODE) return { cause: 'account-suspended', message: ACCOUNT_SUSPENDED_MESSAGE };
     if (code === AI_NOT_ALLOWED_CODE) return { cause: 'ai-not-allowed', message: AI_NOT_ALLOWED_MESSAGE };
+    if (code === ALLOWANCE_EXPIRED_CODE) return { cause: 'allowance-expired', message: ALLOWANCE_EXPIRED_MESSAGE };
     // A provider refusing a pasted key: the open instance's ordinary case.
     return { cause: 'auth', message: AUTH_MESSAGE };
   }
@@ -276,6 +313,25 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
   }
   if (response.status === HTTP_PAYLOAD_TOO_LARGE) {
     return { cause: 'photo-too-large', message: PHOTO_TOO_LARGE_MESSAGE };
+  }
+  // BEFORE THE 5xx FALL-THROUGH, and that order is the whole fix. A managed
+  // instance out of its daily capacity answers `503 ai-instance-ceiling` with a
+  // `Retry-After` to the next UTC midnight; read after the fall-through it
+  // became "the provider is temporarily unavailable, try again in a moment"
+  // about a refusal that lasts the rest of the day, and the header was thrown
+  // away. A 503 with no marker, or any other 5xx, is still transient below.
+  if (response.status === HTTP_SERVICE_UNAVAILABLE) {
+    const code = (await readErrorBody(response))?.error?.code;
+    if (code === AI_INSTANCE_CEILING_CODE) {
+      return {
+        cause: 'ai-instance-ceiling',
+        message: AI_INSTANCE_CEILING_MESSAGE,
+        // Carried exactly as the 429 branch carries it, so a screen can say
+        // "tomorrow" from the service's own advice rather than from a guess.
+        retryAfterSeconds: readRetryAfterSeconds(response),
+      };
+    }
+    return { cause: 'transient', message: SERVER_UNAVAILABLE_MESSAGE };
   }
   if (response.status >= HTTP_SERVER_ERROR_START) {
     return { cause: 'transient', message: SERVER_UNAVAILABLE_MESSAGE };

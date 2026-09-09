@@ -44,7 +44,9 @@ const ACCOUNT: AccountViewWire = {
   role: 'member',
   dailyAiLimit: 200,
   aiUsedToday: 3,
+  allowanceExpiresAt: null,
   suspendedAt: null,
+  invitesLeft: 5,
   createdAt: '2026-09-04T10:00:00.000Z',
 };
 

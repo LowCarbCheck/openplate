@@ -32,7 +32,7 @@ import type { FormEvent } from 'react';
 import { useLoaderData } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
-import { Loader2, LogOut, RefreshCw, Trash2, UserRound } from 'lucide-react';
+import { Loader2, LogOut, MailPlus, RefreshCw, Trash2, UserRound } from 'lucide-react';
 
 import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
@@ -58,6 +58,9 @@ import {
 import { getFormProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useServerInstance } from '#app/hooks/use-server-instance';
+import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
+import { canSendMemberInvites } from '#app/lib/sync/member-invites';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackAccountDeleted, trackPasswordChanged } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
@@ -67,6 +70,7 @@ import {
   changeSyncPassphrase,
   deleteSyncAccount,
   refreshSyncAccount,
+  sendMemberInvite,
   setSyncDisplayName,
   syncNow,
 } from '#app/lib/sync/sync-actions';
@@ -100,6 +104,19 @@ export default function SettingsAccount() {
   // somebody what an administrator sees must be gated on the seeing.
   const { aiComesFromTheInstance, operatorSeesActivity } = useInstancePolicy();
   const account = session.account;
+  // WHAT THIS INSTANCE OFFERS, from the instance itself rather than from the
+  // mode. `memberInvites` is a per-deployment fact, not a consequence of being
+  // managed, so it cannot be an `InstancePolicy` question: two managed
+  // instances answer it differently. `false` while the handshake is in flight,
+  // which draws no card and keeps the sentence that names an administrator.
+  const memberInvites = useServerInstance()?.memberInvites ?? false;
+  // WHY the allowance is missing, in the words that are true here, resolved by
+  // the same rule `/scan` and the composer's notice ask (M212 spec 04).
+  const allowanceDoor = resolveAllowanceDoor({
+    memberInvites,
+    allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+    now: new Date(),
+  });
 
   // ON OPEN, ONCE. The allowance and the count move on the SERVER while a tab
   // sits here, and this page is the one that shows them; the sign-in snapshot
@@ -132,7 +149,20 @@ export default function SettingsAccount() {
             }
           />
           {aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
-            <AllowanceCard dailyLimit={account.dailyAiLimit} usedToday={account.aiUsedToday} />
+            <AllowanceCard
+              dailyLimit={account.dailyAiLimit}
+              usedToday={account.aiUsedToday}
+              expiresAt={account.allowanceExpiresAt}
+              door={allowanceDoor}
+            />
+          )}
+          {/* TWO GATES, AND BOTH ARE THE SERVICE'S ANSWER (M212 spec 04). The
+              instance says whether the route exists at all, and the account
+              says whether this person has any left; `null` is "the cap is not
+              about you", which is an administrator and an instance with the
+              feature off, and it is also the unread moment after a reload. */}
+          {canSendMemberInvites({ memberInvites, invitesLeft: account.invitesLeft }) && (
+            <InviteCard invitesLeft={account.invitesLeft ?? 0} />
           )}
           <Card>
             <CardHeader>
@@ -273,7 +303,25 @@ function IdentityCard({
  * nobody can act on would be worse than showing nothing if it were not for the
  * one question it answers: "why did my scan stop working today".
  */
-function AllowanceCard({ dailyLimit, usedToday }: { dailyLimit: number; usedToday: number }) {
+function AllowanceCard({
+  dailyLimit,
+  usedToday,
+  expiresAt,
+  door,
+}: {
+  dailyLimit: number;
+  usedToday: number;
+  /**
+   * When the allowance ends, or `null`.
+   *
+   * `null` IS NOT A PASSED DATE. It is an allowance with no end at all, which
+   * is what every self-hosted instance keeps, and it is also the moment before
+   * the account view has been read. Neither may draw an ended line.
+   */
+  expiresAt: string | null;
+  /** Why the allowance is missing, when it is. See `resolveAllowanceDoor`. */
+  door: AllowanceDoor;
+}) {
   const { t } = useTranslation();
   return (
     <Card>
@@ -284,9 +332,111 @@ function AllowanceCard({ dailyLimit, usedToday }: { dailyLimit: number; usedToda
             t('account.allowance.none')
           : t('account.allowance.body', { used: usedToday, limit: dailyLimit })}
         </CardDescription>
+        {/* THE DATE, BESIDE THE NUMBER IT BOUNDS. A DATE and not a phrase: "in
+            3 days" is a sentence baked in one language and computed against
+            the reader's clock, and this is the one fact somebody checks when a
+            scan stops working. The ended form is chosen by the door, so this
+            line and the sentence below cannot disagree about the same date. */}
+        {expiresAt !== null && (
+          <CardDescription>
+            {door.kind === 'allowance-ended' ?
+              t('account.allowance.expired', { date: new Date(expiresAt).toLocaleDateString() })
+            : t('account.allowance.expires', { date: new Date(expiresAt).toLocaleDateString() })}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
-        <p className="text-xs text-muted-foreground">{t('account.allowance.askAdmin')}</p>
+        {/* THE SENTENCE THAT USED TO NAME A PERSON WHO MAY NOT EXIST. On an
+            instance whose accounts invite each other there is no
+            administrator, so the card stops at the description above, which
+            already says photo estimates are not switched on for this account.
+            The ended case has something true left to say, and it is the
+            date. */}
+        {door.kind === 'ask-admin' && <p className="text-xs text-muted-foreground">{t('account.allowance.askAdmin')}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * INVITE SOMEBODY, on an instance that hands its accounts invitations.
+ *
+ * ── The one sentence, whatever happened ──────────────────────────────────
+ *
+ * The service answers one fixed `202` with an empty body for a new address,
+ * for an address that already holds an invitation and for an address that
+ * already holds an account (`PROTOCOL.md` §5.21). That is deliberate: a person
+ * who types a colleague's address must not learn from this screen that the
+ * colleague is already here. So there is ONE confirmation, it is neutral, and
+ * it says so, and a refusal shows the same neutral failure sentence rather
+ * than the reason.
+ *
+ * `refreshSyncAccount` runs after a submit because the count moved on the
+ * server, and this screen is the only one that draws it.
+ */
+function InviteCard({ invitesLeft }: { invitesLeft: number }) {
+  const { t } = useTranslation();
+  const [email, setEmail] = useState('');
+  const [isBusy, setIsBusy] = useState(false);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    setIsBusy(true);
+    setMessage(null);
+    try {
+      await sendMemberInvite({ email: email.trim() });
+      setMessage({ kind: 'ok', text: t('account.invites.sent') });
+      setEmail('');
+    } catch {
+      // NOT `describeErrorForUser`, and that is the point rather than laziness:
+      // a transport failure and a refusal from the cap are one sentence here,
+      // because the refused ones are the cases whose reason would say
+      // something about the address.
+      setMessage({ kind: 'error', text: t('account.invites.failed') });
+    } finally {
+      setIsBusy(false);
+      await refreshSyncAccount();
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MailPlus className="h-5 w-5 text-primary" aria-hidden="true" /> {t('account.invites.title')}
+        </CardTitle>
+        <CardDescription>{t('account.invites.body')}</CardDescription>
+        <CardDescription>
+          {invitesLeft === 0 ? t('account.invites.none') : t('account.invites.left', { left: invitesLeft })}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
+          <div className="space-y-2">
+            <Label htmlFor="account-invite-email">{t('account.invites.label')}</Label>
+            <Input
+              id="account-invite-email"
+              type="email"
+              autoComplete="off"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="h-11"
+            />
+          </div>
+          {message !== null && (
+            <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
+              {message.text}
+            </p>
+          )}
+          {/* DISABLED AT ZERO, and still refused by the service if a client
+              believed otherwise: `invitesLeft` is drawn, never trusted. */}
+          <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isBusy || invitesLeft === 0}>
+            {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {t('account.invites.send')}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );

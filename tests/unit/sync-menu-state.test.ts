@@ -22,6 +22,8 @@ function session(overrides: Partial<SyncSessionSnapshot> = {}): SyncSessionSnaps
       role: 'member',
       dailyAiLimit: 0,
       aiUsedToday: 0,
+      allowanceExpiresAt: null,
+      invitesLeft: null,
     },
     isResuming: false,
     phase: 'idle',

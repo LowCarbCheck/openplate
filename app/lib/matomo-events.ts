@@ -222,6 +222,8 @@ export type ScanFailureReason =
   | 'photo-too-large'
   | 'ai-not-allowed'
   | 'account-suspended'
+  | 'allowance-expired'
+  | 'ai-instance-ceiling'
   // Not provider causes: the photo never reached a provider at all.
   | 'no-provider'
   | 'unreadable-image'

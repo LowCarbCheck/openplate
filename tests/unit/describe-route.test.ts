@@ -94,7 +94,7 @@ const noop = () => undefined;
 function renderComposer({
   text = '',
   aiConnection = 'connected',
-  door = 'byok',
+  door = { kind: 'byok' },
   speakArmed = false,
 }: {
   text?: string;
@@ -277,7 +277,7 @@ describe('with no AI provider on this device', () => {
 
 describe('on a managed instance, where nobody brings a provider', () => {
   it('names the administrator, because no page raises an allowance', () => {
-    const markup = renderComposer({ aiConnection: 'absent', door: 'ask-admin' });
+    const markup = renderComposer({ aiConnection: 'absent', door: { kind: 'ask-admin' } });
     assert.ok(markup.includes(MANAGED_COPY.noAllowance), 'the account with no allowance is told nothing');
     // THE 0.20.0 BLOCKER ITSELF. `/settings/ai` redirects to `/settings` on a
     // managed instance, and `/settings` has no AI row: this link was a dead end.
@@ -292,19 +292,19 @@ describe('on a managed instance, where nobody brings a provider', () => {
   // before this component renders. `describe-signed-out-door.test.ts` holds
   // the lock half of that decision; this is the screen half.
   it('offers no way back into a session, in any state the notice has', () => {
-    for (const door of ['byok', 'ask-admin'] as const) {
+    for (const door of [{ kind: 'byok' }, { kind: 'ask-admin' }] as const) {
       for (const aiConnection of ['unknown', 'absent', 'connected'] as const) {
         const markup = renderComposer({ aiConnection, door });
         assert.doesNotMatch(
           markup,
           /href="\/sign-in"/,
-          `the composer offers a session door for ${door}/${aiConnection}`,
+          `the composer offers a session door for ${door.kind}/${aiConnection}`,
         );
       }
     }
     // THE CONTROL. The same render DOES carry the two links it is supposed to,
     // so the check above is reading real markup rather than an empty string.
-    const byok = renderComposer({ aiConnection: 'absent', door: 'byok' });
+    const byok = renderComposer({ aiConnection: 'absent', door: { kind: 'byok' } });
     assert.match(byok, /href="\/settings\/ai\?next=describe"/);
     assert.match(byok, /href="\/add"/);
   });
@@ -312,14 +312,14 @@ describe('on a managed instance, where nobody brings a provider', () => {
   it('still offers the provider settings on an open instance', () => {
     // THE CONTROL for the managed case above: without it, a notice that had
     // simply dropped the BYOK branch would pass it and break every self-hoster.
-    const markup = renderComposer({ aiConnection: 'absent', door: 'byok' });
+    const markup = renderComposer({ aiConnection: 'absent', door: { kind: 'byok' } });
     assert.match(markup, /href="\/settings\/ai\?next=describe"/);
     assert.ok(markup.includes(COPY.needsProvider));
     assert.ok(!markup.includes(MANAGED_COPY.noAllowance), 'an open instance is sent to an administrator');
   });
 
   it('says none of it while the AI answer is still unknown', () => {
-    for (const door of ['byok', 'ask-admin'] as const) {
+    for (const door of [{ kind: 'byok' }, { kind: 'ask-admin' }] as const) {
       const markup = renderComposer({ aiConnection: 'unknown', door });
       assert.ok(!markup.includes(MANAGED_COPY.noAllowance));
       assert.ok(!markup.includes(COPY.needsProvider));

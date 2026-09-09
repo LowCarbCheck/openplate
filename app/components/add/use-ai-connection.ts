@@ -34,7 +34,9 @@ import { getLocalAiSettings, type LocalAiSettings } from '#app/lib/local-store';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useSyncSession } from '#app/components/sync-status';
-import type { EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
+import { resolveAllowanceDoor } from '#app/lib/ai/managed-ai-settings';
+import type { AllowanceDoor, EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
+import { useServerInstance } from '#app/hooks/use-server-instance';
 
 export type AiConnection = 'unknown' | 'connected' | 'absent';
 
@@ -44,11 +46,14 @@ export type AiConnection = 'unknown' | 'connected' | 'absent';
  *
  * - `byok`: an open instance, where the answer is the person's own provider
  *   and `/settings/ai` is the page that takes it.
- * - `ask-admin`: a managed instance, where nobody brings a provider and the
- *   only thing that can be missing is the allowance. That is the default
- *   standing of a new account rather than an error, and there is no link for
- *   it: the door is a person, not a URL. `/scan`'s `managed-missing` card says
- *   exactly this.
+ * - the three ALLOWANCE doors, on a managed instance, where nobody brings a
+ *   provider and the only thing that can be missing is the allowance. Which of
+ *   the three is a fact about the account and the instance rather than about
+ *   this screen, so it is resolved by {@link resolveAllowanceDoor} and reused
+ *   verbatim by `/scan`'s `managed-missing` card and by the account page. None
+ *   of them carries a link, because none of them is fixed by a page: the door
+ *   is a person on an organization's instance, and on a consumer instance
+ *   there is nobody to send anybody to (M212 spec 04).
  *
  * ── THERE IS NO SIGNED-OUT DOOR ANY MORE (M204 spec 01) ──────────────────
  *
@@ -71,7 +76,7 @@ export type AiConnection = 'unknown' | 'connected' | 'absent';
  * device the last person's rows, which is the one thing the lock exists to
  * stop.
  */
-export type AiIntakeDoor = 'byok' | 'ask-admin';
+export type AiIntakeDoor = { kind: 'byok' } | AllowanceDoor;
 
 /** What a screen needs to decide whether to offer an AI intake, and what to say when it cannot. */
 export interface AiIntake {
@@ -120,14 +125,32 @@ export function resolveAiConnection({
  * notice, because the lock has already sent it to `/welcome`. See
  * {@link AiIntakeDoor}.
  */
-export function resolveAiIntakeDoor({ aiComesFromTheInstance }: { aiComesFromTheInstance: boolean }): AiIntakeDoor {
-  return aiComesFromTheInstance ? 'ask-admin' : 'byok';
+export function resolveAiIntakeDoor({
+  aiComesFromTheInstance,
+  allowance,
+}: {
+  aiComesFromTheInstance: boolean;
+  /**
+   * The account and instance facts the three managed doors are told apart by.
+   *
+   * REQUIRED, with no default, and that is deliberate. A default of "no
+   * invitations, no end date" would compile at every call site and answer
+   * `ask-admin` for ever on the one instance where nobody can be asked, which
+   * is a correctness argument threaded to nowhere.
+   */
+  allowance: { memberInvites: boolean; allowanceExpiresAt: string | null; now: Date };
+}): AiIntakeDoor {
+  if (!aiComesFromTheInstance) return { kind: 'byok' };
+  return resolveAllowanceDoor(allowance);
 }
 
 /** Whether this device may run an AI intake right now, and where to send a person who may not. */
 export function useAiIntake(): AiIntake {
   const { aiComesFromTheInstance } = useInstancePolicy();
   const session = useSyncSession();
+  // ONE CACHED `/health` READ FOR THE WHOLE TAB (`use-server-instance.ts`), so
+  // asking it here costs nothing on a screen where something else already has.
+  const instance = useServerInstance();
   const [deviceRow, setDeviceRow] = useState<LocalAiSettings | null>(null);
   const [hasReadDeviceRow, setHasReadDeviceRow] = useState(false);
 
@@ -158,7 +181,17 @@ export function useAiIntake(): AiIntake {
       hasReadDeviceRow,
       effectiveSettings,
     }),
-    door: resolveAiIntakeDoor({ aiComesFromTheInstance }),
+    door: resolveAiIntakeDoor({
+      aiComesFromTheInstance,
+      allowance: {
+        // The instance's own answer, never a guess: an unreachable or older
+        // service reads `false`, which keeps the sentence that names an
+        // administrator rather than inventing an invite card.
+        memberInvites: instance?.memberInvites ?? false,
+        allowanceExpiresAt: session.account?.allowanceExpiresAt ?? null,
+        now: new Date(),
+      },
+    }),
   };
 }
 

@@ -1750,7 +1750,10 @@
         "aiNotAllowed": "AI estimates are not switched on for your account. Ask your administrator.",
         "accountSuspended": "Your account is suspended. Ask your administrator.",
         "rateLimitMinute": "That was a few requests in quick succession. Try again in a minute.",
-        "allowanceSpent": "You have used today's AI estimates. Try again tomorrow."
+        "allowanceSpent": "You have used today's AI estimates. Try again tomorrow.",
+        "allowanceExpired": "Your allowance for photo estimates has ended. Everything else in openplate keeps working.",
+        "allowanceExpiredOn": "Your allowance for photo estimates ended on {{date}}. Everything else in openplate keeps working.",
+        "instanceCeiling": "This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account."
       },
       "readPhoto": "Failed to read that photo. Try another.",
       "titles": {
@@ -1764,7 +1767,9 @@
         "transient": "The provider had trouble responding",
         "photoTooLarge": "That photo is too big",
         "aiNotAllowed": "AI estimates are off",
-        "accountSuspended": "Your account is suspended"
+        "accountSuspended": "Your account is suspended",
+        "allowanceExpired": "Your photo estimates have ended",
+        "instanceCeiling": "This instance is out of capacity today"
       },
       "text": {
         "empty": "Write what you ate first.",
@@ -1874,7 +1879,8 @@
       "title": "Snap a photo, skip the typing",
       "managedMissing": {
         "body": "Photo estimates are not switched on for this account.",
-        "askAdmin": "Ask your administrator to switch them on. You can add food without a photo in the meantime."
+        "askAdmin": "Ask your administrator to switch them on. You can add food without a photo in the meantime.",
+        "expired": "Photo estimates for this account ended on {{date}}. You can still add food without a photo."
       },
       "managedSignedOut": {
         "body": "You are signed out on this device, so photo estimates are off. Sign in again to use them.",
@@ -2591,7 +2597,9 @@
       "body": "{{used}} of {{limit}} used today.",
       "none": "Photo estimates are not switched on for this account.",
       "askAdmin": "Your administrator sets this.",
-      "today": "Photo estimates today: {{used}} of {{limit}}"
+      "today": "Photo estimates today: {{used}} of {{limit}}",
+      "expires": "Photo estimates for this account run until {{date}}.",
+      "expired": "Photo estimates for this account ended on {{date}}."
     },
     "devices": {
       "title": "Your devices",
@@ -2610,7 +2618,9 @@
       "role": "Whether you may administer this instance yourself.",
       "suspendedAt": "Whether your account is suspended.",
       "activity": "They can also see how many photos were read for you on each of the last {{days}} days. Older daily counts are deleted.",
-      "notTheDiary": "What you eat is not on those pages. Your diary is encrypted on this device before any copy of it leaves, so it cannot be read there."
+      "notTheDiary": "What you eat is not on those pages. Your diary is encrypted on this device before any copy of it leaves, so it cannot be read there.",
+      "allowanceExpiresAt": "The date your allowance ends.",
+      "invitesLeft": "How many invitations you have left."
     },
     "password": {
       "title": "Password",
@@ -2643,6 +2653,16 @@
       "title": "You are signed out",
       "body": "Sign in to see your account.",
       "signIn": "Sign in"
+    },
+    "invites": {
+      "title": "Invite somebody",
+      "body": "Send an invitation by email. Whoever you invite gets their own account on this instance, with its own diary.",
+      "label": "Email address",
+      "left": "Invitations you have left: {{left}}",
+      "none": "You have used all of your invitations.",
+      "send": "Send invitation",
+      "sent": "If that address can be invited, the invitation is on its way. We answer the same way every time, so nobody can use this to find out who is already here.",
+      "failed": "The invitation could not be sent. Try again in a moment."
     }
   },
   "admin": {
@@ -2842,6 +2862,8 @@
     }
   },
   "aiIntake": {
-    "noAllowance": "AI entries are not switched on for this account. Ask your administrator to switch them on. Searching the food database works without them."
+    "noAllowance": "AI entries are not switched on for this account. Ask your administrator to switch them on. Searching the food database works without them.",
+    "allowanceEnded": "AI entries for this account ended on {{date}}. Searching the food database still works.",
+    "notSwitchedOn": "AI entries are not switched on for this account. Searching the food database works without them."
   }
 }
