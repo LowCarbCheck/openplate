@@ -169,6 +169,17 @@ export type InstanceDescriptor = {
    * for every reader, so there is no third state worth carrying.
    */
   memberInvites: boolean;
+  /**
+   * Whether a biller stands behind this instance, so `/v1/plans/*` exists on
+   * it. DESCRIPTIVE, NEVER A GRANT, like every other field here: `false` means
+   * the whole subtree answers the ordinary unknown-path `404`, so this client
+   * draws no plan door.
+   *
+   * NOT OPTIONAL HERE, for the reason `memberInvites` is not: the decoder
+   * answers `false` for a service older than the field, and an absent key and
+   * a service that says no are the same fact for every reader.
+   */
+  plans: boolean;
   /** The model the instance's AI proxy serves, or `null` when it has no upstream key. */
   ai: { model: string | null } | null;
   /**
@@ -260,6 +271,9 @@ const instanceDescriptorSchema = z.object({
   // answers the missing key and a non-boolean value alike: no invite card,
   // which is the safe direction, because the service refuses the mint anyway.
   memberInvites: z.boolean().catch(false),
+  // `.catch(false)` for the same reason as the line above: a service with no
+  // biller, and a service built before the field, both mean no plan door.
+  plans: z.boolean().catch(false),
   ai: z.object({ model: z.string().nullable() }).nullable(),
   // `.optional()`, exactly like `instance` itself: a service older than the
   // field, or one with reports switched off, sends no key here.

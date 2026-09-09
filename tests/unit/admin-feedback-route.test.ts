@@ -299,6 +299,7 @@ const INSTANCE_WITHOUT_REPORTS: InstanceDescriptor = {
   mail: true,
   memberInvites: false,
   ai: { model: 'a-model' },
+  plans: false,
 };
 
 const INSTANCE_WITH_REPORTS: InstanceDescriptor = {
