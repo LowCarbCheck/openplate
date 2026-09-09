@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.22.2] - 2026-09-09
+
 ### Fixed
 
-- **A release now publishes the amd64 image even when arm64 fails.** The two architectures build separately, and until now one broken build left the whole version untagged in the registry, so an x86_64 host had nothing to pull. The run says in its log which platforms the published tag carries.
+- **A release now publishes the amd64 image even when arm64 fails.** The two architectures build separately, and until now one broken build left the whole version untagged in the registry, so an x86_64 host had nothing to pull. The run says in its log which platforms the published tag carries. ([a28ea2e](https://github.com/LowCarbCheck/openplate/commit/a28ea2e))
 
 ## [0.22.1] - 2026-09-09
 
