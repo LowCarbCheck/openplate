@@ -29,9 +29,23 @@ export interface TermsContentProps {
    * takes one: this content renders with no data router in the unit tests.
    */
   managed?: boolean;
+  /**
+   * `true` where the photo estimates come from this instance's own proxy, on
+   * the account's allowance, rather than from a provider the reader chose
+   * (M212 spec 06).
+   *
+   * A SECOND PROP RATHER THAN A SIXTH USE OF `managed`, and the same rule
+   * `PrivacyContentProps` wrote down: a NEW claim gets the prop for the
+   * question it actually depends on. These are the paragraphs about WHO the
+   * photo goes to and WHAT the account's allowance is, which is
+   * `aiComesFromTheInstance` and not "there are accounts here". `managed`
+   * above still chooses the older bundle, and splitting that bundle now would
+   * rename call sites and change nothing a reader sees.
+   */
+  aiComesFromTheInstance?: boolean;
 }
 
-export function TermsContent({ managed = false }: TermsContentProps) {
+export function TermsContent({ managed = false, aiComesFromTheInstance = false }: TermsContentProps) {
   const { t, i18n } = useTranslation('legal');
   return (
     <article className="prose prose-zinc dark:prose-invert max-w-none">
@@ -65,12 +79,23 @@ export function TermsContent({ managed = false }: TermsContentProps) {
 
       <section className="mb-8">
         <H2 variant="default">{t('terms.s3Heading')}</H2>
-        <P>{t('terms.s3Body')}</P>
+        {/* "the AI provider you have configured" is false where the operator
+            configured it, and this is the disclaimer paragraph, so the false
+            half was the sentence naming who to blame for an estimate. */}
+        <P>{t(aiComesFromTheInstance ? 'terms.s3BodyManaged' : 'terms.s3Body')}</P>
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">{t('terms.s4Heading')}</H2>
+        {/* THE HEADING, NOT ONLY THE BODY. "4. Bring your own AI provider" sat
+            over `terms.s4BodyManaged`, which says the opposite, so a managed
+            reader got a correct paragraph under a false title (M212 spec 06). */}
+        <H2 variant="default">{t(aiComesFromTheInstance ? 'terms.s4HeadingManaged' : 'terms.s4Heading')}</H2>
         <P>{t(managed ? 'terms.s4BodyManaged' : 'terms.s4Body')}</P>
+        {/* AND THE END DATE, which nothing in this document said. The managed
+            body states the proxy, the operator's key and the daily limit; the
+            allowance also ENDS, on a date the account carries, and access that
+            ends itself is a term rather than a detail. */}
+        {aiComesFromTheInstance && <P className="mt-4">{t('terms.s4AllowanceManaged')}</P>}
       </section>
 
       <section className="mb-8">
@@ -156,10 +181,14 @@ export default function Terms() {
   // the operator's key (`aiComesFromTheInstance`). All three answer alike, and
   // the document is one bundle rather than three switches, so the route asks
   // the question that changes the most of it and the prop selects the bundle.
-  const { serverHoldsTheDiary } = useInstancePolicy();
+  //
+  // TWO QUESTIONS SINCE M212 SPEC 06. `serverHoldsTheDiary` still chooses the
+  // older bundle; `aiComesFromTheInstance` chooses the three paragraphs about
+  // the photo estimates, which is the question those actually depend on.
+  const { serverHoldsTheDiary, aiComesFromTheInstance } = useInstancePolicy();
   return (
     <PublicWrapper>
-      <TermsContent managed={serverHoldsTheDiary} />
+      <TermsContent managed={serverHoldsTheDiary} aiComesFromTheInstance={aiComesFromTheInstance} />
     </PublicWrapper>
   );
 }

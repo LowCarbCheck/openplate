@@ -281,18 +281,37 @@ describe('Legal pages — the managed instance says what the operator can see (M
     assert.doesNotMatch(managed, /This data is not sent to us and we cannot see it/);
   });
 
-  it('privacy: section 6 names every field an administrator can read (M201/06)', () => {
+  it('privacy: section 6 names every field an administrator can read (M201/06, M212/06)', () => {
     // The SAME facts the app states at `account.operatorSees.*`, in this
     // document's register rather than the app's, and gated on the question
     // that makes them true rather than on the mode name.
+    //
+    // THE SUBJECTS, NEVER THE SENTENCES. This test pinned three exact phrases
+    // and one of them ("the day the account was created") broke on a
+    // legitimate rephrase the moment the paragraph was rewritten, which is the
+    // failure mode the workspace rule is about: wordsmith owns the wording and
+    // a test that owns it too turns every copy pass into a red gate. What the
+    // document owes the reader is that each of these things is named at all.
     const seen = renderToStaticMarkup(createElement(PrivacyContent, { managed: true, operatorSeesActivity: true }));
-    for (const field of ['your email address', 'the day the account was created', 'when you last signed in']) {
-      assert.ok(seen.includes(field), `section 6 must name ${field}`);
+    for (const subject of [/email address/i, /created/i, /sign-?in/i, /allowance/i, /invitations/i]) {
+      assert.match(seen, subject, `section 6 must name ${String(subject)}`);
     }
     assert.match(seen, new RegExp(`last${'\\s*'}${USAGE_COUNTER_RETENTION_DAYS} days`));
     assert.doesNotMatch(seen, /\{\{usageDays\}\}/);
     // And the half that matters more: none of it is the diary.
     assert.match(seen, /Your diary itself is not on those pages/);
+  });
+
+  // THE CONTROL for the two subjects M212 spec 04 added to the admin view. An
+  // instance with no operator says neither, so the assertion above is reading
+  // the managed paragraph rather than any paragraph on the page.
+  it('privacy: an instance with no operator names neither the allowance end nor the invitations', () => {
+    // The open document does say "you get one by invitation" about an account,
+    // so the control is the PLURAL, which only a count of remaining ones can
+    // be, plus the allowance, which an instance with no operator has none of.
+    const open = renderPrivacy();
+    assert.doesNotMatch(open, /allowance/i);
+    assert.doesNotMatch(open, /invitations/i);
   });
 
   it('privacy: an instance with no operator keeps the shorter claim and gains no paragraph', () => {
@@ -322,6 +341,95 @@ describe('Legal pages — the managed instance says what the operator can see (M
     assert.match(privacy, /not on our servers/);
     assert.match(terms, /bring-your-own-key/i);
     assert.doesNotMatch(privacy, /This instance has accounts, handed out by invitation/);
+  });
+});
+
+/**
+ * M212 spec 06. Six sentences and two of them headings had no managed twin,
+ * so `beta.openplate.de` was already shipping them: a correct paragraph under
+ * a false heading, and a promise that the photo and the key never reach any
+ * server of ours on an instance where every scan passes through one.
+ *
+ * NO ASSERTION HERE PINS A TRANSLATED PHRASE. What is checked is that the
+ * managed render and the open render DISAGREE, that the claim which is false
+ * on a managed instance is gone from it, and that the two new facts are stated
+ * at all. The wording is wordsmith's, and three tests broke on legitimate
+ * rephrases in one session because they owned it too.
+ */
+describe('Legal pages — the sentences that had no managed twin (M212/06)', () => {
+  const managedAi = { managed: true, aiComesFromTheInstance: true, serverHoldsTheDiary: true };
+
+  it('terms: the section 4 heading stops promising a provider nobody brings', () => {
+    const managed = renderToStaticMarkup(createElement(TermsContent, managedAi));
+    // The heading and the body must agree. The body already said the estimates
+    // come from this instance; the heading said to bring your own provider.
+    assert.doesNotMatch(managed, /<h2[^>]*>[^<]*your own AI provider/i);
+    assert.match(renderTerms(), /Bring your own AI provider/i, 'the open heading is still the open one');
+  });
+
+  it('privacy: the section 4 heading no longer says "your own provider" over the proxy paragraph', () => {
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, managedAi));
+    assert.doesNotMatch(managed, /<h2[^>]*>[^<]*\(your own provider\)/i);
+    assert.match(renderPrivacy(), /AI plate identification \(your own provider\)/);
+  });
+
+  it('terms: the disclaimer stops blaming a provider the reader did not configure', () => {
+    const managed = renderToStaticMarkup(createElement(TermsContent, managedAi));
+    assert.doesNotMatch(managed, /provider you have configured/i);
+    assert.match(renderTerms(), /provider you have configured/i);
+  });
+
+  it('privacy: the short version stops promising the photo never reaches our servers', () => {
+    // The claim `privacy.s4BodyOnManaged` has contradicted on the same page
+    // since M196. This is the line that contradicted it.
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, managedAi));
+    assert.doesNotMatch(managed, /never pass through our servers/i);
+    assert.match(renderPrivacy(), /never pass through our servers/i);
+  });
+
+  it('privacy: section 2 stops saying the photo only ever goes to a provider you connect', () => {
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, managedAi));
+    assert.doesNotMatch(managed, /only ever goes to the AI provider you connect/i);
+    assert.match(renderPrivacy(), /only ever goes to the AI provider you connect/i);
+  });
+
+  it('privacy: section 3 admits the recovery escrow as a second exception', () => {
+    // The open sentence names ONE exception. Where the operator holds a
+    // recovery key there are two, and section 6 already admitted the second.
+    const managed = renderToStaticMarkup(createElement(PrivacyContent, managedAi));
+    assert.doesNotMatch(managed, /There is one exception/i);
+    assert.match(managed, /two exceptions/i);
+    assert.match(renderPrivacy(), /There is one exception/i);
+  });
+
+  it('terms: states that the allowance ends on a date, which no version said before', () => {
+    const managed = renderToStaticMarkup(createElement(TermsContent, managedAi));
+    assert.match(managed, /end date/i);
+    // THE CONTROL. The paragraph is gated on the question about where the
+    // estimates come from, so an open instance gains nothing.
+    assert.doesNotMatch(renderTerms(), /end date/i);
+  });
+
+  it('privacy: discloses the address a member types only where a member can type one', () => {
+    // `memberInvites` is the instance's own answer off `/health`, not a mode:
+    // an organization's instance with the route switched off must not publish
+    // a paragraph about addresses nobody there can hand over.
+    const inviting = renderToStaticMarkup(createElement(PrivacyContent, { ...managedAi, memberInvites: true }));
+    assert.match(inviting, /invitation/i);
+    assert.match(inviting, /email address you enter/i);
+    // THE CONTROL, and it is the whole reason this is a separate prop.
+    const notInviting = renderToStaticMarkup(createElement(PrivacyContent, managedAi));
+    assert.doesNotMatch(notInviting, /email address you enter/i);
+  });
+
+  it('keeps every interpolation on the new twins, so no reader sees a raw placeholder', () => {
+    const managed = renderToStaticMarkup(
+      createElement(PrivacyContent, { ...managedAi, memberInvites: true, reportRetentionDays: 30 }),
+    );
+    for (const placeholder of [/\{\{days\}\}/, /\{\{reportWindow\}\}/, /\{\{usageDays\}\}/]) {
+      assert.doesNotMatch(managed, placeholder);
+    }
+    assert.match(managed, new RegExp(`${PHOTO_RETENTION_DAYS} days`));
   });
 });
 

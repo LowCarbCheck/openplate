@@ -20,8 +20,32 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+import { withI18n } from './trends-i18n-harness';
 import { clientLoader } from '../../app/routes/settings.ai';
+import { NoAiIntakeNotice } from '../../app/components/add/no-ai-intake-notice';
+import { resolveAiIntakeDoor, type AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import enCommon from '../../app/i18n/locales/en/common.json';
+
+function readLegal(name: string): string {
+  return readFileSync(fileURLToPath(new URL(`../../app/routes/legal/${name}`, import.meta.url)), 'utf8');
+}
+
+/** The notice `/add` and `/describe` draw, rendered for one door. */
+function renderNoAiNotice(door: AiIntakeDoor): string {
+  return renderToStaticMarkup(
+    withI18n(
+      createElement(NoAiIntakeNotice, {
+        door,
+        byokMessage: 'byok message',
+        byokLinkLabel: 'byok link',
+        byokHref: '/settings/ai',
+      }),
+    ),
+  );
+}
 
 function readRoute(name: string): string {
   return readFileSync(fileURLToPath(new URL(`../../app/routes/${name}`, import.meta.url)), 'utf8');
@@ -103,5 +127,103 @@ describe('/settings/ai on a managed instance', () => {
     assert.ok(thrown instanceof Response, 'the guard throws a redirect Response');
     assert.equal(thrown.status, 302);
     assert.equal(thrown.headers.get('location'), '/settings');
+  });
+});
+
+/**
+ * The legal pages, wired the same way (M212 spec 06).
+ *
+ * WHAT IS PINNED IS THE QUESTION, not the sentence. `legal-pages.test.ts`
+ * renders both documents and checks that the managed one has stopped making
+ * the claim; this checks that the branch which chooses it names the rule it
+ * depends on, so the next paragraph that should ask the same question can be
+ * found by grepping for it.
+ */
+describe('the legal pages ask which fact each paragraph depends on', () => {
+  for (const [file, managedKey] of [
+    ['terms.tsx', 'terms.s3BodyManaged'],
+    ['terms.tsx', 'terms.s4HeadingManaged'],
+    ['privacy.tsx', 'privacy.s1Item3Managed'],
+    ['privacy.tsx', 'privacy.s2Body2Managed'],
+    ['privacy.tsx', 'privacy.s4HeadingManaged'],
+  ]) {
+    it(`${file} chooses ${managedKey} by asking where the photo estimates come from`, () => {
+      assertChosenByPolicy(readLegal(file), 'aiComesFromTheInstance', managedKey);
+    });
+  }
+
+  it('privacy.tsx chooses privacy.s3OutroManaged by asking who holds the diary', () => {
+    // A DIFFERENT QUESTION on purpose: the second exception this paragraph
+    // admits is the recovery escrow, which is about the copy on the server and
+    // not about who reads a photograph.
+    assertChosenByPolicy(readLegal('privacy.tsx'), 'serverHoldsTheDiary', 'privacy.s3OutroManaged');
+  });
+
+  it('draws the two new paragraphs from a call site rather than leaving them in the catalog', () => {
+    // The defect this whole file exists for: a `*Managed` twin that is never
+    // rendered passes key parity and leaves the false sentence on the screen.
+    assert.match(readLegal('terms.tsx'), /aiComesFromTheInstance && <P className="mt-4">\{t\('terms\.s4AllowanceManaged'\)\}/);
+    assert.match(readLegal('privacy.tsx'), /memberInvites && <P className="mt-4">\{t\('privacy\.s3InvitesManaged'\)\}/);
+  });
+
+  it('reads memberInvites off the instance rather than inventing a policy question for it', () => {
+    // `InstancePolicy` states that the mode is its only input, and two managed
+    // instances answer this differently. It comes off `/health`, like the
+    // feedback retention window beside it.
+    assert.match(readLegal('privacy.tsx'), /useServerInstance\(\)\?\.memberInvites \?\? false/);
+  });
+});
+
+/**
+ * THE ASK-ADMIN PROBLEM (M212 spec 04).
+ *
+ * Three sentences in this app sent a person to an administrator. On an
+ * instance whose accounts invite each other there is no administrator, so each
+ * one is now chosen by what is TRUE of the account rather than by who to ask.
+ */
+describe('no surface names an administrator where memberInvites is on', () => {
+  const NOW = new Date('2026-09-09T10:00:00.000Z');
+
+  it('says nothing about an administrator on an instance whose accounts invite each other', () => {
+    const door = resolveAiIntakeDoor({
+      aiComesFromTheInstance: true,
+      allowance: { memberInvites: true, allowanceExpiresAt: null, now: NOW },
+    });
+    assert.doesNotMatch(renderNoAiNotice(door), /administrator/i);
+  });
+
+  it('names the date instead, when the allowance ended on one', () => {
+    const door = resolveAiIntakeDoor({
+      aiComesFromTheInstance: true,
+      allowance: { memberInvites: true, allowanceExpiresAt: '2026-09-01T00:00:00.000Z', now: NOW },
+    });
+    const markup = renderNoAiNotice(door);
+    assert.doesNotMatch(markup, /administrator/i);
+    assert.doesNotMatch(markup, /\{\{date\}\}/, 'the date is interpolated, never printed as a placeholder');
+    assert.match(markup, new RegExp(new Date('2026-09-01T00:00:00.000Z').toLocaleDateString()));
+  });
+
+  it('KEEPS the old sentence where there really is an administrator, which is the control', () => {
+    // Without this the two assertions above would pass against a notice that
+    // had simply lost the sentence, and every organization's instance would
+    // stop telling anybody who can switch their allowance on.
+    const door = resolveAiIntakeDoor({
+      aiComesFromTheInstance: true,
+      allowance: { memberInvites: false, allowanceExpiresAt: null, now: NOW },
+    });
+    assert.match(renderNoAiNotice(door), /administrator/i);
+  });
+
+  it('gates the account page and the scan card on the same rule, from their own source', () => {
+    const account = readRoute('settings.account.tsx');
+    const scan = readRoute('scan.tsx');
+    // The sentence is rendered only for the door that has somebody to name.
+    assert.match(account, /door\.kind === 'ask-admin' && <p/);
+    assert.match(scan, /allowanceDoor\.kind === 'ask-admin' && <p>\{t\('scan\.setup\.managedMissing\.askAdmin'\)\}/);
+    // And both read the instance's own answer rather than the mode. The
+    // account page has it in a variable of that name; the scan card reads the
+    // descriptor inline.
+    assert.match(account, /useServerInstance\(\)\?\.memberInvites \?\? false/);
+    assert.match(scan, /memberInvites: instance\?\.memberInvites \?\? false/);
   });
 });

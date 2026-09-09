@@ -4,7 +4,7 @@ import { PHOTO_RETENTION_DAYS } from '#app/lib/local-store/photo-policy';
 import { USAGE_COUNTER_RETENTION_DAYS } from '#app/lib/admin/operator-visibility';
 import type { MetaFunction } from 'react-router';
 import { useInstancePolicy, usePublicConfig } from '#app/hooks/use-public-config';
-import { useFeedbackRetentionDays } from '#app/hooks/use-server-instance';
+import { useFeedbackRetentionDays, useServerInstance } from '#app/hooks/use-server-instance';
 import type { AnalyticsEventLevel } from '#app/config/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { OPERATOR } from './operator';
@@ -101,6 +101,48 @@ export interface PrivacyContentProps {
    * per-person activity, and this is the paragraph that would then be false.
    */
   operatorSeesActivity?: boolean;
+  /**
+   * `true` where the plate photo passes through this operator's own proxy
+   * under this operator's key (M212 spec 06).
+   *
+   * THE THIRD PROP, and the same per-claim rule the block above wrote down.
+   * Four sentences and one heading in this document say the photo and the key
+   * never reach any server of ours and go straight to a provider the reader
+   * connected. On a managed instance every scan passes through our server, so
+   * those are not stale copy, they are false disclosure in a document the
+   * operator is legally answerable for. `managed` could not be the gate: it is
+   * fed by `serverHoldsTheDiary`, which is about the ciphertext of a diary and
+   * says nothing about who receives a photograph.
+   */
+  aiComesFromTheInstance?: boolean;
+  /**
+   * `true` where the diary reaches a server this operator runs, even as
+   * ciphertext.
+   *
+   * A NAMED QUESTION FOR ONE NEW CLAIM, `privacy.s3OutroManaged`. The open
+   * sentence names ONE exception to "nothing readable on a server"; a managed
+   * instance has a second, the recovery escrow, which §6 already admits
+   * elsewhere. That is a claim about what the server holds, so it reads the
+   * question about what the server holds, and not `managed`, whose name says
+   * only which bundle this is.
+   */
+  serverHoldsTheDiary?: boolean;
+  /**
+   * `true` where an ordinary account on this instance may invite other people.
+   *
+   * NOT A POLICY QUESTION, AND IT MUST NOT BECOME ONE. `InstancePolicy` states
+   * that the mode is its only input, and this is not decided by the mode: two
+   * instances an organization runs answer it differently, because it is set per
+   * deployment (`MEMBER_INVITE_*`). It arrives on the sync server's `/health`
+   * handshake, exactly as `reportRetentionDays` does, and for the same reason:
+   * the paragraph states a fact about a service somebody else operates, so it
+   * is read off that service rather than assumed from a mode.
+   *
+   * `false` FOR AN INSTANCE THAT HAS NOT ANSWERED, which is the safe direction
+   * here: an operator whose accounts cannot invite anybody must not publish a
+   * paragraph saying their readers' addresses reach us that way.
+   */
+  memberInvites?: boolean;
 }
 
 /**
@@ -122,6 +164,9 @@ export function PrivacyContent({
   managed = false,
   reportRetentionDays = null,
   operatorSeesActivity = false,
+  aiComesFromTheInstance = false,
+  serverHoldsTheDiary = false,
+  memberInvites = false,
 }: PrivacyContentProps) {
   const { t, i18n } = useTranslation('legal');
   // TWO WINDOWS, AND THEY ARE NOT THE SAME THING, AND THEY DO NOT COME FROM
@@ -156,7 +201,11 @@ export function PrivacyContent({
         <ul className="mt-4">
           <li>{t('privacy.s1Item1')}</li>
           <li>{t(managed ? 'privacy.s1Item2Managed' : 'privacy.s1Item2')}</li>
-          <li>{t('privacy.s1Item3', { reportWindow })}</li>
+          {/* THE SHORT VERSION cannot promise what section 4 denies. This
+              line said the photo and the key never pass through our servers;
+              on a managed instance every scan does, and `s4BodyOnManaged` two
+              sections down already said so (M212 spec 06). */}
+          <li>{t(aiComesFromTheInstance ? 'privacy.s1Item3Managed' : 'privacy.s1Item3', { reportWindow })}</li>
           <li>{t(analyticsLevel === null ? 'privacy.s1Item4NoAnalytics' : S1_ITEM4_KEY_BY_LEVEL[analyticsLevel])}</li>
         </ul>
       </section>
@@ -164,7 +213,11 @@ export function PrivacyContent({
       <section className="mb-8">
         <H2 variant="default">{t('privacy.s2Heading')}</H2>
         <P>{t(managed ? 'privacy.s2Body1Managed' : 'privacy.s2Body1')}</P>
-        <P className="mt-4">{t('privacy.s2Body2', { days, reportWindow })}</P>
+        {/* "on its own it only ever goes to the AI provider you connect" is
+            false where there is no provider the reader connects. */}
+        <P className="mt-4">
+          {t(aiComesFromTheInstance ? 'privacy.s2Body2Managed' : 'privacy.s2Body2', { days, reportWindow })}
+        </P>
       </section>
 
       <section className="mb-8">
@@ -179,11 +232,31 @@ export function PrivacyContent({
           <li>{t('privacy.s3Item3')}</li>
           <li>{t('privacy.s3Item4')}</li>
         </ul>
-        <P className="mt-4">{t('privacy.s3Outro', { reportWindow })}</P>
+        {/* ONE EXCEPTION OR TWO. The open sentence names the reported estimate
+            as the only thing readable on a server. Where a copy of the diary
+            reaches this operator there is a second, the recovery escrow, and
+            `s6Body5Managed` already admits it further down, so this paragraph
+            was the document contradicting itself. */}
+        <P className="mt-4">
+          {t(serverHoldsTheDiary ? 'privacy.s3OutroManaged' : 'privacy.s3Outro', { reportWindow })}
+        </P>
+        {/* SOMEBODY ELSE'S ADDRESS, which is the disclosure nothing here made.
+            An account that invites a friend hands us an address belonging to a
+            third party who never visited this site, and we keep it until the
+            invitation is redeemed, revoked or expires. It belongs in "what we
+            store on our servers" rather than only in the terms.
+
+            Gated on the instance's own answer, not on the mode: see
+            `memberInvites` in the props block for why this one fact cannot be
+            an `InstancePolicy` question. */}
+        {memberInvites && <P className="mt-4">{t('privacy.s3InvitesManaged')}</P>}
       </section>
 
       <section className="mb-8">
-        <H2 variant="default">{t('privacy.s4Heading')}</H2>
+        {/* THE HEADING TOO. "(your own provider)" stood over
+            `s4BodyOnManaged`, which says the photo goes through our server
+            under our key (M212 spec 06). */}
+        <H2 variant="default">{t(aiComesFromTheInstance ? 'privacy.s4HeadingManaged' : 'privacy.s4Heading')}</H2>
         {/* `s4BodyOnManaged`, NOT `s4BodyManaged`: the section already ends
             with `s4ManagedBody` below, and two keys a letter apart in the same
             section is how a swap lands on the wrong paragraph. */}
@@ -377,13 +450,21 @@ export default function Privacy() {
   // `operatorSeesActivity` chooses the two that say what an administrator may
   // read about one person. The prop doc block records why the older bundle was
   // left as it is.
-  const { serverHoldsTheDiary, operatorSeesActivity } = useInstancePolicy();
+  // THREE QUESTIONS SINCE M212 SPEC 06. `aiComesFromTheInstance` chooses the
+  // four sentences and the heading about who receives a photograph, and
+  // `serverHoldsTheDiary` now also has a call site of its own, for the
+  // paragraph about what is readable on a server.
+  const { serverHoldsTheDiary, operatorSeesActivity, aiComesFromTheInstance } = useInstancePolicy();
   // `null` until the sync server's `/health` answers, and for ever on an
   // instance that has none. The paragraph reads sensibly either way, which is
   // why this is not gated on a loading state: a policy that flickered between
   // two different retention claims would be worse than one that names the
   // operator's period.
   const reportRetentionDays = useFeedbackRetentionDays();
+  // OFF THE SAME HANDSHAKE as the retention window above, and `false` until it
+  // answers. A paragraph about addresses a member hands us must not appear on
+  // an instance where no member can hand us one.
+  const memberInvites = useServerInstance()?.memberInvites ?? false;
   return (
     <PublicWrapper>
       <PrivacyContent
@@ -391,6 +472,9 @@ export default function Privacy() {
         managed={serverHoldsTheDiary}
         reportRetentionDays={reportRetentionDays}
         operatorSeesActivity={operatorSeesActivity}
+        aiComesFromTheInstance={aiComesFromTheInstance}
+        serverHoldsTheDiary={serverHoldsTheDiary}
+        memberInvites={memberInvites}
       />
     </PublicWrapper>
   );
