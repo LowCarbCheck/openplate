@@ -147,6 +147,9 @@
       "label": "Lebensmittel suchen",
       "offlineBanner": "Du bist offline. Um neue Lebensmittel zu suchen, brauchst du eine Verbindung. Deine zuletzt verwendeten und gespeicherten Lebensmittel funktionieren weiterhin.",
       "offlinePending": "Die Suche nach neuen Lebensmitteln erfordert eine Verbindung und wird fortgesetzt, sobald du wieder online bist.",
+      "parts": {
+        "lead": "Stattdessen einzeln suchen:"
+      },
       "pause": {
         "minute": "in etwa einer Minute",
         "minutes": "in ein paar Minuten",

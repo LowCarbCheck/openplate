@@ -47,7 +47,7 @@ import {
   type DisplayPortion,
   type MacroEntryBasis,
 } from '#app/lib/portions';
-import { matchTier, type MatchTier } from '#app/lib/match-quality';
+import { isConfidentTier, matchTier, type MatchTier } from '#app/lib/match-quality';
 import { createOptionalNonNegativeNumberSchema } from '#app/lib/zod-numeric';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -73,6 +73,8 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
 import { SearchResultRow } from '#app/components/add/search-result-row';
+import { QueryPartChips, SEARCH_CHIP_CLASS } from '#app/components/add/query-part-chips';
+import { queryPartsToOffer } from '#app/lib/query-parts';
 import { useAiIntake } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
 import { offerTypedText } from '#app/lib/scan-handoff';
@@ -1539,6 +1541,22 @@ export function searchEmptyMessage({
   return t('add.search.empty.firstTime');
 }
 
+/**
+ * Whether the whole-query search already answered the question.
+ *
+ * A recent or a saved food that matched carries no relevance score at all
+ * (`matchTier: null`), because it matched on the person's own name for it,
+ * which is as confident as this screen gets. A curated row counts only at the
+ * strong or likely tier; a weak, typo-tolerant guess is exactly the case where
+ * the parts chips are worth offering instead.
+ *
+ * @param candidates - the federated result list as rendered.
+ * @returns true when at least one candidate is trustworthy.
+ */
+export function hasConfidentSearchMatch(candidates: readonly AddSearchCandidate[]): boolean {
+  return candidates.some((candidate) => candidate.matchTier === null || isConfidentTier(candidate.matchTier));
+}
+
 /** Splits the federated candidate list into its three source buckets, preserving each bucket's existing (already relevance-ordered) order — one labeled section per bucket instead of one long undifferentiated list. */
 export function groupCandidatesBySource(candidates: readonly AddSearchCandidate[]) {
   return {
@@ -1606,7 +1624,7 @@ function SearchStep({
   manualResult: SubmissionResult<string[]> | undefined;
   onSelect: (candidate: AddSearchCandidate) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const [searchValue, setSearchValue] = useState(query);
@@ -1677,6 +1695,17 @@ function SearchStep({
   );
 
   const grouped = groupCandidatesBySource(candidates);
+
+  // THE DEAD END THIS ANSWERS: "Kaffee mit Hafermilch" is a real drink and no
+  // database row, so the whole phrase finds nothing worth showing while both
+  // of its foods are one tap away. Derived from the query the loader actually
+  // searched (never the half-typed box), and empty unless that search came
+  // back without a strong or likely match.
+  const queryParts = queryPartsToOffer({
+    query,
+    language: i18n.language,
+    hasConfidentMatch: hasConfidentSearchMatch(candidates),
+  });
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -1782,7 +1811,7 @@ function SearchStep({
                     key={suggestionKey}
                     type="button"
                     onClick={() => setSearchValue(term)}
-                    className="inline-flex min-h-9 items-center justify-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+                    className={SEARCH_CHIP_CLASS}
                   >
                     {term}
                   </button>
@@ -1791,6 +1820,10 @@ function SearchStep({
             </div>
           )}
         </div>
+      )}
+
+      {!throttled && (
+        <QueryPartChips parts={queryParts} label={t('add.search.parts.lead')} onSelect={setSearchValue} />
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">

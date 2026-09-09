@@ -147,6 +147,9 @@
       "label": "Search foods",
       "offlineBanner": "You're offline. Looking up new foods needs a connection. Your recent and saved foods still work.",
       "offlinePending": "Looking up new foods needs a connection, resumes when you reconnect.",
+      "parts": {
+        "lead": "Search each part instead:"
+      },
       "pause": {
         "minute": "in about a minute",
         "minutes": "in a few minutes",
