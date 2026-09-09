@@ -47,17 +47,47 @@ jobs:
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  build-and-push:
+  # ── One platform per NATIVE runner ─────────────────────────────
+  # Until 2026-09-09 this was a single job that built linux/amd64 and
+  # linux/arm64 together on an x86 runner, with the arm64 half emulated by
+  # QEMU. Emulation is what broke: on the v0.21.0 and v0.22.0 tag runs the
+  # emulated arm64 process died with "qemu: uncaught target signal 4 (Illegal
+  # instruction)", buildkit kept waiting for a worker that was gone, and the
+  # job only ended when the timeout cancelled it. NO image was pushed at all,
+  # not even the amd64 half that had built fine, because one push of a
+  # manifest list is one atomic step. The v0.10.0 and v0.10.1 runs hung the
+  # same way.
+  #
+  # So each platform now builds on a runner of its own architecture and no
+  # emulator is installed: linux/amd64 on ubuntu-latest, linux/arm64 on
+  # ubuntu-24.04-arm, GitHub's hosted arm runner, free for public
+  # repositories. Each leg pushes an image by DIGEST only, with no tag, and
+  # the `merge` job below assembles the tagged manifest list from the digests.
+  #
+  # fail-fast is off so a broken arm64 leg does not cancel the amd64 leg that
+  # production actually pulls. A leg that hangs now costs its own platform and
+  # nothing else.
+  build:
     needs: resolve-commit
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            slug: amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            slug: arm64
+            runner: ubuntu-24.04-arm
 
     # ── Why this job queues ─────────────────────────────────────
     # A coordinated release pushes `main` and then the `v*` tag seconds later.
     # Both refs point at the SAME commit, so both start this job. On 2026-09-08
     # the second one to start missed the first one's not yet exported buildx
-    # cache and rebuilt linux/arm64 under QEMU from nothing: openplate v0.17.0
-    # sat 42 minutes and never finished, openplate-sync v0.9.0 sat 26 minutes.
-    # A warm run of this step takes under 3 minutes.
+    # cache and rebuilt from nothing: openplate v0.17.0 sat 42 minutes and never
+    # finished, openplate-sync v0.9.0 sat 26 minutes. A warm run takes under 3
+    # minutes.
     #
     # The group is keyed on the COMMIT, resolved by the job above rather than
     # taken from `github.sha`. Not on the ref, because the branch push and the
@@ -69,32 +99,35 @@ jobs:
     # release build rather than delay it. Keying on the commit bounds this
     # queue at two, the branch run and the tag run, so nothing is ever evicted.
     #
+    # The PLATFORM is part of the key as well, because the two legs build
+    # different artifacts from different caches and have no reason to wait for
+    # each other. Serialising is per platform, so a stuck amd64 leg holds only
+    # the amd64 slot.
+    #
     # cancel-in-progress MUST stay false. Cancelling a release run is the
     # failure this block exists to prevent; see the dispatch-website note below.
     #
-    # EXPECT a release to take about twice one build now, roughly 5 to 8 minutes
-    # end to end, because the tag run starts only after the branch run finishes.
-    # A job held here reads "Queued" in the Actions UI. Queued is not hung. Do
-    # not cancel it.
+    # EXPECT a release to take about twice one build, roughly 5 to 8 minutes end
+    # to end, because the tag run starts only after the branch run finishes. A
+    # job held here reads "Queued" in the Actions UI. Queued is not hung. Do not
+    # cancel it.
     concurrency:
-      group: release-image-${{ needs.resolve-commit.outputs.sha }}
+      group: release-image-${{ needs.resolve-commit.outputs.sha }}-${{ matrix.slug }}
       cancel-in-progress: false
 
     # Ordering the two runs cannot stop a stall from a GHCR outage or a poisoned
-    # cache, and a stuck job now holds the group instead of only hurting itself.
-    # GitHub's own default would let it sit for six hours. 45 clears the slowest
-    # real cold arm64 build on record (42 minutes) and still fails a genuine
-    # hang inside the hour.
-    timeout-minutes: 45
+    # cache, and a stuck leg still holds its own slot in the group. GitHub's own
+    # default would let it sit for six hours. A native build of either platform
+    # is minutes, cold or warm, now that nothing is emulated, so 20 is generous
+    # and still fails a genuine hang inside the half hour. The 45 that stood
+    # here was sized for a cold emulated arm64 build, which no longer exists.
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up QEMU (multi-arch emulation)
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -109,7 +142,108 @@ jobs:
       - name: Set lowercase image name
         run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
-      - name: Derive image tags and labels
+      # Only the LABELS are read here. The tags are decided once, in the merge
+      # job, because a leg pushes no tag at all.
+      - name: Derive image labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.pnpm
+          platforms: ${{ matrix.platform }}
+          # The commit the bundle is stamped with. The build cannot read it
+          # itself: `.dockerignore` excludes `.git` and the base image has no
+          # git. Use the resolved commit, not `github.sha`, for the same reason
+          # the concurrency group above does: an annotated tag's `github.sha` is
+          # the tag object, not the commit.
+          build-args: |
+            OPENPLATE_BUILD_SHA=${{ needs.resolve-commit.outputs.sha }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # `push-by-digest` publishes the layers and the image manifest under
+          # its own digest and attaches NO tag. `name-canonical` records the
+          # repository in that manifest so `imagetools create` can address it.
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          # One cache per platform. A shared scope would have the two legs
+          # overwrite each other's export and neither would ever be warm.
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+
+      # The digest is passed to the merge job as a FILE NAME with an empty file
+      # under it, which is the pattern documented by Docker in "Multi-platform
+      # image with GitHub Actions", section "Distribute build across multiple
+      # runners". An artifact is the only channel here: a matrix leg cannot
+      # write a job output the other legs would not clobber.
+      - name: Export the digest
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/digests"
+          digest='${{ steps.build.outputs.digest }}'
+          touch "$RUNNER_TEMP/digests/${digest#sha256:}"
+
+      - name: Upload the digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.slug }}
+          path: ${{ runner.temp }}/digests/*
+          # A leg that produced no digest must fail loudly here rather than
+          # leave the merge job to build a one-platform manifest quietly.
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── The tagged manifest list ───────────────────────────────────────────────
+  # The legs above push untagged, per platform images. This job is what makes
+  # `ghcr.io/lowcarbcheck/openplate:0.22.0` exist, and it is the ONLY place tags
+  # are decided, with exactly the rules the old single job used.
+  #
+  # It needs both legs, so a failed platform stops the release rather than
+  # publishing a manifest list that silently lost an architecture.
+  merge:
+    needs:
+      - resolve-commit
+      - build
+    runs-on: ubuntu-latest
+
+    # The plain group, without a platform. The branch run and the tag run of one
+    # commit must not write the same tags at the same time, and for the same
+    # reasons as the legs: keyed on the resolved commit, never cancelling.
+    concurrency:
+      group: release-image-${{ needs.resolve-commit.outputs.sha }}
+      cancel-in-progress: false
+
+    # No build happens here. This is a few registry calls.
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download the digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Derive image tags
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -119,25 +253,23 @@ jobs:
             type=semver,pattern={{version}}
             type=sha,prefix=sha-,format=short
 
-      - name: Build and push (linux/amd64, linux/arm64)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile.pnpm
-          platforms: linux/amd64,linux/arm64
-          push: true
-          # The commit the bundle is stamped with. The build cannot read it
-          # itself: `.dockerignore` excludes `.git` and the base image has no
-          # git. Use the resolved commit, not `github.sha`, for the same reason
-          # the concurrency group above does: an annotated tag's `github.sha` is
-          # the tag object, not the commit.
-          build-args: |
-            OPENPLATE_BUILD_SHA=${{ needs.resolve-commit.outputs.sha }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # `printf ... *` expands to every downloaded digest file name, which is
+      # why this runs INSIDE the digest directory. The tags come from the
+      # metadata action's JSON rather than its newline separated output,
+      # because each one needs its own `-t`.
+      - name: Create the manifest list
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
+      # Prints the platforms the list actually carries. Read this line when a
+      # self-hoster reports "no matching manifest for linux/arm64".
+      - name: Inspect the manifest list
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect "${REGISTRY}/${IMAGE_NAME}:${{ steps.meta.outputs.version }}"
 
   # ── Tell the website ───────────────────────────────────────────────────────
   # openplate.de quotes this repository's README table and `docs/*.md`, and it
@@ -147,9 +279,10 @@ jobs:
   # missed dispatch heals itself.
   #
   # NO `needs:`. It runs beside the image build, not after it. The v0.10.0 and
-  # v0.10.1 tag runs of openplate both HUNG in "Build and push" (M192
-  # follow-up), and a dispatch waiting on that job would have been eaten by the
-  # hang. Nothing about re-quoting the docs depends on an image existing.
+  # v0.10.1 tag runs of openplate both HUNG in the image build (M192
+  # follow-up), as did v0.21.0 and v0.22.0, and a dispatch waiting on that build
+  # would have been eaten by every one of those hangs. Nothing about re-quoting
+  # the docs depends on an image existing.
   #
   # IT CARRIES THE TAG FOR THE RECORD AND NOTHING ELSE READS IT. Which release
   # the site documents is decided in one place, `highestTag` in the site's
@@ -180,11 +313,11 @@ jobs:
   # then a link into the changelog for the detail and a compare link against the
   # previous tag.
   #
-  # NO `needs:`, and outside the build's concurrency group, for the same reason
-  # `dispatch-website` above is: the v0.10.0 and v0.10.1 tag runs both HUNG in
-  # "Build and push", and a release page waiting on that job would have been
-  # eaten by the hang. Nothing about publishing the notes depends on an image
-  # existing, and the image is found by tag whenever it lands.
+  # NO `needs:`, and outside the build's concurrency groups, for the same reason
+  # `dispatch-website` above is: the v0.10.0, v0.10.1, v0.21.0 and v0.22.0 tag
+  # runs all HUNG in the image build, and a release page waiting on it would
+  # have been eaten by the hang. Nothing about publishing the notes depends on
+  # an image existing, and the image is found by tag whenever it lands.
   #
   # NO `--generate-notes`. GitHub's generated summary only knows merged pull
   # requests, and almost all of this repository's history lands as direct

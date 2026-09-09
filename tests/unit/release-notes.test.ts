@@ -352,16 +352,23 @@ describe("the repository's CHANGELOG.md", () => {
     const newest = versionHeadings(changelog).find((heading) => isAtLeastFormatStart(heading.version));
     assert.ok(newest, 'no version at or above 0.20.0 to break');
 
-    const undated = changelog.replace(`## [${newest.version}] - ${newest.date}`, `## [${newest.version}]`);
+    // Break the file BELOW the [Unreleased] heading. The mutations here each hit the first match in
+    // the string, and the checker under test deliberately ignores [Unreleased], so a mutation
+    // anchored at the top of the whole file would land on an Unreleased bullet as soon as one
+    // exists, change nothing the checker looks at, and this control would fail while the checker
+    // was fine. Every version at or above 0.20.0 is still inside this slice.
+    const recent = changelog.slice(changelog.indexOf(`## [${newest.version}]`));
+
+    const undated = recent.replace(`## [${newest.version}] - ${newest.date}`, `## [${newest.version}]`);
     assert.notDeepEqual(complaintsAboutRecentVersions(undated), []);
 
-    const unled = changelog.replace(/^- \*\*/m, '- ');
+    const unled = recent.replace(/^- \*\*/m, '- ');
     assert.notDeepEqual(complaintsAboutRecentVersions(unled), []);
 
-    const ungrouped = changelog.replace(/^### Added$/m, '### Security');
+    const ungrouped = recent.replace(/^### Added$/m, '### Security');
     assert.notDeepEqual(complaintsAboutRecentVersions(ungrouped), []);
 
-    const unpunctuated = changelog.replace(/^- \*\*([^*]+)\.\*\*/m, '- **$1**');
+    const unpunctuated = recent.replace(/^- \*\*([^*]+)\.\*\*/m, '- **$1**');
     assert.notDeepEqual(complaintsAboutRecentVersions(unpunctuated), []);
   });
 
