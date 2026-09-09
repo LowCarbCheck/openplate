@@ -2,6 +2,18 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.21.0 - 2026-09-09
+
+- The message box at /describe now looks like a chat: one rounded box that
+  grows as you write, with a round Send button inside it. Enter still sends,
+  and Shift and Enter still start a new line.
+- The app's own microphone button is gone. On a phone it did nothing, and it
+  sent your voice to Google or Apple through the browser. Speak now opens the
+  message box with the field focused. Tap the microphone key on your keyboard
+  to dictate, then send.
+- Today's budget rows on the dashboard and in the diary now show fat, in
+  grams, between protein and fiber. Fat has no target.
+
 ## 0.20.1 - 2026-09-08
 
 - On a managed instance the message box at /describe and the "Log with AI"
