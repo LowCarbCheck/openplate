@@ -182,7 +182,7 @@ describe('getProvidersByPlacement', () => {
     );
     assert.deepStrictEqual(
       getProvidersByPlacement('advanced').map((definition) => definition.id),
-      ['openai-compatible', 'anthropic'],
+      ['modelrunner', 'openai-compatible', 'anthropic'],
     );
   });
 });
