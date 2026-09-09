@@ -2238,6 +2238,11 @@
     "unavailable": "Konten sind auf diesem Server deaktiviert.",
     "forgot": "Passwort vergessen?"
   },
+  "strangerNote": {
+    "device": "Du bist nicht angemeldet. Diese Einstellung gilt für dieses Gerät.",
+    "home": "Startseite",
+    "needsSignIn": "Für diese Seite ist eine Anmeldung erforderlich."
+  },
   "sync": {
     "cancel": "Abbrechen",
     "changePassphrase": {

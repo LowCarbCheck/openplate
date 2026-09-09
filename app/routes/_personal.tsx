@@ -4,6 +4,7 @@ import type { BaseHandle } from '#types/base';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef } from 'react';
 import {
+  useLocation,
   useMatches,
   Outlet,
   isRouteErrorResponse,
@@ -25,6 +26,9 @@ import { useSyncSession } from '#app/components/sync-status';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import { isDeviceLocked } from '#app/lib/sync/sync-state';
 import { resolveSignInDestination } from '#app/lib/sign-in-flow';
+import { PublicShell } from '#app/components/public-shell';
+import { StrangerNote, strangerNoteVariantForPath } from '#app/components/stranger-note';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
 
 /**
  * The onboarding gate — the only gate this layout still runs, and it is purely
@@ -69,10 +73,19 @@ import { resolveSignInDestination } from '#app/lib/sign-in-flow';
  *   pending with no prior data to self-heal from.
  */
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  // The routes this gate never tests: `/settings/preferences`, the way out of
-  // the instance's default language, `/settings/sync`, where an emailed invite
-  // link lands, and the gate's own two destinations. See `isOnboardingGateExempt`.
-  if (isOnboardingGateExempt(new URL(request.url).pathname)) return { isWaitingForSession: false };
+  // THE ROUTES THIS GATE NEVER REDIRECTS: `/settings/preferences`, the way out
+  // of the instance's default language, `/settings/account` and
+  // `/settings/sync`, where an emailed link lands, `/settings/about`, which the
+  // landing footer links to, and the gate's own destinations. See
+  // `isOnboardingGateExempt`.
+  //
+  // IT USED TO RETURN HERE (M204 spec 09). Returning early made every exempt
+  // page wear the app shell, because the layout had no answer to render
+  // anything else from. The path fact is now an INPUT instead, and the gate
+  // answers `exempt` for a visitor with no diary on one of those pages; the
+  // three kinds an exempt path can produce are all handled below without a
+  // single redirect, exactly as the early return guaranteed.
+  const isExemptPath = isOnboardingGateExempt(new URL(request.url).pathname);
   const profile = await getLocalProfileGoals();
   const hasProfile = profile !== null;
   const hasCompletedOnboarding = profile?.onboardingCompletedAt != null;
@@ -80,7 +93,14 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // input here — but it cannot change the outcome once onboarding is stamped,
   // because the resolver's first branch returns before `logCount` is read. So
   // the hot path (every app boot of an onboarded device) skips it entirely.
-  const logCount = hasProfile && hasCompletedOnboarding ? 0 : (await listLocalFoodLogs()).length;
+  //
+  // AN EXEMPT PATH SKIPS IT TOO (M204 spec 09), and that is the requirement
+  // that no diary read runs for a stranger: the listing is the one read here
+  // that asks the diary for its contents, and `resolveForExemptPath` cannot
+  // reach a different answer from it than from the marker below, which any
+  // written log has already set. What is left are two reads that no diary need
+  // exist for, a profile row that is `null` on a fresh device and a boolean.
+  const logCount = isExemptPath || (hasProfile && hasCompletedOnboarding) ? 0 : (await listLocalFoodLogs()).length;
   // THE SNAPSHOT, READ SYNCHRONOUSLY. On a cold boot it says `isResuming`,
   // because `SyncController` (which settles it) is rendered by this layout and
   // therefore has not mounted yet. That is not a race to paper over: it is the
@@ -99,12 +119,17 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     // and it must decide offline too. The marker is written at sign-out, where
     // the policy IS known.
     isDeviceLocked: isDeviceLocked(),
+    isExemptPath,
   });
 
   // NOT A REDIRECT. This layout renders the loading screen and mounts the
   // controller that reopens the session, then revalidates. A redirect here
   // would unmount the only thing that can settle the question.
-  if (outcome.kind === 'wait') return { isWaitingForSession: true };
+  if (outcome.kind === 'wait') return { gateKind: 'wait' as const };
+  // A STRANGER ON A PAGE THAT IS OPEN TO THEM. No redirect, and no app shell
+  // either: the component below draws the public chrome for this kind. Only an
+  // exempt path can produce it, so no gated route can reach this line.
+  if (outcome.kind === 'exempt') return { gateKind: 'exempt' as const };
   if (outcome.kind === 'recover') throw redirect('/recover');
   // SIGNED IN WITH NO DIARY: the questionnaire, not the door. This is what a
   // freshly joined account hits on its first full navigation, and sending it
@@ -117,7 +142,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   if (outcome.kind === 'welcome') throw redirect('/welcome');
   if (outcome.kind === 'self-heal') await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
   writeHomeHint();
-  return { isWaitingForSession: false };
+  return { gateKind: 'pass' as const };
 }
 clientLoader.hydrate = true as const;
 
@@ -132,6 +157,14 @@ clientLoader.hydrate = true as const;
  * below it still exist and still matter (a leaf's own client loader can run
  * again later); this one is the first-paint screen, and only on first paint —
  * a client-side nav never re-renders a `HydrateFallback`.
+ *
+ * IT IS ALSO THE NO-FLASH GUARANTEE (M204 spec 09). The shell a visitor gets
+ * is decided by the client loader, so the default render before that loader
+ * resolves must not be either shell: this fallback is what renders instead,
+ * and it is why a stranger opening `/settings/preferences` never sees one
+ * frame of the sidebar before the public chrome replaces it. A client-side
+ * navigation into this layout runs the loader BEFORE it renders, so the same
+ * holds there without a second mechanism.
  */
 export function HydrateFallback() {
   const { t } = useTranslation();
@@ -167,7 +200,9 @@ const leafBackToSchema = z.object({ backTo: z.string() });
  */
 export default function PersonalLayout() {
   const { t } = useTranslation();
-  const { isWaitingForSession } = useLoaderData<typeof clientLoader>();
+  const { gateKind } = useLoaderData<typeof clientLoader>();
+  const { strangerSeesThePublicShell } = useInstancePolicy();
+  const { pathname } = useLocation();
   useRevalidateWhenTheSessionEnds();
   const matches = useMatches();
   const leafMatch = matches[matches.length - 1];
@@ -183,6 +218,21 @@ export default function PersonalLayout() {
   // `title` remains the English fallback for the ones that haven't.
   const title = handle?.titleKey ? t(handle.titleKey) : handle?.title;
 
+  // THE KIND-TO-SHELL MAPPING, and the only copy of it (M204 spec 09). The
+  // gate says whether this visitor has anything here; the policy says whether
+  // this instance shows such a visitor the public chrome. Both, because the
+  // kinds are about the DEVICE and are reachable on an open instance too,
+  // where the app is where a self-hoster already is and the shell should not
+  // change under them.
+  if (gateKind === 'exempt' && strangerSeesThePublicShell) {
+    return (
+      <PublicShell title={title}>
+        <StrangerNote variant={strangerNoteVariantForPath(pathname)} />
+        <Outlet />
+      </PublicShell>
+    );
+  }
+
   return (
     <AppWrapper title={title} backTo={backTo}>
       {/* Flushes queued offline writes on app start / reconnect / focus; renders nothing. */}
@@ -191,7 +241,7 @@ export default function PersonalLayout() {
           nothing, and attaches nothing at all unless `SYNC_SERVER_URL` is set.
           MOUNTED EVEN WHILE WAITING, because it is what ends the wait. */}
       <SyncController />
-      {isWaitingForSession ?
+      {gateKind === 'wait' ?
         <SessionResumeGate />
       : <Outlet />}
     </AppWrapper>

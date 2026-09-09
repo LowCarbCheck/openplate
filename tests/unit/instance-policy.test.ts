@@ -56,7 +56,7 @@ interface FrozenAnswer {
 /**
  * The policy openplate shipped on 2026-09-07.
  *
- * Six of the seven answer `false` on an open instance and `true` on a managed
+ * Seven of the eight answer `false` on an open instance and `true` on a managed
  * one. `homeCookieProvesSession` is the exception, and it is worth noticing
  * rather than smoothing over: managed does not simply switch things ON, it
  * withdraws a piece of trust the open app is right to extend.
@@ -129,6 +129,16 @@ const FROZEN: FrozenAnswer[] = [
       'only address: the landing page title, the footer tagline on every public page, the trust card body ' +
       'at each of the three analytics levels, and the recovery screen, which on a managed instance says ' +
       'the copy exists and offers the sign-in door that fetches it.',
+  },
+  {
+    question: 'strangerSeesThePublicShell',
+    open: false,
+    managed: true,
+    governs:
+      'Whether a visitor with no diary sees the PUBLIC chrome on a gate-exempt page. The three exempt ' +
+      'settings pages are reachable without an account on a managed instance, and they wore the sidebar, ' +
+      'the device chip and the back arrow, which read as a signed-in app to somebody who had never signed ' +
+      'in. `_personal.tsx` asks this question together with the gate\u2019s `exempt` kind (M204 spec 09).',
   },
 ];
 

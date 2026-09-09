@@ -1,7 +1,7 @@
 import type { MetaFunction } from 'react-router';
 import { Outlet, isRouteErrorResponse, useRouteError } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import PublicWrapper from '#app/components/public-wrapper';
+import { PublicShell } from '#app/components/public-shell';
 import { ErrorFallback } from '#app/components/route-error-boundary';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -32,8 +32,12 @@ export function ErrorBoundary() {
   const { t } = useTranslation();
   const error = useRouteError();
   return (
-    <PublicWrapper>
+    // `PublicShell` with no title is the `PublicWrapper` this used to render,
+    // element for element. It is named here so the shared shell has both of
+    // its two callers in the source: this layout and `_personal.tsx`'s exempt
+    // branch (M204 spec 09).
+    <PublicShell>
       <ErrorFallback error={error} homeTo="/" homeLabel={t('errors.backToHome')} boundary="public-layout" />
-    </PublicWrapper>
+    </PublicShell>
   );
 }

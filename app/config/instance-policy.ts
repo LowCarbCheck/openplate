@@ -137,6 +137,27 @@ export interface InstancePolicy {
    * so rather than repeat "it never leaves your device".
    */
   readonly serverHoldsTheDiary: boolean;
+  /**
+   * On a page the onboarding gate lets through untested, does a visitor with
+   * no diary here see the PUBLIC chrome rather than the app shell?
+   *
+   * `true` on a managed instance, where a stranger really can reach
+   * `/settings/preferences`, `/settings/account` and `/settings/about` without
+   * an account, and where the sidebar, the device chip and the back arrow told
+   * them they were inside an app they had never entered (M204 spec 09).
+   *
+   * `false` on an open instance, and this is the one question whose answer is
+   * ARGUABLY the same in both modes: a device with no diary at all gets the
+   * gate's `exempt` kind there too, and the public chrome would be honest for
+   * it. It is kept as a question, and answered `false`, because the open
+   * instance's whole premise is that the diary is the device's and the app is
+   * where you already are; a self-hoster opening preferences on a fresh
+   * browser is one screen away from starting, not a visitor to somebody
+   * else's service. This field is the documented switch for that judgement, so
+   * changing it is a one-line decision with a reason attached rather than a
+   * rewrite of `_personal.tsx`.
+   */
+  readonly strangerSeesThePublicShell: boolean;
 }
 
 /**
@@ -154,6 +175,7 @@ const OPEN_INSTANCE_POLICY = {
   operatorSeesActivity: false,
   aiComesFromTheInstance: false,
   serverHoldsTheDiary: false,
+  strangerSeesThePublicShell: false,
 } satisfies InstancePolicy;
 
 /** An instance an organization runs for its people: `INSTANCE_MODE=managed`. */
@@ -165,6 +187,7 @@ const MANAGED_INSTANCE_POLICY = {
   operatorSeesActivity: true,
   aiComesFromTheInstance: true,
   serverHoldsTheDiary: true,
+  strangerSeesThePublicShell: true,
 } satisfies InstancePolicy;
 
 /**

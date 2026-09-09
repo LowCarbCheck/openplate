@@ -62,6 +62,7 @@ const ONBOARDED_SIGNED_OUT: OnboardingGateInput = {
   hasSyncAccount: false,
   isResumingSession: false,
   isDeviceLocked: false,
+  isExemptPath: false,
 };
 
 describe('the device lock has no exception for the add-food screens', () => {

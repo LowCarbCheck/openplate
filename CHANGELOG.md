@@ -18,6 +18,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Changed
 
 - **The scan screen drops a notice nobody could read.** On an instance an organization runs, the camera card told a signed out visitor to sign in before it would take a photo. Signing out closes that screen on that kind of instance, so the sentence was written for a card that never opened. It is gone, and signing out still sends you to the welcome screen as before.
+- **The settings pages a visitor may open drop the app shell.** Preferences, Account and About are reachable without an account on an instance an organization runs, so that a visitor can set the language and find the sign in door. They used to arrive wrapped in the full sidebar, the device chip and a back arrow, which read as an app the visitor had never entered. They now wear the public header and footer, with one sentence saying why and links to the start page, the sign in page, the imprint and the privacy page. Anyone with a diary on the device sees the app as before.
 
 ## [0.26.0] - 2026-09-09
 

@@ -46,5 +46,10 @@ export async function readOnboardingGateKind(): Promise<OnboardingGateOutcome['k
     // this is the single reader and a gate input it silently defaulted would
     // be the one place the two readers could disagree.
     isDeviceLocked: isDeviceLocked(),
+    // NOT the path this runs on. Both callers ask a different question from
+    // the layout's: not "which chrome does this page wear" but "where does
+    // this person go now that they are signed in", and that question is the
+    // gated order for every one of them (M204 spec 09).
+    isExemptPath: false,
   }).kind;
 }

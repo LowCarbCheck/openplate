@@ -2267,6 +2267,11 @@
     },
     "eraseFailed": "The diary could not be erased, because openplate is open in another tab. Close it and try again."
   },
+  "strangerNote": {
+    "device": "You are not signed in. This setting applies to this device.",
+    "home": "Home",
+    "needsSignIn": "This page needs a sign-in."
+  },
   "sync": {
     "cancel": "Cancel",
     "changePassphrase": {

@@ -44,7 +44,21 @@ export type OnboardingGateOutcome =
    */
   | { kind: 'onboard' }
   /** A device with nothing on it: the welcome screen, which offers both doors. */
-  | { kind: 'welcome' };
+  | { kind: 'welcome' }
+  /**
+   * A STRANGER ON A PAGE THE GATE DOES NOT GUARD (M204 spec 09).
+   *
+   * The path is in `GATE_EXEMPT_PATHS`, so nothing is redirected; and this
+   * device holds no diary, no session and no evidence it ever did, so there is
+   * nothing for the app shell to be about. The caller renders the PUBLIC
+   * chrome around the page instead of the sidebar, the account chip and the
+   * back arrow, which together read as a signed-in app to somebody who is not
+   * signed in.
+   *
+   * DISTINCT FROM `pass`, which is the same three pages seen by a person who
+   * does have a diary here, and who keeps the full shell.
+   */
+  | { kind: 'exempt' };
 
 /** Everything the gate looks at. All three come from the on-device store. */
 export interface OnboardingGateInput {
@@ -76,6 +90,15 @@ export interface OnboardingGateInput {
    * this is `false` there by construction and the gate below is unchanged.
    */
   isDeviceLocked: boolean;
+  /**
+   * Is the requested path one of `GATE_EXEMPT_PATHS` (`isOnboardingGateExempt`)?
+   *
+   * A PATH FACT, not a device fact, and the only one this module reads. It is
+   * an input rather than a branch at the call site because the exempt order
+   * below is part of the same decision: an exempt path never redirects, and
+   * which chrome it wears depends on the very same device facts.
+   */
+  isExemptPath: boolean;
 }
 
 /**
@@ -125,8 +148,61 @@ export interface OnboardingGateInput {
  *    snapshot and arrives only AFTER they sign in, so a device that has never
  *    pulled one looks exactly like a fresh install. The welcome screen is the
  *    place that asks which of the two this is, rather than assuming.
+ *
+ * AN EXEMPT PATH TAKES A DIFFERENT ORDER (M204 spec 09), written out in
+ * `resolveForExemptPath` below. The order above is about where a device is
+ * SENT, and an exempt path sends nobody anywhere; the exempt order is about
+ * which chrome the page wears, and it answers only `exempt`, `wait` or `pass`.
  */
-export function resolveOnboardingGate({
+export function resolveOnboardingGate(input: OnboardingGateInput): OnboardingGateOutcome {
+  if (input.isExemptPath) return resolveForExemptPath(input);
+  return resolveForGatedPath(input);
+}
+
+/**
+ * The gate on a path it must not redirect away from (M204 spec 09).
+ *
+ * THE ORDER, WRITTEN DOWN, and it is the whole content of this function:
+ *
+ * (a) **A stranger gets `exempt`.** Not resuming, no session, and either the
+ *     device is LOCKED (its diary belongs to an account that signed out, so
+ *     this page has no diary behind it either) or there is nothing on this
+ *     device at all: no profile row, no log, and no `firstDataAt` marker. The
+ *     lock is tested here for the same reason it is tested first in the gated
+ *     order: a locked device with a stamped profile still must not read as a
+ *     signed-in app.
+ * (b) **A resuming session gets `wait`.** After (a) and not before it only in
+ *     writing: (a) already requires `!isResumingSession`, so the two cannot
+ *     both fire. Stated as its own branch because it is the case that matters
+ *     most, a signed-in person mid-resume who must never be shown the public
+ *     shell for the frame it takes their session to reopen.
+ * (c) **Everything else gets `pass`**, and wears the full shell: an open
+ *     session, a profile row, a log, or the marker. An OPEN instance with a
+ *     local diary lands here, never in (a), which is the point of testing the
+ *     device rather than the instance mode.
+ *
+ * The three kinds above are the only ones an exempt path can produce. That is
+ * the second half of the exemption and the reason it lives here rather than at
+ * the call site: `recover`, `onboard` and `self-heal` are redirects (or a
+ * write), and an exempt path that redirected would swallow the invite fragment
+ * and hide the language switch, which is what the exemption exists to prevent.
+ */
+function resolveForExemptPath({
+  hasProfile,
+  logCount,
+  hasEverHadData,
+  hasSyncAccount,
+  isResumingSession,
+  isDeviceLocked,
+}: OnboardingGateInput): OnboardingGateOutcome {
+  const holdsNothing = !hasProfile && logCount === 0 && !hasEverHadData;
+  if (!isResumingSession && !hasSyncAccount && (isDeviceLocked || holdsNothing)) return { kind: 'exempt' };
+  if (isResumingSession) return { kind: 'wait' };
+  return { kind: 'pass' };
+}
+
+/** The gate on every other route under `_personal`: the order the header describes. */
+function resolveForGatedPath({
   hasProfile,
   hasCompletedOnboarding,
   logCount,
@@ -147,7 +223,17 @@ export function resolveOnboardingGate({
 }
 
 /**
- * Routes under `_personal` that the gate must NOT redirect away from.
+ * Routes under `_personal` that the gate must NOT redirect away from, AND the
+ * routes whose chrome a stranger's visit changes.
+ *
+ * TWO JOBS, not one (M204 spec 09). Membership here used to mean only "skip
+ * the redirect", and a reader could safely treat it as an access list. It is
+ * now also the input `resolveForExemptPath` reads to answer `exempt`, which is
+ * what makes `_personal.tsx` draw the PUBLIC shell instead of the sidebar for
+ * a visitor with no diary. So adding a path here does two things: it opens the
+ * page to somebody who has not onboarded, and it declares that the page is
+ * legible to a stranger without the app around it. A page that is only the
+ * first is not a candidate for this set.
  *
  * `/settings/preferences` is the documented way out of the instance's default
  * language, and this instance defaults to German. A first-time visitor who
@@ -168,6 +254,11 @@ export function resolveOnboardingGate({
  * address: it redirects, and a gate that bounced it to `/onboarding` first
  * would swallow the redirect.
  *
+ * `/settings/about` is linked from the landing page footer, which is a public
+ * page: a visitor following that link was bounced to `/welcome` and never saw
+ * the page the link named. It reads nothing from onboarding either, and it is
+ * the one exempt page that is pure reading matter.
+ *
  * `/welcome` and `/sign-in` are the gate's own destinations (M183 spec 02),
  * and `/forgot` and `/reset` are where a mailed link lands (M192/05). All four
  * are registered outside this layout, so the exemptions are belt and braces
@@ -181,6 +272,7 @@ const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   '/settings/preferences',
   '/settings/account',
   '/settings/sync',
+  '/settings/about',
   '/welcome',
   '/sign-in',
   '/forgot',

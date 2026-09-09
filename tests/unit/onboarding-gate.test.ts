@@ -33,6 +33,9 @@ function newDevice(overrides: Partial<OnboardingGateInput> = {}): OnboardingGate
     hasSyncAccount: false,
     isResumingSession: false,
     isDeviceLocked: false,
+    // The GATED order, which is what every case in this file is about. The
+    // exempt order has its own file, `personal-shell-for-a-stranger.test.ts`.
+    isExemptPath: false,
     ...overrides,
   };
 }
