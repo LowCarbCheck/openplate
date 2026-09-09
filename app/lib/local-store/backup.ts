@@ -18,6 +18,7 @@ import { z } from 'zod';
 import type { Store } from 'tinybase';
 import { displayPortionSchema } from '#app/lib/portions';
 import { CARB_BASES } from '#app/lib/net-carbs';
+import { EATING_STYLE_IDS } from '#app/lib/eating-style';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
 import { LAST_EXPORT_VALUE } from './store';
 import { SCHEMA_VERSION } from './schema';
@@ -242,6 +243,19 @@ const profileGoalsSchema = z.object({
   // it) rather than reject the whole backup.
   pregnancyDueDate: z.string().nullable().optional(),
   lactationStartDate: z.string().nullable().optional(),
+  // Added v20 (the eating style, M210), one more OPTIONAL field on the same
+  // entity, under the same rules as the six above: a v19 envelope lacks the
+  // key, which already reads as "picked before the pick existed", so no
+  // forward-migration step was added. The line is needed because zod strips
+  // unrecognized keys, and a dropped style is not merely a lost preference.
+  // `deriveEatingStyle` would read `just-track` back out of an account that
+  // deliberately chose it, and one that simply never set a goal, with no way
+  // to tell them apart afterwards.
+  //
+  // `z.enum(EATING_STYLE_IDS)` rather than `z.string()`, unlike the two date
+  // fields above: an unknown style id is not a value the readers can ignore,
+  // it is one the lens cannot resolve, so it must not import.
+  eatingStyle: z.enum(EATING_STYLE_IDS).nullable().optional(),
 });
 
 const fastSchema = z.object({
@@ -593,6 +607,13 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // `profileGoalsSchema` accepts it as-is. There is nothing to back-fill from
   // either: a person who used to be able to say only "pregnant" never told this
   // app a date, and inventing one would report a gestation week nobody entered.
+
+  // Nor is there one for v19 -> v20 (the eating style, M210): it put ONE more
+  // OPTIONAL field, `eatingStyle`, on the EXISTING profile entity, so a v19
+  // envelope lacks the key and `profileGoalsSchema` accepts it as-is. Nothing
+  // is back-filled on purpose, because `deriveEatingStyle` reads a style out of the
+  // goal numbers on every read, so writing a guess here would freeze a
+  // derivation that is meant to follow the numbers.
 
   const result = snapshotSchema.safeParse(migratedData);
   if (!result.success) {

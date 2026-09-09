@@ -520,8 +520,19 @@
       "againstReference": "gemessen an einem Richtwert von {{value}} g",
       "ariaLabel": "{{label}}, {{reference}}",
       "high": "Viele Kohlenhydrate",
+      "kcal": {
+        "near": "Nahe am Kalorienziel",
+        "over": "Über dem Kalorienziel",
+        "sr": "{{label}}, {{eaten}} von {{target}} kcal",
+        "within": "Im Kalorienziel"
+      },
       "low": "Wenig Kohlenhydrate",
-      "moderate": "Mittel viele Kohlenhydrate"
+      "moderate": "Mittel viele Kohlenhydrate",
+      "protein": {
+        "met": "Eiweißziel erreicht",
+        "sr": "{{label}}, {{eaten}} von {{floor}} g Eiweiß",
+        "toGo": "Noch {{value}} g Eiweiß"
+      }
     },
     "kcal": {
       "absolute": "{{value}} Kalorien"
@@ -1389,6 +1400,33 @@
       }
     },
     "stepOf": "Schritt {{current}} von {{total}}",
+    "style": {
+      "caution": "In der Schwangerschaft und in der Stillzeit brauchst du mehr Energie und mehr Kohlenhydrate. Sprich mit deiner Hebamme oder deiner Ärztin, bevor du eines von beiden begrenzt. Viel Eiweiß oder Nur mitschreiben passen vielleicht besser zu dir. Lies, <source>was die DGE dazu rät</source>.",
+      "highProtein": {
+        "detail": "1,6 g Eiweiß pro kg Körpergewicht",
+        "label": "Viel Eiweiß"
+      },
+      "hint": "Die meisten fangen hier an",
+      "justTrack": {
+        "detail": "Kein Ziel, nur die Zahlen",
+        "label": "Nur mitschreiben"
+      },
+      "lowCarb": {
+        "detail": "Kohlenhydrate unter einer Tagesgrenze halten",
+        "label": "Low-Carb"
+      },
+      "lowCarbLowKcal": {
+        "detail": "Eine Kohlenhydratgrenze und ein Kalorienziel",
+        "label": "Low-Carb und Kalorien"
+      },
+      "lowKcal": {
+        "detail": "Ein Kalorienziel am Tag",
+        "label": "Kalorien"
+      },
+      "needsWeight": "Trag dein Gewicht ein, damit wir dieses Ziel ausrechnen können. Bis dahin bleibt dein Eiweißziel beim Richtwert.",
+      "sourceLabel": "Deutsche Gesellschaft für Ernährung (DGE), öffnet in einem neuen Tab",
+      "title": "Wie isst du?"
+    },
     "waysToLog": {
       "photo": {
         "title": "Fotografieren",
@@ -1914,6 +1952,12 @@
         "title": "Administration",
         "status": "Einladungen und Konten"
       }
+    },
+    "style": {
+      "lead": "Dein Stil entscheidet, woran der Tag gemessen wird.",
+      "save": "Stil speichern",
+      "saved": "Stil gespeichert",
+      "title": "Ernährungsstil"
     },
     "title": "Einstellungen"
   },
@@ -2786,8 +2830,8 @@
     "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen"
   },
   "aiIntake": {
+    "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie.",
     "signedOut": "Du bist auf diesem Gerät abgemeldet, daher kann keine KI lesen, was du schreibst. Melde dich an, um sie wieder zu nutzen.",
-    "signIn": "Anmelden",
-    "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie."
+    "signIn": "Anmelden"
   }
 }

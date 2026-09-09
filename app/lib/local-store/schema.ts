@@ -318,7 +318,25 @@
  * to tell the app which. `app/lib/reproductive-stage.ts` turns the date into a
  * gestation week and a trimester against a `today` passed in by the caller, so
  * the record advances by itself and never reads a clock of its own.
+ *
+ * NOTE (M210, the eating style): `SCHEMA_VERSION` v19 → v20 adds ONE OPTIONAL
+ * field, `eatingStyle`, to the EXISTING `LocalProfileGoals` entity, so it is
+ * under the same optional-field rules as the M206 bump above and NOT under the
+ * v6 → v7 or the v17 → v18 rules. A pre-v20 row, and a v19 backup envelope,
+ * simply lacks the key and reads back as a valid v20 profile with it absent.
+ * There is therefore no `migrateSnapshotToV20` step in `backup.ts` and there
+ * must not be one; the one new line on `profileGoalsSchema` IS needed, because
+ * zod strips unrecognized keys and would drop the pick on every export/import
+ * round trip.
+ *
+ * Absent is a MEANINGFUL state here, not merely an unset one:
+ * `deriveEatingStyle` (`#app/lib/eating-style`) reads a style back out of the
+ * three goal numbers, which stay the source of truth. That is also why no
+ * override columns were added beside them, because two homes for a ceiling would be
+ * two places to disagree about it, and the derivation keeps the upgrade
+ * lossless and reversible for every account written before this version.
  */
+import type { EatingStyleId } from '#app/lib/eating-style';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { Macros } from '#app/lib/macros';
@@ -330,7 +348,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 19;
+export const SCHEMA_VERSION = 20;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -770,6 +788,19 @@ export interface LocalProfileGoals {
    * into a month count the same clock-free way `resolveGestation` does.
    */
   lactationStartDate?: string | null;
+  /**
+   * The chosen eating style (added v20, M210), or absent/`null` for an account
+   * that predates the pick. NOT a fourth goal number: the three numbers above
+   * stay the source of truth, and `effectiveEatingStyle`
+   * (`#app/lib/eating-style`) derives the style from them when this is absent,
+   * so a legacy profile is never re-asked and never rewritten.
+   *
+   * Stored at all because the derivation cannot tell two answers apart that a
+   * person means differently. No ceiling and no kcal target is `just-track`
+   * to a reader, and a deliberate "just track" to the person who picked it.
+   * The stored pick is what makes the second one survive.
+   */
+  eatingStyle?: EatingStyleId | null;
 }
 
 /**

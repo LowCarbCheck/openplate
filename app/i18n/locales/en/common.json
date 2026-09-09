@@ -532,8 +532,19 @@
       "againstReference": "against a {{value}} g reference day",
       "ariaLabel": "{{label}}, {{reference}}",
       "high": "High carb impact",
+      "kcal": {
+        "near": "Near your calorie goal",
+        "over": "Over your calorie goal",
+        "sr": "{{label}}, {{eaten}} of {{target}} kcal",
+        "within": "Within your calorie goal"
+      },
       "low": "Low carb impact",
-      "moderate": "Moderate carb impact"
+      "moderate": "Moderate carb impact",
+      "protein": {
+        "met": "Protein goal met",
+        "sr": "{{label}}, {{eaten}} of {{floor}} g protein",
+        "toGo": "{{value}} g protein to go"
+      }
     },
     "kcal": {
       "absolute": "{{value}} calories"
@@ -1381,6 +1392,7 @@
     },
     "loading": "Loading…",
     "localFirst": "Your data lives on <strong>this device</strong>. We never see it. The diary you’re about to start stays local, always.",
+    "localFirstManaged": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator manages the AI, so photos sent for estimates pass through that server in transit. The privacy policy details what the operator can access.",
     "step": {
       "body": {
         "description": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number, and like everything else, they stay on this device.",
@@ -1400,6 +1412,33 @@
       }
     },
     "stepOf": "Step {{current}} of {{total}}",
+    "style": {
+      "caution": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <source>what the DGE advises</source>.",
+      "highProtein": {
+        "detail": "1.6 g of protein per kg of body weight",
+        "label": "High protein"
+      },
+      "hint": "Most people start here",
+      "justTrack": {
+        "detail": "No goal, only the numbers",
+        "label": "Just track"
+      },
+      "lowCarb": {
+        "detail": "Keep carbs under a daily limit",
+        "label": "Low-carb"
+      },
+      "lowCarbLowKcal": {
+        "detail": "A carb limit and a calorie goal",
+        "label": "Low-carb and calories"
+      },
+      "lowKcal": {
+        "detail": "One calorie goal a day",
+        "label": "Calories"
+      },
+      "needsWeight": "Log your weight so we can work this goal out. Until then your protein goal stays at the reference value.",
+      "sourceLabel": "German Nutrition Society (DGE), opens in a new tab",
+      "title": "How do you eat?"
+    },
     "waysToLog": {
       "photo": {
         "title": "Photograph it",
@@ -1426,8 +1465,7 @@
       "target": "Target weight",
       "unitToggleLabel": "Weight unit",
       "units": "Units"
-    },
-    "localFirstManaged": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator manages the AI, so photos sent for estimates pass through that server in transit. The privacy policy details what the operator can access."
+    }
   },
   "preferences": {
     "cardDescription": "Theme and language, kept on this device.",
@@ -1926,6 +1964,12 @@
         "title": "Administration",
         "status": "Invitations and accounts"
       }
+    },
+    "style": {
+      "lead": "Your style decides which goal the day is graded by.",
+      "save": "Save style",
+      "saved": "Style saved",
+      "title": "Eating style"
     },
     "title": "Settings"
   },
@@ -2786,8 +2830,8 @@
     }
   },
   "aiIntake": {
+    "noAllowance": "AI entries are not switched on for this account. Ask your administrator to switch them on. Searching the food database works without them.",
     "signedOut": "You are signed out on this device, so there is no AI to read what you write. Sign in to use it again.",
-    "signIn": "Sign in",
-    "noAllowance": "AI entries are not switched on for this account. Ask your administrator to switch them on. Searching the food database works without them."
+    "signIn": "Sign in"
   }
 }

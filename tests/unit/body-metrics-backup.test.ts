@@ -53,12 +53,13 @@ describe('schema version', () => {
   // v14, research contributions (M161/03) at v15, the submitted research
   // window (M163/01) at v16, the gateway connection (M187/02) at v17, and its
   // REMOVAL (M192) at v18, the first bump here that deletes an entity, and
-  // the pregnancy due date plus the lactation start date (M206/01) at v19.
+  // the pregnancy due date plus the lactation start date (M206/01) at v19,
+  // and the eating style on the profile (M210/01) at v20.
   // What it guards is that a bump is never silent —
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 19, bumped past the v8 body-metrics bump by everything through the M206 pregnancy dates', () => {
-    assert.equal(SCHEMA_VERSION, 19);
+  it('is 20, bumped past the v8 body-metrics bump by everything through the M210 eating style', () => {
+    assert.equal(SCHEMA_VERSION, 20);
   });
 });
 

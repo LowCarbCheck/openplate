@@ -270,6 +270,11 @@ const EMPTY_PROFILE_GOALS: LocalProfileGoals = {
   reproductiveStatus: null,
   pregnancyDueDate: null,
   lactationStartDate: null,
+  // Added v20 (M210). `null` is the honest default and not a hidden pick: the
+  // readers go through `effectiveEatingStyle`, which derives a style from the
+  // goal numbers while this is null, so a device that has never onboarded is
+  // graded by what it actually knows.
+  eatingStyle: null,
 };
 
 /**

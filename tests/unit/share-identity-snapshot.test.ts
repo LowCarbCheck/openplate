@@ -61,8 +61,8 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
 }
 
 describe('the local schema version', () => {
-  it('is 19, the pregnancy due date and the lactation start date (M206/01)', () => {
-    assert.equal(SCHEMA_VERSION, 19);
+  it('is 20, the eating style on the profile (M210/01)', () => {
+    assert.equal(SCHEMA_VERSION, 20);
   });
 });
 
@@ -74,7 +74,7 @@ describe('a v12 backup envelope', () => {
       data: { foods: [], foodLogs: [], weightEntries: [], profile: null, fasts: [], savedMeals: [] },
     });
 
-    assert.equal(migrated.schemaVersion, 19);
+    assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
     assert.equal(migrated.data.shareIdentity, null);
     assert.deepEqual(migrated.data.sharePeers, []);
     // And the v15 keys default the same way, which is the whole of the v14 ->
