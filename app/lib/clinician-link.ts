@@ -6,7 +6,7 @@
  * client parses it here, and the result is handed straight to the ceremony
  * that already exists (`app/lib/sync/sharing.ts`). Nothing in this file is a
  * trust decision — it is transport, and keeping the two apart is the whole
- * design (`openplate-sync` ADR-0002, the trust section).
+ * design (`openplate-core` ADR-0002, the trust section).
  *
  * ── The payload rides in the FRAGMENT, and that is not a detail ───────────
  *

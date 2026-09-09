@@ -45,7 +45,7 @@ export const SYNC_ENTITY_TYPES = {
   weight: 'weightEntry',
   profile: 'profile',
   /**
-   * THE OWNER-PRIVATE COMPARTMENT (M160/07, `openplate-sync` ADR-0002's
+   * THE OWNER-PRIVATE COMPARTMENT (M160/07, `openplate-core` ADR-0002's
    * partition amendment) — one entity holding the sealed ciphertext and its
    * two CDK wraps.
    *

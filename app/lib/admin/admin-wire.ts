@@ -60,7 +60,7 @@ export type AdminAccountView = z.infer<typeof accountViewSchema>;
  *
  * The service keeps one integer per account per day and nothing else: no
  * prompt, no model, no clock time inside the day. Days are the whole
- * resolution that exists, on purpose (`openplate-sync/src/db/schema.ts:412`).
+ * resolution that exists, on purpose (`openplate-core/src/db/schema.ts:412`).
  */
 export const activityDaySchema = z.object({ day: z.string(), count: z.number().int() });
 export type AdminActivityDay = z.infer<typeof activityDaySchema>;
@@ -212,7 +212,7 @@ export const adminStatsResponseSchema = z.object({ stats: adminStatsSchema });
 //
 // `GET /v1/admin/feedback`, `GET /v1/admin/feedback/:id` and
 // `DELETE /v1/admin/feedback/:id`, transcribed from
-// `openplate-sync/src/server/admin-feedback-routes.ts`: `toSummaryView` at
+// `openplate-core/src/server/admin-feedback-routes.ts`: `toSummaryView` at
 // `:79`, `toDetailView` at `:97`, the list envelope at `:183` and the detail
 // envelope at `:209`.
 //

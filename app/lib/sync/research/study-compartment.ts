@@ -2,7 +2,7 @@
  * THE STUDY ACCOUNT'S OWN COMPARTMENT — the same construction as
  * `private-store.ts`, over a different plaintext.
  *
- * `openplate-sync` ADR-0003: "the private key lives in the study account's own
+ * `openplate-core` ADR-0003: "the private key lives in the study account's own
  * owner-private compartment". The CRYPTO is shared with the diary's
  * (`engine/crypto/private-store.ts`: one CDK, wrapped under `K_pp` and `K_pr`,
  * AAD-bound to the account id) — a second wrap format is how the packed-IV

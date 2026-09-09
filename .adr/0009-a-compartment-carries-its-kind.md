@@ -11,7 +11,7 @@ Two different plaintexts now ride inside one crypto construction
 compartment** (`OwnerPrivateRegion` — share key pair, pinned peers, pseudonym
 root, study enrolments) and the study console's own compartment
 (`StudyPrivateRegion` — every ECIES key generation the study has minted).
-ADR-0008 put the second one there deliberately, and `openplate-sync` ADR-0002's
+ADR-0008 put the second one there deliberately, and `openplate-core` ADR-0002's
 one-wrap-implementation rule is why they share the construction rather than
 growing a second wrap format.
 
@@ -106,7 +106,7 @@ Concretely:
 - **Refuse on the wrong kind by inspecting the ciphertext or the wraps.** Not
   possible, and worth writing down so nobody re-derives it: the wraps and the
   AAD are identical between the two compartments by design, and making them
-  differ would mean a second wrap format, which `openplate-sync` ADR-0002
+  differ would mean a second wrap format, which `openplate-core` ADR-0002
   forbids for exactly the drift reasons that produced this hazard.
 - **Gate `/study` behind `SYNC_RESEARCH` and call the hazard unreachable.**
   Rejected. It narrows the entry point without removing the confusion, it does
@@ -323,8 +323,8 @@ No protocol change. `PROTOCOL.md` §3.2 already declares everything inside
 ## References
 
 - [ADR-0008](0008-the-study-console-lives-in-openplate.md) — why a study account and a diary account meet in the same browser profile at all.
-- `openplate-sync/docs/adr/0002-sharing-a-diary-without-giving-the-server-a-key.md` — the partition amendment and the one-wrap-implementation rule.
-- `openplate-sync/docs/adr/0003-research-contributions-pseudonymous-but-never-anonymous.md` — "a study is an ordinary sync account", and the private key's home.
+- `openplate-core/docs/adr/0002-sharing-a-diary-without-giving-the-server-a-key.md` — the partition amendment and the one-wrap-implementation rule.
+- `openplate-core/docs/adr/0003-research-contributions-pseudonymous-but-never-anonymous.md` — "a study is an ordinary sync account", and the private key's home.
 - `.tracker/M164-openplate-research-hardening/01-the-seal-must-never-blank-a-compartment-it-could-not-open.md` — the re-emit invariant this decision splits.
 - `.tracker/M164-openplate-research-hardening/02-a-compartment-carries-its-kind-and-a-wrong-kind-is-refused.md`
 - `.tracker/M164-openplate-research-hardening/06-a-refusal-that-arrives-after-the-write-is-not-a-refusal.md` — the three places this decision was not applied.

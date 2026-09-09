@@ -1,5 +1,5 @@
 /**
- * `/study` — the researcher's console (M163/03, `openplate-sync` ADR-0003).
+ * `/study` — the researcher's console (M163/03, `openplate-core` ADR-0003).
  *
  * ── A second persona, at the top level ───────────────────────────────────
  *

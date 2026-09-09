@@ -20,7 +20,7 @@
  * ── The figures are not on the queue, and that is the design ─────────────
  *
  * `GET /v1/admin/feedback` sends no `measurements`
- * (`openplate-sync/src/feedback/feedback-admin-store.ts`, its header says
+ * (`openplate-core/src/feedback/feedback-admin-store.ts`, its header says
  * why), so the figures are asserted where they arrive: the report's own page,
  * beside the photograph.
  */

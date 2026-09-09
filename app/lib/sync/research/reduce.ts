@@ -1,5 +1,5 @@
 /**
- * THE REDUCTION (`PROTOCOL.md` §3.5, `openplate-sync` ADR-0003).
+ * THE REDUCTION (`PROTOCOL.md` §3.5, `openplate-core` ADR-0003).
  *
  * Turns a device snapshot into `daily-intake:v1` — the ONLY thing a research
  * contribution is ever allowed to carry. It is a pure function of a snapshot

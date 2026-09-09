@@ -6,7 +6,7 @@
  * `clientAction` — deliberately, like `connect-gateway.tsx` beside it. The
  * payload lives in the URL FRAGMENT, which no browser sends to any server, so
  * a loader could not read it even if one existed. That is the point:
- * `openplate-sync` ADR-0002 prohibition 1 says the server never stores, serves
+ * `openplate-core` ADR-0002 prohibition 1 says the server never stores, serves
  * or endorses a share public key, and a query parameter would put the key in
  * this server's access log, in a `Referer` header and in every proxy between.
  *

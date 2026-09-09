@@ -1,5 +1,5 @@
 /**
- * THE CONTRIBUTOR'S SUBMISSION (`openplate-sync` ADR-0003, `PROTOCOL.md`
+ * THE CONTRIBUTOR'S SUBMISSION (`openplate-core` ADR-0003, `PROTOCOL.md`
  * §5.18).
  *
  * Reduce the window, seal it to the study's PINNED key, push it under a

@@ -221,7 +221,7 @@ test('a session opened once the real AccountView has been read carries the true 
       },
     });
     // The reset ceremony's own account read — `recover-rotate`'s response
-    // already carries the full view (`openplate-sync` `toAccountView`), and
+    // already carries the full view (`openplate-core` `toAccountView`), and
     // `resumeSyncSession` reaches the same state via `getAccount()`.
     await authClient.getAccount();
     const http = new SyncHttpClient({ baseUrl: SERVER_URL, tokens: authClient });

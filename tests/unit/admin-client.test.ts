@@ -368,7 +368,7 @@ test('listInvites parses an invitation, including the fields only an admin sees'
 });
 
 /**
- * The stats body EXACTLY as `openplate-sync` 0.6.0 sends it, transcribed from
+ * The stats body EXACTLY as `openplate-core` 0.6.0 sends it, transcribed from
  * the network log of the 2026-09-04 walk.
  *
  * Wrapped in `stats`, like every other admin response, and carrying four

@@ -4,7 +4,7 @@ import { type RouteConfig, route, layout, index } from '@react-router/dev/routes
  * The whole route tree, accountless (M128 spec 03). There is no login,
  * registration, session, or superadmin route left in this app: the tracker is
  * device-local and every visitor gets the full product on first load. Accounts
- * moved out entirely — the standalone `openplate-sync` service owns identity
+ * moved out entirely — the standalone `openplate-core` service owns identity
  * for the optional E2EE-sync feature and is reached directly at its own origin
  * (M128 spec 04), never through this server.
  */
@@ -37,14 +37,14 @@ export default [
   // CLIENT-ONLY and top-level for the same two reasons as `/connect-gateway`,
   // plus a third that is specific to it — the payload rides in the URL
   // FRAGMENT, which no browser sends to any server, so there is nothing a
-  // loader here could read. `openplate-sync` ADR-0002 prohibition 1: the
+  // loader here could read. `openplate-core` ADR-0002 prohibition 1: the
   // server never stores, serves or endorses a share public key.
   route('/connect-clinician', 'routes/connect-clinician.tsx'),
 
   // Joining a study: where a study's join link lands (M163/02). Same shape as
   // `/connect-clinician` and for the same reason — the study's contribution
   // key rides in the URL FRAGMENT, so no loader could read it and no server
-  // ever sees it. `openplate-sync` ADR-0003: the fingerprint that authenticates
+  // ever sees it. `openplate-core` ADR-0003: the fingerprint that authenticates
   // that key is typed from the study's printed consent document, never shown.
   route('/join-study', 'routes/join-study.tsx'),
 

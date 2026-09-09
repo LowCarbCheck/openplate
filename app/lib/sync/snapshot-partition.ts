@@ -1,5 +1,5 @@
 /**
- * THE SNAPSHOT PARTITION (`openplate-sync` ADR-0002, "The snapshot is
+ * THE SNAPSHOT PARTITION (`openplate-core` ADR-0002, "The snapshot is
  * partitioned — amendment, 2026-08-27").
  *
  * The device's snapshot is formally two regions, and this module is the one
@@ -198,7 +198,7 @@ export function classifySnapshotKey(key: string): SnapshotRegion {
     if (classified === key) return region;
   }
   throw new Error(
-    `snapshot key "${key}" is not classified in SNAPSHOT_KEY_REGIONS — classify it as 'shared' or 'owner-private' (openplate-sync ADR-0002)`,
+    `snapshot key "${key}" is not classified in SNAPSHOT_KEY_REGIONS — classify it as 'shared' or 'owner-private' (openplate-core ADR-0002)`,
   );
 }
 

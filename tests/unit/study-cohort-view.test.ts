@@ -1,5 +1,5 @@
 /**
- * WHAT THE CONSOLE SAYS, AND IN WHICH REGISTER (M163/03, `openplate-sync`
+ * WHAT THE CONSOLE SAYS, AND IN WHICH REGISTER (M163/03, `openplate-core`
  * ADR-0003).
  *
  * Three rules, each of which fails silently if it is not executable.

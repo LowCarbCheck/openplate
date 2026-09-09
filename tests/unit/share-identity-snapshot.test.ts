@@ -1,6 +1,6 @@
 /**
  * The share key pair and its pinned peers, where they meet the SNAPSHOT
- * (M160/04, `openplate-sync` ADR-0002).
+ * (M160/04, `openplate-core` ADR-0002).
  *
  * Three claims are pinned here, and each has a silent failure mode:
  *

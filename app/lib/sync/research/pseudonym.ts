@@ -1,5 +1,5 @@
 /**
- * THE STUDY PSEUDONYM (`PROTOCOL.md` §3.5, `openplate-sync` ADR-0003).
+ * THE STUDY PSEUDONYM (`PROTOCOL.md` §3.5, `openplate-core` ADR-0003).
  *
  * A contributor presents a different, stable identifier to every study:
  *

@@ -1,6 +1,6 @@
 /**
  * REWRAPPING THE COMPARTMENT'S SLOTS ON THE SERVER — the lifecycle half of the
- * partition (`openplate-sync` ADR-0002's amendment).
+ * partition (`openplate-core` ADR-0002's amendment).
  *
  * The compartment lives inside the blob, so a slot cannot be rewrapped by a
  * key-record write the way the DEK's two doors are. This module is the one

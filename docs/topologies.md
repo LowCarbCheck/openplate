@@ -87,7 +87,7 @@ blob and pulls the other device's, and the photo still leaves each device for th
 flowchart LR
   app["openplate app"] -->|"HTML and JS"| phone["Phone"]
   app -->|"HTML and JS"| laptop["Laptop"]
-  phone -->|"ciphertext"| sync["openplate-sync"]
+  phone -->|"ciphertext"| sync["openplate-core"]
   laptop -->|"ciphertext"| sync
   sync --> db[("Postgres")]
   phone -->|"photo and your key"| cloud["Cloud AI provider"]
@@ -97,7 +97,7 @@ flowchart LR
 **You operate:** the app, an account service, and a Postgres. That is a real step up: an
 account service has a database worth backing up, a `SERVER_SECRET` worth keeping, and users
 who can lock themselves out. Read
-[openplate-sync's README](https://github.com/LowCarbCheck/openplate-sync#readme) before you
+[openplate-core's README](https://github.com/LowCarbCheck/openplate-core#readme) before you
 put it on the public internet.
 **Compose file:** [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml).
 
@@ -130,7 +130,7 @@ forwards the request to whatever the operator pointed it at.
 ```mermaid
 %% alt: On a managed instance the signed-in member scans through the sync server's AI proxy, which counts the request against a daily allowance.
 flowchart LR
-  browser["Member's browser"] -->|"ciphertext"| sync["openplate-sync, managed"]
+  browser["Member's browser"] -->|"ciphertext"| sync["openplate-core, managed"]
   browser -->|"photo"| sync
   sync --- quota["Daily allowance per account"]
   sync -->|"photo"| upstream["Cloud provider, or inference"]
@@ -185,10 +185,10 @@ They are easy to confuse and they compose.
 
 - **openplate-inference is the compute layer.** It answers the question *what is on this
   plate*. It carries a model runtime and weights, and it wants hardware.
-- **openplate-sync, on a managed instance, is the tenancy layer.** It answers *who is allowed
+- **openplate-core, on a managed instance, is the tenancy layer.** It answers *who is allowed
   to spend, how much, and how do I take it away*. It carries no model and forwards everything.
 
-Point a managed instance's AI proxy at your inference box (openplate-sync's
+Point a managed instance's AI proxy at your inference box (openplate-core's
 `UPSTREAM_BASE_URL`, with `UPSTREAM_API_KEY` left empty) and you get both: scans on your own hardware, with per-account
 allowances in front of them. Point it at a cloud provider instead and you get shared spend
 with no hardware. Either way, the same sync server also carries the diary: sync and the AI
@@ -203,7 +203,7 @@ Rung 4 is the two rungs above, drawn together. Nothing new appears on it.
 flowchart LR
   app["openplate app"] -->|"HTML and JS"| phone["Phone"]
   app -->|"HTML and JS"| laptop["Laptop"]
-  phone -->|"ciphertext"| sync["openplate-sync"]
+  phone -->|"ciphertext"| sync["openplate-core"]
   laptop -->|"ciphertext"| sync
   sync --> db[("Postgres")]
   phone -->|"photo"| inf["openplate-inference"]

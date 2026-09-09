@@ -51,7 +51,7 @@ const INVITE_FRAGMENT_KEY = 'invite';
 
 /**
  * The shape every signup invite carries, and the client's half of the service
- * binding minted in `openplate-sync/src/lib/tokens.ts`.
+ * binding minted in `openplate-core/src/lib/tokens.ts`.
  *
  * Checked here so the ordinary accident is caught before it becomes a network
  * call: a copy of the wrong line of an operator's output, a truncated paste, a

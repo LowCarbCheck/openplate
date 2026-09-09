@@ -6,7 +6,7 @@
  * client parses it here, and the result is handed straight to the ceremony
  * that already exists (`app/lib/sync/research/enrolment.ts`). Nothing in this
  * file is a trust decision — it is transport, and keeping the two apart is the
- * whole design (`openplate-sync` ADR-0003).
+ * whole design (`openplate-core` ADR-0003).
  *
  * This module is `clinician-link.ts`'s sibling and obeys its two rules, for
  * the same reasons and with more at stake. It shares that module's readers

@@ -11,7 +11,7 @@ openplate shipped with a conventional self-hosted account system: cookie session
 - **The tracker had already left the server.** M117/03 moved food logs, personal foods, weigh-ins and profile/goals into the browser's IndexedDB primary store and dropped the server tables. The account row no longer had any health data hanging off it.
 - **The BYOK key had already left the server.** M117/02 moved the AI provider key onto the device, so the AES-256-GCM at-rest encryption — and the key material it needed in the environment — protected nothing.
 - **Accounts had already stopped gating the product.** M117/04 made the whole tracker work with no session at all; the login page was an entrance to a building nobody had to enter.
-- **The one remaining reason to have an account was sync**, and M128 spec 01/02 moved sync out of this app entirely, into a standalone `openplate-sync` service with its own identity, its own database, and its own secrets.
+- **The one remaining reason to have an account was sync**, and M128 spec 01/02 moved sync out of this app entirely, into a standalone `openplate-core` service with its own identity, its own database, and its own secrets.
 
 What was left was an account system whose only real effects were costs: two required secrets in every deployment's environment, a `users` table that made this server a processor of personal data (an email address is personal data even with no health data attached), a login wall in front of a product that did not need one, and a large surface of auth code — throttles, token tables, session-freshness checks, superadmin gating — to keep correct and reviewed for no user-visible benefit.
 
@@ -19,7 +19,7 @@ What was left was an account system whose only real effects were costs: two requ
 
 **The openplate app server has no accounts, and holds no personal data.**
 
-Removed entirely: the `users`, email-verification-token, password-reset-token and feature-entitlement tables; the E2EE sync-storage tables (relocated to `openplate-sync`); every auth route (`/login`, `/logout`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`); the `/super/*` panel; auth and superadmin middleware; the session service; the mail transports; the login/registration throttles; and the `user` CLI command group.
+Removed entirely: the `users`, email-verification-token, password-reset-token and feature-entitlement tables; the E2EE sync-storage tables (relocated to `openplate-core`); every auth route (`/login`, `/logout`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`); the `/super/*` panel; auth and superadmin middleware; the session service; the mail transports; the login/registration throttles; and the `user` CLI command group.
 
 Two consequences of that removal are themselves decisions, and are the ones worth defending:
 

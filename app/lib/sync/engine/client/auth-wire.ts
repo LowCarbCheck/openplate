@@ -1,9 +1,9 @@
 /**
- * The `/v1/auth/*` wire shapes, transcribed from `openplate-sync/PROTOCOL.md`
+ * The `/v1/auth/*` wire shapes, transcribed from `openplate-core/PROTOCOL.md`
  * and, for protocol 2, from M192's contract table.
  *
  * WHY THESE AREN'T IN `protocol.ts`: that file is the hand-maintained
- * duplicate of `openplate-sync/src/protocol.ts`, and changing the contract it
+ * duplicate of `openplate-core/src/protocol.ts`, and changing the contract it
  * describes means editing FOUR places (both copies plus both transcribed-
  * literal drift-guard tests). The account endpoints arrived with the
  * standalone service in M128 spec 02 and were never mirrored into the client

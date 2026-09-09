@@ -1,5 +1,5 @@
 /**
- * THE STUDY CLIENT (`openplate-sync` ADR-0003, `PROTOCOL.md` §5.18 and §3.5).
+ * THE STUDY CLIENT (`openplate-core` ADR-0003, `PROTOCOL.md` §5.18 and §3.5).
  *
  * The researcher's half: pull a cohort, open what this device's keys can open,
  * and say out loud what it could not. Pure with respect to the device — the

@@ -1,5 +1,5 @@
 /**
- * THE STUDY KEYRING KEEPS EVERY GENERATION (M163/03, `openplate-sync`
+ * THE STUDY KEYRING KEEPS EVERY GENERATION (M163/03, `openplate-core`
  * ADR-0003).
  *
  * `study.ts` reports a contribution un-openable only after EVERY key it was

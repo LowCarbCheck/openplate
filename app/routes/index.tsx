@@ -1621,7 +1621,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               made a promise that goes stale on a managed instance; this body
               makes a specific, checkable claim about the operator's
               infrastructure, "it has no database at all", and on a managed
-              instance that claim is simply false: `openplate-sync` runs a
+              instance that claim is simply false: `openplate-core` runs a
               Postgres and stores the ciphertext blob in it. It also
               contradicts the sync card three cards down this same page, which
               discloses that copy and the operator's recovery key, so on one

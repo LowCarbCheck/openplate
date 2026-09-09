@@ -147,7 +147,7 @@ export type RotateDekHttpResult =
   | { status: 'conflict'; currentVersion: number };
 
 // ---------------------------------------------------------------------------
-// Research contributions (§5.18, `openplate-sync` ADR-0003)
+// Research contributions (§5.18, `openplate-core` ADR-0003)
 // ---------------------------------------------------------------------------
 
 /** One of the caller's OWN enrolments. Never carries a sealed body — see {@link ContributionEnrolmentWire}. */

@@ -1,5 +1,5 @@
 /**
- * THE ENROLMENT CEREMONY, on screen (M163/02, `openplate-sync` ADR-0003).
+ * THE ENROLMENT CEREMONY, on screen (M163/02, `openplate-core` ADR-0003).
  *
  * The study's key arrived in a LINK. The twelve characters below are read off
  * the study's PRINTED CONSENT DOCUMENT and typed here. Two channels, and the

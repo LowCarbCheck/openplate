@@ -1,6 +1,6 @@
 /**
  * THE ONE THING THE STUDY CONSOLE MUST NEVER DO (M163/03,
- * `openplate-sync` ADR-0003).
+ * `openplate-core` ADR-0003).
  *
  * The owner-private compartment rides INSIDE the synced snapshot, and
  * openplate's local store is DEVICE-scoped — one flat store per browser

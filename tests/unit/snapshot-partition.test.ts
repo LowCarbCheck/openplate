@@ -1,5 +1,5 @@
 /**
- * THE SNAPSHOT PARTITION (M160/07, `openplate-sync` ADR-0002's amendment) —
+ * THE SNAPSHOT PARTITION (M160/07, `openplate-core` ADR-0002's amendment) —
  * the test that replaces a one-time audit.
  *
  * A share is full-DEK and the blob is the whole snapshot, so anything left in

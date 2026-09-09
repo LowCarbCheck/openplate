@@ -1,5 +1,5 @@
 /**
- * WITHDRAWAL (`openplate-sync` PROTOCOL.md §5.18, ADR-0003 prohibitions 5, 6
+ * WITHDRAWAL (`openplate-core` PROTOCOL.md §5.18, ADR-0003 prohibitions 5, 6
  * and 8).
  *
  * Three steps, and the middle one is the one that gets skipped: call the

@@ -1,6 +1,6 @@
 /**
  * THE JOIN SCREEN, and the two things it must never do (M163/02,
- * `openplate-sync` ADR-0003).
+ * `openplate-core` ADR-0003).
  *
  * ── 1. It never shows the fingerprint it computed ────────────────────────
  *

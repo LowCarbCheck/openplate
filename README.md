@@ -59,7 +59,7 @@ This is the interface only. It does not translate food names or AI replies.
 
 If you also want end-to-end-encrypted sync across devices,
 [`docker/topologies/compose.sync.yml`](docker/topologies/compose.sync.yml) brings up the app, the
-[openplate-sync](https://github.com/LowCarbCheck/openplate-sync) service, and the Postgres that
+[openplate-core](https://github.com/LowCarbCheck/openplate-core) service, and the Postgres that
 sync (and only sync) needs:
 
 ```bash
@@ -97,9 +97,9 @@ Run any subset. Only the first one is required.
 | Component                                                                     | What it is                                                                                    | Needed?                                                          |
 | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | **openplate** (this repo)                                                     | The app. Accountless, local-first, stateless, boots with no secrets.                          | Yes, it is the product.                                         |
-| **[openplate-sync](https://github.com/LowCarbCheck/openplate-sync)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address and ciphertext it holds no key for. It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
+| **[openplate-core](https://github.com/LowCarbCheck/openplate-core)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address and ciphertext it holds no key for. It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
 | **[openplate-inference](https://github.com/LowCarbCheck/openplate-inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint: open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
-| ~~openplate-gateway~~                                                         | Archived 2026-09-04 (M192), merged into openplate-sync: a managed instance's own account now carries the AI allowance, so the separate proxy is gone. | n/a |
+| ~~openplate-gateway~~                                                         | Archived 2026-09-04 (M192), merged into openplate-core: a managed instance's own account now carries the AI allowance, so the separate proxy is gone. | n/a |
 
 ## Documentation
 
@@ -163,7 +163,7 @@ entries beside photographed ones, a weight series and goals. Open `/settings/dat
 and upload it. A fresh browser has to be walked past onboarding first, or `/settings/data` is
 unreachable.
 
-With an `openplate-sync` instance running, the same command also creates an account you can
+With an `openplate-core` instance running, the same command also creates an account you can
 sign in as, and pushes the diary to it, so a fresh device pulls a populated diary on its first
 sign-in:
 
@@ -175,7 +175,7 @@ ADMIN_TOKEN=... SEED_PASSPHRASE=... pnpm seed:test-account --url http://localhos
 has a flag: a credential in argv is a credential in your shell history. The default target is
 localhost and any other host needs `--allow-remote`, because **the account this creates is a
 real account** on whatever instance you point it at, and nothing removes it for you. Delete it
-when you are done, with `pnpm sync-api accounts delete <id> --yes` in `openplate-sync`.
+when you are done, with `pnpm sync-api accounts delete <id> --yes` in `openplate-core`.
 
 `pnpm seed:test-account --help` lists the rest: `--weeks`, `--seed`, `--end-day`,
 `--timezone`, `--out`, `--email`, `--no-push`.
@@ -188,6 +188,6 @@ provisioning step.
 ## License
 
 openplate is open source under the [MIT License](LICENSE) (SPDX: `MIT`), as is
-[openplate-sync](https://github.com/LowCarbCheck/openplate-sync). Run it, read it, change it,
+[openplate-core](https://github.com/LowCarbCheck/openplate-core). Run it, read it, change it,
 fork it, redistribute it, host it for others, commercially or not, with no restrictions
 beyond keeping the copyright and license notice attached to any copy you distribute.

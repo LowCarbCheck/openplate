@@ -1,6 +1,6 @@
 /**
  * THE STUDY KEYRING — every key generation a study has ever minted
- * (`openplate-sync` ADR-0003, "A study is an ordinary sync account").
+ * (`openplate-core` ADR-0003, "A study is an ordinary sync account").
  *
  * The ADR puts the private key in **the study account's own** owner-private
  * compartment. This module is the plaintext that goes in there, and it is

@@ -3,7 +3,7 @@
  * queue makes about one attempt.
  *
  * TRANSCRIBED FROM THE SERVER, NOT GUESSED. Every bound and every field name
- * below is read off `openplate-sync/src/feedback/register-feedback-route.ts`
+ * below is read off `openplate-core/src/feedback/register-feedback-route.ts`
  * (`decodeSubmission`, `parseImage`, `MAX_FEEDBACK_IMAGE_BYTES`,
  * `MAX_MEASUREMENTS_BYTES`, `ALLOWED_FEEDBACK_IMAGE_TYPES`). A client that
  * invents a field here does not get a helpful error; it gets the same

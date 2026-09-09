@@ -1,5 +1,5 @@
 /**
- * THE ENROLMENT CEREMONY (`openplate-sync` ADR-0003, prohibitions 3 and 4).
+ * THE ENROLMENT CEREMONY (`openplate-core` ADR-0003, prohibitions 3 and 4).
  *
  * Joining a study is two refusals and then three writes, in that order. Both
  * refusals happen BEFORE any side effect, and that ordering is the security

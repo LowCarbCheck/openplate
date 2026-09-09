@@ -1,7 +1,7 @@
 # openplate, everything at once: app + sync + Postgres + your own AI.
 #
 # Four containers: the stateless app, the optional account + E2EE sync service
-# (openplate-sync), the Postgres that sync — and only sync — needs, and a
+# (openplate-core), the Postgres that sync — and only sync — needs, and a
 # self-hosted plate-identification endpoint (openplate-inference). The app
 # itself still keeps no database at all. Every image is open source under the
 # MIT License and is published to GHCR — nothing here builds from source.
@@ -31,7 +31,7 @@
 # Then open PUBLIC_APP_URL. A "Sync" section appears in the app because
 # SYNC_SERVER_URL is set below; create an account there and the two devices
 # you sign in on converge. The service still cannot read a single entry —
-# see openplate-sync's PROTOCOL.md.
+# see openplate-core's PROTOCOL.md.
 #
 # "README" in the inference block below always means openplate-inference's
 # README: https://github.com/LowCarbCheck/openplate-inference
@@ -214,7 +214,7 @@ services:
   # image ships its own HEALTHCHECK against the unauthenticated /health
   # endpoint, so none is repeated here.
   sync:
-    image: ghcr.io/lowcarbcheck/openplate-sync:latest
+    image: ghcr.io/lowcarbcheck/openplate-core:latest
     restart: unless-stopped
     depends_on:
       postgres:

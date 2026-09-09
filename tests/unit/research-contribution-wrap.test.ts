@@ -1,6 +1,6 @@
 /**
  * THE RESEARCH CONTRIBUTION ENVELOPE (M161/03, `PROTOCOL.md` §3.5,
- * `openplate-sync` ADR-0003).
+ * `openplate-core` ADR-0003).
  *
  * The round-trip on its own is a weak test: a seal and an open that both used
  * the WRONG HKDF label would pass it, and the two clients would then disagree

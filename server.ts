@@ -315,7 +315,7 @@ app.use(express.static('build/client', { maxAge: '1h' }));
 // mounted them here through a build-time composition seam that resolved a
 // gitignored private module via a runtime-computed dynamic import; that seam
 // (and the never-built browser bundle behind it) is gone. Sync is now a
-// standalone service — `openplate-sync`, spoken to over the wire contract in
+// standalone service — `openplate-core`, spoken to over the wire contract in
 // `app/lib/sync/engine/protocol.ts` — and the client reaches it directly at
 // its own origin (`SYNC_SERVER_URL`, M128 spec 04). Nothing sync-related
 // belongs in this file again.

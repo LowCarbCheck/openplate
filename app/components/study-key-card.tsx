@@ -3,7 +3,7 @@
  *
  * ── The fingerprint is computed here and goes into a printed document ────
  *
- * `openplate-sync` ADR-0003 moves the trust anchor to the study's
+ * `openplate-core` ADR-0003 moves the trust anchor to the study's
  * ethics-approved consent materials: the fingerprint is PRINTED there and the
  * contributor TYPES it at enrolment. That is what makes a substituted study
  * key fail for a whole cohort rather than pass for it. So this card states

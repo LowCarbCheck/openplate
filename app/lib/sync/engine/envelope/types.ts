@@ -13,7 +13,7 @@ import { ENVELOPE_VERSION } from '../protocol';
  * Re-exported from `../protocol` so this module's own callers don't need to
  * know where the constant lives, while `protocol.ts` stays the single
  * in-repo source of truth for every version number on the wire (M128 spec
- * 01 — it is the file kept in lockstep with `openplate-sync`).
+ * 01 — it is the file kept in lockstep with `openplate-core`).
  */
 export { ENVELOPE_VERSION };
 

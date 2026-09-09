@@ -1,5 +1,5 @@
 /**
- * THE CONTRIBUTION TIERS (`PROTOCOL.md` §3.5, `openplate-sync` ADR-0003
+ * THE CONTRIBUTION TIERS (`PROTOCOL.md` §3.5, `openplate-core` ADR-0003
  * prohibition 1).
  *
  * A study chooses a TIER BY NAME and a date window. It never supplies a field

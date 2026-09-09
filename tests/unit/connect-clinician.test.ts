@@ -7,7 +7,7 @@
  *  1. A payload that arrived in the QUERY STRING is refused, even when a
  *     perfectly good fragment sits beside it. Without this, a mail provider
  *     rewriting links downgrades the design and nothing anywhere fails —
- *     `openplate-sync` ADR-0002 prohibition 1 says the server never holds a
+ *     `openplate-core` ADR-0002 prohibition 1 says the server never holds a
  *     share public key, and a query parameter puts it in the access log.
  *  2. Every fingerprint shown is computed from the KEY BYTES that actually
  *     arrived. The link carries no fingerprint field at all, and a forged one

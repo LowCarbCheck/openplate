@@ -1,5 +1,5 @@
 /**
- * THE RESEARCH CONTRIBUTION ENVELOPE (`PROTOCOL.md` §3.5, `openplate-sync`
+ * THE RESEARCH CONTRIBUTION ENVELOPE (`PROTOCOL.md` §3.5, `openplate-core`
  * ADR-0003).
  *
  * A contribution is sealed to a STUDY's public key. It is a different artifact

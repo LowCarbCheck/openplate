@@ -254,7 +254,7 @@ const MANAGED_FALSE_CLAIMS = [
   },
   {
     phrase: 'no database at all',
-    why: 'openplate-sync runs a Postgres and keeps the ciphertext diary in it',
+    why: 'openplate-core runs a Postgres and keeps the ciphertext diary in it',
   },
 ];
 
@@ -829,7 +829,7 @@ describe('the storage card describes the storage this instance actually has', ()
   // THE STRONGEST FALSE CLAIM ON THE PAGE, and different in kind from the
   // other five this file pins. The hero and the footer tagline made a promise
   // that a managed instance cannot keep; this card asserts a fact about the
-  // operator's machines, "it has no database at all", and `openplate-sync`
+  // operator's machines, "it has no database at all", and `openplate-core`
   // runs a Postgres with the ciphertext diary in it. Worse, the sync card
   // three cards down the same grid discloses that copy and the operator's
   // recovery key, so before this branch a managed visitor read two opposite

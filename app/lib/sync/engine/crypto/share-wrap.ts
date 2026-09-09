@@ -1,5 +1,5 @@
 /**
- * The share wrap (`PROTOCOL.md` §3.4, `openplate-sync` ADR-0002) — the one
+ * The share wrap (`PROTOCOL.md` §3.4, `openplate-core` ADR-0002) — the one
  * asymmetric primitive in this product, and the whole of it.
  *
  * A patient's DEK is already wrapped twice, under two KEKs the owner alone can

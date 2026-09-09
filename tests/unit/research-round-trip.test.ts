@@ -1,5 +1,5 @@
 /**
- * CONTRIBUTOR TO STUDY, END TO END (M161/04, `openplate-sync` ADR-0003).
+ * CONTRIBUTOR TO STUDY, END TO END (M161/04, `openplate-core` ADR-0003).
  *
  * The two halves of this lane are written in two modules, on two sides of a
  * wire, and they agree on a packing, an AAD and a payload codec. Every one of

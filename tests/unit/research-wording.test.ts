@@ -1,5 +1,5 @@
 /**
- * THE WORDING PASS, AS A TEST (M161/05, `openplate-sync` ADR-0003
+ * THE WORDING PASS, AS A TEST (M161/05, `openplate-core` ADR-0003
  * prohibition 5).
  *
  * A review of copy is stale the next time someone edits a string, and this

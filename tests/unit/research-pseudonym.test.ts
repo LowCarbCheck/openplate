@@ -1,5 +1,5 @@
 /**
- * THE STUDY PSEUDONYM (M161/03, `PROTOCOL.md` §3.5, `openplate-sync`
+ * THE STUDY PSEUDONYM (M161/03, `PROTOCOL.md` §3.5, `openplate-core`
  * ADR-0003) — stability, unlinkability, and the byte encoding.
  *
  * The encoding is the part worth testing hardest, because it is the part that

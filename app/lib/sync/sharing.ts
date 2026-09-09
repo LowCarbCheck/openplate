@@ -1,5 +1,5 @@
 /**
- * CLINICIAN SHARING, as decisions rather than screens (`openplate-sync`
+ * CLINICIAN SHARING, as decisions rather than screens (`openplate-core`
  * ADR-0002, `PROTOCOL.md` §5.16–§5.17).
  *
  * Everything here is pure with respect to the device: it takes the pinned

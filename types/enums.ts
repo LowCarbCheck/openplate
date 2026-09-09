@@ -50,7 +50,7 @@ export type TrackingFocusType = 'net-carbs' | 'calories' | 'habit';
 
 // `SyncKeyRecordKind` used to live here too, for the `sync_key_records.kind`
 // column. Both the column and the table are gone (M128 spec 03 — sync storage
-// belongs to the standalone `openplate-sync` service now), and the wire-level
+// belongs to the standalone `openplate-core` service now), and the wire-level
 // type of the same name survives where the protocol is defined:
 // `app/lib/sync/engine/protocol.ts`. There is deliberately no re-export here —
 // this file is the DB's enum surface, and that type is no longer a DB concern.

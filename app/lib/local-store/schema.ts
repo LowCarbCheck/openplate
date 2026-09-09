@@ -175,7 +175,7 @@
  * `.default(null)` / `.default([])` on `snapshotSchema`: "this device had no
  * share key, because sharing did not exist". No `migrateSnapshotToV13` step.
  *
- * THIS BUMP RE-OPENS A GATE, AND THAT IS DELIBERATE. `openplate-sync`'s
+ * THIS BUMP RE-OPENS A GATE, AND THAT IS DELIBERATE. `openplate-core`'s
  * ADR-0002 makes a full-DEK share creatable only while the synced snapshot
  * carries NO CREDENTIAL, "because anything added to the synced snapshot that
  * is not diary or preferences data re-opens this gate". These two entities are
@@ -201,7 +201,7 @@
  * byte-for-byte as it always did — there is no forward-migration step for the
  * same reason there is nothing to migrate.
  *
- * What changed is the SYNCED shape. `openplate-sync` ADR-0002's partition
+ * What changed is the SYNCED shape. `openplate-core` ADR-0002's partition
  * amendment moves those two entities out of the shareable region of the blob
  * and into an encrypted compartment (`app/lib/sync/snapshot-partition.ts`),
  * because a share is full-DEK and the blob is the whole snapshot — so a
@@ -232,7 +232,7 @@
  * is no `migrateSnapshotToV13` one.
  *
  * BOTH KEYS ARE OWNER-PRIVATE, and that is the whole reason the compartment
- * exists (`app/lib/sync/snapshot-partition.ts`, `openplate-sync` ADR-0003
+ * exists (`app/lib/sync/snapshot-partition.ts`, `openplate-core` ADR-0003
  * prohibition 3). The pseudonym root is the secret every study pseudonym
  * derives from: a clinician grantee holding a full DEK must learn neither the
  * root — which would let her recompute every pseudonym this person will ever
@@ -903,7 +903,7 @@ export interface LocalSavedMeal {
 }
 
 /**
- * This account's own share key pair (`openplate-sync` ADR-0002) — the identity
+ * This account's own share key pair (`openplate-core` ADR-0002) — the identity
  * a clinician is addressed BY, and a patient wraps their DEK TO.
  *
  * A SINGLETON: one key pair per account, not per device. It lives in the
@@ -962,7 +962,7 @@ export interface LocalSharePeer {
 }
 
 /**
- * The pseudonym ROOT (`openplate-sync` ADR-0003) — 256 random bits, generated
+ * The pseudonym ROOT (`openplate-core` ADR-0003) — 256 random bits, generated
  * once at first enrolment, and the only input a study pseudonym derives from
  * that the server does not hold.
  *

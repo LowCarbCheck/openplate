@@ -1108,7 +1108,7 @@
       "title": "Working in about a minute"
     },
     "sync": {
-      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-sync server (ours, or one you run yourself) and that server has no key to it, because the key is made from a password it never sees.",
+      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-core server (ours, or one you run yourself) and that server has no key to it, because the key is made from a password it never sees.",
       "link": "Create an account",
       "photos": "Plate photos stay where they are. They are never part of a sync blob.",
       "shotAlt": "The account screen on a phone, signed out, with a link to sign in.",

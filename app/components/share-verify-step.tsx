@@ -1,6 +1,6 @@
 /**
  * THE FINGERPRINT CEREMONY — the one screen the whole sharing design rests on
- * (`openplate-sync` ADR-0002, "Trust: the invite carries the key, the room
+ * (`openplate-core` ADR-0002, "Trust: the invite carries the key, the room
  * verifies it").
  *
  * The clinician's own app computes her fingerprint from her own key and she

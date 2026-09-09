@@ -2,7 +2,7 @@
  * THE STUDY CONSOLE'S SESSION — a second sync account, held in a vault of its
  * own, that never touches this device's diary.
  *
- * `openplate-sync` ADR-0003: "a study is an ordinary sync account", and its
+ * `openplate-core` ADR-0003: "a study is an ordinary sync account", and its
  * private key lives in THAT account's owner-private compartment. This module
  * is the composition root that makes it so. Like `sync-actions.ts` and
  * `research-actions.ts` it decides nothing; it wires.

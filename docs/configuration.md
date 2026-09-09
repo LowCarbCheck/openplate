@@ -27,7 +27,7 @@ const appUrl = CONFIG.app.url;
 | `TRUST_PROXY`               | `1` in prod, off in dev     | Express `trust proxy`. Required behind a proxy: React Router's CSRF check compares the browser `Origin` against the host it thinks it is serving. Use the hop count (1 = one proxy, 2 = Cloudflare → Traefik). |
 | `VITE_ALLOWED_HOSTS`        | unset                       | Dev only. Comma-separated extra hostnames Vite should accept (for example your tailnet MagicDNS name).                                                                                          |
 | `FOOD_DB_API_URL`           | `https://lowcarbcheck.org`  | Curated nutrition data and food images for identified foods. Only food **names** are sent (never photos, never anything about you), and the lookup fails open. Set to an empty string to disable it entirely. |
-| `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-sync](https://github.com/LowCarbCheck/openplate-sync) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
+| `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-core](https://github.com/LowCarbCheck/openplate-core) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
 | `INSTANCE_MODE`             | `open`                      | `open` or `managed`. Setting `managed` declares a **managed instance**, see [Managed instances](#managed-instances) below. Requires `SYNC_SERVER_URL`. Any other value stops the boot on purpose. |
 | `GATEWAY_URL`               | must be unset                | Retired by M192 (September 2026): the sync server took over the AI proxy that openplate-gateway used to provide. A non-empty `GATEWAY_URL` fails the boot. Use `INSTANCE_MODE=managed` instead. |
 | `DEFAULT_INFERENCE_BASE_URL`| unset                       | An OpenAI-compatible vision endpoint this instance offers to every visitor. See [Instance-provided AI](#instance-provided-ai) below.                                                            |
@@ -198,7 +198,7 @@ the allowance together; declaring `managed` without a sync server stops the boot
 half-enabling anything.
 
 An administrator invites people from the app itself, at `/admin`, or from a terminal through
-openplate-sync's `sync-api` CLI (see the workspace's admin notes). The invite is mailed, never
+openplate-core's `sync-api` CLI (see the workspace's admin notes). The invite is mailed, never
 printed to a console. A forgotten password is reset by a mailed link; the server holds an
 escrowed recovery code that unwraps the data key after the reset (see
 [sync.md](sync.md#encryption-and-what-the-operator-holds)).

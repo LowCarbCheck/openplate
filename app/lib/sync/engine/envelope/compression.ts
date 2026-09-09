@@ -10,7 +10,7 @@
  * best case for gzip, so this buys roughly an order of magnitude of headroom
  * for one dependency-free step. The chunked/per-entity blob redesign that
  * eventually replaces it is a future protocol-version bump, recorded in
- * `openplate-sync/PROTOCOL.md`.
+ * `openplate-core/PROTOCOL.md`.
  *
  * WHY COMPRESS BEFORE ENCRYPTING (and not after): ciphertext is
  * indistinguishable from random data and does not compress. Compression has

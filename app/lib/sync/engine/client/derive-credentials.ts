@@ -37,7 +37,7 @@ export interface DerivedCredentials {
   /** The passphrase KEK, non-extractable. Unwraps the account's DEK; never transmitted, never persisted. */
   passphraseKek: CryptoKey;
   /**
-   * `K_pp` — the OWNER-PRIVATE COMPARTMENT's passphrase door (`openplate-sync`
+   * `K_pp` — the OWNER-PRIVATE COMPARTMENT's passphrase door (`openplate-core`
    * ADR-0002's partition amendment), a THIRD sibling off the same Argon2id run.
    *
    * It must never be the same key as `passphraseKek`: that one opens the DEK,

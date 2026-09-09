@@ -1,6 +1,6 @@
 /**
  * A protocol-faithful sync service, built from openplate's OWN
- * `app/lib/sync/engine/protocol.ts` types and `openplate-sync/PROTOCOL.md`.
+ * `app/lib/sync/engine/protocol.ts` types and `openplate-core/PROTOCOL.md`.
  *
  * ── Why an in-repo fake and not the real service ─────────────────────────
  *
@@ -1044,7 +1044,7 @@ export async function startFakeSyncService(): Promise<FakeSyncService> {
   });
 
   // ---------------------------------------------------------------------
-  // Shares — grantor side (§5.16, `openplate-sync` ADR-0002)
+  // Shares — grantor side (§5.16, `openplate-core` ADR-0002)
   //
   // This fake models a deployment with `SYNC_SHARING` SET. Production's dark
   // mode is the ordinary unknown-route 404 mounted ahead of authentication —

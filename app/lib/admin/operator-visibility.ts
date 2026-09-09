@@ -48,7 +48,7 @@ type AdminObjectSchema = z.ZodObject<Record<string, z.ZodType>>;
 /**
  * How long the service keeps one person's daily photo counts, in days.
  *
- * TRANSCRIBED FROM `openplate-sync/PROTOCOL.md` §5.20, where it is normative
+ * TRANSCRIBED FROM `openplate-core/PROTOCOL.md` §5.20, where it is normative
  * for every conforming server: an hourly sweep deletes every `ai_usage_days`
  * row older than this, on every instance and without an operator action, and
  * the activity endpoint refuses to draw a longer window because a longer strip

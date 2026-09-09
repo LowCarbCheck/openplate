@@ -1,6 +1,6 @@
 /**
  * The clinician-sharing ceremony, and the clinician's read view (M160/05,
- * `openplate-sync` ADR-0002).
+ * `openplate-core` ADR-0002).
  *
  * ADR-0002 names ONE attack as the thing that breaks the whole design:
  * grant-time key substitution with a skipped or theatrical ceremony. These

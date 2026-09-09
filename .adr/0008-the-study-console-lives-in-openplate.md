@@ -6,7 +6,7 @@
 
 ## Context
 
-`openplate-sync` ADR-0003 gives a research study an ordinary sync account and
+`openplate-core` ADR-0003 gives a research study an ordinary sync account and
 puts its ECIES private key in **that account's own owner-private compartment**.
 Somebody has to serve the JavaScript that generates that key pair, unwraps that
 compartment, and opens a cohort with it. Three properties of this system decide
@@ -66,7 +66,7 @@ Concretely:
 
 ## Alternatives Considered
 
-- **Host the console in `openplate-sync`.** It already has a web surface and the
+- **Host the console in `openplate-core`.** It already has a web surface and the
   contributions live there. Rejected: it would let a sync operator serve the
   JavaScript that handles a study's private key, which defeats the reason
   ADR-0003's prohibition 10 exists — not merely its letter. The whole research
@@ -106,7 +106,7 @@ Concretely:
 
 ## References
 
-- `openplate-sync/docs/adr/0003-research-contributions-pseudonymous-but-never-anonymous.md` — "A study is an ordinary sync account", and prohibitions 4, 8 and 10.
-- `openplate-sync/docs/adr/0002-sharing-a-diary-without-giving-the-server-a-key.md` — the partition amendment, and the one-wrap-implementation rule.
+- `openplate-core/docs/adr/0003-research-contributions-pseudonymous-but-never-anonymous.md` — "A study is an ordinary sync account", and prohibitions 4, 8 and 10.
+- `openplate-core/docs/adr/0002-sharing-a-diary-without-giving-the-server-a-key.md` — the partition amendment, and the one-wrap-implementation rule.
 - [ADR-0006](0006-the-app-server-holds-no-accounts.md) — why this server holds no account of its own, which is why the study account is a sync-service account.
 - `.tracker/M163-openplate-research-surfaces/03-study-surfaces-the-cohort-screen-and-the-export.md`

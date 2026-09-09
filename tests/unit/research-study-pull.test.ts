@@ -1,5 +1,5 @@
 /**
- * THE STUDY PULL (M161/04, `openplate-sync` ADR-0003 prohibition 8 and
+ * THE STUDY PULL (M161/04, `openplate-core` ADR-0003 prohibition 8 and
  * `PROTOCOL.md` §5.18).
  *
  * Three claims, and each one is written so that the obvious wrong

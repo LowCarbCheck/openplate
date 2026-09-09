@@ -1,5 +1,5 @@
 /**
- * THE COHORT EXPORT (M161/04, `openplate-sync` ADR-0003 prohibitions 5 and 8).
+ * THE COHORT EXPORT (M161/04, `openplate-core` ADR-0003 prohibitions 5 and 8).
  *
  * What a researcher actually keeps is the file, so the file has to carry the
  * three things a screen would otherwise carry alone: that this data is

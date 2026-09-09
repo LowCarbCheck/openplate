@@ -1,5 +1,5 @@
 /**
- * THE REFUSAL WITH NO WAY PAST IT (M163/02, `openplate-sync` ADR-0003
+ * THE REFUSAL WITH NO WAY PAST IT (M163/02, `openplate-core` ADR-0003
  * prohibition 4).
  *
  * This account has no owner-private compartment, which is where the pseudonym

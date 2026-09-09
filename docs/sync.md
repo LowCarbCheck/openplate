@@ -3,15 +3,15 @@
 openplate is a local app by default: your diary lives in the browser's IndexedDB on the
 device you use, and nothing leaves it. Moving that diary between devices is the one thing
 that needs an account, so it lives in a separate service,
-[openplate-sync](https://github.com/LowCarbCheck/openplate-sync), with its own image,
+[openplate-core](https://github.com/LowCarbCheck/openplate-core), with its own image,
 database and secrets.
 
 Sync is entirely optional. Unset, openplate loses no feature.
 
 ## What it needs
 
-- A running **openplate-sync** instance: either the hosted one, your own, or any third-party
-  server implementing [the protocol](https://github.com/LowCarbCheck/openplate-sync/blob/main/PROTOCOL.md).
+- A running **openplate-core** instance: either the hosted one, your own, or any third-party
+  server implementing [the protocol](https://github.com/LowCarbCheck/openplate-core/blob/main/PROTOCOL.md).
   To run your own, use
   [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml): see
   [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).
@@ -43,7 +43,7 @@ quietly off".
 The app always carries a `/study` route, and it is inert on an ordinary instance. It comes to
 life only when the sync service it talks to has `SYNC_RESEARCH=true`, which is **off by
 default**: an instance you stand up without touching that flag runs no study, holds no study
-graph, and offers nothing to enrol in. Read `openplate-sync`'s `.env.example` before turning it
+graph, and offers nothing to enrol in. Read `openplate-core`'s `.env.example` before turning it
 on: it makes the server hold health-adjacent personal data, which is a different undertaking
 from holding ciphertext it cannot read.
 

@@ -28,7 +28,7 @@ import type { AnalyticsConfig } from '#app/config/analytics';
  * The first is the sync server's base URL. It has to reach the
  * browser because the sync client runs entirely in the browser: it derives
  * keys there, encrypts there, and talks to the service directly from there,
- * never through this server (see `openplate-sync/PROTOCOL.md` §4.1 — bearer
+ * never through this server (see `openplate-core/PROTOCOL.md` §4.1 — bearer
  * tokens, no cookies, `Access-Control-Allow-Origin: *`).
  *
  * Pure module: no `process.env` reads, no imports from `#app/config`. The

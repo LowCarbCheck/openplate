@@ -1,7 +1,7 @@
 # openplate — the full experience, self-hosted end to end.
 #
 # Three containers: the stateless app, the optional account + E2EE sync
-# service (openplate-sync), and the Postgres that sync — and only sync — needs.
+# service (openplate-core), and the Postgres that sync — and only sync — needs.
 # The app itself keeps no database at all. Both images are open source under
 # the MIT License and are published to GHCR — nothing here builds from source.
 #
@@ -29,7 +29,7 @@
 # Then open PUBLIC_APP_URL. A "Sync" section appears in the app because
 # SYNC_SERVER_URL is set below; create an account there and the two devices
 # you sign in on converge. The service still cannot read a single entry —
-# see openplate-sync's PROTOCOL.md.
+# see openplate-core's PROTOCOL.md.
 #
 # Fixes the project name, so containers and the pg-data volume are named after
 # the stack rather than after whatever directory the file sits in.
@@ -115,7 +115,7 @@ services:
   # image ships its own HEALTHCHECK against the unauthenticated /health
   # endpoint, so none is repeated here.
   sync:
-    image: ghcr.io/lowcarbcheck/openplate-sync:latest
+    image: ghcr.io/lowcarbcheck/openplate-core:latest
     restart: unless-stopped
     depends_on:
       postgres:

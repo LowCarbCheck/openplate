@@ -1,5 +1,5 @@
 /**
- * THE ENROLMENT CEREMONY (M161/03, `openplate-sync` ADR-0003 prohibitions 3
+ * THE ENROLMENT CEREMONY (M161/03, `openplate-core` ADR-0003 prohibitions 3
  * and 4).
  *
  * Two refusals, and both are tested by asserting that NOTHING WAS WRITTEN —

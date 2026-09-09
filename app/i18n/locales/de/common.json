@@ -1096,7 +1096,7 @@
       "subtitleManaged": "Das machst du einmal und dann nie wieder. Drei Schritte, und der mittlere ist für dich schon erledigt."
     },
     "sync": {
-      "body": "Trage dein Mittagessen auf dem Smartphone ein und schau dir die Woche auf dem Laptop an. Die Synchronisation ist optional und Ende-zu-Ende-verschlüsselt: Die verschlüsselten Daten liegen auf einem openplate-sync-Server (unserem oder deinem eigenen). Der Server hat keinen Schlüssel dazu, denn der Schlüssel entsteht aus einem Passwort, das er nie zu Gesicht bekommt.",
+      "body": "Trage dein Mittagessen auf dem Smartphone ein und schau dir die Woche auf dem Laptop an. Die Synchronisation ist optional und Ende-zu-Ende-verschlüsselt: Die verschlüsselten Daten liegen auf einem openplate-core-Server (unserem oder deinem eigenen). Der Server hat keinen Schlüssel dazu, denn der Schlüssel entsteht aus einem Passwort, das er nie zu Gesicht bekommt.",
       "bodyManaged": "Trage dein Mittagessen auf dem Smartphone ein und analysiere deine Woche auf dem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird auf deinem Gerät verschlüsselt, und der Server speichert lediglich die verschlüsselten Daten. Der Betreiber speichert zudem einen Wiederherstellungsschlüssel. Mit diesem Schlüssel kannst du dein Tagebuch nach dem Zurücksetzen des Passworts wiederherstellen. Dadurch kann der Betreiber deine Daten technisch gesehen auch entschlüsseln.",
       "link": "Konto erstellen",
       "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",

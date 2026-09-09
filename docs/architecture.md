@@ -5,7 +5,7 @@ page is about which one holds what, and, more importantly, which one is standing
 path of your data.
 
 The drawing below is the whole system in three arrows. Your device holds the diary and the
-plate photo. The diary leaves encrypted, for openplate-sync, which never gets the key. The
+plate photo. The diary leaves encrypted, for openplate-core, which never gets the key. The
 photo leaves for whichever AI endpoint you configured. The app server sends the page and
 stands on neither path.
 
@@ -13,7 +13,7 @@ stands on neither path.
 %% alt: The device holds the diary and the photo, the diary leaves encrypted for the sync server, and the photo goes to the AI endpoint you configured.
 flowchart LR
   app["openplate app server"] -->|"the page"| device["Your device"]
-  device -->|"diary, encrypted"| sync["openplate-sync"]
+  device -->|"diary, encrypted"| sync["openplate-core"]
   device -->|"photo"| ai["Your AI endpoint"]
 ```
 
@@ -35,7 +35,7 @@ whole promise: see [ADR-0006](../.adr/0006-the-app-server-holds-no-accounts.md).
 
 ## Sync is identity, beside the photo path and never inside it
 
-openplate-sync moves a diary between devices. It is the only service in openplate that holds
+openplate-core moves a diary between devices. It is the only service in openplate that holds
 accounts at all. It is a separate deployable with its own image, database and secret, and the
 browser talks to it directly. The app server proxies nothing on its behalf and serves no sync
 route.
@@ -48,7 +48,7 @@ credential. They are siblings, not parent and child, so holding the credential r
 about the key. The server stores bytes it has no key for.
 
 What it *does* see is stated plainly in
-[PROTOCOL.md §9](https://github.com/LowCarbCheck/openplate-sync/blob/main/PROTOCOL.md):
+[PROTOCOL.md §9](https://github.com/LowCarbCheck/openplate-core/blob/main/PROTOCOL.md):
 an email address, blob size, write frequency and timing, version numbers, and KDF parameters.
 Not what you ate.
 
@@ -84,13 +84,13 @@ hostname on your reverse proxy.
 An instance can set `INSTANCE_MODE=managed` (see
 [configuration.md](configuration.md#managed-instances)). That declares one thing: **an
 organization runs this instance, invites its people by email, and gives each one a daily AI
-allowance.** openplate-sync is what carries that, the account it already holds for sync also
+allowance.** openplate-core is what carries that, the account it already holds for sync also
 holds the allowance, so there is no second connection step and no second credential.
 
 To the browser it is unchanged: a signed-in account with an allowance scans through the AI
-proxy openplate-sync exposes, the same service the client already talks to for sync. To the
-thing behind it, openplate-sync is a client: it points at either a cloud provider or your own
-openplate-inference container. **Inference is the compute layer, openplate-sync is the
+proxy openplate-core exposes, the same service the client already talks to for sync. To the
+thing behind it, openplate-core is a client: it points at either a cloud provider or your own
+openplate-inference container. **Inference is the compute layer, openplate-core is the
 tenancy layer on a managed instance, and they compose**: the sync server carries no model and
 answers no scan itself.
 
@@ -107,7 +107,7 @@ provider is still required.
 
 From August to September 2026, this was a separate service, openplate-gateway: a small
 OpenAI-compatible proxy holding one upstream key and issuing each member an `opk_…` token
-with its own daily quota. M192 (September 2026) merged it into openplate-sync: one account
+with its own daily quota. M192 (September 2026) merged it into openplate-core: one account
 now carries both the diary and the allowance, so there is no second service, no second
 invite link, and no second credential to hand out.
 
@@ -129,6 +129,6 @@ injected script exfiltrating a key that lives in the page. See
 | --- | --- | --- |
 | **Your browser** | The whole diary, in the clear, in IndexedDB. Your AI key. Cached plate photos. | Everything. It is your device. |
 | **openplate app server** | Nothing. No database, no secrets, no state. | HTML and JS requests. Never a photo, never a key, never a diary entry, never a sync blob. |
-| **openplate-sync** (optional) | An email address, an authentication verifier, KDF parameters, and ciphertext it holds no key for. On a managed instance (`INSTANCE_MODE=managed`), also each account's daily allowance and usage count. | Blob size, write timing, session metadata. On a managed instance, also the photo forwarded to the AI proxy, for as long as it takes to forward it, read once, not stored. Not the diary contents. |
+| **openplate-core** (optional) | An email address, an authentication verifier, KDF parameters, and ciphertext it holds no key for. On a managed instance (`INSTANCE_MODE=managed`), also each account's daily allowance and usage count. | Blob size, write timing, session metadata. On a managed instance, also the photo forwarded to the AI proxy, for as long as it takes to forward it, read once, not stored. Not the diary contents. |
 | **openplate-inference** (optional) | Nothing per user: no accounts, no sessions, no cookies. Model weights and a food dataset. | The photo you sent it, for as long as the request takes. It makes no outbound call except the one-time weight download. |
 | **Cloud AI provider** (BYOK path) | Whatever their policy says. | The photo, and your key. Their terms apply, not ours. |

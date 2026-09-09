@@ -7,7 +7,7 @@
  * boolean" is not that. So the agreement is a RECORD: the instant the person
  * agreed, by their own clock, and the version of the wording they read. Both
  * travel with the report (`feedback-report.ts`) and are stored on the row by
- * `openplate-sync`'s `feedback_reports` table.
+ * `openplate-core`'s `feedback_reports` table.
  *
  * THE VERSION IS PINNED BY A TEST, not by a promise. `tests/unit/feedback-consent.test.ts`
  * hashes the English consent strings and compares the digest against
@@ -30,7 +30,7 @@ export const FEEDBACK_CONSENT_WORDING_VERSION = '2026-09-07';
  * WHAT USED TO BE HERE: `FEEDBACK_RETENTION_DAYS = 30`.
  *
  * IT WAS THE SECOND COPY OF A PROMISE ANOTHER REPOSITORY KEEPS. The number of
- * days a reported photograph survives is decided by `openplate-sync`, whose
+ * days a reported photograph survives is decided by `openplate-core`, whose
  * retention sweep deletes on its own constant. This app held a matching
  * literal and printed it in the consent step and in the privacy policy, with
  * nothing whatsoever stopping the two drifting: an operator who moved their

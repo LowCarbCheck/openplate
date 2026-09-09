@@ -5,7 +5,7 @@
  * network. That matters here: the only thing this app puts in a QR code is a
  * clinician's connect link (`app/lib/clinician-link.ts`), and a QR service that
  * rendered it elsewhere would be a third party holding a share public key,
- * which is the thing `openplate-sync` ADR-0002 prohibition 1 forbids the
+ * which is the thing `openplate-core` ADR-0002 prohibition 1 forbids the
  * app's OWN server from doing.
  *
  * SVG rather than a canvas so it prints, scales and survives a screenshot at

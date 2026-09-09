@@ -2,7 +2,7 @@
  * CROSS-REPO DRIFT GUARD for the sync wire contract (M128 spec 01).
  *
  * `app/lib/sync/engine/protocol.ts` here and `src/protocol.ts` in the
- * `openplate-sync` repo are hand-maintained duplicates of one contract. There
+ * `openplate-core` repo are hand-maintained duplicates of one contract. There
  * is no shared package and no shared CI, so nothing structurally prevents one
  * side from being edited alone — and a silent protocol split between a client
  * and the server holding the user's only synced copy of their data is about
@@ -33,7 +33,7 @@ import {
   isSyncKeyRecordKind,
 } from '../../../app/lib/sync/engine/protocol';
 
-// --- Transcribed from openplate-sync/src/protocol.ts. Keep in lockstep. ---
+// --- Transcribed from openplate-core/src/protocol.ts. Keep in lockstep. ---
 const EXPECTED_PROTOCOL_VERSION = 2;
 const EXPECTED_ENVELOPE_VERSION = 1;
 const EXPECTED_MAX_BLOB_BYTES = 2 * 1024 * 1024;
@@ -127,7 +127,7 @@ test('the instance block is optional, so a service older than the field is still
 });
 
 test('the advertised retention window is read off the instance block, and never invented', () => {
-  // TRANSCRIBED FROM `openplate-sync/PROTOCOL.md` §5.6, like every other shape
+  // TRANSCRIBED FROM `openplate-core/PROTOCOL.md` §5.6, like every other shape
   // in this file: the two repositories cannot import each other, so this is
   // the literal a conforming service sends.
   const base = { protocolVersion: 2, envelopeVersion: 1, serviceVersion: '0.6.0' };

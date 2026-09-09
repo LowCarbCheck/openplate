@@ -55,10 +55,10 @@ and top it up deliberately.
 programmatically, which is worth knowing about if you are provisioning for more than a
 handful of people. For a family, the dashboard is faster than writing the script.
 
-## The other alternative: a managed openplate-sync instance
+## The other alternative: a managed openplate-core instance
 
 If your provider will not issue capped sub-keys (Mistral, most direct provider APIs), the
-sub-key recipe above has nothing to work with. That is what a **managed** openplate-sync
+sub-key recipe above has nothing to work with. That is what a **managed** openplate-core
 instance is for: set `INSTANCE_MODE=managed` (requires `SYNC_SERVER_URL`), and the account
 service your household already uses for sync also becomes the AI proxy, with a daily request
 allowance per account.
@@ -77,10 +77,10 @@ allowance per account.
 **Stay with provider sub-keys when you can.** If you are on OpenRouter, you are already done
 five minutes ago and there is no service to keep alive.
 
-Setup: bring up openplate-sync (see [sync.md](sync.md) and
+Setup: bring up openplate-core (see [sync.md](sync.md) and
 [topologies.md](topologies.md#rung-2-add-sync)), and set `INSTANCE_MODE=managed` on the
 openplate app. From there, invite people at `/admin` in the app, or from a terminal with
-openplate-sync's `sync-api` CLI, giving each account a daily allowance. The invite is mailed
+openplate-core's `sync-api` CLI, giving each account a daily allowance. The invite is mailed
 to the person; the link is never printed to a console. Each person signs in and their account
 already carries the AI connection: there is no separate step and nothing to paste in.
 Suspending or reactivating an account is the same admin screen, and takes effect immediately.

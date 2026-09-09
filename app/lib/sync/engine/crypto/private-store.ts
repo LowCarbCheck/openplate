@@ -1,5 +1,5 @@
 /**
- * The OWNER-PRIVATE COMPARTMENT's crypto (`openplate-sync` ADR-0002, "The
+ * The OWNER-PRIVATE COMPARTMENT's crypto (`openplate-core` ADR-0002, "The
  * snapshot is partitioned — amendment, 2026-08-27").
  *
  * ── The problem, in one paragraph ─────────────────────────────────────────

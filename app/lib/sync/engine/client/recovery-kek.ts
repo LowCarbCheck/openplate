@@ -56,7 +56,7 @@ export async function deriveRecoveryKek(rawRecoveryCode: Uint8Array): Promise<Cr
 
 /**
  * Derives the compartment's RECOVERY door (`K_pr`) from the same raw recovery
- * code — `openplate-sync` ADR-0002's partition amendment.
+ * code — `openplate-core` ADR-0002's partition amendment.
  *
  * A SIBLING of {@link deriveRecoveryKek}, never the same key: that one opens
  * the DEK, whose domain a clinician share discloses, and this one opens the

@@ -20,6 +20,6 @@ openplate is a local-first app: it has no database and no accounts, and a user's
 
 - **XSS and CSP** — since a key or diary data compromised in the page is compromised entirely; the production Content-Security-Policy (`app/config/content-security-policy.ts`) is a load-bearing control, not decoration.
 - **The service worker** (`public/sw.js`, `app/lib/service-worker.ts`) — cache-poisoning or scope issues that could serve stale or malicious assets to an installed PWA.
-- **The optional, separately-hosted services a user opts into** — [openplate-sync](https://github.com/LowCarbCheck/openplate-sync) (end-to-end-encrypted diary sync) and [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) (self-hosted vision endpoint). Vulnerabilities specific to those services should be reported in their own repos, but cross-cutting issues (e.g. the shared wire protocol) are welcome here too.
+- **The optional, separately-hosted services a user opts into** — [openplate-core](https://github.com/LowCarbCheck/openplate-core) (end-to-end-encrypted diary sync) and [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) (self-hosted vision endpoint). Vulnerabilities specific to those services should be reported in their own repos, but cross-cutting issues (e.g. the shared wire protocol) are welcome here too.
 
 If you're unsure whether something is a security issue or a regular bug, err on the side of reporting it privately — we can always downgrade it to a public issue afterward.

@@ -4,7 +4,7 @@ openplate is a plate tracker: log what you eat, and optionally photograph it and
 model estimate the macros. It is four separate programs, and **you run only the ones you
 need**. The app is the product: it works alone, with no account, no database and no server
 secret, because your diary lives in your browser's own IndexedDB.
-[openplate-sync](https://github.com/LowCarbCheck/openplate-sync) adds an account so a diary
+[openplate-core](https://github.com/LowCarbCheck/openplate-core) adds an account so a diary
 can move between your devices, encrypted so the service cannot read it.
 [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) adds a
 photo-to-macros endpoint on your own hardware, so no cloud AI provider is involved at all.
@@ -32,8 +32,8 @@ accounts.
 
 Each service documents its own operation. Read those before you run it, not this page.
 
-- **openplate-sync**: [README](https://github.com/LowCarbCheck/openplate-sync#readme) for
-  running it, [PROTOCOL.md](https://github.com/LowCarbCheck/openplate-sync/blob/main/PROTOCOL.md)
+- **openplate-core**: [README](https://github.com/LowCarbCheck/openplate-core#readme) for
+  running it, [PROTOCOL.md](https://github.com/LowCarbCheck/openplate-core/blob/main/PROTOCOL.md)
   for the normative wire format and an honest list of the metadata the server does learn.
 - **openplate-inference**: [README](https://github.com/LowCarbCheck/openplate-inference#readme)
   for the quickstart,

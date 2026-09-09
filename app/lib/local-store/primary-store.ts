@@ -513,7 +513,7 @@ export async function deleteLocalSavedMeal(id: string, { store }: StoreOption = 
 
 // ---------------------------------------------------------------------------
 // Clinician sharing: this account's own key pair, and the peers it has pinned
-// (M160/04, `openplate-sync` ADR-0002)
+// (M160/04, `openplate-core` ADR-0002)
 // ---------------------------------------------------------------------------
 
 /**
@@ -581,7 +581,7 @@ export async function deleteLocalSharePeer(accountId: number, { store }: StoreOp
 
 // ---------------------------------------------------------------------------
 // Research contributions: this account's pseudonym root, and the studies it
-// has pinned (M161/03, `openplate-sync` ADR-0003)
+// has pinned (M161/03, `openplate-core` ADR-0003)
 // ---------------------------------------------------------------------------
 
 /**

@@ -105,7 +105,7 @@ ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the
 
 It emptied out in three waves: the personal tracker tables (`foods`, `food_logs`, `weight_entries`, `user_profiles`, the per-user AI settings table, `ai_usage_events`) moved onto the device in M117/03; the account system (`users`, `email_verification_tokens`, `password_reset_tokens`, `user_entitlements`) plus the E2EE sync storage (`sync_blobs`, `sync_key_records`) were dropped in M128 spec 03; and the last table — `data_migrations`, the data-migration runner's own ledger — went with Drizzle and Postgres themselves once nothing was left to migrate. Git history has every one of those definitions if you need to look one up.
 
-**Reintroducing a database is an architectural decision, not a routine step.** The product promise is that this server holds no personal data; a new table needs an ADR arguing against that promise, not just "it would be convenient". Persistent state belongs either on the device (`app/lib/local-store/`) or in the separately deployed `openplate-sync` service.
+**Reintroducing a database is an architectural decision, not a routine step.** The product promise is that this server holds no personal data; a new table needs an ADR arguing against that promise, not just "it would be convenient". Persistent state belongs either on the device (`app/lib/local-store/`) or in the separately deployed `openplate-core` service.
 
 ## Local-First Data Ownership (Client-Side)
 
@@ -116,10 +116,10 @@ Tracker health data (personal foods, food logs, weight entries, profile/goals) l
 Sync exists to move a diary between devices. It is opt-in, and it is split across two repos:
 
 - **The client engine lives in this repo**, at `app/lib/sync/engine/` — ordinary tracked source, built by Vite like everything else. M117's build-time composition seam (a private engine `dist/` copied into a gitignored directory before the image build, driven by a script that no longer exists) was deleted in M128 spec 01. There is no composition step, no gitignored engine directory, and nothing sync-specific in any Dockerfile. Any doc that still implies otherwise is stale and should be fixed, not worked around.
-- **The server is a separate deployable**: [`openplate-sync`](https://github.com/LowCarbCheck/openplate-sync), with its own image, database and secrets. **This app serves no sync HTTP routes and stores nothing on sync's behalf** — the browser talks to that service directly.
+- **The server is a separate deployable**: [`openplate-core`](https://github.com/LowCarbCheck/openplate-core), with its own image, database and secrets. **This app serves no sync HTTP routes and stores nothing on sync's behalf** — the browser talks to that service directly.
 - **`SYNC_SERVER_URL` is the only switch.** Unset ⇒ no sync UI renders anywhere and no sync request leaves the app. Set ⇒ the value flows `CONFIG` → root-loader public config → browser, and the origin is appended to the production CSP's `connect-src`. It must be an address a **browser** can reach; the server never proxies sync traffic.
 - **All key material is client-side.** Passphrase → Argon2id → HKDF gives two independent branches: one wraps the data key and never leaves the device, one is sent as the login credential. Neither server can decrypt a blob, by construction rather than by policy.
-- **The wire contract is duplicated on purpose.** `app/lib/sync/engine/protocol.ts` is a hand-maintained duplicate of `openplate-sync/src/protocol.ts`; each repo's unit test asserts _transcribed literals_, not the other repo. Changing the protocol is four edits (two sources, two tests), and `openplate-sync/PROTOCOL.md` is the normative document — start there. A one-sided edit keeps both suites green while the repos silently disagree.
+- **The wire contract is duplicated on purpose.** `app/lib/sync/engine/protocol.ts` is a hand-maintained duplicate of `openplate-core/src/protocol.ts`; each repo's unit test asserts _transcribed literals_, not the other repo. Changing the protocol is four edits (two sources, two tests), and `openplate-core/PROTOCOL.md` is the normative document — start there. A one-sided edit keeps both suites green while the repos silently disagree.
 
 ## Adding a new feature
 
@@ -186,7 +186,7 @@ Checklist for triaging incoming issues and PRs on the public repo. Labels: `gh l
 - **Security report opened as a public issue** → do not triage it in public. Close/redirect immediately to [private vulnerability reporting](https://github.com/LowCarbCheck/openplate/security/advisories/new) per [SECURITY.md](SECURITY.md), and say so in one comment. Never discuss exploit details in the public thread.
 - **Missing version, logs, or repro steps** → label `needs info` and ask for exactly what's missing (openplate version/commit, browser + OS, whether it's the hosted image or a self-build, console/network errors, minimal repro). Don't guess at root cause without it.
 - **Regression** ("this used to work") → label `regression` and get the last-good version named in the issue before triaging further; if the reporter can't name one, that's a `needs info` case first.
-- **Root cause outside this repo** (a dependency, or `openplate-sync`/`openplate-inference`) → label `upstream` and link the external issue/repo. Cross-cutting protocol issues (see `app/lib/sync/engine/protocol.ts`) still belong here even if `upstream`-tagged.
+- **Root cause outside this repo** (a dependency, or `openplate-core`/`openplate-inference`) → label `upstream` and link the external issue/repo. Cross-cutting protocol issues (see `app/lib/sync/engine/protocol.ts`) still belong here even if `upstream`-tagged.
 - **Already fixed in a shipped version** → label `fixed in release`, comment naming the version that contains the fix, and close.
 
 **PRs:** apply the same `area:` labels as the code touched. A small fix without a DCO sign-off is fine — don't block on it. Before spending review effort, confirm CI is green in this order: lint → typecheck → unit → build (`.github/workflows` / the pre-push gate mirrors this). A PR with a red build gets a comment pointing at the failure, not a substantive review.

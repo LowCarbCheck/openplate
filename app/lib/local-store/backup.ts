@@ -356,7 +356,7 @@ const studyEnrolmentSchema = z.object({
 });
 
 /**
- * THE SHAREABLE REGION (`openplate-sync` ADR-0002, "The snapshot is
+ * THE SHAREABLE REGION (`openplate-core` ADR-0002, "The snapshot is
  * partitioned"): diary and preferences. This is what a clinician grant means,
  * and it is the ONLY part of the snapshot a full-DEK share may disclose.
  *

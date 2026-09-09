@@ -58,7 +58,7 @@ echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
 docker compose -f compose.sync.yml up -d
 ```
 
-**Read [openplate-sync's README](https://github.com/LowCarbCheck/openplate-sync) before you
+**Read [openplate-core's README](https://github.com/LowCarbCheck/openplate-core) before you
 run that last line on a machine other people can reach.** Both services publish their ports
 on every interface, so the account service is exposed the moment it starts, and running an
 account service is a bigger undertaking than running the app.

@@ -1,5 +1,5 @@
 /**
- * THE COHORT EXPORT (`openplate-sync` ADR-0003, prohibitions 5 and 8).
+ * THE COHORT EXPORT (`openplate-core` ADR-0003, prohibitions 5 and 8).
  *
  * A CSV built from a PURGED cohort and nothing else. Its input type is
  * {@link StudyCohort}, which only {@link pullStudyCohort} produces and which

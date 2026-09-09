@@ -1,5 +1,5 @@
 /**
- * THE REDUCTION TEST (M161/03, `openplate-sync` ADR-0003 prohibitions 1 and
+ * THE REDUCTION TEST (M161/03, `openplate-core` ADR-0003 prohibitions 1 and
  * 11) — the gate that makes "the reduction map fails closed" a fact rather
  * than a sentence in a document.
  *

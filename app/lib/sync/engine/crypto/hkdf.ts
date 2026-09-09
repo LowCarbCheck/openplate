@@ -23,7 +23,7 @@ const AES_256_KEY_BITS = 256;
  * THESE STRINGS ARE FROZEN CRYPTOGRAPHIC CONSTANTS, not references to a repo
  * name. Changing so much as a character derives entirely different keys and
  * makes every existing wrapped DEK permanently unopenable. The `-sync` in
- * them is part of the label, not a pointer to the `openplate-sync` repo —
+ * them is part of the label, not a pointer to the `openplate-core` repo —
  * do not "tidy" them when that repo is renamed, split, or retired.
  *
  * Security review finding #7: `PASSPHRASE_KEK` and `RECOVERY_KEK` are
@@ -78,7 +78,7 @@ export const HKDF_INFO = {
    */
   SHARE_KEK: new TextEncoder().encode('openplate-sync:share-kek:p256:v1'),
   /**
-   * The OWNER-PRIVATE COMPARTMENT KEK (`openplate-sync` ADR-0002, "The
+   * The OWNER-PRIVATE COMPARTMENT KEK (`openplate-core` ADR-0002, "The
    * snapshot is partitioned" amendment) — the AES-256-GCM key that wraps the
    * compartment data key (CDK) under the account's passphrase.
    *
@@ -110,7 +110,7 @@ export const HKDF_INFO = {
    */
   PRIVATE_STORE_RECOVERY_KEK: new TextEncoder().encode('openplate-sync:private-store-recovery-kek:v1'),
   /**
-   * The RESEARCH KEK (`PROTOCOL.md` §3.5, `openplate-sync` ADR-0003) — the
+   * The RESEARCH KEK (`PROTOCOL.md` §3.5, `openplate-core` ADR-0003) — the
    * AES-256-GCM key a research contribution is sealed under, derived from an
    * ECDH P-256 shared secret against a STUDY's public key.
    *
@@ -129,7 +129,7 @@ export const HKDF_INFO = {
    */
   RESEARCH_KEK: new TextEncoder().encode('openplate-sync:research-kek:p256:v1'),
   /**
-   * The RECOVERY AUTHENTICATION branch (`openplate-sync` M181) — the value a
+   * The RECOVERY AUTHENTICATION branch (`openplate-core` M181) — the value a
    * client sends to the service to prove it holds the recovery code, so a
    * user who has lost their passphrase can set a new one.
    *

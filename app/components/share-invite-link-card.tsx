@@ -3,7 +3,7 @@
  *
  * Everything on this card is made from values this device already holds: her
  * own share public key, her own account id, and the app's own origin read from
- * `window.location`. There is no loader, no action and no request — `openplate-sync`
+ * `window.location`. There is no loader, no action and no request — `openplate-core`
  * ADR-0002 prohibition 1 says the server never stores, serves or endorses a
  * share public key, and a "give me my invite link" endpoint would be exactly
  * that endorsement with a different name.

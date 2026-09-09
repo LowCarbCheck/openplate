@@ -4,7 +4,7 @@
  *
  * It exists because of a real gap. There is no login on this app's own server,
  * so "sign in and check the incident" needs an account on a separately
- * deployed `openplate-sync`; and the diary is local-first, so a fresh browser
+ * deployed `openplate-core`; and the diary is local-first, so a fresh browser
  * holds nothing and every review of a screen starts on an empty app. Two
  * halves, two places, one script:
  *
@@ -20,13 +20,13 @@
  * Nothing about it is a test double. It occupies an address, it holds a blob,
  * and it stays there until somebody removes it. Delete it when you are done:
  *
- *   cd ../openplate-sync
+ *   cd ../openplate-core
  *   ADMIN_TOKEN=… pnpm sync-api accounts list
  *   ADMIN_TOKEN=… pnpm sync-api accounts delete <id> --yes
  *
  * ── LOCALHOST IS THE DEFAULT, AND ANYTHING ELSE IS A DELIBERATE ACT ─────────
  * `--url`, then `SYNC_SERVER_URL`, then `http://localhost:3000` — the same
- * precedence `openplate-sync/scripts/sync-api/main.ts` documents, and no
+ * precedence `openplate-core/scripts/sync-api/main.ts` documents, and no
  * `--production` shortcut for the same reason it has none. A non-loopback host
  * additionally needs `--allow-remote`, and the host being written to is
  * printed before the first request either way. There is no production URL
@@ -108,7 +108,7 @@ const USAGE = `seed-test-account — a test account and a diary worth looking at
   THE ACCOUNT THIS CREATES IS A REAL ACCOUNT. It is not a test double and
   nothing removes it for you. When you are done:
 
-    cd ../openplate-sync && ADMIN_TOKEN=... pnpm sync-api accounts delete <id> --yes
+    cd ../openplate-core && ADMIN_TOKEN=... pnpm sync-api accounts delete <id> --yes
 
   Restoring the diary on a device: open /settings/data and upload the written
   file. A fresh browser must be walked past onboarding first, or /settings/data
@@ -468,7 +468,7 @@ async function main(): Promise<void> {
   }
 
   process.stdout.write(
-    `\nDelete it when you are done:\n  cd ../openplate-sync && ADMIN_TOKEN=... pnpm sync-api accounts delete ${account.accountId} --yes\n`,
+    `\nDelete it when you are done:\n  cd ../openplate-core && ADMIN_TOKEN=... pnpm sync-api accounts delete ${account.accountId} --yes\n`,
   );
 }
 

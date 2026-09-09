@@ -1,5 +1,5 @@
 /**
- * WITHDRAWAL (M161/05, `openplate-sync` PROTOCOL.md §5.18, ADR-0003).
+ * WITHDRAWAL (M161/05, `openplate-core` PROTOCOL.md §5.18, ADR-0003).
  *
  * Three claims, and each one is a thing that goes wrong quietly:
  *
