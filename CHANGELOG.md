@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-09-09
+
 ### Fixed
 
-- **Releases no longer hang building the arm64 image.** The arm64 half was emulated on an x86 runner, and when that emulator crashed the whole release published no image for either architecture, so each architecture now builds on a machine of its own.
+- **Releases no longer hang building the arm64 image.** The arm64 half was emulated on an x86 runner, and when that emulator crashed the whole release published no image for either architecture, so each architecture now builds on a machine of its own. ([7948355](https://github.com/LowCarbCheck/openplate/commit/7948355))
 
 ## [0.22.0] - 2026-09-09
 
