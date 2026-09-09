@@ -101,10 +101,11 @@ const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account
  * checked in `device-only-managed-copy.test.ts`; what it may not say is here,
  * with every other managed string.
  *
- * The `aiIntake.*` entries are what `/add` and `/describe` say to somebody who
- * cannot run an AI intake (0.20.0). Both are drawn on either kind of instance,
- * and only these two branches are managed: the third names the person's own
- * provider and is true only where they bring one.
+ * The `aiIntake.noAllowance` entry is what `/add` and `/describe` say to
+ * somebody who cannot run an AI intake (0.20.0). It is the one managed branch
+ * of that notice: the other names the person's own provider and is true only
+ * where they bring one. The signed-out branch left with M204 spec 01, because
+ * the device lock closes both screens before it can be read.
  */
 const MANAGED_BRANCH_KEYS = [
   'chrome.signIn',
@@ -127,8 +128,6 @@ const MANAGED_BRANCH_KEYS = [
   'account.allowance.askAdmin',
   'offline.bodyManaged',
   'settings.data.descriptionManaged',
-  'aiIntake.signedOut',
-  'aiIntake.signIn',
   'aiIntake.noAllowance',
 ];
 

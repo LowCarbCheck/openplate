@@ -12,8 +12,15 @@
  * On a managed instance nobody brings a provider, and `/settings/ai` redirects
  * to `/settings`, which has no AI row: the notice pointed at a door that is
  * not there. The BYOK sentence stays exactly as it was where it is true, and
- * the two managed answers mirror `/scan`'s `managed-signed-out` and
- * `managed-missing` cards.
+ * the managed answer mirrors `/scan`'s `managed-missing` card.
+ *
+ * ── THE SIGNED-OUT BRANCH IS GONE (M204 spec 01) ─────────────────────────
+ *
+ * A third branch used to tell a signed-out visitor on a managed instance to
+ * open a session again. Nobody could read it: signing out of a managed
+ * instance locks the device, and the lock closes `/describe` and `/add`
+ * before either one renders. The reasoning, and the lock exception that was
+ * refused instead, are in `AiIntakeDoor`.
  *
  * The BYOK copy is a PROP because it is the one branch whose wording is the
  * screen's own: `/add` promises a whole meal in one sentence, `/describe`
@@ -40,20 +47,7 @@ const LINK_CLASS = 'text-primary underline-offset-4 hover:underline';
 export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }: NoAiIntakeNoticeProps) {
   const { t } = useTranslation();
 
-  // NO SESSION on an instance whose AI comes with one. The door is sign-in and
-  // nothing about the account has to change, so no administrator is named.
-  if (door === 'sign-in') {
-    return (
-      <p className={NOTICE_CLASS}>
-        {t('aiIntake.signedOut')}{' '}
-        <Link to="/sign-in" className={LINK_CLASS}>
-          {t('aiIntake.signIn')}
-        </Link>
-      </p>
-    );
-  }
-
-  // SIGNED IN, NO ALLOWANCE, which is what a new account looks like until an
+  // NO ALLOWANCE, which is what a new account looks like until an
   // administrator raises it. There is no link because there is no page that
   // fixes it.
   if (door === 'ask-admin') {

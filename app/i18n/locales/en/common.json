@@ -2830,8 +2830,6 @@
     }
   },
   "aiIntake": {
-    "noAllowance": "AI entries are not switched on for this account. Ask your administrator to switch them on. Searching the food database works without them.",
-    "signedOut": "You are signed out on this device, so there is no AI to read what you write. Sign in to use it again.",
-    "signIn": "Sign in"
+    "noAllowance": "AI entries are not switched on for this account. Ask your administrator to switch them on. Searching the food database works without them."
   }
 }

@@ -69,10 +69,8 @@ const describeCopySchema = z.object({
     connect: z.string(),
     searchInstead: z.string(),
   }),
-  /** The two sentences a managed instance shows instead, shared with `/add`. */
+  /** The sentence a managed instance shows instead, shared with `/add`. */
   aiIntake: z.object({
-    signedOut: z.string(),
-    signIn: z.string(),
     noAllowance: z.string(),
   }),
 });
@@ -278,38 +276,51 @@ describe('with no AI provider on this device', () => {
 });
 
 describe('on a managed instance, where nobody brings a provider', () => {
-  it('sends a signed-out person to sign in, never to a settings page that is not there', () => {
-    const markup = renderComposer({ aiConnection: 'absent', door: 'sign-in' });
-    assert.ok(markup.includes(MANAGED_COPY.signedOut), 'the screen does not say why nothing can be sent');
-    assert.ok(markup.includes(MANAGED_COPY.signIn), 'the way back in is gone');
-    assert.match(markup, /href="\/sign-in"/, 'the notice points nowhere');
-    // THE BLOCKER ITSELF. `/settings/ai` redirects to `/settings` on a managed
-    // instance, and `/settings` has no AI row: this link was a dead end.
-    assert.doesNotMatch(markup, /href="\/settings\/ai/, 'the notice still points at the BYOK settings page');
+  it('names the administrator, because no page raises an allowance', () => {
+    const markup = renderComposer({ aiConnection: 'absent', door: 'ask-admin' });
+    assert.ok(markup.includes(MANAGED_COPY.noAllowance), 'the account with no allowance is told nothing');
+    // THE 0.20.0 BLOCKER ITSELF. `/settings/ai` redirects to `/settings` on a
+    // managed instance, and `/settings` has no AI row: this link was a dead end.
+    assert.doesNotMatch(markup, /href="\/settings\/ai/, 'a settings link appeared for an allowance');
     assert.ok(!markup.includes(COPY.connect), 'a managed instance still offers to connect a provider');
   });
 
-  it('names the administrator once they are signed in, because no page raises an allowance', () => {
-    const markup = renderComposer({ aiConnection: 'absent', door: 'ask-admin' });
-    assert.ok(markup.includes(MANAGED_COPY.noAllowance), 'the account with no allowance is told nothing');
-    assert.doesNotMatch(markup, /href="\/settings\/ai/, 'a settings link appeared for an allowance');
-    assert.doesNotMatch(markup, /href="\/sign-in"/, 'a signed-in person is told to sign in');
+  // M204 spec 01. The composer used to carry a third notice, for a signed-out
+  // visitor on a managed instance, with a link to the sign in screen. Nobody
+  // could reach it: signing out of a managed instance locks the device, and
+  // `_personal.tsx`'s gate turns `/describe` into a redirect to `/welcome`
+  // before this component renders. `describe-signed-out-door.test.ts` holds
+  // the lock half of that decision; this is the screen half.
+  it('offers no way back into a session, in any state the notice has', () => {
+    for (const door of ['byok', 'ask-admin'] as const) {
+      for (const aiConnection of ['unknown', 'absent', 'connected'] as const) {
+        const markup = renderComposer({ aiConnection, door });
+        assert.doesNotMatch(
+          markup,
+          /href="\/sign-in"/,
+          `the composer offers a session door for ${door}/${aiConnection}`,
+        );
+      }
+    }
+    // THE CONTROL. The same render DOES carry the two links it is supposed to,
+    // so the check above is reading real markup rather than an empty string.
+    const byok = renderComposer({ aiConnection: 'absent', door: 'byok' });
+    assert.match(byok, /href="\/settings\/ai\?next=describe"/);
+    assert.match(byok, /href="\/add"/);
   });
 
   it('still offers the provider settings on an open instance', () => {
-    // THE CONTROL for both cases above: without it, a notice that had simply
-    // dropped the BYOK branch would pass them and break every self-hoster.
+    // THE CONTROL for the managed case above: without it, a notice that had
+    // simply dropped the BYOK branch would pass it and break every self-hoster.
     const markup = renderComposer({ aiConnection: 'absent', door: 'byok' });
     assert.match(markup, /href="\/settings\/ai\?next=describe"/);
     assert.ok(markup.includes(COPY.needsProvider));
-    assert.ok(!markup.includes(MANAGED_COPY.signedOut), 'an open instance is told it is signed out of something');
     assert.ok(!markup.includes(MANAGED_COPY.noAllowance), 'an open instance is sent to an administrator');
   });
 
   it('says none of it while the AI answer is still unknown', () => {
-    for (const door of ['byok', 'sign-in', 'ask-admin'] as const) {
+    for (const door of ['byok', 'ask-admin'] as const) {
       const markup = renderComposer({ aiConnection: 'unknown', door });
-      assert.ok(!markup.includes(MANAGED_COPY.signedOut));
       assert.ok(!markup.includes(MANAGED_COPY.noAllowance));
       assert.ok(!markup.includes(COPY.needsProvider));
     }

@@ -44,15 +44,34 @@ export type AiConnection = 'unknown' | 'connected' | 'absent';
  *
  * - `byok`: an open instance, where the answer is the person's own provider
  *   and `/settings/ai` is the page that takes it.
- * - `sign-in`: a managed instance with no session. The account is very
- *   probably fine and nothing about it has to change; what is missing is the
- *   session. The same sentence `/scan` shows on its `managed-signed-out` card.
- * - `ask-admin`: a managed instance WITH a session and no allowance, which is
- *   the default standing of a new account rather than an error. There is no
- *   link for this one: the door is a person, not a URL. `/scan`'s
- *   `managed-missing` card says exactly this.
+ * - `ask-admin`: a managed instance, where nobody brings a provider and the
+ *   only thing that can be missing is the allowance. That is the default
+ *   standing of a new account rather than an error, and there is no link for
+ *   it: the door is a person, not a URL. `/scan`'s `managed-missing` card says
+ *   exactly this.
+ *
+ * ── THERE IS NO SIGNED-OUT DOOR ANY MORE (M204 spec 01) ──────────────────
+ *
+ * A third member used to name a managed instance with no session, and sent
+ * the person to the screen that reopens one. It cannot happen on the screens
+ * that read this. Signing out of a managed instance LOCKS the device:
+ * `signOutErasesDevice` makes `sign-out-flow.ts` call `lockDevice()`, and a
+ * server-refused session does the same through `session-cache.ts`. Then
+ * `_personal.tsx`'s gate reads that marker synchronously and sends every
+ * personal route, `/describe` and `/add` included, to `/welcome`, through
+ * `resolveOnboardingGate`'s `isDeviceLocked && !hasSyncAccount` branch. A
+ * managed instance's diary belongs to the account, so "signed out" and "these
+ * screens are closed" are one fact, and the notice for the second one was a
+ * sentence nobody could read. The walk that found it is in the worklog under
+ * "M201, the managed walk of the meal composer on 0.20.1".
+ *
+ * The alternative was an exception to that lock for the two add-food screens.
+ * It was refused: `/add` lists this device's own foods and both screens WRITE
+ * to the diary, so exempting them would hand the next person on a shared
+ * device the last person's rows, which is the one thing the lock exists to
+ * stop.
  */
-export type AiIntakeDoor = 'byok' | 'sign-in' | 'ask-admin';
+export type AiIntakeDoor = 'byok' | 'ask-admin';
 
 /** What a screen needs to decide whether to offer an AI intake, and what to say when it cannot. */
 export interface AiIntake {
@@ -95,16 +114,14 @@ export function resolveAiConnection({
  *
  * The resuming moment needs no answer here, because `resolveAiConnection`
  * reports `unknown` for it and no notice is drawn at all.
+ *
+ * THE SESSION IS NOT AN INPUT, and that is the M204 spec 01 decision rather
+ * than an omission: a managed device with no session never renders this
+ * notice, because the lock has already sent it to `/welcome`. See
+ * {@link AiIntakeDoor}.
  */
-export function resolveAiIntakeDoor({
-  aiComesFromTheInstance,
-  isSignedIn,
-}: {
-  aiComesFromTheInstance: boolean;
-  isSignedIn: boolean;
-}): AiIntakeDoor {
-  if (!aiComesFromTheInstance) return 'byok';
-  return isSignedIn ? 'ask-admin' : 'sign-in';
+export function resolveAiIntakeDoor({ aiComesFromTheInstance }: { aiComesFromTheInstance: boolean }): AiIntakeDoor {
+  return aiComesFromTheInstance ? 'ask-admin' : 'byok';
 }
 
 /** Whether this device may run an AI intake right now, and where to send a person who may not. */
@@ -141,7 +158,7 @@ export function useAiIntake(): AiIntake {
       hasReadDeviceRow,
       effectiveSettings,
     }),
-    door: resolveAiIntakeDoor({ aiComesFromTheInstance, isSignedIn: session.account !== null }),
+    door: resolveAiIntakeDoor({ aiComesFromTheInstance }),
   };
 }
 

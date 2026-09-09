@@ -164,20 +164,20 @@ describe('an open instance, unchanged', () => {
 });
 
 describe('the door a person with no AI is shown', () => {
-  it('is the sign-in screen on a managed instance with no session', () => {
-    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: true, isSignedIn: false }), 'sign-in');
+  it('is the administrator on a managed instance, because there is no page that fixes an allowance', () => {
+    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: true }), 'ask-admin');
   });
 
-  it('is the administrator once they are signed in, because there is no page that fixes it', () => {
-    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: true, isSignedIn: true }), 'ask-admin');
-  });
-
-  it('is the provider settings on an open instance, signed in or not', () => {
-    // The control for both managed answers: a door that was always `byok`
-    // would pass nothing above, and one that was never `byok` would send a
-    // self-hoster to a sign-in screen their instance does not have.
-    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: false, isSignedIn: false }), 'byok');
-    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: false, isSignedIn: true }), 'byok');
+  it('is the provider settings on an open instance', () => {
+    // The control for the managed answer: a door that was always `byok` would
+    // pass nothing above, and one that was never `byok` would send a
+    // self-hoster to an administrator their instance does not have.
+    assert.equal(resolveAiIntakeDoor({ aiComesFromTheInstance: false }), 'byok');
+    assert.notEqual(
+      resolveAiIntakeDoor({ aiComesFromTheInstance: true }),
+      resolveAiIntakeDoor({ aiComesFromTheInstance: false }),
+      'the door stopped depending on the instance at all',
+    );
   });
 });
 
@@ -192,9 +192,13 @@ describe('the hook feeds those rules the real inputs', () => {
     assert.match(SOURCE, /const \{ aiComesFromTheInstance \} = useInstancePolicy\(\);/);
   });
 
-  it('reads the session for both halves of the answer', () => {
+  it('reads the session for the half that needs it, and asks it nothing about the door', () => {
     assert.match(SOURCE, /isSessionResuming: session\.isResuming/);
-    assert.match(SOURCE, /isSignedIn: session\.account !== null/);
+    // M204 spec 01: the door has no signed-out branch left to feed, because a
+    // managed device with no session is locked out of `/describe` and `/add`
+    // before either renders. A resolver handed the session again would be the
+    // first sign that branch had come back.
+    assert.doesNotMatch(SOURCE, /isSignedIn/);
   });
 
   it('opens no second database on an instance that would refuse the row', () => {
