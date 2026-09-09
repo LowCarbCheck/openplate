@@ -618,8 +618,28 @@ function TimezoneField() {
   return <input type="hidden" name="timezone" value={timezone} readOnly />;
 }
 
-/** Primary "Continue" submit + a quiet "Skip for now" that exits the whole flow. */
-function StepActions({ primaryIntent, primaryPendingLabel }: { primaryIntent: string; primaryPendingLabel: string }) {
+/**
+ * Primary "Continue" submit, plus a quiet "Skip for now" on the steps that have
+ * one.
+ *
+ * `canSkip` exists for the style step, and only for it. Skipping a step means
+ * "do not answer this", and on every other step that is a real, distinct
+ * outcome: no weight logged, no body metrics given, no first food. The style
+ * step already SPELLS that outcome as an answer, `just-track`, which is the
+ * whole point of listing it. Offering Skip beside it would put the same
+ * decision on the screen twice, once as a considered pick that writes a style
+ * and once as a link that writes nothing, and the two would grade a day
+ * differently for no reason a reader could see.
+ */
+function StepActions({
+  primaryIntent,
+  primaryPendingLabel,
+  canSkip = true,
+}: {
+  primaryIntent: string;
+  primaryPendingLabel: string;
+  canSkip?: boolean;
+}) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const isBusy = navigation.state !== 'idle';
@@ -639,16 +659,18 @@ function StepActions({ primaryIntent, primaryPendingLabel }: { primaryIntent: st
       >
         {t('onboarding.actions.continue')}
       </SubmitButton>
-      <Button
-        type="submit"
-        name="_intent"
-        value={INTENT.SKIP}
-        variant="link"
-        disabled={isBusy}
-        className="text-muted-foreground"
-      >
-        {skipLabel}
-      </Button>
+      {canSkip && (
+        <Button
+          type="submit"
+          name="_intent"
+          value={INTENT.SKIP}
+          variant="link"
+          disabled={isBusy}
+          className="text-muted-foreground"
+        >
+          {skipLabel}
+        </Button>
+      )}
     </div>
   );
 }
@@ -688,10 +710,7 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
   // it in one place (`app/lib/eating-style.ts`).
   const definition = style === null ? null : eatingStyle(style);
   return (
-    // `settings.style.lead` is the step's description: it is the one sentence
-    // in the catalog that says what a style decides, and this milestone's key
-    // budget has no `onboarding.step.style.description`.
-    <StepShell title={t('onboarding.style.title')} description={t('settings.style.lead')}>
+    <StepShell title={t('onboarding.style.title')} description={t('onboarding.step.style.description')}>
       <Form method="post" className="space-y-6">
         <TimezoneField />
         <div className="space-y-3">
@@ -712,7 +731,14 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
         {definition?.kcalMode === 'asked' && (
           <KcalTargetField defaultValue={loaderData.goalKcalTarget} errorKey={errors.kcalTarget} />
         )}
-        <StepActions primaryIntent={INTENT.SAVE_STYLE} primaryPendingLabel={t('onboarding.actions.saving')} />
+        {/* No Skip here: `just-track` in the list above IS the "no goal"
+            answer, so a second way to decline would only be a way to decline
+            differently. */}
+        <StepActions
+          primaryIntent={INTENT.SAVE_STYLE}
+          primaryPendingLabel={t('onboarding.actions.saving')}
+          canSkip={false}
+        />
       </Form>
     </StepShell>
   );
@@ -900,17 +926,16 @@ function chipClass(isSelected: boolean): string {
  * The calorie target, shown for the two styles that ask for one and REQUIRED
  * there.
  *
- * The label comes from `goals.kcal.label` rather than `onboarding.kcal.label`
- * because the onboarding one says "(optional)" and its hint invites the reader
- * to leave the field blank, both of which are now false: a style that asks for
- * a target does not save without one. A required-field key of its own is the
- * follow-up.
+ * The label is `onboarding.kcal.requiredLabel`, not `onboarding.kcal.label`:
+ * that one says "(optional)" and its hint invites the reader to leave the field
+ * blank, both of which are false here, because a style that asks for a target
+ * does not save without one.
  */
 function KcalTargetField({ defaultValue, errorKey }: { defaultValue: number | null; errorKey?: string }) {
   const { t } = useTranslation();
   return (
     <div className="space-y-2 rounded-lg border border-dashed p-4">
-      <Label htmlFor={KCAL_TARGET_FIELD}>{t('goals.kcal.label')}</Label>
+      <Label htmlFor={KCAL_TARGET_FIELD}>{t('onboarding.kcal.requiredLabel')}</Label>
       <Input
         id={KCAL_TARGET_FIELD}
         name={KCAL_TARGET_FIELD}

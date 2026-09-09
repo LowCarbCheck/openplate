@@ -53,6 +53,23 @@ function wrongDerive(input: EatingStyleGoals): EatingStyleId {
   return 'just-track';
 }
 
+/**
+ * One save over an existing profile, with a logged weight and a reference floor
+ * on hand. Module scope rather than inside the describe, because oxlint's
+ * `consistent-function-scoping` refuses a helper that captures nothing.
+ */
+function saveOver(input: { currentGoals: EatingStyleGoals; style: EatingStyleId; kcalTarget?: number | null }) {
+  const { currentGoals, style, kcalTarget = null } = input;
+  return applyEatingStyle({
+    style,
+    currentGoals,
+    carbPresetCeiling: style === 'low-carb' || style === 'low-carb-low-kcal' ? 50 : null,
+    kcalTarget,
+    latestWeightKg: 78,
+    referenceProteinFloorG: 60,
+  });
+}
+
 /** A deliberately over-eager caution rule, used as the control below: it ignores the style. */
 function overEagerCaution(status: ReproductiveStatus): 'caution' | null {
   return status === 'pregnant' || status === 'lactating' ? 'caution' : null;
@@ -312,6 +329,44 @@ describe('applying a style', () => {
       if (id === 'high-protein') continue;
       assert.equal(apply(id).needsWeight, false);
     }
+  });
+
+  // The floor someone typed into the goals card by hand, on a style that leaves
+  // the floor at the reference.
+  const typedFloor = goals({ goalNetCarbsCeilingG: 50, goalProteinFloorG: 125, eatingStyle: 'low-carb' });
+
+  it('keeps a hand-typed protein floor when the same style is saved again', () => {
+    // Opening the style card, changing nothing about the style and saving must
+    // not quietly replace 125 g with the reference. Nothing on screen would say
+    // the goal had moved.
+    assert.equal(saveOver({ currentGoals: typedFloor, style: 'low-carb' }).patch.goalProteinFloorG, 125);
+  });
+
+  it('keeps a hand-typed floor on a re-save for a profile written before the stored pick existed', () => {
+    // No `eatingStyle` on file, so the comparison runs against the DERIVED
+    // style. A ceiling and no target derives `low-carb`, which is what is being
+    // saved, so this is a re-save and not a change.
+    const preV20 = goals({ goalNetCarbsCeilingG: 50, goalProteinFloorG: 125 });
+    assert.equal(saveOver({ currentGoals: preV20, style: 'low-carb' }).patch.goalProteinFloorG, 125);
+  });
+
+  it('resets the floor to the reference when the style changes', () => {
+    assert.equal(saveOver({ currentGoals: typedFloor, style: 'low-kcal', kcalTarget: 1600 }).patch.goalProteinFloorG, 60);
+    assert.equal(saveOver({ currentGoals: typedFloor, style: 'just-track' }).patch.goalProteinFloorG, 60);
+  });
+
+  it('recomputes the floor from weight on a `high-protein` re-save, typed floor or not', () => {
+    const stale = goals({ goalProteinFloorG: 200, eatingStyle: 'high-protein' });
+    assert.equal(saveOver({ currentGoals: stale, style: 'high-protein' }).patch.goalProteinFloorG, Math.round(78 * HIGH_PROTEIN_G_PER_KG));
+  });
+
+  it('CONTROL: an implementation that always writes the reference fails the re-save case', () => {
+    // This is exactly what the first cut did, and it passed every case above:
+    // the changed-style case wants the reference, so only the re-save case can
+    // tell the two implementations apart.
+    const alwaysResets = { ...saveOver({ currentGoals: typedFloor, style: 'low-carb' }).patch, goalProteinFloorG: 60 };
+    assert.throws(() => assert.equal(alwaysResets.goalProteinFloorG, 125));
+    assert.equal(alwaysResets.goalProteinFloorG, saveOver({ currentGoals: typedFloor, style: 'low-kcal', kcalTarget: 1600 }).patch.goalProteinFloorG);
   });
 });
 

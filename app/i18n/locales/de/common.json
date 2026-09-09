@@ -517,7 +517,6 @@
     },
     "impact": {
       "againstGoal": "gemessen an deinem Ziel von {{value}} g",
-      "againstReference": "gemessen an einem Richtwert von {{value}} g",
       "ariaLabel": "{{label}}, {{reference}}",
       "high": "Viele Kohlenhydrate",
       "kcal": {
@@ -1348,6 +1347,9 @@
       "moderate": {
         "detail": "Unter 100 g Netto-KH am Tag",
         "label": "Mittel"
+      },
+      "errors": {
+        "required": "Wähl eine Kohlenhydratgrenze für diesen Stil."
       }
     },
     "firstFood": {
@@ -1376,7 +1378,11 @@
     "kcal": {
       "hint": "Leer lassen, um später zu entscheiden. Du kannst den Wert jederzeit in den Einstellungen anpassen.",
       "label": "Tägliches Kalorienziel (optional)",
-      "placeholder": "z. B. 2000"
+      "placeholder": "z. B. 2000",
+      "errors": {
+        "required": "Dieser Stil braucht ein tägliches Kalorienziel."
+      },
+      "requiredLabel": "Tägliches Kalorienziel"
     },
     "loading": "Wird geladen…",
     "localFirst": "Deine Daten liegen auf <strong>diesem Gerät</strong>. Wir sehen sie niemals. Das Tagebuch, das du gleich beginnst, bleibt immer lokal.",
@@ -1397,6 +1403,9 @@
       "weight": {
         "description": "Optional. Trage dein heutiges Gewicht und bei Bedarf ein Zielgewicht ein. Das liefert später die Daten für deine Trends.",
         "title": "Gewicht mitverfolgen?"
+      },
+      "style": {
+        "description": "Wähl, wie du isst. Jede Zahl im Tagebuch folgt daraus."
       }
     },
     "stepOf": "Schritt {{current}} von {{total}}",
@@ -1425,7 +1434,10 @@
       },
       "needsWeight": "Trag dein Gewicht ein, damit wir dieses Ziel ausrechnen können. Bis dahin bleibt dein Eiweißziel beim Richtwert.",
       "sourceLabel": "Deutsche Gesellschaft für Ernährung (DGE), öffnet in einem neuen Tab",
-      "title": "Wie isst du?"
+      "title": "Wie isst du?",
+      "errors": {
+        "required": "Wähl einen Stil, um weiterzugehen."
+      }
     },
     "waysToLog": {
       "photo": {

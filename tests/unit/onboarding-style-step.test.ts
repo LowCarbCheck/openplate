@@ -249,3 +249,30 @@ describe('the caution note on a first run', () => {
     assert.ok(markup.includes(STYLE_CAUTION_SOURCE_URL));
   });
 });
+
+/** Every submit button in the markup that would post the `skip` intent. */
+function skipSubmits(markup: string): string[] {
+  return markup.match(/<button[^>]*value="skip"[^>]*>/g) ?? [];
+}
+
+describe('the step has no Skip', () => {
+  // Skipping a step means "do not answer this". Every other step in the wizard
+  // has that as a distinct outcome, but this one spells it out as an answer:
+  // `just-track` IS the no-goal pick. A Skip link beside it would offer the
+  // same decision twice, once writing a style and once writing nothing.
+  it('offers Continue and no Skip on the style step', () => {
+    const markup = renderStyleStep(fixture());
+    assert.ok(markup.includes('Continue'), 'the primary action must still be there');
+    assert.deepEqual(skipSubmits(markup), []);
+    assert.equal(markup.includes('Skip for now'), false);
+  });
+
+  // THE CONTROL. The same two assertions over markup that DOES carry the link,
+  // so neither can pass by matching a string the screen never renders.
+  it('CONTROL: markup that still carries the Skip link fails both assertions', () => {
+    const withSkip =
+      renderStyleStep(fixture()) + '<button type="submit" name="_intent" value="skip">Skip for now</button>';
+    assert.throws(() => assert.deepEqual(skipSubmits(withSkip), []));
+    assert.throws(() => assert.equal(withSkip.includes('Skip for now'), false));
+  });
+});

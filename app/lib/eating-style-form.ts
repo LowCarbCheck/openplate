@@ -40,14 +40,16 @@ export const CARB_SUB_PRESETS: readonly (CarbPreset & { ceiling: number })[] = O
 /**
  * Message for a carb style submitted with no ceiling picked.
  *
- * REUSED, not new: M210 shipped no `settings.style.errors.*` keys, and the
- * onboarding legend already asks this exact question in both locales. An
- * English-only new key would fail the i18n parity test.
+ * Shared with the onboarding step rather than given a `settings.style.errors.*`
+ * twin: the two surfaces put the same question and refuse it for the same
+ * reason, so one sentence in each locale is one sentence to keep true. The
+ * first cut of this card reused the LEGEND that asks the question, which said
+ * nothing about what was wrong; `onboarding.carbPreset.errors.required` does.
  */
-export const STYLE_CARB_REQUIRED_KEY = 'onboarding.carbPreset.legend';
+export const STYLE_CARB_REQUIRED_KEY = 'onboarding.carbPreset.errors.required';
 
-/** Message for a kcal style submitted with no target. Reused for the same reason as above. */
-export const STYLE_KCAL_REQUIRED_KEY = 'errors.notANumber';
+/** Message for a kcal style submitted with no target. Shared with the onboarding step for the same reason as above. */
+export const STYLE_KCAL_REQUIRED_KEY = 'onboarding.kcal.errors.required';
 
 /**
  * A goal number that may be absent from the submission entirely: the card only

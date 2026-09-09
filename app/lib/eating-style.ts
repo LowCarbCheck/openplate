@@ -237,7 +237,11 @@ export interface EatingStylePatch {
 /** What `applyEatingStyle` needs to turn a pick into numbers. An options object because five of the six arguments are the same type. */
 export interface ApplyEatingStyleInput {
   style: EatingStyleId;
-  /** The numbers stored today, used as the fallback for a field the caller did not re-ask. */
+  /**
+   * The numbers stored today. Two jobs: the fallback for a field the caller did
+   * not re-ask, and the style to compare against, which is what decides whether
+   * a reference protein floor is imposed or the stored one kept.
+   */
   currentGoals: EatingStyleGoals;
   /** The 20/50/100 g answer from the carb sub step, or null when it was not asked. */
   carbPresetCeiling: number | null;
@@ -261,12 +265,57 @@ export interface ApplyEatingStyleResult {
   needsWeight: boolean;
 }
 
+/** What `resolveProteinFloor` weighs up. An options object because four of the five values are the same type. */
+interface ResolveProteinFloorInput {
+  proteinRule: EatingStyleProteinRule;
+  /** Whether the style in effect differs from the one being saved. */
+  isStyleChange: boolean;
+  latestWeightKg: number | null;
+  referenceProteinFloorG: number | null;
+  storedProteinFloorG: number | null;
+}
+
+/**
+ * The protein floor a save should store. Split out of `applyEatingStyle`
+ * because it is the one field with three inputs rather than one, and a reader
+ * asking "does my typed floor survive this?" should find the answer in one
+ * short function rather than in a nested conditional.
+ *
+ * @param input - the rule, whether the style changed, and the three candidate numbers.
+ * @returns the floor to write, `null` when there is nothing to write.
+ */
+function resolveProteinFloor(input: ResolveProteinFloorInput): number | null {
+  const { proteinRule, isStyleChange, latestWeightKg, referenceProteinFloorG, storedProteinFloorG } = input;
+  // Weight-scaled: always recomputed, because the number means 1.6 g per kg and
+  // a stale one would not. With no weight it falls back to the reference and the
+  // caller says a weight is needed.
+  if (proteinRule === 'g-per-kg') {
+    return latestWeightKg === null ? referenceProteinFloorG : Math.round(latestWeightKg * HIGH_PROTEIN_G_PER_KG);
+  }
+  // Reference-based: only a style CHANGE resets it. A re-save keeps whatever is
+  // stored, including a hand-typed floor.
+  return isStyleChange ? referenceProteinFloorG : storedProteinFloorG;
+}
+
 /**
  * Turns a style pick into the numbers to store. It writes what the style owns
  * and NULLS what it does not, which is the whole point: leaving a stale carb
  * ceiling behind when someone switches to `low-kcal` would keep the old ceiling
  * live in every export, every sync blob and every future derivation, and the
  * app would go on grading a day by a goal the person thought they had dropped.
+ *
+ * The protein floor is the one field that also asks WHETHER the style changed.
+ * `high-protein` always computes it from body weight, so a re-save recomputes
+ * and that is correct. Every other style leaves the floor at the age and sex
+ * reference, and a reference is only imposed on a style CHANGE: re-saving the
+ * style you already have keeps the floor now stored, so a number someone typed
+ * into the goals card by hand survives a visit to the style card. Writing the
+ * reference on every save silently discarded that number, and nothing on the
+ * screen said it had happened.
+ *
+ * The comparison runs against `effectiveEatingStyle`, not against the raw
+ * stored field, so a profile written before v20 counts as the style its numbers
+ * describe rather than as a change away from nothing.
  *
  * @param input - the pick and the answers gathered alongside it.
  * @returns the patch to merge onto the profile, and whether a weight is missing.
@@ -281,11 +330,15 @@ export function applyEatingStyle(input: ApplyEatingStyleInput): ApplyEatingStyle
   const ceiling = definition.carbSubPreset ? (carbPresetCeiling ?? currentGoals.goalNetCarbsCeilingG) : null;
   const kcal = definition.kcalMode === 'asked' ? (kcalTarget ?? currentGoals.goalKcalTarget) : null;
 
+  const isStyleChange = effectiveEatingStyle(currentGoals) !== style;
   const needsWeight = definition.proteinRule === 'g-per-kg' && latestWeightKg === null;
-  const proteinFloor =
-    definition.proteinRule === 'g-per-kg' && latestWeightKg !== null
-      ? Math.round(latestWeightKg * HIGH_PROTEIN_G_PER_KG)
-      : referenceProteinFloorG;
+  const proteinFloor = resolveProteinFloor({
+    proteinRule: definition.proteinRule,
+    isStyleChange,
+    latestWeightKg,
+    referenceProteinFloorG,
+    storedProteinFloorG: currentGoals.goalProteinFloorG ?? null,
+  });
 
   return {
     patch: {

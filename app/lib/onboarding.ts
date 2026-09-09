@@ -220,16 +220,18 @@ export type StyleStepField = (typeof STYLE_STEP_FIELDS)[number];
 /**
  * i18n KEYS (not copy) for the three ways the style step can be incomplete.
  *
- * All three are keys that already exist in the catalog, because this milestone
- * splits the copy work across workers and the style step must not invent a key
- * the other locale has never heard of: an English only key fails both
- * `i18n-key-parity` and the managed copy sweep. They are re-asks of the
- * question the field puts, which is honest but not ideal, and dedicated
- * `errors.required` keys for all three are the follow-up.
+ * Each of the three now has a key of its own, in both locales. The first cut of
+ * this step reused the keys that ASK each question (`onboarding.style.title`,
+ * `onboarding.carbPreset.legend`) plus the generic `errors.notANumber`, because
+ * the milestone split the copy work across workers and an English only key
+ * fails both `i18n-key-parity` and the managed copy sweep. Re-asking the
+ * question is not an error message: it told the reader nothing about what the
+ * form wanted next, and `errors.notANumber` was plainly wrong for a field left
+ * blank. The dedicated keys say what to do instead.
  */
-export const STYLE_REQUIRED_KEY = 'onboarding.style.title';
-export const CARB_PRESET_REQUIRED_KEY = 'onboarding.carbPreset.legend';
-export const KCAL_TARGET_REQUIRED_KEY = 'errors.notANumber';
+export const STYLE_REQUIRED_KEY = 'onboarding.style.errors.required';
+export const CARB_PRESET_REQUIRED_KEY = 'onboarding.carbPreset.errors.required';
+export const KCAL_TARGET_REQUIRED_KEY = 'onboarding.kcal.errors.required';
 
 /** The raw strings the style step's form submits. Every one may be absent. */
 export interface StyleStepInput {

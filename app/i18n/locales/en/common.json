@@ -529,7 +529,6 @@
     },
     "impact": {
       "againstGoal": "against your {{value}} g goal",
-      "againstReference": "against a {{value}} g reference day",
       "ariaLabel": "{{label}}, {{reference}}",
       "high": "High carb impact",
       "kcal": {
@@ -1360,6 +1359,9 @@
       "moderate": {
         "detail": "Under 100 g net carbs a day",
         "label": "Moderate"
+      },
+      "errors": {
+        "required": "Pick a carb limit for this style."
       }
     },
     "firstFood": {
@@ -1388,7 +1390,11 @@
     "kcal": {
       "hint": "Leave blank to decide later. You can set it in Settings anytime.",
       "label": "Daily calorie target (optional)",
-      "placeholder": "e.g. 2000"
+      "placeholder": "e.g. 2000",
+      "errors": {
+        "required": "This style needs a daily calorie target."
+      },
+      "requiredLabel": "Daily calorie target"
     },
     "loading": "Loading…",
     "localFirst": "Your data lives on <strong>this device</strong>. We never see it. The diary you’re about to start stays local, always.",
@@ -1409,6 +1415,9 @@
       "weight": {
         "description": "Optional. Log today's weight and a target if you like. It powers your trends later.",
         "title": "Track your weight?"
+      },
+      "style": {
+        "description": "Pick the way you eat. Every number on the diary follows from it."
       }
     },
     "stepOf": "Step {{current}} of {{total}}",
@@ -1437,7 +1446,10 @@
       },
       "needsWeight": "Log your weight so we can work this goal out. Until then your protein goal stays at the reference value.",
       "sourceLabel": "German Nutrition Society (DGE), opens in a new tab",
-      "title": "How do you eat?"
+      "title": "How do you eat?",
+      "errors": {
+        "required": "Pick one style to go on."
+      }
     },
     "waysToLog": {
       "photo": {

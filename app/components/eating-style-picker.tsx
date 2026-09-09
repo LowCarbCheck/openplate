@@ -135,7 +135,10 @@ export function EatingStylePicker({
           missing answer here (M210 design), so the field is required. */}
       {definition.kcalMode === 'asked' && (
         <div className="space-y-2">
-          <Label htmlFor={kcalField.id}>{t('goals.kcal.label')}</Label>
+          {/* `onboarding.kcal.requiredLabel`, not `onboarding.kcal.label`: the
+              latter reads "(optional)", and a style that asks for a target does
+              not save without one. */}
+          <Label htmlFor={kcalField.id}>{t('onboarding.kcal.requiredLabel')}</Label>
           <Input
             id={kcalField.id}
             name={kcalField.name}
