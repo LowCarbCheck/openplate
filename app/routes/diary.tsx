@@ -31,6 +31,7 @@ import { diaryHrefForDate } from '#app/lib/diary-href';
 import { useDaySwipe } from '#app/hooks/use-day-swipe';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { computeDayGaps } from '#app/lib/macro-gaps';
+import { computeReferenceProteinFloor, selectLatestWeighInKg } from '#app/models/body-metrics';
 import { useCountUp } from '#app/hooks/use-count-up';
 import { useCelebration } from '#app/hooks/use-celebration';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
@@ -57,6 +58,7 @@ import {
   daysSinceExport,
   daysSinceFirstData,
   deleteLocalFoodLog,
+  getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalFoodLogs,
   listLocalFoods,
@@ -963,7 +965,13 @@ export interface DiaryData {
   logs: LocalFoodLog[];
   mealGroups: MealGroup[];
   summary: DaySummary;
-  goals: { netCarbsCeiling: number | null; proteinFloor: number | null; kcalTarget: number | null };
+  goals: {
+    netCarbsCeiling: number | null;
+    proteinFloor: number | null;
+    kcalTarget: number | null;
+    /** The population reference protein floor, used only while `proteinFloor` is null. */
+    proteinReferenceG: number;
+  };
   habitStrip: HabitStripDay[];
   loggedDaysCount: number;
   frequentChips: LocalFrequentChip[];
@@ -1091,6 +1099,17 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
   // count.
   const [personalFoods, weightEntries] = await Promise.all([listLocalFoods(), listLocalWeightEntries()]);
 
+  // A protein floor for someone who set none: scaled by their own latest
+  // weigh-in, or by height and sex, and tagged `'default'` downstream so the
+  // row reads as a reference rather than as a goal they chose.
+  const bodyMetrics = await getLocalBodyMetrics();
+  const proteinReferenceG = computeReferenceProteinFloor({
+    latestWeighInKg: selectLatestWeighInKg(weightEntries),
+    heightCm: bodyMetrics.heightCm,
+    biologicalSex: bodyMetrics.biologicalSex,
+    reproductiveStatus: bodyMetrics.reproductiveStatus,
+  }).grams;
+
   return {
     date,
     today,
@@ -1099,7 +1118,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     logs: logsForDay,
     mealGroups,
     summary,
-    goals,
+    goals: { ...goals, proteinReferenceG },
     habitStrip,
     loggedDaysCount: countLoggedDays(habitStrip),
     frequentChips,
@@ -1416,6 +1435,8 @@ interface DiaryGoals {
   netCarbsCeiling: number | null;
   proteinFloor: number | null;
   kcalTarget: number | null;
+  /** The population reference protein floor, used only while `proteinFloor` is null. */
+  proteinReferenceG: number;
 }
 
 /**
@@ -1458,20 +1479,27 @@ function DaySummaryCard({
   goals,
   addBase,
   date,
+  loggedFoodNames,
   celebrating,
 }: {
   summary: DaySummary;
   goals: DiaryGoals;
   addBase: string;
-  /** The viewed day — scopes the count-up so paging days doesn't tween one day's figure into another's. */
+  /** The viewed day, scopes the count-up so paging days doesn't tween one day's figure into another's, and rotates the suggestions. */
   date: string;
+  /** The names of the foods logged on that day, so the suggestions don't offer back what was already eaten. */
+  loggedFoodNames: readonly string[];
   /** True while a one-time celebration is playing, which pulses this card's edge. */
   celebrating: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const gaps = computeDayGaps({
     totals: { netCarbs: summary.netCarbs, protein: summary.protein, fiber: summary.fiber },
-    goals: { netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor },
+    goals: {
+      netCarbsCeiling: goals.netCarbsCeiling,
+      proteinFloor: goals.proteinFloor,
+      proteinReferenceG: goals.proteinReferenceG,
+    },
     t,
   });
   const hasAnyGoal = goals.netCarbsCeiling !== null || goals.proteinFloor !== null || goals.kcalTarget !== null;
@@ -1564,7 +1592,7 @@ function DaySummaryCard({
         <div className="border-t border-primary/15 pt-4">
           <WhatYouAte summary={summary} caveat={getSummaryCaveat(summary, t)} kcalLine={kcalLine} />
         </div>
-        <SuggestionsDisclosure gaps={gaps} addBase={addBase} />
+        <SuggestionsDisclosure gaps={gaps} addBase={addBase} dateKey={date} loggedFoodNames={loggedFoodNames} />
       </CardContent>
     </Card>
   );
@@ -2330,6 +2358,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
           goals={goals}
           addBase={addTo}
           date={date}
+          loggedFoodNames={logs.map((log) => log.name)}
           celebrating={celebration !== null}
         />
       )}

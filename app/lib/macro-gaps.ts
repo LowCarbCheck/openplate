@@ -298,6 +298,14 @@ export interface DayGapTotals {
 export interface DayGapGoals {
   netCarbsCeiling: number | null;
   proteinFloor: number | null;
+  /**
+   * The population reference protein floor in grams, from
+   * `computeReferenceProteinFloor`, used ONLY when `proteinFloor` is null.
+   * Optional so a caller that has no body metrics to work from (a test, or a
+   * surface that never reads the profile) keeps the older no-target behaviour
+   * rather than inventing a figure.
+   */
+  proteinReferenceG?: number | null;
 }
 
 /**
@@ -358,8 +366,12 @@ function selectDominantGap(protein: MacroGap, fiber: MacroGap): DominantGap | nu
  *   in their mouth. (The impact chip still uses the 50 g reference — a
  *   qualitative verdict is a much smaller claim than a displayed target, and
  *   the chip's `referenceSource` says which it used.)
- * - **Protein** likewise takes a target only from the user's floor: protein
- *   needs vary far too much with body mass and goal for a default to be honest.
+ * - **Protein** prefers the user's floor and falls back to
+ *   `goals.proteinReferenceG`, tagged `'default'`, the population reference
+ *   `computeReferenceProteinFloor` scales from the person's own weigh-in or
+ *   height. Protein needs do vary with body mass, which is exactly why the
+ *   reference is computed per person rather than being one flat number; a
+ *   floor the user typed in still wins whenever there is one.
  * - **Fiber** always uses `DEFAULT_FIBER_REFERENCE_G`, tagged `'default'`,
  *   because there is no fiber goal field to read and the reference is a
  *   published population figure rather than a personal target.
@@ -391,8 +403,10 @@ export function computeDayGaps({
     label: t('diary.macros.protein'),
     kind: 'floor',
     consumed: totals.protein,
-    target: goals.proteinFloor,
-    targetSource: goals.proteinFloor === null ? 'none' : 'goal',
+    // `buildGap` re-tags a null target as `'none'`, so a caller that passes
+    // neither a floor nor a reference keeps the untargeted protein row.
+    target: goals.proteinFloor ?? goals.proteinReferenceG ?? null,
+    targetSource: goals.proteinFloor !== null ? 'goal' : 'default',
   });
   const fiber = buildGap({
     key: 'fiber',

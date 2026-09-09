@@ -17,8 +17,14 @@ import {
   EMPTY_BODY_METRICS,
   LIGHTLY_ACTIVE_FACTOR,
   PROTEIN_PER_KG,
+  EFSA_LACTATION_PROTEIN_ADDITION_G,
+  EFSA_PREGNANCY_PROTEIN_ADDITION_G,
+  EFSA_PROTEIN_REFERENCE_G_PER_KG,
+  EU_PROTEIN_REFERENCE_INTAKE_G,
   computeBmrKcal,
   computeDevineIdealWeightKg,
+  computeReferenceProteinFloor,
+  selectLatestWeighInKg,
   computeTdeeKcal,
   estimateProteinFloorG,
   deriveAgeYears,
@@ -417,5 +423,189 @@ describe('the protein floor, from height and sex', () => {
       method: 'weight',
     });
     assert.equal(suggestProteinFloor({ heightCm: null, biologicalSex: null, latestWeighInKg: null }), null);
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The reference protein floor
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * `computeReferenceProteinFloor` stands in for a floor the person never set, so
+ * unlike every other function in this file it must ALWAYS answer. What is
+ * pinned here is the fallback ORDER (weigh-in, then height, then the flat
+ * labelling figure), the two additions on top of each basis, and the rounding.
+ *
+ * Every figure below is arithmetic anyone can redo by hand from the four
+ * exported constants, which is why the constants are imported rather than the
+ * numbers being retyped.
+ */
+describe('computeReferenceProteinFloor', () => {
+  const MALE_180 = { heightCm: 180, biologicalSex: 'male' } as const;
+
+  it('scales the latest weigh-in by the EFSA reference intake', () => {
+    // 82 kg x 0.83 = 68.06 g.
+    assert.deepEqual(
+      computeReferenceProteinFloor({
+        latestWeighInKg: 82,
+        heightCm: null,
+        biologicalSex: null,
+        reproductiveStatus: null,
+      }),
+      { grams: 68, basis: 'weigh-in' },
+    );
+    assert.equal(EFSA_PROTEIN_REFERENCE_G_PER_KG, 0.83);
+  });
+
+  it('falls back to the Devine reference mass when there is no weigh-in', () => {
+    // 180 cm male: 74.992126 kg x 0.83 = 62.2434... g.
+    assert.deepEqual(computeReferenceProteinFloor({ latestWeighInKg: null, ...MALE_180, reproductiveStatus: null }), {
+      grams: 62,
+      basis: 'height',
+    });
+    // Control: the same height as a female gives a different figure, so the
+    // 'height' basis really is running Devine and not returning a constant.
+    assert.deepEqual(
+      computeReferenceProteinFloor({
+        latestWeighInKg: null,
+        heightCm: 165,
+        biologicalSex: 'female',
+        reproductiveStatus: null,
+      }),
+      { grams: 47, basis: 'height' },
+    );
+  });
+
+  it('falls back to the flat labelling reference intake when there is no basis at all', () => {
+    assert.deepEqual(
+      computeReferenceProteinFloor({
+        latestWeighInKg: null,
+        heightCm: null,
+        biologicalSex: null,
+        reproductiveStatus: 'none',
+      }),
+      { grams: EU_PROTEIN_REFERENCE_INTAKE_G, basis: 'labelling' },
+    );
+    // A height Devine refuses (below 152.4 cm) is still "no basis", not a
+    // silently extrapolated one.
+    assert.deepEqual(
+      computeReferenceProteinFloor({
+        latestWeighInKg: null,
+        heightCm: 150,
+        biologicalSex: 'male',
+        reproductiveStatus: null,
+      }),
+      { grams: 50, basis: 'labelling' },
+    );
+  });
+
+  it('prefers a weigh-in over height, which is the whole point of the order', () => {
+    // CONTROL: this person has BOTH. The weigh-in answer (58) and the height
+    // answer (62) differ, so the assertion cannot pass by accident.
+    const both = computeReferenceProteinFloor({ latestWeighInKg: 70, ...MALE_180, reproductiveStatus: null });
+    const heightOnly = computeReferenceProteinFloor({ latestWeighInKg: null, ...MALE_180, reproductiveStatus: null });
+    assert.deepEqual(both, { grams: 58, basis: 'weigh-in' });
+    assert.deepEqual(heightOnly, { grams: 62, basis: 'height' });
+    assert.notEqual(both.grams, heightOnly.grams);
+  });
+
+  it('adds the pregnancy and lactation figures on top of whichever basis was used', () => {
+    // 70 kg x 0.83 = 58.1 g, plus 28 or 19.
+    const pregnantOnWeight = computeReferenceProteinFloor({
+      latestWeighInKg: 70,
+      heightCm: null,
+      biologicalSex: null,
+      reproductiveStatus: 'pregnant',
+    });
+    const lactatingOnWeight = computeReferenceProteinFloor({
+      latestWeighInKg: 70,
+      heightCm: null,
+      biologicalSex: null,
+      reproductiveStatus: 'lactating',
+    });
+    assert.deepEqual(pregnantOnWeight, { grams: 58 + EFSA_PREGNANCY_PROTEIN_ADDITION_G, basis: 'weigh-in' });
+    assert.deepEqual(lactatingOnWeight, { grams: 58 + EFSA_LACTATION_PROTEIN_ADDITION_G, basis: 'weigh-in' });
+
+    // On the height basis: 62.2434 + 28 = 90.24 g.
+    assert.deepEqual(
+      computeReferenceProteinFloor({
+        latestWeighInKg: null,
+        heightCm: 180,
+        biologicalSex: 'male',
+        reproductiveStatus: 'pregnant',
+      }),
+      { grams: 90, basis: 'height' },
+    );
+    // On the labelling basis.
+    assert.deepEqual(
+      computeReferenceProteinFloor({
+        latestWeighInKg: null,
+        heightCm: null,
+        biologicalSex: null,
+        reproductiveStatus: 'lactating',
+      }),
+      { grams: EU_PROTEIN_REFERENCE_INTAKE_G + EFSA_LACTATION_PROTEIN_ADDITION_G, basis: 'labelling' },
+    );
+    // CONTROL: 'none' adds nothing, so the two assertions above are measuring
+    // the addition and not a constant that was always there.
+    assert.equal(
+      computeReferenceProteinFloor({
+        latestWeighInKg: 70,
+        heightCm: null,
+        biologicalSex: null,
+        reproductiveStatus: 'none',
+      }).grams,
+      58,
+    );
+  });
+
+  it('rounds to a whole gram, including the exact half', () => {
+    // 50 kg x 0.83 = 41.5 g exactly, which must not be reported as 41.5.
+    const half = computeReferenceProteinFloor({
+      latestWeighInKg: 50,
+      heightCm: null,
+      biologicalSex: null,
+      reproductiveStatus: null,
+    });
+    assert.equal(half.grams, 42);
+    assert.equal(Number.isInteger(half.grams), true);
+  });
+
+  it('ignores a weigh-in that is not a usable number', () => {
+    assert.deepEqual(computeReferenceProteinFloor({ latestWeighInKg: 0, ...MALE_180, reproductiveStatus: null }), {
+      grams: 62,
+      basis: 'height',
+    });
+    assert.deepEqual(
+      computeReferenceProteinFloor({
+        latestWeighInKg: Number.NaN,
+        heightCm: null,
+        biologicalSex: null,
+        reproductiveStatus: null,
+      }),
+      { grams: 50, basis: 'labelling' },
+    );
+  });
+});
+
+/**
+ * `selectLatestWeighInKg` is the one rule for "the latest weigh-in", shared by
+ * the two loaders that scale a target by body mass.
+ */
+describe('selectLatestWeighInKg', () => {
+  it('picks the newest dayKey regardless of the order rows arrive in', () => {
+    const entries = [
+      { dayKey: '2026-01-02', weightKg: 81 },
+      { dayKey: '2026-03-09', weightKg: 78 },
+      { dayKey: '2026-02-11', weightKg: 80 },
+    ];
+    assert.equal(selectLatestWeighInKg(entries), 78);
+    // CONTROL: reversed input gives the same answer, so this is not just
+    // reading the first or the last row.
+    assert.equal(selectLatestWeighInKg(entries.toReversed()), 78);
+  });
+
+  it('answers null for no weigh-ins at all', () => {
+    assert.equal(selectLatestWeighInKg([]), null);
   });
 });

@@ -164,7 +164,9 @@ describe('computeDayGaps — the protein and fiber floors', () => {
     assert.equal(protein.fraction, 1);
   });
 
-  it('leaves protein target-less (never defaulted) when the user set no floor', () => {
+  it('leaves protein target-less when there is neither a floor nor a reference', () => {
+    // The pre-M205 behaviour, kept for a caller that has no body metrics to
+    // compute a reference from: no target is still better than a made-up one.
     const { protein } = computeDayGaps({
       totals: { netCarbs: 20, protein: 46, fiber: 10 },
       goals: { netCarbsCeiling: 50, proteinFloor: null },
@@ -173,6 +175,42 @@ describe('computeDayGaps — the protein and fiber floors', () => {
     assert.equal(protein.target, null);
     assert.equal(protein.targetSource, 'none');
     assert.equal(protein.consumed, 46);
+  });
+
+  it('gives protein the reference floor, tagged as a default, when the user set none', () => {
+    const { protein } = computeDayGaps({
+      totals: { netCarbs: 20, protein: 46, fiber: 10 },
+      goals: { netCarbsCeiling: 50, proteinFloor: null, proteinReferenceG: 62 },
+      t,
+    });
+    assert.equal(protein.target, 62);
+    assert.equal(protein.targetSource, 'default');
+    assert.equal(protein.remainingG, 16);
+    assert.equal(protein.isMet, false);
+  });
+
+  it('lets a floor the user set beat the reference, and tags it as a goal', () => {
+    const { protein } = computeDayGaps({
+      totals: { netCarbs: 20, protein: 46, fiber: 10 },
+      goals: { netCarbsCeiling: 50, proteinFloor: 100, proteinReferenceG: 62 },
+      t,
+    });
+    assert.equal(protein.target, 100);
+    assert.equal(protein.targetSource, 'goal');
+    // CONTROL: the reference was a live, DIFFERENT number in the same call ,
+    // 62 would have been reached at 46 g of protein short by 16, not 54, so
+    // this cannot pass by the reference having been ignored everywhere.
+    assert.equal(protein.remainingG, 54);
+  });
+
+  it('keeps a floor of 0 winning over the reference, since 0 is a choice too', () => {
+    const { protein } = computeDayGaps({
+      totals: { netCarbs: 20, protein: 46, fiber: 10 },
+      goals: { netCarbsCeiling: 50, proteinFloor: 0, proteinReferenceG: 62 },
+      t,
+    });
+    assert.equal(protein.target, 0);
+    assert.equal(protein.targetSource, 'goal');
   });
 
   it('always gives fiber the documented default reference, tagged as a default', () => {

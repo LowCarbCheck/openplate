@@ -32,6 +32,7 @@ import {
   computeDailyTotals,
   computeDailyTotalsInRange,
   computeLocalHabitStrip,
+  getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalFasts,
   listLocalFoodLogs,
@@ -42,6 +43,7 @@ import type { LocalFast } from '#app/lib/local-store';
 import { selectCurrentFast } from '#app/models/fasting';
 import { shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { computeDayGaps } from '#app/lib/macro-gaps';
+import { computeReferenceProteinFloor, selectLatestWeighInKg } from '#app/models/body-metrics';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { fromKg, roundWeightForDisplay, formatKgForDisplay } from '#app/lib/weight-units';
 import type { WeightUnit } from '#app/lib/weight-units';
@@ -118,7 +120,13 @@ export interface DashboardData {
   today: string;
   hasLoggedToday: boolean;
   summary: DaySummary;
-  goals: { netCarbsCeiling: number | null; proteinFloor: number | null; kcalTarget: number | null };
+  goals: {
+    netCarbsCeiling: number | null;
+    proteinFloor: number | null;
+    kcalTarget: number | null;
+    /** The population reference protein floor, used only while `proteinFloor` is null. */
+    proteinReferenceG: number;
+  };
   habitStrip: HabitStripDay[];
   loggedDaysCount: number;
   weight: WeightGlance;
@@ -160,12 +168,23 @@ export async function clientLoader(): Promise<DashboardData> {
   const weightEntries = await listLocalWeightEntries();
   const fasts = await listLocalFasts();
 
+  // A protein floor for someone who set none: scaled by their own latest
+  // weigh-in, or by height and sex, and tagged `'default'` downstream so the
+  // row reads as a reference rather than as a goal they chose.
+  const bodyMetrics = await getLocalBodyMetrics();
+  const proteinReferenceG = computeReferenceProteinFloor({
+    latestWeighInKg: selectLatestWeighInKg(weightEntries),
+    heightCm: bodyMetrics.heightCm,
+    biologicalSex: bodyMetrics.biologicalSex,
+    reproductiveStatus: bodyMetrics.reproductiveStatus,
+  }).grams;
+
   return {
     currentFast: selectCurrentFast(fasts),
     today,
     hasLoggedToday: totalsForToday.hasLogs,
     summary: totalsForToday.summary ?? EMPTY_DAY_SUMMARY,
-    goals,
+    goals: { ...goals, proteinReferenceG },
     habitStrip,
     loggedDaysCount: countLoggedDays(habitStrip),
     weight: computeWeightGlance({ entries: weightEntries, today, windowDays: WEEK_DAYS }),
@@ -211,7 +230,11 @@ function TodayHeroCard({
 
   const gaps = computeDayGaps({
     totals: { netCarbs: summary.netCarbs, protein: summary.protein, fiber: summary.fiber },
-    goals: { netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor },
+    goals: {
+      netCarbsCeiling: goals.netCarbsCeiling,
+      proteinFloor: goals.proteinFloor,
+      proteinReferenceG: goals.proteinReferenceG,
+    },
     t,
   });
 

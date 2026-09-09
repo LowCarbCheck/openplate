@@ -598,3 +598,144 @@ export function suggestProteinFloor(input: ProteinFloorSuggestionInput): Protein
   if (latestWeighInKg === null || !Number.isFinite(latestWeighInKg) || latestWeighInKg <= 0) return null;
   return { grams: Math.round(PROTEIN_PER_KG * latestWeighInKg), method: 'weight' };
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Reference protein floor
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * TWO protein figures live in this file, and they answer different questions.
+ *
+ * `PROTEIN_PER_KG` (1.6 g/kg, above) is a SUGGESTION for a floor the person
+ * then chooses and owns. It is an athletic, muscle-sparing factor, it is
+ * offered as a chip to tap on the goals page, and nothing applies it silently.
+ *
+ * The four constants below are a POPULATION REFERENCE the day view falls back
+ * to when the person set no protein floor at all, exactly the way
+ * `DEFAULT_FIBER_REFERENCE_G` stands in for a fiber goal that has no field.
+ * It is the smallest defensible intake for an adult, not a figure to train on,
+ * and the row wears a "reference" tag rather than posing as a goal.
+ *
+ * Never substitute one for the other: swapping them would either double a
+ * beginner's floor overnight or halve the suggestion an athlete asked for.
+ */
+
+/**
+ * EFSA's population reference intake for protein in adults, in grams per
+ * kilogram of body weight per day.
+ *
+ * Source: EFSA Panel on Dietetic Products, Nutrition and Allergies, "Scientific
+ * Opinion on Dietary Reference Values for protein", EFSA Journal 2012;10(2):2557.
+ */
+export const EFSA_PROTEIN_REFERENCE_G_PER_KG = 0.83;
+
+/**
+ * The food-labelling reference intake for protein, in grams per day. This is
+ * the last resort, for a person who has given neither a weigh-in nor a height
+ * and sex, so there is no body mass to scale by at all.
+ *
+ * Source: Regulation (EU) No 1169/2011, Annex XIII.
+ */
+export const EU_PROTEIN_REFERENCE_INTAKE_G = 50;
+
+/**
+ * Grams of protein EFSA adds for pregnancy, on top of whichever basis was used.
+ *
+ * EFSA gives three additions, one per trimester, and this app records no
+ * trimester. The largest, the third-trimester figure, is therefore the one
+ * always applied, so the floor never sits under what a pregnancy may need. It
+ * overstates an early pregnancy on purpose; a floor that is a little high shows
+ * a gap that is still there, while one that is too low shows none at all.
+ */
+export const EFSA_PREGNANCY_PROTEIN_ADDITION_G = 28;
+
+/** Grams of protein EFSA adds while lactating, its first-six-months figure. */
+export const EFSA_LACTATION_PROTEIN_ADDITION_G = 19;
+
+/**
+ * Which body mass, if any, the reference floor was scaled by. The basis is
+ * NAMED rather than implied, for the same reason `ProteinFloorMethod` is: a
+ * figure whose method cannot be stated is a number nobody can check.
+ */
+export type ProteinReferenceBasis = 'weigh-in' | 'height' | 'labelling';
+
+/** A reference protein floor in whole grams, and the basis behind it. */
+export interface ReferenceProteinFloor {
+  grams: number;
+  basis: ProteinReferenceBasis;
+}
+
+/** Everything the reference floor reads: the last weigh-in, Devine's two fields, and the reproductive status. */
+export interface ReferenceProteinFloorInput extends IdealWeightInput {
+  latestWeighInKg: number | null;
+  reproductiveStatus: ReproductiveStatus | null;
+}
+
+/** The pregnancy or lactation addition in grams, or zero. */
+function proteinAdditionFor(reproductiveStatus: ReproductiveStatus | null): number {
+  if (reproductiveStatus === 'pregnant') return EFSA_PREGNANCY_PROTEIN_ADDITION_G;
+  if (reproductiveStatus === 'lactating') return EFSA_LACTATION_PROTEIN_ADDITION_G;
+  return 0;
+}
+
+/**
+ * The reference protein floor, in whole grams, with the basis that produced it.
+ *
+ * Unlike `estimateProteinFloorG` and `suggestProteinFloor`, this one ALWAYS
+ * answers. That is the point of it: it stands in for a floor the person never
+ * set, so "I cannot say" would leave the protein row with no target at all,
+ * which is the state this function exists to end.
+ *
+ * The fallback order, and why:
+ * 1. the latest weigh-in, because a real measurement beats an estimate;
+ * 2. `computeDevineIdealWeightKg` from height and sex, the same reference mass
+ *    `estimateProteinFloorG` scales, for a person who weighs themselves
+ *    nowhere but filled in the body-metrics card;
+ * 3. `EU_PROTEIN_REFERENCE_INTAKE_G`, the flat labelling figure, for a person
+ *    who gave neither.
+ *
+ * The pregnancy or lactation addition applies on top of whichever basis won.
+ *
+ * @param input - the latest weigh-in, height, sex and reproductive status, each possibly null.
+ * @returns whole grams per day, and the basis, never null.
+ */
+export function computeReferenceProteinFloor(input: ReferenceProteinFloorInput): ReferenceProteinFloor {
+  const additionG = proteinAdditionFor(input.reproductiveStatus);
+  const { latestWeighInKg } = input;
+
+  if (latestWeighInKg !== null && Number.isFinite(latestWeighInKg) && latestWeighInKg > 0) {
+    return { grams: Math.round(latestWeighInKg * EFSA_PROTEIN_REFERENCE_G_PER_KG + additionG), basis: 'weigh-in' };
+  }
+
+  const referenceMassKg = computeDevineIdealWeightKg(input);
+  if (referenceMassKg !== null) {
+    return { grams: Math.round(referenceMassKg * EFSA_PROTEIN_REFERENCE_G_PER_KG + additionG), basis: 'height' };
+  }
+
+  return { grams: Math.round(EU_PROTEIN_REFERENCE_INTAKE_G + additionG), basis: 'labelling' };
+}
+
+/** The two fields a weigh-in row needs for "which one is the latest". */
+export interface WeighInDay {
+  dayKey: string;
+  weightKg: number;
+}
+
+/**
+ * The most recent weigh-in in kilograms, or `null` when there are none.
+ *
+ * `dayKey` IS the calendar day a weigh-in belongs to, one entry per day, so the
+ * newest key is the latest measurement. Shared rather than re-sorted per route,
+ * because "the latest weigh-in" must mean the same thing on every screen that
+ * scales a target by body mass.
+ *
+ * @param entries - weigh-in rows in any order.
+ * @returns kilograms, or `null`.
+ */
+export function selectLatestWeighInKg(entries: readonly WeighInDay[]): number | null {
+  let latest: WeighInDay | null = null;
+  for (const entry of entries) {
+    if (latest === null || entry.dayKey > latest.dayKey) latest = entry;
+  }
+  return latest === null ? null : latest.weightKg;
+}
