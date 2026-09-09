@@ -20,6 +20,17 @@ import type { IntakeMode } from '../../app/services/vision/task';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA } from '../../app/services/vision/schema';
 import { TEXT_INTAKE_SYSTEM_PROMPT } from '../../app/services/vision/prompt';
 
+/**
+ * A pure check, kept separate from the prompt itself, so the test below can
+ * run it against a deliberately broken copy of the prompt as a control. A
+ * check that only ever runs against the real prompt can pass for the wrong
+ * reason, and this one proves it actually depends on the rule it is named
+ * for.
+ */
+function promptSplitsDrinkAndMilk(prompt: string): boolean {
+  return prompt.includes('is coffee and oat milk') && prompt.includes('Kaffee and Hafermilch');
+}
+
 describe('the text intake task', () => {
   it('is paired with its own prompt and the PLATE schema, in the task table', () => {
     assert.strictEqual(INTAKE_TASK_BY_MODE.text, TEXT_INTAKE_TASK);
@@ -94,5 +105,19 @@ describe('the text intake prompt', () => {
 
   it('returns an empty list rather than guessing at a food that was not named', () => {
     assert.match(TEXT_INTAKE_SYSTEM_PROMPT, /return an empty "foods" list/);
+  });
+
+  it('splits a drink and its named milk into two products, in English and in German', () => {
+    assert.ok(promptSplitsDrinkAndMilk(TEXT_INTAKE_SYSTEM_PROMPT));
+
+    // Control case: a copy of the prompt with the rule line removed must fail
+    // the same check, so the check is proven to depend on that line and is
+    // not passing against unrelated prompt text.
+    const withoutTheRule = TEXT_INTAKE_SYSTEM_PROMPT.replace(
+      /- A drink with a named milk or a named add-in is two products:[^\n]*\n/,
+      '',
+    );
+    assert.notEqual(withoutTheRule, TEXT_INTAKE_SYSTEM_PROMPT);
+    assert.ok(!promptSplitsDrinkAndMilk(withoutTheRule));
   });
 });

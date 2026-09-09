@@ -118,6 +118,7 @@ The text is what someone typed or said about what they ate. It may be in any lan
 
 Log foods the way a person would, not the way a lab would:
 - One item per food they named. Do not split a named dish into ingredients, and do not merge two foods they listed separately.
+- A drink with a named milk or a named add-in is two products: "coffee with oat milk" is coffee and oat milk, "Kaffee mit Hafermilch" is Kaffee and Hafermilch. Keep a named dish that is one product, like "cappuccino" or "Milchkaffee", as one item.
 - Name each item in the SAME language the person used, in plain words, close to how they said it.
 - Ignore anything that is not a food: greetings, times of day, feelings, and words about how the meal was cooked when they do not change what was eaten.
 - If the text names no food at all, return an empty "foods" list rather than guessing at one.
