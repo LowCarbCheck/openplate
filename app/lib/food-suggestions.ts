@@ -6,10 +6,13 @@
  *
  * Three properties are load-bearing:
  *
- * 1. **Deterministic.** No randomness, no clock, no network. The same day
- *    produces the same list every render, so a suggestion never shuffles out
- *    from under a tapping thumb, and every entry can be justified by the two
- *    numbers printed next to it.
+ * 1. **Deterministic. No randomness, no clock, no network.** The day is an
+ *    INPUT, not something this module reads: the caller passes the viewed
+ *    day's `dateKey`, and that string alone decides which slice of the ranked
+ *    pool is shown. The same day produces the same list every render, so a
+ *    suggestion never shuffles out from under a tapping thumb, and every entry
+ *    can be justified by the two numbers printed next to it. A different day
+ *    rotates the list, which is why the day has to come in as an argument.
  * 2. **Pure.** Candidates come in as an argument, not from an import — the
  *    ranking is testable against a five-item fixture, and the real bundle
  *    (`#app/data/suggestion-foods`) is just the caller's default.
@@ -49,6 +52,54 @@ const HEADROOM_TOLERANCE_G = 0.5;
 
 /** Category cap for the first ranking pass, so five suggestions aren't five cuts of meat. */
 const MAX_PER_CATEGORY = 2;
+
+/**
+ * How wide the day's rotation pool is, as a multiple of the display limit.
+ * Wider than the limit is the whole point: a pool the size of the list has
+ * nothing to rotate, and the person sees the same four foods forever. Three
+ * times the limit keeps every rotated food a genuinely good answer to the gap
+ * while giving the week somewhere to move.
+ */
+const ROTATION_POOL_MULTIPLIER = 3;
+
+/** FNV-1a's standard 32-bit offset basis and prime. */
+const FNV_OFFSET_BASIS = 2166136261;
+const FNV_PRIME = 16777619;
+
+/**
+ * Folds a food name to the key both sides of the exclusion compare on:
+ * diacritics stripped, trimmed, lower-cased. So a logged "Greek Yogurt "
+ * excludes a suggested "greek yogurt", and a logged "Müsli" excludes "Musli".
+ *
+ * This module cannot import the app's other name normalisers (it takes no
+ * route or store dependency, see the header), so it carries its own, following
+ * the same `.trim().toLowerCase()` rule the rest of the app already uses.
+ *
+ * @param name - a food name from either side, logged or suggested.
+ * @returns the comparison key.
+ */
+export function normaliseFoodName(name: string): string {
+  return name.normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+}
+
+/**
+ * FNV-1a over a day key, the rotation's only source of variation.
+ *
+ * A hash rather than "days since an epoch" because the day arrives as a string
+ * and parsing it would drag a calendar into a module that deliberately has no
+ * clock. Exported so a test can pin the values rather than infer them.
+ *
+ * @param dateKey - the viewed day, `YYYY-MM-DD`.
+ * @returns an unsigned 32-bit hash.
+ */
+export function hashDateKey(dateKey: string): number {
+  let hash = FNV_OFFSET_BASIS;
+  for (let index = 0; index < dateKey.length; index += 1) {
+    hash ^= dateKey.charCodeAt(index);
+    hash = Math.imul(hash, FNV_PRIME) >>> 0;
+  }
+  return hash >>> 0;
+}
 
 /** One ranked suggestion, carrying every number the UI prints — no recomputation at the call site. */
 export interface FoodSuggestion {
@@ -115,6 +166,36 @@ function diversify(ranked: FoodSuggestion[], limit: number, maxPerCategory: numb
 }
 
 /**
+ * Best first, slug as the tie-break so the order is fully determined by the
+ * data, never by the input array's incidental ordering.
+ */
+function compareSuggestions(a: FoodSuggestion, b: FoodSuggestion): number {
+  return b.score !== a.score ? b.score - a.score : a.food.slug.localeCompare(b.food.slug);
+}
+
+/**
+ * Turns the ranked list into the day's candidate order: the top
+ * `limit * ROTATION_POOL_MULTIPLIER` candidates, walked circularly from an
+ * offset the day key alone decides.
+ *
+ * A pool of `limit` or fewer has nothing to rotate, every candidate is going
+ * to be shown anyway, so it is returned untouched, and a person with only
+ * four qualifying foods sees the same four every day rather than a list that
+ * reshuffles for no reason.
+ */
+function rotateForDay(ranked: FoodSuggestion[], limit: number, dateKey: string): FoodSuggestion[] {
+  const pool = ranked.slice(0, limit * ROTATION_POOL_MULTIPLIER);
+  if (pool.length <= limit) return pool;
+
+  const offset = hashDateKey(dateKey) % pool.length;
+  const rotated: FoodSuggestion[] = [];
+  for (let step = 0; step < pool.length; step += 1) {
+    rotated.push(pool[(offset + step) % pool.length]);
+  }
+  return rotated;
+}
+
+/**
  * Ranks the foods that best close `nutrient`'s remaining gap within the day's
  * carb headroom.
  *
@@ -123,6 +204,8 @@ function diversify(ranked: FoodSuggestion[], limit: number, maxPerCategory: numb
  * @param remainingG - grams of that nutrient still needed. A non-positive value returns `[]`.
  * @param carbHeadroomG - grams of net carbs available to spend, or null when the user has no ceiling (no filter is applied — carb cost still shapes the ranking through the score).
  * @param limit - how many suggestions to return.
+ * @param dateKey - the viewed day, `YYYY-MM-DD`. Decides which slice of the wider ranked pool is shown, so the list is stable within a day and rotates across days.
+ * @param loggedFoodNames - what the person already logged that day. Matched by `normaliseFoodName` and dropped before ranking, because "eat some Greek yogurt" is a poor answer to a day that already had Greek yogurt.
  * @returns up to `limit` suggestions, best first, at most `MAX_PER_CATEGORY` per category where possible. Empty whenever nothing qualifies.
  */
 export function rankFoodSuggestions({
@@ -131,14 +214,20 @@ export function rankFoodSuggestions({
   remainingG,
   carbHeadroomG,
   limit,
+  dateKey,
+  loggedFoodNames,
 }: {
   foods: readonly SuggestionFood[];
   nutrient: GapNutrient;
   remainingG: number;
   carbHeadroomG: number | null;
   limit: number;
+  dateKey: string;
+  loggedFoodNames: readonly string[];
 }): FoodSuggestion[] {
   if (limit <= 0 || remainingG <= 0 || foods.length === 0) return [];
+
+  const alreadyLogged = new Set(loggedFoodNames.map(normaliseFoodName));
 
   // A day already past its ceiling has 0 g to spend, not a negative budget —
   // clamping here is what keeps the zero-carb options available rather than
@@ -147,6 +236,8 @@ export function rankFoodSuggestions({
 
   const ranked: FoodSuggestion[] = [];
   for (const food of foods) {
+    if (alreadyLogged.has(normaliseFoodName(food.name))) continue;
+
     const servingGrams = food.servingGrams;
     if (servingGrams <= 0) continue;
 
@@ -166,11 +257,13 @@ export function rankFoodSuggestions({
     });
   }
 
-  // Slug is the tie-break so the order is fully determined by the data, never
-  // by the input array's incidental ordering.
-  ranked.sort((a, b) => (b.score !== a.score ? b.score - a.score : a.food.slug.localeCompare(b.food.slug)));
+  ranked.sort(compareSuggestions);
 
-  return diversify(ranked, limit, MAX_PER_CATEGORY);
+  // Rotate first, then diversify, then sort what survived back into score
+  // order: the rotation decides WHICH foods this day gets, the category cap
+  // still applies to that selection, and the reader still sees the best of
+  // them first rather than a list that starts wherever the hash landed.
+  return diversify(rotateForDay(ranked, limit, dateKey), limit, MAX_PER_CATEGORY).toSorted(compareSuggestions);
 }
 
 /**

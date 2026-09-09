@@ -183,9 +183,19 @@ function SuggestionRow({
  * read their own day.
  *
  * @param gaps - the day's gaps, whose `dominantGap` decides what to rank for.
+ * @param dateKey - the viewed day, which rotates the list across days without making it move within one.
+ * @param loggedFoodNames - what the day already contains, so it is not suggested back.
  * @returns the ranked foods, or an empty list when there is nothing to offer.
  */
-function rankSuggestionsForDay(gaps: DayGaps): FoodSuggestion[] {
+function rankSuggestionsForDay({
+  gaps,
+  dateKey,
+  loggedFoodNames,
+}: {
+  gaps: DayGaps;
+  dateKey: string;
+  loggedFoodNames: readonly string[];
+}): FoodSuggestion[] {
   const dominant = gaps.dominantGap;
   if (dominant === null) return [];
   try {
@@ -195,6 +205,8 @@ function rankSuggestionsForDay(gaps: DayGaps): FoodSuggestion[] {
       remainingG: dominant.remainingG,
       carbHeadroomG: gaps.carbHeadroomG,
       limit: SUGGESTION_LIMIT,
+      dateKey,
+      loggedFoodNames,
     });
   } catch {
     // Enrichment, never a dependency. See this function's doc comment.
@@ -249,13 +261,25 @@ function FoodSuggestions({
  * no food. The ranking runs ONCE, feeding both the count in the label and
  * the list behind it.
  */
-export function SuggestionsDisclosure({ gaps, addBase }: { gaps: DayGaps; addBase: string }) {
+export function SuggestionsDisclosure({
+  gaps,
+  addBase,
+  dateKey,
+  loggedFoodNames,
+}: {
+  gaps: DayGaps;
+  addBase: string;
+  /** The viewed day, `YYYY-MM-DD`. The list rotates on it, so it is a required input, never read from a clock here. */
+  dateKey: string;
+  /** The names of the foods already logged on that day, which the ranking drops. */
+  loggedFoodNames: readonly string[];
+}) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const panelId = useId();
 
   const dominant = gaps.dominantGap;
-  const suggestions = rankSuggestionsForDay(gaps);
+  const suggestions = rankSuggestionsForDay({ gaps, dateKey, loggedFoodNames });
   if (dominant === null || suggestions.length === 0) return null;
 
   return (
