@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.23.3] - 2026-09-09
+
 ### Changed
 
-- The Today so far card lays every nutrient row out as a two column grid: the value and its caption share one right edge, a hairline separates the rows, and a row with no target says so in words instead of drawing an empty meter.
+- **The Today so far card lays every nutrient row out as a two column grid.** The value and its caption share one right edge, a hairline separates the rows, and a row with no target says so in words instead of drawing an empty meter. ([441f36e](https://github.com/LowCarbCheck/openplate/commit/441f36e))
 
 ## [0.23.2] - 2026-09-09
 
