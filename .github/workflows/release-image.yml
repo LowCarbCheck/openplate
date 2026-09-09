@@ -80,6 +80,8 @@ jobs:
           - platform: linux/arm64
             slug: arm64
             runner: ubuntu-24.04-arm
+            # Turns on the probe step below. Only this leg has ever failed.
+            probe: true
 
     # ── Why this job queues ─────────────────────────────────────
     # A coordinated release pushes `main` and then the `v*` tag seconds later.
@@ -150,6 +152,19 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
+      # ── A probe, not a build step ─────────────────────────────────
+      # On the v0.22.1 run this leg failed after 27 seconds at
+      # `RUN pnpm i --frozen-lockfile` with exit code 1 and NOT ONE line of
+      # pnpm output, so the log said nothing about why. This runs the same
+      # base image the Dockerfile uses, `node:22-alpine`, and installs pnpm
+      # the same way it does, so the next run's log shows whether pnpm itself
+      # works on this runner. It is a few seconds of pulls, it builds nothing,
+      # and `continue-on-error` keeps it from ever deciding the leg.
+      - name: Probe pnpm on the arm64 runner
+        if: ${{ matrix.probe }}
+        continue-on-error: true
+        run: docker run --rm --platform linux/arm64 node:22-alpine sh -c 'node -v && npm i -g pnpm && pnpm -v'
+
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v6
@@ -192,8 +207,9 @@ jobs:
         with:
           name: digests-${{ matrix.slug }}
           path: ${{ runner.temp }}/digests/*
-          # A leg that produced no digest must fail loudly here rather than
-          # leave the merge job to build a one-platform manifest quietly.
+          # A leg that built but exported nothing is a bug in this file, not a
+          # narrower release, so it fails here. A leg that FAILED uploads no
+          # artifact at all, and the merge job reports that platform missing.
           if-no-files-found: error
           retention-days: 1
 
@@ -202,12 +218,22 @@ jobs:
   # `ghcr.io/lowcarbcheck/openplate:0.22.0` exist, and it is the ONLY place tags
   # are decided, with exactly the rules the old single job used.
   #
-  # It needs both legs, so a failed platform stops the release rather than
-  # publishing a manifest list that silently lost an architecture.
+  # IT PUBLISHES WHAT BUILT. On the v0.22.1 run the amd64 leg pushed its digest
+  # in five minutes and the arm64 leg failed, and because this job simply needed
+  # `build` it was skipped: no `0.22.1` tag existed in GHCR at all, while a
+  # perfectly good amd64 image sat there addressable only by digest. Production
+  # is x86_64, so the release cost far more than the platform that broke.
+  #
+  # So the gate is the amd64 leg, not the matrix. `!cancelled()` is what lets
+  # this job run past a failed leg; a plain `if: success()` or no `if` at all
+  # skips on any failure in `needs`. `resolve-commit` must still have succeeded,
+  # because its output keys the concurrency group below. A missing arm64 leg is
+  # REPORTED, as a `::warning::` and in the inspect output, and is not fatal.
   merge:
     needs:
       - resolve-commit
       - build
+    if: ${{ !cancelled() && needs.resolve-commit.result == 'success' }}
     runs-on: ubuntu-latest
 
     # The plain group, without a platform. The branch run and the tag run of one
@@ -223,12 +249,37 @@ jobs:
       contents: read
       packages: write
     steps:
+      # NOT `merge-multiple`. Merging flattens every artifact into one directory
+      # and a digest file is named after the digest, so the platform it came
+      # from would be unreadable and the guard below could not tell an
+      # amd64-only run from an arm64-only one. Left unmerged, each artifact
+      # keeps its own `digests-<slug>` directory. A pattern that matches nothing
+      # is a warning here, never an error, which is the point: a failed leg
+      # uploads no artifact and this step must still succeed.
       - name: Download the digests
         uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
           pattern: digests-*
-          merge-multiple: true
+
+      # The one hard requirement. amd64 is the platform production pins, so
+      # without it there is nothing worth tagging and the release must fail
+      # loudly. arm64 missing only narrows the manifest list, and the warning
+      # is what an operator reads when a self-hoster reports "no matching
+      # manifest for linux/arm64" on that version.
+      - name: Check which platforms built
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          set -euo pipefail
+          if [ -z "$(find digests-amd64 -type f 2>/dev/null || true)" ]; then
+            echo "::error::No linux/amd64 digest was uploaded, so that leg did not build. Production runs x86_64, so this release publishes no tag."
+            exit 1
+          fi
+          if [ -z "$(find digests-arm64 -type f 2>/dev/null || true)" ]; then
+            echo "::warning::No linux/arm64 digest was uploaded. The manifest list is single-platform, linux/amd64 only, and an arm64 host cannot pull this tag."
+          fi
+          echo "platforms with a digest:"
+          find . -type f
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -253,16 +304,22 @@ jobs:
             type=semver,pattern={{version}}
             type=sha,prefix=sha-,format=short
 
-      # `printf ... *` expands to every downloaded digest file name, which is
-      # why this runs INSIDE the digest directory. The tags come from the
-      # metadata action's JSON rather than its newline separated output,
-      # because each one needs its own `-t`.
+      # Over WHATEVER DIGESTS EXIST, one or two, which is what makes a broken
+      # leg cost only its own platform. `*/*` walks the per artifact
+      # directories the download step kept, and each file name is the digest.
+      # The tags come from the metadata action's JSON rather than its newline
+      # separated output, because each one needs its own `-t`.
       - name: Create the manifest list
         working-directory: ${{ runner.temp }}/digests
         run: |
           set -euo pipefail
+          refs=()
+          for file in */*; do
+            refs+=("${REGISTRY}/${IMAGE_NAME}@sha256:$(basename "$file")")
+          done
+          echo "assembling from: ${refs[*]}"
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+            "${refs[@]}"
 
       # Prints the platforms the list actually carries. Read this line when a
       # self-hoster reports "no matching manifest for linux/arm64".
