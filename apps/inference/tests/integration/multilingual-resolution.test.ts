@@ -61,7 +61,13 @@ function plateOf(names: string[]): PlateIdentification {
       confidence: 'medium' as const,
       portionHint: 'about 100 g',
       macrosPer100g: null,
+      macroSource: 'estimated' as const,
+      brand: null,
+      servingSize: null,
+      carbBasis: null,
     })),
+    unreadable: false,
+    unreadableReason: null,
     notes: null,
   };
 }

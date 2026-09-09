@@ -88,7 +88,7 @@ describe('vendored PlateIdentification contract', () => {
     const foods = PLATE_IDENTIFICATION_JSON_SCHEMA.properties?.foods;
     const item = foods?.items;
     expect(PLATE_IDENTIFICATION_JSON_SCHEMA.additionalProperties).toBe(false);
-    expect(PLATE_IDENTIFICATION_JSON_SCHEMA.required).toEqual(['foods', 'notes']);
+    expect(PLATE_IDENTIFICATION_JSON_SCHEMA.required).toEqual(['foods', 'unreadable', 'unreadableReason', 'notes']);
     expect(item?.additionalProperties).toBe(false);
     expect(item?.required).toEqual([
       'name',
@@ -96,6 +96,10 @@ describe('vendored PlateIdentification contract', () => {
       'confidence',
       'portionHint',
       'macrosPer100g',
+      'macroSource',
+      'brand',
+      'servingSize',
+      'carbBasis',
     ]);
     expect(PLATE_IDENTIFICATION_JSON_SCHEMA.$schema).toBeUndefined();
   });
@@ -129,5 +133,13 @@ describe('vendored PlateIdentification contract', () => {
     expect(source).toContain('portionHint: z.string().nullable()');
     expect(source).toContain('macrosPer100g: RawMacrosSchema.nullable()');
     expect(source).toContain('notes: z.string().nullable()');
+    // The label merge (openplate commit b770563): unreadable is plate-level
+    // and required, never nullable — the model always answers it.
+    expect(source).toContain('unreadable: z.boolean()');
+    expect(source).toContain('unreadableReason: z.string().nullable()');
+    expect(source).toContain('macroSource: z.enum(MACRO_SOURCE_VALUES)');
+    expect(source).toContain('brand: z.string().nullable()');
+    expect(source).toContain('servingSize: RawServingSizeSchema.nullable()');
+    expect(source).toContain('carbBasis: z.enum(CARB_BASES).nullable().catch(null)');
   });
 });

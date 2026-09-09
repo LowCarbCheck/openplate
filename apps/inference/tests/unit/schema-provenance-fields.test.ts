@@ -25,6 +25,10 @@ const baseFood = {
   confidence: 'medium' as const,
   portionHint: 'about 140 g',
   macrosPer100g: null,
+  macroSource: 'estimated' as const,
+  brand: null,
+  servingSize: null,
+  carbBasis: null,
 };
 
 describe('provenance and attribution fields', () => {
@@ -52,6 +56,8 @@ describe('provenance and attribution fields', () => {
   it('accepts a whole plate carrying both fields', () => {
     const plate = {
       foods: [{ ...baseFood, provenance: 'corpus' as const, attribution: 'USDA FDC' }],
+      unreadable: false,
+      unreadableReason: null,
       notes: null,
     };
     expect(() => PlateIdentificationSchema.parse(plate)).not.toThrow();
@@ -70,6 +76,10 @@ describe('provenance and attribution fields', () => {
       'confidence',
       'portionHint',
       'macrosPer100g',
+      'macroSource',
+      'brand',
+      'servingSize',
+      'carbBasis',
     ]);
   });
 });

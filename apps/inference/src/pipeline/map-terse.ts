@@ -33,6 +33,15 @@
  *    food. The FIRST occurrence's grams win; they are not summed, because the
  *    repetition is a decoding artifact and summing it would inflate a 5× stutter
  *    into a 5× portion.
+ *
+ * 5. **`unreadable` is always `false`, and `macroSource` is always
+ *    `'estimated'`.** Openplate commit b770563 folded label reading into
+ *    `PlateIdentification` — a per-item `macroSource` and a plate-level
+ *    `unreadable` answer. `TerseCandidateSchema` gives the model no field for
+ *    either: this pipeline only ever asks for `{name, grams}`, so it never
+ *    reads a panel and never declares a photo unreadable. `brand`,
+ *    `servingSize` and `carbBasis` are the other label-only fields and stay
+ *    `null` for the same reason.
  */
 import type { IdentifiedFood, PlateIdentification } from '../contract/plate-identification.js';
 import type { TerseCandidate, TerseItem } from './terse-contract.js';
@@ -65,6 +74,11 @@ function toIdentifiedFood(item: TerseItem): IdentifiedFood {
     // Always null — see decision 1. Spec 04 fills this from the food corpus and
     // sets `provenance`/`attribution` at the same time; both are omitted here.
     macrosPer100g: null,
+    // See decision 5 — this pipeline never reads a label.
+    macroSource: 'estimated',
+    brand: null,
+    servingSize: null,
+    carbBasis: null,
   };
 }
 
@@ -97,6 +111,9 @@ export function mapTerseToPlate(candidate: TerseCandidate): MappedPlate {
   return {
     plate: {
       foods,
+      // See decision 5 — this pipeline never declares a photo unreadable.
+      unreadable: false,
+      unreadableReason: null,
       // No `notes`: prose is pure decode cost, the terse grammar has no field
       // for it, and a note written by this mapper would be our words presented
       // as the model's.

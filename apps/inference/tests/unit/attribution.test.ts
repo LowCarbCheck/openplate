@@ -95,8 +95,14 @@ function plate(name: string): PlateIdentification {
         confidence: 'medium',
         portionHint: 'about 150 g',
         macrosPer100g: null,
+        macroSource: 'estimated',
+        brand: null,
+        servingSize: null,
+        carbBasis: null,
       },
     ],
+    unreadable: false,
+    unreadableReason: null,
     notes: null,
   };
 }

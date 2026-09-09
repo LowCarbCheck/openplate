@@ -38,10 +38,42 @@ export const MacrosSchema = z.object({
 });
 
 /**
+ * Where one item's macros came from: `'estimated'` (the model looking at
+ * food) or `'label'` (the model transcribing a printed nutrition panel). See
+ * openplate's `MacroSource` (`app/services/vision/types.ts`) — this replaced
+ * the old label-scan MODE (openplate commit b770563, "one photo path, and the
+ * model decides what the picture shows").
+ */
+export const MACRO_SOURCE_VALUES = ['estimated', 'label'] as const;
+
+/**
+ * Which printed-panel convention a `'label'` item's carbs figure uses: `total`
+ * (US, fibre-inclusive) or `available` (EU, fibre-exclusive). See openplate's
+ * `CarbBasis` (`#app/lib/net-carbs`).
+ */
+export const CARB_BASES = ['total', 'available'] as const;
+
+/**
+ * The serving a panel prints, as the model reports it for a `'label'` item.
+ * `asPrinted` is not nullable because the whole block is: a serving with no
+ * printed text is not a serving, it is an absent one.
+ */
+export const ServingSizeSchema = z.object({
+  asPrinted: z.string(),
+  grams: z.number().nullable(),
+});
+
+/**
  * The base per-item shape, byte-for-byte the client's contract. Kept separate
  * from `IdentifiedFoodSchema` so the parity test can compare exactly this
  * against openplate's `RawIdentifiedFoodSchema` without the two forward-looking
  * fields below counting as drift.
+ *
+ * `macroSource`, `brand`, `servingSize` and `carbBasis` (openplate commit
+ * b770563, "one photo path, and the model decides what the picture shows")
+ * are the folded-in label reading: one prompt now decides PER ITEM whether it
+ * is estimating food or transcribing a printed panel, and answers with one
+ * `foods[]` array either way.
  */
 export const BaseIdentifiedFoodSchema = z.object({
   name: z.string(),
@@ -50,6 +82,20 @@ export const BaseIdentifiedFoodSchema = z.object({
   /** Short everyday-size comparison ("about half the plate"); null when nothing natural fits. */
   portionHint: z.string().nullable(),
   macrosPer100g: MacrosSchema.nullable(),
+  /** Estimated from looking at food, or transcribed off a printed panel. */
+  macroSource: z.enum(MACRO_SOURCE_VALUES),
+  /** The manufacturer, when a package named one. Null for anything unbranded, and never invented. */
+  brand: z.string().nullable(),
+  /** The printed serving, for a label item. Null for an estimated one. */
+  servingSize: ServingSizeSchema.nullable(),
+  /**
+   * Which printed-panel convention this item's carbs figure uses. Null for an
+   * estimated item, and null when a panel's layout does not decide it, never
+   * a guess. `.catch(null)`, mirroring openplate: every other field here
+   * stays strict, but a provider that emits an unrecognised value has clearly
+   * still read the panel, and `null` already means "not decided".
+   */
+  carbBasis: z.enum(CARB_BASES).nullable().catch(null),
 });
 
 /**
@@ -74,11 +120,22 @@ export const IdentifiedFoodSchema = BaseIdentifiedFoodSchema.extend({
 /** The base plate shape — exactly what openplate validates. Used by the parity test. */
 export const BasePlateIdentificationSchema = z.object({
   foods: z.array(BaseIdentifiedFoodSchema),
+  /**
+   * The model's own "I could not read this photograph" answer (openplate
+   * commit b770563). A statement about the whole picture, not about one food
+   * on it — a photograph with legible items and one unreadable packet is not
+   * unreadable, and the model says so per item instead, by leaving that
+   * item's macros null.
+   */
+  unreadable: z.boolean(),
+  unreadableReason: z.string().nullable(),
   notes: z.string().nullable(),
 });
 
 export const PlateIdentificationSchema = z.object({
   foods: z.array(IdentifiedFoodSchema),
+  unreadable: z.boolean(),
+  unreadableReason: z.string().nullable(),
   notes: z.string().nullable(),
 });
 
