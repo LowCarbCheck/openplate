@@ -1349,7 +1349,7 @@
         "label": "Mittel"
       },
       "errors": {
-        "required": "Wähl eine Kohlenhydratgrenze für diesen Stil."
+        "required": "Wähl ein Netto-KH-Limit für diesen Stil."
       }
     },
     "firstFood": {
@@ -1421,15 +1421,15 @@
         "label": "Nur mitschreiben"
       },
       "lowCarb": {
-        "detail": "Kohlenhydrate unter einer Tagesgrenze halten",
+        "detail": "Netto-KH unter einem Tageslimit halten",
         "label": "Low-Carb"
       },
       "lowCarbLowKcal": {
-        "detail": "Eine Kohlenhydratgrenze und ein Kalorienziel",
+        "detail": "Ein Netto-KH-Limit und ein Kalorienziel",
         "label": "Low-Carb und Kalorien"
       },
       "lowKcal": {
-        "detail": "Ein Kalorienziel am Tag",
+        "detail": "Ein Kalorienziel pro Tag",
         "label": "Kalorien"
       },
       "needsWeight": "Trag dein Gewicht ein, damit wir dieses Ziel ausrechnen können. Bis dahin bleibt dein Eiweißziel beim Richtwert.",
