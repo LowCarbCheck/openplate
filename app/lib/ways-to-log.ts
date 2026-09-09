@@ -18,11 +18,10 @@
  *    photo path reads a plate, a single item or a printed panel and decides
  *    per item, so "photograph a nutrition panel" is no longer a separate way
  *    in, it is the same card.
- * 2. Speaking stopped being a way to type. A finished transcript now goes to
- *    the same AI intake a typed sentence does and lands on the same review
- *    screen, so it IS a way to log, and the footnote that said otherwise was
- *    a false sentence in the one place a person has nothing to check it
- *    against.
+ * 2. Speaking stopped being a way to type. Dictated words go to the same AI
+ *    intake a typed sentence does and land on the same review screen, so it IS
+ *    a way to log, and the footnote that said otherwise was a false sentence
+ *    in the one place a person has nothing to check it against.
  *
  * So: PHOTO, TYPE, SPEAK. One card per way, no footnote, and each card starts
  * the action it describes.
@@ -34,12 +33,18 @@
  *    still in the product and the type card's copy still names it, as the way
  *    to add one exact item.
  *
- * WHAT IS STILL TRUE ABOUT SPEECH, and must stay in the copy: the AUDIO never
- * reaches openplate and never reaches the AI provider. `app/lib/speech-input.ts`
- * wraps the browser's own Web Speech API, so the recording goes to the
- * browser's maker (Google on Chrome, Apple on Safari) and what leaves this app
- * afterwards is TEXT, exactly as if it had been typed. Nothing here may ever
- * grow into a claim that a recording is sent anywhere by openplate.
+ * 4. The app's own microphone is GONE (M203). It was a Web Speech button, it
+ *    reported every failure to an `sr-only` region, so on a phone it read as a
+ *    button that does nothing, and the audio went to Google or Apple anyway.
+ *    A person dictates with the KEYBOARD's dictation key now, which reaches
+ *    this app as ordinary typing. The speak card therefore leads to the
+ *    composer with its field focused, and the note under it names the keyboard.
+ *
+ * WHAT IS STILL TRUE ABOUT DICTATION, and must stay in the copy: openplate has
+ * no microphone, receives no audio, and stores none. The keyboard turns speech
+ * into text (Google on an Android keyboard, Apple on iOS), and what leaves this
+ * app is TEXT, exactly as if it had been typed. Nothing here may ever grow into
+ * a claim that a recording is sent anywhere by openplate.
  *
  * Pure data plus i18n KEYS (never copy), so the route, the animated chunk and
  * the unit tests all read the same three rows.
@@ -67,8 +72,8 @@ export interface WayToLog {
 /**
  * Ordered photo, type, speak. Photography leads because it is the reason
  * someone installed this. Typing sits second because it is the one that works
- * with no camera and no microphone, and speaking last because it is the one a
- * browser may not offer at all.
+ * with no camera and no keyboard dictation, and speaking last because it is
+ * typing with a different key pressed.
  */
 export const WAYS_TO_LOG: readonly WayToLog[] = WAY_TO_LOG_IDS.map((id) => ({
   id,
@@ -80,9 +85,8 @@ export const WAYS_TO_LOG: readonly WayToLog[] = WAY_TO_LOG_IDS.map((id) => ({
 /** The real action behind each card. Exhaustive over `WayToLogId` by construction. */
 function destinationFor(id: WayToLogId): OnboardingExitDestination {
   if (id === 'photo') return '/scan';
-  // ARMS the microphone and focuses it. It never starts listening: that is the
-  // button's own guarantee, and an app that opened a microphone on navigation
-  // is an app nobody can trust with one.
+  // FOCUSES the composer's field and shows the dictation hint. Nothing starts
+  // recording, because nothing in this app can: dictation is the keyboard's.
   if (id === 'speak') return '/describe?speak=1';
   return '/describe';
 }
@@ -96,11 +100,11 @@ function destinationFor(id: WayToLogId): OnboardingExitDestination {
 export const WAYS_TO_LOG_LEAD_KEY = 'onboarding.step.firstFood.description';
 
 /**
- * The privacy line, under the speak card. Its copy is load-bearing: it is the
- * sentence that stops a first-time reader from believing openplate records
- * them. It replaces the old dictation note, which said speaking never logs a
- * food. That is no longer true, and it was the one claim a person would have
- * disproved on their first tap.
+ * The privacy line, under the speak card. Its copy is load-bearing twice over:
+ * it is the sentence that stops a first-time reader from believing openplate
+ * records them, and since M203 it is also the sentence that tells them WHERE
+ * the dictation key is, because this app no longer offers a microphone of its
+ * own. It must name the keyboard and it must say that only text travels.
  */
 export const WAYS_TO_LOG_SPEECH_PRIVACY_KEY = 'onboarding.waysToLog.speechPrivacyNote';
 

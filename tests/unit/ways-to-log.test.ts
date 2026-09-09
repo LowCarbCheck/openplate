@@ -86,19 +86,22 @@ describe('each card starts the real action', () => {
     assert.notEqual(WAYS_TO_LOG[1]?.destination, '/add');
   });
 
-  it('sends the speak card to the ARMED microphone, never to a listening one', () => {
+  it('sends the speak card to the composer with its field focused, never to a microphone', () => {
     const speak = WAYS_TO_LOG[2];
     assert.equal(speak?.id, 'speak');
     assert.equal(speak?.destination, '/describe?speak=1');
     assert.notEqual(speak?.destination, '/add?speak=1');
-    // Arming is focus, not a session. An app that opened a microphone on
-    // navigation is an app nobody can trust with one, so the button's own
-    // guarantee is read here rather than assumed.
-    const button = readFileSync(
-      fileURLToPath(new URL('../../app/components/add/speech-input-button.tsx', import.meta.url)),
-      'utf8',
-    );
-    assert.match(button, /NO AUTO-START, EVER/, 'the microphone button dropped its no-auto-start guarantee');
+    // `speak=1` is FOCUS AND A HINT. M203 deleted this app's Web Speech
+    // microphone, so the composer must carry no recogniser at all: an app that
+    // ships a microphone whose failures are invisible is worse than one with
+    // none, which is what the removal was for.
+    const composer = readFileSync(fileURLToPath(new URL('../../app/routes/describe.tsx', import.meta.url)), 'utf8');
+    for (const forbidden of ['SpeechRecognition', 'startListening', 'SpeechInputButton']) {
+      assert.ok(!composer.includes(forbidden), `the composer opens a microphone again (${forbidden})`);
+    }
+    // The control: the flag still has to DO something, or the card leads
+    // nowhere in particular.
+    assert.match(composer, /speakArmed && <p/, 'the armed entry no longer shows the dictation hint');
   });
 
   it('teaches no scanner that no longer exists', () => {

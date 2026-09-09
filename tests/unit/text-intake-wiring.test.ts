@@ -1,5 +1,5 @@
 /**
- * Typed and spoken intake reach the SAME screen the photo does.
+ * Typed intake reaches the SAME screen the photo does.
  *
  * The whole change is a claim about one pipeline, and a pipeline is exactly
  * what a unit test of a pure function cannot see: `/add` hands words to a
@@ -10,9 +10,14 @@
  *
  * WHAT WOULD BREAK SILENTLY WITHOUT THIS. A second review screen for text. A
  * `/add?q=` navigation instead of the hand-off slot, which would put what
- * somebody ate into their browser history. A confirm that files a spoken meal
- * under the photo path, which is the only place the three ways in are still
+ * somebody ate into their browser history. A confirm that files a typed meal
+ * under the photo path, which is the only place the ways in are still
  * distinguishable.
+ *
+ * The `speech` source is still read on the way OUT of the slot (`/scan` maps it
+ * to its own analytics path) because entries written before M203 removed the
+ * in-app microphone carry it. Nothing produces it any more, which is why no
+ * assertion here expects a transcript.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -34,9 +39,7 @@ function between(source: string, start: string, end: string): string {
 }
 
 /** The body of `/add`'s AI submit helper. */
-const SUBMIT_TO_AI = between(ADD_ROUTE, 'const submitToAi = useCallback(', '  /**\n   * A finished transcript.');
-/** The body of `/add`'s transcript handler. */
-const APPLY_TRANSCRIPT = between(ADD_ROUTE, 'const applyTranscript = useCallback(', 'const disarmSpeak =');
+const SUBMIT_TO_AI = between(ADD_ROUTE, 'const submitToAi = useCallback(', 'const grouped = groupCandidatesBySource');
 
 describe('/add hands words to /scan', () => {
   it('parks them in the one-shot slot rather than in the URL', () => {
@@ -76,14 +79,16 @@ describe('/add hands words to /scan', () => {
     assert.match(ADD_ROUTE, /\{candidates\.length > 0 && \([\s\S]*?add\.search\.sections\.recent/);
   });
 
-  it('submits a finished transcript through the same path, by the pure rule', () => {
-    assert.match(ADD_ROUTE, /resolveSpeechIntakeAction\(\{ transcript, hasAiProvider \}\) === 'submit'/);
-    assert.match(ADD_ROUTE, /submitToAi\(transcript, 'speech'\)/);
-    // And it still lands in the field first, so nothing heard is ever lost.
-    assert.ok(
-      APPLY_TRANSCRIPT.indexOf('setSearchValue(transcript)') < APPLY_TRANSCRIPT.indexOf('resolveSpeechIntakeAction'),
-      'the transcript is submitted before it reaches the field',
-    );
+  it('reaches for no microphone of its own', () => {
+    // M203 removed the Web Speech button. It reported every failure to an
+    // `sr-only` live region, so on a phone it was a control that visibly did
+    // nothing; dictation is the keyboard's now and arrives as ordinary typing.
+    for (const forbidden of ['SpeechInputButton', 'useSpeechInputAvailable', 'resolveSpeechIntakeAction', 'speak']) {
+      assert.ok(!ADD_ROUTE.includes(forbidden), `/add still reaches for speech (${forbidden})`);
+    }
+    // The control on the check above: the words themselves still travel, so a
+    // file that had simply lost the whole submit path would fail here.
+    assert.match(SUBMIT_TO_AI, /offerTypedText\(trimmed, source\)/);
   });
 });
 

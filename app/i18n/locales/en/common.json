@@ -169,27 +169,6 @@
       },
       "throttled": "Search is taking a quick break. Try again {{when}}. Your recent and saved foods still work below."
     },
-    "speak": {
-      "start": "Search by voice",
-      "stop": "Stop listening",
-      "hint": "Tap to speak",
-      "consent": {
-        "title": "Use voice search",
-        "body": "Your browser sends your voice to Google or Apple to turn it into text. openplate and your AI provider only ever receive the text, never your recording.",
-        "continue": "Continue",
-        "cancel": "Cancel"
-      },
-      "error": {
-        "permission": "Allow microphone access in your browser, then tap again.",
-        "noSpeech": "Nothing heard. Tap and speak again.",
-        "failed": "Voice search did not work. Type your food or try again."
-      },
-      "results": {
-        "none": "No foods found for {{transcript}}.",
-        "one": "Found one food for {{transcript}}.",
-        "many": "Found {{n}} foods for {{transcript}}."
-      }
-    },
     "title": "Add food",
     "aiIntake": {
       "submit": "Log with AI",
@@ -406,7 +385,7 @@
     "placeholder": "2 fried eggs, a slice of toast with butter, black coffee",
     "send": "Send",
     "sendHint": "Enter sends. Shift and Enter start a new line.",
-    "speakHint": "Tap the microphone, then say what you ate.",
+    "dictateHint": "Tap the microphone key on your keyboard to dictate your meal.",
     "needsProvider": "Describing a meal needs an AI connection on this device.",
     "connect": "Connect a provider",
     "searchInstead": "Search the food database instead"
@@ -1399,7 +1378,7 @@
         "title": "Say it",
         "description": "Say what you ate and check the entries before they are saved. Handy when your hands are busy."
       },
-      "speechPrivacyNote": "Your browser turns speech into text, using Google on Chrome or Apple on Safari. Only the text reaches openplate and your AI provider."
+      "speechPrivacyNote": "openplate has no microphone of its own. Tap the microphone key on your keyboard, which turns your speech into text with Google or Apple. Only the text reaches openplate and your AI provider."
     },
     "weight": {
       "current": "Current weight",

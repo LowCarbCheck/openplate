@@ -17,16 +17,19 @@
  * gesture lives in `useCameraCapture`, which the tab bar's raised launcher
  * shares. One decision, four surfaces, no drift.
  *
- * "Speak" renders only where a recogniser exists (Firefox has none), so nobody
- * sees a dead control. Without it the row is two columns rather than three
- * with a hole in it.
+ * "Speak" IS THE COMPOSER WITH ITS FIELD FOCUSED. This app has no microphone
+ * of its own any more: the in-app Web Speech button was removed in M203 (it
+ * reported every failure to an `sr-only` region, so on a phone it looked like
+ * a button that did nothing), and the keyboard's own dictation key does the
+ * job. So the row is always three columns, on every browser, and the speak
+ * button promises a place to dictate INTO rather than a recording.
  *
  * BOTH destinations are passed in, and both carry the viewed day. `/diary`
  * sends `/describe?date=...` and `/scan?date=...` when the user is not looking
  * at today, so a back-dated log, typed OR photographed, lands on the day in
  * front of them. `/dashboard` is always today and takes the defaults. The
- * speak destination is `describeTo` with `speak=1`, which arms the microphone
- * on the composer without ever starting it.
+ * speak destination is `describeTo` with `speak=1`, which focuses the composer
+ * and shows the dictation hint.
  *
  * TYPE AND SPEAK GO TO `/describe`, not to `/add`. `/add` is the database
  * search, which answers "which food is this" for one item; these two buttons
@@ -39,10 +42,9 @@ import { Camera, Keyboard, Mic } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Button } from '#app/components/ui/button';
 import { useCameraCapture } from '#app/components/add/use-camera-capture';
-import { useSpeechInputAvailable } from '#app/components/add/speech-input-button';
 import { cn } from '#app/lib/utils';
 
-/** A destination with `speak=1` added, whether or not it already carries a query. */
+/** A destination with `speak=1` added, whether or not it already carries a query. It focuses the composer's field; nothing records. */
 export function speakHref(destination: string): string {
   const [path = destination, query = ''] = destination.split('?');
   const params = new URLSearchParams(query);
@@ -62,14 +64,13 @@ export function AddFoodActions({
   scanTo = '/scan',
   className,
 }: {
-  /** The composer, carrying the viewed day. Typing goes here; speaking goes here with the microphone armed. */
+  /** The composer, carrying the viewed day. Typing goes here; dictating goes here with the field focused. */
   describeTo: string;
   scanTo?: string;
   className?: string;
 }): ReactElement {
   const { t } = useTranslation();
   const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
-  const canSpeak = useSpeechInputAvailable() === true;
 
   return (
     <div className={cn('flex w-full flex-col gap-2', className)}>
@@ -87,14 +88,12 @@ export function AddFoodActions({
             {t('launcher.type')}
           </Link>
         </Button>
-        {canSpeak && (
-          <Button asChild variant="outline" className={cn(ACTION_CLASS, 'border-primary/50 text-primary')}>
-            <Link to={speakHref(describeTo)}>
-              <Mic className="h-5 w-5" aria-hidden="true" />
-              {t('launcher.speak')}
-            </Link>
-          </Button>
-        )}
+        <Button asChild variant="outline" className={cn(ACTION_CLASS, 'border-primary/50 text-primary')}>
+          <Link to={speakHref(describeTo)}>
+            <Mic className="h-5 w-5" aria-hidden="true" />
+            {t('launcher.speak')}
+          </Link>
+        </Button>
       </div>
       {/* The hidden capture input, outside every conditional above: the
           element whose `click()` is on the gesture stack must not be able to

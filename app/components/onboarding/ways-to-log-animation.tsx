@@ -105,10 +105,10 @@ function TypeGlyph() {
 /**
  * The microphone, borrowed from lucide rather than drawn.
  *
- * Every other surface that offers speech already uses this exact icon
- * (`add-food-actions.tsx`, `add-launcher.tsx`, `speech-input-button.tsx`), so
- * a hand-drawn second microphone would be a new asset that taught the person
- * a symbol they then would not recognise on the screen the card sends them to.
+ * Every other surface that offers dictation already uses this exact icon
+ * (`add-food-actions.tsx`, `add-launcher.tsx`), so a hand-drawn second
+ * microphone would be a new asset that taught the person a symbol they then
+ * would not recognise on the screen the card sends them to.
  * It carries no `wtl-` class, so it has nothing to animate and nothing to turn
  * off, which is a complete drawing at rest exactly like the other two.
  */

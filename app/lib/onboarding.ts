@@ -388,16 +388,16 @@ export function resolveOnboardingTimezone(candidate: string | null | undefined):
  * the `_personal` onboarding gate before landing on settings, then flows on to
  * the diary once connected (see `settings.ai.tsx`'s `?next=` return).
  *
- * `/describe?speak=1` is the ways-to-log lesson's speak card. It ARMS the
- * composer's microphone and focuses it; it never starts listening, which the
- * button itself guarantees (`speech-input-button.tsx`). It is the same route
- * with a flag in the query, so nothing about the open-redirect guarantee
- * changes: the list is still closed literals.
+ * `/describe?speak=1` is the ways-to-log lesson's speak card. It focuses the
+ * composer's field and shows the line naming the keyboard's dictation key.
+ * There is nothing to start: the in-app microphone was removed in M203. It is
+ * the same route with a flag in the query, so nothing about the open-redirect
+ * guarantee changes: the list is still closed literals.
  *
- * `/add` and `/add?speak=1` stay allowlisted although the lesson stopped using
- * them in M203: the search screen is still a real screen with the same armed
- * microphone, and a stored or bookmarked exit value pointing there must land
- * rather than be silently rewritten to the diary.
+ * `/add` and `/add?speak=1` stay allowlisted although nothing produces them
+ * any more: the search screen is still a real screen, and a stored or
+ * bookmarked exit value pointing there must land rather than be silently
+ * rewritten to the diary. `/add` ignores the flag.
  *
  * `/scan?mode=label` was here for the same lesson's third card until
  * 2026-09-08, when the label scan mode was merged into the one photo path

@@ -16,6 +16,12 @@
  * first. Typing and speaking are outlined in the primary colour, not in a
  * neutral grey, so the row reads as one family.
  *
+ * SPEAKING IS ALWAYS THERE NOW. It used to render only where the browser had a
+ * Web Speech recogniser, because it opened this app's own microphone. M203
+ * removed that microphone: the button leads to the composer with its field
+ * focused, and the keyboard's dictation key does the talking, so there is no
+ * browser on which the row should be two columns.
+ *
  * Source-level for the same reason as `add-launcher-gesture.test.ts`: the
  * component's behaviour is a browser gesture and a hook, not a return value.
  */
@@ -84,8 +90,15 @@ describe('the add-food actions', () => {
     }
   });
 
-  it('hides speaking where no recogniser exists', () => {
-    assert.match(source, /useSpeechInputAvailable\(\) === true/);
+  it('offers speaking on every browser, and promises no microphone of its own', () => {
+    // The gate is GONE, and so is the hook behind it: this app has no
+    // recogniser to detect any more.
+    assert.doesNotMatch(source, /useSpeechInputAvailable/, 'the speak action is gated on a recogniser again');
+    assert.doesNotMatch(source, /speech-input-button/, 'the removed speech module is imported again');
+    // The control: the row must still HAVE the speak action, or the check
+    // above would pass on a component that simply dropped it.
+    assert.match(source, /<Link to=\{speakHref\(describeTo\)\}>/);
+    assert.doesNotMatch(source, /\{canSpeak && \(/, 'the speak action is conditional again');
   });
 });
 

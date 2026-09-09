@@ -1097,6 +1097,10 @@ export function buildConfirmedBatch({
  * rather than a batch of entries quietly filed under the photo path. The
  * distinction is the whole reason `LogInputPath` exists: it says which way in
  * is worth improving, and nothing about the food (see `matomo-events.ts`).
+ *
+ * `speech` is a historic member of both unions (M203 removed this app's own
+ * microphone; dictation is the keyboard's and arrives as `text`), so the row
+ * below is unreachable and is kept only to keep the mapping exhaustive.
  */
 const SCAN_LOG_PATH_BY_SOURCE = {
   photo: 'scan-plate',

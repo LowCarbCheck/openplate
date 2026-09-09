@@ -152,8 +152,10 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
             {t('launcher.photoAnything')}
           </button>
           {/* Navigations stay links: `SheetClose` closes the sheet, the link
-              does the travelling. `?speak=1` is what arms the composer's
-              microphone.
+              does the travelling. `?speak=1` focuses the composer's field and
+              shows the line that names the keyboard's dictation key. This app
+              has no microphone of its own (M203 removed the Web Speech one),
+              so the row offers a place to dictate INTO, never a recording.
 
               BOTH ROWS POINT AT `/describe` NOW, not at `/add`. Speaking and
               typing are the same act here, words about a meal, and `/add` is

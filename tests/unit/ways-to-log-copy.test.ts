@@ -6,10 +6,11 @@
  * The feature request behind M200/01 said "a voice message can be sent". The
  * app does not do that, and never has:
  *
- *  - `app/lib/speech-input.ts` wraps the browser's own Web Speech API. On
- *    Chrome the audio goes to Google, on Safari to Apple. It never reaches
- *    openplate and it never reaches the AI provider the person chose.
- *  - What leaves this app afterwards is TEXT, exactly as if it had been typed.
+ *  - There is no microphone in this app at all since M203. A person dictates
+ *    with the KEYBOARD's dictation key, which turns speech into text on the
+ *    phone (Google on an Android keyboard, Apple on iOS) and types the result
+ *    into the field. openplate has no part in that step.
+ *  - What leaves this app is TEXT, exactly as if it had been typed.
  *
  * ── What changed on 2026-09-08, and why this file had to change with it ──
  *
@@ -29,6 +30,15 @@
  * uploads or stores a recording. The privacy note under the speak card now
  * carries that fact instead of the old one.
  *
+ * ── What changed again on 2026-09-09 (M203) ──────────────────────────────
+ *
+ * The in-app Web Speech microphone was removed. Every failure of it was
+ * announced only to an `sr-only` live region, so on a phone it was a button
+ * that visibly did nothing. The note therefore has one more job: it must point
+ * at the keyboard's dictation key, because that is now the only way to dictate,
+ * and it must not imply this app listens. The vendor names stay true, since the
+ * keyboard is Google's or Apple's.
+ *
  * ── What it can and cannot prove ─────────────────────────────────────────
  *
  * It cannot read English. What it CAN do is hold the facts in place: the
@@ -39,12 +49,19 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
 import { WAYS_TO_LOG_SPEECH_PRIVACY_KEY, waysToLogCopyKeys } from '../../app/lib/ways-to-log';
+
+/** Every `.ts`/`.tsx` file under a directory, so a sweep cannot miss a subfolder. */
+function sourceFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true, recursive: true })
+    .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name))
+    .map((entry) => `${entry.parentPath}/${entry.name}`);
+}
 
 type Catalog = { [key: string]: string | Catalog };
 
@@ -115,6 +132,20 @@ const FORBIDDEN = [
 /** Banned in every string EXCEPT the privacy note, which needs it to be true. */
 const FORBIDDEN_OUTSIDE_THE_PRIVACY_NOTE = [/\bsend(s|ing)?\b/i, /\bsent\b/i, /\bsende(n|st|t)?\b/i, /\bgesendet\b/i];
 
+/**
+ * The words a claim that THIS APP listens would need, banned everywhere in the
+ * lesson including the note.
+ *
+ * `our microphone` and `in the app` are the shapes the false version takes.
+ * The plain word `microphone` is NOT banned: the note has to name the
+ * microphone KEY on the keyboard, which is the true and useful sentence.
+ */
+const FORBIDDEN_APP_MICROPHONE = [
+  /\bopenplate('s)? microphone\b/i,
+  /\bmikrofon von openplate\b/i,
+  /\btap the microphone\b(?! key)/i,
+];
+
 describe('the lesson exists in both languages', () => {
   for (const locale of LOCALES) {
     it(`${locale} carries every string the lesson renders`, () => {
@@ -141,7 +172,19 @@ describe('no string in the lesson claims openplate records anybody', () => {
       }
     });
 
-    it(`${locale} says nothing is sent, except where the note truthfully says the browser sends it`, () => {
+    it(`${locale} never claims openplate has a microphone of its own`, () => {
+      for (const { key, value } of lessonStrings(locale)) {
+        for (const pattern of FORBIDDEN_APP_MICROPHONE) {
+          assert.doesNotMatch(
+            value,
+            pattern,
+            `${locale}.${key} reads "${value}". This app has no microphone since M203: only the keyboard's dictation key does. Fix the sentence, not this test.`,
+          );
+        }
+      }
+    });
+
+    it(`${locale} says nothing is sent, except where the note truthfully says who turns speech into text`, () => {
       for (const { key, value } of lessonStrings(locale)) {
         if (key === WAYS_TO_LOG_SPEECH_PRIVACY_KEY) continue;
         for (const pattern of FORBIDDEN_OUTSIDE_THE_PRIVACY_NOTE) {
@@ -161,12 +204,18 @@ describe('no string in the lesson claims openplate records anybody', () => {
  *
  * wordsmith (`google/gemini-3.8-flash`) is the FINAL JUDGE on this copy (see
  * the workspace `CLAUDE.md`) and legitimately rephrases it over time, so this
- * must not pin one exact wording. What it DOES pin is the pair of facts the
- * note exists to state, each as a small set of accepted shapes that grows the
- * next time wordsmith rewords it: that the browser's own maker turns the
- * speech into text, and that only the TEXT travels onward.
+ * must not pin one exact wording. What it DOES pin is the three facts the note
+ * exists to state, each as a small set of accepted shapes that grows the next
+ * time wordsmith rewords it: that the KEYBOARD is where dictation happens,
+ * that its maker turns the speech into text, and that only the TEXT travels
+ * onward.
  */
-const NAMES_THE_BROWSER_VENDOR = {
+const NAMES_THE_KEYBOARD = {
+  en: [/\bkeyboard\b/i],
+  de: [/\btastatur\b/i],
+};
+
+const NAMES_THE_VENDOR = {
   en: [/\bgoogle\b/i, /\bapple\b/i],
   de: [/\bgoogle\b/i, /\bapple\b/i],
 };
@@ -176,13 +225,19 @@ const SAYS_ONLY_TEXT_TRAVELS = {
   de: [/\bnur der text\b/i, /\bnur den text\b/i, /\bausschließlich der text\b/i],
 };
 
-describe('the privacy note says the two true things', () => {
+describe('the privacy note says every true thing it has to', () => {
   for (const locale of LOCALES) {
-    it(`${locale} names the browser's maker and says only text travels`, () => {
+    it(`${locale} names the keyboard and its maker, and says only text travels`, () => {
       const note = read(loadCatalog(locale), WAYS_TO_LOG_SPEECH_PRIVACY_KEY);
       assert.ok(note !== undefined, `${locale} is missing the privacy note`);
-      const vendors = NAMES_THE_BROWSER_VENDOR[locale];
-      for (const vendor of vendors) {
+      for (const keyboard of NAMES_THE_KEYBOARD[locale]) {
+        assert.match(
+          note,
+          keyboard,
+          `the ${locale} note stopped naming the keyboard, which is now the only place dictation happens`,
+        );
+      }
+      for (const vendor of NAMES_THE_VENDOR[locale]) {
         assert.match(note, vendor, `the ${locale} note stopped naming who actually turns the speech into text`);
       }
       assert.ok(
@@ -193,25 +248,29 @@ describe('the privacy note says the two true things', () => {
   }
 });
 
-describe('the two source facts the copy rests on', () => {
-  it("speech input is still the BROWSER's recognizer, not a call openplate makes", () => {
-    const speech = readFileSync(fileURLToPath(new URL('../../app/lib/speech-input.ts', import.meta.url)), 'utf8');
-    assert.match(
-      speech,
-      /window\.SpeechRecognition \?\? window\.webkitSpeechRecognition/,
-      "speech input no longer resolves the browser's own recognizer. If audio now leaves through openplate, this whole lesson needs rewriting",
+describe('the source fact the copy rests on', () => {
+  it('no file in the app touches a speech recogniser at all', () => {
+    const offenders = sourceFiles(fileURLToPath(new URL('../../app', import.meta.url)))
+      .filter((file) => {
+        const source = readFileSync(file, 'utf8');
+        return /SpeechRecognition|webkitSpeechRecognition|MediaRecorder|getUserMedia/.test(source);
+      })
+      .map((file) => file.slice(file.indexOf('/app/')));
+    assert.deepEqual(
+      offenders,
+      [],
+      'a recogniser or a recorder is back in the app. The lesson says openplate has no microphone: rewrite the lesson or drop the code',
     );
-    assert.doesNotMatch(speech, /\bfetch\(/, 'speech-input.ts now makes a network call of its own');
   });
 
-  it('the microphone button still never starts a session by itself', () => {
-    const button = readFileSync(
-      fileURLToPath(new URL('../../app/components/add/speech-input-button.tsx', import.meta.url)),
-      'utf8',
+  it('reads enough files for the sweep above to mean anything', () => {
+    // THE CONTROL. A walk that silently returned nothing would report a clean
+    // app forever, which is the failure mode this whole file exists to refuse.
+    const files = sourceFiles(fileURLToPath(new URL('../../app', import.meta.url)));
+    assert.ok(files.length > 100, `only walked ${files.length} files under app/`);
+    assert.ok(
+      files.some((file) => file.endsWith('/routes/describe.tsx')),
+      'the composer itself was not among the files swept',
     );
-    // What the button IS changed on 2026-09-08: it is a way to log now, not a
-    // way to type. What must not change is that arriving on the screen never
-    // opens the microphone. `/add?speak=1` focuses it; the person presses it.
-    assert.match(button, /NO AUTO-START, EVER/, 'the microphone button dropped its no-auto-start guarantee');
   });
 });

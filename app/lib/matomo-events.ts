@@ -262,13 +262,21 @@ export function trackScanStartedFromShare(): void {
  * into the diary a person used, so the weak ones can be improved. It says
  * nothing about the food, the amount, the meal or the time.
  *
- * `scan-text` and `scan-speech` are the AI intake reached by writing or
- * saying what was eaten rather than photographing it. They are the same
- * pipeline and the same review screen as `scan-plate` by design, which is
- * exactly why they need their own names here: this is the only remaining
- * place that can say which way in a person actually took, and whether a way
- * in is worth improving is the one question this event exists to answer. It
- * stays a fixed literal union, and it still carries no content.
+ * `scan-text` is the AI intake reached by writing what was eaten rather than
+ * photographing it. It is the same pipeline and the same review screen as
+ * `scan-plate` by design, which is exactly why it needs its own name here:
+ * this is the only remaining place that can say which way in a person actually
+ * took, and whether a way in is worth improving is the one question this event
+ * exists to answer. It stays a fixed literal union, and it still carries no
+ * content.
+ *
+ * `scan-speech` is HISTORIC. It named the app's own Web Speech microphone,
+ * which M203 removed: every failure of it reached only an `sr-only` region, so
+ * on a phone it was a button that visibly did nothing. Dictation is the
+ * keyboard's now and arrives as `scan-text`. The member stays because events
+ * already recorded under it exist in the analytics data, and a name dropped
+ * from the union would make the old rows unreadable rather than historic.
+ * Nothing emits it any more.
  *
  * `scan-label` was a member until 2026-09-08 and is not one any more. It named
  * the second scanner, which is gone (amends ADR-0005): one photo path now

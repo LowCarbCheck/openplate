@@ -181,10 +181,11 @@ describe('resolveExitDestination', () => {
     assert.equal(resolveExitDestination('/scan'), '/scan');
   });
 
-  it('keeps the armed microphone, which is a way to log and not a settings detour', () => {
+  it('keeps the speak entry, which is the composer with its field focused', () => {
     assert.equal(resolveExitDestination('/describe?speak=1'), '/describe?speak=1');
-    // The search screen's own armed microphone still resolves: M203 moved the
-    // lesson onto the composer, it did not delete the other screen.
+    // A stored exit value from before M203 may still name the search screen
+    // with the same flag. It must land there rather than be silently rewritten
+    // to the diary; `/add` simply ignores the flag now.
     assert.equal(resolveExitDestination('/add?speak=1'), '/add?speak=1');
   });
 

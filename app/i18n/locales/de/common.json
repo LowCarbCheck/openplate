@@ -169,27 +169,6 @@
       },
       "throttled": "Die Suche macht eine kurze Pause. Versuche es {{when}} erneut. Deine zuletzt verwendeten und gespeicherten Lebensmittel funktionieren unten weiterhin."
     },
-    "speak": {
-      "start": "Mit Sprache suchen",
-      "stop": "Zuhören beenden",
-      "hint": "Tippen und sprechen",
-      "consent": {
-        "title": "Sprachsuche nutzen",
-        "body": "Dein Browser schickt deine Sprachaufnahme an Google oder Apple, um sie in Text umzuwandeln. openplate und dein KI-Anbieter erhalten immer nur den Text, nie deine Aufnahme.",
-        "continue": "Weiter",
-        "cancel": "Abbrechen"
-      },
-      "error": {
-        "permission": "Erlaube den Mikrofonzugriff in deinem Browser und tippe dann noch einmal.",
-        "noSpeech": "Nichts gehört. Tippe und sprich noch einmal.",
-        "failed": "Sprachsuche hat nicht geklappt. Tippe dein Essen ein oder versuche es noch einmal."
-      },
-      "results": {
-        "none": "Keine Lebensmittel für {{transcript}} gefunden.",
-        "one": "Ein Lebensmittel für {{transcript}} gefunden.",
-        "many": "{{n}} Lebensmittel für {{transcript}} gefunden."
-      }
-    },
     "title": "Essen eintragen",
     "aiIntake": {
       "submit": "Mit KI eintragen",
@@ -1388,7 +1367,7 @@
         "title": "Einsprechen",
         "description": "Sprich ein, was du gegessen hast, und prüfe die Einträge vor dem Speichern. Praktisch, wenn du keine Hand frei hast."
       },
-      "speechPrivacyNote": "Dein Browser wandelt Sprache in Text um, bei Chrome über Google, bei Safari über Apple. Nur der Text erreicht openplate und deinen KI-Anbieter."
+      "speechPrivacyNote": "openplate hat kein eigenes Mikrofon. Tippe auf die Mikrofontaste deiner Tastatur, die deine Sprache über Google oder Apple in Text umwandelt. Nur der Text erreicht openplate und deinen KI-Anbieter."
     },
     "weight": {
       "current": "Aktuelles Gewicht",
@@ -2766,7 +2745,7 @@
     "placeholder": "2 Spiegeleier, eine Scheibe Toast mit Butter, schwarzer Kaffee",
     "send": "Senden",
     "sendHint": "Enter sendet. Shift und Enter beginnen eine neue Zeile.",
-    "speakHint": "Tippe auf das Mikrofon und sprich dann, was du gegessen hast.",
+    "dictateHint": "Tippe auf die Mikrofontaste deiner Tastatur, um deine Mahlzeit zu diktieren.",
     "needsProvider": "Mahlzeiten beschreiben erfordert eine KI-Verbindung auf diesem Gerät.",
     "connect": "Anbieter verbinden",
     "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen"

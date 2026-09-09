@@ -18,6 +18,7 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { offerPickedFile, offerTypedText, takeIntakeHandoff } from '../../app/lib/scan-handoff';
+import { INTAKE_SOURCES } from '../../app/lib/intake-source';
 
 function photo(name: string): File {
   return new File(['x'], name, { type: 'image/jpeg' });
@@ -76,7 +77,7 @@ describe('scan hand-off slot', () => {
     assert.equal(handed.source, 'text');
   });
 
-  it('tells a spoken sentence from a typed one', () => {
+  it('tells a dictated sentence from a typed one, for the entries that already say so', () => {
     offerTypedText('a banana', 'speech');
 
     const handed = takeIntakeHandoff();
@@ -100,5 +101,15 @@ describe('scan hand-off slot', () => {
 
     assert.ok(handed?.kind === 'photo', 'the sentence survived a later photo capture');
     assert.equal(takeIntakeHandoff(), null, 'the replaced sentence must not queue behind it');
+  });
+});
+
+describe('intake sources', () => {
+  it('still names the three ways in, including the historic one', () => {
+    // `speech` is a RECORDED VALUE, not a live feature: M203 removed the app's
+    // own microphone, and dictation arrives as ordinary typing. Diary entries
+    // and analytics events written before that carry the literal, so dropping
+    // it from the union would make valid old data unreadable.
+    assert.deepStrictEqual([...INTAKE_SOURCES], ['photo', 'text', 'speech']);
   });
 });
