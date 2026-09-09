@@ -13,7 +13,7 @@
  * dev workspace) and skips loudly when it is not (a self-hoster has no openplate
  * checkout, and a hard failure there would be noise, not a signal).
  *
- * This is the same duplication discipline `openplate-sync/src/protocol.ts` uses
+ * This is the same duplication discipline `openplate-core/src/protocol.ts` uses
  * for the sync wire contract, for the same reason and with the same cost:
  * changing the contract is FOUR edits (two sources, two tests).
  *

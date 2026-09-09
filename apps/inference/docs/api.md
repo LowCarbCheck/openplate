@@ -56,7 +56,7 @@ external mode `/readyz` has limits worth knowing; see
 
 ## Why there is no admin API and no CLI
 
-The two sibling services grew one in August 2026: `openplate-gateway` has `gw-api` over its member and invite endpoints, and `openplate-sync` has `sync-api` over an account-metadata surface. This service deliberately grew
+The two sibling services grew one in August 2026: `openplate-gateway` has `gw-api` over its member and invite endpoints, and `openplate-core` has `sync-api` over an account-metadata surface. This service deliberately grew
 neither, and the reason is worth writing down so the absence reads as a decision
 rather than an oversight.
 

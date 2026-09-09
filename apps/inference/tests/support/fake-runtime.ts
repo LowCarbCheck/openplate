@@ -7,7 +7,7 @@
  * `response_format` it sends, the `finish_reason: length` truncation trap, an
  * empty `content`, a non-2xx body it must NOT forward. Stubbing `fetch` would
  * assert that we called a mock the way we think we call it; a socket asserts what
- * actually goes over one. (Same precedent as openplate-sync's service harness.)
+ * actually goes over one. (Same precedent as openplate-core's service harness.)
  *
  * It records what it RECEIVED, minus the payload: the recorded request carries
  * the model id, whether a `response_format` was attached, the token cap, the

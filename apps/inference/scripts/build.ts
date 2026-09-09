@@ -42,7 +42,7 @@ const repoRoot = resolve(__dirname, '..');
  *
  * This check exists because that failure is invisible to everything else:
  * typecheck passes, the test suites pass (they run TypeScript sources, never
- * `dist/`), and esbuild reports success. It cost openplate-sync a debugging
+ * `dist/`), and esbuild reports success. It cost openplate-core a debugging
  * session — an inlined CJS `dotenv` calling `require('fs')` at load time — and
  * the grep costs a millisecond.
  *
