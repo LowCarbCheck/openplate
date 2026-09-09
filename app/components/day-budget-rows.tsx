@@ -96,51 +96,69 @@ function headlineFor(row: DayBudgetRow, animated: AnimatedHeadlines | null): str
   return row.headline;
 }
 
-/** One row. Kept to about 40 px on a phone: that budget is the whole reason four rows cost less than two rings. */
+/**
+ * One row, as a two column grid with two grid rows. Top row: the label side
+ * (swatch, label, optional reference tag) on the left, the headline value
+ * right-aligned on the right. Second row: the meter track under the label, and
+ * the sub-line under the value, so the number and its caption share one right
+ * edge in every row and all rows are the same height.
+ *
+ * A row with no target draws NO track, only the empty first cell: an empty
+ * meter would read as a goal sitting at zero percent, which is a different and
+ * wrong statement. Its sub-line says "no target set" in words instead.
+ */
 function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHeadlines | null }) {
   const { t } = useTranslation();
   const isOver = row.tone === 'over';
   const isMet = row.tone === 'met';
   const fillClass = isOver ? 'bg-accent-amber' : ROW_FILL_CLASS[row.key];
+  // A target always brings a progress text with it today, so the third state
+  // (a track with nothing to caption it) is unreachable from the formatter.
+  // It is still rendered as a blank line of the same height, because this
+  // component takes any `DayBudgetRow` and a shorter row would break the grid.
+  const noTargetText = row.fraction === null ? t('diary.drilldown.noTarget') : null;
+  const subline = row.progressText ?? noTargetText;
 
   return (
-    <li className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
-          <span className={cn('h-2 w-2 shrink-0 rounded-full', fillClass)} aria-hidden="true" />
-          <span className="truncate">{row.label}</span>
-          {row.targetSource === 'default' && <ReferenceTag row={row} />}
-        </span>
-        <span
-          className={cn(
-            'flex shrink-0 items-center gap-1.5 text-xl font-semibold leading-tight tracking-tight tabular-nums sm:text-2xl',
-            // Over-goal is amber and only amber: the day describes the food,
-            // never the person (DESIGN.md §2b).
-            isOver ? 'text-accent-amber'
-            : isMet ? 'text-primary'
-            : 'text-foreground',
-          )}
-        >
-          {headlineFor(row, animated)}
-          {isMet && <Check className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />}
-        </span>
-      </div>
-
-      {row.fraction === null && <p className="text-xs text-muted-foreground">{t('diary.drilldown.noTarget')}</p>}
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 py-2.5 first:pt-0 last:pb-0">
+      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', fillClass)} aria-hidden="true" />
+        <span className="truncate">{row.label}</span>
+        {row.targetSource === 'default' && <ReferenceTag row={row} />}
+      </span>
+      <span
+        className={cn(
+          'flex shrink-0 items-center gap-1.5 justify-self-end text-right text-xl font-semibold leading-tight tracking-tight tabular-nums sm:text-2xl',
+          // Over-goal is amber and only amber: the day describes the food,
+          // never the person (DESIGN.md §2b).
+          isOver ? 'text-accent-amber'
+          : isMet ? 'text-primary'
+          : 'text-foreground',
+        )}
+      >
+        {headlineFor(row, animated)}
+        {isMet && <Check className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />}
+      </span>
 
       {row.fraction !== null && (
-        <div className="flex items-center gap-2.5">
-          <div className={cn('h-2 flex-1 overflow-hidden rounded-full', ROW_TRACK_CLASS[row.key])}>
-            <div
-              className={cn('h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500', fillClass)}
-              style={{ width: `${row.fraction * 100}%` }}
-            />
-          </div>
-          {row.progressText !== null && (
-            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{row.progressText}</span>
-          )}
+        <div
+          data-slot="budget-track"
+          className={cn('col-start-1 h-2 self-center overflow-hidden rounded-full', ROW_TRACK_CLASS[row.key])}
+        >
+          <div
+            className={cn('h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500', fillClass)}
+            style={{ width: `${row.fraction * 100}%` }}
+          />
         </div>
       )}
+
+      <span
+        data-slot="budget-subline"
+        aria-hidden={subline === null ? true : undefined}
+        className="col-start-2 justify-self-end text-right text-xs text-muted-foreground tabular-nums"
+      >
+        {subline ?? '\u00a0'}
+      </span>
 
       {/*
         The semantics live on a real element, not on the meter above: the same
@@ -175,7 +193,7 @@ export function DayBudgetRows({
   animatedHeadlines?: AnimatedHeadlines | null;
 }) {
   return (
-    <ul className="space-y-3">
+    <ul className="divide-y divide-border/50">
       {rows.map((row) => (
         <BudgetRow key={row.key} row={row} animated={animatedHeadlines} />
       ))}

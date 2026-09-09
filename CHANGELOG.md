@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- The Today so far card lays every nutrient row out as a two column grid: the value and its caption share one right edge, a hairline separates the rows, and a row with no target says so in words instead of drawing an empty meter.
+
 ## [0.23.2] - 2026-09-09
 
 ### Changed
