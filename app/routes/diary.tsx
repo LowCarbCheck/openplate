@@ -31,7 +31,14 @@ import { diaryHrefForDate } from '#app/lib/diary-href';
 import { useDaySwipe } from '#app/hooks/use-day-swipe';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { computeDayGaps } from '#app/lib/macro-gaps';
-import { computeReferenceProteinFloor, selectLatestWeighInKg } from '#app/models/body-metrics';
+import {
+  computeReferenceKcalAddition,
+  computeReferenceProteinFloor,
+  selectLatestWeighInKg,
+  selectMissingReferenceDate,
+} from '#app/models/body-metrics';
+import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
+import type { MissingReferenceDate } from '#app/lib/macro-gaps';
 import { useCountUp } from '#app/hooks/use-count-up';
 import { useCelebration } from '#app/hooks/use-celebration';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
@@ -968,9 +975,16 @@ export interface DiaryData {
   goals: {
     netCarbsCeiling: number | null;
     proteinFloor: number | null;
+    /**
+     * The calorie target as it is DISPLAYED and compared against: the figure the
+     * person typed in, plus the EFSA pregnancy or lactation addition when one
+     * applies. The raw figure they typed is what storage and the goals page keep.
+     */
     kcalTarget: number | null;
     /** The population reference protein floor, used only while `proteinFloor` is null. */
     proteinReferenceG: number;
+    /** Which date would make both references follow the person's real stage, or null. */
+    proteinReferenceMissingDate: MissingReferenceDate | null;
   };
   habitStrip: HabitStripDay[];
   loggedDaysCount: number;
@@ -1103,12 +1117,26 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
   // weigh-in, or by height and sex, and tagged `'default'` downstream so the
   // row reads as a reference rather than as a goal they chose.
   const bodyMetrics = await getLocalBodyMetrics();
+  // The stage is resolved against the real `today`, never the viewed date: the
+  // reference follows where the person is now, and paging back through history
+  // must not re-date a pregnancy.
+  const stage = {
+    reproductiveStatus: bodyMetrics.reproductiveStatus,
+    trimester: resolveGestation({ dueDate: bodyMetrics.pregnancyDueDate, today })?.trimester ?? null,
+    lactationMonths: resolveLactationMonths({ startDate: bodyMetrics.lactationStartDate, today }),
+  };
   const proteinReferenceG = computeReferenceProteinFloor({
+    ...stage,
     latestWeighInKg: selectLatestWeighInKg(weightEntries),
     heightCm: bodyMetrics.heightCm,
     biologicalSex: bodyMetrics.biologicalSex,
-    reproductiveStatus: bodyMetrics.reproductiveStatus,
   }).grams;
+  // The energy addition lands on the target the person TYPED IN, and only when
+  // they typed one. Nothing is written back: `goalKcalTarget` in the store is
+  // still their own figure.
+  const kcalAddition = computeReferenceKcalAddition(stage);
+  const kcalTarget =
+    goals.kcalTarget === null || kcalAddition === null ? goals.kcalTarget : goals.kcalTarget + kcalAddition;
 
   return {
     date,
@@ -1118,7 +1146,12 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     logs: logsForDay,
     mealGroups,
     summary,
-    goals: { ...goals, proteinReferenceG },
+    goals: {
+      ...goals,
+      kcalTarget,
+      proteinReferenceG,
+      proteinReferenceMissingDate: selectMissingReferenceDate(stage),
+    },
     habitStrip,
     loggedDaysCount: countLoggedDays(habitStrip),
     frequentChips,
@@ -1434,9 +1467,12 @@ function DateNav({ date, today }: { date: string; today: string }) {
 interface DiaryGoals {
   netCarbsCeiling: number | null;
   proteinFloor: number | null;
+  /** The calorie target as displayed: what the person typed in, plus any EFSA pregnancy or lactation addition. */
   kcalTarget: number | null;
   /** The population reference protein floor, used only while `proteinFloor` is null. */
   proteinReferenceG: number;
+  /** Which date would make both references follow the person's real stage, or null. */
+  proteinReferenceMissingDate: MissingReferenceDate | null;
 }
 
 /**
@@ -1499,6 +1535,7 @@ function DaySummaryCard({
       netCarbsCeiling: goals.netCarbsCeiling,
       proteinFloor: goals.proteinFloor,
       proteinReferenceG: goals.proteinReferenceG,
+      proteinReferenceMissingDate: goals.proteinReferenceMissingDate,
     },
     t,
   });
@@ -1513,7 +1550,11 @@ function DaySummaryCard({
       fiber: summary.fiber,
       hasEstimates: summary.hasEstimates,
     },
-    goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget: goals.kcalTarget },
+    goals: {
+      netCarbsCeiling: goals.netCarbsCeiling,
+      kcalTarget: goals.kcalTarget,
+      missingReferenceDate: goals.proteinReferenceMissingDate,
+    },
     gaps,
     t,
     language: i18n.language,

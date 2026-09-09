@@ -237,6 +237,111 @@ describe('computeDayGaps — the protein and fiber floors', () => {
   });
 });
 
+/**
+ * `referenceDateMissing` (M206/03): the flag that lets the day view say "this
+ * is the LARGEST published figure, because you gave no due date" instead of
+ * tagging every default alike.
+ *
+ * Only a reference that was actually used can carry it, which is what the two
+ * controls below check: a floor the person typed in owes nothing to a date, and
+ * a row with no target at all has no figure to qualify.
+ */
+describe('computeDayGaps, the missing reference date', () => {
+  const totals = { netCarbs: 20, protein: 46, fiber: 10 };
+
+  it('flags the protein reference when the pregnancy has no due date on file', () => {
+    const { protein } = computeDayGaps({
+      totals,
+      goals: {
+        netCarbsCeiling: 50,
+        proteinFloor: null,
+        proteinReferenceG: 86,
+        proteinReferenceMissingDate: 'due-date',
+      },
+      t,
+    });
+    assert.equal(protein.referenceDateMissing, true);
+    // The source is still a plain default: the figure is defensible, it is only
+    // less exact than it could be.
+    assert.equal(protein.targetSource, 'default');
+    assert.equal(protein.target, 86);
+  });
+
+  it('flags it for breastfeeding with no birth date too', () => {
+    const { protein } = computeDayGaps({
+      totals,
+      goals: {
+        netCarbsCeiling: 50,
+        proteinFloor: null,
+        proteinReferenceG: 77,
+        proteinReferenceMissingDate: 'birth-date',
+      },
+      t,
+    });
+    assert.equal(protein.referenceDateMissing, true);
+  });
+
+  it('leaves it false when a date resolved a stage', () => {
+    const { protein } = computeDayGaps({
+      totals,
+      goals: { netCarbsCeiling: 50, proteinFloor: null, proteinReferenceG: 67, proteinReferenceMissingDate: null },
+      t,
+    });
+    assert.equal(protein.referenceDateMissing, false);
+    // CONTROL: same call, same reference, only the missing-date field differs.
+    const flagged = computeDayGaps({
+      totals,
+      goals: {
+        netCarbsCeiling: 50,
+        proteinFloor: null,
+        proteinReferenceG: 67,
+        proteinReferenceMissingDate: 'due-date',
+      },
+      t,
+    });
+    assert.equal(flagged.protein.referenceDateMissing, true);
+  });
+
+  it('leaves it false when the caller passes no missing date at all', () => {
+    const { protein, fiber, netCarbs } = computeDayGaps({
+      totals,
+      goals: { netCarbsCeiling: 50, proteinFloor: null, proteinReferenceG: 62 },
+      t,
+    });
+    assert.equal(protein.referenceDateMissing, false);
+    // The other two rows never carry it: fiber's reference has no date behind
+    // it, and a ceiling is always the person's own figure.
+    assert.equal(fiber.referenceDateMissing, false);
+    assert.equal(netCarbs.referenceDateMissing, false);
+  });
+
+  it('leaves it false for a floor the person set themselves', () => {
+    const { protein } = computeDayGaps({
+      totals,
+      goals: {
+        netCarbsCeiling: 50,
+        proteinFloor: 100,
+        proteinReferenceG: 86,
+        proteinReferenceMissingDate: 'due-date',
+      },
+      t,
+    });
+    // The reference was never used, so no fallback happened to report.
+    assert.equal(protein.targetSource, 'goal');
+    assert.equal(protein.referenceDateMissing, false);
+  });
+
+  it('leaves it false when there is no protein target at all', () => {
+    const { protein } = computeDayGaps({
+      totals,
+      goals: { netCarbsCeiling: 50, proteinFloor: null, proteinReferenceMissingDate: 'due-date' },
+      t,
+    });
+    assert.equal(protein.targetSource, 'none');
+    assert.equal(protein.referenceDateMissing, false);
+  });
+});
+
 describe('computeDayGaps — the dominant gap', () => {
   it('picks the larger RELATIVE shortfall, not the larger gram gap', () => {
     // Protein: 60 g short of 200 (30% short). Fiber: 24 g short of 25 (96%).

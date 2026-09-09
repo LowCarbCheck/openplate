@@ -25,6 +25,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import i18next from '../../app/i18n/i18n';
 import { withI18n } from './trends-i18n-harness';
+import { MemoryRouter } from 'react-router';
 import { DayBudgetRows } from '../../app/components/day-budget-rows';
 import {
   buildDayBudgetRows,
@@ -33,7 +34,7 @@ import {
   type DayBudgetRowKey,
 } from '../../app/lib/day-budget-rows';
 import { computeDayGaps } from '../../app/lib/macro-gaps';
-import type { Translate } from '../../app/lib/macro-gaps';
+import type { MissingReferenceDate, Translate } from '../../app/lib/macro-gaps';
 
 /**
  * The REAL catalog, not a stub. These assertions are about exact wording, and
@@ -56,17 +57,29 @@ interface DayGoals {
   netCarbsCeiling: number | null;
   kcalTarget: number | null;
   proteinFloor: number | null;
+  /** The M206/03 reference-fallback pair: the reference figure, and the date that would sharpen it. */
+  proteinReferenceG?: number | null;
+  missingReferenceDate?: MissingReferenceDate | null;
 }
 
 function buildRows(totals: DayTotals, goals: DayGoals, hasEstimates = false): DayBudgetRow[] {
   const gaps = computeDayGaps({
     totals: { netCarbs: totals.netCarbs, protein: totals.protein, fiber: totals.fiber },
-    goals: { netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor },
+    goals: {
+      netCarbsCeiling: goals.netCarbsCeiling,
+      proteinFloor: goals.proteinFloor,
+      proteinReferenceG: goals.proteinReferenceG ?? null,
+      proteinReferenceMissingDate: goals.missingReferenceDate ?? null,
+    },
     t,
   });
   return buildDayBudgetRows({
     totals: { ...totals, hasEstimates },
-    goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget: goals.kcalTarget },
+    goals: {
+      netCarbsCeiling: goals.netCarbsCeiling,
+      kcalTarget: goals.kcalTarget,
+      missingReferenceDate: goals.missingReferenceDate ?? null,
+    },
     gaps,
     t,
     language: 'en',
@@ -293,9 +306,15 @@ describe('formatBudgetHeadline', () => {
   });
 });
 
-/** The rows as the diary paints them, with no tween, which is what the dashboard renders. */
+/**
+ * The rows as the diary paints them, with no tween, which is what the dashboard
+ * renders.
+ *
+ * A router is in scope because the date-missing reference tag is a `Link`; the
+ * rest of the stack renders identically inside it, so one helper covers both.
+ */
 function render(rows: DayBudgetRow[]): string {
-  return renderToStaticMarkup(withI18n(createElement(DayBudgetRows, { rows })));
+  return renderToStaticMarkup(withI18n(createElement(MemoryRouter, null, createElement(DayBudgetRows, { rows }))));
 }
 
 describe('DayBudgetRows rendering', () => {
@@ -327,5 +346,47 @@ describe('DayBudgetRows rendering', () => {
   it('draws no meter for a row with no target, and says so instead', () => {
     const html = render(buildRows(DAY, { netCarbsCeiling: null, kcalTarget: null, proteinFloor: null }));
     assert.ok(html.includes('No target set'));
+  });
+
+  it('tags an ordinary reference row with one plain, unlinked word', () => {
+    const html = render(buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 67 }));
+    // Two default rows are on screen, protein's reference and fiber's, and both
+    // wear the same plain word.
+    assert.equal(html.match(/>reference</g)?.length, 2);
+    // CONTROL: nothing on this page offers the goals page, so the link asserted
+    // in the next test cannot be something the stack renders anyway.
+    assert.ok(!html.includes('/settings/goals'), 'an ordinary reference tag is not actionable');
+    assert.ok(!html.includes('add your due date'));
+  });
+
+  it('asks for the due date, as a link to the goals page, when the pregnancy has none', () => {
+    const html = render(
+      buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 86, missingReferenceDate: 'due-date' }),
+    );
+    assert.match(html, /<a[^>]*href="\/settings\/goals"[^>]*>reference, add your due date<\/a>/);
+    assert.ok(!html.includes('add the birth date'));
+    // CONTROL: the tag REPLACES protein's plain word rather than sitting beside
+    // it, and fiber's stays plain and unlinked either way.
+    assert.equal(html.match(/>reference</g)?.length, 1);
+    assert.equal(html.match(/settings\/goals/g)?.length, 1);
+  });
+
+  it('asks for the birth date instead while breastfeeding', () => {
+    const html = render(
+      buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 77, missingReferenceDate: 'birth-date' }),
+    );
+    assert.match(html, /<a[^>]*href="\/settings\/goals"[^>]*>reference, add the birth date<\/a>/);
+    // CONTROL: the two subjects really do produce different copy.
+    assert.ok(!html.includes('add your due date'));
+  });
+
+  it('never links a floor the person set themselves', () => {
+    const html = render(
+      buildRows(DAY, { ...BOTH_GOALS, proteinFloor: 90, proteinReferenceG: 86, missingReferenceDate: 'due-date' }),
+    );
+    // The protein row is a goal, so it wears no tag at all; only fiber's plain
+    // reference is left, and no date is asked for.
+    assert.equal(html.match(/>reference</g)?.length, 1);
+    assert.ok(!html.includes('/settings/goals'));
   });
 });

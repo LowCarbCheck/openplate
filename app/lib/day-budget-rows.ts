@@ -37,7 +37,7 @@ import type { HeroStat, HeroStatMode, Translate } from '#app/components/hero-sta
 import { selectGoalRings } from '#app/lib/goal-rings';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { describeGap } from '#app/lib/macro-gaps';
-import type { DayGaps, MacroGap, MacroGapTargetSource } from '#app/lib/macro-gaps';
+import type { DayGaps, MacroGap, MacroGapTargetSource, MissingReferenceDate } from '#app/lib/macro-gaps';
 
 /** Which metric a row describes. The array order below is the display order. */
 export type DayBudgetRowKey = 'netCarbs' | 'calories' | 'protein' | 'fat' | 'fiber';
@@ -67,6 +67,16 @@ export interface DayBudgetRow {
   consumed: number;
   target: number | null;
   targetSource: MacroGapTargetSource;
+  /** True when this row's reference used its no-date fallback (see `MacroGap.referenceDateMissing`). */
+  referenceDateMissing: boolean;
+  /**
+   * Which date the row should ask for, or `null` when it has nothing to ask.
+   *
+   * The COPY concern beside `referenceDateMissing`'s computation concern: the gap
+   * decides whether a fallback happened, this decides whether the tag says "due
+   * date" or "birth date". Always `null` while `referenceDateMissing` is false.
+   */
+  missingReferenceDate: MissingReferenceDate | null;
   /** A whole sentence for assistive tech. */
   srLabel: string;
 }
@@ -101,7 +111,20 @@ export interface DayBudgetTotals {
  */
 export interface DayBudgetGoals {
   netCarbsCeiling: number | null;
+  /**
+   * The calorie target as it is DISPLAYED and compared against. A caller for a
+   * pregnant or breastfeeding person has already added the EFSA energy addition
+   * (`computeReferenceKcalAddition`) to the figure the person typed in; the raw
+   * one they typed is untouched in storage.
+   */
   kcalTarget: number | null;
+  /**
+   * Which date would make the protein reference follow the person's actual
+   * stage, or `null`. Only read for the row whose gap reports
+   * `referenceDateMissing`, so passing it for somebody with a due date on file
+   * changes nothing.
+   */
+  missingReferenceDate?: MissingReferenceDate | null;
 }
 
 export interface DayBudgetRowsInput {
@@ -205,6 +228,10 @@ function budgetRow({
     consumed,
     target,
     targetSource: target === null ? 'none' : 'goal',
+    // A budget row's target is a figure the person typed in, so no reference and
+    // no fallback can apply to it.
+    referenceDateMissing: false,
+    missingReferenceDate: null,
     srLabel: stat.srLabel,
   };
 }
@@ -219,11 +246,14 @@ function budgetRow({
 function floorRow({
   key,
   gap,
+  missingReferenceDate,
   t,
   language,
 }: {
   key: 'protein' | 'fiber';
   gap: MacroGap;
+  /** The caller's date subject; kept only when this gap actually fell back. */
+  missingReferenceDate: MissingReferenceDate | null;
   t: Translate;
   language: string | null | undefined;
 }): DayBudgetRow {
@@ -243,6 +273,8 @@ function floorRow({
     consumed: gap.consumed,
     target: gap.target,
     targetSource: gap.targetSource,
+    referenceDateMissing: gap.referenceDateMissing,
+    missingReferenceDate: gap.referenceDateMissing ? missingReferenceDate : null,
     srLabel:
       gap.target === null ?
         t('diary.budget.srRowNoTarget', { label: gap.label, status: headline })
@@ -287,6 +319,8 @@ function fatRow({
     consumed: totals.fat,
     target: null,
     targetSource: 'none',
+    referenceDateMissing: false,
+    missingReferenceDate: null,
     srLabel: t('diary.budget.srRowNoTarget', { label, status: headline }),
   };
 }
@@ -347,10 +381,11 @@ export function buildDayBudgetRows({ totals, goals, gaps, t, language }: DayBudg
     );
   }
 
+  const missingReferenceDate = goals.missingReferenceDate ?? null;
   rows.push(
-    floorRow({ key: 'protein', gap: gaps.protein, t, language }),
+    floorRow({ key: 'protein', gap: gaps.protein, missingReferenceDate, t, language }),
     fatRow({ totals, t, language }),
-    floorRow({ key: 'fiber', gap: gaps.fiber, t, language }),
+    floorRow({ key: 'fiber', gap: gaps.fiber, missingReferenceDate, t, language }),
   );
   return rows;
 }

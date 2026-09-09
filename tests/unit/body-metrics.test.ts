@@ -17,14 +17,23 @@ import {
   EMPTY_BODY_METRICS,
   LIGHTLY_ACTIVE_FACTOR,
   PROTEIN_PER_KG,
-  EFSA_LACTATION_PROTEIN_ADDITION_G,
-  EFSA_PREGNANCY_PROTEIN_ADDITION_G,
+  EFSA_LACTATION_KCAL_ADDITION_FIRST_6MO,
+  EFSA_LACTATION_PROTEIN_ADDITION_AFTER_6MO_G,
+  EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G,
+  EFSA_PREGNANCY_T1_KCAL_ADDITION,
+  EFSA_PREGNANCY_T1_PROTEIN_ADDITION_G,
+  EFSA_PREGNANCY_T2_KCAL_ADDITION,
+  EFSA_PREGNANCY_T2_PROTEIN_ADDITION_G,
+  EFSA_PREGNANCY_T3_KCAL_ADDITION,
+  EFSA_PREGNANCY_T3_PROTEIN_ADDITION_G,
   EFSA_PROTEIN_REFERENCE_G_PER_KG,
   EU_PROTEIN_REFERENCE_INTAKE_G,
   computeBmrKcal,
   computeDevineIdealWeightKg,
+  computeReferenceKcalAddition,
   computeReferenceProteinFloor,
   selectLatestWeighInKg,
+  selectMissingReferenceDate,
   computeTdeeKcal,
   estimateProteinFloorG,
   deriveAgeYears,
@@ -34,6 +43,9 @@ import {
   parseBiologicalSex,
   parseBirthYear,
   parseHeightCm,
+  inspectPregnancyDueDate,
+  parseLactationStartDate,
+  parsePregnancyDueDate,
   parseReproductiveStatus,
   readBodyMetrics,
   resolveAgeBandForBirthYear,
@@ -42,10 +54,26 @@ import {
   suggestProteinFloor,
   validateBodyMetricsForm,
   bodyMetricsFormKey,
+  BODY_DUE_DATE_PAST_KEY,
+  BODY_DUE_DATE_RANGE_KEY,
+  BODY_START_DATE_FUTURE_KEY,
+  MAX_WEEKS_UNTIL_DUE_DATE,
   type BodyMetrics,
 } from '../../app/models/body-metrics';
+import type { ReproductiveStageInput } from '../../app/models/body-metrics';
+import type { Trimester } from '../../app/lib/reproductive-stage';
+import { shiftDate } from '../../app/lib/user-days';
 
 const CURRENT_YEAR = 2026;
+
+/**
+ * The day every date case below is measured against, fixed so the suite reads
+ * the same in 2027. UTC midnight, which is the day the parsers compare on.
+ */
+const TODAY = new Date('2026-09-09T00:00:00.000Z');
+
+/** The same day as a day key, so the shifts below read as calendar arithmetic. */
+const TODAY_KEY = '2026-09-09';
 
 describe('parseHeightCm', () => {
   it('reads a plain height in centimetres', () => {
@@ -113,15 +141,59 @@ describe('parseBiologicalSex / parseReproductiveStatus', () => {
 });
 
 describe('normalizeBodyMetrics', () => {
-  it('drops a reproductive status when the sex it applies to is not set', () => {
+  it('keeps a reproductive status when the sex was never given (widened in M206)', () => {
+    // A person can be pregnant without having told this app their sex, so
+    // "prefer not to say" must not cost them the status.
     const normalized = normalizeBodyMetrics({
       heightCm: 170,
       birthYear: 1990,
       biologicalSex: null,
       reproductiveStatus: 'pregnant',
+      pregnancyDueDate: '2026-11-02',
     });
-    assert.equal(normalized.reproductiveStatus, null);
+    assert.equal(normalized.reproductiveStatus, 'pregnant');
+    assert.equal(normalized.pregnancyDueDate, '2026-11-02');
     assert.equal(normalized.heightCm, 170);
+    // CONTROL: the same record with an explicit male sex still loses both, so
+    // the assertions above are not simply "this function keeps everything".
+    const male = normalizeBodyMetrics({
+      heightCm: 170,
+      birthYear: 1990,
+      biologicalSex: 'male',
+      reproductiveStatus: 'pregnant',
+      pregnancyDueDate: '2026-11-02',
+    });
+    assert.equal(male.reproductiveStatus, null);
+    assert.equal(male.pregnancyDueDate, null);
+  });
+
+  it('drops a date that no longer matches its status', () => {
+    const switched = normalizeBodyMetrics({
+      heightCm: null,
+      birthYear: null,
+      biologicalSex: 'female',
+      reproductiveStatus: 'lactating',
+      pregnancyDueDate: '2026-11-02',
+      lactationStartDate: '2026-03-01',
+    });
+    // The pregnancy is over: its date goes rather than waiting in the store for
+    // a status change to make it visible again.
+    assert.equal(switched.pregnancyDueDate, null);
+    // CONTROL: the date that DOES match the status survives the same call.
+    assert.equal(switched.lactationStartDate, '2026-03-01');
+
+    // And "neither" keeps no date at all.
+    const cleared = normalizeBodyMetrics({
+      heightCm: null,
+      birthYear: null,
+      biologicalSex: 'female',
+      reproductiveStatus: 'none',
+      pregnancyDueDate: '2026-11-02',
+      lactationStartDate: '2026-03-01',
+    });
+    assert.equal(cleared.reproductiveStatus, null);
+    assert.equal(cleared.pregnancyDueDate, null);
+    assert.equal(cleared.lactationStartDate, null);
   });
 
   it('drops a reproductive status when the sex changes away from female', () => {
@@ -210,7 +282,7 @@ describe('validateBodyMetricsForm', () => {
   it('accepts an entirely blank form as "declined everything"', () => {
     const submission = validateBodyMetricsForm(
       { heightCm: '', birthYear: '', biologicalSex: '', reproductiveStatus: '' },
-      { currentYear: CURRENT_YEAR },
+      { currentYear: CURRENT_YEAR, today: TODAY },
     );
     assert.equal(hasBodyMetricsErrors(submission), false);
     assert.deepEqual(submission.values, EMPTY_BODY_METRICS);
@@ -219,7 +291,7 @@ describe('validateBodyMetricsForm', () => {
   it('reports a filled-in field that cannot be read, instead of silently clearing it', () => {
     const submission = validateBodyMetricsForm(
       { heightCm: 'about six foot', birthYear: '85', biologicalSex: 'female', reproductiveStatus: 'none' },
-      { currentYear: CURRENT_YEAR },
+      { currentYear: CURRENT_YEAR, today: TODAY },
     );
     assert.equal(hasBodyMetricsErrors(submission), true);
     assert.equal(submission.errors.heightCm, BODY_HEIGHT_INVALID_KEY);
@@ -229,10 +301,129 @@ describe('validateBodyMetricsForm', () => {
   it('applies the sex invariant to what it returns', () => {
     const submission = validateBodyMetricsForm(
       { heightCm: '170', birthYear: '1990', biologicalSex: 'male', reproductiveStatus: 'pregnant' },
-      { currentYear: CURRENT_YEAR },
+      { currentYear: CURRENT_YEAR, today: TODAY },
     );
     assert.equal(hasBodyMetricsErrors(submission), false);
     assert.equal(submission.values.reproductiveStatus, null);
+  });
+});
+
+describe('parsePregnancyDueDate', () => {
+  it('reads a blank field as "declined", not as an error', () => {
+    assert.equal(parsePregnancyDueDate('', { today: TODAY }), null);
+    assert.equal(parsePregnancyDueDate(null, { today: TODAY }), null);
+  });
+
+  it('accepts a due date exactly MAX_WEEKS_UNTIL_DUE_DATE weeks out, and refuses one week further', () => {
+    const atCeiling = shiftDate(TODAY_KEY, MAX_WEEKS_UNTIL_DUE_DATE * 7);
+    const pastCeiling = shiftDate(TODAY_KEY, (MAX_WEEKS_UNTIL_DUE_DATE + 1) * 7);
+    // The control: 42 weeks is a real, if very early, pregnancy and is kept.
+    assert.equal(parsePregnancyDueDate(atCeiling, { today: TODAY }), atCeiling);
+    assert.equal(parsePregnancyDueDate(pastCeiling, { today: TODAY }), null);
+  });
+
+  it('accepts today itself and refuses the day before it', () => {
+    assert.equal(parsePregnancyDueDate(TODAY_KEY, { today: TODAY }), TODAY_KEY);
+    assert.equal(parsePregnancyDueDate(shiftDate(TODAY_KEY, -1), { today: TODAY }), null);
+  });
+
+  it('names WHY it refused, so the form can say something better than "invalid"', () => {
+    assert.deepEqual(inspectPregnancyDueDate(shiftDate(TODAY_KEY, -1), { today: TODAY }), {
+      kind: 'rejected',
+      reason: 'past',
+    });
+    assert.deepEqual(inspectPregnancyDueDate(shiftDate(TODAY_KEY, (MAX_WEEKS_UNTIL_DUE_DATE + 1) * 7), {
+      today: TODAY,
+    }), { kind: 'rejected', reason: 'too-far' });
+    assert.deepEqual(inspectPregnancyDueDate('not a date', { today: TODAY }), {
+      kind: 'rejected',
+      reason: 'unreadable',
+    });
+    // The control: a usable date is not a rejection at all.
+    assert.deepEqual(inspectPregnancyDueDate(TODAY_KEY, { today: TODAY }), { kind: 'date', value: TODAY_KEY });
+  });
+});
+
+describe('parseLactationStartDate', () => {
+  it('reads a blank field as "declined"', () => {
+    assert.equal(parseLactationStartDate('', { today: TODAY }), null);
+  });
+
+  it('refuses a birth date in the future and keeps today itself', () => {
+    assert.equal(parseLactationStartDate(shiftDate(TODAY_KEY, 1), { today: TODAY }), null);
+    assert.equal(parseLactationStartDate(TODAY_KEY, { today: TODAY }), TODAY_KEY);
+  });
+
+  it('keeps a long-past birth date, because a long-fed child is not a typo', () => {
+    const threeYearsAgo = shiftDate(TODAY_KEY, -1095);
+    assert.equal(parseLactationStartDate(threeYearsAgo, { today: TODAY }), threeYearsAgo);
+  });
+});
+
+describe('validateBodyMetricsForm, the two dates', () => {
+  const blank = { heightCm: '', birthYear: '', biologicalSex: '', reproductiveStatus: '' };
+
+  it('passes a blank due date through as null with no error', () => {
+    const submission = validateBodyMetricsForm(
+      { ...blank, reproductiveStatus: 'pregnant', pregnancyDueDate: '' },
+      { currentYear: CURRENT_YEAR, today: TODAY },
+    );
+    assert.equal(hasBodyMetricsErrors(submission), false);
+    assert.equal(submission.values.pregnancyDueDate, null);
+  });
+
+  it('reports the out-of-range due date against its own field, and keeps an in-range one', () => {
+    const rejected = validateBodyMetricsForm(
+      {
+        ...blank,
+        reproductiveStatus: 'pregnant',
+        pregnancyDueDate: shiftDate(TODAY_KEY, (MAX_WEEKS_UNTIL_DUE_DATE + 1) * 7),
+      },
+      { currentYear: CURRENT_YEAR, today: TODAY },
+    );
+    assert.equal(hasBodyMetricsErrors(rejected), true);
+    assert.equal(rejected.errors.pregnancyDueDate, BODY_DUE_DATE_RANGE_KEY);
+
+    // The control: the same form one week earlier saves without a word.
+    const accepted = validateBodyMetricsForm(
+      { ...blank, reproductiveStatus: 'pregnant', pregnancyDueDate: shiftDate(TODAY_KEY, MAX_WEEKS_UNTIL_DUE_DATE * 7) },
+      { currentYear: CURRENT_YEAR, today: TODAY },
+    );
+    assert.equal(hasBodyMetricsErrors(accepted), false);
+    assert.equal(accepted.values.pregnancyDueDate, shiftDate(TODAY_KEY, MAX_WEEKS_UNTIL_DUE_DATE * 7));
+  });
+
+  it('tells a passed due date apart from an implausible one', () => {
+    const submission = validateBodyMetricsForm(
+      { ...blank, reproductiveStatus: 'pregnant', pregnancyDueDate: shiftDate(TODAY_KEY, -1) },
+      { currentYear: CURRENT_YEAR, today: TODAY },
+    );
+    assert.equal(submission.errors.pregnancyDueDate, BODY_DUE_DATE_PAST_KEY);
+  });
+
+  it('reports a birth date in the future, and accepts one in the past', () => {
+    const rejected = validateBodyMetricsForm(
+      { ...blank, reproductiveStatus: 'lactating', lactationStartDate: shiftDate(TODAY_KEY, 1) },
+      { currentYear: CURRENT_YEAR, today: TODAY },
+    );
+    assert.equal(hasBodyMetricsErrors(rejected), true);
+    assert.equal(rejected.errors.lactationStartDate, BODY_START_DATE_FUTURE_KEY);
+
+    const accepted = validateBodyMetricsForm(
+      { ...blank, reproductiveStatus: 'lactating', lactationStartDate: shiftDate(TODAY_KEY, -120) },
+      { currentYear: CURRENT_YEAR, today: TODAY },
+    );
+    assert.equal(hasBodyMetricsErrors(accepted), false);
+    assert.equal(accepted.values.lactationStartDate, shiftDate(TODAY_KEY, -120));
+  });
+
+  it('drops a due date whose status went away, rather than storing it beside the wrong answer', () => {
+    const submission = validateBodyMetricsForm(
+      { ...blank, reproductiveStatus: 'lactating', pregnancyDueDate: shiftDate(TODAY_KEY, 70) },
+      { currentYear: CURRENT_YEAR, today: TODAY },
+    );
+    assert.equal(hasBodyMetricsErrors(submission), false);
+    assert.equal(submission.values.pregnancyDueDate, null);
   });
 });
 
@@ -442,6 +633,12 @@ describe('the protein floor, from height and sex', () => {
  */
 describe('computeReferenceProteinFloor', () => {
   const MALE_180 = { heightCm: 180, biologicalSex: 'male' } as const;
+  /**
+   * "No date on file": what every caller passed before a due date could be
+   * recorded, and what a pregnancy or lactation with no date still passes today.
+   * The stage-aware cases below pass a real trimester or month count instead.
+   */
+  const NO_STAGE = { trimester: null, lactationMonths: null } as const;
 
   it('scales the latest weigh-in by the EFSA reference intake', () => {
     // 82 kg x 0.83 = 68.06 g.
@@ -450,6 +647,7 @@ describe('computeReferenceProteinFloor', () => {
         latestWeighInKg: 82,
         heightCm: null,
         biologicalSex: null,
+        ...NO_STAGE,
         reproductiveStatus: null,
       }),
       { grams: 68, basis: 'weigh-in' },
@@ -459,10 +657,13 @@ describe('computeReferenceProteinFloor', () => {
 
   it('falls back to the Devine reference mass when there is no weigh-in', () => {
     // 180 cm male: 74.992126 kg x 0.83 = 62.2434... g.
-    assert.deepEqual(computeReferenceProteinFloor({ latestWeighInKg: null, ...MALE_180, reproductiveStatus: null }), {
-      grams: 62,
-      basis: 'height',
-    });
+    assert.deepEqual(
+      computeReferenceProteinFloor({ latestWeighInKg: null, ...MALE_180, ...NO_STAGE, reproductiveStatus: null }),
+      {
+        grams: 62,
+        basis: 'height',
+      },
+    );
     // Control: the same height as a female gives a different figure, so the
     // 'height' basis really is running Devine and not returning a constant.
     assert.deepEqual(
@@ -470,6 +671,7 @@ describe('computeReferenceProteinFloor', () => {
         latestWeighInKg: null,
         heightCm: 165,
         biologicalSex: 'female',
+        ...NO_STAGE,
         reproductiveStatus: null,
       }),
       { grams: 47, basis: 'height' },
@@ -482,6 +684,7 @@ describe('computeReferenceProteinFloor', () => {
         latestWeighInKg: null,
         heightCm: null,
         biologicalSex: null,
+        ...NO_STAGE,
         reproductiveStatus: 'none',
       }),
       { grams: EU_PROTEIN_REFERENCE_INTAKE_G, basis: 'labelling' },
@@ -493,6 +696,7 @@ describe('computeReferenceProteinFloor', () => {
         latestWeighInKg: null,
         heightCm: 150,
         biologicalSex: 'male',
+        ...NO_STAGE,
         reproductiveStatus: null,
       }),
       { grams: 50, basis: 'labelling' },
@@ -502,29 +706,41 @@ describe('computeReferenceProteinFloor', () => {
   it('prefers a weigh-in over height, which is the whole point of the order', () => {
     // CONTROL: this person has BOTH. The weigh-in answer (58) and the height
     // answer (62) differ, so the assertion cannot pass by accident.
-    const both = computeReferenceProteinFloor({ latestWeighInKg: 70, ...MALE_180, reproductiveStatus: null });
-    const heightOnly = computeReferenceProteinFloor({ latestWeighInKg: null, ...MALE_180, reproductiveStatus: null });
+    const both = computeReferenceProteinFloor({
+      latestWeighInKg: 70,
+      ...MALE_180,
+      ...NO_STAGE,
+      reproductiveStatus: null,
+    });
+    const heightOnly = computeReferenceProteinFloor({
+      latestWeighInKg: null,
+      ...MALE_180,
+      ...NO_STAGE,
+      reproductiveStatus: null,
+    });
     assert.deepEqual(both, { grams: 58, basis: 'weigh-in' });
     assert.deepEqual(heightOnly, { grams: 62, basis: 'height' });
     assert.notEqual(both.grams, heightOnly.grams);
   });
 
-  it('adds the pregnancy and lactation figures on top of whichever basis was used', () => {
-    // 70 kg x 0.83 = 58.1 g, plus 28 or 19.
+  it('adds the no-date pregnancy and lactation figures on top of whichever basis was used', () => {
+    // 70 kg x 0.83 = 58.1 g, plus the largest figure for the status: 28 or 19.
     const pregnantOnWeight = computeReferenceProteinFloor({
       latestWeighInKg: 70,
       heightCm: null,
       biologicalSex: null,
+      ...NO_STAGE,
       reproductiveStatus: 'pregnant',
     });
     const lactatingOnWeight = computeReferenceProteinFloor({
       latestWeighInKg: 70,
       heightCm: null,
       biologicalSex: null,
+      ...NO_STAGE,
       reproductiveStatus: 'lactating',
     });
-    assert.deepEqual(pregnantOnWeight, { grams: 58 + EFSA_PREGNANCY_PROTEIN_ADDITION_G, basis: 'weigh-in' });
-    assert.deepEqual(lactatingOnWeight, { grams: 58 + EFSA_LACTATION_PROTEIN_ADDITION_G, basis: 'weigh-in' });
+    assert.deepEqual(pregnantOnWeight, { grams: 58 + EFSA_PREGNANCY_T3_PROTEIN_ADDITION_G, basis: 'weigh-in' });
+    assert.deepEqual(lactatingOnWeight, { grams: 58 + EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G, basis: 'weigh-in' });
 
     // On the height basis: 62.2434 + 28 = 90.24 g.
     assert.deepEqual(
@@ -532,6 +748,7 @@ describe('computeReferenceProteinFloor', () => {
         latestWeighInKg: null,
         heightCm: 180,
         biologicalSex: 'male',
+        ...NO_STAGE,
         reproductiveStatus: 'pregnant',
       }),
       { grams: 90, basis: 'height' },
@@ -542,9 +759,10 @@ describe('computeReferenceProteinFloor', () => {
         latestWeighInKg: null,
         heightCm: null,
         biologicalSex: null,
+        ...NO_STAGE,
         reproductiveStatus: 'lactating',
       }),
-      { grams: EU_PROTEIN_REFERENCE_INTAKE_G + EFSA_LACTATION_PROTEIN_ADDITION_G, basis: 'labelling' },
+      { grams: EU_PROTEIN_REFERENCE_INTAKE_G + EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G, basis: 'labelling' },
     );
     // CONTROL: 'none' adds nothing, so the two assertions above are measuring
     // the addition and not a constant that was always there.
@@ -553,6 +771,7 @@ describe('computeReferenceProteinFloor', () => {
         latestWeighInKg: 70,
         heightCm: null,
         biologicalSex: null,
+        ...NO_STAGE,
         reproductiveStatus: 'none',
       }).grams,
       58,
@@ -565,6 +784,7 @@ describe('computeReferenceProteinFloor', () => {
       latestWeighInKg: 50,
       heightCm: null,
       biologicalSex: null,
+      ...NO_STAGE,
       reproductiveStatus: null,
     });
     assert.equal(half.grams, 42);
@@ -572,18 +792,240 @@ describe('computeReferenceProteinFloor', () => {
   });
 
   it('ignores a weigh-in that is not a usable number', () => {
-    assert.deepEqual(computeReferenceProteinFloor({ latestWeighInKg: 0, ...MALE_180, reproductiveStatus: null }), {
-      grams: 62,
-      basis: 'height',
-    });
+    assert.deepEqual(
+      computeReferenceProteinFloor({ latestWeighInKg: 0, ...MALE_180, ...NO_STAGE, reproductiveStatus: null }),
+      {
+        grams: 62,
+        basis: 'height',
+      },
+    );
     assert.deepEqual(
       computeReferenceProteinFloor({
         latestWeighInKg: Number.NaN,
         heightCm: null,
         biologicalSex: null,
+        ...NO_STAGE,
         reproductiveStatus: null,
       }),
       { grams: 50, basis: 'labelling' },
+    );
+  });
+});
+
+/**
+ * The stage-aware half of the reference floor (M206/03).
+ *
+ * EFSA publishes one protein addition per trimester and two for lactation, and
+ * the app can now resolve which one applies from the person's own due date or
+ * birth date. What is pinned here is every stage, the day-before boundary that
+ * separates the two lactation figures, and the fallback: with no date to resolve
+ * from, the LARGEST figure for the status still applies, exactly as it did
+ * before a date could be recorded.
+ *
+ * The stage arrives already resolved, as `ReproductiveStageInput`, because
+ * `resolveGestation` and `resolveLactationMonths` own the calendar arithmetic
+ * one module away, see `tests/unit/reproductive-stage.test.ts`.
+ */
+/** 70 kg x 0.83 = 58.1 g of base, so every stage figure below is 58 plus its addition. */
+const BASE_G = 58;
+
+/** The reference floor for one 70 kg person, varying nothing but the resolved stage. */
+function floorGramsFor(stage: ReproductiveStageInput): number {
+  return computeReferenceProteinFloor({ ...stage, latestWeighInKg: 70, heightCm: null, biologicalSex: null }).grams;
+}
+
+describe('computeReferenceProteinFloor across the reproductive stage', () => {
+  it('applies the figure for the trimester the caller resolved', () => {
+    const pregnant = { reproductiveStatus: 'pregnant', lactationMonths: null } as const;
+    assert.equal(floorGramsFor({ ...pregnant, trimester: 1 }), BASE_G + EFSA_PREGNANCY_T1_PROTEIN_ADDITION_G);
+    assert.equal(floorGramsFor({ ...pregnant, trimester: 2 }), BASE_G + EFSA_PREGNANCY_T2_PROTEIN_ADDITION_G);
+    assert.equal(floorGramsFor({ ...pregnant, trimester: 3 }), BASE_G + EFSA_PREGNANCY_T3_PROTEIN_ADDITION_G);
+    // CONTROL: the three answers are three different numbers, so the assertions
+    // above cannot pass against a function that ignores the trimester.
+    const everyTrimester: Trimester[] = [1, 2, 3];
+    assert.equal(new Set(everyTrimester.map((trimester) => floorGramsFor({ ...pregnant, trimester }))).size, 3);
+    assert.deepEqual(
+      [
+        EFSA_PREGNANCY_T1_PROTEIN_ADDITION_G,
+        EFSA_PREGNANCY_T2_PROTEIN_ADDITION_G,
+        EFSA_PREGNANCY_T3_PROTEIN_ADDITION_G,
+      ],
+      [1, 9, 28],
+    );
+  });
+
+  it('falls back to the third-trimester figure when no due date resolved a trimester', () => {
+    const noDueDate = { reproductiveStatus: 'pregnant', trimester: null, lactationMonths: null } as const;
+    assert.equal(floorGramsFor(noDueDate), BASE_G + EFSA_PREGNANCY_T3_PROTEIN_ADDITION_G);
+    // CONTROL: the fallback is the LARGEST figure, not simply "whatever T1 is".
+    assert.notEqual(floorGramsFor(noDueDate), floorGramsFor({ ...noDueDate, trimester: 1 }));
+    assert.equal(floorGramsFor(noDueDate), floorGramsFor({ ...noDueDate, trimester: 3 }));
+  });
+
+  it('splits lactation at six months, with the month before as the control', () => {
+    const lactating = { reproductiveStatus: 'lactating', trimester: null } as const;
+    assert.equal(
+      floorGramsFor({ ...lactating, lactationMonths: 0 }),
+      BASE_G + EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G,
+    );
+    // The last month of the first period, and the first month after it.
+    assert.equal(
+      floorGramsFor({ ...lactating, lactationMonths: 5 }),
+      BASE_G + EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G,
+    );
+    assert.equal(
+      floorGramsFor({ ...lactating, lactationMonths: 6 }),
+      BASE_G + EFSA_LACTATION_PROTEIN_ADDITION_AFTER_6MO_G,
+    );
+    assert.equal(
+      floorGramsFor({ ...lactating, lactationMonths: 18 }),
+      BASE_G + EFSA_LACTATION_PROTEIN_ADDITION_AFTER_6MO_G,
+    );
+    // CONTROL: month five and month six really do answer differently.
+    assert.notEqual(
+      floorGramsFor({ ...lactating, lactationMonths: 5 }),
+      floorGramsFor({ ...lactating, lactationMonths: 6 }),
+    );
+    assert.deepEqual(
+      [EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G, EFSA_LACTATION_PROTEIN_ADDITION_AFTER_6MO_G],
+      [19, 13],
+    );
+  });
+
+  it('falls back to the first-six-months figure when no birth date resolved a month count', () => {
+    const noBirthDate = { reproductiveStatus: 'lactating', trimester: null, lactationMonths: null } as const;
+    assert.equal(floorGramsFor(noBirthDate), BASE_G + EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G);
+    // CONTROL: the fallback is the larger of the two, not the later figure.
+    assert.notEqual(floorGramsFor(noBirthDate), floorGramsFor({ ...noBirthDate, lactationMonths: 6 }));
+  });
+
+  it('ignores a resolved stage that does not belong to the status', () => {
+    // A stale month count left over from a status change must not reach the
+    // pregnancy branch, and a stale trimester must not reach the lactation one.
+    assert.equal(
+      floorGramsFor({ reproductiveStatus: 'pregnant', trimester: 2, lactationMonths: 9 }),
+      BASE_G + EFSA_PREGNANCY_T2_PROTEIN_ADDITION_G,
+    );
+    assert.equal(
+      floorGramsFor({ reproductiveStatus: 'lactating', trimester: 1, lactationMonths: 2 }),
+      BASE_G + EFSA_LACTATION_PROTEIN_ADDITION_FIRST_6MO_G,
+    );
+    // CONTROL: 'none' still adds nothing at all, whatever the stage fields say.
+    assert.equal(floorGramsFor({ reproductiveStatus: 'none', trimester: 3, lactationMonths: 1 }), BASE_G);
+  });
+});
+
+/**
+ * The ENERGY addition (M206/03), the protein floor's sibling.
+ *
+ * It adjusts a calorie target the person typed in, and only when they typed
+ * one; `suggestDailyKcal`, which invents a figure from scratch, is untouched by
+ * it (M135's locked decision 2). Two distinctions are load-bearing and pinned
+ * below: `null` for "no adjustment applies to this person" against `0` for
+ * "an adjustment applies, but this milestone had no published figure for the
+ * stage", which today is lactation past six months.
+ */
+describe('computeReferenceKcalAddition', () => {
+  it('applies the figure for the trimester the caller resolved', () => {
+    const pregnant = { reproductiveStatus: 'pregnant', lactationMonths: null } as const;
+    assert.equal(computeReferenceKcalAddition({ ...pregnant, trimester: 1 }), EFSA_PREGNANCY_T1_KCAL_ADDITION);
+    assert.equal(computeReferenceKcalAddition({ ...pregnant, trimester: 2 }), EFSA_PREGNANCY_T2_KCAL_ADDITION);
+    assert.equal(computeReferenceKcalAddition({ ...pregnant, trimester: 3 }), EFSA_PREGNANCY_T3_KCAL_ADDITION);
+    // CONTROL: three distinct published figures, so no branch can be a constant.
+    assert.deepEqual(
+      [EFSA_PREGNANCY_T1_KCAL_ADDITION, EFSA_PREGNANCY_T2_KCAL_ADDITION, EFSA_PREGNANCY_T3_KCAL_ADDITION],
+      [70, 260, 500],
+    );
+  });
+
+  it('falls back to the third-trimester figure with no due date on file', () => {
+    const noDueDate = { reproductiveStatus: 'pregnant', trimester: null, lactationMonths: null } as const;
+    assert.equal(computeReferenceKcalAddition(noDueDate), EFSA_PREGNANCY_T3_KCAL_ADDITION);
+    // CONTROL: not the first-trimester figure, which is the one it would take
+    // if the fallback were "the first branch that matches".
+    assert.notEqual(computeReferenceKcalAddition(noDueDate), EFSA_PREGNANCY_T1_KCAL_ADDITION);
+  });
+
+  it('answers ZERO, not null, past six months of lactation, because no figure is published', () => {
+    const lactating = { reproductiveStatus: 'lactating', trimester: null } as const;
+    assert.equal(
+      computeReferenceKcalAddition({ ...lactating, lactationMonths: 5 }),
+      EFSA_LACTATION_KCAL_ADDITION_FIRST_6MO,
+    );
+    const afterSixMonths = computeReferenceKcalAddition({ ...lactating, lactationMonths: 6 });
+    assert.equal(afterSixMonths, 0);
+    // The distinction the docblock draws: 0 is "an addition applies and the
+    // published figure is missing", null is "no addition applies to this
+    // person at all". A caller that treats them alike loses that.
+    assert.notEqual(afterSixMonths, null);
+    // CONTROL: month five is not zero, so the boundary is real.
+    assert.notEqual(computeReferenceKcalAddition({ ...lactating, lactationMonths: 5 }), 0);
+    assert.equal(EFSA_LACTATION_KCAL_ADDITION_FIRST_6MO, 500);
+  });
+
+  it('falls back to the first-six-months figure with no birth date on file', () => {
+    const lactating = { reproductiveStatus: 'lactating', trimester: null } as const;
+    assert.equal(
+      computeReferenceKcalAddition({ ...lactating, lactationMonths: null }),
+      EFSA_LACTATION_KCAL_ADDITION_FIRST_6MO,
+    );
+  });
+
+  it('answers NULL for a person who is neither pregnant nor lactating', () => {
+    assert.equal(
+      computeReferenceKcalAddition({ reproductiveStatus: 'none', trimester: null, lactationMonths: null }),
+      null,
+    );
+    assert.equal(
+      computeReferenceKcalAddition({ reproductiveStatus: null, trimester: null, lactationMonths: null }),
+      null,
+    );
+    // CONTROL: null here is a refusal, not the zero the after-six-months branch
+    // returns; a stage that DOES apply answers a number.
+    assert.equal(
+      computeReferenceKcalAddition({ reproductiveStatus: 'pregnant', trimester: 1, lactationMonths: null }),
+      70,
+    );
+  });
+});
+
+/**
+ * Which date the day view should ask for. The tag it drives is the only place
+ * the app admits it used the largest figure rather than the right one.
+ */
+describe('selectMissingReferenceDate', () => {
+  it('asks for the due date only while a pregnancy has no resolved trimester', () => {
+    assert.equal(
+      selectMissingReferenceDate({ reproductiveStatus: 'pregnant', trimester: null, lactationMonths: null }),
+      'due-date',
+    );
+    // CONTROL: a resolved trimester asks for nothing.
+    assert.equal(
+      selectMissingReferenceDate({ reproductiveStatus: 'pregnant', trimester: 2, lactationMonths: null }),
+      null,
+    );
+  });
+
+  it('asks for the birth date only while lactation has no resolved month count', () => {
+    assert.equal(
+      selectMissingReferenceDate({ reproductiveStatus: 'lactating', trimester: null, lactationMonths: null }),
+      'birth-date',
+    );
+    // CONTROL: a resolved month count asks for nothing.
+    assert.equal(
+      selectMissingReferenceDate({ reproductiveStatus: 'lactating', trimester: null, lactationMonths: 8 }),
+      null,
+    );
+  });
+
+  it('asks for nothing at all from a person who is neither', () => {
+    assert.equal(
+      selectMissingReferenceDate({ reproductiveStatus: 'none', trimester: null, lactationMonths: null }),
+      null,
+    );
+    assert.equal(
+      selectMissingReferenceDate({ reproductiveStatus: null, trimester: null, lactationMonths: null }),
+      null,
     );
   });
 });

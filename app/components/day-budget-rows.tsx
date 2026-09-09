@@ -20,6 +20,7 @@
  *    `RingProgress` does for the gauge this replaced.
  */
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { Check } from 'lucide-react';
 import type { AnimatedHeadlines, DayBudgetRow, DayBudgetRowKey } from '#app/lib/day-budget-rows';
 import { cn } from '#app/lib/utils';
@@ -52,6 +53,37 @@ const ROW_TRACK_CLASS = {
   fiber: 'bg-macro-fiber/20',
 } satisfies Record<DayBudgetRowKey, string>;
 
+/** The shared look of the small uppercase tag beside a row's label. */
+const REFERENCE_TAG_CLASS = 'shrink-0 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground';
+
+/**
+ * The tag beside a reference row's label.
+ *
+ * An ordinary default says one word, "reference", and is not actionable: there
+ * is no fiber goal field to send anyone to. A default that fell back for a
+ * missing due or birth date IS actionable, so it names the date it wants and
+ * links to the goals page where that date is entered. Same size, same weight:
+ * the tag is a footnote either way, never an alarm.
+ */
+function ReferenceTag({ row }: { row: DayBudgetRow }) {
+  const { t } = useTranslation();
+  if (!row.referenceDateMissing)
+    return <span className={REFERENCE_TAG_CLASS}>{t('diary.drilldown.referenceTag')}</span>;
+
+  const key =
+    row.missingReferenceDate === 'birth-date' ?
+      'diary.drilldown.referenceTagBirthDateMissing'
+    : 'diary.drilldown.referenceTagDateMissing';
+  return (
+    <Link
+      to="/settings/goals"
+      className={cn(REFERENCE_TAG_CLASS, 'underline underline-offset-2 hover:text-foreground')}
+    >
+      {t(key)}
+    </Link>
+  );
+}
+
 /**
  * The headline to paint for a row: the tweened string when the caller is
  * animating that metric, and the settled one otherwise. Only the two budget
@@ -77,11 +109,7 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
         <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
           <span className={cn('h-2 w-2 shrink-0 rounded-full', fillClass)} aria-hidden="true" />
           <span className="truncate">{row.label}</span>
-          {row.targetSource === 'default' && (
-            <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-              {t('diary.drilldown.referenceTag')}
-            </span>
-          )}
+          {row.targetSource === 'default' && <ReferenceTag row={row} />}
         </span>
         <span
           className={cn(

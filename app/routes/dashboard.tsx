@@ -39,11 +39,18 @@ import {
   listLocalWeightEntries,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
-import type { LocalFast } from '#app/lib/local-store';
+import type { LocalFast, ReproductiveStatus } from '#app/lib/local-store';
 import { selectCurrentFast } from '#app/models/fasting';
 import { shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { computeDayGaps } from '#app/lib/macro-gaps';
-import { computeReferenceProteinFloor, selectLatestWeighInKg } from '#app/models/body-metrics';
+import {
+  computeReferenceKcalAddition,
+  computeReferenceProteinFloor,
+  selectLatestWeighInKg,
+  selectMissingReferenceDate,
+} from '#app/models/body-metrics';
+import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
+import type { MissingReferenceDate } from '#app/lib/macro-gaps';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { fromKg, roundWeightForDisplay, formatKgForDisplay } from '#app/lib/weight-units';
 import type { WeightUnit } from '#app/lib/weight-units';
@@ -57,6 +64,7 @@ import { computeWeightGlance } from '#app/models/dashboard';
 import type { WeightGlance } from '#app/models/dashboard';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { FastStrip } from '#app/components/fast-strip';
+import { ReproductiveStatusPromptBanner } from '#app/components/reproductive-status-prompt-banner';
 import { HabitStrip } from '#app/components/habit-strip';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
@@ -123,9 +131,16 @@ export interface DashboardData {
   goals: {
     netCarbsCeiling: number | null;
     proteinFloor: number | null;
+    /**
+     * The calorie target as it is DISPLAYED and compared against: the figure the
+     * person typed in, plus the EFSA pregnancy or lactation addition when one
+     * applies. The raw figure they typed is what storage and the goals page keep.
+     */
     kcalTarget: number | null;
     /** The population reference protein floor, used only while `proteinFloor` is null. */
     proteinReferenceG: number;
+    /** Which date would make both references follow the person's real stage, or null. */
+    proteinReferenceMissingDate: MissingReferenceDate | null;
   };
   habitStrip: HabitStripDay[];
   loggedDaysCount: number;
@@ -136,6 +151,12 @@ export interface DashboardData {
    * live clock, because a status resolved here is already stale by first paint.
    */
   currentFast: LocalFast | null;
+  /** The stored reproductive status, or null. Read only: this page never writes it back. */
+  reproductiveStatus: ReproductiveStatus | null;
+  /** The stored pregnancy due date (`YYYY-MM-DD`), or null. */
+  pregnancyDueDate: string | null;
+  /** The stored lactation start date (`YYYY-MM-DD`), or null. */
+  lactationStartDate: string | null;
 }
 
 export async function clientLoader(): Promise<DashboardData> {
@@ -172,19 +193,46 @@ export async function clientLoader(): Promise<DashboardData> {
   // weigh-in, or by height and sex, and tagged `'default'` downstream so the
   // row reads as a reference rather than as a goal they chose.
   const bodyMetrics = await getLocalBodyMetrics();
+  // The stage is resolved against `today`, the same device-local day key the
+  // weigh-in glance windows, so every figure on this page agrees about what day
+  // it is. With no date on file both resolvers answer null and the references
+  // fall back to the largest figure for the status, which is what they did
+  // before a date could be recorded at all.
+  const stage = {
+    reproductiveStatus: bodyMetrics.reproductiveStatus,
+    trimester: resolveGestation({ dueDate: bodyMetrics.pregnancyDueDate, today })?.trimester ?? null,
+    lactationMonths: resolveLactationMonths({ startDate: bodyMetrics.lactationStartDate, today }),
+  };
   const proteinReferenceG = computeReferenceProteinFloor({
+    ...stage,
     latestWeighInKg: selectLatestWeighInKg(weightEntries),
     heightCm: bodyMetrics.heightCm,
     biologicalSex: bodyMetrics.biologicalSex,
-    reproductiveStatus: bodyMetrics.reproductiveStatus,
   }).grams;
+  // The energy addition lands on the target the person TYPED IN, and only when
+  // they typed one. Nothing is written back: `goalKcalTarget` in the store is
+  // still their own figure.
+  const kcalAddition = computeReferenceKcalAddition(stage);
+  const kcalTarget =
+    goals.kcalTarget === null || kcalAddition === null ? goals.kcalTarget : goals.kcalTarget + kcalAddition;
 
   return {
     currentFast: selectCurrentFast(fasts),
     today,
+    // The three fields the status prompt reads (M206/04). They ride the loader
+    // rather than a second store read in the component, and they are REPORTED
+    // only: nothing on this page ever writes a reproductive status back.
+    reproductiveStatus: bodyMetrics.reproductiveStatus,
+    pregnancyDueDate: bodyMetrics.pregnancyDueDate ?? null,
+    lactationStartDate: bodyMetrics.lactationStartDate ?? null,
     hasLoggedToday: totalsForToday.hasLogs,
     summary: totalsForToday.summary ?? EMPTY_DAY_SUMMARY,
-    goals: { ...goals, proteinReferenceG },
+    goals: {
+      ...goals,
+      kcalTarget,
+      proteinReferenceG,
+      proteinReferenceMissingDate: selectMissingReferenceDate(stage),
+    },
     habitStrip,
     loggedDaysCount: countLoggedDays(habitStrip),
     weight: computeWeightGlance({ entries: weightEntries, today, windowDays: WEEK_DAYS }),
@@ -234,6 +282,7 @@ function TodayHeroCard({
       netCarbsCeiling: goals.netCarbsCeiling,
       proteinFloor: goals.proteinFloor,
       proteinReferenceG: goals.proteinReferenceG,
+      proteinReferenceMissingDate: goals.proteinReferenceMissingDate,
     },
     t,
   });
@@ -247,7 +296,11 @@ function TodayHeroCard({
       fiber: summary.fiber,
       hasEstimates: summary.hasEstimates,
     },
-    goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget: goals.kcalTarget },
+    goals: {
+      netCarbsCeiling: goals.netCarbsCeiling,
+      kcalTarget: goals.kcalTarget,
+      missingReferenceDate: goals.proteinReferenceMissingDate,
+    },
     gaps,
     t,
     language: i18n.language,
@@ -394,11 +447,35 @@ function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
 ////////////////////////////////////////////////////////////////////////////////
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { hasLoggedToday, summary, goals, habitStrip, loggedDaysCount, weight, currentFast } = loaderData;
+  const {
+    hasLoggedToday,
+    summary,
+    goals,
+    habitStrip,
+    loggedDaysCount,
+    weight,
+    currentFast,
+    reproductiveStatus,
+    pregnancyDueDate,
+    lactationStartDate,
+  } = loaderData;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <TodayHeroCard summary={summary} goals={goals} hasLoggedToday={hasLoggedToday} />
+      {/*
+        A question, never a correction: a due date that has passed, or lactation
+        older than two years, gets one dismissable line asking whether to update
+        the setting. The banner decides for itself and renders nothing the rest
+        of the time, and the clock is passed in here rather than read inside it.
+        The app never flips the stored status (M206/04).
+      */}
+      <ReproductiveStatusPromptBanner
+        reproductiveStatus={reproductiveStatus}
+        dueDate={pregnancyDueDate}
+        lactationStartDate={lactationStartDate}
+        today={new Date()}
+      />
       {/*
         Conditional and ABOVE the glance row (M132) — see this file's header for
         the height arithmetic and why the fast outranks last week's weight for

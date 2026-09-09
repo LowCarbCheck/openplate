@@ -11,6 +11,14 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **You can record a due date or a birth date, and anyone can be asked.** Choosing Pregnant on your goals page now reveals a due-date field, with a "weeks along" box that fills it in for you, and choosing Breastfeeding reveals the birth date. Under the field, one line says which trimester and week, or how many months of breastfeeding, that date means today. Both are optional, both can be cleared, and the question is now put to everyone who did not answer Male, including anyone who preferred not to say. The onboarding step asks the same way.
+
+### Changed
+
+- **Pregnancy and breastfeeding targets now follow your stage.** The protein reference used to add the third trimester figure to every pregnancy. With a due date or a birth date on file, it now adds the figure for the trimester or the month you are in, and it adds the matching energy figure to a calorie target you set yourself. Your stored target is untouched. Without a date, the app still uses the largest figure, and the day view says so with a link to your goals.
+
 ## [0.22.2] - 2026-09-09
 
 ### Fixed

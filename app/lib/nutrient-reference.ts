@@ -521,6 +521,17 @@ export function resolveReferenceAmount({
   const { biologicalSex, birthYear, reproductiveStatus } = metrics;
   if (biologicalSex === null || birthYear === null) return { kind: 'no-body-metrics' };
 
+  // The micronutrient model stays on ONE pregnancy column and ONE lactation
+  // column, with no trimester and no month count, even though the protein and
+  // energy references in `#app/models/body-metrics` now follow the stage a due
+  // date or a birth date resolves to.
+  //
+  // That is a LowCarbCheck follow-up, not an openplate gap: `rda.pregnancy` and
+  // `rda.lactation` are what that API publishes, so splitting them here would
+  // mean inventing per-trimester micronutrient figures nobody sourced. When
+  // LowCarbCheck publishes trimester-specific rows, this function gains the
+  // stage the same way the protein floor did.
+
   const band = resolveAgeBandForBirthYear({ birthYear, currentYear });
   if (band === null) return { kind: 'age-out-of-bands' };
 

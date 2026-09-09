@@ -140,6 +140,17 @@ export type MacroGapKind = 'ceiling' | 'floor';
 /** Where a gap's target came from — never guess, always say. */
 export type MacroGapTargetSource = 'goal' | 'default' | 'none';
 
+/**
+ * Which date is missing when a reference had to fall back to the largest figure
+ * for a reproductive status: a pregnancy's due date, or a birth date for
+ * breastfeeding.
+ *
+ * Named per date rather than per status because the UI's job is to ask for the
+ * one thing that would fix the figure, and "add your due date" is a different
+ * request from "add the birth date".
+ */
+export type MissingReferenceDate = 'due-date' | 'birth-date';
+
 export interface MacroGap {
   key: MacroGapKey;
   /** Human label — "Net carbs", "Protein", "Fiber". */
@@ -164,6 +175,17 @@ export interface MacroGap {
   isMet: boolean;
   /** Ceiling only: past the target. Always false for a floor. */
   isOver: boolean;
+  /**
+   * True when this row's target is a reference that had to use its no-date
+   * fallback: the person is pregnant or breastfeeding, but gave no due date or
+   * birth date, so the largest figure for that status applied instead of the one
+   * for the stage they are actually in.
+   *
+   * A separate fact from `targetSource`, deliberately. The source is still
+   * `'default'` and the figure is still defensible; what the UI can now say is
+   * that one date would make it exact.
+   */
+  referenceDateMissing: boolean;
 }
 
 /**
@@ -194,6 +216,7 @@ function buildGap({
   consumed,
   target,
   targetSource,
+  referenceDateMissing = false,
 }: {
   key: MacroGapKey;
   label: string;
@@ -201,6 +224,7 @@ function buildGap({
   consumed: number;
   target: number | null;
   targetSource: MacroGapTargetSource;
+  referenceDateMissing?: boolean;
 }): MacroGap {
   if (target === null) {
     return {
@@ -215,6 +239,8 @@ function buildGap({
       fraction: null,
       isMet: false,
       isOver: false,
+      // No target means no reference was used, so there is no fallback to report.
+      referenceDateMissing: false,
     };
   }
 
@@ -235,6 +261,7 @@ function buildGap({
       fraction: targetFraction(consumed, target),
       isMet: !isOver,
       isOver,
+      referenceDateMissing,
     };
   }
 
@@ -251,6 +278,7 @@ function buildGap({
     fraction: targetFraction(consumed, target),
     isMet,
     isOver: false,
+    referenceDateMissing,
   };
 }
 
@@ -306,6 +334,16 @@ export interface DayGapGoals {
    * rather than inventing a figure.
    */
   proteinReferenceG?: number | null;
+  /**
+   * Which date the person would have to add for `proteinReferenceG` to follow
+   * their actual stage, or `null` when nothing is missing.
+   *
+   * Set by the caller only when the status is `'pregnant'` or `'lactating'` AND
+   * the matching date resolved to no stage, which is the one case where the
+   * reference silently used the largest figure for that status. Optional, so a
+   * caller with no body metrics keeps the older behaviour.
+   */
+  proteinReferenceMissingDate?: MissingReferenceDate | null;
 }
 
 /**
@@ -371,7 +409,10 @@ function selectDominantGap(protein: MacroGap, fiber: MacroGap): DominantGap | nu
  *   `computeReferenceProteinFloor` scales from the person's own weigh-in or
  *   height. Protein needs do vary with body mass, which is exactly why the
  *   reference is computed per person rather than being one flat number; a
- *   floor the user typed in still wins whenever there is one.
+ *   floor the user typed in still wins whenever there is one. When that
+ *   reference had to use its no-date fallback for a pregnancy or for
+ *   breastfeeding, the row also carries `referenceDateMissing`, so the UI can
+ *   ask for the one date that would make the figure exact.
  * - **Fiber** always uses `DEFAULT_FIBER_REFERENCE_G`, tagged `'default'`,
  *   because there is no fiber goal field to read and the reference is a
  *   published population figure rather than a personal target.
@@ -398,15 +439,21 @@ export function computeDayGaps({
     target: goals.netCarbsCeiling,
     targetSource: goals.netCarbsCeiling === null ? 'none' : 'goal',
   });
+  // `buildGap` re-tags a null target as `'none'`, so a caller that passes
+  // neither a floor nor a reference keeps the untargeted protein row.
+  const proteinTarget = goals.proteinFloor ?? goals.proteinReferenceG ?? null;
+  // Only a reference that was actually USED can have fallen back: a floor the
+  // person typed in owes nothing to a due date, and a row with no target at all
+  // has no figure to qualify.
+  const usesProteinReference = goals.proteinFloor === null && proteinTarget !== null;
   const protein = buildGap({
     key: 'protein',
     label: t('diary.macros.protein'),
     kind: 'floor',
     consumed: totals.protein,
-    // `buildGap` re-tags a null target as `'none'`, so a caller that passes
-    // neither a floor nor a reference keeps the untargeted protein row.
-    target: goals.proteinFloor ?? goals.proteinReferenceG ?? null,
+    target: proteinTarget,
     targetSource: goals.proteinFloor !== null ? 'goal' : 'default',
+    referenceDateMissing: usesProteinReference && (goals.proteinReferenceMissingDate ?? null) !== null,
   });
   const fiber = buildGap({
     key: 'fiber',
