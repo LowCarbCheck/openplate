@@ -160,5 +160,28 @@
     "s7aPaymentBody2": "The subscription management service stores your account id, subscription status, and the expiration date of your paid period. It stores no diary entries. It operates separately from the application server described in Section 3.",
     "s7aPaymentBody3": "Stripe issues an invoice for each payment. Under section 147 of the Fiscal Code and section 14b of the Value Added Tax Act, German tax law requires us to retain this invoice for ten years.",
     "s7aPaymentBody4": "Deleting your account does not delete your invoices. Each invoice is stored as a separate record containing the amount, the date, and your account id at the time of issuance. It contains no logged diary data."
+  },
+  "withdrawal": {
+    "title": "Right of withdrawal and model withdrawal form",
+    "bindingNotice": "The German version of this page is the binding one. This English text is a translation, provided for information only.",
+    "instructionHeading": "Withdrawal instruction",
+    "rightHeading": "Right of withdrawal",
+    "rightBody1": "You have the right to withdraw from this contract within fourteen days without giving any reason.",
+    "rightBody2": "The withdrawal period is fourteen days from the day of the conclusion of the contract.",
+    "rightBody3": "To exercise your right of withdrawal, you must inform us ({{operator}}) of your decision to withdraw from this contract by an unequivocal statement, for example a letter sent by post or an e-mail. You may use the attached model withdrawal form, but it is not obligatory.",
+    "rightBody4": "To meet the withdrawal deadline, it is sufficient for you to send your communication concerning your exercise of the right of withdrawal before the withdrawal period has expired.",
+    "consequencesHeading": "Effects of withdrawal",
+    "consequencesBody1": "If you withdraw from this contract, we shall reimburse to you all payments received from you, including the costs of delivery (with the exception of the supplementary costs resulting from your choice of a type of delivery other than the least expensive type of standard delivery offered by us), without undue delay and in any event not later than fourteen days from the day on which we are informed about your decision to withdraw from this contract. We will carry out such reimbursement using the same means of payment as you used for the initial transaction, unless you have expressly agreed otherwise; in any event, you will not incur any fees as a result of such reimbursement.",
+    "consequencesBody2": "If you requested that the services begin during the withdrawal period, you shall pay us an amount which is in proportion to what has been provided until you have communicated to us your withdrawal from this contract, in comparison with the full coverage of the contract.",
+    "formHeading": "Model withdrawal form",
+    "formIntro": "(If you want to withdraw from the contract, please fill in this form and send it back.)",
+    "formField1": "To {{operator}}:",
+    "formField2": "I/We (*) hereby give notice that I/We (*) withdraw from my/our (*) contract of sale of the following goods (*)/for the provision of the following service (*)",
+    "formField3": "Ordered on (*)/received on (*)",
+    "formField4": "Name of consumer(s)",
+    "formField5": "Address of consumer(s)",
+    "formField6": "Signature of consumer(s) (only if this form is notified on paper)",
+    "formField7": "Date",
+    "formFootnote": "(*) Delete as appropriate."
   }
 }

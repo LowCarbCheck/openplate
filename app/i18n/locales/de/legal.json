@@ -160,5 +160,28 @@
     "s7aPaymentBody2": "Der Dienst zur Abonnementverwaltung speichert Ihre Konto-ID, den Abonnementstatus und das Ablaufdatum Ihres bezahlten Zeitraums. Er speichert keine Tagebucheinträge. Er arbeitet getrennt von dem in Abschnitt 3 beschriebenen Anwendungsserver.",
     "s7aPaymentBody3": "Stripe stellt für jede Zahlung eine Rechnung aus. Gemäß Paragraf 147 AO und Paragraf 14b UStG sind wir nach deutschem Steuerrecht verpflichtet, diese Rechnung zehn Jahre lang aufzubewahren.",
     "s7aPaymentBody4": "Das Löschen Ihres Kontos führt nicht zur Löschung Ihrer Rechnungen. Jede Rechnung wird als separater Datensatz gespeichert, der den Betrag, das Datum und Ihre Konto-ID zum Zeitpunkt der Ausstellung enthält. Sie enthält keine erfassten Tagebuchdaten."
+  },
+  "withdrawal": {
+    "title": "Widerrufsbelehrung und Muster-Widerrufsformular",
+    "bindingNotice": "Verbindlich ist die deutsche Fassung dieser Seite. Die englische Übersetzung dient nur zur Information.",
+    "instructionHeading": "Widerrufsbelehrung",
+    "rightHeading": "Widerrufsrecht",
+    "rightBody1": "Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.",
+    "rightBody2": "Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsabschlusses.",
+    "rightBody3": "Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ({{operator}}) mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.",
+    "rightBody4": "Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.",
+    "consequencesHeading": "Folgen des Widerrufs",
+    "consequencesBody1": "Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, einschließlich der Lieferkosten (mit Ausnahme der zusätzlichen Kosten, die sich daraus ergeben, dass Sie eine andere Art der Lieferung als die von uns angebotene, günstigste Standardlieferung gewählt haben), unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.",
+    "consequencesBody2": "Haben Sie verlangt, dass die Dienstleistungen während der Widerrufsfrist beginnen sollen, so haben Sie uns einen angemessenen Betrag zu zahlen, der dem Anteil der bis zu dem Zeitpunkt, zu dem Sie uns von der Ausübung des Widerrufsrechts hinsichtlich dieses Vertrags unterrichten, bereits erbrachten Dienstleistungen im Vergleich zum Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht.",
+    "formHeading": "Muster-Widerrufsformular",
+    "formIntro": "(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)",
+    "formField1": "An {{operator}}:",
+    "formField2": "Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren (*)/die Erbringung der folgenden Dienstleistung (*)",
+    "formField3": "Bestellt am (*)/erhalten am (*)",
+    "formField4": "Name des/der Verbraucher(s)",
+    "formField5": "Anschrift des/der Verbraucher(s)",
+    "formField6": "Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)",
+    "formField7": "Datum",
+    "formFootnote": "(*) Unzutreffendes streichen."
   }
 }

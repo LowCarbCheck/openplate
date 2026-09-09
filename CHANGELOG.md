@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The withdrawal instruction and the model form now have a page.** `/withdrawal` carries the statutory Widerrufsbelehrung and the Muster-Widerrufsformular, which the terms already linked to. The German text is the binding one and follows the model in the EGBGB word for word; the English beside it is a translation, and the page says so. The operator's telephone number is still missing from it, and the page leaves no gap where it belongs.
+
 ## [0.26.0] - 2026-09-09
 
 ### Added

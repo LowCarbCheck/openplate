@@ -111,6 +111,12 @@ export default [
     // purpose — an imprint behind a login does not discharge the duty.
     route('/imprint', 'routes/legal/imprint.tsx'),
 
+    // The statutory withdrawal instruction and model withdrawal form (Anlage 1
+    // and Anlage 2 zu Artikel 246a § 1 Absatz 2 EGBGB). Always registered, not
+    // gated on whether this deployment sells anything: section 4a of the terms
+    // links here in every copy a reader may have saved.
+    route('/withdrawal', 'routes/legal/withdrawal.tsx'),
+
     // Service-worker offline fallback: precached at install, served for failed
     // navigations. Always cacheable, never gated.
     route('/offline', 'routes/offline.tsx'),
