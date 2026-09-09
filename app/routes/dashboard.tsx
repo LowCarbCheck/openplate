@@ -220,6 +220,7 @@ function TodayHeroCard({
       netCarbs: summary.netCarbs,
       kcal: summary.kcal,
       protein: summary.protein,
+      fat: summary.fat,
       fiber: summary.fiber,
       hasEstimates: summary.hasEstimates,
     },

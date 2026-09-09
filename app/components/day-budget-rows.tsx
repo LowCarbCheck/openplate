@@ -26,27 +26,29 @@ import { cn } from '#app/lib/utils';
 
 /**
  * The swatch and meter fill per metric. Net carbs and calories are the two
- * BUDGETS and share the brand colour, as their rings did; protein and fiber
- * take the same macro tokens the ratio bar and the macro grid use, so a row
- * and its slice of that bar are visibly the same thing.
+ * BUDGETS and share the brand colour, as their rings did; protein, fat and
+ * fiber take the same macro tokens the ratio bar and the macro grid use, so a
+ * row and its slice of that bar are visibly the same thing.
  */
 const ROW_FILL_CLASS = {
   netCarbs: 'bg-primary',
   calories: 'bg-primary',
   protein: 'bg-macro-protein',
+  fat: 'bg-macro-fat',
   fiber: 'bg-macro-fiber',
 } satisfies Record<DayBudgetRowKey, string>;
 
 /**
  * The meter track: a lighter step of the row's own fill rather than a neutral
- * grey, so an empty meter still says which metric it belongs to. Protein and
- * fiber sit a little heavier than the brand pair because their tokens are less
- * saturated at low opacity.
+ * grey, so an empty meter still says which metric it belongs to. Protein, fat
+ * and fiber sit a little heavier than the brand pair because their tokens are
+ * less saturated at low opacity.
  */
 const ROW_TRACK_CLASS = {
   netCarbs: 'bg-primary/15',
   calories: 'bg-primary/15',
   protein: 'bg-macro-protein/20',
+  fat: 'bg-macro-fat/20',
   fiber: 'bg-macro-fiber/20',
 } satisfies Record<DayBudgetRowKey, string>;
 

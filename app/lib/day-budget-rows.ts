@@ -3,17 +3,20 @@
  * ring gauges the hero used to draw.
  *
  * A ring answers "how much is left?" with a shape, and it can only carry one
- * metric per circle. Four metrics therefore cost four circles, and a phone has
+ * metric per circle. Five metrics therefore cost five circles, and a phone has
  * room for two. A row costs about 40 px, says the same thing in words, and
- * stacks: net carbs, calories, protein and fiber all fit in less height than
- * the two rings they replace. Colour is never the message here, every row is
- * named, and the swatch and the meter are the only coloured parts.
+ * stacks: net carbs, calories, protein, fat and fiber all fit in less height
+ * than the two rings they replace. Colour is never the message here, every row
+ * is named, and the swatch and the meter are the only coloured parts.
  *
  * Nothing is computed twice. The two BUDGET metrics (net carbs, calories) keep
  * their existing remaining-first framings from `#app/components/hero-stat`,
  * and the two FLOOR metrics (protein, fiber) keep theirs from
- * `#app/lib/macro-gaps`. This module only decides which rows exist, in what
- * order, and how their two lines of text read.
+ * `#app/lib/macro-gaps`. Fat is a third kind of its own: it has no target and
+ * no default reference (unlike fiber's), so it is always the day's absolute
+ * gram figure with no meter, the same shape net carbs takes when there is no
+ * ceiling. This module only decides which rows exist, in what order, and how
+ * their two lines of text read.
  *
  * The rules the two sources already hold apply unchanged:
  *
@@ -37,7 +40,7 @@ import { describeGap } from '#app/lib/macro-gaps';
 import type { DayGaps, MacroGap, MacroGapTargetSource } from '#app/lib/macro-gaps';
 
 /** Which metric a row describes. The array order below is the display order. */
-export type DayBudgetRowKey = 'netCarbs' | 'calories' | 'protein' | 'fiber';
+export type DayBudgetRowKey = 'netCarbs' | 'calories' | 'protein' | 'fat' | 'fiber';
 
 /** How a row is painted: amber past a ceiling, brand once a floor is reached, plain otherwise. */
 export type DayBudgetRowTone = 'default' | 'over' | 'met';
@@ -85,6 +88,7 @@ export interface DayBudgetTotals {
   netCarbs: number;
   kcal: number;
   protein: number;
+  fat: number;
   fiber: number;
   /** True when the day's figures include AI estimates, which hedges the two budget headlines with a leading "~". */
   hasEstimates: boolean;
@@ -252,7 +256,43 @@ function floorRow({
 }
 
 /**
- * The day's budget rows, in display order: net carbs, calories, protein,
+ * The fat row: no target and no default reference (unlike fiber's), so it is
+ * always the day's absolute gram figure, with no meter and no over/under
+ * framing, the same shape net carbs takes when the person has set no
+ * ceiling. Reuses that shape's own template (`diary.budget.grams`) rather than
+ * inventing a second "N g" wording, and does not animate: there is no goal to
+ * count toward, so it is built directly from the totals rather than from a
+ * `HeroStat` or a `MacroGap`.
+ */
+function fatRow({
+  totals,
+  t,
+  language,
+}: {
+  totals: DayBudgetTotals;
+  t: Translate;
+  language: string | null | undefined;
+}): DayBudgetRow {
+  const label = t('diary.macros.fat');
+  const headline = t('diary.budget.grams', { value: formatMacroNumberIn(language, totals.fat) });
+  return {
+    key: 'fat',
+    label,
+    headline,
+    headlineNumeric: null,
+    headlineMode: null,
+    tone: 'default',
+    progressText: null,
+    fraction: null,
+    consumed: totals.fat,
+    target: null,
+    targetSource: 'none',
+    srLabel: t('diary.budget.srRowNoTarget', { label, status: headline }),
+  };
+}
+
+/**
+ * The day's budget rows, in display order: net carbs, calories, protein, fat,
  * fiber.
  *
  * Net carbs is always present. With a ceiling it is a budget, without one it
@@ -267,7 +307,7 @@ function floorRow({
  * would hand back the calorie stat.
  *
  * @param input - the day's totals, the two budgets, the day's gaps, and the caller's translator.
- * @returns two to four rows, in display order.
+ * @returns three to five rows, in display order.
  */
 export function buildDayBudgetRows({ totals, goals, gaps, t, language }: DayBudgetRowsInput): DayBudgetRow[] {
   const heroInput = {
@@ -309,6 +349,7 @@ export function buildDayBudgetRows({ totals, goals, gaps, t, language }: DayBudg
 
   rows.push(
     floorRow({ key: 'protein', gap: gaps.protein, t, language }),
+    fatRow({ totals, t, language }),
     floorRow({ key: 'fiber', gap: gaps.fiber, t, language }),
   );
   return rows;

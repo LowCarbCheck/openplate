@@ -42,11 +42,12 @@ import type { Translate } from '../../app/lib/macro-gaps';
  */
 const t: Translate = (key, params) => i18next.t(key, params ?? {});
 
-/** The day's four figures; every test overrides what it cares about. */
+/** The day's five figures; every test overrides what it cares about. */
 interface DayTotals {
   netCarbs: number;
   kcal: number;
   protein: number;
+  fat: number;
   fiber: number;
 }
 
@@ -78,15 +79,15 @@ function rowFor(rows: DayBudgetRow[], key: DayBudgetRowKey): DayBudgetRow {
   return row;
 }
 
-const DAY = { netCarbs: 25.1, kcal: 899, protein: 95, fiber: 13 };
+const DAY = { netCarbs: 25.1, kcal: 899, protein: 95, fat: 34.6, fiber: 13 };
 const BOTH_GOALS = { netCarbsCeiling: 50, kcalTarget: 1800, proteinFloor: 90 };
 
 describe('buildDayBudgetRows, both budgets set', () => {
-  it('returns the four rows in display order', () => {
+  it('returns the five rows in display order', () => {
     const rows = buildRows(DAY, BOTH_GOALS);
     assert.deepEqual(
       rows.map((row) => row.key),
-      ['netCarbs', 'calories', 'protein', 'fiber'],
+      ['netCarbs', 'calories', 'protein', 'fat', 'fiber'],
     );
   });
 
@@ -130,7 +131,7 @@ describe('buildDayBudgetRows, only a carb ceiling', () => {
     const rows = buildRows(DAY, { netCarbsCeiling: 50, kcalTarget: null, proteinFloor: 90 });
     assert.deepEqual(
       rows.map((row) => row.key),
-      ['netCarbs', 'protein', 'fiber'],
+      ['netCarbs', 'protein', 'fat', 'fiber'],
     );
     assert.equal(rowFor(rows, 'netCarbs').headline, '24.9 g left');
   });
@@ -146,7 +147,7 @@ describe('buildDayBudgetRows, only a calorie target', () => {
     const rows = buildRows(DAY, { netCarbsCeiling: null, kcalTarget: 1800, proteinFloor: null });
     assert.deepEqual(
       rows.map((row) => row.key),
-      ['netCarbs', 'calories', 'protein', 'fiber'],
+      ['netCarbs', 'calories', 'protein', 'fat', 'fiber'],
     );
 
     const netCarbs = rowFor(rows, 'netCarbs');
@@ -165,7 +166,7 @@ describe('buildDayBudgetRows, no goals at all', () => {
     const rows = buildRows(DAY, NO_GOALS);
     assert.deepEqual(
       rows.map((row) => row.key),
-      ['netCarbs', 'protein', 'fiber'],
+      ['netCarbs', 'protein', 'fat', 'fiber'],
     );
     for (const row of rows) {
       assert.ok(row.fraction === null || Number.isFinite(row.fraction), `${row.key} fraction must never be NaN`);
@@ -227,6 +228,47 @@ describe('buildDayBudgetRows, a floor that is reached', () => {
   });
 });
 
+describe('buildDayBudgetRows, the fat row', () => {
+  it('sits between protein and fiber, with no target and the absolute gram figure alone', () => {
+    const rows = buildRows(DAY, BOTH_GOALS);
+    assert.equal(rows[3].key, 'fat');
+    const fat = rowFor(rows, 'fat');
+    assert.equal(fat.label, 'Fat');
+    assert.equal(fat.headline, '34.6 g');
+    assert.equal(fat.targetSource, 'none');
+    assert.equal(fat.tone, 'default');
+    assert.equal(fat.target, null);
+    assert.equal(fat.fraction, null);
+    assert.equal(fat.progressText, null);
+    assert.equal(fat.consumed, 34.6);
+    assert.equal(fat.srLabel, 'Fat: 34.6 g.');
+  });
+
+  it('never fabricates a target for fat, unlike fiber which borrows a reference', () => {
+    const rows = buildRows(DAY, { netCarbsCeiling: null, kcalTarget: null, proteinFloor: null });
+    const fat = rowFor(rows, 'fat');
+    assert.equal(fat.target, null);
+    assert.equal(fat.targetSource, 'none');
+    // Fiber, by contrast, gets the documented default reference in the same
+    // goal-less day (see the "no goals at all" describe block above).
+    assert.equal(rowFor(rows, 'fiber').targetSource, 'default');
+  });
+
+  it('does not animate, there is no single figure to count toward', () => {
+    const fat = rowFor(buildRows(DAY, BOTH_GOALS), 'fat');
+    assert.equal(fat.headlineNumeric, null);
+    assert.equal(fat.headlineMode, null);
+  });
+
+  it("returns fat's settled headline unchanged from formatBudgetHeadline, because it does not animate", () => {
+    const fat = rowFor(buildRows(DAY, BOTH_GOALS), 'fat');
+    assert.equal(
+      formatBudgetHeadline({ row: fat, numericValue: 999, hasEstimates: false, language: 'en', t }),
+      '34.6 g',
+    );
+  });
+});
+
 describe('formatBudgetHeadline', () => {
   it('formats a mid-tween figure exactly as the settled one would be', () => {
     const netCarbs = rowFor(buildRows(DAY, BOTH_GOALS), 'netCarbs');
@@ -259,7 +301,7 @@ function render(rows: DayBudgetRow[]): string {
 describe('DayBudgetRows rendering', () => {
   it('names every row in words, so colour is never the only encoding', () => {
     const html = render(buildRows(DAY, BOTH_GOALS));
-    for (const label of ['Net carbs', 'Calories', 'Protein', 'Fiber']) {
+    for (const label of ['Net carbs', 'Calories', 'Protein', 'Fat', 'Fiber']) {
       assert.ok(html.includes(label), `expected the row labelled "${label}"`);
     }
   });
