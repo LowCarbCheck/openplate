@@ -49,6 +49,7 @@ import {
 } from '../../app/lib/eating-style';
 import { EatingStyleCautionNote, EatingStylePicker } from '../../app/components/eating-style-picker';
 import type { ReproductiveStatus } from '../../app/lib/local-store/schema';
+import { eatingStyleCardKey, goalsCardKey, type GoalsCardValues } from '../../app/lib/goals-form-key';
 
 /** The key itself, which is what the schema's messages are here: no copy is pinned. */
 const identityT = (key: string): string => key;
@@ -339,4 +340,76 @@ test('the weight note shows only for high-protein without a weigh-in', () => {
   );
   assert.deepEqual(asking, ['high-protein']);
   assert.ok(!renderPicker('high-protein', { latestWeightKg: 78 }).includes('Log your weight'));
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The remount key, which is what makes a style save VISIBLE on the goals card
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The walk that produced this: saving "low calorie" removed the 50 g carb
+ * ceiling and wrote 1800 kcal, and the goals card below went on printing 50
+ * until the page was reloaded. Conform seeds an uncontrolled input from
+ * `defaultValue` at mount and never re-reads it, so only a remount can move it.
+ */
+const WALK_BEFORE: GoalsCardValues = {
+  netCarbsCeilingG: 50,
+  proteinFloorG: null,
+  kcalTarget: 1800,
+  targetWeightKg: null,
+};
+
+const WALK_AFTER: GoalsCardValues = { ...WALK_BEFORE, netCarbsCeilingG: null };
+
+test('two different goal states get different keys', () => {
+  assert.notEqual(goalsCardKey(WALK_BEFORE), goalsCardKey(WALK_AFTER));
+  assert.notEqual(goalsCardKey(WALK_BEFORE), goalsCardKey({ ...WALK_BEFORE, proteinFloorG: 90 }));
+  assert.notEqual(goalsCardKey(WALK_BEFORE), goalsCardKey({ ...WALK_BEFORE, kcalTarget: 1900 }));
+  assert.notEqual(goalsCardKey(WALK_BEFORE), goalsCardKey({ ...WALK_BEFORE, targetWeightKg: 72 }));
+});
+
+test('an unchanged goal state keeps its key, so typing is never interrupted', () => {
+  assert.equal(goalsCardKey(WALK_BEFORE), goalsCardKey({ ...WALK_BEFORE }));
+  assert.equal(goalsCardKey(WALK_AFTER), goalsCardKey({ ...WALK_AFTER }));
+});
+
+/**
+ * The naive builder the fix could have been: everything except the one field
+ * the style save actually cleared. It cannot tell the two walk states apart, so
+ * the card would not remount and the removed 50 would stay on screen.
+ */
+function ceilingBlindKey(stored: GoalsCardValues): string {
+  return [stored.proteinFloorG, stored.kcalTarget, stored.targetWeightKg].map((value) => String(value)).join('|');
+}
+
+/** The style card key, with the two inputs spelled out per call. */
+function withStyle(style: EatingStyleId, stored: GoalsCardValues): string {
+  return eatingStyleCardKey({ style, goals: stored });
+}
+
+test('CONTROL: a key that ignores the carb ceiling collides on the exact walk case', () => {
+  assert.equal(ceilingBlindKey(WALK_BEFORE), ceilingBlindKey(WALK_AFTER), 'the control must collide');
+  assert.notEqual(goalsCardKey(WALK_BEFORE), goalsCardKey(WALK_AFTER), 'the shipped builder must not');
+});
+
+test('the style card key follows the style AND the numbers it preselects from', () => {
+  assert.notEqual(withStyle('low-carb', WALK_BEFORE), withStyle('low-kcal', WALK_BEFORE));
+  // A goals save that leaves the derived style alone still has to re-seed the
+  // card's carb chip and calorie field.
+  assert.notEqual(withStyle('low-carb', WALK_BEFORE), withStyle('low-carb', { ...WALK_BEFORE, netCarbsCeilingG: 20 }));
+  assert.equal(withStyle('low-carb', WALK_BEFORE), withStyle('low-carb', { ...WALK_BEFORE }));
+});
+
+test('the settings route actually keys both cards off the loader values', () => {
+  const source = readFileSync(new URL('../../app/routes/settings.goals.tsx', import.meta.url), 'utf8');
+  // `assert.ok` rather than `assert.match`: a failure here should print the one
+  // line that is missing, not the whole route module.
+  assert.ok(
+    /<GoalsCard\s+key=\{goalsCardKey\(goals\)\}/.test(source),
+    'the goals card must remount on a goals change',
+  );
+  assert.ok(
+    /<EatingStyleCard\s+key=\{eatingStyleCardKey\(\{ style, goals \}\)\}/.test(source),
+    'the style card must remount on a style or goals change',
+  );
 });

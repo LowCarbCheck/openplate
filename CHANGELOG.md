@@ -22,6 +22,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **The day now gets one grade, the one your eating style asks for.** A low carb style still gets the carb verdict, a calorie style gets a calorie one, a high protein style gets its floor, and "just track" gets no grade at all. A day with no carb goal used to be graded against a hidden 50 gram line that was never shown to you. That line is gone.
 - **The meal composer drops a notice nobody could read.** On an instance an organization runs, "Describe a meal" and "Add food" told a signed out visitor to sign in before the AI could read their words. Signing out closes both screens on that kind of instance, so the sentence was written for a screen that never opened. It is gone, and signing out still sends you to the welcome screen as before.
 
+### Fixed
+
+- **Goals in Settings shows the numbers a style save just wrote.** Saving an eating style cleared the goals it does not use, but the goal card underneath kept printing the old daily carb limit until you left the page and came back. Both cards now redraw from what is stored, in either direction: changing your goals also re-ticks the style card.
+
 ## [0.23.3] - 2026-09-09
 
 ### Changed

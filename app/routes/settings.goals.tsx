@@ -47,6 +47,7 @@ import type { ReproductiveStatus } from '#app/lib/local-store/schema';
 import { CARB_PRESETS as ONBOARDING_CARB_PRESETS, type CarbPreset } from '#app/lib/onboarding';
 import { effectiveEatingStyle, styleCaution, type EatingStyleId } from '#app/lib/eating-style';
 import { makeEatingStyleSchema, planEatingStyleSave, CARB_SUB_PRESETS, styleNeedsWeight } from '#app/lib/eating-style-form';
+import { eatingStyleCardKey, goalsCardKey } from '#app/lib/goals-form-key';
 import { EatingStyleCautionNote, EatingStylePicker } from '#app/components/eating-style-picker';
 import { makeBodyMetricsSchema } from '#app/lib/body-metrics-schema';
 import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
@@ -1158,17 +1159,26 @@ export default function SettingsGoals({ loaderData }: Route.ComponentProps) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* First on the page: the style decides which of the numbers below are
-          kept at all, so it is asked before them. KEYED off the stored style so
-          a save that changes it resets the card's own selection state to what
-          was actually written. */}
+          kept at all, so it is asked before them. KEYED off the stored style
+          AND the stored goals: a save that changes the style resets the card's
+          own selection to what was written, and a save on the goals card below
+          re-derives the preselected style, the carb chip and the calorie
+          field from the new numbers. */}
       <EatingStyleCard
-        key={style}
+        key={eatingStyleCardKey({ style, goals })}
         style={style}
         goals={goals}
         latestWeightKg={latestWeightKg}
         reproductiveStatus={reproductiveStatus}
       />
+      {/* KEYED for the same reason as the body metrics card at the bottom: the
+          fields are uncontrolled, Conform seeds them from `defaultValue` once,
+          and a save on the style card above rewrites these very numbers. Before
+          this key, saving "low calorie" left a removed 50 g carb limit on
+          screen until the person navigated away and back. The key moves only
+          when the STORE moves, so nobody is remounted mid-typing. */}
       <GoalsCard
+        key={goalsCardKey(goals)}
         goals={goals}
         proteinSuggestion={proteinSuggestion}
         weightUnit={weightUnit}
