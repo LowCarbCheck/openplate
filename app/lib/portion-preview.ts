@@ -65,6 +65,25 @@ export function scalePortionGrams(baseGrams: number, multiplier: number): number
 }
 
 /**
+ * The grams a single tap of the scan review's stepper moves. 10 g, coarser
+ * than the diary editor's 5 g, because the review screen is reached straight
+ * after a scan where the estimate is a whole plate rather than a corrected
+ * portion.
+ */
+export const SCAN_GRAMS_STEP = 10;
+
+/**
+ * Applies one stepper tap to the current grams. Never returns less than 1 g,
+ * so holding the minus button cannot walk a portion to zero or below, and a
+ * grams field that is empty or otherwise unreadable is treated as 0 rather
+ * than poisoning the result with NaN.
+ */
+export function stepPortionGrams(current: number, delta: number): number {
+  const base = Number.isFinite(current) ? current : 0;
+  return Math.max(1, roundToTenth(base + delta));
+}
+
+/**
  * Derives which chip (if any) the current grams corresponds to, so chip
  * selection is a function of the grams field — never a duplicated piece of
  * state. A manual grams edit that matches no chip returns `null` (all chips

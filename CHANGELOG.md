@@ -13,6 +13,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Fixed
 
+- **The scan review screen now shows a grams box you can type into.** After a label scan the portion chips only reached twice the estimate, and the free grams field was hidden inside the fine-tune panel, so there was no visible way to log 300 g. The grams box now sits under the chips with a minus and a plus button that move it 10 g at a time, and typing your own amount clears the chips.
 - **The arm64 image builds again.** The Docker build installed the newest pnpm, which then downloaded the version the repo pins as a separate binary, and that binary has no arm64 alpine build. The build now installs the pinned version directly.
 
 ## [0.23.0] - 2026-09-09

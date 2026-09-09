@@ -46,9 +46,11 @@ import { cloneMicronutrients, encodeMicronutrients, micronutrientsField } from '
 import { toStoredAttribution } from '#app/lib/attribution';
 import {
   PORTION_SCALE_OPTIONS,
+  SCAN_GRAMS_STEP,
   computeMacroPreview,
   derivePortionMultiplier,
   scalePortionGrams,
+  stepPortionGrams,
   summarizeIncludedPortions,
   type MacroPreview,
 } from '#app/lib/portion-preview';
@@ -103,7 +105,7 @@ import { Label } from '#app/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '#app/components/ui/alert';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
-import { AlertTriangle, Camera, Check, ChevronDown, Loader2, Type as TypeIcon, X } from 'lucide-react';
+import { AlertTriangle, Camera, Check, ChevronDown, Loader2, Minus, Plus, Type as TypeIcon, X } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import {
   trackFoodLogged,
@@ -3112,6 +3114,55 @@ export function ConfirmDraftForm({
                       })}
                   </div>
                 )}
+
+                {/* The free grams field, in the open. The chips stop at 2x of
+                    the estimate, so somebody who ate 300 g of a food read off
+                    a 100 g panel has to be able to say so without opening
+                    anything. This is the ONLY grams input on the card: a
+                    second one under the same name would post the field
+                    twice. */}
+                <div className="grid gap-1">
+                  <Label htmlFor={itemFieldset.estimatedGrams.id}>{t('scan.review.gramsLabel')}</Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-11 w-11 shrink-0"
+                      aria-label={t('entry.edit.decreaseGrams')}
+                      onClick={() =>
+                        form.update({
+                          name: itemFieldset.estimatedGrams.name,
+                          value: String(stepPortionGrams(view.currentGrams, -SCAN_GRAMS_STEP)),
+                        })
+                      }
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      {...getInputProps(itemFieldset.estimatedGrams, { type: 'number', step: '0.1' })}
+                      inputMode="decimal"
+                      className="h-11 w-28 text-center tabular-nums"
+                    />
+                    <span className="text-sm text-muted-foreground">g</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-11 w-11 shrink-0"
+                      aria-label={t('entry.edit.increaseGrams')}
+                      onClick={() =>
+                        form.update({
+                          name: itemFieldset.estimatedGrams.name,
+                          value: String(stepPortionGrams(view.currentGrams, SCAN_GRAMS_STEP)),
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FieldError id={itemFieldset.estimatedGrams.errorId} errors={itemFieldset.estimatedGrams.errors} />
+                </div>
               </div>
 
               {preview && carbStatus ?
@@ -3199,20 +3250,12 @@ export function ConfirmDraftForm({
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent forceMount className="space-y-3 pt-1 data-[state=closed]:hidden">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="grid gap-1">
-                      <Label htmlFor={itemFieldset.name.id}>{t('scan.review.foodLabel')}</Label>
-                      <Input {...getInputProps(itemFieldset.name, { type: 'text' })} />
-                      <FieldError id={itemFieldset.name.errorId} errors={itemFieldset.name.errors} />
-                    </div>
-                    <div className="grid gap-1">
-                      <Label htmlFor={itemFieldset.estimatedGrams.id}>{t('scan.review.gramsLabel')}</Label>
-                      <Input {...getInputProps(itemFieldset.estimatedGrams, { type: 'number', step: '0.1' })} />
-                      <FieldError
-                        id={itemFieldset.estimatedGrams.errorId}
-                        errors={itemFieldset.estimatedGrams.errors}
-                      />
-                    </div>
+                  {/* Grams is NOT here: it is the visible stepper above, and
+                      one name can only be posted once. */}
+                  <div className="grid gap-1">
+                    <Label htmlFor={itemFieldset.name.id}>{t('scan.review.foodLabel')}</Label>
+                    <Input {...getInputProps(itemFieldset.name, { type: 'text' })} />
+                    <FieldError id={itemFieldset.name.errorId} errors={itemFieldset.name.errors} />
                   </div>
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                     {MACRO_FIELD_LABEL_KEYS.map(([macroKey, labelKey]) => (

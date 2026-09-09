@@ -7,9 +7,11 @@ import assert from 'node:assert/strict';
 
 import {
   PORTION_SCALE_OPTIONS,
+  SCAN_GRAMS_STEP,
   computeMacroPreview,
   derivePortionMultiplier,
   scalePortionGrams,
+  stepPortionGrams,
   summarizeIncludedPortions,
 } from '../../app/lib/portion-preview';
 import type { Macros } from '../../app/lib/macros';
@@ -48,6 +50,28 @@ describe('scalePortionGrams', () => {
 
   it('rounds to one decimal', () => {
     assert.strictEqual(scalePortionGrams(65, 0.5), 32.5);
+  });
+});
+
+describe('stepPortionGrams, the scan review stepper', () => {
+  it('moves one step up', () => {
+    assert.equal(stepPortionGrams(100, SCAN_GRAMS_STEP), 110);
+  });
+
+  it('floors at 1 g instead of walking a portion to zero or below', () => {
+    assert.equal(stepPortionGrams(5, -SCAN_GRAMS_STEP), 1);
+  });
+
+  it('rounds to one decimal, the grams field own step', () => {
+    assert.equal(stepPortionGrams(0.25, SCAN_GRAMS_STEP), 10.3);
+  });
+
+  it('treats an unreadable grams field as 0 rather than returning NaN', () => {
+    assert.equal(stepPortionGrams(Number.NaN, SCAN_GRAMS_STEP), 10);
+  });
+
+  it('steps 10 g, coarser than the diary editor 5 g', () => {
+    assert.equal(SCAN_GRAMS_STEP, 10);
   });
 });
 
