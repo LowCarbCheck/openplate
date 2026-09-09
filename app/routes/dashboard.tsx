@@ -42,7 +42,9 @@ import {
 import type { LocalFast, ReproductiveStatus } from '#app/lib/local-store';
 import { selectCurrentFast } from '#app/models/fasting';
 import { shiftDate, todayInTimezone } from '#app/lib/user-days';
-import { computeDayGaps } from '#app/lib/macro-gaps';
+import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
+import { effectiveEatingStyle, lensForStyle } from '#app/lib/eating-style';
+import type { EatingStyleLens } from '#app/lib/eating-style';
 import {
   computeReferenceKcalAddition,
   computeReferenceProteinFloor,
@@ -70,7 +72,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
 import { DayBudgetRows } from '#app/components/day-budget-rows';
 import { buildDayBudgetRows } from '#app/lib/day-budget-rows';
-import { CarbImpactChip } from '#app/components/day-summary-details';
+import { DayVerdictChip } from '#app/components/day-summary-details';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -141,6 +143,8 @@ export interface DashboardData {
     proteinReferenceG: number;
     /** Which date would make both references follow the person's real stage, or null. */
     proteinReferenceMissingDate: MissingReferenceDate | null;
+    /** The eating style's lens, which decides the day's one verdict. */
+    lens: EatingStyleLens;
   };
   habitStrip: HabitStripDay[];
   loggedDaysCount: number;
@@ -171,6 +175,17 @@ export async function clientLoader(): Promise<DashboardData> {
     netCarbsCeiling: profile?.goalNetCarbsCeilingG ?? null,
     proteinFloor: profile?.goalProteinFloorG ?? null,
     kcalTarget: profile?.goalKcalTarget ?? null,
+    // Which single verdict this account is graded by (M210). Derived here from
+    // the stored style, or from the numbers for a profile written before the
+    // style existed, so the card never has to know either rule.
+    lens: lensForStyle(
+      effectiveEatingStyle({
+        goalNetCarbsCeilingG: profile?.goalNetCarbsCeilingG ?? null,
+        goalKcalTarget: profile?.goalKcalTarget ?? null,
+        goalProteinFloorG: profile?.goalProteinFloorG ?? null,
+        eatingStyle: profile?.eatingStyle ?? null,
+      }),
+    ),
   };
 
   // ONE range query backs the strip; the weight glance windows the same seven
@@ -287,6 +302,15 @@ function TodayHeroCard({
     t,
   });
 
+  // The kcal figure the verdict grades is the one the rows display: the target
+  // the person typed in, plus any reproductive addition the loader applied.
+  const verdict = dayVerdict({
+    lens: goals.lens,
+    gaps,
+    kcal: { consumed: summary.kcal, target: goals.kcalTarget },
+    protein: { consumed: summary.protein, floor: goals.proteinFloor },
+  });
+
   const rows = buildDayBudgetRows({
     totals: {
       netCarbs: summary.netCarbs,
@@ -327,9 +351,10 @@ function TodayHeroCard({
             On an untouched plate the carb-impact chip resolves to "Low carb
             impact", which is true and useless, because it grades a day nobody has
             eaten yet. So the verdict is withheld until something is logged,
-            exactly as `/diary` withholds its summary card until then.
+            exactly as `/diary` withholds its summary card until then. A style
+            with no lens is withheld always: `DayVerdictChip` renders nothing.
           */}
-          {hasLoggedToday && <CarbImpactChip impact={gaps.impact} />}
+          {hasLoggedToday && <DayVerdictChip verdict={verdict} />}
           {!hasLoggedToday && <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>}
         </div>
         <DayBudgetRows rows={rows} />

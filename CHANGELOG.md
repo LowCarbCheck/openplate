@@ -15,10 +15,12 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **A search that finds nothing now offers each part of it as a button.** Typing "Kaffee mit Hafermilch" searched the whole phrase, which no food database holds, and left you with nothing. When a search joins two foods with a word like mit, und, with or and, and finds no good match, the screen now offers "Kaffee" and "Hafermilch" as buttons that search each one on their own. A search that says what you did not eat, such as "Salat ohne Hähnchen", is never split.
 - **The device schema moves to version 20 and makes room for an eating style.** The profile now records one chosen eating style, low carb, low carb and calories, calories, high protein, or just track, beside the goal numbers it already kept. A profile written before this version has no pick, and the app reads one back out of the numbers instead, so nothing is rewritten and nothing is lost. A backup taken from now on needs this version or newer to import.
+- **Settings lets you change your eating style.** Goals now opens with an eating style card that lists the five styles. A carb style asks for a daily limit of 20, 50 or 100 g, a calorie style asks for a target, and saving keeps the numbers that style uses and removes the ones it does not. The goal numbers below stay yours to fine tune afterwards. If you have recorded a pregnancy or a breastfeeding period, a note with a source link appears under the card for the three styles that restrict carbs or calories, and no number changes.
 
 ### Changed
 
 - **The meal composer drops a notice nobody could read.** On an instance an organization runs, "Describe a meal" and "Add food" told a signed out visitor to sign in before the AI could read their words. Signing out closes both screens on that kind of instance, so the sentence was written for a screen that never opened. It is gone, and signing out still sends you to the welcome screen as before.
+- **The day now gets one grade, the one your eating style asks for.** A low carb style still gets the carb verdict, a calorie style gets a calorie one, a high protein style gets its floor, and "just track" gets no grade at all. A day with no carb goal used to be graded against a hidden 50 gram line that was never shown to you. That line is gone.
 
 ## [0.23.3] - 2026-09-09
 

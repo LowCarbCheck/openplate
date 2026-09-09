@@ -30,7 +30,9 @@ import type { DiaryEmptyState } from '#app/lib/diary-empty-state';
 import { diaryHrefForDate } from '#app/lib/diary-href';
 import { useDaySwipe } from '#app/hooks/use-day-swipe';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
-import { computeDayGaps } from '#app/lib/macro-gaps';
+import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
+import { effectiveEatingStyle, lensForStyle } from '#app/lib/eating-style';
+import type { EatingStyleLens } from '#app/lib/eating-style';
 import {
   computeReferenceKcalAddition,
   computeReferenceProteinFloor,
@@ -87,7 +89,7 @@ import { SectionEyebrow } from '#app/components/typography';
 import { DayBudgetRows } from '#app/components/day-budget-rows';
 import { buildDayBudgetRows, formatBudgetHeadline } from '#app/lib/day-budget-rows';
 import type { AnimatedHeadlines } from '#app/lib/day-budget-rows';
-import { CarbImpactChip, SuggestionsDisclosure, WhatYouAte } from '#app/components/day-summary-details';
+import { DayVerdictChip, SuggestionsDisclosure, WhatYouAte } from '#app/components/day-summary-details';
 import { Button } from '#app/components/ui/button';
 import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
@@ -985,6 +987,8 @@ export interface DiaryData {
     proteinReferenceG: number;
     /** Which date would make both references follow the person's real stage, or null. */
     proteinReferenceMissingDate: MissingReferenceDate | null;
+    /** The eating style's lens, which decides the day's one verdict. */
+    lens: EatingStyleLens;
   };
   habitStrip: HabitStripDay[];
   loggedDaysCount: number;
@@ -1053,6 +1057,17 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     netCarbsCeiling: profile?.goalNetCarbsCeilingG ?? null,
     proteinFloor: profile?.goalProteinFloorG ?? null,
     kcalTarget: profile?.goalKcalTarget ?? null,
+    // Which single verdict this account is graded by (M210). Derived here from
+    // the stored style, or from the numbers for a profile written before the
+    // style existed, so the card never has to know either rule.
+    lens: lensForStyle(
+      effectiveEatingStyle({
+        goalNetCarbsCeilingG: profile?.goalNetCarbsCeilingG ?? null,
+        goalKcalTarget: profile?.goalKcalTarget ?? null,
+        goalProteinFloorG: profile?.goalProteinFloorG ?? null,
+        eatingStyle: profile?.eatingStyle ?? null,
+      }),
+    ),
   };
 
   // The habit strip always ends on the real "today" (not the viewed date), so
@@ -1473,6 +1488,8 @@ interface DiaryGoals {
   proteinReferenceG: number;
   /** Which date would make both references follow the person's real stage, or null. */
   proteinReferenceMissingDate: MissingReferenceDate | null;
+  /** The eating style's lens, which decides the day's one verdict. */
+  lens: EatingStyleLens;
 }
 
 /**
@@ -1540,6 +1557,14 @@ function DaySummaryCard({
     t,
   });
   const hasAnyGoal = goals.netCarbsCeiling !== null || goals.proteinFloor !== null || goals.kcalTarget !== null;
+  // The kcal figure the verdict grades is the one the rows display: the target
+  // the person typed in, plus any reproductive addition the loader applied.
+  const verdict = dayVerdict({
+    lens: goals.lens,
+    gaps,
+    kcal: { consumed: summary.kcal, target: goals.kcalTarget },
+    protein: { consumed: summary.protein, floor: goals.proteinFloor },
+  });
 
   const rows = buildDayBudgetRows({
     totals: {
@@ -1621,7 +1646,10 @@ function DaySummaryCard({
       <CardContent className="space-y-5 p-5 sm:p-6">
         {/* No eyebrow here: the date navigation directly above already names
             the day this card describes. */}
-        <CarbImpactChip impact={gaps.impact} />
+        {/* The card itself only renders once the day has an entry, so the
+            verdict is already withheld until something is logged. A style with
+            no lens is withheld always: `DayVerdictChip` renders nothing. */}
+        <DayVerdictChip verdict={verdict} />
         <div className="space-y-3">
           <DayBudgetRows rows={rows} animatedHeadlines={animatedHeadlines} />
           {!hasAnyGoal && (

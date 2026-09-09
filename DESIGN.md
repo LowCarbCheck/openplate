@@ -95,19 +95,27 @@ sanctioned brand-carrying treatments on ordinary surfaces, all token-only:
 
 ---
 
-## 2b. Day carb-impact chip (M129/06)
+## 2b. Day verdict chip (M129/06, regraded by the lens in M210)
 
-The diary hero's novice-first verdict — "Low / Moderate / High carb impact" against the user's
-net-carb ceiling, or against the documented 50 g reference when they've set none. Tiers and the
-non-shaming rationale live in `app/lib/macro-gaps.ts`; the chip is `CarbImpactChip` in
-`app/components/day-drill-down.tsx`.
+The diary hero's novice-first verdict, one grade per day, chosen by the account's eating style.
+The style (`app/lib/eating-style.ts`) carries a `lens`, and the lens decides which single chip the
+day gets: `carb` renders the carb impact against the person's own net-carb ceiling, `kcal` renders
+a three tier calorie verdict (within, near from 0.9 of the target, over above it), `protein`
+renders two states against the floor (to go, met), and `none` renders no chip at all. The
+arithmetic is `dayVerdict` in `app/lib/macro-gaps.ts`; the chips are `DayVerdictChip`,
+`CarbImpactChip`, `KcalBudgetChip` and `ProteinChip` in `app/components/day-summary-details.tsx`.
 
-- Palette **tops out at amber and never reaches `--destructive`** — a high-carb day describes the
-  food, not the person, matching the over-goal ring arc and habit-strip dots.
-- Moderate and high therefore share a hue, so **color is not the discriminator**: a three-bar level
+- **A day with no goal is not graded.** The carb chip used to fall back to a documented 50 g
+  reference for someone who had set no ceiling, which put a number in front of a person who had
+  never seen it. M210 deleted that reference: a lens is either backed by a number the person set,
+  or there is no verdict.
+- Palette **tops out at amber and never reaches `--destructive`**, a day past its line describes the
+  food, not the person, matching the over-goal ring arc and habit-strip dots. Protein never wears
+  amber at all, since a floor cannot be exceeded.
+- Tiers within a lens can share a hue, so **color is not the discriminator**: a three-bar level
   meter (1/2/3 lit) sits beside a label that states the tier in words.
-- Distinct from §3's traffic light, which grades a FOOD's per-100 g net carbs. This grades a DAY
-  against a target. Don't merge them.
+- Distinct from section 3's traffic light, which grades a FOOD's per-100 g net carbs. This grades a
+  DAY against a target. Don't merge them.
 
 ---
 

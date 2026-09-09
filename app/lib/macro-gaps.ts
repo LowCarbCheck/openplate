@@ -12,9 +12,11 @@
  *
  * 1. **Never fabricate a target.** A user with no protein goal has no protein
  *    gap — the drill-down shows their absolute intake and stops. The only
- *    targets that appear without the user setting them are the two DOCUMENTED
- *    references below, and every gap carries a `targetSource` so the UI can
- *    say plainly which one it's using.
+ *    targets that appear without the user setting them are the DOCUMENTED
+ *    fiber reference below and the protein reference the caller passes in, and
+ *    every gap carries a `targetSource` so the UI can say plainly which one
+ *    it's using. There is no carb reference: a day is graded on net carbs only
+ *    against a ceiling the person actually set (M210).
  * 2. **Never NaN, never Infinity.** A zero or negative target can't be divided
  *    against; those paths return a null fraction rather than a broken number.
  * 3. **Ceilings and floors are different shapes.** Net carbs is a CEILING
@@ -32,24 +34,13 @@
  * module's whole value is that its arithmetic and its wording can both be
  * driven from a test with nothing else in scope.
  */
+import type { EatingStyleLens } from '#app/lib/eating-style';
 
 /**
  * The i18next `t` shape this module needs. Declared locally (see the module
  * doc) — structurally identical to the one the other diary modules declare.
  */
 export type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
-
-/**
- * Reference net-carb ceiling used for the carb-impact tier when the user has
- * set no goal of their own. 50 g is not invented for this module: it is the
- * "Low-carb" preset openplate's own onboarding offers
- * (`#app/lib/onboarding`'s `CARB_PRESETS`), and the most widely used
- * definition of a low-carb day. It NEVER becomes a displayed target — see
- * `computeDayGaps`, where the carb gap row stays target-less without a real
- * goal — it only gives a goal-less novice a big-picture verdict instead of a
- * bare number.
- */
-export const DEFAULT_NET_CARB_REFERENCE_G = 50;
 
 /**
  * Reference daily fiber intake. openplate has no fiber goal field, so this
@@ -72,12 +63,10 @@ export interface CarbImpact {
   level: CarbImpactLevel;
   /** Short label for the chip — "Low carb impact" etc. Never a percentage, never a grade. */
   label: string;
-  /** The reference the verdict was measured against. */
+  /** The ceiling the verdict was measured against. Always the person's own goal. */
   referenceG: number;
-  /** Whether that reference is the user's own goal or `DEFAULT_NET_CARB_REFERENCE_G`. */
-  referenceSource: 'goal' | 'default';
-  /** Share of the reference consumed, clamped to 0..1. Null when the reference is non-positive. */
-  fraction: number | null;
+  /** Share of the ceiling consumed, clamped to 0..1. Never null: a verdict without a usable ceiling is no verdict at all. */
+  fraction: number;
   /** True once the day's net carbs pass the reference. `level` is always `'high'` when this is set. */
   isOver: boolean;
 }
@@ -90,8 +79,14 @@ const CARB_IMPACT_LABEL_KEY = {
 } satisfies Record<CarbImpactLevel, string>;
 
 /**
- * The day's qualitative carb verdict, measured against the user's ceiling when
- * they have one and `DEFAULT_NET_CARB_REFERENCE_G` when they don't.
+ * The day's qualitative carb verdict, measured against the user's own ceiling.
+ *
+ * Null without a usable ceiling, and that is the whole M210 change: this
+ * module used to measure a goal-less day against a hidden 50 g reference, so a
+ * person who had set no carb goal still read a carb grade against a number
+ * they had never seen. A day is graded on net carbs only for someone whose
+ * eating style says carbs are the point, and such a style always carries a
+ * ceiling by construction (`#app/lib/eating-style`).
  *
  * The tiers are deliberately generous at the bottom and unhedged at the top:
  * half a day's carbs or less is "low", up to 85% is "moderate", and the last
@@ -104,7 +99,7 @@ const CARB_IMPACT_LABEL_KEY = {
  * @param netCarbs - the day's net carbs in grams.
  * @param ceiling - the user's net-carb ceiling, or null when unset.
  * @param t - the caller's translator (see the module doc).
- * @returns the tier, its label, and the reference it was measured against.
+ * @returns the tier, its label, and the ceiling it was measured against, or null with no usable ceiling.
  */
 export function computeCarbImpact({
   netCarbs,
@@ -114,21 +109,18 @@ export function computeCarbImpact({
   netCarbs: number;
   ceiling: number | null;
   t: Translate;
-}): CarbImpact {
-  const hasGoal = ceiling !== null && ceiling > 0;
-  const referenceG = hasGoal ? ceiling : DEFAULT_NET_CARB_REFERENCE_G;
-  const referenceSource = hasGoal ? 'goal' : 'default';
-  const fraction = referenceG > 0 ? Math.min(1, Math.max(0, netCarbs / referenceG)) : null;
-  const isOver = referenceG > 0 && netCarbs > referenceG;
+}): CarbImpact | null {
+  if (ceiling === null || ceiling <= 0) return null;
+  const fraction = Math.min(1, Math.max(0, netCarbs / ceiling));
+  const isOver = netCarbs > ceiling;
 
   const level: CarbImpactLevel =
-    fraction === null ? 'high'
-    : isOver ? 'high'
+    isOver ? 'high'
     : fraction <= LOW_IMPACT_MAX_FRACTION ? 'low'
     : fraction <= MODERATE_IMPACT_MAX_FRACTION ? 'moderate'
     : 'high';
 
-  return { level, label: t(CARB_IMPACT_LABEL_KEY[level]), referenceG, referenceSource, fraction, isOver };
+  return { level, label: t(CARB_IMPACT_LABEL_KEY[level]), referenceG: ceiling, fraction, isOver };
 }
 
 /** Which of the three tracked targets a gap row describes. */
@@ -294,8 +286,8 @@ export interface DominantGap {
 }
 
 export interface DayGaps {
-  /** The hero's qualitative verdict. */
-  impact: CarbImpact;
+  /** The hero's qualitative carb verdict, or null when the person set no ceiling. */
+  impact: CarbImpact | null;
   /** The three rows the drill-down renders, in display order. */
   gaps: [MacroGap, MacroGap, MacroGap];
   netCarbs: MacroGap;
@@ -401,9 +393,8 @@ function selectDominantGap(protein: MacroGap, fiber: MacroGap): DominantGap | nu
  * - **Net carbs** takes a target ONLY from the user's ceiling. A goal-less
  *   user sees their absolute net carbs with no target line, because inventing
  *   a "50 g limit" for someone who declined to set one would be putting words
- *   in their mouth. (The impact chip still uses the 50 g reference — a
- *   qualitative verdict is a much smaller claim than a displayed target, and
- *   the chip's `referenceSource` says which it used.)
+ *   in their mouth. The impact chip is silent for the same person: since M210
+ *   there is no carb reference to fall back on.
  * - **Protein** prefers the user's floor and falls back to
  *   `goals.proteinReferenceG`, tagged `'default'`, the population reference
  *   `computeReferenceProteinFloor` scales from the person's own weigh-in or
@@ -498,4 +489,151 @@ export function describeGap(gap: MacroGap, formatGrams: (value: number) => strin
   }
   if (gap.isMet) return t('diary.gap.reached');
   return t('diary.gap.toGo', { value: formatGrams(roundGrams(gap.remainingG ?? 0)) });
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// The day's one verdict, chosen by the eating style's lens (M210)
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Share of the calorie target at which a day stops reading as comfortably
+ * within it. Below 0.9 the person has room they can still plan around; from
+ * 0.9 up the next meal is the one that decides the day.
+ */
+const KCAL_NEAR_MIN_FRACTION = 0.9;
+/**
+ * Share of the calorie target above which the day is over. Strictly above, so
+ * a day that lands exactly on the target is "near", never "over": hitting the
+ * number is the goal, and grading it as a miss would be absurd.
+ */
+const KCAL_OVER_MIN_FRACTION = 1;
+
+/** The three calorie tiers, in the order they occur. */
+export type KcalTier = 'within' | 'near' | 'over';
+
+/** The two protein states. Reaching the floor is the win, so there is no "over". */
+export type ProteinState = 'toGo' | 'met';
+
+/** The carb lens's verdict: today's chip, unchanged. */
+export interface CarbDayVerdict {
+  lens: 'carb';
+  impact: CarbImpact;
+}
+
+/** The kcal lens's verdict, against the target as DISPLAYED (any reproductive addition already applied by the caller). */
+export interface KcalDayVerdict {
+  lens: 'kcal';
+  tier: KcalTier;
+  consumed: number;
+  target: number;
+  /** Share of the target eaten, clamped 0..1, so a meter fed from this never overflows. */
+  fraction: number;
+  /** Calories left before the target, 0 once it is reached. */
+  remainingKcal: number;
+  /** Calories past the target, 0 while under it. */
+  overByKcal: number;
+}
+
+/** The protein lens's verdict, against the person's floor. */
+export interface ProteinDayVerdict {
+  lens: 'protein';
+  state: ProteinState;
+  consumed: number;
+  floor: number;
+  /** Share of the floor eaten, clamped 0..1. */
+  fraction: number;
+  /** Grams still needed, 0 once met. */
+  remainingG: number;
+}
+
+/** No verdict. A real answer for `just-track`, and the fallback whenever a lens has no number to grade against. */
+export interface NoDayVerdict {
+  lens: 'none';
+}
+
+/**
+ * The day's single verdict. Discriminated by `lens`, so a caller cannot read a
+ * calorie tier off a carb day, and the `none` arm has no figures at all.
+ */
+export type DayVerdict = CarbDayVerdict | KcalDayVerdict | ProteinDayVerdict | NoDayVerdict;
+
+/** What `dayVerdict` needs. An options object because three of its four figures are plain numbers. */
+export interface DayVerdictInput {
+  /** The lens of the account's eating style (`lensForStyle` in `#app/lib/eating-style`). */
+  lens: EatingStyleLens;
+  /** The day's gaps, whose `impact` the carb lens renders. */
+  gaps: DayGaps;
+  kcal: {
+    consumed: number;
+    /** The target as displayed, or null when the person set none. */
+    target: number | null;
+  };
+  protein: {
+    consumed: number;
+    /** The person's floor, or null. A reference is not a floor: see the doc below. */
+    floor: number | null;
+  };
+}
+
+/**
+ * The one verdict a day is graded by, chosen by the account's lens.
+ *
+ * Exactly one grade per day, deliberately. Before M210 every day got a carb
+ * verdict whether or not carbs were the point, which is how a person tracking
+ * calories ended up reading a carb grade against a 50 g line nobody had shown
+ * them. The style names what the person is doing, the lens falls out of the
+ * style, and this function turns the lens into the single thing the card says.
+ *
+ * Every lens degrades to `none` rather than to a guess. A `kcal` lens with no
+ * target and a `protein` lens with no floor cannot be graded, so they are not:
+ * the budget rows below the chip still show the day, and no number is invented
+ * to put a grade on it. The protein floor here is the person's OWN floor, not
+ * the population reference the protein ROW may fall back to, for the same
+ * reason: a verdict is a claim about their goal.
+ *
+ * @param input - the lens, the day's gaps, and the two figures the other two lenses grade.
+ * @returns the verdict to render, or the `none` arm when there is nothing to grade.
+ */
+export function dayVerdict({ lens, gaps, kcal, protein }: DayVerdictInput): DayVerdict {
+  if (lens === 'carb') {
+    return gaps.impact === null ? { lens: 'none' } : { lens: 'carb', impact: gaps.impact };
+  }
+
+  if (lens === 'kcal') {
+    const target = kcal.target;
+    if (target === null || target <= 0) return { lens: 'none' };
+    const ratio = kcal.consumed / target;
+    const tier: KcalTier =
+      ratio > KCAL_OVER_MIN_FRACTION ? 'over'
+      : ratio >= KCAL_NEAR_MIN_FRACTION ? 'near'
+      : 'within';
+    return {
+      lens: 'kcal',
+      tier,
+      consumed: kcal.consumed,
+      target,
+      fraction: Math.min(1, Math.max(0, ratio)),
+      remainingKcal: Math.max(0, target - kcal.consumed),
+      overByKcal: Math.max(0, kcal.consumed - target),
+    };
+  }
+
+  if (lens === 'protein') {
+    const floor = protein.floor;
+    if (floor === null || floor <= 0) return { lens: 'none' };
+    // Rounded on both sides before the comparison, so "110 of 110 g" and
+    // "0.4 g to go" can never appear together (see `roundGrams`).
+    const isMet = roundGrams(protein.consumed) >= roundGrams(floor);
+    return {
+      lens: 'protein',
+      state: isMet ? 'met' : 'toGo',
+      consumed: protein.consumed,
+      floor,
+      fraction: Math.min(1, Math.max(0, protein.consumed / floor)),
+      remainingG: isMet ? 0 : floor - protein.consumed,
+    };
+  }
+
+  return { lens: 'none' };
 }

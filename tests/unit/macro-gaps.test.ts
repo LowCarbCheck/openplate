@@ -8,16 +8,24 @@
  * ceilings and floors compute "remaining" in opposite directions, and that the
  * dominant gap is chosen by RELATIVE shortfall (the whole reason a 24 g fiber
  * gap can beat a 60 g protein one).
+ *
+ * M210 removed the fourth thing this file used to pin: a goal-less day was
+ * graded against a hidden 50 g reference. It is not graded at all now, and the
+ * tests that used to assert the fallback assert its absence instead.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import {
   computeCarbImpact,
   computeDayGaps,
+  dayVerdict,
   describeGap,
   DEFAULT_FIBER_REFERENCE_G,
-  DEFAULT_NET_CARB_REFERENCE_G,
+  type CarbImpact,
+  type DayGaps,
   type Translate,
 } from '../../app/lib/macro-gaps';
 import { formatMacroNumber } from '../../app/lib/format-macro-number';
@@ -29,56 +37,56 @@ import i18next from '../../app/i18n/i18n';
  */
 const t: Translate = (key, params) => i18next.t(key, params ?? {});
 
+/** Narrows the impact for the tests that are about a graded day, so a null is a failure rather than an optional chain. */
+function gradedImpact(netCarbs: number, ceiling: number): CarbImpact {
+  const impact = computeCarbImpact({ netCarbs, ceiling, t });
+  assert.ok(impact !== null, 'expected a ceiling to produce a verdict');
+  return impact;
+}
+
 describe('computeCarbImpact', () => {
   it('reads low at or under half the ceiling', () => {
-    assert.equal(computeCarbImpact({ netCarbs: 10, ceiling: 50, t }).level, 'low');
-    assert.equal(computeCarbImpact({ netCarbs: 25, ceiling: 50, t }).level, 'low');
+    assert.equal(gradedImpact(10, 50).level, 'low');
+    assert.equal(gradedImpact(25, 50).level, 'low');
   });
 
   it('reads moderate between half and 85% of the ceiling', () => {
-    assert.equal(computeCarbImpact({ netCarbs: 26, ceiling: 50, t }).level, 'moderate');
-    assert.equal(computeCarbImpact({ netCarbs: 42.5, ceiling: 50, t }).level, 'moderate');
+    assert.equal(gradedImpact(26, 50).level, 'moderate');
+    assert.equal(gradedImpact(42.5, 50).level, 'moderate');
   });
 
   it('reads high in the last stretch below the ceiling, and once over it', () => {
-    assert.equal(computeCarbImpact({ netCarbs: 46, ceiling: 50, t }).level, 'high');
-    const over = computeCarbImpact({ netCarbs: 71, ceiling: 50, t });
+    assert.equal(gradedImpact(46, 50).level, 'high');
+    const over = gradedImpact(71, 50);
     assert.equal(over.level, 'high');
     assert.equal(over.isOver, true);
   });
 
   it('never labels the person — only the day', () => {
     for (const netCarbs of [0, 25, 49, 120]) {
-      const label = computeCarbImpact({ netCarbs, ceiling: 50, t }).label;
+      const label = gradedImpact(netCarbs, 50).label;
       assert.match(label, /carb impact$/);
       assert.doesNotMatch(label, /bad|fail|poor|good/i);
     }
   });
 
-  it('falls back to the documented 50 g reference when no ceiling is set, and says so', () => {
-    const impact = computeCarbImpact({ netCarbs: 20, ceiling: null, t });
-    assert.equal(impact.referenceG, DEFAULT_NET_CARB_REFERENCE_G);
-    assert.equal(impact.referenceSource, 'default');
-    assert.equal(impact.level, 'low');
+  it('grades nothing when no ceiling is set, there is no 50 g fallback any more', () => {
+    assert.equal(computeCarbImpact({ netCarbs: 20, ceiling: null, t }), null);
   });
 
   it('uses the goal as the reference when there is one', () => {
-    const impact = computeCarbImpact({ netCarbs: 20, ceiling: 120, t });
-    assert.equal(impact.referenceG, 120);
-    assert.equal(impact.referenceSource, 'goal');
+    assert.equal(gradedImpact(20, 120).referenceG, 120);
   });
 
   it('never produces NaN or Infinity for a zero or negative ceiling', () => {
-    const impact = computeCarbImpact({ netCarbs: 20, ceiling: 0, t });
-    // A non-positive ceiling is treated as "no usable goal", so the documented
-    // reference takes over rather than dividing by zero.
-    assert.equal(impact.referenceG, DEFAULT_NET_CARB_REFERENCE_G);
-    assert.ok(impact.fraction !== null && Number.isFinite(impact.fraction));
+    // A non-positive ceiling is not a usable goal, so there is nothing to
+    // divide against and nothing to say, rather than a division by zero.
+    assert.equal(computeCarbImpact({ netCarbs: 20, ceiling: 0, t }), null);
+    assert.equal(computeCarbImpact({ netCarbs: 20, ceiling: -50, t }), null);
   });
 
-  it('clamps the fraction to 0..1 on a day well past the reference', () => {
-    const impact = computeCarbImpact({ netCarbs: 500, ceiling: 50, t });
-    assert.equal(impact.fraction, 1);
+  it('clamps the fraction to 0..1 on a day well past the ceiling', () => {
+    assert.equal(gradedImpact(500, 50).fraction, 1);
   });
 });
 
@@ -445,5 +453,184 @@ describe('describeGap', () => {
     const phrase = describeGap(protein, formatMacroNumber, t);
     assert.equal(phrase, '46 g logged');
     assert.doesNotMatch(phrase, /NaN|Infinity|undefined|null/);
+  });
+});
+
+
+/**
+ * The day's one verdict, per lens (M210).
+ *
+ * The boundaries are the whole test: a tier that moves by one calorie is the
+ * kind of change nobody sees in a screenshot and everybody feels on the card.
+ * Each assertion below has its neighbour beside it, so a threshold moved in
+ * either direction fails here.
+ */
+describe('dayVerdict', () => {
+  const KCAL_TARGET = 2000;
+
+  /** Gaps for a day, from the real formatter, so a verdict is never graded against a hand-typed impact. */
+  function gapsFor({ netCarbs, ceiling }: { netCarbs: number; ceiling: number | null }): DayGaps {
+    return computeDayGaps({
+      totals: { netCarbs, protein: 60, fiber: 12 },
+      goals: { netCarbsCeiling: ceiling, proteinFloor: 100 },
+      t,
+    });
+  }
+
+  const NO_KCAL = { consumed: 1500, target: null };
+  const NO_PROTEIN = { consumed: 60, floor: null };
+
+  it('renders the carb impact for a carb lens', () => {
+    const gaps = gapsFor({ netCarbs: 45, ceiling: 50 });
+    const verdict = dayVerdict({ lens: 'carb', gaps, kcal: NO_KCAL, protein: NO_PROTEIN });
+    assert.equal(verdict.lens, 'carb');
+    assert.equal(verdict.lens === 'carb' && verdict.impact.level, 'high');
+  });
+
+  it('grades nothing for a carb lens with no ceiling, rather than inventing one', () => {
+    const gaps = gapsFor({ netCarbs: 45, ceiling: null });
+    assert.equal(dayVerdict({ lens: 'carb', gaps, kcal: NO_KCAL, protein: NO_PROTEIN }).lens, 'none');
+  });
+
+  /** The kcal tier for a day, with everything else held constant. */
+  function kcalTierFor(consumed: number): string {
+    const verdict = dayVerdict({
+      lens: 'kcal',
+      gaps: gapsFor({ netCarbs: 20, ceiling: null }),
+      kcal: { consumed, target: KCAL_TARGET },
+      protein: NO_PROTEIN,
+    });
+    return verdict.lens === 'kcal' ? verdict.tier : verdict.lens;
+  }
+
+  it('reads within the budget below 0.9 of the target, and near it from 0.9', () => {
+    assert.equal(kcalTierFor(0.89 * KCAL_TARGET), 'within');
+    assert.equal(kcalTierFor(0.9 * KCAL_TARGET), 'near');
+  });
+
+  it('still reads near at exactly the target, and over only above it', () => {
+    assert.equal(kcalTierFor(KCAL_TARGET), 'near');
+    assert.equal(kcalTierFor(1.01 * KCAL_TARGET), 'over');
+  });
+
+  it('reports the remaining and over-by calories, never a negative one', () => {
+    const under = dayVerdict({
+      lens: 'kcal',
+      gaps: gapsFor({ netCarbs: 20, ceiling: null }),
+      kcal: { consumed: 1500, target: KCAL_TARGET },
+      protein: NO_PROTEIN,
+    });
+    assert.deepEqual(
+      under.lens === 'kcal' ? [under.remainingKcal, under.overByKcal, under.fraction] : null,
+      [500, 0, 0.75],
+    );
+    const over = dayVerdict({
+      lens: 'kcal',
+      gaps: gapsFor({ netCarbs: 20, ceiling: null }),
+      kcal: { consumed: 2400, target: KCAL_TARGET },
+      protein: NO_PROTEIN,
+    });
+    assert.deepEqual(
+      over.lens === 'kcal' ? [over.remainingKcal, over.overByKcal, over.fraction] : null,
+      [0, 400, 1],
+    );
+  });
+
+  it('grades nothing for a kcal lens with no target', () => {
+    const gaps = gapsFor({ netCarbs: 20, ceiling: null });
+    assert.equal(dayVerdict({ lens: 'kcal', gaps, kcal: NO_KCAL, protein: NO_PROTEIN }).lens, 'none');
+    assert.equal(
+      dayVerdict({ lens: 'kcal', gaps, kcal: { consumed: 1500, target: 0 }, protein: NO_PROTEIN }).lens,
+      'none',
+    );
+  });
+
+  /** The protein state for a day, with everything else held constant. */
+  function proteinStateFor(consumed: number): string {
+    const verdict = dayVerdict({
+      lens: 'protein',
+      gaps: gapsFor({ netCarbs: 20, ceiling: null }),
+      kcal: NO_KCAL,
+      protein: { consumed, floor: 120 },
+    });
+    return verdict.lens === 'protein' ? verdict.state : verdict.lens;
+  }
+
+  it('reads to-go just under the floor and met at it', () => {
+    assert.equal(proteinStateFor(119.4), 'toGo');
+    assert.equal(proteinStateFor(120), 'met');
+  });
+
+  it('rounds both sides before the comparison, so a sub-gram shortfall does not read as unmet', () => {
+    // 119.6 g renders as "120 g"; a verdict decided on the raw value would say
+    // "1 g to go" beside it.
+    assert.equal(proteinStateFor(119.6), 'met');
+  });
+
+  it('reports the grams still to go, and zero once met', () => {
+    const toGo = dayVerdict({
+      lens: 'protein',
+      gaps: gapsFor({ netCarbs: 20, ceiling: null }),
+      kcal: NO_KCAL,
+      protein: { consumed: 80, floor: 120 },
+    });
+    assert.equal(toGo.lens === 'protein' && toGo.remainingG, 40);
+    const met = dayVerdict({
+      lens: 'protein',
+      gaps: gapsFor({ netCarbs: 20, ceiling: null }),
+      kcal: NO_KCAL,
+      protein: { consumed: 140, floor: 120 },
+    });
+    assert.equal(met.lens === 'protein' && met.remainingG, 0);
+  });
+
+  it('grades nothing for a protein lens with no floor the person set', () => {
+    const gaps = gapsFor({ netCarbs: 20, ceiling: null });
+    assert.equal(dayVerdict({ lens: 'protein', gaps, kcal: NO_KCAL, protein: NO_PROTEIN }).lens, 'none');
+  });
+
+  it('grades nothing for the none lens, even with every number available', () => {
+    const verdict = dayVerdict({
+      lens: 'none',
+      gaps: gapsFor({ netCarbs: 45, ceiling: 50 }),
+      kcal: { consumed: 2400, target: KCAL_TARGET },
+      protein: { consumed: 40, floor: 120 },
+    });
+    // The control for this one is the line above it: the same figures under a
+    // carb lens DO produce a verdict, so a `none` that graded anything would
+    // fail here rather than pass vacuously.
+    assert.equal(verdict.lens, 'none');
+    assert.equal(
+      dayVerdict({
+        lens: 'carb',
+        gaps: gapsFor({ netCarbs: 45, ceiling: 50 }),
+        kcal: { consumed: 2400, target: KCAL_TARGET },
+        protein: { consumed: 40, floor: 120 },
+      }).lens,
+      'carb',
+    );
+  });
+});
+
+/** Whether a module's source still declares the reference. */
+function declaresCarbReference(source: string): boolean {
+  return source.includes('DEFAULT_NET_CARB_REFERENCE_G');
+}
+
+/**
+ * The 50 g reference is GONE from the source, not merely unused.
+ *
+ * A dead export is exactly the thing a future reader wires back in, and the
+ * milestone's decision was that a goal-less day has no carb line at all. The
+ * check reads the module's own text, because a deleted export cannot be
+ * imported to assert against.
+ */
+describe('the deleted 50 g carb reference', () => {
+  it('no longer appears anywhere in macro-gaps.ts', () => {
+    const source = readFileSync(fileURLToPath(new URL('../../app/lib/macro-gaps.ts', import.meta.url)), 'utf8');
+    assert.equal(declaresCarbReference(source), false);
+    // Control: the same check on a source that DOES declare it must be true,
+    // or the assertion above would pass against any string at all.
+    assert.equal(declaresCarbReference('export const DEFAULT_NET_CARB_REFERENCE_G = 50;'), true);
   });
 });

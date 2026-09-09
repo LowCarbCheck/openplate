@@ -3,7 +3,10 @@
  *
  * Three exports, in the order the card stacks them:
  *
- * 1. `CarbImpactChip`, the qualitative verdict that sits above the rows.
+ * 1. `DayVerdictChip`, the day's one grade, which sits above the rows. It
+ *    switches on the account's lens (M210) over `CarbImpactChip`,
+ *    `KcalBudgetChip` and `ProteinChip`, and renders nothing at all for a
+ *    person whose style asks for no grade.
  * 2. `WhatYouAte`, the composition block: the macro ratio bar, the four macro
  *    figures, the calorie line the caller passes in, and the footnotes.
  * 3. `SuggestionsDisclosure`, the card's one collapsed offer, naming the foods
@@ -27,7 +30,17 @@ import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import { ChevronDown, Plus } from 'lucide-react';
 import type { DaySummary } from '#app/models/food-log-summary';
-import type { CarbImpact, CarbImpactLevel, DayGaps, GapNutrient } from '#app/lib/macro-gaps';
+import type {
+  CarbImpact,
+  CarbImpactLevel,
+  DayGaps,
+  DayVerdict,
+  GapNutrient,
+  KcalDayVerdict,
+  KcalTier,
+  ProteinDayVerdict,
+  ProteinState,
+} from '#app/lib/macro-gaps';
 import { describeSuggestion, rankFoodSuggestions } from '#app/lib/food-suggestions';
 import type { FoodSuggestion } from '#app/lib/food-suggestions';
 import { SUGGESTION_FOODS } from '#app/data/suggestion-foods';
@@ -40,40 +53,38 @@ import { cn } from '#app/lib/utils';
 const SUGGESTION_LIMIT = 4;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Carb-impact chip, the card's one-glance verdict
+// The day verdict chip, the card's one-glance grade
 ////////////////////////////////////////////////////////////////////////////////
 
-/**
- * Chip skin per tier. The palette deliberately tops out at amber and never
- * reaches `--destructive`: a high-carb day is a description of the food, not a
- * failure, and this app's own convention (the over-budget meter fill, the
- * habit strip's over dots) is already "amber, never red".
- *
- * Because moderate and high therefore share a hue AND the same fixed
- * `--accent-amber-surface`/`--accent-amber-border` wash (opacity-stepped
- * fills mix to grey in light mode, see the token comment in `app.css`),
- * color is NOT the discriminator between them. The three-bar level meter
- * beside the label is, and the label itself says the tier in words.
- */
-const IMPACT_CHIP_CLASS = {
-  low: 'border-primary/35 bg-primary/10 text-primary',
-  moderate: 'border-accent-amber-border bg-accent-amber-surface text-accent-amber',
-  high: 'border-accent-amber-border bg-accent-amber-surface text-accent-amber',
-} satisfies Record<CarbImpactLevel, string>;
+/** Which of the three skins a chip wears. */
+type VerdictTone = 'muted' | 'primary' | 'amber';
 
-/** How many of the meter's three bars are lit per tier. */
-const IMPACT_METER_BARS = { low: 1, moderate: 2, high: 3 } satisfies Record<CarbImpactLevel, number>;
+/**
+ * The three chip skins. The palette deliberately tops out at amber and never
+ * reaches `--destructive`: going past a ceiling describes the food, not a
+ * failure, and this app's own convention (the over-budget meter fill, the
+ * habit strip's over dots) is already "amber, never red" (DESIGN.md 2b).
+ *
+ * `amber` is used ONLY for a day that is over, or close enough to over that
+ * the tier says so in words. Because two carb tiers therefore share a hue AND
+ * the same fixed wash, colour is never the discriminator: the three-bar meter
+ * beside the label carries the level, and the label states it in words.
+ */
+const VERDICT_CHIP_CLASS = {
+  muted: 'border-border bg-muted/50 text-muted-foreground',
+  primary: 'border-primary/35 bg-primary/10 text-primary',
+  amber: 'border-accent-amber-border bg-accent-amber-surface text-accent-amber',
+} satisfies Record<VerdictTone, string>;
 
 /** Bar heights, shortest first, a rising staircase, so the meter reads as a level even unlit. */
 const METER_BAR_HEIGHTS = ['h-1.5', 'h-2.5', 'h-3.5'] as const;
 
 /**
- * Three-bar level meter. `currentColor` inherits the chip's tier color, so the
- * meter never needs its own color map, and unlit bars sit at 25% of the same
- * hue rather than on a separate neutral token.
+ * Three-bar level meter. `currentColor` inherits the chip's tone, so the meter
+ * never needs its own colour map, and unlit bars sit at 25% of the same hue
+ * rather than on a separate neutral token.
  */
-function ImpactMeter({ level }: { level: CarbImpactLevel }) {
-  const lit = IMPACT_METER_BARS[level];
+function ImpactMeter({ lit }: { lit: number }) {
   return (
     <span className="flex items-end gap-0.5" aria-hidden="true">
       {METER_BAR_HEIGHTS.map((height, index) => (
@@ -87,33 +98,142 @@ function ImpactMeter({ level }: { level: CarbImpactLevel }) {
 }
 
 /**
- * The hero's qualitative carb verdict. Sits above the budget rows: "Moderate
- * carb impact" is a sentence a novice can act on, where a column of grams is
- * homework.
- *
- * When the verdict is measured against the documented 50 g reference rather
- * than a goal the user set, the chip says so in its accessible name (and the
- * caption underneath says it on screen). The app never quietly implies the
- * user has a target they never chose.
+ * The chip itself: one meter, one label, one accessible sentence. Every lens
+ * renders through this, so a new lens cannot arrive with its own geometry or
+ * its own palette.
  */
-export function CarbImpactChip({ impact }: { impact: CarbImpact }) {
-  const { t } = useTranslation();
-  const reference =
-    impact.referenceSource === 'goal' ?
-      t('diary.impact.againstGoal', { value: Math.round(impact.referenceG) })
-    : t('diary.impact.againstReference', { value: Math.round(impact.referenceG) });
+function VerdictChip({ tone, lit, label, srLabel }: { tone: VerdictTone; lit: number; label: string; srLabel: string }) {
   return (
     <span
       className={cn(
         'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold',
-        IMPACT_CHIP_CLASS[impact.level],
+        VERDICT_CHIP_CLASS[tone],
       )}
-      aria-label={t('diary.impact.ariaLabel', { label: impact.label, reference })}
+      aria-label={srLabel}
     >
-      <ImpactMeter level={impact.level} />
-      {impact.label}
+      <ImpactMeter lit={lit} />
+      {label}
     </span>
   );
+}
+
+/** Skin and lit-bar count per carb tier. Amber from `moderate` up, and the meter carries the level. */
+const CARB_CHIP_LEVEL = {
+  low: { tone: 'primary', lit: 1 },
+  moderate: { tone: 'amber', lit: 2 },
+  high: { tone: 'amber', lit: 3 },
+} satisfies Record<CarbImpactLevel, { tone: VerdictTone; lit: number }>;
+
+/**
+ * The carb lens's verdict. Sits above the budget rows: "Moderate carb impact"
+ * is a sentence a novice can act on, where a column of grams is homework.
+ *
+ * Measured against the person's own ceiling, always: since M210 there is no
+ * reference to fall back on, so this chip renders only for a carb-lens account,
+ * which has a ceiling by construction.
+ */
+export function CarbImpactChip({ impact }: { impact: CarbImpact }) {
+  const { t } = useTranslation();
+  const { tone, lit } = CARB_CHIP_LEVEL[impact.level];
+  return (
+    <VerdictChip
+      tone={tone}
+      lit={lit}
+      label={impact.label}
+      srLabel={t('diary.impact.ariaLabel', {
+        label: impact.label,
+        reference: t('diary.impact.againstGoal', { value: Math.round(impact.referenceG) }),
+      })}
+    />
+  );
+}
+
+/** Skin and lit-bar count per calorie tier. Amber only once the day is near or past the target. */
+const KCAL_CHIP_TIER = {
+  within: { tone: 'primary', lit: 1 },
+  near: { tone: 'amber', lit: 2 },
+  over: { tone: 'amber', lit: 3 },
+} satisfies Record<KcalTier, { tone: VerdictTone; lit: number }>;
+
+/** Catalog key per calorie tier. The wording lives in `diary.impact.kcal.*`; only the mapping lives here. */
+const KCAL_CHIP_LABEL_KEY = {
+  within: 'diary.impact.kcal.within',
+  near: 'diary.impact.kcal.near',
+  over: 'diary.impact.kcal.over',
+} satisfies Record<KcalTier, string>;
+
+/**
+ * The kcal lens's verdict, for someone whose style is about calories. The
+ * label never names a number, the same discipline the carb chip follows: the
+ * figures live one row below, and a chip's job is the one-glance answer.
+ */
+export function KcalBudgetChip({ verdict }: { verdict: KcalDayVerdict }) {
+  const { t } = useTranslation();
+  const { tone, lit } = KCAL_CHIP_TIER[verdict.tier];
+  const label = t(KCAL_CHIP_LABEL_KEY[verdict.tier]);
+  return (
+    <VerdictChip
+      tone={tone}
+      lit={lit}
+      label={label}
+      srLabel={t('diary.impact.kcal.sr', {
+        label,
+        eaten: Math.round(verdict.consumed),
+        target: Math.round(verdict.target),
+      })}
+    />
+  );
+}
+
+/**
+ * Skin and lit-bar count per protein state. Never amber: a floor is reached or
+ * not yet reached, and there is no way to be over one, so the amber the other
+ * two lenses use for "past the line" would mean nothing here.
+ */
+const PROTEIN_CHIP_STATE = {
+  toGo: { tone: 'muted', lit: 1 },
+  met: { tone: 'primary', lit: 3 },
+} satisfies Record<ProteinState, { tone: VerdictTone; lit: number }>;
+
+/**
+ * The protein lens's verdict. Two states, and the unmet one carries the grams
+ * still to go because that IS the action: "38 g protein to go" is a shopping
+ * decision, where "protein goal not met" is a scolding with no next step.
+ */
+export function ProteinChip({ verdict }: { verdict: ProteinDayVerdict }) {
+  const { t } = useTranslation();
+  const { tone, lit } = PROTEIN_CHIP_STATE[verdict.state];
+  const label =
+    verdict.state === 'met' ?
+      t('diary.impact.protein.met')
+    : t('diary.impact.protein.toGo', { value: Math.round(verdict.remainingG) });
+  return (
+    <VerdictChip
+      tone={tone}
+      lit={lit}
+      label={label}
+      srLabel={t('diary.impact.protein.sr', {
+        label,
+        eaten: Math.round(verdict.consumed),
+        floor: Math.round(verdict.floor),
+      })}
+    />
+  );
+}
+
+/**
+ * The day's grade, whichever one the account's lens asks for.
+ *
+ * Renders NOTHING for the `none` lens, which is a real answer rather than a
+ * missing one: someone whose style is "just track" asked for the rows and no
+ * verdict, and the card is complete without one. This switch is the only place
+ * a lens turns into a chip, so a screen cannot show two grades or the wrong one.
+ */
+export function DayVerdictChip({ verdict }: { verdict: DayVerdict }) {
+  if (verdict.lens === 'carb') return <CarbImpactChip impact={verdict.impact} />;
+  if (verdict.lens === 'kcal') return <KcalBudgetChip verdict={verdict} />;
+  if (verdict.lens === 'protein') return <ProteinChip verdict={verdict} />;
+  return null;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
