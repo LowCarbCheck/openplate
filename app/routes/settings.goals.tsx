@@ -36,13 +36,20 @@ import {
 import {
   BIOLOGICAL_SEX_VALUES,
   bodyMetricsFormKey,
+  computeReferenceProteinFloor,
   hasAnyBodyMetric,
+  selectLatestWeighInKg,
   suggestDailyKcal,
   suggestProteinFloor,
 } from '#app/models/body-metrics';
 import type { BodyMetrics, ProteinFloorSuggestion } from '#app/models/body-metrics';
+import type { ReproductiveStatus } from '#app/lib/local-store/schema';
 import { CARB_PRESETS as ONBOARDING_CARB_PRESETS, type CarbPreset } from '#app/lib/onboarding';
+import { effectiveEatingStyle, styleCaution, type EatingStyleId } from '#app/lib/eating-style';
+import { makeEatingStyleSchema, planEatingStyleSave, CARB_SUB_PRESETS, styleNeedsWeight } from '#app/lib/eating-style-form';
+import { EatingStyleCautionNote, EatingStylePicker } from '#app/components/eating-style-picker';
 import { makeBodyMetricsSchema } from '#app/lib/body-metrics-schema';
+import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
 import { ReproductiveStatusFields } from '#app/components/reproductive-status-fields';
 import type { ReproductiveStatusValue } from '#app/components/reproductive-status-fields';
 import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
@@ -84,6 +91,8 @@ const INTENT = {
   SAVE_BODY_METRICS: 'save-body-metrics',
   /** Wipes all four body metrics in one action — the "take it back" affordance (M135). */
   CLEAR_BODY_METRICS: 'clear-body-metrics',
+  /** The eating style card (M210 spec 05), one pick and the numbers it owns. */
+  SAVE_EATING_STYLE: 'save-eating-style',
 } as const;
 
 /**
@@ -213,7 +222,32 @@ export async function clientLoader() {
   // turns a due date into a trimester, and it has to do that against the
   // person's OWN calendar day rather than the browser's, exactly as the
   // dashboard does.
-  return { goals, weighIns, today, todayWeightKg, bodyMetrics, suggestedKcalTarget, proteinSuggestion };
+  // The style in effect: the stored pick, or the one derived from the numbers
+  // for an account written before schema v20. Derived for DISPLAY only,
+  // nothing here writes `eatingStyle` back, so a legacy profile stays legacy
+  // until the person saves the card themselves (M210 spec 05).
+  const style = effectiveEatingStyle({
+    goalNetCarbsCeilingG: goals.netCarbsCeilingG,
+    goalKcalTarget: goals.kcalTarget,
+    goalProteinFloorG: goals.proteinFloorG,
+    eatingStyle: profile?.eatingStyle ?? null,
+  });
+
+  return {
+    goals,
+    weighIns,
+    today,
+    todayWeightKg,
+    bodyMetrics,
+    suggestedKcalTarget,
+    proteinSuggestion,
+    style,
+    // The card asks for a weight rather than silently falling back, and the
+    // caution note reads the stored status. Both ride the loader so the card
+    // stays a pure render of what is on file.
+    latestWeightKg: currentWeightKg,
+    reproductiveStatus: bodyMetrics.reproductiveStatus,
+  };
 }
 clientLoader.hydrate = true as const;
 
@@ -318,6 +352,67 @@ async function _clearBodyMetrics() {
   });
 }
 
+/**
+ * Applies one eating style (M210 spec 05).
+ *
+ * The style decides which of the three goal numbers survive: `applyEatingStyle`
+ * writes what it owns and NULLS what it does not, so switching away from a carb
+ * style really removes the ceiling instead of leaving it live in every export,
+ * sync blob and future derivation.
+ *
+ * The two body figures it needs are read here, not asked for on the card: the
+ * weight is the latest weigh-in already on file, and the reference protein
+ * intake is the same figure the day view falls back to. With no body data at
+ * all the reference is `null`, so a style change never invents a protein goal
+ * for someone who gave the app nothing to compute one from.
+ */
+async function _saveEatingStyle(formData: FormData) {
+  const submission = parseWithZod(formData, { schema: makeEatingStyleSchema(actionT) });
+  if (submission.status !== 'success') return submission.reply();
+
+  const profile = await getLocalProfileGoals();
+  const entries = await listLocalWeightEntries();
+  const latestWeightKg = selectLatestWeighInKg(entries);
+  const metrics = await getLocalBodyMetrics();
+  const today = todayInTimezone(resolveLocalTimezone(profile));
+  const referenceProteinFloorG =
+    hasAnyBodyMetric(metrics) || latestWeightKg !== null ?
+      computeReferenceProteinFloor({
+        latestWeighInKg: latestWeightKg,
+        heightCm: metrics.heightCm,
+        biologicalSex: metrics.biologicalSex,
+        reproductiveStatus: metrics.reproductiveStatus,
+        trimester: resolveGestation({ dueDate: metrics.pregnancyDueDate, today })?.trimester ?? null,
+        lactationMonths: resolveLactationMonths({ startDate: metrics.lactationStartDate, today }),
+      }).grams
+    : null;
+
+  const { patch } = planEatingStyleSave({
+    values: submission.value,
+    currentGoals: {
+      goalNetCarbsCeilingG: profile?.goalNetCarbsCeilingG ?? null,
+      goalKcalTarget: profile?.goalKcalTarget ?? null,
+      goalProteinFloorG: profile?.goalProteinFloorG ?? null,
+      eatingStyle: profile?.eatingStyle ?? null,
+    },
+    latestWeightKg,
+    referenceProteinFloorG,
+  });
+
+  // `trackingFocus` follows the resulting numbers for the same reason
+  // `_saveGoals` writes it: an older build renders that field, and a stale one
+  // would order the food list for a metric this person no longer tracks.
+  const trackingFocus = storedTrackingFocusFor(
+    selectGoalRings({ netCarbsCeiling: patch.goalNetCarbsCeilingG, kcalTarget: patch.goalKcalTarget }),
+  );
+  await patchLocalProfileGoals({ trackingFocus, ...patch });
+  trackGoalsSaved('targets');
+  return redirectWithLocalToast('/settings/goals', {
+    type: 'success',
+    description: actionT('settings.style.saved'),
+  });
+}
+
 export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const intent = formData.get('_intent');
@@ -325,6 +420,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   if (intent === INTENT.DELETE_WEIGHT) return _deleteWeight(formData);
   if (intent === INTENT.SAVE_BODY_METRICS) return _saveBodyMetrics(formData);
   if (intent === INTENT.CLEAR_BODY_METRICS) return _clearBodyMetrics();
+  if (intent === INTENT.SAVE_EATING_STYLE) return _saveEatingStyle(formData);
   return _saveGoals(formData);
 }
 
@@ -375,6 +471,115 @@ function suggestionChipClass(isSelected: boolean): string {
     isSelected ?
       'border-primary bg-primary text-primary-foreground'
     : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground',
+  );
+}
+
+/**
+ * The eating style card (M210 spec 05), above the numbers.
+ *
+ * Five styles as a radio list, the same list and the same `onboarding.style.*`
+ * copy the wizard shows, so the two screens cannot drift about what a style is.
+ * Only the chrome has `settings.style.*` keys of its own.
+ *
+ * The sub questions follow the SELECTION, not the stored profile: pick a carb
+ * style and the 20/50/100 step appears, pick a calorie style and the target
+ * field does. React state drives that reveal while Conform still owns the
+ * values and the errors, the same division `BodyMetricsCard` uses for its
+ * radio-driven fieldset.
+ *
+ * Saving redirects, so the goals card below re-reads the store and shows the
+ * numbers this style just wrote, including the ones it removed.
+ */
+function EatingStyleCard({
+  style,
+  goals,
+  latestWeightKg,
+  reproductiveStatus,
+}: {
+  style: EatingStyleId;
+  goals: Route.ComponentProps['loaderData']['goals'];
+  latestWeightKg: number | null;
+  reproductiveStatus: ReproductiveStatus | null;
+}) {
+  const { t } = useTranslation();
+  const fetcher = useFetcher<typeof clientAction>();
+  const isSaving = fetcher.state !== 'idle';
+  const [selectedStyle, setSelectedStyle] = useState<EatingStyleId>(style);
+  // Seeded from the stored ceiling only when it IS one of the three presets: a
+  // hand-typed 45 g has no chip to light up, and pretending otherwise would
+  // submit a value the person cannot see selected.
+  const [carbPresetCeiling, setCarbPresetCeiling] = useState<string>(() =>
+    CARB_SUB_PRESETS.some((preset) => preset.ceiling === goals.netCarbsCeilingG) ?
+      String(goals.netCarbsCeilingG)
+    : '',
+  );
+  const [kcalTarget, setKcalTarget] = useState<string>(_toInput(goals.kcalTarget));
+
+  const [form, fields] = useForm({
+    id: 'eating-style',
+    // SAFETY: as on the cards below, this route's `clientAction` only ever
+    // resolves to a `parseWithZod(...).reply()` or nothing.
+    lastResult: fetcher.data as SubmissionResult<string[]> | undefined,
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: makeEatingStyleSchema(t) });
+    },
+    // A required answer supplied after the error was reported clears it as it
+    // is given, rather than sitting red until the next submit.
+    shouldRevalidate: 'onInput',
+    defaultValue: {
+      eatingStyle: style,
+      carbPresetCeiling,
+      kcalTarget,
+    },
+  });
+
+  const caution = styleCaution(selectedStyle, reproductiveStatus);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('settings.style.title')}</CardTitle>
+        <CardDescription>{t('settings.style.lead')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
+          <input type="hidden" name="_intent" value={INTENT.SAVE_EATING_STYLE} />
+
+          <EatingStylePicker
+            selectedStyle={selectedStyle}
+            onSelectStyle={setSelectedStyle}
+            styleFieldName={fields.eatingStyle.name}
+            carbField={{
+              name: fields.carbPresetCeiling.name,
+              id: fields.carbPresetCeiling.id,
+              errorId: fields.carbPresetCeiling.errorId,
+              errors: fields.carbPresetCeiling.errors,
+            }}
+            carbPresetCeiling={carbPresetCeiling}
+            onCarbPresetCeilingChange={setCarbPresetCeiling}
+            kcalField={{
+              name: fields.kcalTarget.name,
+              id: fields.kcalTarget.id,
+              errorId: fields.kcalTarget.errorId,
+              errors: fields.kcalTarget.errors,
+            }}
+            kcalTarget={kcalTarget}
+            onKcalTargetChange={setKcalTarget}
+            needsWeight={styleNeedsWeight({ style: selectedStyle, latestWeightKg })}
+          />
+
+          <FieldError id={form.errorId} errors={form.errors} />
+
+          <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+            {t('settings.style.save')}
+          </SubmitButton>
+        </fetcher.Form>
+
+        {/* Under the card, and only for the combinations `styleCaution` names.
+            A note, never a block and never a number (M210 spec 04). */}
+        {caution !== null && <EatingStyleCautionNote />}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -929,8 +1134,18 @@ function AiSettingsLinkCard() {
 }
 
 export default function SettingsGoals({ loaderData }: Route.ComponentProps) {
-  const { goals, weighIns, today, todayWeightKg, bodyMetrics, suggestedKcalTarget, proteinSuggestion } =
-    loaderData;
+  const {
+    goals,
+    weighIns,
+    today,
+    todayWeightKg,
+    bodyMetrics,
+    suggestedKcalTarget,
+    proteinSuggestion,
+    style,
+    latestWeightKg,
+    reproductiveStatus,
+  } = loaderData;
   // Device-local display preference only (not synced), SHARED with the Progress
   // page's weight card — one storage key, one reader (see
   // `#app/lib/weight-unit-preference`), so the two screens can't disagree.
@@ -942,6 +1157,17 @@ export default function SettingsGoals({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {/* First on the page: the style decides which of the numbers below are
+          kept at all, so it is asked before them. KEYED off the stored style so
+          a save that changes it resets the card's own selection state to what
+          was actually written. */}
+      <EatingStyleCard
+        key={style}
+        style={style}
+        goals={goals}
+        latestWeightKg={latestWeightKg}
+        reproductiveStatus={reproductiveStatus}
+      />
       <GoalsCard
         goals={goals}
         proteinSuggestion={proteinSuggestion}
