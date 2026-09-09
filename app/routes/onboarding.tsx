@@ -17,10 +17,14 @@ import {
 import {
   BIOLOGICAL_SEX_VALUES,
   MAX_WEEKS_UNTIL_DUE_DATE,
+  computeReferenceProteinFloor,
   hasBodyMetricsErrors,
+  selectLatestWeighInKg,
   validateBodyMetricsForm,
 } from '#app/models/body-metrics';
+import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
 import type { BodyMetrics, BodyMetricsSubmission } from '#app/models/body-metrics';
+import type { ReproductiveStatus } from '#app/lib/local-store/schema';
 import { ReproductiveStatusFields } from '#app/components/reproductive-status-fields';
 import type { ReproductiveStatusValue } from '#app/components/reproductive-status-fields';
 import { todayInTimezone } from '#app/lib/user-days';
@@ -31,20 +35,36 @@ import { readInstancePolicy } from '#app/lib/read-instance-policy';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import {
-  CARB_PRESETS,
   ONBOARDING_STEPS,
+  STYLE_CARB_PRESETS,
   hasWeightStepErrors,
-  initialFocusSwitches,
+  initialCarbPresetSelection,
+  initialStyleSelection,
   nextOnboardingStep,
   onboardingStepNumber,
   parseOnboardingStep,
-  presetIdForCeiling,
   resolveExitDestination,
-  resolveFocusStep,
   resolveOnboardingTimezone,
+  trackingFocusForPatch,
+  validateStyleStep,
   validateWeightStep,
 } from '#app/lib/onboarding';
-import type { CarbPreset, OnboardingStep, Translate, WeightStepSubmission } from '#app/lib/onboarding';
+import type {
+  CarbPreset,
+  OnboardingStep,
+  StyleStepField,
+  StyleStepValues,
+  Translate,
+  WeightStepSubmission,
+} from '#app/lib/onboarding';
+import {
+  EATING_STYLES,
+  STYLE_CAUTION_SOURCE_URL,
+  applyEatingStyle,
+  eatingStyle,
+  styleCaution,
+} from '#app/lib/eating-style';
+import type { EatingStyle, EatingStyleId } from '#app/lib/eating-style';
 import {
   WEIGHT_UNITS,
   formatKgForDisplay,
@@ -96,7 +116,7 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
 
 /** Submit-button intents that drive the single onboarding action. */
 const INTENT = {
-  SAVE_FOCUS: 'save-focus',
+  SAVE_STYLE: 'save-style',
   SAVE_WEIGHT: 'save-weight',
   SAVE_BODY: 'save-body',
   SKIP: 'skip',
@@ -104,54 +124,38 @@ const INTENT = {
 } as const;
 
 /**
- * Both steps that can come back with per-field errors report through ONE shape,
- * so `actionData?.errors` never becomes a union the component has to narrow
- * before it can read a field. Whichever step didn't run contributes `{}`.
+ * Every step that can come back with per-field errors reports through ONE
+ * shape, so `actionData?.errors` never becomes a union the component has to
+ * narrow before it can read a field. Whichever step didn't run contributes
+ * `{}`.
  */
 interface OnboardingStepErrors {
+  style: StyleStepErrors;
   weight: WeightStepErrors;
   body: BodyStepErrors;
 }
 
 /** No errors at all — the shape every non-erroring branch returns. */
-const NO_STEP_ERRORS: OnboardingStepErrors = { weight: {}, body: {} };
+const NO_STEP_ERRORS: OnboardingStepErrors = { style: {}, weight: {}, body: {} };
+
+/** The form field the style list submits. Named once, so the action reads back what the list wrote. */
+const STYLE_FIELD = 'eatingStyle';
+
+/** The form field the carb sub step submits, unchanged from the old focus step. */
+const CARB_PRESET_FIELD = 'carbPreset';
+
+/** The form field the kcal step submits, unchanged from the old focus step. */
+const KCAL_TARGET_FIELD = 'kcalTarget';
 
 /**
- * The two daily goals, as independent switches, and the i18n keys for the copy
- * on their tappable cards (this is module scope, so there is no `t` here, and
- * the card component resolves the keys). Descriptions spell out what each
- * term means in plain words, because a first-run visitor should be able to
- * pick one without already knowing what "net carbs" is (see the usability-overhaul
- * audience note: never assume the reader has heard these terms before).
+ * The query flag that carries "your protein goal has no weight to scale from"
+ * across the redirect into the weight step.
  *
- * They are checkboxes, not radios (M200 spec 02): a person can watch carbs and
- * calories at once, and the old radio group was the only thing that made them
- * exclusive. `field` is the form field each one submits; an unchecked box
- * submits nothing, which the action reads as "off".
+ * It travels in the URL rather than in action data because the style step
+ * REDIRECTS on success, and action data does not survive a redirect. A flag in
+ * the URL also means a reload of the weight step still shows the note.
  */
-/** The form field each goal switch submits, named once so the action reads back what the form wrote. */
-const TRACK_NET_CARBS_FIELD = 'trackNetCarbs';
-const TRACK_CALORIES_FIELD = 'trackCalories';
-
-const GOAL_OPTIONS: readonly {
-  field: string;
-  labelKey: string;
-  descriptionKey: string;
-  recommended: boolean;
-}[] = [
-  {
-    field: TRACK_NET_CARBS_FIELD,
-    labelKey: 'onboarding.focus.netCarbs.label',
-    descriptionKey: 'onboarding.focus.netCarbs.description',
-    recommended: true,
-  },
-  {
-    field: TRACK_CALORIES_FIELD,
-    labelKey: 'onboarding.focus.calories.label',
-    descriptionKey: 'onboarding.focus.calories.description',
-    recommended: false,
-  },
-];
+const NEEDS_WEIGHT_PARAM = 'needsWeight';
 
 ////////////////////////////////////////////////////////////////////////////////
 // Server loader — non-health context only (M117/03: onboarding is local-only)
@@ -212,7 +216,8 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   });
   if (!isAllowed) throw redirect('/welcome');
   clearHomeHint();
-  const step = parseOnboardingStep(new URL(request.url).searchParams.get('step'));
+  const url = new URL(request.url);
+  const step = parseOnboardingStep(url.searchParams.get('step'));
   const entries = await listLocalWeightEntries();
   const latestWeight =
     entries.toSorted((a, b) =>
@@ -222,7 +227,15 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     )[0] ?? null;
   return {
     step,
-    trackingFocus: profile?.trackingFocus ?? null,
+    // The style step's own state: the stored pick (absent before schema v20)
+    // plus the three numbers a pre-v20 pick is derived from. All four ride the
+    // loader because `initialStyleSelection` decides from the set of them, and
+    // a screen that read only one would tick a style nobody chose.
+    eatingStyle: profile?.eatingStyle ?? null,
+    goalProteinFloorG: profile?.goalProteinFloorG ?? null,
+    // Set by the style step's redirect when `high-protein` was picked with no
+    // weigh-in on file, so the weight step can say why it matters now.
+    needsWeight: url.searchParams.get(NEEDS_WEIGHT_PARAM) === '1',
     goalNetCarbsCeilingG: profile?.goalNetCarbsCeilingG ?? null,
     goalKcalTarget: profile?.goalKcalTarget ?? null,
     targetWeightKg: profile?.targetWeightKg ?? null,
@@ -282,10 +295,23 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   // Silently capture the browser's time zone on every step (see `applyBrowserTimezone`).
   await applyBrowserTimezone(formData);
 
-  if (intent === INTENT.SAVE_FOCUS) {
-    await saveFocus(formData);
+  if (intent === INTENT.SAVE_STYLE) {
+    const result = validateStyleStep({
+      style: readField(formData, STYLE_FIELD),
+      carbPresetId: readField(formData, CARB_PRESET_FIELD),
+      kcalTarget: readField(formData, KCAL_TARGET_FIELD),
+    });
+    // Same rule as the weight and body steps: an incomplete answer stays on
+    // the step. Advancing would store a style whose own number is missing, and
+    // the day would then be graded by a lens with nothing behind it.
+    if (!result.ok) return { errors: { ...NO_STEP_ERRORS, style: result.errors } };
+    const needsWeight = await saveStyle(result.values);
+    // The funnel step name is unchanged (`'focus'`): this is the same first
+    // step of the same wizard, and `OnboardingStepName` in `matomo-events.ts`
+    // is another module's contract. What the person answered never rides the
+    // event, so nothing about the pick is reported either way.
     trackOnboardingStepCompleted('focus');
-    return redirect(nextStepUrl(step));
+    return redirect(nextStepUrl(step, { needsWeight }));
   }
   if (intent === INTENT.SAVE_WEIGHT) {
     const submission = validateWeightStep({
@@ -346,10 +372,15 @@ function readField(formData: FormData, name: string): string | null {
   return z.string().safeParse(formData.get(name)).data ?? null;
 }
 
-/** The URL of the step after `current`; falls back to the diary past the last step. */
-function nextStepUrl(current: OnboardingStep): string {
+/**
+ * The URL of the step after `current`; falls back to the diary past the last
+ * step. `needsWeight` rides along as a query flag, see `NEEDS_WEIGHT_PARAM`.
+ */
+function nextStepUrl(current: OnboardingStep, options: { needsWeight?: boolean } = {}): string {
   const next = nextOnboardingStep(current);
-  return next ? `/onboarding?step=${next}` : '/diary';
+  if (next === null) return '/diary';
+  const suffix = options.needsWeight === true ? `&${NEEDS_WEIGHT_PARAM}=1` : '';
+  return `/onboarding?step=${next}${suffix}`;
 }
 
 /**
@@ -363,36 +394,59 @@ async function applyBrowserTimezone(formData: FormData): Promise<void> {
 }
 
 /**
- * Persists the focus step: both goal values, and the one focus value the
- * store has room for.
+ * Persists the style step: the four fields the style owns, plus the stored
+ * `trackingFocus` reduced from the two numbers it just wrote.
  *
- * Net carbs and calories are independent switches now (M200 spec 02), so both
- * goals are written on every save, including as `null`, which is how turning
- * a metric off actually clears its target. `resolveFocusStep` owns every one
- * of those decisions; this function only reads the form.
+ * Everything the style decides is decided by `applyEatingStyle`, including
+ * NULLING the fields the style does not own, so a person who switches away
+ * from a carb style does not leave a live ceiling behind. This function only
+ * gathers what that pure function needs.
+ *
+ * The reference protein floor is passed as `null` when the device holds no
+ * body data at all. `computeReferenceProteinFloor` always answers, and its
+ * last fallback is the flat labelling figure, so handing it in unconditionally
+ * would write a protein goal onto every first-run profile, from nothing the
+ * person ever told us. That is the "never invent a target" rule this whole
+ * milestone is about.
+ *
+ * @param values - the validated answers from the style step.
+ * @returns whether the person now needs to log a weight for their protein goal.
  */
-async function saveFocus(formData: FormData): Promise<void> {
-  const submission = resolveFocusStep({
-    trackNetCarbs: isChecked(formData, TRACK_NET_CARBS_FIELD),
-    trackCalories: isChecked(formData, TRACK_CALORIES_FIELD),
-    carbPresetId: readField(formData, 'carbPreset'),
-    kcalTarget: readField(formData, 'kcalTarget'),
+async function saveStyle(values: StyleStepValues): Promise<boolean> {
+  const profile = await getLocalProfileGoals();
+  const latestWeightKg = selectLatestWeighInKg(await listLocalWeightEntries());
+  const bodyMetrics = await getLocalBodyMetrics();
+  const today = todayInTimezone(resolveLocalTimezone(profile));
+  const stage = {
+    reproductiveStatus: bodyMetrics.reproductiveStatus,
+    trimester: resolveGestation({ dueDate: bodyMetrics.pregnancyDueDate, today })?.trimester ?? null,
+    lactationMonths: resolveLactationMonths({ startDate: bodyMetrics.lactationStartDate, today }),
+  };
+  const hasBodyBasis = latestWeightKg !== null || bodyMetrics.heightCm !== null;
+  const referenceProteinFloorG =
+    hasBodyBasis ?
+      computeReferenceProteinFloor({
+        ...stage,
+        latestWeighInKg: latestWeightKg,
+        heightCm: bodyMetrics.heightCm,
+        biologicalSex: bodyMetrics.biologicalSex,
+      }).grams
+    : null;
+  const { patch, needsWeight } = applyEatingStyle({
+    style: values.style,
+    currentGoals: {
+      goalNetCarbsCeilingG: profile?.goalNetCarbsCeilingG ?? null,
+      goalKcalTarget: profile?.goalKcalTarget ?? null,
+      goalProteinFloorG: profile?.goalProteinFloorG ?? null,
+      eatingStyle: profile?.eatingStyle ?? null,
+    },
+    carbPresetCeiling: values.carbPresetCeiling,
+    kcalTarget: values.kcalTarget,
+    latestWeightKg,
+    referenceProteinFloorG,
   });
-  await patchLocalProfileGoals({
-    // Both a person's targets are stored today and always were. What is new is
-    // that both are WRITTEN here, so the derived rings and the stored numbers
-    // cannot disagree. `trackingFocus` still carries only one metric on
-    // purpose: an older build on another device reads it and renders the hero
-    // it already renders, which is why nothing about the stored shape moves.
-    trackingFocus: submission.trackingFocus,
-    goalNetCarbsCeilingG: submission.goalNetCarbsCeilingG,
-    goalKcalTarget: submission.goalKcalTarget,
-  });
-}
-
-/** Whether a checkbox was submitted. An unchecked box sends no field at all. */
-function isChecked(formData: FormData, name: string): boolean {
-  return readField(formData, name) !== null;
+  await patchLocalProfileGoals({ ...patch, trackingFocus: trackingFocusForPatch(patch) });
+  return needsWeight;
 }
 
 /**
@@ -419,6 +473,23 @@ async function saveWeight(values: WeightStepSubmission['values']): Promise<void>
 /** Per-field i18n error keys the weight step renders after a rejected submit. */
 type WeightStepErrors = WeightStepSubmission['errors'];
 
+/** Per-field i18n error keys the style step renders after a rejected submit. */
+type StyleStepErrors = Partial<Record<StyleStepField, string>>;
+
+/**
+ * The loader fields the style step reads, declared as its own shape rather
+ * than taken whole from `OnboardingLoaderData`. The step needs five of them,
+ * and naming those five is what lets its unit test hand in a fixture instead
+ * of a cast of a route's generated loader type.
+ */
+export interface StyleStepData {
+  eatingStyle: EatingStyleId | null;
+  goalNetCarbsCeilingG: number | null;
+  goalKcalTarget: number | null;
+  goalProteinFloorG: number | null;
+  bodyMetrics: { reproductiveStatus: ReproductiveStatus | null };
+}
+
 /** Per-field i18n error keys the body-metrics step renders after a rejected submit. */
 type BodyStepErrors = BodyMetricsSubmission['errors'];
 
@@ -434,7 +505,11 @@ export default function Onboarding({ loaderData, actionData }: Route.ComponentPr
         <OnboardingHeader step={step} />
         {step === 'focus' && <LocalFirstExplainer />}
         <main className="mt-8 flex-1">
-          {step === 'focus' && <FocusStep loaderData={loaderData} />}
+          {/* The first step keeps the id `focus` (see `ONBOARDING_STEPS`): the
+              question it asks changed, the URL and the funnel step name did
+              not, so a bookmarked `?step=focus` still lands on the first
+              screen. */}
+          {step === 'focus' && <StyleStep loaderData={loaderData} errors={errors.style} />}
           {step === 'weight' && <WeightStep loaderData={loaderData} errors={errors.weight} />}
           {step === 'body' && <BodyStep loaderData={loaderData} errors={errors.body} />}
           {step === 'first-food' && <FirstFoodStep />}
@@ -579,140 +654,175 @@ function StepActions({ primaryIntent, primaryPendingLabel }: { primaryIntent: st
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Step 1 — tracking focus
+// Step 1, the eating style (M210)
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Preset shown pre-selected the first time someone reaches the net-carbs
- * picker with no goal saved yet. Usability-overhaul fix: this used to fall
- * through to `presetIdForCeiling(null)`, which resolves to "Decide later" —
- * so tapping straight through onboarding produced a diary with no ceiling at
- * all, unable to answer "was that OK?" (the entire point of tracking). A
- * default still isn't medical advice and stays one tap away from changing;
- * "moderate" (100 g/day) is the least prescriptive real target on offer —
- * "Decide later" is still right there for anyone who wants it.
+ * The first question the app asks, and the only one that decides how a day is
+ * graded.
+ *
+ * It replaced a pair of independent switches (net carbs, calories) plus a
+ * carb preset. Two switches could express "carbs and calories" but never
+ * "protein", and nothing they wrote said whether a person with no numbers at
+ * all had chosen that or simply skipped. The five styles say it in one pick,
+ * and `applyEatingStyle` turns the pick into the numbers.
+ *
+ * NOTHING IS PRESELECTED on a first run. `initialStyleSelection` returns
+ * `null` for a profile with nothing stored, and this component starts on that
+ * answer, so a person who taps Continue without choosing is asked again rather
+ * than given a style they never picked. A returning person still finds their
+ * own style ticked.
+ *
+ * Exported for `tests/unit/onboarding-style-step.test.ts`, which renders it and
+ * counts what is checked. There is no DOM in this repo's test tier, so a
+ * static render of the real component is the only way to prove the control.
  */
-const DEFAULT_CARB_PRESET_ID = 'moderate';
-
-function FocusStep({ loaderData }: { loaderData: OnboardingLoaderData }) {
+export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; errors: StyleStepErrors }) {
   const { t } = useTranslation();
-  const initial = initialFocusSwitches(loaderData);
-  const [trackNetCarbs, setTrackNetCarbs] = useState(initial.trackNetCarbs);
-  const [trackCalories, setTrackCalories] = useState(initial.trackCalories);
-  const [carbPreset, setCarbPreset] = useState(
-    loaderData.goalNetCarbsCeilingG === null ?
-      DEFAULT_CARB_PRESET_ID
-    : presetIdForCeiling(loaderData.goalNetCarbsCeilingG),
+  const [style, setStyle] = useState<EatingStyleId | null>(() => initialStyleSelection(loaderData));
+  const [carbPreset, setCarbPreset] = useState<string | null>(() =>
+    initialCarbPresetSelection(loaderData.goalNetCarbsCeilingG),
   );
-  // "Just the habit" is not a fourth piece of state, it IS both switches
-  // being off. Modelling it that way is what keeps it exclusive: there is no
-  // second source of truth that could disagree with the two boxes.
-  const isHabitOnly = !trackNetCarbs && !trackCalories;
-  const clearBothGoals = () => {
-    setTrackNetCarbs(false);
-    setTrackCalories(false);
-  };
+  // The two follow-up questions are read off the TABLE, never off a second
+  // list of style ids here, so a style that changes what it asks for changes
+  // it in one place (`app/lib/eating-style.ts`).
+  const definition = style === null ? null : eatingStyle(style);
   return (
-    <StepShell title={t('onboarding.step.focus.title')} description={t('onboarding.step.focus.description')}>
+    // `settings.style.lead` is the step's description: it is the one sentence
+    // in the catalog that says what a style decides, and this milestone's key
+    // budget has no `onboarding.step.style.description`.
+    <StepShell title={t('onboarding.style.title')} description={t('settings.style.lead')}>
       <Form method="post" className="space-y-6">
         <TimezoneField />
         <div className="space-y-3">
-          <GoalOptionCard
-            option={GOAL_OPTIONS[0]}
-            isSelected={trackNetCarbs}
-            onToggle={() => setTrackNetCarbs(!trackNetCarbs)}
-          />
-          <GoalOptionCard
-            option={GOAL_OPTIONS[1]}
-            isSelected={trackCalories}
-            onToggle={() => setTrackCalories(!trackCalories)}
-          />
-          <HabitOptionCard isSelected={isHabitOnly} onSelect={clearBothGoals} />
+          {EATING_STYLES.map((candidate) => (
+            <StyleOptionCard
+              key={candidate.id}
+              style={candidate}
+              isSelected={style === candidate.id}
+              onSelect={() => setStyle(candidate.id)}
+            />
+          ))}
         </div>
-        {trackNetCarbs && <CarbPresetPicker selected={carbPreset} onSelect={setCarbPreset} />}
-        {trackCalories && <KcalTargetField defaultValue={loaderData.goalKcalTarget} />}
-        <StepActions primaryIntent={INTENT.SAVE_FOCUS} primaryPendingLabel={t('onboarding.actions.saving')} />
+        <FieldError id="eatingStyle-error" errors={errors.style === undefined ? undefined : [t(errors.style)]} />
+        <StyleCautionNote style={style} reproductiveStatus={loaderData.bodyMetrics.reproductiveStatus} />
+        {definition?.carbSubPreset === true && (
+          <CarbPresetPicker selected={carbPreset} onSelect={setCarbPreset} errorKey={errors.carbPreset} />
+        )}
+        {definition?.kcalMode === 'asked' && (
+          <KcalTargetField defaultValue={loaderData.goalKcalTarget} errorKey={errors.kcalTarget} />
+        )}
+        <StepActions primaryIntent={INTENT.SAVE_STYLE} primaryPendingLabel={t('onboarding.actions.saving')} />
       </Form>
     </StepShell>
   );
 }
 
 /**
- * One goal switch. A real checkbox carries the state, so the browser submits
- * it and assistive tech announces "checked" rather than "selected". The two
- * boxes are genuinely independent now and must not read as a choice between
- * them.
+ * One style in the list. A real radio carries the state, so the browser
+ * submits it, assistive tech announces "selected, 1 of 5", and the five are
+ * mutually exclusive without any JavaScript deciding that.
+ *
+ * The `onboarding.style.hint` line sits under `low-carb` only, and it is a
+ * hint rather than a default: it says where most people start without ticking
+ * anything on their behalf.
  */
-function GoalOptionCard({
-  option,
+function StyleOptionCard({
+  style,
   isSelected,
-  onToggle,
+  onSelect,
 }: {
-  option: (typeof GOAL_OPTIONS)[number];
+  style: EatingStyle;
   isSelected: boolean;
-  onToggle: () => void;
+  onSelect: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <label
-      // The checkbox's own name: the visible description and "recommended"
-      // badge stay on screen but would otherwise be read out as part of every
-      // option.
-      aria-label={t(option.labelKey)}
+      // The radio's own name: the detail line and the hint stay on screen but
+      // would otherwise be read out as part of every option.
+      aria-label={t(style.labelKey)}
       className={cn(
-        'flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all',
-        focusCardClass(isSelected),
+        'flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all focus-within:ring-2 focus-within:ring-primary',
+        styleCardClass(isSelected),
       )}
     >
       <input
-        type="checkbox"
-        name={option.field}
+        type="radio"
+        name={STYLE_FIELD}
+        value={style.id}
         checked={isSelected}
-        onChange={onToggle}
+        onChange={onSelect}
         className="mt-1 accent-primary"
       />
       <span className="flex-1 space-y-0.5">
-        <span className="flex items-center gap-2 font-medium">
-          {t(option.labelKey)}
-          {option.recommended && <Badge variant="secondary">{t('onboarding.focus.recommended')}</Badge>}
-        </span>
-        <span className="block text-sm text-muted-foreground">{t(option.descriptionKey)}</span>
+        <span className="block font-medium">{t(style.labelKey)}</span>
+        <span className="block text-sm text-muted-foreground">{t(style.detailKey)}</span>
+        {style.id === 'low-carb' && (
+          <span className="block pt-1">
+            <Badge variant="secondary">{t('onboarding.style.hint')}</Badge>
+          </span>
+        )}
       </span>
     </label>
   );
 }
 
-/**
- * "Just the habit": no daily number at all.
- *
- * It submits no field, because it is the absence of the other two rather than
- * a value of its own, so it is a button rather than an input. Pressing it
- * clears both goals, which is also what the action writes.
- */
-function HabitOptionCard({ isSelected, onSelect }: { isSelected: boolean; onSelect: () => void }) {
-  const { t } = useTranslation();
-  return (
-    <button
-      type="button"
-      aria-pressed={isSelected}
-      onClick={onSelect}
-      className={cn(
-        'flex min-h-11 w-full cursor-pointer items-start gap-3 rounded-lg border p-4 text-left transition-all',
-        focusCardClass(isSelected),
-      )}
-    >
-      <span className="flex-1 space-y-0.5">
-        <span className="block font-medium">{t('onboarding.focus.habit.label')}</span>
-        <span className="block text-sm text-muted-foreground">{t('onboarding.focus.habit.description')}</span>
-      </span>
-    </button>
-  );
-}
-
-/** Border/fill for a focus card by selection state. */
-function focusCardClass(isSelected: boolean): string {
+/** Border/fill for a style card by selection state. */
+function styleCardClass(isSelected: boolean): string {
   if (isSelected) return 'border-primary bg-accent/40';
   return 'border-border hover:border-teal-300 dark:hover:border-teal-600';
+}
+
+/**
+ * The sourced caution note (M206/05), under the style list.
+ *
+ * `styleCaution` decides, and it returns a KEY or nothing: no block, no
+ * adjusted number, no colour beyond muted text. The app has no business
+ * overriding a clinician, and the hidden reference that used to move with a
+ * person's bodily state is exactly what this milestone deleted.
+ *
+ * A FIRST RUN NEVER SEES THIS. The body step, where a pregnancy or lactation
+ * status is recorded, comes AFTER this one (`ONBOARDING_STEPS`), so on a first
+ * pass the status is always null and this renders nothing. It fires for a
+ * person who re-enters the wizard with a status already on file; the surface
+ * that carries the note for everyone else is the settings style card
+ * (M210 spec 04).
+ *
+ * Exported for its unit test, which is the only way to prove the note appears
+ * for exactly the three restricting styles.
+ */
+export function StyleCautionNote({
+  style,
+  reproductiveStatus,
+}: {
+  style: EatingStyleId | null;
+  reproductiveStatus: ReproductiveStatus | null;
+}) {
+  const { t } = useTranslation();
+  if (style === null) return null;
+  if (styleCaution(style, reproductiveStatus) === null) return null;
+  return (
+    <p className="text-sm text-muted-foreground">
+      {/* <Trans> rather than a plain t(): the source link sits mid-sentence,
+          and splitting the sentence around it would force every translation
+          into English word order. */}
+      <Trans
+        i18nKey="onboarding.style.caution"
+        components={{
+          source: (
+            <a
+              href={STYLE_CAUTION_SOURCE_URL}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={t('onboarding.style.sourceLabel')}
+              className="underline underline-offset-2"
+            />
+          ),
+        }}
+      />
+    </p>
+  );
 }
 
 /**
@@ -730,24 +840,41 @@ export function carbPresetChipLabel(preset: CarbPreset, t: Translate): string {
   return t('onboarding.carbPreset.chipWithCeiling', { label, ceiling: preset.ceiling });
 }
 
-function CarbPresetPicker({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+/**
+ * The 20/50/100 g sub step, shown for the two carb styles and REQUIRED there.
+ *
+ * `STYLE_CARB_PRESETS` is the old chip list minus "Decide later": a carb style
+ * with no ceiling is the state M210 removed, so the answer that used to mean
+ * "no number" is now a different style rather than a fourth chip. Nothing is
+ * preselected for a person with no stored ceiling, for the same reason nothing
+ * is preselected in the style list above.
+ */
+function CarbPresetPicker({
+  selected,
+  onSelect,
+  errorKey,
+}: {
+  selected: string | null;
+  onSelect: (id: string) => void;
+  errorKey?: string;
+}) {
   const { t } = useTranslation();
-  const detailKey = CARB_PRESETS.find((preset) => preset.id === selected)?.detailKey;
+  const detailKey = STYLE_CARB_PRESETS.find((preset) => preset.id === selected)?.detailKey;
   return (
     <fieldset className="space-y-2 rounded-lg border border-dashed p-4">
       <legend className="px-1 text-sm font-medium">{t('onboarding.carbPreset.legend')}</legend>
       <div className="flex flex-wrap gap-2">
-        {CARB_PRESETS.map((preset) => (
+        {STYLE_CARB_PRESETS.map((preset) => (
           <label
             key={preset.id}
             className={cn(
-              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors',
+              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === preset.id),
             )}
           >
             <input
               type="radio"
-              name="carbPreset"
+              name={CARB_PRESET_FIELD}
               value={preset.id}
               checked={selected === preset.id}
               onChange={() => onSelect(preset.id)}
@@ -757,7 +884,8 @@ function CarbPresetPicker({ selected, onSelect }: { selected: string; onSelect: 
           </label>
         ))}
       </div>
-      {detailKey && <p className="text-xs text-muted-foreground">{t(detailKey)}</p>}
+      {detailKey !== undefined && <p className="text-xs text-muted-foreground">{t(detailKey)}</p>}
+      <FieldError id="carbPreset-error" errors={errorKey === undefined ? undefined : [t(errorKey)]} />
     </fieldset>
   );
 }
@@ -768,14 +896,24 @@ function chipClass(isSelected: boolean): string {
   return 'border-border hover:border-teal-300 dark:hover:border-teal-600';
 }
 
-function KcalTargetField({ defaultValue }: { defaultValue: number | null }) {
+/**
+ * The calorie target, shown for the two styles that ask for one and REQUIRED
+ * there.
+ *
+ * The label comes from `goals.kcal.label` rather than `onboarding.kcal.label`
+ * because the onboarding one says "(optional)" and its hint invites the reader
+ * to leave the field blank, both of which are now false: a style that asks for
+ * a target does not save without one. A required-field key of its own is the
+ * follow-up.
+ */
+function KcalTargetField({ defaultValue, errorKey }: { defaultValue: number | null; errorKey?: string }) {
   const { t } = useTranslation();
   return (
     <div className="space-y-2 rounded-lg border border-dashed p-4">
-      <Label htmlFor="kcalTarget">{t('onboarding.kcal.label')}</Label>
+      <Label htmlFor={KCAL_TARGET_FIELD}>{t('goals.kcal.label')}</Label>
       <Input
-        id="kcalTarget"
-        name="kcalTarget"
+        id={KCAL_TARGET_FIELD}
+        name={KCAL_TARGET_FIELD}
         type="number"
         inputMode="numeric"
         min={1}
@@ -783,9 +921,11 @@ function KcalTargetField({ defaultValue }: { defaultValue: number | null }) {
         step={1}
         placeholder={t('onboarding.kcal.placeholder')}
         defaultValue={defaultValue ?? ''}
+        aria-invalid={errorKey === undefined ? undefined : true}
+        aria-describedby={errorKey === undefined ? undefined : 'kcalTarget-error'}
         className="h-11"
       />
-      <p className="text-xs text-muted-foreground">{t('onboarding.kcal.hint')}</p>
+      <FieldError id="kcalTarget-error" errors={errorKey === undefined ? undefined : [t(errorKey)]} />
     </div>
   );
 }
@@ -896,6 +1036,14 @@ function WeightStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; 
     <StepShell title={t('onboarding.step.weight.title')} description={t('onboarding.step.weight.description')}>
       <Form method="post" className="space-y-6">
         <TimezoneField />
+        {/* Set by the style step when `high-protein` was picked with no
+            weigh-in on file: the floor fell back to the reference, and this is
+            the one place that says why a weight would change it. */}
+        {loaderData.needsWeight && (
+          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            {t('onboarding.style.needsWeight')}
+          </p>
+        )}
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium">{t('onboarding.weight.units')}</p>
           <WeightUnitToggle unit={unit} onChange={changeUnit} />

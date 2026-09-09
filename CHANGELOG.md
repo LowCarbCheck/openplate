@@ -21,6 +21,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The meal composer drops a notice nobody could read.** On an instance an organization runs, "Describe a meal" and "Add food" told a signed out visitor to sign in before the AI could read their words. Signing out closes both screens on that kind of instance, so the sentence was written for a screen that never opened. It is gone, and signing out still sends you to the welcome screen as before.
 - **The day now gets one grade, the one your eating style asks for.** A low carb style still gets the carb verdict, a calorie style gets a calorie one, a high protein style gets its floor, and "just track" gets no grade at all. A day with no carb goal used to be graded against a hidden 50 gram line that was never shown to you. That line is gone.
+- **The first question the app asks is now how you eat.** The opening step of the setup lists five eating styles: low carb, low carb and calories, calories, high protein, and just track. Nothing is picked for you. A carb style then asks for a daily limit of 20, 50 or 100 g, a calorie style asks for a target, and both answers are required, so no goal is ever invented from a blank field. Picking high protein without a weight on file says so on the next step. If a pregnancy or a breastfeeding period is already recorded on the device, a note with a source link appears under the list for the three styles that restrict carbs or calories.
 
 ## [0.23.3] - 2026-09-09
 

@@ -1,6 +1,8 @@
+import { z } from 'zod';
 import type { TrackingFocusType } from '#types/enums';
-import type { GoalRing } from '#app/lib/goal-rings';
-import { storedTrackingFocusFor } from '#app/lib/goal-rings';
+import { selectGoalRings, storedTrackingFocusFor } from '#app/lib/goal-rings';
+import type { EatingStyleGoals, EatingStyleId } from '#app/lib/eating-style';
+import { eatingStyle, effectiveEatingStyle, isEatingStyleId } from '#app/lib/eating-style';
 import { isValidTimeZone } from '#app/lib/user-days';
 import { parseDisplayWeightToKg } from '#app/lib/weight-units';
 
@@ -195,108 +197,197 @@ export function parseWeightKg(raw: string | null | undefined): number | null {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Focus step
+// Style step (M210)
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * What the focus step submits: two independent switches, plus the target each
- * one collects.
+ * The sub preset chips the two carb styles ask for: today's `CARB_PRESETS`
+ * minus `later`.
  *
- * Net carbs and calories are INDEPENDENT (M200 spec 02), so a person can
- * track one, the other, or both. "Just the habit" is not a third switch: it is what
- * both switches being off means, which is how it stays exclusive with no
- * fourth state to keep in step.
+ * `later` is gone because the sub step is REQUIRED now. A carb style whose
+ * ceiling was never set would be graded against nothing, and the hidden 50 g
+ * reference that used to stand in for it is exactly what M210 removes. Someone
+ * who does not want a carb number picks a different style instead, which is a
+ * choice the five item list can finally express.
  */
-export interface FocusStepInput {
-  /** True when the person wants a daily net-carb ceiling. */
-  trackNetCarbs: boolean;
-  /** True when the person wants a daily calorie target. */
-  trackCalories: boolean;
-  /** The chosen carb preset id, read only when `trackNetCarbs` is true. */
+export const STYLE_CARB_PRESETS: readonly CarbPreset[] = CARB_PRESETS.filter((preset) => preset.ceiling !== null);
+
+/** The three fields the style step can complain about, and the order they appear in. */
+export const STYLE_STEP_FIELDS = ['style', 'carbPreset', 'kcalTarget'] as const;
+
+export type StyleStepField = (typeof STYLE_STEP_FIELDS)[number];
+
+/**
+ * i18n KEYS (not copy) for the three ways the style step can be incomplete.
+ *
+ * All three are keys that already exist in the catalog, because this milestone
+ * splits the copy work across workers and the style step must not invent a key
+ * the other locale has never heard of: an English only key fails both
+ * `i18n-key-parity` and the managed copy sweep. They are re-asks of the
+ * question the field puts, which is honest but not ideal, and dedicated
+ * `errors.required` keys for all three are the follow-up.
+ */
+export const STYLE_REQUIRED_KEY = 'onboarding.style.title';
+export const CARB_PRESET_REQUIRED_KEY = 'onboarding.carbPreset.legend';
+export const KCAL_TARGET_REQUIRED_KEY = 'errors.notANumber';
+
+/** The raw strings the style step's form submits. Every one may be absent. */
+export interface StyleStepInput {
+  /** The picked style id. Absent until the person picks one: nothing is preselected. */
+  style: string | null;
+  /** The 20/50/100 g chip, read only for a style that asks for one. */
   carbPresetId: string | null;
-  /** The raw kcal field, read only when `trackCalories` is true. */
+  /** The raw kcal field, read only for a style that asks for one. */
   kcalTarget: string | null;
 }
 
-/** The profile patch the focus step writes: the stored focus, plus both targets. */
-export interface FocusStepSubmission {
-  trackingFocus: TrackingFocusType;
-  goalNetCarbsCeilingG: number | null;
-  goalKcalTarget: number | null;
+/** The three answers the style step gathers, parsed. */
+export interface StyleStepValues {
+  style: EatingStyleId;
+  /** The sub preset ceiling in grams, or `null` for a style that does not ask. */
+  carbPresetCeiling: number | null;
+  /** The kcal target, or `null` for a style that does not ask. */
+  kcalTarget: number | null;
 }
 
 /**
- * Resolves the focus step into the three values it persists.
- *
- * Both targets are always written, including as `null`, so switching a metric
- * off actually clears its goal rather than leaving a stale number behind that
- * would keep drawing a ring nobody asked for. "Just the habit" is both
- * switches off, and it therefore clears both.
- *
- * The stored `trackingFocus` is reduced from the SWITCHES by
- * `#app/lib/goal-rings`, not from the numbers: someone who picks net carbs and
- * then taps "decide later" has still told us what they track, and the food
- * list they get should stay carb-forward (`#app/lib/nutrient-reference`) while
- * they think about the number.
- *
- * @param input - the two switches and the two raw target fields.
- * @returns the focus value and both goal values to persist.
+ * What the style step submitted: either the three answers, or the keys of what
+ * is missing. A discriminated union rather than the weight step's
+ * `values` + `errors` pair, because here an incomplete step has NO usable
+ * values at all: without a style there is nothing to apply, and every caller
+ * would otherwise have to re-narrow a nullable `style` the validator has
+ * already decided about.
  */
-export function resolveFocusStep({
-  trackNetCarbs,
-  trackCalories,
-  carbPresetId,
-  kcalTarget,
-}: FocusStepInput): FocusStepSubmission {
-  const chosen: GoalRing[] = [];
-  if (trackNetCarbs) chosen.push('net-carbs');
-  if (trackCalories) chosen.push('calories');
-  return {
-    trackingFocus: storedTrackingFocusFor(chosen),
-    goalNetCarbsCeilingG: trackNetCarbs ? carbCeilingForPreset(carbPresetId) : null,
-    goalKcalTarget: trackCalories ? parseKcalTarget(kcalTarget) : null,
-  };
-}
+export type StyleStepResult =
+  | { ok: true; values: StyleStepValues }
+  | { ok: false; errors: Partial<Record<StyleStepField, string>> };
 
-/** The two switches, as the focus step's form starts out. */
-export interface FocusSwitches {
-  trackNetCarbs: boolean;
-  trackCalories: boolean;
+/**
+ * The one schema that decides whether the style step may advance.
+ *
+ * The conditional rules live in `superRefine` rather than in the caller
+ * because they are the same two rules on every surface that applies a style:
+ * a carb style needs its ceiling, an `asked` style needs its target, and the
+ * remaining styles need neither. Reading them off `eatingStyle()` rather than
+ * off a second list of ids is what stops the table and the validator drifting
+ * apart when a sixth style arrives.
+ */
+const styleStepSchema = z
+  .object({
+    style: z.string().nullable(),
+    carbPresetId: z.string().nullable(),
+    kcalTarget: z.string().nullable(),
+  })
+  .transform((raw) => ({
+    style: isEatingStyleId(raw.style) ? raw.style : null,
+    carbPresetCeiling: carbCeilingForPreset(raw.carbPresetId),
+    kcalTarget: parseKcalTarget(raw.kcalTarget),
+  }))
+  .superRefine((values, ctx) => {
+    if (values.style === null) {
+      ctx.addIssue({ code: 'custom', message: STYLE_REQUIRED_KEY, path: ['style'] });
+      return;
+    }
+    const definition = eatingStyle(values.style);
+    if (definition.carbSubPreset && values.carbPresetCeiling === null) {
+      ctx.addIssue({ code: 'custom', message: CARB_PRESET_REQUIRED_KEY, path: ['carbPreset'] });
+    }
+    if (definition.kcalMode === 'asked' && values.kcalTarget === null) {
+      ctx.addIssue({ code: 'custom', message: KCAL_TARGET_REQUIRED_KEY, path: ['kcalTarget'] });
+    }
+  });
+
+/**
+ * Reads the style step's form values, and refuses an incomplete pick.
+ *
+ * A style that owns a number but was given none is the failure this exists to
+ * stop: it would be saved as a style with a `null` ceiling or `null` target,
+ * and the day would then be graded by a lens with no number behind it. Blank
+ * still never becomes a fabricated `0`; it becomes an error the step shows.
+ *
+ * @param raw - the three raw form values.
+ * @returns the parsed answers, or the i18n error keys per field.
+ */
+export function validateStyleStep(raw: StyleStepInput): StyleStepResult {
+  const parsed = styleStepSchema.safeParse({
+    style: raw.style,
+    carbPresetId: raw.carbPresetId,
+    kcalTarget: raw.kcalTarget,
+  });
+  if (parsed.success) {
+    const { style, carbPresetCeiling, kcalTarget } = parsed.data;
+    // `superRefine` has already refused a null style, so this narrowing can
+    // only fail if the schema above lost that rule, and then it must throw
+    // rather than write a styleless profile.
+    if (style === null) throw new Error('validateStyleStep accepted a submission with no style');
+    return { ok: true, values: { style, carbPresetCeiling, kcalTarget } };
+  }
+  const errors: Partial<Record<StyleStepField, string>> = {};
+  for (const issue of parsed.error.issues) {
+    const field = STYLE_STEP_FIELDS.find((candidate) => candidate === issue.path[0]);
+    if (field !== undefined) errors[field] = issue.message;
+  }
+  return { ok: false, errors };
 }
 
 /**
- * How the focus step's switches start for a returning visitor.
+ * Which style the list starts on, and `null` for a first run.
  *
- * A stored goal VALUE is the strongest evidence that a person tracks that
- * metric, so either target being set turns its switch on. That is what lets
- * somebody who set a calorie target in Settings come back here and find it
- * still on rather than silently discarded. The stored focus is the fallback
- * for the case with no number yet ("decide later").
+ * `null` is the load-bearing half. `effectiveEatingStyle` always answers, and
+ * for an empty profile it answers `just-track`, so preselecting its answer
+ * unconditionally would defeat the "nothing is preselected" rule with a value
+ * that looks like a considered choice. A profile with nothing stored at all
+ * therefore selects nothing; a returning person still finds their own style
+ * ticked, derived from their numbers when the pick predates schema v20.
  *
- * `'habit'` means no daily number at all, so it wins outright. A first-run
- * visitor, with nothing stored, starts on net carbs: it is the recommended
- * option and the app's tracked metric, which is exactly where this step has
- * always started.
- *
- * @param profile - the stored focus and both stored targets.
- * @returns the initial state of the two switches.
+ * @param goals - the stored goal numbers, with or without a stored style.
+ * @returns the style to tick, or `null` when the person has told us nothing.
  */
-export function initialFocusSwitches({
-  trackingFocus,
-  goalNetCarbsCeilingG,
-  goalKcalTarget,
-}: {
-  trackingFocus: TrackingFocusType | null;
-  goalNetCarbsCeilingG: number | null;
-  goalKcalTarget: number | null;
-}): FocusSwitches {
-  if (trackingFocus === 'habit') return { trackNetCarbs: false, trackCalories: false };
-  const trackNetCarbs = goalNetCarbsCeilingG !== null || trackingFocus === 'net-carbs';
-  const trackCalories = goalKcalTarget !== null || trackingFocus === 'calories';
-  if (!trackNetCarbs && !trackCalories) return { trackNetCarbs: true, trackCalories: false };
-  return { trackNetCarbs, trackCalories };
+export function initialStyleSelection(goals: EatingStyleGoals): EatingStyleId | null {
+  const hasStoredAnswer =
+    isEatingStyleId(goals.eatingStyle) ||
+    goals.goalNetCarbsCeilingG !== null ||
+    goals.goalKcalTarget !== null ||
+    goals.goalProteinFloorG !== null;
+  return hasStoredAnswer ? effectiveEatingStyle(goals) : null;
 }
 
+/**
+ * Which sub preset chip starts ticked, and `null` when none does.
+ *
+ * `presetIdForCeiling` answers `later` for a ceiling it cannot match, and
+ * `later` is not on offer here, so that answer has to become "nothing ticked"
+ * rather than a chip id no chip carries.
+ *
+ * @param ceiling - the stored net-carb ceiling, or `null`.
+ * @returns the chip id to tick, or `null`.
+ */
+export function initialCarbPresetSelection(ceiling: number | null): string | null {
+  const id = presetIdForCeiling(ceiling);
+  return STYLE_CARB_PRESETS.some((preset) => preset.id === id) ? id : null;
+}
+
+/**
+ * The `trackingFocus` to store alongside a style patch.
+ *
+ * The stored focus is still the three-member enum an older build on another
+ * device knows how to read, and it is reduced from the NUMBERS the style just
+ * wrote, through the same `goal-rings` pair the rest of the app uses. That is
+ * what keeps the rings and the stored focus from disagreeing after a style
+ * change: switching to `low-kcal` nulls the carb ceiling, so the focus follows
+ * to `calories` instead of leaving `net-carbs` behind pointing at nothing.
+ *
+ * @param patch - the two goal numbers the style decided.
+ * @returns the focus value to persist.
+ */
+export function trackingFocusForPatch(patch: {
+  goalNetCarbsCeilingG: number | null;
+  goalKcalTarget: number | null;
+}): TrackingFocusType {
+  return storedTrackingFocusFor(
+    selectGoalRings({ netCarbsCeiling: patch.goalNetCarbsCeilingG, kcalTarget: patch.goalKcalTarget }),
+  );
+}
 ////////////////////////////////////////////////////////////////////////////////
 // Weight step validation
 ////////////////////////////////////////////////////////////////////////////////

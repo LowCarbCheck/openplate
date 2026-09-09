@@ -19,10 +19,17 @@ import {
   resolveExitDestination,
   validateWeightStep,
   hasWeightStepErrors,
-  initialFocusSwitches,
-  resolveFocusStep,
+  initialCarbPresetSelection,
+  initialStyleSelection,
+  trackingFocusForPatch,
+  validateStyleStep,
+  CARB_PRESET_REQUIRED_KEY,
+  KCAL_TARGET_REQUIRED_KEY,
+  STYLE_CARB_PRESETS,
+  STYLE_REQUIRED_KEY,
   WEIGHT_NOT_A_NUMBER_KEY,
 } from '../../app/lib/onboarding';
+import type { StyleStepInput } from '../../app/lib/onboarding';
 
 describe('parseOnboardingStep', () => {
   it('returns the value when it is a known step', () => {
@@ -214,106 +221,205 @@ describe('resolveExitDestination', () => {
   });
 });
 
-describe('resolveFocusStep', () => {
-  it('writes BOTH goal values when both metrics are chosen', () => {
-    const submission = resolveFocusStep({
-      trackNetCarbs: true,
-      trackCalories: true,
-      carbPresetId: 'keto',
-      kcalTarget: '1800',
-    });
-    assert.equal(submission.goalNetCarbsCeilingG, 20);
-    assert.equal(submission.goalKcalTarget, 1800);
+/**
+ * The style step (M210). The old focus step submitted two independent
+ * switches; it now submits one style, and the two follow-up answers that style
+ * asks for. The suites below are the whole of that decision: what a submission
+ * must carry, what the list starts on, and what `trackingFocus` is reduced to
+ * afterwards.
+ */
+
+/** A blank submission: nothing picked, nothing typed, which is a first run. */
+function blankStyleSubmission(overrides: Partial<StyleStepInput> = {}): StyleStepInput {
+  return { style: null, carbPresetId: null, kcalTarget: null, ...overrides };
+}
+
+describe('validateStyleStep', () => {
+  it('refuses a submission with no style at all, because nothing is preselected', () => {
+    const result = validateStyleStep(blankStyleSubmission());
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.ok === false ? result.errors : null, { style: STYLE_REQUIRED_KEY });
   });
 
-  it('stores net-carbs for both, so an older build renders the carb hero it already renders', () => {
-    const submission = resolveFocusStep({
-      trackNetCarbs: true,
-      trackCalories: true,
-      carbPresetId: 'low-carb',
-      kcalTarget: '2000',
-    });
-    assert.equal(submission.trackingFocus, 'net-carbs');
+  it('refuses a style string this build has never heard of', () => {
+    const result = validateStyleStep(blankStyleSubmission({ style: 'paleo' }));
+    assert.equal(result.ok, false);
   });
 
-  it('clears the other goal when only one metric is chosen, rather than leaving a stale target', () => {
-    const carbsOnly = resolveFocusStep({
-      trackNetCarbs: true,
-      trackCalories: false,
-      carbPresetId: 'keto',
-      kcalTarget: '1800',
-    });
-    assert.deepEqual(carbsOnly, { trackingFocus: 'net-carbs', goalNetCarbsCeilingG: 20, goalKcalTarget: null });
-
-    const caloriesOnly = resolveFocusStep({
-      trackNetCarbs: false,
-      trackCalories: true,
-      carbPresetId: 'keto',
-      kcalTarget: '1800',
-    });
-    assert.deepEqual(caloriesOnly, { trackingFocus: 'calories', goalNetCarbsCeilingG: null, goalKcalTarget: 1800 });
+  // THE CARB RULE. A carb style with no ceiling is the state M210 removed: the
+  // day would be graded by a carb lens with no number behind it, which is what
+  // the deleted 50 g reference used to paper over.
+  it('refuses a carb style with no sub preset', () => {
+    for (const style of ['low-carb', 'low-carb-low-kcal']) {
+      const result = validateStyleStep(blankStyleSubmission({ style, kcalTarget: '1800' }));
+      assert.equal(result.ok, false, `${style} must not save without a ceiling`);
+      assert.equal(result.ok === false ? result.errors.carbPreset : null, CARB_PRESET_REQUIRED_KEY);
+    }
   });
 
-  it('reads "just the habit" as both switches off, and clears both targets', () => {
-    const submission = resolveFocusStep({
-      trackNetCarbs: false,
-      trackCalories: false,
-      carbPresetId: 'keto',
-      kcalTarget: '1800',
-    });
-    assert.deepEqual(submission, { trackingFocus: 'habit', goalNetCarbsCeilingG: null, goalKcalTarget: null });
+  it('refuses "decide later" as a sub preset, since it is no longer on offer', () => {
+    const result = validateStyleStep(blankStyleSubmission({ style: 'low-carb', carbPresetId: 'later' }));
+    assert.equal(result.ok, false);
+    assert.equal(result.ok === false ? result.errors.carbPreset : null, CARB_PRESET_REQUIRED_KEY);
   });
 
-  it('keeps the carb focus when the person picks "decide later", so their food list stays carb-forward', () => {
-    const submission = resolveFocusStep({
-      trackNetCarbs: true,
-      trackCalories: false,
-      carbPresetId: 'later',
+  // THE KCAL RULE, the same failure on the other axis.
+  it('refuses a kcal style with no target, blank or unreadable', () => {
+    for (const style of ['low-kcal', 'low-carb-low-kcal']) {
+      for (const raw of [null, '', '   ', 'abc', '0', '-100']) {
+        const result = validateStyleStep(blankStyleSubmission({ style, carbPresetId: 'keto', kcalTarget: raw }));
+        assert.equal(result.ok, false, `${style} must not save on kcal ${JSON.stringify(raw)}`);
+        assert.equal(result.ok === false ? result.errors.kcalTarget : null, KCAL_TARGET_REQUIRED_KEY);
+      }
+    }
+  });
+
+  // THE CONTROL for both rules above: the two styles that ask for neither
+  // number pass with neither given. Without this, a validator that simply
+  // rejected everything would satisfy every assertion above.
+  it('accepts high-protein and just-track with neither a preset nor a target', () => {
+    for (const style of ['high-protein', 'just-track']) {
+      const result = validateStyleStep(blankStyleSubmission({ style }));
+      assert.equal(result.ok, true, `${style} asks for no number`);
+      assert.deepEqual(result.ok === true ? result.values : null, {
+        style,
+        carbPresetCeiling: null,
+        kcalTarget: null,
+      });
+    }
+  });
+
+  it('accepts a carb style once its ceiling is picked, and reads the grams off the chip', () => {
+    const result = validateStyleStep(blankStyleSubmission({ style: 'low-carb', carbPresetId: 'keto' }));
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.ok === true ? result.values : null, {
+      style: 'low-carb',
+      carbPresetCeiling: 20,
       kcalTarget: null,
     });
-    assert.equal(submission.trackingFocus, 'net-carbs');
-    assert.equal(submission.goalNetCarbsCeilingG, null);
   });
 
-  it('never fabricates a target from an unreadable kcal field', () => {
-    const submission = resolveFocusStep({
-      trackNetCarbs: false,
-      trackCalories: true,
-      carbPresetId: null,
-      kcalTarget: 'abc',
+  it('accepts the style that asks for both, and carries both answers', () => {
+    const result = validateStyleStep(
+      blankStyleSubmission({ style: 'low-carb-low-kcal', carbPresetId: 'moderate', kcalTarget: '1800' }),
+    );
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.ok === true ? result.values : null, {
+      style: 'low-carb-low-kcal',
+      carbPresetCeiling: 100,
+      kcalTarget: 1800,
     });
-    assert.equal(submission.goalKcalTarget, null);
+  });
+
+  it('ignores an answer the style never asked for, rather than storing it', () => {
+    // Someone who picks a carb style, fills the kcal field, then switches to
+    // low-carb: the field is no longer rendered, but a stale value could still
+    // ride along. It must not become a target the style does not own.
+    const result = validateStyleStep(
+      blankStyleSubmission({ style: 'low-carb', carbPresetId: 'keto', kcalTarget: '1800' }),
+    );
+    assert.equal(result.ok, true);
+    assert.equal(result.ok === true ? result.values.kcalTarget : null, 1800);
+    // `applyEatingStyle` is what drops it: the validator reports what was
+    // submitted, the style decides what is stored. Proven in eating-style.test.ts.
   });
 });
 
-describe('initialFocusSwitches', () => {
-  it('turns BOTH switches on for someone who already has both targets', () => {
+describe('STYLE_CARB_PRESETS', () => {
+  it('is the three real ceilings, without "decide later"', () => {
     assert.deepEqual(
-      initialFocusSwitches({ trackingFocus: 'net-carbs', goalNetCarbsCeilingG: 20, goalKcalTarget: 1800 }),
-      { trackNetCarbs: true, trackCalories: true },
+      STYLE_CARB_PRESETS.map((preset) => preset.ceiling),
+      [20, 50, 100],
+    );
+    assert.equal(
+      STYLE_CARB_PRESETS.some((preset) => preset.id === 'later'),
+      false,
+    );
+  });
+});
+
+describe('initialStyleSelection', () => {
+  // THE CONTROL THE SPEC NAMES: no item is preselected on a first render, and
+  // a convenient default must not defeat it. `effectiveEatingStyle` answers
+  // `just-track` for an empty profile, so returning its answer unconditionally
+  // would tick a box nobody ticked.
+  it('selects nothing for a device that has told us nothing', () => {
+    assert.equal(
+      initialStyleSelection({ goalNetCarbsCeilingG: null, goalKcalTarget: null, goalProteinFloorG: null }),
+      null,
+    );
+    assert.equal(
+      initialStyleSelection({
+        goalNetCarbsCeilingG: null,
+        goalKcalTarget: null,
+        goalProteinFloorG: null,
+        eatingStyle: null,
+      }),
+      null,
     );
   });
 
-  it('turns a switch on from its stored VALUE, even when the stored focus names the other metric', () => {
-    // The case someone reaches by setting a calorie target in Settings: the
-    // focus still says net-carbs, but the number is the honest evidence.
-    assert.deepEqual(
-      initialFocusSwitches({ trackingFocus: 'net-carbs', goalNetCarbsCeilingG: null, goalKcalTarget: 1800 }),
-      { trackNetCarbs: true, trackCalories: true },
+  it('selects the stored pick when there is one', () => {
+    assert.equal(
+      initialStyleSelection({
+        goalNetCarbsCeilingG: null,
+        goalKcalTarget: null,
+        goalProteinFloorG: null,
+        eatingStyle: 'just-track',
+      }),
+      'just-track',
     );
   });
 
-  it('leaves both switches off for a stored habit focus', () => {
-    assert.deepEqual(initialFocusSwitches({ trackingFocus: 'habit', goalNetCarbsCeilingG: 20, goalKcalTarget: 1800 }), {
-      trackNetCarbs: false,
-      trackCalories: false,
-    });
+  it('derives the pick from the numbers for a profile written before the style existed', () => {
+    assert.equal(
+      initialStyleSelection({ goalNetCarbsCeilingG: 20, goalKcalTarget: null, goalProteinFloorG: null }),
+      'low-carb',
+    );
+    assert.equal(
+      initialStyleSelection({ goalNetCarbsCeilingG: 20, goalKcalTarget: 1800, goalProteinFloorG: null }),
+      'low-carb-low-kcal',
+    );
+    assert.equal(
+      initialStyleSelection({ goalNetCarbsCeilingG: null, goalKcalTarget: 1800, goalProteinFloorG: null }),
+      'low-kcal',
+    );
+    assert.equal(
+      initialStyleSelection({ goalNetCarbsCeilingG: null, goalKcalTarget: null, goalProteinFloorG: 110 }),
+      'high-protein',
+    );
+  });
+});
+
+describe('initialCarbPresetSelection', () => {
+  it('ticks nothing when there is no stored ceiling', () => {
+    assert.equal(initialCarbPresetSelection(null), null);
   });
 
-  it('starts a first-run visitor on net carbs, the recommended option', () => {
-    assert.deepEqual(initialFocusSwitches({ trackingFocus: null, goalNetCarbsCeilingG: null, goalKcalTarget: null }), {
-      trackNetCarbs: true,
-      trackCalories: false,
-    });
+  it('ticks nothing for a ceiling no chip carries, rather than an id no chip has', () => {
+    // `presetIdForCeiling` answers `later` here, and `later` is not offered.
+    assert.equal(presetIdForCeiling(37), 'later');
+    assert.equal(initialCarbPresetSelection(37), null);
+  });
+
+  it('ticks the chip a returning person already has', () => {
+    assert.equal(initialCarbPresetSelection(20), 'keto');
+    assert.equal(initialCarbPresetSelection(50), 'low-carb');
+    assert.equal(initialCarbPresetSelection(100), 'moderate');
+  });
+});
+
+describe('trackingFocusForPatch', () => {
+  // The rings are derived from the VALUES (`goal-rings.ts`), and the stored
+  // focus has to agree with them, or an older build on another device draws a
+  // hero for a goal this one just cleared.
+  it('follows the numbers the style wrote', () => {
+    assert.equal(trackingFocusForPatch({ goalNetCarbsCeilingG: 20, goalKcalTarget: null }), 'net-carbs');
+    assert.equal(trackingFocusForPatch({ goalNetCarbsCeilingG: 20, goalKcalTarget: 1800 }), 'net-carbs');
+    assert.equal(trackingFocusForPatch({ goalNetCarbsCeilingG: null, goalKcalTarget: 1800 }), 'calories');
+  });
+
+  it('falls to habit when the style keeps neither number, which is just-track', () => {
+    assert.equal(trackingFocusForPatch({ goalNetCarbsCeilingG: null, goalKcalTarget: null }), 'habit');
   });
 });

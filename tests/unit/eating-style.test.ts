@@ -336,8 +336,10 @@ describe('the caution note', () => {
 
   it('links a source that resolves', () => {
     // The deeper DGE page named in the design note answered 404 on 2026-09-09,
-    // so the note points at the DGE landing page instead.
-    assert.equal(STYLE_CAUTION_SOURCE_URL, 'https://www.dge.de/');
+    // so the note points at the DGE reference values index instead, which
+    // answered 200 the same day and is where the pregnancy and lactation
+    // intake figures live.
+    assert.equal(STYLE_CAUTION_SOURCE_URL, 'https://www.dge.de/wissenschaft/referenzwerte/');
   });
 });
 

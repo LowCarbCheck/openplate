@@ -302,12 +302,13 @@ export function applyEatingStyle(input: ApplyEatingStyleInput): ApplyEatingStyle
 export type EatingStyleCaution = 'caution';
 
 /**
- * The page the caution note links to. The DGE's pregnancy and lactation page
- * was checked with `curl -sI` on 2026-09-09 and answered 404, so the note
- * points at the DGE landing page instead, because a link that resolves is worth more
- * than a deeper link that dies.
+ * The page the caution note links to: the DGE's reference values index, which
+ * is where the energy and nutrient intake figures for pregnancy and lactation
+ * live. The deeper page on nutrition in pregnancy answered 404 when it was
+ * checked on 2026-09-09; this one answered 200 the same day. A link that
+ * resolves is worth more than a deeper link that dies.
  */
-export const STYLE_CAUTION_SOURCE_URL = 'https://www.dge.de/';
+export const STYLE_CAUTION_SOURCE_URL = 'https://www.dge.de/wissenschaft/referenzwerte/';
 
 /**
  * Whether to show the sourced caution note under the style list. Pregnancy and
