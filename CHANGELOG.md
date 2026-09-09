@@ -15,6 +15,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The withdrawal instruction and the model form now have a page.** `/withdrawal` carries the statutory Widerrufsbelehrung and the Muster-Widerrufsformular, which the terms already linked to. The German text is the binding one and follows the model in the EGBGB word for word; the English beside it is a translation, and the page says so. The operator's telephone number is still missing from it, and the page leaves no gap where it belongs.
 
+### Changed
+
+- **The scan screen drops a notice nobody could read.** On an instance an organization runs, the camera card told a signed out visitor to sign in before it would take a photo. Signing out closes that screen on that kind of instance, so the sentence was written for a card that never opened. It is gone, and signing out still sends you to the welcome screen as before.
+
 ## [0.26.0] - 2026-09-09
 
 ### Added

@@ -2223,7 +2223,7 @@ function useKeylessSharedPhotoPreview(): string | null {
 }
 
 /**
- * Which of the three connect cards this instance shows a user who has no AI
+ * Which of the connect cards this instance shows a user who has no AI
  * connection yet.
  *
  * - `self-hosted`: nobody but the provider the user picks themselves, so the
@@ -2231,34 +2231,40 @@ function useKeylessSharedPhotoPreview(): string | null {
  * - `instance-ai`: this instance runs an inference endpoint of its own (M138
  *   spec 06), and the recipient is NAMED — a person deciding whether to press
  *   the shutter is deciding who sees the photo.
- * - `managed-missing`: a managed instance (M187 spec 03, M192) with a session
- *   OPEN, where AI comes from the account and never from a button on this
- *   card. It wins over a preset: a person here brings no key of their own, and
- *   the answer to a missing connection is their administrator rather than a
- *   provider signup.
- * - `managed-signed-out`: the same instance with NO session. The card must not
- *   name an administrator here, the account is very probably fine, and the
- *   only true sentence is that this device is signed out.
+ * - `managed-missing`: a managed instance (M187 spec 03, M192), where AI comes
+ *   from the account and never from a button on this card. It wins over a
+ *   preset: a person here brings no key of their own, and the answer to a
+ *   missing connection is their administrator rather than a provider signup.
  * - `resuming`: the same instance while the session is still being reopened.
  *   Not a card at all; `ConnectCard` renders the screen's loading placeholder,
- *   because the two managed answers above are opposite and one of them would
- *   be wrong for the second the resume takes.
+ *   because a managed answer picked before the resume settles could be wrong
+ *   for the moment the resume takes.
  *
- * ── The incident this third argument exists for (0.10.3) ─────────────────
+ * ── The incident this rule exists for (0.10.3) ────────────────────────────
  *
  * A managed instance signed people out silently: a spent refresh token in the
  * device's cache was read by the service as theft and the whole family was
  * revoked. This screen then told them their account was not switched on for
  * photo estimates and to ask their administrator, of an account with a limit
  * of 200 that was never suspended and whose owner had done nothing. The rule
- * (`resolveEffectiveAiSettings`) was right to answer `null` for all three
- * cases; naming them is the SCREEN's job, and this is the screen.
+ * (`resolveEffectiveAiSettings`) was right to answer `null` regardless of
+ * session; naming a cause is the SCREEN's job, and this is the screen.
+ *
+ * ── THE SIGNED-OUT CARD IS GONE (M204 spec 07) ────────────────────────────
+ *
+ * A fourth variant used to name a managed instance with no session, and sent
+ * the person to the screen that reopens one. It cannot happen on this screen:
+ * `_personal.tsx`'s gate reads `isDeviceLocked() || no session` and sends
+ * every personal route, `/scan` included, to `/welcome` before this card ever
+ * renders. The identical dead state was removed from `/describe` and `/add`
+ * in M204 spec 01 (`resolveAiIntakeDoor`); this is the same decision for the
+ * one screen it had not reached yet. See `use-ai-connection.ts` for the full
+ * reasoning, which applies here unchanged.
  */
 export type ConnectCardVariant =
   | { kind: 'self-hosted' }
   | { kind: 'instance-ai'; host: string }
   | { kind: 'managed-missing' }
-  | { kind: 'managed-signed-out' }
   | { kind: 'resuming' };
 
 /** Whether this device holds a session, as this card has to ask it. */
@@ -2286,8 +2292,10 @@ export function resolveConnectCardVariant({
   sessionState: ConnectSessionState;
 }): ConnectCardVariant {
   if (managed) {
+    // NOT SIGNED-IN VS SIGNED-OUT any more (M204 spec 07): the device lock
+    // sends a signed-out device to `/welcome` before this ever renders, so
+    // `resuming` is the only session shape left to distinguish.
     if (sessionState === 'resuming') return { kind: 'resuming' };
-    if (sessionState === 'signed-out') return { kind: 'managed-signed-out' };
     return { kind: 'managed-missing' };
   }
   // An open instance's card does not depend on a session at all: the key is
@@ -2320,8 +2328,9 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
   // being a managed instance whose server proxies AI for its accounts (M192).
   const { aiComesFromTheInstance } = useInstancePolicy();
   const instancePreset = useInstanceInferencePreset();
-  // AND WHETHER THIS DEVICE IS SIGNED IN, which on a managed instance decides
-  // between two opposite sentences. See `resolveConnectCardVariant`.
+  // AND WHETHER THIS DEVICE IS STILL RESUMING A SESSION, the one session
+  // question a managed instance's card still asks (M204 spec 07). See
+  // `resolveConnectCardVariant`.
   const session = useSyncSession();
   // AND WHY, when the answer is "this account has no allowance". Three
   // different facts wear that one variant, and only one of them is "ask your
@@ -2350,9 +2359,11 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
  *
  * SPLIT FROM THE HOOKS ABOVE so every shape can be rendered in a test. The
  * session snapshot is read through `useSyncExternalStore`, whose server
- * snapshot is a constant signed-out session, so a static render of the
- * container can only ever produce the signed-out shape, and the other two
- * would have no test at all.
+ * snapshot is a constant signed-out session, and on a managed instance that
+ * now resolves to `managed-missing` regardless, the same shape a signed-in
+ * device gets (M204 spec 07). `self-hosted` and `instance-ai` still need
+ * `ConnectCardView` rendered directly, because those depend on the instance,
+ * not the session.
  */
 export function ConnectCardView({
   variant,
@@ -2375,10 +2386,10 @@ export function ConnectCardView({
   const revalidator = useRevalidator();
   const addHref = logDate ? `/add?date=${logDate}` : '/add';
   const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
-  // BOTH MANAGED SHAPES SUPPRESS THE SAME BUTTONS. There is no key to bring on
-  // a managed instance whether or not anybody is signed in, so the OAuth
-  // button, the preset and the manual settings link are wrong in both.
-  const isManaged = variant.kind === 'managed-missing' || variant.kind === 'managed-signed-out';
+  // THE MANAGED SHAPE SUPPRESSES THE SAME BUTTONS the open shapes offer.
+  // There is no key to bring on a managed instance, so the OAuth button, the
+  // preset and the manual settings link are all wrong here.
+  const isManaged = variant.kind === 'managed-missing';
   return (
     <Card>
       <CardHeader>
@@ -2400,7 +2411,9 @@ export function ConnectCardView({
             connection arrives with an invite link, never from a button here,
             so the card explains the gap and points at the person who invited
             them. The recipient line is dropped in that case, because no photo
-            goes anywhere yet.
+            goes anywhere yet. There is no fourth, signed-out shape any more
+            (M204 spec 07): the device lock sends that visit to `/welcome`
+            before this card renders.
             The audit line, when a gateway declared one, is rendered by
             `AuditReviewNotice` on the connected screen — it describes a
             connection that does not exist yet on this card. */}
@@ -2435,18 +2448,6 @@ export function ConnectCardView({
                 })}
               </p>
             )}
-          </div>
-        )}
-        {/* AND THE OPPOSITE ANSWER, for the same instance with no session open.
-            No administrator is named here: the account is very probably fine
-            and nothing about it has to change. What is missing is the session,
-            and the door to it is on this card rather than three taps away. */}
-        {variant.kind === 'managed-signed-out' && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">{t('scan.setup.managedSignedOut.body')}</p>
-            <Button asChild className="h-11 w-full">
-              <Link to="/sign-in">{t('scan.setup.managedSignedOut.cta')}</Link>
-            </Button>
           </div>
         )}
         {/* One tap, no key to go and get — renders nothing at all when this

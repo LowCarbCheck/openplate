@@ -109,7 +109,8 @@ const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account
  * somebody who cannot run an AI intake (0.20.0). It is the one managed branch
  * of that notice: the other names the person's own provider and is true only
  * where they bring one. The signed-out branch left with M204 spec 01, because
- * the device lock closes both screens before it can be read.
+ * the device lock closes both screens before it can be read. `/scan`'s own
+ * signed-out card left the same way in M204 spec 07.
  */
 const MANAGED_BRANCH_KEYS = [
   'chrome.signIn',
@@ -126,8 +127,6 @@ const MANAGED_BRANCH_KEYS = [
   // M212 spec 04: the sentence for an allowance that ended on a date, which
   // is what an instance with no administrator says instead of the line above.
   'scan.setup.managedMissing.expired',
-  'scan.setup.managedSignedOut.body',
-  'scan.setup.managedSignedOut.cta',
   'scan.capture.managedDescription',
   'account.allowance.title',
   'account.allowance.body',

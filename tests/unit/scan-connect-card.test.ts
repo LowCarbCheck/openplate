@@ -12,7 +12,7 @@
  * and each assertion pins copy that must be present in one shape and absent in
  * the other.
  *
- * ── The third shape, and the incident that added it (M201, 0.10.3) ───────
+ * ── The incident behind the managed shape (M201, 0.10.3) ──────────────────
  *
  * A managed instance signed people out silently, and this card then told them
  * their account was not switched on for photo estimates and to ask their
@@ -21,11 +21,17 @@
  * been read as theft and the family revoked. The card was reading "no AI" as
  * "no allowance" because those were the only two answers it had.
  *
- * There are now three, and the session decides between them. THE VIEW IS
- * RENDERED DIRECTLY for the signed-in one: the container reads the session
- * through `useSyncExternalStore`, whose server snapshot is a constant
- * signed-out session, so a static render of it can only ever produce the
- * signed-out shape.
+ * ── THE THIRD, SIGNED-OUT SHAPE IS GONE (M204 spec 07) ────────────────────
+ *
+ * A card used to exist for the same instance with no session, pointing back
+ * at `/sign-in`. It could not be reached: `_personal.tsx`'s device-lock gate
+ * sends a signed-out visit to `/welcome` before this card ever renders,
+ * exactly the reasoning that removed the twin door from `/describe` and
+ * `/add` in M204 spec 01. `resolveConnectCardVariant` now answers
+ * `managed-missing` for a signed-out session too, and the tests below pin
+ * that on both sides: the container's constant signed-out server snapshot
+ * renders the same shape a signed-in device gets, and no sign-in link is
+ * left anywhere in this file's markup.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -189,27 +195,44 @@ describe('resolveConnectCardVariant', () => {
     });
   });
 
-  it('names the session, not the account, when the device is signed out', () => {
+  it('is the managed dead end for a signed-out session too, because the lock already redirected it', () => {
+    // THE M204 SPEC 07 DECISION. A signed-out device on a managed instance
+    // cannot reach this rule at all, because `_personal.tsx`'s gate sends it
+    // to `/welcome` first, so there is no reason left for this function to
+    // say anything different for `signed-out` than it says for `signed-in`.
     assert.deepEqual(resolveConnectCardVariant({ managed: true, presetBaseUrl: null, sessionState: 'signed-out' }), {
-      kind: 'managed-signed-out',
+      kind: 'managed-missing',
+    });
+  });
+
+  it('still tells resuming apart from a settled session', () => {
+    // THE CONTROL for the assertion above. Without it, `resolveConnectCardVariant`
+    // could ignore `sessionState` entirely and still pass, and this proves the
+    // parameter still does something, just not a signed-out/signed-in split.
+    assert.deepEqual(resolveConnectCardVariant({ managed: true, presetBaseUrl: null, sessionState: 'resuming' }), {
+      kind: 'resuming',
     });
   });
 });
 
-describe('ConnectCard on a managed instance with no session', () => {
+describe('ConnectCard on a managed instance, container rendered with the constant signed-out snapshot', () => {
+  // `useSyncExternalStore`'s server snapshot is a constant signed-out
+  // session, so this is the one way to render the CONTAINER, hooks and all,
+  // without a session already open, the same static render that used to
+  // produce the sign-in door.
   const markup = render(publicConfig({ managed: true }));
 
-  it('offers the way back in', () => {
-    assert.ok(markup.includes(SIGN_IN_HREF), markup.slice(0, 600));
-    assert.ok(markup.includes('Sign in'));
+  it('renders the same dead end a signed-in device gets', () => {
+    assert.ok(markup.includes(MANAGED_MISSING), markup.slice(0, 600));
+    assert.ok(markup.includes(ASK_ADMIN), markup.slice(0, 600));
   });
 
-  it('does NOT send the person to their administrator', () => {
-    // THE INCIDENT, in one assertion. The account is very probably fine, the
-    // session is what ended, and an administrator asked to switch on photo
-    // estimates that are already on can do nothing at all.
-    assert.ok(!markup.includes(ASK_ADMIN), markup.slice(0, 600));
-    assert.ok(!markup.includes(MANAGED_MISSING));
+  it('offers no way back into a session, because there is no door left to it', () => {
+    // THE M204 SPEC 07 DECISION, in one assertion. A card that answered "sign
+    // in again" here has confused the account, which is very probably fine,
+    // with the session that ended, which is the INCIDENT this card exists for.
+    assert.ok(!markup.includes(SIGN_IN_HREF), markup.slice(0, 600));
+    assert.ok(!markup.includes('Sign in'));
   });
 
   it('still brings no key of its own into it', () => {

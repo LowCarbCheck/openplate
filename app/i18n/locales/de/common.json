@@ -1872,10 +1872,6 @@
         "askAdmin": "Bitte deine Administration, sie zu aktivieren. In der Zwischenzeit kannst du Mahlzeiten ohne Foto eintragen.",
         "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}. Du kannst Lebensmittel immer noch ohne Foto hinzufügen."
       },
-      "managedSignedOut": {
-        "body": "Du bist auf diesem Gerät abgemeldet, daher sind Foto-Schätzungen deaktiviert. Melde dich wieder an, um sie zu nutzen.",
-        "cta": "Anmelden"
-      },
       "managed": {
         "description": "Fotografiere deinen Teller und die Kohlenhydrate werden für dich berechnet."
       }
