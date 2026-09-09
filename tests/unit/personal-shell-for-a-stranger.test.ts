@@ -31,6 +31,7 @@ import {
 } from '../../app/lib/onboarding-gate';
 import { INSTANCE_POLICIES } from '../../app/config/instance-policy';
 import { strangerNoteVariantForPath } from '../../app/components/stranger-note';
+import { shellForGate, type PersonalShell, type PersonalShellInput } from '../../app/lib/personal-shell';
 
 /**
  * A stranger's device on a page the gate does not guard: nothing written, no
@@ -209,5 +210,90 @@ describe('both layouts draw the same public shell', () => {
       readFileSync(fileURLToPath(new URL('../../app/components/public-shell.tsx', import.meta.url)), 'utf8'),
       /public-wrapper/,
     );
+  });
+});
+
+/**
+ * THE COLD-BOOT FLASH, and the mapping that closes it.
+ *
+ * A browser walk on a managed instance measured about 240 ms of sidebar and
+ * device chip on a stranger's first load of `/settings/preferences`. The gate
+ * was right and the branch was right; the FIRST answer was `wait`, because
+ * `getSyncSessionSnapshot()` reports `isResuming` until `SyncController`
+ * mounts, and `wait` was drawn as the app shell. So `wait` on an exempt path
+ * is now its own chrome.
+ *
+ * One case per row, and every row is paired: the control flips ONE field and
+ * the answer has to change, so no row can pass against a function that returns
+ * a constant.
+ */
+interface ShellCase {
+  /** What the row is about, in the words the assertion fails with. */
+  name: string;
+  /** The mapping's input. */
+  input: PersonalShellInput;
+  /** The chrome this input must produce. */
+  shell: PersonalShell;
+  /** One field changed, and the answer it must produce instead. */
+  control: { change: Partial<PersonalShellInput>; shell: PersonalShell };
+}
+
+const SHELL_CASES: ShellCase[] = [
+  {
+    name: 'a stranger on an exempt page, managed',
+    input: { gateKind: 'exempt', isExemptPath: true, strangerSeesThePublicShell: true },
+    shell: 'public',
+    // The same visitor on an instance that keeps its people in the app.
+    control: { change: { strangerSeesThePublicShell: false }, shell: 'app' },
+  },
+  {
+    name: 'the cold-boot wait on an exempt page, managed',
+    input: { gateKind: 'wait', isExemptPath: true, strangerSeesThePublicShell: true },
+    shell: 'loading',
+    // The same wait on a guarded route is a device with a diary reopening its
+    // session, and it keeps the app shell it already had.
+    control: { change: { isExemptPath: false }, shell: 'app' },
+  },
+  {
+    name: 'a person with a diary on an exempt page',
+    input: { gateKind: 'pass', isExemptPath: true, strangerSeesThePublicShell: true },
+    shell: 'app',
+    // Take the diary away and the same page is the public chrome.
+    control: { change: { gateKind: 'exempt' }, shell: 'public' },
+  },
+  {
+    name: 'an open instance, whatever the gate said',
+    input: { gateKind: 'exempt', isExemptPath: true, strangerSeesThePublicShell: false },
+    shell: 'app',
+    // The policy is the only thing standing between this input and 'public'.
+    control: { change: { strangerSeesThePublicShell: true }, shell: 'public' },
+  },
+];
+
+describe('shellForGate', () => {
+  for (const testCase of SHELL_CASES) {
+    it(`draws the ${testCase.shell} chrome for ${testCase.name}`, () => {
+      assert.equal(shellForGate(testCase.input), testCase.shell);
+    });
+
+    it(`changes its answer when one field of "${testCase.name}" changes`, () => {
+      const mutated = { ...testCase.input, ...testCase.control.change };
+      assert.equal(shellForGate(mutated), testCase.control.shell);
+      assert.notEqual(testCase.control.shell, testCase.shell, 'the control must expect a DIFFERENT chrome');
+    });
+  }
+
+  it('never leaves an open instance a chrome it did not have before', () => {
+    // The whole open-instance surface in one sweep: no input can take a
+    // self-hoster out of the app shell.
+    for (const gateKind of ['pass', 'wait', 'exempt', 'welcome', 'recover', 'onboard', 'self-heal'] as const) {
+      for (const isExemptPath of [true, false]) {
+        assert.equal(
+          shellForGate({ gateKind, isExemptPath, strangerSeesThePublicShell: false }),
+          'app',
+          `${gateKind} on ${isExemptPath ? 'an exempt' : 'a guarded'} path changed an open instance`,
+        );
+      }
+    }
   });
 });

@@ -29,6 +29,7 @@ import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 import { PublicShell } from '#app/components/public-shell';
 import { StrangerNote, strangerNoteVariantForPath } from '#app/components/stranger-note';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { shellForGate } from '#app/lib/personal-shell';
 
 /**
  * The onboarding gate — the only gate this layout still runs, and it is purely
@@ -125,11 +126,11 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // NOT A REDIRECT. This layout renders the loading screen and mounts the
   // controller that reopens the session, then revalidates. A redirect here
   // would unmount the only thing that can settle the question.
-  if (outcome.kind === 'wait') return { gateKind: 'wait' as const };
+  if (outcome.kind === 'wait') return { gateKind: 'wait' as const, isExemptPath };
   // A STRANGER ON A PAGE THAT IS OPEN TO THEM. No redirect, and no app shell
   // either: the component below draws the public chrome for this kind. Only an
   // exempt path can produce it, so no gated route can reach this line.
-  if (outcome.kind === 'exempt') return { gateKind: 'exempt' as const };
+  if (outcome.kind === 'exempt') return { gateKind: 'exempt' as const, isExemptPath };
   if (outcome.kind === 'recover') throw redirect('/recover');
   // SIGNED IN WITH NO DIARY: the questionnaire, not the door. This is what a
   // freshly joined account hits on its first full navigation, and sending it
@@ -142,7 +143,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   if (outcome.kind === 'welcome') throw redirect('/welcome');
   if (outcome.kind === 'self-heal') await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
   writeHomeHint();
-  return { gateKind: 'pass' as const };
+  return { gateKind: 'pass' as const, isExemptPath };
 }
 clientLoader.hydrate = true as const;
 
@@ -158,13 +159,16 @@ clientLoader.hydrate = true as const;
  * again later); this one is the first-paint screen, and only on first paint —
  * a client-side nav never re-renders a `HydrateFallback`.
  *
- * IT IS ALSO THE NO-FLASH GUARANTEE (M204 spec 09). The shell a visitor gets
- * is decided by the client loader, so the default render before that loader
- * resolves must not be either shell: this fallback is what renders instead,
- * and it is why a stranger opening `/settings/preferences` never sees one
- * frame of the sidebar before the public chrome replaces it. A client-side
- * navigation into this layout runs the loader BEFORE it renders, so the same
- * holds there without a second mechanism.
+ * IT IS ONLY HALF OF THE NO-FLASH STORY, and the first version of M204 spec 09
+ * claimed it was all of it. This fallback covers the frames before the client
+ * loader RESOLVES, and it draws neither shell, which is correct. What it
+ * cannot cover is the answer that loader gives on a cold boot: the session
+ * snapshot reports `isResuming` before `SyncController` has mounted, so the
+ * first answer for everybody, stranger included, is `wait`. A browser walk
+ * measured about 240 ms of sidebar and device chip on `/settings/preferences`
+ * because that `wait` was drawn as the app shell. The mapping in
+ * `#app/lib/personal-shell` is what covers it, by giving `wait` on an exempt
+ * path its own chrome: the same loading screen this fallback shows.
  */
 export function HydrateFallback() {
   const { t } = useTranslation();
@@ -200,7 +204,7 @@ const leafBackToSchema = z.object({ backTo: z.string() });
  */
 export default function PersonalLayout() {
   const { t } = useTranslation();
-  const { gateKind } = useLoaderData<typeof clientLoader>();
+  const { gateKind, isExemptPath } = useLoaderData<typeof clientLoader>();
   const { strangerSeesThePublicShell } = useInstancePolicy();
   const { pathname } = useLocation();
   useRevalidateWhenTheSessionEnds();
@@ -218,18 +222,40 @@ export default function PersonalLayout() {
   // `title` remains the English fallback for the ones that haven't.
   const title = handle?.titleKey ? t(handle.titleKey) : handle?.title;
 
-  // THE KIND-TO-SHELL MAPPING, and the only copy of it (M204 spec 09). The
-  // gate says whether this visitor has anything here; the policy says whether
-  // this instance shows such a visitor the public chrome. Both, because the
-  // kinds are about the DEVICE and are reachable on an open instance too,
-  // where the app is where a self-hoster already is and the shell should not
-  // change under them.
-  if (gateKind === 'exempt' && strangerSeesThePublicShell) {
+  // THE KIND-TO-SHELL MAPPING. The rules and their order live in
+  // `#app/lib/personal-shell`, where a test can reach them; this is the only
+  // place that turns the answer into elements. `isExemptPath` comes from the
+  // LOADER, so the mapping reads the same path fact the gate read rather than
+  // a second reading of the URL.
+  const shell = shellForGate({ gateKind, isExemptPath, strangerSeesThePublicShell });
+
+  if (shell === 'public') {
     return (
       <PublicShell title={title}>
+        {/* `pathname` and not the loader's path fact, because this picks a
+            SENTENCE per page rather than deciding the chrome. */}
         <StrangerNote variant={strangerNoteVariantForPath(pathname)} />
         <Outlet />
       </PublicShell>
+    );
+  }
+
+  // NEITHER SHELL WHILE THE ANSWER IS STILL COMING. The screen is the same one
+  // `HydrateFallback` shows, deliberately: a cold boot goes fallback, then
+  // this, then the answer, and a person sees one loading screen throughout.
+  // The app shell is not allowed around it on an exempt path because the
+  // cold-boot `wait` is what every stranger gets first, and drawing the
+  // sidebar for it is the 240 ms flash this branch exists to remove.
+  //
+  // BOTH CHILDREN ARE LOAD-BEARING. `SyncController` is what ends the wait,
+  // and unmounting it here would leave the wait for ever; `SessionResumeGate`
+  // is what revalidates once the session has settled.
+  if (shell === 'loading') {
+    return (
+      <>
+        <SyncController />
+        <SessionResumeGate />
+      </>
     );
   }
 
