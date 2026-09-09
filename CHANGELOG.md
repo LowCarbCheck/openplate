@@ -2,6 +2,18 @@
 
 All notable user-facing changes to openplate are recorded here.
 
+## 0.22.0 - 2026-09-09
+
+- The protein row on the dashboard and in the diary now shows a reference
+  floor when you have set no protein goal. It uses the same small
+  "reference" tag as the fiber row. The figure is EFSA's population
+  reference intake. It uses 0.83 g of protein per kilogram of body weight
+  from your latest weigh-in. Without a weigh-in, it uses your height and
+  sex. It falls back to 50 g when the app knows neither. Pregnancy adds
+  28 g, and breastfeeding adds 19 g. A goal you set yourself always wins.
+- The food suggestions for an open protein or fiber gap now change from day
+  to day. A food you already logged today is not suggested again.
+
 ## 0.21.0 - 2026-09-09
 
 - The message box at /describe now looks like a chat: one rounded box that
