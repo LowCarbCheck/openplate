@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.23.2] - 2026-09-09
+
 ### Changed
 
-- **A sentence with a drink and a named milk logs two foods.** "Kaffee mit Hafermilch" used to become one item that no food database holds, so the lookup showed a cow-milk coffee or nothing. The sentence path now lists the coffee and the oat milk as two items, each with its own lookup. A named single product such as a cappuccino stays one item.
+- **A sentence with a drink and a named milk logs two foods.** "Kaffee mit Hafermilch" used to become one item that no food database holds, so the lookup showed a cow-milk coffee or nothing. The sentence path now lists the coffee and the oat milk as two items, each with its own lookup. A named single product such as a cappuccino stays one item. ([ee51b60](https://github.com/LowCarbCheck/openplate/commit/ee51b60))
 
 ## [0.23.1] - 2026-09-09
 
