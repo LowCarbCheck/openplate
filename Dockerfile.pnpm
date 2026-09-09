@@ -1,4 +1,4 @@
-# This Dockerfile builds the app from tracked source and nothing else — no
+# This Dockerfile builds the app from tracked source and nothing else, no
 # build secret, no private npmrc, no extra clone stage. Every dependency
 # resolves from public npm, which is the invariant
 # `argo-sprqvntrs/group_vars/all/services.yml` relies on.
@@ -6,12 +6,17 @@
 # M117/06 briefly complicated that: the E2EE sync engine lived in a separate
 # private repo and had to be copied into a gitignored `app/lib/sync/engine/`
 # by an infra-side step before `docker build` ran (an Argo pre-build hook
-# that never existed, so it stayed manual). M128 spec 01 deleted that seam —
+# that never existed, so it stayed manual). M128 spec 01 deleted that seam,
 # the engine is ordinary tracked source now, and the sync SERVER is a
 # separate deployable with its own image. There is deliberately nothing
 # sync-specific left in this file.
 FROM node:22-alpine AS dependencies-env
-RUN npm i -g pnpm
+# The global pnpm version here MUST equal the `packageManager` field in
+# package.json. A newer global pnpm downloads the declared version as a
+# separate self-managed binary, and that binary has no musl build for arm64,
+# so it segfaults on arm64 alpine before printing anything. See
+# tests/unit/dockerfile-pnpm-pin.test.ts.
+RUN npm i -g pnpm@11.1.1
 COPY . /app
 
 FROM dependencies-env AS development-dependencies-env
