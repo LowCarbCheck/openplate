@@ -12,6 +12,11 @@
  *     `reproductiveStatus` is the most sensitive datum in the file to lose
  *     without a word.
  *  3. A profile with **no body metrics** set behaves exactly as it always did.
+ *
+ * M206/01 added two more fields under the same rules, `pregnancyDueDate` and
+ * `lactationStartDate`, so the same three claims now carry a date each. A
+ * dropped date is worse than a dropped status: a restored pregnancy would still
+ * say "pregnant" and no longer know how far along it is.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -47,12 +52,13 @@ describe('schema version', () => {
   // at v12, clinician sharing at v13, the snapshot partition (M160/07) at
   // v14, research contributions (M161/03) at v15, the submitted research
   // window (M163/01) at v16, the gateway connection (M187/02) at v17, and its
-  // REMOVAL (M192) at v18 — the first bump here that deletes an entity.
+  // REMOVAL (M192) at v18, the first bump here that deletes an entity, and
+  // the pregnancy due date plus the lactation start date (M206/01) at v19.
   // What it guards is that a bump is never silent —
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 18 — bumped past the v8 body-metrics bump by everything through the M192 gateway removal', () => {
-    assert.equal(SCHEMA_VERSION, 18);
+  it('is 19, bumped past the v8 body-metrics bump by everything through the M206 pregnancy dates', () => {
+    assert.equal(SCHEMA_VERSION, 19);
   });
 });
 
@@ -73,6 +79,10 @@ describe('a v7 backup envelope', () => {
     assert.equal(profile?.birthYear, undefined);
     assert.equal(profile?.biologicalSex, undefined);
     assert.equal(profile?.reproductiveStatus, undefined);
+    // The v19 keys are absent on an old envelope for the same reason, and the
+    // v18 -> v19 bump added no migration step to fill them either (M206/01).
+    assert.equal(profile?.pregnancyDueDate, undefined);
+    assert.equal(profile?.lactationStartDate, undefined);
     // Nothing else about the older envelope was disturbed.
     assert.equal(profile?.goalNetCarbsCeilingG, 50);
     assert.equal(profile?.trackingFocus, 'net-carbs');
@@ -98,7 +108,14 @@ describe('a v8 backup envelope', () => {
     const store = createPrimaryStore();
     await putLocalProfileGoals({ ...V7_PROFILE, trackingFocus: 'net-carbs' }, { store });
     await putLocalBodyMetrics(
-      { heightCm: 165, birthYear: 1990, biologicalSex: 'female', reproductiveStatus: 'lactating' },
+      {
+        heightCm: 165,
+        birthYear: 1990,
+        biologicalSex: 'female',
+        reproductiveStatus: 'lactating',
+        pregnancyDueDate: null,
+        lactationStartDate: '2026-03-01',
+      },
       { store },
     );
 
@@ -113,13 +130,22 @@ describe('a v8 backup envelope', () => {
       birthYear: 1990,
       biologicalSex: 'female',
       reproductiveStatus: 'lactating',
+      pregnancyDueDate: null,
+      lactationStartDate: '2026-03-01',
     });
   });
 
   it('round-trips a cleared metric as cleared, not as never-set-then-guessed', async () => {
     const store = createPrimaryStore();
     await putLocalBodyMetrics(
-      { heightCm: 180, birthYear: null, biologicalSex: 'male', reproductiveStatus: null },
+      {
+        heightCm: 180,
+        birthYear: null,
+        biologicalSex: 'male',
+        reproductiveStatus: null,
+        pregnancyDueDate: null,
+        lactationStartDate: null,
+      },
       { store },
     );
 
@@ -162,18 +188,36 @@ describe('the store accessors', () => {
   it('never stores a pregnancy status without the sex it applies to', async () => {
     const store = createPrimaryStore();
     await putLocalBodyMetrics(
-      { heightCm: null, birthYear: null, biologicalSex: 'male', reproductiveStatus: 'pregnant' },
+      {
+        heightCm: null,
+        birthYear: null,
+        biologicalSex: 'male',
+        reproductiveStatus: 'pregnant',
+        pregnancyDueDate: '2026-11-02',
+        lactationStartDate: null,
+      },
       { store },
     );
 
-    assert.equal((await getLocalBodyMetrics({ store })).reproductiveStatus, null);
+    const metrics = await getLocalBodyMetrics({ store });
+    assert.equal(metrics.reproductiveStatus, null);
+    // And the date goes with the status it belonged to, rather than sitting in
+    // the store where no screen would ever show it again.
+    assert.equal(metrics.pregnancyDueDate, null);
   });
 
   it('clears every metric on request and leaves the rest of the profile alone', async () => {
     const store = createPrimaryStore();
     await putLocalProfileGoals({ ...V7_PROFILE, trackingFocus: 'net-carbs' }, { store });
     await putLocalBodyMetrics(
-      { heightCm: 165, birthYear: 1990, biologicalSex: 'female', reproductiveStatus: 'pregnant' },
+      {
+        heightCm: 165,
+        birthYear: 1990,
+        biologicalSex: 'female',
+        reproductiveStatus: 'pregnant',
+        pregnancyDueDate: '2026-11-02',
+        lactationStartDate: null,
+      },
       { store },
     );
 

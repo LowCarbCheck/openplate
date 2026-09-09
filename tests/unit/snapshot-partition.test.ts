@@ -110,6 +110,15 @@ const STUDY_LABEL_MARKER = 'Charite sleep trial';
  */
 const SENT_WINDOW_MARKER = '2026-08-24';
 
+/**
+ * M206/01's marker: the pregnancy due date on the profile. The profile is a
+ * SHARED key, so this date is disclosed to a grantee exactly as
+ * `reproductiveStatus` beside it always has been, the assertion below is
+ * positive about that on purpose, because the alternative reading (it silently
+ * vanishes in the partition) would be a lossy sync, not a privacy win.
+ */
+const DUE_DATE_MARKER = '2026-11-02';
+
 /** Argon2id stands in as a plain digest here. The LABELS are what this file tests, and they sit above the hash. */
 async function fakeArgon2id({ passphrase, salt }: { passphrase: string; salt: Uint8Array }): Promise<Uint8Array> {
   const material = new TextEncoder().encode(`${passphrase}::${bytesToBase64(salt)}`);
@@ -179,6 +188,13 @@ async function buildPopulatedSnapshot(): Promise<LocalStoreSnapshot> {
       trackingFocus: 'net-carbs',
       onboardingCompletedAt: 4_000,
       updatedAt: 4_000,
+      // The v19 fields (M206/01), on a profile that is genuinely pregnant. An
+      // empty profile would classify and round-trip just as happily, so the
+      // dates are seeded and then asserted present on the far side.
+      biologicalSex: 'female',
+      reproductiveStatus: 'pregnant',
+      pregnancyDueDate: DUE_DATE_MARKER,
+      lactationStartDate: null,
     },
     { store },
   );
@@ -307,6 +323,7 @@ describe('the snapshot classification map', () => {
     // vacuous: an empty snapshot leaks nothing and classifies nothing.
     assert.ok(snapshot.foods.length > 0 && snapshot.foodLogs.length > 0 && snapshot.weightEntries.length > 0);
     assert.ok(snapshot.fasts.length > 0 && snapshot.savedMeals.length > 0 && snapshot.profile !== null);
+    assert.equal(snapshot.profile?.pregnancyDueDate, DUE_DATE_MARKER);
     assert.equal(snapshot.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
     assert.equal(snapshot.sharePeers[0]?.label, PEER_LABEL_MARKER);
     assert.equal(snapshot.researchIdentity?.pseudonymRoot, PSEUDONYM_ROOT_MARKER);
@@ -384,6 +401,17 @@ describe('a clinician grantee', () => {
     // POSITIVE: the share works. Without this the absence claims below would
     // also pass on an empty blob, a wrong key, or a broken fixture.
     assert.ok(granteeView.includes(DIARY_MARKER), 'the grantee must actually be able to read the diary');
+    // The profile rides the SHARED region whole, dates included. This is a
+    // disclosure claim, not a plumbing one: a later edit that moved `profile`
+    // into the owner-private region would take a clinician's view of the
+    // pregnancy with it, and every other assertion in this file would stay
+    // green. The zod half of the same loss is pinned in
+    // `local-backup-roundtrip.test.ts`, which is where the profile meets a
+    // schema.
+    assert.ok(
+      granteeView.includes(DUE_DATE_MARKER),
+      'the pregnancy due date was lost between the store and the wire snapshot',
+    );
 
     // POSITIVE: what the grantee reaches instead of the key material is one
     // opaque ciphertext with two wraps it cannot open.

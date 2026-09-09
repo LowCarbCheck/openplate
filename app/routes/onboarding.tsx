@@ -16,11 +16,13 @@ import {
 } from '#app/lib/local-store';
 import {
   BIOLOGICAL_SEX_VALUES,
-  REPRODUCTIVE_STATUS_VALUES,
+  MAX_WEEKS_UNTIL_DUE_DATE,
   hasBodyMetricsErrors,
   validateBodyMetricsForm,
 } from '#app/models/body-metrics';
 import type { BodyMetrics, BodyMetricsSubmission } from '#app/models/body-metrics';
+import { ReproductiveStatusFields } from '#app/components/reproductive-status-fields';
+import type { ReproductiveStatusValue } from '#app/components/reproductive-status-fields';
 import { todayInTimezone } from '#app/lib/user-days';
 import { clearHomeHint, writeHomeHint } from '#app/lib/home-entry';
 import { CONFIG } from '#app/config';
@@ -227,8 +229,11 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     currentWeightKg: latestWeight?.weightKg ?? null,
     // Prefilled so re-entering the flow (or stepping back) shows what the
     // person already told us rather than an empty form that looks like it lost
-    // their answers. All four may be null — that is the normal case.
+    // their answers. Every field may be null, that is the normal case.
     bodyMetrics: await getLocalBodyMetrics(),
+    // The body step turns a due date into a trimester line, and it does that
+    // against the person's own calendar day rather than the browser's.
+    today: todayInTimezone(resolveLocalTimezone(profile)),
   };
 }
 clientLoader.hydrate = true as const;
@@ -301,8 +306,13 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         birthYear: readField(formData, 'birthYear'),
         biologicalSex: readField(formData, 'biologicalSex'),
         reproductiveStatus: readField(formData, 'reproductiveStatus'),
+        // Both dates are read here as well, so a person who answers the
+        // pregnancy question during onboarding keeps the date they typed. They
+        // stay optional, exactly like every other field on this step.
+        pregnancyDueDate: readField(formData, 'pregnancyDueDate'),
+        lactationStartDate: readField(formData, 'lactationStartDate'),
       },
-      { currentYear: new Date().getFullYear() },
+      { currentYear: new Date().getFullYear(), today: new Date() },
     );
     // Same rule as the weight step: stay put when a field was filled in but
     // can't be read, rather than advancing having quietly dropped it.
@@ -1034,16 +1044,16 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
   const [heightCm, setHeightCm] = useState(stored.heightCm === null ? '' : String(stored.heightCm));
   const [birthYear, setBirthYear] = useState(stored.birthYear === null ? '' : String(stored.birthYear));
   const [biologicalSex, setBiologicalSex] = useState<string>(stored.biologicalSex ?? '');
-  const [reproductiveStatus, setReproductiveStatus] = useState<string>(stored.reproductiveStatus ?? 'none');
+  const [reproductive, setReproductive] = useState<ReproductiveStatusValue>({
+    reproductiveStatus: stored.reproductiveStatus ?? 'none',
+    pregnancyDueDate: stored.pregnancyDueDate ?? '',
+    lactationStartDate: stored.lactationStartDate ?? '',
+  });
 
   const sexOptions = [
     ...BIOLOGICAL_SEX_VALUES.map((value) => ({ value, label: t(`bodyMetrics.sex.${value}`) })),
     { value: '', label: t('bodyMetrics.sex.unset') },
   ];
-  const statusOptions = REPRODUCTIVE_STATUS_VALUES.map((value) => ({
-    value,
-    label: t(`bodyMetrics.reproductive.${value}`),
-  }));
 
   return (
     <StepShell title={t('onboarding.step.body.title')} description={t('onboarding.step.body.description')}>
@@ -1075,20 +1085,47 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
           selected={biologicalSex}
           onSelect={setBiologicalSex}
         />
-        {/* Only asked of the people the answer can apply to, and `none` is
-            always right there to put it back. `normalizeBodyMetrics` drops any
-            stored status the moment this condition stops holding, so hiding the
-            control never leaves a stale answer behind in the store. */}
-        {biologicalSex === 'female' && (
-          <ChipRadioGroup
-            name="reproductiveStatus"
-            legend={t('bodyMetrics.reproductive.legend')}
-            hint={t('bodyMetrics.reproductive.hint')}
-            options={statusOptions}
-            selected={reproductiveStatus}
-            onSelect={setReproductiveStatus}
-          />
-        )}
+        {/* The same fieldset `/settings/goals` shows, component and all, so the
+            wizard and the settings page cannot drift about what may be entered
+            here. It asks anyone who did not answer "male", it reveals one date
+            beside the chosen chip, and `none` is always right there to put the
+            answer back. Still optional: Skip walks past it, and a status with
+            no date is a perfectly good save.
+
+            `normalizeBodyMetrics` drops a stored status, and its date with it,
+            the moment the answer stops applying, so hiding the control never
+            leaves a stale answer behind in the store. */}
+        <ReproductiveStatusFields
+          biologicalSex={biologicalSex}
+          value={reproductive}
+          onChange={setReproductive}
+          today={loaderData.today}
+          statusName="reproductiveStatus"
+          dueDateField={{
+            name: 'pregnancyDueDate',
+            id: 'pregnancyDueDate',
+            errorId: 'pregnancyDueDate-error',
+            errors:
+              errors.pregnancyDueDate ?
+                [t(errors.pregnancyDueDate, { weeks: MAX_WEEKS_UNTIL_DUE_DATE })]
+              : undefined,
+          }}
+          lactationStartDateField={{
+            name: 'lactationStartDate',
+            id: 'lactationStartDate',
+            errorId: 'lactationStartDate-error',
+            errors:
+              errors.lactationStartDate ?
+                [t(errors.lactationStartDate, { weeks: MAX_WEEKS_UNTIL_DUE_DATE })]
+              : undefined,
+          }}
+          chipClassName={(isSelected) =>
+            cn(
+              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
+              chipClass(isSelected),
+            )
+          }
+        />
         <StepActions primaryIntent={INTENT.SAVE_BODY} primaryPendingLabel={t('onboarding.actions.saving')} />
       </Form>
     </StepShell>

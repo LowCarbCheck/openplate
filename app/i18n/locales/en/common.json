@@ -185,6 +185,10 @@
     "backupNeverExported": "Your diary only lives here: one device, no cloud. Back it up in 10 seconds.",
     "loggingTo": "Logging to <day>{{label}}</day>",
     "offlineDefault": "You're offline. Recent days are readable; new logs sync when you reconnect.",
+    "reproductiveStatusPromptDismiss": "Not now",
+    "reproductiveStatusPromptDueDate": "Your due date has passed. Still pregnant, or time to update your settings?",
+    "reproductiveStatusPromptLactation": "It has been over two years of breastfeeding. Still breastfeeding, or time to update your settings?",
+    "reproductiveStatusPromptUpdate": "Update",
     "switchToToday": "Switch to today"
   },
   "bodyMetrics": {
@@ -211,11 +215,37 @@
       "placeholder": "e.g. 175"
     },
     "reproductive": {
+      "derivedMonths_one": "{{count}} month of breastfeeding.",
+      "derivedMonths_other": "{{count}} months of breastfeeding.",
+      "derivedNotSet": "No date yet. Until you add one we use the largest reference amount for this answer.",
+      "derivedTrimester": "{{trimester}}, week {{week}}.",
+      "dueDate": {
+        "hint": "The date you were given. We work the week out from it, so it stays right without you coming back to change it.",
+        "label": "Due date"
+      },
+      "errors": {
+        "dueDatePast": "That date has passed. Enter today or a later one.",
+        "dueDateRange": "Enter a due date within the next {{weeks}} weeks.",
+        "startDateFuture": "That date is in the future. Enter today or an earlier one."
+      },
       "hint": "Both change the reference amounts for several nutrients. Pick \"Neither\" whenever you want it gone.",
       "lactating": "Breastfeeding",
       "legend": "Pregnant or breastfeeding?",
       "none": "Neither",
-      "pregnant": "Pregnant"
+      "pregnant": "Pregnant",
+      "startDate": {
+        "hint": "We count the months of breastfeeding from this day, and the reference amounts change after six of them.",
+        "label": "Your baby's date of birth"
+      },
+      "trimester": {
+        "first": "First trimester",
+        "second": "Second trimester",
+        "third": "Third trimester"
+      },
+      "weeksAlong": {
+        "hint": "Type the week you are in and we fill in the due date above. Only the date is saved.",
+        "label": "Or the week you are in today"
+      }
     },
     "save": "Save details",
     "sex": {
@@ -434,6 +464,8 @@
       "netCarbsDefinition": "Net carbs = carbs minus fiber, minus any sugar alcohols.",
       "noTarget": "No target set",
       "referenceTag": "reference",
+      "referenceTagDateMissing": "reference, add your due date",
+      "referenceTagBirthDateMissing": "reference, add the birth date",
       "setTargets": "Set your own targets",
       "whatYouAte": "What you ate"
     },

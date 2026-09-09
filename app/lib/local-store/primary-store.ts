@@ -268,6 +268,8 @@ const EMPTY_PROFILE_GOALS: LocalProfileGoals = {
   birthYear: null,
   biologicalSex: null,
   reproductiveStatus: null,
+  pregnancyDueDate: null,
+  lactationStartDate: null,
 };
 
 /**
@@ -294,8 +296,8 @@ export async function patchLocalProfileGoals(
 // ---------------------------------------------------------------------------
 
 /**
- * The four optional body metrics off the singleton profile, with every unset
- * field as `null` (a pre-v8 row lacks the keys entirely — see `readBodyMetrics`).
+ * The optional body metrics off the singleton profile, with every unset field
+ * as `null` (an older row lacks the keys entirely, see `readBodyMetrics`).
  * Returns the fully-unset shape when no profile has ever been written, so no
  * caller has to special-case a brand-new device.
  */
@@ -304,10 +306,10 @@ export async function getLocalBodyMetrics({ store }: StoreOption = {}): Promise<
 }
 
 /**
- * Writes all four body metrics at once, normalising the sex ↔ reproductive-
- * status invariant first (`normalizeBodyMetrics` is the single enforcement
- * point, so no route can store a pregnancy status the person can no longer see
- * or withdraw).
+ * Writes every body metric at once, normalising the sex, status and date
+ * invariants first (`normalizeBodyMetrics` is the single enforcement point, so
+ * no route can store a pregnancy status, a due date or a lactation start date
+ * the person can no longer see or withdraw).
  *
  * Whole-record, not a patch, on purpose: the settings form and the onboarding
  * step both submit every field, and a `null` here CLEARS — which is how the

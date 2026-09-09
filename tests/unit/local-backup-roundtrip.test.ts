@@ -19,6 +19,8 @@ import {
   type BackupEnvelope,
 } from '../../app/lib/local-store/backup';
 import {
+  getLocalBodyMetrics,
+  getLocalProfileGoals,
   putLocalFast,
   putLocalFood,
   putLocalFoodLog,
@@ -26,7 +28,7 @@ import {
   putLocalSavedMeal,
   putLocalWeightEntry,
 } from '../../app/lib/local-store/primary-store';
-import { SCHEMA_VERSION } from '../../app/lib/local-store/schema';
+import { SCHEMA_VERSION, type LocalProfileGoals } from '../../app/lib/local-store/schema';
 import type { Store } from 'tinybase';
 
 /** Seeds a store with one of every entity, including null macro/goal fields. */
@@ -149,6 +151,16 @@ async function seedStore(store: Store): Promise<void> {
       trackingFocus: 'net-carbs',
       onboardingCompletedAt: 5_000,
       updatedAt: 4_000,
+      // M206/01: a PREGNANT profile carrying a due date, seeded for the same
+      // reason `carbBasis` is seeded above, zod strips unrecognized keys, so a
+      // `profileGoalsSchema` that lost the v19 line would restore a pregnancy
+      // with no idea how far along it is, and every other assertion here would
+      // stay green. `lactationStartDate` is an EXPLICIT null beside it, so the
+      // round trip has to keep "cleared" distinct from "stripped" too.
+      biologicalSex: 'female',
+      reproductiveStatus: 'pregnant',
+      pregnancyDueDate: '2026-11-02',
+      lactationStartDate: null,
     },
     { store },
   );
@@ -182,6 +194,36 @@ async function seedStore(store: Store): Promise<void> {
     },
     { store },
   );
+}
+
+/**
+ * A current-version envelope carrying nothing but a profile built from
+ * `fields`, as JSON text, the fixture the M206 body-metrics cases below
+ * restore. Serialized rather than handed over as an object so it goes through
+ * the real parse path a downloaded backup file takes.
+ */
+function envelopeWithProfile(fields: Partial<LocalProfileGoals>): string {
+  return JSON.stringify({
+    schemaVersion: SCHEMA_VERSION,
+    exportedAt: '2026-09-09T00:00:00.000Z',
+    data: {
+      foods: [],
+      foodLogs: [],
+      weightEntries: [],
+      fasts: [],
+      profile: {
+        timezone: 'UTC',
+        goalNetCarbsCeilingG: null,
+        goalProteinFloorG: null,
+        goalKcalTarget: null,
+        targetWeightKg: null,
+        trackingFocus: null,
+        onboardingCompletedAt: null,
+        updatedAt: 1,
+        ...fields,
+      },
+    },
+  });
 }
 
 describe('backup round-trip', () => {
@@ -218,6 +260,27 @@ describe('backup round-trip', () => {
     assert.equal(roundTripped.data.foods[0].macrosPer100g.sugars, null);
     assert.equal(roundTripped.data.foodLogs[0].macros.fiber, null);
     assert.equal(roundTripped.data.profile?.goalProteinFloorG, null);
+  });
+
+  it('preserves the pregnancy due date through the round-trip, a restored pregnancy must still know how far along it is', async () => {
+    const source = createPrimaryStore();
+    await seedStore(source);
+    const json = serializeBackup(await exportBackup({ store: source }));
+
+    const target = createPrimaryStore();
+    await restoreBackup(json, { store: target });
+    const roundTripped = await exportBackup({ store: target });
+
+    assert.equal(
+      roundTripped.data.profile?.pregnancyDueDate,
+      '2026-11-02',
+      'zod stripped `pregnancyDueDate` on import, a restored backup turns a dated pregnancy back into a bare status',
+    );
+    // The control that makes the line above discriminating: a CLEARED date
+    // comes back as an explicit null, not as the `undefined` a stripped key
+    // would leave, so the assertion cannot be passing on an absent key.
+    assert.equal(roundTripped.data.profile?.lactationStartDate, null);
+    assert.equal('lactationStartDate' in (roundTripped.data.profile ?? {}), true);
   });
 
   it('preserves the chosen display portion through the round-trip — a backup must not silently demote "½ cup" to bare grams', async () => {
@@ -749,5 +812,98 @@ describe('v8 -> v9 micronutrient snapshot (M135: an optional field, so the zod l
     assert.ok(stored);
     assert.equal(stored.minerals, undefined);
     assert.equal(stored.vitamins?.vitaminC, 0.4);
+  });
+});
+
+describe('v18 -> v19 pregnancy dates (M206/01: two more optional fields, no migration step)', () => {
+  it('imports a v18 envelope whose profile has neither date key and leaves both unset', () => {
+    // Every backup file on every device today predates the dates. The absent
+    // keys already mean "never told us", so the whole migration is the two
+    // `.nullable().optional()` lines on `profileGoalsSchema`.
+    const v18Json = JSON.stringify({
+      schemaVersion: 18,
+      exportedAt: '2026-09-01T00:00:00.000Z',
+      data: {
+        foods: [],
+        foodLogs: [],
+        weightEntries: [],
+        fasts: [],
+        profile: {
+          timezone: 'UTC',
+          goalNetCarbsCeilingG: null,
+          goalProteinFloorG: null,
+          goalKcalTarget: null,
+          targetWeightKg: null,
+          trackingFocus: null,
+          onboardingCompletedAt: null,
+          updatedAt: 1,
+          biologicalSex: 'female',
+          reproductiveStatus: 'pregnant',
+        },
+      },
+    });
+
+    const migrated = migrateEnvelopeForward(parseBackupEnvelope(v18Json));
+
+    assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
+    assert.equal(migrated.data.profile?.reproductiveStatus, 'pregnant');
+    assert.equal(migrated.data.profile?.pregnancyDueDate, undefined);
+    assert.equal(migrated.data.profile?.lactationStartDate, undefined);
+  });
+
+  it('restores a dated pregnancy and reads it back off the store as body metrics', async () => {
+    const store = createPrimaryStore();
+    const envelope = envelopeWithProfile({
+      biologicalSex: 'female',
+      reproductiveStatus: 'pregnant',
+      pregnancyDueDate: '2026-11-02',
+    });
+    await restoreBackup(envelope, { store });
+
+    const metrics = await getLocalBodyMetrics({ store });
+    assert.equal(metrics.reproductiveStatus, 'pregnant');
+    assert.equal(metrics.pregnancyDueDate, '2026-11-02');
+  });
+
+  it('drops a restored due date whose status is `none`, so a stale date cannot outlive the pregnancy', async () => {
+    const store = createPrimaryStore();
+    const envelope = envelopeWithProfile({
+      biologicalSex: 'female',
+      reproductiveStatus: 'none',
+      pregnancyDueDate: '2026-11-02',
+    });
+    await restoreBackup(envelope, { store });
+
+    // The envelope itself is lossless, the date IS in the restored row.
+    assert.equal((await getLocalProfileGoals({ store }))?.pregnancyDueDate, '2026-11-02');
+    // The reader is what refuses it, which is the invariant this pins.
+    assert.equal((await getLocalBodyMetrics({ store })).pregnancyDueDate, null);
+  });
+
+  it('keeps a status and its date when the sex is "prefer not to say", and drops both for a male profile', async () => {
+    // A person can be pregnant without having told this app their sex; only an
+    // explicit `male` makes the answer meaningless (widened in M206).
+    const unstated = createPrimaryStore();
+    const unstatedEnvelope = envelopeWithProfile({
+      biologicalSex: null,
+      reproductiveStatus: 'pregnant',
+      pregnancyDueDate: '2026-11-02',
+    });
+    await restoreBackup(unstatedEnvelope, { store: unstated });
+    const kept = await getLocalBodyMetrics({ store: unstated });
+    assert.equal(kept.reproductiveStatus, 'pregnant');
+    assert.equal(kept.pregnancyDueDate, '2026-11-02');
+
+    // The control on the same pair of assertions, one field different.
+    const male = createPrimaryStore();
+    const maleEnvelope = envelopeWithProfile({
+      biologicalSex: 'male',
+      reproductiveStatus: 'pregnant',
+      pregnancyDueDate: '2026-11-02',
+    });
+    await restoreBackup(maleEnvelope, { store: male });
+    const dropped = await getLocalBodyMetrics({ store: male });
+    assert.equal(dropped.reproductiveStatus, null);
+    assert.equal(dropped.pregnancyDueDate, null);
   });
 });

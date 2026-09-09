@@ -228,6 +228,20 @@ const profileGoalsSchema = z.object({
   birthYear: z.number().int().nullable().optional(),
   biologicalSex: z.enum(['female', 'male']).nullable().optional(),
   reproductiveStatus: z.enum(['none', 'pregnant', 'lactating']).nullable().optional(),
+  // Added v19 (a due date not a trimester, M206), two more OPTIONAL fields on
+  // the same entity, under the same rules as the v8 four above: a v18 envelope
+  // lacks both keys, which is already "never told us", so no forward-migration
+  // step was added. The lines are needed for the same reason the v8 lines are,
+  // and the loss is worse than a stale figure here: the due date is what makes
+  // the pregnancy self-advancing, so an export that dropped it would restore a
+  // pregnancy with no idea how far along it is.
+  //
+  // Deliberately `z.string()` and not a date-shaped refinement: an envelope is
+  // read back before `normalizeBodyMetrics` runs, and a malformed date must
+  // import as a value the readers ignore (`resolveGestation` returns null for
+  // it) rather than reject the whole backup.
+  pregnancyDueDate: z.string().nullable().optional(),
+  lactationStartDate: z.string().nullable().optional(),
 });
 
 const fastSchema = z.object({
@@ -572,6 +586,13 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // shape moving: the bump exists to invalidate the sync envelope's AAD for
   // pre-partition clients (`schema.ts`'s NOTE), and the BACKUP file's shape is
   // byte-for-byte unchanged. A v13 envelope is already a valid v14 one.
+
+  // Nor is there one for v18 -> v19 (a due date not a trimester, M206): it put
+  // two more OPTIONAL fields, `pregnancyDueDate` and `lactationStartDate`, on
+  // the EXISTING profile entity, so a v18 envelope lacks both keys and
+  // `profileGoalsSchema` accepts it as-is. There is nothing to back-fill from
+  // either: a person who used to be able to say only "pregnant" never told this
+  // app a date, and inventing one would report a gestation week nobody entered.
 
   const result = snapshotSchema.safeParse(migratedData);
   if (!result.success) {

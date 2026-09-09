@@ -185,6 +185,10 @@
     "backupNeverExported": "Dein Tagebuch existiert nur hier: auf diesem Gerät, ohne Cloud. Erstelle in 10 Sekunden ein Backup.",
     "loggingTo": "Eintrag für <day>{{label}}</day>",
     "offlineDefault": "Du bist offline. Die letzten Tage kannst du lesen; neue Einträge werden übertragen, sobald du wieder verbunden bist.",
+    "reproductiveStatusPromptDismiss": "Nicht jetzt",
+    "reproductiveStatusPromptDueDate": "Dein errechneter Termin ist vorbei. Noch schwanger, oder Zeit, deine Einstellungen zu aktualisieren?",
+    "reproductiveStatusPromptLactation": "Du stillst seit über zwei Jahren. Stillst du noch, oder Zeit, deine Einstellungen zu aktualisieren?",
+    "reproductiveStatusPromptUpdate": "Aktualisieren",
     "switchToToday": "Zu heute wechseln"
   },
   "bodyMetrics": {
@@ -211,11 +215,37 @@
       "placeholder": "z. B. 175"
     },
     "reproductive": {
+      "derivedMonths_one": "{{count}} Monat Stillzeit.",
+      "derivedMonths_other": "{{count}} Monate Stillzeit.",
+      "derivedNotSet": "Noch kein Datum. Bis du eins angibst, nutzen wir den höchsten Richtwert für diese Angabe.",
+      "derivedTrimester": "{{trimester}}, Woche {{week}}.",
+      "dueDate": {
+        "hint": "Der Termin, den du bekommen hast. Wir berechnen die Woche daraus, damit sie stimmt, ohne dass du sie nachstellen musst.",
+        "label": "Errechneter Termin"
+      },
+      "errors": {
+        "dueDatePast": "Dieses Datum liegt in der Vergangenheit. Gib das heutige oder ein späteres Datum ein.",
+        "dueDateRange": "Gib einen errechneten Termin innerhalb der nächsten {{weeks}} Wochen ein.",
+        "startDateFuture": "Dieses Datum liegt in der Zukunft. Gib das heutige oder ein früheres Datum ein."
+      },
       "hint": "Beides ändert die Referenzmengen für mehrere Nährstoffe. Wähle „Weder noch“, wenn du es wieder entfernen möchtest.",
       "lactating": "Stillend",
       "legend": "Schwanger oder stillend?",
       "none": "Weder noch",
-      "pregnant": "Schwanger"
+      "pregnant": "Schwanger",
+      "startDate": {
+        "hint": "Wir zählen die Stillmonate ab diesem Tag, und nach sechs Monaten ändern sich die Richtwerte.",
+        "label": "Geburtsdatum deines Babys"
+      },
+      "trimester": {
+        "first": "Erstes Trimester",
+        "second": "Zweites Trimester",
+        "third": "Drittes Trimester"
+      },
+      "weeksAlong": {
+        "hint": "Gib die Woche ein, in der du bist, und wir tragen den Termin oben ein. Gespeichert wird nur das Datum.",
+        "label": "Oder die Woche, in der du heute bist"
+      }
     },
     "save": "Angaben speichern",
     "sex": {
@@ -422,6 +452,8 @@
       "netCarbsDefinition": "Netto-Kohlenhydrate = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole.",
       "noTarget": "Kein Ziel gesetzt",
       "referenceTag": "Richtwert",
+      "referenceTagDateMissing": "Richtwert, errechneten Termin eintragen",
+      "referenceTagBirthDateMissing": "Richtwert, Geburtsdatum eintragen",
       "setTargets": "Eigene Ziele festlegen",
       "whatYouAte": "Was du gegessen hast"
     },

@@ -301,6 +301,23 @@
  * matters most: `SCHEMA_VERSION` is bound into the sync envelope's AAD, and a
  * v17 client that pulled a v18 blob would find its `gatewayConnection` absent,
  * write `null` where it had a connection, and push that back.
+ *
+ * NOTE (M206, a due date not a trimester): `SCHEMA_VERSION` v18 → v19 adds two
+ * OPTIONAL fields, `pregnancyDueDate` and `lactationStartDate`, to the
+ * EXISTING `LocalProfileGoals` entity, so it is under the same optional-field
+ * rules as the M135 body-metrics bump above and NOT under the v6 → v7 or the
+ * v17 → v18 rules. A pre-v19 row, and a v18 backup envelope, simply lacks both
+ * keys and reads back as a valid v19 profile with each of them absent, i.e.
+ * "never told us". There is therefore no `migrateSnapshotToV19` step in
+ * `backup.ts` and there must not be one; the two new lines on
+ * `profileGoalsSchema` ARE needed, because zod strips unrecognized keys and
+ * would drop a due date on every export/import round trip.
+ *
+ * A DATE, not a picked trimester, because a trimester goes stale on its own: it
+ * is correct on the day it is chosen and wrong a few weeks later, with nothing
+ * to tell the app which. `app/lib/reproductive-stage.ts` turns the date into a
+ * gestation week and a trimester against a `today` passed in by the caller, so
+ * the record advances by itself and never reads a clock of its own.
  */
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
@@ -313,7 +330,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 18;
+export const SCHEMA_VERSION = 19;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -723,12 +740,36 @@ export interface LocalProfileGoals {
   /** Biological sex (added v8, M135) — reference intakes are sex-segmented. */
   biologicalSex?: BiologicalSex | null;
   /**
-   * Pregnancy / lactation status (added v8, M135). Only meaningful alongside
-   * `biologicalSex === 'female'`; `normalizeBodyMetrics`
-   * (`#app/models/body-metrics`) is the single place that keeps the two
-   * consistent, so a sex change can never strand a stale status.
+   * Pregnancy / lactation status (added v8, M135). Meaningless alongside
+   * `biologicalSex === 'male'` and dropped there; kept for every other answer,
+   * including "prefer not to say" and no answer at all, because a person can be
+   * pregnant without having told this app their sex (widened M206).
+   * `normalizeBodyMetrics` (`#app/models/body-metrics`) is the single place that
+   * keeps this field and the two dates below consistent with each other, so a
+   * sex change can never strand a stale status or a stale date.
    */
   reproductiveStatus?: ReproductiveStatus | null;
+  /**
+   * The expected date of birth as `YYYY-MM-DD`, or absent/`null` when not given
+   * (added v19, M206). Only meaningful alongside
+   * `reproductiveStatus === 'pregnant'`, and dropped by `normalizeBodyMetrics`
+   * otherwise.
+   *
+   * A DATE rather than a picked trimester: `resolveGestation`
+   * (`#app/lib/reproductive-stage`) derives the gestation week and the trimester
+   * from it against a `today` the caller passes in, so the answer stays right as
+   * the weeks pass instead of freezing on the day it was entered.
+   */
+  pregnancyDueDate?: string | null;
+  /**
+   * The birth date as `YYYY-MM-DD`, or absent/`null` when not given (added v19,
+   * M206), the day lactation started counting, which is what the reference
+   * tables band by. Only meaningful alongside
+   * `reproductiveStatus === 'lactating'`, and dropped by `normalizeBodyMetrics`
+   * otherwise. `resolveLactationMonths` (`#app/lib/reproductive-stage`) turns it
+   * into a month count the same clock-free way `resolveGestation` does.
+   */
+  lactationStartDate?: string | null;
 }
 
 /**
