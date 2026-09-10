@@ -85,6 +85,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { BackupNudgeBanner } from '#app/components/backup-nudge-banner';
 import { HabitStrip } from '#app/components/habit-strip';
+import { StickySubheader } from '#app/components/sticky-subheader';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { SectionEyebrow } from '#app/components/typography';
 import { DayBudgetRows } from '#app/components/day-budget-rows';
@@ -2374,7 +2375,16 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
         daysSinceFirstData={daysSinceFirstDataLocal}
         hasData={hasLocalData}
       />
-      <DateNav date={date} today={today} />
+      {/* The date navigator pins under the app header (see
+          `sticky-subheader.tsx`): on a long day it is the only thing on screen
+          that says which day these rows belong to, and the only way to step to
+          the day before without scrolling back to the top. The `space-y-6` on
+          the container above adds a gap either side of the bar; that is
+          accepted. The swipe handlers on that container still cover this bar,
+          because it is a child of it. */}
+      <StickySubheader>
+        <DateNav date={date} today={today} />
+      </StickySubheader>
       <HabitStrip days={habitStrip} loggedCount={loggedDaysCount} hasCeiling={goals.netCarbsCeiling !== null} />
 
       {hasLogs && (

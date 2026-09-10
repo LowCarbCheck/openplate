@@ -165,8 +165,10 @@ function ImportBackupSection() {
     }
   }
 
+  // `scroll-mt-20`: the diary links here by hash, and the pinned app header
+  // (see `app-wrapper.tsx`) would otherwise cover the heading.
   return (
-    <div id="import-backup" className="space-y-2 border-t pt-4">
+    <div id="import-backup" className="scroll-mt-20 space-y-2 border-t pt-4">
       <p className="text-sm font-medium">{t('settings.data.importHeading')}</p>
       <p className="text-xs text-muted-foreground">{t('settings.data.importDescription')}</p>
       <input
@@ -238,7 +240,9 @@ export default function SettingsData() {
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
-      <Card id="your-data">
+      {/* `scroll-mt-20`: the backup nudge banner links here by hash, and the
+          pinned app header (see `app-wrapper.tsx`) would otherwise cover it. */}
+      <Card id="your-data" className="scroll-mt-20">
         <CardHeader>
           <CardTitle>{t('settings.data.exportTitle')}</CardTitle>
           <CardDescription>

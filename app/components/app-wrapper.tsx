@@ -227,7 +227,27 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
           (DESIGN.md §2, "where the brand shows up outside a hero");
           `AppSidebar`'s header carries the same value so the two rules read as
           one line across the chrome at `md`+. */}
-      <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-primary/20 bg-card">
+      {/* `sticky top-0` pins the header to the top of the viewport while the
+          page scrolls under it, so the page title and the device menu are
+          always one tap away. The scroll container is the DOCUMENT: nothing
+          between `<html>` and this element sets an `overflow` (checked in
+          `root.tsx`, in `app.css`, and on `SidebarProvider`'s wrapper and
+          `SidebarInset` in `ui/sidebar.tsx`), so `top-0` is measured against
+          the viewport. Do not introduce a scrolling ancestor here; it would
+          silently re-anchor this bar.
+
+          `UpdateRibbon` above stays IN FLOW, so it scrolls away with the page
+          and the header then pins at 0 rather than under a bar that is usually
+          not there.
+
+          `z-40` is deliberate and is a contract with three neighbours:
+          `BottomNav` and the scan route's action bar are also `z-40`, and
+          every Radix portal (Popover, Sheet, Dialog) is `z-50`. Raising this
+          to `z-50` would put the header OVER the diary's calendar popover.
+          `tests/unit/app-wrapper-sticky-header.test.ts` fails on that. The bar
+          already sits on `bg-card`, an opaque fill, so it needs no backdrop
+          blur to stay readable over scrolling content. */}
+      <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center gap-2 border-b border-primary/20 bg-card">
         <div className="flex items-center gap-2.5 px-4 w-full">
           {/* Desktop only: below `md` the drawer's own brand-mark trigger (see
               `NavDrawer`) opens the same list, and a second hamburger beside it

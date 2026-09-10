@@ -485,7 +485,9 @@ export default function SettingsIndex() {
       {/* Renders nothing unless the app is installable and not already standalone.
           `id="install"` gives the app-chrome nav drawer's iOS "Install app" item
           (`app-wrapper.tsx`) an anchor to jump straight to these instructions. */}
-      <div id="install">
+      {/* `scroll-mt-20` keeps this clear of the pinned app header (see
+          `app-wrapper.tsx`) when the drawer link jumps here by hash. */}
+      <div id="install" className="scroll-mt-20">
         <InstallCard />
       </div>
     </div>
