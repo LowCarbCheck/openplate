@@ -355,7 +355,7 @@ describe('DayBudgetRows rendering', () => {
     assert.equal(html.match(/>reference</g)?.length, 2);
     // CONTROL: nothing on this page offers the goals page, so the link asserted
     // in the next test cannot be something the stack renders anyway.
-    assert.ok(!html.includes('/settings/goals'), 'an ordinary reference tag is not actionable');
+    assert.ok(!html.includes('/settings/nutrition'), 'an ordinary reference tag is not actionable');
     assert.ok(!html.includes('add your due date'));
   });
 
@@ -363,19 +363,19 @@ describe('DayBudgetRows rendering', () => {
     const html = render(
       buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 86, missingReferenceDate: 'due-date' }),
     );
-    assert.match(html, /<a[^>]*href="\/settings\/goals"[^>]*>reference, add your due date<\/a>/);
+    assert.match(html, /<a[^>]*href="\/settings\/nutrition"[^>]*>reference, add your due date<\/a>/);
     assert.ok(!html.includes('add the birth date'));
     // CONTROL: the tag REPLACES protein's plain word rather than sitting beside
     // it, and fiber's stays plain and unlinked either way.
     assert.equal(html.match(/>reference</g)?.length, 1);
-    assert.equal(html.match(/settings\/goals/g)?.length, 1);
+    assert.equal(html.match(/settings\/nutrition/g)?.length, 1);
   });
 
   it('asks for the birth date instead while breastfeeding', () => {
     const html = render(
       buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 77, missingReferenceDate: 'birth-date' }),
     );
-    assert.match(html, /<a[^>]*href="\/settings\/goals"[^>]*>reference, add the birth date<\/a>/);
+    assert.match(html, /<a[^>]*href="\/settings\/nutrition"[^>]*>reference, add the birth date<\/a>/);
     // CONTROL: the two subjects really do produce different copy.
     assert.ok(!html.includes('add your due date'));
   });
@@ -387,6 +387,6 @@ describe('DayBudgetRows rendering', () => {
     // The protein row is a goal, so it wears no tag at all; only fiber's plain
     // reference is left, and no date is asked for.
     assert.equal(html.match(/>reference</g)?.length, 1);
-    assert.ok(!html.includes('/settings/goals'));
+    assert.ok(!html.includes('/settings/nutrition'));
   });
 });

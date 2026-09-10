@@ -1114,6 +1114,14 @@
     "photo": "Foto",
     "photoAnything": "Essen fotografieren"
   },
+  "nutrition": {
+    "title": "Ernährung und Ziele",
+    "loading": "Wird geladen…"
+  },
+  "profile": {
+    "title": "Über dich",
+    "loading": "Wird geladen…"
+  },
   "lifePhase": {
     "title": "Lebensphase",
     "description": "Das siehst nur du, und es wird nie bei einer Lebensmittelsuche mitgeschickt.",
@@ -1154,7 +1162,6 @@
     "error": "Etwas ist schiefgelaufen · openplate",
     "fasting": "Fasten · openplate",
     "foods": "Deine Lebensmittel · openplate",
-    "goals": "Deine Ziele · openplate",
     "imprint": "Impressum · openplate",
     "join": "Beitreten · openplate",
     "joinStudy": "Bei einer Studie mitmachen · openplate",
@@ -1162,6 +1169,8 @@
     "landingManaged": "openplate, ein Ernährungstagebuch, das nur du lesen kannst",
     "landingDescription": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir in Sekundenschnelle die Kohlenhydrate und vergleicht sie mit deinem festgelegten Tagesziel. Kostenlos, ohne Account, und alles, was du einträgst, bleibt auf deinem Gerät.",
     "lifePhase": "Lebensphase · openplate",
+    "nutrition": "Ernährung und Ziele · openplate",
+    "profile": "Über dich · openplate",
     "meals": "Gespeicherte Mahlzeiten · openplate",
     "notFound": "Seite nicht gefunden · openplate",
     "nutrients": "Nährstoffe · openplate",
@@ -1973,7 +1982,7 @@
         "status": "Studien, zu denen du beiträgst"
       },
       "account": {
-        "title": "Konto",
+        "title": "Konto und Synchronisierung",
         "signedOut": "Abgemeldet"
       },
       "admin": {

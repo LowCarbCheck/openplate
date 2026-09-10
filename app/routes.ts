@@ -180,9 +180,20 @@ export default [
     // App preferences (theme + language) — M129/05. Under `_personal` rather
     // than `_public` so it wears the app chrome.
     route('/settings/preferences', 'routes/settings.preferences.tsx'),
+    // The body facts and the weigh-in log (M215 spec 03): height, sex, birth
+    // year, the weight log with its unit toggle, and a row to the life phase.
+    route('/settings/profile', 'routes/settings.profile.tsx'),
+    // The eating style and the four targets (M215 spec 03). The two pages were
+    // one route called `/settings/goals`, which asked "how tall are you" and
+    // "how many carbs a day" under a single title.
+    route('/settings/nutrition', 'routes/settings.nutrition.tsx'),
+    // The address those two pages used to share. Kept as a REDIRECT to the
+    // targets, for the same reason `/settings/sync` below is kept: it is in
+    // bookmarks and in every release note before M215, and a 404 there would
+    // read as "the feature was removed".
     route('/settings/goals', 'routes/settings.goals.tsx'),
     // Pregnancy and breastfeeding, on a page of their own (M215 spec 01). It
-    // used to be a fieldset inside the body metrics card on `/settings/goals`,
+    // used to be a fieldset inside the body metrics card on the page above,
     // where nobody looking for it had a reason to go.
     route('/settings/life-phase', 'routes/settings.life-phase.tsx'),
     // Export/import + the device-local photo cache — the old profile page's

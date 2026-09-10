@@ -231,7 +231,7 @@ clientLoader.hydrate = true as const;
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Logs (or replaces) today's weigh-in. Mirrors `/settings/goals`' own weight
+ * Logs (or replaces) today's weigh-in. Mirrors `/settings/profile`' own weight
  * action down to the schema and the local-store upsert — the only difference is
  * where it redirects — so the two entry points can never diverge on what a
  * valid weight is.
@@ -300,7 +300,7 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     todayWeightKg,
   } = loaderData;
   const [metric, setMetric] = useState<TrendMetric>('net-carbs');
-  // Device-local display preference, shared with `/settings/goals` (which owns
+  // Device-local display preference, shared with `/settings/profile` (which owns
   // the toggle). Read once per mount, so returning here after switching it
   // there picks the new unit up.
   const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
@@ -361,7 +361,7 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
       />
 
       {/* The body story is its own chapter: the chart moved here from
-          `/settings/goals`, which keeps the entry form and the weigh-in list. */}
+          `/settings/profile`, which keeps the entry form and the weigh-in list. */}
       <WeightProgressCard
         points={weightWindow}
         targetWeightKg={targetWeightKg}

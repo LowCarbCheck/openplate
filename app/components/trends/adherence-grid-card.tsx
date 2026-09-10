@@ -42,7 +42,7 @@ export function AdherenceGridCard({ grid, goals }: { grid: AdherenceGridModel; g
           <div className="space-y-2 pt-1">
             <p className="text-xs text-muted-foreground">{t('trends.grid.noGoalsHint')}</p>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/settings/goals">{t('trends.grid.noGoalsCta')}</Link>
+              <Link to="/settings/nutrition">{t('trends.grid.noGoalsCta')}</Link>
             </Button>
           </div>
         )}

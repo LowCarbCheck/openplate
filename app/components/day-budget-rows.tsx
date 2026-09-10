@@ -62,7 +62,7 @@ const REFERENCE_TAG_CLASS = 'shrink-0 text-[10px] font-medium uppercase tracking
  * An ordinary default says one word, "reference", and is not actionable: there
  * is no fiber goal field to send anyone to. A default that fell back for a
  * missing due or birth date IS actionable, so it names the date it wants and
- * links to the goals page where that date is entered. Same size, same weight:
+ * links to the targets page where that date is entered. Same size, same weight:
  * the tag is a footnote either way, never an alarm.
  */
 function ReferenceTag({ row }: { row: DayBudgetRow }) {
@@ -76,7 +76,7 @@ function ReferenceTag({ row }: { row: DayBudgetRow }) {
     : 'diary.drilldown.referenceTagDateMissing';
   return (
     <Link
-      to="/settings/goals"
+      to="/settings/nutrition"
       className={cn(REFERENCE_TAG_CLASS, 'underline underline-offset-2 hover:text-foreground')}
     >
       {t(key)}

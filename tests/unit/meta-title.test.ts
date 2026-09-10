@@ -48,6 +48,20 @@ describe('metaTitle', () => {
     assert.strictEqual(metaTitle(undefined, 'meta.settings'), 'Settings · openplate');
   });
 
+  it('titles the two pages the goals page split into, in both languages', () => {
+    // M215 spec 03. `meta.goals` went with the page, so a route that still
+    // asked for it would render the key itself, which the test below shows is
+    // what an unknown key does here.
+    assert.strictEqual(metaTitle('en', 'meta.profile'), 'About you · openplate');
+    assert.strictEqual(metaTitle('de', 'meta.profile'), 'Über dich · openplate');
+    assert.strictEqual(metaTitle('en', 'meta.nutrition'), 'Eating and targets · openplate');
+    assert.strictEqual(metaTitle('de', 'meta.nutrition'), 'Ernährung und Ziele · openplate');
+    // CONTROL: the retired key is gone from both catalogs, so nothing can go
+    // on rendering the old title while claiming to be one of these pages.
+    assert.strictEqual(metaTitle('en', 'meta.goals'), 'meta.goals');
+    assert.strictEqual(metaTitle('de', 'meta.goals'), 'meta.goals');
+  });
+
   it('returns the key itself for an unknown key rather than throwing', () => {
     assert.strictEqual(metaTitle('de', 'meta.nope'), 'meta.nope');
     assert.strictEqual(metaTitle('de', ''), '');

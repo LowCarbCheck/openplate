@@ -425,7 +425,7 @@ function formatWeightDelta(deltaKg: number, unit: WeightUnit): string {
  */
 function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
   const { t, i18n } = useTranslation();
-  // Device-local display preference, owned by `/settings/goals`. Read once per
+  // Device-local display preference, owned by `/settings/profile`. Read once per
   // mount, same as `/trends`.
   const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
 

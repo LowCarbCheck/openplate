@@ -51,7 +51,7 @@ describe('personalNavigationItems', () => {
         // The nutrient screen (M135/06) is a reviewing surface, so it sits
         // beside Trends — and never reaches the tab bar either.
         { labelKey: 'nav.nutrients', to: '/nutrients' },
-        { labelKey: 'nav.goals', to: '/settings/goals' },
+        { labelKey: 'nav.goals', to: '/settings/nutrition' },
         // The settings HUB, not the Preferences page it used to point at —
         // one setting can't stand in for all of them. It sits in the separated
         // footer group, not among the daily destinations.
@@ -73,7 +73,7 @@ describe('navigation surfaces', () => {
   it('gives the drawer and the sidebar the same eight primary rows plus a Settings footer', () => {
     assert.deepEqual(
       primaryNavigationItems.map((item) => item.to),
-      ['/dashboard', '/diary', '/add', '/scan', '/fasting', '/trends', '/nutrients', '/settings/goals'],
+      ['/dashboard', '/diary', '/add', '/scan', '/fasting', '/trends', '/nutrients', '/settings/nutrition'],
     );
     assert.deepEqual(
       footerNavigationItems.map((item) => item.to),
@@ -133,9 +133,9 @@ describe('activeNavigationHref', () => {
   });
 
   it('gives the longest match the highlight — a settings PAGE never lights up the hub row too', () => {
-    // The bug this pins: `/settings` and `/settings/goals` both live in the
-    // catalog, so a naive per-item `startsWith` lit two rows at once.
-    assert.equal(activeNavigationHref('/settings/goals'), '/settings/goals');
+    // The bug this pins: `/settings` and `/settings/nutrition` both live in
+    // the catalog, so a naive per-item `startsWith` lit two rows at once.
+    assert.equal(activeNavigationHref('/settings/nutrition'), '/settings/nutrition');
     assert.equal(activeNavigationHref('/settings/ai'), '/settings');
   });
 

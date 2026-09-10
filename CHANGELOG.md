@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The goals page splits into "About you" and "Eating and targets".** One page asked how tall you are and how many carbs a day you want, under a single title called Goals. Your height, your birth year, the sex answer and the weigh-in log are now on "About you", with a row to the life phase page, and the eating style and the four targets are on "Eating and targets". The old address still works and sends you to the targets. The card that only linked to the AI settings is gone, the settings hub already lists them.
+
 ## [0.27.0] - 2026-09-10
 
 ### Added

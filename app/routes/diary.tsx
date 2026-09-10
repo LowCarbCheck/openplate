@@ -1653,7 +1653,7 @@ function DaySummaryCard({
         <div className="space-y-3">
           <DayBudgetRows rows={rows} animatedHeadlines={animatedHeadlines} />
           {!hasAnyGoal && (
-            <Link to="/settings/goals" className="inline-block text-xs text-primary underline-offset-4 hover:underline">
+            <Link to="/settings/nutrition" className="inline-block text-xs text-primary underline-offset-4 hover:underline">
               {t('diary.drilldown.setTargets')}
             </Link>
           )}

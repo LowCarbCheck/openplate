@@ -1,5 +1,5 @@
 /**
- * REMOUNT KEYS for the two cards on `/settings/goals` that seed uncontrolled
+ * REMOUNT KEYS for the two cards on `/settings/nutrition` that seed uncontrolled
  * inputs from the loader (M210).
  *
  * Both cards are Conform `useForm` forms: Conform reads `defaultValue` once, at

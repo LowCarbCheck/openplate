@@ -107,7 +107,7 @@ export const personalNavigationItems: NavigationItem[] = [
   // raised centre button needs exactly three slots. This is a reviewing
   // surface — it sits next to Trends, which is what it is a sibling of.
   { labelKey: 'nav.nutrients', to: '/nutrients', icon: Sprout, group: 'primary' },
-  { labelKey: 'nav.goals', to: '/settings/goals', icon: Target, group: 'primary' },
+  { labelKey: 'nav.goals', to: '/settings/nutrition', icon: Target, group: 'primary' },
   // The settings HUB, not one setting: this row used to point straight at
   // Preferences, which made theme/language look like the only settings the
   // app has and left AI, sync and backups reachable only from the retired
@@ -154,7 +154,7 @@ export const tabNavigationItems: NavigationItem[] = personalNavigationItems
  * href wins.
  *
  * A plain `startsWith` per item breaks now that the catalog carries both
- * `/settings` (the hub) and `/settings/goals`: on the goals page both rows
+ * `/settings` (the hub) and `/settings/nutrition`: on the targets page both rows
  * would match and both would highlight, which tells the user nothing. Pure
  * and exported so the sidebar and the mobile drawer share one rule, and so it
  * is testable without a router.

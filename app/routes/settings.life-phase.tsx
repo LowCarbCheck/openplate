@@ -3,7 +3,7 @@
  * (M215 spec 01).
  *
  * The question used to be a fieldset at the bottom of the body metrics card on
- * `/settings/goals`, which is a page about eating targets. A person looking for
+ * the old goals page, which was a page about eating targets. A person looking for
  * "I am pregnant" had no reason to open "Ziele" and no row anywhere that said
  * the setting existed. It has a hub row now, always visible, and this page.
  *
@@ -133,7 +133,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * Shared chip recipe, the same one the body metrics card on `/settings/goals`
+ * Shared chip recipe, the same one the body metrics card on `/settings/profile`
  * uses, so the chips look identical wherever this fieldset is rendered
  * (DESIGN.md §2/§11, tokens only).
  */

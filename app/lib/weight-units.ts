@@ -6,7 +6,7 @@
  * their preferred unit into the kg number the rest of the app already
  * expects, and back again for display. No DB, no React, so it's directly
  * unit-testable and shared by any screen that lets someone enter a weight
- * (onboarding's weight step today; settings/goals can reuse the same
+ * (onboarding's weight step today; the settings weigh-in log reuses the same
  * conversion math for its own kg-only fields).
  */
 

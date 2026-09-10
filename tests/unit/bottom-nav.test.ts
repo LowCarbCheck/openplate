@@ -102,7 +102,7 @@ describe('BottomNav', () => {
   });
 
   it('no longer has a Goals tab — it moved into the nav drawer', () => {
-    assert.ok(!hrefsOf(renderBottomNav()).includes('/settings/goals'));
+    assert.ok(!hrefsOf(renderBottomNav()).includes('/settings/nutrition'));
   });
 
   it('no longer has a Trends tab — reviewing a week is not the daily logging loop', () => {

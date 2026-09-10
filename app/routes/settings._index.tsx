@@ -228,7 +228,7 @@ export default function SettingsIndex() {
       )}
 
       <SettingsGroup label={t('settings.groups.you')}>
-        <SettingsRow to="/settings/goals" icon={Target} title={t('settings.rows.goals.title')} status={goalsStatus} />
+        <SettingsRow to="/settings/nutrition" icon={Target} title={t('settings.rows.goals.title')} status={goalsStatus} />
         {/* ALWAYS RENDERED, for every account (M215 spec 01). The question
             behind it is gated by the sex answer inside the fieldset, but the
             ROW is not: a person who never answered that question still has to

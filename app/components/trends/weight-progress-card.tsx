@@ -3,8 +3,9 @@
  * the smoothed trend chart, and the readouts that make the chart legible
  * without hovering.
  *
- * The chart moved here from `/settings/goals` (one home per idea): Goals keeps
- * the entry form, the recent-weigh-ins list and delete; Progress gets the
+ * The chart moved here from the settings weigh-in log (one home per idea):
+ * `/settings/profile` keeps
+ * the entry form, the recent-weigh-ins list and delete, and Progress gets the
  * story. The quick log is duplicated on purpose and only in the shallowest
  * sense — both routes parse the SAME schema
  * (`#app/lib/weight-log-schema`) and write through the same local-store

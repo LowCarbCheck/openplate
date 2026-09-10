@@ -518,7 +518,7 @@ export default function Nutrients({ loaderData }: Route.ComponentProps) {
           {!hasReferenceMetrics && (
             <p className="text-xs text-muted-foreground">
               {t('nutrients.hero.addDetails')}{' '}
-              <Link to="/settings/goals" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link to="/settings/profile" className="font-medium text-primary underline-offset-4 hover:underline">
                 {t('nutrients.reference.noBodyMetricsAction')}
               </Link>
             </p>

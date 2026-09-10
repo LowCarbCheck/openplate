@@ -245,7 +245,7 @@ export interface ReconcileEatingStyleInput {
  * The style a GOALS save should leave behind, when the person edited the
  * numbers directly rather than picking a style.
  *
- * Without this the two cards on `/settings/goals` disagree. A walk found it:
+ * Without this the two cards on `/settings/nutrition` disagree. A walk found it:
  * with `low-kcal` stored and 1800 kcal on file, typing a 100 g carb limit into
  * the goals card kept `low-kcal`, so the style card still read "Calories" and
  * the day was still graded by the kcal lens although the person had just set a

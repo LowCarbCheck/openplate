@@ -1,6 +1,6 @@
 /**
  * The one "log today's weight" schema, shared by the two routes that offer the
- * form: `/settings/goals` (the full weight card) and `/trends` (the one-field
+ * form: `/settings/profile` (the full weight card) and `/trends` (the one-field
  * quick log beside the chart).
  *
  * Extracted rather than copied when the quick log landed on Progress: two

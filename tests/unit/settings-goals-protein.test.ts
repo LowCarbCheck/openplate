@@ -1,5 +1,6 @@
 /**
- * The goals page's protein suggestion: which method produces it, what the
+ * The protein suggestion on `/settings/nutrition` (the goals page until M215
+ * spec 03 split it): which method produces it, what the
  * screen says about that, and what happens when neither method can answer
  * (M200 spec 03).
  *
@@ -59,7 +60,7 @@ function translatorFor(locale: 'en' | 'de') {
 }
 
 const routeSource = readFileSync(
-  fileURLToPath(new URL('../../app/routes/settings.goals.tsx', import.meta.url)),
+  fileURLToPath(new URL('../../app/routes/settings.nutrition.tsx', import.meta.url)),
   'utf8',
 );
 

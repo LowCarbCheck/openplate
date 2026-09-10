@@ -1,5 +1,5 @@
 /**
- * THE EATING STYLE CARD on `/settings/goals` (M210 spec 05), and the note that
+ * THE EATING STYLE CARD on `/settings/nutrition` (M210 spec 05), and the note that
  * goes under it (spec 04).
  *
  * Three things are pinned here, and each one is a thing the card would get
@@ -213,7 +213,7 @@ test('only a weight-scaled style asks for a weight', () => {
 //////////////////////////////////////////////////////////////////////////////
 
 function routeSource(): string {
-  return readFileSync(fileURLToPath(new URL('../../app/routes/settings.goals.tsx', import.meta.url)), 'utf8');
+  return readFileSync(fileURLToPath(new URL('../../app/routes/settings.nutrition.tsx', import.meta.url)), 'utf8');
 }
 
 test('an account with no stored style preselects the one its numbers describe', () => {
@@ -401,7 +401,7 @@ test('the style card key follows the style AND the numbers it preselects from', 
 });
 
 test('the settings route actually keys both cards off the loader values', () => {
-  const source = readFileSync(new URL('../../app/routes/settings.goals.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../app/routes/settings.nutrition.tsx', import.meta.url), 'utf8');
   // `assert.ok` rather than `assert.match`: a failure here should print the one
   // line that is missing, not the whole route module.
   assert.ok(

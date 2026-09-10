@@ -1,6 +1,6 @@
 /**
  * The Conform/Zod schemas behind the two forms that edit body metrics: the
- * body-metrics card on `/settings/goals` and the life-phase page at
+ * body-metrics card on `/settings/profile` and the life-phase page at
  * `/settings/life-phase` (M215 spec 01), which submits the status and its date
  * alone.
  *

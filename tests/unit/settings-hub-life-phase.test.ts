@@ -76,7 +76,7 @@ function hasLifePhaseRow(markup: string): boolean {
  * Settings markup WITHOUT the row: the neighbouring goals row on its own. The
  * control that makes `hasLifePhaseRow` falsifiable.
  */
-const HUB_WITHOUT_THE_ROW = `<a href="/settings/goals"><span>${enCommon.settings.rows.goals.title}</span></a>`;
+const HUB_WITHOUT_THE_ROW = `<a href="/settings/nutrition"><span>${enCommon.settings.rows.goals.title}</span></a>`;
 
 describe('the settings hub life-phase row', () => {
   it('renders for an account that has answered nothing, biological sex included', () => {

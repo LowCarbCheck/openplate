@@ -85,7 +85,7 @@ export function WeightStatTiles({
         {!hasTarget ?
           <p className="text-sm text-muted-foreground">
             {t('trends.weight.stat.noTarget')}{' '}
-            <Link to="/settings/goals" className="underline underline-offset-2">
+            <Link to="/settings/nutrition" className="underline underline-offset-2">
               {t('trends.weight.stat.setTarget')}
             </Link>
           </p>

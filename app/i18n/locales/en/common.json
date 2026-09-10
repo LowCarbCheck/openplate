@@ -1126,6 +1126,14 @@
     "photo": "Photo",
     "photoAnything": "Photograph food"
   },
+  "nutrition": {
+    "title": "Eating and targets",
+    "loading": "Loading…"
+  },
+  "profile": {
+    "title": "About you",
+    "loading": "Loading…"
+  },
   "lifePhase": {
     "title": "Life phase",
     "description": "Only you see this, and it is never part of a food lookup.",
@@ -1167,7 +1175,6 @@
     "error": "Something went wrong · openplate",
     "fasting": "Fasting · openplate",
     "foods": "Your foods · openplate",
-    "goals": "Your goals · openplate",
     "imprint": "Imprint · openplate",
     "join": "Join · openplate",
     "joinStudy": "Join a study · openplate",
@@ -1175,6 +1182,8 @@
     "landingManaged": "openplate, a food tracker only you can read",
     "landingDescription": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
     "lifePhase": "Life phase · openplate",
+    "nutrition": "Eating and targets · openplate",
+    "profile": "About you · openplate",
     "meals": "Saved meals · openplate",
     "notFound": "Page not found · openplate",
     "nutrients": "Nutrients · openplate",
@@ -1985,7 +1994,7 @@
         "status": "Studies you contribute to"
       },
       "account": {
-        "title": "Account",
+        "title": "Account and sync",
         "signedOut": "Signed out"
       },
       "admin": {

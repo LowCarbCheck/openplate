@@ -1258,7 +1258,7 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
           selected={biologicalSex}
           onSelect={setBiologicalSex}
         />
-        {/* The same fieldset `/settings/goals` shows, component and all, so the
+        {/* The same fieldset `/settings/life-phase` shows, component and all, so the
             wizard and the settings page cannot drift about what may be entered
             here. It asks anyone who did not answer "male", it reveals one date
             beside the chosen chip, and `none` is always right there to put the

@@ -5,7 +5,7 @@
  *
  * ── Why it is a component rather than JSX in two routes ────────────────────
  *
- * `/settings/goals` and the onboarding body step ask this same question, and
+ * `/settings/life-phase` and the onboarding body step ask this same question, and
  * before M206 they asked it with two hand-copied `fieldset`s that had already
  * drifted in their chip classes. A date field, a helper input and a derived
  * line are more than enough to drift again, and the two screens would then
