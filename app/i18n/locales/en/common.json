@@ -845,10 +845,6 @@
     }
   },
   "goals": {
-    "aiLink": {
-      "description": "Connect your AI provider for photo plate identification.",
-      "title": "AI settings"
-    },
     "carbs": {
       "custom": "Custom",
       "hint": "This counts net carbs: fiber and sugar alcohols already taken out, the same number your diary tracks. Pick a common starting point below, or type your own amount in grams.",
@@ -870,7 +866,6 @@
       "suggested": "Use {{kcal}} kcal a day (lightly active)",
       "suggestionUnavailable": "Add your height, year of birth and sex below, plus a weigh-in, and we can suggest a starting number."
     },
-    "loading": "Loading goals…",
     "protein": {
       "basis": {
         "height": "your height and sex",
@@ -891,7 +886,6 @@
       "placeholderKg": "e.g. 70",
       "placeholderLb": "e.g. 154"
     },
-    "title": "Goals",
     "toast": {
       "saved": "Goals saved.",
       "weightLogged": "Weight logged.",
@@ -1935,10 +1929,13 @@
       "title": "Data & backup"
     },
     "groups": {
-      "about": "About",
-      "scanning": "Scanning",
-      "you": "You",
-      "yourData": "Your data"
+      "profile": "About you",
+      "nutrition": "Eating and targets",
+      "scanning": "Scanning and AI",
+      "appearance": "Appearance and language",
+      "account": "Account and plan",
+      "lists": "My lists and data",
+      "about": "About openplate"
     },
     "photos": {
       "cancel": "Cancel",
@@ -1971,9 +1968,7 @@
       },
       "goals": {
         "calories": "{{kcal}} calories a day",
-        "carbs": "{{grams}} g net carbs a day",
-        "none": "No targets set yet",
-        "title": "Goals"
+        "carbs": "{{grams}} g net carbs a day"
       },
       "meals": {
         "title": "Saved meals"
@@ -2000,6 +1995,16 @@
       "admin": {
         "title": "Administration",
         "status": "Invitations and accounts"
+      },
+      "profile": {
+        "status": "Height, weight, birth year"
+      },
+      "nutrition": {
+        "status": "Eating style and targets"
+      },
+      "plan": {
+        "title": "Plan",
+        "status": "Your plan and payment"
       }
     },
     "style": {

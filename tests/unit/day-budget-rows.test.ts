@@ -353,29 +353,29 @@ describe('DayBudgetRows rendering', () => {
     // Two default rows are on screen, protein's reference and fiber's, and both
     // wear the same plain word.
     assert.equal(html.match(/>reference</g)?.length, 2);
-    // CONTROL: nothing on this page offers the goals page, so the link asserted
+    // CONTROL: nothing on this page offers the life-phase page, so the link asserted
     // in the next test cannot be something the stack renders anyway.
-    assert.ok(!html.includes('/settings/nutrition'), 'an ordinary reference tag is not actionable');
+    assert.ok(!html.includes('/settings/life-phase'), 'an ordinary reference tag is not actionable');
     assert.ok(!html.includes('add your due date'));
   });
 
-  it('asks for the due date, as a link to the goals page, when the pregnancy has none', () => {
+  it('asks for the due date, as a link to the life-phase page, when the pregnancy has none', () => {
     const html = render(
       buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 86, missingReferenceDate: 'due-date' }),
     );
-    assert.match(html, /<a[^>]*href="\/settings\/nutrition"[^>]*>reference, add your due date<\/a>/);
+    assert.match(html, /<a[^>]*href="\/settings\/life-phase"[^>]*>reference, add your due date<\/a>/);
     assert.ok(!html.includes('add the birth date'));
     // CONTROL: the tag REPLACES protein's plain word rather than sitting beside
     // it, and fiber's stays plain and unlinked either way.
     assert.equal(html.match(/>reference</g)?.length, 1);
-    assert.equal(html.match(/settings\/nutrition/g)?.length, 1);
+    assert.equal(html.match(/settings\/life-phase/g)?.length, 1);
   });
 
   it('asks for the birth date instead while breastfeeding', () => {
     const html = render(
       buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 77, missingReferenceDate: 'birth-date' }),
     );
-    assert.match(html, /<a[^>]*href="\/settings\/nutrition"[^>]*>reference, add the birth date<\/a>/);
+    assert.match(html, /<a[^>]*href="\/settings\/life-phase"[^>]*>reference, add the birth date<\/a>/);
     // CONTROL: the two subjects really do produce different copy.
     assert.ok(!html.includes('add your due date'));
   });
@@ -387,6 +387,6 @@ describe('DayBudgetRows rendering', () => {
     // The protein row is a goal, so it wears no tag at all; only fiber's plain
     // reference is left, and no date is asked for.
     assert.equal(html.match(/>reference</g)?.length, 1);
-    assert.ok(!html.includes('/settings/nutrition'));
+    assert.ok(!html.includes('/settings/life-phase'));
   });
 });

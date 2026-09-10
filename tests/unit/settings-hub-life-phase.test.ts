@@ -22,7 +22,7 @@
  * ── Every assertion has a control ─────────────────────────────────────────
  *
  * `hasLifePhaseRow` is checked against a fixture that carries the neighbouring
- * goals row and nothing else, so a predicate that matched any settings markup
+ * nutrition row and nothing else, so a predicate that matched any settings markup
  * would fail here instead of passing quietly. Same for the derived line: each
  * status is asserted against the key the OTHER status would have produced.
  */
@@ -73,10 +73,10 @@ function hasLifePhaseRow(markup: string): boolean {
 }
 
 /**
- * Settings markup WITHOUT the row: the neighbouring goals row on its own. The
- * control that makes `hasLifePhaseRow` falsifiable.
+ * Settings markup WITHOUT the row: the neighbouring nutrition row on its own.
+ * The control that makes `hasLifePhaseRow` falsifiable.
  */
-const HUB_WITHOUT_THE_ROW = `<a href="/settings/nutrition"><span>${enCommon.settings.rows.goals.title}</span></a>`;
+const HUB_WITHOUT_THE_ROW = `<a href="/settings/nutrition"><span>${enCommon.nutrition.title}</span></a>`;
 
 describe('the settings hub life-phase row', () => {
   it('renders for an account that has answered nothing, biological sex included', () => {

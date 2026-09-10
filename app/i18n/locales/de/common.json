@@ -833,10 +833,6 @@
     }
   },
   "goals": {
-    "aiLink": {
-      "description": "Verbinde deinen KI-Anbieter für die Teller-Fotoerkennung.",
-      "title": "KI-Einstellungen"
-    },
     "carbs": {
       "custom": "Eigener Wert",
       "hint": "Hier werden Netto-Kohlenhydrate gezählt: Ballaststoffe und mehrwertige Alkohole sind bereits abgezogen, genau wie in deinem Tagebuch. Wähle unten einen gängigen Richtwert oder gib deine eigene Menge in Gramm ein.",
@@ -858,7 +854,6 @@
       "suggested": "{{kcal}} kcal pro Tag übernehmen (leicht aktiv)",
       "suggestionUnavailable": "Gib unten deine Größe, dein Geburtsjahr und dein Geschlecht sowie ein Gewicht ein, damit wir dir einen Richtwert vorschlagen können."
     },
-    "loading": "Ziele werden geladen…",
     "protein": {
       "basis": {
         "height": "deiner Größe und deinem Geschlecht",
@@ -879,7 +874,6 @@
       "placeholderKg": "z. B. 70",
       "placeholderLb": "z. B. 154"
     },
-    "title": "Ziele",
     "toast": {
       "saved": "Ziele gespeichert.",
       "weightLogged": "Gewicht eingetragen.",
@@ -1923,10 +1917,13 @@
       "title": "Daten & Sicherung"
     },
     "groups": {
-      "about": "Über",
-      "scanning": "Scannen",
-      "you": "Du",
-      "yourData": "Deine Daten"
+      "profile": "Über dich",
+      "nutrition": "Ernährung und Ziele",
+      "scanning": "Scannen und KI",
+      "appearance": "Erscheinungsbild und Sprache",
+      "account": "Konto und Tarif",
+      "lists": "Meine Listen und Daten",
+      "about": "Über openplate"
     },
     "photos": {
       "cancel": "Abbrechen",
@@ -1959,9 +1956,7 @@
       },
       "goals": {
         "calories": "{{kcal}} Kalorien pro Tag",
-        "carbs": "{{grams}} g Netto-KH pro Tag",
-        "none": "Noch keine Ziele gesetzt",
-        "title": "Ziele"
+        "carbs": "{{grams}} g Netto-KH pro Tag"
       },
       "meals": {
         "title": "Gespeicherte Mahlzeiten"
@@ -1988,6 +1983,16 @@
       "admin": {
         "title": "Administration",
         "status": "Einladungen und Konten"
+      },
+      "profile": {
+        "status": "Größe, Gewicht, Geburtsjahr"
+      },
+      "nutrition": {
+        "status": "Ernährungsstil und Ziele"
+      },
+      "plan": {
+        "title": "Tarif",
+        "status": "Dein Tarif und deine Zahlung"
       }
     },
     "style": {
