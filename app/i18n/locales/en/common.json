@@ -430,7 +430,6 @@
     },
     "week": {
       "empty": "No days logged yet. Today can be the first.",
-      "link": "See your progress",
       "title": "Your last 7 days"
     },
     "weight": {

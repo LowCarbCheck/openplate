@@ -132,6 +132,13 @@ interface AdherenceCellProps {
   day: AdherenceDay;
   goals: AdherenceGoals;
   mode: AdherenceMode;
+  /**
+   * False on a surface that is itself one big link (Overview's `StreakGridCard`).
+   * A cell then paints as a labelled `<span>`: an interactive `<button>` inside
+   * an `<a>` is invalid HTML, and the tooltip and roving-tabindex model it
+   * carries cannot work there either.
+   */
+  isInteractive: boolean;
   /** True for the single cell that owns the grid's tab stop (roving tabindex). */
   isAnchor: boolean;
   onActivate: (date: string) => void;
@@ -148,6 +155,7 @@ const AdherenceCell = memo(function AdherenceCell({
   day,
   goals,
   mode,
+  isInteractive,
   isAnchor,
   onActivate,
   onKeyDown,
@@ -164,6 +172,27 @@ const AdherenceCell = memo(function AdherenceCell({
   }
 
   const description = describeAdherenceDay({ day, goals, mode, t, language: i18n.language });
+
+  // Read-only: the same paint and the same screen-reader sentence, with no tab
+  // stop, no tooltip and no click target. The sentence rides an `sr-only` span
+  // rather than an `aria-label` on the square, because a bare `<span>` needs a
+  // role to be nameable and `role="img"` on a decorative div is exactly what
+  // the a11y lint rejects.
+  if (!isInteractive) {
+    return (
+      <li>
+        <span
+          aria-hidden="true"
+          className={cn(
+            'block aspect-square w-full rounded-sm',
+            fillClass(day),
+            day.isToday && 'outline outline-[1.5px] outline-offset-[1px] outline-foreground/55',
+          )}
+        />
+        <span className="sr-only">{description.ariaLabel}</span>
+      </li>
+    );
+  }
 
   return (
     <li>
@@ -241,8 +270,18 @@ function summarySentence(
  *
  * @param grid - the resolved grid model (13 columns, oldest first).
  * @param goals - the user's configured daily goals, for the readout's "against" phrases.
+ * @param interactive - false renders read-only cells, for a grid that sits inside a link.
  */
-export function AdherenceGrid({ grid, goals }: { grid: AdherenceGridModel; goals: AdherenceGoals }) {
+export function AdherenceGrid({
+  grid,
+  goals,
+  interactive = true,
+}: {
+  grid: AdherenceGridModel;
+  goals: AdherenceGoals;
+  /** Default true. Pass false where the grid sits inside a link (see `AdherenceCellProps.isInteractive`). */
+  interactive?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const weekdayNames = useWeekdayNames();
   const monthLabels = useMonthLabels(grid);
@@ -323,6 +362,7 @@ export function AdherenceGrid({ grid, goals }: { grid: AdherenceGridModel; goals
                 day={day}
                 goals={goals}
                 mode={grid.mode}
+                isInteractive={interactive}
                 isAnchor={day.date === anchorDate}
                 onActivate={onActivate}
                 onKeyDown={onKeyDown}

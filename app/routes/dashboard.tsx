@@ -18,9 +18,16 @@
  * an active fast is the only time-sensitive fact on the screen, and the thing
  * that has to be scrolled to should be the thing that is not moving.
  *
- * That arithmetic is also the standing argument against a FOURTH module and
- * against a mini adherence grid: a third glance tile would orphan a 2+1 row and
- * cost a full ~120 px, which is a different order of expense from a strip.
+ * That arithmetic used to be the standing argument against a FOURTH module and
+ * against putting the adherence grid here: a third glance tile would orphan a
+ * 2+1 row and cost a full ~120 px, which is a different order of expense from a
+ * strip. The owner OVERRULED that on 2026-09-10. The 13-week grid from
+ * `/trends` now also renders here, near the top, as `StreakGridCard`, and the
+ * page scrolls. The argument above is kept as the record of what the cost was,
+ * not as a rule: the grid is the record of showing up, and the owner's call is
+ * that it is worth a scroll on the screen people open first. The two grids are
+ * fed from ONE selection (`#app/lib/adherence-grid-days`) so they can never
+ * disagree about a day.
  */
 import type { ReactElement } from 'react';
 import type { Route } from './+types/dashboard';
@@ -31,6 +38,7 @@ import { Link } from '#app/components/link';
 import {
   computeDailyTotals,
   computeDailyTotalsInRange,
+  computeStreak,
   getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalFasts,
@@ -65,9 +73,14 @@ import { buildDayRidge } from '#app/models/day-ridge';
 import type { DayRidge as DayRidgeModel } from '#app/models/day-ridge';
 import { computeWeightGlance } from '#app/models/dashboard';
 import type { WeightGlance } from '#app/models/dashboard';
+import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-days';
+import { buildAdherenceGrid } from '#app/models/adherence-grid';
+import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
+import type { StreakSnapshot } from '#app/lib/streak-message';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
+import { StreakGridCard } from '#app/components/dashboard/streak-grid-card';
 import { ReproductiveStatusPromptBanner } from '#app/components/reproductive-status-prompt-banner';
 import { DayRidge } from '#app/components/day-ridge';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -95,6 +108,13 @@ export const handle = {
 
 /** The strip's width, and the window the week tile and the weight delta share. */
 const WEEK_DAYS = 7;
+
+/**
+ * How far back the streak is looked for. Copied from `streak-card.tsx`, which
+ * is where the figure is explained: generous enough that a real streak is never
+ * undercounted, short enough not to scan a whole history.
+ */
+const STREAK_LOOKBACK_DAYS = 60;
 
 /** The one link style this page uses to hand the user on to the screen that owns the detail. */
 const HANDOFF_LINK_CLASS =
@@ -154,6 +174,18 @@ export interface DashboardData {
    * the dots, which is where the dot metaphor is taught.
    */
   ridge: DayRidgeModel;
+  /**
+   * The 13-week goal grid, the same model `/trends` draws (owner's call,
+   * 2026-09-10, see this file's header). Built in the loader rather than
+   * memoised in the component the way `/trends` does it, because that is this
+   * page's own convention: `ridge` and `weight` are both built here too, which
+   * keeps every component on this route presentational.
+   */
+  grid: AdherenceGridModel;
+  /** The goals the grid graded each day against, carried so the card's readouts can name them. */
+  adherenceGoals: AdherenceGoals;
+  /** The current streak, and whether today itself carries any logs, for the grid card's header line. */
+  streak: StreakSnapshot;
   weight: WeightGlance;
   /**
    * The one scheduled-or-running fast, or null (M132). The RAW row: its status
@@ -236,6 +268,31 @@ export async function clientLoader(): Promise<DashboardData> {
   const kcalTarget =
     goals.kcalTarget === null || kcalAddition === null ? goals.kcalTarget : goals.kcalTarget + kcalAddition;
 
+  // The grid's own window: 13 whole Monday to Sunday columns, selected through
+  // the seam `/trends` uses so the two screens agree day for day.
+  const gridDays = selectAdherenceGridDays({ allLogs, today, weeks: GRID_WEEKS });
+  // The goals the grid grades against. `kcalTarget` here is the DISPLAYED one,
+  // reproductive addition included, so the squares agree with the budget rows
+  // above them. `/trends` passes the raw stored figure instead, so somebody
+  // pregnant or lactating can see a darker square here than there; being
+  // consistent with this page's own rows is the louder claim.
+  const adherenceGoals: AdherenceGoals = {
+    netCarbsCeilingG: goals.netCarbsCeiling,
+    proteinFloorG: goals.proteinFloor,
+    kcalTarget,
+  };
+
+  // The streak, off the `allLogs` this loader already read, so the card costs
+  // no second store pass (`StreakCard` on `/trends` reads the store itself from
+  // an effect, which this page cannot do inside a loader-fed card).
+  // `computeStreak` counts only days that are logged AND at or under the carb
+  // ceiling, so a `0` on a day that WAS logged is correct and `todayHasLogs`
+  // is what tells the two cases apart.
+  const streakTotals = computeDailyTotalsInRange(allLogs, {
+    fromDate: shiftDate(today, -STREAK_LOOKBACK_DAYS),
+    toDate: today,
+  });
+
   return {
     currentFast: selectCurrentFast(fasts),
     today,
@@ -266,6 +323,12 @@ export async function clientLoader(): Promise<DashboardData> {
       lens: goals.lens,
       goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget, proteinFloor: goals.proteinFloor },
     }),
+    grid: buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals }),
+    adherenceGoals,
+    streak: {
+      streak: computeStreak(streakTotals, { netCarbsCeiling: goals.netCarbsCeiling }),
+      todayHasLogs: totalsForToday.hasLogs,
+    },
     weight: computeWeightGlance({ entries: weightEntries, today, windowDays: WEEK_DAYS }),
   };
 }
@@ -400,31 +463,34 @@ function TodayHeroCard({
  * fact; a shrunken copy of the grid would be the duplication the nav catalog
  * exists to prevent. The streak NUMBER stays on `/trends` for the same reason.
  *
- * The handoff to `/trends` is the arrow beside the title rather than the page's
- * usual labelled `HANDOFF_LINK_CLASS` row: at this tile's real width the label
+ * The whole tile is the door to `/trends`, not just the arrow beside the
+ * title: one `Link` wraps the `Card` rather than the page's usual labelled
+ * `HANDOFF_LINK_CLASS` row, because at this tile's real width that label
  * wrapped to two lines and spent 40 px of the tile's 164 px budget, which the
- * chart needs to draw in. It keeps the label as its `aria-label`, so the link
- * still announces itself in full. See `day-ridge.tsx` for the full arithmetic.
+ * chart needs to draw in. The arrow stays as a plain, decorative span, the
+ * card's own title and content already name the link, so it carries no
+ * `aria-label` of its own. See `day-ridge.tsx` for the full arithmetic.
  */
 function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
   const { t } = useTranslation();
 
   return (
-    <Card>
-      <CardHeader className={cn(GLANCE_HEADER_CLASS, 'flex-row items-start justify-between gap-2 space-y-0')}>
-        <CardTitle className="text-base">{t('dashboard.week.title')}</CardTitle>
-        <Link
-          to="/trends"
-          aria-label={t('dashboard.week.link')}
-          className="shrink-0 text-primary hover:text-primary/80"
-        >
-          <ArrowRight className="h-5 w-5" aria-hidden="true" />
-        </Link>
-      </CardHeader>
-      <CardContent className={GLANCE_CONTENT_CLASS}>
-        <DayRidge ridge={ridge} emptyLabel={t('dashboard.week.empty')} />
-      </CardContent>
-    </Card>
+    <Link
+      to="/trends"
+      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Card className="transition-colors hover:border-primary/40">
+        <CardHeader className={cn(GLANCE_HEADER_CLASS, 'flex-row items-start justify-between gap-2 space-y-0')}>
+          <CardTitle className="text-base">{t('dashboard.week.title')}</CardTitle>
+          <span className="shrink-0 text-primary">
+            <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          </span>
+        </CardHeader>
+        <CardContent className={GLANCE_CONTENT_CLASS}>
+          <DayRidge ridge={ridge} emptyLabel={t('dashboard.week.empty')} />
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -441,7 +507,10 @@ function formatWeightDelta(deltaKg: number, unit: WeightUnit): string {
 /**
  * The latest weigh-in, and how it moved over the same seven days the strip
  * covers. A single weigh-in shows the figure and no delta — "0.0 over the last
- * 7 days" would read as "no change" rather than "not enough data".
+ * 7 days" would read as "no change" rather than "not enough data". The whole
+ * tile is the door to `/trends`; the trailing text and arrow keep their
+ * `HANDOFF_LINK_CLASS` styling as the visible call to action, but are no
+ * longer a link of their own.
  */
 function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
   const { t, i18n } = useTranslation();
@@ -450,40 +519,45 @@ function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
   const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
 
   return (
-    <Card>
-      <CardHeader className={GLANCE_HEADER_CLASS}>
-        <CardTitle className="text-base">{t('trends.weight.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className={cn(GLANCE_CONTENT_CLASS, 'space-y-2')}>
-        {weight.latestKg === null || weight.latestDate === null ?
-          <p className="text-sm text-muted-foreground">{t('trends.weight.empty')}</p>
-        : <>
-            <p className="text-2xl font-semibold tabular-nums">
-              {formatKgForDisplay(weight.latestKg, weightUnit)}{' '}
-              <span className="text-base font-normal text-muted-foreground">{weightUnit}</span>
-            </p>
-            {/*
-              The weigh-in DATE is the first thing to go on a phone: it is the
-              least load-bearing line in the tile (the figure and the 7-day
-              delta both survive), and `/trends` — one tap away through the link
-              below — is where the dated history actually lives.
-            */}
-            <p className="hidden text-xs text-muted-foreground sm:block">
-              {t('trends.weight.stat.latestOn', { date: formatDayLabel(weight.latestDate, i18n.language) })}
-            </p>
-            {weight.deltaKg !== null && (
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {t('dashboard.weight.since', { delta: formatWeightDelta(weight.deltaKg, weightUnit) })}
+    <Link
+      to="/trends"
+      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Card className="transition-colors hover:border-primary/40">
+        <CardHeader className={GLANCE_HEADER_CLASS}>
+          <CardTitle className="text-base">{t('trends.weight.title')}</CardTitle>
+        </CardHeader>
+        <CardContent className={cn(GLANCE_CONTENT_CLASS, 'space-y-2')}>
+          {weight.latestKg === null || weight.latestDate === null ?
+            <p className="text-sm text-muted-foreground">{t('trends.weight.empty')}</p>
+          : <>
+              <p className="text-2xl font-semibold tabular-nums">
+                {formatKgForDisplay(weight.latestKg, weightUnit)}{' '}
+                <span className="text-base font-normal text-muted-foreground">{weightUnit}</span>
               </p>
-            )}
-          </>
-        }
-        <Link to="/trends" className={HANDOFF_LINK_CLASS}>
-          {t('dashboard.weight.link')}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
-      </CardContent>
-    </Card>
+              {/*
+                The weigh-in DATE is the first thing to go on a phone: it is the
+                least load-bearing line in the tile (the figure and the 7-day
+                delta both survive), and `/trends`, one tap away on the whole
+                tile, is where the dated history actually lives.
+              */}
+              <p className="hidden text-xs text-muted-foreground sm:block">
+                {t('trends.weight.stat.latestOn', { date: formatDayLabel(weight.latestDate, i18n.language) })}
+              </p>
+              {weight.deltaKg !== null && (
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {t('dashboard.weight.since', { delta: formatWeightDelta(weight.deltaKg, weightUnit) })}
+                </p>
+              )}
+            </>
+          }
+          <span className={HANDOFF_LINK_CLASS}>
+            {t('dashboard.weight.link')}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </span>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -497,6 +571,9 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     summary,
     goals,
     ridge,
+    grid,
+    adherenceGoals,
+    streak,
     weight,
     currentFast,
     reproductiveStatus,
@@ -526,6 +603,14 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         lactationStartDate={lactationStartDate}
         today={new Date()}
       />
+      {/*
+        The 13-week record, directly under the hero and its banner and ABOVE
+        the fast strip and the glance row (owner's call, 2026-09-10). It is the
+        second thing the page says, after "where does today stand": how long
+        the showing up has been going on. The whole card is one door to
+        `/trends`, where the same grid is interactive.
+      */}
+      <StreakGridCard grid={grid} goals={adherenceGoals} streak={streak} />
       {/*
         Conditional and ABOVE the glance row (M132) — see this file's header for
         the height arithmetic and why the fast outranks last week's weight for

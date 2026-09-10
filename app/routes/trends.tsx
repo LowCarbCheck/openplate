@@ -24,6 +24,7 @@ import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
 import { readStoredWeightUnit } from '#app/lib/weight-unit-preference';
 import type { WeightUnit } from '#app/lib/weight-units';
 import { buildAdherenceGrid } from '#app/models/adherence-grid';
+import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-days';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { StreakCard } from '#app/components/streak-card';
 import { AdherenceGridCard } from '#app/components/trends/adherence-grid-card';
@@ -61,8 +62,10 @@ const DEFAULT_RANGE: TrendRange = 14;
 const NEW_ACCOUNT_RANGE: TrendRange = 7;
 /** A Monday→Sunday week is seven days wide. */
 const DAYS_IN_WEEK = 7;
-/** Week columns in the adherence grid. Fixed: one geometry at every breakpoint, no scroll, no responsive week count. */
-const GRID_WEEKS = 13;
+// `GRID_WEEKS` is imported: Overview draws the same grid, so the week count
+// and the day selection live in `#app/lib/adherence-grid-days` where both
+// screens read them. Fixed at 13: one geometry at every breakpoint, no scroll,
+// no responsive week count.
 /** The weight window matches the grid's, so both surfaces honestly say "the last 13 weeks". */
 const WEIGHT_WINDOW_DAYS = GRID_WEEKS * DAYS_IN_WEEK;
 
@@ -184,17 +187,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   // The adherence grid: 13 whole Monday→Sunday columns ending in the week that
   // contains today, so the grid never shows a ragged part-week at either end.
-  const gridWeekStart = startOfWeek(today);
-  const gridDays = computeDailyTotalsInRange(allLogs, {
-    fromDate: shiftDate(gridWeekStart, -(GRID_WEEKS - 1) * DAYS_IN_WEEK),
-    toDate: shiftDate(gridWeekStart, DAYS_IN_WEEK - 1),
-  }).map((day) => ({
-    date: day.date,
-    hasLogs: day.hasLogs,
-    netCarbs: day.summary?.netCarbs ?? null,
-    protein: day.summary?.protein ?? null,
-    kcal: day.kcal.total,
-  }));
+  // Selected through the shared seam Overview uses, so the two grids cannot
+  // disagree about their window.
+  const gridDays = selectAdherenceGridDays({ allLogs, today, weeks: GRID_WEEKS });
 
   // The same 91-day window, ascending — the weight chart's series.
   const weightWindowStart = shiftDate(today, -(WEIGHT_WINDOW_DAYS - 1));
