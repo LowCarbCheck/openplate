@@ -121,9 +121,14 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
 
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 py-2.5 first:pt-0 last:pb-0">
-      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+      {/*
+        A German label beside the reference tag overflowed at a large font: it
+        lost its tail to an ellipsis, or collapsed to nothing. Wrapping the
+        label cell keeps the whole word, and keeps M209's value column aligned.
+      */}
+      <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium text-foreground">
         <span className={cn('h-2 w-2 shrink-0 rounded-full', fillClass)} aria-hidden="true" />
-        <span className="truncate">{row.label}</span>
+        <span className="min-w-0">{row.label}</span>
         {row.targetSource === 'default' && <ReferenceTag row={row} />}
       </span>
       <span
