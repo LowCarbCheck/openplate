@@ -1,6 +1,11 @@
 import { H1, H2, P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import type { MetaFunction } from 'react-router';
+import { useLoaderData } from 'react-router';
+import type { Route } from './+types/terms';
+import { CONFIG } from '#app/config';
+import { resolveRequestLanguage } from '#app/i18n/language-prefs';
+import { formatPlanPrice, PLAN_PRICING } from '#app/lib/plans/plan-price.server';
 import { Trans, useTranslation } from 'react-i18next';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
@@ -13,6 +18,28 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 // Title via the pure `meta-title` seam — see `meta-title.ts` for why the
 // i18next singleton must not be read from a `meta()`.
 export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.terms') }];
+
+/**
+ * SERVER: the price and the trial length, for THIS request's language.
+ *
+ * The figures are parsed once at boot (`plan-price.server.ts`); what this
+ * loader adds is the locale, and it takes it from the same cookie the document
+ * is rendered from (`resolveRequestLanguage`, the reading `app/root.tsx` uses
+ * for `<html lang>`). Formatting on the server rather than in the component
+ * keeps the whole decision on one side of the wire: the browser receives a
+ * finished string, or `null`, and never a number it could format a second way.
+ *
+ * A language change reloads the document (`applyLanguageChange`), so this
+ * runs again and the label follows the reader.
+ */
+export function loader({ request }: Route.LoaderArgs) {
+  const language = resolveRequestLanguage(request.headers.get('cookie'), CONFIG.i18n.defaultLanguage);
+  const { priceEur, trialDays } = PLAN_PRICING;
+  return {
+    priceLabel: priceEur === null ? null : formatPlanPrice(priceEur, language),
+    trialDays,
+  };
+}
 
 /**
  * The terms copy itself, split out from the page chrome so it can be unit-tested
@@ -263,18 +290,21 @@ export default function Terms() {
   // section, and that is the safe direction: an instance nobody can pay for
   // must not publish terms describing a subscription.
   const plans = hasPlansDoor(useServerInstance());
+  // THE TWO FIGURES COME FROM THE SERVER (M214 spec 02). They are this
+  // deployment's own environment, not the handshake and not a bundle, so they
+  // are read in the loader above and arrive here already formatted for the
+  // language this request is being rendered in. An instance that set neither
+  // sends `null` for both, and the two sentences stay unrendered exactly as
+  // they did before. See `plan-price.server.ts`.
+  const { priceLabel, trialDays } = useLoaderData<typeof loader>();
   return (
     <PublicWrapper>
       <TermsContent
         managed={serverHoldsTheDiary}
         aiComesFromTheInstance={aiComesFromTheInstance}
         plans={plans}
-        // TODO(owner): the gross monthly price and the trial length. Neither
-        // is on the wire and neither may be invented here, so the two
-        // sentences that carry them stay unrendered until the owner supplies
-        // them. See `TermsContentProps`.
-        price={null}
-        trialDays={null}
+        price={priceLabel}
+        trialDays={trialDays}
       />
     </PublicWrapper>
   );

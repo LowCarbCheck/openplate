@@ -32,6 +32,7 @@ import { LEGAL_LAST_UPDATED, formatLegalDate } from '../../app/routes/legal/last
 import { PrivacyContent } from '../../app/routes/legal/privacy';
 import { TermsContent } from '../../app/routes/legal/terms';
 import { ImprintContent } from '../../app/routes/legal/imprint';
+import { formatPlanPrice } from '../../app/lib/plans/plan-price.server';
 
 /**
  * A translation catalog: nested groups of keys bottoming out in strings.
@@ -337,5 +338,106 @@ describe('legal pages — the German render', () => {
       // reason the German is.
       assertClaim({ html, bundle: EN, key: 'privacy.s9aLevelBody', present: false, because: 'the English fallback rendered inside a German policy' });
     }
+  });
+});
+
+/**
+ * Section 4a's two figures, in German (M214 spec 02).
+ *
+ * `price` and `trialDays` reach `TermsContent` from the route's server loader,
+ * which reads them from this deployment's environment and formats the price
+ * for the request's language. Two things can go wrong in the German document
+ * and nowhere else, so both are asserted here rather than in
+ * `legal-pages.test.ts`:
+ *
+ *  - the figure never arrives, and the sentence prints a literal `{{price}}`;
+ *  - the price is written in the English form inside a German contract, which
+ *    the Preisangabenverordnung expects to be readable as one total price.
+ *
+ * The claim is read out of the SHIPPED bundle and interpolated here, for the
+ * reason `assertClaim` gives: wordsmith owns the German and rephrases it.
+ *
+ * The figure below is not a price anybody charges. The real one lives in the
+ * operator's environment (`PLAN_PRICE_EUR`), and this repository may not
+ * invent one.
+ */
+describe('legal pages: section 4a carries the figures it is given', () => {
+  const SAMPLE_PRICE_EUR = 12.34;
+  const SAMPLE_TRIAL_DAYS = 3;
+
+  /**
+   * A bundle string with its one placeholder filled in, reduced to plain text.
+   *
+   * An options object because `key`, `token` and `value` are three strings in
+   * a row, and any two of them could be swapped and still compile. Same
+   * reason `assertClaim` above takes one.
+   */
+  function interpolated({ key, token, value }: { key: string; token: string; value: string }): string {
+    const claim = DE[key];
+    assert.ok(claim !== undefined, `${key} is missing from the German bundle`);
+    return plainText(claim.replace(`{{${token}}}`, value));
+  }
+
+  /** The part of a claim BEFORE its placeholder: present if and only if the sentence was drawn at all. */
+  function leadingHalf({ key, token }: { key: string; token: string }): string {
+    const claim = DE[key];
+    assert.ok(claim !== undefined, `${key} is missing from the German bundle`);
+    const [lead] = claim.split(`{{${token}}}`);
+    assert.ok(lead !== undefined && lead.length > 0, `${key} no longer opens before its placeholder`);
+    return plainText(lead);
+  }
+
+  function renderGermanTerms(price: string | null, trialDays: number | null): string {
+    return plainText(render(createElement(TermsContent, { plans: true, price, trialDays }), 'de'));
+  }
+
+  it('states the price and the trial in German when the deployment supplies both', () => {
+    const priceLabel = formatPlanPrice(SAMPLE_PRICE_EUR, 'de');
+    const text = renderGermanTerms(priceLabel, SAMPLE_TRIAL_DAYS);
+
+    assert.ok(text.includes(priceLabel), 'the formatted price never reached the page');
+    assert.ok(
+      text.includes(interpolated({ key: 'terms.s4aPaymentPrice', token: 'price', value: priceLabel })),
+      'the price sentence did not render with the figure in it',
+    );
+    assert.ok(
+      text.includes(
+        interpolated({ key: 'terms.s4aPaymentTrial', token: 'trialDays', value: String(SAMPLE_TRIAL_DAYS) }),
+      ),
+      'the trial sentence did not render with the figure in it',
+    );
+    // A placeholder that survived to the page is the failure this whole block
+    // exists for: it reads as a bug to every visitor, in a contract.
+    assert.doesNotMatch(text, /\{\{price\}\}|\{\{trialDays\}\}/);
+  });
+
+  it('writes that price the German way, not the English way', () => {
+    const german = formatPlanPrice(SAMPLE_PRICE_EUR, 'de');
+    const english = formatPlanPrice(SAMPLE_PRICE_EUR, 'en');
+    // THE CONTROL. Without it the assertion above passes on a formatter that
+    // ignores its locale and prints the English form into a German contract.
+    assert.notEqual(german, english);
+    assert.ok(!renderGermanTerms(german, SAMPLE_TRIAL_DAYS).includes(english));
+  });
+
+  it('draws neither sentence when the deployment supplies neither figure', () => {
+    const text = renderGermanTerms(null, null);
+    assert.ok(
+      !text.includes(leadingHalf({ key: 'terms.s4aPaymentPrice', token: 'price' })),
+      'the price sentence was drawn empty',
+    );
+    assert.ok(
+      !text.includes(leadingHalf({ key: 'terms.s4aPaymentTrial', token: 'trialDays' })),
+      'the trial sentence was drawn empty',
+    );
+    // The rest of section 4a is unconditional, so this is a check that the two
+    // sentences went missing and not the whole section.
+    assertClaim({
+      html: render(createElement(TermsContent, { plans: true }), 'de'),
+      bundle: DE,
+      key: 'terms.s4aPaymentRenewal',
+      present: true,
+      because: 'section 4a itself disappeared, which is not what a missing figure means',
+    });
   });
 });
