@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **"Like yesterday" is now a button on the Overview card and on the composer.** Copying a whole day from the day before it only existed in your diary, on the day you were looking at, and a person who eats the same thing most days never went there to look for it. The Overview card and the meal composer now each carry one "Like yesterday" button that copies everything you logged yesterday onto today, with the same Undo the diary offers. It only appears when yesterday has entries and today has fewer, so a day that is already logged looks exactly as it did. The diary section is unchanged and is now called the same thing.
+
 ### Changed
 
 - **The Overview week tile draws your last seven days as bars.** The tile showed seven dots, the same dots the diary shows. It now draws one bar per day, as tall as that day stands against your one goal, with a hairline where the goal sits. A day over a ceiling pokes above the line in amber; a day that reached a floor crosses it in teal; a day with nothing logged is a small stub. With no goal set the bars count what you logged and no line is drawn. Every bar still opens that day in your diary, and says its own figure, its goal and the verdict out loud. The link to your progress is now the arrow beside the tile title.

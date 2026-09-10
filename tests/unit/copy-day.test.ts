@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { remapInstantToTargetDay } from '../../app/lib/copy-day';
+import { remapInstantToTargetDay, selectRepeatYesterday } from '../../app/lib/copy-day';
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -46,5 +46,70 @@ describe('remapInstantToTargetDay', () => {
 
     // Offset from the (shorter) target day's midnight is still 9h.
     assert.strictEqual(mapped - targetDayStartMs, 9 * HOUR_MS);
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// selectRepeatYesterday (M217): whether the "Wie gestern" door is offered
+////////////////////////////////////////////////////////////////////////////////
+
+const TODAY = '2026-09-10';
+const YESTERDAY = '2026-09-09';
+
+/** `n` logs stamped with one day key. Only `dayKey` is read by the selector. */
+function logsOn(dayKey: string, n: number): { dayKey: string }[] {
+  return Array.from({ length: n }, () => ({ dayKey }));
+}
+
+/** The selector run against the two day keys every case in this suite shares. */
+function offerFor(logs: { dayKey: string }[]) {
+  return selectRepeatYesterday({ logs, today: TODAY, yesterday: YESTERDAY });
+}
+
+describe('selectRepeatYesterday', () => {
+  it('offers the whole of yesterday on a day with nothing logged yet', () => {
+    const offer = offerFor(logsOn(YESTERDAY, 4));
+
+    assert.deepEqual(offer, { sourceDate: YESTERDAY, targetDate: TODAY, sourceCount: 4, targetCount: 0 });
+  });
+
+  it('still offers it when today has fewer entries than yesterday', () => {
+    // "I logged breakfast, the rest was the same as yesterday."
+    const offer = offerFor([...logsOn(YESTERDAY, 4), ...logsOn(TODAY, 2)]);
+
+    assert.notEqual(offer, null);
+    assert.equal(offer?.sourceCount, 4);
+    assert.equal(offer?.targetCount, 2);
+  });
+
+  it('answers null when yesterday is empty, whatever today holds', () => {
+    assert.equal(offerFor([]), null);
+    assert.equal(offerFor(logsOn(TODAY, 3)), null);
+    // A day further back is not a source: reading 3 stays a non-goal.
+    assert.equal(offerFor(logsOn('2026-09-08', 5)), null);
+  });
+
+  it('answers null when today already has as many entries as yesterday', () => {
+    assert.equal(offerFor([...logsOn(YESTERDAY, 3), ...logsOn(TODAY, 3)]), null);
+    assert.equal(offerFor([...logsOn(YESTERDAY, 3), ...logsOn(TODAY, 7)]), null);
+  });
+
+  it('counts only the two days it was given', () => {
+    const offer = offerFor([
+      ...logsOn(YESTERDAY, 2),
+      ...logsOn(TODAY, 1),
+      ...logsOn('2026-09-08', 9),
+      ...logsOn('2026-09-11', 9),
+    ]);
+
+    assert.equal(offer?.sourceCount, 2);
+    assert.equal(offer?.targetCount, 1);
+  });
+
+  it('names yesterday as the source and today as the target, never the other way round', () => {
+    const offer = offerFor(logsOn(YESTERDAY, 1));
+
+    assert.equal(offer?.sourceDate, YESTERDAY);
+    assert.equal(offer?.targetDate, TODAY);
   });
 });

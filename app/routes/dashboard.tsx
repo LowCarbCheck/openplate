@@ -41,6 +41,8 @@ import {
 import type { LocalFast, ReproductiveStatus } from '#app/lib/local-store';
 import { selectCurrentFast } from '#app/models/fasting';
 import { shiftDate, todayInTimezone } from '#app/lib/user-days';
+import { selectRepeatYesterday } from '#app/lib/copy-day';
+import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
 import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
 import { effectiveEatingStyle, lensForStyle } from '#app/lib/eating-style';
 import type { EatingStyleLens } from '#app/lib/eating-style';
@@ -64,6 +66,7 @@ import type { DayRidge as DayRidgeModel } from '#app/models/day-ridge';
 import { computeWeightGlance } from '#app/models/dashboard';
 import type { WeightGlance } from '#app/models/dashboard';
 import { AddFoodActions } from '#app/components/add-food-actions';
+import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
 import { ReproductiveStatusPromptBanner } from '#app/components/reproductive-status-prompt-banner';
 import { DayRidge } from '#app/components/day-ridge';
@@ -164,6 +167,11 @@ export interface DashboardData {
   pregnancyDueDate: string | null;
   /** The stored lactation start date (`YYYY-MM-DD`), or null. */
   lactationStartDate: string | null;
+  /**
+   * Whether today is worth offering a whole-day repeat of yesterday (M217), and
+   * with what counts. Null means the card renders exactly what it did before.
+   */
+  repeatYesterday: RepeatYesterdayOffer | null;
 }
 
 export async function clientLoader(): Promise<DashboardData> {
@@ -238,6 +246,10 @@ export async function clientLoader(): Promise<DashboardData> {
     pregnancyDueDate: bodyMetrics.pregnancyDueDate ?? null,
     lactationStartDate: bodyMetrics.lactationStartDate ?? null,
     hasLoggedToday: totalsForToday.hasLogs,
+    // Off the `allLogs` read above, so the "Wie gestern" door costs no second
+    // store pass. The day keys are the timezone-derived ones this loader
+    // already works in.
+    repeatYesterday: selectRepeatYesterday({ logs: allLogs, today, yesterday: shiftDate(today, -1) }),
     summary: totalsForToday.summary ?? EMPTY_DAY_SUMMARY,
     goals: {
       ...goals,
@@ -288,10 +300,12 @@ function TodayHeroCard({
   summary,
   goals,
   hasLoggedToday,
+  repeatYesterday,
 }: {
   summary: DaySummary;
   goals: DashboardData['goals'];
   hasLoggedToday: boolean;
+  repeatYesterday: RepeatYesterdayOffer | null;
 }): ReactElement {
   const { t, i18n } = useTranslation();
 
@@ -336,6 +350,14 @@ function TodayHeroCard({
 
   const actions = (
     <div className="space-y-3">
+      {/*
+        CONDITIONAL, and above the add row (M217). Somebody who eats the same
+        thing every day thinks "wie gestern" on this screen, not on `/diary`,
+        so the door is here; it renders nothing at all on a day with nothing to
+        repeat, which leaves the no-scroll phone page untouched in the common
+        case. It posts `/diary`'s existing copy intent and owns no write.
+      */}
+      <RepeatYesterdayDoor offer={repeatYesterday} />
       <AddFoodActions describeTo="/describe" />
       <Link to="/diary" className={HANDOFF_LINK_CLASS}>
         {t('dashboard.today.openDiary')}
@@ -480,11 +502,17 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     reproductiveStatus,
     pregnancyDueDate,
     lactationStartDate,
+    repeatYesterday,
   } = loaderData;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <TodayHeroCard summary={summary} goals={goals} hasLoggedToday={hasLoggedToday} />
+      <TodayHeroCard
+        summary={summary}
+        goals={goals}
+        hasLoggedToday={hasLoggedToday}
+        repeatYesterday={repeatYesterday}
+      />
       {/*
         A question, never a correction: a due date that has passed, or lactation
         older than two years, gets one dismissable line asking whether to update

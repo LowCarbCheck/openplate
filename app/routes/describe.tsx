@@ -63,9 +63,13 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
 import { offerTypedText } from '#app/lib/scan-handoff';
+import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
+import { selectRepeatYesterday } from '#app/lib/copy-day';
+import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
+import { getLocalProfileGoals, listLocalFoodLogs, resolveLocalTimezone } from '#app/lib/local-store';
 import { cn } from '#app/lib/utils';
 import type { TypedIntakeSource } from '#app/lib/intake-source';
-import { parseDateParam } from '#app/lib/user-days';
+import { parseDateParam, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -143,6 +147,13 @@ interface DescribeComposerProps {
   speakArmed: boolean;
   /** The database search, for one exact item. */
   searchHref: string;
+  /**
+   * The "Wie gestern" offer (M217), or null for no door. Optional because the
+   * route resolves it in an effect: the screen renders at once without it and
+   * the door arrives a moment later, ABOVE the title where a late arrival
+   * cannot move the Send button under a thumb.
+   */
+  repeatYesterday?: RepeatYesterdayOffer | null;
 }
 
 /**
@@ -169,6 +180,7 @@ export function DescribeComposer({
   door,
   speakArmed,
   searchHref,
+  repeatYesterday = null,
 }: DescribeComposerProps) {
   const { t } = useTranslation();
   const hasAiProvider = aiConnection === 'connected';
@@ -197,6 +209,11 @@ export function DescribeComposer({
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col gap-4">
+      {/* ABOVE the title, and never between the title and the box. The
+          composer is pinned to the bottom by `mt-auto`, so a door that arrives
+          after the first paint pushes the heading down and leaves Send exactly
+          where the thumb found it. */}
+      <RepeatYesterdayDoor offer={repeatYesterday} />
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">{t('describe.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('describe.lead')}</p>
@@ -298,6 +315,28 @@ export default function DescribeRoute() {
   const { connection: aiConnection, door } = useAiIntake();
   const hasAiProvider = aiConnection === 'connected';
 
+  // NO LOADER, deliberately (see this file's header): a client loader on a
+  // client-only route forces a HydrateFallback, which would blank the message
+  // box on arrival, and the box taking focus at once is the whole point of this
+  // screen. So the one thing worth reading from the store is read here, after
+  // the first paint, and the door appears above the title when it lands.
+  const [repeatYesterday, setRepeatYesterday] = useState<RepeatYesterdayOffer | null>(null);
+  useEffect(() => {
+    let isMounted = true;
+    async function readOffer(): Promise<void> {
+      const profile = await getLocalProfileGoals();
+      const timezone = resolveLocalTimezone(profile);
+      const today = todayInTimezone(timezone);
+      const logs = await listLocalFoodLogs();
+      if (!isMounted) return;
+      setRepeatYesterday(selectRepeatYesterday({ logs, today, yesterday: shiftDate(today, -1) }));
+    }
+    void readOffer();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleSend = useCallback((): void => {
     if (!hasAiProvider) return;
     handOffDescription({ text, source: 'text', scanHref, go: (href) => void navigate(href) });
@@ -312,6 +351,7 @@ export default function DescribeRoute() {
       door={door}
       speakArmed={speakArmed}
       searchHref={searchHref}
+      repeatYesterday={repeatYesterday}
     />
   );
 }

@@ -102,3 +102,38 @@ describe('dashboard loader contract', () => {
     assert.ok(dashboardSource.includes('lens: goals.lens,'));
   });
 });
+
+describe('the Wie gestern door on the today card (M217/02)', () => {
+  it('rides the loader the page already runs, off the one store read', () => {
+    const contract = dashboardDataSource();
+
+    assert.ok(contract.includes('repeatYesterday: RepeatYesterdayOffer | null;'), 'the offer left the loader contract');
+    // Off `allLogs`, which the loader reads once for today's totals: no second
+    // pass over the on-device store for one row.
+    assert.ok(dashboardSource.includes('selectRepeatYesterday({ logs: allLogs,'));
+    // Reading 3 stays a non-goal: the source is derived here, never chosen.
+    assert.ok(dashboardSource.includes('yesterday: shiftDate(today, -1)'));
+  });
+
+  it('renders the door inside the hero, above the add actions', () => {
+    const hero = dashboardSource.indexOf('function TodayHeroCard({');
+    assert.notEqual(hero, -1, 'TodayHeroCard is gone');
+    const doorAt = dashboardSource.indexOf('<RepeatYesterdayDoor offer={repeatYesterday} />', hero);
+    const addActionsAt = dashboardSource.indexOf('<AddFoodActions describeTo="/describe" />', hero);
+
+    assert.notEqual(doorAt, -1, 'the today card lost its Wie gestern door');
+    assert.notEqual(addActionsAt, -1, 'the today card lost its add actions');
+    assert.ok(doorAt < addActionsAt, 'the door sank below the add actions');
+    // The control for the ordering above: both indexes are real positions in
+    // the hero, not two -1s comparing equal.
+    assert.ok(doorAt > hero && addActionsAt > hero);
+  });
+
+  it('owns no action of its own, so the copy still happens in exactly one place', () => {
+    assert.doesNotMatch(dashboardSource, /^export (async )?function clientAction/m, 'the dashboard grew an action');
+    assert.doesNotMatch(dashboardSource, /^export (async )?function action/m, 'the dashboard grew a server action');
+    for (const forbidden of ['putLocalFoodLog', 'randomUuid', 'trackFoodLogged']) {
+      assert.ok(!dashboardSource.includes(forbidden), `the dashboard started writing logs itself (${forbidden})`);
+    }
+  });
+});

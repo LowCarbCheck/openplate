@@ -487,8 +487,10 @@
       "chooseEntries": "Choose entries…",
       "copySelected": "Copy selected ({{count}})",
       "copying": "Copying…",
+      "door": "Like yesterday",
+      "doorHint": "Copy yesterday's {{count}} entries into today",
       "meal": "{{meal}} ({{n}})",
-      "title": "Copy from yesterday"
+      "title": "Like yesterday"
     },
     "drilldown": {
       "netCarbsDefinition": "Net carbs = carbs minus fiber, minus any sugar alcohols.",

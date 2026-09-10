@@ -54,6 +54,7 @@ import { withI18n } from './trends-i18n-harness';
 import { DescribeComposer, describeScanHref, handOffDescription } from '../../app/routes/describe';
 import { takeIntakeHandoff } from '../../app/lib/scan-handoff';
 import type { AiConnection, AiIntakeDoor } from '../../app/components/add/use-ai-connection';
+import type { RepeatYesterdayOffer } from '../../app/lib/copy-day';
 
 /** The shipped copy this file asserts on, so a renamed key fails here rather than shipping a raw `describe.send`. */
 const describeCopySchema = z.object({
@@ -73,6 +74,12 @@ const describeCopySchema = z.object({
   aiIntake: z.object({
     noAllowance: z.string(),
   }),
+  /** The "Wie gestern" door's label (M217), shared with the diary and the dashboard. */
+  diary: z.object({
+    copy: z.object({
+      door: z.string(),
+    }),
+  }),
 });
 
 const CATALOG = describeCopySchema.parse(
@@ -80,6 +87,7 @@ const CATALOG = describeCopySchema.parse(
 );
 const COPY = CATALOG.describe;
 const MANAGED_COPY = CATALOG.aiIntake;
+const DOOR_COPY = CATALOG.diary.copy;
 
 const SOURCE = readFileSync(new URL('../../app/routes/describe.tsx', import.meta.url), 'utf8');
 
@@ -96,11 +104,13 @@ function renderComposer({
   aiConnection = 'connected',
   door = { kind: 'byok' },
   speakArmed = false,
+  repeatYesterday = null,
 }: {
   text?: string;
   aiConnection?: AiConnection;
   door?: AiIntakeDoor;
   speakArmed?: boolean;
+  repeatYesterday?: RepeatYesterdayOffer | null;
 } = {}): string {
   const element = createElement(DescribeComposer, {
     text,
@@ -110,6 +120,7 @@ function renderComposer({
     door,
     speakArmed,
     searchHref: '/add',
+    repeatYesterday,
   });
   const router = createMemoryRouter([{ path: '/describe', element: withI18n(element) }], {
     initialEntries: ['/describe'],
@@ -363,5 +374,66 @@ describe('the hand-off to /scan', () => {
 
     assert.equal(takeIntakeHandoff(), null, 'an empty box was parked for /scan to pay for');
     assert.deepStrictEqual(visited, [], 'an empty box navigated to the scan screen anyway');
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The "Wie gestern" door on the composer (M217/02)
+////////////////////////////////////////////////////////////////////////////////
+
+/** An eligible offer: yesterday holds three entries, today none. */
+const REPEAT_OFFER: RepeatYesterdayOffer = {
+  sourceDate: '2026-09-09',
+  targetDate: '2026-09-10',
+  sourceCount: 3,
+  targetCount: 0,
+};
+
+/** Where the door's form starts in the markup, or -1 when there is no door. */
+function doorFormIndex(markup: string): number {
+  return markup.search(/<form[^>]*action="\/diary"/);
+}
+
+/** Where the composer's heading starts. Always present, on every render. */
+function titleIndex(markup: string): number {
+  const found = markup.indexOf(`>${COPY.title}<`);
+  assert.notEqual(found, -1, 'the composer lost its heading');
+  return found;
+}
+
+describe('the composer offers a repeat of yesterday', () => {
+  it('is absent with no offer, and the same probe finds it when there is one', () => {
+    // Control first: a probe that can never see a door makes the absence
+    // assertion below vacuous.
+    assert.notEqual(doorFormIndex(renderComposer({ repeatYesterday: REPEAT_OFFER })), -1, 'the probe is blind');
+
+    assert.equal(doorFormIndex(renderComposer()), -1, 'a composer with no offer drew a door anyway');
+    assert.ok(!renderComposer().includes(DOOR_COPY.door), 'the door label is on the screen with nothing to repeat');
+  });
+
+  it('sits ABOVE the title, where a late arrival cannot move the Send button', () => {
+    const markup = renderComposer({ repeatYesterday: REPEAT_OFFER });
+
+    assert.ok(doorFormIndex(markup) < titleIndex(markup), 'the door landed under the heading');
+  });
+
+  it('leaves the Send button exactly where it was, with or without the door', () => {
+    const withDoor = renderComposer({ text: '2 fried eggs', repeatYesterday: REPEAT_OFFER });
+    const without = renderComposer({ text: '2 fried eggs' });
+
+    // Same tag, same classes, same state: the door is added above the pinned
+    // composer, so nothing about the button changes.
+    assert.equal(sendButtonTag(withDoor), sendButtonTag(without));
+    assert.equal(isSendDisabled(withDoor), isSendDisabled(without));
+    // And it is still the LAST thing before the hint line, not pushed around
+    // in the composer container.
+    assert.ok(withDoor.indexOf(sendButtonTag(withDoor)) > titleIndex(withDoor));
+  });
+
+  it('adds no loader to a screen that must never blank its box', () => {
+    assert.doesNotMatch(SOURCE, /^export (async )?(function|const) (client)?[lL]oader/m, '/describe grew a loader');
+    assert.doesNotMatch(SOURCE, /^export function HydrateFallback/m, '/describe grew a hydrate fallback');
+    // The offer is read after the first paint instead.
+    assert.ok(SOURCE.includes('selectRepeatYesterday'), 'the composer stopped asking the selector');
   });
 });

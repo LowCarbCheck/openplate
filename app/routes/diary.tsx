@@ -44,6 +44,7 @@ import type { MissingReferenceDate } from '#app/lib/macro-gaps';
 import { useCountUp } from '#app/hooks/use-count-up';
 import { useCelebration } from '#app/hooks/use-celebration';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
+import { useCopyYesterdayToast } from '#app/hooks/use-copy-yesterday-toast';
 import { remapInstantToTargetDay } from '#app/lib/copy-day';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { encodeDisplayPortion, formatPortionLabel, portionField } from '#app/lib/portions';
@@ -1986,35 +1987,13 @@ function CopyFromYesterdayChip({
   mealType: LocalFoodLog['mealType'] | undefined;
   label: string;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const copyFetcher = useFetcher<typeof clientAction>();
-  const undoFetcher = useFetcher<typeof clientAction>();
-  const shownRef = useRef<Set<string>>(new Set());
   const isCopying = copyFetcher.state !== 'idle';
 
-  useEffect(() => {
-    const data = copyFetcher.data;
-    if (!data || !('intent' in data) || data.intent !== 'copy-yesterday') return;
-    if (data.copiedBatchId === null || data.copiedCount === 0) return;
-    if (shownRef.current.has(data.copiedBatchId)) return;
-    shownRef.current.add(data.copiedBatchId);
-    const batchId = data.copiedBatchId;
-    showFoodAddedToast({
-      name: data.firstName,
-      count: data.copiedCount,
-      verb: 'copied',
-      mealLabel: null,
-      netCarbsTotal: data.netCarbsTotal,
-      hasEstimates: data.hasEstimates,
-      dayLabel: data.dayLabel,
-      t,
-      language: i18n.language,
-      action: {
-        label: t('diary.actions.undo'),
-        onClick: () => undoFetcher.submit({ _intent: 'copy-undo', batchId }, { method: 'post' }),
-      },
-    });
-  }, [copyFetcher.data, undoFetcher, t, i18n.language]);
+  // The toast and its Undo live in the shared hook (M217): the door on the
+  // dashboard and the composer announce the same batch through the same code.
+  useCopyYesterdayToast({ data: copyFetcher.data });
 
   return (
     <copyFetcher.Form method="post">
@@ -2124,36 +2103,13 @@ function CopyEntryPicker({
 }) {
   const { t, i18n } = useTranslation();
   const copyFetcher = useFetcher<typeof clientAction>();
-  const undoFetcher = useFetcher<typeof clientAction>();
-  const shownRef = useRef<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const isCopying = copyFetcher.state !== 'idle';
   const groups = groupLogsByMeal(entries);
 
-  useEffect(() => {
-    const data = copyFetcher.data;
-    if (!data || !('intent' in data) || data.intent !== 'copy-yesterday') return;
-    if (data.copiedBatchId === null || data.copiedCount === 0) return;
-    if (shownRef.current.has(data.copiedBatchId)) return;
-    shownRef.current.add(data.copiedBatchId);
-    const batchId = data.copiedBatchId;
-    showFoodAddedToast({
-      name: data.firstName,
-      count: data.copiedCount,
-      verb: 'copied',
-      mealLabel: null,
-      netCarbsTotal: data.netCarbsTotal,
-      hasEstimates: data.hasEstimates,
-      dayLabel: data.dayLabel,
-      t,
-      language: i18n.language,
-      action: {
-        label: t('diary.actions.undo'),
-        onClick: () => undoFetcher.submit({ _intent: 'copy-undo', batchId }, { method: 'post' }),
-      },
-    });
-    onClose();
-  }, [copyFetcher.data, undoFetcher, t, i18n.language, onClose]);
+  // Same shared announcement as the chips above; the picker only adds closing
+  // itself once the batch has landed.
+  useCopyYesterdayToast({ data: copyFetcher.data, onCopied: onClose });
 
   function toggle(id: string): void {
     setSelectedIds((current) => {
