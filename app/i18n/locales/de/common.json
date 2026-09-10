@@ -401,8 +401,8 @@
       "caption": {
         "kcal": "Ziel {{goal}} kcal",
         "netCarbs": "Ziel {{goal}} g",
-        "none": "ohne Ziel",
-        "protein": "mindestens {{goal}} g"
+        "none": "Kein Ziel festgelegt",
+        "protein": "Mindestens {{goal}} g"
       },
       "day": {
         "entries_one": "{{day}}, {{count}} Eintrag erfasst",
@@ -422,7 +422,7 @@
           "under": "{{day}}, {{value}} von {{goal}} g Eiweiß, Ziel nicht erreicht"
         }
       },
-      "srSummary": "Deine letzten {{total}} Tage, ein Balken je Tag. An {{logged}} Tagen hast du etwas erfasst. Jeder Balken öffnet den Tag im Tagebuch."
+      "srSummary": "Deine letzten {{total}} Tage, ein Balken pro Tag. Du hast an {{logged}} davon Einträge erfasst. Jeder Balken öffnet diesen Tag im Tagebuch."
     },
     "title": "Übersicht",
     "today": {
@@ -475,8 +475,10 @@
       "chooseEntries": "Einträge auswählen…",
       "copySelected": "Auswahl übernehmen ({{count}})",
       "copying": "Wird übernommen…",
+      "door": "Wie gestern",
+      "doorHint": "{{count}} Einträge von gestern für heute übernehmen",
       "meal": "{{meal}} ({{n}})",
-      "title": "Von gestern übernehmen"
+      "title": "Wie gestern"
     },
     "drilldown": {
       "netCarbsDefinition": "Netto-Kohlenhydrate = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole.",
