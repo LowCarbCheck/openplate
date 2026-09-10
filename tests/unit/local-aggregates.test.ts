@@ -34,7 +34,7 @@ function foodLog(id: string, dayKey: string, carbs: number): LocalFoodLog {
 
 /** A day's totals: logged with `netCarbs` when given, else a gap day — for streak fixtures. */
 function dailyTotal(date: string, netCarbs: number | null): LocalDailyTotals {
-  if (netCarbs === null) return { date, ...computeDailyEntry([]) };
+  if (netCarbs === null) return { date, entryCount: 0, ...computeDailyEntry([]) };
   const snapshot = {
     carbs: netCarbs,
     fiber: 0,
@@ -45,7 +45,7 @@ function dailyTotal(date: string, netCarbs: number | null): LocalDailyTotals {
     kcal: null,
     aiEstimated: false,
   };
-  return { date, ...computeDailyEntry([snapshot]) };
+  return { date, entryCount: 1, ...computeDailyEntry([snapshot]) };
 }
 
 describe('computeDailyTotalsInRange', () => {

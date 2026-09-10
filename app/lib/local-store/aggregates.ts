@@ -27,6 +27,14 @@ import type { LocalFoodLog } from './schema';
 /** One calendar day's totals, keyed by its local `YYYY-MM-DD` date. */
 export interface LocalDailyTotals extends DailyTotals {
   date: string;
+  /**
+   * How many entries were logged that day. Carried because the Overview's
+   * Budget Ridge (M216/01) sizes its bars by entry count for an account with no
+   * goal at all, and there is no other honest figure to draw there. It is a
+   * count of rows, not a nutrition figure, which is why it sits here rather
+   * than on the shared `DailyTotals` the macro math produces.
+   */
+  entryCount: number;
 }
 
 /** A single point on a net-carb trend series. */
@@ -103,9 +111,11 @@ export function computeDailyTotalsInRange(
     else buckets.set(log.dayKey, [localFoodLogToSnapshot(log)]);
   }
   return enumerateDates(fromDate, toDate).map((date) => {
-    const totals = computeDailyEntry(buckets.get(date) ?? []);
+    const forDay = buckets.get(date) ?? [];
+    const totals = computeDailyEntry(forDay);
     return {
       date,
+      entryCount: forDay.length,
       hasLogs: totals.hasLogs,
       summary: totals.summary,
       kcal: totals.kcal,

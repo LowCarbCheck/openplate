@@ -397,6 +397,33 @@
   },
   "dashboard": {
     "loading": "Loading your day…",
+    "ridge": {
+      "caption": {
+        "kcal": "Goal {{goal}} kcal",
+        "netCarbs": "Goal {{goal}} g",
+        "none": "No goal set",
+        "protein": "At least {{goal}} g"
+      },
+      "day": {
+        "entries_one": "{{day}}, {{count}} entry logged",
+        "entries_other": "{{day}}, {{count}} entries logged",
+        "kcal": {
+          "met": "{{day}}, {{value}} of {{goal}} kcal, within budget",
+          "over": "{{day}}, {{value}} of {{goal}} kcal, over budget"
+        },
+        "logged": "{{day}}, logged, not graded",
+        "netCarbs": {
+          "met": "{{day}}, {{value}} of {{goal}} g net carbs, within budget",
+          "over": "{{day}}, {{value}} of {{goal}} g net carbs, over budget"
+        },
+        "none": "{{day}}, nothing logged",
+        "protein": {
+          "met": "{{day}}, {{value}} of {{goal}} g protein, goal reached",
+          "under": "{{day}}, {{value}} of {{goal}} g protein, goal not reached"
+        }
+      },
+      "srSummary": "Your last {{total}} days, one bar per day. You logged on {{logged}} of them. Each bar opens that day in the diary."
+    },
     "title": "Overview",
     "today": {
       "openDiary": "Open today's diary"

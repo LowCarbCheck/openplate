@@ -31,7 +31,6 @@ import { Link } from '#app/components/link';
 import {
   computeDailyTotals,
   computeDailyTotalsInRange,
-  computeLocalHabitStrip,
   getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalFasts,
@@ -60,14 +59,14 @@ import { readStoredWeightUnit } from '#app/lib/weight-unit-preference';
 import { cn } from '#app/lib/utils';
 import { EMPTY_DAY_SUMMARY } from '#app/models/food-log-summary';
 import type { DaySummary } from '#app/models/food-log-summary';
-import { countLoggedDays } from '#app/models/habit-strip';
-import type { HabitStripDay } from '#app/models/habit-strip';
+import { buildDayRidge } from '#app/models/day-ridge';
+import type { DayRidge as DayRidgeModel } from '#app/models/day-ridge';
 import { computeWeightGlance } from '#app/models/dashboard';
 import type { WeightGlance } from '#app/models/dashboard';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { FastStrip } from '#app/components/fast-strip';
 import { ReproductiveStatusPromptBanner } from '#app/components/reproductive-status-prompt-banner';
-import { HabitStrip } from '#app/components/habit-strip';
+import { DayRidge } from '#app/components/day-ridge';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
 import { DayBudgetRows } from '#app/components/day-budget-rows';
@@ -146,8 +145,12 @@ export interface DashboardData {
     /** The eating style's lens, which decides the day's one verdict. */
     lens: EatingStyleLens;
   };
-  habitStrip: HabitStripDay[];
-  loggedDaysCount: number;
+  /**
+   * The week tile's Budget Ridge (M216/01), seven days as one metric against
+   * its goal. It replaced the dense habit-strip dots here; `/diary` still ships
+   * the dots, which is where the dot metaphor is taught.
+   */
+  ridge: DayRidgeModel;
   weight: WeightGlance;
   /**
    * The one scheduled-or-running fast, or null (M132). The RAW row: its status
@@ -188,17 +191,11 @@ export async function clientLoader(): Promise<DashboardData> {
     ),
   };
 
-  // ONE range query backs the strip; the weight glance windows the same seven
+  // ONE range query backs the ridge; the weight glance windows the same seven
   // days so "the last 7 days" means one thing on this page.
   const totalsWindow = computeDailyTotalsInRange(allLogs, {
     fromDate: shiftDate(today, -(WEEK_DAYS - 1)),
     toDate: today,
-  });
-  const habitStrip = computeLocalHabitStrip({
-    dailyTotals: totalsWindow,
-    today,
-    dayCount: WEEK_DAYS,
-    netCarbsCeiling: goals.netCarbsCeiling,
   });
 
   const weightEntries = await listLocalWeightEntries();
@@ -248,8 +245,15 @@ export async function clientLoader(): Promise<DashboardData> {
       proteinReferenceG,
       proteinReferenceMissingDate: selectMissingReferenceDate(stage),
     },
-    habitStrip,
-    loggedDaysCount: countLoggedDays(habitStrip),
+    // Built here, after `kcalTarget` above, so a kcal-lens ridge grades the day
+    // against the target the rows DISPLAY, reproductive addition included.
+    ridge: buildDayRidge({
+      dailyTotals: totalsWindow,
+      today,
+      dayCount: WEEK_DAYS,
+      lens: goals.lens,
+      goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget, proteinFloor: goals.proteinFloor },
+    }),
     weight: computeWeightGlance({ entries: weightEntries, today, windowDays: WEEK_DAYS }),
   };
 }
@@ -369,40 +373,34 @@ function TodayHeroCard({
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * The last seven days as the diary's own dot strip — NOT a miniature of
+ * The last seven days as the Budget Ridge (M216/01), NOT a miniature of
  * `/trends`' 13-week adherence grid. A different time scale is a different
  * fact; a shrunken copy of the grid would be the duplication the nav catalog
  * exists to prevent. The streak NUMBER stays on `/trends` for the same reason.
+ *
+ * The handoff to `/trends` is the arrow beside the title rather than the page's
+ * usual labelled `HANDOFF_LINK_CLASS` row: at this tile's real width the label
+ * wrapped to two lines and spent 40 px of the tile's 164 px budget, which the
+ * chart needs to draw in. It keeps the label as its `aria-label`, so the link
+ * still announces itself in full. See `day-ridge.tsx` for the full arithmetic.
  */
-function WeekGlanceCard({
-  habitStrip,
-  loggedDaysCount,
-  hasCeiling,
-}: {
-  habitStrip: HabitStripDay[];
-  loggedDaysCount: number;
-  hasCeiling: boolean;
-}): ReactElement {
+function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
   const { t } = useTranslation();
 
   return (
     <Card>
-      <CardHeader className={GLANCE_HEADER_CLASS}>
+      <CardHeader className={cn(GLANCE_HEADER_CLASS, 'flex-row items-start justify-between gap-2 space-y-0')}>
         <CardTitle className="text-base">{t('dashboard.week.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className={cn(GLANCE_CONTENT_CLASS, 'space-y-3')}>
-        <HabitStrip
-          days={habitStrip}
-          loggedCount={loggedDaysCount}
-          hasCeiling={hasCeiling}
-          showLegend={false}
-          emptyLabel={t('dashboard.week.empty')}
-          dense
-        />
-        <Link to="/trends" className={HANDOFF_LINK_CLASS}>
-          {t('dashboard.week.link')}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        <Link
+          to="/trends"
+          aria-label={t('dashboard.week.link')}
+          className="shrink-0 text-primary hover:text-primary/80"
+        >
+          <ArrowRight className="h-5 w-5" aria-hidden="true" />
         </Link>
+      </CardHeader>
+      <CardContent className={GLANCE_CONTENT_CLASS}>
+        <DayRidge ridge={ridge} emptyLabel={t('dashboard.week.empty')} />
       </CardContent>
     </Card>
   );
@@ -476,8 +474,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     hasLoggedToday,
     summary,
     goals,
-    habitStrip,
-    loggedDaysCount,
+    ridge,
     weight,
     currentFast,
     reproductiveStatus,
@@ -517,11 +514,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         stays exactly as it is.
       */}
       <div className="grid grid-cols-2 gap-4">
-        <WeekGlanceCard
-          habitStrip={habitStrip}
-          loggedDaysCount={loggedDaysCount}
-          hasCeiling={goals.netCarbsCeiling !== null}
-        />
+        <WeekGlanceCard ridge={ridge} />
         <WeightGlanceCard weight={weight} />
       </div>
     </div>

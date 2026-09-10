@@ -1,6 +1,12 @@
 /**
- * Unit tests for `#app/models/dashboard`'s `computeWeightGlance` — the model
- * behind the Overview page's weight tile.
+ * Unit tests for the Overview page's two glance tiles.
+ *
+ * `computeWeightGlance` (`#app/models/dashboard`) is the model behind the
+ * weight tile. The second suite covers the week tile's WIRING after M216/01:
+ * the tile draws the Budget Ridge, the diary's dot strip is gone from this
+ * page, and the handoff to `/trends` moved into the tile header. The ridge
+ * itself is covered by `day-ridge.test.ts`; what is checked here is that the
+ * dashboard actually renders it.
  *
  * The tile makes two claims at once ("this is your weight" and "this is how it
  * moved over the last 7 days") off one set of rows, and the interesting cases
@@ -10,8 +16,27 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { computeWeightGlance, type WeightGlanceEntry } from '../../app/models/dashboard';
+
+/**
+ * The route module's source. The week tile is module-private and its loader
+ * reads IndexedDB, so a render harness would buy a mock of the whole store to
+ * assert something the source states plainly. Same judgment call as
+ * `dashboard-route.test.ts`, which asserts the route's data without rendering.
+ */
+const dashboardSource = readFileSync(fileURLToPath(new URL('../../app/routes/dashboard.tsx', import.meta.url)), 'utf8');
+
+/** The body of `WeekGlanceCard`, from its declaration to the start of the next one. */
+function weekGlanceCardSource(): string {
+  const start = dashboardSource.indexOf('function WeekGlanceCard(');
+  assert.notEqual(start, -1, 'WeekGlanceCard must still exist in the route module');
+  const end = dashboardSource.indexOf('\nfunction ', start + 1);
+  assert.notEqual(end, -1, 'WeekGlanceCard must be followed by another declaration');
+  return dashboardSource.slice(start, end);
+}
 
 const TODAY = '2026-08-06';
 
@@ -104,5 +129,42 @@ describe('computeWeightGlance', () => {
     });
     assert.equal(excluded.deltaKg, null);
     assert.equal(excluded.latestKg, 80);
+  });
+});
+
+describe('the week glance tile draws the budget ridge', () => {
+  it('renders DayRidge and no longer the diary dot strip', () => {
+    const card = weekGlanceCardSource();
+
+    assert.ok(card.includes('<DayRidge'), 'the tile renders the ridge');
+    assert.ok(!card.includes('<HabitStrip'), 'the dense dot strip is gone from this page');
+    // Control: the strip is not merely renamed away. It is not imported here at
+    // all any more, while `/diary` still ships it.
+    assert.ok(!dashboardSource.includes("from '#app/components/habit-strip'"));
+    assert.ok(dashboardSource.includes("from '#app/components/day-ridge'"));
+  });
+
+  it('keeps the handoff to /trends as a real link in the header, with its full label spoken', () => {
+    const card = weekGlanceCardSource();
+    const header = card.slice(card.indexOf('<CardHeader'), card.indexOf('<CardContent'));
+
+    assert.match(header, /to="\/trends"/, 'the handoff link sits in the tile header now');
+    assert.match(
+      header,
+      /aria-label=\{t\('dashboard\.week\.link'\)\}/,
+      'the label that stopped being visible is still the accessible name',
+    );
+    // Control: the tile has exactly ONE link to /trends, so the header arrow
+    // replaced the old row rather than being added beside it.
+    assert.equal(card.match(/to="\/trends"/g)?.length, 1);
+  });
+
+  it('still names the tile and keeps its empty copy', () => {
+    const card = weekGlanceCardSource();
+
+    assert.ok(card.includes("t('dashboard.week.title')"));
+    // The empty line has no room left on screen, so it became the tile's
+    // screen-reader sentence rather than being deleted.
+    assert.ok(card.includes("emptyLabel={t('dashboard.week.empty')}"));
   });
 });

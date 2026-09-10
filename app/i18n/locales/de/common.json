@@ -397,6 +397,33 @@
   },
   "dashboard": {
     "loading": "Dein Tag wird geladen…",
+    "ridge": {
+      "caption": {
+        "kcal": "Ziel {{goal}} kcal",
+        "netCarbs": "Ziel {{goal}} g",
+        "none": "ohne Ziel",
+        "protein": "mindestens {{goal}} g"
+      },
+      "day": {
+        "entries_one": "{{day}}, {{count}} Eintrag erfasst",
+        "entries_other": "{{day}}, {{count}} Einträge erfasst",
+        "kcal": {
+          "met": "{{day}}, {{value}} von {{goal}} kcal, im Rahmen",
+          "over": "{{day}}, {{value}} von {{goal}} kcal, über dem Rahmen"
+        },
+        "logged": "{{day}}, erfasst, nicht bewertet",
+        "netCarbs": {
+          "met": "{{day}}, {{value}} von {{goal}} g Netto-Kohlenhydrate, im Rahmen",
+          "over": "{{day}}, {{value}} von {{goal}} g Netto-Kohlenhydrate, über dem Rahmen"
+        },
+        "none": "{{day}}, nichts erfasst",
+        "protein": {
+          "met": "{{day}}, {{value}} von {{goal}} g Eiweiß, Ziel erreicht",
+          "under": "{{day}}, {{value}} von {{goal}} g Eiweiß, Ziel nicht erreicht"
+        }
+      },
+      "srSummary": "Deine letzten {{total}} Tage, ein Balken je Tag. An {{logged}} Tagen hast du etwas erfasst. Jeder Balken öffnet den Tag im Tagebuch."
+    },
     "title": "Übersicht",
     "today": {
       "openDiary": "Tagebuch von heute öffnen"
