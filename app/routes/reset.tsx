@@ -36,7 +36,6 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
-import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { getFormProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
@@ -58,6 +57,7 @@ import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import type { SignInDestination } from '#app/lib/sign-in-flow';
 import { resetSyncPassphrase } from '#app/lib/sync/sync-actions';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -92,7 +92,7 @@ type Phase =
 
 export default function Reset() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
   const [phase, setPhase] = useState<Phase>({ status: 'reading' });
   // THE SAME PULL `/sign-in` RUNS, from the same hook: wait for the snapshot,

@@ -39,7 +39,7 @@
  * not-an-administrator card.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { publishStatus } from '#app/lib/status';
 import { Loader2 } from 'lucide-react';
@@ -53,6 +53,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { currentAdminClient } from '#app/lib/admin/admin-session';
 import type { AdminClient } from '#app/lib/admin/admin-client';
 import type { AdminAccountView } from '#app/lib/admin/admin-wire';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 /** Where the account read is. One `kind`, so a spinner and an error can never be on screen together. */
 type PersonState =
@@ -61,7 +62,7 @@ type PersonState =
 export default function AdminPersonPage() {
   const { t } = useTranslation();
   const params = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const session = useSyncSession();
   const [state, setState] = useState<PersonState>({ kind: 'loading' });
   const [activity, setActivity] = useState<PersonActivityState>({ kind: 'loading' });
@@ -174,7 +175,7 @@ export default function AdminPersonPage() {
   /** Deletion leaves nothing to show, so the page it was is the list it came from. */
   const deletePerson = useCallback(async (): Promise<void> => {
     await apply((client) => client.deleteAccount({ id }));
-    await navigate('/admin');
+    navigate('/admin');
   }, [apply, id, navigate]);
 
   if (state.kind === 'forbidden') return <NotAnAdministratorCard />;

@@ -5,7 +5,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import i18next from '#app/i18n/i18n';
 import { formatClockTime } from '#app/lib/format-clock-time';
 import { DEFAULT_LANGUAGE } from '#app/i18n/language-prefs';
-import { redirect, useFetcher, useNavigate, useRevalidator } from 'react-router';
+import { redirect, useFetcher, useRevalidator } from 'react-router';
 import { Link } from '#app/components/link';
 import { z } from 'zod';
 import { parseWithZod } from '@conform-to/zod/v4';
@@ -80,6 +80,7 @@ import {
   selectLocalFrequentChips,
 } from '#app/lib/local-store';
 import type { LocalDailyTotals, LocalFoodLog, LocalFrequentChip, LocalRecentFood } from '#app/lib/local-store';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { trackEntryRestored, trackFoodLogged, trackMealSaved } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { AddFoodActions } from '#app/components/add-food-actions';
@@ -1398,7 +1399,7 @@ function useLiveDiaryRevalidation(): void {
  */
 function DateNav({ date, today }: { date: string; today: string }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const isToday = date === today;
   const canGoNext = date < today;
@@ -2292,7 +2293,7 @@ function OrdinaryEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: str
  * @returns touch props to spread onto the diary's root element.
  */
 function useDiaryDaySwipe({ date, today }: { date: string; today: string }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   return useDaySwipe((direction) => {
     if (direction === 'next' && date >= today) return;
     const target = shiftDate(date, direction === 'next' ? 1 : -1);

@@ -3019,7 +3019,12 @@ export function ConfirmDraftForm({
   );
 
   return (
-    <Form method="post" {...getFormProps(form)} className="space-y-4 pb-40 md:pb-28">
+    // `replace`: confirming redirects to `/diary?date=...`, a SIBLING root of
+    // `/scan`, so the submission must not grow the history stack, otherwise
+    // Back from the diary lands on a plate draft that has already been logged.
+    // React Router reads this flag for the action redirect
+    // (`startRedirectNavigation`, router.js:624-628 and :1024).
+    <Form method="post" replace {...getFormProps(form)} className="space-y-4 pb-40 md:pb-28">
       <input type="hidden" name="_intent" value="confirm" />
       {/* Which way in this draft arrived by. Outside every collapsible for the
           same reason the date is: it must submit whatever the person expands. */}

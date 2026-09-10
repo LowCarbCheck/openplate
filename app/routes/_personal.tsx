@@ -30,6 +30,7 @@ import { PublicShell } from '#app/components/public-shell';
 import { StrangerNote, strangerNoteVariantForPath } from '#app/components/stranger-note';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { shellForGate } from '#app/lib/personal-shell';
+import { useSettleAppNavigation } from '#app/hooks/use-app-navigate';
 
 /**
  * The onboarding gate — the only gate this layout still runs, and it is purely
@@ -207,6 +208,15 @@ export default function PersonalLayout() {
   const { gateKind, isExemptPath } = useLoaderData<typeof clientLoader>();
   const { strangerSeesThePublicShell } = useInstancePolicy();
   const { pathname } = useLocation();
+  // THE HISTORY STACK, MOUNTED ONCE. Records what pathname sits at each history
+  // index and settles a pop that landed on the right screen with the wrong
+  // query. This is what makes the Back gesture in the installed app mean "up"
+  // rather than "replay every step", see `#app/hooks/use-app-navigate` for the
+  // rules and the four worked walks. It sits ABOVE every early return below so
+  // the note is kept even while the gate is still deciding, and it is here
+  // rather than in the root because the public shell keeps "earlier" as the
+  // right meaning of Back.
+  useSettleAppNavigation();
   useRevalidateWhenTheSessionEnds();
   const matches = useMatches();
   const leafMatch = matches[matches.length - 1];

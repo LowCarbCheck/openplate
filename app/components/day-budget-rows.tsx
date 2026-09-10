@@ -20,7 +20,7 @@
  *    `RingProgress` does for the gauge this replaced.
  */
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link } from '#app/components/link';
 import { Check } from 'lucide-react';
 import type { AnimatedHeadlines, DayBudgetRow, DayBudgetRowKey } from '#app/lib/day-budget-rows';
 import { cn } from '#app/lib/utils';

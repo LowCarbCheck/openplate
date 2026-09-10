@@ -35,7 +35,6 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
-import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -48,6 +47,7 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { consumeSyncInvite } from '#app/lib/join-link';
 import type { SignInDestination } from '#app/lib/sign-in-flow';
 import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -57,7 +57,7 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
 
 export default function SignIn() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
   // THE PULL, and its two screens, shared with `/reset` (M192/06 fix). Both
   // routes open a session and then have to wait for the same snapshot; the

@@ -1,6 +1,6 @@
 import type { Route } from './+types/settings.ai';
 import { useState } from 'react';
-import { Form, redirect, useNavigate, useSearchParams } from 'react-router';
+import { Form, redirect, useSearchParams } from 'react-router';
 import { Link } from '#app/components/link';
 import { Trans, useTranslation } from 'react-i18next';
 // The singleton, not the hook: `clientAction` and the pure helpers it reaches
@@ -58,6 +58,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#app/
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -812,7 +813,7 @@ function ScanTroubleshootingCard() {
 export default function SettingsAi({ loaderData }: Route.ComponentProps) {
   const { monthlyUsage } = loaderData;
   const { t, i18n: i18nInstance } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [searchParams] = useSearchParams();
   // `null` on every instance whose operator set no `DEFAULT_INFERENCE_BASE_URL`
   // — which is the default, and means this page renders exactly as it did

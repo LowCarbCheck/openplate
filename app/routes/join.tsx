@@ -47,7 +47,6 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import type { MetaFunction } from 'react-router';
-import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
@@ -65,6 +64,7 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackJoinCompleted } from '#app/lib/matomo-events';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
 import { resolveSignInDestination } from '#app/lib/sign-in-flow';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -108,7 +108,7 @@ type Phase =
 
 export default function Join() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const configuredSyncUrl = useSyncServerUrl();
   const session = useSyncSession();
   const [phase, setPhase] = useState<Phase>({ status: 'reading' });

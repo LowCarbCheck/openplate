@@ -24,9 +24,9 @@
  * unmount the element whose `click()` is still on the gesture stack.
  */
 import { useEffect, useRef, type ChangeEvent, type ComponentProps, type RefObject } from 'react';
-import { useNavigate } from 'react-router';
 import { offerPickedFile } from '#app/lib/scan-handoff';
 import { useAiConnection } from '#app/components/add/use-ai-connection';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 export type CameraCapture = {
   /** Open the camera, synchronously, inside the tap that asked for it. */
@@ -40,7 +40,7 @@ export type CameraCapture = {
 };
 
 export function useCameraCapture({ scanTo = '/scan' }: { scanTo?: string } = {}): CameraCapture {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   // Shared with `/add`'s "Log with AI" action, so the two surfaces can never

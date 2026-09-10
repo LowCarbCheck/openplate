@@ -26,7 +26,7 @@
  * and revokes when it goes away or when the report changes.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useLoaderData, useNavigate, useParams } from 'react-router';
+import { useLoaderData, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
@@ -41,6 +41,7 @@ import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
 import type { AdminFeedbackReportDetail } from '#app/lib/admin/admin-wire';
 import { requireFeedbackWindow } from '#app/lib/admin/feedback-console';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 /** @throws a 404 Response on an instance with no server, where nobody could have reported anything. */
 export function loader() {
@@ -76,7 +77,7 @@ type ReportState =
 export default function AdminFeedbackReport() {
   const { t } = useTranslation();
   const params = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const { retentionDays } = useLoaderData<typeof clientLoader>();
   const [state, setState] = useState<ReportState>({ kind: 'loading' });
   const [photo, setPhoto] = useState<FeedbackPhotoState>({ kind: 'loading' });
@@ -169,7 +170,7 @@ export default function AdminFeedbackReport() {
         setState({ kind: 'forbidden' });
         return;
       }
-      await navigate('/admin/feedback');
+      navigate('/admin/feedback');
     } catch {
       setDidDeleteFail(true);
     } finally {

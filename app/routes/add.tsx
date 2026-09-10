@@ -1,6 +1,6 @@
 import type { Route } from './+types/add';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Form, redirect, useNavigate, useNavigation } from 'react-router';
+import { Form, redirect, useNavigation } from 'react-router';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 // The singleton, not a hook: `clientAction` and the helpers it calls run
@@ -80,6 +80,7 @@ import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
 import { offerTypedText } from '#app/lib/scan-handoff';
 import type { TypedIntakeSource } from '#app/lib/intake-source';
 import { ManageCustomFoodsSheet } from '#app/components/add/manage-custom-foods';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
@@ -1226,7 +1227,13 @@ export function PortionStep({
           {candidate.attribution && <p className="text-xs text-muted-foreground">{candidate.attribution}</p>}
         </CardHeader>
         <CardContent>
-          <Form method="post" {...getFormProps(form)} className="space-y-4">
+          {/* `replace`: this save's `clientAction` redirects to `returnTo`,
+              which is the diary, a SIBLING root, not a child. React Router
+              takes push-vs-replace for an action redirect from the submitting
+              navigation's own flag (`startRedirectNavigation`, router.js:624-628
+              and :1024), so without this the stack would end `[ /add, /diary ]`
+              and the Back gesture would land on the form just submitted. */}
+          <Form method="post" replace {...getFormProps(form)} className="space-y-4">
             <input type="hidden" name="_intent" value="log" />
             <input type="hidden" name="returnTo" value={returnTo} />
             {logContext.date && <input type="hidden" name="date" value={logContext.date} />}
@@ -1411,7 +1418,9 @@ function ManualAddForm({
         <CardDescription>{t('add.manual.description')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form method="post" {...getFormProps(form)} className="space-y-4">
+        {/* `replace`, for the same reason the search form above carries it:
+            the manual save redirects to `returnTo` (the diary), a sibling root. */}
+        <Form method="post" replace {...getFormProps(form)} className="space-y-4">
           <input type="hidden" name="_intent" value="manual" />
           <input type="hidden" name="returnTo" value={returnTo} />
           {logDate && <input type="hidden" name="date" value={logDate} />}
@@ -1625,7 +1634,7 @@ function SearchStep({
   onSelect: (candidate: AddSearchCandidate) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const isOnline = useOnlineStatus();
   const [searchValue, setSearchValue] = useState(query);
   const [showManual, setShowManual] = useState(manualResult !== undefined);

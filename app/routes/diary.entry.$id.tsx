@@ -924,7 +924,9 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
   // just avoids a wrong intermediate URL. `HeaderStatus` clears the status on
   // click, so a second Undo can't fire (idempotent by construction).
   const handleUndo = () => {
-    submit(buildRestorePayload(log), { method: 'post', action: backTo });
+    // `replace` for the same reason the delete carries it: this posts to the
+    // diary, one level shallower, and the entry screen is already unmounted.
+    submit(buildRestorePayload(log), { method: 'post', action: backTo, replace: true });
   };
 
   // Optimistic delete: publish the Undo status immediately, then submit the
@@ -943,7 +945,9 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
     if (log.logBatchId !== null && siblings.length === 0) {
       void deletePlatePhoto({ userId, logBatchId: log.logBatchId });
     }
-    submit({ _intent: 'delete' }, { method: 'post' });
+    // `replace`: the delete redirects to the entry's own DAY, one level
+    // SHALLOWER than this screen. The entry is gone, so Back must not offer it.
+    submit({ _intent: 'delete' }, { method: 'post', replace: true });
   };
 
   return (
@@ -1227,7 +1231,10 @@ export function EditEntry({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Form method="post" {...getFormProps(form)} className="space-y-6">
+      {/* `replace`: saving redirects back to `/diary/entry/:id`, the SAME
+          pathname this form is on, so a push would stack a second copy of one
+          screen and cost a Back to leave it. */}
+      <Form method="post" replace {...getFormProps(form)} className="space-y-6">
         <input type="hidden" name="_intent" value="save" />
 
         <div>

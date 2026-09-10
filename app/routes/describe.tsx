@@ -54,7 +54,7 @@
  */
 import type { Route } from './+types/describe';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import { Send } from 'lucide-react';
@@ -71,6 +71,7 @@ import { cn } from '#app/lib/utils';
 import type { TypedIntakeSource } from '#app/lib/intake-source';
 import { parseDateParam, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -299,7 +300,7 @@ export function DescribeComposer({
 
 export default function DescribeRoute() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [text, setText] = useState('');
   // `?speak=1` came from the launcher's "Speak" entry. It focuses the field and
   // shows the dictation hint; there is nothing to start and nothing to stop.

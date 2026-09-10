@@ -23,7 +23,6 @@
  * link.
  */
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { getFormProps, getInputProps, getSelectProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
@@ -47,6 +46,7 @@ import {
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import type { Delivery } from '#app/lib/admin/admin-wire';
 import { isSyncRequestError } from '#app/lib/sync/engine/client/sync-error';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 /** What the page is doing. `sent` carries the answer the result card needs and nothing else. */
 type InviteState =
@@ -54,7 +54,7 @@ type InviteState =
 
 export default function AdminInvite() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [state, setState] = useState<InviteState>({ kind: 'form' });
   const [failure, setFailure] = useState<string | null>(null);
 

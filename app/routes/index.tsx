@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useEffect } from 'react';
 import type { Route } from './+types/index';
-import { data, redirect, useNavigate } from 'react-router';
+import { data, redirect } from 'react-router';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import {
@@ -53,6 +53,7 @@ import { instancePolicyForMode } from '#app/config/instance-policy';
 import { readInstancePolicy } from '#app/lib/read-instance-policy';
 import { hasDeviceSyncSession } from '#app/lib/sync/session-cache';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 // Title AND description via the pure `meta-title` seam, with the language read
 // off the ROOT loader through `matches` — never the i18next singleton (see
@@ -477,7 +478,7 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
  * derived state.
  */
 function useHomeHintRepair(): void {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   // The THIRD of the three paths (M201 spec 01). A fix to one of them is not a
   // fix: this one runs on exactly the hard loads the other two do not decide,
   // and it shares their decision function rather than restating it.
