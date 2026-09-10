@@ -51,8 +51,6 @@ import { eatingStyleCardKey, goalsCardKey } from '#app/lib/goals-form-key';
 import { EatingStyleCautionNote, EatingStylePicker } from '#app/components/eating-style-picker';
 import { makeBodyMetricsSchema } from '#app/lib/body-metrics-schema';
 import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
-import { ReproductiveStatusFields } from '#app/components/reproductive-status-fields';
-import type { ReproductiveStatusValue } from '#app/components/reproductive-status-fields';
 import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
 import { readStoredWeightUnit, writeStoredWeightUnit } from '#app/lib/weight-unit-preference';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -219,10 +217,10 @@ export async function clientLoader() {
 
   // No chart data here: the weight TREND lives on `/trends` now (one home per
   // idea). This page owns entering, listing and deleting weigh-ins.
-  // `today` is returned as well as used above: the reproductive-status fieldset
-  // turns a due date into a trimester, and it has to do that against the
-  // person's OWN calendar day rather than the browser's, exactly as the
-  // dashboard does.
+  // `today` is used above and NOT returned: the reproductive-status fieldset
+  // was the one thing on this page that needed the person's own calendar day,
+  // and it lives at `/settings/life-phase` now (M215 spec 01), where that
+  // route's own client loader resolves the day the same way.
   // The style in effect: the stored pick, or the one derived from the numbers
   // for an account written before schema v20. Derived for DISPLAY only,
   // nothing here writes `eatingStyle` back, so a legacy profile stays legacy
@@ -237,7 +235,6 @@ export async function clientLoader() {
   return {
     goals,
     weighIns,
-    today,
     todayWeightKg,
     bodyMetrics,
     suggestedKcalTarget,
@@ -346,7 +343,20 @@ async function _saveBodyMetrics(formData: FormData) {
     schema: makeBodyMetricsSchema(actionT, { currentYear: new Date().getFullYear(), today: new Date() }),
   });
   if (submission.status !== 'success') return submission.reply();
-  await putLocalBodyMetrics(submission.value);
+  // The life phase moved to `/settings/life-phase` (M215 spec 01), so this card
+  // no longer renders those three fields and this submission never carries
+  // them. `putLocalBodyMetrics` writes the WHOLE record and a `null` in it
+  // CLEARS, so the stored status and its date are read back and carried over:
+  // without this merge, saving a height here would silently end a pregnancy.
+  // The invariant still holds either way, because `normalizeBodyMetrics` drops
+  // a status the sex answer below contradicts.
+  const stored = await getLocalBodyMetrics();
+  await putLocalBodyMetrics({
+    ...stored,
+    heightCm: submission.value.heightCm,
+    birthYear: submission.value.birthYear,
+    biologicalSex: submission.value.biologicalSex,
+  });
   trackGoalsSaved('body-metrics');
   return redirectWithLocalToast('/settings/goals', {
     type: 'success',
@@ -937,8 +947,10 @@ function WeightCard({
 }
 
 /**
- * The optional body metrics (M135) — height, birth year, biological sex and,
- * only where it applies, pregnancy/breastfeeding status.
+ * The optional body metrics (M135): height, birth year and biological sex.
+ * Pregnancy and breastfeeding used to be asked here too; they have their own
+ * page and their own settings row now (M215 spec 01), and a save here carries
+ * the stored answer over untouched.
  *
  * Three things this card is careful about, all deliberate:
  *  - **Every field explains why it is asked**, because this is health data and
@@ -950,21 +962,14 @@ function WeightCard({
  *    JSON backup and the encrypted sync payload, and is never part of a food
  *    lookup — that request only ever carries a food name.
  */
-function BodyMetricsCard({ metrics, today }: { metrics: BodyMetrics; today: string }) {
+function BodyMetricsCard({ metrics }: { metrics: BodyMetrics }) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
   const isSaving = fetcher.state !== 'idle';
-  // Local mirrors ONLY for the radio groups and the two dates, and only because
-  // something else on this card reads their live value: the chips paint from
-  // them, the reproductive fieldset appears from the sex answer, and the
-  // weeks-along helper WRITES the due date. The two text fields have no such
-  // need, so Conform owns them outright (see the inputs).
+  // A local mirror ONLY for the sex radio group, and only because the chips
+  // paint from its live value. The two text fields have no such need, so
+  // Conform owns them outright (see the inputs).
   const [biologicalSex, setBiologicalSex] = useState<string>(metrics.biologicalSex ?? '');
-  const [reproductive, setReproductive] = useState<ReproductiveStatusValue>({
-    reproductiveStatus: metrics.reproductiveStatus ?? 'none',
-    pregnancyDueDate: metrics.pregnancyDueDate ?? '',
-    lactationStartDate: metrics.lactationStartDate ?? '',
-  });
 
   const [form, fields] = useForm({
     id: 'body-metrics',
@@ -987,9 +992,6 @@ function BodyMetricsCard({ metrics, today }: { metrics: BodyMetrics; today: stri
       heightCm: metrics.heightCm === null ? '' : String(metrics.heightCm),
       birthYear: metrics.birthYear === null ? '' : String(metrics.birthYear),
       biologicalSex,
-      reproductiveStatus: reproductive.reproductiveStatus,
-      pregnancyDueDate: reproductive.pregnancyDueDate,
-      lactationStartDate: reproductive.lactationStartDate,
     },
   });
 
@@ -1066,39 +1068,16 @@ function BodyMetricsCard({ metrics, today }: { metrics: BodyMetrics; today: stri
           </fieldset>
 
           {/*
-            The chips, the one date the chosen chip reveals, and the derived
-            line under it all live in `ReproductiveStatusFields`, shared with
-            the onboarding body step so the two screens can never drift about
-            what may be entered here. That component owns the gate too (anyone
-            who did not answer "male"), the `weeksAlong` helper that fills the
-            due-date field, and the derived text it gets from `resolveGestation`
-            and `resolveLactationMonths` against the `today` this route's loader
-            resolved in the person's own time zone.
-
-            Nothing is sticky: `normalizeBodyMetrics` drops a saved status, and
-            its date with it, the moment the answer stops applying, so switching
-            away can't strand an answer the person can no longer see.
+            THE LIFE PHASE IS NOT ASKED HERE ANY MORE (M215 spec 01). Pregnancy
+            and breastfeeding have their own page at `/settings/life-phase` and
+            their own always visible settings row, because this page is about
+            eating targets and nobody looking for that question came here. The
+            same shared `ReproductiveStatusFields` renders it there; only the
+            address changed. The sex answer above still gates the fieldset, and
+            `normalizeBodyMetrics` still drops a status the answer contradicts,
+            so saving "male" on this card clears a stored pregnancy exactly as
+            it did before.
           */}
-          <ReproductiveStatusFields
-            biologicalSex={biologicalSex}
-            value={reproductive}
-            onChange={setReproductive}
-            today={today}
-            statusName={fields.reproductiveStatus.name}
-            dueDateField={{
-              name: fields.pregnancyDueDate.name,
-              id: fields.pregnancyDueDate.id,
-              errorId: fields.pregnancyDueDate.errorId,
-              errors: fields.pregnancyDueDate.errors,
-            }}
-            lactationStartDateField={{
-              name: fields.lactationStartDate.name,
-              id: fields.lactationStartDate.id,
-              errorId: fields.lactationStartDate.errorId,
-              errors: fields.lactationStartDate.errors,
-            }}
-            chipClassName={(isSelected) => cn('cursor-pointer', suggestionChipClass(isSelected))}
-          />
 
           <FieldError id={form.errorId} errors={form.errors} />
 
@@ -1148,7 +1127,6 @@ export default function SettingsGoals({ loaderData }: Route.ComponentProps) {
   const {
     goals,
     weighIns,
-    today,
     todayWeightKg,
     bodyMetrics,
     suggestedKcalTarget,
@@ -1210,7 +1188,7 @@ export default function SettingsGoals({ loaderData }: Route.ComponentProps) {
           remount can clear what is on screen — otherwise the inputs keep
           showing the values that no longer exist. React's own reset-on-prop-
           change answer, and no `useEffect` (.claude/react-rules.md). */}
-      <BodyMetricsCard key={bodyMetricsFormKey(bodyMetrics)} metrics={bodyMetrics} today={today} />
+      <BodyMetricsCard key={bodyMetricsFormKey(bodyMetrics)} metrics={bodyMetrics} />
       <AiSettingsLinkCard />
     </div>
   );

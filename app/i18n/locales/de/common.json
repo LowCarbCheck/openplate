@@ -1114,6 +1114,17 @@
     "photo": "Foto",
     "photoAnything": "Essen fotografieren"
   },
+  "lifePhase": {
+    "title": "Lebensphase",
+    "description": "Das siehst nur du, und es wird nie bei einer Lebensmittelsuche mitgeschickt.",
+    "loading": "Wird geladen…",
+    "inactive": "Nicht aktiv",
+    "summary": {
+      "pregnant": "Schwanger, Woche {{week}}",
+      "lactating_one": "Stillend, {{count}} Monat",
+      "lactating_other": "Stillend, {{count}} Monate"
+    }
+  },
   "meals": {
     "description": "Mahlzeiten, die du als Bündel gespeichert hast. Mit einem Tap eintragen oder hier entfernen.",
     "empty": "Du hast noch keine Mahlzeit gespeichert. Speichere eine aus dem Tagebuch: Fasse deine eingetragenen Lebensmittel zusammen und gib ihnen einen Namen.",
@@ -1150,6 +1161,7 @@
     "landing": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
     "landingManaged": "openplate, ein Ernährungstagebuch, das nur du lesen kannst",
     "landingDescription": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir in Sekundenschnelle die Kohlenhydrate und vergleicht sie mit deinem festgelegten Tagesziel. Kostenlos, ohne Account, und alles, was du einträgst, bleibt auf deinem Gerät.",
+    "lifePhase": "Lebensphase · openplate",
     "meals": "Gespeicherte Mahlzeiten · openplate",
     "notFound": "Seite nicht gefunden · openplate",
     "nutrients": "Nährstoffe · openplate",

@@ -28,7 +28,7 @@ type ReproductiveStatusPromptBannerProps = Pick<
  *
  * THE APP NEVER FLIPS THE STATUS ITSELF. This banner calls
  * `shouldPromptStatusUpdate` and renders a question with a link to
- * `/settings/goals`, it has no write path of any kind. Only a person, on
+ * `/settings/life-phase`, it has no write path of any kind. Only a person, on
  * that settings page, can change `reproductiveStatus`, `pregnancyDueDate` or
  * `lactationStartDate`; see `#app/lib/reproductive-status-nudge` for the full
  * rationale.
@@ -65,7 +65,7 @@ export function ReproductiveStatusPromptBanner({
       <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="flex-1">
         {message}{' '}
-        <Link to="/settings/goals" className="underline underline-offset-2 hover:no-underline">
+        <Link to="/settings/life-phase" className="underline underline-offset-2 hover:no-underline">
           {t('banners.reproductiveStatusPromptUpdate')}
         </Link>
       </span>

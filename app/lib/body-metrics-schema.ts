@@ -1,5 +1,8 @@
 /**
- * The Conform/Zod schema for the body-metrics form on `/settings/goals`.
+ * The Conform/Zod schemas behind the two forms that edit body metrics: the
+ * body-metrics card on `/settings/goals` and the life-phase page at
+ * `/settings/life-phase` (M215 spec 01), which submits the status and its date
+ * alone.
  *
  * It is a thin wrapper over the pure parsers in `#app/models/body-metrics` —
  * every bound (plausible height, age floor and ceiling) still lives there, in
@@ -83,6 +86,34 @@ function optionalReproductiveDateField(inspect: (raw: string) => ReproductiveDat
 }
 
 /**
+ * The three fields the reproductive-status fieldset submits: the status and the
+ * two dates that belong to it.
+ *
+ * Defined once and used by both schemas below, because the fieldset itself is
+ * one shared component rendered on two screens (M215 spec 01 gave it a page of
+ * its own at `/settings/life-phase`, and the body metrics card keeps the height,
+ * the birth year and the sex). Two hand-copied field lists would let the page
+ * and the card disagree about what may be entered about one pregnancy.
+ *
+ * @param t - the caller's translator.
+ * @param today - the day to measure the two dates against.
+ * @returns the three field schemas, ready to spread into a `z.object`.
+ */
+function reproductiveFields(t: Translate, today: Date) {
+  return {
+    // A radio group can't be unreadable: an unrecognised value is simply "no
+    // answer", which is a legitimate answer here.
+    reproductiveStatus: optionalText().transform((raw) => parseReproductiveStatus(raw)),
+    // Both dates are validated on every submit, whichever status is chosen. The
+    // hidden one is blank (the input only renders beside its own chip), and
+    // `normalizeBodyMetrics` drops any date whose status went away, so a date
+    // typed and then abandoned can never be stored.
+    pregnancyDueDate: optionalReproductiveDateField((raw) => inspectPregnancyDueDate(raw, { today }), t),
+    lactationStartDate: optionalReproductiveDateField((raw) => inspectLactationStartDate(raw, { today }), t),
+  };
+}
+
+/**
  * The body-metrics schema.
  *
  * @param t - the caller's translator.
@@ -94,15 +125,26 @@ export function makeBodyMetricsSchema(t: Translate, { currentYear, today }: { cu
   return z.object({
     heightCm: optionalNumericField(parseHeightCm, t('bodyMetrics.errors.height')),
     birthYear: optionalNumericField((raw) => parseBirthYear(raw, { currentYear }), t('bodyMetrics.errors.birthYear')),
-    // The two radio groups can't be unreadable: an unrecognised value is simply
-    // "no answer", which is a legitimate answer here.
+    // An unrecognised value is "no answer" here too.
     biologicalSex: optionalText().transform((raw) => parseBiologicalSex(raw)),
-    reproductiveStatus: optionalText().transform((raw) => parseReproductiveStatus(raw)),
-    // Both dates are validated on every submit, whichever status is chosen. The
-    // hidden one is blank (the input only renders beside its own chip), and
-    // `normalizeBodyMetrics` drops any date whose status went away, so a date
-    // typed and then abandoned can never be stored.
-    pregnancyDueDate: optionalReproductiveDateField((raw) => inspectPregnancyDueDate(raw, { today }), t),
-    lactationStartDate: optionalReproductiveDateField((raw) => inspectLactationStartDate(raw, { today }), t),
+    ...reproductiveFields(t, today),
   });
+}
+
+/**
+ * The life-phase schema: the status and its date, and nothing else (M215 spec
+ * 01).
+ *
+ * `/settings/life-phase` edits ONLY these three fields, so its form submits only
+ * these three. The route reads the stored record, merges what this schema
+ * resolved and writes the whole record back, which is what keeps a height, a
+ * birth year and a sex answer that this page never showed from being cleared by
+ * a save here.
+ *
+ * @param t - the caller's translator.
+ * @param options.today - the day to measure the two reproductive dates against.
+ * @returns a Zod object schema resolving to the status and the two nullable dates.
+ */
+export function makeLifePhaseSchema(t: Translate, { today }: { today: Date }) {
+  return z.object(reproductiveFields(t, today));
 }

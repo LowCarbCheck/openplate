@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Database,
   FlaskConical,
+  HeartPulse,
   Info,
   Share2,
   ShieldCheck,
@@ -37,8 +38,11 @@ import {
 } from 'lucide-react';
 
 import { BUILD } from '#app/lib/build-info';
-import { getLocalProfileGoals } from '#app/lib/local-store';
+import { getLocalProfileGoals, resolveLocalTimezone } from '#app/lib/local-store';
 import type { LocalProfileGoals } from '#app/lib/local-store';
+import { readBodyMetrics } from '#app/models/body-metrics';
+import { reproductiveStatusLine } from '#app/lib/reproductive-status-line';
+import { todayInTimezone } from '#app/lib/user-days';
 // Shared with the header avatar menu's AI shortcut — one derivation of "which
 // provider is this device connected to", rendered in two places.
 import { useAiConnectionStatusLine } from '#app/hooks/use-ai-connection-summary';
@@ -148,6 +152,31 @@ function useGoalsStatus(): string | null {
   return t('settings.rows.goals.none');
 }
 
+/**
+ * The life-phase row's status line: "Not active", or the phase and the number
+ * the app derives from the stored date (M215 spec 01).
+ *
+ * Read for EVERY account. The fieldset behind the row has its own rule about
+ * who is asked, but the row itself is never hidden by the sex answer: a person
+ * who has not answered it still has to be able to find this page.
+ */
+function useLifePhaseStatus(): string | null {
+  const { t } = useTranslation();
+  const goals = useLocalGoals();
+
+  if (goals === undefined) return null;
+  const metrics = readBodyMetrics(goals);
+  return reproductiveStatusLine({
+    reproductiveStatus: metrics.reproductiveStatus,
+    pregnancyDueDate: metrics.pregnancyDueDate ?? null,
+    lactationStartDate: metrics.lactationStartDate ?? null,
+    // The person's own calendar day, the same one every other surface derives
+    // a gestation week against.
+    today: todayInTimezone(resolveLocalTimezone(goals)),
+    t,
+  });
+}
+
 /** "Dark · Deutsch". `null` until the theme is readable — localStorage isn't available during SSR/first paint. */
 function usePreferencesStatus(): string | null {
   const { t, i18n } = useTranslation();
@@ -172,6 +201,7 @@ export default function SettingsIndex() {
   const { t } = useTranslation();
   const aiStatus = useAiConnectionStatusLine();
   const goalsStatus = useGoalsStatus();
+  const lifePhaseStatus = useLifePhaseStatus();
   const preferencesStatus = usePreferencesStatus();
   // `null` unless the operator set `SYNC_SERVER_URL`. On that instance the
   // sync row renders NOTHING — no row, no mention (AGENTS.md: unset means no
@@ -199,6 +229,18 @@ export default function SettingsIndex() {
 
       <SettingsGroup label={t('settings.groups.you')}>
         <SettingsRow to="/settings/goals" icon={Target} title={t('settings.rows.goals.title')} status={goalsStatus} />
+        {/* ALWAYS RENDERED, for every account (M215 spec 01). The question
+            behind it is gated by the sex answer inside the fieldset, but the
+            ROW is not: a person who never answered that question still has to
+            be able to find their life phase. Spec 04 regroups the hub around
+            the person and moves this row under "Mein Profil" / "About you";
+            until then it sits beside the goals row it came out of. */}
+        <SettingsRow
+          to="/settings/life-phase"
+          icon={HeartPulse}
+          title={t('lifePhase.title')}
+          status={lifePhaseStatus}
+        />
         <SettingsRow
           to="/settings/preferences"
           icon={SlidersHorizontal}

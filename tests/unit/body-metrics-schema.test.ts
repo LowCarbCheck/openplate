@@ -13,7 +13,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { makeBodyMetricsSchema } from '../../app/lib/body-metrics-schema';
+import { makeBodyMetricsSchema, makeLifePhaseSchema } from '../../app/lib/body-metrics-schema';
 import {
   BODY_DUE_DATE_PAST_KEY,
   BODY_DUE_DATE_RANGE_KEY,
@@ -161,5 +161,56 @@ describe('makeBodyMetricsSchema, the two reproductive dates', () => {
     });
     assert.equal(accepted.success, true);
     assert.equal(accepted.data?.lactationStartDate, shiftDate(TODAY_KEY, -30));
+  });
+});
+
+/**
+ * The life-phase form's own schema (M215 spec 01). `/settings/life-phase`
+ * submits the status and its date and NOTHING else, so its schema has to carry
+ * the same three fields, with the same messages, and none of the three the body
+ * metrics card kept.
+ *
+ * That absence is the point: a life-phase schema that still resolved
+ * `heightCm` would hand the route a `null` height on every save, and the route
+ * writes the whole record.
+ */
+describe('makeLifePhaseSchema', () => {
+  const lifePhase = makeLifePhaseSchema(t, { today: TODAY });
+
+  it('accepts a blank form as "no life phase"', () => {
+    const result = lifePhase.safeParse({ reproductiveStatus: '' });
+    assert.equal(result.success, true);
+    assert.deepEqual(result.data, {
+      reproductiveStatus: null,
+      pregnancyDueDate: null,
+      lactationStartDate: null,
+    });
+  });
+
+  it('resolves the three fields the fieldset submits, and no others', () => {
+    const result = lifePhase.safeParse({
+      reproductiveStatus: 'pregnant',
+      pregnancyDueDate: shiftDate(TODAY_KEY, 70),
+      // The body metrics card's fields are not this form's business. Sent
+      // anyway, they must not appear in the parsed record: this is the control
+      // that a `.pick`less copy of the whole schema would fail.
+      heightCm: '170',
+      birthYear: '1990',
+      biologicalSex: 'female',
+    });
+    assert.equal(result.success, true);
+    assert.deepEqual(Object.keys(result.data ?? {}).toSorted(), [
+      'lactationStartDate',
+      'pregnancyDueDate',
+      'reproductiveStatus',
+    ]);
+    assert.equal(result.data?.reproductiveStatus, 'pregnant');
+  });
+
+  it('rejects a due date that has already passed, with the same sentence the card gives', () => {
+    const result = lifePhase.safeParse({ reproductiveStatus: 'pregnant', pregnancyDueDate: shiftDate(TODAY_KEY, -1) });
+    assert.equal(result.success, false);
+    assert.deepEqual(result.error?.issues.map((issue) => issue.path.join('.')), ['pregnancyDueDate']);
+    assert.equal(result.error?.issues[0]?.message, `${BODY_DUE_DATE_PAST_KEY}:${MAX_WEEKS_UNTIL_DUE_DATE}`);
   });
 });

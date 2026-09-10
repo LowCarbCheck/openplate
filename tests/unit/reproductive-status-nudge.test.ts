@@ -198,14 +198,18 @@ function renderBanner(props: Parameters<typeof ReproductiveStatusPromptBanner>[0
 }
 
 describe('ReproductiveStatusPromptBanner', () => {
-  it('links to /settings/goals once the due date has passed', () => {
+  it('links to /settings/life-phase once the due date has passed', () => {
     const markup = renderBanner({
       reproductiveStatus: 'pregnant',
       dueDate: DUE_DATE,
       lactationStartDate: null,
       today: new Date(Date.UTC(2026, 0, 16)),
     });
-    assert.match(markup, /href="\/settings\/goals"/, 'the banner no longer links to the goals settings page');
+    // The life phase left `/settings/goals` in M215 spec 01. A banner still
+    // pointing at the goals page would land somebody on a card that no longer
+    // asks the question it just asked them about.
+    assert.match(markup, /href="\/settings\/life-phase"/, 'the banner no longer links to the life-phase page');
+    assert.doesNotMatch(markup, /href="\/settings\/goals"/, 'the banner still links to the old goals page');
   });
 
   it('renders nothing for a due date that has not passed yet', () => {

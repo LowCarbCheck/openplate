@@ -181,6 +181,10 @@ export default [
     // than `_public` so it wears the app chrome.
     route('/settings/preferences', 'routes/settings.preferences.tsx'),
     route('/settings/goals', 'routes/settings.goals.tsx'),
+    // Pregnancy and breastfeeding, on a page of their own (M215 spec 01). It
+    // used to be a fieldset inside the body metrics card on `/settings/goals`,
+    // where nobody looking for it had a reason to go.
+    route('/settings/life-phase', 'routes/settings.life-phase.tsx'),
     // Export/import + the device-local photo cache — the old profile page's
     // "Your data" and "Photos on this device" cards, given their own page.
     route('/settings/data', 'routes/settings.data.tsx'),

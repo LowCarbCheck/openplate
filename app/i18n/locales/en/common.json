@@ -1126,6 +1126,17 @@
     "photo": "Photo",
     "photoAnything": "Photograph food"
   },
+  "lifePhase": {
+    "title": "Life phase",
+    "description": "Only you see this, and it is never part of a food lookup.",
+    "loading": "Loading…",
+    "inactive": "Not active",
+    "summary": {
+      "pregnant": "Pregnant, week {{week}}",
+      "lactating_one": "Breastfeeding, {{count}} month",
+      "lactating_other": "Breastfeeding, {{count}} months"
+    }
+  },
   "meals": {
     "description": "Meals you've saved as a bundle. Log one in a single tap, or remove it here.",
     "empty": "You haven't saved a meal yet. Save one from the diary: bundle the foods you logged and give them a name.",
@@ -1163,6 +1174,7 @@
     "landing": "openplate, a food tracker that stays on your device",
     "landingManaged": "openplate, a food tracker only you can read",
     "landingDescription": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
+    "lifePhase": "Life phase · openplate",
     "meals": "Saved meals · openplate",
     "notFound": "Page not found · openplate",
     "nutrients": "Nutrients · openplate",

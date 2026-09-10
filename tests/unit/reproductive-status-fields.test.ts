@@ -204,3 +204,41 @@ describe('ReproductiveStatusFields, the derived line', () => {
     assert.equal(blank.includes(copy.derivedNotSet), true);
   });
 });
+
+/**
+ * WHERE the fieldset is rendered, read off the two route sources (M215 spec
+ * 01). Neither route can be rendered here (both are client-loader routes over
+ * IndexedDB), so this reads the source the way `no-telemetry-wiring.test.ts`
+ * does: the import and the JSX tag together, so a route that imported the
+ * component and never used it would still fail.
+ *
+ * The pair IS the control: the same two checks answer the opposite way for the
+ * page that gave the fieldset up.
+ */
+function routeSource(file: string): string {
+  return readFileSync(fileURLToPath(new URL(`../../app/routes/${file}`, import.meta.url)), 'utf8');
+}
+
+/** Does this route import the shared fieldset AND render it? */
+function rendersTheFieldset(source: string): boolean {
+  return (
+    source.includes("from '#app/components/reproductive-status-fields'") &&
+    source.includes('<ReproductiveStatusFields')
+  );
+}
+
+describe('ReproductiveStatusFields, which screens render it', () => {
+  it('is rendered by the life-phase settings page', () => {
+    assert.equal(rendersTheFieldset(routeSource('settings.life-phase.tsx')), true);
+  });
+
+  it('is no longer rendered by the body metrics card on the goals page', () => {
+    // The control for the case above: the same two checks, the page the
+    // fieldset moved OFF, and the answer flips.
+    assert.equal(rendersTheFieldset(routeSource('settings.goals.tsx')), false);
+  });
+
+  it('is still rendered by the onboarding body step, which this move did not touch', () => {
+    assert.equal(rendersTheFieldset(routeSource('onboarding.tsx')), true);
+  });
+});
