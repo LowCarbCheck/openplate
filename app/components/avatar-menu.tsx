@@ -3,10 +3,10 @@
  *
  * An OPEN instance has no account to put in a menu (AGENTS.md), so this is not
  * an account menu there: it is about the DEVICE. It answers "whose diary is this,
- * is it safe, and how does it look" without leaving the page, the identity
- * header names the device (plus the sync account's email when one is
- * connected), the sync row reports the one piece of state that had no presence
- * in the chrome at all, and the theme row switches appearance in place.
+ * is it safe, and how does it look" without leaving the page. The label at the
+ * top names the device, the theme row switches appearance in place, and the
+ * foot carries the ACCOUNT STRIP (`avatar-account-strip.tsx`), which is where
+ * the email, the sync state and the allowance all live now.
  *
  * THAT PREMISE IS NOW CONDITIONAL (M201). `INSTANCE_MODE=managed` gives an
  * instance accounts, and on one of those this menu is the menu a person
@@ -19,14 +19,20 @@
  * So the menu now carries an ACCOUNT DOOR, and there are four states of it,
  * decided in `resolveAvatarMenuDoor` rather than by `&&`s in the JSX below:
  * signed in (the way out), signed out on an instance that requires an account
- * (the way in), signed out on an open instance with a sync server (the way in
- * AND the way to make an account), and no sync server at all (nothing). The
- * "make one" row was the only one that ever existed, and it was shown in every
- * case: a managed instance offered "Create account" to somebody who cannot
- * create one, because accounts there come from an invitation an administrator
- * sends. That is the same false promise the public header carried, and
+ * (the way in), signed out on an open instance with a sync server (also the
+ * way in), and no sync server at all (nothing). The "make one" row was the
+ * only one that ever existed, and it was shown in every case: a managed
+ * instance offered "Create account" to somebody who cannot create one,
+ * because accounts there come from an invitation an administrator sends. That
+ * is the same false promise the public header carried, and
  * `resolveAvatarMenuDoor` documents why `requiresAccount` and "is sync
  * configured" are not the same question.
+ *
+ * M215 SPEC 02 CUT THE MENU DOWN AGAIN. Two mid-menu rows both read as
+ * "account" and both went to `/settings/account`: the sync row and the
+ * "Create account" row. Both are gone. One row opens `/settings`, one strip
+ * at the foot opens `/settings/account`, and that is the whole account
+ * surface here.
  *
  * Why a menu and not the plain `/settings` link it briefly was: sync status and
  * the theme both belong in the chrome. Sync is the only thing in the app whose
@@ -43,7 +49,7 @@
  */
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Loader2, LogIn, LogOut, RefreshCw, Settings, User } from 'lucide-react';
+import { LogIn, LogOut, Settings, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
@@ -58,15 +64,10 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { THEME_OPTIONS, useThemePreference, type Theme } from './theme-selector';
+import { AvatarAccountStrip } from './avatar-account-strip';
 import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
-import { formatRelativeTime } from '#app/lib/relative-time';
-import {
-  deriveSyncMenuState,
-  resolveAvatarMenuDoor,
-  type AvatarMenuDoor,
-  type SyncMenuState,
-} from '#app/lib/sync/sync-menu-state';
+import { resolveAvatarMenuDoor, type AvatarMenuDoor } from '#app/lib/sync/sync-menu-state';
 import { SignOutDialog } from './sign-out-dialog';
 import { cn } from '#app/lib/utils';
 
@@ -76,111 +77,19 @@ function isTheme(value: string): value is Theme {
 }
 
 /**
- * The sync row's status line, or `null` when the row has nothing to add under
- * its title.
- *
- * Wording is reused wholesale from `sync.status.*` (DESIGN.md §10.7: one
- * phrasing per idea) — the only menu-specific string is the short error line,
- * because the settings page's full sentence is a paragraph and this is one
- * line under a title.
- */
-function useSyncStatusLine(state: SyncMenuState): string | null {
-  const { t, i18n } = useTranslation();
-
-  if (state.status === 'hidden' || state.status === 'not-set-up') return null;
-  if (state.status === 'error') return t('sync.status.shortError');
-  if (state.status === 'syncing') return t('sync.status.syncing');
-  if (state.status === 'pending') return t('sync.status.pending');
-  if (state.status === 'never-synced') return t('sync.status.never');
-
-  const when = formatRelativeTime({
-    from: state.lastSyncedAt,
-    now: Date.now(),
-    locale: i18n.resolvedLanguage ?? i18n.language,
-  });
-  return t('sync.status.syncedAgo', { when });
-}
-
-/** The leading icon carries the state too, so it never rests on the status line's color alone. */
-function SyncStateIcon({ state }: { state: SyncMenuState }) {
-  if (state.status === 'error') {
-    return <AlertTriangle className="h-4 w-4 shrink-0 text-accent-amber" aria-hidden="true" />;
-  }
-  if (state.status === 'syncing') {
-    return <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden="true" />;
-  }
-  if (state.status === 'pending') {
-    return <RefreshCw className="h-4 w-4 shrink-0 text-accent-amber" aria-hidden="true" />;
-  }
-  if (state.status === 'synced') {
-    return <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />;
-  }
-  return <RefreshCw className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />;
-}
-
-/**
- * The sync row — the point of this revision. Sync had no presence in the app
- * chrome at all: a device could be signed out, or hours behind, and nothing
- * outside `/settings/sync` would say so.
- *
- * Renders NOTHING when the instance has no sync server configured — that is
- * the AGENTS.md rule ("unset ⇒ no sync UI renders anywhere"), not a layout
- * choice, so it is decided in `deriveSyncMenuState` and merely obeyed here.
- */
-function SyncRow({ state }: { state: SyncMenuState }) {
-  const { t } = useTranslation();
-  const status = useSyncStatusLine(state);
-
-  if (state.status === 'hidden') return null;
-  // "No account on this device yet" is now the DOOR's business, not a status
-  // line's: what to offer there depends on whether this instance lets anybody
-  // make an account, and this row only knows about syncing. See `AccountDoor`.
-  if (state.status === 'not-set-up') return null;
-
-  return (
-    <DropdownMenuItem asChild className="cursor-pointer py-2">
-      <Link to="/settings/account">
-        <SyncStateIcon state={state} />
-        <span className="min-w-0 flex-1">
-          <span className="block">{t('settings.rows.sync.title')}</span>
-          {status !== null && (
-            /* While a sync is actually in flight the status line breathes, so
-               the row has a live quality even when the spinning icon is out of
-               the reader's focus. Deliberately the text and NOT a second glyph:
-               the leading `SyncStateIcon` is already spinning, and two moving
-               objects in one two-line row is noise, not feedback. */
-            <span
-              className={cn('block truncate text-xs text-muted-foreground', state.status === 'syncing' && 'pulse-soft')}
-            >
-              {status}
-            </span>
-          )}
-        </span>
-      </Link>
-    </DropdownMenuItem>
-  );
-}
-
-/**
  * The account door: the rows the menu offers about the account, if any
  * (M201 spec 02 and 03).
  *
- * NOT "one row, or none", which is what it was and what the defect was made
- * of. Signing in and creating an account are not alternatives: on an instance
- * where anybody may make an account, a returning person may also sign in, so
- * that state carries BOTH rows and this component renders both. Reported from
- * a real screen, where a signed-out open instance offered creation only and
- * had no route to sign in at all, while `/settings/account` behind the menu
- * offered the link the menu was hiding.
+ * ONE ROW NOW, or none. It used to be two whenever an open instance let
+ * anybody make an account: "Sign in", then "Create account" pointing at
+ * `/settings/account`. M215 spec 02 folded the second into the footer strip,
+ * which opens that same page and says why somebody would go there. Signing in
+ * stays a row of its own because `/sign-in` is a different destination.
  *
  * Which state applies comes from `resolveAvatarMenuDoor`, so it stays a tested
  * decision rather than a chain of conditions in this file. Each row is a plain
  * menu item, none is styled as a danger action, and the sign-out one is the
  * whole reason this component exists.
- *
- * SIGN IN COMES FIRST wherever both show. Opening this menu signed out is far
- * more often "let me back in" than "let me start an account here", and making
- * an account is the rarer and heavier act of the two.
  *
  * Exported for `tests/unit/avatar-menu-door.test.ts`, which renders it.
  */
@@ -188,12 +97,13 @@ export function AccountDoor({ door }: { door: AvatarMenuDoor }) {
   if (door === 'none') return null;
   if (door === 'sign-out') return <SignOutRow />;
 
-  return (
-    <>
-      <SignInRow />
-      {door === 'sign-in-or-create' && <CreateAccountRow />}
-    </>
-  );
+  // BOTH signed-out doors render the same ONE row now. Creating an account
+  // used to be a second row here, pointing at `/settings/account`; M215 spec
+  // 02 folded that job into the footer strip, which already opens that page
+  // and now also says WHY somebody would go there ("Abgemeldet"). The
+  // distinction the resolver draws still matters to the rest of the app, so
+  // the door type is unchanged and only this file stopped drawing two rows.
+  return <SignInRow />;
 }
 
 /** The way out, behind the shared confirm dialog `/settings/account` also opens. */
@@ -228,25 +138,6 @@ function SignInRow() {
       <Link to="/sign-in">
         <LogIn className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <span>{t('signIn.title')}</span>
-      </Link>
-    </DropdownMenuItem>
-  );
-}
-
-/**
- * The way to make one, and it is honest here and only here: an OPEN instance
- * with a sync server, where anybody may make an account for themselves. A
- * managed instance hands accounts out by invitation, so this row never shows
- * there.
- */
-function CreateAccountRow() {
-  const { t } = useTranslation();
-
-  return (
-    <DropdownMenuItem asChild className="cursor-pointer py-2">
-      <Link to="/settings/account">
-        <RefreshCw className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-        <span>{t('sync.profileCard.setUp')}</span>
       </Link>
     </DropdownMenuItem>
   );
@@ -313,7 +204,6 @@ export function AvatarMenu() {
   // `null` unless the operator set `SYNC_SERVER_URL` — on every other instance
   // the sync row vanishes entirely (AGENTS.md).
   const syncServerUrl = useSyncServerUrl();
-  const syncState = deriveSyncMenuState({ hasSyncServer: syncServerUrl !== null, session });
   // `requiresAccount`, not the mode name: the question is whether a person
   // needs an account to use this instance at all, and a self-hoster who turned
   // sync on for themselves does not.
@@ -344,17 +234,13 @@ export function AvatarMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        {/* Identity, not an action: the email only appears when sync is
-            actually connected, because on every other install there is no
-            account to name (AGENTS.md — the app server holds none). */}
+        {/* THE DEVICE, and only the device. The email used to sit under this
+            label as well; the footer strip carries it now, and printing the
+            same address twice in a 16rem menu is noise, not identity. */}
         <DropdownMenuLabel className="py-2">
           <span className="block">{t('chrome.thisDevice')}</span>
-          {session.account !== null && (
-            <span className="block truncate text-xs font-normal text-muted-foreground">{session.account.email}</span>
-          )}
         </DropdownMenuLabel>
 
-        <SyncRow state={syncState} />
         <AccountDoor door={door} />
 
         <DropdownMenuSeparator />
@@ -370,6 +256,12 @@ export function AvatarMenu() {
           {t('preferences.theme.title')}
         </DropdownMenuLabel>
         <ThemeRow />
+
+        {/* THE ACCOUNT, AT THE FOOT. Not a row among rows: one strip that
+            names who is signed in, how sync is doing and what the allowance
+            is, and opens `/settings/account` when tapped. It renders nothing
+            at all on an instance with no sync server. */}
+        <AvatarAccountStrip />
       </DropdownMenuContent>
     </DropdownMenu>
   );

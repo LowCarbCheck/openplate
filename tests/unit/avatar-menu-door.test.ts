@@ -114,8 +114,36 @@ describe('the menu renders the door it was given', () => {
     assert.match(source, /requiresAccount/);
   });
 
-  it('leaves the create-account row for the open-instance branch alone', () => {
-    assert.match(source, /sync\.profileCard\.setUp/);
+  it('no longer carries a mid-menu create-account row', () => {
+    // M215 spec 02. The row pointed at `/settings/account`, which is exactly
+    // where the footer strip goes, so the menu offered one destination behind
+    // two same-weight items and said nothing about the account on either.
+    assert.doesNotMatch(source, /sync\.profileCard\.setUp/);
+    assert.doesNotMatch(source, /CreateAccountRow/);
+  });
+
+  it('no longer carries a mid-menu sync row either', () => {
+    assert.doesNotMatch(source, /settings\.rows\.sync\.title/);
+    assert.doesNotMatch(source, /function SyncRow/);
+  });
+
+  it('keeps exactly one row that opens the settings hub', () => {
+    // THE CONTROL for the two assertions above: removing rows must not have
+    // removed the one row this menu is supposed to keep, and a second copy of
+    // it would be the same defect wearing a different label.
+    assert.equal(source.split('to="/settings"').length - 1, 1, source);
+    assert.match(source, /nav\.settings/);
+  });
+
+  it('reaches the account through the strip, and only through the strip', () => {
+    // No literal `/settings/account` is left in this file at all: the strip
+    // owns that destination now (`avatar-account-strip.tsx`).
+    assert.equal(source.split('"/settings/account"').length - 1, 0, source);
+    assert.match(source, /<AvatarAccountStrip \/>/);
+  });
+
+  it('never names an administrator in the header menu (M212)', () => {
+    assert.doesNotMatch(source, /askAdmin/);
   });
 });
 
@@ -136,25 +164,24 @@ describe('the rows the door renders', () => {
   describe('signed out on an open instance', () => {
     const markup = renderDoor('sign-in-or-create');
 
-    it('carries the way in AND the way to make an account', () => {
-      // THE DEFECT, in one assertion. This menu offered creation only, so a
-      // person who already had an account and had been signed out could not
-      // reach sign-in from the header at all.
+    it('carries the way in, as the one row', () => {
+      // Still the way in: a person who already had an account and had been
+      // signed out must reach sign-in from the header, which is the defect
+      // M201 fixed and this spec must not undo.
       assert.ok(markup.includes(SIGN_IN_HREF), markup.slice(0, 800));
-      assert.ok(markup.includes(ACCOUNT_HREF), markup.slice(0, 800));
-      assert.equal(countRows(markup), 2);
+      assert.equal(countRows(markup), 1, markup.slice(0, 800));
     });
 
-    it('puts sign in first', () => {
-      // A returning person is the commoner case, and making an account is the
-      // heavier act. Both are the reading order and the keyboard order, since
-      // Radix walks menu items in DOM order.
-      assert.ok(markup.indexOf(SIGN_IN_HREF) < markup.indexOf(ACCOUNT_HREF), markup.slice(0, 800));
+    it('sends account creation to the footer strip instead of a second row', () => {
+      // M215 spec 02: the creation row pointed at `/settings/account` and the
+      // strip goes to the same page, so the row was a duplicate destination
+      // sitting at the same weight as sign-in.
+      assert.ok(!markup.includes(ACCOUNT_HREF), markup.slice(0, 800));
+      assert.ok(!markup.includes('Create account'), markup.slice(0, 800));
     });
 
-    it('reuses the copy both rows already had', () => {
+    it('reuses the copy the row already had', () => {
       assert.ok(markup.includes('Sign in'));
-      assert.ok(markup.includes('Create account'));
     });
   });
 
