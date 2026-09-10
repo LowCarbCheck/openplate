@@ -20,6 +20,7 @@ import { useMatomoTracker } from '#app/hooks/use-matomo-tracker';
 import { registerServiceWorker } from '#app/lib/service-worker';
 import { startPwaInstallCapture } from '#app/lib/pwa-install-capture';
 import { ErrorFallback } from '#app/components/route-error-boundary';
+import { StatusFallbackHost } from '#app/components/status-fallback-host';
 import { useTranslation } from 'react-i18next';
 import { I18nProvider } from '#app/i18n/I18nProvider';
 import { DEFAULT_LANGUAGE, resolveRequestLanguage, type LanguageCode } from '#app/i18n/language-prefs';
@@ -207,7 +208,19 @@ export default function App() {
     return () => window.removeEventListener('unhandledrejection', onUnhandledRejection);
   }, []);
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      {/* The notification channel's last tier, mounted where the floating
+          message host used to sit before M218 deleted the whole floating
+          layer, and a unit test sweeps this tree to keep it deleted, its name
+          included. It draws nothing at all unless a message is live AND no shell is
+          hosting it, which is the bare top-level routes (`/welcome`,
+          `/sign-in`, `/join` and the rest) and nothing else. See
+          `components/status-fallback-host.tsx` for the three tiers. */}
+      <StatusFallbackHost />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

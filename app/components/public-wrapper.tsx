@@ -9,6 +9,7 @@ import { cn } from '#app/lib/utils';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { InviteOnlyDialog } from '#app/components/invite-only-dialog';
 import { Button } from './ui/button';
+import { HeaderStatus } from './header-status';
 
 /**
  * The chrome every public page wears: header, content, footer.
@@ -66,13 +67,23 @@ export default function PublicWrapper({
           this 64px band rather than under it. */}
       <header className="fixed left-0 right-0 top-0 z-50 h-16 border-b bg-background/98 backdrop-blur-md">
         <div className={cn(container, 'flex h-full items-center justify-between')}>
-          <div>
-            {showLogo && (
-              <a href="/" className="flex items-center gap-3 font-medium transition-opacity hover:opacity-80">
-                <img src="/icons/icon-192.png?v=2" alt="" className="h-6 w-6 rounded-full" />
-                <span className="font-display text-lg font-semibold text-foreground">{APP_NAME}</span>
-              </a>
-            )}
+          {/* The wordmark's box is also this chrome's NOTIFICATION SLOT, the
+              same trade `app-wrapper.tsx`'s header makes with its title block.
+              A public page had no host at all before this, so anything it
+              published went nowhere (see `#app/lib/status`). While a message is
+              up it takes this box and the logo steps aside for those seconds;
+              `min-w-0 flex-1` lets the row truncate inside the box instead of
+              growing it, and the controls opposite are `shrink-0`, so the
+              sign-in door does not move by a pixel and the bar stays `h-16`. */}
+          <div className="flex min-w-0 flex-1 items-center">
+            <HeaderStatus>
+              {showLogo && (
+                <a href="/" className="flex items-center gap-3 font-medium transition-opacity hover:opacity-80">
+                  <img src="/icons/icon-192.png?v=2" alt="" className="h-6 w-6 rounded-full" />
+                  <span className="font-display text-lg font-semibold text-foreground">{APP_NAME}</span>
+                </a>
+              )}
+            </HeaderStatus>
           </div>
           {/* Was an account menu / "Log in" button. M128 spec 03 deleted it
             because this app had no accounts at all, and the one thing a
@@ -93,7 +104,7 @@ export default function PublicWrapper({
             answer for a visitor holding no invite. Neither one renders on an
             open instance, where there is nothing to sign in to and the offer
             would be the mirror image of the same fault. */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* The source icon left this corner in M201/03. It was the SECOND
                 copy of a link the footer already carries as a labelled word,
                 and the row is one 16px band: on a managed instance the space

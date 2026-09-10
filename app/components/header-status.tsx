@@ -1,10 +1,10 @@
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '#app/components/ui/button';
 import { cn } from '#app/lib/utils';
-import { clearStatus, useStatus, type StatusMessage, type StatusTone } from '#app/lib/status';
+import { clearStatus, registerStatusHost, useStatus, type StatusMessage, type StatusTone } from '#app/lib/status';
 
 /**
  * The app's notifications, rendered in the header's TITLE SLOT.
@@ -118,8 +118,15 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
  *
  * Keyed by `status.id`, which is monotone per publish, so republishing the same
  * words restarts the row rather than leaving a half-faded one in place.
+ *
+ * It also REGISTERS ITSELF as a host for the lifetime of the mount. That is how
+ * `components/status-fallback-host.tsx` knows whether a shell is already
+ * carrying the message; see that file for the three tiers. The registration is
+ * an effect, so it never runs during a server render, which is what makes the
+ * fallback's server snapshot of zero the honest answer.
  */
 export function HeaderStatus({ children }: { children: ReactNode }): ReactNode {
+  useEffect(() => registerStatusHost(), []);
   const status = useStatus();
   if (status === null) return <>{children}</>;
   return <HeaderStatusRow key={status.id} status={status} />;

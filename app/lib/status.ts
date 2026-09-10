@@ -14,13 +14,20 @@
  * second publish replaces the first, exactly as a second sentence replaces the
  * first in a conversation.
  *
- * A PUBLISHED STATUS WITH NO HOST ON SCREEN IS SILENTLY LOST. This module only
- * holds the message; something has to be rendering `HeaderStatus` for it to be
- * read. Today that is `components/app-wrapper.tsx`'s header, which every route
- * under `routes/_personal.tsx` wears, and every call site in the app is on one
- * of those routes. A new caller on the PUBLIC chrome (`components/public-shell.tsx`,
- * which has no title slot at all) would publish into nothing, and nobody would
- * see a failure, so a new surface needs a host mounted before it gets a voice.
+ * NO PUBLISHED STATUS IS EVER LOST (owner, 2026-09-10). It used to be: this
+ * module only holds the message, and something has to be rendering it for it to
+ * be read, which was `components/app-wrapper.tsx`'s header and nowhere else. A
+ * publish from the public chrome or from a bare top-level route went into
+ * nothing, with no failure anywhere. The fix is a HOST COUNT, kept here: every
+ * `HeaderStatus` registers itself while it is mounted, and
+ * `components/status-fallback-host.tsx`, mounted once at the root, watches that
+ * count and draws its own bar when it is zero. Read
+ * `components/status-fallback-host.tsx` for the three tiers.
+ *
+ * The count lives beside the message rather than in the fallback component
+ * because the two are read together: a fallback that counted its own siblings
+ * would have to know about every shell, and this way a new shell only has to
+ * mount `HeaderStatus`.
  *
  * SERVER RENDERING. `getServerSnapshot` reads the same module slot, which is
  * process-wide rather than per-request. That is safe only because nothing
@@ -125,11 +132,16 @@ export function readStatus(): StatusMessage | null {
   return current;
 }
 
-/** Test seam: drops the message AND the id counter, so one test's ids can't leak into the next one's. */
+/**
+ * Test seam: drops the message, the id counter AND the host count, so one
+ * test's ids and one test's mounted hosts can't leak into the next one's.
+ */
 export function resetStatusChannel(): void {
   cancelTimer();
   current = null;
   nextId = 1;
+  hostCount = 0;
+  emitHosts();
 }
 
 function subscribe(onStoreChange: () => void): () => void {
@@ -142,4 +154,60 @@ function subscribe(onStoreChange: () => void): () => void {
 /** Subscribes a component to the channel. Re-renders on every publish and every clear. */
 export function useStatus(): StatusMessage | null {
   return useSyncExternalStore(subscribe, readStatus, readStatus);
+}
+
+let hostCount = 0;
+const hostListeners = new Set<() => void>();
+
+function emitHosts(): void {
+  for (const listener of hostListeners) listener();
+}
+
+/**
+ * Declares that a host for this channel is on screen, and returns the call that
+ * takes the declaration back. `HeaderStatus` calls this in a mount effect and
+ * returns the result as the cleanup, so the count is exactly the number of
+ * mounted hosts.
+ *
+ * @returns the unregister call. Calling it twice is harmless; the second call does nothing.
+ */
+export function registerStatusHost(): () => void {
+  hostCount += 1;
+  emitHosts();
+  let isReleased = false;
+  return () => {
+    if (isReleased) return;
+    isReleased = true;
+    hostCount -= 1;
+    emitHosts();
+  };
+}
+
+/** How many hosts are mounted, read without subscribing. The test seam, and the client snapshot. */
+export function readStatusHostCount(): number {
+  return hostCount;
+}
+
+function subscribeHosts(onStoreChange: () => void): () => void {
+  hostListeners.add(onStoreChange);
+  return () => {
+    hostListeners.delete(onStoreChange);
+  };
+}
+
+/**
+ * Subscribes a component to the host count. Re-renders whenever a host mounts
+ * or unmounts.
+ *
+ * BOTH snapshots read the same module slot, exactly as `useStatus` does. On a
+ * real server that slot is always zero and cannot be anything else: the only
+ * caller of `registerStatusHost` is a mount effect, and effects never run
+ * during a server render. So a server render always reports "no host", the
+ * honest answer for HTML that has not hydrated, and the first client render
+ * agrees with it. Reading the slot rather than returning a hard-coded zero is
+ * also what lets a static-render test drive the count, which is the only way to
+ * test the fallback without a DOM.
+ */
+export function useStatusHostCount(): number {
+  return useSyncExternalStore(subscribeHosts, readStatusHostCount, readStatusHostCount);
 }
