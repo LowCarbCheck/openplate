@@ -26,7 +26,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useFetcher } from 'react-router';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import type { Macros } from '#app/lib/macros';
 import type { LocalPersonalFood } from '#app/lib/local-store';
 import type { MacroEntryBasis } from '#app/lib/portions';
@@ -158,11 +158,11 @@ function EditFoodForm({
     const data = parsed.data;
     shownResult.current = fetcher.data;
     if (data.ok) {
-      toast.success(t('add.custom.updated', { name: data.name ?? food.name }));
+      publishStatus({ text: t('add.custom.updated', { name: data.name ?? food.name }), tone: 'success' });
       onSaved();
       return;
     }
-    toast.error(editFailureMessage(data.reason, t));
+    publishStatus({ text: editFailureMessage(data.reason, t), tone: 'error' });
   }, [fetcher.data, food.name, onSaved, t]);
 
   return (
@@ -265,7 +265,7 @@ function CustomFoodRow({
     const parsed = deleteFoodResultSchema.safeParse(deleteFetcher.data);
     if (!parsed.success || shownDelete.current) return;
     shownDelete.current = true;
-    toast.success(t('add.custom.removed', { name: parsed.data.name }));
+    publishStatus({ text: t('add.custom.removed', { name: parsed.data.name }), tone: 'success' });
   }, [deleteFetcher.data, t]);
 
   if (isEditing) {

@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import i18nSingleton from '#app/i18n/i18n';
 import { dateLabelLocale } from '#app/i18n/date-locale';
 import { formatClockTime } from '#app/lib/format-clock-time';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { z } from 'zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
@@ -497,8 +497,8 @@ async function handleDelete(id: string, timezone: string): Promise<Response> {
   const existing = await getLocalFoodLog(id);
   await deleteLocalFoodLog(id);
   trackEntryDeleted();
-  // The client fires an optimistic sonner "Undo" toast (see the receipt), so
-  // this just returns the user to their diary — no server-flashed toast.
+  // The client publishes an optimistic "Undo" status (see the receipt), so
+  // this just returns the user to their diary, no server-flashed message.
   // Returns to the entry's own day (falling back to a bare `/diary` if the
   // log was already gone, e.g. a stale tab).
   if (!existing) return redirect('/diary');
@@ -921,19 +921,20 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
   // captured `submit` stays valid; targeting `backTo` (the entry's own day)
   // posts the restore there and revalidates the visible list — the diary
   // action itself also redirects the restored entry to its own day, so this
-  // just avoids a wrong intermediate URL. sonner dismisses the toast on
+  // just avoids a wrong intermediate URL. `HeaderStatus` clears the status on
   // click, so a second Undo can't fire (idempotent by construction).
   const handleUndo = () => {
     submit(buildRestorePayload(log), { method: 'post', action: backTo });
   };
 
-  // Optimistic delete: fire the Undo toast immediately, then submit the delete
-  // (which redirects to the entry's own day, see `backTo`). The toast lives at
-  // the root, so it survives the navigation; its "Undo" re-creates the entry
-  // from the snapshot we already hold in loader data.
+  // Optimistic delete: publish the Undo status immediately, then submit the
+  // delete (which redirects to the entry's own day, see `backTo`). The status
+  // lives in the layout's header, so it survives the navigation; its "Undo"
+  // re-creates the entry from the snapshot we already hold in loader data.
   const handleDeleteClick = () => {
     setIsDeleting(true);
-    toast(t('entry.toast.removed', { name: log.name }), {
+    publishStatus({
+      text: t('entry.toast.removed', { name: log.name }),
       action: { label: t('entry.toast.undo'), onClick: handleUndo },
     });
     // Device-local photo cache: when this is the batch's last remaining entry,

@@ -483,18 +483,6 @@
   }
 }
 
-/* Toasts settle instantly for anyone who asked for less motion. The library
-   animates enter/exit with its own transitions rather than a named keyframe,
-   so this has to reach both. Same wildcard discipline as the view-transition
-   block above: the media query is the only switch this app has. */
-@media (prefers-reduced-motion: reduce) {
-  [data-sonner-toast],
-  [data-sonner-toast] * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
-
 /*
  * ===========================================================================
  * Waiting vocabulary

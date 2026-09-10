@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { useFetcher } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import i18n from '#app/i18n/i18n';
 import { BookMarked, Trash2, Utensils } from 'lucide-react';
 import { randomUuid } from '#app/lib/uuid';
@@ -167,7 +167,7 @@ function SavedMealRow({ meal }: { meal: LocalSavedMeal }) {
     const parsed = deleteMealResultSchema.safeParse(deleteFetcher.data);
     if (!parsed.success || shownDelete.current) return;
     shownDelete.current = true;
-    toast.success(t('meals.toast.deleted', { name: parsed.data.name || meal.name }));
+    publishStatus({ text: t('meals.toast.deleted', { name: parsed.data.name || meal.name }), tone: 'success' });
   }, [deleteFetcher.data, meal.name, t]);
 
   return (

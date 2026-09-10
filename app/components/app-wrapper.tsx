@@ -13,6 +13,7 @@ import {
 import { useSyncSession } from './sync-status';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
+import { HeaderStatus } from './header-status';
 import { ProgressBar } from './progress-bar';
 import { UpdateRibbon } from './update-ribbon';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from './ui/sidebar';
@@ -257,40 +258,47 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
           <NavDrawer />
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex min-w-0 flex-col justify-center gap-px">
-              {/* The wordmark, mobile only. Below `md` the mark to its left is
-                  the app's ONLY persistent brand statement, so the word belongs
-                  next to it; at `md`+ the sidebar's own `Logo()` renders this
-                  exact lockup a few pixels away, and a second "openplate" there
-                  is a duplicate, not emphasis.
+          <div className="flex flex-1 items-center justify-between gap-2">
+            {/* The header's title slot is also the app's ONE notification
+                surface. While `#app/lib/status` holds a message,
+                `HeaderStatus` renders it here instead of the two lines below,
+                in the same box and under the same fixed header height, so
+                nothing on this bar moves. There are no toasts any more. */}
+            <HeaderStatus>
+              <div className="flex min-w-0 flex-col justify-center gap-px">
+                {/* The wordmark, mobile only. Below `md` the mark to its left is
+                    the app's ONLY persistent brand statement, so the word belongs
+                    next to it; at `md`+ the sidebar's own `Logo()` renders this
+                    exact lockup a few pixels away, and a second "openplate" there
+                    is a duplicate, not emphasis.
 
-                  Deliberately NOT the `SectionEyebrow` recipe (DESIGN.md §2:
-                  11px, uppercase-ish, `tracking-[0.11em]`) — that treatment
-                  already means "label for the content block below" everywhere
-                  else in the app, so wearing it made the brand read as a
-                  category kicker for the page title rather than as the product
-                  name. A wordmark is set like a wordmark: normal tracking,
-                  lowercase, brand-teal.
+                    Deliberately NOT the `SectionEyebrow` recipe (DESIGN.md §2:
+                    11px, uppercase-ish, `tracking-[0.11em]`), that treatment
+                    already means "label for the content block below" everywhere
+                    else in the app, so wearing it made the brand read as a
+                    category kicker for the page title rather than as the product
+                    name. A wordmark is set like a wordmark: normal tracking,
+                    lowercase, brand-teal.
 
-                  "openplate" is a literal, lowercase brand string, deliberately
-                  outside i18n — same convention as `APP_NAME` elsewhere here.
-                  Decorative: the `h1` below names the page for assistive tech. */}
-              <span
-                aria-hidden="true"
-                className="font-display text-xs font-semibold leading-none text-primary md:hidden"
-              >
-                {APP_NAME}
-              </span>
-              {/* `truncate` because the longest titles ("Sync across devices",
-                  "Connecting to OpenRouter", and their longer German
-                  translations) would otherwise wrap the header to three lines
-                  on a narrow phone. */}
-              <h1 className="truncate font-display text-lg font-semibold leading-tight tracking-tight md:text-xl">
-                {title || APP_NAME}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
+                    "openplate" is a literal, lowercase brand string, deliberately
+                    outside i18n, same convention as `APP_NAME` elsewhere here.
+                    Decorative: the `h1` below names the page for assistive tech. */}
+                <span
+                  aria-hidden="true"
+                  className="font-display text-xs font-semibold leading-none text-primary md:hidden"
+                >
+                  {APP_NAME}
+                </span>
+                {/* `truncate` because the longest titles ("Sync across devices",
+                    "Connecting to OpenRouter", and their longer German
+                    translations) would otherwise wrap the header to three lines
+                    on a narrow phone. */}
+                <h1 className="truncate font-display text-lg font-semibold leading-tight tracking-tight md:text-xl">
+                  {title || APP_NAME}
+                </h1>
+              </div>
+            </HeaderStatus>
+            <div className="flex shrink-0 items-center gap-3">
               {/* The device menu, at both breakpoints — identity, the theme
                   inline, and the settings people revisit. See
                   `avatar-menu.tsx` for why the theme lives in here rather than

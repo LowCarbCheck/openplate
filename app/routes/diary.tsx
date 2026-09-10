@@ -98,7 +98,7 @@ import { Card, CardContent } from '#app/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '#app/components/ui/popover';
 import { Calendar as CalendarPicker } from '#app/components/ui/calendar';
 import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -1810,7 +1810,7 @@ function SaveMealButton({ group }: { group: MealGroup }) {
     const data = fetcher.data;
     if (!data || !('intent' in data) || data.intent !== 'save-meal' || shownRef.current) return;
     shownRef.current = true;
-    toast.success(t('diary.saveMeal.toast', { name: data.name, count: data.count }));
+    publishStatus({ text: t('diary.saveMeal.toast', { name: data.name, count: data.count }), tone: 'success' });
     setIsNaming(false);
     setName('');
   }, [fetcher.data, t]);
@@ -1867,7 +1867,7 @@ function SaveMealButton({ group }: { group: MealGroup }) {
  * A single one-tap quick-add chip (frequent or favorite). Submitting re-logs
  * the food at its last-used grams via its own fetcher (so the tapped chip
  * shows its own pending state) onto `date` — the day being viewed, not always
- * "today" (item 6) — then fires a sonner "Added … · Undo" toast whose Undo
+ * "today" (item 6), then publishes an "Added … · Undo" header status whose Undo
  * deletes the just-created entry. The traffic-light dot reads the food's
  * net-carb status.
  *

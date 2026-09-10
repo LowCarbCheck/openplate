@@ -1,24 +1,25 @@
 /**
- * The "food added" toast (M129/03) — one family, one copy rule, one sonner id.
+ * The "food added" announcement (M129/03), one family, one copy rule, one id.
  *
- * Two things it does that a bare `toast('Added X')` didn't:
+ * Two things it does that a bare "Added X" didn't:
  *
  * 1. **It reports the running total.** "Added Greek yogurt · To breakfast —
  *    12g net carbs so far today." answers the question the add was FOR, on the
  *    surface where the user is already looking, instead of making them read the
  *    diary hero to find out what it cost them.
  * 2. **It batches.** Confirming a four-item plate, or tapping three quick-add
- *    chips in a row, used to stack four toasts. Every add now writes through
- *    the SAME sonner id, and consecutive adds inside `ADD_BATCH_WINDOW_MS`
- *    collapse into one updating toast ("Added 4 foods · …23g net carbs so far
- *    today.") — sonner replaces the content of an existing toast in place when
- *    the id matches.
+ *    chips in a row, used to stack four toasts. Every add writes through this
+ *    one module, and consecutive adds inside `ADD_BATCH_WINDOW_MS` collapse
+ *    into one growing message ("Added 4 foods · …23g net carbs so far today.").
+ *    Under `#app/lib/status` that collapse costs nothing extra: the
+ *    channel is latest-wins by construction, so a republish IS the update, and
+ *    the burst state below is the whole mechanism.
  *
  * The copy and the batch arithmetic are pure and exported separately from the
  * `showFoodAddedToast` side effect, so the exact strings and the collapse rule
- * are pinned by tests rather than by watching a toast go by.
+ * are pinned by tests rather than by watching a message go by.
  */
-import { toast as showToast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { formatMeasureIn } from '#app/lib/format-macro-number';
 
 /** The i18next `t` shape this module needs, taken as an argument so the copy stays testable without a provider. */
@@ -54,9 +55,10 @@ function fallbackTranslate(key: string, params: Readonly<Record<string, string |
 }
 
 /**
- * The shared sonner id. Every add path (portion step, manual entry, quick-add
- * chip, scan confirm, copy-from-yesterday) writes through this one id — that is
- * the entire batching mechanism, and it must not be parameterised per food.
+ * The family's one id. Every add path (portion step, manual entry, quick-add
+ * chip, scan confirm, copy-from-yesterday) reports through this one module and
+ * this one name, it must not be parameterised per food, or the batch below
+ * stops meaning "one action".
  */
 export const FOOD_ADDED_TOAST_ID = 'food-added';
 
@@ -101,7 +103,7 @@ export function nextFoodAddedBatch({
   return { count: previous.count + count, lastName: name, startedAtMs: previous.startedAtMs };
 }
 
-/** The rendered toast: sonner's title line plus its description line. */
+/** The rendered message: the status text plus its second, smaller line. */
 export interface FoodAddedToastCopy {
   title: string;
   description: string;
@@ -167,11 +169,12 @@ export interface FoodAddedToastAction {
 }
 
 /**
- * Shows (or updates) the single food-added toast.
+ * Publishes (or replaces) the single food-added status.
  *
  * Safe to call from a `clientAction` immediately before returning a
- * `redirect()` — sonner's queue is a global singleton, the same property
- * `#app/lib/client-toast` relies on.
+ * `redirect()`, `#app/lib/status` is a module-scoped global and its host lives
+ * in the layout above the route, the same property `#app/lib/client-toast`
+ * relies on.
  *
  * @param input - the add being reported plus the day's post-add totals.
  */
@@ -213,9 +216,10 @@ export function showFoodAddedToast({
     t,
     language,
   });
-  showToast.success(copy.title, {
-    id: FOOD_ADDED_TOAST_ID,
+  publishStatus({
+    text: copy.title,
     description: copy.description,
+    tone: 'success',
     // An Undo bound to ONE entry would be a lie on a collapsed burst, so it's
     // offered only while the burst is still a single food.
     action: action && currentBatch.count === 1 ? action : undefined,

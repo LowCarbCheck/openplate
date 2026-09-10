@@ -17,7 +17,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 
 import { Button } from '#app/components/ui/button';
 import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
@@ -49,14 +49,14 @@ export function InstancePresetConnect({ onConnected, className }: InstancePreset
       await putLocalAiSettings(buildPresetAiSettings({ preset, now: Date.now() }));
     } catch (error) {
       reportError(error, { boundary: 'instance-preset-connect' });
-      toast.error(t('settingsAi.preset.failed'));
+      publishStatus({ text: t('settingsAi.preset.failed'), tone: 'error' });
       return;
     } finally {
       setIsConnecting(false);
     }
 
     // Past the catch above, so the settings row is written. The probe below
-    // may still downgrade the toast, but the connect itself has happened.
+    // may still downgrade the message, but the connect itself has happened.
     trackAiProviderConnected('preset');
 
     // Tell the caller first: the connection IS saved at this point, and the
@@ -66,7 +66,7 @@ export function InstancePresetConnect({ onConnected, className }: InstancePreset
 
     // Non-blocking reachability probe (`GET <baseUrl>/models`, the registry's
     // own check for this provider). `verifyProviderKey` never throws, so an
-    // unreachable or key-refusing endpoint downgrades the toast rather than
+    // unreachable or key-refusing endpoint downgrades the message rather than
     // undoing the save — the operator, not the user, is the one who can fix an
     // instance endpoint, and the user can still disconnect.
     const verification = await verifyProviderKey({
@@ -75,10 +75,10 @@ export function InstancePresetConnect({ onConnected, className }: InstancePreset
       baseUrl: preset.baseUrl,
     });
     if (verification.status === 'ok') {
-      toast.success(t('settingsAi.preset.connected'));
+      publishStatus({ text: t('settingsAi.preset.connected'), tone: 'success' });
       return;
     }
-    toast.warning(t('settingsAi.preset.connectedUnverified'));
+    publishStatus({ text: t('settingsAi.preset.connectedUnverified'), tone: 'warning' });
   }
 
   return (

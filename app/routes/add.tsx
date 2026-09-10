@@ -637,7 +637,7 @@ function resolveLoggedAt({ date, timezone }: { date: string | undefined; timezon
  *
  * The toast reports the day's running net-carb total, which is why it happens
  * HERE rather than in a `redirectWithLocalToast` call: the total has to be read
- * after the write. Every add path in the app writes through the one sonner id
+ * after the write. Every add path in the app writes through the one status
  * behind `showFoodAddedToast`, so confirming a multi-item plate — or tapping
  * four chips in a row — collapses into a single updating toast.
  *

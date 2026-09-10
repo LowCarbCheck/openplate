@@ -13,7 +13,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { celebrationMessage, markCelebrationsSeen, readSeenCelebrations, resolveCelebration } from '#app/lib/celebration';
 import type { CelebrationFacts, CelebrationId } from '#app/lib/celebration';
 
@@ -33,7 +33,7 @@ export function useCelebration(facts: CelebrationFacts): CelebrationId | null {
     facts;
 
   // `t` is read through a ref rather than depended on: re-running the effect on
-  // a language change would re-toast an already-banked milestone. A language
+  // a language change would re-announce an already-banked milestone. A language
   // switch reloads the document anyway (see `app/i18n/language-prefs.ts`), so
   // the next render already has the right language from a cold start.
   const translateRef = useRef(t);
@@ -59,7 +59,7 @@ export function useCelebration(facts: CelebrationFacts): CelebrationId | null {
     // navigation can't leave a milestone able to fire a second time.
     markCelebrationsSeen(window.localStorage, decision.newlySatisfied);
     setActive(decision.celebrate);
-    toast(celebrationMessage(decision.celebrate, translateRef.current));
+    publishStatus({ text: celebrationMessage(decision.celebrate, translateRef.current), tone: 'success' });
     const timer = setTimeout(() => setActive(null), CELEBRATION_VISIBLE_MS);
     return () => clearTimeout(timer);
   }, [totalLogCount, aiEstimatedLogCount, loggedDaysInWindow, windowDays, weighInCount, crossedTargetOnLatest]);

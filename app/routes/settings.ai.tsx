@@ -8,7 +8,7 @@ import { Trans, useTranslation } from 'react-i18next';
 // client-only (the BYOK key never touches the server), so the singleton is
 // always this browser's own instance — never one shared across requests.
 import i18n from '#app/i18n/i18n';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { z } from 'zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
@@ -995,7 +995,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
         // need to fix a CSP/CORS issue) — it never sweeps them onward.
         if (verification.status === 'unverified') {
           trackAiKeyCheckFailed('unverified');
-          toast.success(buildUnverifiedSaveMessage({ provider: data.provider, t }));
+          publishStatus({ text: buildUnverifiedSaveMessage({ provider: data.provider, t }), tone: 'warning' });
           return;
         }
 
@@ -1003,7 +1003,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
         // re-save reaches here with an 'ok' verification it never ran, and
         // counting that would report a connect on every model change.
         if (data.apiKey) trackAiProviderConnected('manual');
-        toast.success(t('settingsAi.toast.saved'));
+        publishStatus({ text: t('settingsAi.toast.saved'), tone: 'success' });
         // On a verified save: return to the caller's `?next=` target, or the
         // diary on a first connect. A re-save with no return token stays put.
         const destination = resolveSettingsReturnPath(nextToken) ?? (wasFirstConnect ? '/diary' : null);

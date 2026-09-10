@@ -15,10 +15,8 @@ import type { Route } from './+types/root';
 import { getToast } from '#app/utils/toast.server';
 import stylesheet from './app.css?url';
 import { combineHeaders } from '#app/utils/misc';
-import { Toaster } from '#app/components/ui/toaster';
 import { useToast } from '#app/hooks/use-toast';
 import { useMatomoTracker } from '#app/hooks/use-matomo-tracker';
-import { useResolvedTheme } from '#app/hooks/use-resolved-theme';
 import { registerServiceWorker } from '#app/lib/service-worker';
 import { startPwaInstallCapture } from '#app/lib/pwa-install-capture';
 import { ErrorFallback } from '#app/components/route-error-boundary';
@@ -100,7 +98,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   };
 }
 
-// Root data (the toast flash) only changes via an action (redirectWithToast);
+// Root data (the flashed message) only changes via an action (redirectWithToast);
 // a plain GET nav's parent `.data` fetch fails unhandled offline, so skip it
 // and only revalidate after a submission.
 export function shouldRevalidate({ formMethod, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs): boolean {
@@ -163,7 +161,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const data = useLoaderData<typeof loader>();
   useToast(data?.toast);
-  const resolvedTheme = useResolvedTheme();
 
   // Analytics. `null` on every instance whose operator did not configure
   // MATOMO_URL + MATOMO_SITE_ID — the default and the self-host default — and
@@ -210,45 +207,7 @@ export default function App() {
     return () => window.removeEventListener('unhandledrejection', onUnhandledRejection);
   }, []);
 
-  return (
-    <>
-      <Outlet />
-      <Toaster
-        closeButton
-        // Below the header, not over the bottom nav. The old bottom placement
-        // put every confirmation on top of the mobile tab bar and the raised
-        // Scan button — the app's two most-tapped targets — so the feedback for
-        // an action sat on the control you use to take the next one.
-        position="top-center"
-        theme={resolvedTheme}
-        // The band starts just under the 4rem header (`app-wrapper.tsx`'s
-        // `min-h-16`, `public-wrapper.tsx`'s fixed `h-16`), which is why one
-        // offset works for both the app chrome and the public pages.
-        // `safe-area-inset-top` is 0 in every current configuration (the PWA
-        // uses the non-translucent status-bar style) and is included so a future
-        // `black-translucent` switch can't push the band under the notch.
-        offset={{ top: 'calc(env(safe-area-inset-top, 0px) + 4.75rem)' }}
-        mobileOffset={{
-          top: 'calc(env(safe-area-inset-top, 0px) + 4.5rem)',
-          left: '0.75rem',
-          right: '0.75rem',
-        }}
-        visibleToasts={2}
-        gap={8}
-        // The container must never intercept a tap: the header device menu and
-        // the nav drawer both open into this band, and they sit at z-50 while
-        // sonner renders far above them. Only the toast box itself is
-        // interactive (`pointer-events-auto`, in `ui/toaster.tsx`).
-        //
-        // `toaster group` is repeated here on purpose: the wrapper spreads
-        // `{...props}` AFTER its own `className`, so a bare `pointer-events-none`
-        // would REPLACE those two classes and silently kill every
-        // `group-[.toaster]:` variant in its `classNames` recipe. Same trap as
-        // passing `toastOptions` from here — which is why we don't.
-        className="toaster group pointer-events-none"
-      />
-    </>
-  );
+  return <Outlet />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

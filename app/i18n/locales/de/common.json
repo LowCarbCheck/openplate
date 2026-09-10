@@ -286,6 +286,9 @@
     "signIn": "Anmelden",
     "source": "Quellcode",
     "sourceShort": "Quellcode",
+    "status": {
+      "dismiss": "Nachricht schließen"
+    },
     "terms": "AGB",
     "thisDevice": "Dieses Gerät",
     "update": {
@@ -2565,9 +2568,6 @@
     },
     "sheet": {
       "close": "Schließen"
-    },
-    "toaster": {
-      "label": "Benachrichtigungen"
     }
   },
   "welcome": {

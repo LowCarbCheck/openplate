@@ -36,7 +36,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { MessageSquareWarning } from 'lucide-react';
 
 import { Button } from '#app/components/ui/button';
@@ -102,15 +102,15 @@ export function ReportEstimate({ userId, logId, logBatchId, entry }: ReportEstim
           consent: recordFeedbackConsent(),
         });
         setIsOpen(false);
-        toast(t('entry.report.queued'));
-        // Best effort, and deliberately not awaited for the toast: the report
+        publishStatus({ text: t('entry.report.queued') });
+        // Best effort, and deliberately not awaited for the message: the report
         // is already durable, so an offline device has lost nothing.
         void drainFeedbackOutboxOnce();
       } catch (error) {
         log.warn('could not queue a feedback report', {
           error: error instanceof Error ? error.message : String(error),
         });
-        toast.error(t('entry.report.failed'));
+        publishStatus({ text: t('entry.report.failed'), tone: 'error' });
       } finally {
         setIsQueueing(false);
       }

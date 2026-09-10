@@ -16,7 +16,7 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import type { Route } from './+types/settings.data';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { Download, Upload } from 'lucide-react';
 
 import { buildLogsCsv, type ExportLogInput } from '#app/lib/export-format';
@@ -157,9 +157,9 @@ function ImportBackupSection() {
       const json = await file.text();
       await restoreBackup(json);
       trackBackupImported();
-      toast.success(t('settings.data.importSuccess'));
+      publishStatus({ text: t('settings.data.importSuccess'), tone: 'success' });
     } catch {
-      toast.error(t('settings.data.importError'));
+      publishStatus({ text: t('settings.data.importError'), tone: 'error' });
     } finally {
       setIsImporting(false);
     }

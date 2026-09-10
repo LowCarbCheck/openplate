@@ -286,6 +286,9 @@
     "signIn": "Sign in",
     "source": "Source code",
     "sourceShort": "Source",
+    "status": {
+      "dismiss": "Dismiss this message"
+    },
     "terms": "Terms",
     "thisDevice": "This device",
     "update": {
@@ -2594,9 +2597,6 @@
     },
     "sheet": {
       "close": "Close"
-    },
-    "toaster": {
-      "label": "Notifications"
     }
   },
   "welcome": {

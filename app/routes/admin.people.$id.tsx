@@ -41,7 +41,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { publishStatus } from '#app/lib/status';
 import { Loader2 } from 'lucide-react';
 
 import { CopyableLink } from '#app/components/admin/invite-result';
@@ -160,7 +160,7 @@ export default function AdminPersonPage() {
       setState({ kind: 'forbidden' });
       return;
     }
-    // THE LINK IS SHOWN, never toasted: a toast disappears, and on an instance
+    // THE LINK IS SHOWN, never announced: a status disappears, and on an instance
     // with no mail this link is the only way that person gets back into their
     // account.
     if (outcome.value.link !== null) {
@@ -168,7 +168,7 @@ export default function AdminPersonPage() {
       return;
     }
     setResetLink(null);
-    toast(t('admin.resetMail.sent', { email }));
+    publishStatus({ text: t('admin.resetMail.sent', { email }) });
   }, [id, state, t]);
 
   /** Deletion leaves nothing to show, so the page it was is the list it came from. */
