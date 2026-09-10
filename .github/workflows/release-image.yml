@@ -47,6 +47,104 @@ jobs:
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+  # ── Copy, do not rebuild ───────────────────────────────────────
+  # A coordinated release pushes `main` and then the `v*` tag at the same commit,
+  # and the concurrency group makes the tag run start only after the branch run
+  # has finished or failed. So whatever the branch run published is a SETTLED
+  # fact by the time this runs, never a race, and a registry lookup here is
+  # exact. That is what makes copying safe at all.
+  #
+  # If the commit already has a two platform `sha-` image, the semver tag becomes
+  # a manifest COPY of it: seconds, no layers pushed, no cache exported. Every
+  # other case falls through to the build below and behaves exactly as it does
+  # today: no image, a pruned image, a single platform image, or a copy that
+  # failed. A SINGLE PLATFORM source is never copied, because that would silently
+  # drop `linux/arm64` from the release, and self-hosters on a Raspberry Pi or an
+  # ARM VPS pull that platform.
+  #
+  # Tagging an OLD commit lands here too, and copying is the more faithful answer
+  # than a fresh build: the `sha-` image is what that commit actually produced,
+  # against the base image of that day.
+  #
+  # The source is keyed on the RESOLVED commit, never on `github.sha`, for the
+  # same reason the group is: an annotated tag's `github.sha` is the tag OBJECT,
+  # and no `sha-` image is ever published under it.
+  #
+  # `latest` is untouched. It is emitted only with `enable={{is_default_branch}}`,
+  # so a tag run never moved it and still does not.
+  #
+  # A copy carries the source's OCI labels, whose version says the `sha-` tag.
+  # `--annotation` rewrites that one value on the new index so the semver tag
+  # states its own version.
+  #
+  # This lives at JOB level here, not at step level as it does in
+  # openplate-core, because this workflow builds each platform in a matrix job
+  # of its own. Gating a single step would leave both legs running, and the
+  # second build is the whole thing this removes.
+  reuse:
+    needs: resolve-commit
+    # Tags only. A push to `main` IS the build that a later tag copies.
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+
+    # The plain group, the same one `merge` holds. Without it this job could
+    # read the registry while the branch run's `merge` was still assembling
+    # that commit's manifest list, and the lookup would be a race again, which
+    # is exactly what the queue exists to remove.
+    concurrency:
+      group: release-image-${{ needs.resolve-commit.outputs.sha }}
+      cancel-in-progress: false
+
+    # No build happens here. This is a few registry calls.
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      done: ${{ steps.reuse.outputs.done }}
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Reuse the branch image if it published
+        id: reuse
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          SHA: ${{ needs.resolve-commit.outputs.sha }}
+        run: |
+          set -uo pipefail
+          src="$IMAGE:sha-${SHA:0:7}"
+          version="${GITHUB_REF_NAME#v}"
+          plats=$(docker buildx imagetools inspect "$src" \
+            --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}' 2>/dev/null || true)
+          echo "source $src carries: ${plats:-<no image>}"
+          case "$plats" in
+            *linux/amd64*linux/arm64*|*linux/arm64*linux/amd64*) ;;
+            *)
+              echo "::notice::no two platform image at $src, so this release builds instead"
+              echo "done=false" >> "$GITHUB_OUTPUT"
+              exit 0 ;;
+          esac
+          if docker buildx imagetools create \
+            --annotation "index:org.opencontainers.image.version=$version" \
+            -t "$IMAGE:$version" "$src"; then
+            docker buildx imagetools inspect "$IMAGE:$version"
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::the copy of $src failed, so this release builds instead"
+            echo "done=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # ── One platform per NATIVE runner ─────────────────────────────
   # Until 2026-09-09 this was a single job that built linux/amd64 and
   # linux/arm64 together on an x86 runner, with the arm64 half emulated by
@@ -68,7 +166,21 @@ jobs:
   # production actually pulls. A leg that hangs now costs its own platform and
   # nothing else.
   build:
-    needs: resolve-commit
+    needs:
+      - resolve-commit
+      - reuse
+    # ── Why this is not a plain `needs:` ──────────────────────────
+    # On a push to `main` the `reuse` job above is SKIPPED, and GitHub skips a
+    # dependent job when a job it needs was skipped, UNLESS that dependent's
+    # `if:` uses a status check function. So `!cancelled()` is load bearing: it
+    # is what lets a branch push build at all. Drop it and this repository
+    # stops publishing images entirely, while the file still reads correctly.
+    #
+    # A skipped `reuse` also yields an EMPTY `done`, and empty is not 'true',
+    # so a branch push builds. A `reuse` that ran and copied yields 'true' and
+    # this job is skipped. A `reuse` that ran and FAILED yields empty as well,
+    # so the release falls back to a build rather than publishing nothing.
+    if: ${{ !cancelled() && needs.resolve-commit.result == 'success' && needs.reuse.outputs.done != 'true' }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -232,8 +344,15 @@ jobs:
   merge:
     needs:
       - resolve-commit
+      - reuse
       - build
-    if: ${{ !cancelled() && needs.resolve-commit.result == 'success' }}
+    # `needs.build.result != 'skipped'` is what keeps a COPIED release from
+    # assembling a manifest list out of digests that were never built: with no
+    # artifacts to download the create step would fail and paint a green
+    # release red. On the build path nothing changes, because a matrix job
+    # whose arm64 leg failed reports 'failure', never 'skipped', so amd64 still
+    # publishes exactly as it does today.
+    if: ${{ !cancelled() && needs.resolve-commit.result == 'success' && needs.reuse.outputs.done != 'true' && needs.build.result != 'skipped' }}
     runs-on: ubuntu-latest
 
     # The plain group, without a platform. The branch run and the tag run of one
