@@ -81,6 +81,15 @@ jobs:
   # openplate-core, because this workflow builds each platform in a matrix job
   # of its own. Gating a single step would leave both legs running, and the
   # second build is the whole thing this removes.
+  #
+  # ── Why this job WAITS before it looks ────────────────────────
+  # The group below only covers `merge`. The build legs hold PER PLATFORM
+  # groups of their own, so during the minutes they are compiling the plain
+  # group is EMPTY. In the coordinated case, `main` and then the `v*` tag
+  # seconds later, this job would win that empty group, find no `sha-` image
+  # yet, and hand the release straight back to a full double build, which is
+  # the one case this milestone exists for. So the wait on the sibling run,
+  # not the group, is what turns a coordinated release into a copy.
   reuse:
     needs: resolve-commit
     # Tags only. A push to `main` IS the build that a later tag copies.
@@ -95,11 +104,16 @@ jobs:
       group: release-image-${{ needs.resolve-commit.outputs.sha }}
       cancel-in-progress: false
 
-    # No build happens here. This is a few registry calls.
-    timeout-minutes: 10
+    # This job now sits through a whole sibling build before it looks, so it is
+    # sized for one, not for the few registry calls it then makes. Overrunning
+    # is safe rather than fatal: a timed out `reuse` publishes no `done`, and
+    # `build` reads that as "build", so the release falls back.
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
+      # `gh run list` and `gh run watch` read this workflow's other runs.
+      actions: read
     outputs:
       done: ${{ steps.reuse.outputs.done }}
     steps:
@@ -115,6 +129,34 @@ jobs:
 
       - name: Set lowercase image name
         run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      # `gh` is preinstalled on hosted runners. This job runs NO checkout, so
+      # `gh` has no repository to infer, and `GH_REPO` is what names it.
+      #
+      # A sibling that FAILED must not stop the release, so `--exit-status` is
+      # swallowed: the point is only that the sibling is finished, so the
+      # registry lookup below reads a settled answer either way.
+      - name: Wait for the branch run of this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ needs.resolve-commit.outputs.sha }}
+        run: |
+          set -uo pipefail
+          ids=$(gh run list --workflow "$GITHUB_WORKFLOW" --commit "$SHA" --limit 50 \
+            --json databaseId,status \
+            --jq '.[] | select(.status != "completed") | .databaseId' \
+            | grep -vx "$GITHUB_RUN_ID" || true)
+          if [ -z "$ids" ]; then
+            echo "no other run of $GITHUB_WORKFLOW is open on $SHA"
+            exit 0
+          fi
+          echo "waiting on run ids: $(echo "$ids" | tr '\n' ' ')"
+          for id in $ids; do
+            echo "::group::run $id"
+            gh run watch "$id" --exit-status || true
+            echo "::endgroup::"
+          done
 
       - name: Reuse the branch image if it published
         id: reuse
