@@ -298,6 +298,23 @@ describe('buildDayBudgetRows, the fat row with no derivable reference', () => {
     assert.equal(justOver.target, 10);
   });
 
+  it('keeps the absolute shape when the arithmetic goes negative', () => {
+    // 1200 - 4*100 - 4*250 = -200 kcal, well under zero. The absolute shape stands.
+    // deriveFatReferenceG is not exported, so this is proven through the public
+    // buildDayBudgetRows entry point rather than by calling it directly.
+    const fat = rowFor(buildRows(DAY, { netCarbsCeiling: 100, kcalTarget: 1200, proteinFloor: 250 }), 'fat');
+    assert.equal(fat.target, null);
+    assert.equal(fat.fraction, null);
+    assert.equal(fat.targetSource, 'none');
+    assert.equal(fat.headline, '34.6 g');
+    // The control: raising the kcal target alone clears the same three inputs
+    // into positive territory, so the negative case above is the arithmetic
+    // and not some other missing input.
+    const withHeadroom = rowFor(buildRows(DAY, { netCarbsCeiling: 100, kcalTarget: 3000, proteinFloor: 250 }), 'fat');
+    assert.equal(withHeadroom.targetSource, 'derived');
+    assert.ok(withHeadroom.target !== null && withHeadroom.target > 0);
+  });
+
   it('never fabricates a target for fat, unlike fiber which borrows a reference', () => {
     const rows = buildRows(DAY, { netCarbsCeiling: null, kcalTarget: null, proteinFloor: null });
     const fat = rowFor(rows, 'fat');
