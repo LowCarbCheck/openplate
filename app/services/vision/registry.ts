@@ -29,6 +29,8 @@ import type { AiProviderType } from '#types/enums';
 import {
   ANTHROPIC_KEYS_URL,
   MISTRAL_KEYS_URL,
+  MODELRUNNER_BASE_URL,
+  MODELRUNNER_KEYS_URL,
   OPENROUTER_BASE_URL,
   OPENROUTER_KEYS_URL,
   getOpenrouterAttributionHeaders,
@@ -154,6 +156,25 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     placement: 'primary',
     keyConsoleUrl: MISTRAL_KEYS_URL,
   },
+  modelrunner: {
+    id: 'modelrunner',
+    labelKey: 'settingsAi.provider.modelrunner',
+    authMethods: ['manual'],
+    // Fixed endpoint, reachable straight from the browser: `OPTIONS
+    // /v1/chat/completions` answers `access-control-allow-origin: *` with no
+    // `allow-credentials`, so BYOK needs no proxy and no Anthropic-style
+    // direct-browser-access opt-in — same shape as Mistral above
+    // (live-probed 2026-09-09).
+    baseUrl: MODELRUNNER_BASE_URL,
+    // A REAL key check, and the one place this differs from a guess: every
+    // other path under `/v1` answers 404 without a key (`/v1/nonsense`,
+    // `/v1/models/extra`), while `/v1/models` answers 401 — so the 401 is the
+    // route authenticating, not a catch-all, and a bad key cannot pass.
+    verification: { kind: 'base-url-path', path: '/models' },
+    adapter: 'openai-compatible',
+    placement: 'advanced',
+    keyConsoleUrl: MODELRUNNER_KEYS_URL,
+  },
   'openai-compatible': {
     id: 'openai-compatible',
     labelKey: 'settingsAi.provider.openaiCompatible',
@@ -221,7 +242,7 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
 // const`, and the `satisfies` constraint are a single guarantee, and the
 // milestone's verification greps for them together.
 // prettier-ignore
-export const PROVIDER_IDS = ['openrouter', 'mistral', 'openai-compatible', 'anthropic', 'managed'] as const satisfies readonly AiProviderType[];
+export const PROVIDER_IDS = ['openrouter', 'mistral', 'modelrunner', 'openai-compatible', 'anthropic', 'managed'] as const satisfies readonly AiProviderType[];
 
 /** Compiles only for `never` — the assertion vehicle for the check below. */
 type AssertNever<T extends never> = T;

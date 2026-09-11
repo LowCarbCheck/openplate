@@ -2049,6 +2049,7 @@
   "settingsAi": {
     "advanced": {
       "anthropicOption": "Anthropic direct",
+      "modelrunnerOption": "ModelRunner (one key, models from several labs)",
       "backToRecommended": "← Use {{provider}} instead (recommended)",
       "openaiCompatibleOption": "Self-hosted / local endpoint (Ollama, vLLM, LM Studio...), localhost only on the hosted instance",
       "toggle": "Advanced: use a different provider"
@@ -2057,6 +2058,7 @@
       "label": {
         "anthropic": "Anthropic API key",
         "mistral": "Mistral API key",
+        "modelrunner": "ModelRunner API key",
         "openaiCompatible": "API key (for your endpoint)",
         "openrouter": "OpenRouter API key"
       },
@@ -2117,6 +2119,7 @@
         "google-gemini-3-1-flash-lite": "Cheap and capable, great default for plate photos",
         "google-gemini-3-5-flash-lite": "Default after connecting OpenRouter, picked for privacy, not price: no training on your photos",
         "ministral-14b-2512": "A respectable budget floor, names dishes a bit clumsily",
+        "alibaba-qwen3-8-max": "The only image-capable model here, not yet compared on real plates",
         "ministral-3b-2512": "Cheapest of the family, for simple, clearly separated plates",
         "ministral-8b-2512": "Budget tier with a little more headroom",
         "mistral-large-2512": "Flagship price, weakest plate breakdown of the family",
@@ -2153,6 +2156,7 @@
     "provider": {
       "anthropic": "Anthropic",
       "mistral": "Mistral",
+      "modelrunner": "ModelRunner",
       "openaiCompatible": "Self-hosted / local endpoint",
       "openrouter": "OpenRouter",
       "managed": "This instance"

@@ -11,6 +11,7 @@
  */
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+export const MODELRUNNER_BASE_URL = 'https://queue.modelrunner.run/v1';
 
 /**
  * Where a user mints a key for each provider — the deep links the settings
@@ -19,6 +20,7 @@ export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 export const OPENROUTER_KEYS_URL = 'https://openrouter.ai/settings/keys';
 export const ANTHROPIC_KEYS_URL = 'https://console.anthropic.com/settings/keys';
 export const MISTRAL_KEYS_URL = 'https://console.mistral.ai/api-keys';
+export const MODELRUNNER_KEYS_URL = 'https://modelrunner.ai/settings/api-keys';
 
 /**
  * OpenRouter attribution headers (used for their app rankings/analytics —

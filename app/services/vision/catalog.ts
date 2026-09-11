@@ -193,6 +193,28 @@ export const MODEL_CATALOG: ModelCatalog = {
       recommended: true,
     },
   ],
+  /**
+   * ONE ENTRY, because ModelRunner publishes exactly one chat model that takes
+   * images (its `inputModalities` carry `image`); the rest of its chat catalog
+   * is text-only and would fail a plate scan on the missing input rather than
+   * return a worse answer. Priced from the platform's published per-million
+   * rates, verified against its public catalog on 2026-09-08.
+   *
+   * `recommended` is true because the catalog invariant requires exactly one
+   * recommendation per non-empty list — not because it won a comparison. The
+   * blurb says so; nothing here has been run against real plates.
+   */
+  modelrunner: [
+    {
+      id: 'alibaba/qwen3.8-max',
+      label: 'Qwen3.8-Max',
+      vendor: 'Alibaba',
+      blurb: 'The only image-capable model here — not yet compared on real plates',
+      inPerM: 2,
+      outPerM: 6,
+      recommended: true,
+    },
+  ],
   // Empty on purpose — see the doc comment above.
   'openai-compatible': [],
   managed: [],
