@@ -425,7 +425,8 @@
           "under": "{{day}}, {{value}} von {{goal}} g Eiweiß, Ziel nicht erreicht"
         }
       },
-      "srSummary": "Deine letzten {{total}} Tage, ein Balken pro Tag. Du hast an {{logged}} davon Einträge erfasst. Jeder Balken öffnet diesen Tag im Tagebuch."
+      "srSummary": "Deine letzten {{total}} Tage, ein Balken pro Tag. Du hast an {{logged}} davon Einträge erfasst. Jeder Balken öffnet diesen Tag im Tagebuch.",
+      "srSummaryReadOnly": "Deine letzten {{total}} Tage, ein Balken pro Tag. Du hast an {{logged}} davon Einträge erfasst. Tipp auf die Kachel für deinen Verlauf."
     },
     "title": "Übersicht",
     "today": {
@@ -448,9 +449,9 @@
     "budget": {
       "calories": "Kalorien",
       "grams": "{{value}} g",
-      "gramsLeft": "{{value}} g übrig",
+      "gramsLeft": "noch {{value}} g möglich",
       "gramsOver": "{{value}} g darüber",
-      "left": "{{value}} übrig",
+      "left": "noch {{value}} möglich",
       "over": "{{value}} darüber",
       "progress": "{{consumed}} von {{target}}",
       "progressGrams": "{{consumed}} von {{target}} g",
@@ -485,6 +486,7 @@
     "drilldown": {
       "netCarbsDefinition": "Netto-Kohlenhydrate = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole.",
       "noTarget": "Kein Ziel gesetzt",
+      "derivedTag": "aus deinen Zielen",
       "referenceTag": "Richtwert",
       "referenceTagDateMissing": "Richtwert, errechneten Termin eintragen",
       "referenceTagBirthDateMissing": "Richtwert, Geburtsdatum eintragen",
@@ -520,7 +522,7 @@
       "logged": "{{value}} g eingetragen",
       "overBy": "{{value}} g darüber",
       "reached": "Erreicht",
-      "toGo": "Noch {{value}} g"
+      "toGo": "noch {{value}} g nötig"
     },
     "habit": {
       "logged": "{{date}}, eingetragen",
@@ -2451,6 +2453,7 @@
       },
       "captionIdle": "Wähl einen Tag, um zu sehen, wie er lief.",
       "cell": {
+        "level": "Ziele erreicht: Stufe {{level}} von 4.",
         "logged": "Du hast etwas eingetragen.",
         "metCount": "{{met}} von {{total}} Zielen erreicht",
         "today": "Heute, läuft noch.",

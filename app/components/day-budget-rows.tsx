@@ -131,6 +131,16 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
         <span className={cn('h-2 w-2 shrink-0 rounded-full', fillClass)} aria-hidden="true" />
         <span className="min-w-0">{row.label}</span>
         {row.targetSource === 'default' && <ReferenceTag row={row} />}
+        {/*
+          A DERIVED target is neither a goal the person typed in nor a
+          population reference, so it wears its own footnote saying where the
+          figure came from. Same size and same weight as the reference tag, and
+          never a link: the numbers it is built from are already three separate
+          fields on the targets page, so there is no one place to send anyone.
+        */}
+        {row.targetSource === 'derived' && (
+          <span className={REFERENCE_TAG_CLASS}>{t('diary.drilldown.derivedTag')}</span>
+        )}
       </span>
       <span
         className={cn(

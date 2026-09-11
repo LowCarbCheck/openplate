@@ -12,11 +12,22 @@
  * Nothing is computed twice. The two BUDGET metrics (net carbs, calories) keep
  * their existing remaining-first framings from `#app/components/hero-stat`,
  * and the two FLOOR metrics (protein, fiber) keep theirs from
- * `#app/lib/macro-gaps`. Fat is a third kind of its own: it has no target and
- * no default reference (unlike fiber's), so it is always the day's absolute
- * gram figure with no meter, the same shape net carbs takes when there is no
- * ceiling. This module only decides which rows exist, in what order, and how
- * their two lines of text read.
+ * `#app/lib/macro-gaps`. Fat is a third kind of its own: nobody sets a fat
+ * target and there is no population default to borrow (unlike fiber's), so by
+ * default it is the day's absolute gram figure with no meter, the same shape
+ * net carbs takes when there is no ceiling.
+ *
+ * It gets ONE exception, and only when the person's own numbers already
+ * contain the answer. On a low-carb day fat is what is left of the energy
+ * budget once carbs and protein are paid for, so a person who has set all
+ * three of a kcal target, a net-carb ceiling and a protein floor has already
+ * said what their fat figure is: `(kcal - 4*carbs - 4*protein) / 9`. That is
+ * arithmetic on their targets, not a target invented for them, and it is
+ * labelled `targetSource: 'derived'` so the row can say where it came from.
+ * Any of the three missing, or a result under ten grams, and the absolute
+ * shape stands: a two-gram "budget" is a rounding artefact, not a budget.
+ * This module only decides which rows exist, in what order, and how their two
+ * lines of text read.
  *
  * The rules the two sources already hold apply unchanged:
  *
@@ -25,8 +36,12 @@
  *    target means there is no calorie row at all (`selectGoalRings` decides).
  * 2. **Never a NaN.** A row's `fraction` is null whenever there is nothing
  *    positive to divide against.
- * 3. **Over is amber and factual.** `tone` is the only colour instruction this
- *    module gives, and it never reaches for a destructive tone.
+ * 3. **Over is amber and factual, once per cause.** `tone` is the only colour
+ *    instruction this module gives, and it never reaches for a destructive
+ *    tone. The derived fat row is the one row that stays plain past its
+ *    reference: that reference is the energy the calorie row already guards,
+ *    so colouring both would report one overshoot twice. Its words still say
+ *    "over".
  *
  * Pure and provider free, like the two modules it composes: the translator and
  * the language come in as parameters, so every string below is pinned by a
@@ -41,6 +56,16 @@ import type { DayGaps, MacroGap, MacroGapTargetSource, MissingReferenceDate } fr
 
 /** Which metric a row describes. The array order below is the display order. */
 export type DayBudgetRowKey = 'netCarbs' | 'calories' | 'protein' | 'fat' | 'fiber';
+
+/**
+ * Where a row's target came from.
+ *
+ * `MacroGapTargetSource`'s three answers plus one this module alone can give:
+ * `'derived'`, a figure computed from the person's own targets rather than
+ * read off one of them. Kept local rather than pushed into `macro-gaps`, since
+ * no gap can ever be derived, only a row can.
+ */
+export type DayBudgetTargetSource = MacroGapTargetSource | 'derived';
 
 /** How a row is painted: amber past a ceiling, brand once a floor is reached, plain otherwise. */
 export type DayBudgetRowTone = 'default' | 'over' | 'met';
@@ -66,7 +91,7 @@ export interface DayBudgetRow {
   /** The raw, unclamped figures behind the meter, as the visually hidden `progress` element reports them. */
   consumed: number;
   target: number | null;
-  targetSource: MacroGapTargetSource;
+  targetSource: DayBudgetTargetSource;
   /** True when this row's reference used its no-date fallback (see `MacroGap.referenceDateMissing`). */
   referenceDateMissing: boolean;
   /**
@@ -105,12 +130,19 @@ export interface DayBudgetTotals {
 }
 
 /**
- * The two daily budgets. Protein's floor is deliberately absent: the protein
- * and fiber rows read their targets off `DayGaps`, and a second copy of the
- * same number here would be a second source of truth for it.
+ * The daily budgets a row set needs.
+ *
+ * The protein and fiber ROWS still read their targets off `DayGaps`, never off
+ * this, so there is no second source of truth for what protein's floor means.
+ * `proteinFloor` is here for one unrelated job: it is a term in the fat row's
+ * energy arithmetic (see `deriveFatReferenceG`). A caller that omits it gets
+ * the absolute fat row, which is the same answer as a person who never set a
+ * floor.
  */
 export interface DayBudgetGoals {
   netCarbsCeiling: number | null;
+  /** The protein floor in grams, as the person typed it in, or `null`. Only read by the fat row's derivation. */
+  proteinFloor?: number | null;
   /**
    * The calorie target as it is DISPLAYED and compared against. A caller for a
    * pregnant or breastfeeding person has already added the EFSA energy addition
@@ -287,16 +319,47 @@ function floorRow({
   };
 }
 
+/** Atwater energy factors, in kilocalories per gram, for the fat derivation below. */
+const KCAL_PER_GRAM_CARB = 4;
+const KCAL_PER_GRAM_PROTEIN = 4;
+const KCAL_PER_GRAM_FAT = 9;
+
 /**
- * The fat row: no target and no default reference (unlike fiber's), so it is
- * always the day's absolute gram figure, with no meter and no over/under
- * framing, the same shape net carbs takes when the person has set no
- * ceiling. Reuses that shape's own template (`diary.budget.grams`) rather than
- * inventing a second "N g" wording, and does not animate: there is no goal to
- * count toward, so it is built directly from the totals rather than from a
- * `HeroStat` or a `MacroGap`.
+ * The smallest derived fat reference worth drawing a meter against.
+ *
+ * Below this the three targets are barely consistent with each other, and the
+ * remainder is a rounding artefact of somebody else's arithmetic rather than a
+ * budget anyone set. The row falls back to its absolute shape, which says
+ * nothing false.
  */
-function fatRow({
+const DERIVED_FAT_MINIMUM_G = 10;
+
+/**
+ * Fat as the remainder of the energy budget, in whole grams, or `null` when
+ * the person's targets do not contain the answer.
+ *
+ * Requires ALL THREE inputs. Two of them would mean guessing the third, which
+ * is the one thing this module never does.
+ *
+ * @param goals - the day's budgets.
+ * @returns the derived reference in grams, or `null` to keep the absolute row.
+ */
+function deriveFatReferenceG(goals: DayBudgetGoals): number | null {
+  const proteinFloor = goals.proteinFloor ?? null;
+  if (goals.kcalTarget === null || goals.netCarbsCeiling === null || proteinFloor === null) return null;
+  const fatKcal =
+    goals.kcalTarget - KCAL_PER_GRAM_CARB * goals.netCarbsCeiling - KCAL_PER_GRAM_PROTEIN * proteinFloor;
+  const grams = Math.round(fatKcal / KCAL_PER_GRAM_FAT);
+  return grams >= DERIVED_FAT_MINIMUM_G ? grams : null;
+}
+
+/**
+ * The fat row's absolute shape: the day's gram figure with no meter and no
+ * over/under framing, the same shape net carbs takes when the person has set
+ * no ceiling. Reuses that shape's own template (`diary.budget.grams`) rather
+ * than inventing a second "N g" wording.
+ */
+function absoluteFatRow({
   totals,
   t,
   language,
@@ -323,6 +386,95 @@ function fatRow({
     missingReferenceDate: null,
     srLabel: t('diary.budget.srRowNoTarget', { label, status: headline }),
   };
+}
+
+/**
+ * The fat row against a reference derived from the person's own targets: a
+ * meter and a remaining-first headline, read exactly as the calorie row is.
+ *
+ * Its tone stays `'default'` in both states, and that is deliberate. The
+ * reference IS the energy left over once carbs and protein are paid for, so
+ * eating past it is the same event as eating past the calorie target, and the
+ * calorie row already turns amber for it. Two amber rows for one cause reads
+ * as two problems. The words still say it: the headline is "{{value}} g over"
+ * and the meter is full. There is no "met" state either, because a reference
+ * is not a floor to reach.
+ *
+ * It still does not animate. `AnimatedHeadlines` names two fields, net carbs
+ * and calories, so "fat is tweening" is a state the diary cannot express, and
+ * a `headlineMode` here would invite `formatBudgetHeadline` to render frames
+ * nothing ever asks for.
+ *
+ * @param totals - the day's figures.
+ * @param referenceG - the derived reference in whole grams, already vetted by `deriveFatReferenceG`.
+ * @param t - the caller's translator.
+ * @param language - the active UI language.
+ * @returns the fat row.
+ */
+function referencedFatRow({
+  totals,
+  referenceG,
+  t,
+  language,
+}: {
+  totals: DayBudgetTotals;
+  referenceG: number;
+  t: Translate;
+  language: string | null | undefined;
+}): DayBudgetRow {
+  const label = t('diary.macros.fat');
+  const consumedText = formatMacroNumberIn(language, totals.fat);
+  // Compared at the precision the row DISPLAYS, one decimal, so a day can
+  // never read "0 g over" beside a meter that looks full. The same reason
+  // `carbStat` compares through its shared rounding one module away.
+  const isOver = Math.round(totals.fat * 10) > referenceG * 10;
+  const difference = isOver ? totals.fat - referenceG : Math.max(0, referenceG - totals.fat);
+  const headline = t(isOver ? 'diary.budget.gramsOver' : 'diary.budget.gramsLeft', {
+    value: formatMacroNumberIn(language, difference),
+  });
+  return {
+    key: 'fat',
+    label,
+    headline,
+    headlineNumeric: null,
+    headlineMode: null,
+    // Never 'over': see this function's doc. The calorie row carries that warning.
+    tone: 'default',
+    progressText: t('diary.budget.progressGrams', { consumed: consumedText, target: referenceG }),
+    fraction: budgetFraction(totals.fat, referenceG),
+    consumed: totals.fat,
+    target: referenceG,
+    targetSource: 'derived',
+    referenceDateMissing: false,
+    missingReferenceDate: null,
+    srLabel: t('diary.budget.srRowGrams', {
+      label,
+      consumed: consumedText,
+      target: referenceG,
+      status: headline,
+    }),
+  };
+}
+
+/**
+ * The fat row, in whichever of its two shapes the person's targets earn. See
+ * the module doc for why the derivation exists and why it needs all three
+ * inputs.
+ */
+function fatRow({
+  totals,
+  goals,
+  t,
+  language,
+}: {
+  totals: DayBudgetTotals;
+  goals: DayBudgetGoals;
+  t: Translate;
+  language: string | null | undefined;
+}): DayBudgetRow {
+  const referenceG = deriveFatReferenceG(goals);
+  if (referenceG === null) return absoluteFatRow({ totals, t, language });
+  return referencedFatRow({ totals, referenceG, t, language });
 }
 
 /**
@@ -384,7 +536,7 @@ export function buildDayBudgetRows({ totals, goals, gaps, t, language }: DayBudg
   const missingReferenceDate = goals.missingReferenceDate ?? null;
   rows.push(
     floorRow({ key: 'protein', gap: gaps.protein, missingReferenceDate, t, language }),
-    fatRow({ totals, t, language }),
+    fatRow({ totals, goals, t, language }),
     floorRow({ key: 'fiber', gap: gaps.fiber, missingReferenceDate, t, language }),
   );
   return rows;

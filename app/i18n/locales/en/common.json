@@ -425,7 +425,8 @@
           "under": "{{day}}, {{value}} of {{goal}} g protein, goal not reached"
         }
       },
-      "srSummary": "Your last {{total}} days, one bar per day. You logged on {{logged}} of them. Each bar opens that day in the diary."
+      "srSummary": "Your last {{total}} days, one bar per day. You logged on {{logged}} of them. Each bar opens that day in the diary.",
+      "srSummaryReadOnly": "Your last {{total}} days, one bar per day. You logged on {{logged}} of them. Tap the tile for your progress."
     },
     "title": "Overview",
     "today": {
@@ -460,9 +461,9 @@
     "budget": {
       "calories": "Calories",
       "grams": "{{value}} g",
-      "gramsLeft": "{{value}} g left",
+      "gramsLeft": "up to {{value}} g more",
       "gramsOver": "{{value}} g over",
-      "left": "{{value}} left",
+      "left": "up to {{value}} more",
       "over": "{{value}} over",
       "progress": "{{consumed}} of {{target}}",
       "progressGrams": "{{consumed}} of {{target}} g",
@@ -497,6 +498,7 @@
     "drilldown": {
       "netCarbsDefinition": "Net carbs = carbs minus fiber, minus any sugar alcohols.",
       "noTarget": "No target set",
+      "derivedTag": "from your targets",
       "referenceTag": "reference",
       "referenceTagDateMissing": "reference, add your due date",
       "referenceTagBirthDateMissing": "reference, add the birth date",
@@ -532,7 +534,7 @@
       "logged": "{{value}} g logged",
       "overBy": "Over by {{value}} g",
       "reached": "Reached",
-      "toGo": "{{value}} g to go"
+      "toGo": "{{value}} g still needed"
     },
     "habit": {
       "logged": "{{date}}, logged",
@@ -2480,6 +2482,7 @@
       },
       "captionIdle": "Pick a day to see how it went.",
       "cell": {
+        "level": "Goals met: level {{level}} of 4.",
         "logged": "You logged something.",
         "metCount": "{{met}} of {{total}} goals met",
         "today": "Today, still going.",

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { parseWithZod } from '@conform-to/zod/v4';
 import {
   computeDailyTotalsInRange,
+  getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalFoodLogs,
   listLocalWeightEntries,
@@ -24,6 +25,8 @@ import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
 import { readStoredWeightUnit } from '#app/lib/weight-unit-preference';
 import type { WeightUnit } from '#app/lib/weight-units';
 import { buildAdherenceGrid } from '#app/models/adherence-grid';
+import type { AdherenceGoals } from '#app/models/adherence-grid';
+import { resolveAdherenceGoals } from '#app/lib/adherence-goals';
 import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-days';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { StreakCard } from '#app/components/streak-card';
@@ -190,6 +193,16 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // Selected through the shared seam Overview uses, so the two grids cannot
   // disagree about their window.
   const gridDays = selectAdherenceGridDays({ allLogs, today, weeks: GRID_WEEKS });
+  // The goals those columns are graded against, from the one builder Overview
+  // and the diary's calendar also call: `kcalTarget` carries the reproductive
+  // energy addition, so a pregnant person's day cannot read as met here and
+  // missed there. Resolved in the loader rather than in the component, because
+  // the stage is a store read and the grid is pure arithmetic on its result.
+  const adherenceGoals: AdherenceGoals = resolveAdherenceGoals({
+    goals,
+    bodyMetrics: await getLocalBodyMetrics(),
+    today,
+  }).goals;
 
   // The same 91-day window, ascending — the weight chart's series.
   const weightWindowStart = shiftDate(today, -(WEIGHT_WINDOW_DAYS - 1));
@@ -214,6 +227,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     hasAnyData,
     today,
     gridDays,
+    adherenceGoals,
     weightWindow,
     targetWeightKg: profile?.targetWeightKg ?? null,
     todayWeightKg: weightRows.find((row) => row.dayKey === today)?.weightKg ?? null,
@@ -290,6 +304,7 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     hasAnyData,
     today,
     gridDays,
+    adherenceGoals,
     weightWindow,
     targetWeightKg,
     todayWeightKg,
@@ -301,14 +316,6 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
   const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
   const { t } = useTranslation();
 
-  const adherenceGoals = useMemo(
-    () => ({
-      netCarbsCeilingG: goals.netCarbsCeiling,
-      proteinFloorG: goals.proteinFloor,
-      kcalTarget: goals.kcalTarget,
-    }),
-    [goals.netCarbsCeiling, goals.proteinFloor, goals.kcalTarget],
-  );
   const adherenceGrid = useMemo(
     () => buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals }),
     [today, gridDays, adherenceGoals],

@@ -209,13 +209,22 @@
        ~2.4:1 on a white card — nowhere near AA — so the light theme uses a
        dark ochre instead, and only the dark theme gets the bright value.
 
-       `--macro-fat` is a FILL color for a ratio-bar segment and a 2px legend
-       rule — it never carries text, so it only has to clear the 3:1 that
-       non-text graphics need, and it's free to keep a brighter, warmer amber
-       than `--accent-amber` can afford. That's the whole reason the two are
-       separate tokens rather than one: same family, different jobs, different
-       contrast floors. `--macro-carbs` is likewise independent of
-       `--primary`.
+       The `--macro-*` family left amber and red entirely in M216. A person
+       read the old coral protein as "red, something is wrong" and the old
+       amber fat as a warning, and neither was saying that: a macro swatch
+       names a nutrient, it never grades a day. Protein is orange and fat is
+       plum now, the assignment most food trackers already share, and amber
+       is left to mean one thing in this product, over a ceiling. The two
+       tokens are still their own tokens, and that is why the move cost one
+       line each: an accent retune must never silently recolor a macro.
+       `--macro-carbs` is likewise independent of `--primary`.
+
+       All four macro fills are picked as if they carried text, which is a
+       tighter floor than a fill needs and is what keeps a swatch legible
+       beside a small uppercase label. Protein, fat and fiber clear AA (4.5:1)
+       against their own theme's `--card`; `--macro-carbs` is the mark teal,
+       frozen by `openplate-brand`, and sits at 3.40:1 on white, which is a
+       brand question for a person rather than a value to nudge here.
 
        WARNING SURFACES — the offline banner, the backup nudge, the scan
        double-check note, `Badge`/`Alert` variant="warning" — need a WASH and a
@@ -227,8 +236,8 @@
        the values the Tailwind literals they replaced actually rendered
        (`amber-50`/`amber-100` and `amber-500/40` in light, `amber-900/20` and
        the same border over the dark surface). Same family, three jobs, three
-       contrast floors — the identical argument that already separates
-       `--accent-amber` from `--macro-fat`.
+       contrast floors, the identical argument that separates a fill token
+       from a text token everywhere else in this block.
 
        Only `--accent-amber` ever carries text or a stroke that must be read;
        the other two are decorative and only have to stay distinguishable from
@@ -245,8 +254,8 @@
     --accent-amber-surface: 48 96% 92%; /* pale warm wash behind that text */
     --accent-amber-border: 38 92% 78%; /* golden hairline around it */
     --macro-carbs: 181 93% 32%; /* brand teal, #069A9D */
-    --macro-protein: 349 66% 50%; /* coral, darkened for AA as light-theme text */
-    --macro-fat: 36 95% 38%; /* amber, darkened for a legible 2px rule on white */
+    --macro-protein: 26 90% 36%; /* orange, darkened for AA as light-theme text (5.27:1 on white) */
+    --macro-fat: 283 55% 44%; /* plum, darkened for AA as light-theme text (6.62:1 on white) */
     --macro-fiber: 125 34% 38%; /* sage */
 
     /* Goal-adherence grid ramp (Progress page). A SEQUENTIAL ramp: one hue,
@@ -300,14 +309,15 @@
     /* Dark-theme values for the accent/macro tokens. `--accent-amber` flips
        to the bright amber here — it's a text/stroke color, and on a 4.5%-L
        surface the bright value is the ACCESSIBLE one (~10:1) while the light
-       theme's dark ochre would be unreadable. The macro fills lift a little
-       for the same reason the surfaces darkened. */
+       theme's dark ochre would be unreadable. The macro fills lift here for
+       the same reason, and keep the light theme's hues: a macro does not
+       change identity between themes. */
     --accent-amber: 38 94% 62%;
     --accent-amber-surface: 24 30% 10%; /* deep warm wash — the dark-theme counterpart */
     --accent-amber-border: 38 70% 26%;
     --macro-carbs: 172 70% 52%;
-    --macro-protein: 349 82% 70%;
-    --macro-fat: 38 94% 62%;
+    --macro-protein: 30 95% 65%; /* orange, lifted for AA on the dark card (9.19:1) */
+    --macro-fat: 283 80% 76%; /* plum, lifted for AA on the dark card (7.97:1) */
     --macro-fiber: 125 34% 62%;
     /* Dark ramp — SELECTED, not flipped. Steps were re-chosen against the dark
        `--card` (#101718) and re-validated there: monotone L, adjacent ΔL

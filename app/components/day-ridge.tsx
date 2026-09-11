@@ -24,6 +24,16 @@
  * lines and spent 40 px of the 164, which would have left the chart 22 px to
  * draw in. It is still a real link to the same place, and it keeps the label as
  * its `aria-label`, so nothing is lost to a screen reader (same decision).
+ *
+ * `interactive` (default true, same shape `AdherenceGrid` takes) exists because
+ * `dashboard.tsx`'s `WeekGlanceCard` wraps this WHOLE tile in its own `Link` to
+ * `/trends`; a per-day `<a>` nested inside that outer `<a>` is invalid HTML and
+ * silently swallows both taps. `interactive={false}` swaps each bar's `Link`
+ * for a plain `<span>` and moves its screen-reader sentence onto an `sr-only`
+ * sibling, exactly as `adherence-grid.tsx`'s read-only cell does. The intro
+ * sentence changes too: `dashboard.ridge.srSummary` promises "each bar opens
+ * that day", which stops being true, so a read-only render uses the sibling key
+ * `dashboard.ridge.srSummaryReadOnly` instead (2026-09-11).
  */
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
@@ -115,7 +125,16 @@ function ridgeDayLabel({
   });
 }
 
-export function DayRidge({ ridge, emptyLabel }: { ridge: DayRidgeModel; emptyLabel: string }): ReactElement {
+export function DayRidge({
+  ridge,
+  emptyLabel,
+  interactive = true,
+}: {
+  ridge: DayRidgeModel;
+  emptyLabel: string;
+  /** Default true. Pass false where the ridge sits inside a link (see the header comment). */
+  interactive?: boolean;
+}): ReactElement {
   const { t, i18n } = useTranslation();
   const locale = dateLabelLocale(i18n.language);
 
@@ -142,7 +161,10 @@ export function DayRidge({ ridge, emptyLabel }: { ridge: DayRidgeModel; emptyLab
       <p className="sr-only">
         {ridge.loggedDayCount === 0 ?
           emptyLabel
-        : t('dashboard.ridge.srSummary', { logged: ridge.loggedDayCount, total: ridge.days.length })}
+        : t(interactive ? 'dashboard.ridge.srSummary' : 'dashboard.ridge.srSummaryReadOnly', {
+            logged: ridge.loggedDayCount,
+            total: ridge.days.length,
+          })}
       </p>
       <p
         aria-hidden="true"
@@ -156,24 +178,40 @@ export function DayRidge({ ridge, emptyLabel }: { ridge: DayRidgeModel; emptyLab
         {ridge.metric !== null && (
           <span aria-hidden="true" className="absolute inset-x-0 h-px bg-border" style={{ bottom: RULE_HEIGHT_PX }} />
         )}
-        {ridge.days.map((day) => (
-          <Link
-            key={day.date}
-            to={`/diary?date=${day.date}`}
-            aria-label={ridgeDayLabel({ day, ridge, dayLabel: spokenDay.format(utcInstant(day.date)), t })}
-            aria-current={day.isToday ? 'date' : undefined}
-            className="flex h-full flex-1 items-end justify-center"
-          >
-            <span
-              className={cn(
-                'block w-full rounded-t-sm transition-colors',
-                RIDGE_BAR_CLASS[day.state],
-                day.isToday && 'ring-2 ring-primary/40 ring-offset-1 ring-offset-background',
-              )}
-              style={{ height: barHeightPx(day) }}
-            />
-          </Link>
-        ))}
+        {ridge.days.map((day) => {
+          const label = ridgeDayLabel({ day, ridge, dayLabel: spokenDay.format(utcInstant(day.date)), t });
+          const barClassName = cn(
+            'block w-full rounded-t-sm transition-colors',
+            RIDGE_BAR_CLASS[day.state],
+            day.isToday && 'ring-2 ring-primary/40 ring-offset-1 ring-offset-background',
+          );
+
+          // Read-only: the same paint and the same screen-reader sentence, with
+          // no tab stop and no link. A `<span>` needs a role to carry
+          // `aria-label` (oxlint's `jsx-a11y(prefer-tag-over-role)` rejects
+          // `role="img"` on a decorative bar), so the sentence rides an
+          // `sr-only` sibling instead, exactly as `adherence-grid.tsx` does.
+          if (!interactive) {
+            return (
+              <span key={day.date} className="flex h-full flex-1 items-end justify-center">
+                <span aria-hidden="true" className={barClassName} style={{ height: barHeightPx(day) }} />
+                <span className="sr-only">{label}</span>
+              </span>
+            );
+          }
+
+          return (
+            <Link
+              key={day.date}
+              to={`/diary?date=${day.date}`}
+              aria-label={label}
+              aria-current={day.isToday ? 'date' : undefined}
+              className="flex h-full flex-1 items-end justify-center"
+            >
+              <span className={barClassName} style={{ height: barHeightPx(day) }} />
+            </Link>
+          );
+        })}
       </div>
       <div
         aria-hidden="true"

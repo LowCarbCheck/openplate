@@ -5,14 +5,16 @@
  * Three properties are pinned here, all of them the reason the rings went:
  *
  * 1. **Every row is named and worded.** A ring said "24.9" and left the rest to
- *    a circle; a row says "24.9 g left" and "25.1 of 50 g". The exact strings
+ *    a circle; a row says "up to 24.9 g more" and "25.1 of 50 g". The exact strings
  *    are asserted against the SHIPPED English catalog, so a renamed key fails
  *    here rather than rendering `diary.budget.gramsLeft` to a user.
  * 2. **Nothing is invented.** No ceiling means no meter and no target; no
  *    calorie target means no calorie row at all. There is never a NaN.
- * 3. **Over is amber and clamped.** A day past its ceiling reports `tone:
- *    'over'` with a full meter, while the `progress` element still carries the
- *    real, unclamped figures.
+ * 3. **Over is amber and clamped, once per cause.** A day past its ceiling
+ *    reports `tone: 'over'` with a full meter, while the `progress` element
+ *    still carries the real, unclamped figures. The derived fat row is the one
+ *    exception and stays plain, because its reference is the same energy the
+ *    calorie row already guards; the control below proves that row still turns.
  *
  * The rendering test at the bottom is the one visual claim worth pinning: the
  * over-goal treatment is amber and never `--destructive`, and the colour cue
@@ -20,6 +22,8 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -78,6 +82,7 @@ function buildRows(totals: DayTotals, goals: DayGoals, hasEstimates = false): Da
     goals: {
       netCarbsCeiling: goals.netCarbsCeiling,
       kcalTarget: goals.kcalTarget,
+      proteinFloor: goals.proteinFloor,
       missingReferenceDate: goals.missingReferenceDate ?? null,
     },
     gaps,
@@ -108,21 +113,21 @@ describe('buildDayBudgetRows, both budgets set', () => {
     const rows = buildRows(DAY, BOTH_GOALS);
     const netCarbs = rowFor(rows, 'netCarbs');
     assert.equal(netCarbs.label, 'Net carbs');
-    assert.equal(netCarbs.headline, '24.9 g left');
+    assert.equal(netCarbs.headline, 'up to 24.9 g more');
     assert.equal(netCarbs.progressText, '25.1 of 50 g');
     assert.equal(netCarbs.tone, 'default');
     assert.equal(netCarbs.targetSource, 'goal');
 
     const calories = rowFor(rows, 'calories');
     assert.equal(calories.label, 'Calories');
-    assert.equal(calories.headline, '901 left');
+    assert.equal(calories.headline, 'up to 901 more');
     assert.equal(calories.progressText, '899 of 1800');
   });
 
   it('hedges both budget headlines when the day includes AI estimates', () => {
     const rows = buildRows(DAY, BOTH_GOALS, true);
-    assert.equal(rowFor(rows, 'netCarbs').headline, '~24.9 g left');
-    assert.equal(rowFor(rows, 'calories').headline, '~901 left');
+    assert.equal(rowFor(rows, 'netCarbs').headline, 'up to ~24.9 g more');
+    assert.equal(rowFor(rows, 'calories').headline, 'up to ~901 more');
   });
 
   it('carries the raw figures and a clamped fraction for the meter', () => {
@@ -146,7 +151,7 @@ describe('buildDayBudgetRows, only a carb ceiling', () => {
       rows.map((row) => row.key),
       ['netCarbs', 'protein', 'fat', 'fiber'],
     );
-    assert.equal(rowFor(rows, 'netCarbs').headline, '24.9 g left');
+    assert.equal(rowFor(rows, 'netCarbs').headline, 'up to 24.9 g more');
   });
 
   it('refuses a non-positive calorie target, which is not a goal', () => {
@@ -192,7 +197,7 @@ describe('buildDayBudgetRows, no goals at all', () => {
     const fiber = rowFor(buildRows(DAY, NO_GOALS), 'fiber');
     assert.equal(fiber.target, 25);
     assert.equal(fiber.targetSource, 'default');
-    assert.equal(fiber.headline, '12 g to go');
+    assert.equal(fiber.headline, '12 g still needed');
     assert.equal(fiber.progressText, '13 of 25 g');
   });
 
@@ -241,9 +246,12 @@ describe('buildDayBudgetRows, a floor that is reached', () => {
   });
 });
 
-describe('buildDayBudgetRows, the fat row', () => {
+describe('buildDayBudgetRows, the fat row with no derivable reference', () => {
+  /** All three inputs are needed; this day has a ceiling and a target but no protein floor. */
+  const NO_FLOOR = { netCarbsCeiling: 50, kcalTarget: 1800, proteinFloor: null };
+
   it('sits between protein and fiber, with no target and the absolute gram figure alone', () => {
-    const rows = buildRows(DAY, BOTH_GOALS);
+    const rows = buildRows(DAY, NO_FLOOR);
     assert.equal(rows[3].key, 'fat');
     const fat = rowFor(rows, 'fat');
     assert.equal(fat.label, 'Fat');
@@ -257,6 +265,39 @@ describe('buildDayBudgetRows, the fat row', () => {
     assert.equal(fat.srLabel, 'Fat: 34.6 g.');
   });
 
+  it('needs all three targets, so a missing protein floor keeps the absolute shape', () => {
+    const fat = rowFor(buildRows(DAY, NO_FLOOR), 'fat');
+    assert.equal(fat.target, null);
+    assert.equal(fat.targetSource, 'none');
+    // The control: the SAME day with a floor added does derive one, so the
+    // assertion above is about the missing input and not about fat in general.
+    const withFloor = rowFor(buildRows(DAY, { ...NO_FLOOR, proteinFloor: 90 }), 'fat');
+    assert.equal(withFloor.targetSource, 'derived');
+  });
+
+  it('needs a kcal target too, and a ceiling too', () => {
+    for (const goals of [
+      { netCarbsCeiling: 50, kcalTarget: null, proteinFloor: 90 },
+      { netCarbsCeiling: null, kcalTarget: 1800, proteinFloor: 90 },
+    ]) {
+      const fat = rowFor(buildRows(DAY, goals), 'fat');
+      assert.equal(fat.targetSource, 'none', `${JSON.stringify(goals)} must not derive a fat reference`);
+      assert.equal(fat.target, null);
+    }
+  });
+
+  it('refuses a remainder under ten grams, which is a rounding artefact and not a budget', () => {
+    // 700 - 4*30 - 4*130 = 60 kcal, 7 g of fat. Under the floor, so no meter.
+    const fat = rowFor(buildRows(DAY, { netCarbsCeiling: 30, kcalTarget: 700, proteinFloor: 130 }), 'fat');
+    assert.equal(fat.targetSource, 'none');
+    assert.equal(fat.target, null);
+    assert.equal(fat.headline, '34.6 g');
+    // The control: 30 more kcal clears ten grams and the row changes shape.
+    const justOver = rowFor(buildRows(DAY, { netCarbsCeiling: 30, kcalTarget: 730, proteinFloor: 130 }), 'fat');
+    assert.equal(justOver.targetSource, 'derived');
+    assert.equal(justOver.target, 10);
+  });
+
   it('never fabricates a target for fat, unlike fiber which borrows a reference', () => {
     const rows = buildRows(DAY, { netCarbsCeiling: null, kcalTarget: null, proteinFloor: null });
     const fat = rowFor(rows, 'fat');
@@ -268,17 +309,83 @@ describe('buildDayBudgetRows, the fat row', () => {
   });
 
   it('does not animate, there is no single figure to count toward', () => {
-    const fat = rowFor(buildRows(DAY, BOTH_GOALS), 'fat');
+    const fat = rowFor(buildRows(DAY, NO_FLOOR), 'fat');
     assert.equal(fat.headlineNumeric, null);
     assert.equal(fat.headlineMode, null);
   });
 
   it("returns fat's settled headline unchanged from formatBudgetHeadline, because it does not animate", () => {
-    const fat = rowFor(buildRows(DAY, BOTH_GOALS), 'fat');
+    const fat = rowFor(buildRows(DAY, NO_FLOOR), 'fat');
     assert.equal(
       formatBudgetHeadline({ row: fat, numericValue: 999, hasEstimates: false, language: 'en', t }),
       '34.6 g',
     );
+  });
+});
+
+/**
+ * The M216 derivation: fat is what is left of the energy budget once carbs and
+ * protein are paid for. It is arithmetic on figures the person set, never a
+ * target invented for them, which is why all three inputs are mandatory.
+ */
+describe('buildDayBudgetRows, the fat row against a derived reference', () => {
+  it('reads like the calorie row once all three targets are set', () => {
+    const fat = rowFor(buildRows(DAY, BOTH_GOALS), 'fat');
+    // 1800 - 4*50 - 4*90 = 1240 kcal, 137.8 g, rounded to a whole gram.
+    assert.equal(fat.target, 138);
+    assert.equal(fat.targetSource, 'derived');
+    assert.equal(fat.headline, 'up to 103.4 g more');
+    assert.equal(fat.progressText, '34.6 of 138 g');
+    assert.equal(fat.tone, 'default');
+    assert.ok(fat.fraction !== null && Math.abs(fat.fraction - 34.6 / 138) < 1e-9);
+    assert.equal(fat.srLabel, 'Fat: 34.6 of 138 g. up to 103.4 g more.');
+  });
+
+  it('derives 133 g from a 1800 kcal, 30 g carb, 120 g protein day', () => {
+    // 1800 - 4*30 - 4*120 = 1200 kcal, exactly 133.3 g, rounded down to 133.
+    const fat = rowFor(buildRows(DAY, { netCarbsCeiling: 30, kcalTarget: 1800, proteinFloor: 120 }), 'fat');
+    assert.equal(fat.target, 133);
+    assert.equal(fat.targetSource, 'derived');
+  });
+
+  it('says over in words but stays plain, because the calorie row carries that warning', () => {
+    const fat = rowFor(buildRows({ ...DAY, fat: 150 }, BOTH_GOALS), 'fat');
+    assert.equal(fat.tone, 'default');
+    assert.equal(fat.headline, '12 g over');
+    assert.equal(fat.fraction, 1);
+    // The meter clamps; the reported figures do not.
+    assert.equal(fat.consumed, 150);
+    assert.equal(fat.target, 138);
+    assert.doesNotMatch(fat.headline, /-\d/);
+  });
+
+  it('never reads as met either, a reference is not a floor', () => {
+    const fat = rowFor(buildRows({ ...DAY, fat: 150 }, BOTH_GOALS), 'fat');
+    assert.notEqual(fat.tone, 'met');
+  });
+
+  /**
+   * The control for the two assertions above. A `tone` of `'default'` would be
+   * vacuous if no row in this module could reach `'over'` at all: the calorie
+   * row is the one that must, and past its target on the very same day it does.
+   * That is also the reason fat does not, one cause, one amber row.
+   */
+  it('CONTROL: the calorie row does go amber on a day past the calorie target', () => {
+    const rows = buildRows({ ...DAY, kcal: 2000, fat: 150 }, BOTH_GOALS);
+    assert.equal(rowFor(rows, 'calories').tone, 'over');
+    assert.equal(rowFor(rows, 'fat').tone, 'default');
+  });
+
+  it('stays default exactly at the reference, because a reference is not a floor to reach', () => {
+    const fat = rowFor(buildRows({ ...DAY, fat: 138 }, BOTH_GOALS), 'fat');
+    assert.equal(fat.tone, 'default');
+    assert.equal(fat.headline, 'up to 0 g more');
+  });
+
+  it('still does not animate, because AnimatedHeadlines names only the two budgets', () => {
+    const fat = rowFor(buildRows(DAY, BOTH_GOALS), 'fat');
+    assert.equal(fat.headlineNumeric, null);
+    assert.equal(fat.headlineMode, null);
   });
 });
 
@@ -389,4 +496,36 @@ describe('DayBudgetRows rendering', () => {
     assert.equal(html.match(/>reference</g)?.length, 1);
     assert.ok(!html.includes('/settings/life-phase'));
   });
+});
+
+/**
+ * A source-position check on the two routes that build these rows.
+ *
+ * `DayBudgetGoals.proteinFloor` is OPTIONAL, so a call site that forgets it
+ * still typechecks and still renders, it just silently loses the derived fat
+ * row, which is a screen quietly disagreeing with its sibling rather than a
+ * failure anyone sees. The type cannot catch that; this can.
+ *
+ * Control: the diary route at HEAD passes no `proteinFloor` into
+ * `buildDayBudgetRows`. Run, from a shell and never inside this test,
+ * `git show HEAD:app/routes/diary.tsx | grep -A 12 'buildDayBudgetRows({'`
+ * and read the `goals:` block, it carries two of the three terms. The grep
+ * must be scoped that way: the route's `computeDayGaps` call a few lines
+ * above passes `proteinFloor: goals.proteinFloor` and always did, which is
+ * exactly why this test slices the call rather than searching the file.
+ */
+describe('the routes that build these rows pass all three fat terms', () => {
+  for (const file of ['dashboard.tsx', 'diary.tsx']) {
+    it(`${file} passes proteinFloor into buildDayBudgetRows`, () => {
+      const source = readFileSync(fileURLToPath(new URL(`../../app/routes/${file}`, import.meta.url)), 'utf8');
+      const callIndex = source.indexOf('buildDayBudgetRows({');
+      assert.notEqual(callIndex, -1, `sanity: ${file} still calls buildDayBudgetRows`);
+      const call = source.slice(callIndex, callIndex + 600);
+      assert.match(call, /proteinFloor: goals\.proteinFloor/, `${file} loses the derived fat row without it`);
+      // The other two terms of the same arithmetic, so this reads as one claim
+      // about the derivation rather than one about a single property name.
+      assert.match(call, /netCarbsCeiling: goals\.netCarbsCeiling/);
+      assert.match(call, /kcalTarget: goals\.kcalTarget/);
+    });
+  }
 });

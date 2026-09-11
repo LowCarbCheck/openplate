@@ -55,12 +55,11 @@ import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
 import { effectiveEatingStyle, lensForStyle } from '#app/lib/eating-style';
 import type { EatingStyleLens } from '#app/lib/eating-style';
 import {
-  computeReferenceKcalAddition,
   computeReferenceProteinFloor,
   selectLatestWeighInKg,
   selectMissingReferenceDate,
 } from '#app/models/body-metrics';
-import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
+import { resolveAdherenceGoals } from '#app/lib/adherence-goals';
 import type { MissingReferenceDate } from '#app/lib/macro-gaps';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { fromKg, roundWeightForDisplay, formatKgForDisplay } from '#app/lib/weight-units';
@@ -250,37 +249,25 @@ export async function clientLoader(): Promise<DashboardData> {
   // it is. With no date on file both resolvers answer null and the references
   // fall back to the largest figure for the status, which is what they did
   // before a date could be recorded at all.
-  const stage = {
-    reproductiveStatus: bodyMetrics.reproductiveStatus,
-    trimester: resolveGestation({ dueDate: bodyMetrics.pregnancyDueDate, today })?.trimester ?? null,
-    lactationMonths: resolveLactationMonths({ startDate: bodyMetrics.lactationStartDate, today }),
-  };
+  // The energy addition lands on the target the person TYPED IN, and only when
+  // they typed one. Nothing is written back: `goalKcalTarget` in the store is
+  // still their own figure. The resolved stage comes back with it, so the
+  // protein reference below reads the same stage the calories did.
+  const { goals: adherenceGoals, stage, kcalTarget } = resolveAdherenceGoals({ goals, bodyMetrics, today });
   const proteinReferenceG = computeReferenceProteinFloor({
     ...stage,
     latestWeighInKg: selectLatestWeighInKg(weightEntries),
     heightCm: bodyMetrics.heightCm,
     biologicalSex: bodyMetrics.biologicalSex,
   }).grams;
-  // The energy addition lands on the target the person TYPED IN, and only when
-  // they typed one. Nothing is written back: `goalKcalTarget` in the store is
-  // still their own figure.
-  const kcalAddition = computeReferenceKcalAddition(stage);
-  const kcalTarget =
-    goals.kcalTarget === null || kcalAddition === null ? goals.kcalTarget : goals.kcalTarget + kcalAddition;
 
   // The grid's own window: 13 whole Monday to Sunday columns, selected through
   // the seam `/trends` uses so the two screens agree day for day.
   const gridDays = selectAdherenceGridDays({ allLogs, today, weeks: GRID_WEEKS });
-  // The goals the grid grades against. `kcalTarget` here is the DISPLAYED one,
-  // reproductive addition included, so the squares agree with the budget rows
-  // above them. `/trends` passes the raw stored figure instead, so somebody
-  // pregnant or lactating can see a darker square here than there; being
-  // consistent with this page's own rows is the louder claim.
-  const adherenceGoals: AdherenceGoals = {
-    netCarbsCeilingG: goals.netCarbsCeiling,
-    proteinFloorG: goals.proteinFloor,
-    kcalTarget,
-  };
+  // The goals the grid grades against come from `resolveAdherenceGoals` above:
+  // `kcalTarget` is the DISPLAYED one, reproductive addition included, so the
+  // squares agree with the budget rows above them. `/trends` and the diary's
+  // calendar call the same builder, so one day carries one verdict everywhere.
 
   // The streak, off the `allLogs` this loader already read, so the card costs
   // no second store pass (`StreakCard` on `/trends` reads the store itself from
@@ -404,6 +391,7 @@ function TodayHeroCard({
     goals: {
       netCarbsCeiling: goals.netCarbsCeiling,
       kcalTarget: goals.kcalTarget,
+      proteinFloor: goals.proteinFloor,
       missingReferenceDate: goals.proteinReferenceMissingDate,
     },
     gaps,
@@ -470,6 +458,12 @@ function TodayHeroCard({
  * chart needs to draw in. The arrow stays as a plain, decorative span, the
  * card's own title and content already name the link, so it carries no
  * `aria-label` of its own. See `day-ridge.tsx` for the full arithmetic.
+ *
+ * The ridge itself renders `interactive={false}`: it used to draw a `Link`
+ * per bar into that day's diary, nested inside this tile's own `Link` to
+ * `/trends`, which React warned about as `<a>` inside `<a>` and which
+ * silently swallowed both taps. Read-only, each bar keeps its screen-reader
+ * sentence on an `sr-only` span instead (2026-09-11).
  */
 function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
   const { t } = useTranslation();
@@ -487,7 +481,7 @@ function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
           </span>
         </CardHeader>
         <CardContent className={GLANCE_CONTENT_CLASS}>
-          <DayRidge ridge={ridge} emptyLabel={t('dashboard.week.empty')} />
+          <DayRidge ridge={ridge} emptyLabel={t('dashboard.week.empty')} interactive={false} />
         </CardContent>
       </Card>
     </Link>

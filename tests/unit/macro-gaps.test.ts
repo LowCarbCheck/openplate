@@ -429,7 +429,7 @@ describe('describeGap', () => {
     computeDayGaps({ totals, goals: { netCarbsCeiling: 50, proteinFloor: 100 }, t });
 
   it('phrases an unmet floor as grams to go', () => {
-    assert.equal(describeGap(gapsFor({ netCarbs: 20, protein: 46, fiber: 10 }).protein, formatMacroNumber, t), '54 g to go');
+    assert.equal(describeGap(gapsFor({ netCarbs: 20, protein: 46, fiber: 10 }).protein, formatMacroNumber, t), '54 g still needed');
   });
 
   it('phrases a met floor without a number', () => {

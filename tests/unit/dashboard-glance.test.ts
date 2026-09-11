@@ -40,6 +40,16 @@ const streakGridCardSource = readFileSync(
   'utf8',
 );
 
+/**
+ * The ridge component's own source. `assertWholeCardIsOneLinkToTrends` below
+ * only ever reads `dashboardSource`, so it cannot see a `<Link>` this file
+ * renders per day; that gap is exactly how React's "`<a>` cannot be a
+ * descendant of `<a>`" warning shipped in 0.28.0 with a green suite. The
+ * render-based proof lives in `day-ridge.test.ts`; this file adds the source
+ * check that the dashboard actually asks for the read-only render.
+ */
+const dayRidgeSource = readFileSync(fileURLToPath(new URL('../../app/components/day-ridge.tsx', import.meta.url)), 'utf8');
+
 /** The body of the page component, where the module order is decided. */
 function pageBodySource(): string {
   const start = dashboardSource.indexOf('export default function Dashboard');
@@ -201,6 +211,34 @@ describe('the week glance tile draws the budget ridge', () => {
     // all any more, while `/diary` still ships it.
     assert.ok(!dashboardSource.includes("from '#app/components/habit-strip'"));
     assert.ok(dashboardSource.includes("from '#app/components/day-ridge'"));
+  });
+
+  it('renders the ridge read-only, so no per-day link nests inside the tile link', () => {
+    const card = weekGlanceCardSource();
+
+    assert.match(
+      card,
+      /<DayRidge ridge=\{ridge\} emptyLabel=\{t\('dashboard\.week\.empty'\)\} interactive=\{false\} \/>/,
+      'the ridge must render read-only inside the whole-tile link to /trends',
+    );
+  });
+
+  it('the ridge component itself draws a per-day span, never a Link, once interactive is false', () => {
+    // Control for the assertion above: passing `interactive={false}` from the
+    // dashboard is worthless if the ridge ignores the prop and links every bar
+    // regardless, the previous version of this suite asserted "exactly one
+    // <Link>" without ever reading this file, so it could not have failed
+    // against a ridge that draws its own links underneath a correct dashboard.
+    const guardAt = dayRidgeSource.indexOf('if (!interactive) {');
+    const spanAt = dayRidgeSource.indexOf('<span key={day.date}');
+    const linkAt = dayRidgeSource.indexOf('<Link', guardAt);
+
+    assert.notEqual(guardAt, -1, 'the ridge must still branch per day on interactive');
+    assert.ok(spanAt > guardAt, "the read-only span must sit inside the interactive guard, not before it");
+    assert.ok(linkAt > spanAt, 'the Link must sit in the branch taken only when interactive is true');
+    // The read-only branch runs from the guard to the Link fallback; no Link
+    // may appear anywhere inside it.
+    assert.doesNotMatch(dayRidgeSource.slice(guardAt, linkAt), /<Link\b/, 'the read-only branch must never render a Link');
   });
 
   it('moved the handoff to /trends off the header arrow and onto the whole tile', () => {

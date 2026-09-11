@@ -26,13 +26,12 @@ import { cn } from '#app/lib/utils';
 import { dateLabelLocale } from '#app/i18n/date-locale';
 import { describeAdherenceDay, type AdherenceDayDescription } from '#app/lib/adherence-message';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#app/components/ui/tooltip';
+import { fillClassForDay } from '#app/lib/adherence-cell-fill';
 import type {
   AdherenceDay,
   AdherenceGoals,
   AdherenceGrid as AdherenceGridModel,
-  AdherenceLevel,
   AdherenceMode,
-  AdherenceStatus,
 } from '#app/models/adherence-grid';
 
 /** Days in a Monday→Sunday week — one grid row each. */
@@ -45,30 +44,6 @@ const REFERENCE_MONDAY_UTC = Date.UTC(2024, 0, 1);
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Hover delay before a cell's tooltip opens — short enough to feel like a readout, long enough not to strobe on a sweep. */
 const TOOLTIP_DELAY_MS = 80;
-
-/**
- * The one place a cell state becomes a class. Tokens only — no literals.
- *
- * `activity` mode paints every logged day at step 4 deliberately: with no goal
- * configured there is no magnitude to encode, so it is a nominal one-series
- * fill (the same two-state teal the habit strip uses), not a ramp.
- */
-const CELL_FILL = {
-  'no-data': 'bg-adherence-empty',
-  unrated: 'bg-adherence-unrated',
-  logged: 'bg-adherence-4',
-  rated: 'bg-adherence-empty', // unreachable — `rated` always resolves via level
-  'rated-1': 'bg-adherence-1',
-  'rated-2': 'bg-adherence-2',
-  'rated-3': 'bg-adherence-3',
-  'rated-4': 'bg-adherence-4',
-} satisfies Record<AdherenceStatus | `rated-${AdherenceLevel}`, string>;
-
-/** The paint class for one resolved cell. */
-function fillClass(day: AdherenceDay): string {
-  if (day.status === 'rated' && day.level !== null) return CELL_FILL[`rated-${day.level}`];
-  return CELL_FILL[day.status];
-}
 
 /** Where the readout is being drawn — the tooltip surface is inverted, so the emphasis classes differ. */
 type ReadoutTone = 'surface' | 'inverted';
@@ -185,7 +160,7 @@ const AdherenceCell = memo(function AdherenceCell({
           aria-hidden="true"
           className={cn(
             'block aspect-square w-full rounded-sm',
-            fillClass(day),
+            fillClassForDay(day),
             day.isToday && 'outline outline-[1.5px] outline-offset-[1px] outline-foreground/55',
           )}
         />
@@ -218,7 +193,7 @@ const AdherenceCell = memo(function AdherenceCell({
               // with zero overlap between neighbours.
               "relative block aspect-square w-full rounded-sm after:absolute after:-inset-[1px] after:content-['']",
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              fillClass(day),
+              fillClassForDay(day),
               day.isToday && 'outline outline-[1.5px] outline-offset-[1px] outline-foreground/55',
             )}
           />

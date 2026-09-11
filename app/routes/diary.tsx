@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { Route } from './+types/diary';
 import { Trans, useTranslation } from 'react-i18next';
@@ -34,12 +34,11 @@ import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
 import { effectiveEatingStyle, lensForStyle } from '#app/lib/eating-style';
 import type { EatingStyleLens } from '#app/lib/eating-style';
 import {
-  computeReferenceKcalAddition,
   computeReferenceProteinFloor,
   selectLatestWeighInKg,
   selectMissingReferenceDate,
 } from '#app/models/body-metrics';
-import { resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
+import { resolveAdherenceGoals } from '#app/lib/adherence-goals';
 import type { MissingReferenceDate } from '#app/lib/macro-gaps';
 import { useCountUp } from '#app/hooks/use-count-up';
 import { useCelebration } from '#app/hooks/use-celebration';
@@ -98,6 +97,14 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '#app/components/ui/popover';
 import { Calendar as CalendarPicker } from '#app/components/ui/calendar';
+import { AdherenceLegend } from '#app/components/trends/adherence-legend';
+import { countConfiguredGoals } from '#app/models/adherence-grid';
+import type { AdherenceMode } from '#app/models/adherence-grid';
+import { selectCalendarDayLevels } from '#app/lib/calendar-day-levels';
+import type { CalendarDayLevel } from '#app/lib/calendar-day-levels';
+import { CALENDAR_DAY_MODIFIER_CLASSNAMES, calendarDayModifierFor } from '#app/lib/adherence-cell-fill';
+import type { CalendarDayModifier } from '#app/lib/adherence-cell-fill';
+import { labelDayButton as defaultLabelDayButton } from 'react-day-picker';
 import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import { publishStatus } from '#app/lib/status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -1034,6 +1041,17 @@ export interface DiaryData {
   totalLogCount: number;
   /** How many entries on this device came from an AI plate identification — the "first scan" milestone. */
   aiEstimatedLogCount: number;
+  /**
+   * The resolved goal-adherence level for every day this device ever logged,
+   * keyed by `YYYY-MM-DD`. This is what `DateNav`'s calendar paints each day
+   * cell with, so paging back through months reads the same verdict and the
+   * same colour the 13-week grid uses on `/trends` and Overview. Built from
+   * the same goals those screens grade against, including
+   * the reproductive `kcalTarget` addition, via `selectCalendarDayLevels`.
+   */
+  calendarDayLevels: Record<string, CalendarDayLevel>;
+  /** Whether the calendar's colours are a goal-adherence ramp or a plain logged/not record, for `AdherenceLegend`. */
+  calendarMode: AdherenceMode;
 }
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise<DiaryData> {
@@ -1138,23 +1156,29 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
   // The stage is resolved against the real `today`, never the viewed date: the
   // reference follows where the person is now, and paging back through history
   // must not re-date a pregnancy.
-  const stage = {
-    reproductiveStatus: bodyMetrics.reproductiveStatus,
-    trimester: resolveGestation({ dueDate: bodyMetrics.pregnancyDueDate, today })?.trimester ?? null,
-    lactationMonths: resolveLactationMonths({ startDate: bodyMetrics.lactationStartDate, today }),
-  };
+  // The energy addition lands on the target the person TYPED IN, and only when
+  // they typed one. Nothing is written back: `goalKcalTarget` in the store is
+  // still their own figure. The resolved stage comes back with it, so the
+  // protein reference below reads the same stage the calories did.
+  const { goals: adherenceGoals, stage, kcalTarget } = resolveAdherenceGoals({ goals, bodyMetrics, today });
   const proteinReferenceG = computeReferenceProteinFloor({
     ...stage,
     latestWeighInKg: selectLatestWeighInKg(weightEntries),
     heightCm: bodyMetrics.heightCm,
     biologicalSex: bodyMetrics.biologicalSex,
   }).grams;
-  // The energy addition lands on the target the person TYPED IN, and only when
-  // they typed one. Nothing is written back: `goalKcalTarget` in the store is
-  // still their own figure.
-  const kcalAddition = computeReferenceKcalAddition(stage);
-  const kcalTarget =
-    goals.kcalTarget === null || kcalAddition === null ? goals.kcalTarget : goals.kcalTarget + kcalAddition;
+
+  // The calendar's per-day paint, built off the SAME goals Overview and
+  // `/trends` grade against: `resolveAdherenceGoals` is the one builder all
+  // three call, so a day never shows one verdict on the popover calendar and a
+  // different one on a grid. `allLogs` is already the whole device history
+  // (read above for the habit strip and the recents), so this costs no second
+  // store read.
+  const calendarDayLevels = selectCalendarDayLevels({ allLogs, goals: adherenceGoals, today });
+  // Same rule `buildAdherenceGrid` uses for its own `.mode`: whether goals are
+  // configured at all, never whether the calendar happens to have painted a
+  // day yet, so the legend is right even before the first log lands.
+  const calendarMode: AdherenceMode = countConfiguredGoals(adherenceGoals) > 0 ? 'adherence' : 'activity';
 
   return {
     date,
@@ -1190,6 +1214,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
       foodCount: personalFoods.length,
       weightEntryCount: weightEntries.length,
     }),
+    calendarDayLevels,
+    calendarMode,
   };
 }
 clientLoader.hydrate = true as const;
@@ -1396,8 +1422,27 @@ function useLiveDiaryRevalidation(): void {
  * `#app/lib/day-key-date`'s header for the UTC-shift bug that would
  * reintroduce) and navigates to `/diary?date=<key>` (or bare `/diary` for
  * today), closing the popover.
+ *
+ * Every day cell also carries a goal-adherence fill, reusing the exact model
+ * and the exact colours the 13-week grid draws on `/trends` and Overview
+ * (`#app/lib/calendar-day-levels`, `#app/lib/adherence-cell-fill`), so a day
+ * can never read one verdict there and a different one here. The
+ * `AdherenceLegend` in the popover's footer explains the colours without any
+ * new copy, and is always visible, not only while browsing a past day.
  */
-function DateNav({ date, today }: { date: string; today: string }) {
+function DateNav({
+  date,
+  today,
+  calendarDayLevels,
+  calendarMode,
+}: {
+  date: string;
+  today: string;
+  /** Every logged day's resolved paint, keyed by `YYYY-MM-DD` (see `#app/lib/calendar-day-levels`). */
+  calendarDayLevels: Record<string, CalendarDayLevel>;
+  /** Whether the calendar reads as a goal-adherence ramp or a plain logged/not record. */
+  calendarMode: AdherenceMode;
+}) {
   const { t, i18n } = useTranslation();
   const navigate = useAppNavigate();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -1410,6 +1455,67 @@ function DateNav({ date, today }: { date: string; today: string }) {
     navigate(nextKey === today ? '/diary' : `/diary?date=${nextKey}`);
     setIsPickerOpen(false);
   };
+
+  // Which of the six paintable states (`#app/lib/adherence-cell-fill`) one
+  // calendar day is in, or null for a day with no log at all, or for the
+  // SELECTED day itself. The selected day is excluded on purpose: it already
+  // carries the calendar's one pre-existing solid fill (the `selected`
+  // classnames in `calendar.tsx`), and a second `[&>button]:bg-*` class
+  // competing for the same background would have to depend on Tailwind's
+  // generated CSS order to lose, a guarantee nothing here can make. Leaving
+  // the selected day out of every bucket makes "selected wins" unconditional
+  // rather than a coincidence of build order.
+  const modifierForDate = useCallback(
+    (candidate: Date): CalendarDayModifier | null => {
+      const key = localDateToDayKey(candidate);
+      if (key === date) return null;
+      const entry = calendarDayLevels[key];
+      return entry === undefined ? null : calendarDayModifierFor(entry);
+    },
+    [calendarDayLevels, date],
+  );
+
+  const dayModifiers = useMemo(
+    () =>
+      ({
+        logged: (candidate: Date) => modifierForDate(candidate) === 'logged',
+        unrated: (candidate: Date) => modifierForDate(candidate) === 'unrated',
+        rated1: (candidate: Date) => modifierForDate(candidate) === 'rated1',
+        rated2: (candidate: Date) => modifierForDate(candidate) === 'rated2',
+        rated3: (candidate: Date) => modifierForDate(candidate) === 'rated3',
+        rated4: (candidate: Date) => modifierForDate(candidate) === 'rated4',
+      }) satisfies Record<CalendarDayModifier, (candidate: Date) => boolean>,
+    [modifierForDate],
+  );
+
+  // The day button's accessible name: react-day-picker's own locale-aware
+  // date phrase, plus the day's verdict. `unrated` and `logged` repeat the
+  // exact sentence the 13-week grid already speaks
+  // (`trends.grid.cell.unrated`/`.logged`).
+  //
+  // A `rated` day gets `trends.grid.cell.level`, which names the RAMP STEP and
+  // not a goal count. `calendarDayLevels` carries only `status`/`level`, and a
+  // level is `levelForShare`'s 1-to-4 scaling of the SHARE of goals met, so
+  // somebody who set one goal and met it is on level 4 with one goal. Saying
+  // "4 of 4 goals" there would be false; saying "level 4 of 4" is the same
+  // thing the legend's own ramp says. The grid's `metCount` string is the one
+  // that may speak in goals, because the grid has the counts.
+  const labelDayButton = useCallback(
+    (...args: Parameters<typeof defaultLabelDayButton>): string => {
+      const base = defaultLabelDayButton(...args);
+      const entry = calendarDayLevels[localDateToDayKey(args[0])];
+      if (entry === undefined) return base;
+      if (entry.status === 'logged') return `${base}. ${t('trends.grid.cell.logged')}`;
+      if (entry.status === 'unrated') return `${base}. ${t('trends.grid.cell.unrated')}`;
+      return `${base}. ${t('trends.grid.cell.level', { level: entry.level })}`;
+    },
+    [calendarDayLevels, t],
+  );
+
+  const hasUnratedCalendarDays = useMemo(
+    () => Object.values(calendarDayLevels).some((entry) => entry.status === 'unrated'),
+    [calendarDayLevels],
+  );
 
   return (
     <div className="flex items-center justify-between gap-2">
@@ -1437,18 +1543,22 @@ function DateNav({ date, today }: { date: string; today: string }) {
               selected={dayKeyToLocalDate(date)}
               month={dayKeyToLocalDate(date)}
               disabled={{ after: todayDate }}
+              modifiers={dayModifiers}
+              modifiersClassNames={CALENDAR_DAY_MODIFIER_CLASSNAMES}
+              labels={{ labelDayButton }}
               onSelect={(nextDate) => {
                 if (!nextDate) return;
                 goToDay(nextDate);
               }}
             />
-            {!isToday && (
-              <div className="border-t p-2">
+            <div className="space-y-2 border-t p-2">
+              <AdherenceLegend mode={calendarMode} hasUnratedDays={hasUnratedCalendarDays} />
+              {!isToday && (
                 <Button variant="secondary" size="sm" className="w-full" onClick={() => goToDay(todayDate)}>
                   {t('diary.nav.jumpToToday')}
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </PopoverContent>
         </Popover>
         {!isToday && (
@@ -1581,6 +1691,7 @@ function DaySummaryCard({
     goals: {
       netCarbsCeiling: goals.netCarbsCeiling,
       kcalTarget: goals.kcalTarget,
+      proteinFloor: goals.proteinFloor,
       missingReferenceDate: goals.proteinReferenceMissingDate,
     },
     gaps,
@@ -2327,6 +2438,8 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     hasLocalData,
     totalLogCount,
     aiEstimatedLogCount,
+    calendarDayLevels,
+    calendarMode,
   } = loaderData;
   const justAddedLogId = useJustAddedLogId(logs);
   // One-time celebrations for genuine firsts only — see `#app/lib/celebration`
@@ -2384,7 +2497,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
           accepted. The swipe handlers on that container still cover this bar,
           because it is a child of it. */}
       <StickySubheader>
-        <DateNav date={date} today={today} />
+        <DateNav date={date} today={today} calendarDayLevels={calendarDayLevels} calendarMode={calendarMode} />
       </StickySubheader>
       <HabitStrip days={habitStrip} loggedCount={loggedDaysCount} hasCeiling={goals.netCarbsCeiling !== null} />
 

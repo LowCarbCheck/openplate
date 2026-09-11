@@ -77,13 +77,13 @@ function ridgeForOneDay(totals: LocalDailyTotals, lens: 'carb' | 'kcal' | 'prote
   return buildDayRidge({ dailyTotals: [totals], today: totals.date, dayCount: 1, lens, goals });
 }
 
-function renderRidge(ridge: DayRidge): string {
+function renderRidge(ridge: DayRidge, { interactive = true }: { interactive?: boolean } = {}): string {
   return renderToStaticMarkup(
     withI18n(
       createElement(
         MemoryRouter,
         { initialEntries: ['/dashboard'] },
-        createElement(DayRidgeView, { ridge, emptyLabel: 'No days logged yet.' }),
+        createElement(DayRidgeView, { ridge, emptyLabel: 'No days logged yet.', interactive }),
       ),
     ),
   );
@@ -429,5 +429,63 @@ describe('DayRidge, the aria-label shapes', () => {
         }),
       ).includes('No goal set'),
     );
+  });
+});
+
+/**
+ * `interactive={false}` is how `dashboard.tsx`'s `WeekGlanceCard` avoids
+ * nesting a per-day `<a>` inside the tile's own `Link` to `/trends` (invalid
+ * HTML, and it swallowed both taps). These are render-based, unlike
+ * `dashboard-glance.test.ts`'s source check, because a source check that only
+ * reads `dashboard.tsx` cannot see what this file renders.
+ */
+describe('DayRidge, interactive vs read-only', () => {
+  const CEILING: RidgeGoals = { netCarbsCeiling: 50, kcalTarget: null, proteinFloor: null };
+
+  function sevenDayRidge(): DayRidge {
+    return buildDayRidge({
+      dailyTotals: [loggedDay(TODAY, { netCarbs: 25 })],
+      today: TODAY,
+      dayCount: 7,
+      lens: 'carb',
+      goals: CEILING,
+    });
+  }
+
+  it('links every bar by default', () => {
+    assert.equal(renderRidge(sevenDayRidge()).match(/<a /g)?.length, 7, 'seven days, seven links');
+  });
+
+  it('draws every bar read-only with no <a> at all, on the same ridge that draws seven when interactive', () => {
+    const ridge = sevenDayRidge();
+
+    assert.equal(renderRidge(ridge, { interactive: false }).match(/<a /g), null, 'no bar link remains');
+    // Control: the exact same ridge, interactive, still has seven.
+    assert.equal(renderRidge(ridge).match(/<a /g)?.length, 7);
+  });
+
+  it("keeps a bar's own sentence on an sr-only span once its link is gone", () => {
+    const html = renderRidge(ridgeForOneDay(loggedDay(TODAY, { netCarbs: 69 }), 'carb', CEILING), {
+      interactive: false,
+    });
+
+    assert.ok(
+      html.includes('<span class="sr-only">Thursday 10 September, 69 of 50 g net carbs, over budget</span>'),
+      html,
+    );
+    assert.ok(!html.includes('aria-label='), 'no link remains to carry the sentence as an aria-label');
+  });
+
+  it('drops the tap promise from the intro sentence when read-only, without losing the lead-in', () => {
+    const ridge = sevenDayRidge();
+
+    const linked = renderRidge(ridge);
+    const readOnly = renderRidge(ridge, { interactive: false });
+
+    assert.ok(linked.includes('Each bar opens that day in the diary.'), linked);
+    assert.ok(!readOnly.includes('Each bar opens that day in the diary.'), readOnly);
+    assert.ok(readOnly.includes('Tap the tile for your progress.'), readOnly);
+    // Control: both still open with the shared count, so only the tail changed.
+    assert.ok(readOnly.includes('Your last 7 days, one bar per day.'));
   });
 });

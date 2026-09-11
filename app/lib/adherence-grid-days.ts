@@ -14,6 +14,7 @@ import { computeDailyTotalsInRange } from '#app/lib/local-store';
 import type { LocalFoodLog } from '#app/lib/local-store/schema';
 import { startOfWeek } from '#app/lib/trend-week';
 import { shiftDate } from '#app/lib/user-days';
+import type { DailyTotals } from '#app/models/daily-totals';
 import type { AdherenceDayTotal } from '#app/models/adherence-grid';
 
 /** Days in a Monday→Sunday week. */
@@ -46,11 +47,29 @@ export function selectAdherenceGridDays({
   return computeDailyTotalsInRange(allLogs, {
     fromDate: shiftDate(gridWeekStart, -(weeks - 1) * DAYS_PER_WEEK),
     toDate: shiftDate(gridWeekStart, DAYS_PER_WEEK - 1),
-  }).map((day) => ({
-    date: day.date,
-    hasLogs: day.hasLogs,
-    netCarbs: day.summary?.netCarbs ?? null,
-    protein: day.summary?.protein ?? null,
-    kcal: day.kcal.total,
-  }));
+  }).map((day) => toAdherenceDayTotal(day.date, day));
+}
+
+/**
+ * Converts one day's local totals into the grid's `AdherenceDayTotal` shape,
+ * the one mapping shared by `selectAdherenceGridDays` (a whole contiguous
+ * window, gaps included) and `selectCalendarDayLevels`
+ * (`#app/lib/calendar-day-levels`, every logged day, no window). Both read
+ * their totals differently, but neither may carry its own copy of THIS
+ * conversion, which is exactly the drift `localFoodLogToSnapshot`'s doc
+ * warns about, one level up the same call chain.
+ *
+ * @param date - the day's local `YYYY-MM-DD` key.
+ * @param totals - that day's totals, from either `computeDailyTotals` or one
+ *   entry of `computeDailyTotalsInRange`.
+ * @returns the day in the shape `resolveAdherenceDay` grades.
+ */
+export function toAdherenceDayTotal(date: string, totals: DailyTotals): AdherenceDayTotal {
+  return {
+    date,
+    hasLogs: totals.hasLogs,
+    netCarbs: totals.summary?.netCarbs ?? null,
+    protein: totals.summary?.protein ?? null,
+    kcal: totals.kcal.total,
+  };
 }

@@ -11,6 +11,15 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The day's budget rows read plainer, and fat now has a figure.** Protein is orange and fat is plum, so a protein row no longer looks like a red warning and a fat row no longer looks like an amber one. The second line of each row now says which way it means: a ceiling reads "up to 24.9 g more" and a floor reads "12 g still needed", where both used to read as a bare remainder you had to work out. Fat gets a meter of its own when your calorie target, your net carb ceiling and your protein floor are all set, because those three already say what is left for fat; the row is tagged "from your targets" so it is clear nobody set that number for you. Past that figure the fat row says "12 g over" and fills its meter, but it stays plain rather than turning amber, because going over there is the same thing as going over your calories and the calorie row already says so. Set fewer than three targets and the fat row shows the day's grams as before.
+- **The diary calendar now colours every day by your goals.** Opening the date picker in your diary used to show a plain month. Each day is now filled the same way the 13-week grid on Overview and on the progress page fills it, darker the more of your goals you met, with the same legend under it, so one day looks the same wherever you meet it. A screen reader now reads a coloured day as the date plus which step of the four it reached, where it used to read the date alone. The progress page grades its squares against the same targets the other two screens use, so if you are pregnant or breastfeeding the energy your phase adds is counted there too, and a day can no longer be met on one screen and missed on another.
+
+### Fixed
+
+- **The week tile's bars are no longer links inside the tile link.** Each of the seven bars on Overview's last-7-days tile opened its own day in the diary, a link nested inside the whole tile's own link to your progress, which browsers do not support and could silently break a tap. Tapping a bar no longer opens anything by itself; tapping anywhere on the tile still opens your progress, exactly as before.
+
 ## [0.28.0] - 2026-09-11
 
 ### Added
