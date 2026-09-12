@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.29.2] - 2026-09-12
+
 ### Fixed
 
-- **A device that lost its local data no longer empties your fasts and saved meals.** Your fasts and your saved meals are not merged between devices yet, so whichever device syncs next hands over its whole list. If a browser had thrown that device's data away, or if the app had only half read it, the list it handed over was empty or short, and your account's copy was replaced by it. Neither one is a deletion anybody made, so neither is accepted any more: when a device cannot show what it holds, the copy already on your account is kept instead. A device that can show it holds none still means it, so a fast or a saved meal you really deleted stays deleted.
+- **A device that lost its local data no longer empties your fasts and saved meals.** Your fasts and your saved meals are not merged between devices yet, so whichever device syncs next hands over its whole list. If a browser had thrown that device's data away, or if the app had only half read it, the list it handed over was empty or short, and your account's copy was replaced by it. Neither one is a deletion anybody made, so neither is accepted any more: when a device cannot show what it holds, the copy already on your account is kept instead. A device that can show it holds none still means it, so a fast or a saved meal you really deleted stays deleted. ([794ba1a](https://github.com/LowCarbCheck/openplate/commit/794ba1a))
 
 ## [0.29.1] - 2026-09-12
 
