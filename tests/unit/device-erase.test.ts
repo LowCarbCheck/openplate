@@ -10,14 +10,42 @@
  * failure; a person just has no record. That is why the assertion below is
  * about the two together and not about either one.
  */
-import { describe, it } from 'node:test';
+import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { eraseDeviceData, ERASED_DATABASES, type DeviceEraseDeps } from '../../app/lib/local-store/device-erase';
 import { createMemoryStorage, syncBaselineStorageKey } from '../../app/lib/sync/sync-state';
 import { OUTBOX_DB_NAME, PHOTOS_DB_NAME, PRIMARY_DB_NAME } from '../../app/lib/local-store/store';
+import { PULSE_ENABLED_STORAGE_KEY } from '../../app/lib/pulse';
+import { PUSH_DISABLED_STORAGE_KEY, PUSH_ENDPOINT_STORAGE_KEY, PUSH_PREFS_STORAGE_KEY, resetPush } from '../../app/lib/push';
 
 const ACCOUNT_ID = 42;
+
+/** A `Storage` a test can seed and read back, standing in for `window.localStorage`. */
+function fakeLocalStorage(seed: Record<string, string> = {}): Storage & { entries: Map<string, string> } {
+  const entries = new Map<string, string>(Object.entries(seed));
+  return {
+    entries,
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => void entries.set(key, value),
+    removeItem: (key) => void entries.delete(key),
+    clear: () => entries.clear(),
+    key: () => null,
+    get length() {
+      return entries.size;
+    },
+  };
+}
+
+/** Installs a bare `window` carrying the given `localStorage`, restored after the test. */
+function withFakeWindow(localStorage: Storage): () => void {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  Object.defineProperty(globalThis, 'window', { value: { localStorage }, configurable: true, writable: true });
+  return () => {
+    if (previous === undefined) Reflect.deleteProperty(globalThis, 'window');
+    else Object.defineProperty(globalThis, 'window', previous);
+  };
+}
 
 /** A recording stand-in for `indexedDB.deleteDatabase`, optionally failing on one name. */
 function fakeDeps({ failOn }: { failOn?: string } = {}): DeviceEraseDeps & { deleted: string[] } {
@@ -88,5 +116,42 @@ describe('eraseDeviceData', () => {
     assert.deepEqual(deps.deleted, [PRIMARY_DB_NAME, PHOTOS_DB_NAME, OUTBOX_DB_NAME]);
     // Nothing to remove: a device with no account never wrote a baseline for one.
     assert.notEqual(deps.storage.getItem(syncBaselineStorageKey(ACCOUNT_ID)), null);
+  });
+});
+
+/**
+ * The pulse toggle and every push key are DEVICE preferences, not account
+ * data: `deleteDatabase` never touches `localStorage`, so without this an
+ * erased device hands its pulse opt-in and its stale push subscription
+ * straight to the next account that signs in on it.
+ */
+describe('eraseDeviceData forgets this device’s preferences', () => {
+  afterEach(() => {
+    resetPush();
+  });
+
+  it('clears the pulse opt-in and every push key, and leaves an unrelated preference alone', async () => {
+    const localStorage = fakeLocalStorage({
+      [PULSE_ENABLED_STORAGE_KEY]: 'on',
+      [PUSH_ENDPOINT_STORAGE_KEY]: 'https://push.example.test/aaa',
+      [PUSH_DISABLED_STORAGE_KEY]: '1',
+      [PUSH_PREFS_STORAGE_KEY]: JSON.stringify({ catchUpMinute: 480, fastTargetEnabled: true }),
+      'openplate:weight-unit': 'kg',
+    });
+    const restoreWindow = withFakeWindow(localStorage);
+
+    try {
+      await eraseDeviceData({ accountId: ACCOUNT_ID }, fakeDeps());
+
+      assert.equal(localStorage.getItem(PULSE_ENABLED_STORAGE_KEY), null, 'the pulse opt-in is gone');
+      assert.equal(localStorage.getItem(PUSH_ENDPOINT_STORAGE_KEY), null, 'the remembered endpoint is gone');
+      assert.equal(localStorage.getItem(PUSH_DISABLED_STORAGE_KEY), null, 'the remembered refusal is gone');
+      assert.equal(localStorage.getItem(PUSH_PREFS_STORAGE_KEY), null, 'the two kinds are gone');
+      // The control: a key this erase never touches must survive, or the
+      // assertions above would pass just as well against a wiped-out storage.
+      assert.equal(localStorage.getItem('openplate:weight-unit'), 'kg', 'an unrelated preference must survive');
+    } finally {
+      restoreWindow();
+    }
   });
 });

@@ -23,6 +23,7 @@ import i18n from '#app/i18n/i18n';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { loadCatchUpInput } from '#app/lib/catch-up-input';
 import { buildDayBudgetRows } from '#app/lib/day-budget-rows';
+import type { DayBudgetTotals } from '#app/lib/day-budget-rows';
 import { computeDayGaps } from '#app/lib/macro-gaps';
 import { buildCatchUp } from '#app/models/catch-up';
 import type { CatchUp, CatchUpDay, CatchUpGoals } from '#app/models/catch-up';
@@ -84,6 +85,25 @@ export function HydrateFallback(): ReactElement {
 }
 
 /**
+ * Yesterday's totals in the day-budget-rows shape, straight off `CatchUpDay`.
+ *
+ * Exported and kept pure so the wiring is pinned by a test that does not need
+ * to render the route: the catch-up's own three sentences never mention fat,
+ * but the row set below is the diary's, and the diary's fat row needs the
+ * day's real figure, not a placeholder that would read as "no fat yesterday".
+ */
+export function yesterdayBudgetTotals(yesterday: CatchUpDay): DayBudgetTotals {
+  return {
+    netCarbs: yesterday.netCarbsG,
+    kcal: yesterday.kcal,
+    protein: yesterday.proteinG,
+    fat: yesterday.fatG,
+    fiber: yesterday.fiberG,
+    hasEstimates: false,
+  };
+}
+
+/**
  * Yesterday's budget rows, built from the same three figures the sentence
  * above them names. Rendered only for a day that HAS entries: a row set for a
  * day with nothing in it is five zeros, which reads as a verdict.
@@ -91,16 +111,7 @@ export function HydrateFallback(): ReactElement {
 function YesterdayRows({ yesterday, goals }: { yesterday: CatchUpDay; goals: CatchUpGoals }): ReactElement {
   const { t, i18n: i18next } = useTranslation();
   const language = i18next.language;
-  const totals = {
-    netCarbs: yesterday.netCarbsG,
-    kcal: yesterday.kcal,
-    protein: yesterday.proteinG,
-    // The catch-up reads three figures and fat is not one of them. Zero here
-    // is the honest answer for a row this page does not carry a number for.
-    fat: 0,
-    fiber: yesterday.fiberG,
-    hasEstimates: false,
-  };
+  const totals = yesterdayBudgetTotals(yesterday);
   const gaps = computeDayGaps({
     totals: { netCarbs: totals.netCarbs, protein: totals.protein, fiber: totals.fiber },
     goals: { netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor },

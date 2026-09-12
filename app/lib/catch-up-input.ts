@@ -170,6 +170,7 @@ export async function loadCatchUpInput({
     netCarbsG: day.summary?.netCarbs ?? 0,
     proteinG: day.summary?.protein ?? 0,
     kcal: day.kcal.total ?? 0,
+    fatG: day.summary?.fat ?? 0,
     fiberG: day.summary?.fiber ?? 0,
   }));
 

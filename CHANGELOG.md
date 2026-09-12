@@ -31,6 +31,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Fixed
 
 - **The week tile's bars are no longer links inside the tile link.** Each of the seven bars on Overview's last-7-days tile opened its own day in the diary, a link nested inside the whole tile's own link to your progress, which browsers do not support and could silently break a tap. Tapping a bar no longer opens anything by itself; tapping anywhere on the tile still opens your progress, exactly as before.
+- **The morning catch-up's fat row shows yesterday's real figure.** Yesterday's rows on the catch-up page always read "0 g" for fat, whatever you actually ate, because the page never carried that figure at all. It now reads the same total the diary shows for that day.
+- **Erasing this device now forgets the pulse and push settings too.** Signing out with erase turned on used to leave the pulse opt-in switch and the remembered push subscription behind, so the next account on that device found sharing already on and a stale notification target. Both are now cleared along with the diary.
 
 ## [0.28.0] - 2026-09-11
 

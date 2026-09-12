@@ -64,6 +64,7 @@ export interface CatchUpDay {
   netCarbsG: number;
   proteinG: number;
   kcal: number;
+  fatG: number;
   fiberG: number;
 }
 

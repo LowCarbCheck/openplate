@@ -35,7 +35,7 @@ const YESTERDAY = '2026-09-11';
 
 /** A day with entries; every test overrides what it cares about. */
 function day(overrides: Partial<CatchUpDay> & { dayKey: string }): CatchUpDay {
-  return { meals: 3, netCarbsG: 42, proteinG: 96, kcal: 1800, fiberG: 28, ...overrides };
+  return { meals: 3, netCarbsG: 42, proteinG: 96, kcal: 1800, fatG: 60, fiberG: 28, ...overrides };
 }
 
 /** Three logged days, all comfortably inside every goal, so nothing nudges by accident. */

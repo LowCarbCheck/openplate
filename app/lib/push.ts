@@ -566,6 +566,31 @@ export async function disablePush(): Promise<void> {
   rememberEndpoint(null);
 }
 
+/**
+ * Forgets everything THIS module remembers about push, for a device erase
+ * (`device-erase.ts`) rather than for the settings switch.
+ *
+ * {@link disablePush} runs first, best effort, so a session that is still
+ * open gets one chance to delete the server-side subscription and drop the
+ * browser's own one. Its bookkeeping is not enough for an erase, though: it
+ * WRITES the disabled flag rather than clearing it, and leaves the two kinds
+ * on storage untouched, both right for a person who just turned the switch
+ * off. An erase has no such person to remember for: the next account on this
+ * device must find no answer here at all, not "the last owner said no". So
+ * every key this module owns is removed afterwards regardless of whether
+ * {@link disablePush} could reach the server.
+ */
+export async function forgetPushOnThisDevice(): Promise<void> {
+  try {
+    await disablePush();
+  } catch (caught) {
+    pushLog.debug('disable push on erase failed', { error: caught instanceof Error ? caught.message : 'unknown' });
+  }
+  dependencies.storage.remove(PUSH_ENDPOINT_STORAGE_KEY);
+  dependencies.storage.remove(PUSH_DISABLED_STORAGE_KEY);
+  dependencies.storage.remove(PUSH_PREFS_STORAGE_KEY);
+}
+
 /** One PATCH against this device's row. Returns false when there is nothing registered to patch. */
 async function patchSubscription(patch: Omit<PushPatchBody, 'endpoint'>): Promise<boolean> {
   const endpoint = rememberedEndpoint();

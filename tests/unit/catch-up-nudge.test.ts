@@ -38,6 +38,7 @@ function days(
     netCarbsG: 30,
     proteinG: protein[index] ?? 0,
     kcal: 1800,
+    fatG: 60,
     fiberG: fiber[index] ?? 0,
   }));
 }

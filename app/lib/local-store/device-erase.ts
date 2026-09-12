@@ -46,6 +46,8 @@
  * case.
  */
 import { createComponentLogger } from '#app/lib/logger';
+import { setPulseEnabled } from '#app/lib/pulse';
+import { forgetPushOnThisDevice } from '#app/lib/push';
 import { syncBaselineStorageKey, type KeyValueStorage } from '#app/lib/sync/sync-state';
 import { OUTBOX_DB_NAME, PHOTOS_DB_NAME, PRIMARY_DB_NAME } from './store';
 
@@ -75,7 +77,15 @@ export interface DeviceEraseDeps {
 
 /**
  * Removes this account's diary, photos, outbox and sync baseline from this
- * device.
+ * device, and forgets the community-pulse opt-in and every push preference.
+ *
+ * The pulse toggle and push's endpoint, disabled flag and two kinds are all
+ * DEVICE preferences, not account data, so `deleteDatabase` never touches
+ * them: they live in `localStorage`, next to the baseline, not in IndexedDB.
+ * Left alone, the next account to use this device would find pulse already
+ * switched on and a stale push subscription still remembered, both answers
+ * that belong to the person who just left. Neither call can throw, so their
+ * place before the (fallible) database loop below costs nothing.
  *
  * @param accountId - the account whose baseline key must go with the rows, or
  *   `null` for a device that holds no account: there is then no per-account key
@@ -90,6 +100,8 @@ export async function eraseDeviceData(
 ): Promise<void> {
   // FIRST, and see the header for why the order is the whole point.
   if (accountId !== null) deps.storage.removeItem(syncBaselineStorageKey(accountId));
+  setPulseEnabled(false);
+  await forgetPushOnThisDevice();
   for (const name of ERASED_DATABASES) {
     await deps.deleteDatabase(name);
   }
