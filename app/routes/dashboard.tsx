@@ -1,10 +1,10 @@
 /**
- * Overview — the app home (M134).
+ * Overview, the app home (M134).
  *
  * Three PERMANENT modules: one brand hero answering "where does today stand,
  * and how do I add to it", then a 7-day habit tile and a weight tile, each of
  * which links once to the screen that owns the detail. `/diary` remains today's
- * DETAIL; `/trends` remains the history. This route owns no data of its own —
+ * DETAIL; `/trends` remains the history. This route owns no data of its own ,
  * every figure below is derived from an existing aggregate.
  *
  * Plus exactly ONE conditional strip: `FastStrip` (M132), present only while a
@@ -14,7 +14,7 @@
  * the strip's ~57 px plus its 16 px gap means the page scrolls by ~73 px WHILE
  * A FAST EXISTS and not otherwise. That cost is accepted on two grounds: the
  * common case is untouched, and the strip sits ABOVE the glance row so what
- * falls below the fold is the bottom of the weight tile rather than the fast —
+ * falls below the fold is the bottom of the weight tile rather than the fast ,
  * an active fast is the only time-sensitive fact on the screen, and the thing
  * that has to be scrolled to should be the thing that is not moving.
  *
@@ -41,13 +41,11 @@ import {
   computeStreak,
   getLocalBodyMetrics,
   getLocalProfileGoals,
-  listLocalFasts,
   listLocalFoodLogs,
   listLocalWeightEntries,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
-import type { LocalFast, ReproductiveStatus } from '#app/lib/local-store';
-import { selectCurrentFast } from '#app/models/fasting';
+import type { ReproductiveStatus } from '#app/lib/local-store';
 import { shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { selectRepeatYesterday } from '#app/lib/copy-day';
 import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
@@ -79,6 +77,7 @@ import type { StreakSnapshot } from '#app/lib/streak-message';
 import { AddFoodActions } from '#app/components/add-food-actions';
 import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
+import { PulseTileSlot } from '#app/components/pulse-tile';
 import { StreakGridCard } from '#app/components/dashboard/streak-grid-card';
 import { ReproductiveStatusPromptBanner } from '#app/components/reproductive-status-prompt-banner';
 import { DayRidge } from '#app/components/day-ridge';
@@ -93,7 +92,7 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 export { RouteErrorBoundary as ErrorBoundary };
 
 // Title via the pure `meta-title` seam, with the language read off the ROOT
-// loader through `matches` — never the i18next singleton (see `meta-title.ts`).
+// loader through `matches`, never the i18next singleton (see `meta-title.ts`).
 export const meta: Route.MetaFunction = ({ matches }) => [
   { title: metaTitle(metaLanguage(matches), 'meta.dashboard') },
 ];
@@ -124,7 +123,7 @@ const HANDOFF_LINK_CLASS =
  *
  * They sit two-up from the narrowest phone up (see the page component), so on a
  * 375 px screen each tile is ~164 px wide and `Card`'s stock `p-6` would spend
- * 48 px of that on gutters — leaving ~116 px, which is less than the seven-dot
+ * 48 px of that on gutters, leaving ~116 px, which is less than the seven-dot
  * strip's own width. `p-4` below `sm` gives the content ~132 px and hands back
  * 16 px of height per tile; the desktop geometry is untouched at `sm` and up.
  */
@@ -132,7 +131,7 @@ const GLANCE_HEADER_CLASS = 'p-4 pb-2 sm:p-6 sm:pb-3';
 const GLANCE_CONTENT_CLASS = 'p-4 pt-0 sm:p-6 sm:pt-0';
 
 ////////////////////////////////////////////////////////////////////////////////
-// Server loader — none needed (this route's data is entirely on-device)
+// Server loader, none needed (this route's data is entirely on-device)
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -186,12 +185,6 @@ export interface DashboardData {
   /** The current streak, and whether today itself carries any logs, for the grid card's header line. */
   streak: StreakSnapshot;
   weight: WeightGlance;
-  /**
-   * The one scheduled-or-running fast, or null (M132). The RAW row: its status
-   * and every figure the strip renders are derived in the component against a
-   * live clock, because a status resolved here is already stale by first paint.
-   */
-  currentFast: LocalFast | null;
   /** The stored reproductive status, or null. Read only: this page never writes it back. */
   reproductiveStatus: ReproductiveStatus | null;
   /** The stored pregnancy due date (`YYYY-MM-DD`), or null. */
@@ -238,7 +231,6 @@ export async function clientLoader(): Promise<DashboardData> {
   });
 
   const weightEntries = await listLocalWeightEntries();
-  const fasts = await listLocalFasts();
 
   // A protein floor for someone who set none: scaled by their own latest
   // weigh-in, or by height and sex, and tagged `'default'` downstream so the
@@ -281,7 +273,6 @@ export async function clientLoader(): Promise<DashboardData> {
   });
 
   return {
-    currentFast: selectCurrentFast(fasts),
     today,
     // The three fields the status prompt reads (M206/04). They ride the loader
     // rather than a second store read in the component, and they are REPORTED
@@ -333,7 +324,7 @@ export function HydrateFallback(): ReactElement {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Today — the page's one brand hero
+// Today, the page's one brand hero
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -417,7 +408,7 @@ function TodayHeroCard({
     </div>
   );
 
-  // The page's single `.surface-brand` (DESIGN.md §2, one hero per screen) —
+  // The page's single `.surface-brand` (DESIGN.md §2, one hero per screen) ,
   // the two glance tiles below are plain `bg-card`.
   return (
     <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
@@ -488,7 +479,7 @@ function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
   );
 }
 
-/** A signed weekly change in the display unit — "+0.4 kg", "−1.2 kg", "0 kg". */
+/** A signed weekly change in the display unit, "+0.4 kg", "−1.2 kg", "0 kg". */
 function formatWeightDelta(deltaKg: number, unit: WeightUnit): string {
   const displayed = roundWeightForDisplay(fromKg(deltaKg, unit));
   const sign =
@@ -500,7 +491,7 @@ function formatWeightDelta(deltaKg: number, unit: WeightUnit): string {
 
 /**
  * The latest weigh-in, and how it moved over the same seven days the strip
- * covers. A single weigh-in shows the figure and no delta — "0.0 over the last
+ * covers. A single weigh-in shows the figure and no delta, "0.0 over the last
  * 7 days" would read as "no change" rather than "not enough data". The whole
  * tile is the door to `/trends`; the trailing text and arrow keep their
  * `HANDOFF_LINK_CLASS` styling as the visible call to action, but are no
@@ -569,7 +560,6 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     adherenceGoals,
     streak,
     weight,
-    currentFast,
     reproductiveStatus,
     pregnancyDueDate,
     lactationStartDate,
@@ -606,24 +596,34 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
       */}
       <StreakGridCard grid={grid} goals={adherenceGoals} streak={streak} />
       {/*
-        Conditional and ABOVE the glance row (M132) — see this file's header for
+        Conditional and ABOVE the glance row (M132), see this file's header for
         the height arithmetic and why the fast outranks last week's weight for
         the space above the fold. Absent entirely with no fast, so the shipped
-        no-scroll page is untouched in the common case.
+        no-scroll page is untouched in the common case. The STRIP decides that
+        for itself now, off the same hook the header chip reads, so a fast that
+        starts or ends on `/fasting` reaches this row without a navigation.
       */}
-      {currentFast !== null && <FastStrip fast={currentFast} />}
+      <FastStrip />
       {/*
         Two-up at EVERY width, not just from `sm`. Stacked, the two tiles put
         the page at 812 px on a 375x667 phone against ~491 px of content area,
         and the weight tile ended up behind the fixed bottom bar. Side by side
         they cost one row instead of two, which is the design spec's own
-        prescribed mitigation for the small-phone case (§1.2 caveat) — the hero
+        prescribed mitigation for the small-phone case (§1.2 caveat), the hero
         stays exactly as it is.
       */}
       <div className="grid grid-cols-2 gap-4">
         <WeekGlanceCard ridge={ridge} />
         <WeightGlanceCard weight={weight} />
       </div>
+      {/*
+        What the whole instance did today, UNDER the glance row and absent
+        entirely below three contributors (M222 spec 04). The loader above
+        knows nothing about it: the figures are fetched client-side after first
+        paint, so a slow or unreachable pulse cannot hold this page up, and a
+        device with no account never asks.
+      */}
+      <PulseTileSlot />
     </div>
   );
 }

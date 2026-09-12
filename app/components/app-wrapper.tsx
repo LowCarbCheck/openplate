@@ -14,6 +14,7 @@ import { useSyncSession } from './sync-status';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
 import { FastChipSlot } from './fast-chip';
+import { PulseHeartbeat } from './pulse-heartbeat';
 import { HeaderStatus } from './header-status';
 import { ProgressBar } from './progress-bar';
 import { UpdateRibbon } from './update-ribbon';
@@ -307,6 +308,12 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                   and it sits in the shrink-0 group so the `h1` beside it
                   truncates first. */}
               <FastChipSlot />
+              {/* No markup at all: it beats a "still fasting" signal while a
+                  fast is running and this tab is visible, and it is mounted
+                  beside the chip for the chip's own reason, a fast runs
+                  whatever page the person is on (M222). The toggle is asked
+                  inside `#app/lib/pulse`, never here. */}
+              <PulseHeartbeat />
               {/* The device menu, at both breakpoints, identity, the theme
                   inline, and the settings people revisit. See
                   `avatar-menu.tsx` for why the theme lives in here rather than

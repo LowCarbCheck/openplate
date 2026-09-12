@@ -1647,6 +1647,19 @@
       "tablespoon_other": "{{count}} tablespoons"
     }
   },
+  "pulse": {
+    "fasting": {
+      "others_one": "{{count}} other person is fasting right now",
+      "others_other": "{{count}} others are fasting right now"
+    },
+    "tile": {
+      "kcal": "Calories tracked",
+      "meals": "Meals logged",
+      "photos": "Photos parsed",
+      "protein": "Protein tracked",
+      "title": "Today, everyone here"
+    }
+  },
   "recover": {
     "firstDataAt": "This device first stored data on {{date}}.",
     "lead": "This device has stored openplate data before, but the copy in this browser is empty right now. openplate keeps everything on your device and sends nothing to a server, so there is no other copy for us to fetch.",
@@ -2321,6 +2334,10 @@
   },
   "sharing": {
     "cancel": "Cancel",
+    "pulse": {
+      "help": "Sends small rounded numbers: one meal, its calories rounded to 50 and protein rounded to 5 g, one photo, and a short 'still fasting' signal while you fast. Never the food, the time, the photo or your goals. The fasting signal is tied to your account for 30 minutes, then deleted.",
+      "label": "Share a pulse"
+    },
     "title": "Sharing",
     "intro": "Let a dietician or doctor read your diary. It stays encrypted the whole way: they get a copy of your key sealed to theirs, and the server still cannot read a thing.",
     "unavailable": "This sync server does not offer sharing. Nothing here is switched on, and nothing was sent.",

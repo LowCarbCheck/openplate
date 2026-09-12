@@ -1641,6 +1641,19 @@
       "tablespoon_other": "{{count}} Esslöffel"
     }
   },
+  "pulse": {
+    "fasting": {
+      "others_one": "{{count}} andere Person fastet gerade",
+      "others_other": "{{count}} andere fasten gerade"
+    },
+    "tile": {
+      "kcal": "Kalorien erfasst",
+      "meals": "Mahlzeiten erfasst",
+      "photos": "Fotos ausgewertet",
+      "protein": "Protein erfasst",
+      "title": "Heute alle hier"
+    }
+  },
   "recover": {
     "firstDataAt": "Dieses Gerät hat am {{date}} zum ersten Mal Daten gespeichert.",
     "lead": "Auf diesem Gerät wurden bereits openplate-Daten gespeichert, aber die Kopie in diesem Browser ist gerade leer. openplate speichert alles auf deinem Gerät und sendet nichts an einen Server, daher gibt es keine andere Kopie, die wir abrufen könnten.",
@@ -2315,6 +2328,10 @@
   },
   "sharing": {
     "cancel": "Abbrechen",
+    "pulse": {
+      "help": "Sendet kleine, gerundete Zahlen: eine Mahlzeit, die Kalorien gerundet auf 50 und Protein auf 5 g, ein Foto und ein kurzes „fastet noch“-Signal, während du fastest. Niemals das Essen, die Uhrzeit, das Foto oder deine Ziele. Das Fastensignal ist 30 Minuten lang mit deinem Konto verknüpft und wird dann gelöscht.",
+      "label": "Ein Lebenszeichen teilen"
+    },
     "title": "Teilen",
     "intro": "Lass deine Ernährungsberatung oder deinen Arzt dein Tagebuch einsehen. Es bleibt durchgehend verschlüsselt: Sie erhalten eine mit ihrem Key versiegelte Kopie deines Keys, und der Server kann weiterhin nichts mitlesen.",
     "unavailable": "Dieser Sync-Server bietet kein Teilen an. Hier ist nichts eingeschaltet, und es wurde nichts gesendet.",

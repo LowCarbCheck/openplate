@@ -93,6 +93,7 @@ import { EndFastSheet, endLabelKey } from '#app/components/fasting/end-fast-shee
 import type { EndFastReflection } from '#app/components/fasting/end-fast-sheet';
 import { FastingStatsRow } from '#app/components/fasting/fasting-stats-row';
 import { StageLines, StageList } from '#app/components/fasting/stage-panel';
+import { PulseFastingLineSlot } from '#app/components/pulse-fasting-line';
 import { RingProgress } from '#app/components/ring-progress';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
@@ -1209,6 +1210,11 @@ function ActiveFastCard({
               timezone={timezone}
               language={i18next.language}
             />
+            {/* One sentence, and only above the floor of three: the line is
+                absent rather than reading "0 others are fasting" (M222 spec
+                04). Fetched client-side, so this card renders at the same
+                moment it always did. */}
+            <PulseFastingLineSlot />
             <AdjustStartInline
               fast={fast}
               intent={INTENT.ADJUST_START}

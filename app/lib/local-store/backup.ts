@@ -753,7 +753,11 @@ export async function hasAnyLocalData({ store }: { store?: Store } = {}): Promis
 /** Upserts every entity in a snapshot into the primary store (non-destructive). */
 async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Promise<void> {
   for (const food of snapshot.foods) await putLocalFood(food, { store });
-  for (const log of snapshot.foodLogs) await putLocalFoodLog(log, { store });
+  // `origin: 'restore'`, and it is load-bearing: this loop writes rows the
+  // person is not logging right now (a backup import, and the merge every sync
+  // pull ends in). Without it a restored year of dinners would be reported to
+  // the community pulse as having been eaten this afternoon.
+  for (const log of snapshot.foodLogs) await putLocalFoodLog(log, { store, origin: 'restore' });
   for (const entry of snapshot.weightEntries) await putLocalWeightEntry(entry, { store });
   // The UNGUARDED put, deliberately: a restore must reproduce the file rather
   // than adjudicate it, so it may land a second open fast on a device that

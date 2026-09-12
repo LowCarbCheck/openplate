@@ -56,6 +56,17 @@ function render(fast: LocalFast, stageLabel?: string): string {
   );
 }
 
+/** The same chip, told how many other people on this instance are fasting. */
+function renderWithOthers(fast: LocalFast, othersFasting: number | null): string {
+  return renderToStaticMarkup(
+    createElement(
+      MemoryRouter,
+      { initialEntries: ['/diary'] },
+      withI18n(createElement(FastChip, { fast, nowMs: NOW, othersFasting })),
+    ),
+  );
+}
+
 /** The rendered TEXT, with every tag (and therefore every class name) removed. */
 function textOf(html: string): string {
   return html.replace(/<[^>]*>/g, ' ');
@@ -140,5 +151,48 @@ describe('FastChip stage label', () => {
 
     assert.ok(!textOf(html).includes('·'), `no separator without a stage to separate: ${html}`);
     assert.ok(!html.includes('md:inline'), `no md:-only span exists without a stage: ${html}`);
+  });
+});
+
+/**
+ * The company sentence (M222). It rides the `aria-label` and nothing else: the
+ * pill has no room for a second line, and a count of strangers is not a figure
+ * anyone needs to read off a header.
+ */
+describe('FastChip and the pulse count', () => {
+  it('appends the plural sentence after the state, for more than one other', () => {
+    const html = renderWithOthers(fastStartedHoursAgo(8), 2);
+
+    assert.ok(
+      html.includes(`aria-label="${ACTIVE_LABEL_STEM} 8h, open the timer 2 others are fasting right now"`),
+      `expected the state sentence then the count sentence: ${html}`,
+    );
+  });
+
+  it('appends the singular sentence for exactly one other', () => {
+    const html = renderWithOthers(fastStartedHoursAgo(8), 1);
+
+    assert.ok(
+      html.includes(`aria-label="${ACTIVE_LABEL_STEM} 8h, open the timer 1 other person is fasting right now"`),
+      `expected the singular form, not "1 others": ${html}`,
+    );
+  });
+
+  it('carries neither sentence when there is no figure', () => {
+    // The control for the two above: the same chip with `null` must read
+    // exactly as it did before the pulse existed.
+    const html = renderWithOthers(fastStartedHoursAgo(8), null);
+
+    assert.ok(
+      html.includes(`aria-label="${ACTIVE_LABEL_STEM} 8h, open the timer"`),
+      `the state sentence must be the whole label: ${html}`,
+    );
+    assert.ok(!html.includes('fasting right now'), `no count sentence without a count: ${html}`);
+  });
+
+  it('never puts the count in the visible pill', () => {
+    const html = renderWithOthers(fastStartedHoursAgo(8), 2);
+
+    assert.ok(!textOf(html).includes('fasting right now'), `the sentence is for assistive tech only: ${html}`);
   });
 });

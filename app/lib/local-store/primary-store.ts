@@ -18,6 +18,7 @@
  */
 import type { Store } from 'tinybase';
 import { z } from 'zod';
+import { reportMealFromLog } from '#app/lib/pulse';
 import { randomUuid } from '#app/lib/uuid';
 import { FAST_NOTE_MAX_LENGTH, selectCurrentFast } from '#app/models/fasting';
 import { EMPTY_BODY_METRICS, normalizeBodyMetrics, readBodyMetrics } from '#app/models/body-metrics';
@@ -166,9 +167,37 @@ export async function deleteLocalFood(id: string, { store }: StoreOption = {}): 
 // Food logs
 // ---------------------------------------------------------------------------
 
-/** Upserts a food log (keyed by its `id`/`clientId`, so a replay is exactly-once). */
-export async function putLocalFoodLog(log: LocalFoodLog, { store }: StoreOption = {}): Promise<LocalFoodLog> {
+/**
+ * Where a food log came from.
+ *
+ * `restore` is the bulk path: a backup import, and the merge a sync pull ends
+ * in, both of which write hundreds of rows the person is not logging right
+ * now. It exists ONLY so that the community pulse below can tell a meal from a
+ * copy of a meal. Without it, restoring a backup would report a year of
+ * dinners as having been eaten this afternoon.
+ */
+export type FoodLogOrigin = 'user' | 'restore';
+
+/**
+ * Upserts a food log (keyed by its `id`/`clientId`, so a replay is
+ * exactly-once).
+ *
+ * THIS IS THE APP'S ONE "a meal was logged" MOMENT, and therefore the single
+ * place the community pulse is told about one (M222 spec 03). Five routes
+ * write a log and there is no other function they all pass through;
+ * `trackFoodLogged` in `matomo-events.ts` is the only near miss, and that file
+ * is barred from carrying a numeric value at all, which a calorie figure is.
+ *
+ * `reportMealFromLog` does the deciding: it sends nothing unless the person
+ * turned the pulse on, it rounds, and it folds rows that share a `logBatchId`
+ * into one meal. Nothing here can throw.
+ */
+export async function putLocalFoodLog(
+  log: LocalFoodLog,
+  { store, origin = 'user' }: StoreOption & { origin?: FoodLogOrigin } = {},
+): Promise<LocalFoodLog> {
   writeEntity(await resolveStore(store), FOOD_LOGS_TABLE, log.id, log);
+  if (origin === 'user') reportMealFromLog(log);
   return log;
 }
 

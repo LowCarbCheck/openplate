@@ -1,5 +1,5 @@
 /**
- * `/settings/sharing` — the patient's grant, verify and revoke surface, plus
+ * `/settings/sharing`, the patient's grant, verify and revoke surface, plus
  * the Tier 2 rotation that is what actually defends the future.
  *
  * ── This route does not exist when sync is off ────────────────────────────
@@ -12,7 +12,7 @@
  *
  * `SYNC_SHARING` unset makes every share path answer the ordinary
  * unknown-route 404, to everybody (ADR-0002 prohibition 10). The client reads
- * that as `unavailable` — not as an error — and this page says so in one
+ * that as `unavailable`, not as an error, and this page says so in one
  * sentence instead of rendering a broken form. Sharing ships dark, so that is
  * the state every existing deployment is in today.
  *
@@ -20,12 +20,12 @@
  *
  * The loader returns one string. The ceremony, the wrap, the rotation and
  * every request to the sync service happen in the browser and never touch this
- * server — the property the whole design rests on.
+ * server, the property the whole design rests on.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
-import { KeyRound, Loader2, Share2 } from 'lucide-react';
+import { Activity, KeyRound, Loader2, Share2 } from 'lucide-react';
 
 import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
@@ -37,6 +37,7 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
+import { Switch } from '#app/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -49,6 +50,7 @@ import {
 } from '#app/components/ui/alert-dialog';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackShareGranted, trackShareKeyRotated, trackShareRevoked } from '#app/lib/matomo-events';
+import { isPulseEnabled, setPulseEnabled } from '#app/lib/pulse';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
   grantShare,
@@ -118,8 +120,58 @@ export default function SettingsSharing() {
         </CardContent>
       </Card>
 
+      {/* The pulse sits on this page because it is the other thing that can
+          leave this device, and it is offered only to a device that HAS an
+          account: the counts are posted with the account's own token, so there
+          is nothing to switch on without one. The route already 404s on an
+          instance with no sync server, so that half of the condition is the
+          loader's. */}
+      {session.account !== null && <PulseCard />}
+
       {state.status === 'ready' && <RotationCard onRotated={() => void refresh()} />}
     </div>
+  );
+}
+
+/**
+ * The community pulse opt in (M222 spec 03).
+ *
+ * DEFAULT OFF, and off on every path that cannot answer: the stored
+ * preference is read in an effect rather than during render, because
+ * `localStorage` does not exist on the server and a value that differs
+ * between the two renders is a hydration mismatch, which in this app is a
+ * blank screen.
+ *
+ * The sentence under the switch is the consent. It names the rounding, it
+ * names what is never sent, and it names the thirty minute window the fasting
+ * signal lives for. A person cannot agree to something nobody told them.
+ */
+function PulseCard() {
+  const { t } = useTranslation();
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    setEnabled(isPulseEnabled());
+  }, []);
+
+  const handleToggle = (next: boolean): void => {
+    setEnabled(next);
+    setPulseEnabled(next);
+  };
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="sharing-pulse" className="flex items-center gap-2 text-sm font-medium">
+            <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
+            {t('sharing.pulse.label')}
+          </Label>
+          <Switch id="sharing-pulse" checked={enabled} onCheckedChange={handleToggle} />
+        </div>
+        <p className="text-sm text-muted-foreground">{t('sharing.pulse.help')}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -136,7 +188,7 @@ function SignedOutNotice() {
   );
 }
 
-/** The honest answer for a deployment whose operator has not enabled sharing — which, while it ships dark, is all of them. */
+/** The honest answer for a deployment whose operator has not enabled sharing, which, while it ships dark, is all of them. */
 function UnavailableNotice() {
   const { t } = useTranslation();
   return <p className="text-sm text-muted-foreground">{t('sharing.unavailable')}</p>;
@@ -223,14 +275,14 @@ function describeCeremony(result: ShareCeremonyResult, t: (key: string, params?:
 }
 
 /**
- * TIER 2 — rotate the data key.
+ * TIER 2, rotate the data key.
  *
  * The copy here is as load-bearing as the revoke dialog's. Rotation seals
  * FUTURE entries with a key a revoked person never had; it does not and cannot
  * reach what was already downloaded, and this card must not suggest it does.
  *
  * It also shows the plan before it runs: any grant this device cannot re-wrap
- * — an unpinned peer, or a key that has changed — is revoked by the rotation,
+ *, an unpinned peer, or a key that has changed, is revoked by the rotation,
  * and the person should learn that from this screen rather than from their
  * dietician.
  */

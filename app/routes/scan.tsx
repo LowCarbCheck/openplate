@@ -24,6 +24,7 @@ import type { PlateImageInput, VisionProvider } from '#app/services/vision';
 import { INTAKE_SOURCES } from '#app/lib/intake-source';
 import type { IntakeSource, TypedIntakeSource } from '#app/lib/intake-source';
 import { parseCarbBasis } from '#app/lib/net-carbs';
+import { reportPhotoParsed } from '#app/lib/pulse';
 import { estimateScanCostUsd, formatScanCost, formatTokenCount } from '#app/services/vision/cost';
 import type { FoodMatch } from '#app/services/food-resolution';
 import {
@@ -126,7 +127,7 @@ import type { LogInputPath } from '#app/lib/matomo-events';
 export { RouteErrorBoundary as ErrorBoundary };
 
 // Title via the pure `meta-title` seam, with the language read off the ROOT
-// loader through `matches` — never the i18next singleton (see `meta-title.ts`
+// loader through `matches`, never the i18next singleton (see `meta-title.ts`
 // for why that would leak one visitor's language into another's <title>).
 export const meta: Route.MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.scan') }];
 
@@ -146,7 +147,7 @@ export const handle = {
 const translate: Translate = (key, params) => i18nSingleton.t(key, params ?? {});
 
 /**
- * Active UI language for those same client-only paths — day labels and token
+ * Active UI language for those same client-only paths, day labels and token
  * counts are display text and must follow the language around them.
  */
 function currentLanguage(): string {
@@ -155,7 +156,7 @@ function currentLanguage(): string {
 
 /**
  * Shown while the client loader reads the on-device BYOK settings + local
- * usage stats (M117/02) — that read can only happen in the browser, so the
+ * usage stats (M117/02), that read can only happen in the browser, so the
  * server-rendered markup is discarded and this fallback covers the gap until
  * `clientLoader` resolves. React Router requires this on any route where
  * `clientLoader.hydrate` is true.
@@ -227,7 +228,7 @@ export function identifyFailedErrorKey(subject: IntakeSubject): string {
  * The schemas are FACTORIES, not module constants: a Zod message is baked in
  * when the schema is built, so a module-level schema would freeze whatever
  * language happened to be active at import time. Each parse site builds its own
- * with the `t` it already has — the component's from `useTranslation`, the
+ * with the `t` it already has, the component's from `useTranslation`, the
  * client action's from `translate`.
  */
 function makeConfirmMacrosSchema(t: Translate) {
@@ -253,18 +254,18 @@ function makeConfirmItemSchema(t: Translate) {
     /**
      * The applied match's AUTHORITATIVE per-100g net carbs, carried through so it
      * survives into `LocalFoodLog.netCarbsPer100g` instead of dying at the store
-     * boundary. Blank for a plain AI plate estimate — which genuinely has no
+     * boundary. Blank for a plain AI plate estimate, which genuinely has no
      * upstream figure, so it correctly decodes to `undefined` and the readers
      * compute from the parts. Blank ALSO once the user hand-edits the macros
      * after applying a match, since the snapshot then describes numbers that are
-     * no longer there — see `resolveAppliedMatchSnapshot`, which owns that rule.
+     * no longer there, see `resolveAppliedMatchSnapshot`, which owns that rule.
      */
     netCarbsPer100g: authoritativeNetCarbsField,
     /**
      * The applied match's per-100 g vitamins/minerals (M135), carried through so
      * they survive into `LocalFoodLog.micronutrientsPer100g`. Blank for a plain
-     * AI plate estimate — the vision schema is deliberately NOT asked to
-     * estimate micronutrients, since it would fabricate them — and that blank
+     * AI plate estimate, the vision schema is deliberately NOT asked to
+     * estimate micronutrients, since it would fabricate them, and that blank
      * decodes to `undefined`, which the daily aggregation counts as UNCOVERED
      * rather than as a plate of zeros. Unlike the figure above, this is NOT
      * withdrawn by a macro hand-edit; see `resolveAppliedMatchSnapshot`.
@@ -279,10 +280,10 @@ function makeConfirmItemSchema(t: Translate) {
     /**
      * The applied match's printed-panel convention, derived from
      * `FoodMatch.origin` (M123/13 second-review finding 1) and snapshotted at
-     * log time — same convention as `LocalPersonalFood.carbBasis`/
+     * log time, same convention as `LocalPersonalFood.carbBasis`/
      * `LocalFoodLog.carbBasis`. Blank for a plain AI plate estimate, which has
      * no printed panel to report. Unlike `netCarbsPer100g` above, NOT withdrawn
-     * by a macro hand-edit — see `resolveAppliedMatchSnapshot`'s doc for why the
+     * by a macro hand-edit, see `resolveAppliedMatchSnapshot`'s doc for why the
      * two rules differ. Parsed with `parseCarbBasis` on the way in, so an
      * unrecognised value decodes to "unknown" rather than throwing.
      */
@@ -305,7 +306,7 @@ function makeConfirmItemSchema(t: Translate) {
   });
 }
 
-/** One parsed plate item — the schema is built per parse, so infer off the factory. */
+/** One parsed plate item, the schema is built per parse, so infer off the factory. */
 type ConfirmItem = z.infer<ReturnType<typeof makeConfirmItemSchema>>;
 
 /**
@@ -402,7 +403,7 @@ export function makeConfirmDraftSchema(t: Translate) {
 /**
  * Exported for direct schema-behavior testing (see
  * tests/unit/authoritative-net-carbs-wiring.test.ts). Those tests assert
- * SHAPE, not message wording, so a singleton-built instance is fine here —
+ * SHAPE, not message wording, so a singleton-built instance is fine here ,
  * every real parse site builds its own with a live `t` instead.
  */
 export const ConfirmDraftSchema = makeConfirmDraftSchema(translate);
@@ -414,13 +415,13 @@ type IdentifyResult =
       /**
        * WHICH INTAKE produced this identification. A photo, a typed sentence
        * and a spoken one all land on this same arm with the same `foods[]`,
-       * which is the whole point — so the only thing left that can tell them
+       * which is the whole point, so the only thing left that can tell them
        * apart is carried here, and its only reader is the diary's input-path
        * event on the confirm (`SCAN_LOG_PATH_BY_SOURCE`). It says nothing
        * about the food.
        */
       intakeSource: IntakeSource;
-      /** Provider + model of the attempt, together — pricing resolves on the PAIR (`estimateScanCostUsd`), never on the id alone. */
+      /** Provider + model of the attempt, together, pricing resolves on the PAIR (`estimateScanCostUsd`), never on the id alone. */
       provider: AiProviderType;
       modelId: string;
       matches: FoodMatch[][];
@@ -430,11 +431,11 @@ type IdentifyResult =
       error: string;
       usage?: ScanTokenUsage;
       modelId?: string;
-      /** Set only for a typed `VisionProviderFailure` — drives cause-specific alert copy (see `UploadForm`). */
+      /** Set only for a typed `VisionProviderFailure`, drives cause-specific alert copy (see `UploadForm`). */
       failureCause?: VisionFailureCause;
       /** The server's `Retry-After` in seconds, when it sent one. Only ever set on a `rate-limit`. */
       retryAfterSeconds?: number | null;
-      /** The configured provider at the time of this attempt — lets `UploadForm` phrase a `rate-limit` failure with OpenRouter-specific "free tier resets daily" copy without `failure-cause.ts` (the provider-neutral adapter layer) knowing about any one provider. */
+      /** The configured provider at the time of this attempt, lets `UploadForm` phrase a `rate-limit` failure with OpenRouter-specific "free tier resets daily" copy without `failure-cause.ts` (the provider-neutral adapter layer) knowing about any one provider. */
       provider?: AiProviderType;
     };
 
@@ -446,7 +447,7 @@ type ConfirmResult = { intent: 'confirm'; submission: SubmissionResult<string[]>
  * value below is read from the device.
  *
  * BYOK settings + this month's usage live only in the local store since
- * M117/02 — the server never sees the key, so this data can only come from
+ * M117/02, the server never sees the key, so this data can only come from
  * the browser. `logDate`/`logDateLabel` (M117/03) are computed here too, since
  * the timezone they depend on is local-only (`LocalProfileGoals.timezone`).
  *
@@ -492,12 +493,12 @@ function fileToBase64(file: File): Promise<string> {
 
 /**
  * A blocked `fetch` (CSP `connect-src`, CORS, or a genuinely unreachable
- * host) surfaces to JS as a `TypeError` with no further detail — browsers
+ * host) surfaces to JS as a `TypeError` with no further detail, browsers
  * deliberately don't distinguish these for security reasons. For
  * `openai-compatible` specifically (the only provider with a caller-supplied
  * host, so the only one the CSP's localhost carve-out can silently reject),
  * that ambiguity is worth naming rather than leaving the generic "Failed to
- * identify foods from the photo." — a one-branch message improvement, not a
+ * identify foods from the photo.", a one-branch message improvement, not a
  * new error-classification framework (M117/02 review fix).
  */
 function refineIdentifyErrorMessage(params: { provider: AiProviderType; error: unknown; fallback: string }): string {
@@ -520,7 +521,7 @@ const intakeKindSchema = z.enum(['photo', 'text']).catch('photo');
 /**
  * How the intake started. Read here rather than derived, because a typed
  * sentence and a spoken one are byte-identical by the time they reach this
- * function — the difference is a fact about the person's tap, and only the
+ * function, the difference is a fact about the person's tap, and only the
  * screen that took it knows.
  */
 const intakeSourceSchema = z.enum(INTAKE_SOURCES).catch('photo');
@@ -532,7 +533,7 @@ const intakeTextSchema = z
   .catch('');
 
 /**
- * Records exactly one local usage row per attempt outcome — see
+ * Records exactly one local usage row per attempt outcome, see
  * `handleClientIdentify`. Fail-open by contract: the recorded row is never read
  * back by the caller, so the return is `void` rather than the store's own row.
  */
@@ -544,7 +545,7 @@ type RecordScanAttempt = (params: {
 /**
  * Maps a scan outcome to its analytics event.
  *
- * `error` reports nothing here on purpose — the outcome alone cannot say WHY,
+ * `error` reports nothing here on purpose, the outcome alone cannot say WHY,
  * and a bare 'failed' with no reason is the least useful event we could send.
  * The failure path reports its own cause where the cause is known.
  *
@@ -617,7 +618,7 @@ async function completePlateIntake({
   }
 
   if (identification.foods.length === 0) {
-    // The model billed tokens but found nothing — attribute that cost here
+    // The model billed tokens but found nothing, attribute that cost here
     // (this is the previously-lost case) rather than discarding the usage.
     await recordAttempt({ usage, outcome: 'no_foods' });
     return {
@@ -629,7 +630,7 @@ async function completePlateIntake({
     };
   }
   await recordAttempt({ usage, outcome: 'identified' });
-  // Enrich with curated LowCarbCheck matches (names only, fail-open — never
+  // Enrich with curated LowCarbCheck matches (names only, fail-open, never
   // blocks the draft). `matches` is parallel to `identification.foods` by index.
   const { matches } = await fetchFoodMatches(identification.foods.map((food) => food.name));
   return {
@@ -671,10 +672,10 @@ async function runTextIntake(context: TextAttemptContext): Promise<IdentifyResul
  * Runs the plate-identity call browser -> provider directly (M117/02): the
  * BYOK key is read from the local store and never leaves this device except
  * in the request to the user's own configured provider. Replaces the old
- * server-mediated `handleIdentify` — the photo and the key no longer transit
+ * server-mediated `handleIdentify`, the photo and the key no longer transit
  * the openplate server at all. Usage bookkeeping moves to the local-only
  * event log (`recordLocalAiUsageEvent`); there is no server-side rate limit
- * here anymore (there's no server round trip left to gate) — the user's own
+ * here anymore (there's no server round trip left to gate), the user's own
  * provider billing is the natural throttle on their own key.
  */
 /** The three form fields the screen uses to tell the action which AI it resolved. */
@@ -684,7 +685,7 @@ const MANAGED_AI_FIELDS = { source: 'aiSource', baseUrl: 'aiBaseUrl', model: 'ai
  * Writes the managed descriptor into a submission, or nothing at all.
  *
  * Nothing SECRET crosses: a base URL and a model id, both of which the server
- * already publishes to this browser. The bearer is never in the form — it is
+ * already publishes to this browser. The bearer is never in the form, it is
  * fetched from the vault inside the action, one frame before the request.
  */
 export function writeManagedAiFields(formData: FormData, managed: ManagedAiSettings | null): void {
@@ -695,7 +696,7 @@ export function writeManagedAiFields(formData: FormData, managed: ManagedAiSetti
 }
 
 /**
- * The parse of the three fields — a form is an I/O boundary, so this is where
+ * The parse of the three fields, a form is an I/O boundary, so this is where
  * `FormDataEntryValue` becomes a domain value.
  *
  * A partial or malformed set reads as "no managed AI" rather than throwing:
@@ -748,7 +749,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   // reachable from a `clientAction`: this function runs outside React, and the
   // route has no server loader to read the root's data through. So the screen
   // resolves it with `useEffectiveAiSettings` and posts the answer as three
-  // fields. Nothing secret travels — a base URL and a model id — and the
+  // fields. Nothing secret travels, a base URL and a model id, and the
   // bearer is fetched from the vault here, in this frame.
   const managed = readManagedAiFields(formData);
   const settings = managed === null ? await getLocalAiSettings() : null;
@@ -792,8 +793,14 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     // Analytics rides the usage row's own choke point: every scan outcome
     // already passes through here exactly once, so reporting here cannot
     // drift out of step with reality the way N separate call sites would.
-    // No counts, no model id, nothing from the photo — see `matomo-events.ts`.
+    // No counts, no model id, nothing from the photo, see `matomo-events.ts`.
     reportScanOutcome(params.outcome);
+    // The community pulse, on the same choke point and only for a PHOTOGRAPH
+    // that produced food: a typed or spoken intake is not a photo, and a
+    // failed or empty read is not a parse. One line through
+    // `#app/lib/pulse`, which sends nothing unless the person turned it on
+    // (M222 spec 03).
+    if (params.outcome === 'identified' && intakeKind === 'photo') void reportPhotoParsed();
     return recordLocalAiUsageEvent({
       provider,
       model,
@@ -826,7 +833,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       baseUrl,
       model,
       // The MANAGED path hands over a token provider rather than a key, and
-      // that is what lets the adapter refresh once on a 401 — an access token
+      // that is what lets the adapter refresh once on a 401, an access token
       // lasts fifteen minutes and a tab stays open for hours.
       credential: managed === null ? { apiKey: settings?.apiKey ?? '' } : managedAiCredential(),
     });
@@ -849,14 +856,14 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     const retryAfterSeconds = error instanceof VisionProviderFailure ? error.retryAfterSeconds : undefined;
     // A `VisionProviderError`'s own message is authored in the provider-neutral
     // vision adapter layer (`app/services/vision/failure-cause.ts`), which this
-    // route can't translate from here — see `describeFailureBody`, which
+    // route can't translate from here, see `describeFailureBody`, which
     // substitutes localized copy for every typed cause it recognizes.
     const fallbackMessage =
       error instanceof VisionProviderError ? error.message : translate(identifyFailedErrorKey(intakeKind));
     const message = refineIdentifyErrorMessage({ provider, error, fallback: fallbackMessage });
     await recordAttempt({ usage, outcome: 'error' });
     // The reason, not just the fact. The machine-readable cause lives on
-    // `VisionProviderFailure.failureCause` — NOT on `VisionProviderError.cause`,
+    // `VisionProviderFailure.failureCause`, NOT on `VisionProviderError.cause`,
     // which is the standard `Error` cause and holds an arbitrary value.
     // `ScanFailureReason` mirrors `VisionFailureCause` exactly so nothing has
     // to be mapped; a mapping is where a real failure would quietly turn into
@@ -876,7 +883,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
 }
 
 /**
- * Builds the food-log entry one confirmed plate item persists — the pure core
+ * Builds the food-log entry one confirmed plate item persists, the pure core
  * of `handleConfirm`, split out so the whole "AI draft (± an applied curated
  * match) → stored entry" path is unit-testable without a store, a clock, or a
  * form. Same precedent as `#app/routes/add`'s `buildLoggedEntry`, which it
@@ -930,7 +937,7 @@ export function buildConfirmedEntry({
     mealType,
     source: 'plate_ai',
     // Curated macros aren't AI-guessed, so `aiEstimated` is false whenever a
-    // match was applied (even if the user then tweaked the numbers — they're
+    // match was applied (even if the user then tweaked the numbers, they're
     // still sourced from a curated entry, not an LLM estimate). `curatedSource`
     // is the single source of truth for this distinction.
     aiEstimated: curatedSource === null,
@@ -941,7 +948,7 @@ export function buildConfirmedEntry({
     logBatchId,
     // Snapshotted per-100g so a later quantity edit rescales it correctly.
     // Absent for a plain AI plate estimate, which genuinely has no upstream
-    // figure — the readers then compute from the parts, which is the right
+    // figure, the readers then compute from the parts, which is the right
     // answer there. Present ONLY for an applied curated match whose macros the
     // user hasn't since hand-edited (see `resolveAppliedMatchSnapshot`); THIS
     // is the line that stops a fibre-heavy curated food scanned off a plate
@@ -952,10 +959,10 @@ export function buildConfirmedEntry({
     // micronutrient dimension to claim.
     micronutrientsPer100g: item.micronutrientsPer100g,
     // The applied match's licence credit, travelling with the data it credits
-    // (CC BY). Null for an AI estimate — there is no source to credit.
+    // (CC BY). Null for an AI estimate, there is no source to credit.
     attribution: toStoredAttribution(item.attribution),
     // The applied match's printed-panel convention (M123/13 second-review
-    // finding 1) — see `makeConfirmItemSchema`'s `carbBasis` doc for why this
+    // finding 1), see `makeConfirmItemSchema`'s `carbBasis` doc for why this
     // is NOT withdrawn by a macro edit the way `netCarbsPer100g` above is.
     // Absent for a plain AI plate estimate, which has no printed panel.
     carbBasis: parseCarbBasis(item.carbBasis) ?? undefined,
@@ -964,13 +971,13 @@ export function buildConfirmedEntry({
 
 /**
  * Builds the PERSONAL FOOD one confirmed plate item persists alongside its log
- * — the second half of `handleConfirm`'s pure core, split out for exactly the
+ *, the second half of `handleConfirm`'s pure core, split out for exactly the
  * reason `buildConfirmedEntry` above was: this confirm writes TWO rows from one
  * upstream fact, and a field that reaches only one of them is invisible at the
  * time and permanent afterwards.
  *
  * That is precisely what happened: the log carried `item.netCarbsPer100g` while
- * the food, built inline here, did not — so /add's "Your food" row for a
+ * the food, built inline here, did not, so /add's "Your food" row for a
  * scanned-and-matched fibre-heavy food re-derived `carbs - fiber - polyols` and
  * showed a green 0 beside the identical food's 21.7 in the diary.
  *
@@ -1008,7 +1015,7 @@ export function buildConfirmedFood({
     // estimate stays `'plate_ai'`.
     source: isLabelItem(item) ? 'user' : 'plate_ai',
     createdAt: createdAtMs,
-    // The SAME figure the log gets, from the SAME upstream fact — see
+    // The SAME figure the log gets, from the SAME upstream fact, see
     // `buildConfirmedEntry`. Present only for an applied curated match whose
     // macros the user hasn't since hand-edited (`resolveAppliedMatchSnapshot`
     // withdraws it otherwise); absent for a plain AI plate estimate, which has
@@ -1016,7 +1023,7 @@ export function buildConfirmedFood({
     // parts. Deliberately NOT `?? null`: absent ("never captured") and `null`
     // ("upstream consulted, genuinely unknown") are different facts.
     netCarbsPer100g: item.netCarbsPer100g,
-    // The SAME snapshot the log gets, from the SAME upstream fact (v10) — and
+    // The SAME snapshot the log gets, from the SAME upstream fact (v10), and
     // the second time this exact asymmetry has been closed on this exact line:
     // the figure above was the v5 → v6 fix, these are the v9 → v10 one. Absent
     // for a plain AI plate estimate, which has no micronutrient dimension to
@@ -1024,7 +1031,7 @@ export function buildConfirmedFood({
     // cannot invent it). Cloned rather than aliased so the food's snapshot and
     // the log's never share object identity.
     micronutrientsPer100g: cloneMicronutrients(item.micronutrientsPer100g),
-    // The SAME basis the log gets, from the SAME upstream fact — see
+    // The SAME basis the log gets, from the SAME upstream fact, see
     // `buildConfirmedEntry` and the M123/13 second-review finding 1 comment
     // there.
     carbBasis: parseCarbBasis(item.carbBasis) ?? undefined,
@@ -1130,7 +1137,7 @@ export function readIntakeSource(formData: FormData): IntakeSource {
 }
 
 /**
- * Confirm now writes straight to the on-device primary store (M117/03) — the
+ * Confirm now writes straight to the on-device primary store (M117/03), the
  * confirmed food logs never transit the server at all; this route has no
  * server `action` anymore (see `clientAction` below).
  */
@@ -1149,7 +1156,7 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
   }
 
   // Back-dating: when a non-today day rode along, stamp every entry from this
-  // batch onto that day (one shared instant is fine — they're one meal capture).
+  // batch onto that day (one shared instant is fine, they're one meal capture).
   const activeDate =
     submission.value.date !== undefined && submission.value.date !== todayInTimezone(timezone) ?
       submission.value.date
@@ -1196,7 +1203,7 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
     void savePlatePhoto({ userId: offeredPhoto.userId, logBatchId, file: offeredPhoto.file });
   }
 
-  // One toast for the whole plate, through the app's shared add-toast id — a
+  // One toast for the whole plate, through the app's shared add-toast id, a
   // four-item confirm is ONE action, not four (M129/03). The running total is
   // read after every entry is written, so it reports the day the user is about
   // to land on rather than a mid-write figure.
@@ -1224,7 +1231,7 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
 }
 
 /**
- * Dispatches every submission entirely client-side (M117/03 — this route no
+ * Dispatches every submission entirely client-side (M117/03, this route no
  * longer has a server `action`): `confirm` writes the food logs to the local
  * primary store, `identify` runs the browser -> provider vision call. Neither
  * intent ever reaches the server.
@@ -1293,7 +1300,7 @@ function getIdentifyStageMessage(elapsedSeconds: number, t: Translate, kind: Int
 function formatFailedAttemptCreditLine(estimatedCostUsd: number | null, t: Translate): string {
   if (estimatedCostUsd === null) return t('scan.errors.attemptRecorded');
   const amount = formatScanCost(estimatedCostUsd);
-  // `formatScanCost` already prefixes "<" for sub-thousandth amounts — don't
+  // `formatScanCost` already prefixes "<" for sub-thousandth amounts, don't
   // double up with a leading "~" in that case.
   const approx = amount.startsWith('<') ? amount : `~${amount}`;
   return t('scan.errors.attemptCost', { amount: approx });
@@ -1301,7 +1308,7 @@ function formatFailedAttemptCreditLine(estimatedCostUsd: number | null, t: Trans
 
 /**
  * The interactive scan flow for a connected user. Owns the photo pipeline, the
- * arm/dispatch state machine, and the identify `useFetcher` — auto-firing the
+ * arm/dispatch state machine, and the identify `useFetcher`, auto-firing the
  * (paid) identification the moment a downscaled JPEG is ready, while keeping the
  * preview and staged overlay mounted throughout (no navigation flash). Once the
  * fetcher returns an identification it swaps to the confirm draft.
@@ -1367,7 +1374,7 @@ function ScanFlow({
   const [didSettleWithNothing, setDidSettleWithNothing] = useState(false);
   // The fetcher keeps its last result during a resubmit; suppress the result
   // that belonged to a superseded pick so a stale error/success can't cling to
-  // a freshly-picked photo. Compared by reference — a new response is a new object.
+  // a freshly-picked photo. Compared by reference, a new response is a new object.
   const [suppressedData, setSuppressedData] = useState<typeof fetcher.data>(undefined);
   const lastSubmittedDispatchId = useRef(0);
   const prevFetcherState = useRef(fetcher.state);
@@ -1386,9 +1393,9 @@ function ScanFlow({
 
   // Sync the object-URL preview to the file that will actually be uploaded.
   // Creating the URL in the effect keeps it revoked on both replacement and
-  // unmount and survives StrictMode remounts — this in-tab preview URL itself
+  // unmount and survives StrictMode remounts, this in-tab preview URL itself
   // is never written anywhere (the confirmed photo, separately, IS cached to
-  // this device on save — see `handleConfirm`'s `savePlatePhoto` call).
+  // this device on save, see `handleConfirm`'s `savePlatePhoto` call).
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -1444,7 +1451,7 @@ function ScanFlow({
     dispatch({ type: 'settled' });
     // THE SILENT FAILURE NET (M192/06). Every failure the action can SEE comes
     // back as `{ error }`, and the alert renders it. What has no owner is the
-    // request that never reached the action at all — a body the dev server
+    // request that never reached the action at all, a body the dev server
     // refused, a navigation that cancelled the submission, a runtime that threw
     // before the handler. Walking 0.10.0 that produced a button that did
     // nothing: no toast, no card, nothing in the console. A round trip that
@@ -1524,7 +1531,7 @@ function ScanFlow({
    * The text pipeline's single entry: hold the words, arm, dispatch.
    *
    * No validation, no downscale, no grace window. There is nothing to prepare
-   * and nothing to reconsider — the person read their own sentence back before
+   * and nothing to reconsider, the person read their own sentence back before
    * they submitted it, which is exactly the confirmation the library-pick
    * grace window exists to provide for a photo they may have picked by
    * mistake. So it arms as a `'camera'` pick, which dispatches at once.
@@ -1536,14 +1543,14 @@ function ScanFlow({
     setFile(null);
     setTypedText(text);
     setIntakeSource(source);
-    // No photo timestamp to read a slot off, so the slot is "now" — which is
+    // No photo timestamp to read a slot off, so the slot is "now", which is
     // what a person logging as they eat means anyway. Still editable on the
     // confirm screen, exactly as a photo's preselection is.
     setCaptureMealType(mealTypeForCapture({ fileLastModifiedMs: Date.now(), nowMs: Date.now(), timezone }));
     dispatch({ type: 'pick', source: 'camera' });
   };
 
-  // Keep the ref pointing at the current pipeline entry (no dep array — runs
+  // Keep the ref pointing at the current pipeline entry (no dep array, runs
   // every render) so the mount effect below always calls the freshest closure.
   useEffect(() => {
     processSharedRef.current = (sharedFile: File) =>
@@ -1555,7 +1562,7 @@ function ScanFlow({
 
   // The tab bar's launcher opened the camera itself and parked the photo for
   // us (`scan-handoff.ts`). Feed it into the SAME pipeline a capture taken on
-  // this screen goes through — 'camera' dispatches at once, exactly as it does
+  // this screen goes through, 'camera' dispatches at once, exactly as it does
   // when the shutter is pressed here, so the grace-window semantics are the
   // capture's, not the hand-off's. The slot empties as it is read, so a
   // remount can never re-analyse (and re-charge for) the same photo.
@@ -1577,7 +1584,7 @@ function ScanFlow({
   // Web Share Target v2: a photo shared into the app lands on /scan?shared=1. The
   // service worker stashed the file in a cache; read it back, strip the flag, and
   // feed it through the SAME library-pick path (downscale + grace + auto-analyze)
-  // — never a forked pipeline. Runs once on mount.
+  //, never a forked pipeline. Runs once on mount.
   useEffect(() => {
     if (sharedPhotoHandledRef.current) return;
     if (globalThis.window === undefined || !('caches' in window)) return;
@@ -1624,7 +1631,7 @@ function ScanFlow({
 
   // A returned identification (or a confirm-step re-validation) swaps to the
   // draft. Passing both keeps the plate's portion chips + curated matches alive
-  // across a failed confirm — the identification rides the still-mounted fetcher.
+  // across a failed confirm, the identification rides the still-mounted fetcher.
   if (identifyResult || confirmResult) {
     return (
       <ConfirmDraftForm
@@ -1673,7 +1680,7 @@ function ScanFlow({
 
 /**
  * Cause-specific alert headline. Replaces the old one-size-fits-all "No luck
- * with that photo" — which was actively wrong for anything that isn't a
+ * with that photo", which was actively wrong for anything that isn't a
  * photo-quality problem (a wrong key, an empty provider balance, a rate
  * limit, an unrecognized model, or a malformed request all used to get the
  * same "mind trying another?" framing, telling the user to retry something
@@ -1697,7 +1704,7 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   'ai-instance-ceiling': 'scan.errors.titles.instanceCeiling',
 } satisfies Record<Exclude<VisionFailureCause, 'genuinely-no-food'>, string>;
 
-/** The alert headline for a given failure cause — see `FAILURE_TITLE_KEY_BY_CAUSE`. */
+/** The alert headline for a given failure cause, see `FAILURE_TITLE_KEY_BY_CAUSE`. */
 export function getFailureAlertTitle(failureCause: VisionFailureCause | undefined, t: Translate): string {
   if (failureCause === undefined || failureCause === 'genuinely-no-food') return t('scan.errors.titles.noLuck');
   return t(FAILURE_TITLE_KEY_BY_CAUSE[failureCause]);
@@ -1705,7 +1712,7 @@ export function getFailureAlertTitle(failureCause: VisionFailureCause | undefine
 
 /**
  * OpenRouter's free-tier vision models cap out at a small daily request
- * count (M127/01 spike: 50 req/day at $0) — `failure-cause.ts` stays
+ * count (M127/01 spike: 50 req/day at $0), `failure-cause.ts` stays
  * provider-neutral (a `rate-limit` there could be ANY provider's generic
  * 429), so the "free scans reset daily, or add credits" specificity lives
  * here, gated on the provider actually being openrouter. Every other cause,
@@ -1717,7 +1724,7 @@ const OPENROUTER_RATE_LIMIT_KEY = 'scan.errors.openrouterRateLimit';
 /**
  * Localized stand-ins for the messages the provider-neutral vision adapter
  * layer (`app/services/vision/failure-cause.ts`) authors in English. That layer
- * is deliberately i18n-free — it has no `t` threaded through it — so the route
+ * is deliberately i18n-free, it has no `t` threaded through it, so the route
  * re-states its deterministic messages here, keyed by the same typed cause the
  * adapter already carries. Only the causes whose adapter message is a single
  * fixed sentence are listed: `transient` has two possible messages (unreachable
@@ -1772,7 +1779,7 @@ export function shouldOfferPlansDoor(input: { failureCause?: VisionFailureCause;
  */
 const RATE_LIMIT_MINUTE_SECONDS = 60;
 
-/** The alert body for a given failure — see `FAILURE_BODY_KEY_BY_CAUSE`. */
+/** The alert body for a given failure, see `FAILURE_BODY_KEY_BY_CAUSE`. */
 export function describeFailureBody(
   params: {
     failureCause?: VisionFailureCause;
@@ -1860,9 +1867,9 @@ export function UploadForm({
   selectionError: string | null;
   elapsedSeconds: number;
   error?: string;
-  /** Machine-readable reason `error` happened — picks the alert's headline (see `getFailureAlertTitle`). */
+  /** Machine-readable reason `error` happened, picks the alert's headline (see `getFailureAlertTitle`). */
   failureCause?: VisionFailureCause;
-  /** The server's `Retry-After` in seconds — tells a burst limit from a spent daily allowance. */
+  /** The server's `Retry-After` in seconds, tells a burst limit from a spent daily allowance. */
   retryAfterSeconds?: number | null;
   /**
    * The account's allowance end date, or `null`.
@@ -1883,7 +1890,7 @@ export function UploadForm({
    * drew then.
    */
   plansAvailable?: boolean;
-  /** The provider active for this attempt — phrases a `rate-limit` failure (see below) and keys the failed attempt's pricing lookup; never branches the alert's headline or any other cause. */
+  /** The provider active for this attempt, phrases a `rate-limit` failure (see below) and keys the failed attempt's pricing lookup; never branches the alert's headline or any other cause. */
   provider?: AiProviderType;
   usage?: ScanTokenUsage;
   modelId?: string;
@@ -1900,12 +1907,12 @@ export function UploadForm({
   const failedAttemptCostUsd =
     usage && modelId && provider ? (estimateScanCostUsd(provider, modelId, usage) ?? null) : null;
   const failedAttemptCreditLine = usage ? formatFailedAttemptCreditLine(failedAttemptCostUsd, t) : null;
-  // A photo-quality failure (no typed cause at all — validation/read errors —
+  // A photo-quality failure (no typed cause at all, validation/read errors ,
   // or the vision call succeeding but returning nothing usable) keeps the
   // original "try a clearer shot" framing, since that advice is actually
   // right there. Every OTHER typed cause (wrong key, no credit, rate limited,
   // unrecognized model, malformed request, transient outage) gets its own
-  // accurate headline below instead — retrying with a different photo can
+  // accurate headline below instead, retrying with a different photo can
   // never fix a rejected API key.
   const isPhotoQualityFailure = failureCause === undefined || failureCause === 'genuinely-no-food';
   // TWO SUBJECTS NOW, not three. A photograph is a photograph whatever it
@@ -1942,7 +1949,7 @@ export function UploadForm({
   // Only relevant for a photo-quality failure: whether there's extra detail
   // worth showing below the friendly headline (the plain NO_FOODS_ERROR case
   // has nothing more specific to add). A non-photo-quality failure shows
-  // `error` as its main body instead — see the Alert render below.
+  // `error` as its main body instead, see the Alert render below.
   const showSpecificError = error !== undefined && error !== t(noFoodsErrorKey(isTextIntake ? 'text' : 'photo'));
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -1959,7 +1966,7 @@ export function UploadForm({
   // the free grace window still accepts a re-pick (which re-arms it).
   const pickDisabled = isProcessing || phase === 'dispatching';
   // After a cancel or a failed attempt we rest at idle-with-an-intake and offer
-  // a manual, deliberately-quiet analyze — this app never nudges the user to
+  // a manual, deliberately-quiet analyze, this app never nudges the user to
   // spend. A sentence qualifies exactly as a prepared photo does.
   const canAnalyze = phase === 'idle' && (file !== null || isTextIntake) && !isProcessing;
 
@@ -2000,7 +2007,7 @@ export function UploadForm({
             />
 
             <div className="grid gap-2">
-              {/* Caption only — picking is driven by the two buttons below. */}
+              {/* Caption only, picking is driven by the two buttons below. */}
               <Label>{photoLabel}</Label>
 
               {/* THE TEXT PATH'S PREVIEW. A photo intake shows the picture
@@ -2028,7 +2035,7 @@ export function UploadForm({
                   {phase === 'grace' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 p-4 backdrop-blur">
                       {/* The grace window is the one in-flight state that used
-                          to sit completely still — a frozen sentence over a
+                          to sit completely still, a frozen sentence over a
                           blurred photo, which reads as a hang. The dots carry
                           "we're on it" without competing with the spinner that
                           takes over the moment the request is actually
@@ -2121,7 +2128,7 @@ export function UploadForm({
                       </>
                       // A non-photo-quality failure's `error` message is already
                       // the specific, actionable detail (see `failure-cause.ts`)
-                      // — showing it as the main body, not a muted afterthought.
+                      //, showing it as the main body, not a muted afterthought.
                       // `describeFailureBody` additionally swaps in OpenRouter-
                       // specific free-tier copy for a `rate-limit` failure.
                     : describeFailureBody({ failureCause, provider, error, retryAfterSeconds, allowanceEndsAt }, t)
@@ -2182,13 +2189,13 @@ export function UploadForm({
 /**
  * Reads back a photo shared into the app from the OS share sheet for a
  * visitor with no AI provider connected. `ScanFlow` (the normal reader of
- * this cache entry) never mounts for a keyless visitor — only `ConnectCard`
- * renders — so without this, the share silently had no visible effect at
+ * this cache entry) never mounts for a keyless visitor, only `ConnectCard`
+ * renders, so without this, the share silently had no visible effect at
  * all: no error, no acknowledgement, nothing. This still reads (and clears)
  * the cache entry so it can't linger forever, but keeps only an in-memory
- * preview to show what was received — a keyless visitor has no AI provider
+ * preview to show what was received, a keyless visitor has no AI provider
  * connected yet, so nothing has been (or can be) identified or cached to the
- * on-device photo store — then `ConnectCard` says plainly what happened and
+ * on-device photo store, then `ConnectCard` says plainly what happened and
  * what to do.
  */
 function useKeylessSharedPhotoPreview(): string | null {
@@ -2208,7 +2215,7 @@ function useKeylessSharedPhotoPreview(): string | null {
         const sharedFile = await readSharedPhoto(window.caches);
         if (sharedFile) setPreviewUrl(URL.createObjectURL(sharedFile));
       } catch {
-        // Nothing readable — ConnectCard just shows its normal copy.
+        // Nothing readable, ConnectCard just shows its normal copy.
       }
     })();
   }, []);
@@ -2229,7 +2236,7 @@ function useKeylessSharedPhotoPreview(): string | null {
  * - `self-hosted`: nobody but the provider the user picks themselves, so the
  *   BYOK buttons are the whole answer.
  * - `instance-ai`: this instance runs an inference endpoint of its own (M138
- *   spec 06), and the recipient is NAMED — a person deciding whether to press
+ *   spec 06), and the recipient is NAMED, a person deciding whether to press
  *   the shutter is deciding who sees the photo.
  * - `managed-missing`: a managed instance (M187 spec 03, M192), where AI comes
  *   from the account and never from a button on this card. It wins over a
@@ -2305,11 +2312,11 @@ export function resolveConnectCardVariant({
 }
 
 /**
- * Keyless-friendly landing for a user without an AI provider yet — also the cold
+ * Keyless-friendly landing for a user without an AI provider yet, also the cold
  * open for anyone who's never scanned before, since /scan is a primary tab. Says
  * plainly, before any jargon, what this does, that it needs a paid account the
  * visitor sets up themselves, roughly what it costs, and that everything else in
- * openplate works without it — so someone who will never do this can tell in one
+ * openplate works without it, so someone who will never do this can tell in one
  * screen and move on without feeling locked out (usability-overhaul fix). Replaces
  * the old hard redirect to /settings/ai with a warm connect card that also offers a
  * photo-free path to logging. When a photo was shared in from the OS share sheet
@@ -2405,7 +2412,7 @@ export function ConnectCardView({
             instance there is nobody but the provider the user chooses, so one
             sentence covers it. On an instance with an AI endpoint of its own
             the photo goes to an endpoint this instance's operator runs, and
-            the recipient is NAMED rather than left as "an AI" — a person
+            the recipient is NAMED rather than left as "an AI", a person
             deciding whether to press the shutter is deciding who sees the
             photo. On a managed instance this card is a DEAD END by design: the
             connection arrives with an invite link, never from a button here,
@@ -2415,7 +2422,7 @@ export function ConnectCardView({
             (M204 spec 07): the device lock sends that visit to `/welcome`
             before this card renders.
             The audit line, when a gateway declared one, is rendered by
-            `AuditReviewNotice` on the connected screen — it describes a
+            `AuditReviewNotice` on the connected screen, it describes a
             connection that does not exist yet on this card. */}
         {variant.kind === 'self-hosted' && (
           <p className="text-sm text-muted-foreground">{t('scan.setup.crisp.selfHosted')}</p>
@@ -2450,7 +2457,7 @@ export function ConnectCardView({
             )}
           </div>
         )}
-        {/* One tap, no key to go and get — renders nothing at all when this
+        {/* One tap, no key to go and get, renders nothing at all when this
             instance provides no AI of its own. Above the BYOK buttons because
             on such an instance it is the whole answer; `revalidate` re-runs
             `clientLoader`, which re-reads the device settings and swaps this
@@ -2472,7 +2479,7 @@ export function ConnectCardView({
         )}
         <div className="flex flex-col gap-3 sm:flex-row">
           {/* Primary CTA: openrouter is the only provider with a one-click OAuth
-              connect (`vision/registry.ts`) — rendered off that capability,
+              connect (`vision/registry.ts`), rendered off that capability,
               never a hardcoded provider check here. Absent on a managed
               instance: a user there never brings a key of their own, so
               offering one reads as "your OpenRouter connection is missing"
@@ -2504,7 +2511,7 @@ export function ConnectCardView({
   );
 }
 
-/** Compact honest per-100g summary for a curated match — null macros are skipped, never shown as 0. */
+/** Compact honest per-100g summary for a curated match, null macros are skipped, never shown as 0. */
 function formatCuratedMacroSummary(match: FoodMatch, t: Translate, language: string): string {
   const { kcal, carbs, fiber } = match.macrosPer100g;
   const parts: string[] = [];
@@ -2547,7 +2554,7 @@ const MATCH_TIER_LABEL_KEY = {
   weak: 'scan.review.matchTier.weak',
 } satisfies Record<MatchTier, string>;
 
-/** Subtle zinc trust chip ("Strong match" / "Possible match") — never shows the raw score. */
+/** Subtle zinc trust chip ("Strong match" / "Possible match"), never shows the raw score. */
 function MatchTierChip({ tier }: { tier: MatchTier }) {
   const { t } = useTranslation();
   return (
@@ -2590,11 +2597,11 @@ function CuratedMatchCard({
         </button>
       </div>
       {/* Below sm: thumbnail+title row, then badge/macro row, then a right-aligned
-          button row — avoids squeezing the title/badge into a sliver of width
+          button row, avoids squeezing the title/badge into a sliver of width
           beside a fixed-size button. At sm+: original side-by-side layout
           (thumbnail | full text column | button). Title/canonical-name render
           twice (visibility toggled per breakpoint) since they belong to a
-          different visual grouping at each size — a plain CSS reorder can't
+          different visual grouping at each size, a plain CSS reorder can't
           split "thumbnail+title" from "badge+macro" any other way. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="flex items-start gap-3">
@@ -2654,7 +2661,7 @@ function MatchOptionRow({ match, applied, onUse }: { match: FoodMatch; applied: 
   const { t, i18n } = useTranslation();
   const macroSummary = formatCuratedMacroSummary(match, t, i18n.language);
   return (
-    // Below sm: thumbnail+text on one row, then a full-width button below —
+    // Below sm: thumbnail+text on one row, then a full-width button below ,
     // the button's non-shrinking label (e.g. German "Diese Daten übernehmen")
     // otherwise starves the text column down to a sliver, truncating the
     // title and wrapping the macro line one word per line. At sm+: original
@@ -2695,7 +2702,7 @@ function MatchOptionRow({ match, applied, onUse }: { match: FoodMatch; applied: 
 
 /**
  * The value Conform reports for a form field, exactly as its own metadata
- * types it — a form string, a `defaultValue` echo, or nothing at all. Named
+ * types it, a form string, a `defaultValue` echo, or nothing at all. Named
  * here so the two readers below can state that they parse it.
  */
 type ConformFieldValue = FieldMetadata['value'];
@@ -2706,7 +2713,7 @@ const conformStringSchema = z.string();
 /**
  * Parses a Conform field's current value into a number, returning null for
  * blank/missing/non-numeric input. Conform serializes every scalar field back
- * as a form string, or leaves it absent — so the value is parsed here rather
+ * as a form string, or leaves it absent, so the value is parsed here rather
  * than asserted.
  */
 function parseNumericFieldValue(value: ConformFieldValue): number | null {
@@ -2756,7 +2763,7 @@ const MACRO_FIELD_LABEL_KEYS = [
 /**
  * Portion-chip label keys. `PORTION_SCALE_OPTIONS`'s own `label` is English and
  * lives in `#app/lib/portion-preview`, which /add and the diary entry editor
- * also import — so the localized wording is keyed off the multiplier here
+ * also import, so the localized wording is keyed off the multiplier here
  * rather than changing that shared module. The `hint` ("½×", "1×") is notation,
  * not copy, and stays as authored.
  */
@@ -2782,7 +2789,7 @@ export function ConfirmDraftForm({
   typedText,
 }: {
   identification?: PlateIdentification;
-  /** Provider of the attempt — pairs with `modelId` for the scan's cost estimate; without it there is no honest price to show. */
+  /** Provider of the attempt, pairs with `modelId` for the scan's cost estimate; without it there is no honest price to show. */
   provider?: AiProviderType;
   modelId?: string;
   matches?: FoodMatch[][];
@@ -2802,7 +2809,7 @@ export function ConfirmDraftForm({
   /**
    * Which way in produced this draft. Posted as a hidden field and read by
    * `handleConfirm` for the diary's input-path event, which is its only reader
-   * — nothing on this screen looks or behaves differently because of it.
+   *, nothing on this screen looks or behaves differently because of it.
    */
   intakeSource: IntakeSource;
   /**
@@ -2859,7 +2866,7 @@ export function ConfirmDraftForm({
     : undefined;
 
   // Local UI state (never submitted): which foods the user excluded and which
-  // curated suggestions they dismissed. Keyed by item index — the draft list is
+  // curated suggestions they dismissed. Keyed by item index, the draft list is
   // fixed for the life of this view, so the index is stable.
   const [excludedIndexes, setExcludedIndexes] = useState<ReadonlySet<number>>(() => new Set<number>());
   // Seeded once, from the capture time. Plate-wide, and editable. See the prop.
@@ -2925,7 +2932,7 @@ export function ConfirmDraftForm({
 
   // Derive everything the preview-first cards + the plate summary need from the
   // live Conform field values, in one pass. The portion-chip base is the AI's
-  // ORIGINAL estimate (from the identification prop) — never the grams field's
+  // ORIGINAL estimate (from the identification prop), never the grams field's
   // initialValue, which `form.update` rewrites (that caused chip drift).
   const itemViews = itemFields.map((itemField, index) => {
     const itemFieldset = itemField.getFieldset();
@@ -2946,8 +2953,8 @@ export function ConfirmDraftForm({
     const foodMatches = matches?.[index] ?? [];
     // The applied match's own facts, re-derived from the live macro fields on
     // every render (never a second stored copy that could drift): its
-    // origin-aware net carbs — which STOP applying the moment the user
-    // hand-edits the macros — and its licence credit, which doesn't. See
+    // origin-aware net carbs, which STOP applying the moment the user
+    // hand-edits the macros, and its licence credit, which doesn't. See
     // `resolveAppliedMatchSnapshot` for why the two rules differ.
     const appliedSnapshot = resolveAppliedMatchSnapshot({
       appliedCuratedSource: readStringFieldValue(itemFieldset.curatedSource.value),
@@ -2962,7 +2969,7 @@ export function ConfirmDraftForm({
     // No `carbBasis` argument here, deliberately (spec 13, M123): a plate item
     // is an AI ESTIMATE off a photo of food, never a transcribed printed
     // panel, and `FoodMatch` (the only other fact this item can carry) has no
-    // basis field of its own — it always brings its own authoritative figure
+    // basis field of its own, it always brings its own authoritative figure
     // above instead, so the compute-from-parts fallback below is only ever
     // reached for a plain, unmatched estimate with no basis to report. There
     // is no "EU vs US" distinction to make on a plate of food.
@@ -2984,13 +2991,13 @@ export function ConfirmDraftForm({
       // No `carbBasis` argument, for the identical reason `computeMacroPreview`
       // above gets none: a plate item never carries one (M123/13 review
       // finding). `undefined` keeps `checkMacroSanity`'s fibre-vs-carbs
-      // comparisons running, which is correct here — a plate estimate has no
+      // comparisons running, which is correct here, a plate estimate has no
       // EU/US panel to misclassify.
       sanityIssues: preview ? checkMacroSanity(macrosPer100g, t, i18n.language) : [],
       selectedMultiplier: hasChips ? derivePortionMultiplier({ baseGrams, currentGrams }) : null,
       // SAFETY: `confidence` is populated only by this route's own confirm-draft
       // schema, which parses it with the `ConfidenceLevel` enum before it ever
-      // reaches the form — an absent field is the `undefined` arm.
+      // reaches the form, an absent field is the `undefined` arm.
       confidence: itemFieldset.confidence.initialValue as ConfidenceLevel | undefined,
       // The model's own answer for this item, for the three things only it
       // knows: whether the numbers were read off a panel, what that panel
@@ -3089,14 +3096,14 @@ export function ConfirmDraftForm({
         const hasConfidentTop = foodMatches.length > 0 && isConfidentTier(matchTier(topMatch.score));
         const primaryMatch = !dismissed && hasConfidentTop ? topMatch : undefined;
         // Alternates: the runners-up when the top is confident, otherwise every
-        // (weak) match — all hidden behind the "See other matches" disclosure.
+        // (weak) match, all hidden behind the "See other matches" disclosure.
         let alternateMatches: FoodMatch[] = [];
         if (!dismissed) alternateMatches = primaryMatch ? foodMatches.slice(1) : foodMatches;
 
         return (
           <Card key={index} className={cn('transition-opacity', !included && 'opacity-60')}>
             <CardContent className="space-y-3 p-4">
-              {/* Whole header row toggles inclusion — the label enlarges the hit area. */}
+              {/* Whole header row toggles inclusion, the label enlarges the hit area. */}
               <label className="-m-1 flex cursor-pointer items-start justify-between gap-3 rounded-md p-1 transition-colors hover:bg-muted/50">
                 <div className="min-w-0 space-y-1">
                   <p className="truncate text-sm font-medium">{view.displayName || t('scan.review.unnamedFood')}</p>
@@ -3131,7 +3138,7 @@ export function ConfirmDraftForm({
                 </span>
               </label>
 
-              {/* Always-rendered hidden fields — kept outside the collapsible so they always submit. */}
+              {/* Always-rendered hidden fields, kept outside the collapsible so they always submit. */}
               <input {...getInputProps(itemFieldset.confidence, { type: 'text' })} hidden readOnly />
               <input {...getInputProps(itemFieldset.curatedSource, { type: 'hidden' })} />
               {/* What kind of number this is, and whose product it is. Both are
@@ -3143,7 +3150,7 @@ export function ConfirmDraftForm({
               {/* The applied match's two snapshotted facts. DERIVED every render
                   from `curatedSource` + the live macro fields (never `form.update`d
                   like `curatedSource` is), so a later macro edit can withdraw the
-                  net-carbs figure — a stored copy couldn't. Rendered
+                  net-carbs figure, a stored copy couldn't. Rendered
                   unconditionally, unlike the add flow's equivalent: there the
                   candidate always holds a locally-ESTIMATED figure that must not
                   be submitted, so the input itself is the gate; here the value is
@@ -3166,7 +3173,7 @@ export function ConfirmDraftForm({
               />
               {/* Same "derived every render from `curatedSource`, never withdrawn by an
                   edit" treatment as `attribution` above, not `netCarbsPer100g`'s
-                  clear-on-edit treatment — see `resolveAppliedMatchSnapshot`'s doc. */}
+                  clear-on-edit treatment, see `resolveAppliedMatchSnapshot`'s doc. */}
               {/* THE ITEM'S OWN PANEL CONVENTION WINS. `appliedSnapshot` only
                   ever holds a curated match's basis, and a transcribed panel
                   has one of its own that no match can improve on: an EU
@@ -3417,7 +3424,7 @@ export function ConfirmDraftForm({
           mobile and pins to the very bottom on desktop. The extra 1.75rem of
           mobile bottom padding is the clearance for `BottomNav`'s raised Scan
           button (M129/04), which overhangs the tab bar's top edge by ~24px and
-          paints above this bar — the padding guarantees it only ever covers
+          paints above this bar, the padding guarantees it only ever covers
           empty space, never the "Confirm & log" button. */}
       <div className="fixed inset-x-0 bottom-14 z-40 border-t bg-background/95 pb-[calc(env(safe-area-inset-bottom)+1.75rem)] backdrop-blur md:bottom-0 md:pb-2">
         <div className="mx-auto max-w-3xl space-y-2 px-4 py-3 sm:px-6">

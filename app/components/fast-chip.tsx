@@ -22,6 +22,8 @@ import { Timer } from 'lucide-react';
 
 import { Link } from '#app/components/link';
 import { useCurrentFast } from '#app/hooks/use-current-fast';
+import { usePulseToday } from '#app/hooks/use-pulse-today';
+import { othersFastingLine } from '#app/lib/pulse';
 import { formatFastDuration, resolveFastTimeline } from '#app/models/fasting';
 import { stageAt } from '#app/models/fasting-stages';
 import type { LocalFast } from '#app/lib/local-store';
@@ -38,13 +40,20 @@ export interface FastChipProps {
    * chip should not grow an opinion about how stages are named.
    */
   stageLabel?: string;
+  /**
+   * How many OTHER people on this instance are fasting right now, or null when
+   * there is no figure to name. It reaches the person through the `aria-label`
+   * only: the pill has no room for a second sentence, and the count is company
+   * rather than data, so it belongs where the whole state is already read out.
+   */
+  othersFasting?: number | null;
 }
 
 /**
  * The chip. Tokens only, never a colour literal: the brand teal is defined in
  * `openplate-brand` and reaches this file as `primary`.
  */
-export function FastChip({ fast, nowMs, stageLabel }: FastChipProps): ReactElement {
+export function FastChip({ fast, nowMs, stageLabel, othersFasting = null }: FastChipProps): ReactElement {
   const { t } = useTranslation();
   const timeline = resolveFastTimeline(fast, nowMs);
 
@@ -54,8 +63,12 @@ export function FastChip({ fast, nowMs, stageLabel }: FastChipProps): ReactEleme
   const isScheduled = timeline.status === 'scheduled';
   const duration = formatFastDuration(isScheduled ? timeline.startsInMs : timeline.elapsedMs, t);
   const text = isScheduled ? t('fasting.chip.startsIn', { duration }) : duration;
-  const label =
+  const stateLabel =
     isScheduled ? t('fasting.chip.scheduledLabel', { duration }) : t('fasting.chip.activeLabel', { duration });
+  // A second sentence, appended rather than woven in, so the state is read out
+  // first and unchanged whether or not the instance has a figure to add.
+  const label =
+    othersFasting === null ? stateLabel : `${stateLabel} ${t('pulse.fasting.others', { count: othersFasting })}`;
 
   return (
     <Link
@@ -82,6 +95,10 @@ export function FastChip({ fast, nowMs, stageLabel }: FastChipProps): ReactEleme
 export function FastChipSlot(): ReactElement | null {
   const { t } = useTranslation();
   const { fast, nowMs } = useCurrentFast();
+  // Nothing is asked of the server while no fast is open, which is most of this
+  // component's life on every route. See `use-pulse-today.ts` for why that is an
+  // option on the hook and not a conditional call.
+  const pulseToday = usePulseToday({ enabled: fast !== null });
   if (fast === null) return null;
 
   // A SCHEDULED fast carries no stage: nothing has started, so there is
@@ -90,5 +107,5 @@ export function FastChipSlot(): ReactElement | null {
   const timeline = resolveFastTimeline(fast, nowMs);
   const stageLabel = timeline.status === 'scheduled' ? undefined : t(stageAt(timeline.elapsedMs).nameKey);
 
-  return <FastChip fast={fast} nowMs={nowMs} stageLabel={stageLabel} />;
+  return <FastChip fast={fast} nowMs={nowMs} stageLabel={stageLabel} othersFasting={othersFastingLine(pulseToday)} />;
 }

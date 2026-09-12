@@ -1,10 +1,10 @@
 /**
- * The Overview page's fasting strip — present ONLY while a fast is scheduled
+ * The Overview page's fasting strip, present ONLY while a fast is scheduled
  * or running (M132). Deliberately the slimmest module on the page: the
  * Overview budget is one phone screen with no scroll and the shipped three
  * modules already spend it, so this costs ~73 px of scroll on a 375x667
  * phone and earns it by being the only time-sensitive fact on the screen.
- * That is why it sits ABOVE the glance row rather than below — the thing that
+ * That is why it sits ABOVE the glance row rather than below, the thing that
  * falls off the fold should be the thing that is not moving.
  *
  * Ticks at MINUTE resolution (60 s), because minutes are the smallest unit it
@@ -20,25 +20,32 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Timer } from 'lucide-react';
 import { Link } from '#app/components/link';
-import { useNow } from '#app/hooks/use-now';
+import { useCurrentFast } from '#app/hooks/use-current-fast';
 import { formatFastDuration, formatFastOvertime, resolveFastTimeline } from '#app/models/fasting';
 import type { LocalFast } from '#app/lib/local-store';
 
 /** Minutes are the smallest unit this strip renders, so a faster tick buys nothing. */
 const STRIP_TICK_MS = 60_000;
 
+/** The row's inputs. The CALLER owns the clock, so the row is pure to render. */
+export interface FastStripRowProps {
+  /** The open fast. The caller decides visibility; there is no empty branch here. */
+  fast: LocalFast;
+  /** The clock reading every figure is derived against. */
+  nowMs: number;
+}
+
 /**
- * The strip. The PARENT decides visibility (`currentFast !== null`); this
- * component takes a non-null fast, so there is no "nothing to show" branch to
- * keep in sync with the page.
+ * The row itself, prop-driven. Separate from {@link FastStrip} so it stays
+ * renderable under `renderToStaticMarkup`, which can never run the hook's
+ * effects, exactly as `FastChip` is separate from `FastChipSlot`.
  */
-export function FastStrip({ fast }: { fast: LocalFast }): ReactElement {
+export function FastStripRow({ fast, nowMs }: FastStripRowProps): ReactElement {
   const { t } = useTranslation();
-  const nowMs = useNow({ intervalMs: STRIP_TICK_MS });
   const timeline = resolveFastTimeline(fast, nowMs);
 
-  // Terminal statuses are unreachable here — `selectCurrentFast` only ever
-  // returns an open fast — so this is a two-arm branch, not a switch with dead
+  // Terminal statuses are unreachable here, `selectCurrentFast` only ever
+  // returns an open fast, so this is a two-arm branch, not a switch with dead
   // arms.
   const isScheduled = timeline.status === 'scheduled';
   const eyebrow = isScheduled ? t('fasting.strip.scheduled') : t('fasting.strip.fasting');
@@ -68,4 +75,21 @@ export function FastStrip({ fast }: { fast: LocalFast }): ReactElement {
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
     </Link>
   );
+}
+
+/**
+ * The strip's container: asks the device whether a fast is open and renders
+ * nothing when none is.
+ *
+ * The page no longer decides this. `/dashboard` used to read the fasts table in
+ * its own `clientLoader` and pass the row down, which meant a fast that started
+ * or ended on `/fasting` only reached this row on the next navigation. The hook
+ * re-reads on every write to the `fasts` table, so the strip appears and
+ * disappears when the fast does, and the two surfaces that show a running fast
+ * now share one implementation.
+ */
+export function FastStrip(): ReactElement | null {
+  const { fast, nowMs } = useCurrentFast({ intervalMs: STRIP_TICK_MS });
+  if (fast === null) return null;
+  return <FastStripRow fast={fast} nowMs={nowMs} />;
 }

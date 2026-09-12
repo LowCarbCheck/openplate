@@ -1,12 +1,15 @@
 /**
- * Unit tests for `#app/components/fast-strip` — the Overview page's conditional
- * fasting row (M132). Renders to static markup inside a `MemoryRouter` with a
+ * Unit tests for `#app/components/fast-strip`, the Overview page's conditional
+ * fasting row (M132). Renders the PROP-DRIVEN half, `FastStripRow`: the exported
+ * `FastStrip` calls `useCurrentFast`, whose effects never run under
+ * `renderToStaticMarkup`, so it could only ever render its null branch here.
+ * Renders to static markup inside a `MemoryRouter` with a
  * hermetic inline i18next catalog, the exact harness `bottom-nav.test.ts` uses.
  *
  * Two things this pins that no other test can:
  *
  * 1. **The live figures are `tabular-nums` and never `font-display`.**
- *    DESIGN.md §4 — the Fraunces subset carries no tabular figures, so a
+ *    DESIGN.md §4, the Fraunces subset carries no tabular figures, so a
  *    minute-ticking number set in it would jitter in width as it updates.
  * 2. **The strip is a LINK, not a Card.** The Overview page's no-scroll budget
  *    is built on this row costing ~57 px; the moment someone "tidies" it into a
@@ -21,7 +24,7 @@ import { MemoryRouter } from 'react-router';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { FastStrip } from '../../app/components/fast-strip';
+import { FastStripRow } from '../../app/components/fast-strip';
 import type { LocalFast } from '../../app/lib/local-store/schema';
 
 const HOUR = 3_600_000;
@@ -55,9 +58,9 @@ void i18next.use(initReactI18next).init({
 });
 
 /**
- * The strip reads the wall clock through `useNow`, whose initial state is
- * `Date.now()` — so the fixtures are anchored to NOW rather than to a fixed
- * instant, and every assertion below is about a duration, never a date.
+ * `FastStripRow` takes the clock as a prop, and every render below passes
+ * `Date.now()`, so the fixtures are anchored to NOW rather than to a fixed
+ * instant and every assertion is about a duration, never a date.
  */
 function fastStartedHoursAgo(hours: number, overrides: Partial<LocalFast> = {}): LocalFast {
   const startedAt = Date.now() - hours * HOUR;
@@ -80,11 +83,15 @@ function textOf(html: string): string {
 
 function render(fast: LocalFast): string {
   return renderToStaticMarkup(
-    createElement(MemoryRouter, { initialEntries: ['/dashboard'] }, createElement(FastStrip, { fast })),
+    createElement(
+      MemoryRouter,
+      { initialEntries: ['/dashboard'] },
+      createElement(FastStripRow, { fast, nowMs: Date.now() }),
+    ),
   );
 }
 
-describe('FastStrip', () => {
+describe('FastStripRow', () => {
   it('shows elapsed and remaining for a running fast, and hands off to /fasting', () => {
     // 8 h in on a 16:8 window, offset by a minute so neither figure is a
     // suspiciously round number that a bug could produce by accident.
@@ -116,10 +123,10 @@ describe('FastStrip', () => {
     const html = render(fastStartedHoursAgo(8));
 
     assert.ok(html.includes('tabular-nums'), 'ticking digits must not shift width as they change');
-    assert.ok(!html.includes('font-display'), 'Fraunces has no tabular figures — never on a live number');
+    assert.ok(!html.includes('font-display'), 'Fraunces has no tabular figures, never on a live number');
   });
 
-  it('is a link row, not a card — the Overview height budget depends on it', () => {
+  it('is a link row, not a card, the Overview height budget depends on it', () => {
     const html = render(fastStartedHoursAgo(8));
 
     assert.ok(html.includes('px-3 py-2.5'), 'the strip keeps its one-row padding');
