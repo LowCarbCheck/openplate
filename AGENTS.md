@@ -87,6 +87,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0010](.adr/0010-hosted-analytics.md)                      | Analytics on the hosted instance, off everywhere else            | Amended    |
 | [0011](.adr/0011-analytics-levels.md)                      | Analytics levels, and the research tier ADR-0010 refused         | Accepted   |
 | [0012](.adr/0012-the-server-asks-github-about-releases.md) | The server asks GitHub about releases, and it asks by default     | Accepted   |
+| [0013](.adr/0013-a-recreated-store-cannot-vouch-for-an-absence.md) | A recreated store cannot vouch for an absence; a delete needs a journal row | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 
