@@ -49,6 +49,15 @@
  */
 import { z } from 'zod';
 import type { LocalStoreSnapshot } from '#app/lib/local-store';
+import {
+  DELETE_JOURNAL_TAG_BY_TABLE,
+  entityKey,
+  RESEARCH_IDENTITY_ROW_ID,
+  SHARE_IDENTITY_ROW_ID,
+  SHARE_IDENTITY_TABLE,
+  SHARE_PEERS_TABLE,
+  STUDY_ENROLMENTS_TABLE,
+} from '#app/lib/local-store/schema';
 
 /** Which side of the partition a snapshot key sits on. There is no third value and no "unknown", absent means fail. */
 export type SnapshotRegion = 'shared' | 'owner-private';
@@ -115,6 +124,51 @@ export const EMPTY_OWNER_PRIVATE_REGION: OwnerPrivateRegion = {
   researchIdentity: null,
   studyEnrolments: [],
 };
+
+/**
+ * Every row in a region, as the DELETE JOURNAL would name it: `sharePeer:12`.
+ *
+ * The compartment is sealed and pushed WHOLE, so the wire carries no removal
+ * of its own for any row inside it: a plaintext that stopped naming a pinned
+ * peer IS the removal. That makes "this region is smaller than the one this
+ * session last read" the only observable event, and it has two causes, a
+ * person un-pinning a peer and a browser evicting the table, which the bytes
+ * cannot tell apart. These keys are what lets the journal tell them apart
+ * (`private-store.ts`), and they are spelled by {@link DELETE_JOURNAL_TAG_BY_TABLE}
+ * so the seal reads exactly the strings the delete verbs write.
+ *
+ * PURE, and a list rather than a set: the caller decides what to do with it,
+ * and every caller so far wants to subtract one list from another.
+ *
+ * The research identity is in it too, under a tag no verb can ever write.
+ * That is not an oversight: nothing removes the pseudonym root, so its
+ * absence from a region this session once read is ALWAYS an eviction, and a
+ * key that can never be journalled is exactly how that is said. Re-pseudonymising
+ * somebody in every study they have ever joined is the one loss here with no
+ * recovery at all.
+ */
+export function ownerPrivateRegionKeys(region: OwnerPrivateRegion): string[] {
+  const keys: string[] = [];
+  if (region.shareIdentity !== null) {
+    keys.push(entityKey(DELETE_JOURNAL_TAG_BY_TABLE[SHARE_IDENTITY_TABLE], SHARE_IDENTITY_ROW_ID));
+  }
+  for (const peer of region.sharePeers) keys.push(entityKey(DELETE_JOURNAL_TAG_BY_TABLE[SHARE_PEERS_TABLE], peer.id));
+  if (region.researchIdentity !== null) keys.push(entityKey(RESEARCH_IDENTITY_JOURNAL_TAG, RESEARCH_IDENTITY_ROW_ID));
+  for (const enrolment of region.studyEnrolments) {
+    keys.push(entityKey(DELETE_JOURNAL_TAG_BY_TABLE[STUDY_ENROLMENTS_TABLE], enrolment.id));
+  }
+  return keys;
+}
+
+/**
+ * The tag the pseudonym root would carry if anything could delete it.
+ *
+ * Written here rather than in `DELETE_JOURNAL_TAG_BY_TABLE`, which is the map
+ * of tables WITH a delete verb, and this table has none. The one spelling risk
+ * a second literal usually carries, a writer and a reader drifting apart, does
+ * not exist for a key nothing ever writes.
+ */
+const RESEARCH_IDENTITY_JOURNAL_TAG = 'researchIdentity';
 
 /**
  * The sealed compartment, as it rides inside the snapshot on the wire.

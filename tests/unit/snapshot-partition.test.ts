@@ -42,10 +42,12 @@ import { SCHEMA_VERSION, type LocalStoreSnapshot } from '../../app/lib/local-sto
 import {
   classifySnapshotKey,
   partitionSnapshot,
+  ownerPrivateRegionKeys,
   recomposeSnapshot,
   SNAPSHOT_KEY_REGIONS,
   type SyncedSnapshot,
 } from '../../app/lib/sync/snapshot-partition';
+import { NOTHING_WAS_UNPINNED, withUnpinned } from '../sync-integrity-fixtures';
 import {
   createPrivateStoreSession,
   openOwnerPrivateRegion,
@@ -305,7 +307,9 @@ async function buildWireSnapshot({
   const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek, established });
   return {
     ...shareable,
-    privateStore: sealedCompartmentOrNull(await sealOwnerPrivateRegion({ session, region: ownerPrivate })),
+    privateStore: sealedCompartmentOrNull(
+      await sealOwnerPrivateRegion({ session, region: ownerPrivate, ...NOTHING_WAS_UNPINNED }),
+    ),
   };
 }
 
@@ -541,12 +545,22 @@ describe('the owner-private compartment', () => {
     const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek, established });
     const region = partitionSnapshot(snapshot).ownerPrivate;
 
-    const first = await sealOwnerPrivateRegion({ session, region });
-    const second = await sealOwnerPrivateRegion({ session, region });
+    const first = await sealOwnerPrivateRegion({ session, region, ...NOTHING_WAS_UNPINNED });
+    const second = await sealOwnerPrivateRegion({ session, region, ...NOTHING_WAS_UNPINNED });
     assert.deepEqual(first, second);
 
     // A real change must still produce new bytes, or nothing would ever sync.
-    const changed = await sealOwnerPrivateRegion({ session, region: { ...region, sharePeers: [] } });
+    //
+    // AND IT IS AN UN-PIN, spelled as one (M226). Dropping every peer is the
+    // one kind of change the seal now asks for evidence about, so the fixture
+    // hands it the journal rows the delete verb would have written. Without
+    // them this is an emptied store, and the seal correctly holds the old
+    // bytes instead of writing the shorter region.
+    const changed = await sealOwnerPrivateRegion({
+      session,
+      region: { ...region, sharePeers: [] },
+      ...withUnpinned(ownerPrivateRegionKeys(region)),
+    });
     assert.notDeepEqual(changed, first);
   });
 });

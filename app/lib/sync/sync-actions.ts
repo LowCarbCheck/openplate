@@ -575,7 +575,16 @@ export async function syncNow(): Promise<void> {
 async function readSyncedSnapshot(session: PrivateStoreSession): Promise<ReadSnapshotResult> {
   const read = await readLocalSnapshot();
   const { shareable, ownerPrivate } = partitionSnapshot(read.snapshot);
-  const seal = await sealOwnerPrivateRegion({ session, region: ownerPrivate });
+  // THE SAME READ ANSWERS BOTH QUESTIONS (M226). The seal weighs the journal
+  // and the storage evidence from `read`, not from a second look a moment
+  // later: an un-pin that landed in between would be judged against a region
+  // that still holds the row, and one that landed just before would not.
+  const seal = await sealOwnerPrivateRegion({
+    session,
+    region: ownerPrivate,
+    deletedEntityKeys: read.deletedEntityKeys,
+    integrity: read.integrity,
+  });
   return {
     snapshot: { ...shareable, privateStore: sealedCompartmentOrNull(seal) },
     integrity: {
@@ -588,6 +597,11 @@ async function readSyncedSnapshot(session: PrivateStoreSession): Promise<ReadSna
       // else for it to carry, and the stamping has to be told which of the two
       // this is or it will tombstone a compartment nobody deleted.
       isCompartmentKnown: seal.kind !== 'unknown',
+      // THE SEAL HELD THE ACCOUNT'S BYTES (M226), so this push publishes none
+      // of this device's owner-private changes. The snapshot above carries the
+      // held bytes, which is what makes the push harmless; the stamping is
+      // told so the cycle cannot be reported as a clean one.
+      isCompartmentHeld: seal.kind === 'held',
     },
   };
 }

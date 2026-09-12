@@ -360,6 +360,25 @@ export interface SnapshotIntegrity extends LocalStoreIntegrity {
    * compartment on its first cycle before this field existed.
    */
   isCompartmentKnown: boolean;
+  /**
+   * Did the seal HOLD the compartment: re-emit the account's bytes because the
+   * region it was handed had lost rows nobody wrote down (M226)?
+   *
+   * `true` is `sealOwnerPrivateRegion` answering `held`. The push is
+   * byte-identical to the account's own copy, so nothing is destroyed, and
+   * this device's real owner-private changes are NOT published either. That is
+   * the same silent cost a withheld tombstone carries, so it is reported the
+   * same way: a `privateStore` entry in {@link StampSnapshotResult.withheld},
+   * which forbids `shrinkAcknowledged` and fires the heal log.
+   *
+   * The one OPTIONAL field on this interface, and it is a narrow exception to
+   * the rule its neighbours state. Omitting it says "the seal did not hold",
+   * which is the state of every device on every ordinary cycle and the only
+   * state a fixture that predates the hold can be describing. The single
+   * production producer, `readSyncedSnapshot`, always sets it from the seal's
+   * own answer.
+   */
+  isCompartmentHeld?: boolean;
 }
 
 /**
@@ -441,7 +460,7 @@ function isTombstoneTrusted({
  * A table nobody wrote is absent from both sides, so it is agreed by
  * definition and defaults to `true`.
  */
-function isTableTrusted({ table, integrity }: { table: string; integrity: LocalStoreIntegrity }): boolean {
+export function isTableTrusted({ table, integrity }: { table: string; integrity: LocalStoreIntegrity }): boolean {
   if (!integrity.hasPersistedDatabase) return false;
   return integrity.isTableLoaded[table] ?? true;
 }
@@ -547,6 +566,22 @@ export function stampSnapshot({
     else withheld.push(tombstone);
   }
   tombstones.push(...minted);
+
+  // THE HELD COMPARTMENT IS A WITHHELD REMOVAL, and it is pushed here rather
+  // than minted anywhere: it is not a tombstone, it never reaches `meta` or
+  // the baseline, and the compartment's own stamp above is carried forward
+  // untouched because the held bytes hash to what the cache already held. It
+  // exists so the shell cannot call this cycle clean, `shrinkAcknowledged`
+  // stays false, and the heal log says which entity type went unpublished.
+  if (integrity.isCompartmentHeld === true) {
+    const key = entityKey(SYNC_ENTITY_TYPES.privateStore, PRIVATE_STORE_ENTITY_ID);
+    withheld.push({
+      entityId: PRIVATE_STORE_ENTITY_ID,
+      entityType: SYNC_ENTITY_TYPES.privateStore,
+      lamport: (baseline.perEntity[key]?.lamport ?? 0) + 1,
+      deviceId,
+    });
+  }
 
   return {
     meta: { perEntity: toWireStamps(perEntity), tombstones },

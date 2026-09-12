@@ -10,7 +10,7 @@
  * function would eventually be reached for by a real caller, and the whole
  * point of the argument is that no caller can avoid the question.
  */
-import type { SnapshotIntegrity, SyncBaseline } from '../app/lib/sync/snapshot-sync';
+import type { LocalStoreIntegrity, SnapshotIntegrity, SyncBaseline } from '../app/lib/sync/snapshot-sync';
 
 /**
  * A HEALTHY DEVICE: the database is there, every table loaded, the compartment
@@ -51,6 +51,45 @@ export const EVICTED_STORAGE: SnapshotIntegrity = {
  */
 export function withRecordedDeletes(base: SnapshotIntegrity, keys: readonly string[]): SnapshotIntegrity {
   return { ...base, deletedEntityKeys: new Set(keys) };
+}
+
+// ---------------------------------------------------------------------------
+// The seal's question: may this compartment be written smaller than the last
+// one this session read?
+// ---------------------------------------------------------------------------
+
+/**
+ * The two arguments `sealOwnerPrivateRegion` weighs before it writes a region
+ * that lost a row: what this device WROTE DOWN as removed, and whether it can
+ * speak for its own store at all.
+ */
+export interface SealEvidence {
+  deletedEntityKeys: ReadonlySet<string>;
+  integrity: LocalStoreIntegrity;
+}
+
+/**
+ * A healthy device that has removed NOTHING.
+ *
+ * The ordinary fixture for a seal whose subject is not the shrink rule: a
+ * region that grew, or changed a row in place, needs no evidence, so this
+ * constant is how a test says "and nothing here was un-pinned" in one word.
+ */
+export const NOTHING_WAS_UNPINNED: SealEvidence = {
+  deletedEntityKeys: new Set(),
+  integrity: HEALTHY_STORAGE,
+};
+
+/**
+ * The same device, having RECORDED these owner-private removals.
+ *
+ * `keys` are the strings `ownerPrivateRegionKeys` spells and the delete verbs
+ * write (`sharePeer:12`, `shareIdentity:me`). This is the fixture half of
+ * `deleteLocalSharePeer`: dropping the row is what the person sees, and
+ * writing the key down is what licenses telling the account about it.
+ */
+export function withUnpinned(keys: readonly string[]): SealEvidence {
+  return { deletedEntityKeys: new Set(keys), integrity: HEALTHY_STORAGE };
 }
 
 // ---------------------------------------------------------------------------

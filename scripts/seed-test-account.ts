@@ -358,7 +358,20 @@ async function createAccount({
     dek: keys.dek,
     snapshot: {
       ...shareable,
-      privateStore: sealedCompartmentOrNull(await sealOwnerPrivateRegion({ session, region: ownerPrivate })),
+      privateStore: sealedCompartmentOrNull(
+        await sealOwnerPrivateRegion({
+          session,
+          region: ownerPrivate,
+          // NOTHING WAS REMOVED HERE AND NOTHING COULD BE. This process mints
+          // the compartment a line above, so the region it seals has only ever
+          // grown, and the shrink rule the two arguments feed is never
+          // consulted. `hasPersistedDatabase: false` is the honest answer for a
+          // node script with no device database at all, rather than a `true`
+          // that would be a claim about a browser that is not here.
+          deletedEntityKeys: new Set(),
+          integrity: { hasPersistedDatabase: false, isTableLoaded: {} },
+        }),
+      ),
     },
     http: new SyncHttpClient({ baseUrl, tokens: authClient }),
   };

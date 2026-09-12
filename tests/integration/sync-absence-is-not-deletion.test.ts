@@ -50,7 +50,7 @@ import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { createMemoryStorage, createSyncStateStore } from '../../app/lib/sync/sync-state';
 import type { PushBlobHttpResult, PulledBlob, SyncHttpClient } from '../../app/lib/sync/engine/client/http-client';
 import { PRIVATE_STORE_ENTITY_KEY } from '../../app/lib/sync/snapshot-sync';
-import { EVICTED_STORAGE, HEALTHY_STORAGE } from '../sync-integrity-fixtures';
+import { EVICTED_STORAGE, HEALTHY_STORAGE, NOTHING_WAS_UNPINNED } from '../sync-integrity-fixtures';
 
 const ACCOUNT_ID = 42;
 
@@ -162,6 +162,7 @@ test('a RESUMED session pushes the account’s compartment back, never a tombsto
       ...EMPTY_OWNER_PRIVATE_REGION,
       shareIdentity: { publicKeyRaw: 'a-public-key', privateKeyPkcs8: 'THE-KEY-THAT-MUST-SURVIVE', createdAt: 7 },
     },
+    ...NOTHING_WAS_UNPINNED,
   });
   assert.equal(ownerSeal.kind, 'sealed', 'the fixture must carry a real compartment');
   const published = sealedCompartmentOrNull(ownerSeal);
@@ -197,7 +198,7 @@ test('a RESUMED session pushes the account’s compartment back, never a tombsto
   // it pulls, so the seal is asked a question it cannot answer yet.
   const resumed = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
   assert.equal(resumed.cdk, null, 'a resumed session holds no CDK');
-  assert.deepEqual(await sealOwnerPrivateRegion({ session: resumed, region: EMPTY_OWNER_PRIVATE_REGION }), {
+  assert.deepEqual(await sealOwnerPrivateRegion({ session: resumed, region: EMPTY_OWNER_PRIVATE_REGION, ...NOTHING_WAS_UNPINNED }), {
     kind: 'unknown',
   });
 
@@ -209,7 +210,7 @@ test('a RESUMED session pushes the account’s compartment back, never a tombsto
     deviceId: 'device-owner',
     // WIRED AS `readSyncedSnapshot` WIRES IT, seal answer and all.
     readSnapshot: async () => {
-      const seal = await sealOwnerPrivateRegion({ session: resumed, region: EMPTY_OWNER_PRIVATE_REGION });
+      const seal = await sealOwnerPrivateRegion({ session: resumed, region: EMPTY_OWNER_PRIVATE_REGION, ...NOTHING_WAS_UNPINNED });
       return {
         snapshot: snapshotOf([foodLog('log-1', 'Lentil soup')], sealedCompartmentOrNull(seal)),
         integrity: { ...HEALTHY_STORAGE, isCompartmentKnown: seal.kind !== 'unknown' },

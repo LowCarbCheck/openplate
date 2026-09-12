@@ -30,6 +30,7 @@ import {
   type StudyCompartmentSession,
 } from '../../app/lib/sync/research/study-compartment';
 import { WrongCompartmentKindError } from '../../app/lib/sync/compartment-kind';
+import { NOTHING_WAS_UNPINNED } from '../sync-integrity-fixtures';
 import {
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
@@ -56,7 +57,7 @@ async function sealedDiaryBytes(input: {
   session: PrivateStoreSession;
   region: OwnerPrivateRegion;
 }): Promise<SealedPrivateStore> {
-  const seal = await sealOwnerPrivateRegion(input);
+  const seal = await sealOwnerPrivateRegion({ ...input, ...NOTHING_WAS_UNPINNED });
   assert.equal(seal.kind, 'sealed', 'the fixture must carry a real diary compartment');
   // SAFETY: the assertion above has already failed the test for every other kind.
   return (seal as { kind: 'sealed'; value: SealedPrivateStore }).value;
@@ -83,6 +84,10 @@ async function establishedSession() {
       cdkWrapRecovery: bytesToBase64(await wrapCdk({ cdk, kek })),
     },
     extras: {},
+    // NO PLAINTEXT READ YET. This fixture hands its CDK straight over without
+    // opening anything, so it cannot say what the compartment holds, and the
+    // seal's shrink rule has nothing to measure against (M226).
+    region: null,
     pulled: null,
   };
 }
@@ -263,6 +268,7 @@ test('a diary compartment is not an empty study, and is refused', async () => {
     cdk: null,
     wraps: null,
     extras: {},
+    region: null,
     pulled: null,
     hasPulled: false,
   };
@@ -289,6 +295,7 @@ test('a diary compartment is not an empty study, and is refused', async () => {
       wraps: null,
       cache: null,
       extras: {},
+      region: null,
       pulled: null,
       hasPulled: false,
       },
@@ -542,6 +549,7 @@ test('the study seal refuses a foreign CDK it never adopted', async () => {
       wraps: null,
       cache: null,
       extras: {},
+      region: null,
       pulled: null,
       hasPulled: false,
       },

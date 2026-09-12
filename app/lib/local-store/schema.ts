@@ -563,11 +563,28 @@ export type SyncEntityTypeTag = (typeof SYNC_ENTITY_TYPE_BY_TABLE)[keyof typeof 
  * may only let this device's list stand when every id the baseline recorded is
  * either still in it or named here, which is how an evicted device is told
  * apart from a person who cleared their fasts.
+ *
+ * The three OWNER-PRIVATE tables are here for the same reason, read against
+ * the compartment instead of against a list: a seal may write a plaintext
+ * smaller than the one the session last read only for rows named here
+ * (`private-store.ts`). There is no entry for the research identity, because
+ * there is no verb that removes it, so its absence is always an eviction.
  */
 export const DELETE_JOURNAL_TAG_BY_TABLE = {
   ...SYNC_ENTITY_TYPE_BY_TABLE,
   [FASTS_TABLE]: 'fast',
   [SAVED_MEALS_TABLE]: 'savedMeal',
+  // THE OWNER-PRIVATE ROWS (M226), and they are here for the pass-through
+  // reason one level down. Nothing on the wire describes their removals
+  // either: the share identity, the pinned peers and the study enrolments
+  // travel as ONE sealed compartment, so a seal either writes the whole
+  // plaintext or it does not, and a plaintext missing a row says nothing
+  // about why. The journal is the only evidence that a person un-pinned a
+  // peer rather than a browser evicting the table, and `private-store.ts`
+  // refuses to seal a shrunk compartment without it.
+  [SHARE_IDENTITY_TABLE]: 'shareIdentity',
+  [SHARE_PEERS_TABLE]: 'sharePeer',
+  [STUDY_ENROLMENTS_TABLE]: 'studyEnrolment',
 } as const;
 
 /** The fixed row id for the singleton profile/goals row. */

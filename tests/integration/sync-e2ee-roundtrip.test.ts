@@ -57,7 +57,7 @@ import { constants as zlibConstants, gunzipSync } from 'node:zlib';
 import 'fake-indexeddb/auto';
 import { z } from 'zod';
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
-import { HEALTHY_STORAGE, withRecordedDeletes } from '../sync-integrity-fixtures';
+import { HEALTHY_STORAGE, NOTHING_WAS_UNPINNED, withRecordedDeletes } from '../sync-integrity-fixtures';
 import {
   createSyncAccount,
   markSyncPending,
@@ -119,7 +119,7 @@ async function sealedBytes(input: {
   session: PrivateStoreSession;
   region: OwnerPrivateRegion;
 }): Promise<SealedPrivateStore> {
-  const seal = await sealOwnerPrivateRegion(input);
+  const seal = await sealOwnerPrivateRegion({ ...input, ...NOTHING_WAS_UNPINNED });
   assert.equal(seal.kind, 'sealed', 'the fixture must carry a real compartment, or nothing below is a statement');
   // SAFETY: the assertion above has already failed the test for every other kind.
   return (seal as { kind: 'sealed'; value: SealedPrivateStore }).value;
@@ -854,7 +854,11 @@ test('a compartment it could not adopt survives the next push', async () => {
     assertPulledSnapshot: ({ pulled }: { pulled: SyncedSnapshot }) =>
       assertOwnerPrivateCompartment({ session: victim.privateStore, sealed: pulled.privateStore }),
     readSnapshot: async (): Promise<ReadSnapshotResult> => {
-      const seal = await sealOwnerPrivateRegion({ session: victim.privateStore, region: EMPTY_OWNER_PRIVATE_REGION });
+      const seal = await sealOwnerPrivateRegion({
+        session: victim.privateStore,
+        region: EMPTY_OWNER_PRIVATE_REGION,
+        ...NOTHING_WAS_UNPINNED,
+      });
       return {
         snapshot: { ...local.current, privateStore: sealedCompartmentOrNull(seal) },
         // Wired exactly as `readSyncedSnapshot` wires it: the compartment's
@@ -973,7 +977,11 @@ test('the diary refuses a study account before writing, and the blob is unchange
   const diaryDeps = {
     ...deviceDeps({ vault: diary, deviceId: 'device-diary', local }),
     readSnapshot: async (): Promise<ReadSnapshotResult> => {
-      const seal = await sealOwnerPrivateRegion({ session: diary.privateStore, region: EMPTY_OWNER_PRIVATE_REGION });
+      const seal = await sealOwnerPrivateRegion({
+        session: diary.privateStore,
+        region: EMPTY_OWNER_PRIVATE_REGION,
+        ...NOTHING_WAS_UNPINNED,
+      });
       return {
         snapshot: { ...local.current, privateStore: sealedCompartmentOrNull(seal) },
         integrity: { ...HEALTHY_STORAGE, isCompartmentKnown: seal.kind !== 'unknown' },

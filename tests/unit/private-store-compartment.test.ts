@@ -63,6 +63,7 @@ import { ARGON2ID_DEFAULT_PARAMS } from '../../app/lib/sync/engine/crypto/argon2
 import { derivePrivateStoreRecoveryKek } from '../../app/lib/sync/engine/client/recovery-kek';
 import { base64ToBytes, bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { z } from 'zod';
+import { NOTHING_WAS_UNPINNED, withUnpinned, type SealEvidence } from '../sync-integrity-fixtures';
 
 const ACCOUNT_ID = 42;
 
@@ -75,11 +76,13 @@ const ACCOUNT_ID = 42;
  * that used to want a `SealedPrivateStore` still wants one, and this helper is
  * what makes "and it really was sealed" an assertion rather than a cast.
  */
-async function sealedBytes(input: {
-  session: PrivateStoreSession;
-  region: OwnerPrivateRegion;
-}): Promise<SealedPrivateStore> {
-  const seal = await sealOwnerPrivateRegion(input);
+async function sealedBytes(
+  input: {
+    session: PrivateStoreSession;
+    region: OwnerPrivateRegion;
+  } & Partial<SealEvidence>,
+): Promise<SealedPrivateStore> {
+  const seal = await sealOwnerPrivateRegion({ ...NOTHING_WAS_UNPINNED, ...input });
   assert.equal(seal.kind, 'sealed', 'expected the seal to answer bytes');
   // SAFETY: the assertion above has already failed the test for every other kind.
   return (seal as { kind: 'sealed'; value: SealedPrivateStore }).value;
@@ -227,13 +230,13 @@ describe('the seal after a failed adopt', () => {
     // BEFORE ANY PULL the honest answer is IGNORANCE, not absence (M224). This
     // is the state every RESUMED session starts in, and reading it as "the
     // account has no compartment" is what tombstoned a live one.
-    assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION }), {
+    assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION, ...NOTHING_WAS_UNPINNED }), {
       kind: 'unknown',
     });
 
     // A pull that CARRIED NOTHING is the knowledge that narrows it.
     assert.equal(await openOwnerPrivateRegion({ session, sealed: null }), null);
-    assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION }), {
+    assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION, ...NOTHING_WAS_UNPINNED }), {
       kind: 'absent',
     });
 
@@ -732,9 +735,20 @@ describe('the refusal must come before the write', () => {
 
     // AND ONCE IT HAS OPENED, IT SEALS AGAIN. The refusal is about ignorance,
     // not a permanent state — without this the fix could be "never seal".
+    //
+    // The region it seals is the one it just OPENED, plus a pinned peer. An
+    // EMPTY region here would be a different claim entirely: a compartment
+    // that lost its share identity with nothing written down, which the seal
+    // is right to hold rather than publish (M226). Adding a row keeps this
+    // about the refusal clearing, and keeps it a real write rather than a
+    // cache hit.
+    assert.ok(opened !== null);
     const afterOpen = await sealedBytes({
       session: nextSession,
-      region: { ...EMPTY_OWNER_PRIVATE_REGION, sharePeers: [] },
+      region: {
+        ...opened,
+        sharePeers: [{ id: '9', accountId: 9, publicKeyRaw: 'peer-public-key', label: 'Dr. Meier', createdAt: 8_000 }],
+      },
     });
     assert.ok(afterOpen !== null);
     assert.deepEqual((await readRawPlaintext({ established, sealed: afterOpen }))[FUTURE_KEY], FUTURE_VALUE);
@@ -790,7 +804,11 @@ describe('a compartment this session minted, and one it only holds a key to', ()
     // bare `null` since M224, it has neither minted a compartment nor pulled
     // one, so it cannot say whether the account has one.
     const untouched = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
-    assert.deepEqual(await sealOwnerPrivateRegion({ session: untouched, region: regionWithShareKey(PRIVATE_KEY_MARKER) }), {
+    assert.deepEqual(await sealOwnerPrivateRegion({
+        session: untouched,
+        region: regionWithShareKey(PRIVATE_KEY_MARKER),
+        ...NOTHING_WAS_UNPINNED,
+      }), {
       kind: 'unknown',
     });
   });
@@ -869,5 +887,167 @@ describe('a compartment this session minted, and one it only holds a key to', ()
     const migrating = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
     const opened = await openOwnerPrivateRegion({ session: migrating, sealed: untagged.sealed });
     assert.equal(opened?.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER, 'an untagged compartment still opens');
+  });
+});
+
+/**
+ * A LIVE SESSION WHOSE STORE WAS EMPTIED UNDER IT (M226).
+ *
+ * Every refusal above is about a session that could not READ the compartment.
+ * This one holds everything: the CDK, both wraps, the extras, and a plaintext
+ * it opened itself. What went away is the STORE. A browser evicted the
+ * database, or a `t` object store lost its rows, and the next
+ * `partitionSnapshot` hands the seal an empty region.
+ *
+ * Nothing in the tombstone rule fires here. The compartment carries no
+ * tombstone at all, the owner-private delete verbs journalled nothing until
+ * M226, and the seal simply wrote what it was handed: a new ciphertext, a new
+ * hash, a stamp of `previous + 1`, and a push that replaced the account's
+ * share key pair and every pinned peer with an empty compartment.
+ *
+ * The invariant these three cases pin: a session may write a plaintext SMALLER
+ * than the one it last read only for rows this device wrote down.
+ */
+describe('the seal after the store was emptied under a live session', () => {
+  /** A pinned peer, the row an eviction and an un-pin both remove. */
+  const PEER = { id: '9', accountId: 9, publicKeyRaw: 'peer-public-key', label: 'Dr. Meier', createdAt: 8_000 };
+
+  /** The region that session last read: this account's key pair, and one clinician it verified in person. */
+  const REGION_WITH_BOTH: OwnerPrivateRegion = {
+    ...regionWithShareKey(PRIVATE_KEY_MARKER),
+    sharePeers: [PEER],
+  };
+
+  /** The journal keys the two delete verbs would have written for those rows. */
+  const BOTH_KEYS = ['shareIdentity:me', 'sharePeer:9'];
+
+  /**
+   * A session that has READ this region, exactly as a cycle leaves one: it
+   * minted the compartment, sealed the region, and holds the plaintext.
+   */
+  async function sessionHolding(region: OwnerPrivateRegion): Promise<PrivateStoreSession> {
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek, established });
+    const sealed = await sealedBytes({ session, region });
+    // NON-VACUITY: there really are bytes on the account now, so "the old
+    // bytes came back" below is a statement about something.
+    assert.ok(sealed.ciphertext.length > 0);
+    assert.deepEqual(session.region, region, 'a seal that wrote must record the plaintext it stood behind');
+    return session;
+  }
+
+  it('holds the account’s bytes when the region lost rows nobody wrote down', async () => {
+    const session = await sessionHolding(REGION_WITH_BOTH);
+    const before = session.cache?.sealed;
+    assert.ok(before !== undefined && before !== null);
+
+    // THE EMPTIED STORE. `partitionSnapshot` reads the rows that are there,
+    // and there are none, so this is the region the seal is handed.
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: EMPTY_OWNER_PRIVATE_REGION,
+      ...NOTHING_WAS_UNPINNED,
+    });
+
+    assert.equal(seal.kind, 'held', 'an unexplained shrink must not be written');
+    assert.deepEqual(
+      seal.kind === 'held' ? seal.value : null,
+      before,
+      'and the bytes pushed must be the ones the account already holds',
+    );
+
+    // POSITIVE, because "the same three strings" says nothing about what is in
+    // them: the key material is still reachable through the door that opened it.
+    const reader = createPrivateStoreSession({
+      accountId: ACCOUNT_ID,
+      passphraseKek: await privateStoreKekFor('the passphrase that minted it'),
+    });
+    const opened = await openOwnerPrivateRegion({
+      session: reader,
+      sealed: seal.kind === 'held' ? seal.value : before,
+    });
+    assert.equal(opened?.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
+    assert.deepEqual(opened?.sharePeers, [PEER]);
+
+    // AND THE SESSION DID NOT MOVE. The cache and the region both still
+    // describe the plaintext it stood behind, or the next cycle would read
+    // the loss as the state it last agreed with and publish it.
+    assert.deepEqual(session.cache?.sealed, before);
+    assert.deepEqual(session.region, REGION_WITH_BOTH);
+  });
+
+  // CONTROL 1: the same shrink, with the removals WRITTEN DOWN, is an ordinary
+  // write. Without this the rule above could be "never shrink a compartment",
+  // which would strand every un-pin on the device that performed it.
+  it('writes the smaller region when this device journalled both removals', async () => {
+    const session = await sessionHolding(REGION_WITH_BOTH);
+    const before = session.cache?.sealed;
+    assert.ok(before !== undefined && before !== null);
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: EMPTY_OWNER_PRIVATE_REGION,
+      ...withUnpinned(BOTH_KEYS),
+    });
+
+    assert.equal(seal.kind, 'sealed', 'a removal this device recorded must publish');
+    const value = seal.kind === 'sealed' ? seal.value : null;
+    assert.ok(value !== null);
+    assert.notEqual(value.ciphertext, before.ciphertext, 'new bytes, or nothing was written');
+
+    // AND THE PLAINTEXT IS REALLY EMPTY NOW, read back through the door.
+    const reader = createPrivateStoreSession({
+      accountId: ACCOUNT_ID,
+      passphraseKek: await privateStoreKekFor('the passphrase that minted it'),
+    });
+    const opened = await openOwnerPrivateRegion({ session: reader, sealed: value });
+    assert.deepEqual(opened, EMPTY_OWNER_PRIVATE_REGION);
+  });
+
+  // CONTROL 2: the journal is the AUTHORITY, and the storage evidence still
+  // REFUSES. A device with no database cannot speak for its own compartment,
+  // whatever rows its journal holds, because the journal lives in the database
+  // that is gone.
+  it('holds even with a full journal when the device has no database', async () => {
+    const session = await sessionHolding(REGION_WITH_BOTH);
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: EMPTY_OWNER_PRIVATE_REGION,
+      deletedEntityKeys: new Set(BOTH_KEYS),
+      integrity: { hasPersistedDatabase: false, isTableLoaded: {} },
+    });
+
+    assert.equal(seal.kind, 'held', 'an evicted device may not speak for its own journal');
+  });
+
+  // Only a SHRINK is weighed. A region that gained a row is an ordinary write
+  // and needs no evidence at all, which is what keeps a first pin, a first
+  // enrolment and a device whose database is not primed yet working.
+  it('writes a region that only grew, with an empty journal', async () => {
+    const session = await sessionHolding(regionWithShareKey(PRIVATE_KEY_MARKER));
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: REGION_WITH_BOTH,
+      ...NOTHING_WAS_UNPINNED,
+    });
+
+    assert.equal(seal.kind, 'sealed', 'pinning a peer must not need a delete journal row');
+    assert.deepEqual(session.region, REGION_WITH_BOTH, 'and the session now stands behind the larger plaintext');
+  });
+
+  // THE SEAL IS WHOLE-PLAINTEXT, so half the evidence is no evidence: writing
+  // the region would publish the unexplained loss beside the explained one.
+  it('holds when only one of two lost rows was written down', async () => {
+    const session = await sessionHolding(REGION_WITH_BOTH);
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: EMPTY_OWNER_PRIVATE_REGION,
+      ...withUnpinned(['sharePeer:9']),
+    });
+
+    assert.equal(seal.kind, 'held', 'an un-pin does not license losing the share identity beside it');
   });
 });

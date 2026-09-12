@@ -27,10 +27,13 @@
  * sharper reason, no tombstone describes their removals, so the journal is
  * the only evidence `mergeSnapshots` has that this device's list is short on
  * purpose. `deleteLocalShareIdentity`, `deleteLocalSharePeer` and
- * `deleteLocalStudyEnrolment` call `delRow` directly and are outside the
- * journal: each removes a local-only key or pinning record that is never
- * mirrored to sync, so no other device is ever owed a tombstone for it, and
- * each function's own doc says so. Grep for `delRow` in this file before
+ * `deleteLocalStudyEnrolment` GO THROUGH IT TOO (M226). They called `delRow`
+ * directly until an emptied store proved what that costs: the three rows are
+ * the owner-private compartment, which is sealed and pushed WHOLE, so a
+ * compartment missing a row is published as a compartment that no longer has
+ * it, and an eviction is byte-for-byte the same act as an un-pin. The journal
+ * is what tells those two apart, and `private-store.ts` refuses to seal a
+ * shrunk compartment without it. Grep for `delRow` in this file before
  * adding a path. There is ONE other remover,
  * `removeEntitiesWithoutJournal`, and it is the opposite case, rows a PEER
  * deleted, which this device must not claim. Its own doc says why.
@@ -153,8 +156,10 @@ function writeEntity(store: Store, table: string, id: string, entity: PrimaryEnt
  * "nothing to record". It is the opposite: nothing on the wire describes their
  * removals, so the journal is the ONLY thing that can tell a list somebody
  * emptied from a list a browser evicted, and `mergeSnapshots` reads it for
- * exactly that. A table absent from the map (the owner-private rows) has no
- * journalled delete verb at all, and the row is simply removed.
+ * exactly that. The three owner-private tables are in the map for the same
+ * reason, one region over: the compartment is sealed whole, so the seal reads
+ * the journal to tell an un-pin from an eviction. A table still absent from
+ * the map has no journalled delete verb at all, and the row is simply removed.
  */
 function deleteEntity(store: Store, table: string, id: string): void {
   const entityType: string | undefined = Object.entries(DELETE_JOURNAL_TAG_BY_TABLE).find(
@@ -914,7 +919,7 @@ export async function getLocalShareIdentity({ store }: StoreOption = {}): Promis
  * automatically, and nothing may.
  */
 export async function deleteLocalShareIdentity({ store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(SHARE_IDENTITY_TABLE, SHARE_IDENTITY_ROW_ID);
+  deleteEntity(await resolveStore(store), SHARE_IDENTITY_TABLE, SHARE_IDENTITY_ROW_ID);
 }
 
 /**
@@ -944,9 +949,19 @@ export async function getLocalSharePeer(
   return readEntity<LocalSharePeer>(await resolveStore(store), SHARE_PEERS_TABLE, String(accountId));
 }
 
-/** Un-pins a peer. Local only, it revokes nothing on the server, which is a separate, explicit act. */
+/**
+ * Un-pins a peer. Local only, it revokes nothing on the server, which is a
+ * separate, explicit act.
+ *
+ * JOURNALLED (M226). The pin lives in the owner-private compartment, which is
+ * pushed as one sealed blob, so the account learns about this removal only by
+ * receiving a compartment that no longer names the peer. The journal row is
+ * the evidence that makes that write legitimate; without it the seal holds the
+ * old bytes, because a compartment that lost a row to an eviction looks
+ * exactly the same.
+ */
 export async function deleteLocalSharePeer(accountId: number, { store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(SHARE_PEERS_TABLE, String(accountId));
+  deleteEntity(await resolveStore(store), SHARE_PEERS_TABLE, String(accountId));
 }
 
 // ---------------------------------------------------------------------------
@@ -1015,7 +1030,7 @@ export async function getLocalStudyEnrolment(
  * the server's copy is the one erasure has to reach.
  */
 export async function deleteLocalStudyEnrolment(studyAccountId: number, { store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(STUDY_ENROLMENTS_TABLE, String(studyAccountId));
+  deleteEntity(await resolveStore(store), STUDY_ENROLMENTS_TABLE, String(studyAccountId));
 }
 // ---------------------------------------------------------------------------
 // The gateway this account joined (M187/02), the singleton that travels in

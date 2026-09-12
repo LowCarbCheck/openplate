@@ -55,7 +55,13 @@
 import { base64ToBytes, bytesToBase64 } from './engine/crypto/base64';
 import { openPrivateStore, sealPrivateStore, unwrapCdk } from './engine/crypto/private-store';
 import type { EstablishedPrivateStore } from './engine/crypto/private-store';
-import { contentHash } from './snapshot-sync';
+import { contentHash, isTableTrusted, type LocalStoreIntegrity } from './snapshot-sync';
+import {
+  RESEARCH_IDENTITY_TABLE,
+  SHARE_IDENTITY_TABLE,
+  SHARE_PEERS_TABLE,
+  STUDY_ENROLMENTS_TABLE,
+} from '#app/lib/local-store/schema';
 import { ownerPrivateRegionSchema } from '#app/lib/local-store/backup';
 import {
   COMPARTMENT_KIND,
@@ -65,7 +71,12 @@ import {
   type CompartmentExtras,
   type ParsedCompartment,
 } from './compartment-kind';
-import type { OwnerPrivateRegion, SealedPrivateStore } from './snapshot-partition';
+import {
+  EMPTY_OWNER_PRIVATE_REGION,
+  ownerPrivateRegionKeys,
+  type OwnerPrivateRegion,
+  type SealedPrivateStore,
+} from './snapshot-partition';
 
 export type { EstablishedPrivateStore };
 
@@ -102,6 +113,22 @@ export interface PrivateStoreSession {
    * a plaintext from that state.
    */
   extras: CompartmentExtras | null;
+  /**
+   * THE PLAINTEXT THIS SESSION LAST READ OR WROTE, and the only thing that can
+   * say a compartment SHRANK (M226).
+   *
+   * Written by {@link openOwnerPrivateRegion} on a successful open, by
+   * {@link adoptEstablishedCompartment} (a compartment nobody has put anything
+   * in yet, so the empty region), and by every seal that actually writes.
+   * `null` is a session that has never held the plaintext, which is where
+   * {@link adoptRewrappedSlots} leaves one.
+   *
+   * The seal compares it against the region it is handed. A key that was in
+   * here and is not in the new one is a ROW THIS DEVICE STOPPED HAVING, and
+   * the compartment is pushed whole, so writing it would publish the loss. It
+   * is legitimate exactly when the delete journal names the key.
+   */
+  region: OwnerPrivateRegion | null;
   /**
    * The compartment EXACTLY AS LAST PULLED, written on every pull that carried
    * one — whether or not this session could open it.
@@ -152,6 +179,7 @@ export function createPrivateStoreSession({
     wraps: null,
     cache: null,
     extras: null,
+    region: null,
     pulled: null,
     hasPulled: false,
   };
@@ -205,6 +233,12 @@ export function adoptEstablishedCompartment({
   // plaintext hash — anything left here would belong to a different one.
   session.cache = null;
   session.extras = {};
+  // AND THE PLAINTEXT IS KNOWN TO BE EMPTY, which is a statement rather than a
+  // default, exactly as `extras` above is. This session made the compartment,
+  // so it can say what is in it: nothing yet. Leaving `region` at `null` would
+  // make the first seal after an establish unable to say whether the region it
+  // is handed grew or shrank, and the safe answer to that question is to hold.
+  session.region = EMPTY_OWNER_PRIVATE_REGION;
 }
 
 /**
@@ -274,14 +308,56 @@ export type OwnerPrivateSeal =
    * nothing else to carry, but the stamping is told so and contributes no
    * candidate for the compartment at all.
    */
-  | { kind: 'unknown' };
+  | { kind: 'unknown' }
+  /**
+   * THE COMPARTMENT SHRANK AND NOBODY WROTE THE REMOVAL DOWN (M226), so these
+   * are the bytes the account already holds, re-emitted verbatim.
+   *
+   * The state it exists for is a LIVE session, holding a CDK, both wraps and
+   * the extras, whose store was emptied under it: an eviction, a cleared site,
+   * a `t` object store that lost its rows. `partitionSnapshot` then hands the
+   * seal an EMPTY region, the seal takes the write branch, the compartment
+   * gets a new hash and a higher stamp, and the push replaces the account's
+   * share key pair, its pinned peers and its pseudonym root with nothing. No
+   * tombstone is involved anywhere in it, so the journal rule that protects
+   * every other collection never fires.
+   *
+   * Byte-identical to `sealed` on the wire, and a different sentence: the
+   * device's own changes did NOT publish. `snapshot-sync.ts` is told
+   * (`isCompartmentHeld`) so the push cannot claim the shrink was intended
+   * and the heal log fires.
+   */
+  | { kind: 'held'; value: SealedPrivateStore };
+
+/**
+ * The store tables the compartment is sealed FROM. All four, including the
+ * research identity, which has no delete verb and is therefore the one row
+ * here whose absence can only ever be an eviction.
+ */
+const OWNER_PRIVATE_TABLES = [
+  SHARE_IDENTITY_TABLE,
+  SHARE_PEERS_TABLE,
+  RESEARCH_IDENTITY_TABLE,
+  STUDY_ENROLMENTS_TABLE,
+] as const;
 
 export async function sealOwnerPrivateRegion({
   session,
   region,
+  deletedEntityKeys,
+  integrity,
 }: {
   session: PrivateStoreSession;
   region: OwnerPrivateRegion;
+  /**
+   * The delete journal as of the SAME read that produced `region`
+   * (`sync-actions.ts`). Required, like `stampSnapshot`'s integrity and for
+   * the same reason: a correctness argument with a permissive default is a
+   * correctness argument at zero call sites.
+   */
+  deletedEntityKeys: ReadonlySet<string>;
+  /** What that read can prove about the device's storage, the second signal behind the journal. */
+  integrity: LocalStoreIntegrity;
 }): Promise<OwnerPrivateSeal> {
   const { cdk, wraps, extras } = session;
   // A SESSION MAY ONLY WRITE A PLAINTEXT IT HAS READ (M164/06).
@@ -323,6 +399,28 @@ export async function sealOwnerPrivateRegion({
     return { kind: 'sealed', value: session.cache.sealed };
   }
 
+  // A SESSION MAY WRITE A SMALLER PLAINTEXT THAN THE ONE IT LAST READ ONLY FOR
+  // ROWS THIS DEVICE WROTE DOWN (M226). Everything above this line is about a
+  // session that cannot read the compartment; this is the one that can, and
+  // whose STORE went away underneath it.
+  //
+  // Only a shrink is weighed. A region that grew, or changed a row in place,
+  // is an ordinary write and needs no evidence at all, which is also what
+  // keeps a first-ever push working on a device whose database is not primed
+  // yet.
+  const withdrawn = session.region === null ? [] : ownerPrivateRegionKeys(session.region);
+  const stillHere = new Set(ownerPrivateRegionKeys(region));
+  const lost = withdrawn.filter((key) => !stillHere.has(key));
+  if (lost.length > 0 && !isShrinkProven({ lost, deletedEntityKeys, integrity })) {
+    // THE CACHE AND THE REGION ARE LEFT ALONE, deliberately. Both describe the
+    // plaintext this session last stood behind, and the bytes returned here
+    // are that same plaintext; moving either to the shrunk region would make
+    // the NEXT cycle read the loss as the state it last agreed with, and
+    // publish it.
+    const held = session.cache?.sealed ?? session.pulled;
+    return held === null ? { kind: 'unknown' } : { kind: 'held', value: held };
+  }
+
   const ciphertext = await sealPrivateStore({
     cdk,
     // TAGGED, always. An untagged compartment is readable — it defaults to
@@ -337,12 +435,50 @@ export async function sealOwnerPrivateRegion({
   });
   const sealed: SealedPrivateStore = { ciphertext: bytesToBase64(ciphertext), ...wraps };
   session.cache = { plaintextHash, sealed };
+  // The plaintext this session now stands behind. The next seal measures its
+  // region against THIS one, so a write is what moves the line, never a read
+  // of a region that was refused.
+  session.region = region;
   return { kind: 'sealed', value: sealed };
+}
+
+/**
+ * May this device say that these rows were REMOVED, rather than that it cannot
+ * see them?
+ *
+ * The compartment's half of `snapshot-sync.ts`'s tombstone rule, and it weighs
+ * the same two signals in the same order. THE JOURNAL IS THE AUTHORITY: a key
+ * a delete verb wrote down is a removal somebody performed, in the same
+ * transaction and the same database as the row. The disk-versus-memory
+ * comparison only REFUSES: a compartment table the device half read is one it
+ * cannot speak for, whatever the journal says beside it, and an evicted
+ * database answers `false` for every table at once.
+ *
+ * Every lost key must be proven. A region that lost a pinned peer and a study
+ * enrolment, with a journal row for only one of them, is a region this device
+ * cannot write: the seal is whole-plaintext, so publishing the proven half
+ * publishes the other half with it.
+ */
+function isShrinkProven({
+  lost,
+  deletedEntityKeys,
+  integrity,
+}: {
+  lost: readonly string[];
+  deletedEntityKeys: ReadonlySet<string>;
+  integrity: LocalStoreIntegrity;
+}): boolean {
+  if (!OWNER_PRIVATE_TABLES.every((table) => isTableTrusted({ table, integrity }))) return false;
+  return lost.every((key) => deletedEntityKeys.has(key));
 }
 
 /** The sealed bytes a snapshot carries for this answer. `absent` and `unknown` both have none to carry. */
 export function sealedCompartmentOrNull(seal: OwnerPrivateSeal): SealedPrivateStore | null {
-  return seal.kind === 'sealed' ? seal.value : null;
+  // `held` CARRIES BYTES TOO, and they are the ones that must ride in the
+  // snapshot: they are what the account already holds, so the push re-emits
+  // them, the stamp is carried forward unchanged, and nothing is overwritten.
+  // A `null` here would be the very loss the hold exists to prevent.
+  return seal.kind === 'sealed' || seal.kind === 'held' ? seal.value : null;
 }
 
 /**
@@ -445,6 +581,10 @@ export async function openOwnerPrivateRegion({
     // compartment VERBATIM instead of re-sealing it under a fresh IV and
     // making every boot write a blob version.
     session.cache = { plaintextHash: sealCacheKey({ region, extras }), sealed };
+    // AND THE PLAINTEXT ITSELF, which is what the next seal measures a shrink
+    // against (M226). Written from the same opened compartment as the cache
+    // beside it, so the two cannot describe different plaintexts.
+    session.region = region;
     return region;
   }
   return null;
