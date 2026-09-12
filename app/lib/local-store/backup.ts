@@ -7,7 +7,7 @@
  * device-local file, and the envelope's `schemaVersion` lets an export taken on
  * an older build migrate forward on import.
  *
- * Device-only photos are deliberately excluded — they never enter export, sync,
+ * Device-only photos are deliberately excluded, they never enter export, sync,
  * or the server (see `photos.ts`).
  *
  * Split: `serializeBackup`/`parseBackupEnvelope`/`migrateEnvelopeForward` are
@@ -36,7 +36,9 @@ import {
   listLocalSharePeers,
   listLocalStudyEnrolments,
   listLocalWeightEntries,
+  peekLocalFastingSettings,
   putLocalFast,
+  putLocalFastingSettingsRecord,
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
@@ -79,7 +81,7 @@ const personalFoodSchema = z.object({
   macrosPer100g: macrosSchema,
   source: z.enum(['user', 'plate_ai']),
   createdAt: z.number(),
-  // Added v6 — the exact counterpart of `foodLogSchema.netCarbsPer100g` below,
+  // Added v6, the exact counterpart of `foodLogSchema.netCarbsPer100g` below,
   // and present for the identical reason: zod STRIPS unrecognized keys, so
   // omitting this line would silently drop the figure on every export/import,
   // turning a scanned-and-matched fibre-heavy food's 21.7 g back into a
@@ -88,32 +90,32 @@ const personalFoodSchema = z.object({
   // distinct: an absent key means "no authoritative figure was captured"
   // (recompute from parts) while an explicit `null` means "an upstream source
   // was consulted and had none" (never fabricate a 0). No forward-migration
-  // step is needed for the v5 → v6 bump — a v5 envelope simply lacks the key,
+  // step is needed for the v5 → v6 bump, a v5 envelope simply lacks the key,
   // which is already the correct "never captured" state.
   netCarbsPer100g: z.number().nonnegative().nullable().optional(),
-  // Added v12 (spec 13, EU/US carb basis) — the exact counterpart of
+  // Added v12 (spec 13, EU/US carb basis), the exact counterpart of
   // `foodLogSchema.carbBasis` below: OPTIONAL, no `.nullable()`, because an
   // absent key is the only "unknown" state this field has (see that field's
   // doc comment in `schema.ts` for the UNKNOWN-means-`total` rule). Present
   // for the usual reason: zod STRIPS unrecognized keys, so omitting this
   // line would silently drop which panel convention a food's carbs were
   // read from on every export/import round trip. No forward-migration step
-  // is needed for the v11 → v12 bump — a v11 envelope simply lacks the key,
+  // is needed for the v11 → v12 bump, a v11 envelope simply lacks the key,
   // which is already the correct "unknown" state.
   carbBasis: z.enum(CARB_BASES).optional(),
-  // Added v10 — the exact counterpart of `foodLogSchema.micronutrientsPer100g`
+  // Added v10, the exact counterpart of `foodLogSchema.micronutrientsPer100g`
   // below, sharing the same `micronutrientsPer100gSchema` so a food's stored
   // snapshot and a log's can never drift. Present for the identical reason the
   // line above it is: zod STRIPS unrecognized keys, so omitting this would
   // silently drop every vitamin and mineral figure off a saved food on each
-  // export/import — and the loss would be invisible, because the restored food
+  // export/import, and the loss would be invisible, because the restored food
   // would simply start re-logging as uncovered.
   //
   // `.optional()` WITHOUT `.nullable()`, matching the log's field rather than
   // its `netCarbsPer100g` neighbour: this field is never written as an explicit
   // `null`. "Nothing was captured" is the key's absence; the finer-grained
   // unknowns live INSIDE the snapshot. No forward-migration step is needed for
-  // the v9 → v10 bump — a v9 envelope's foods simply lack the key, which is
+  // the v9 → v10 bump, a v9 envelope's foods simply lack the key, which is
   // already the correct "never captured" state.
   micronutrientsPer100g: micronutrientsPer100gSchema.optional(),
 });
@@ -132,7 +134,7 @@ const foodLogSchema = z.object({
   loggedAt: z.number(),
   createdAt: z.number(),
   logBatchId: z.string().nullable(),
-  // Added v3 (household portions) — `.nullable().optional()` for the same
+  // Added v3 (household portions), `.nullable().optional()` for the same
   // reason as `attribution` below: a pre-v3 envelope simply lacks the key,
   // while a post-v3 gram-only entry carries an explicit `null`, and both must
   // parse. Reuses `displayPortionSchema` rather than re-declaring the shape,
@@ -140,14 +142,14 @@ const foodLogSchema = z.object({
   // through (`portionField`).
   //
   // This line was deliberately deferred when the field was added, on the
-  // grounds that `backup.ts` wasn't owned by that round — which left a real
+  // grounds that `backup.ts` wasn't owned by that round, which left a real
   // gap: zod STRIPS unrecognized keys, so an export → import round trip
   // silently turned every "2 eggs" entry back into a bare gram figure. The
   // grams always survived (`quantityGrams` is the authoritative amount), so
-  // nothing miscomputed — but the person's own chosen unit vanished from
+  // nothing miscomputed, but the person's own chosen unit vanished from
   // their own backup, with no error to notice it by.
   portion: displayPortionSchema.nullable().optional(),
-  // Added v4 (durability round) — OPTIONAL (not just nullable), matching
+  // Added v4 (durability round), OPTIONAL (not just nullable), matching
   // `LocalFoodLog.attribution`'s own convention, so a pre-v4 envelope (whose
   // `foodLogs[].attribution` key is simply absent) still parses cleanly with
   // no migration step: `.optional()` alone would satisfy `z.infer` as
@@ -155,33 +157,33 @@ const foodLogSchema = z.object({
   // to also accept an explicit `null` (an entry logged post-v4 whose source
   // carried no licence credit), not just a missing key.
   attribution: z.string().nullable().optional(),
-  // Added v5 — `.nullable().optional()` for the same reason as `attribution`,
+  // Added v5, `.nullable().optional()` for the same reason as `attribution`,
   // but here the two non-numeric states are semantically DISTINCT and both
   // must survive the round-trip: an absent key means "no authoritative figure
   // was captured" (recompute from parts) while an explicit `null` means "an
   // upstream source was consulted and had none" (never fabricate a 0). Zod
   // strips unrecognized keys, so omitting this line would silently drop the
-  // figure on every export/import — turning a fibre-heavy curated entry's
+  // figure on every export/import, turning a fibre-heavy curated entry's
   // 21.7 g back into a confident, wrong 0 g. No forward-migration step is
   // needed for the v4 → v5 bump: a v4 envelope simply lacks the key, which is
   // already the correct "never captured" state.
   netCarbsPer100g: z.number().nonnegative().nullable().optional(),
-  // Added v12 (spec 13, EU/US carb basis) — which printed-panel convention
+  // Added v12 (spec 13, EU/US carb basis), which printed-panel convention
   // (`total`/`available`) this entry's `macros.carbs` was read from, see
   // `LocalFoodLog.carbBasis`'s doc comment in `schema.ts`. OPTIONAL WITHOUT
   // `.nullable()`: unlike `netCarbsPer100g` above, there is no explicit-null
-  // "consulted and unknown" state here — absence alone means unknown, and
+  // "consulted and unknown" state here, absence alone means unknown, and
   // unknown is treated exactly as `total`. Present for the usual reason: zod
   // STRIPS unrecognized keys, so omitting this would silently drop the basis
   // on every export/import, quietly reverting an EU-basis entry's fallback
   // formula back to double-subtracting fibre. No forward-migration step is
-  // needed for the v11 → v12 bump — a v11 envelope simply lacks the key.
+  // needed for the v11 → v12 bump, a v11 envelope simply lacks the key.
   carbBasis: z.enum(CARB_BASES).optional(),
-  // Added v9 (micronutrients, M135) — one OPTIONAL field on an EXISTING
+  // Added v9 (micronutrients, M135), one OPTIONAL field on an EXISTING
   // entity, so this follows the `attribution`/`netCarbsPer100g` rules above and
   // not the `fasts` rule below: a v8 envelope simply lacks the key, which is
   // already the correct "no micronutrients were captured" state, so no
-  // forward-migration step is needed. The line itself IS needed — zod strips
+  // forward-migration step is needed. The line itself IS needed, zod strips
   // unrecognized keys, so omitting it would drop every vitamin and mineral
   // figure on each export/import round trip, and the loss would be invisible:
   // the aggregation would just report the day as uncovered.
@@ -189,7 +191,7 @@ const foodLogSchema = z.object({
   // `.optional()` WITHOUT `.nullable()`, unlike its neighbours: this field is
   // never written as an explicit `null`. "Nothing was captured" is expressed by
   // the key's absence, and the finer-grained unknowns live INSIDE the snapshot
-  // (an absent block, or a `null` value in a present one) — see
+  // (an absent block, or a `null` value in a present one), see
   // `micronutrientsPer100gSchema`, which is shared with the food-resolution
   // parser so a stored snapshot and a freshly-parsed one can never drift.
   micronutrientsPer100g: micronutrientsPer100gSchema.optional(),
@@ -208,12 +210,12 @@ const profileGoalsSchema = z.object({
   goalNetCarbsCeilingG: z.number().nullable(),
   goalProteinFloorG: z.number().nullable(),
   goalKcalTarget: z.number().nullable(),
-  // Added v2 (M117/03) — see `migrateProfileToV2` for the v1 → v2 default fill.
+  // Added v2 (M117/03), see `migrateProfileToV2` for the v1 → v2 default fill.
   targetWeightKg: z.number().nullable(),
   trackingFocus: z.enum(['net-carbs', 'calories', 'habit']).nullable(),
   onboardingCompletedAt: z.number().nullable(),
   updatedAt: z.number(),
-  // Added v8 (body metrics, M135) — four OPTIONAL fields on an EXISTING
+  // Added v8 (body metrics, M135), four OPTIONAL fields on an EXISTING
   // entity, so these follow the `attribution`/`netCarbsPer100g` rules above
   // and not the `fasts` rule below: a v7 envelope simply lacks the keys, which
   // is already the correct "never told us" state, so no forward-migration step
@@ -260,15 +262,53 @@ const profileGoalsSchema = z.object({
 
 const fastSchema = z.object({
   id: z.string(),
-  protocolId: z.enum(['16:8', '18:6', '20:4', 'custom']),
+  // Widened at v21 with the four extended presets. A widening needs no
+  // migration in this direction, every id a v20 device wrote is still a
+  // member, but it is why the version bump is not optional: a v20 build
+  // reading a `48h` row fails this enum and refuses the whole file.
+  protocolId: z.enum(['16:8', '18:6', '20:4', '24h', '36h', '48h', '72h', 'custom']),
   targetDurationMs: z.number().positive(),
   plannedStartAt: z.number().nullable(),
   startedAt: z.number().nullable(),
   endedAt: z.number().nullable(),
   createdAt: z.number(),
+  // Added v21 (the fasting rework), two OPTIONAL fields on an EXISTING
+  // entity, so they follow the `portion`/`attribution` rules above and not the
+  // `fasts` rule below: a v20 envelope's fasts simply lack both keys, which is
+  // already "nothing was said", so no forward-migration step was added. The
+  // two lines ARE needed, because zod strips unrecognized keys and would drop
+  // a person's own words on every export/import round trip.
+  mood: z.enum(['rough', 'ok', 'good']).nullable().optional(),
+  // DELIBERATELY UNBOUNDED, although the store refuses a note over
+  // `FAST_NOTE_MAX_LENGTH`. The store guards what this app WRITES; a validator
+  // guards what it can READ, and a file holding a longer note (hand-edited, or
+  // written by a build with a higher ceiling) must import rather than have the
+  // whole backup refused over one long sentence. Same reasoning as
+  // `pregnancyDueDate` being an unrefined `z.string()`.
+  note: z.string().nullable().optional(),
 });
 
-// Added v11 (saved meals, M123/07) — one item's shape mirrors `foodLogSchema`
+/**
+ * The singleton fasting routine (added v21).
+ *
+ * `updatedAt` is carried verbatim, which is why `importSnapshot` writes this
+ * record through `putLocalFastingSettingsRecord` rather than the merging
+ * `putLocalFastingSettings`: re-stamping it on a restore would make an old
+ * routine look like this device's freshest edit.
+ */
+const fastingSettingsSchema = z.object({
+  routineProtocolId: z.enum(['16:8', '18:6', '20:4', '24h', '36h', '48h', '72h', 'custom']).nullable(),
+  // `int().min(0).max(1439)` rather than a bare number: a minute-of-day out of
+  // range is not a value any reader can ignore, it is one that would render a
+  // start time that does not exist. Unlike a malformed due date, there is
+  // nothing here to fall back on.
+  routineStartMinute: z.number().int().min(0).max(1_439).nullable(),
+  routineCustomHours: z.number().int().positive().nullable(),
+  extendedAcknowledgedAt: z.number().nullable(),
+  updatedAt: z.number(),
+});
+
+// Added v11 (saved meals, M123/07), one item's shape mirrors `foodLogSchema`
 // minus placement, for the same reason `schema.ts`'s `LocalSavedMealItem`
 // doc comment gives: a saved meal is a template, not a pinned-to-a-day log.
 const savedMealItemSchema = z.object({
@@ -282,7 +322,7 @@ const savedMealItemSchema = z.object({
   portion: displayPortionSchema.nullable().optional(),
   attribution: z.string().nullable().optional(),
   netCarbsPer100g: z.number().nonnegative().nullable().optional(),
-  // Added v12 (spec 13) — mirrors `foodLogSchema.carbBasis`, for the same
+  // Added v12 (spec 13), mirrors `foodLogSchema.carbBasis`, for the same
   // lossless-round-trip reason this item's whole field set mirrors
   // `foodLogSchema`'s (see `LocalSavedMealItem`'s doc comment in schema.ts):
   // without it, re-logging a saved EU-basis item would silently fall back to
@@ -300,7 +340,7 @@ const savedMealSchema = z.object({
 
 /**
  * Added v13 (clinician sharing, M160/04). Base64 rather than bytes because a
- * snapshot is JSON; the lengths are NOT asserted here on purpose — a wrong
+ * snapshot is JSON; the lengths are NOT asserted here on purpose, a wrong
  * length fails loudly at `crypto.subtle.importKey`, and a zod refinement that
  * merely rejected the whole envelope would make one malformed key un-importable
  * ALONGSIDE somebody's entire diary.
@@ -332,7 +372,7 @@ const researchIdentitySchema = z.object({
 });
 
 /**
- * Added v16 (M163/01) — the window this device last SENT to a study. Named
+ * Added v16 (M163/01), the window this device last SENT to a study. Named
  * here for the reason every field in this file is named: zod STRIPS
  * unrecognized keys, so omitting it would drop the window on every export,
  * every import, and every compartment seal/open round-trip, leaving a screen
@@ -361,8 +401,8 @@ const studyEnrolmentSchema = z.object({
  * and it is the ONLY part of the snapshot a full-DEK share may disclose.
  *
  * Exported as its own schema so `app/lib/sync/snapshot-partition.ts` can
- * validate a WIRE snapshot — which carries this region plus one opaque
- * compartment ciphertext — without a second copy of every entity schema
+ * validate a WIRE snapshot, which carries this region plus one opaque
+ * compartment ciphertext, without a second copy of every entity schema
  * above. Two copies would be a silent way for a backup and a blob to drift.
  */
 export const shareableSnapshotFields = {
@@ -374,7 +414,7 @@ export const shareableSnapshotFields = {
   // every earlier bump in this file added an OPTIONAL FIELD to an existing
   // entity, which needed no migration because a pre-bump row simply lacked the
   // key and `.optional()` accepted it. This bump adds a REQUIRED ARRAY to the
-  // snapshot itself, and a v6 envelope has no `fasts` key at all — without a
+  // snapshot itself, and a v6 envelope has no `fasts` key at all, without a
   // default it would fail `snapshotSchema.safeParse` and every older backup on
   // every device would become un-importable.
   //
@@ -387,16 +427,30 @@ export const shareableSnapshotFields = {
   // Added v11 (saved meals, M123/07). Same rule as `fasts` above (a whole new
   // entity, not an optional field on an existing one): a v10 envelope has no
   // `savedMeals` key, and `.default([])` IS the complete v10 -> v11 forward
-  // migration — "this device had no saved meals, because saved meals did not
+  // migration, "this device had no saved meals, because saved meals did not
   // exist". No `migrateSnapshotToV11` step, for the identical reason there is
   // no `migrateSnapshotToV7` one. See the `NOTE (M123/07, saved meals)` block
   // in `schema.ts`.
   savedMeals: z.array(savedMealSchema).default([]),
+  // Added v21 (the fasting rework). Same rule as `fasts` and `savedMeals`
+  // above (a whole new entity, not an optional field on an existing one): a
+  // v20 envelope has no `fastingSettings` key, and `.default(null)` IS the
+  // complete v20 -> v21 forward migration, "this device had no fasting
+  // routine, because a routine could not be expressed". No
+  // `migrateSnapshotToV21` step, for the identical reason there is no
+  // `migrateSnapshotToV11` one.
+  //
+  // `.nullable().default(null)` rather than an array default, because this is
+  // a SINGLETON: the shape it follows is `shareIdentity`'s, one region over.
+  // It sits in the SHAREABLE region because a fasting routine is a preference
+  // like the profile's goals, not key material, see `snapshot-partition.ts`
+  // which is where that decision is recorded and enforced.
+  fastingSettings: fastingSettingsSchema.nullable().default(null),
 } as const;
 
 /**
  * THE OWNER-PRIVATE COMPARTMENT's plaintext: key material and trust pins.
- * This is what a grant must NEVER mean — see ADR-0002's partition amendment
+ * This is what a grant must NEVER mean, see ADR-0002's partition amendment
  * for why a grantee holding the grantor's share private key is a cascade
  * rather than a leak.
  *
@@ -410,20 +464,20 @@ export const ownerPrivateRegionFields = {
   // Added v13 (clinician sharing, M160/04). Same rule as `fasts` and
   // `savedMeals` above (whole new entities, not optional fields): a v12
   // envelope has neither key, and these two defaults ARE the complete v12 ->
-  // v13 forward migration — "this device had no share key, because sharing did
+  // v13 forward migration, "this device had no share key, because sharing did
   // not exist". No `migrateSnapshotToV13` step, for the identical reason there
   // is no `migrateSnapshotToV11` one.
   //
   // Present here for the usual reason every field in this file is: zod STRIPS
   // unrecognized keys. Omitting these two lines would silently drop a
   // clinician's share PRIVATE KEY on every export/import and every sync
-  // round-trip — and the loss would be invisible until a patient's wrap
+  // round-trip, and the loss would be invisible until a patient's wrap
   // stopped opening on a restored device.
   shareIdentity: shareIdentitySchema.nullable().default(null),
   sharePeers: z.array(sharePeerSchema).default([]),
   // Added v15 (research contributions, M161/03). Same rule again: a v14
   // envelope has neither key, and these two defaults ARE the complete v14 ->
-  // v15 forward migration — "this device had no research identity, because
+  // v15 forward migration, "this device had no research identity, because
   // contributing did not exist". No `migrateSnapshotToV15` step.
   //
   // They belong in THIS object rather than the shareable one for the reason
@@ -434,16 +488,16 @@ export const ownerPrivateRegionFields = {
   studyEnrolments: z.array(studyEnrolmentSchema).default([]),
 } as const;
 
-/** The shareable region as a schema — what a wire snapshot validates its diary half against. */
+/** The shareable region as a schema, what a wire snapshot validates its diary half against. */
 export const shareableSnapshotSchema = z.object(shareableSnapshotFields);
 
 /**
- * The compartment's plaintext as a schema — what a just-decrypted compartment
+ * The compartment's plaintext as a schema, what a just-decrypted compartment
  * is validated against.
  *
  * IDENTICAL TO A BACKUP'S OWNER-PRIVATE HALF AGAIN, as of v18. M187/02 made it
- * one key wider — the compartment carried `gatewayConnection` and a backup
- * deliberately did not — and M192 deleted that key along with the gateway. The
+ * one key wider, the compartment carried `gatewayConnection` and a backup
+ * deliberately did not, and M192 deleted that key along with the gateway. The
  * two are spelled as one spread rather than merged into `snapshotSchema`
  * outright, because the reason they differed is a live one: the moment
  * something belongs in the compartment and not in an export, it is added HERE
@@ -457,11 +511,11 @@ export const shareableSnapshotSchema = z.object(shareableSnapshotFields);
  */
 export const ownerPrivateRegionSchema = z.object({ ...ownerPrivateRegionFields });
 
-/** A BACKUP file's payload — the shareable region plus the owner-private keys a backup is allowed to carry. See above for the one it is not. */
+/** A BACKUP file's payload, the shareable region plus the owner-private keys a backup is allowed to carry. See above for the one it is not. */
 const snapshotSchema = z.object({ ...shareableSnapshotFields, ...ownerPrivateRegionFields });
 
 /**
- * The WRAPPER shape shared by every envelope version — schema-agnostic about
+ * The WRAPPER shape shared by every envelope version, schema-agnostic about
  * `data`. This is deliberately the ONLY thing `parseBackupEnvelope` validates;
  * see the ordering note on `migrateEnvelopeForward` below for why.
  */
@@ -485,12 +539,12 @@ export function serializeBackup(envelope: BackupEnvelope): string {
 
 /**
  * Parses a backup JSON string into a `RawBackupEnvelope`, validating ONLY the
- * version-agnostic wrapper (`schemaVersion`/`exportedAt`/`data` presence) — not
+ * version-agnostic wrapper (`schemaVersion`/`exportedAt`/`data` presence), not
  * the shape of `data` itself. Throws a clear error on anything malformed (fail
- * fast — a bad backup file must never partly import). Pure.
+ * fast, a bad backup file must never partly import). Pure.
  *
  * ORDERING FIX (review of commit 6264322): this used to validate `data`
- * against the CURRENT, full `snapshotSchema` at parse time — which would have
+ * against the CURRENT, full `snapshotSchema` at parse time, which would have
  * rejected a genuinely OLDER envelope (a real pre-v2+ payload shape) before
  * `migrateEnvelopeForward` ever got a chance to upgrade it. Validating only
  * the wrapper here, and validating the migrated payload's final shape inside
@@ -515,7 +569,7 @@ export function parseBackupEnvelope(json: string): RawBackupEnvelope {
 /**
  * v1 → v2 upgrade step (M117/03): `LocalProfileGoals` gained `targetWeightKg`,
  * `trackingFocus`, and `onboardingCompletedAt`. A v1 envelope's `data.profile`
- * (when present and non-null) predates those fields — fill them with their
+ * (when present and non-null) predates those fields, fill them with their
  * "unset" default (`null`) rather than rejecting an otherwise-valid older
  * backup. Leaves everything else untouched; a missing/null `profile` (or a
  * `data` shape that isn't even an object) passes through unchanged, so the
@@ -564,7 +618,7 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // There is deliberately no `if (envelope.schemaVersion < 8) …` step for the
   // v7 → v8 body-metrics bump (M135): it added only OPTIONAL fields to an
   // EXISTING entity, so a v7 envelope's profile simply lacks the four keys and
-  // `profileGoalsSchema`'s `.nullable().optional()` accepts it as-is — the
+  // `profileGoalsSchema`'s `.nullable().optional()` accepts it as-is, the
   // absent keys already mean "never told us". Filling them with an explicit
   // `null` the way `migrateProfileToV2` had to would change nothing a reader
   // can observe. See `schema.ts`'s `NOTE (M135, body metrics)`.
@@ -574,7 +628,7 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // OPTIONAL field to the EXISTING food-log entity, so a v8 envelope's logs
   // simply lack `micronutrientsPer100g` and `foodLogSchema`'s `.optional()`
   // accepts them as-is. Filling the key with an empty object would be actively
-  // WRONG here — an empty snapshot is indistinguishable from a populated one at
+  // WRONG here, an empty snapshot is indistinguishable from a populated one at
   // the type level, whereas an absent key is exactly "we captured nothing",
   // which is what a pre-v9 log means.
   //
@@ -582,17 +636,17 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // personal-food entity: a v9 envelope's foods simply lack
   // `micronutrientsPer100g` and `personalFoodSchema`'s `.optional()` accepts
   // them as-is. Back-filling it from anywhere would be worse than useless here
-  // — the only honest source for a saved food's micronutrients is the match it
+  //, the only honest source for a saved food's micronutrients is the match it
   // was created from, which the envelope does not carry, and re-deriving one
   // from a live lookup would rewrite history for a food that has since been
   // edited. Absent means absent.
   //
-  // Nor is there one for v10 → v11 (saved meals, M123/07) — that bump is back
+  // Nor is there one for v10 → v11 (saved meals, M123/07), that bump is back
   // under the `fasts` rule, not the optional-field rule: `snapshotSchema`'s
   // `savedMeals: z.array(savedMealSchema).default([])` IS the complete
   // migration, exactly as it was for `fasts` at v6 → v7. A v10 envelope simply
   // has no `savedMeals` key, and `.default([])` reads that as "this device had
-  // no saved meals, because saved meals did not exist" — there is nothing left
+  // no saved meals, because saved meals did not exist", there is nothing left
   // for a per-version step to do.
 
   // Nor is there one for v13 -> v14 (the snapshot partition, M160/07), and
@@ -636,7 +690,7 @@ async function resolveStore(store: Store | undefined): Promise<Store> {
  * Reads the full health snapshot from the primary store (deterministic order).
  *
  * THE ALLOWLIST, one line per key. It is an allowlist rather than a spread so
- * that a new entity has to be added here deliberately — the export file is the
+ * that a new entity has to be added here deliberately, the export file is the
  * one artefact a person carries off this device, and a credential that reached
  * it would leave with them. `openplate-ai` and `openplate-session` are
  * different databases entirely and there is no code path from here to either.
@@ -648,6 +702,12 @@ async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
     weightEntries: await listLocalWeightEntries({ store }),
     profile: await getLocalProfileGoals({ store }),
     fasts: await listLocalFasts({ store }),
+    // `peek`, not `get`: the reader that returns unset DEFAULTS would export a
+    // record of nulls from a device that has never set a routine, and the sync
+    // merge would then treat that as an answer competing with a peer's real
+    // one. `null` here means "never set", which is what it must mean on the
+    // wire too.
+    fastingSettings: await peekLocalFastingSettings({ store }),
     savedMeals: await listLocalSavedMeals({ store }),
     shareIdentity: await getLocalShareIdentity({ store }),
     sharePeers: await listLocalSharePeers({ store }),
@@ -657,7 +717,7 @@ async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
 }
 
 /**
- * Whether the primary store currently holds ANY trackable data — foods, food
+ * Whether the primary store currently holds ANY trackable data, foods, food
  * logs, weight entries, fasts, or a saved profile/goals row. This is the `hasData`
  * signal `#app/lib/backup-nudge`'s `shouldShowBackupNudge` needs to nudge a
  * device that's never exported (the population most at risk of losing its
@@ -672,13 +732,18 @@ export async function hasAnyLocalData({ store }: { store?: Store } = {}): Promis
     snapshot.weightEntries.length > 0 ||
     // A device whose only data is a fast must not be told it has nothing to lose.
     snapshot.fasts.length > 0 ||
-    // Nor one whose only data is a saved meal — it took real effort to name
+    // Nor one whose only data is a saved meal, it took real effort to name
     // and bundle, and losing it silently would be exactly the failure this
     // nudge exists to prevent.
     snapshot.savedMeals.length > 0 ||
+    // `fastingSettings` is deliberately NOT counted either, on the same
+    // footing: a routine is a preference, not something a person would
+    // recognise as data of theirs to lose, and counting it would fire the
+    // nudge at somebody who has picked a window and logged nothing.
+    //
     // `shareIdentity` and `sharePeers` are deliberately NOT counted. This
     // signal drives the backup nudge, and a key pair on its own is not
-    // "trackable data" a person would recognise as theirs to lose — nagging a
+    // "trackable data" a person would recognise as theirs to lose, nagging a
     // device whose only content is a keypair would fire the nudge at someone
     // with an empty diary.
     snapshot.profile !== null
@@ -693,10 +758,16 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   // The UNGUARDED put, deliberately: a restore must reproduce the file rather
   // than adjudicate it, so it may land a second open fast on a device that
   // already has one. `selectCurrentFast` picks the latest effective start and
-  // the loser shows in history as "Still open" with a Remove action — nothing
+  // the loser shows in history as "Still open" with a Remove action, nothing
   // is invented, nothing is silently dropped.
   for (const fast of snapshot.fasts) await putLocalFast(fast, { store });
   for (const meal of snapshot.savedMeals) await putLocalSavedMeal(meal, { store });
+  // The WHOLE-RECORD write, deliberately: `putLocalFastingSettings` would
+  // merge and re-stamp `updatedAt`, which would make every restore look like
+  // a fresh local edit of the routine.
+  if (snapshot.fastingSettings) {
+    await putLocalFastingSettingsRecord(snapshot.fastingSettings, { store });
+  }
   for (const peer of snapshot.sharePeers) await putLocalSharePeer(peer, { store });
   for (const enrolment of snapshot.studyEnrolments) await putLocalStudyEnrolment(enrolment, { store });
   if (snapshot.profile) await putLocalProfileGoals(snapshot.profile, { store });
@@ -705,7 +776,7 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   // she can no longer open, with nothing on screen to say why.
   if (snapshot.shareIdentity) await putLocalShareIdentity(snapshot.shareIdentity, { store });
   // The research identity restores like the share identity: present-or-absent,
-  // never merged. Dropping it would silently re-root this person — every study
+  // never merged. Dropping it would silently re-root this person, every study
   // they already contribute to would start receiving a NEW pseudonym, which a
   // researcher reads as a second participant.
   if (snapshot.researchIdentity) await putLocalResearchIdentity(snapshot.researchIdentity, { store });
@@ -724,7 +795,7 @@ export async function exportBackup({ store, now }: { store?: Store; now?: () => 
 /**
  * Imports a (possibly older-version) envelope into the primary store, migrating
  * it forward first. Upsert semantics: existing rows with matching ids are
- * overwritten, others are added — a restore into a fresh store is exact, and a
+ * overwritten, others are added, a restore into a fresh store is exact, and a
  * restore into a populated store merges.
  */
 export async function importBackup(envelope: BackupEnvelope, { store }: { store?: Store } = {}): Promise<void> {
@@ -751,7 +822,7 @@ export function computeDaysSinceExport(lastExportMs: number | null, nowMs: numbe
   return Math.max(0, Math.floor((nowMs - lastExportMs) / MS_PER_DAY));
 }
 
-/** The last-export instant as it comes back off the store — a TinyBase value, not yet an epoch-ms. */
+/** The last-export instant as it comes back off the store, a TinyBase value, not yet an epoch-ms. */
 const lastExportValueSchema = z.number();
 
 /** Records that the user has just exported a backup (stamps the last-export instant). */
@@ -767,7 +838,7 @@ export async function getLastExportAt({ store }: { store?: Store } = {}): Promis
 }
 
 /**
- * Whole days since the last backup export, or null when never exported — the
+ * Whole days since the last backup export, or null when never exported, the
  * datum the spec-08 nudge banner ("you have N days of un-exported data") reads.
  */
 export async function daysSinceExport({ store, now }: { store?: Store; now?: () => number } = {}): Promise<
@@ -785,7 +856,7 @@ export async function daysSinceExport({ store, now }: { store?: Store; now?: () 
  * Whole days between the instant this device first held data and `now`; null
  * when the device never has (or its marker is unreadable). Pure.
  *
- * Deliberately identical in shape to `computeDaysSinceExport` — same floor-to-
+ * Deliberately identical in shape to `computeDaysSinceExport`, same floor-to-
  * whole-days rounding, same `Math.max(0, …)` clamp against a clock that has
  * moved backwards, and the same null-means-"no instant to measure from"
  * semantics. The two feed one comparison against
@@ -797,12 +868,12 @@ export function computeDaysSinceFirstData(firstDataMs: number | null, nowMs: num
 }
 
 /**
- * Whole days since this device first held data, or null when it never has —
+ * Whole days since this device first held data, or null when it never has ,
  * the datum `shouldShowBackupNudge` measures a NEVER-EXPORTED device against,
  * in place of the `daysSinceExport` it has no value for.
  *
  * Reads `getFirstDataAt`, which lives in the store's VALUES partition and so
- * survives the tables wipe this spec exists to contain — meaning a device that
+ * survives the tables wipe this spec exists to contain, meaning a device that
  * just lost its tables still reports the true age of its data, not zero.
  */
 export async function daysSinceFirstData({ store, now }: { store?: Store; now?: () => number } = {}): Promise<

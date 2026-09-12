@@ -1,5 +1,5 @@
 /**
- * Versioned local schema — the structural source of truth for the on-device
+ * Versioned local schema, the structural source of truth for the on-device
  * primary store (M117/01, the local-first inversion). The TinyBase mirror/outbox
  * were a 30-day *cache* of server-owned diary data; this module defines the
  * durable, authoritative home for a user's tracker data: personal foods, food
@@ -11,19 +11,19 @@
  * export taken on an older app build can be migrated forward on import. Bump it
  * (and add a forward migration in `backup.ts`) whenever an entity shape changes.
  *
- * Pure types + id constants only — no runtime deps beyond `import type`, so the
+ * Pure types + id constants only, no runtime deps beyond `import type`, so the
  * pure logic modules (`aggregates.ts`, `backup.ts`) and their unit tests stay
  * browser- and store-free.
  *
  * NOTE (M117/03): this `SCHEMA_VERSION` bump (v1 → v2, adding the three fields
  * below to `LocalProfileGoals`) is a legitimate local-schema extension needed
- * for a faithful server → device profile migration — it is NOT the sync-blob
+ * for a faithful server → device profile migration, it is NOT the sync-blob
  * versioning spec 05 asked to leave alone (that constraint binds spec 06's
  * E2EE sync envelope, a different version counter).
  *
  * NOTE (M12x, household portions): `SCHEMA_VERSION` v2 → v3 adds the OPTIONAL
  * `portion` field to `LocalFoodLog` (see that field's doc comment). It is
- * genuinely optional — not just nullable — specifically so every existing
+ * genuinely optional, not just nullable, specifically so every existing
  * `putLocalFoodLog({...})` call site across the app keeps compiling
  * untouched, and so a pre-v3 on-device row (whose JSON blob simply lacks the
  * key) reads back as a perfectly valid v3 `LocalFoodLog` with no migration
@@ -32,27 +32,27 @@
  * the same reason.
  * CLOSED 2026-07-28: `backup.ts`'s `foodLogSchema` now DOES carry
  * `portion: displayPortionSchema.nullable().optional()`. Deferring it left a
- * real gap for one round — zod strips unrecognized keys, so an export →
+ * real gap for one round, zod strips unrecognized keys, so an export →
  * import round-trip dropped the chosen unit (grams survived, since
  * `quantityGrams` is authoritative; the "2 eggs" label did not).
  *
  * NOTE (durability round): `SCHEMA_VERSION` v3 → v4 adds the OPTIONAL
- * `attribution` field to `LocalFoodLog` (see that field's doc comment) — same
+ * `attribution` field to `LocalFoodLog` (see that field's doc comment), same
  * `?: string | null` convention as `portion` above, for the same reason: a
  * pre-v4 on-device row simply lacks the key, so it reads back as a valid v4
  * `LocalFoodLog` with `attribution: undefined` (never set), no migration
  * required. UNLIKE the `portion` bump, `backup.ts`'s `foodLogSchema` WAS
- * extended for this one (`attribution: z.string().nullable().optional()`) —
+ * extended for this one (`attribution: z.string().nullable().optional()`) ,
  * a licence credit dropped silently on export/import is a real compliance
  * gap, not just a cosmetic one, so this round closes it rather than deferring
  * it the way `portion`'s was deferred.
  *
  * NOTE (authoritative net carbs): `SCHEMA_VERSION` v4 → v5 adds the OPTIONAL
- * `netCarbsPer100g` field to `LocalFoodLog` (see that field's doc comment) —
+ * `netCarbsPer100g` field to `LocalFoodLog` (see that field's doc comment) ,
  * same `?: number | null` convention as `portion`/`attribution` above, for the
  * same reason: a pre-v5 on-device row simply lacks the key, so it reads back
  * as a valid v5 `LocalFoodLog` with `netCarbsPer100g: undefined` (never set),
- * which the readers treat exactly as they always have — recomputing net carbs
+ * which the readers treat exactly as they always have, recomputing net carbs
  * from the stored macro parts. No migration step is required, and none was
  * added. LIKE the `attribution` bump (and unlike `portion`'s), `backup.ts`'s
  * `foodLogSchema` WAS extended for this one: this field is the difference
@@ -61,7 +61,7 @@
  * corrupt the very number the app exists to track.
  *
  * NOTE (authoritative net carbs, part two): `SCHEMA_VERSION` v5 → v6 adds the
- * OPTIONAL `netCarbsPer100g` field to `LocalPersonalFood` — the SAME field, one
+ * OPTIONAL `netCarbsPer100g` field to `LocalPersonalFood`, the SAME field, one
  * entity over, on the same `?: number | null` three-state convention as every
  * bump above, so a pre-v6 on-device row reads back as a valid v6
  * `LocalPersonalFood` with the key absent ("never captured") and no migration
@@ -79,7 +79,7 @@
  * Every prior bump added an OPTIONAL FIELD to an EXISTING entity, which needed
  * no migration because a pre-bump row simply lacked the key and
  * `.nullable().optional()` accepted it. This bump adds a whole new entity
- * (`LocalFast`, plus `FASTS_TABLE`) AND a REQUIRED array — `fasts` — to
+ * (`LocalFast`, plus `FASTS_TABLE`) AND a REQUIRED array, `fasts`, to
  * `LocalStoreSnapshot` itself, and a v6 backup envelope has no `fasts` key at
  * all. The forward migration is therefore not a `migrate*` function in
  * `backup.ts` at all: it is `fasts: z.array(fastSchema).default([])` on
@@ -89,41 +89,41 @@
  * `LocalFast`'s own fields is back under the optional-field rules above.
  *
  * NOTE (M135, body metrics): `SCHEMA_VERSION` v7 → v8 is back under the
- * optional-field rules, NOT the v6 → v7 rules: it adds four OPTIONAL fields —
- * `heightCm`, `birthYear`, `biologicalSex`, `reproductiveStatus` — to the
+ * optional-field rules, NOT the v6 → v7 rules: it adds four OPTIONAL fields ,
+ * `heightCm`, `birthYear`, `biologicalSex`, `reproductiveStatus`, to the
  * EXISTING `LocalProfileGoals` entity, so a pre-v8 row (and a v7 backup
  * envelope) simply lacks the keys and reads back as a valid v8 profile with
  * every one of them absent, i.e. "never told us". There is therefore no
- * `migrateProfileToV8` step in `backup.ts` — only four new lines on
+ * `migrateProfileToV8` step in `backup.ts`, only four new lines on
  * `profileGoalsSchema`, without which zod would STRIP the keys and silently
  * empty the person's body metrics on every export/import round trip.
  *
  * They are `?:` rather than bare `| null` for the reason every optional field
  * above is: every existing `LocalProfileGoals` literal in the app and its tests
  * keeps compiling untouched. Semantically absent and `null` mean the same thing
- * here ("not set") — unlike `netCarbsPer100g`, this is a two-state field, and
+ * here ("not set"), unlike `netCarbsPer100g`, this is a two-state field, and
  * readers must treat both the same way. The whole app has to work with all four
  * unset; that is health-data minimisation, not an unfinished feature.
  *
  * NOTE (M135, micronutrients): `SCHEMA_VERSION` v8 → v9 is under the SAME
- * optional-field rules as v2 → v6 and v7 → v8: it adds ONE optional field —
- * `micronutrientsPer100g` — to the EXISTING `LocalFoodLog` entity, so a pre-v9
+ * optional-field rules as v2 → v6 and v7 → v8: it adds ONE optional field ,
+ * `micronutrientsPer100g`, to the EXISTING `LocalFoodLog` entity, so a pre-v9
  * row (and a v8 backup envelope) simply lacks the key and reads back as a
  * valid v9 log whose micronutrients were never captured. There is therefore no
- * `migrateFoodLogToV9` step in `backup.ts` — only one new line on
+ * `migrateFoodLogToV9` step in `backup.ts`, only one new line on
  * `foodLogSchema`, without which zod would STRIP the key and silently drop
  * every vitamin and mineral figure on each export/import round trip.
  *
  * The field's THREE states are not the same three as `netCarbsPer100g`'s, and
  * a reader who assumes they are will get the coverage measure wrong: here the
- * states nest — the field may be absent (no micronutrient dimension at all),
+ * states nest, the field may be absent (no micronutrient dimension at all),
  * present with a block absent (that whole vitamin/mineral dimension is
  * missing), or present with a block whose individual figure is `null` (that
  * one nutrient is unknown). All three read as UNCOVERED, never as zero. See
  * `#app/lib/micronutrients`, which owns the contract and the only reader.
  *
  * NOTE (M135, micronutrients part two): `SCHEMA_VERSION` v9 → v10 adds the
- * SAME `micronutrientsPer100g` field to `LocalPersonalFood` — one entity over,
+ * SAME `micronutrientsPer100g` field to `LocalPersonalFood`, one entity over,
  * under the same optional-field rules, so a pre-v10 row simply lacks the key
  * and reads back as a valid v10 food whose micronutrients were never captured.
  * No `migrateFoodToV10` step; one new line on `backup.ts`'s
@@ -134,13 +134,13 @@
  * scan-confirm writing two rows from one upstream fact and keeping the figures
  * on just one of them: `handleConfirm` creates a personal food from the applied
  * curated match, and with nowhere to keep the snapshot, re-logging that saved
- * food from /add's "Your foods" contributed ZERO micronutrient coverage — the
+ * food from /add's "Your foods" contributed ZERO micronutrient coverage, the
  * identical food logged from "Recent" contributed full coverage. One food, two
  * entry points, two different coverage answers, and the one that lost the data
  * is the one a person uses for the foods they eat most.
  *
- * A personal food created any OTHER way — hand-typed manual entry, plain AI
- * plate estimate — carries NO micronutrients and must keep carrying none. The
+ * A personal food created any OTHER way, hand-typed manual entry, plain AI
+ * plate estimate, carries NO micronutrients and must keep carrying none. The
  * vision schema is deliberately never asked to estimate them (it would
  * fabricate), and a person typing a label has not measured them. Absent is the
  * honest answer; a block of zeros would be a lie the coverage model cannot see
@@ -148,12 +148,12 @@
  *
  * NOTE (M123/07, saved meals): `SCHEMA_VERSION` v10 → v11 is under the SAME
  * rules as v6 → v7 (fasting), NOT the optional-field rules v2 → v6/v8/v9/v10
- * follow: it adds a WHOLE NEW ENTITY — `LocalSavedMeal`, plus `SAVED_MEALS_TABLE`
- * — and a REQUIRED array, `savedMeals`, to `LocalStoreSnapshot` itself. A v10
+ * follow: it adds a WHOLE NEW ENTITY, `LocalSavedMeal`, plus `SAVED_MEALS_TABLE`
+ *, and a REQUIRED array, `savedMeals`, to `LocalStoreSnapshot` itself. A v10
  * backup envelope has no `savedMeals` key at all, so the forward migration is
  * not a `migrate*` step in `backup.ts`: it is `savedMeals: z.array(savedMealSchema).default([])`
  * on `snapshotSchema`, which reads a v10 envelope as "this device had no saved
- * meals, because saved meals did not exist" — the exact `fasts` precedent, one
+ * meals, because saved meals did not exist", the exact `fasts` precedent, one
  * entity over. Any FUTURE change to `LocalSavedMeal`'s own fields is back under
  * the optional-field rules above.
  *
@@ -162,15 +162,15 @@
  * `carbBasis?: CarbBasis`, to BOTH `LocalPersonalFood` and `LocalFoodLog` (see
  * that field's doc comment on each for the full precedence and UNKNOWN-means-
  * `total` rule). A pre-v12 row simply lacks the key, which reads back as a
- * perfectly valid v12 row with `carbBasis: undefined` — no forward-migration
+ * perfectly valid v12 row with `carbBasis: undefined`, no forward-migration
  * step required, the exact `portion` (v2 → v3) precedent, NOT the `savedMeals`
  * (v10 → v11) one: no new entity, no new required field, nothing to default.
  * `backup.ts`'s two entity schemas get the matching `.optional()` zod line.
  *
  * NOTE (M160/04, clinician sharing): `SCHEMA_VERSION` v12 -> v13 is under the
  * `fasts`/`savedMeals` rules, NOT the optional-field rules: it adds TWO WHOLE
- * NEW ENTITIES — `LocalShareIdentity` and `LocalSharePeer`, plus their two
- * tables — and two new keys on `LocalStoreSnapshot` itself. A v12 envelope has
+ * NEW ENTITIES, `LocalShareIdentity` and `LocalSharePeer`, plus their two
+ * tables, and two new keys on `LocalStoreSnapshot` itself. A v12 envelope has
  * neither key, so the complete forward migration is `backup.ts`'s
  * `.default(null)` / `.default([])` on `snapshotSchema`: "this device had no
  * share key, because sharing did not exist". No `migrateSnapshotToV13` step.
@@ -198,13 +198,13 @@
  * UNLIKE every bump above it, because THE LOCAL SHAPE DOES NOT CHANGE AT ALL.
  * `LocalStoreSnapshot` still carries `shareIdentity` and `sharePeers` in the
  * clear, `backup.ts` still validates them, and a v13 backup file imports
- * byte-for-byte as it always did — there is no forward-migration step for the
+ * byte-for-byte as it always did, there is no forward-migration step for the
  * same reason there is nothing to migrate.
  *
  * What changed is the SYNCED shape. `openplate-core` ADR-0002's partition
  * amendment moves those two entities out of the shareable region of the blob
  * and into an encrypted compartment (`app/lib/sync/snapshot-partition.ts`),
- * because a share is full-DEK and the blob is the whole snapshot — so a
+ * because a share is full-DEK and the blob is the whole snapshot, so a
  * grantee was decrypting the grantor's own share PRIVATE key and their pinned
  * peers.
  *
@@ -212,7 +212,7 @@
  * `SCHEMA_VERSION` is bound into the sync envelope's AAD as
  * `payloadSchemaVersion`. Without the bump, a v13 client would decrypt a
  * partitioned blob, silently STRIP the compartment as an unrecognized key, and
- * push the result back — destroying the account's share keys with nothing
+ * push the result back, destroying the account's share keys with nothing
  * failing anywhere. With it, that client cannot decrypt the blob at all and
  * says so, which is the correct refusal.
  *
@@ -223,8 +223,8 @@
 /**
  * NOTE (M161/03, research contributions): `SCHEMA_VERSION` v14 -> v15 is under
  * the `fasts`/`savedMeals`/`shareIdentity` rules, NOT the optional-field
- * rules: it adds TWO WHOLE NEW ENTITIES — `LocalResearchIdentity` and
- * `LocalStudyEnrolment`, plus their two tables — and two new keys on
+ * rules: it adds TWO WHOLE NEW ENTITIES, `LocalResearchIdentity` and
+ * `LocalStudyEnrolment`, plus their two tables, and two new keys on
  * `LocalStoreSnapshot` itself. A v14 envelope has neither key, so
  * `backup.ts`'s `.default(null)` / `.default([])` IS the complete forward
  * migration ("this device had no research identity, because contributing did
@@ -235,8 +235,8 @@
  * exists (`app/lib/sync/snapshot-partition.ts`, `openplate-core` ADR-0003
  * prohibition 3). The pseudonym root is the secret every study pseudonym
  * derives from: a clinician grantee holding a full DEK must learn neither the
- * root — which would let her recompute every pseudonym this person will ever
- * present to any study — nor `studyEnrolments`, which is the list of studies
+ * root, which would let her recompute every pseudonym this person will ever
+ * present to any study, nor `studyEnrolments`, which is the list of studies
  * this person joined and therefore health data in its own right.
  *
  * The compartment is also what makes the pseudonym STABLE: it survives a
@@ -245,7 +245,7 @@
  * rather than degrading to a per-device root.
  *
  * NOTE (M163/01, the window that was sent): `SCHEMA_VERSION` v15 -> v16 adds
- * the REQUIRED-but-nullable `lastSubmission` field to `LocalStudyEnrolment` —
+ * the REQUIRED-but-nullable `lastSubmission` field to `LocalStudyEnrolment` ,
  * a NESTED field on an entity that already exists, so it adds no key to
  * `LocalStoreSnapshot` and no table. A v15 row simply lacks the key, and
  * `backup.ts`'s `.default(null)` IS the complete v15 -> v16 forward migration
@@ -253,8 +253,8 @@
  * No `migrateSnapshotToV16` step, for the identical reason there is no
  * `migrateSnapshotToV15` one.
  *
- * Nullable rather than optional — the `label` convention on the same entity,
- * not the `portion` one — because `null` here is a MEANING the enrolments
+ * Nullable rather than optional, the `label` convention on the same entity,
+ * not the `portion` one, because `null` here is a MEANING the enrolments
  * screen states ("nothing has been sent to this study yet") rather than a
  * field a caller may leave off. An optional field lets a future writer forget
  * it and get the same rendering by accident.
@@ -270,7 +270,7 @@
  * grantee and no study learns which days another study received. Nothing new
  * crosses the wire either: `PROTOCOL.md` §5.18's contribution row carries no
  * window, and putting one there would tell the SERVER the date range of a
- * person's diary contribution — a new §9.2 disclosure for a convenience the
+ * person's diary contribution, a new §9.2 disclosure for a convenience the
  * client can serve locally.
  *
  * NOTE (M187/02, gateway connection): `SCHEMA_VERSION` v16 -> v17 added ONE
@@ -286,7 +286,7 @@
  *
  * Both held a GATEWAY MEMBER TOKEN, and the gateway is gone: the sync server
  * took over the AI proxy, and a signed-in account authenticates to it with its
- * own access token. The row is not merely unused — it is a dead credential for
+ * own access token. The row is not merely unused, it is a dead credential for
  * a service that no longer answers, and an AI settings row pointing at it makes
  * every scan fail with a network error rather than an explanation.
  *
@@ -335,6 +335,44 @@
  * override columns were added beside them, because two homes for a ceiling would be
  * two places to disagree about it, and the derivation keeps the upgrade
  * lossless and reversible for every account written before this version.
+ *
+ * NOTE (the fasting rework): `SCHEMA_VERSION` v20 -> v21 does THREE things at
+ * once, and they are under two different rules. Read both before copying
+ * either.
+ *
+ *  1. `FastProtocolId` gains four named presets (`24h`, `36h`, `48h`, `72h`).
+ *     This is a WIDENING of a stored union, which needs no migration in this
+ *     direction: every id a v20 device ever wrote is still a member. It is not
+ *     reversible, which is exactly what the version bump records, since a v20
+ *     client that read a `48h` row would fail `fastSchema`'s enum and reject
+ *     the whole backup.
+ *  2. `LocalFast` gains two OPTIONAL fields, `mood` and `note`. This is under
+ *     the optional-field rules of v2 -> v6/v8/v9/v10/v19/v20: a pre-v21 row
+ *     simply lacks both keys and reads back as a valid v21 fast that carries
+ *     no reflection, so there is no `migrateFastToV21` step. The two lines on
+ *     `backup.ts`'s `fastSchema` ARE needed, because zod strips unrecognized
+ *     keys and would drop a person's own words on every export/import round
+ *     trip. The 280-character ceiling is enforced by the STORE
+ *     (`endLocalFast`/`setLocalFastReflection`), never by the type and never
+ *     by the backup validator: a file already holding a longer note must
+ *     import rather than be refused wholesale, which is the same reasoning
+ *     that keeps `pregnancyDueDate` an unrefined `z.string()`.
+ *  3. A WHOLE NEW ENTITY, `LocalFastingSettings`, plus `FASTING_SETTINGS_TABLE`
+ *     and one new key on `LocalStoreSnapshot`. This half is under the
+ *     `shareIdentity`/`researchIdentity` rules, NOT the optional-field ones: a
+ *     v20 envelope has no `fastingSettings` key at all, and `backup.ts`'s
+ *     `fastingSettings: fastingSettingsSchema.nullable().default(null)` IS the
+ *     complete forward migration ("this device had no fasting routine, because
+ *     a routine could not be expressed"). No `migrateSnapshotToV21` step, for
+ *     the identical reason there is no `migrateSnapshotToV13` one.
+ *
+ * UNLIKE `fasts` themselves, the settings record IS merged across devices
+ * (`snapshot-sync.ts`), and it is classified `shared` in the snapshot
+ * partition. Both are stated here because a reader who assumes the new record
+ * inherits the fasting feature's sync stance would get it backwards: a fast is
+ * an EVENT with a hard cross-device invariant ("at most one open"), while a
+ * routine is a PREFERENCE, exactly like the profile row beside it, and a
+ * person who sets their window on a phone means it on their tablet too.
  */
 import type { EatingStyleId } from '#app/lib/eating-style';
 import type { CarbBasis } from '#app/lib/net-carbs';
@@ -348,11 +386,11 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 20;
+export const SCHEMA_VERSION = 21;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
- * carry an owner in their key — the photo cache (`${userId}::${logBatchId}`)
+ * carry an owner in their key, the photo cache (`${userId}::${logBatchId}`)
  * and the migration-gate stamp.
  *
  * Introduced in M117/04 as the "no account is signed in" sentinel, chosen as
@@ -376,23 +414,27 @@ export const PERSONAL_FOODS_TABLE = 'personalFoods';
 export const FOOD_LOGS_TABLE = 'foodLogs';
 /** Table: weight entries, keyed by a client-generated id. */
 export const WEIGHT_ENTRIES_TABLE = 'weightEntries';
-/** Table: profile + goals — a singleton row (see `PROFILE_ROW_ID`). */
+/** Table: profile + goals, a singleton row (see `PROFILE_ROW_ID`). */
 export const PROFILE_GOALS_TABLE = 'profileGoals';
 /** Table: planned/active/completed fasts, keyed by a client-generated id. */
 export const FASTS_TABLE = 'fasts';
+/** Table: the fasting routine + the extended-fast acknowledgement, a SINGLETON row (see {@link FASTING_SETTINGS_ROW_ID}), exactly like the profile row. */
+export const FASTING_SETTINGS_TABLE = 'fastingSettings';
+/** The one row id the fasting settings ever occupy, a person has one fasting routine, and a second row would be two answers to one question. */
+export const FASTING_SETTINGS_ROW_ID = 'me';
 /** Table: saved meals (M123/07 item 1), keyed by a client-generated id. */
 export const SAVED_MEALS_TABLE = 'savedMeals';
-/** Share identity table (M160/04) — a SINGLETON, keyed by {@link SHARE_IDENTITY_ROW_ID}, exactly like the profile row. */
+/** Share identity table (M160/04), a SINGLETON, keyed by {@link SHARE_IDENTITY_ROW_ID}, exactly like the profile row. */
 export const SHARE_IDENTITY_TABLE = 'shareIdentity';
-/** The one row id the share identity ever occupies — this device's account has exactly one share key pair. */
+/** The one row id the share identity ever occupies, this device's account has exactly one share key pair. */
 export const SHARE_IDENTITY_ROW_ID = 'me';
-/** Pinned peer public keys (M160/04) — one row per counterpart account, keyed by that account id as a string. */
+/** Pinned peer public keys (M160/04), one row per counterpart account, keyed by that account id as a string. */
 export const SHARE_PEERS_TABLE = 'sharePeers';
-/** Research identity table (M161/03) — a SINGLETON, keyed by {@link RESEARCH_IDENTITY_ROW_ID}, exactly like the share identity row. */
+/** Research identity table (M161/03), a SINGLETON, keyed by {@link RESEARCH_IDENTITY_ROW_ID}, exactly like the share identity row. */
 export const RESEARCH_IDENTITY_TABLE = 'researchIdentity';
-/** The one row id the research identity ever occupies — an account has exactly one pseudonym root, and a second would break every pseudonym derived from the first. */
+/** The one row id the research identity ever occupies, an account has exactly one pseudonym root, and a second would break every pseudonym derived from the first. */
 export const RESEARCH_IDENTITY_ROW_ID = 'me';
-/** Study enrolments (M161/03) — one row per study this account contributes to, keyed by that study's account id as a string. */
+/** Study enrolments (M161/03), one row per study this account contributes to, keyed by that study's account id as a string. */
 export const STUDY_ENROLMENTS_TABLE = 'studyEnrolments';
 /**
  * The table a v17 device wrote its gateway connection into, kept ONLY so v18
@@ -413,13 +455,13 @@ export const SCHEMA_VERSION_VALUE = 'schemaVersion';
 export const LAST_EXPORT_VALUE = 'lastExportAt';
 /**
  * Store-level value: epoch-ms the FIRST food log or profile write ever landed
- * on this device — the durable "this device has had data before" marker
+ * on this device, the durable "this device has had data before" marker
  * (M123 spec 01).
  *
  * It lives in the store's VALUES partition (`v`) deliberately. The load/
  * autosave race this spec exists to close empties the TABLES partition (`t`)
  * while `v` is observed to survive, so a `t`-empty/`v`-populated store is not
- * "a new device" — it is "a device that lost its tables". This value is the
+ * "a new device", it is "a device that lost its tables". This value is the
  * only thing that can tell those two states apart, and it is readable without
  * consulting `t` at all.
  *
@@ -430,7 +472,7 @@ export const HAD_DATA_MARKER_VALUE = 'firstDataAt';
  * Store-level value: the userId the one-time server -> device migration gate
  * (`_personal.tsx`) was last confirmed clear for on THIS device (M117/03
  * follow-up fix). Session-scoped trust: written after a successful gate
- * check, cleared on logout — see `app/lib/local-store/migration-gate.ts`.
+ * check, cleared on logout, see `app/lib/local-store/migration-gate.ts`.
  */
 export const MIGRATION_GATE_CLEARED_FOR_VALUE = 'migrationGateClearedFor';
 
@@ -453,8 +495,8 @@ export interface LocalPersonalFood {
    * The AUTHORITATIVE net carbs per 100 g for this food, snapshotted from the
    * upstream source (LCC's origin-aware `FoodMatch.netCarbsPer100g`) at the
    * moment the food was created. The exact counterpart of
-   * `LocalFoodLog.netCarbsPer100g` — same figure, same basis, same three
-   * states — and it exists for the same reason: `macrosPer100g` above may hold
+   * `LocalFoodLog.netCarbsPer100g`, same figure, same basis, same three
+   * states, and it exists for the same reason: `macrosPer100g` above may hold
    * EU-convention "available" carbohydrate with fibre ALREADY excluded, so
    * recomputing `carbs - fiber - polyols` from it double-subtracts the fibre
    * and floors a genuinely high-carb food to a confident, green 0 g. There is
@@ -466,34 +508,34 @@ export interface LocalPersonalFood {
    *
    * Three states, identical to `LocalFoodLog.netCarbsPer100g` and to
    * `computeMacroPreview`'s `authoritativeNetCarbsPer100g` contract:
-   *  - ABSENT/`undefined` — no authoritative figure was captured. Readers fall
+   *  - ABSENT/`undefined`, no authoritative figure was captured. Readers fall
    *    back to computing from the parts, which is the correct answer for a
    *    hand-typed manual food, a plain AI plate estimate, a food migrated from
    *    the server (whose `foods` table has no such column), and every row
    *    written before this field existed.
-   *  - `null` — an upstream source was consulted and its figure is genuinely
+   *  - `null`, an upstream source was consulted and its figure is genuinely
    *    unknown for this food. Never fabricate a 0 from it.
-   *  - a number — the authoritative figure; it wins outright over the parts.
+   *  - a number, the authoritative figure; it wins outright over the parts.
    *
    * A macro EDIT clears this back to absent (the person has become the source,
-   * so a stale upstream figure would now be a lie) — see `handleEditFood` in
+   * so a stale upstream figure would now be a lie), see `handleEditFood` in
    * `app/routes/add.tsx`, which reuses `#app/lib/log-edit`'s
    * `resolveEditedNetCarbsPer100g` so the food and the log clear on exactly the
-   * same signal. OPTIONAL, not just nullable — same reasoning as every field
+   * same signal. OPTIONAL, not just nullable, same reasoning as every field
    * above (see the `SCHEMA_VERSION` v5 → v6 note).
    */
   netCarbsPer100g?: number | null;
   /**
    * Which printed-panel convention this food's `macrosPer100g.carbs` was read
-   * from — `total` (US, fibre-INCLUSIVE) or `available` (EU, fibre-EXCLUSIVE,
-   * polyols still subtracted) — governing the compute-from-parts fallback
+   * from, `total` (US, fibre-INCLUSIVE) or `available` (EU, fibre-EXCLUSIVE,
+   * polyols still subtracted), governing the compute-from-parts fallback
    * `computeNetCarbsFromParts` (`#app/lib/net-carbs`) uses when
    * `netCarbsPer100g` above is absent. See that module's doc for the formula
    * per basis, and spec 13 (M123) for why one formula applied to both
    * conventions understated net carbs on every EU-basis food.
    *
    * ABSENT/`undefined` means UNKNOWN, and UNKNOWN behaves EXACTLY as `total`
-   * — today's original formula, unchanged — for every food created before
+   *, today's original formula, unchanged, for every food created before
    * this field existed and every food whose basis was never set. This is a
    * deliberate choice, not a gap: the true basis of an already-logged food is
    * unknowable after the fact, and guessing `available` would silently RAISE
@@ -501,9 +543,9 @@ export interface LocalPersonalFood {
    * direction across all legacy data. See `SCHEMA_VERSION` v11 → v12 above.
    *
    * A macro EDIT clears `netCarbsPer100g` back to absent but does NOT clear
-   * this field — the basis is a property of the printed panel the person is
+   * this field, the basis is a property of the printed panel the person is
    * reading from, not of the (now-stale) upstream snapshot. OPTIONAL, not
-   * just nullable — same reasoning as `portion` (see the `SCHEMA_VERSION`
+   * just nullable, same reasoning as `portion` (see the `SCHEMA_VERSION`
    * v2 → v3 note): there is no third "explicitly unknown" state to encode, an
    * absent key already means exactly that.
    *
@@ -512,7 +554,7 @@ export interface LocalPersonalFood {
    * copies whatever basis THIS field held at the moment the underlying log was
    * written, exactly as `attribution` and `netCarbsPer100g` already do. If the
    * person later corrects this food's basis here, that correction heals only
-   * FUTURE `/add` logs of it — it does NOT retroactively fix an existing chip,
+   * FUTURE `/add` logs of it, it does NOT retroactively fix an existing chip,
    * saved-meal item, or already-logged entry frozen with the old value. This is
    * intended snapshot semantics, matching the rest of this food's fields, not a
    * bug to "fix" into a live lookup keyed by `foodId`.
@@ -520,12 +562,12 @@ export interface LocalPersonalFood {
   carbBasis?: CarbBasis;
   /**
    * This food's vitamins and minerals PER 100 g, snapshotted from the upstream
-   * source at the moment the food was created — the exact counterpart of
+   * source at the moment the food was created, the exact counterpart of
    * `LocalFoodLog.micronutrientsPer100g`, with the same nested three states and
    * the same absolute rule that none of them is ever a zero. Added v10 (M135).
    *
    * Already per-100 g here, like `macrosPer100g` beside it, so unlike the log's
-   * copy it needs no rescaling note — the two stay valid together, and
+   * copy it needs no rescaling note, the two stay valid together, and
    * `localFoodToCandidate` hands this straight to the portion step, which
    * carries it onto the entry the person logs.
    *
@@ -534,26 +576,26 @@ export interface LocalPersonalFood {
    * figures genuinely come from LCC. Deliberately ABSENT for a hand-typed
    * manual food and for a plain AI plate estimate, and that absence is a
    * finding, not a gap: nobody measured those vitamins, so claiming any figure
-   * — including zeros — would fabricate data the coverage model then reports as
+   *, including zeros, would fabricate data the coverage model then reports as
    * confidently known. Do not "fix" this by filling a block.
    *
    * A macro EDIT does NOT clear this, unlike `netCarbsPer100g` above: net carbs
    * are derived from the very macros being edited, while a vitamin C
    * measurement is an independent fact about the matched food that a person
    * adjusting a carb value has neither measured nor invalidated. `handleEditFood`
-   * spreads the existing row, so it survives an edit by construction — the same
+   * spreads the existing row, so it survives an edit by construction, the same
    * split `resolveAppliedMatchSnapshot` already draws between the two fields.
-   * OPTIONAL, not just nullable — same reasoning as every field above (see the
+   * OPTIONAL, not just nullable, same reasoning as every field above (see the
    * `SCHEMA_VERSION` v9 → v10 note).
    */
   micronutrientsPer100g?: MicronutrientsPer100g;
 }
 
 /**
- * A single food log — the authoritative entry. `id` is the client-generated
+ * A single food log, the authoritative entry. `id` is the client-generated
  * `clientId` that doubles as the server-side idempotency key (so the spec-06
  * sync path replays exactly-once). `dayKey` is the device-local calendar day
- * (`YYYY-MM-DD`) the entry belongs to — the local-first source of truth for
+ * (`YYYY-MM-DD`) the entry belongs to, the local-first source of truth for
  * diary placement, no timezone round-trip required.
  */
 export interface LocalFoodLog {
@@ -568,7 +610,7 @@ export interface LocalFoodLog {
   curatedSource: string | null;
   /** The personal-food id this log was created from, when any. */
   foodId: string | null;
-  /** Device-local calendar day (`YYYY-MM-DD`) — the diary bucket for this entry. */
+  /** Device-local calendar day (`YYYY-MM-DD`), the diary bucket for this entry. */
   dayKey: string;
   /** Epoch-ms the entry is logged against (may be back-dated). */
   loggedAt: number;
@@ -579,25 +621,25 @@ export interface LocalFoodLog {
   /**
    * The DISPLAY portion the person actually chose ("2 eggs"), kept alongside
    * the always-authoritative `quantityGrams` so a reload renders the real
-   * unit again instead of a bare gram figure (M12x household portions — see
+   * unit again instead of a bare gram figure (M12x household portions, see
    * `#app/lib/portions`). `null`/absent for gram-only entries: every log
    * recorded before this field existed, and any entry logged by typing an
    * exact weight that doesn't correspond to a whole portion choice.
-   * OPTIONAL, not just nullable — see the `SCHEMA_VERSION` v2 → v3 note above
+   * OPTIONAL, not just nullable, see the `SCHEMA_VERSION` v2 → v3 note above
    * for why.
    */
   portion?: DisplayPortion | null;
   /**
-   * The source's licence credit ("Bundeslebensmittelschlüssel (BLS) 4.0 — Max
+   * The source's licence credit ("Bundeslebensmittelschlüssel (BLS) 4.0, Max
    * Rubner-Institut, CC BY 4.0 (adapted)"), copied verbatim from the curated
    * match's own `attribution` at the moment this entry was logged. CC BY is a
    * real licence obligation, not a nicety: the credit must survive wherever
-   * the underlying data is shown, so this snapshot — not a live re-lookup —
+   * the underlying data is shown, so this snapshot, not a live re-lookup ,
    * is what the entry detail page renders, exactly like `macros`/`name` are
    * already snapshotted rather than re-fetched. `null`/absent for every entry
    * whose source carries no attribution (manual, AI-estimated, or a curated
    * source with no licence string) and for every entry logged before this
-   * field existed. OPTIONAL, not just nullable — same reasoning as `portion`
+   * field existed. OPTIONAL, not just nullable, same reasoning as `portion`
    * above (see the `SCHEMA_VERSION` v3 → v4 note).
    */
   attribution?: string | null;
@@ -609,7 +651,7 @@ export interface LocalFoodLog {
    * so recomputing `carbs - fiber - polyols` from this entry's own `macros`
    * double-subtracts the fibre and can floor a genuinely high-carb food to a
    * confident, green 0 g. There is no way to reconstruct this figure from the
-   * stored parts — hence a stored field rather than a derivation.
+   * stored parts, hence a stored field rather than a derivation.
    *
    * Stored PER 100 g, deliberately, even though `macros` is per-serving:
    * `quantityGrams` is editable, and a per-serving figure would silently
@@ -620,24 +662,24 @@ export interface LocalFoodLog {
    *
    * Three states, mirroring `computeMacroPreview`'s `authoritativeNetCarbsPer100g`
    * contract in `#app/lib/portion-preview`:
-   *  - ABSENT/`undefined` — no authoritative figure was captured for this
+   *  - ABSENT/`undefined`, no authoritative figure was captured for this
    *    entry. Readers fall back to computing from parts, which is the correct
    *    answer for a manual entry, an AI plate estimate, and every row logged
    *    before this field existed.
-   *  - `null` — an upstream source was consulted and its figure is genuinely
+   *  - `null`, an upstream source was consulted and its figure is genuinely
    *    unknown for this food. Never fabricate a 0 from it.
-   *  - a number — the authoritative figure; it wins outright over the parts.
+   *  - a number, the authoritative figure; it wins outright over the parts.
    *
    * A macro EDIT clears this back to absent (the user has become the source,
    * so a stale upstream figure would now be a lie); a QUANTITY edit preserves
    * it (per-100 g, so it stays valid). See `diary.entry.$id.tsx`'s `handleSave`.
-   * OPTIONAL, not just nullable — same reasoning as `portion`/`attribution`
+   * OPTIONAL, not just nullable, same reasoning as `portion`/`attribution`
    * above (see the `SCHEMA_VERSION` v4 → v5 note).
    */
   netCarbsPer100g?: number | null;
   /**
    * Which printed-panel convention this entry's `macros.carbs` was read from
-   * — the exact counterpart of `LocalPersonalFood.carbBasis` above, same
+   *, the exact counterpart of `LocalPersonalFood.carbBasis` above, same
    * type, same UNKNOWN-means-`total` rule, same "edit clears
    * `netCarbsPer100g`, not this" precedence. See that field's doc comment for
    * the full reasoning and `#app/lib/net-carbs` for the formula per basis.
@@ -659,26 +701,26 @@ export interface LocalFoodLog {
    * moment someone re-portions the entry. `computeDailyMicronutrients`
    * (`aggregates.ts`) does the `× quantityGrams / 100` scaling on the way out.
    *
-   * States — three of them, NESTED, and none of them is zero:
-   *  - ABSENT/`undefined` — no micronutrient dimension was captured for this
+   * States, three of them, NESTED, and none of them is zero:
+   *  - ABSENT/`undefined`, no micronutrient dimension was captured for this
    *    entry. Correct for a manual entry, an AI plate estimate (the vision
-   *    schema is deliberately NOT asked to estimate micronutrients — it would
+   *    schema is deliberately NOT asked to estimate micronutrients, it would
    *    fabricate them), a BLS/FDC-origin match, and every row logged before
    *    this field existed. Every nutrient is UNCOVERED.
-   *  - A BLOCK absent (`vitamins` or `minerals` missing) — that whole dimension
+   *  - A BLOCK absent (`vitamins` or `minerals` missing), that whole dimension
    *    is unavailable for this food. Those nutrients are UNCOVERED.
-   *  - A value `null` inside a present block — the source was consulted and has
+   *  - A value `null` inside a present block, the source was consulted and has
    *    no figure for that one nutrient. UNCOVERED for it alone.
    * A numeric value, INCLUDING `0`, is a real measurement: it sums as 0 and
    * counts as COVERED. Never fabricate a 0 from any of the three absent states
-   * — that is the single correctness rule this whole field exists to serve.
+   *, that is the single correctness rule this whole field exists to serve.
    *
    * Unlike `netCarbsPer100g`, a macro EDIT does NOT clear this. Net carbs are
    * derived from the very macros being edited, so an upstream figure computed
    * for different numbers becomes a lie; a vitamin C measurement is an
    * independent fact about the food that was matched, and the person editing a
-   * carb value has not measured — or invalidated — it.
-   * OPTIONAL, not just nullable — same reasoning as every field above (see the
+   * carb value has not measured, or invalidated, it.
+   * OPTIONAL, not just nullable, same reasoning as every field above (see the
    * `SCHEMA_VERSION` v8 → v9 note).
    */
   micronutrientsPer100g?: MicronutrientsPer100g;
@@ -700,7 +742,7 @@ export interface LocalWeightEntry {
  * columns, and because a union can grow a value without every reader having to
  * re-read what `true` meant.
  *
- * This is a lookup key into nutrient reference data, nothing more — it is never
+ * This is a lookup key into nutrient reference data, nothing more, it is never
  * shown back to the person as a label about them, and the settings surface
  * always offers "prefer not to say", which stores nothing at all.
  */
@@ -708,14 +750,14 @@ export type BiologicalSex = 'female' | 'male';
 
 /**
  * Pregnancy / lactation status (M135). A union, not a boolean, because the
- * reference-intake tables carry SEPARATE `pregnancy` and `lactation` columns —
+ * reference-intake tables carry SEPARATE `pregnancy` and `lactation` columns ,
  * a boolean could not tell them apart, and would force a second flag later.
  * `none` is the explicit "not applicable" value, so the person can put the
  * answer back exactly the way they found it.
  *
  * The most sensitive datum this app stores. It lives only in the browser's
  * IndexedDB, rides the JSON backup and the E2EE sync payload like every other
- * profile field (both of which the server cannot read — see ADR-0006), and is
+ * profile field (both of which the server cannot read, see ADR-0006), and is
  * never part of any outbound request: the food API only ever receives a food
  * name.
  */
@@ -733,9 +775,9 @@ export interface LocalProfileGoals {
   /** Selected tracking focus, or null when not chosen yet (added v2, M117/03). */
   trackingFocus: TrackingFocusType | null;
   /**
-   * Epoch-ms the onboarding wizard was completed (or skipped — skipping still
+   * Epoch-ms the onboarding wizard was completed (or skipped, skipping still
    * stamps completion, see `app/lib/onboarding.ts`), or null while still
-   * pending. Added v2, M117/03 — onboarding completion is now a LOCAL concept
+   * pending. Added v2, M117/03, onboarding completion is now a LOCAL concept
    * (the server no longer holds a profile row for a new account at all).
    */
   onboardingCompletedAt: number | null;
@@ -744,7 +786,7 @@ export interface LocalProfileGoals {
   /**
    * Standing height in centimetres (added v8, M135). Feeds the Mifflin-St Jeor
    * energy estimate in `#app/models/body-metrics`; nothing else reads it.
-   * Absent/`null` — and the estimate simply isn't offered.
+   * Absent/`null`, and the estimate simply isn't offered.
    */
   heightCm?: number | null;
   /**
@@ -755,7 +797,7 @@ export interface LocalProfileGoals {
    * point, not a shortcut.
    */
   birthYear?: number | null;
-  /** Biological sex (added v8, M135) — reference intakes are sex-segmented. */
+  /** Biological sex (added v8, M135), reference intakes are sex-segmented. */
   biologicalSex?: BiologicalSex | null;
   /**
    * Pregnancy / lactation status (added v8, M135). Meaningless alongside
@@ -809,14 +851,29 @@ export interface LocalProfileGoals {
  * `custom` means the person typed their own hour count and the real target
  * lives in `targetDurationMs`.
  *
- * The literals are deliberately NOT translated — "16:8" is written the same in
+ * The literals are deliberately NOT translated, "16:8" is written the same in
  * every language this app ships, and turning it into a catalog key would only
  * create a way for the two locales to disagree about a number.
  */
-export type FastProtocolId = '16:8' | '18:6' | '20:4' | 'custom';
+export type FastProtocolId = '16:8' | '18:6' | '20:4' | '24h' | '36h' | '48h' | '72h' | 'custom';
 
 /**
- * One fast — planned, running, or finished. Status is never stored: it is
+ * How the fast FELT, in the person's own reading, recorded when it ends.
+ *
+ * Three values and no scale, deliberately. A 1-to-10 slider invites a person
+ * to grade themselves, which DESIGN.md 10.1 forbids, and it would imply a
+ * precision nobody has about their own morning. `rough` is first because the
+ * hardest answer must be the easiest to give.
+ *
+ * There is no `none` sentinel: a fast with no recorded mood carries an absent
+ * field, which already means "not said". Adding a fourth literal for it would
+ * make "I skipped the question" and "it was fine" two different-looking
+ * answers to the same silence.
+ */
+export type FastMood = 'rough' | 'ok' | 'good';
+
+/**
+ * One fast, planned, running, or finished. Status is never stored: it is
  * derived from these timestamps against `now` (see `app/models/fasting.ts`'s
  * `resolveFastTimeline`), which is what lets a scheduled fast auto-activate
  * with no background job, no notification, and no write.
@@ -827,18 +884,18 @@ export interface LocalFast {
   protocolId: FastProtocolId;
   /**
    * The target length in ms. ALWAYS authoritative, including for a named
-   * protocol — `protocolId` is a label, this is the number. A future change to
+   * protocol, `protocolId` is a label, this is the number. A future change to
    * what "16:8" means must not retroactively rewrite a finished fast.
    */
   targetDurationMs: number;
   /**
    * Epoch-ms the fast is planned to begin, or null for a start-now fast.
-   * Once this instant passes and `endedAt` is still null the fast IS active —
+   * Once this instant passes and `endedAt` is still null the fast IS active ,
    * nothing writes anything to make that true.
    */
   plannedStartAt: number | null;
   /**
-   * Epoch-ms the fast actually began — written ONLY when the person set it
+   * Epoch-ms the fast actually began, written ONLY when the person set it
    * explicitly (started now, or adjusted the start time). Auto-activation
    * leaves this null on purpose, so the row stays honest about what the person
    * actually declared. Readers use `startedAt ?? plannedStartAt`.
@@ -848,13 +905,107 @@ export interface LocalFast {
   endedAt: number | null;
   /** Epoch-ms the row was created on-device. */
   createdAt: number;
+  /**
+   * How the fast felt, recorded when it ended (added v21). Absent means the
+   * question was never answered; `null` means it was answered and then taken
+   * back, and both read as "nothing to show", see `FastMood` for why there is
+   * no fourth literal.
+   *
+   * OPTIONAL rather than bare `| null`, the convention every optional field in
+   * this file follows (see the `SCHEMA_VERSION` v2 -> v3 note): every existing
+   * `LocalFast` literal in the app and its tests keeps compiling untouched,
+   * and a pre-v21 stored row simply lacks the key.
+   *
+   * Never inferred from the timestamps. A fast ended two hours short is not a
+   * `rough` one, and guessing would write a feeling the person did not report.
+   */
+  mood?: FastMood | null;
+  /**
+   * A line the person wrote about this fast (added v21), at most
+   * `FAST_NOTE_MAX_LENGTH` characters.
+   *
+   * THE CEILING IS ENFORCED IN THE STORE, not here and not in `backup.ts`:
+   * `endLocalFast` and `setLocalFastReflection` throw `FastNoteTooLongError`
+   * on a longer note, while the backup validator accepts any string so a file
+   * written by some future build imports rather than being refused wholesale.
+   * The type cannot carry the bound at all, and a branded string that could
+   * would push the check to every call site instead of the one that writes.
+   *
+   * This is health-adjacent free text the person typed. It lives in IndexedDB,
+   * rides the JSON backup and the E2EE sync payload like the rest of the
+   * diary, and is never part of any outbound request.
+   */
+  note?: string | null;
 }
 
 /**
- * One food inside a saved meal (M123/07 item 1) — everything a fresh
+ * The fasting ROUTINE, and the one acknowledgement an extended fast needs.
+ * A SINGLETON, like the profile/goals row (added v21).
+ *
+ * Every field is nullable and every field starts null: a device that has never
+ * opened `/fasting` has no routine, and `getLocalFastingSettings` returns
+ * exactly that rather than a default window nobody picked. A pre-filled 16:8
+ * here would read on screen as a decision the person made.
+ *
+ * It is NOT part of `LocalFast`. A routine describes what the person intends
+ * to do repeatedly; a fast records what they actually did once. Storing the
+ * routine on the last fast would rewrite history every time the routine
+ * changed, which is the same reason `targetDurationMs` is stored per fast
+ * rather than looked up from `protocolId`.
+ */
+export interface LocalFastingSettings {
+  /**
+   * The protocol the routine repeats, or null when no routine is set.
+   * `custom` here means the hours live in `routineCustomHours` below, exactly
+   * as `LocalFast.protocolId === 'custom'` defers to `targetDurationMs`.
+   */
+  routineProtocolId: FastProtocolId | null;
+  /**
+   * The LOCAL wall-clock minute after midnight the routine starts (0..1439),
+   * or null when the person has not named an hour.
+   *
+   * A minute-of-day rather than an instant, because a routine is a wall-clock
+   * habit: "I start at 20:00" stays 20:00 across a DST change and across a
+   * flight, while a stored epoch instant would drift by an hour twice a year.
+   * The fast the routine produces is still stamped in epoch-ms, so the
+   * DURATION arithmetic in `app/models/fasting.ts` is untouched by this.
+   */
+  routineStartMinute: number | null;
+  /**
+   * The routine's own hour count, meaningful ONLY alongside
+   * `routineProtocolId === 'custom'` and null otherwise. Kept separate from
+   * the protocol id for the reason `LocalFast` keeps `targetDurationMs`
+   * separate: a number and its label are two facts, and merging them loses one.
+   */
+  routineCustomHours: number | null;
+  /**
+   * Epoch-ms the person acknowledged the 24 h+ care sheet, or null while they
+   * never have.
+   *
+   * ONCE PER PERSON, not once per fast: it rides the synced snapshot, so a
+   * second device does not re-ask. An instant rather than a boolean because
+   * the date is the only thing that can answer "which version of the sheet did
+   * they see?" if the sheet is ever revised, and a boolean would have to be
+   * reset blind.
+   */
+  extendedAcknowledgedAt: number | null;
+  /**
+   * Epoch-ms of the last write to this record.
+   *
+   * Bookkeeping the person never sees, and NOT the sync ordering authority:
+   * `snapshot-sync.ts` orders by the Lamport stamp `(lamport, deviceId)` like
+   * every other merged entity, because wall-clock time across two devices is
+   * routinely wrong. What this field does for sync is feed the content hash,
+   * so a change here is a change that pushes.
+   */
+  updatedAt: number;
+}
+
+/**
+ * One food inside a saved meal (M123/07 item 1), everything a fresh
  * `LocalFoodLog` needs to be recreated from this snapshot at re-log time,
  * EXCEPT placement (`dayKey`/`loggedAt`/`mealType`/`logBatchId`), which a
- * re-log always sets fresh for the moment it's actually logged — a saved
+ * re-log always sets fresh for the moment it's actually logged, a saved
  * meal is not itself pinned to a day or a meal slot, only its re-logged
  * instances are. Deliberately the same field set `LocalFoodLog` carries for
  * "what was eaten" (name/quantity/macros/provenance/portion/attribution/
@@ -870,7 +1021,7 @@ export interface LocalSavedMealItem {
   source: FoodLogSourceType;
   aiEstimated: boolean;
   curatedSource: string | null;
-  /** The personal-food id this item was created from, when any — see `LocalFoodLog.foodId`. */
+  /** The personal-food id this item was created from, when any, see `LocalFoodLog.foodId`. */
   foodId: string | null;
   /** The chosen display portion ("2 eggs"), same convention as `LocalFoodLog.portion`. */
   portion?: DisplayPortion | null;
@@ -885,7 +1036,7 @@ export interface LocalSavedMealItem {
 }
 
 /**
- * A named, reusable bundle of foods (M123/07 item 1) — "save as meal" bundles
+ * A named, reusable bundle of foods (M123/07 item 1), "save as meal" bundles
  * one or more currently-logged foods (typically a whole meal group) into this
  * shape, and re-logging it creates one fresh `LocalFoodLog` per item, stamped
  * with whatever day/time/meal the re-log names. A saved meal is a TEMPLATE,
@@ -903,23 +1054,23 @@ export interface LocalSavedMeal {
 }
 
 /**
- * This account's own share key pair (`openplate-core` ADR-0002) — the identity
+ * This account's own share key pair (`openplate-core` ADR-0002), the identity
  * a clinician is addressed BY, and a patient wraps their DEK TO.
  *
  * A SINGLETON: one key pair per account, not per device. It lives in the
  * synced snapshot on purpose, so it inherits multi-device sync and
- * recovery-code recovery from machinery that already exists — a clinician who
+ * recovery-code recovery from machinery that already exists, a clinician who
  * replaces her phone keeps every share her patients granted. The cost is
  * recorded and accepted: lose both passphrase and recovery code and every
  * share dies, because any server-side softening would be a decryption
  * capability parked on the server.
  *
  * Both halves are base64 rather than `Uint8Array` because a snapshot is JSON
- * (`backup.ts` serializes it, and `contentHash` walks it) — a typed array
+ * (`backup.ts` serializes it, and `contentHash` walks it), a typed array
  * would round-trip through JSON as an object of numeric keys.
  */
 export interface LocalShareIdentity {
-  /** Uncompressed SEC1 raw public key (65 bytes), base64. Safe to publish — this is the half that travels in an invite. */
+  /** Uncompressed SEC1 raw public key (65 bytes), base64. Safe to publish, this is the half that travels in an invite. */
   publicKeyRaw: string;
   /**
    * PKCS#8 private key, base64.
@@ -940,20 +1091,20 @@ export interface LocalShareIdentity {
  * The EXISTENCE of a row here IS the verification record: a row is only ever
  * written by a ceremony that passed, which is why there is no `verified`
  * boolean to get out of step with reality. Deliberately NO stored fingerprint
- * either — it is `SHA-256(publicKeyRaw)` and recomputing it costs nothing,
+ * either, it is `SHA-256(publicKeyRaw)` and recomputing it costs nothing,
  * whereas a stored copy could drift from the key it claims to describe and
  * would then be displayed as if it were still true.
  *
- * A key change — rotation, or substitution attack, indistinguishable and
- * correctly so — voids the pin until a new ceremony. Nothing may overwrite
+ * A key change, rotation, or substitution attack, indistinguishable and
+ * correctly so, voids the pin until a new ceremony. Nothing may overwrite
  * this row automatically.
  */
 export interface LocalSharePeer {
-  /** The peer's sync account id, as a string — the row id, and the identity both share endpoints address. */
+  /** The peer's sync account id, as a string, the row id, and the identity both share endpoints address. */
   id: string;
   /** The peer's sync account id. `id` is its string form; this is the value that goes into the wrap's AAD. */
   accountId: number;
-  /** The peer's uncompressed SEC1 raw public key (65 bytes), base64 — the key every later re-wrap uses. */
+  /** The peer's uncompressed SEC1 raw public key (65 bytes), base64, the key every later re-wrap uses. */
   publicKeyRaw: string;
   /** The person's own label for this peer ("Dr. Meier"). Local only; the server never sees it. */
   label: string | null;
@@ -962,7 +1113,7 @@ export interface LocalSharePeer {
 }
 
 /**
- * The pseudonym ROOT (`openplate-core` ADR-0003) — 256 random bits, generated
+ * The pseudonym ROOT (`openplate-core` ADR-0003), 256 random bits, generated
  * once at first enrolment, and the only input a study pseudonym derives from
  * that the server does not hold.
  *
@@ -973,7 +1124,7 @@ export interface LocalSharePeer {
  * rather than falling back to a per-device root.
  *
  * `pid = HMAC-SHA-256(root, "openplate-sync:study-pseudonym:v1" || studyAccountId)`
- * — see `app/lib/sync/research/pseudonym.ts`, which owns the derivation.
+ *, see `app/lib/sync/research/pseudonym.ts`, which owns the derivation.
  * `H(accountId || studyId)` was rejected on exactly one point: with public
  * inputs it reverses by enumeration over the account table.
  *
@@ -983,7 +1134,7 @@ export interface LocalSharePeer {
  * whole design turns on.
  */
 export interface LocalResearchIdentity {
-  /** The 256-bit root, base64 — bytes rather than a typed array for the reason `LocalShareIdentity`'s halves are: a snapshot is JSON. */
+  /** The 256-bit root, base64, bytes rather than a typed array for the reason `LocalShareIdentity`'s halves are: a snapshot is JSON. */
   pseudonymRoot: string;
   /** Epoch-ms the root was generated on-device. */
   createdAt: number;
@@ -998,9 +1149,9 @@ export interface LocalResearchIdentity {
  * `LocalSharePeer`: a row is only ever written by a ceremony that passed.
  *
  * Deliberately NO stored fingerprint and NO stored pseudonym, for the reason
- * `LocalSharePeer` stores no fingerprint: both are recomputable — the
+ * `LocalSharePeer` stores no fingerprint: both are recomputable, the
  * fingerprint from `publicKeyRaw`, the pseudonym from the root and
- * `studyAccountId` — and a stored copy can drift from the thing it claims to
+ * `studyAccountId`, and a stored copy can drift from the thing it claims to
  * describe and then be displayed as if it were still true.
  */
 export interface LocalSubmittedWindow {
@@ -1013,11 +1164,11 @@ export interface LocalSubmittedWindow {
 }
 
 export interface LocalStudyEnrolment {
-  /** The study's sync account id, as a string — the row id. */
+  /** The study's sync account id, as a string, the row id. */
   id: string;
   /** The study's sync account id. `id` is its string form; this is the value that goes into the contribution's AAD. */
   studyAccountId: number;
-  /** The study's uncompressed SEC1 raw public key (65 bytes), base64 — the key every contribution is sealed to. */
+  /** The study's uncompressed SEC1 raw public key (65 bytes), base64, the key every contribution is sealed to. */
   publicKeyRaw: string;
   /** The person's own name for this study ("Charité sleep trial"). Local only; the server never sees it. */
   label: string | null;
@@ -1027,7 +1178,7 @@ export interface LocalStudyEnrolment {
    * The window this device last SENT to this study, or `null` when nothing has
    * been sent yet (M163/01). Added v16.
    *
-   * UNLIKE the fingerprint and the pseudonym above, this is NOT recomputable —
+   * UNLIKE the fingerprint and the pseudonym above, this is NOT recomputable ,
    * which is why, alone among this entity's facts, it is stored. It is also
    * the one thing on this row the server cannot tell the device: §5.18's
    * contribution row deliberately carries no window.
@@ -1040,9 +1191,9 @@ export interface LocalStudyEnrolment {
 }
 
 /**
- * A full, lossless snapshot of the primary store's health data — the payload a
+ * A full, lossless snapshot of the primary store's health data, the payload a
  * backup envelope carries (`backup.ts`). Device-only photos are deliberately
- * excluded (they never enter export, sync, or the server — see `photos.ts`).
+ * excluded (they never enter export, sync, or the server, see `photos.ts`).
  */
 export interface LocalStoreSnapshot {
   foods: LocalPersonalFood[];
@@ -1050,7 +1201,7 @@ export interface LocalStoreSnapshot {
   weightEntries: LocalWeightEntry[];
   profile: LocalProfileGoals | null;
   /**
-   * Added v7 (fasting, M132) — REQUIRED, unlike every optional field added by
+   * Added v7 (fasting, M132), REQUIRED, unlike every optional field added by
    * the five bumps before it. A v6 envelope has no `fasts` key, so
    * `backup.ts`'s `.default([])` is what makes an older backup importable; see
    * the `NOTE (M132, fasting)` block at the top of this file.
@@ -1061,7 +1212,21 @@ export interface LocalStoreSnapshot {
    */
   fasts: LocalFast[];
   /**
-   * Added v11 (saved meals, M123/07) — REQUIRED, under the same rule as
+   * Added v21 (the fasting rework), the singleton fasting routine, or `null`
+   * on a device that has never set one (the normal state).
+   *
+   * REQUIRED KEY, nullable value, under the `shareIdentity` rule rather than
+   * the optional-field one: a v20 envelope has no key at all, and
+   * `backup.ts`'s `.default(null)` is the whole forward migration.
+   *
+   * MERGED across devices, unlike `fasts` directly above it. See the
+   * `NOTE (the fasting rework)` block at the top of this file: a fast is an
+   * event with a hard cross-device invariant, a routine is a preference like
+   * the profile row.
+   */
+  fastingSettings: LocalFastingSettings | null;
+  /**
+   * Added v11 (saved meals, M123/07), REQUIRED, under the same rule as
    * `fasts` above (a whole new entity, not an optional field on an existing
    * one). A v10 envelope has no `savedMeals` key; `backup.ts`'s
    * `.default([])` is the complete v10 → v11 forward migration. See the
@@ -1069,7 +1234,7 @@ export interface LocalStoreSnapshot {
    */
   savedMeals: LocalSavedMeal[];
   /**
-   * Added v13 (clinician sharing, M160/04) — this account's own share key
+   * Added v13 (clinician sharing, M160/04), this account's own share key
    * pair, or `null` on a device that has never generated one (the normal
    * state: sharing is opt-in and most people never use it).
    *
@@ -1079,7 +1244,7 @@ export interface LocalStoreSnapshot {
    */
   shareIdentity: LocalShareIdentity | null;
   /**
-   * Added v13 (clinician sharing, M160/04) — peer public keys pinned by a
+   * Added v13 (clinician sharing, M160/04), peer public keys pinned by a
    * passed fingerprint ceremony. Public material only.
    *
    * REQUIRED, under the `fasts`/`savedMeals` rule: a v12 envelope has no key
@@ -1087,7 +1252,7 @@ export interface LocalStoreSnapshot {
    */
   sharePeers: LocalSharePeer[];
   /**
-   * Added v15 (research contributions, M161/03) — this account's pseudonym
+   * Added v15 (research contributions, M161/03), this account's pseudonym
    * root, or `null` on a device that has never enrolled in a study (the
    * normal state: contributing is opt-in and most people never do).
    *
@@ -1097,7 +1262,7 @@ export interface LocalStoreSnapshot {
    */
   researchIdentity: LocalResearchIdentity | null;
   /**
-   * Added v15 (research contributions, M161/03) — the studies whose keys this
+   * Added v15 (research contributions, M161/03), the studies whose keys this
    * device has pinned through the typed fingerprint ceremony.
    *
    * REQUIRED, under the `fasts`/`savedMeals`/`sharePeers` rule: a v14 envelope

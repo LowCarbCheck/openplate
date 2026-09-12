@@ -6,7 +6,7 @@
  *
  *  1. A v12 backup still imports. Two REQUIRED keys were added to
  *     `LocalStoreSnapshot`, so without `backup.ts`'s two defaults every
- *     existing backup file on every device becomes un-importable — the exact
+ *     existing backup file on every device becomes un-importable, the exact
  *     trap the `fasts` and `savedMeals` bumps documented before this one.
  *  2. Both survive an export/import round trip. zod STRIPS unrecognized keys,
  *     so a missing line in `snapshotSchema` would drop a clinician's share
@@ -14,7 +14,7 @@
  *     patient's wrap stopped opening on a restored device.
  *  3. They stay in the LOCAL shape and the BACKUP file after the M160/07
  *     partition. Only the SYNCED blob compartments them, because only a blob
- *     is ever handed to a second person — a backup that dropped the share key
+ *     is ever handed to a second person, a backup that dropped the share key
  *     would leave a restored device unable to open a single patient's wrap.
  *
  * The MERGE claims that used to live here moved to
@@ -52,6 +52,7 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
     profile: null,
     fasts: [],
     savedMeals: [],
+    fastingSettings: null,
     shareIdentity: null,
     sharePeers: [],
     researchIdentity: null,
@@ -61,8 +62,8 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
 }
 
 describe('the local schema version', () => {
-  it('is 20, the eating style on the profile (M210/01)', () => {
-    assert.equal(SCHEMA_VERSION, 20);
+  it('is 21, the fasting rework (presets, mood and note, the routine record)', () => {
+    assert.equal(SCHEMA_VERSION, 21);
   });
 });
 

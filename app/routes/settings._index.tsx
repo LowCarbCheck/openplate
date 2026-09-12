@@ -1,16 +1,16 @@
 /**
- * settings._index.tsx — the settings hub (`/settings`).
+ * settings._index.tsx, the settings hub (`/settings`).
  *
  * Replaces the old `/profile` card-hub. The difference is deliberate: a hub's
  * job is to say what exists and what it's currently set to, in one scan, and
- * then get out of the way. So every entry here is a compact ROW — icon, name,
- * one line of live status, chevron — not a card with its own explainer. The
+ * then get out of the way. So every entry here is a compact ROW, icon, name,
+ * one line of live status, chevron, not a card with its own explainer. The
  * per-page copy stays on the pages themselves (DESIGN.md §10.7: one phrasing
  * per idea; an explainer repeated on the hub and the page is a bug in one of
  * them).
  *
  * NO SERVER LOADER, by design (AGENTS.md, local-first). Every status line
- * below is read on the device — BYOK settings from the AI store, goals from
+ * below is read on the device, BYOK settings from the AI store, goals from
  * the primary store, theme/language from localStorage, sync from the
  * in-memory session. Nothing about this page's contents is ever sent
  * anywhere, and in particular the AI row shows the provider and model only,
@@ -34,18 +34,23 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Timer,
   Target,
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
 
 import { BUILD } from '#app/lib/build-info';
-import { getLocalProfileGoals, resolveLocalTimezone } from '#app/lib/local-store';
-import type { LocalProfileGoals } from '#app/lib/local-store';
+import { getLocalFastingSettings, getLocalProfileGoals, resolveLocalTimezone } from '#app/lib/local-store';
+import type { LocalFastingSettings, LocalProfileGoals } from '#app/lib/local-store';
+// The routine phrase is built ONCE, by the page that owns the setting, and
+// printed here. Two formatters would let the hub and the page disagree about
+// what "16:8, starts 20:00" means.
+import { fastingRowStatus } from './settings.fasting';
 import { readBodyMetrics } from '#app/models/body-metrics';
 import { reproductiveStatusLine } from '#app/lib/reproductive-status-line';
 import { todayInTimezone } from '#app/lib/user-days';
-// Shared with the header avatar menu's AI shortcut — one derivation of "which
+// Shared with the header avatar menu's AI shortcut, one derivation of "which
 // provider is this device connected to", rendered in two places.
 import { useAiConnectionStatusLine } from '#app/hooks/use-ai-connection-summary';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -65,7 +70,7 @@ import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 export { RouteErrorBoundary as ErrorBoundary };
 
 // Title via the pure `meta-title` seam, with the language read off the ROOT
-// loader through `matches` — never the i18next singleton (see `meta-title.ts`
+// loader through `matches`, never the i18next singleton (see `meta-title.ts`
 // for why that would leak one visitor's language into another's <title>).
 export const meta: Route.MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.settings') }];
 
@@ -81,7 +86,7 @@ export const handle = {
 /**
  * One settings destination. The whole row is the link (not a trailing "Open"
  * action) so the touch target is the full width, and the status line is
- * `null` — rather than a placeholder string — while the device read that
+ * `null`, rather than a placeholder string, while the device read that
  * feeds it is still in flight, so the row never flashes a wrong value.
  */
 function SettingsRow({
@@ -125,7 +130,7 @@ function SettingsGroup({ label, children }: { label: string; children: ReactNode
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Device reads (all client-side — see the module doc comment)
+// Device reads (all client-side, see the module doc comment)
 ////////////////////////////////////////////////////////////////////////////////
 
 /** The device's profile/goals row, or `undefined` while the first read is in flight. */
@@ -171,7 +176,25 @@ function useLifePhaseStatus(): string | null {
   });
 }
 
-/** "Dark · Deutsch". `null` until the theme is readable — localStorage isn't available during SSR/first paint. */
+/** The device's fasting routine, or `undefined` while the first read is in flight. */
+function useLocalFastingSettings(): LocalFastingSettings | undefined {
+  const [settings, setSettings] = useState<LocalFastingSettings | undefined>(undefined);
+
+  useEffect(() => {
+    let isCancelled = false;
+    void (async () => {
+      const loaded = await getLocalFastingSettings();
+      if (!isCancelled) setSettings(loaded);
+    })();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  return settings;
+}
+
+/** "Dark · Deutsch". `null` until the theme is readable, localStorage isn't available during SSR/first paint. */
 function usePreferencesStatus(): string | null {
   const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState<Theme | null>(null);
@@ -183,7 +206,7 @@ function usePreferencesStatus(): string | null {
   if (theme === null) return null;
   const raw = i18n.resolvedLanguage ?? i18n.language;
   const language: LanguageCode = isLanguageCode(raw) ? raw : DEFAULT_LANGUAGE;
-  // The language is named in its own language — never translated.
+  // The language is named in its own language, never translated.
   return `${t(THEME_LABEL_KEYS[theme])} · ${LANGUAGE_LABELS[language]}`;
 }
 
@@ -223,6 +246,12 @@ export interface SettingsHubFacts {
    * derived from it, so the live figure a person set is on the hub.
    */
   goals: LocalProfileGoals | null | undefined;
+  /**
+   * The device's fasting routine, `null` when nothing is stored and
+   * `undefined` while the first read is in flight. The fasting row's status
+   * line is derived from it, so the live routine is on the hub.
+   */
+  fastingSettings: LocalFastingSettings | null | undefined;
   /** The account row's status line: an address, or "signed out". */
   accountStatus: string;
   /** A managed instance brings its own AI, so there is no provider to pick and no key to bring. */
@@ -308,6 +337,15 @@ export function buildSettingsHubGroups(facts: SettingsHubFacts): SettingsHubGrou
           icon: Target,
           title: t('nutrition.title'),
           status: nutritionRowStatus({ goals: facts.goals, t }),
+          isVisible: true,
+        },
+        // The fasting ROUTINE (M216), never the timer: `/fasting` is a screen
+        // you open to start something, this row is the preference behind it.
+        {
+          to: '/settings/fasting',
+          icon: Timer,
+          title: t('settings.hub.fasting.label'),
+          status: fastingRowStatus({ settings: facts.fastingSettings, t }),
           isVisible: true,
         },
       ],
@@ -446,6 +484,7 @@ export default function SettingsIndex() {
   const aiStatus = useAiConnectionStatusLine();
   const lifePhaseStatus = useLifePhaseStatus();
   const goals = useLocalGoals();
+  const fastingSettings = useLocalFastingSettings();
   const preferencesStatus = usePreferencesStatus();
   // `null` unless the operator set `SYNC_SERVER_URL`. On that instance the
   // account row renders NOTHING, no row, no mention (AGENTS.md: unset means no
@@ -464,6 +503,7 @@ export default function SettingsIndex() {
     lifePhaseStatus,
     preferencesStatus,
     goals,
+    fastingSettings,
     accountStatus: session.account === null ? t('settings.rows.account.signedOut') : session.account.email,
     aiComesFromTheInstance,
     hasSyncServer: syncServerUrl !== null,

@@ -3,12 +3,12 @@
  * in-memory TinyBase store.
  *
  * Three things have to hold, and each has burned a previous schema bump:
- *  1. A **v7 envelope** — taken before these fields existed — still imports.
+ *  1. A **v7 envelope**, taken before these fields existed, still imports.
  *     The v7 → v8 bump added only optional fields, so there is deliberately no
  *     `migrateProfileToV8`; this test is what proves that was the right call.
  *  2. A **v8 envelope round-trips losslessly**, including an explicitly cleared
  *     field. Zod strips unrecognized keys, so a missing line on
- *     `profileGoalsSchema` would silently empty someone's body metrics — and
+ *     `profileGoalsSchema` would silently empty someone's body metrics, and
  *     `reproductiveStatus` is the most sensitive datum in the file to lose
  *     without a word.
  *  3. A profile with **no body metrics** set behaves exactly as it always did.
@@ -33,7 +33,7 @@ import {
 import { SCHEMA_VERSION } from '../../app/lib/local-store/schema';
 import { EMPTY_BODY_METRICS } from '../../app/models/body-metrics';
 
-/** The profile fields that existed before v8 — the shape a v7 backup carries. */
+/** The profile fields that existed before v8, the shape a v7 backup carries. */
 const V7_PROFILE = {
   timezone: 'Europe/Berlin',
   goalNetCarbsCeilingG: 50,
@@ -54,12 +54,14 @@ describe('schema version', () => {
   // window (M163/01) at v16, the gateway connection (M187/02) at v17, and its
   // REMOVAL (M192) at v18, the first bump here that deletes an entity, and
   // the pregnancy due date plus the lactation start date (M206/01) at v19,
-  // and the eating style on the profile (M210/01) at v20.
-  // What it guards is that a bump is never silent —
+  // and the eating style on the profile (M210/01) at v20, and the fasting
+  // rework at v21: four new named presets on `FastProtocolId`, `mood` and
+  // `note` on a fast, and the whole new `fastingSettings` record.
+  // What it guards is that a bump is never silent ,
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 20, bumped past the v8 body-metrics bump by everything through the M210 eating style', () => {
-    assert.equal(SCHEMA_VERSION, 20);
+  it('is 21, bumped past the v8 body-metrics bump by everything through the fasting rework', () => {
+    assert.equal(SCHEMA_VERSION, 21);
   });
 });
 
@@ -74,7 +76,7 @@ describe('a v7 backup envelope', () => {
     assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
     const profile = migrated.data.profile;
     assert.notEqual(profile, null);
-    // Absent, not null-filled — an absent key already means "never told us",
+    // Absent, not null-filled, an absent key already means "never told us",
     // which is why no migration function was written for this bump.
     assert.equal(profile?.heightCm, undefined);
     assert.equal(profile?.birthYear, undefined);
@@ -176,7 +178,7 @@ describe('a device with no body metrics', () => {
     );
 
     assert.deepEqual(await getLocalBodyMetrics({ store: restored }), EMPTY_BODY_METRICS);
-    // The rest of the profile is untouched — the app works exactly as before.
+    // The rest of the profile is untouched, the app works exactly as before.
     assert.equal((await getLocalProfileGoals({ store: restored }))?.goalProteinFloorG, 110);
   });
 

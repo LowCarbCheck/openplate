@@ -786,6 +786,7 @@
       "adjustLabel": "Start time",
       "adjustSave": "Save start time",
       "adjustStart": "Adjust",
+      "complete": "Complete",
       "elapsedLabel": "elapsed",
       "end": "End fast",
       "endBodyEarly": "You're at {{elapsed}} of {{target}}. Ending now saves those {{elapsed}} to your history.",
@@ -799,14 +800,39 @@
       "srLabel": "Fasting for {{elapsed}}. Goal {{target}}.",
       "startedAt": "Started {{time}}"
     },
+    "care": {
+      "pregnancyNotice": "Fasting is not advised while pregnant or breastfeeding, the NHS says so plainly. Your diary and goals stay as they are.",
+      "stop": "Stop and eat if you faint, feel dizzy in a way that does not settle, notice a racing heart, feel confused, have chest pain or vomit more than once.",
+      "title": "Before a long fast",
+      "understood": "Understood",
+      "water": "Drink water through the day and add a little salt to it. Anything past 72 hours is outside what this app can guide.",
+      "who": "Fasting is not advised while pregnant or breastfeeding, with an eating disorder now or in the past, with type 1 diabetes or blood sugar medication, or under 18."
+    },
+    "chip": {
+      "activeLabel": "Fasting for {{duration}}, open the timer",
+      "scheduledLabel": "Fast starts in {{duration}}, open the timer",
+      "startsIn": "in {{duration}}"
+    },
     "duration": {
       "hoursMinutes": "{{hours}}h {{minutes}}m",
       "hoursOnly": "{{hours}}h",
       "minutesOnly": "{{minutes}}m"
     },
+    "end": {
+      "confirm": "Save the fast",
+      "mood": {
+        "good": "Good",
+        "ok": "Okay",
+        "rough": "Rough"
+      },
+      "moodLabel": "How did it go?",
+      "note": "Anything to note?",
+      "title": "End this fast"
+    },
     "errors": {
       "alreadyRunning": "A fast is already running.",
       "customHours": "Enter a whole number of hours between {{min}} and {{max}}.",
+      "noteTooLong": "Keep the note under {{max}} characters.",
       "startInFuture": "Pick a time that has already passed.",
       "startTooFarAhead": "Pick a time within the next seven days.",
       "startTooFarBack": "Pick a time within the last two days.",
@@ -832,9 +858,25 @@
       "eyebrow": "Plan a fast",
       "honesty": "openplate just counts the hours. It doesn't give medical advice.",
       "plannedStartLabel": "Start time",
+      "protocol": {
+        "24h": "24 h",
+        "36h": "36 h",
+        "48h": "48 h",
+        "72h": "72 h"
+      },
+      "protocol": {
+        "16:8": "16:8",
+        "18:6": "18:6",
+        "20:4": "20:4",
+        "24h": "24 h",
+        "36h": "36 h",
+        "48h": "48 h",
+        "72h": "72 h"
+      },
       "protocolAria": "{{fastingHours}} hours fasting, {{eatingHours}} hours eating",
       "protocolGroup": "Fasting window",
       "saving": "Saving…",
+      "startAtRoutine": "Start at {{time}}",
       "startLater": "Start later",
       "startModeLabel": "When to start",
       "startNow": "Start now",
@@ -855,6 +897,43 @@
       "startsIn": "Starts in {{duration}}",
       "startsNow": "Starting now"
     },
+    "stages": {
+      "early": {
+        "name": "Early fasting",
+        "sentence": "Insulin falls and your body starts using stored liver sugar."
+      },
+      "entered": "Entered {{name}} at {{time}}",
+      "extended": {
+        "name": "Extended fast",
+        "sentence": "Beyond what most people practise. Anything past 72 hours is outside what this app can guide."
+      },
+      "fed": {
+        "name": "Digesting",
+        "sentence": "Your body is still digesting your last meal."
+      },
+      "fromHours": "from {{hours}} h",
+      "hedge": "Averages, not a measurement of you. On low carb you move through the early stages sooner.",
+      "ketosis": {
+        "name": "Ketosis",
+        "sentence": "Many people reach measurable ketosis here and the brain runs more on ketones. Some animal studies suggest cell cleanup rises too; human evidence is limited."
+      },
+      "listTitle": "What happens when",
+      "low-stores": {
+        "name": "Low liver stores",
+        "sentence": "Stored liver sugar is mostly used up for most people and fat burning rises."
+      },
+      "next": "Next: {{name}} from {{hours}} h",
+      "rising-ketones": {
+        "name": "Rising ketones",
+        "sentence": "Blood ketones typically start climbing here, sooner if you already eat low carb."
+      }
+    },
+    "stats": {
+      "completed": "Fasts completed",
+      "longest": "Longest",
+      "streak": "Day streak",
+      "week": "Hours this week"
+    },
     "strip": {
       "activeLine": "{{elapsed}} in · {{remaining}} left",
       "fasting": "Fasting",
@@ -865,6 +944,7 @@
     "summary": {
       "line": "You fasted {{achieved}}.",
       "metTarget": "That's your {{target}} done.",
+      "scheduleNext": "Schedule the next one for {{time}}",
       "targetWas": "Your goal was {{target}}."
     },
     "title": "Fasting",
@@ -1201,6 +1281,7 @@
     "entry": "Edit entry · openplate",
     "error": "Something went wrong · openplate",
     "fasting": "Fasting · openplate",
+    "fastingSettings": "Fasting settings · openplate",
     "foods": "Your foods · openplate",
     "imprint": "Imprint · openplate",
     "join": "Join · openplate",
@@ -2046,7 +2127,37 @@
       "saved": "Style saved",
       "title": "Eating style"
     },
-    "title": "Settings"
+    "title": "Settings",
+    "fasting": {
+      "title": "Fasting",
+      "lead": "Your usual fast. The timer preselects it, and a usual start time gives you a one-tap start at that hour.",
+      "routine": {
+        "label": "Your usual fast",
+        "none": "None",
+        "customHours": "{{hours}} h"
+      },
+      "startTime": {
+        "label": "Usual start time",
+        "help": "Optional. Leave it empty to always start by hand.",
+        "invalid": "Enter a time between 00:00 and 23:59."
+      },
+      "care": {
+        "title": "Before a long fast",
+        "pending": "The note for fasts of 24 hours or more appears once, before your first long fast.",
+        "acknowledged": "You have read the note for fasts of 24 hours or more.",
+        "reset": "Show it again next time",
+        "resetSaved": "The note appears again before your next long fast."
+      },
+      "save": "Save fasting settings",
+      "saved": "Fasting settings saved."
+    },
+    "hub": {
+      "fasting": {
+        "label": "Fasting",
+        "description": "{{routine}}, starts {{time}}",
+        "none": "No usual fast"
+      }
+    }
   },
   "settingsAi": {
     "advanced": {

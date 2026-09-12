@@ -1,7 +1,7 @@
 /**
  * The PURE core of sync: turning a local-store snapshot into a stamped sync
  * payload, and merging two payloads into one. No fetch, no crypto, no
- * IndexedDB, no clock — everything here is a function of its arguments, which
+ * IndexedDB, no clock, everything here is a function of its arguments, which
  * is what makes convergence testable without a server (`functional-core`).
  *
  * ── Where the Lamport stamps come from ────────────────────────────────────
@@ -19,15 +19,15 @@
  *   - entity gone      → a tombstone at `previous + 1`
  *   - entity is back   → a live stamp above any tombstone for it (resurrection)
  *
- * This is a genuine Lamport clock — a stamp only advances when something
- * actually happened — and it costs the rest of the app exactly nothing. The
+ * This is a genuine Lamport clock, a stamp only advances when something
+ * actually happened, and it costs the rest of the app exactly nothing. The
  * price is granularity: an edit-then-undo between two syncs is invisible,
  * which is the correct outcome anyway.
  *
  * ── What is deliberately NOT here ─────────────────────────────────────────
  *
  * Conflict resolution is whole-record last-writer-wins per entity, ordered by
- * `(lamport, deviceId)` — `PROTOCOL.md` §3.3's accepted v1 trade-off. Two
+ * `(lamport, deviceId)`, `PROTOCOL.md` §3.3's accepted v1 trade-off. Two
  * devices editing the SAME entry offline means the lower stamp is dropped
  * silently. No field-level merge, no conflict UI. Wall-clock time is never an
  * ordering authority: it drifts, and across devices it is routinely wrong.
@@ -35,7 +35,13 @@
 import { mergeEntityMaps } from './engine/merge/merge-entities';
 import type { MergeCandidate, Tombstone } from './engine/merge/types';
 import type { SyncMetaPayload } from './engine/envelope/types';
-import type { LocalFoodLog, LocalPersonalFood, LocalProfileGoals, LocalWeightEntry } from '#app/lib/local-store';
+import type {
+  LocalFastingSettings,
+  LocalFoodLog,
+  LocalPersonalFood,
+  LocalProfileGoals,
+  LocalWeightEntry,
+} from '#app/lib/local-store';
 import type { SealedPrivateStore, SyncedSnapshot } from './snapshot-partition';
 
 /** The entity-type tags that appear in tombstones and in namespaced entity keys. */
@@ -45,8 +51,32 @@ export const SYNC_ENTITY_TYPES = {
   weight: 'weightEntry',
   profile: 'profile',
   /**
+   * THE FASTING ROUTINE (the fasting rework), the singleton settings record.
+   *
+   * It is MERGED, exactly like `profile` above it, and NOT passed through from
+   * the local side like `fasts` and `savedMeals` below. The difference is the
+   * one that matters: a fast is an EVENT, and "at most one open fast" across
+   * two devices is a question with two truthful answers, while a routine is a
+   * PREFERENCE, and a person who sets their window on a phone means it on
+   * their tablet too. A pass-through would leave the second device blank and
+   * look like it had worked.
+   *
+   * WHOLE-RECORD LAST-WRITER-WINS, ordered by `(lamport, deviceId)` like every
+   * other merged entity, NOT by the record's own `updatedAt`. Wall-clock time
+   * is never an ordering authority here (see this file's header): it drifts,
+   * and across two devices it is routinely wrong. `updatedAt` still earns its
+   * place, because it feeds the content hash, so an edit that changes nothing
+   * else still reads as a change and still pushes.
+   *
+   * The granularity is the whole record, so two devices that each change a
+   * different field while offline keep only the later one's record. That is
+   * the same accepted §3.3 trade-off the profile row has always carried, and
+   * a routine is re-set in two taps.
+   */
+  fastingSettings: 'fastingSettings',
+  /**
    * THE OWNER-PRIVATE COMPARTMENT (M160/07, `openplate-core` ADR-0002's
-   * partition amendment) — one entity holding the sealed ciphertext and its
+   * partition amendment), one entity holding the sealed ciphertext and its
    * two CDK wraps.
    *
    * It is MERGED rather than passed through from the local side like `fasts`
@@ -67,11 +97,14 @@ export const SYNC_ENTITY_TYPES = {
   privateStore: 'privateStore',
 } as const;
 
-/** The fixed entity id of the singleton profile row — it has no id of its own. */
+/** The fixed entity id of the singleton profile row, it has no id of its own. */
 export const PROFILE_ENTITY_ID = 'me';
 
-/** The fixed entity id of the singleton compartment — one per account, so it has no id of its own either. */
+/** The fixed entity id of the singleton compartment, one per account, so it has no id of its own either. */
 export const PRIVATE_STORE_ENTITY_ID = 'me';
+
+/** The fixed entity id of the singleton fasting settings record, one routine per person, so it has no id of its own. */
+export const FASTING_SETTINGS_ENTITY_ID = 'me';
 
 /** The namespaced key the compartment occupies in `perEntity`. One place, so the rewrap path and the merge cannot disagree. */
 export const PRIVATE_STORE_ENTITY_KEY = `${SYNC_ENTITY_TYPES.privateStore}:${PRIVATE_STORE_ENTITY_ID}`;
@@ -80,7 +113,7 @@ export const PRIVATE_STORE_ENTITY_KEY = `${SYNC_ENTITY_TYPES.privateStore}:${PRI
 export interface StampedEntity {
   lamport: number;
   deviceId: string;
-  /** Content hash of the entity as of the last sync. Absent from the wire payload — it is baseline bookkeeping, not protocol. */
+  /** Content hash of the entity as of the last sync. Absent from the wire payload, it is baseline bookkeeping, not protocol. */
   hash: string;
 }
 
@@ -108,8 +141,8 @@ export function entityKey(entityType: string, entityId: string): string {
 /**
  * The hasher is generic over its input on purpose.
  *
- * It walks whatever it is handed structurally — a `LocalFoodLog`, a stamped
- * payload, a nested array, a number — and every caller passes a value whose
+ * It walks whatever it is handed structurally, a `LocalFoodLog`, a stamped
+ * payload, a nested array, a number, and every caller passes a value whose
  * type is already known at the call site, so the type parameter carries that
  * knowledge through instead of throwing it away. A recursive JSON type would
  * not work here: the local-store entities are `interface`s, which TypeScript
@@ -120,7 +153,7 @@ export function entityKey(entityType: string, entityId: string): string {
  * Deterministic JSON with sorted object keys.
  *
  * `JSON.stringify` preserves insertion order, so two structurally identical
- * entities written by different code paths can serialize differently — which
+ * entities written by different code paths can serialize differently, which
  * would read as "changed" on every single sync and re-push the whole store
  * forever. Sorting the keys removes that.
  */
@@ -141,7 +174,7 @@ export function stableStringify<T>(value: T): string {
  * 64-bit FNV-1a, as two interleaved 32-bit lanes, rendered hex.
  *
  * 64 bits rather than 32 because a hash collision here is not a crash but a
- * SILENTLY unsynced edit — the change-detection would say "unchanged" and the
+ * SILENTLY unsynced edit, the change-detection would say "unchanged" and the
  * entity would never leave the device. Two 32-bit lanes are used instead of
  * BigInt purely for speed: this runs over every entity on every sync.
  */
@@ -161,9 +194,9 @@ export function contentHash<T>(value: T): string {
 // Stamping: snapshot + baseline -> stamped payload
 // ---------------------------------------------------------------------------
 
-/** The local-store records sync carries — everything `flattenSnapshot` can produce. */
+/** The local-store records sync carries, everything `flattenSnapshot` can produce. */
 export type SyncEntityValue =
-  LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | SealedPrivateStore;
+  LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | LocalFastingSettings | SealedPrivateStore;
 
 interface FlatEntity {
   key: string;
@@ -181,6 +214,12 @@ function flattenSnapshot(snapshot: SyncedSnapshot): FlatEntity[] {
   ];
   if (snapshot.profile !== null) {
     flattened.push(toFlat(SYNC_ENTITY_TYPES.profile, PROFILE_ENTITY_ID, snapshot.profile));
+  }
+  // `null` means this device has never set a routine, and a device with no
+  // answer must not be stamped as holding one, an empty record competing in
+  // the merge would blank a peer's real routine on the first cycle.
+  if (snapshot.fastingSettings !== null) {
+    flattened.push(toFlat(SYNC_ENTITY_TYPES.fastingSettings, FASTING_SETTINGS_ENTITY_ID, snapshot.fastingSettings));
   }
   if (snapshot.privateStore !== null) {
     flattened.push(toFlat(SYNC_ENTITY_TYPES.privateStore, PRIVATE_STORE_ENTITY_ID, snapshot.privateStore));
@@ -201,7 +240,7 @@ export interface StampSnapshotResult {
 /**
  * Stamps the current snapshot against the last-synced baseline.
  *
- * Returns BOTH the wire meta (no hashes — the service never sees them) and the
+ * Returns BOTH the wire meta (no hashes, the service never sees them) and the
  * refreshed baseline, so the caller persists exactly what it just sent.
  */
 export function stampSnapshot({
@@ -225,7 +264,7 @@ export function stampSnapshot({
     const hash = contentHash(entity.value);
     const buried = tombstonesByKey.get(entity.key);
     // A resurrected entity must outrank its own tombstone, or the merge would
-    // keep deleting it on every sync — the classic "the row I re-added keeps
+    // keep deleting it on every sync, the classic "the row I re-added keeps
     // vanishing" bug.
     const floor = Math.max(previous?.lamport ?? 0, buried?.lamport ?? 0);
     perEntity[entity.key] =
@@ -306,6 +345,7 @@ export function mergeSnapshots({
   const foodLogs: LocalFoodLog[] = [];
   const weightEntries: LocalWeightEntry[] = [];
   let profile: LocalProfileGoals | null = null;
+  let fastingSettings: LocalFastingSettings | null = null;
   let privateStore: SealedPrivateStore | null = null;
   const perEntity: SyncMetaPayload['perEntity'] = {};
   const tombstones: Tombstone[] = [];
@@ -349,6 +389,11 @@ export function mergeSnapshots({
       profile = entity.value as LocalProfileGoals;
       continue;
     }
+    if (entity.entityType === SYNC_ENTITY_TYPES.fastingSettings) {
+      // SAFETY: the `fastingSettings` tag is only ever attached to the singleton `LocalFastingSettings`.
+      fastingSettings = entity.value as LocalFastingSettings;
+      continue;
+    }
     if (entity.entityType === SYNC_ENTITY_TYPES.privateStore) {
       // SAFETY: the `privateStore` tag is only ever attached to the singleton `SealedPrivateStore`.
       privateStore = entity.value as SealedPrivateStore;
@@ -377,7 +422,7 @@ export function mergeSnapshots({
   // `SYNC_ENTITY_TYPES`/`flattenSnapshot`/`toCandidateMap`, so `local` passes
   // straight through rather than a bare `savedMeals: []` silently emptying a
   // device's saved meals on its first merge. Unlike fasts there is no hard
-  // cross-device invariant blocking a real merge here — this is simply not
+  // cross-device invariant blocking a real merge here, this is simply not
   // built yet, and is a smaller, lower-risk follow-up than fasts' was.
   return {
     snapshot: {
@@ -387,10 +432,15 @@ export function mergeSnapshots({
       profile,
       fasts: local.snapshot.fasts,
       savedMeals: local.snapshot.savedMeals,
+      // NOT passed through from `local` like the two above it: the routine is
+      // genuinely merged, so a second device adopts it instead of staying
+      // blank. See the comment on `SYNC_ENTITY_TYPES.fastingSettings` for why
+      // a routine and a fast sit on opposite sides of this line.
+      fastingSettings,
       // NOT passed through from `local` like the two above it (M160/04, moved
       // into the compartment by M160/07): the share key pair and the pinned
       // peers are genuinely merged, so a second device adopts them instead of
-      // staying blank. What is merged here is the SEALED compartment — this
+      // staying blank. What is merged here is the SEALED compartment, this
       // function never sees the key material inside it. See the comment on
       // `SYNC_ENTITY_TYPES.privateStore`.
       privateStore,
@@ -403,7 +453,7 @@ export function mergeSnapshots({
  * Rebuilds a baseline from a payload this device has just agreed with (either
  * pushed or adopted wholesale).
  *
- * Recomputing the hashes here — rather than carrying the local ones forward —
+ * Recomputing the hashes here, rather than carrying the local ones forward ,
  * is what makes the NEXT cycle see "nothing changed" after adopting a remote
  * entity. Skip it and every sync re-pushes the whole store.
  */
@@ -421,7 +471,7 @@ export function baselineFromPayload(payload: StampedSnapshot): SyncBaseline {
  *
  * The orchestrator uses this to SKIP a push when the merge contributed
  * nothing. Without it, every boot of every device would write a new blob
- * version — burning the 5-version retention window, and turning "open the app"
+ * version, burning the 5-version retention window, and turning "open the app"
  * into a write.
  */
 export function payloadsEqual(a: StampedSnapshot, b: StampedSnapshot): boolean {
@@ -440,12 +490,16 @@ function canonicalize(payload: StampedSnapshot) {
       foodLogs: byId(payload.snapshot.foodLogs),
       weightEntries: byId(payload.snapshot.weightEntries),
       profile: payload.snapshot.profile,
+      // The routine IS included, for the same reason `profile` beside it is
+      // and `fasts` below is not: it is merged, so a device that changes it
+      // has something another device needs, and it must be allowed to push.
+      fastingSettings: payload.snapshot.fastingSettings,
       // The compartment IS included, unlike `fasts` below: generating a key
       // pair, pinning a peer, or rewrapping a slot after a passphrase change
       // is a real change another device needs, so it must be allowed to make
       // this device push. It is compared as sealed bytes, which is why
       // `private-store.ts` caches a sealed compartment and re-emits it
-      // verbatim while its plaintext is unchanged — a fresh IV on every cycle
+      // verbatim while its plaintext is unchanged, a fresh IV on every cycle
       // would make every boot write a new blob version.
       privateStore: payload.snapshot.privateStore,
       // `fasts` is deliberately omitted, for the same reason `mergeSnapshots`

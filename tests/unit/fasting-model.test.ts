@@ -1,5 +1,5 @@
 /**
- * Unit tests for `#app/models/fasting` — the pure model behind `/fasting` and
+ * Unit tests for `#app/models/fasting`, the pure model behind `/fasting` and
  * the Overview strip (M132).
  *
  * What this file pins, in one sentence each:
@@ -8,7 +8,7 @@
  *   writes.** That is the property that lets the whole feature exist with no
  *   background job and no notification, and it is invisible in any screenshot.
  * - **The model is TOTAL.** A stepped device clock, a restored backup with two
- *   open fasts, a row with neither start field, a zero target — each has a
+ *   open fasts, a row with neither start field, a zero target, each has a
  *   defined, renderable answer instead of a `NaN`, an `Infinity`, or a throw.
  * - **Elapsed truncates and never claims an unfinished minute**, and `progress`
  *   is returned UNCLAMPED so the caller can cap the arc while the figure keeps
@@ -24,6 +24,11 @@ import assert from 'node:assert/strict';
 import {
   customHoursToMs,
   defaultPlannedStartLocal,
+  FAST_MAX_CUSTOM_HOURS,
+  FAST_MIN_CUSTOM_HOURS,
+  FAST_PROTOCOLS,
+  isDailyProtocol,
+  protocolById,
   fastTargetLabel,
   formatFastClock,
   formatFastDuration,
@@ -50,7 +55,7 @@ const SIXTEEN = 16 * HOUR;
 
 /**
  * A fake translator, so the duration assertions below check REAL strings
- * without booting an i18n instance — the same device `hero-stat.test.ts` uses.
+ * without booting an i18n instance, the same device `hero-stat.test.ts` uses.
  */
 const t: Translate = (key, params = {}) =>
   key === 'fasting.duration.hoursMinutes' ? `${params.hours}h ${params.minutes}m`
@@ -72,7 +77,7 @@ function fast(overrides: Partial<LocalFast> = {}): LocalFast {
   };
 }
 
-describe('resolveFastTimeline — running fasts', () => {
+describe('resolveFastTimeline, running fasts', () => {
   it('reports a half-way fast as active, elapsed and remaining balanced', () => {
     const timeline = resolveFastTimeline(fast({ startedAt: T }), T + 8 * HOUR);
 
@@ -84,7 +89,7 @@ describe('resolveFastTimeline — running fasts', () => {
     assert.equal(timeline.hasReachedTarget, false);
   });
 
-  it('stays ACTIVE at exactly the target — reaching the goal is not ending the fast', () => {
+  it('stays ACTIVE at exactly the target, reaching the goal is not ending the fast', () => {
     const timeline = resolveFastTimeline(fast({ startedAt: T }), T + 16 * HOUR);
 
     assert.equal(timeline.status, 'active');
@@ -113,7 +118,7 @@ describe('resolveFastTimeline — running fasts', () => {
   });
 });
 
-describe('resolveFastTimeline — scheduled fasts auto-activate', () => {
+describe('resolveFastTimeline, scheduled fasts auto-activate', () => {
   const scheduled = fast({ plannedStartAt: T + 3 * HOUR });
 
   it('reports a future planned start as scheduled, with a countdown and no elapsed', () => {
@@ -133,7 +138,7 @@ describe('resolveFastTimeline — scheduled fasts auto-activate', () => {
     assert.equal(
       JSON.stringify(scheduled),
       before,
-      'auto-activation must not mutate the row — nothing writes anything to make it true',
+      'auto-activation must not mutate the row, nothing writes anything to make it true',
     );
   });
 
@@ -146,7 +151,7 @@ describe('resolveFastTimeline — scheduled fasts auto-activate', () => {
   });
 });
 
-describe('resolveFastTimeline — ended fasts', () => {
+describe('resolveFastTimeline, ended fasts', () => {
   it('reports a fast ended at its target as completed, independently of the clock', () => {
     const ended = fast({ startedAt: T, endedAt: T + 16 * HOUR });
     const soon = resolveFastTimeline(ended, T + 17 * HOUR);
@@ -173,14 +178,14 @@ describe('resolveFastTimeline — ended fasts', () => {
     assert.equal(timeline.elapsedMs, 0);
   });
 
-  it('reports an end BEFORE the start as cancelled too — the `<=` absorbs both', () => {
+  it('reports an end BEFORE the start as cancelled too, the `<=` absorbs both', () => {
     const timeline = resolveFastTimeline(fast({ plannedStartAt: T + 3 * HOUR, endedAt: T + HOUR }), T + 4 * HOUR);
 
     assert.equal(timeline.status, 'cancelled');
   });
 });
 
-describe('resolveFastTimeline — totality on rows the app cannot produce', () => {
+describe('resolveFastTimeline, totality on rows the app cannot produce', () => {
   it('floors everything at zero when the device clock steps backwards', () => {
     const timeline = resolveFastTimeline(fast({ startedAt: T }), T - 2 * HOUR);
 
@@ -199,7 +204,7 @@ describe('resolveFastTimeline — totality on rows the app cannot produce', () =
     assert.equal(timeline.elapsedMs, HOUR);
   });
 
-  it('returns progress 0 for a zero target — never Infinity, never NaN', () => {
+  it('returns progress 0 for a zero target, never Infinity, never NaN', () => {
     const timeline = resolveFastTimeline(fast({ startedAt: T, targetDurationMs: 0 }), T + HOUR);
 
     assert.equal(timeline.progress, 0);
@@ -214,7 +219,7 @@ describe('formatFastDuration', () => {
     assert.equal(formatFastDuration(16 * HOUR + 4 * MINUTE, t), '16h 4m');
   });
 
-  it('drops zero minutes — a preset target reads "16h", never "16h 0m"', () => {
+  it('drops zero minutes, a preset target reads "16h", never "16h 0m"', () => {
     assert.equal(formatFastDuration(16 * HOUR, t), '16h');
   });
 
@@ -230,7 +235,7 @@ describe('formatFastDuration', () => {
     assert.equal(formatFastDuration(-5_000, t), '0m');
   });
 
-  it('truncates rather than rounds — it never claims a minute that has not finished', () => {
+  it('truncates rather than rounds, it never claims a minute that has not finished', () => {
     assert.equal(formatFastDuration(16 * HOUR + 59_999, t), '16h');
   });
 });
@@ -260,7 +265,7 @@ describe('fastTargetLabel', () => {
     assert.equal(fastTargetLabel(fast({ protocolId: '16:8' }), t), '16:8');
   });
 
-  it('uses the formatted duration for a custom target — never an invented protocol name', () => {
+  it('uses the formatted duration for a custom target, never an invented protocol name', () => {
     assert.equal(fastTargetLabel(fast({ protocolId: 'custom', targetDurationMs: 9 * HOUR }), t), '9h');
   });
 });
@@ -282,7 +287,73 @@ describe('custom hours and protocol targets', () => {
   it('resolves a preset to its window and returns null for custom', () => {
     assert.equal(protocolTargetMs('18:6'), 18 * HOUR);
     assert.equal(protocolTargetMs('20:4'), 20 * HOUR);
+    assert.equal(protocolTargetMs('48h'), 48 * HOUR);
     assert.equal(protocolTargetMs('custom'), null);
+  });
+});
+
+describe('the preset catalog', () => {
+  it('carries the seven named presets, in picker order, daily first', () => {
+    // A deliberate pin on the ORDER as well as the set: the picker renders this
+    // array, and a person reaching for a fast wants 16:8 far more often than
+    // 72 h. A reorder that buried the daily windows under the long ones would
+    // pass every other assertion in this file.
+    assert.deepEqual(
+      FAST_PROTOCOLS.map((protocol) => protocol.id),
+      ['16:8', '18:6', '20:4', '24h', '36h', '48h', '72h'],
+    );
+  });
+
+  it('gives every named protocol its hours, and a daily one an eating window that completes the day', () => {
+    assert.deepEqual(
+      FAST_PROTOCOLS.map(({ id, fastingHours, eatingHours, daily }) => ({ id, fastingHours, eatingHours, daily })),
+      [
+        { id: '16:8', fastingHours: 16, eatingHours: 8, daily: true },
+        { id: '18:6', fastingHours: 18, eatingHours: 6, daily: true },
+        { id: '20:4', fastingHours: 20, eatingHours: 4, daily: true },
+        { id: '24h', fastingHours: 24, eatingHours: 0, daily: false },
+        { id: '36h', fastingHours: 36, eatingHours: 0, daily: false },
+        { id: '48h', fastingHours: 48, eatingHours: 0, daily: false },
+        { id: '72h', fastingHours: 72, eatingHours: 0, daily: false },
+      ],
+    );
+
+    // The invariant behind the table above, stated separately so a future
+    // preset cannot satisfy the list by being typed in twice: a DAILY window
+    // fills a day, and a long fast names no eating window at all.
+    for (const protocol of FAST_PROTOCOLS) {
+      if (protocol.daily) assert.equal(protocol.fastingHours + protocol.eatingHours, 24, protocol.id);
+      else assert.equal(protocol.eatingHours, 0, protocol.id);
+    }
+  });
+
+  it("keeps every named protocol inside the custom bounds, the picker can never offer what the field would reject", () => {
+    // 72 h is the outer edge of commonly-practised extended fasting; past it
+    // the app would imply medical guidance it cannot give. A preset above the
+    // ceiling would be a window the person can pick but not type.
+    for (const protocol of FAST_PROTOCOLS) {
+      assert.ok(
+        protocol.fastingHours >= FAST_MIN_CUSTOM_HOURS && protocol.fastingHours <= FAST_MAX_CUSTOM_HOURS,
+        `${protocol.id} is outside 1..${FAST_MAX_CUSTOM_HOURS} hours`,
+      );
+      assert.ok(isValidCustomHours(protocol.fastingHours), `${protocol.id} is not a whole hour count`);
+    }
+  });
+
+  it('looks a protocol up by id, and answers null for custom and for an id it does not know', () => {
+    assert.equal(protocolById('36h')?.fastingHours, 36);
+    assert.equal(protocolById('custom'), null);
+  });
+
+  it('calls the three windows daily and everything else not, custom included', () => {
+    assert.equal(isDailyProtocol('16:8'), true);
+    assert.equal(isDailyProtocol('18:6'), true);
+    assert.equal(isDailyProtocol('20:4'), true);
+    assert.equal(isDailyProtocol('24h'), false);
+    assert.equal(isDailyProtocol('72h'), false);
+    // NOT a fallback: a typed hour count is a one-off target, and treating it
+    // as a routine would put a window on tomorrow that nobody asked for.
+    assert.equal(isDailyProtocol('custom'), false);
   });
 });
 
@@ -291,7 +362,7 @@ describe('parseLocalDateTimeInput', () => {
     assert.equal(parseLocalDateTimeInput('2026-08-06T20:00'), Date.parse('2026-08-06T20:00'));
   });
 
-  it('refuses a partial or malformed value — the regex guard is the whole point', () => {
+  it('refuses a partial or malformed value, the regex guard is the whole point', () => {
     // Without it `Date.parse('2026')` returns a real UTC-midnight instant, and
     // the fast would be silently scheduled eight months ago.
     assert.equal(parseLocalDateTimeInput('2026'), null);
@@ -379,7 +450,7 @@ describe('selection', () => {
     assert.equal(selectRecentlyEndedFast([justEnded], T + 11 * MINUTE), null);
   });
 
-  it('never surfaces a cancelled plan — there is nothing to report about a fast that never ran', () => {
+  it('never surfaces a cancelled plan, there is nothing to report about a fast that never ran', () => {
     const cancelled = fast({ id: 'cancelled', plannedStartAt: T + 3 * HOUR, endedAt: T + 3 * HOUR });
 
     assert.equal(selectRecentlyEndedFast([cancelled], T + 3 * HOUR + MINUTE), null);

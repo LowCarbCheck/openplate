@@ -24,9 +24,11 @@ import {
   putLocalFast,
   putLocalFood,
   putLocalFoodLog,
+  putLocalFastingSettings,
   putLocalProfileGoals,
   putLocalSavedMeal,
   putLocalWeightEntry,
+  getLocalFastingSettings,
 } from '../../app/lib/local-store/primary-store';
 import { SCHEMA_VERSION, type LocalProfileGoals } from '../../app/lib/local-store/schema';
 import type { Store } from 'tinybase';
@@ -42,7 +44,7 @@ async function seedStore(store: Store): Promise<void> {
       source: 'user',
       createdAt: 1_000,
       // M123/13 review finding 6: seeded here (and on the log below) for the
-      // identical reason `portion`/`micronutrientsPer100g` are — zod STRIPS
+      // identical reason `portion`/`micronutrientsPer100g` are, zod STRIPS
       // unrecognized keys, so if `personalFoodSchema` ever lost its
       // `carbBasis` line the export -> import -> export cycle would quietly
       // return a food/log with no basis and every future read of it would
@@ -82,7 +84,7 @@ async function seedStore(store: Store): Promise<void> {
       // -> import -> export cycle would quietly return an entry with no
       // vitamins or minerals and every day it appears in would silently read as
       // uncovered. Note the deliberate mix: a measured `0` (sodium), a `null`
-      // (vitaminD — source consulted, no figure), and real values. All three
+      // (vitaminD, source consulted, no figure), and real values. All three
       // have to survive byte-for-byte.
       micronutrientsPer100g: {
         vitamins: {
@@ -123,7 +125,7 @@ async function seedStore(store: Store): Promise<void> {
     { store },
   );
 
-  // A SCHEDULED fast — `plannedStartAt` set, `startedAt` and `endedAt` still
+  // A SCHEDULED fast, `plannedStartAt` set, `startedAt` and `endedAt` still
   // null. All three timestamp states in one row, so the lossless assertion
   // above is genuinely discriminating about them: zod STRIPS unrecognized keys,
   // and a `fastSchema` that forgot one would return a row that no longer says
@@ -137,6 +139,41 @@ async function seedStore(store: Store): Promise<void> {
       startedAt: null,
       endedAt: null,
       createdAt: 7_000,
+    },
+    { store },
+  );
+
+  // An ENDED fast carrying a REFLECTION (the fasting rework, v21). Seeded for
+  // the same reason `portion` and `carbBasis` are seeded above: zod STRIPS
+  // unrecognized keys, so a `fastSchema` that lost its `mood`/`note` lines
+  // would quietly return a fast with the person's own words gone, and every
+  // other assertion in this file would stay green. The protocol id is one of
+  // the four presets ADDED at v21, so a schema that forgot to widen the enum
+  // fails here rather than in somebody's restore.
+  await putLocalFast(
+    {
+      id: 'fast-2',
+      protocolId: '48h',
+      targetDurationMs: 48 * 60 * 60 * 1000,
+      plannedStartAt: null,
+      startedAt: 10_000,
+      endedAt: 20_000,
+      createdAt: 10_000,
+      mood: 'rough',
+      note: 'Hard from hour thirty on.',
+    },
+    { store },
+  );
+
+  // The singleton fasting routine (v21), seeded for the same reason: a
+  // `snapshotSchema` missing the `fastingSettings` line would export `null`
+  // from a device that has a routine, and the restore would silently forget it.
+  await putLocalFastingSettings(
+    {
+      routineProtocolId: '18:6',
+      routineStartMinute: 1_200,
+      routineCustomHours: null,
+      extendedAcknowledgedAt: 11_000,
     },
     { store },
   );
@@ -168,7 +205,7 @@ async function seedStore(store: Store): Promise<void> {
   // M123/13 review finding 6: a POPULATED saved meal, not just the empty-array
   // shape every other test in this file exercises. `savedMealItemSchema`
   // strips unrecognized keys exactly like every other entity schema here, so
-  // an empty-array-only fixture cannot catch a schema that lost a field —
+  // an empty-array-only fixture cannot catch a schema that lost a field ,
   // including `carbBasis`, seeded on the item below for the same reason as
   // `food-1`/`log-1` above.
   await putLocalSavedMeal(
@@ -283,7 +320,53 @@ describe('backup round-trip', () => {
     assert.equal('lactationStartDate' in (roundTripped.data.profile ?? {}), true);
   });
 
-  it('preserves the chosen display portion through the round-trip — a backup must not silently demote "½ cup" to bare grams', async () => {
+  it("preserves a fast's mood and note through the round-trip, a backup must not drop the person's own words", async () => {
+    const source = createPrimaryStore();
+    await seedStore(source);
+    const json = serializeBackup(await exportBackup({ store: source }));
+
+    const target = createPrimaryStore();
+    await restoreBackup(json, { store: target });
+    const roundTripped = await exportBackup({ store: target });
+
+    const reflected = roundTripped.data.fasts.find((fast) => fast.id === 'fast-2');
+    assert.equal(reflected?.mood, 'rough', 'zod stripped `mood` on import');
+    assert.equal(reflected?.note, 'Hard from hour thirty on.', 'zod stripped `note` on import');
+    // The v21 enum widening, pinned where a restore would notice it: a
+    // `fastSchema` still listing only the three daily presets rejects the whole
+    // file rather than dropping a field.
+    assert.equal(reflected?.protocolId, '48h');
+
+    // The control that makes the three lines above discriminating: the OTHER
+    // seeded fast never carried a reflection, and it must come back with the
+    // keys still absent rather than filled with a null.
+    const bare = roundTripped.data.fasts.find((fast) => fast.id === 'fast-1');
+    assert.equal(bare?.mood, undefined);
+    assert.equal(bare?.note, undefined);
+  });
+
+  it('preserves the fasting routine through the round-trip, updatedAt included', async () => {
+    const source = createPrimaryStore();
+    const seededAt = (await putLocalFastingSettings({ routineProtocolId: '20:4' }, { store: source })).updatedAt;
+    await seedStore(source);
+    const json = serializeBackup(await exportBackup({ store: source }));
+
+    const target = createPrimaryStore();
+    await restoreBackup(json, { store: target });
+
+    const restored = await getLocalFastingSettings({ store: target });
+    assert.equal(restored.routineProtocolId, '18:6');
+    assert.equal(restored.routineStartMinute, 1_200);
+    assert.equal(restored.extendedAcknowledgedAt, 11_000);
+    // THE restore-path rule: the record is written WHOLE, so `updatedAt` is
+    // the exporting device's instant. Re-stamping it here would make every
+    // import look like this device's freshest edit and push it over a peer's
+    // genuinely newer routine.
+    assert.equal(restored.updatedAt, (await getLocalFastingSettings({ store: source })).updatedAt);
+    assert.ok(restored.updatedAt >= seededAt);
+  });
+
+  it('preserves the chosen display portion through the round-trip, a backup must not silently demote "½ cup" to bare grams', async () => {
     const source = createPrimaryStore();
     await seedStore(source);
     const json = serializeBackup(await exportBackup({ store: source }));
@@ -295,7 +378,7 @@ describe('backup round-trip', () => {
     assert.deepEqual(
       roundTripped.data.foodLogs[0].portion,
       { unit: 'cup', quantity: 0.5, gramsPerUnit: 100 },
-      'zod stripped `portion` on import — restoring a backup turns every unit-labelled entry back into bare grams',
+      'zod stripped `portion` on import, restoring a backup turns every unit-labelled entry back into bare grams',
     );
   });
 
@@ -364,7 +447,7 @@ describe('backup round-trip', () => {
     assert.equal(migrated.data.foodLogs[0]?.portion, undefined);
   });
 
-  it('rejects a malformed portion like every other malformed field — an import is fail-fast, unlike the FORM path', () => {
+  it('rejects a malformed portion like every other malformed field, an import is fail-fast, unlike the FORM path', () => {
     const envelope = {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: '2026-07-28T00:00:00.000Z',
@@ -396,12 +479,12 @@ describe('backup round-trip', () => {
     // fails OPEN and degrades a bad value to grams-only. That is right for a
     // FORM: refusing the submission would stop a person from logging their
     // food over a display label. It is wrong for a BACKUP FILE, which is a
-    // whole-document artifact — this module's stated contract is that a bad
+    // whole-document artifact, this module's stated contract is that a bad
     // backup must never PARTLY import, and every other field here (`macros`,
     // `mealType`, `attribution`, `netCarbsPer100g`) already rejects. Silently
     // dropping the label instead would hand the user a "restore complete"
     // with data quietly missing, which is the exact failure this whole field
-    // was added to close. Do not "align" the two — the contexts differ.
+    // was added to close. Do not "align" the two, the contexts differ.
     assert.throws(
       () => migrateEnvelopeForward(parseBackupEnvelope(JSON.stringify(envelope))),
       /Backup migration failed/,
@@ -418,6 +501,7 @@ describe('backup round-trip', () => {
       profile: null,
       fasts: [],
       savedMeals: [],
+      fastingSettings: null,
       shareIdentity: null,
       sharePeers: [],
       researchIdentity: null,
@@ -441,6 +525,7 @@ describe('backup round-trip', () => {
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -461,6 +546,7 @@ describe('backup round-trip', () => {
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -489,6 +575,21 @@ describe('backup round-trip', () => {
         endedAt: null,
         createdAt: 7_000,
       },
+      // The v21 row beside it: an ENDED fast on one of the new presets,
+      // carrying a reflection. Whole-row equality here is what makes the
+      // absence of `mood`/`note` on `fast-1` above a real assertion rather
+      // than a key nobody looked at.
+      {
+        id: 'fast-2',
+        protocolId: '48h',
+        targetDurationMs: 48 * 60 * 60 * 1000,
+        plannedStartAt: null,
+        startedAt: 10_000,
+        endedAt: 20_000,
+        createdAt: 10_000,
+        mood: 'rough',
+        note: 'Hard from hour thirty on.',
+      },
     ]);
   });
 
@@ -500,13 +601,13 @@ describe('backup round-trip', () => {
 
 describe('parse-before-migrate ordering (review fix)', () => {
   // `parseBackupEnvelope` used to validate `data` against the FULL current
-  // schema before `migrateEnvelopeForward` ever ran — which would reject a
+  // schema before `migrateEnvelopeForward` ever ran, which would reject a
   // genuinely older envelope's (different-shaped) payload before migration
   // got a chance to upgrade it. These fixtures exercise the wrapper-only
   // parse + post-migration validation ordering directly.
 
   it('parseBackupEnvelope accepts an older schemaVersion wrapper without validating the payload shape', () => {
-    // A pre-v1-style wrapper missing the current schema's `profile` field —
+    // A pre-v1-style wrapper missing the current schema's `profile` field ,
     // this would have failed at PARSE time under the old combined schema.
     const legacyJson = JSON.stringify({
       schemaVersion: 0,
@@ -519,7 +620,7 @@ describe('parse-before-migrate ordering (review fix)', () => {
     assert.deepEqual(raw.data, { foods: [], foodLogs: [], weightEntries: [] });
   });
 
-  it('migrateEnvelopeForward is reached with the raw payload — an unmigratable shape fails AFTER migration, not before', () => {
+  it('migrateEnvelopeForward is reached with the raw payload, an unmigratable shape fails AFTER migration, not before', () => {
     const legacyJson = JSON.stringify({
       schemaVersion: 0,
       exportedAt: '2026-01-01T00:00:00.000Z',
@@ -548,7 +649,7 @@ describe('parse-before-migrate ordering (review fix)', () => {
 
     assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
     // `fasts: []`/`savedMeals: []` are filled in by `snapshotSchema`'s two
-    // `.default([])`s — the whole v6 -> v7 (M132) and v10 -> v11 (M123/07)
+    // `.default([])`s, the whole v6 -> v7 (M132) and v10 -> v11 (M123/07)
     // forward migrations, each in one line of schema.
     assert.deepEqual(migrated.data, {
       foods: [],
@@ -557,11 +658,82 @@ describe('parse-before-migrate ordering (review fix)', () => {
       profile: null,
       fasts: [],
       savedMeals: [],
+      fastingSettings: null,
       shareIdentity: null,
       sharePeers: [],
       researchIdentity: null,
       studyEnrolments: [],
     });
+  });
+});
+
+describe('v20 -> v21 fasting rework (the defaults ARE the migration)', () => {
+  it('imports a v20 envelope with no `fastingSettings` key and no reflection on its fasts', () => {
+    // THE case the `.default(null)` exists for: every backup file already on
+    // every device predates the routine and simply has no key for it. Without
+    // the default, `snapshotSchema.safeParse` would reject all of them and a
+    // v21 build would refuse to import anyone's existing backup.
+    const v20Json = JSON.stringify({
+      schemaVersion: 20,
+      exportedAt: '2026-09-10T00:00:00.000Z',
+      data: {
+        foods: [],
+        foodLogs: [],
+        weightEntries: [],
+        profile: null,
+        savedMeals: [],
+        fasts: [
+          {
+            id: 'fast-old',
+            protocolId: '16:8',
+            targetDurationMs: 57_600_000,
+            plannedStartAt: null,
+            startedAt: 1_000,
+            endedAt: 2_000,
+            createdAt: 1_000,
+          },
+        ],
+      },
+    });
+
+    const migrated = migrateEnvelopeForward(parseBackupEnvelope(v20Json));
+
+    assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
+    assert.equal(migrated.data.fastingSettings, null, '"this device had no routine, because a routine did not exist"');
+    // ABSENT, not null-filled. An absent key already means "nothing was said",
+    // which is why no `migrateFastToV21` step was written.
+    assert.equal(migrated.data.fasts[0]?.mood, undefined);
+    assert.equal(migrated.data.fasts[0]?.note, undefined);
+    assert.equal(migrated.data.fasts[0]?.protocolId, '16:8');
+  });
+
+  it('accepts a routine on a current envelope instead of stripping it as an unrecognized key', () => {
+    const settings = {
+      routineProtocolId: '72h' as const,
+      routineStartMinute: 0,
+      routineCustomHours: null,
+      extendedAcknowledgedAt: 12_345,
+      updatedAt: 6_789,
+    };
+    const migrated = migrateEnvelopeForward({
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: '2026-09-10T00:00:00.000Z',
+      data: {
+        foods: [],
+        foodLogs: [],
+        weightEntries: [],
+        profile: null,
+        fasts: [],
+        savedMeals: [],
+        fastingSettings: settings,
+        shareIdentity: null,
+        sharePeers: [],
+        researchIdentity: null,
+        studyEnrolments: [],
+      },
+    });
+
+    assert.deepEqual(migrated.data.fastingSettings, settings);
   });
 });
 
@@ -620,6 +792,7 @@ describe('v1 -> v2 profile migration (M117/03: targetWeightKg/trackingFocus/onbo
         weightEntries: [],
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -733,6 +906,7 @@ describe('v8 -> v9 micronutrient snapshot (M135: an optional field, so the zod l
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -764,7 +938,7 @@ describe('v8 -> v9 micronutrient snapshot (M135: an optional field, so the zod l
     const micronutrients = log.micronutrientsPer100g;
     assert.ok(micronutrients);
     // A measured 0 is DATA and must come back as 0, not as null and not as a
-    // dropped key — this is the assertion that would catch a `|| null`
+    // dropped key, this is the assertion that would catch a `|| null`
     // creeping into the encode/parse path.
     assert.equal(micronutrients.minerals?.sodium, 0);
     // An upstream null is an unknown and must come back as null, not 0.

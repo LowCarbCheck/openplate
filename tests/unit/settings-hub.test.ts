@@ -60,6 +60,7 @@ const RICHEST: SettingsHubFacts = {
   preferencesStatus: null,
   // Nothing stored, which is the account the static line is written for.
   goals: null,
+  fastingSettings: null,
   accountStatus: 'someone@example.test',
   aiComesFromTheInstance: false,
   hasSyncServer: true,

@@ -1,28 +1,30 @@
 /**
- * The primary store's read/write surface — CRUD over the durable, authoritative
+ * The primary store's read/write surface, CRUD over the durable, authoritative
  * on-device tables (personal foods, food logs, weight entries, profile/goals,
  * fasts).
  * This is the "primary commit" the diary/add/weight/goals flows write to and the
  * source the aggregates (`aggregates.ts`) and backup (`backup.ts`) read from.
  *
  * Every entity is stored as ONE JSON cell per row (keyed by the entity's `id`),
- * so a row is read/written whole — the same pattern the mirror/outbox use. Reads
+ * so a row is read/written whole, the same pattern the mirror/outbox use. Reads
  * return entities in a stable order (createdAt then id) so a backup round-trip is
  * deterministic. The store is injectable (defaults to the IndexedDB-backed
  * singleton) so the pure logic and its unit tests run against a real in-memory
  * store with no browser.
  *
  * CRITICAL (M117/01): no function here ever evicts. This store is primary, not a
- * bounded cache — a write never deletes another row. The only deletes are the
+ * bounded cache, a write never deletes another row. The only deletes are the
  * explicit per-id `delete*` functions.
  */
 import type { Store } from 'tinybase';
 import { z } from 'zod';
 import { randomUuid } from '#app/lib/uuid';
-import { selectCurrentFast } from '#app/models/fasting';
+import { FAST_NOTE_MAX_LENGTH, selectCurrentFast } from '#app/models/fasting';
 import { EMPTY_BODY_METRICS, normalizeBodyMetrics, readBodyMetrics } from '#app/models/body-metrics';
 import type { BodyMetrics } from '#app/models/body-metrics';
 import {
+  FASTING_SETTINGS_ROW_ID,
+  FASTING_SETTINGS_TABLE,
   FASTS_TABLE,
   FOOD_LOGS_TABLE,
   PERSONAL_FOODS_TABLE,
@@ -43,8 +45,10 @@ import { getPrimaryStore, requestPersistentStorage } from './persist';
 import { markDeviceHasDataForTable } from './had-data';
 import { SCHEMA_VERSION } from './schema';
 import type {
+  FastMood,
   FastProtocolId,
   LocalFast,
+  LocalFastingSettings,
   LocalFoodLog,
   LocalPersonalFood,
   LocalProfileGoals,
@@ -63,16 +67,17 @@ type PrimaryEntity =
   | LocalWeightEntry
   | LocalProfileGoals
   | LocalFast
+  | LocalFastingSettings
   | LocalSavedMeal
   | LocalShareIdentity
   | LocalSharePeer
   | LocalResearchIdentity
   | LocalStudyEnrolment;
 
-/** The entity cell as it comes back off the store — a TinyBase cell, not yet JSON text. */
+/** The entity cell as it comes back off the store, a TinyBase cell, not yet JSON text. */
 const entityCellSchema = z.string();
 
-/** Options accepted by every primary-store function — the store defaults to the singleton. */
+/** Options accepted by every primary-store function, the store defaults to the singleton. */
 interface StoreOption {
   store?: Store;
 }
@@ -87,14 +92,14 @@ async function resolveStore(store: Store | undefined): Promise<Store> {
 
 /**
  * Writes one entity as a JSON cell, and (on a real browser) requests persistent
- * storage — this is the "first tracker write" durability trigger. Stamps the
+ * storage, this is the "first tracker write" durability trigger. Stamps the
  * schema version the store was last written under, so a future migration can
  * detect the on-disk shape.
  *
  * Also stamps the durable "this device has had data before" marker on the
  * first food-log/profile write (M123 spec 01). It belongs HERE, at the one
  * chokepoint every entity write already passes through, so no future write
- * path can be added that forgets it — `markDeviceHasDataForTable` owns the
+ * path can be added that forgets it, `markDeviceHasDataForTable` owns the
  * decision about which tables count, and is a no-op for the rest.
  */
 function writeEntity(store: Store, table: string, id: string, entity: PrimaryEntity): void {
@@ -119,7 +124,7 @@ function readEntity<T>(store: Store, table: string, id: string): T | null {
   }
 }
 
-/** Every entity in a table, corrupt rows skipped. Unordered — callers sort. */
+/** Every entity in a table, corrupt rows skipped. Unordered, callers sort. */
 function readEntities<T>(store: Store, table: string): T[] {
   return store
     .getRowIds(table)
@@ -212,7 +217,7 @@ export async function deleteLocalWeightEntry(id: string, { store }: StoreOption 
 
 /**
  * Records a weigh-in for `dayKey`, replacing any existing entry for that same
- * day — one weigh-in per calendar day, the local counterpart of the server's
+ * day, one weigh-in per calendar day, the local counterpart of the server's
  * `(userId, measuredAt)` unique-index upsert. Reuses the existing row's id
  * (and original `createdAt`) when one exists for the day, so the row is
  * updated in place rather than duplicated; otherwise mints a fresh id. Shared
@@ -254,7 +259,7 @@ export async function putLocalProfileGoals(
   return profile;
 }
 
-/** The "nothing set yet" profile/goals row — every field unset. */
+/** The "nothing set yet" profile/goals row, every field unset. */
 const EMPTY_PROFILE_GOALS: LocalProfileGoals = {
   timezone: null,
   goalNetCarbsCeilingG: null,
@@ -297,7 +302,7 @@ export async function patchLocalProfileGoals(
 }
 
 // ---------------------------------------------------------------------------
-// Body metrics (M135) — four optional profile fields, read/written together
+// Body metrics (M135), four optional profile fields, read/written together
 // ---------------------------------------------------------------------------
 
 /**
@@ -317,7 +322,7 @@ export async function getLocalBodyMetrics({ store }: StoreOption = {}): Promise<
  * the person can no longer see or withdraw).
  *
  * Whole-record, not a patch, on purpose: the settings form and the onboarding
- * step both submit every field, and a `null` here CLEARS — which is how the
+ * step both submit every field, and a `null` here CLEARS, which is how the
  * person takes an answer back. Nothing on this path is ever sent anywhere; it
  * lands in IndexedDB and travels only through the JSON backup and the E2EE sync
  * payload, exactly like the rest of the profile.
@@ -328,7 +333,7 @@ export async function putLocalBodyMetrics(metrics: BodyMetrics, { store }: Store
   return normalized;
 }
 
-/** Clears every body metric back to unset — the "remove these details" affordance. */
+/** Clears every body metric back to unset, the "remove these details" affordance. */
 export async function clearLocalBodyMetrics({ store }: StoreOption = {}): Promise<BodyMetrics> {
   return putLocalBodyMetrics({ ...EMPTY_BODY_METRICS }, { store });
 }
@@ -349,6 +354,67 @@ export class FastConflictError extends Error {
   }
 }
 
+/**
+ * Thrown when a reflection note is longer than `FAST_NOTE_MAX_LENGTH`. A typed
+ * error for the same reason `FastConflictError` is one: the route branches on
+ * `instanceof` and says "that is too long" in the person's language, instead
+ * of matching a string or showing a stack trace.
+ *
+ * REJECT, never truncate. Cutting somebody's own sentence in half and storing
+ * the stump loses words they wrote and cannot see were lost, the same class
+ * of silent damage as auto-ending a running fast.
+ */
+export class FastNoteTooLongError extends Error {
+  constructor(length: number) {
+    super(`A fast note may be at most ${FAST_NOTE_MAX_LENGTH} characters; this one is ${length}.`);
+    this.name = 'FastNoteTooLongError';
+  }
+}
+
+/**
+ * How a fast felt and what the person wrote about it, the pair every
+ * reflection write takes, so `endLocalFast` and `setLocalFastReflection` can
+ * never disagree about the rules.
+ *
+ * Both members are optional AND nullable, and the three states differ:
+ * absent leaves the stored value alone on an edit, `null` clears it, and a
+ * value sets it.
+ */
+export interface FastReflection {
+  mood?: FastMood | null;
+  note?: string | null;
+}
+
+/**
+ * THE one enforcement point for the note ceiling.
+ *
+ * @throws {FastNoteTooLongError} when the note is longer than
+ * `FAST_NOTE_MAX_LENGTH`. An absent or `null` note passes, because neither is
+ * a note.
+ */
+function assertNoteWithinLimit(note: string | null | undefined): void {
+  if (note === undefined || note === null) return;
+  if (note.length > FAST_NOTE_MAX_LENGTH) throw new FastNoteTooLongError(note.length);
+}
+
+/**
+ * Applies a reflection to a fast row. `undefined` leaves a field as it stands,
+ * so `setLocalFastReflection(id, { note })` edits the note without erasing a
+ * mood the person recorded when the fast ended.
+ */
+function withReflection(fast: LocalFast, { mood, note }: FastReflection): LocalFast {
+  // Each key is ASSIGNED only when it was given, rather than written as
+  // `mood: mood ?? fast.mood`. Assigning `undefined` would leave the key
+  // PRESENT-and-undefined on the returned row, which is a different object
+  // from the one that never had it, `JSON.stringify` drops it on the way to
+  // the store, so the row a caller holds and the row it reads back would stop
+  // being equal.
+  const reflected: LocalFast = { ...fast };
+  if (mood !== undefined) reflected.mood = mood;
+  if (note !== undefined) reflected.note = note;
+  return reflected;
+}
+
 /** Every stored fast, oldest first (createdAt then id). */
 export async function listLocalFasts({ store }: StoreOption = {}): Promise<LocalFast[]> {
   return readEntities<LocalFast>(await resolveStore(store), FASTS_TABLE).toSorted(byCreatedThenId);
@@ -362,7 +428,7 @@ export async function getLocalFast(id: string, { store }: StoreOption = {}): Pro
 /**
  * The single non-ended fast, or null. When the invariant has been broken by a
  * backup restore (see `putLocalFast`), returns the one with the LATEST
- * effective start — and it does so by CALLING `selectCurrentFast` rather than
+ * effective start, and it does so by CALLING `selectCurrentFast` rather than
  * re-implementing its tiebreak, so the store and the model can never disagree
  * about which fast is "the" one. `app/models/fasting.ts` is pure (it imports
  * only types from `schema.ts`), so this import adds no runtime cycle.
@@ -413,14 +479,14 @@ export async function createLocalFast(
  *  - `backup.ts`'s `importSnapshot`, which must restore whatever the file
  *    holds rather than reject it, and
  *  - the adjust/end paths below, which write a row that already exists.
- * Never call this to create a NEW fast from the UI — that is `createLocalFast`.
+ * Never call this to create a NEW fast from the UI, that is `createLocalFast`.
  */
 export async function putLocalFast(fast: LocalFast, { store }: StoreOption = {}): Promise<LocalFast> {
   writeEntity(await resolveStore(store), FASTS_TABLE, fast.id, fast);
   return fast;
 }
 
-/** Reads one fast and refuses when it is missing — the shared guard of every mutation below. */
+/** Reads one fast and refuses when it is missing, the shared guard of every mutation below. */
 async function requireLocalFast(id: string, store: Store): Promise<LocalFast> {
   const fast = await getLocalFast(id, { store });
   if (fast === null) throw new Error(`No fast with id ${id}.`);
@@ -428,21 +494,50 @@ async function requireLocalFast(id: string, store: Store): Promise<LocalFast> {
 }
 
 /**
- * Stamps `endedAt`. Throws if the fast does not exist or is already ended —
+ * Stamps `endedAt`. Throws if the fast does not exist or is already ended ,
  * a double-end is a bug, not a no-op, and silently swallowing it would make a
  * duplicated submit look successful while discarding the second end instant.
  */
 export async function endLocalFast(
   id: string,
-  { endedAt }: { endedAt: number },
+  { endedAt, mood, note }: { endedAt: number } & FastReflection,
   { store }: StoreOption = {},
 ): Promise<LocalFast> {
+  // BEFORE the read and before any write: a rejected end must leave the fast
+  // running, not end it and then complain about the note.
+  assertNoteWithinLimit(note);
   const resolved = await resolveStore(store);
   const fast = await requireLocalFast(id, resolved);
   if (fast.endedAt !== null) throw new Error(`Fast ${id} has already ended.`);
-  const ended: LocalFast = { ...fast, endedAt };
+  const ended: LocalFast = { ...withReflection(fast, { mood, note }), endedAt };
   writeEntity(resolved, FASTS_TABLE, ended.id, ended);
   return ended;
+}
+
+/**
+ * Records or edits the reflection on a fast that has ALREADY ended, the
+ * "I meant to say" path, reached from the history list long after the summary
+ * card is gone.
+ *
+ * Deliberately NOT restricted to ended fasts: a person may want to note how a
+ * running fast is going, and refusing would be a rule the screen cannot
+ * explain. What it does refuse is a note over the ceiling, through the same
+ * `assertNoteWithinLimit` the end path uses.
+ *
+ * @throws {FastNoteTooLongError} when the note is too long.
+ * @throws when no fast has that id.
+ */
+export async function setLocalFastReflection(
+  id: string,
+  { mood, note }: FastReflection,
+  { store }: StoreOption = {},
+): Promise<LocalFast> {
+  assertNoteWithinLimit(note);
+  const resolved = await resolveStore(store);
+  const fast = await requireLocalFast(id, resolved);
+  const reflected = withReflection(fast, { mood, note });
+  writeEntity(resolved, FASTS_TABLE, reflected.id, reflected);
+  return reflected;
 }
 
 /**
@@ -465,7 +560,7 @@ export async function setLocalFastStart(
 
 /**
  * Moves a SCHEDULED fast's planned start. Throws when the fast has already
- * started (`startedAt !== null`) or ended — those take `setLocalFastStart`.
+ * started (`startedAt !== null`) or ended, those take `setLocalFastStart`.
  */
 export async function setLocalFastPlannedStart(
   id: string,
@@ -475,7 +570,7 @@ export async function setLocalFastPlannedStart(
   const resolved = await resolveStore(store);
   const fast = await requireLocalFast(id, resolved);
   if (fast.endedAt !== null) throw new Error(`Fast ${id} has already ended.`);
-  if (fast.startedAt !== null) throw new Error(`Fast ${id} has already started — adjust its start instead.`);
+  if (fast.startedAt !== null) throw new Error(`Fast ${id} has already started, adjust its start instead.`);
   const rescheduled: LocalFast = { ...fast, plannedStartAt };
   writeEntity(resolved, FASTS_TABLE, rescheduled.id, rescheduled);
   return rescheduled;
@@ -484,6 +579,95 @@ export async function setLocalFastPlannedStart(
 /** Removes one fast by id. */
 export async function deleteLocalFast(id: string, { store }: StoreOption = {}): Promise<void> {
   (await resolveStore(store)).delRow(FASTS_TABLE, id);
+}
+
+// ---------------------------------------------------------------------------
+// Fasting settings (the fasting rework), a SINGLETON, mirroring the profile
+// row above: a whole-record write for the restore path, a merging patch for
+// every screen.
+// ---------------------------------------------------------------------------
+
+/**
+ * The "nothing set yet" fasting settings, every field unset, and `updatedAt`
+ * 0 so a never-written record LOSES any merge against a real one.
+ *
+ * Null across the board is the honest default, not a hidden pick: a device
+ * that has never opened `/fasting` has chosen no routine, and offering 16:8
+ * here would put a decision on screen that nobody made.
+ */
+const EMPTY_FASTING_SETTINGS: LocalFastingSettings = {
+  routineProtocolId: null,
+  routineStartMinute: null,
+  routineCustomHours: null,
+  extendedAcknowledgedAt: null,
+  updatedAt: 0,
+};
+
+/**
+ * The singleton fasting settings row, or the fully-unset defaults when it has
+ * never been written.
+ *
+ * Returns defaults rather than `null`, unlike `getLocalProfileGoals`, because
+ * every caller of this one wants a record to read fields off, and the "has a
+ * routine" question is answered by `routineProtocolId !== null` rather than by
+ * the record's existence. The BACKUP path needs the distinction and reads the
+ * row directly (`peekLocalFastingSettings`), so an untouched device exports
+ * `fastingSettings: null` instead of a row of nulls.
+ */
+export async function getLocalFastingSettings({ store }: StoreOption = {}): Promise<LocalFastingSettings> {
+  // A COPY of the defaults, never the module constant itself: a caller that
+  // mutated what it got back would rewrite the "nothing set yet" answer for
+  // every later reader in the page.
+  return (await peekLocalFastingSettings({ store })) ?? { ...EMPTY_FASTING_SETTINGS };
+}
+
+/**
+ * The stored row as it actually is: `null` when this device has never written
+ * one. The one reader that must tell "never set" from "set to nothing", the
+ * backup/sync snapshot builder, which would otherwise export a record of nulls
+ * from a device that has no routine, and hand it to the merge as a real
+ * answer.
+ */
+export async function peekLocalFastingSettings({ store }: StoreOption = {}): Promise<LocalFastingSettings | null> {
+  return readEntity<LocalFastingSettings>(await resolveStore(store), FASTING_SETTINGS_TABLE, FASTING_SETTINGS_ROW_ID);
+}
+
+/**
+ * Merges `patch` onto the stored settings (or the unset defaults) and writes
+ * the result, stamping a fresh `updatedAt`. `undefined` leaves a field alone;
+ * `null` clears it, the same undefined-versus-null convention
+ * `patchLocalProfileGoals` uses, so no screen has to hand-spread the record.
+ *
+ * This is the path every screen takes. The restore path is
+ * {@link putLocalFastingSettingsRecord}, which must NOT re-stamp.
+ */
+export async function putLocalFastingSettings(
+  patch: Partial<Omit<LocalFastingSettings, 'updatedAt'>>,
+  { store }: StoreOption = {},
+): Promise<LocalFastingSettings> {
+  const resolved = await resolveStore(store);
+  const existing = (await peekLocalFastingSettings({ store: resolved })) ?? EMPTY_FASTING_SETTINGS;
+  const merged: LocalFastingSettings = { ...existing, ...patch, updatedAt: Date.now() };
+  writeEntity(resolved, FASTING_SETTINGS_TABLE, FASTING_SETTINGS_ROW_ID, merged);
+  return merged;
+}
+
+/**
+ * Writes the record WHOLE, `updatedAt` included. Exists for exactly two
+ * callers, the same two `putLocalFast` serves:
+ *  - `backup.ts`'s `importSnapshot`, and
+ *  - the sync apply path, which goes through that same importer.
+ *
+ * Never call it from a screen. Re-stamping `updatedAt` on a restore would make
+ * every import look like a fresh local edit, which is a change this device
+ * would then push over a peer's genuinely newer routine.
+ */
+export async function putLocalFastingSettingsRecord(
+  settings: LocalFastingSettings,
+  { store }: StoreOption = {},
+): Promise<LocalFastingSettings> {
+  writeEntity(await resolveStore(store), FASTING_SETTINGS_TABLE, FASTING_SETTINGS_ROW_ID, settings);
+  return settings;
 }
 
 // ---------------------------------------------------------------------------
@@ -531,7 +715,7 @@ export async function putLocalShareIdentity(
   return identity;
 }
 
-/** This account's share key pair, or null on a device that has never generated one (the normal state — sharing is opt-in). */
+/** This account's share key pair, or null on a device that has never generated one (the normal state, sharing is opt-in). */
 export async function getLocalShareIdentity({ store }: StoreOption = {}): Promise<LocalShareIdentity | null> {
   return readEntity<LocalShareIdentity>(await resolveStore(store), SHARE_IDENTITY_TABLE, SHARE_IDENTITY_ROW_ID);
 }
@@ -539,7 +723,7 @@ export async function getLocalShareIdentity({ store }: StoreOption = {}): Promis
 /**
  * Removes this account's share key pair.
  *
- * Deleting it makes every wrap ever addressed to it permanently unopenable —
+ * Deleting it makes every wrap ever addressed to it permanently unopenable ,
  * the same one-way act as deleting a key record. Nothing calls this
  * automatically, and nothing may.
  */
@@ -552,8 +736,8 @@ export async function deleteLocalShareIdentity({ store }: StoreOption = {}): Pro
  *
  * CALL THIS ONLY FROM A PASSED FINGERPRINT CEREMONY (ADR-0002 prohibition 6).
  * The existence of the row is what records that the ceremony happened, so a
- * call from anywhere else — a server response, an invite payload taken on
- * trust, an "accept the changed key?" prompt — writes a lie that every later
+ * call from anywhere else, a server response, an invite payload taken on
+ * trust, an "accept the changed key?" prompt, writes a lie that every later
  * re-wrap then believes.
  */
 export async function putLocalSharePeer(peer: LocalSharePeer, { store }: StoreOption = {}): Promise<LocalSharePeer> {
@@ -574,7 +758,7 @@ export async function getLocalSharePeer(
   return readEntity<LocalSharePeer>(await resolveStore(store), SHARE_PEERS_TABLE, String(accountId));
 }
 
-/** Un-pins a peer. Local only — it revokes nothing on the server, which is a separate, explicit act. */
+/** Un-pins a peer. Local only, it revokes nothing on the server, which is a separate, explicit act. */
 export async function deleteLocalSharePeer(accountId: number, { store }: StoreOption = {}): Promise<void> {
   (await resolveStore(store)).delRow(SHARE_PEERS_TABLE, String(accountId));
 }
@@ -589,7 +773,7 @@ export async function deleteLocalSharePeer(accountId: number, { store }: StoreOp
  *
  * WRITE IT ONCE. Overwriting an existing root re-pseudonymises this person in
  * every study they already contribute to, and a researcher reads the new
- * pseudonym as a second participant with no history — so the only callers are
+ * pseudonym as a second participant with no history, so the only callers are
  * first enrolment (`runEnrolmentCeremony`, which reuses any existing root) and
  * a backup restore, which is reproducing a root rather than minting one.
  */
@@ -601,7 +785,7 @@ export async function putLocalResearchIdentity(
   return identity;
 }
 
-/** This account's pseudonym root, or null on a device that has never enrolled in a study (the normal state — contributing is opt-in). */
+/** This account's pseudonym root, or null on a device that has never enrolled in a study (the normal state, contributing is opt-in). */
 export async function getLocalResearchIdentity({ store }: StoreOption = {}): Promise<LocalResearchIdentity | null> {
   return readEntity<LocalResearchIdentity>(
     await resolveStore(store),
@@ -615,7 +799,7 @@ export async function getLocalResearchIdentity({ store }: StoreOption = {}): Pro
  *
  * CALL THIS ONLY FROM A PASSED FINGERPRINT CEREMONY (ADR-0003's second-ranked
  * attack). The row's existence is what records that the fingerprint printed in
- * the study's consent materials was typed and matched — a call from anywhere
+ * the study's consent materials was typed and matched, a call from anywhere
  * else writes a lie that every later contribution is then sealed to.
  */
 export async function putLocalStudyEnrolment(
@@ -640,7 +824,7 @@ export async function getLocalStudyEnrolment(
 }
 
 /**
- * Removes an enrolment. LOCAL ONLY — it withdraws nothing on the server, which
+ * Removes an enrolment. LOCAL ONLY, it withdraws nothing on the server, which
  * is a separate, explicit act (`DELETE /contributions/:studyAccountId`), and
  * the server's copy is the one erasure has to reach.
  */
@@ -648,6 +832,6 @@ export async function deleteLocalStudyEnrolment(studyAccountId: number, { store 
   (await resolveStore(store)).delRow(STUDY_ENROLMENTS_TABLE, String(studyAccountId));
 }
 // ---------------------------------------------------------------------------
-// The gateway this account joined (M187/02) — the singleton that travels in
+// The gateway this account joined (M187/02), the singleton that travels in
 // the owner-private compartment
 // ---------------------------------------------------------------------------

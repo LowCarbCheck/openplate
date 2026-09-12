@@ -3,8 +3,8 @@
  *
  * This is the SAME defect `authoritative-net-carbs-wiring.test.ts` documents at
  * length, happening a second time on the same line of the same function. One
- * scan confirm writes TWO rows from one upstream fact — a `LocalFoodLog` and a
- * `LocalPersonalFood` — and v9 gave the micronutrient snapshot to only the log.
+ * scan confirm writes TWO rows from one upstream fact, a `LocalFoodLog` and a
+ * `LocalPersonalFood`, and v9 gave the micronutrient snapshot to only the log.
  * The consequence was invisible and asymmetric: re-logging that saved food from
  * /add's "Your foods" contributed ZERO micronutrient coverage, while the
  * identical food re-logged from "Recent" contributed full coverage. Same food,
@@ -17,8 +17,8 @@
  *
  *  1. A personal food created from an applied LCC match CARRIES the match's
  *     figures, all the way through to the coverage a re-log contributes.
- *  2. A personal food created any other way — hand-typed manual entry, plain AI
- *     plate estimate — carries NONE, and that absence must stay absent. Not
+ *  2. A personal food created any other way, hand-typed manual entry, plain AI
+ *     plate estimate, carries NONE, and that absence must stay absent. Not
  *     `{}`, not blocks of `null`, and above all not zeros. Nobody measured those
  *     vitamins; a fabricated figure is worse than a missing one because the
  *     coverage model cannot see through it (milestone locked decision 3).
@@ -26,13 +26,13 @@
  * And one thing that must NOT change: undo-restore and copy-yesterday read the
  * ORIGINAL LOG's snapshot, never the personal food's current one. A log records
  * what was true when the food was eaten. Re-deriving from the food would let an
- * edit made today silently rewrite last month's diary — so the tests below edit
+ * edit made today silently rewrite last month's diary, so the tests below edit
  * the food in between and assert the restored entry ignored the edit.
  *
  * Every chain here runs through the production functions (and, where one
  * exists, the real rendered hidden input) rather than hand-assembled fixtures,
  * because every incident in this class was a CALLER that forgot to pass the
- * value — not a function that computed it wrongly.
+ * value, not a function that computed it wrongly.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -68,12 +68,12 @@ const YESTERDAY_KEY = '2026-08-06';
 const SERVING_GRAMS = 100;
 const AT_NOON = Date.parse(`${DAY_KEY}T12:00:00Z`);
 
-/** Spinach's vitamin C per 100 g — the figure every assertion below follows end to end. */
+/** Spinach's vitamin C per 100 g, the figure every assertion below follows end to end. */
 const VITAMIN_C_PER_100G = 28;
 
 /**
  * A vitamin block with `vitaminC` measured, `vitaminD` explicitly `null`, and a
- * measured `0` for `vitaminB12` — one of each of the three states that must
+ * measured `0` for `vitaminB12`, one of each of the three states that must
  * survive intact, in one fixture. The `0` is the sharp one: it is a real
  * measurement, so it has to sum as 0 AND count as covered.
  */
@@ -111,7 +111,7 @@ function spinachMatch(): FoodMatch {
     imageUrl: null,
     macrosPer100g: { kcal: 23, protein: 2.9, fat: 0.4, carbs: 1.4, fiber: 2.2, sugars: null, polyols: null },
     netCarbsPer100g: 1.4,
-    attribution: 'Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)',
+    attribution: 'Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut, CC BY 4.0 (adapted)',
     score: 0.95,
     origin: 'bls',
     portionSize: SERVING_GRAMS,
@@ -147,7 +147,7 @@ const AI_IDENTIFICATION = {
  * The confirm form's field values for one item: the match's own macros (mapped
  * by the REAL `matchMacrosToFormValues`) plus, optionally, the `curatedSource`
  * token that means "a match is applied". The micronutrient hidden field is
- * deliberately NOT seeded — it must be re-derived from `curatedSource` on every
+ * deliberately NOT seeded, it must be re-derived from `curatedSource` on every
  * render, so seeding it could make a broken derivation look fine.
  */
 function confirmFormData({ applyMatch }: { applyMatch: boolean }): FormData {
@@ -280,7 +280,7 @@ function renderPortionStep(candidate: AddSearchCandidate): string {
  * The REAL "Your foods" re-log path: a saved personal food through the real
  * `localFoodToCandidate`, rendered by the real `PortionStep`, with the
  * micronutrient snapshot taken from the hidden input the STEP emitted (never
- * from the candidate object — that would bypass the wiring under test), parsed
+ * from the candidate object, that would bypass the wiring under test), parsed
  * by the real `createLogSchema` and built by the real `buildLoggedEntry`.
  * Deleting the candidate field, the hidden input, the schema field, or the
  * builder's assignment each breaks this chain.
@@ -338,7 +338,7 @@ describe('a personal food created from an applied LCC match carries its micronut
     assert.equal(reading(food.micronutrientsPer100g, 'magnesium').state, 'no-block');
   });
 
-  it('the LOG and the FOOD written by one confirm never disagree — they come from one upstream fact', () => {
+  it('the LOG and the FOOD written by one confirm never disagree, they come from one upstream fact', () => {
     assert.deepEqual(
       scannedFood({ applyMatch: true }).micronutrientsPer100g,
       scannedLog({ applyMatch: true }).micronutrientsPer100g,
@@ -366,7 +366,7 @@ describe('a personal food created from an applied LCC match carries its micronut
   });
 });
 
-describe('a personal food nobody measured claims nothing — the honest-absent rule', () => {
+describe('a personal food nobody measured claims nothing, the honest-absent rule', () => {
   it('a plain AI plate estimate (no match applied) carries NO micronutrients', () => {
     const food = scannedFood({ applyMatch: false });
     assert.equal(food.micronutrientsPer100g, undefined);
@@ -394,7 +394,7 @@ describe('a personal food nobody measured claims nothing — the honest-absent r
         createdAtMs: AT_NOON,
       }),
     ]) {
-      // Not `{}` — an empty snapshot is indistinguishable from a populated one
+      // Not `{}`, an empty snapshot is indistinguishable from a populated one
       // at the type level, and would read as "we have the dimension".
       assert.notDeepEqual(food.micronutrientsPer100g, {});
       // Every nutrient must read `no-block`. `no-value` would mean "we looked",
@@ -423,7 +423,7 @@ describe('re-logging a saved food from "Your foods" now contributes coverage', (
     const { micronutrientsPer100g: _dropped, ...v9Food } = scannedFood({ applyMatch: true });
     const entry = reLogEntryFromSavedFood(v9Food);
     const vitaminC = vitaminCForDay([entry]);
-    assert.equal(vitaminC.coveredFraction, 0, 'the fixture is not discriminating — v9 already covered this day');
+    assert.equal(vitaminC.coveredFraction, 0, 'the fixture is not discriminating, v9 already covered this day');
     assert.equal(vitaminC.hasEnoughData, false);
   });
 
@@ -435,7 +435,7 @@ describe('re-logging a saved food from "Your foods" now contributes coverage', (
     assert.equal(vitaminC.amount, VITAMIN_C_PER_100G);
   });
 
-  it('and a "Recent" re-log of the same food agrees with it — one food, one coverage answer', () => {
+  it('and a "Recent" re-log of the same food agrees with it, one food, one coverage answer', () => {
     // The two paths differ only in which factory built the candidate. Before
     // v10 they disagreed: `localCuratedMatchToCandidate` carried the snapshot
     // and `localFoodToCandidate` dropped it.
@@ -447,7 +447,7 @@ describe('re-logging a saved food from "Your foods" now contributes coverage', (
 
 describe('undo-restore and copy-yesterday read the LOG, never the food’s current state', () => {
   /**
-   * The food as it stands TODAY, after the person corrected its vitamin C —
+   * The food as it stands TODAY, after the person corrected its vitamin C ,
    * deliberately a different number from the one its old logs recorded. Any
    * path that re-derives from the food instead of copying the log will return
    * this figure, and every assertion below is written to catch exactly that.
@@ -467,7 +467,7 @@ describe('undo-restore and copy-yesterday read the LOG, never the food’s curre
 
   it('Undo restores the figures the entry was logged with, not the food’s corrected ones', () => {
     const original = scannedLog({ applyMatch: true });
-    // The food is edited between the delete and the Undo — the whole point.
+    // The food is edited between the delete and the Undo, the whole point.
     const stillOnDevice = editedFood();
     assert.equal(original.foodId, stillOnDevice.id, 'the log must point at the food that was edited');
 
@@ -489,7 +489,7 @@ describe('undo-restore and copy-yesterday read the LOG, never the food’s curre
     assert.equal(
       vitaminC.state === 'measured' ? vitaminC.value : null,
       VITAMIN_C_PER_100G,
-      'Undo rewrote history — it took the food’s current figures instead of the entry’s own',
+      'Undo rewrote history, it took the food’s current figures instead of the entry’s own',
     );
     // The absent mineral block survives the form round trip too.
     assert.equal(reading(restored.micronutrientsPer100g, 'magnesium').state, 'no-block');
@@ -529,7 +529,7 @@ describe('backup round trip', () => {
     netCarbsPer100g: 1.4,
   };
 
-  it('a v9 envelope — taken before personal foods had the field — imports cleanly', () => {
+  it('a v9 envelope, taken before personal foods had the field, imports cleanly', () => {
     const migrated = migrateEnvelopeForward({
       schemaVersion: 9,
       exportedAt: '2026-08-06T10:00:00.000Z',
@@ -539,7 +539,7 @@ describe('backup round trip', () => {
     assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
     const food = migrated.data.foods[0];
     assert.ok(food);
-    // Absent, not back-filled — an absent key already means "never captured",
+    // Absent, not back-filled, an absent key already means "never captured",
     // which is why no migration function was written for this bump.
     assert.equal(food.micronutrientsPer100g, undefined);
     // Nothing else about the older envelope was disturbed.
@@ -557,6 +557,7 @@ describe('backup round trip', () => {
         weightEntries: [],
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         profile: null,
         shareIdentity: null,
         sharePeers: [],
@@ -570,7 +571,7 @@ describe('backup round trip', () => {
     assert.deepEqual(
       restored.micronutrientsPer100g,
       food.micronutrientsPer100g,
-      'zod stripped the key — a saved food’s vitamins vanish on every export/import',
+      'zod stripped the key, a saved food’s vitamins vanish on every export/import',
     );
     assert.equal(restored.micronutrientsPer100g?.minerals, undefined, 'the absent mineral block was materialized');
     // A measured 0 must survive as a measurement, not be dropped as falsy.
@@ -594,6 +595,7 @@ describe('backup round trip', () => {
         weightEntries: [],
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         profile: null,
         shareIdentity: null,
         sharePeers: [],

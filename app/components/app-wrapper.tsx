@@ -13,6 +13,7 @@ import {
 import { useSyncSession } from './sync-status';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
+import { FastChipSlot } from './fast-chip';
 import { HeaderStatus } from './header-status';
 import { ProgressBar } from './progress-bar';
 import { UpdateRibbon } from './update-ribbon';
@@ -27,7 +28,7 @@ import * as React from 'react';
 
 /**
  * The install-app entry in the mobile nav drawer, rendered only when there's
- * an actual affordance to offer (see `useInstallAffordance` — mirrors
+ * an actual affordance to offer (see `useInstallAffordance`, mirrors
  * `InstallCard`'s logic so the drawer and the settings card can never
  * disagree about whether the app is installable). A native
  * `beforeinstallprompt` triggers directly; iOS has no install API, so that
@@ -69,7 +70,7 @@ function InstallDrawerItem({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
-/** One drawer row's classes — active rows carry the brand the same way the sidebar's do. */
+/** One drawer row's classes, active rows carry the brand the same way the sidebar's do. */
 function drawerItemClasses(isActive: boolean): string {
   return cn(
     'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
@@ -77,7 +78,7 @@ function drawerItemClasses(isActive: boolean): string {
   );
 }
 
-/** One drawer destination — the drawer's counterpart to the sidebar's `NavigationRow`. */
+/** One drawer destination, the drawer's counterpart to the sidebar's `NavigationRow`. */
 function DrawerRow({
   item,
   isActive,
@@ -103,14 +104,14 @@ function DrawerRow({
 }
 
 /**
- * Persistent top-left brand mark for the mobile header — always visible,
+ * Persistent top-left brand mark for the mobile header, always visible,
  * tappable to open the navigation drawer. `md:hidden`: at `md`+ the sidebar's
  * own `Logo()` already occupies this same top-left position, so this would
  * otherwise be a second, redundant brand mark next to it.
  *
  * It was a dropdown of four odd destinations; it's now a real left-slide
  * drawer rendering the SAME catalog the desktop sidebar does, in the same
- * order and with the same footer separation — a phone user and a laptop user
+ * order and with the same footer separation, a phone user and a laptop user
  * see one map of the app rather than two. `BottomNav` keeps only the daily
  * logging loop (Diary · Scan · Add); this drawer is the complete list.
  */
@@ -132,7 +133,7 @@ function NavDrawer() {
             an icon-button grid: at `size-9` the mark optically spans BOTH the
             wordmark and the page title, which is what binds them into one
             brand-then-page unit. `p-0` drops the ghost button's inset, so the
-            mark sits tight against the wordmark — that inset is what left the
+            mark sits tight against the wordmark, that inset is what left the
             first eyebrow attempt floating free of the mark. */}
         <Button
           variant="ghost"
@@ -147,7 +148,7 @@ function NavDrawer() {
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2 font-display text-lg">
             <img src="/icons/icon-192.png?v=2" alt="" className="h-7 w-7 rounded-lg" />
-            {/* The product name is a proper noun — never translated. */}
+            {/* The product name is a proper noun, never translated. */}
             {APP_NAME}
           </SheetTitle>
           <SheetDescription className="sr-only">{t('chrome.navDrawerDescription')}</SheetDescription>
@@ -218,7 +219,7 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
       {/* In flow and above the header, so it reserves space instead of covering
           the page title. Renders nothing unless there is something to say. */}
       <UpdateRibbon />
-      {/* The chrome sits on `bg-card`, not `bg-background` — the header was
+      {/* The chrome sits on `bg-card`, not `bg-background`, the header was
           previously the exact same fill as the page beneath it, so the only
           thing separating it from the date navigator was one hairline and the
           whole top of the screen read as one undifferentiated slab. Every other
@@ -299,7 +300,14 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
               </div>
             </HeaderStatus>
             <div className="flex shrink-0 items-center gap-3">
-              {/* The device menu, at both breakpoints — identity, the theme
+              {/* The one live fact in the app, and the only thing in this bar
+                  that is not always there: it renders nothing unless a fast is
+                  scheduled or running. `min-h-9` inside this header's
+                  `min-h-16` is what keeps the bar's height fixed either way,
+                  and it sits in the shrink-0 group so the `h1` beside it
+                  truncates first. */}
+              <FastChipSlot />
+              {/* The device menu, at both breakpoints, identity, the theme
                   inline, and the settings people revisit. See
                   `avatar-menu.tsx` for why the theme lives in here rather than
                   only on the Preferences page. */}
@@ -322,7 +330,7 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
       {/* Bottom padding clears the mobile `BottomNav` so page content is never
           occluded; the sidebar owns navigation at md+. 6rem = the h-14 bar plus
           the safe area plus the raised Scan button's overhang and ring
-          (M129/04) — content must clear the circle, not just the bar. */}
+          (M129/04), content must clear the circle, not just the bar. */}
       <div className="flex-1 p-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] md:p-6 md:pb-6">{children}</div>
       <BottomNav />
     </>

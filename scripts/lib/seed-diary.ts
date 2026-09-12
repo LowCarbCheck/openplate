@@ -54,7 +54,7 @@ export const SEED_GOALS = {
 
 /**
  * What a seeded day is FOR. The four are not decoration: every chart in the
- * app has to tell them apart, and `empty` is the one most often got wrong —
+ * app has to tell them apart, and `empty` is the one most often got wrong ,
  * an unlogged day and a day whose total is zero are different facts, and a
  * chart that draws them the same way is lying about one of them.
  */
@@ -367,7 +367,7 @@ function createRng(seed: string): () => number {
   };
 }
 
-/** Picks one item. Never empty by construction — every catalogue array above has at least two entries. */
+/** Picks one item. Never empty by construction, every catalogue array above has at least two entries. */
 function pick<TItem>(rng: () => number, items: readonly TItem[]): TItem {
   const chosen = items[Math.floor(rng() * items.length)];
   if (chosen === undefined) throw new Error('Cannot pick from an empty catalogue');
@@ -679,6 +679,7 @@ export function buildSeedDiary(options: SeedDiaryOptions): BackupEnvelope {
       },
       fasts: [],
       savedMeals: [],
+      fastingSettings: null,
       shareIdentity: null,
       sharePeers: [],
       researchIdentity: null,
@@ -708,7 +709,7 @@ export function summarizeSeedDiary(envelope: BackupEnvelope): SeedDiarySummary {
   if (firstLoggedDay === undefined || lastLoggedDay === undefined) {
     throw new Error('A seeded diary must carry at least one logged day');
   }
-  // The calendar span, which is what "how many days" means here — the LOGGED
+  // The calendar span, which is what "how many days" means here, the LOGGED
   // days are a subset of it, and the difference is the whole point.
   const spanDays = allDaysBetween(firstLoggedDay, lastLoggedDay);
   return {

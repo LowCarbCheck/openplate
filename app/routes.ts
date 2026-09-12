@@ -4,7 +4,7 @@ import { type RouteConfig, route, layout, index } from '@react-router/dev/routes
  * The whole route tree, accountless (M128 spec 03). There is no login,
  * registration, session, or superadmin route left in this app: the tracker is
  * device-local and every visitor gets the full product on first load. Accounts
- * moved out entirely — the standalone `openplate-core` service owns identity
+ * moved out entirely, the standalone `openplate-core` service owns identity
  * for the optional E2EE-sync feature and is reached directly at its own origin
  * (M128 spec 04), never through this server.
  */
@@ -19,14 +19,14 @@ export default [
   // it isn't gated by the personal-chrome layout.
   route('/share-target', 'routes/share-target.ts'),
 
-  // OpenRouter OAuth PKCE callback (M127/02) — CLIENT-ONLY (no loader/action;
+  // OpenRouter OAuth PKCE callback (M127/02), CLIENT-ONLY (no loader/action;
   // see the route file's header doc). Top-level, outside every layout, so it
   // never depends on a layout loader that doesn't apply to it.
   route('/oauth/openrouter/callback', 'routes/oauth.openrouter.callback.tsx'),
 
   // ONE join link (M181/05, narrowed to one service in M192): where an invite
-  // lands. CLIENT-ONLY for the same reason the OAuth callback is — no invite
-  // may reach this server — and top-level so it depends on no layout loader
+  // lands. CLIENT-ONLY for the same reason the OAuth callback is, no invite
+  // may reach this server, and top-level so it depends on no layout loader
   // and no onboarding gate: someone arriving from an invite may never have
   // opened this app before. The token rides in the URL FRAGMENT, which no
   // browser sends anywhere, so there is nothing here a loader could read even
@@ -35,21 +35,21 @@ export default [
 
   // Clinician onboarding: where a clinician's connect link lands (M160/08).
   // CLIENT-ONLY and top-level for the same two reasons as `/connect-gateway`,
-  // plus a third that is specific to it — the payload rides in the URL
+  // plus a third that is specific to it, the payload rides in the URL
   // FRAGMENT, which no browser sends to any server, so there is nothing a
   // loader here could read. `openplate-core` ADR-0002 prohibition 1: the
   // server never stores, serves or endorses a share public key.
   route('/connect-clinician', 'routes/connect-clinician.tsx'),
 
   // Joining a study: where a study's join link lands (M163/02). Same shape as
-  // `/connect-clinician` and for the same reason — the study's contribution
+  // `/connect-clinician` and for the same reason, the study's contribution
   // key rides in the URL FRAGMENT, so no loader could read it and no server
   // ever sees it. `openplate-core` ADR-0003: the fingerprint that authenticates
   // that key is typed from the study's printed consent document, never shown.
   route('/join-study', 'routes/join-study.tsx'),
 
   // The study console (M163/03): the RESEARCHER's side. CLIENT-ONLY and top
-  // level for the same reasons `/join-study` is, plus one that is its own —
+  // level for the same reasons `/join-study` is, plus one that is its own ,
   // this screen signs into the STUDY's account, not this device's, and the
   // study's private key is unwrapped in the browser. It sits outside
   // `_personal` deliberately: that layout runs the onboarding gate and mounts
@@ -58,7 +58,7 @@ export default [
   route('/study', 'routes/study._index.tsx'),
 
   // The first screen on a device that holds nothing (M183 spec 02): "Start" or
-  // "I already have an account". TOP-LEVEL and client-only, and it has to be —
+  // "I already have an account". TOP-LEVEL and client-only, and it has to be ,
   // `_personal.tsx`'s onboarding gate is what redirects here, so a route nested
   // inside that layout would be redirected away from itself in a loop. Exactly
   // the position `/recover` is in below, for exactly the same reason. Both
@@ -68,7 +68,7 @@ export default [
 
   // The door back in for somebody who already has an account (M183 spec 03):
   // email, password, and a link to `/forgot`. TOP-LEVEL and client-only for
-  // the same two reasons `/welcome` above is — `_personal.tsx`'s gate
+  // the same two reasons `/welcome` above is, `_personal.tsx`'s gate
   // redirects here, so nesting it inside that layout would redirect it away
   // from itself in a loop, and everything it touches (the remembered address,
   // the password, the pulled diary) belongs to the browser and to the sync
@@ -76,7 +76,7 @@ export default [
   route('/sign-in', 'routes/sign-in.tsx'),
 
   // "I have forgotten my password" (M192/05). One field, and one answer
-  // whether or not the address has an account — the service returns `202`
+  // whether or not the address has an account, the service returns `202`
   // either way so that this form cannot be used to ask whether somebody is a
   // member of the organization, and the screen has to match. Top-level and
   // client-only for the same reasons `/sign-in` is.
@@ -84,13 +84,13 @@ export default [
 
   // Where the mailed reset link lands (M192/05). The token rides in the URL
   // FRAGMENT, which no browser sends to any server, so there is nothing here a
-  // loader could read even if one existed — the same rule `/join` follows, and
+  // loader could read even if one existed, the same rule `/join` follows, and
   // the same `join-link.ts` grammar reads both.
   route('/reset', 'routes/reset.tsx'),
 
   // Local-data recovery (M123 spec 01): where `_personal.tsx`'s gate sends a
   // device whose store has been wiped but whose `firstDataAt` marker survives.
-  // TOP-LEVEL and client-only — it must sit outside `_personal`, whose gate is
+  // TOP-LEVEL and client-only, it must sit outside `_personal`, whose gate is
   // what redirects here, and the backup file it reads never leaves the browser.
   route('/recover', 'routes/recover.tsx'),
 
@@ -108,7 +108,7 @@ export default [
     route('/terms', 'routes/legal/terms.tsx'),
     route('/privacy', 'routes/legal/privacy.tsx'),
     // Section 5 DDG provider identification. Public and unauthenticated on
-    // purpose — an imprint behind a login does not discharge the duty.
+    // purpose, an imprint behind a login does not discharge the duty.
     route('/imprint', 'routes/legal/imprint.tsx'),
 
     // The statutory withdrawal instruction and model withdrawal form (Anlage 1
@@ -121,13 +121,13 @@ export default [
     // navigations. Always cacheable, never gated.
     route('/offline', 'routes/offline.tsx'),
 
-    // Full-screen flow, no personal chrome (no sidebar/bottom-nav) — writes
+    // Full-screen flow, no personal chrome (no sidebar/bottom-nav), writes
     // entirely to the on-device primary store.
     route('/onboarding', 'routes/onboarding.tsx'),
 
     // WHAT USED TO BE HERE: `/reset-passphrase` and `/verify-email`, the two
     // landing pages for the sync service's emails (M128 spec 04). M181 deleted
-    // the mailer, both endpoints and both routes — an account is a handle plus
+    // the mailer, both endpoints and both routes, an account is a handle plus
     // a passphrase, and a lost passphrase is recovered on `/settings/sync`
     // with the recovery code the user already holds.
 
@@ -136,7 +136,7 @@ export default [
   ]),
 
   // =============================================================================
-  // Personal food tracker — the app itself. No middleware and no session: every
+  // Personal food tracker, the app itself. No middleware and no session: every
   // visitor is this device's owner (M128 spec 03).
   // =============================================================================
   layout('routes/_personal.tsx', { id: '_personal' }, [
@@ -177,7 +177,7 @@ export default [
     // below. Replaced the old `/profile` card hub (which now redirects here).
     route('/settings', 'routes/settings._index.tsx'),
     route('/settings/ai', 'routes/settings.ai.tsx'),
-    // App preferences (theme + language) — M129/05. Under `_personal` rather
+    // App preferences (theme + language), M129/05. Under `_personal` rather
     // than `_public` so it wears the app chrome.
     route('/settings/preferences', 'routes/settings.preferences.tsx'),
     // The body facts and the weigh-in log (M215 spec 03): height, sex, birth
@@ -187,6 +187,10 @@ export default [
     // one route called `/settings/goals`, which asked "how tall are you" and
     // "how many carbs a day" under a single title.
     route('/settings/nutrition', 'routes/settings.nutrition.tsx'),
+    // The fasting ROUTINE: the usual window and the usual start hour (M216).
+    // `/fasting` runs the timer; these two are preferences that outlive any one
+    // fast, so they sit in settings beside the eating targets.
+    route('/settings/fasting', 'routes/settings.fasting.tsx'),
     // The address those two pages used to share. Kept as a REDIRECT to the
     // targets, for the same reason `/settings/sync` below is kept: it is in
     // bookmarks and in every release note before M215, and a 404 there would
@@ -196,11 +200,11 @@ export default [
     // used to be a fieldset inside the body metrics card on the page above,
     // where nobody looking for it had a reason to go.
     route('/settings/life-phase', 'routes/settings.life-phase.tsx'),
-    // Export/import + the device-local photo cache — the old profile page's
+    // Export/import + the device-local photo cache, the old profile page's
     // "Your data" and "Photos on this device" cards, given their own page.
     route('/settings/data', 'routes/settings.data.tsx'),
     // The account: who am I, what am I called, change my password, sign out,
-    // delete me (M192/05). 404s unless `SYNC_SERVER_URL` is set — on an
+    // delete me (M192/05). 404s unless `SYNC_SERVER_URL` is set, on an
     // instance with no server there are no accounts, so this is not a page.
     route('/settings/account', 'routes/settings.account.tsx'),
     // The plan (M213 spec 05). TWO gates, both answering 404: no
@@ -216,26 +220,26 @@ export default [
     // would read as "the feature was removed".
     route('/settings/sync', 'routes/settings.sync.tsx'),
     // Clinician sharing, the patient's side (M160/05). 404s unless
-    // `SYNC_SERVER_URL` is set, for the same reason `/settings/sync` does — a
+    // `SYNC_SERVER_URL` is set, for the same reason `/settings/sync` does, a
     // share is a third wrap of the sync DEK, so with no sync there is nothing
     // here to be a page about. When the SERVER has `SYNC_SHARING` off it
     // renders one honest sentence instead: that tree answers the ordinary 404
     // to everybody, and the client reads it as "absent", never as an error.
     route('/settings/sharing', 'routes/settings.sharing.tsx'),
     // Research contributions, the contributor's side (M161/05). Same sync
-    // gate as the two rows above, for the same reason — a contribution is
+    // gate as the two rows above, for the same reason, a contribution is
     // pushed to the sync service, so with no sync there is nothing here to be
     // a page about. When the SERVER has no research lane it renders one
     // honest sentence instead (ADR-0003 prohibition 9).
     route('/settings/research', 'routes/settings.research.tsx'),
     // Clinician sharing, the grantee's side (M160/05). NO LOADER on either
     // route: the patient's blob is pulled and decrypted in the browser, and
-    // `settings.data.tsx`'s rule — the diary lives on the device — has to hold
+    // `settings.data.tsx`'s rule, the diary lives on the device, has to hold
     // for somebody else's diary too, or it was never a rule.
     route('/shared', 'routes/shared._index.tsx'),
     route('/shared/:grantorAccountId', 'routes/shared.$grantorAccountId.tsx'),
     // Provenance: version, licence and the source repository (M146 spec 01).
-    // Ungated — it is true on every instance, including a self-hoster's.
+    // Ungated, it is true on every instance, including a self-hoster's.
     route('/settings/about', 'routes/settings.about.tsx'),
     // The administration console (M192/06). 404s unless `SYNC_SERVER_URL` is
     // set, like every account screen: an instance with no server has nobody to
@@ -262,10 +266,10 @@ export default [
       route('feedback/:id', 'routes/admin.feedback.$id.tsx'),
     ]),
     // Resource route: server-proxied LCC food-name lookup for the client-side
-    // scan flow (M117/02) — see app/routes/api.food-matches.ts.
+    // scan flow (M117/02), see app/routes/api.food-matches.ts.
     route('/api/food-matches', 'routes/api.food-matches.ts'),
     // Resource route: server-proxied LCC nutrient/reference-intake read for
-    // `/nutrients` (M135/06) — see app/routes/api.nutrients.ts.
+    // `/nutrients` (M135/06), see app/routes/api.nutrients.ts.
     route('/api/nutrients', 'routes/api.nutrients.ts'),
   ]),
 ] satisfies RouteConfig;

@@ -1,11 +1,11 @@
 /**
- * WIRING guard for `LocalFoodLog.attribution` — the source's licence credit.
+ * WIRING guard for `LocalFoodLog.attribution`, the source's licence credit.
  *
  * The field shipped with a READER and no writer at all. `AttributionNote` on
  * the entry detail page was built to render it, `backup.ts` was extended to
  * carry it through an export, `local-quick-add.ts` put it on every curated
  * candidate, and both the add flow and the scan flow displayed it before
- * logging — but nothing ever copied it ONTO the entry. So the credit the
+ * logging, but nothing ever copied it ONTO the entry. So the credit the
  * receipt was designed to show was, in practice, always absent.
  *
  * That is not a cosmetic gap. CC BY requires the credit to travel with the
@@ -15,20 +15,20 @@
  * log an entry from a source carrying a credit, and read the credit back off
  * the persisted entry, verbatim.
  *
- * Sibling of `authoritative-net-carbs-wiring.test.ts` — the same defect class
+ * Sibling of `authoritative-net-carbs-wiring.test.ts`, the same defect class
  * (a value correct at its source, silently dropped by its consumer) one field
  * over. Kept separate because the two fields follow deliberately DIFFERENT
  * rules under a macro edit; see `resolveAppliedMatchSnapshot`.
  *
  * If you are reading this because a test here failed: an entry-creating path
- * stopped copying `attribution`. Re-thread it — this is a licence obligation,
+ * stopped copying `attribution`. Re-thread it, this is a licence obligation,
  * not a nicety.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-// The real, initialized shared instance — `PortionStep` renders through
+// The real, initialized shared instance, `PortionStep` renders through
 // `useTranslation`, and the schema's messages come from the same catalog, so
 // the markup asserted below is the actual English the app ships.
 import i18next from '../../app/i18n/i18n';
@@ -65,7 +65,7 @@ import type { FoodMatch } from '../../app/services/food-resolution/types';
  * suffix matter: a licence credit is a legal string, so any test that passes on
  * a reworded/truncated/re-cased version would be pinning the wrong thing.
  */
-const CREDIT = 'Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)';
+const CREDIT = 'Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut, CC BY 4.0 (adapted)';
 
 const SERVING_GRAMS = 100;
 const DAY_KEY = '2026-07-28';
@@ -124,7 +124,7 @@ function emittedAddAttribution(html: string): string {
 
 /**
  * The REAL add-flow write path: render the portion step, take the credit from
- * the hidden input IT actually emitted (never from the candidate object — that
+ * the hidden input IT actually emitted (never from the candidate object, that
  * would bypass the wiring under test), submit it through the real `LogSchema`,
  * and build the entry with the real `buildLoggedEntry`.
  */
@@ -158,7 +158,7 @@ describe('a credited food logged from the add flow keeps its credit', () => {
     assert.equal(
       logEntryFromAddFlow(creditedCandidate()).attribution,
       CREDIT,
-      'the licence credit died between the portion step and the stored entry — the entry detail page will show none',
+      'the licence credit died between the portion step and the stored entry, the entry detail page will show none',
     );
   });
 
@@ -168,13 +168,13 @@ describe('a credited food logged from the add flow keeps its credit', () => {
     assert.ok(html.includes(CREDIT), `the credit is not in the receipt markup:\n${html}`);
   });
 
-  it('stores null — never an empty string — for a source that carries no credit', () => {
+  it('stores null, never an empty string, for a source that carries no credit', () => {
     // `AttributionNote` renders nothing for either, but only `null` matches the
     // field's documented "null/absent for sources with no attribution".
     assert.equal(logEntryFromAddFlow(creditedCandidate({ attribution: null })).attribution, null);
   });
 
-  it('stores no credit for a personal (custom) food — the user is the source, there is nobody to credit', () => {
+  it('stores no credit for a personal (custom) food, the user is the source, there is nobody to credit', () => {
     const custom: AddSearchCandidate = { ...creditedCandidate(), source: 'custom', attribution: null };
     assert.equal(logEntryFromAddFlow(custom).attribution, null);
   });
@@ -212,7 +212,7 @@ const AI_IDENTIFICATION = {
   ],
 };
 
-/** The confirm form's field values for one item — `curatedSource` + macros is the post-`applyMatch` state. */
+/** The confirm form's field values for one item, `curatedSource` + macros is the post-`applyMatch` state. */
 function confirmFormData(overrides: { curatedSource?: string; macros?: MacroFormValues } = {}): FormData {
   const formData = new FormData();
   formData.set('items[0].include', 'on');
@@ -312,14 +312,14 @@ describe('a curated match applied on the scan confirm step keeps its credit', ()
     );
   });
 
-  it('stores no credit for a plain AI plate estimate — an LLM guess has no source to credit', () => {
+  it('stores no credit for a plain AI plate estimate, an LLM guess has no source to credit', () => {
     assert.equal(confirmedEntryFromScanFlow(confirmFormData()).attribution, null);
   });
 
   it('KEEPS the credit after a hand macro edit, unlike the net-carbs figure', () => {
     // Deliberately divergent rules, and the divergence is the point: this flow
     // preserves `curatedSource` through an edit ("still sourced from a curated
-    // entry, not an LLM estimate"), and CC BY's obligation covers adaptations —
+    // entry, not an LLM estimate"), and CC BY's obligation covers adaptations ,
     // the credit itself literally ends "(adapted)". An entry that still claims
     // curated provenance while dropping the credit is the licence violation.
     const edited = confirmFormData({
@@ -368,7 +368,7 @@ function creditedEntry(overrides: Partial<LocalFoodLog> = {}): LocalFoodLog {
 
 /**
  * The Undo toast's payload for a deleted entry, built by the REAL
- * `buildRestorePayload` the receipt's `handleUndo` submits — not a
+ * `buildRestorePayload` the receipt's `handleUndo` submits, not a
  * hand-written lookalike. That distinction is the whole point of this file: a
  * mimic can happily carry a field production forgot, which is exactly how this
  * payload lost three of them one at a time.
@@ -438,19 +438,19 @@ describe('the credit survives every other way an entry is created', () => {
     assert.equal(
       restored.attribution,
       CREDIT,
-      'Undo brought the entry back without its licence credit — silently, and permanently',
+      'Undo brought the entry back without its licence credit, silently, and permanently',
     );
     // The sibling fields ride the same payload; a break in one usually means all.
     assert.equal(restored.netCarbsPer100g, 21.7);
   });
 
-  it('UNDO of a delete restores the chosen PORTION too — an undone "2 eggs" must not come back as "180 g"', () => {
+  it('UNDO of a delete restores the chosen PORTION too, an undone "2 eggs" must not come back as "180 g"', () => {
     const portion = { unit: 'egg' as const, quantity: 2, gramsPerUnit: 50 };
     const restored = restoredEntry(creditedEntry({ portion, quantityGrams: 100 }));
     assert.deepEqual(
       restored.portion,
       portion,
-      'Undo brought the entry back as bare grams — the person’s own portion choice was dropped in transit',
+      'Undo brought the entry back as bare grams, the person’s own portion choice was dropped in transit',
     );
     // The grams are restored unchanged, which is exactly what keeps the label valid.
     assert.equal(restored.quantityGrams, 100);
@@ -464,7 +464,7 @@ describe('the credit survives every other way an entry is created', () => {
     assert.equal(restoredEntry(creditedEntry({ attribution: null })).attribution, null);
   });
 
-  it('a FREQUENT/FAVOURITE CHIP re-log carries the credit — the most-tapped path owes it too', () => {
+  it('a FREQUENT/FAVOURITE CHIP re-log carries the credit, the most-tapped path owes it too', () => {
     assert.equal(
       chipRelogEntry(creditedEntry()).attribution,
       CREDIT,
@@ -476,7 +476,7 @@ describe('the credit survives every other way an entry is created', () => {
     assert.equal(chipRelogEntry(creditedEntry({ attribution: null, curatedSource: null })).attribution, null);
   });
 
-  it('COPY YESTERDAY carries the credit onto the copy — same food, same source, same obligation', () => {
+  it('COPY YESTERDAY carries the credit onto the copy, same food, same source, same obligation', () => {
     const copy = buildCopiedEntry({
       log: creditedEntry(),
       id: 'copy-1',
@@ -487,13 +487,13 @@ describe('the credit survives every other way an entry is created', () => {
     });
     assert.equal(copy.attribution, CREDIT, 'the copied entry claims the original’s source but drops its credit');
     assert.equal(copy.netCarbsPer100g, 21.7);
-    // Only identity/placement/grouping may differ — everything describing the
+    // Only identity/placement/grouping may differ, everything describing the
     // food must be identical, which is the invariant that keeps getting broken.
     assert.deepEqual(
       { ...copy, id: 'log-1', dayKey: DAY_KEY, loggedAt: LOGGED_AT_MS, createdAt: LOGGED_AT_MS, logBatchId: null },
       // M123/13 review finding 3 added `carbBasis` to `buildCopiedEntry`'s
       // field list; `creditedEntry()` carries none, so the copy carries none
-      // either — asserted explicitly here so this deep-equal stays exhaustive.
+      // either, asserted explicitly here so this deep-equal stays exhaustive.
       { ...creditedEntry(), portion: undefined, micronutrientsPer100g: undefined, carbBasis: undefined },
     );
   });
@@ -509,6 +509,7 @@ describe('the credit survives every other way an entry is created', () => {
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -541,7 +542,7 @@ describe('the credit survives every other way an entry is created', () => {
 // context cannot reconcile those two lines, and one of them looks like a bug.
 //
 // The resolution is the LABEL, not either rule: an entry with a credit and no
-// provenance claim is an ADAPTED one — the person's own numbers, derived from
+// provenance claim is an ADAPTED one, the person's own numbers, derived from
 // someone else's data.
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -557,7 +558,7 @@ function handEditedCuratedEntry(): LocalFoodLog {
     currentNetCarbsPer100g: 21.7,
   });
   // Mirrors `handleSave`'s write: the patch decides provenance/macros/figure,
-  // and everything else — `attribution` included — rides the `...existing` spread.
+  // and everything else, `attribution` included, rides the `...existing` spread.
   return {
     ...creditedEntry(),
     macros: patch.snapshot,
@@ -571,19 +572,19 @@ function renderProvenance(log: LocalFoodLog): string {
   return renderToStaticMarkup(createElement(ProvenanceNote, { log }));
 }
 
-/** The curated pill's exact text — the claim "these numbers are unmodified curated data". */
+/** The curated pill's exact text, the claim "these numbers are unmodified curated data". */
 const CURATED_CLAIM = 'From our food database';
 
-describe('a hand-edited curated entry reads coherently — credit kept, provenance honest', () => {
+describe('a hand-edited curated entry reads coherently, credit kept, provenance honest', () => {
   it('FIXTURE CHECK: the edit really does clear the provenance claim while keeping the credit', () => {
     const adapted = handEditedCuratedEntry();
     assert.equal(adapted.curatedSource, null, 'a hand-edited entry must not keep claiming curated provenance');
     assert.equal(adapted.aiEstimated, false);
-    assert.equal(adapted.attribution, CREDIT, 'the credit is deliberately retained — CC BY covers adaptations');
+    assert.equal(adapted.attribution, CREDIT, 'the credit is deliberately retained, CC BY covers adaptations');
     assert.equal(adapted.netCarbsPer100g, undefined, 'and the upstream figure is deliberately withdrawn');
   });
 
-  it('never renders "Manual entry." next to a licence credit — the two statements contradict each other', () => {
+  it('never renders "Manual entry." next to a licence credit, the two statements contradict each other', () => {
     const html = renderProvenance(handEditedCuratedEntry());
     assert.ok(html.includes(CREDIT), 'the credit must survive: dropping it is the actual licence violation');
     assert.equal(
@@ -619,7 +620,7 @@ describe('a hand-edited curated entry reads coherently — credit kept, provenan
     assert.equal(manual.includes('CC BY'), false);
   });
 
-  it('a re-log of an adapted entry stays adapted — never silently promoted back to curated', () => {
+  it('a re-log of an adapted entry stays adapted, never silently promoted back to curated', () => {
     // The recents/chip path passes `curatedSource` and `attribution` through
     // independently, so an adapted food re-logs as adapted rather than
     // regaining a provenance claim its numbers no longer support.
@@ -630,7 +631,7 @@ describe('a hand-edited curated entry reads coherently — credit kept, provenan
   });
 });
 
-describe('toStoredAttribution — the one rule every writer shares', () => {
+describe('toStoredAttribution, the one rule every writer shares', () => {
   it('keeps a real credit verbatim, only trimming surrounding whitespace', () => {
     assert.equal(toStoredAttribution(CREDIT), CREDIT);
     assert.equal(toStoredAttribution(`  ${CREDIT}  `), CREDIT);

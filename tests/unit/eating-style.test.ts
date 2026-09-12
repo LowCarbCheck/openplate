@@ -503,8 +503,12 @@ describe('the caution note', () => {
 });
 
 describe('the stored field', () => {
-  it('is at schema v20, the eating style on the profile (M210/01)', () => {
-    assert.equal(SCHEMA_VERSION, 20);
+  it('is at schema v21, the fasting rework, one bump past the v20 this field landed in', () => {
+    // The pin MOVES on every bump and is not loosened to `SCHEMA_VERSION`: the
+    // version an envelope stamps is the version an older build refuses, so a
+    // change here has to be a change someone chose. The eating style landed at
+    // v20; the fasting rework took it to v21.
+    assert.equal(SCHEMA_VERSION, 21);
   });
 
   it('round-trips a picked style through a backup envelope', () => {

@@ -8,7 +8,7 @@
  *  - a merge that isn't symmetric never converges, it ping-pongs.
  *
  * Everything the cycle touches is injected, so these run with no browser, no
- * IndexedDB, no server and no locks — the algorithm is exercised directly.
+ * IndexedDB, no server and no locks, the algorithm is exercised directly.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -52,7 +52,7 @@ function log(id: string, name: string, grams: number): LocalStoreSnapshot['foodL
 
 function snapshot(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
   // `fasts` is required on the snapshot since v7 but is never merged by the
-  // sync engine (see `mergeSnapshots`) — an empty array is the whole fixture.
+  // sync engine (see `mergeSnapshots`), an empty array is the whole fixture.
   return {
     foods: [],
     foodLogs: logs,
@@ -60,8 +60,9 @@ function snapshot(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
     profile: null,
     fasts: [],
     savedMeals: [],
+    fastingSettings: null,
     // The owner-private compartment (M160/07). `null` is a device that has
-    // never generated a share key — the ordinary case, and the one that must
+    // never generated a share key, the ordinary case, and the one that must
     // not make the cycle behave differently.
     privateStore: null,
   };
@@ -76,7 +77,7 @@ function snapshot(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
 function fakeService(dek: Uint8Array) {
   let stored: { version: number; ciphertext: Uint8Array } | null = null;
   let pushes = 0;
-  /** When set, the next push finds that another device wrote first — the real 409 race. */
+  /** When set, the next push finds that another device wrote first, the real 409 race. */
   let interfereBeforeNextPush: (() => Promise<void>) | null = null;
 
   /** Only the two calls the cycle makes; the rest of the transport is the integration suite's job. */
@@ -171,7 +172,7 @@ function deps({
     // (M164/06).
     assertPulledSnapshot: async () => {},
     // SAFETY: the only payload these cycles can pull back is one they pushed,
-    // built from `local.current` — a `SyncedSnapshot` by construction.
+    // built from `local.current`, a `SyncedSnapshot` by construction.
     parseRemoteSnapshot: ({ snapshot: raw }: { snapshot: unknown }) => raw as SyncedSnapshot,
   };
 }
@@ -222,7 +223,7 @@ test('an entity that disappears becomes a tombstone above its last stamp', () =>
   assert.equal(deleted.meta.perEntity['foodLog:a'], undefined);
 });
 
-test('a re-added entity outranks its own tombstone — deletions do not resurrect', () => {
+test('a re-added entity outranks its own tombstone, deletions do not resurrect', () => {
   const created = stampSnapshot({
     snapshot: snapshot([log('a', 'Apple', 100)]),
     baseline: { perEntity: {}, tombstones: [] },
@@ -241,7 +242,7 @@ test('a re-added entity outranks its own tombstone — deletions do not resurrec
   assert.equal(readded.meta.tombstones.length, 0);
 });
 
-test('the merge is symmetric — both devices compute the identical result', () => {
+test('the merge is symmetric, both devices compute the identical result', () => {
   const a: StampedSnapshot = {
     snapshot: snapshot([log('a', 'Apple', 100)]),
     meta: { perEntity: { 'foodLog:a': { lamport: 2, deviceId: 'device-a' } }, tombstones: [] },
@@ -338,7 +339,7 @@ test('a first sync pushes the local store and records the new version', async ()
   );
 });
 
-test('a second cycle with nothing changed pushes NOTHING — boots must not burn blob versions', async () => {
+test('a second cycle with nothing changed pushes NOTHING, boots must not burn blob versions', async () => {
   const dek = generateDek();
   const service = fakeService(dek);
   const local = { current: snapshot([log('a', 'Apple', 100)]) };
@@ -393,7 +394,7 @@ test('a CAS race lost BETWEEN the pull and the push is retried, not surfaced', a
 
   // The genuine race: device two reads the world, and device one commits
   // before device two's own write lands. Nothing about ordinary divergence
-  // produces this — the cycle pulls first — so it has to be staged.
+  // produces this, the cycle pulls first, so it has to be staged.
   service.raceOnNextPush(async () => {
     await runSyncCycleUnlocked(
       deps({ dek, http: service.client, local: deviceOne, deviceId: 'device-1', storage: storageOne }),
@@ -413,7 +414,7 @@ test('a CAS race lost BETWEEN the pull and the push is retried, not surfaced', a
   );
 
   const stored = await service.read();
-  // SAFETY: as above — the stored payload is the one this cycle pushed.
+  // SAFETY: as above, the stored payload is the one this cycle pushed.
   assert.deepEqual((stored.snapshot as SyncedSnapshot).foodLogs.map((entry) => entry.id).toSorted(), ['a', 'b']);
 });
 
@@ -428,7 +429,7 @@ test('a service that never stops changing fails loudly instead of spinning', asy
   await assert.rejects(
     () =>
       runSyncCycleUnlocked({
-        // SAFETY: same two-method surface as `fakeService`'s client — the cycle
+        // SAFETY: same two-method surface as `fakeService`'s client, the cycle
         // calls nothing else on the transport.
         ...deps({
           dek,
@@ -464,7 +465,7 @@ test('a deletion on one device propagates to the other rather than being re-uplo
     deps({ dek, http: service.client, local: deviceTwo, deviceId: 'device-2', storage: storageTwo }),
   );
 
-  // Device one must adopt the deletion — not push its own stale copy back.
+  // Device one must adopt the deletion, not push its own stale copy back.
   await runSyncCycleUnlocked(
     deps({ dek, http: service.client, local: deviceOne, deviceId: 'device-1', storage: storageOne }),
   );

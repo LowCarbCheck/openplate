@@ -1,18 +1,18 @@
 /**
  * The saved-meals/sync boundary (M123/07 + M123/13 review finding 6):
  * `mergeSnapshots` must leave `savedMeals` EXACTLY as the local device holds
- * them, no matter what the remote payload says — the identical mechanism
+ * them, no matter what the remote payload says, the identical mechanism
  * `sync-fasts-passthrough.test.ts` already pins for `fasts`, one entity over.
  *
  * Saved meals are deliberately absent from `SYNC_ENTITY_TYPES` and
  * `flattenSnapshot`, so they are never stamped, diffed, tombstoned or adopted
  * from another device. Unlike fasts there is no hard cross-device invariant
- * blocking a real merge here — this is simply not built yet (see
+ * blocking a real merge here, this is simply not built yet (see
  * `snapshot-sync.ts`'s comment above `mergeSnapshots`'s return).
  *
  * The failure mode this file exists to catch is silent: a bare
  * `savedMeals: []` in the merge result would EMPTY a device's saved meals on
- * the very first sync, with nothing else in the suite failing — `fasts` had
+ * the very first sync, with nothing else in the suite failing, `fasts` had
  * exactly this test and saved meals did not, until this file.
  */
 import { describe, it } from 'node:test';
@@ -45,7 +45,7 @@ function savedMeal(id: string, overrides: Partial<LocalSavedMeal> = {}): LocalSa
 
 function snapshot(savedMeals: LocalSavedMeal[]): SyncedSnapshot {
   // `fasts` rides through the same pass-through path as `savedMeals` (see
-  // `snapshot-sync.ts`) — an empty array here is enough, since this file's
+  // `snapshot-sync.ts`), an empty array here is enough, since this file's
   // assertions are all about `savedMeals`, not fasts.
   return {
     foods: [],
@@ -54,6 +54,7 @@ function snapshot(savedMeals: LocalSavedMeal[]): SyncedSnapshot {
     profile: null,
     fasts: [],
     savedMeals,
+    fastingSettings: null,
     privateStore: null,
   };
 }
@@ -71,7 +72,7 @@ describe('mergeSnapshots and savedMeals', () => {
     assert.deepEqual(merged.snapshot.savedMeals, [savedMeal('mine')]);
   });
 
-  it('ignores the remote saved meals entirely — nothing is adopted across devices', () => {
+  it('ignores the remote saved meals entirely, nothing is adopted across devices', () => {
     const local = payload([savedMeal('mine')]);
     const remote = payload([savedMeal('theirs', { name: 'Their meal' })]);
 
@@ -90,7 +91,7 @@ describe('mergeSnapshots and savedMeals', () => {
     assert.deepEqual(merged.snapshot.savedMeals, []);
   });
 
-  it('is stable under repeated merges — no drift, no accumulation', () => {
+  it('is stable under repeated merges, no drift, no accumulation', () => {
     const local = payload([savedMeal('mine'), savedMeal('other', { name: 'Other meal' })]);
     const remote = payload([savedMeal('theirs')]);
 
@@ -100,7 +101,7 @@ describe('mergeSnapshots and savedMeals', () => {
     assert.deepEqual(twice.snapshot.savedMeals, local.snapshot.savedMeals);
   });
 
-  it('never stamps or tombstones a saved meal — no saved-meal id reaches the wire meta', () => {
+  it('never stamps or tombstones a saved meal, no saved-meal id reaches the wire meta', () => {
     // `flattenSnapshot` is private, so this asserts the observable
     // consequence: stamping a snapshot that holds a saved meal produces no
     // entity key for it, and deleting it later therefore produces no
@@ -129,6 +130,10 @@ describe('mergeSnapshots and savedMeals', () => {
       'foodLog',
       'weightEntry',
       'profile',
+      // The fasting ROUTINE is in the catalog, and saved meals still are not.
+      // The two sit on opposite sides of the same line on purpose: a routine
+      // is a preference another device needs, a saved meal is not merged yet.
+      'fastingSettings',
       'privateStore',
     ]);
   });

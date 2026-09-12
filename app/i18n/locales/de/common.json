@@ -441,6 +441,18 @@
       "since": "{{delta}} in den letzten 7 Tagen"
     }
   },
+  "describe": {
+    "title": "Beschreibe deine Mahlzeit",
+    "lead": "Schreib auf, was du gegessen hast. Die KI erkennt das Essen aus deinen Worten, genau wie bei einem Foto. Du prüfst jeden Eintrag, bevor etwas gespeichert wird.",
+    "label": "Was hast du gegessen?",
+    "placeholder": "2 Spiegeleier, eine Scheibe Toast mit Butter, schwarzer Kaffee",
+    "send": "Senden",
+    "sendHint": "Enter sendet. Shift und Enter beginnen eine neue Zeile.",
+    "dictateHint": "Tippe auf die Mikrofontaste deiner Tastatur, um deine Mahlzeit zu diktieren.",
+    "needsProvider": "Mahlzeiten beschreiben erfordert eine KI-Verbindung auf diesem Gerät.",
+    "connect": "Anbieter verbinden",
+    "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen"
+  },
   "diary": {
     "actions": {
       "photograph": "Essen fotografieren",
@@ -774,6 +786,7 @@
       "adjustLabel": "Startzeit",
       "adjustSave": "Startzeit speichern",
       "adjustStart": "Anpassen",
+      "complete": "Abschließen",
       "elapsedLabel": "vergangen",
       "end": "Fasten beenden",
       "endBodyEarly": "Du bist bei {{elapsed}} von {{target}}. Wenn du jetzt beendest, landen diese {{elapsed}} in deinem Verlauf.",
@@ -787,14 +800,39 @@
       "srLabel": "Fasten läuft seit {{elapsed}}. Ziel {{target}}.",
       "startedAt": "Gestartet um {{time}}"
     },
+    "care": {
+      "pregnancyNotice": "Fasten wird während der Schwangerschaft oder Stillzeit nicht empfohlen, der NHS sagt das ganz klar. Dein Tagebuch und deine Ziele bleiben, wie sie sind.",
+      "stop": "Hör auf und iss etwas, wenn du ohnmächtig wirst, dir anhaltend schwindelig ist, du Herzrasen bemerkst, dich verwirrt fühlst, Brustschmerzen hast oder dich mehr als einmal erbrichst.",
+      "title": "Vor einem langen Fasten",
+      "understood": "Verstanden",
+      "water": "Trink über den Tag verteilt Wasser und gib etwas Salz dazu. Alles über 72 Stunden geht über das hinaus, was diese App begleiten kann.",
+      "who": "Fasten wird nicht empfohlen während der Schwangerschaft oder Stillzeit, bei einer aktuellen oder früheren Essstörung, bei Typ-1-Diabetes oder Blutzuckermedikamenten oder unter 18 Jahren."
+    },
+    "chip": {
+      "activeLabel": "Fasten seit {{duration}}, Timer öffnen",
+      "scheduledLabel": "Fasten beginnt in {{duration}}, Timer öffnen",
+      "startsIn": "in {{duration}}"
+    },
     "duration": {
       "hoursMinutes": "{{hours}} Std {{minutes}} Min",
       "hoursOnly": "{{hours}} Std",
       "minutesOnly": "{{minutes}} Min"
     },
+    "end": {
+      "confirm": "Fasten speichern",
+      "mood": {
+        "good": "Gut",
+        "ok": "Okay",
+        "rough": "Hart"
+      },
+      "moodLabel": "Wie lief es?",
+      "note": "Etwas zu notieren?",
+      "title": "Dieses Fasten beenden"
+    },
     "errors": {
       "alreadyRunning": "Es läuft schon ein Fasten.",
       "customHours": "Gib eine ganze Stundenzahl zwischen {{min}} und {{max}} ein.",
+      "noteTooLong": "Halte die Notiz unter {{max}} Zeichen.",
       "startInFuture": "Wähl eine Zeit, die schon vorbei ist.",
       "startTooFarAhead": "Wähl eine Zeit in den nächsten sieben Tagen.",
       "startTooFarBack": "Wähl eine Zeit aus den letzten zwei Tagen.",
@@ -820,9 +858,19 @@
       "eyebrow": "Fasten planen",
       "honesty": "openplate zählt nur die Stunden. Es bietet keine medizinische Beratung.",
       "plannedStartLabel": "Startzeit",
+      "protocol": {
+        "16:8": "16:8",
+        "18:6": "18:6",
+        "20:4": "20:4",
+        "24h": "24 h",
+        "36h": "36 h",
+        "48h": "48 h",
+        "72h": "72 h"
+      },
       "protocolAria": "{{fastingHours}} Stunden fasten, {{eatingHours}} Stunden essen",
       "protocolGroup": "Fastenfenster",
       "saving": "Wird gespeichert…",
+      "startAtRoutine": "Start um {{time}}",
       "startLater": "Später starten",
       "startModeLabel": "Wann es losgeht",
       "startNow": "Jetzt starten",
@@ -843,6 +891,43 @@
       "startsIn": "Startet in {{duration}}",
       "startsNow": "Startet gerade"
     },
+    "stages": {
+      "early": {
+        "name": "Frühes Fasten",
+        "sentence": "Das Insulin sinkt und dein Körper beginnt, gespeicherten Leberzucker zu verbrauchen."
+      },
+      "entered": "{{name}} um {{time}} erreicht",
+      "extended": {
+        "name": "Längeres Fasten",
+        "sentence": "Länger, als die meisten Menschen praktizieren. Alles über 72 Stunden hinaus geht über das hinaus, was diese App begleiten kann."
+      },
+      "fed": {
+        "name": "Verdauung",
+        "sentence": "Dein Körper verdaut noch deine letzte Mahlzeit."
+      },
+      "fromHours": "ab {{hours}} h",
+      "hedge": "Durchschnittswerte, keine Messung an dir. Mit Low-Carb durchläufst du die frühen Phasen schneller.",
+      "ketosis": {
+        "name": "Ketose",
+        "sentence": "Viele Menschen erreichen hier eine messbare Ketose und das Gehirn läuft mehr auf Ketonen. Einige Tierstudien deuten darauf hin, dass auch die Zellreinigung zunimmt; Belege beim Menschen sind begrenzt."
+      },
+      "listTitle": "Was wann passiert",
+      "low-stores": {
+        "name": "Niedrige Leberspeicher",
+        "sentence": "Der gespeicherte Leberzucker ist bei den meisten Menschen weitgehend aufgebraucht und die Fettverbrennung steigt."
+      },
+      "next": "Als Nächstes: {{name}} ab {{hours}} h",
+      "rising-ketones": {
+        "name": "Steigende Ketone",
+        "sentence": "Die Ketone im Blut beginnen hier typischerweise zu steigen, früher, wenn du dich bereits Low-Carb ernährst."
+      }
+    },
+    "stats": {
+      "completed": "Fastenzeiten abgeschlossen",
+      "longest": "Längste",
+      "streak": "Tages-Serie",
+      "week": "Stunden diese Woche"
+    },
     "strip": {
       "activeLine": "{{elapsed}} gefastet · noch {{remaining}}",
       "fasting": "Fasten läuft",
@@ -853,6 +938,7 @@
     "summary": {
       "line": "Du hast {{achieved}} gefastet.",
       "metTarget": "Damit sind deine {{target}} voll.",
+      "scheduleNext": "Nächstes Fasten für {{time}} planen",
       "targetWas": "Dein Ziel waren {{target}}."
     },
     "title": "Fasten",
@@ -977,10 +1063,10 @@
   "landing": {
     "close": {
       "body": "Keine Registrierung, keine Konfiguration nötig. Trage ein Lebensmittel ein und openplate hat alles, was es braucht.",
+      "bodyManaged": "Nichts zu konfigurieren. Melde dich an, trage ein Lebensmittel ein, und openplate hat alles, was es braucht.",
       "eyebrow": "Jetzt anfangen",
       "star": "Oder gib dem Quellcode einen Stern auf GitHub, MIT-lizenziert",
-      "title": "Fang mit der ersten Mahlzeit von heute an",
-      "bodyManaged": "Nichts zu konfigurieren. Melde dich an, trage ein Lebensmittel ein, und openplate hat alles, was es braucht."
+      "title": "Fang mit der ersten Mahlzeit von heute an"
     },
     "cta": {
       "howItWorks": "So funktioniert es",
@@ -994,10 +1080,6 @@
       "byok": {
         "body": "Verbinde selbst einen KI-Anbieter: OpenRouter, Mistral, Anthropic oder jeden OpenAI-kompatiblen Endpunkt. Der Schlüssel bleibt auf diesem Gerät und das Foto geht direkt von deinem Browser an den Anbieter. Die Abrechnung erfolgt direkt über sie, nicht über uns.",
         "title": "Fotos werden zu Nährwerten, mit deinem eigenen Schlüssel"
-      },
-      "byokManaged": {
-        "body": "KI-Scans sind direkt in deinem Konto enthalten. Du musst weder Schlüssel konfigurieren noch einen Anbieter bezahlen. Dein Foto wird an den Server dieser Instanz gesendet, der es an den KI-Dienst weiterleitet. Der Server speichert keine Kopie.",
-        "title": "Fotos zu Nährwerten, ganz ohne Schlüssel"
       },
       "eyebrow": "Das bekommst du",
       "install": {
@@ -1030,7 +1112,11 @@
         "title": "Quelloffen, unter der MIT-Lizenz"
       },
       "subtitle": "Nichts davon ist ein Vorhaben. Jedes davon steht heute schon im Repository.",
-      "title": "Sechs Aussagen, die du im Quelltext nachprüfen kannst"
+      "title": "Sechs Aussagen, die du im Quelltext nachprüfen kannst",
+      "byokManaged": {
+        "title": "Fotos zu Nährwerten, ganz ohne Schlüssel",
+        "body": "KI-Scans sind direkt in deinem Konto enthalten. Du musst weder Schlüssel konfigurieren noch einen Anbieter bezahlen. Dein Foto wird an den Server dieser Instanz gesendet, der es an den KI-Dienst weiterleitet. Der Server speichert keine Kopie."
+      }
     },
     "goals": {
       "body": "Wähle ein tägliches Netto-Kohlenhydrate-Limit, ein Protein-Minimum, ein Kalorienziel oder gar keins. openplate erfindet niemals ein Ziel, das du nicht selbst festgelegt hast.",
@@ -1096,12 +1182,17 @@
     },
     "setup": {
       "cta": "Mit Schritt eins beginnen",
+      "ctaManaged": "Zum Starten anmelden",
       "eyebrow": "Einmalige Einrichtung",
       "shotAlt": "Der Übersichtsbildschirm auf einem Telefon, mit dem Tagesring, den letzten sieben Tagen und dem jüngsten Wiegen.",
       "steps": {
         "connect": {
           "body": "Ein Klick verbindet OpenRouter: Du bestätigst es dort, und der Schlüssel wird an dieses Gerät übertragen und bleibt darauf gespeichert. Jeder OpenAI-kompatible Endpunkt funktioniert ebenfalls. Die Erkennung eines Tellers kostet typischerweise deutlich unter einem Cent pro Foto, und dein Anbieter rechnet direkt mit dir ab. Wenn du diesen Schritt überspringst, funktioniert die Suche trotzdem: Ein Schlüssel wird nur für die Fotoerkennung benötigt.",
           "title": "Einen Anbieter verbinden oder überspringen"
+        },
+        "connectManaged": {
+          "body": "Die KI ist Teil dieser Instanz, du brauchst keinen Schlüssel und bezahlst keinen Anbieter. Dein Administrator legt fest, wie viele Fotos täglich für dich gelesen werden dürfen. Die Suche nach einem Lebensmittel zählt nie dazu, weil nur Fotos gelesen werden müssen.",
+          "title": "Die KI ist bereits für dich eingerichtet"
         },
         "open": {
           "body": "Das Tagebuch entsteht auf diesem Gerät, sobald du das erste Lebensmittel einträgst.",
@@ -1111,24 +1202,19 @@
           "body": "Dein Anbieter liest das Foto und schlägt die Lebensmittel vor. Du prüfst die Zahlen, speicherst, und die Tagessumme bewegt sich.",
           "title": "Ersten Teller fotografieren",
           "bodyManaged": "Die KI dieser Instanz liest das Foto und schlägt die Lebensmittel vor. Du prüfst die Werte, speicherst, und die Tagessumme passt sich an."
-        },
-        "connectManaged": {
-          "title": "Die KI ist bereits für dich eingerichtet",
-          "body": "Die KI ist Teil dieser Instanz, du brauchst keinen Schlüssel und bezahlst keinen Anbieter. Dein Administrator legt fest, wie viele Fotos täglich für dich gelesen werden dürfen. Die Suche nach einem Lebensmittel zählt nie dazu, weil nur Fotos gelesen werden müssen."
         }
       },
       "subtitle": "Das machst du einmal und danach nie wieder. Drei Schritte, und nur der mittlere verlangt etwas von dir.",
-      "title": "In etwa einer Minute einsatzbereit",
-      "ctaManaged": "Zum Starten anmelden",
-      "subtitleManaged": "Das machst du einmal und dann nie wieder. Drei Schritte, und der mittlere ist für dich schon erledigt."
+      "subtitleManaged": "Das machst du einmal und dann nie wieder. Drei Schritte, und der mittlere ist für dich schon erledigt.",
+      "title": "In etwa einer Minute einsatzbereit"
     },
     "sync": {
       "body": "Trage dein Mittagessen auf dem Smartphone ein und schau dir die Woche auf dem Laptop an. Die Synchronisation ist optional und Ende-zu-Ende-verschlüsselt: Die verschlüsselten Daten liegen auf einem openplate-core-Server (unserem oder deinem eigenen). Der Server hat keinen Schlüssel dazu, denn der Schlüssel entsteht aus einem Passwort, das er nie zu Gesicht bekommt.",
-      "bodyManaged": "Trage dein Mittagessen auf dem Smartphone ein und analysiere deine Woche auf dem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird auf deinem Gerät verschlüsselt, und der Server speichert lediglich die verschlüsselten Daten. Der Betreiber speichert zudem einen Wiederherstellungsschlüssel. Mit diesem Schlüssel kannst du dein Tagebuch nach dem Zurücksetzen des Passworts wiederherstellen. Dadurch kann der Betreiber deine Daten technisch gesehen auch entschlüsseln.",
       "link": "Konto erstellen",
       "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",
       "shotAlt": "Die Kontoansicht auf einem Smartphone, abgemeldet, mit einem Link zum Anmelden.",
       "title": "Zwei Geräte, ein Tagebuch",
+      "bodyManaged": "Trage dein Mittagessen auf dem Smartphone ein und analysiere deine Woche auf dem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird auf deinem Gerät verschlüsselt, und der Server speichert lediglich die verschlüsselten Daten. Der Betreiber speichert zudem einen Wiederherstellungsschlüssel. Mit diesem Schlüssel kannst du dein Tagebuch nach dem Zurücksetzen des Passworts wiederherstellen. Dadurch kann der Betreiber deine Daten technisch gesehen auch entschlüsseln.",
       "linkManaged": "Bei deinem Konto anmelden"
     }
   },
@@ -1184,10 +1270,12 @@
     "connectGateway": "Gateway beitreten · openplate",
     "dashboard": "Übersicht · openplate",
     "data": "Daten & Sicherung · openplate",
+    "describe": "Mahlzeit beschreiben · openplate",
     "diary": "Tagebuch · openplate",
     "entry": "Eintrag bearbeiten · openplate",
     "error": "Etwas ist schiefgelaufen · openplate",
     "fasting": "Fasten · openplate",
+    "fastingSettings": "Fasten-Einstellungen · openplate",
     "foods": "Deine Lebensmittel · openplate",
     "imprint": "Impressum · openplate",
     "join": "Beitreten · openplate",
@@ -1222,7 +1310,6 @@
     "account": "Konto",
     "admin": "Administration",
     "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
-    "describe": "Mahlzeit beschreiben · openplate",
     "plan": "Dein Tarif · openplate",
     "withdrawal": "Widerrufsbelehrung · openplate"
   },
@@ -1737,11 +1824,11 @@
   "scan": {
     "analyzing": {
       "analyzing": "Dein Teller wird analysiert…",
+      "analyzingText": "Lebensmittel werden erkannt…",
       "starting": "Analyse startet…",
       "stillWorking": "Noch in Arbeit, das kann einen Moment dauern…",
       "uploading": "Foto wird hochgeladen…",
-      "sendingText": "Deine Worte werden gesendet…",
-      "analyzingText": "Lebensmittel werden erkannt…"
+      "sendingText": "Deine Worte werden gesendet…"
     },
     "capture": {
       "addWithoutPhoto": "Essen ohne Foto eintragen",
@@ -1764,8 +1851,10 @@
       "connectProvider": "Verbinde deinen KI-Anbieter in den Einstellungen, damit Lebensmittel für dich erkannt werden können.",
       "endpointUnreachable": "Der Endpunkt konnte vom Browser aus nicht erreicht werden. Wahrscheinlich blockiert die Content Security Policy eine Base-URL außerhalb von localhost oder der Endpunkt lässt keine Browser-Anfragen (CORS) zu. Details findest du in den KI-Einstellungen.",
       "identifyFailed": "Die Lebensmittel auf dem Foto konnten nicht erkannt werden.",
+      "identifyFailedText": "Lebensmittel konnten anhand deiner Beschreibung nicht erkannt werden.",
       "missingBaseUrl": "Dieser Verbindung fehlt eine Base-URL. Öffne die KI-Einstellungen und lege eine fest, oder wechsle zu OpenRouter.",
       "noFoods": "Auf diesem Foto konnten keine Lebensmittel erkannt werden. Versuche es mit einer deutlicheren Aufnahme.",
+      "noFoodsText": "In dieser Beschreibung wurden keine Lebensmittel erkannt. Nenne am besten jedes Lebensmittel und die Menge dazu.",
       "openrouterRateLimit": "Du hast das Nutzungslimit des Anbieters erreicht. Kostenlose Scans werden täglich zurückgesetzt, oder lade Guthaben bei OpenRouter auf, um mehr Scans zu erhalten. Jedes aufgeladene Guthaben geht direkt an OpenRouter (nicht an openplate), ist vollkommen optional und ist ein verbrauchbares Prepaid-Guthaben, kein Abonnement.",
       "photo": {
         "empty": "Wähl ein Foto zum Hochladen aus.",
@@ -1811,9 +1900,7 @@
         "empty": "Schreib zuerst, was du gegessen hast.",
         "title": "Mit dieser Beschreibung hat es nicht geklappt",
         "qualityBody": "Daraus konnten keine Lebensmittel erkannt werden. Nenne am besten jedes Lebensmittel und die Menge, zum Beispiel 3 Eier, 2 Scheiben Toast."
-      },
-      "identifyFailedText": "Lebensmittel konnten anhand deiner Beschreibung nicht erkannt werden.",
-      "noFoodsText": "In dieser Beschreibung wurden keine Lebensmittel erkannt. Nenne am besten jedes Lebensmittel und die Menge dazu."
+      }
     },
     "loading": "Scan wird geladen…",
     "offline": "Du bist offline. Das Scannen von Tellern erfordert eine Internetverbindung. Durchsuche deine kürzlich genutzten Lebensmittel, um jetzt etwas einzutragen.",
@@ -2034,7 +2121,37 @@
       "saved": "Stil gespeichert",
       "title": "Ernährungsstil"
     },
-    "title": "Einstellungen"
+    "title": "Einstellungen",
+    "fasting": {
+      "title": "Fasten",
+      "lead": "Dein gewohntes Fasten. Der Timer wählt es vor, und mit einer gewohnten Startzeit startest du zu dieser Stunde mit einem Tippen.",
+      "routine": {
+        "label": "Dein gewohntes Fasten",
+        "none": "Keines",
+        "customHours": "{{hours}} h"
+      },
+      "startTime": {
+        "label": "Gewohnte Startzeit",
+        "help": "Optional. Lass das Feld leer, um immer manuell zu starten.",
+        "invalid": "Gib eine Zeit zwischen 00:00 und 23:59 ein."
+      },
+      "care": {
+        "title": "Vor einem langen Fasten",
+        "pending": "Der Hinweis für Fasten ab 24 Stunden erscheint einmal vor deinem ersten langen Fasten.",
+        "acknowledged": "Du hast den Hinweis für Fasten ab 24 Stunden gelesen.",
+        "reset": "Beim nächsten Mal wieder anzeigen",
+        "resetSaved": "Der Hinweis erscheint vor deinem nächsten langen Fasten wieder."
+      },
+      "save": "Fasteneinstellungen speichern",
+      "saved": "Fasteneinstellungen gespeichert."
+    },
+    "hub": {
+      "fasting": {
+        "label": "Fasten",
+        "description": "{{routine}}, beginnt um {{time}}",
+        "none": "Kein gewohntes Fasten"
+      }
+    }
   },
   "settingsAi": {
     "advanced": {
@@ -2296,6 +2413,23 @@
     "pullFailedBody": "Du bist angemeldet, aber dein Tagebuch ist noch nicht angekommen.",
     "unavailable": "Konten sind auf diesem Server deaktiviert.",
     "forgot": "Passwort vergessen?"
+  },
+  "signOut": {
+    "menuItem": "Abmelden",
+    "title": "Abmelden",
+    "body": "Du bleibst abgemeldet, bis du dich wieder anmeldest. Dein Tagebuch bleibt auf diesem Gerät.",
+    "bodyManaged": "Dein Tagebuch gehört zu deinem Konto. Nach dem Abmelden zeigt dieses Gerät es erst wieder an, wenn du dich anmeldest.",
+    "confirm": "Abmelden",
+    "erase": {
+      "label": "Tagebuch ebenfalls von diesem Gerät löschen"
+    },
+    "outbox": {
+      "counting": "Prüfen, was noch nicht gesendet wurde.",
+      "empty": "Alles auf diesem Gerät hat den Server erreicht.",
+      "waiting_one": "Ein Eintrag hat den Server noch nicht erreicht. Durch das Löschen geht er verloren.",
+      "waiting_other": "{{count}} Einträge haben den Server noch nicht erreicht. Durch das Löschen gehen sie verloren."
+    },
+    "eraseFailed": "Das Tagebuch konnte nicht gelöscht werden, weil openplate in einem anderen Tab geöffnet ist. Schließe ihn und versuche es erneut."
   },
   "strangerNote": {
     "device": "Du bist nicht angemeldet. Diese Einstellung gilt für dieses Gerät.",
@@ -2638,6 +2772,22 @@
       "body": "Dein Tagebuch wird auf allen Geräten synchron gehalten, auf denen du angemeldet bist.",
       "photosStayHere": "Fotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nie auf ein anderes Gerät kopiert."
     },
+    "operatorSees": {
+      "title": "Was dein Administrator sehen kann",
+      "intro": "Eine Organisation betreibt diese Instanz für dich. Wer sie verwaltet, kann dein Konto öffnen und all das hier sehen:",
+      "email": "Deine E-Mail-Adresse.",
+      "displayName": "Den Namen, den du gewählt hast, falls du einen gewählt hast.",
+      "createdAt": "Den Tag, an dem dein Konto erstellt wurde.",
+      "lastSeenAt": "Wann du dich zuletzt angemeldet hast oder zuletzt ein Foto für dich ausgelesen wurde.",
+      "aiUsedToday": "Wie viele Fotos heute für dich ausgelesen wurden.",
+      "dailyAiLimit": "Wie viele Fotos pro Tag für dich ausgelesen werden dürfen.",
+      "role": "Ob du diese Instanz selbst verwalten darfst.",
+      "suspendedAt": "Ob dein Konto gesperrt ist.",
+      "activity": "Außerdem ist zu sehen, wie viele Fotos an jedem der letzten {{days}} Tage für dich ausgelesen wurden. Ältere Tageswerte werden gelöscht.",
+      "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann.",
+      "allowanceExpiresAt": "Das Datum, an dem dein Kontingent abläuft.",
+      "invitesLeft": "Wie viele Einladungen du noch übrig hast."
+    },
     "password": {
       "title": "Passwort",
       "body": "Ändere das Passwort, mit dem du dich anmeldest.",
@@ -2669,22 +2819,6 @@
       "title": "Du bist abgemeldet",
       "body": "Melde dich an, um dein Konto zu sehen.",
       "signIn": "Anmelden"
-    },
-    "operatorSees": {
-      "title": "Was dein Administrator sehen kann",
-      "intro": "Eine Organisation betreibt diese Instanz für dich. Wer sie verwaltet, kann dein Konto öffnen und all das hier sehen:",
-      "email": "Deine E-Mail-Adresse.",
-      "displayName": "Den Namen, den du gewählt hast, falls du einen gewählt hast.",
-      "createdAt": "Den Tag, an dem dein Konto erstellt wurde.",
-      "lastSeenAt": "Wann du dich zuletzt angemeldet hast oder zuletzt ein Foto für dich ausgelesen wurde.",
-      "aiUsedToday": "Wie viele Fotos heute für dich ausgelesen wurden.",
-      "dailyAiLimit": "Wie viele Fotos pro Tag für dich ausgelesen werden dürfen.",
-      "role": "Ob du diese Instanz selbst verwalten darfst.",
-      "suspendedAt": "Ob dein Konto gesperrt ist.",
-      "activity": "Außerdem ist zu sehen, wie viele Fotos an jedem der letzten {{days}} Tage für dich ausgelesen wurden. Ältere Tageswerte werden gelöscht.",
-      "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann.",
-      "allowanceExpiresAt": "Das Datum, an dem dein Kontingent abläuft.",
-      "invitesLeft": "Wie viele Einladungen du noch übrig hast."
     },
     "invites": {
       "title": "Jemanden einladen",
@@ -2724,14 +2858,32 @@
       "allowance": "Fotos pro Tag",
       "usedToday": "Heute genutzt",
       "standing": "Status",
-      "joined": "Beigetreten",
-      "actions": "Aktionen",
       "lastSeen": "Letzte Anmeldung",
       "recentDays": "Letzte {{days}} Tage",
-      "photosRead": "Gelesene Fotos"
+      "photosRead": "Gelesene Fotos",
+      "joined": "Beigetreten",
+      "actions": "Aktionen"
     },
     "usage": "{{used}} von {{limit}}",
     "usageNone": "Keine Fotos",
+    "lastSeen": {
+      "never": "Nie angemeldet"
+    },
+    "person": {
+      "back": "Zurück zur Liste",
+      "activityTitle": "Gelesene Fotos pro Tag",
+      "activityWindow": "Die letzten {{days}} Tage, {{from}} bis {{to}}.",
+      "activityTotal": "In diesem Zeitraum gelesene Fotos: {{photos}}",
+      "activityQuiet": "In diesem Zeitraum wurde nichts gelesen.",
+      "activityLegend": "Ein Quadrat steht für einen Tag. Ein leeres Quadrat bedeutet, dass nichts gelesen wurde. Tage vor diesem Zeitraum werden nicht gespeichert.",
+      "day": "{{day}}: {{photos}}",
+      "activityLoading": "Wird geladen",
+      "activityFailed": "Die täglichen Zahlen konnten nicht geladen werden.",
+      "activityRetry": "Erneut versuchen",
+      "noDiary": "Das ist alles, was hier über die Nutzung dieser Instanz durch die Person gespeichert wird. Ihr Tagebuch ist auf ihrem eigenen Gerät verschlüsselt und kann hier nicht gelesen werden.",
+      "selfNote": "Das ist dein eigenes Konto. Sperren und Löschen werden hier nicht angeboten, damit sich die letzte Person, die diese Instanz verwalten kann, nicht selbst aussperren kann.",
+      "notFound": "Unter dieser Adresse gibt es niemanden."
+    },
     "role": {
       "label": "Rolle",
       "admin": "Administrator",
@@ -2813,24 +2965,6 @@
       "exists": "{{email}} hat hier bereits ein Konto.",
       "back": "Zurück zur Liste"
     },
-    "lastSeen": {
-      "never": "Nie angemeldet"
-    },
-    "person": {
-      "back": "Zurück zur Liste",
-      "activityTitle": "Gelesene Fotos pro Tag",
-      "activityWindow": "Die letzten {{days}} Tage, {{from}} bis {{to}}.",
-      "activityTotal": "In diesem Zeitraum gelesene Fotos: {{photos}}",
-      "activityQuiet": "In diesem Zeitraum wurde nichts gelesen.",
-      "activityLegend": "Ein Quadrat steht für einen Tag. Ein leeres Quadrat bedeutet, dass nichts gelesen wurde. Tage vor diesem Zeitraum werden nicht gespeichert.",
-      "day": "{{day}}: {{photos}}",
-      "activityLoading": "Wird geladen",
-      "activityFailed": "Die täglichen Zahlen konnten nicht geladen werden.",
-      "activityRetry": "Erneut versuchen",
-      "noDiary": "Das ist alles, was hier über die Nutzung dieser Instanz durch die Person gespeichert wird. Ihr Tagebuch ist auf ihrem eigenen Gerät verschlüsselt und kann hier nicht gelesen werden.",
-      "selfNote": "Das ist dein eigenes Konto. Sperren und Löschen werden hier nicht angeboten, damit sich die letzte Person, die diese Instanz verwalten kann, nicht selbst aussperren kann.",
-      "notFound": "Unter dieser Adresse gibt es niemanden."
-    },
     "tabs": {
       "label": "Bereiche",
       "people": "Personen",
@@ -2892,35 +3026,6 @@
       "deleteConfirmCta": "Endgültig löschen",
       "deleteFailed": "Die Meldung konnte nicht gelöscht werden."
     }
-  },
-  "signOut": {
-    "body": "Du bleibst abgemeldet, bis du dich wieder anmeldest. Dein Tagebuch bleibt auf diesem Gerät.",
-    "bodyManaged": "Dein Tagebuch gehört zu deinem Konto. Nach dem Abmelden zeigt dieses Gerät es erst wieder an, wenn du dich anmeldest.",
-    "confirm": "Abmelden",
-    "erase": {
-      "label": "Tagebuch ebenfalls von diesem Gerät löschen"
-    },
-    "eraseFailed": "Das Tagebuch konnte nicht gelöscht werden, weil openplate in einem anderen Tab geöffnet ist. Schließe ihn und versuche es erneut.",
-    "menuItem": "Abmelden",
-    "outbox": {
-      "counting": "Prüfen, was noch nicht gesendet wurde.",
-      "empty": "Alles auf diesem Gerät hat den Server erreicht.",
-      "waiting_one": "Ein Eintrag hat den Server noch nicht erreicht. Durch das Löschen geht er verloren.",
-      "waiting_other": "{{count}} Einträge haben den Server noch nicht erreicht. Durch das Löschen gehen sie verloren."
-    },
-    "title": "Abmelden"
-  },
-  "describe": {
-    "title": "Beschreibe deine Mahlzeit",
-    "lead": "Schreib auf, was du gegessen hast. Die KI erkennt das Essen aus deinen Worten, genau wie bei einem Foto. Du prüfst jeden Eintrag, bevor etwas gespeichert wird.",
-    "label": "Was hast du gegessen?",
-    "placeholder": "2 Spiegeleier, eine Scheibe Toast mit Butter, schwarzer Kaffee",
-    "send": "Senden",
-    "sendHint": "Enter sendet. Shift und Enter beginnen eine neue Zeile.",
-    "dictateHint": "Tippe auf die Mikrofontaste deiner Tastatur, um deine Mahlzeit zu diktieren.",
-    "needsProvider": "Mahlzeiten beschreiben erfordert eine KI-Verbindung auf diesem Gerät.",
-    "connect": "Anbieter verbinden",
-    "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen"
   },
   "aiIntake": {
     "noAllowance": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie.",

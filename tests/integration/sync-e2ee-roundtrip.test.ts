@@ -40,10 +40,10 @@
  *    twice over: base64 on the outside, DEFLATE on the inside. Neither the
  *    raw nor the base64 view can read it. Hence {@link gunzippedView}, which
  *    is the view that actually fires when `buildEnvelope`'s encryption step
- *    is removed — verified by doing exactly that.
+ *    is removed, verified by doing exactly that.
  *
- * So each surface is searched in three views — raw, base64-decoded, and
- * gunzipped — and a view that cannot be built for a surface is skipped with
+ * So each surface is searched in three views, raw, base64-decoded, and
+ * gunzipped, and a view that cannot be built for a surface is skipped with
  * its reason ASSERTED rather than dropped. A silently-skipped view is how a
  * surface becomes decoration; M163/04 found two of those in its own first
  * version.
@@ -51,7 +51,7 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { constants as zlibConstants, gunzipSync } from 'node:zlib';
-// The LAST test in this file drives `syncNow`, which reads the device store —
+// The LAST test in this file drives `syncNow`, which reads the device store ,
 // see its header. Every other test here mirrors the two seam lines instead and
 // never touches it.
 import 'fake-indexeddb/auto';
@@ -104,7 +104,7 @@ const fastDeriver = (input: { passphrase: string; salt: Uint8Array; params: Argo
 
 /**
  * A string that could only reach the service if the encryption failed. Chosen
- * to be unmistakable in a haystack — no real payload byte can collide with it.
+ * to be unmistakable in a haystack, no real payload byte can collide with it.
  */
 const PLAINTEXT_MARKER = 'ZERO-KNOWLEDGE-CANARY-7f3a91c4-should-never-reach-the-server';
 const PASSPHRASE = 'seventeen purple lanterns drifting';
@@ -121,7 +121,7 @@ before(async () => {
  * test process open. Copied deliberately from `research-actions.test.ts`: the
  * reasoning is that file's, and the four must not drift.
  *
- * Only the last test in this file needs it — `syncNow` is the one verb here
+ * Only the last test in this file needs it, `syncNow` is the one verb here
  * that reads the device store rather than a mirrored seam line.
  */
 async function openTheDeviceStore(): Promise<void> {
@@ -175,7 +175,7 @@ function foodLog(id: string, name: string): LocalStoreSnapshot['foodLogs'][numbe
 
 function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
   // `fasts`/`savedMeals` are required on the snapshot since v7/v11 but are
-  // never merged by the sync engine (see `mergeSnapshots`) — an empty array is
+  // never merged by the sync engine (see `mergeSnapshots`), an empty array is
   // the whole fixture for both.
   return {
     foods: [],
@@ -184,6 +184,7 @@ function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
     profile: null,
     fasts: [],
     savedMeals: [],
+    fastingSettings: null,
     // The owner-private compartment (M160/07); `null` is a device with no
     // share key, which is what every fixture here is.
     privateStore: null,
@@ -213,7 +214,7 @@ function deviceDeps({
       local.current = merged;
     },
     // These devices carry the snapshot verbatim and hold no compartment session
-    // of their own, so there is nothing here for the veto to check against —
+    // of their own, so there is nothing here for the veto to check against ,
     // the two tests that DO hold one override this the way production wires it.
     // Named rather than defaulted, because `SyncCycleDeps` makes it required on
     // purpose (M164/06).
@@ -221,7 +222,7 @@ function deviceDeps({
     // The real bridge validates through the backup schema; the substituted
     // snapshot here is already that exact shape.
     // SAFETY: the only snapshot the engine can hand back is the one `readSnapshot`
-    // above supplied — `local.current`, which is a `SyncedSnapshot` by construction.
+    // above supplied, `local.current`, which is a `SyncedSnapshot` by construction.
     parseRemoteSnapshot: ({ snapshot }: { snapshot: unknown }) => snapshot as SyncedSnapshot,
   };
 }
@@ -235,7 +236,7 @@ function requireVault(): SyncVault {
 /**
  * Every base64-looking run in a serialized surface, decoded back to BYTES.
  *
- * The payloads this file is about — a blob's `ciphertext`, a wrapped DEK —
+ * The payloads this file is about, a blob's `ciphertext`, a wrapped DEK ,
  * are base64 string values inside JSON, so each one is a single unbroken run
  * of the base64 alphabet between two quotes. Sixteen characters is long
  * enough that ordinary JSON words (`accountId`, `blobVersion`) are not picked
@@ -248,7 +249,7 @@ function base64Runs(serialized: string): Buffer[] {
 /**
  * View 2: every base64 run rendered as text.
  *
- * Without this the search has a hole exactly where the payloads live —
+ * Without this the search has a hole exactly where the payloads live ,
  * a snapshot shipped unencrypted is unreadable in the JSON transcript, and a
  * substring search over that transcript passes. This turns "the marker is not
  * in the text" into "the marker is not in the bytes".
@@ -262,7 +263,7 @@ function base64DecodedView(serialized: string): string {
 /**
  * Every offset in `bytes` carrying gzip's magic bytes and DEFLATE method.
  *
- * Detection is by FRAMING, never by a field name — a field called
+ * Detection is by FRAMING, never by a field name, a field called
  * `ciphertext` is exactly the field a regression would leave uncompressed
  * inside. Offsets other than zero matter because the envelope's ciphertext
  * field is `iv || body` (`packIvAndCiphertext`): drop only the AES step and
@@ -281,7 +282,7 @@ function gzipOffsets(bytes: Buffer): number[] {
  * View 3: every base64 run that is a gzip stream, inflated.
  *
  * `buildEnvelope` compresses BEFORE it encrypts, so a blob that skipped only
- * the encryption step still arrives gzipped — DEFLATE-encoded binary that
+ * the encryption step still arrives gzipped, DEFLATE-encoded binary that
  * neither of the other two views can read. This is the view that catches it.
  *
  * Returns `null` when the view does not exist for this surface, which is the
@@ -319,7 +320,7 @@ function decodedViews(serialized: string): { name: string; haystack: string | nu
 
 // WHAT M192 DELETED HERE: `failingKeyRecordFetch`, a transport that let the
 // signup through and failed the first key-record PUT. Protocol 2 commits both
-// records with the account, so no transport can produce that state any more —
+// records with the account, so no transport can produce that state any more ,
 // `service.stripKeyRecords` is the time machine that does.
 
 /**
@@ -328,7 +329,7 @@ function decodedViews(serialized: string): { name: string; haystack: string | nu
  *
  * It used to return the recovery code. There is no code to return any more
  * (M192): it is escrowed with the service and never shown, and the outcome
- * type has no field for one — which is what stops a future caller rendering
+ * type has no field for one, which is what stops a future caller rendering
  * it.
  */
 function expectReady(outcome: SyncSetupOutcome): string {
@@ -340,7 +341,7 @@ function expectReady(outcome: SyncSetupOutcome): string {
  * An account, created the only way protocol 2 allows: an admin's invite,
  * addressed to somebody.
  *
- * The invite is minted through the fake's test SEAM rather than over HTTP —
+ * The invite is minted through the fake's test SEAM rather than over HTTP ,
  * `/v1/admin/invites` belongs to the server spec, and a fake that implemented
  * an admin surface no client calls would be a second reading of a contract
  * nothing here exercises.
@@ -388,7 +389,7 @@ test("signup → key records → push: the service never sees the diary's plaint
 
   // NON-VACUITY FIRST, because everything below is an absence and an absence
   // passes trivially against nothing. A fresh device pulls the blob back down
-  // and the marker comes out of it — so the marker really did travel inside
+  // and the marker comes out of it, so the marker really did travel inside
   // the ciphertext the searches below are about, rather than never having been
   // sent at all.
   const roundTripped = { current: snapshotOf([]) };
@@ -415,7 +416,7 @@ test("signup → key records → push: the service never sees the diary's plaint
     assert.equal(storedAtRest.includes(encoding), false, 'the data-encryption key is stored on the service');
   }
 
-  // And the service really did receive a blob — otherwise the assertions above
+  // And the service really did receive a blob, otherwise the assertions above
   // would pass trivially on an empty account.
   assert.ok(
     service.observed.some((request) => request.method === 'POST' && request.path.endsWith('/blob')),
@@ -424,7 +425,7 @@ test("signup → key records → push: the service never sees the diary's plaint
   assert.ok(storedAtRest.includes('"blobVersion":1'), 'expected the service to be holding a blob');
 
   // THE SEARCH, in three views over the same bytes. The raw view repeats what
-  // the four assertions above already say — deliberately, because the loop is
+  // the four assertions above already say, deliberately, because the loop is
   // what the other two views hang off, and dropping the duplicate would make
   // the raw case depend on the loop's shape.
   const surfaces = {
@@ -473,7 +474,7 @@ test('a second device signs in with the passphrase alone and reads the first dev
   );
 });
 
-test('two devices pushing AT THE SAME TIME both survive — the 409 loop over real HTTP', async () => {
+test('two devices pushing AT THE SAME TIME both survive, the 409 loop over real HTTP', async () => {
   const email = `race-${Date.now()}@example.org`;
   await signUp(email);
   const vaultOne = requireVault();
@@ -535,7 +536,7 @@ test('two diverged devices converge on the union and then go quiet', async () =>
   assert.deepEqual(namesOne, ['Greek salad', 'Roast chicken']);
   assert.deepEqual(namesTwo, ['Greek salad', 'Roast chicken'], 'both devices must end on the same set');
 
-  // A third cycle on each device must be a no-op — convergence, not oscillation.
+  // A third cycle on each device must be a no-op, convergence, not oscillation.
   const settledOne = await runSyncCycleUnlocked(
     deviceDeps({ vault: vaultOne, deviceId: 'device-1', local: deviceOne, storage: storageOne }),
   );
@@ -585,7 +586,7 @@ test('a mailed reset sets a new passphrase and keeps the synced data readable', 
     'data written before the recovery must still decrypt afterwards',
   );
 
-  // The OLD passphrase is genuinely gone — a reset that left it working would
+  // The OLD passphrase is genuinely gone, a reset that left it working would
   // be a rotation that did not rotate.
   await assert.rejects(
     () => signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver }),
@@ -611,7 +612,7 @@ test('a mailed reset sets a new passphrase and keeps the synced data readable', 
  * The escrow is what makes a mailed reset return a diary, and the property
  * that keeps it honest is that a code is bound to ONE account. A code lifted
  * from somebody else's reset must be refused with the same `401` a wrong code
- * gets — the service will not say which, so neither can this test.
+ * gets, the service will not say which, so neither can this test.
  */
 test("another account's recovery code is refused, and says nothing about which half was wrong", async () => {
   const email = `lost-${Date.now()}@example.org`;
@@ -658,12 +659,12 @@ test("another account's recovery code is refused, and says nothing about which h
 });
 
 /**
- * THE INTERRUPTED SETUP, end to end — and the one thing it cannot restore.
+ * THE INTERRUPTED SETUP, end to end, and the one thing it cannot restore.
  *
  * A PRE-M192 client wrote the account and its key records in two requests, so
  * a device that died between them left an account nobody could ever unlock.
  * Protocol 2 commits both records with the account, which closes the hole at
- * the source — and is exactly why this test reaches for the fake's time
+ * the source, and is exactly why this test reaches for the fake's time
  * machine: the repair still has to work for the accounts that already exist,
  * and nothing a current client does can produce one.
  *
@@ -715,8 +716,8 @@ test('an interrupted setup is repaired by the next sign-in', async () => {
   );
   closeSyncSession();
 
-  // THE LIMITATION, stated as a test. The escrowed code still AUTHENTICATES —
-  // its verifier was written at signup — and it no longer opens anything,
+  // THE LIMITATION, stated as a test. The escrowed code still AUTHENTICATES ,
+  // its verifier was written at signup, and it no longer opens anything,
   // because the repair minted a new DEK. The client says exactly that, and
   // says it differently from "wrong code": sending somebody to retype a value
   // that already worked is the one unhelpful answer here.
@@ -738,7 +739,7 @@ test('an interrupted setup is repaired by the next sign-in', async () => {
 });
 
 test('the payload schema version travels through the AAD, not the wire', async () => {
-  // The service stores the blob without ever learning what schema it holds —
+  // The service stores the blob without ever learning what schema it holds ,
   // it is bound into the AAD instead. Anything else would leak a version
   // number about the client's local store to a service that has no business
   // knowing it.
@@ -755,13 +756,13 @@ test('the payload schema version travels through the AAD, not the wire', async (
  * The loss is a TWO-CYCLE effect, which is why both are driven here. The first
  * cycle pulls the compartment and writes it into this device's baseline; the
  * second seals, gets nothing back, and `stampSnapshot` reads "the baseline had
- * this entity and the snapshot does not" as a DELETE — a tombstone that the
+ * this entity and the snapshot does not" as a DELETE, a tombstone that the
  * merge then applies to the server copy. Nothing throws anywhere along it.
  *
  * The compartment planted here is sealed under a key nobody in the signing-in
  * session holds. That is the ordinary post-passphrase-change state, not a
  * contrived one, and it is the shape `candidateCdks` documents as "the caller
- * keeps what the device already has" — true of the device, and false of the
+ * keeps what the device already has", true of the device, and false of the
  * blob until this spec.
  */
 test('a compartment it could not adopt survives the next push', async () => {
@@ -811,7 +812,7 @@ test('a compartment it could not adopt survives the next push', async () => {
    *
    * `readSyncedSnapshot`/`applySyncedSnapshot` are module-private there and
    * read the device store through IndexedDB, which this file deliberately does
-   * not have — so the two SEAM LINES are mirrored here and nothing else is.
+   * not have, so the two SEAM LINES are mirrored here and nothing else is.
    * What is under test is `sealOwnerPrivateRegion` and `openOwnerPrivateRegion`
    * against the real orchestrator, merge and stamping.
    */
@@ -868,7 +869,7 @@ test('a compartment it could not adopt survives the next push', async () => {
  * THE DIARY REFUSES A STUDY ACCOUNT BEFORE WRITING (M164/06).
  *
  * M164/02 made a wrong-kind compartment throw, and on the CONSOLE side the
- * throw lands at sign-in, before anything is pushed — `study-session.ts` proves
+ * throw lands at sign-in, before anything is pushed, `study-session.ts` proves
  * it with a byte-identical blob. The diary side had the throw and not the
  * ordering: `openOwnerPrivateRegion` runs inside `applySnapshot`, and the
  * orchestrator calls `applySnapshot` on the line AFTER `pushBlob`.
@@ -876,7 +877,7 @@ test('a compartment it could not adopt survives the next push', async () => {
  * So a person who typed a study address into the DIARY sign-in pushed this
  * device's whole diary into the study account's blob and then saw the refusal.
  * A study passphrase is normally held by more than one researcher, so those
- * bytes are readable by colleagues — this is a disclosure, not just a mess.
+ * bytes are readable by colleagues, this is a disclosure, not just a mess.
  *
  * ── WHY "IT THREW" IS NOT THE ASSERTION ─────────────────────────────────
  *
@@ -896,7 +897,7 @@ async function blobOnTheService(vault: SyncVault) {
   };
 }
 
-/** A study's private key on the blob — the material a diary push would have sealed over. */
+/** A study's private key on the blob, the material a diary push would have sealed over. */
 const STUDY_KEY_MARKER = 'the-study-private-key-that-must-survive';
 
 test('the diary refuses a study account before writing, and the blob is unchanged', async () => {
@@ -907,7 +908,7 @@ test('the diary refuses a study account before writing, and the blob is unchange
   // A REAL study compartment, sealed under THIS ACCOUNT'S OWN `K_pp`. That is
   // what makes the hazard reachable rather than theoretical: the diary device
   // below holds the same passphrase, so slot 1 unwraps, the AAD binds the right
-  // account, the ciphertext decrypts — and the only thing that can refuse it is
+  // account, the ciphertext decrypts, and the only thing that can refuse it is
   // the tag inside the plaintext.
   const passphraseKek = founderVault.privateStore.passphraseKek;
   const established = await establishPrivateStore({ passphraseKek, recoveryKek: passphraseKek });
@@ -936,7 +937,7 @@ test('the diary refuses a study account before writing, and the blob is unchange
   await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const diary = requireVault();
 
-  // The device under test, wired the way `sync-actions.ts` wires production —
+  // The device under test, wired the way `sync-actions.ts` wires production ,
   // the same three seam lines, and nothing else.
   const local = { current: snapshotOf([foodLog('log-diary', 'A private diary entry')]) };
   const diaryDeps = {
@@ -970,12 +971,12 @@ test('the diary refuses a study account before writing, and the blob is unchange
   );
   assert.deepEqual({ expected: refusal.expected, actual: refusal.actual }, { expected: 'diary', actual: 'study' });
 
-  // THE ASSERTION THE SPEC EXISTS FOR. Not "it threw" — the throw predates this
-  // spec — but that nothing reached the service before it did.
+  // THE ASSERTION THE SPEC EXISTS FOR. Not "it threw", the throw predates this
+  // spec, but that nothing reached the service before it did.
   assert.deepEqual(
     await blobOnTheService(founderVault),
     blobBefore,
-    'the refusal must land before the push — the study account’s blob must be byte-identical',
+    'the refusal must land before the push, the study account’s blob must be byte-identical',
   );
 
   // POSITIVE: what is on the blob is still a study compartment that opens, with
@@ -995,7 +996,7 @@ test('the diary refuses a study account before writing, and the blob is unchange
  * A COMPLETED SYNC CAN STILL BE CARRYING A LOSS, AND MUST SAY SO (M164/07).
  *
  * `sealOwnerPrivateRegion` re-emits a compartment this session could not open
- * (M164/01), which is strictly better than the destruction it replaced — and
+ * (M164/01), which is strictly better than the destruction it replaced, and
  * it is still silent: this device's own owner-private changes are NOT
  * published. A share identity generated here is written to IndexedDB and
  * exists nowhere else. The diary itself synced perfectly, so the cycle reports
@@ -1004,7 +1005,7 @@ test('the diary refuses a study account before writing, and the blob is unchange
  *
  * ADR-0009's consequences say "a completed sync cycle can now report an
  * error". `hasUnopenedCompartment` is that report and `syncNow` is where it
- * reaches a person — and nothing under `tests/` asserted either. This is the
+ * reaches a person, and nothing under `tests/` asserted either. This is the
  * one behaviour change M164/02 made visible to a user.
  *
  * ── Why this test is the only one here that drives `syncNow` ─────────────
@@ -1012,8 +1013,8 @@ test('the diary refuses a study account before writing, and the blob is unchange
  * Every other test in this file mirrors `sync-actions.ts`'s two seam lines and
  * runs the orchestrator directly, because `readSyncedSnapshot` and
  * `applySyncedSnapshot` are module-private and read the device store. The
- * report under test is not on the orchestrator at all — it is written by
- * `syncNow` after the cycle returns — so a mirrored cycle cannot see it, and
+ * report under test is not on the orchestrator at all, it is written by
+ * `syncNow` after the cycle returns, so a mirrored cycle cannot see it, and
  * this file gained a real device store (see `openTheDeviceStore`) for exactly
  * this one case.
  */
@@ -1022,7 +1023,7 @@ test('a session carrying an unopened compartment reports an unopened compartment
   await signUp(email);
   const planterVault = requireVault();
 
-  // A REAL compartment under a key this account's passphrase cannot reach —
+  // A REAL compartment under a key this account's passphrase cannot reach ,
   // the ordinary post-passphrase-change state, planted through the production
   // seal exactly as the adopt-failure test above plants one.
   const strangerKek = await crypto.subtle.importKey('raw', new Uint8Array(32).fill(31), { name: 'AES-GCM' }, false, [
@@ -1044,7 +1045,7 @@ test('a session carrying an unopened compartment reports an unopened compartment
   const planter = { current: { ...snapshotOf([foodLog('log-report', 'Planted')]), privateStore: planted } };
   await runSyncCycleUnlocked(deviceDeps({ vault: planterVault, deviceId: 'device-planter', local: planter }));
 
-  // A genuinely fresh sign-in, and then the production verb — no mirrored
+  // A genuinely fresh sign-in, and then the production verb, no mirrored
   // seams, no substituted deps. This is the call the app makes on boot.
   await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
   const victim = requireVault();
@@ -1052,12 +1053,12 @@ test('a session carrying an unopened compartment reports an unopened compartment
   await syncNow();
 
   // NON-VACUITY: the cycle really is the degraded one, and it really did
-  // complete. Both halves matter — a failed cycle would report an error too,
+  // complete. Both halves matter, a failed cycle would report an error too,
   // and this report is precisely the one a SUCCESSFUL cycle carries.
   assert.equal(hasUnopenedCompartment(victim.privateStore), true, 'the adopt must have failed, or this proves nothing');
   const snapshot = getSyncSessionSnapshot();
   assert.equal(snapshot.phase, 'idle');
-  assert.ok(snapshot.lastSyncedAt !== null, 'the cycle must have completed — this is not a failure report');
+  assert.ok(snapshot.lastSyncedAt !== null, 'the cycle must have completed, this is not a failure report');
   assert.equal(snapshot.hasPendingChanges, false);
 
   // THE ASSERTION THIS TEST WAS WRITTEN FOR: the sentence a person reads.
@@ -1066,8 +1067,8 @@ test('a session carrying an unopened compartment reports an unopened compartment
   assert.match(snapshot.error.message, /in sync/i, 'the diary DID sync, and the message must not deny it');
   assert.match(snapshot.error.message, /could not open/i, 'the message must name what did not happen');
   // AND THE CAUSE IS OFFERED AS LIKELY, NOT STATED (M164/07). Three states
-  // reach here — a passphrase this session does not hold, a failed tag check,
-  // and a plaintext the region schema rejected — and the recovery code helps
+  // reach here, a passphrase this session does not hold, a failed tag check,
+  // and a plaintext the region schema rejected, and the recovery code helps
   // only the first. The message that stood here named that one as the cause.
   assert.match(snapshot.error.message, /most often/i, 'the likely cause must be offered as likely, not as the cause');
 
@@ -1084,14 +1085,14 @@ test('a session carrying an unopened compartment reports an unopened compartment
  *
  * The upgrade path for an account whose data predates the partition is
  * RECOVERY: it is the one routine operation left where both compartment doors
- * exist in the same frame — the recovery code the user just typed, and the
- * passphrase they just chose — so `rewrapCompartmentAfterRecovery` MINTS a
+ * exist in the same frame, the recovery code the user just typed, and the
+ * passphrase they just chose, so `rewrapCompartmentAfterRecovery` MINTS a
  * compartment when the account has none. (It was recovery-code regeneration
  * until M181, which deleted that button: the service registers a recovery
  * verifier at signup or never, so a regenerated code could no longer log in.)
  *
  * M164/06 made `sealOwnerPrivateRegion` refuse to seal from a session that has
- * never read the compartment plaintext (`extras === null`), which is right —
+ * never read the compartment plaintext (`extras === null`), which is right ,
  * and the establish branch never said that it HAD read one, because it minted
  * it. So the seal re-emitted `session.pulled`, which on this account is `null`,
  * and the compartment stayed on the one device that made it.
@@ -1103,7 +1104,7 @@ test('a session carrying an unopened compartment reports an unopened compartment
  * ── Why the recovery door is opened at the end ───────────────────────────
  *
  * "A compartment reached the service" is only half the claim. The other half
- * is that the code the user holds opens it — that is the promise the ceremony
+ * is that the code the user holds opens it, that is the promise the ceremony
  * makes, and slot 2 is the only place it can be checked.
  */
 test('a freshly established compartment reaches the service', async () => {
@@ -1135,7 +1136,7 @@ test('a freshly established compartment reaches the service', async () => {
   // `no-compartment` and the establish branch mints one.
   //
   // The code is read out of the reset link FIRST, and then the same link is
-  // spent by the reset itself — two tokens, because opening one consumes it.
+  // spent by the reset itself, two tokens, because opening one consumes it.
   // This test needs the code in hand for the final assertion, which is the one
   // thing `resetSyncPassphrase` deliberately makes impossible for a caller.
   const peekToken = service.createResetToken(email);
@@ -1177,7 +1178,7 @@ test('a freshly established compartment reaches the service', async () => {
 
   // POSITIVE 2: and so does the code the SERVICE now holds. The reset rotates
   // the code, so slot 2 belongs to the replacement rather than to the value
-  // read above — and reading the new escrow is what proves the rotation moved
+  // read above, and reading the new escrow is what proves the rotation moved
   // the compartment with it. A compartment whose recovery slot nobody can open
   // is the failure this whole ceremony exists to prevent, and re-wrapping slot
   // 2 under the RETIRED code would be exactly that.

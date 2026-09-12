@@ -84,6 +84,7 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   { pattern: '/settings/preferences', parent: '/settings' },
   { pattern: '/settings/profile', parent: '/settings' },
   { pattern: '/settings/nutrition', parent: '/settings' },
+  { pattern: '/settings/fasting', parent: '/settings' },
   // A redirect route, not a screen (it forwards to `/settings/nutrition`). It
   // is in the table because `app/routes.ts` lists it and the parity test reads
   // that file as text; a person never rests on this pathname.

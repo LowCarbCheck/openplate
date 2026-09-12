@@ -1,13 +1,13 @@
 /**
  * THE SNAPSHOT PARTITION (`openplate-core` ADR-0002, "The snapshot is
- * partitioned — amendment, 2026-08-27").
+ * partitioned, amendment, 2026-08-27").
  *
  * The device's snapshot is formally two regions, and this module is the one
  * place that says which key belongs to which:
  *
- *  - **the shareable region** — diary and preferences. This is what a
+ *  - **the shareable region**, diary and preferences. This is what a
  *    clinician grant means.
- *  - **the owner-private compartment** — key material and trust pins. This is
+ *  - **the owner-private compartment**, key material and trust pins. This is
  *    what a grant must never mean.
  *
  * A share is full-DEK and the blob is the WHOLE snapshot, so anything left in
@@ -22,12 +22,12 @@
  * an unclassified key is an ERROR, never a default to `shared`. Two gates
  * enforce it: `satisfies Record<keyof LocalStoreSnapshot, SnapshotRegion>`
  * fails the typecheck when a key is added and not classified, and
- * {@link classifySnapshotKey} throws at runtime — which is what
+ * {@link classifySnapshotKey} throws at runtime, which is what
  * `tests/unit/snapshot-partition.test.ts` drives from a fully populated
  * fixture built by the REAL snapshot builder.
  *
  * That test replaces a one-time audit, because a point-in-time audit of a
- * moving structure is stale the day the structure moves — and this one proved
+ * moving structure is stale the day the structure moves, and this one proved
  * it inside a single milestone, on the same day: spec 01's gate passed while
  * the snapshot held only diary data, and spec 04 put a private key into it
  * hours later.
@@ -50,26 +50,26 @@
 import { z } from 'zod';
 import type { LocalStoreSnapshot } from '#app/lib/local-store';
 
-/** Which side of the partition a snapshot key sits on. There is no third value and no "unknown" — absent means fail. */
+/** Which side of the partition a snapshot key sits on. There is no third value and no "unknown", absent means fail. */
 export type SnapshotRegion = 'shared' | 'owner-private';
 
 /**
- * THE CLASSIFICATION MAP — frozen, total, and fail-closed.
+ * THE CLASSIFICATION MAP, frozen, total, and fail-closed.
  *
  * Adding a key to `LocalStoreSnapshot` without adding it here is a TYPE ERROR
  * (`satisfies`) and a RED TEST (`classifySnapshotKey` throws). Both are
  * deliberate: the decision "may a clinician read this?" is a human one, and
  * the cost of getting it wrong by omission is disclosure.
  *
- * `owner-private` today is ADR-0002's two — the account's own share key pair,
- * and the peer keys pinned by a passed fingerprint ceremony — plus ADR-0003's
+ * `owner-private` today is ADR-0002's two, the account's own share key pair,
+ * and the peer keys pinned by a passed fingerprint ceremony, plus ADR-0003's
  * two. The pinned peer list is the second half of the cascade: it hands every
  * grantee a subset of the care graph that §9.2 only admits the SERVER learns.
  *
  * ADR-0003's two are here for the same shape of reason, one recipient class
  * over. `researchIdentity` holds the PSEUDONYM ROOT, and a grantee who learned
  * it could recompute this person's pseudonym in every study they will ever
- * join — the unlinkability the research design turns on (prohibition 3).
+ * join, the unlinkability the research design turns on (prohibition 3).
  * `studyEnrolments` is which studies they joined, which is health data even
  * though the keys in it are public.
  */
@@ -79,6 +79,13 @@ export const SNAPSHOT_KEY_REGIONS = {
   weightEntries: 'shared',
   profile: 'shared',
   fasts: 'shared',
+  // The fasting ROUTINE (the fasting rework). `shared`, and the reasoning is
+  // the profile row's, not the fasts' beside it: a routine is a preference in
+  // the same class as a carb ceiling, which this map has always classified
+  // `shared`, so a clinician holding a grant reads "16:8 from 20:00" exactly
+  // as she already reads the person's goals. There is no key material in it
+  // and no trust pin, which are the only two things the compartment is for.
+  fastingSettings: 'shared',
   savedMeals: 'shared',
   shareIdentity: 'owner-private',
   sharePeers: 'owner-private',
@@ -90,15 +97,15 @@ export const SNAPSHOT_KEY_REGIONS = {
 // `-?` is kept although no key is optional today. It was needed while
 // `gatewayConnection` was `?:` (M187/02 to M192), and without it a mapped
 // type's value for an optional key includes `undefined`, which `Pick` rejects
-// outright — a compile error several files away from the `?:` that caused it.
+// outright, a compile error several files away from the `?:` that caused it.
 type KeysInRegion<TRegion extends SnapshotRegion> = {
   [TKey in keyof LocalStoreSnapshot]-?: (typeof SNAPSHOT_KEY_REGIONS)[TKey] extends TRegion ? TKey : never;
 }[keyof LocalStoreSnapshot];
 
-/** The diary-and-preferences half — everything a grant is allowed to mean. */
+/** The diary-and-preferences half, everything a grant is allowed to mean. */
 export type ShareableSnapshot = Pick<LocalStoreSnapshot, KeysInRegion<'shared'>>;
 
-/** The compartment's plaintext — key material and trust pins, never disclosed by a share. */
+/** The compartment's plaintext, key material and trust pins, never disclosed by a share. */
 export type OwnerPrivateRegion = Pick<LocalStoreSnapshot, KeysInRegion<'owner-private'>>;
 
 /** The compartment on a device that has generated no share key and pinned no peer. */
@@ -121,7 +128,7 @@ export const EMPTY_OWNER_PRIVATE_REGION: OwnerPrivateRegion = {
  * field violates nothing.
  */
 export interface SealedPrivateStore {
-  /** `iv || AES-256-GCM(CDK, plaintext, aad)` — the compartment itself. Opaque to every grantee. */
+  /** `iv || AES-256-GCM(CDK, plaintext, aad)`, the compartment itself. Opaque to every grantee. */
   ciphertext: string;
   /** Slot 1: the CDK wrapped under `K_pp` (HKDF of the Argon2id hash, `PRIVATE_STORE_KEK`). Rewrapped by a passphrase change. */
   cdkWrapPassphrase: string;
@@ -132,7 +139,7 @@ export interface SealedPrivateStore {
 /**
  * The snapshot AS SYNCED: the shareable region, plus one opaque compartment.
  *
- * The owner-private keys are structurally absent — not empty, absent — so
+ * The owner-private keys are structurally absent, not empty, absent, so
  * there is no code path that can populate them on the wire by accident.
  */
 export interface SyncedSnapshot extends ShareableSnapshot {
@@ -151,7 +158,7 @@ export const sealedPrivateStoreSchema = z.object({
  * A pulled payload, seen only as "something that may carry a compartment".
  *
  * `looseObject` because the rest of the snapshot is validated by the BACKUP
- * migration chain (`local-store-bridge.ts`) — this reads the one key that
+ * migration chain (`local-store-bridge.ts`), this reads the one key that
  * chain knows nothing about, without a second copy of every entity schema.
  */
 const privateStoreCarrierSchema = z.looseObject({
@@ -176,7 +183,7 @@ export function readSealedPrivateStore({ snapshot }: { snapshot: unknown }): Sea
  *
  * The rewrap path is not a sync cycle and must not decide anything about the
  * diary, so the payload is passed through by spread rather than rebuilt from a
- * shape this build understands — a peer on a newer schema must get its own
+ * shape this build understands, a peer on a newer schema must get its own
  * fields back untouched.
  */
 export function replaceSealedPrivateStore({ snapshot, sealed }: { snapshot: unknown; sealed: SealedPrivateStore }) {
@@ -187,7 +194,7 @@ export function replaceSealedPrivateStore({ snapshot, sealed }: { snapshot: unkn
  * Which region a snapshot key belongs to.
  *
  * @throws when the key is not in {@link SNAPSHOT_KEY_REGIONS}. ABSENT MEANS
- * FAIL, never means shared — a field nobody has classified must stop the sync,
+ * FAIL, never means shared, a field nobody has classified must stop the sync,
  * not quietly become part of what a clinician can read.
  */
 export function classifySnapshotKey(key: string): SnapshotRegion {
@@ -198,7 +205,7 @@ export function classifySnapshotKey(key: string): SnapshotRegion {
     if (classified === key) return region;
   }
   throw new Error(
-    `snapshot key "${key}" is not classified in SNAPSHOT_KEY_REGIONS — classify it as 'shared' or 'owner-private' (openplate-core ADR-0002)`,
+    `snapshot key "${key}" is not classified in SNAPSHOT_KEY_REGIONS, classify it as 'shared' or 'owner-private' (openplate-core ADR-0002)`,
   );
 }
 
@@ -219,17 +226,17 @@ export interface SnapshotPartition {
 export function partitionSnapshot(snapshot: LocalStoreSnapshot): SnapshotPartition {
   // THE FAIL-CLOSED GUARD, and it runs over the snapshot's ACTUAL keys rather
   // than the ones this build knows about. A key nobody has classified stops
-  // the sync here, before either region is built — it never becomes part of
+  // the sync here, before either region is built, it never becomes part of
   // what a clinician can read by default.
   for (const key of Object.keys(snapshot)) classifySnapshotKey(key);
 
-  const { foods, foodLogs, weightEntries, profile, fasts, savedMeals } = snapshot;
+  const { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals } = snapshot;
   const { shareIdentity, sharePeers, researchIdentity, studyEnrolments } = snapshot;
   // Written out name by name, and the two literals are the type-level half of
   // the same guard: move a key between regions in the map above, or add one,
   // and these stop compiling until a human has put it on a side.
   return {
-    shareable: { foods, foodLogs, weightEntries, profile, fasts, savedMeals },
+    shareable: { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals },
     ownerPrivate: { shareIdentity, sharePeers, researchIdentity, studyEnrolments },
   };
 }
@@ -238,20 +245,20 @@ export function partitionSnapshot(snapshot: LocalStoreSnapshot): SnapshotPartiti
  * Puts the two regions back together into the shape the local store writes.
  *
  * The inverse of {@link partitionSnapshot}, and the only way owner-private
- * material re-enters a full snapshot — so a merged blob cannot reach the
+ * material re-enters a full snapshot, so a merged blob cannot reach the
  * device's importer without a compartment having been opened for it.
  *
  * The shared half is destructured NAME BY NAME rather than spread, and that is
  * load-bearing twice over. At the live call site `shareable` is a
- * `SyncedSnapshot`, which also carries the sealed compartment — a spread would
+ * `SyncedSnapshot`, which also carries the sealed compartment, a spread would
  * copy that ciphertext into the object handed to the local store's importer.
  * And a literal fails the typecheck the moment the map moves a key or gains
  * one, which is the same fail-closed pressure {@link classifySnapshotKey}
  * applies at runtime.
  */
 export function recomposeSnapshot({ shareable, ownerPrivate }: SnapshotPartition): LocalStoreSnapshot {
-  const { foods, foodLogs, weightEntries, profile, fasts, savedMeals } = shareable;
-  return { foods, foodLogs, weightEntries, profile, fasts, savedMeals, ...ownerPrivate };
+  const { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals } = shareable;
+  return { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, ...ownerPrivate };
 }
 
 // A compartment plaintext is validated by `compartment-kind.ts`'s

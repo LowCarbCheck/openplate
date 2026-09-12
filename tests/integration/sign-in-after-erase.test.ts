@@ -57,7 +57,16 @@ function foodLog(id: string): LocalStoreSnapshot['foodLogs'][number] {
 }
 
 function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
-  return { foods: [], foodLogs: logs, weightEntries: [], profile: null, fasts: [], savedMeals: [], privateStore: null };
+  return {
+    foods: [],
+    foodLogs: logs,
+    weightEntries: [],
+    profile: null,
+    fasts: [],
+    savedMeals: [],
+    fastingSettings: null,
+    privateStore: null,
+  };
 }
 
 /** The account's diary as the server holds it: one logged meal, stamped by this device. */

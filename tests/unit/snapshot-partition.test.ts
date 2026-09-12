@@ -1,5 +1,5 @@
 /**
- * THE SNAPSHOT PARTITION (M160/07, `openplate-core` ADR-0002's amendment) —
+ * THE SNAPSHOT PARTITION (M160/07, `openplate-core` ADR-0002's amendment) ,
  * the test that replaces a one-time audit.
  *
  * A share is full-DEK and the blob is the whole snapshot, so anything left in
@@ -27,6 +27,7 @@ import { createPrimaryStore } from '../../app/lib/local-store/store';
 import { readLocalSnapshot } from '../../app/lib/sync/local-store-bridge';
 import {
   putLocalFast,
+  putLocalFastingSettings,
   putLocalFood,
   putLocalFoodLog,
   putLocalProfileGoals,
@@ -101,7 +102,7 @@ const STUDY_LABEL_MARKER = 'Charite sleep trial';
 /**
  * M163/01's marker: the first day of the window this device SENT to that
  * study. It is nested inside `studyEnrolments`, so it needs no new
- * classification — but a nested field is exactly the kind of thing zod strips
+ * classification, but a nested field is exactly the kind of thing zod strips
  * silently on the way through the compartment, so it is asserted RECOVERABLE
  * after a real seal and open, not merely present in the fixture.
  *
@@ -119,13 +120,21 @@ const SENT_WINDOW_MARKER = '2026-08-24';
  */
 const DUE_DATE_MARKER = '2026-11-02';
 
+/**
+ * The fasting rework's marker: the local minute the routine starts, 20:00 as
+ * minutes after midnight. The routine is a SHARED key, classified beside the
+ * profile's goals rather than in the compartment, so this is asserted present
+ * on the far side of a real seal-and-open instead of absent.
+ */
+const ROUTINE_START_MINUTE_MARKER = 20 * 60;
+
 /** Argon2id stands in as a plain digest here. The LABELS are what this file tests, and they sit above the hash. */
 async function fakeArgon2id({ passphrase, salt }: { passphrase: string; salt: Uint8Array }): Promise<Uint8Array> {
   const material = new TextEncoder().encode(`${passphrase}::${bytesToBase64(salt)}`);
   return new Uint8Array(await crypto.subtle.digest('SHA-256', material));
 }
 
-/** `K_pp` for a passphrase, through the REAL derivation — so a wrong HKDF label here would fail these tests. */
+/** `K_pp` for a passphrase, through the REAL derivation, so a wrong HKDF label here would fail these tests. */
 async function privateStoreKekFor(passphrase: string): Promise<CryptoKey> {
   const descriptor = createPassphraseKdfDescriptor(new Uint8Array(16).fill(7), ARGON2ID_DEFAULT_PARAMS);
   const credentials = await deriveCredentialsFromPassphrase({
@@ -140,7 +149,7 @@ async function privateStoreKekFor(passphrase: string): Promise<CryptoKey> {
  * A FULLY POPULATED snapshot, built by the real builder.
  *
  * `exportBackup` is what `readLocalSnapshot` calls in production, so the key
- * set below is the one that actually reaches the wire — no hand-copied list
+ * set below is the one that actually reaches the wire, no hand-copied list
  * can drift from it, because there is no hand-copied list.
  */
 async function buildPopulatedSnapshot(): Promise<LocalStoreSnapshot> {
@@ -208,6 +217,14 @@ async function buildPopulatedSnapshot(): Promise<LocalStoreSnapshot> {
       endedAt: null,
       createdAt: 5_000,
     },
+    { store },
+  );
+  // The v21 fasting ROUTINE. It is classified `shared`, so unlike the four
+  // markers above it this one is asserted PRESENT in the grantee's view: the
+  // alternative reading, that it silently vanishes in the partition, would be
+  // a lossy sync rather than a privacy win.
+  await putLocalFastingSettings(
+    { routineProtocolId: '18:6', routineStartMinute: ROUTINE_START_MINUTE_MARKER, extendedAcknowledgedAt: 10_000 },
     { store },
   );
   await putLocalSavedMeal(
@@ -323,6 +340,7 @@ describe('the snapshot classification map', () => {
     // vacuous: an empty snapshot leaks nothing and classifies nothing.
     assert.ok(snapshot.foods.length > 0 && snapshot.foodLogs.length > 0 && snapshot.weightEntries.length > 0);
     assert.ok(snapshot.fasts.length > 0 && snapshot.savedMeals.length > 0 && snapshot.profile !== null);
+    assert.equal(snapshot.fastingSettings?.routineStartMinute, ROUTINE_START_MINUTE_MARKER);
     assert.equal(snapshot.profile?.pregnancyDueDate, DUE_DATE_MARKER);
     assert.equal(snapshot.shareIdentity?.privateKeyPkcs8, PRIVATE_KEY_MARKER);
     assert.equal(snapshot.sharePeers[0]?.label, PEER_LABEL_MARKER);
@@ -357,6 +375,12 @@ describe('the snapshot classification map', () => {
     // browser.
     assert.equal(SNAPSHOT_KEY_REGIONS.shareIdentity, 'owner-private');
     assert.equal(SNAPSHOT_KEY_REGIONS.researchIdentity, 'owner-private');
+    // The fasting routine sits on the OTHER side, and the pin is positive on
+    // purpose: it is a preference in the same class as a carb ceiling, so a
+    // grantee reads it exactly as she already reads the person's goals. Moving
+    // it into the compartment would be a lossy sync, not a privacy win.
+    assert.equal(SNAPSHOT_KEY_REGIONS.fastingSettings, 'shared');
+    assert.deepEqual(partitioned.shareable.fastingSettings, snapshot.fastingSettings);
     assert.deepEqual(recomposeSnapshot(partitioned), snapshot);
   });
 });
@@ -427,7 +451,7 @@ describe('a clinician grantee', () => {
     assert.equal(granteeView.includes(STUDY_LABEL_MARKER), false, 'a study enrolment reached a grantee');
     assert.equal(granteeView.includes(SENT_WINDOW_MARKER), false, 'a sent research window reached a grantee');
 
-    // POSITIVE, the other half: the SAME markers ARE recoverable — through the
+    // POSITIVE, the other half: the SAME markers ARE recoverable, through the
     // CDK path, which the grantee has no key for.
     const owner = createPrivateStoreSession({
       accountId: ACCOUNT_ID,
@@ -466,7 +490,7 @@ describe('the owner-private compartment', () => {
     const compartment = wire.privateStore;
     assert.ok(compartment !== null);
 
-    // Door 1: a fresh session that holds nothing but `K_pp` — the second-device
+    // Door 1: a fresh session that holds nothing but `K_pp`, the second-device
     // case, where the CDK is learned from slot 1 rather than carried over.
     const secondDevice = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
     const byPassphrase = await openOwnerPrivateRegion({ session: secondDevice, sealed: compartment });
@@ -484,7 +508,7 @@ describe('the owner-private compartment', () => {
     });
     // The region, plus the one field that says what the compartment IS
     // (M164/02). Asserted on the RAW plaintext rather than through an open,
-    // because the region schema strips the tag on its way out — this is the
+    // because the region schema strips the tag on its way out, this is the
     // only assertion that can see whether the seal actually wrote it.
     assert.deepEqual(JSON.parse(new TextDecoder().decode(plaintext)), {
       ...partitionSnapshot(snapshot).ownerPrivate,
@@ -592,7 +616,7 @@ describe('a passphrase change', () => {
       await unwrapCdk({ wrappedCdk: base64ToBytes(rewrapped.cdkWrapPassphrase), kek: newKek }),
     );
 
-    // The ciphertext is untouched too — only the wraps moved.
+    // The ciphertext is untouched too, only the wraps moved.
     assert.equal(rewrapped.ciphertext, wire.privateStore?.ciphertext);
 
     // And the compartment's stamp advanced with THIS device, so a peer holding

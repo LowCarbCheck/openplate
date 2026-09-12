@@ -1,7 +1,7 @@
 /**
  * WIRING guard for a defect class that has now bitten SEVEN separate times: a
- * value computed correctly at its source and then silently discarded — or
- * re-derived from the wrong parts — by its consumer.
+ * value computed correctly at its source and then silently discarded, or
+ * re-derived from the wrong parts, by its consumer.
  *
  * The value here is LCC's authoritative `FoodMatch.netCarbsPer100g`. It is
  * origin-aware: bls/curated foods report EU-convention "available"
@@ -10,7 +10,7 @@
  * genuinely high-carb food to a confident, green "0 g net carbs".
  *
  * `tests/unit/portion-preview.test.ts` already covers `computeMacroPreview`
- * thoroughly AS A FUNCTION — and could not catch any of the four incidents,
+ * thoroughly AS A FUNCTION, and could not catch any of the four incidents,
  * because every one of them was a CALLER that forgot to pass the value. So
  * this file deliberately tests the wiring instead: it drives the real render
  * path of every surface that displays this number, against one shared
@@ -18,11 +18,11 @@
  *
  * If you are reading this because a test here failed: a surface stopped
  * passing `authoritativeNetCarbsPer100g` through to `computeMacroPreview`
- * (or a candidate type stopped carrying it). Re-thread it — do not relax the
+ * (or a candidate type stopped carrying it). Re-thread it, do not relax the
  * assertion, and do not make the field optional anywhere. See
  * `SearchResultCandidate.authoritativeNetCarbsPer100g`'s doc comment for why
  * `?:` is the exact hole this class of bug crawls back through (its `undefined`
- * is a legal VALUE — "no upstream figure" — but the KEY stays required, so a
+ * is a legal VALUE, "no upstream figure", but the KEY stays required, so a
  * new candidate type cannot omit it and quietly fall back to the naive local
  * formula).
  *
@@ -33,7 +33,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-// The real, initialized shared instance — `PortionStep` renders through
+// The real, initialized shared instance, `PortionStep` renders through
 // `useTranslation`, and the schema's messages come from the same catalog, so
 // the markup asserted below is the actual English the app ships.
 import i18next from '../../app/i18n/i18n';
@@ -78,8 +78,8 @@ import type { FoodMatch } from '../../app/services/food-resolution/types';
  * Wheat bran, per 100 g, shaped exactly like a real bls-origin row: the
  * `carbs` field is the AVAILABLE-carbohydrate figure (fiber already removed),
  * and `fiber` is reported separately and is far LARGER than it. The naive
- * local formula therefore computes `max(0, 21.7 - 42.8) = 0` — a green,
- * confident, completely wrong badge — while the authoritative figure is 21.7,
+ * local formula therefore computes `max(0, 21.7 - 42.8) = 0`, a green,
+ * confident, completely wrong badge, while the authoritative figure is 21.7,
  * which is `high` on the traffic light. The two answers disagree in the
  * number AND in the color, which is what makes this fixture discriminating.
  */
@@ -90,7 +90,7 @@ const AUTHORITATIVE_NET_CARBS_PER_100G = 21.7;
 /**
  * A 100 g serving size, so the portion step's default grams are 100 and both
  * surfaces are expected to render the identical figure. The portion math is
- * not what is under test here — keeping it at 1× keeps the cross-surface
+ * not what is under test here, keeping it at 1× keeps the cross-surface
  * comparison a plain string equality.
  */
 const SERVING_GRAMS = 100;
@@ -98,10 +98,10 @@ const SERVING_GRAMS = 100;
 /**
  * The fixture's licence credit. Its own wiring is guarded in
  * `attribution-wiring.test.ts`; it is named here because the chip round trip
- * below has to prove all THREE fields of this class survive one tap together —
+ * below has to prove all THREE fields of this class survive one tap together ,
  * a chip that keeps the number and loses the credit is still broken.
  */
-const BLS_CREDIT = 'Bundeslebensmittelschlüssel (BLS) 4.0 — Max Rubner-Institut, CC BY 4.0 (adapted)';
+const BLS_CREDIT = 'Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut, CC BY 4.0 (adapted)';
 
 function wheatBranMatch(overrides: Partial<FoodMatch> = {}): FoodMatch {
   return {
@@ -141,8 +141,8 @@ function wheatBranCandidate(overrides: Partial<FoodMatch> = {}): AddSearchCandid
 
 /**
  * The SAME numbers, typed in by hand as a personal food instead of fetched
- * from a source. Nothing about it says "wheat bran from BLS" — the person is
- * the source — so it must carry no authoritative figure at all, while still
+ * from a source. Nothing about it says "wheat bran from BLS", the person is
+ * the source, so it must carry no authoritative figure at all, while still
  * displaying the local estimate those numbers produce (a green 0, which is
  * genuinely the best answer available from parts alone).
  */
@@ -166,7 +166,7 @@ function renderSearchResultRow(candidate: AddSearchCandidate): string {
 
 /**
  * Surface 2: the PORTION step for the same candidate. `PortionStep` calls
- * `useNavigation`/`<Form>`, so it needs a data router — a plain
+ * `useNavigation`/`<Form>`, so it needs a data router, a plain
  * `<MemoryRouter>` throws "useNavigation must be used within a data router".
  */
 function renderPortionStep(candidate: AddSearchCandidate): string {
@@ -225,12 +225,12 @@ describe('authoritative net carbs reach every surface that displays them', () =>
     assert.equal(
       listFigure,
       portionFigure,
-      'the search list and the portion step rendered different net-carb numbers for one food — ' +
+      'the search list and the portion step rendered different net-carb numbers for one food, ' +
         'the surface showing the wrong one is not passing authoritativeNetCarbsPer100g through',
     );
   });
 
-  it('colors the search-result traffic light from the authoritative figure — a 21.7 g food must never render green', () => {
+  it('colors the search-result traffic light from the authoritative figure, a 21.7 g food must never render green', () => {
     const { classes } = findNetCarbBadge(renderSearchResultRow(wheatBranCandidate()));
     assert.ok(classes.includes(carbStatusBadgeClass.high), `expected the high-carb palette, got: ${classes}`);
     assert.equal(classes.includes('green'), false, `a 21.7 g net-carb food rendered a low-carb badge: ${classes}`);
@@ -242,7 +242,7 @@ describe('authoritative net carbs reach every surface that displays them', () =>
     assert.equal(classes.includes('green'), false, `a 21.7 g net-carb food rendered a low-carb badge: ${classes}`);
   });
 
-  it('renders no net-carb badge at all when the upstream figure is unknown — never falls back to a fabricated 0', () => {
+  it('renders no net-carb badge at all when the upstream figure is unknown, never falls back to a fabricated 0', () => {
     // An explicit `null` means "the authoritative figure itself is unknown for
     // this food", which must resolve to no number rather than silently
     // reverting to the local formula (which would happily print "0g" here).
@@ -260,9 +260,9 @@ describe('authoritative net carbs reach every surface that displays them', () =>
 // nowhere to keep it. Every diary/trends/streak/goal read of a logged curated
 // food was therefore permanently wrong, not just transiently mis-rendered.
 //
-// These tests drive the real production chain end to end — `PortionStep`'s own
+// These tests drive the real production chain end to end, `PortionStep`'s own
 // rendered hidden input → the real `LogSchema` → the real `buildLoggedEntry` →
-// the real `localFoodLogToSnapshot`/`computeDailyTotals` — so a break anywhere
+// the real `localFoodLogToSnapshot`/`computeDailyTotals`, so a break anywhere
 // along it fails here. Nothing below re-implements a mapping under test.
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -274,7 +274,7 @@ describe('authoritative net carbs reach every surface that displays them', () =>
  * `false !== true`.
  */
 function assertGrams(actual: number | null | undefined, expected: number, context?: string): void {
-  const detail = `expected ~${expected} g net carbs, got ${String(actual)}${context ? ` — ${context}` : ''}`;
+  const detail = `expected ~${expected} g net carbs, got ${String(actual)}${context ? `, ${context}` : ''}`;
   assert.ok(actual !== null && actual !== undefined, detail);
   assert.ok(Math.abs(actual - expected) < 1e-9, detail);
 }
@@ -303,7 +303,7 @@ function unescapeAttribute(value: string): string {
 /**
  * The REAL add-flow write path for a candidate: render the portion step, take
  * the authoritative figure from the hidden input IT actually emitted (not from
- * the candidate object — that would bypass the wiring under test), submit it
+ * the candidate object, that would bypass the wiring under test), submit it
  * through the real `LogSchema`, and build the entry with the real
  * `buildLoggedEntry`. Deleting the hidden input, the schema field, or the
  * builder's assignment each breaks this chain.
@@ -359,7 +359,7 @@ describe('authoritative net carbs survive being logged', () => {
     assertGrams(
       diaryNetCarbsFor([entry]),
       AUTHORITATIVE_NET_CARBS_PER_100G,
-      'the logged entry lost its authoritative net carbs — the diary is back to double-subtracting fibre',
+      'the logged entry lost its authoritative net carbs, the diary is back to double-subtracting fibre',
     );
   });
 
@@ -369,14 +369,14 @@ describe('authoritative net carbs survive being logged', () => {
     assertGrams(diaryNetCarbsFor([entry]), (AUTHORITATIVE_NET_CARBS_PER_100G * 250) / 100);
   });
 
-  it('persists NO authoritative figure for a personal food — a local estimate must never masquerade as one', () => {
+  it('persists NO authoritative figure for a personal food, a local estimate must never masquerade as one', () => {
     // Built by the REAL factory, not by spreading a curated candidate and
     // relabelling its `source`: what makes this candidate honest is that it
     // genuinely carries no upstream figure, not which tier it came from.
     //
     // This pins the invariant that replaced `PortionStep`'s old
     // `source === 'curated'` gate. The gate asked "which tier is this?"; the
-    // data now answers "do I have an upstream figure?" — so the step emits the
+    // data now answers "do I have an upstream figure?", so the step emits the
     // input unconditionally and a candidate with none submits a blank that
     // decodes straight back to `undefined`. Persisting anything here would
     // claim an authority this food doesn't have, freeze a value that should
@@ -386,7 +386,7 @@ describe('authoritative net carbs survive being logged', () => {
     const emitted = HIDDEN_NET_CARBS_FIELD.exec(renderPortionStep(localCandidate));
     assert.ok(
       emitted,
-      'the portion step must emit the field for every candidate — the DATA is the gate, not the source tier',
+      'the portion step must emit the field for every candidate, the DATA is the gate, not the source tier',
     );
     assert.equal(
       emitted[1],
@@ -407,7 +407,7 @@ describe('authoritative net carbs survive being logged', () => {
     assert.equal(findNetCarbBadge(renderPortionStep(localCandidate)).figure, '0');
   });
 
-  it('the diary ENTRY ROW renders the authoritative figure — this is the exact string that read "0g net carbs"', () => {
+  it('the diary ENTRY ROW renders the authoritative figure, this is the exact string that read "0g net carbs"', () => {
     const entry = logEntryFromAddFlow(wheatBranCandidate(), { grams: 100 });
     assert.equal(
       formatEntryNetCarbs(entry, i18next.t, 'en'),
@@ -423,12 +423,12 @@ describe('authoritative net carbs survive being logged', () => {
     assertGrams(
       group.subtotal.netCarbs,
       AUTHORITATIVE_NET_CARBS_PER_100G,
-      'the meal subtotal disagrees with the day total — diary.tsx has re-grown its own macro-snapshot mapper',
+      'the meal subtotal disagrees with the day total, diary.tsx has re-grown its own macro-snapshot mapper',
     );
     assertGrams(diaryNetCarbsFor([entry]), group.subtotal.netCarbs);
   });
 
-  it('a pre-v5 entry (no such key at all) still loads and falls back to the parts — never crashes, never null', () => {
+  it('a pre-v5 entry (no such key at all) still loads and falls back to the parts, never crashes, never null', () => {
     // Exactly what a row written by an older build reads back as: the key is
     // simply absent. It must behave precisely as it always did.
     const legacyEntry: LocalFoodLog = {
@@ -465,7 +465,7 @@ describe('authoritative net carbs survive being logged', () => {
 //
 // The fifth site of the same defect, and the one with the loudest symptom: the
 // confirm card rendered a green "0 g net carbs" for a food while the curated
-// match card DIRECTLY BELOW IT — on the same screen, for the same food —
+// match card DIRECTLY BELOW IT, on the same screen, for the same food ,
 // rendered "21.7g net carbs". Applying the match copied its macros and its
 // provenance token into the form and dropped its origin-aware net-carbs figure
 // on the floor, so both the preview and the eventually-persisted entry fell
@@ -476,7 +476,7 @@ describe('authoritative net carbs survive being logged', () => {
 // be WITHDRAWN once the person hand-changes the numbers it described.
 ////////////////////////////////////////////////////////////////////////////////
 
-/** The AI's own guess for the same food — deliberately different from the match, so a swap is visible. */
+/** The AI's own guess for the same food, deliberately different from the match, so a swap is visible. */
 const AI_DRAFT_MACROS = { kcal: 200, protein: 10, fat: 4, carbs: 30, fiber: 5 };
 
 const AI_IDENTIFICATION = {
@@ -519,7 +519,7 @@ function confirmFormData(overrides: { curatedSource?: string; macros?: MacroForm
 /**
  * Renders the real confirm step in the state that `formData` describes.
  *
- * The state is injected the way production actually re-creates it — through a
+ * The state is injected the way production actually re-creates it, through a
  * real `ConfirmDraftSchema` parse replied with a form-level error, i.e. the
  * exact `submission.reply({ formErrors })` path `handleConfirm` takes when a
  * confirm comes back for re-validation. That keeps the fixture honest: it is a
@@ -577,8 +577,8 @@ function confirmBadges(html: string): { classes: string; figure: string }[] {
  * `ConfirmDraftSchema` exactly as `handleConfirm` does. Deleting the hidden
  * input or the schema field breaks this chain.
  *
- * Returned as one shared item because `handleConfirm` writes TWO rows from it —
- * a log AND a personal food — and the pair only proves anything if both are
+ * Returned as one shared item because `handleConfirm` writes TWO rows from it ,
+ * a log AND a personal food, and the pair only proves anything if both are
  * built from the same parsed fact rather than from two independent fixtures.
  */
 function confirmedItemFromScanFlow(formData: FormData) {
@@ -644,11 +644,11 @@ describe('the scan confirm step carries an applied match’s authoritative net c
     );
     assert.ok(aiOnly[0], 'expected an item badge');
     // With the match's macros in the fields but NO match applied, the local
-    // formula floors this food to 0 — the exact wrong answer the fix removes.
+    // formula floors this food to 0, the exact wrong answer the fix removes.
     assert.equal(aiOnly[0].figure, '0');
   });
 
-  it('shows the authoritative figure on the item card once a match is applied — not the double-subtracted 0', () => {
+  it('shows the authoritative figure on the item card once a match is applied, not the double-subtracted 0', () => {
     const badges = confirmBadges(renderConfirmStep(confirmFormData(APPLIED)));
     assert.ok(badges[0], 'expected an item badge');
     assert.equal(
@@ -668,7 +668,7 @@ describe('the scan confirm step carries an applied match’s authoritative net c
     );
   });
 
-  it('colors the item traffic light from the authoritative figure — a 21.7 g food must never render green here either', () => {
+  it('colors the item traffic light from the authoritative figure, a 21.7 g food must never render green here either', () => {
     const badges = confirmBadges(renderConfirmStep(confirmFormData(APPLIED)));
     assert.ok(badges[0], 'expected an item badge');
     assert.ok(
@@ -689,14 +689,14 @@ describe('the scan confirm step carries an applied match’s authoritative net c
     );
   });
 
-  it('emits NO figure for a plain AI plate estimate — the scan’s own guess has no upstream authority to claim', () => {
+  it('emits NO figure for a plain AI plate estimate, the scan’s own guess has no upstream authority to claim', () => {
     // This path must keep computing from parts: the LLM reported these numbers
     // itself, so freezing a "net carbs" figure for them would both invent
     // authority and stop tracking the user's later macro corrections.
     assert.equal(emittedConfirmNetCarbs(renderConfirmStep(confirmFormData())), '');
   });
 
-  it('WITHDRAWS the figure once the macros are hand-edited — a snapshot of numbers that are no longer there is a lie', () => {
+  it('WITHDRAWS the figure once the macros are hand-edited, a snapshot of numbers that are no longer there is a lie', () => {
     const edited = confirmFormData({
       ...APPLIED,
       macros: { ...matchMacrosToFormValues(wheatBranMatch().macrosPer100g), carbs: '30' },
@@ -712,7 +712,7 @@ describe('the scan confirm step carries an applied match’s authoritative net c
     assert.equal(confirmedEntryFromScanFlow(edited).netCarbsPer100g, undefined);
     // And the preview follows the numbers the person actually typed.
     const badges = confirmBadges(renderConfirmStep(edited));
-    assert.equal(badges[0]?.figure, '0', '30 − 42.8 clamps to 0 — the user’s own parts, not the stale 21.7');
+    assert.equal(badges[0]?.figure, '0', '30 − 42.8 clamps to 0, the user’s own parts, not the stale 21.7');
   });
 
   it('a scanned-then-matched food totals the authoritative figure on the diary, not 0', () => {
@@ -725,7 +725,7 @@ describe('the scan confirm step carries an applied match’s authoritative net c
     );
   });
 
-  it('keeps the entry’s curated provenance and the figure consistent — both come from the same applied match', () => {
+  it('keeps the entry’s curated provenance and the figure consistent, both come from the same applied match', () => {
     const entry = confirmedEntryFromScanFlow(confirmFormData(APPLIED));
     assert.equal(entry.curatedSource, toCuratedSource('wheat-bran'));
     assert.equal(entry.aiEstimated, false);
@@ -737,12 +737,12 @@ describe('the scan confirm step carries an applied match’s authoritative net c
 });
 
 ////////////////////////////////////////////////////////////////////////////////
-// The scan confirm's OTHER row — the EIGHTH and last site of the same defect.
+// The scan confirm's OTHER row, the EIGHTH and last site of the same defect.
 //
 // One confirm writes TWO rows from one upstream fact: a `LocalFoodLog` (which
 // carried the figure) and a `LocalPersonalFood` (which had nowhere to keep it).
 // So the very same scanned-and-matched food showed 21.7 g on its diary entry
-// and a green 0 on /add's "Your food" row — the exact "one food, two screens,
+// and a green 0 on /add's "Your food" row, the exact "one food, two screens,
 // two numbers" symptom this whole file exists to prevent, reached by a path no
 // test drove because the food row was written inline and never asserted on.
 //
@@ -759,7 +759,7 @@ function customCandidateFor(food: LocalPersonalFood): AddSearchCandidate {
   return { ...localFoodToCandidate(food), matchTier: null };
 }
 
-describe('one scan confirm writes two rows — and both carry the same number', () => {
+describe('one scan confirm writes two rows, and both carry the same number', () => {
   const APPLIED = { curatedSource: toCuratedSource('wheat-bran') };
 
   it('FIXTURE CHECK: the saved food’s own macros really would estimate 0 (else nothing below is discriminating)', () => {
@@ -772,7 +772,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
     assert.equal(
       confirmedFoodFromScanFlow(confirmFormData(APPLIED)).netCarbsPer100g,
       AUTHORITATIVE_NET_CARBS_PER_100G,
-      'buildConfirmedFood dropped the figure — /add’s "Your food" row is back to double-subtracting fibre',
+      'buildConfirmedFood dropped the figure, /add’s "Your food" row is back to double-subtracting fibre',
     );
   });
 
@@ -782,12 +782,12 @@ describe('one scan confirm writes two rows — and both carry the same number', 
     assert.equal(food.netCarbsPer100g, AUTHORITATIVE_NET_CARBS_PER_100G);
   });
 
-  it('the LOG and the FOOD written by one confirm never disagree — they come from one upstream fact', () => {
+  it('the LOG and the FOOD written by one confirm never disagree, they come from one upstream fact', () => {
     const formData = confirmFormData(APPLIED);
     assert.equal(
       confirmedFoodFromScanFlow(formData).netCarbsPer100g,
       confirmedEntryFromScanFlow(formData).netCarbsPer100g,
-      'one confirm stored two different figures for one food — the row that lost it is not being built from `item`',
+      'one confirm stored two different figures for one food, the row that lost it is not being built from `item`',
     );
   });
 
@@ -803,7 +803,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
     assert.equal(diaryFigure, `${AUTHORITATIVE_NET_CARBS_PER_100G} g net carbs`);
   });
 
-  it('colours that row’s traffic light from the authoritative figure — a 21.7 g food must not be green here either', () => {
+  it('colours that row’s traffic light from the authoritative figure, a 21.7 g food must not be green here either', () => {
     const candidate = customCandidateFor(confirmedFoodFromScanFlow(confirmFormData(APPLIED)));
     const { classes } = findNetCarbBadge(renderSearchResultRow(candidate));
     assert.ok(classes.includes(carbStatusBadgeClass.high), `expected the high-carb palette, got: ${classes}`);
@@ -819,25 +819,25 @@ describe('one scan confirm writes two rows — and both carry the same number', 
     assert.equal(
       relogged.netCarbsPer100g,
       scanned.netCarbsPer100g,
-      'the food re-logged from /add stored a different figure than the scan that created it — ' +
+      'the food re-logged from /add stored a different figure than the scan that created it, ' +
         'one plate, logged twice, gives two different day totals with nothing on screen to explain it',
     );
     assertGrams(diaryNetCarbsFor([relogged]), AUTHORITATIVE_NET_CARBS_PER_100G, 'via /add’s "Your food" row');
     assertGrams(diaryNetCarbsFor([scanned]), AUTHORITATIVE_NET_CARBS_PER_100G, 'via the original scan confirm');
   });
 
-  it('claims nothing for a plain AI plate estimate — the scan’s own guess has no authority to hand on', () => {
+  it('claims nothing for a plain AI plate estimate, the scan’s own guess has no authority to hand on', () => {
     const food = confirmedFoodFromScanFlow(confirmFormData());
     assert.equal(food.netCarbsPer100g, undefined);
     const candidate = customCandidateFor(food);
     assert.equal(candidate.authoritativeNetCarbsPer100g, undefined);
-    // And it still SHOWS the local estimate those parts produce — withholding
+    // And it still SHOWS the local estimate those parts produce, withholding
     // the figure from storage must never blank the screen.
     assert.equal(findNetCarbBadge(renderSearchResultRow(candidate)).figure, '0');
     assert.equal(logEntryFromAddFlow(candidate, { grams: SERVING_GRAMS }).netCarbsPer100g, undefined);
   });
 
-  it('withdraws it from the FOOD too once the macros are hand-edited — both rows follow one rule', () => {
+  it('withdraws it from the FOOD too once the macros are hand-edited, both rows follow one rule', () => {
     const edited = confirmFormData({
       ...APPLIED,
       macros: { ...matchMacrosToFormValues(wheatBranMatch().macrosPer100g), carbs: '30' },
@@ -850,8 +850,8 @@ describe('one scan confirm writes two rows — and both carry the same number', 
 
   it('keeps an upstream-unknown null distinct from "never captured" on the food as well', () => {
     // The item's own figure is `null` (upstream consulted, genuinely unknown),
-    // so the saved food must carry `null` — never collapse to absent, never
-    // fabricate a 0 — and its /add row renders no number at all.
+    // so the saved food must carry `null`, never collapse to absent, never
+    // fabricate a 0, and its /add row renders no number at all.
     const food: LocalPersonalFood = { ...confirmedFoodFromScanFlow(confirmFormData(APPLIED)), netCarbsPer100g: null };
     const candidate = customCandidateFor(food);
     assert.equal(candidate.authoritativeNetCarbsPer100g, null);
@@ -871,6 +871,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -883,7 +884,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
     assert.equal(
       restoredFood.netCarbsPer100g,
       AUTHORITATIVE_NET_CARBS_PER_100G,
-      'zod stripped the figure on import — a backup restore would silently corrupt every scanned-and-matched food',
+      'zod stripped the figure on import, a backup restore would silently corrupt every scanned-and-matched food',
     );
     // And the restored food still renders the right number, not a green 0.
     assert.equal(
@@ -907,6 +908,7 @@ describe('one scan confirm writes two rows — and both carry the same number', 
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -955,13 +957,13 @@ describe('one scan confirm writes two rows — and both carry the same number', 
 });
 
 ////////////////////////////////////////////////////////////////////////////////
-// The ENTRY RECEIPT's hero — the same defect reached through the linked food.
+// The ENTRY RECEIPT's hero, the same defect reached through the linked food.
 //
 // `derivePer100gBasis` hands the receipt the LINKED PERSONAL FOOD's per-100 g
 // macros as its display basis whenever the entry still carries curated/AI
 // provenance. Those macros are the fibre-EXCLUSIVE "available" carbohydrate, so
 // recomputing `carbs - fiber - polyols` from them floored the hero to a
-// confident, green 0 while the diary row for the very same entry read 21.7 —
+// confident, green 0 while the diary row for the very same entry read 21.7 ,
 // one tap apart. The fix is the entry's own stored figure, which is also what
 // `handleSave` preserves/clears, so the hero can never show a stale number.
 ////////////////////////////////////////////////////////////////////////////////
@@ -1014,7 +1016,7 @@ describe('the entry receipt hero reads the entry’s figure, not the linked food
     assert.equal(
       match[2],
       String(AUTHORITATIVE_NET_CARBS_PER_100G),
-      'the receipt hero is recomputing from the linked food’s macros again — it shows 0 while the diary row shows 21.7',
+      'the receipt hero is recomputing from the linked food’s macros again, it shows 0 while the diary row shows 21.7',
     );
   });
 
@@ -1024,13 +1026,13 @@ describe('the entry receipt hero reads the entry’s figure, not the linked food
     assert.equal(`${heroFigure} g net carbs`, formatEntryNetCarbs(log, i18next.t, 'en'));
   });
 
-  it('colours the hero from the authoritative figure — a 21.7 g entry must not read green', () => {
+  it('colours the hero from the authoritative figure, a 21.7 g entry must not read green', () => {
     const match = RECEIPT_HERO_BADGE.exec(renderEntryReceipt(scanned()));
     assert.ok(match, 'expected a hero badge');
     assert.ok(match[1]?.includes(carbStatusBadgeClass.high), `expected the high-carb palette, got: ${match[1]}`);
   });
 
-  it('falls back to the parts for an entry that never had a figure — unchanged behaviour', () => {
+  it('falls back to the parts for an entry that never had a figure, unchanged behaviour', () => {
     const { log, food } = scanned();
     const manual: LocalFoodLog = { ...log, netCarbsPer100g: undefined };
     assert.equal(RECEIPT_HERO_BADGE.exec(renderEntryReceipt({ log: manual, food }))?.[2], '0');
@@ -1050,7 +1052,7 @@ describe('the entry receipt hero reads the entry’s figure, not the linked food
 // The mirror of `computeEditPatch`'s rule for logs: hand-changing the macros
 // makes the person the source, so a figure snapshotted from a food database
 // stops describing them and has to clear. `handleEditFood` reuses the very same
-// pure helpers rather than re-deciding the rule, so the two can't drift — these
+// pure helpers rather than re-deciding the rule, so the two can't drift, these
 // pin that composition on the food's own shape.
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1058,7 +1060,7 @@ describe('editing a saved personal food keeps its authoritative figure honest', 
   const savedFood = (): LocalPersonalFood =>
     confirmedFoodFromScanFlow(confirmFormData({ curatedSource: toCuratedSource('wheat-bran') }));
 
-  it('a NAME-only edit preserves the figure — the numbers it describes are untouched', () => {
+  it('a NAME-only edit preserves the figure, the numbers it describes are untouched', () => {
     const food = savedFood();
     const kept = resolveEditedNetCarbsPer100g({
       macrosChanged: macrosDiffer(food.macrosPer100g, { ...food.macrosPer100g }),
@@ -1067,7 +1069,7 @@ describe('editing a saved personal food keeps its authoritative figure honest', 
     assert.equal(kept, AUTHORITATIVE_NET_CARBS_PER_100G);
   });
 
-  it('a MACRO edit CLEARS it — a snapshot of numbers that are no longer there is a lie', () => {
+  it('a MACRO edit CLEARS it, a snapshot of numbers that are no longer there is a lie', () => {
     const food = savedFood();
     const cleared = resolveEditedNetCarbsPer100g({
       macrosChanged: macrosDiffer(food.macrosPer100g, { ...food.macrosPer100g, carbs: 30 }),
@@ -1092,8 +1094,8 @@ describe('editing a saved personal food keeps its authoritative figure honest', 
 // takes, so a chip that logs the wrong number means the whole net-carbs fix
 // does not hold on the main path.
 //
-// The chip form dropped THREE fields of this class at once — the authoritative
-// net carbs, the licence credit, and the chosen portion — so a favourite tapped
+// The chip form dropped THREE fields of this class at once, the authoritative
+// net carbs, the licence credit, and the chosen portion, so a favourite tapped
 // from the diary came back as a curated-provenance entry with a
 // double-subtracted 0 g, no credit, and a bare gram figure where the person had
 // chosen a real portion. The chain driven below is the production one end to
@@ -1102,7 +1104,7 @@ describe('editing a saved personal food keeps its authoritative figure honest', 
 // the real `buildRecentLogEntry` -> the real diary totals.
 ////////////////////////////////////////////////////////////////////////////////
 
-/** The chip's own rendered hidden inputs, by name — read off the markup, never assumed. */
+/** The chip's own rendered hidden inputs, by name, read off the markup, never assumed. */
 function chipHiddenInputs(chip: LocalFrequentChip): Map<string, string> {
   const element = createElement(QuickAddChipButton, { chip, date: DAY_KEY });
   const router = createMemoryRouter([{ path: '/diary', element }], { initialEntries: ['/diary'] });
@@ -1138,7 +1140,7 @@ function relogEntryFromChip(chip: LocalFrequentChip): LocalFoodLog {
 /** The chip a previously-logged food produces, through the real recents ranking + chip selection. */
 function chipFor(log: LocalFoodLog): LocalFrequentChip {
   // Two identical logs so the food clears the diary's real `minTimesLogged: 2`
-  // eligibility floor — a chip is by definition a repeatedly-logged food.
+  // eligibility floor, a chip is by definition a repeatedly-logged food.
   const recents = computeLocalRecentFoods([log, { ...log, id: `${log.id}-again` }], { limit: 5 });
   const [chip] = selectLocalFrequentChips(recents, { limit: 4, minTimesLogged: 2 });
   assert.ok(chip, 'expected the logged food to earn a chip');
@@ -1146,7 +1148,7 @@ function chipFor(log: LocalFoodLog): LocalFrequentChip {
 }
 
 describe('the diary’s frequent/favourite chip re-logs the same food, not a stripped copy of it', () => {
-  /** A credited curated food, logged through the real add flow — the chip's source. */
+  /** A credited curated food, logged through the real add flow, the chip's source. */
   const sourceLog = (): LocalFoodLog => logEntryFromAddFlow(wheatBranCandidate(), { grams: SERVING_GRAMS });
 
   it('FIXTURE CHECK: the source log really carries all three fields (else nothing below is discriminating)', () => {
@@ -1168,13 +1170,13 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
     assert.equal(
       relogged.netCarbsPer100g,
       AUTHORITATIVE_NET_CARBS_PER_100G,
-      'the chip re-log lost the authoritative figure — a re-tapped favourite is back to double-subtracting fibre',
+      'the chip re-log lost the authoritative figure, a re-tapped favourite is back to double-subtracting fibre',
     );
     assert.equal(relogged.attribution, BLS_CREDIT, 'the chip re-log stripped the licence credit');
     assert.deepEqual(
       relogged.portion,
       { unit: 'serving', quantity: 1, gramsPerUnit: SERVING_GRAMS },
-      'the chip re-log dropped the chosen portion — the entry comes back as bare grams',
+      'the chip re-log dropped the chosen portion, the entry comes back as bare grams',
     );
     // And the provenance it already carried still lines up with the figure.
     assert.equal(relogged.curatedSource, toCuratedSource('wheat-bran'));
@@ -1192,7 +1194,7 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
     assert.equal(formatEntryPortion(relogged, 'en'), `1 serving (${SERVING_GRAMS}\u00a0g)`);
   });
 
-  it('colours the chip’s traffic-light dot from the authoritative figure — a 21.7 g food must not show a green dot', () => {
+  it('colours the chip’s traffic-light dot from the authoritative figure, a 21.7 g food must not show a green dot', () => {
     assert.equal(
       chipFor(sourceLog()).carbStatus,
       'high',
@@ -1205,7 +1207,7 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
     assert.equal(chipCarbStatus({ ...wheatBranMatch().macrosPer100g }, SERVING_GRAMS), 'low');
   });
 
-  it('carries NO figure and NO credit for a chip built from a plain manual log — nothing to claim, nobody to credit', () => {
+  it('carries NO figure and NO credit for a chip built from a plain manual log, nothing to claim, nobody to credit', () => {
     const manual: LocalFoodLog = {
       ...sourceLog(),
       curatedSource: null,
@@ -1226,7 +1228,7 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
   });
 
   it('keeps an upstream-unknown null distinct from "never captured" across the chip round trip', () => {
-    // `null` means an upstream source was consulted and had none — a captured
+    // `null` means an upstream source was consulted and had none, a captured
     // fact that must not collapse into "no figure" (nor be fabricated into 0).
     const chip = chipFor({ ...sourceLog(), netCarbsPer100g: null });
     assert.equal(chip.netCarbsPer100g, null);
@@ -1237,18 +1239,18 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
 });
 
 ////////////////////////////////////////////////////////////////////////////////
-// /add's "Recent" row — the SEVENTH site of the same defect, and the first one
+// /add's "Recent" row, the SEVENTH site of the same defect, and the first one
 // whose symptom a user could see directly.
 //
 // `localRecentFoodToCandidate` re-derived a display estimate from the recent
 // food's macros instead of passing the underlying log's own authoritative
 // figure through, and `PortionStep` then gated persistence on
-// `source === 'curated'` — a gate that existed only because that field
+// `source === 'curated'`, a gate that existed only because that field
 // conflated "an upstream figure" with "a local estimate". Consequence: ONE
 // favourite food, logged from the diary chip and from /add's Recent row,
 // stored two different numbers and produced two different day totals. Before
 // the chip was fixed both paths were consistently wrong; afterwards they were
-// inconsistently right, which is worse — a person re-logging the same breakfast
+// inconsistently right, which is worse, a person re-logging the same breakfast
 // two ways got two answers with nothing on screen to explain the difference.
 //
 // The chain driven below is the production one end to end, and it deliberately
@@ -1258,7 +1260,7 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
 
 /**
  * The /add "Recent" row a previously-logged food produces, through the real
- * recents ranking and the real candidate factory (never hand-assembled — a
+ * recents ranking and the real candidate factory (never hand-assembled, a
  * hand-built candidate would sail straight past the mapping under test).
  */
 function recentCandidateFor(log: LocalFoodLog): AddSearchCandidate {
@@ -1268,7 +1270,7 @@ function recentCandidateFor(log: LocalFoodLog): AddSearchCandidate {
 }
 
 describe('one favourite food, two logging paths, one number', () => {
-  /** A credited curated food, logged through the real add flow — the shared source of both paths. */
+  /** A credited curated food, logged through the real add flow, the shared source of both paths. */
   const sourceLog = (): LocalFoodLog => logEntryFromAddFlow(wheatBranCandidate(), { grams: SERVING_GRAMS });
 
   it('FIXTURE CHECK: the Recent candidate’s own macros really would estimate 0 (else nothing below is discriminating)', () => {
@@ -1285,7 +1287,7 @@ describe('one favourite food, two logging paths, one number', () => {
     );
   });
 
-  it('the /add Recent ROW shows the same number the diary does — no green 0 beside a red 21.7', () => {
+  it('the /add Recent ROW shows the same number the diary does, no green 0 beside a red 21.7', () => {
     assert.equal(
       findNetCarbBadge(renderSearchResultRow(recentCandidateFor(sourceLog()))).figure,
       String(AUTHORITATIVE_NET_CARBS_PER_100G),
@@ -1300,12 +1302,12 @@ describe('one favourite food, two logging paths, one number', () => {
     assert.equal(
       viaRecentRow.netCarbsPer100g,
       viaChip.netCarbsPer100g,
-      'the same food logged from /add’s Recent row and from the diary chip stored two different figures — ' +
+      'the same food logged from /add’s Recent row and from the diary chip stored two different figures, ' +
         'a person re-logging one breakfast two ways gets two different day totals with nothing on screen to explain it',
     );
     assertGrams(diaryNetCarbsFor([viaRecentRow]), AUTHORITATIVE_NET_CARBS_PER_100G, 'via /add’s Recent row');
     assertGrams(diaryNetCarbsFor([viaChip]), AUTHORITATIVE_NET_CARBS_PER_100G, 'via the diary chip');
-    // The credit travels with the data on both paths too — a re-log that keeps
+    // The credit travels with the data on both paths too, a re-log that keeps
     // the number and loses the licence line is still broken.
     assert.equal(viaRecentRow.attribution, viaChip.attribution);
     assert.equal(viaRecentRow.attribution, BLS_CREDIT);
@@ -1338,7 +1340,7 @@ describe('editing an entry keeps the authoritative figure honest', () => {
     kcal: 216,
   };
 
-  it('a QUANTITY-only edit preserves the figure — it is per-100 g, so re-portioning leaves it valid', () => {
+  it('a QUANTITY-only edit preserves the figure, it is per-100 g, so re-portioning leaves it valid', () => {
     const patch = computeEditPatch({
       grams: 250,
       editedPer100g: { ...originalBasis },
@@ -1358,7 +1360,7 @@ describe('editing an entry keeps the authoritative figure honest', () => {
     );
   });
 
-  it('a MACRO edit CLEARS the figure — the user is now the source, so a stale upstream number would be a lie', () => {
+  it('a MACRO edit CLEARS the figure, the user is now the source, so a stale upstream number would be a lie', () => {
     const patch = computeEditPatch({
       grams: 100,
       // The person corrects the carbs by hand.
@@ -1369,7 +1371,7 @@ describe('editing an entry keeps the authoritative figure honest', () => {
     });
     assert.equal(patch.macrosChanged, true);
     assert.equal(patch.netCarbsPer100g, undefined, 'a hand-edited entry must not keep the upstream figure');
-    // Provenance clears on the same signal — the two rules must not drift apart.
+    // Provenance clears on the same signal, the two rules must not drift apart.
     assert.equal(patch.provenance.curatedSource, null);
 
     const logged = logEntryFromAddFlow(wheatBranCandidate(), { grams: 100 });
@@ -1403,6 +1405,7 @@ describe('authoritative net carbs survive serialization', () => {
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -1415,7 +1418,7 @@ describe('authoritative net carbs survive serialization', () => {
     assert.equal(
       restoredLog.netCarbsPer100g,
       AUTHORITATIVE_NET_CARBS_PER_100G,
-      'zod stripped the figure on import — a backup restore would silently corrupt every curated entry',
+      'zod stripped the figure on import, a backup restore would silently corrupt every curated entry',
     );
     assertGrams(diaryNetCarbsFor([restoredLog]), AUTHORITATIVE_NET_CARBS_PER_100G);
   });
@@ -1435,6 +1438,7 @@ describe('authoritative net carbs survive serialization', () => {
         profile: null,
         fasts: [],
         savedMeals: [],
+        fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],
         researchIdentity: null,
@@ -1482,7 +1486,7 @@ describe('authoritative net carbs survive serialization', () => {
     };
     // Stringified directly, not via `serializeBackup`: this simulates a file
     // written by an OLDER build, so it is deliberately not a current
-    // `BackupEnvelope` — that is the whole point of the test.
+    // `BackupEnvelope`, that is the whole point of the test.
     const restored = migrateEnvelopeForward(parseBackupEnvelope(JSON.stringify(envelope)));
     assert.equal(restored.schemaVersion, SCHEMA_VERSION);
     assert.equal(restored.data.foodLogs[0]?.netCarbsPer100g, undefined);

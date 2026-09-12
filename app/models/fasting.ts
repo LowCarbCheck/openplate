@@ -1,5 +1,5 @@
 /**
- * The pure fasting model (M132) — every derivation, formatter and validator the
+ * The pure fasting model (M132), every derivation, formatter and validator the
  * `/fasting` route and the Overview strip read. No DOM, no store, no
  * `Date.now()`: `nowMs` is always a parameter, exactly as `models/dashboard.ts`
  * takes `today`, which is what makes the whole feature's behaviour pinnable by
@@ -22,7 +22,7 @@
  * `--accent-amber` in this app means "over a ceiling you set as a limit". A
  * fast target is a floor you are clearing, not a ceiling you are breaching, so
  * the ring caps at full and stays `text-primary`; the figure keeps counting.
- * `progress` is returned UNCLAMPED for exactly that reason — the caller clamps
+ * `progress` is returned UNCLAMPED for exactly that reason, the caller clamps
  * for the arc while the number carries on.
  *
  * ── Clocks, zones and DST ──────────────────────────────────────────────────
@@ -31,7 +31,7 @@
  * counts real hours: a 16 h fast is 16 real hours and ends one wall-clock hour
  * later or earlier than naive arithmetic suggests. The "Started 20:04" label
  * still reads 20:04 because `Intl.DateTimeFormat` resolves the zone offset at
- * that instant. This is honest and needs no copy — openplate counts elapsed
+ * that instant. This is honest and needs no copy, openplate counts elapsed
  * hours, not wall-clock hours. Travelling across zones mid-fast is the same
  * case: the duration is untouched and the start label re-renders as the
  * correct wall clock where the person now is.
@@ -40,7 +40,7 @@ import type { FastProtocolId, LocalFast } from '#app/lib/local-store/schema';
 
 /**
  * The i18next `t` shape, declared locally so the formatters stay pure and
- * driveable from a test with no i18n instance — the same device `hero-stat.tsx`
+ * driveable from a test with no i18n instance, the same device `hero-stat.tsx`
  * uses.
  */
 export type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
@@ -50,15 +50,83 @@ export type FastStatus = 'scheduled' | 'active' | 'completed' | 'ended-early' | 
 export interface FastProtocol {
   id: Exclude<FastProtocolId, 'custom'>;
   fastingHours: number;
+  /**
+   * The eating window that completes a DAILY protocol, so `fastingHours +
+   * eatingHours === 24` for every one of them. `0` on the long fasts, because
+   * a 36 h fast names no eating window at all. The person eats when it ends,
+   * and inventing a number here would put a window on screen that nobody
+   * chose. Read {@link FastProtocol.daily} to tell the two apart; never infer
+   * it from a zero, which is a value rather than an absence.
+   */
   eatingHours: number;
+  /**
+   * True for a protocol that REPEATS every day (16:8, 18:6, 20:4), false for a
+   * one-off long fast (24 h and up).
+   *
+   * The distinction is the reason this field exists rather than being derived
+   * at each call site: a daily window is something a person can put on a
+   * routine and expect back tomorrow, while a 48 h fast is a single event. The
+   * two read differently on screen and schedule differently, and a reader that
+   * guessed from `fastingHours < 24` would silently reclassify any future
+   * 22:2 preset.
+   */
+  daily: boolean;
 }
 
-/** The three preset windows, in picker order. */
+/**
+ * Every named preset, in picker order: the three conventional daily
+ * time-restricted-eating windows first, then the extended fasts.
+ *
+ * Ordered daily-first on purpose. A person arriving at the picker is far more
+ * likely to want 16:8 than 72 h, and the extended end of the list is where the
+ * 24 h+ care sheet applies.
+ */
 export const FAST_PROTOCOLS: readonly FastProtocol[] = [
-  { id: '16:8', fastingHours: 16, eatingHours: 8 },
-  { id: '18:6', fastingHours: 18, eatingHours: 6 },
-  { id: '20:4', fastingHours: 20, eatingHours: 4 },
+  { id: '16:8', fastingHours: 16, eatingHours: 8, daily: true },
+  { id: '18:6', fastingHours: 18, eatingHours: 6, daily: true },
+  { id: '20:4', fastingHours: 20, eatingHours: 4, daily: true },
+  { id: '24h', fastingHours: 24, eatingHours: 0, daily: false },
+  { id: '36h', fastingHours: 36, eatingHours: 0, daily: false },
+  { id: '48h', fastingHours: 48, eatingHours: 0, daily: false },
+  { id: '72h', fastingHours: 72, eatingHours: 0, daily: false },
 ];
+
+/** One named preset by id, or null for `custom` and for an id this build does not know. */
+export function protocolById(id: FastProtocolId): FastProtocol | null {
+  return FAST_PROTOCOLS.find((candidate) => candidate.id === id) ?? null;
+}
+
+/**
+ * Whether this id names a protocol that repeats every day.
+ *
+ * `custom` is NOT daily, and that is a decision rather than a fallback: a
+ * typed hour count is a one-off target the person set for this fast, and
+ * treating it as a routine would put a window on tomorrow that nobody asked
+ * for. A routine built on a custom length is expressed by the fasting
+ * settings record (`routineCustomHours`), not by this predicate.
+ */
+export function isDailyProtocol(id: FastProtocolId): boolean {
+  return protocolById(id)?.daily === true;
+}
+
+/**
+ * The longest reflection note a fast may carry, in UTF-16 code units.
+ *
+ * 280 is a deliberate ceiling rather than a storage limit: the note is a line
+ * about how the fast went, rendered in a summary card, and a page of text
+ * there is a journal the app has not designed. `endLocalFast` REJECTS a longer
+ * one rather than truncating it, because silently cutting somebody's own words
+ * mid-sentence and storing the stump is worse than refusing.
+ */
+export const FAST_NOTE_MAX_LENGTH = 280;
+
+/** Minutes in a day, the exclusive bound on `LocalFastingSettings.routineStartMinute`. */
+export const MINUTES_PER_DAY = 24 * 60;
+
+/** Whether a routine start minute is a real local minute-after-midnight (0..1439). */
+export function isValidRoutineStartMinute(minute: number): boolean {
+  return Number.isInteger(minute) && minute >= 0 && minute < MINUTES_PER_DAY;
+}
 
 export const FAST_MIN_CUSTOM_HOURS = 1;
 /**
@@ -67,7 +135,7 @@ export const FAST_MIN_CUSTOM_HOURS = 1;
  * which "a fast" is a meaningful unit.
  */
 export const FAST_MAX_CUSTOM_HOURS = 72;
-/** How far back a start instant may be placed — backdating "I started at 19:00, it's 21:00 now". */
+/** How far back a start instant may be placed, backdating "I started at 19:00, it's 21:00 now". */
 export const FAST_MAX_BACKDATE_MS = 48 * 60 * 60 * 1000;
 /** How far ahead a fast may be scheduled. */
 export const FAST_MAX_SCHEDULE_AHEAD_MS = 7 * 24 * 60 * 60 * 1000;
@@ -79,7 +147,7 @@ const MS_PER_MINUTE = 60 * 1000;
 const MS_PER_SECOND = 1000;
 
 // ---------------------------------------------------------------------------
-// Timeline — the one derivation everything reads
+// Timeline, the one derivation everything reads
 // ---------------------------------------------------------------------------
 
 export interface FastTimeline {
@@ -95,7 +163,7 @@ export interface FastTimeline {
   /** ms past the target, floored at 0. */
   overtimeMs: number;
   /**
-   * `elapsedMs / targetDurationMs`, floored at 0 and UNCLAMPED above — the
+   * `elapsedMs / targetDurationMs`, floored at 0 and UNCLAMPED above, the
    * caller clamps for the arc so the ring can cap while the figure keeps
    * counting.
    */
@@ -118,7 +186,7 @@ function effectiveStartAt(fast: LocalFast): number {
 /**
  * Resolves one fast against a clock reading. TOTAL: every `LocalFast` × every
  * `nowMs` yields a renderable status, including rows the app itself can never
- * produce (both start fields null, an end before the start, a zero target) —
+ * produce (both start fields null, an end before the start, a zero target) ,
  * a restored backup or a stepped device clock can produce all three, and a
  * screen that throws on them would be worse than one that renders them.
  *
@@ -166,8 +234,8 @@ export function resolveFastTimeline(fast: LocalFast, nowMs: number): FastTimelin
  *  R7 not ended, neither start field set      -> `active` from `createdAt`
  *
  * R1 is the `cancelled` fallback. The UI DELETES a cancelled plan rather than
- * keeping a row — a history list logging every plan you backed out of is a
- * shame ledger (DESIGN.md §10.1) — so R1 is only reachable through a restored
+ * keeping a row, a history list logging every plan you backed out of is a
+ * shame ledger (DESIGN.md §10.1), so R1 is only reachable through a restored
  * backup or a clock jump. It exists so this function stays total. The `<=`
  * absorbs the equal case (ended at the exact planned instant).
  *
@@ -190,7 +258,7 @@ function resolveFastStatus(
 // Selection
 // ---------------------------------------------------------------------------
 
-/** Whether a fast is still open — `endedAt === null`. */
+/** Whether a fast is still open, `endedAt === null`. */
 export function isOpenFast(fast: LocalFast): boolean {
   return fast.endedAt === null;
 }
@@ -204,12 +272,12 @@ function byLatestStart(a: LocalFast, b: LocalFast): number {
  * The fast `/fasting` and the Overview strip operate on, or null.
  *
  * The one-open-fast invariant is enforced on create (`createLocalFast`), but a
- * BACKUP RESTORE bypasses it by design — `importSnapshot` reproduces the file
+ * BACKUP RESTORE bypasses it by design, `importSnapshot` reproduces the file
  * rather than adjudicating it, so a restore onto a device that already has a
  * running fast can leave two open rows. Rather than inventing an end instant
  * for the loser (which would write a lie into the person's history), this picks
  * the one with the LATEST effective start and leaves the other in the list.
- * `selectFastHistory` then renders it as "Still open", with a Remove action —
+ * `selectFastHistory` then renders it as "Still open", with a Remove action ,
  * nothing is fabricated, nothing is silently dropped, and the person can clean
  * it up.
  */
@@ -225,7 +293,7 @@ export function selectFastHistory(fasts: readonly LocalFast[]): LocalFast[] {
 
 /**
  * The fast whose end is recent enough to still deserve a summary line, or null.
- * Never returns a `cancelled` row — there is nothing to report about a plan
+ * Never returns a `cancelled` row, there is nothing to report about a plan
  * that never ran.
  */
 export function selectRecentlyEndedFast(fasts: readonly LocalFast[], nowMs: number): LocalFast | null {
@@ -249,12 +317,12 @@ export function selectRecentlyEndedFast(fasts: readonly LocalFast[], nowMs: numb
  * Compact duration: "16h 4m" / "16h" / "42m" / "0m". Minutes are dropped when
  * they are zero AND there is at least one hour, so a preset target renders as
  * "16h" rather than "16h 0m". Sub-minute durations render "0m" rather than
- * "0h 0m" — a fast that has just started reads as zero minutes, not as broken.
+ * "0h 0m", a fast that has just started reads as zero minutes, not as broken.
  * Truncates rather than rounds: an elapsed figure must never claim a minute
  * that has not finished.
  *
  * Takes `t` because the units are language-dependent (German writes
- * "16 Std 4 Min" — period-free on purpose: this string is interpolated at the
+ * "16 Std 4 Min", period-free on purpose: this string is interpolated at the
  * END of sentences like `fasting.toast.ended`, and a trailing "Std." there
  * would render "0 Min.."), the same device `formatHeroStat` uses.
  */
@@ -268,10 +336,10 @@ export function formatFastDuration(ms: number, t: Translate): string {
 }
 
 /**
- * The LIVE countdown only: "16:04:12" — hours unpadded and never wrapped at 24,
+ * The LIVE countdown only: "16:04:12", hours unpadded and never wrapped at 24,
  * minutes and seconds zero-padded, no locale involvement (H:MM:SS is written
  * the same everywhere). Render it in `font-sans tabular-nums`, never
- * `font-display` (DESIGN.md §4 — the Fraunces subset has no `tnum`, so the
+ * `font-display` (DESIGN.md §4, the Fraunces subset has no `tnum`, so the
  * digits would jitter once a second).
  */
 export function formatFastClock(ms: number): string {
@@ -282,7 +350,7 @@ export function formatFastClock(ms: number): string {
   return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-/** "+2h 14m" — `formatFastDuration` with a sign, minute resolution. */
+/** "+2h 14m", `formatFastDuration` with a sign, minute resolution. */
 export function formatFastOvertime(ms: number, t: Translate): string {
   return `+${formatFastDuration(ms, t)}`;
 }
@@ -302,8 +370,8 @@ export function fastTargetLabel(fast: LocalFast, t: Translate): string {
 
 /** Milliseconds for a preset protocol id; null for 'custom'. */
 export function protocolTargetMs(id: FastProtocolId): number | null {
-  const protocol = FAST_PROTOCOLS.find((candidate) => candidate.id === id);
-  return protocol === undefined ? null : protocol.fastingHours * MS_PER_HOUR;
+  const protocol = protocolById(id);
+  return protocol === null ? null : protocol.fastingHours * MS_PER_HOUR;
 }
 
 /** Whole hours in [FAST_MIN_CUSTOM_HOURS, FAST_MAX_CUSTOM_HOURS]. */
@@ -323,12 +391,12 @@ const LOCAL_DATE_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
  * Parses a native `<input type="datetime-local">` value ("2026-08-06T20:00")
  * into epoch-ms, or null when it is absent/malformed.
  *
- * The value carries NO zone, and `Date.parse` reads it in the RUNTIME's zone —
+ * The value carries NO zone, and `Date.parse` reads it in the RUNTIME's zone ,
  * which is correct and deliberate: the widget renders the DEVICE's wall clock,
  * so reinterpreting it in the stored profile timezone would show one time and
  * mean another. Fasting is wall-clock-of-where-you-are. (Day labels in history
  * still use `resolveLocalTimezone(profile)` like the rest of the app; the
- * asymmetry is the point — the widget must mean what it displays.)
+ * asymmetry is the point, the widget must mean what it displays.)
  *
  * The regex guard runs BEFORE `Date.parse`, and it is load-bearing: without it
  * `Date.parse('2026')` happily returns a real UTC-midnight instant, which would
@@ -346,7 +414,7 @@ export type PlannedStartProblem = 'too-far-back' | 'too-far-ahead' | 'in-future'
  * Bounds a chosen start instant. `allowFuture: false` is the Adjust-an-active-
  * fast case (a running fast cannot have started later than now).
  *
- * A start instant in the PAST is never a problem when `allowFuture` is true —
+ * A start instant in the PAST is never a problem when `allowFuture` is true ,
  * backdating is the single most-requested real-world need, and rejecting it
  * would force the person to lie about when they started.
  *
@@ -374,7 +442,7 @@ export function toLocalDateTimeInputValue(atMs: number): string {
   return `${date}T${pad2(at.getHours())}:${pad2(at.getMinutes())}`;
 }
 
-/** The hour a "start tonight" fast defaults to — see `defaultPlannedStartLocal`. */
+/** The hour a "start tonight" fast defaults to, see `defaultPlannedStartLocal`. */
 const DEFAULT_PLANNED_START_HOUR = 20;
 
 /**
@@ -382,7 +450,7 @@ const DEFAULT_PLANNED_START_HOUR = 20;
  * at 20:00 when 20:00 has already passed (the boundary is "already passed", so
  * exactly 20:00 rolls to tomorrow).
  *
- * 20:00 is the conventional start of an evening-to-midday eating window — a
+ * 20:00 is the conventional start of an evening-to-midday eating window, a
  * 16:8 fast from 20:00 lands at 12:00, which is the shape most people mean when
  * they say "tonight".
  */

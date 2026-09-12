@@ -2,7 +2,7 @@
  * The ONLY seam between sync and the local store.
  *
  * Everything sync does to the device's data happens through the functions
- * `app/lib/local-store` already exports — `exportBackup` to read, the
+ * `app/lib/local-store` already exports, `exportBackup` to read, the
  * `putLocal*`/`deleteLocal*` pair to write. No second write path, no direct
  * TinyBase access, no reaching past `persist.ts` into IndexedDB. That is not
  * politeness: those functions are what take `persist.ts`'s save lock, dedupe
@@ -40,8 +40,8 @@ import {
  * Reads the device's full health snapshot.
  *
  * IDENTICAL TO A BACKUP EXPORT AGAIN, as of M192. Between M187/02 and M192 it
- * was one key wider — it attached `gatewayConnection`, the gateway member
- * token a backup deliberately never carried — and that key went with the
+ * was one key wider, it attached `gatewayConnection`, the gateway member
+ * token a backup deliberately never carried, and that key went with the
  * gateway.
  *
  * IT MUST NOT GROW A SECOND IndexedDB READ. This function is on the PUSH path,
@@ -86,7 +86,7 @@ export async function readLocalOwnerPrivateRegion(): Promise<OwnerPrivateRegion>
  * already tested.
  *
  * @throws when the payload is not a valid snapshot, or is from a NEWER schema
- * this build cannot safely down-convert. Both are refusals, not warnings —
+ * this build cannot safely down-convert. Both are refusals, not warnings ,
  * writing a half-understood entity into someone's diary is worse than not
  * syncing.
  */
@@ -116,7 +116,7 @@ export function parseRemoteSnapshot({
  *
  * DELETES FIRST, then upserts. `importBackup` alone is upsert-only, so an
  * entity another device deleted would survive here forever and be re-uploaded
- * on the next cycle — the "the entry I deleted on my phone keeps coming back"
+ * on the next cycle, the "the entry I deleted on my phone keeps coming back"
  * bug. The delete set is computed by comparing what is here now against what
  * the merge decided, so nothing is removed that the merge did not explicitly
  * resolve as a tombstone.
@@ -125,7 +125,7 @@ export async function applyMergedSnapshot({
   merged,
   local,
 }: {
-  /** The full device shape — the shareable region the merge produced, recomposed with an OPENED compartment. */
+  /** The full device shape, the shareable region the merge produced, recomposed with an OPENED compartment. */
   merged: LocalStoreSnapshot;
   /** Only the shareable region is needed here: every delete set below is computed from an id-bearing diary collection. */
   local: ShareableSnapshot;
@@ -134,11 +134,19 @@ export async function applyMergedSnapshot({
   const survivingLogs = new Set(merged.foodLogs.map((log) => log.id));
   const survivingWeights = new Set(merged.weightEntries.map((entry) => entry.id));
   // No `survivingFasts` set, on purpose (M132): fasts are not merged across
-  // devices — `mergeSnapshots` hands `merged.fasts` straight back from the
-  // LOCAL snapshot — so there is no remote tombstone that could authorise
+  // devices, `mergeSnapshots` hands `merged.fasts` straight back from the
+  // LOCAL snapshot, so there is no remote tombstone that could authorise
   // deleting one. Computing a delete set here would be the bug: a peer running
   // an older build sends no fasts at all, and this loop would wipe every fast
   // on this device. The `importBackup` below re-upserts them unchanged.
+  //
+  // No surviving-set for `fastingSettings` either, but for the OPPOSITE
+  // reason, it IS merged (`snapshot-sync.ts`). It is a SINGLETON with no id
+  // so there is no set to diff: the merge hands back one record or `null`, and
+  // `importBackup` writes it whole through `putLocalFastingSettingsRecord`.
+  // A `null` means no device has ever set a routine, and this path deliberately
+  // does not delete on it: the local row, if there is one, is what the merge
+  // was built from.
 
   for (const food of local.foods) {
     if (!survivingFoods.has(food.id)) await deleteLocalFood(food.id);
