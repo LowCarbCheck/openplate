@@ -21,8 +21,12 @@
  * Sync may only mint a tombstone for a key that journal names, so a delete that
  * reached `delRow` directly is a delete no other device will ever hear about.
  * Grep for `delRow` in this file before adding a path: the three merged
- * collections (personal foods, food logs, weight entries) are the only ones
- * with a delete verb at all. There is ONE other remover,
+ * collections (personal foods, food logs, weight entries) and the two
+ * PASS-THROUGH ones (fasts, saved meals) are the only ones with a delete verb
+ * at all. The pass-through pair journals too, and for a sharper reason: no
+ * tombstone describes their removals, so the journal is the only evidence
+ * `mergeSnapshots` has that this device's list is short on purpose. There is
+ * ONE other remover,
  * `removeEntitiesWithoutJournal`, and it is the opposite case, rows a PEER
  * deleted, which this device must not claim. Its own doc says why.
  *
@@ -61,7 +65,7 @@ import {
 } from './store';
 import { getPrimaryStore, requestPersistentStorage } from './persist';
 import { markDeviceHasDataForTable } from './had-data';
-import { entityKey, SCHEMA_VERSION, SYNC_ENTITY_TYPE_BY_TABLE } from './schema';
+import { DELETE_JOURNAL_TAG_BY_TABLE, entityKey, SCHEMA_VERSION } from './schema';
 import type {
   FastMood,
   FastProtocolId,
@@ -138,13 +142,17 @@ function writeEntity(store: Store, table: string, id: string, entity: PrimaryEnt
  * indivisible: TinyBase commits both writes together, and the autosave
  * listener sees one change, so the disk never holds one half.
  *
- * A table absent from {@link SYNC_ENTITY_TYPE_BY_TABLE} is not merged by sync
- * (fasts, saved meals, the owner-private rows), so there is nothing to record
- * and the row is simply removed. That is not a silent skip: those tables have
- * no tombstones at all, and a journal row for one would be read by nothing.
+ * The tag comes from {@link DELETE_JOURNAL_TAG_BY_TABLE}, NOT from the merged
+ * map beside it. Fasts and saved meals are passed through whole rather than
+ * merged, so they carry no tombstone, and for a long time that was read as
+ * "nothing to record". It is the opposite: nothing on the wire describes their
+ * removals, so the journal is the ONLY thing that can tell a list somebody
+ * emptied from a list a browser evicted, and `mergeSnapshots` reads it for
+ * exactly that. A table absent from the map (the owner-private rows) has no
+ * journalled delete verb at all, and the row is simply removed.
  */
 function deleteEntity(store: Store, table: string, id: string): void {
-  const entityType: string | undefined = Object.entries(SYNC_ENTITY_TYPE_BY_TABLE).find(
+  const entityType: string | undefined = Object.entries(DELETE_JOURNAL_TAG_BY_TABLE).find(
     ([tableId]) => tableId === table,
   )?.[1];
   if (entityType === undefined) {
@@ -734,9 +742,17 @@ export async function setLocalFastPlannedStart(
   return rescheduled;
 }
 
-/** Removes one fast by id. */
+/**
+ * Removes one fast by id, AND writes the removal into the delete journal.
+ *
+ * Through `deleteEntity` like every other delete verb, even though a fast is
+ * never tombstoned. The journal row is what licenses this device's whole fast
+ * list to stand against the account's in `mergeSnapshots`; a bare `delRow` here
+ * would make a real deletion indistinguishable from an evicted database, and
+ * the safe reading of that is the account's list, so the fast would come back.
+ */
 export async function deleteLocalFast(id: string, { store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(FASTS_TABLE, id);
+  deleteEntity(await resolveStore(store), FASTS_TABLE, id);
 }
 
 // ---------------------------------------------------------------------------
@@ -848,9 +864,16 @@ export async function getLocalSavedMeal(id: string, { store }: StoreOption = {})
   return readEntity<LocalSavedMeal>(await resolveStore(store), SAVED_MEALS_TABLE, id);
 }
 
-/** Removes one saved meal by id. Never touches any entry already re-logged from it (items were copied in, not referenced). */
+/**
+ * Removes one saved meal by id, AND writes the removal into the delete journal.
+ *
+ * Never touches any entry already re-logged from it (items were copied in, not
+ * referenced). The journal row is there for the same reason as
+ * {@link deleteLocalFast}'s: saved meals are passed through, so nothing on the
+ * wire carries this removal, and the journal is the only proof it happened.
+ */
 export async function deleteLocalSavedMeal(id: string, { store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(SAVED_MEALS_TABLE, id);
+  deleteEntity(await resolveStore(store), SAVED_MEALS_TABLE, id);
 }
 
 // ---------------------------------------------------------------------------

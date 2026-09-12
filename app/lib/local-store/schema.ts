@@ -529,9 +529,11 @@ export function entityKey(entityType: string, entityId: string): string {
  * key nothing reads.
  *
  * `fasts` and `savedMeals` are absent because they are passed through whole
- * rather than merged, so they are never stamped and never tombstoned. The
- * owner-private compartment is absent because it is not a table at all; its
- * evidence is `SnapshotIntegrity.isCompartmentKnown`.
+ * rather than merged, so they are never stamped and never tombstoned. They DO
+ * journal their deletes, under the tags {@link DELETE_JOURNAL_TAG_BY_TABLE}
+ * adds, which is a separate map for exactly that reason. The owner-private
+ * compartment is absent because it is not a table at all; its evidence is
+ * `SnapshotIntegrity.isCompartmentKnown`.
  */
 export const SYNC_ENTITY_TYPE_BY_TABLE = {
   [PERSONAL_FOODS_TABLE]: 'personalFood',
@@ -543,6 +545,30 @@ export const SYNC_ENTITY_TYPE_BY_TABLE = {
 
 /** A merged table's entity-type tag, `undefined` for every table that is not merged. */
 export type SyncEntityTypeTag = (typeof SYNC_ENTITY_TYPE_BY_TABLE)[keyof typeof SYNC_ENTITY_TYPE_BY_TABLE];
+
+/**
+ * The tag a DELETE is written down under, for every table with a delete verb.
+ *
+ * A SUPERSET of {@link SYNC_ENTITY_TYPE_BY_TABLE}, and the two are deliberately
+ * different maps rather than one widened one. The merged map answers "which
+ * entities are stamped, diffed and tombstoned", and `snapshot-sync.ts` derives
+ * both `SYNC_ENTITY_TYPES` and its tag-to-table lookup from it, so a tag that
+ * entered it would make `stampSnapshot` mint tombstones for a collection that
+ * has none. This map answers a smaller question: what key does the journal
+ * record when a person removes this row.
+ *
+ * `fasts` and `savedMeals` are here because they are PASSED THROUGH rather
+ * than merged, so nothing on the wire carries their removals, and the whole
+ * local list either stands or is replaced by the account's. `mergeSnapshots`
+ * may only let this device's list stand when every id the baseline recorded is
+ * either still in it or named here, which is how an evicted device is told
+ * apart from a person who cleared their fasts.
+ */
+export const DELETE_JOURNAL_TAG_BY_TABLE = {
+  ...SYNC_ENTITY_TYPE_BY_TABLE,
+  [FASTS_TABLE]: 'fast',
+  [SAVED_MEALS_TABLE]: 'savedMeal',
+} as const;
 
 /** The fixed row id for the singleton profile/goals row. */
 export const PROFILE_ROW_ID = 'me';

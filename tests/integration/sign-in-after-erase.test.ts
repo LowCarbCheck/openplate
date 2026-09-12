@@ -21,7 +21,7 @@
  * `eraseDeviceData` ever stopped taking the baseline with the rows: without
  * that half these fixtures produce the deletion described above.
  */
-import { HEALTHY_STORAGE, withRecordedDeletes } from '../sync-integrity-fixtures';
+import { HEALTHY_STORAGE, NOTHING_TO_ACCOUNT_FOR, withRecordedDeletes } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -111,6 +111,7 @@ describe('signing in after erase re-downloads the diary', () => {
     assert.deepEqual(local.meta.tombstones, [], 'an erased device must not claim anything was deleted');
 
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: HEALTHY_STORAGE,
       local: { snapshot: snapshotOf([]), meta: local.meta },
       remote: serverPayload(),

@@ -44,6 +44,7 @@ import type {
 } from '#app/lib/local-store';
 import {
   entityKey as buildEntityKey,
+  DELETE_JOURNAL_TAG_BY_TABLE,
   FASTING_SETTINGS_TABLE,
   FASTS_TABLE,
   FOOD_LOGS_TABLE,
@@ -132,6 +133,31 @@ export interface StampedEntity {
 export interface SyncBaseline {
   perEntity: Record<string, StampedEntity>;
   tombstones: Tombstone[];
+  /**
+   * The ids the two PASS-THROUGH collections held in the payload this device
+   * last agreed with.
+   *
+   * Not in `perEntity`, deliberately and permanently. That record drives the
+   * stamping, so an id in it would be diffed, stamped and tombstoned, which is
+   * the merge these two collections do not have. This is a plain list of ids
+   * and it answers one question: which fasts and saved meals did the account
+   * hold last time this device looked? `mergeSnapshots` lets the local list
+   * stand only when every one of those ids is still in it or is named in the
+   * delete journal, so an emptiness has to be accounted for before it is
+   * published.
+   *
+   * OPTIONAL FOR ONE CYCLE, which is the migration. A baseline written before
+   * this field existed has no record of what the account held, so nothing can
+   * be accounted for, the table reads as untrusted, and the REMOTE list wins
+   * that cycle. `applyMergedSnapshot` computes no delete set for these two, so
+   * `importBackup` upserts the account's list beside the device's own rows and
+   * nothing local is lost. The baseline this cycle commits carries the ids, and
+   * every later cycle is the ordinary case.
+   */
+  passThrough?: {
+    fasts: string[];
+    savedMeals: string[];
+  };
 }
 
 /** A stamped payload, ready to encrypt (or just merged out of two others). */
@@ -585,6 +611,98 @@ function toCandidateMap(payload: StampedSnapshot) {
 }
 
 /**
+ * What the pass-through decision produced, beside the merged payload itself.
+ *
+ * Returned rather than inferred by the caller, because neither half can be
+ * recomputed from the merged snapshot: `published` names ids that are no
+ * longer in it, and `refused` is a statement about which side won, which two
+ * identical lists do not record.
+ */
+export interface PassThroughOutcome {
+  /**
+   * The DELETE JOURNAL KEYS of the ids this device's list removed and this
+   * merge therefore published (`fast:abc`, `savedMeal:def`).
+   *
+   * The orchestrator reads it twice: it is the second half of
+   * `shrinkAcknowledged`, because a person who cleared forty saved meals shrank
+   * the blob on purpose and the service must be told; and it is what the
+   * journal prune forgets once the baseline that carries the removal is
+   * committed.
+   */
+  published: string[];
+  /**
+   * The store tables whose REMOTE list stood, because the local one could not
+   * be accounted for.
+   *
+   * Empty on every ordinary cycle. A table here means this device holds fewer
+   * fasts or saved meals than the account does and cannot say why, so the
+   * account's list was kept instead of its own.
+   */
+  refused: string[];
+}
+
+/** A merged payload, plus what happened to the two collections the merge does not merge. */
+export interface MergedSnapshot extends StampedSnapshot {
+  passThrough: PassThroughOutcome;
+}
+
+/** One table's verdict: the list that survived, the journal keys it published, and the table id when the remote won. */
+interface PassThroughDecision<T> {
+  list: T[];
+  published: string[];
+  refused: string | null;
+}
+
+/**
+ * WHICH SIDE'S LIST SURVIVES, for one collection that is not merged.
+ *
+ * THE INVARIANT, and it is the whole of this function: this device may push
+ * its own list only when every id its persisted baseline recorded for the
+ * table is either still in that list, or is named in the delete journal as a
+ * removal this device performed. An id that is in neither is an id this device
+ * cannot account for, and the honest reading of that is "I lost it", not "it
+ * is gone".
+ *
+ * The disk-versus-memory signal is kept BESIDE the journal, not instead of it,
+ * the same pairing `isTombstoneTrusted` uses: a half-read table can produce a
+ * list that accounts for every baseline id and is still wrong about the rows
+ * it never read.
+ */
+function decidePassThrough<T extends { id: string }>({
+  table,
+  tag,
+  local,
+  remote,
+  baselineIds,
+  deletedEntityKeys,
+  integrity,
+}: {
+  table: string;
+  /** The journal tag this table's removals are written under (`DELETE_JOURNAL_TAG_BY_TABLE`). */
+  tag: string;
+  local: T[];
+  remote: T[];
+  /** The ids the baseline recorded for this table, or `undefined` for a baseline written before it did. */
+  baselineIds: string[] | undefined;
+  deletedEntityKeys: ReadonlySet<string>;
+  integrity: LocalStoreIntegrity;
+}): PassThroughDecision<T> {
+  const localIds = new Set(local.map((entry) => entry.id));
+  const removed = (baselineIds ?? []).filter((id) => !localIds.has(id));
+  const removedKeys = removed.map((id) => entityKey(tag, id));
+  // A MISSING RECORD IS NOT AN EMPTY ONE. `baselineIds === undefined` is the
+  // migration case, a baseline from before this field existed, and it can
+  // account for nothing because it recorded nothing. Defaulting it to `[]`
+  // would make every one of those devices trusted, which is the state the whole
+  // rule exists to refuse.
+  const isAccountedFor = baselineIds !== undefined && removedKeys.every((key) => deletedEntityKeys.has(key));
+  if (!isTableTrusted({ table, integrity }) || !isAccountedFor) {
+    return { list: remote, published: [], refused: table };
+  }
+  return { list: local, published: removedKeys, refused: null };
+}
+
+/**
  * Merges the local payload with a just-pulled remote one.
  *
  * Deterministic and symmetric: both devices running this over the same pair of
@@ -595,6 +713,8 @@ export function mergeSnapshots({
   local,
   remote,
   integrity,
+  baseline,
+  deletedEntityKeys,
 }: {
   local: StampedSnapshot;
   remote: StampedSnapshot;
@@ -608,7 +728,25 @@ export function mergeSnapshots({
    * and every stamped entity is merged exactly as before.
    */
   integrity: LocalStoreIntegrity;
-}): StampedSnapshot {
+  /**
+   * The PERSISTED baseline, for its `passThrough` ids and nothing else.
+   *
+   * It is what the local list is held against: a fast the baseline names and
+   * the list does not is either a delete this device wrote down or a row it
+   * lost, and only those two ids together can tell which.
+   */
+  baseline: SyncBaseline;
+  /**
+   * This device's delete journal, the keys it recorded as removed
+   * (`SnapshotIntegrity.deletedEntityKeys`).
+   *
+   * Passed separately rather than read off `integrity`, because `integrity`
+   * here is the narrower {@link LocalStoreIntegrity}: the disk comparison is
+   * all the merged entities need, and widening it would put the journal in
+   * front of readers that must not weigh it.
+   */
+  deletedEntityKeys: ReadonlySet<string>;
+}): MergedSnapshot {
   const merged = mergeEntityMaps(toCandidateMap(local), toCandidateMap(remote));
 
   const foods: LocalPersonalFood[] = [];
@@ -675,13 +813,30 @@ export function mergeSnapshots({
   // THE BOUNDARY HAS NOT MOVED: fasts are still not merged across devices, and
   // the "at most one open fast" question M132 deferred is still open and still
   // needs its own design pass. This decides something much smaller, and only
-  // in a state that should never happen: when the device CANNOT VOUCH for its
-  // own storage, its emptiness is not a fact about the account, so it must not
-  // be the side that wins. Nothing here combines two lists, and on every
-  // ordinary cycle, including one where the person genuinely holds no fasts at
-  // all, the local list wins exactly as it always has.
-  const canVouchForFasts = isTableTrusted({ table: FASTS_TABLE, integrity });
-  const canVouchForSavedMeals = isTableTrusted({ table: SAVED_MEALS_TABLE, integrity });
+  // in a state that should never happen: when the device cannot ACCOUNT FOR
+  // the ids its own baseline recorded, its shorter list is not a fact about the
+  // account, so it must not be the side that wins. Nothing here combines two
+  // lists, and on every ordinary cycle, including one where the person
+  // genuinely cleared every fast they had, the local list wins exactly as it
+  // always has, because every removal was written down as it happened.
+  const fastsDecision = decidePassThrough({
+    table: FASTS_TABLE,
+    tag: DELETE_JOURNAL_TAG_BY_TABLE[FASTS_TABLE],
+    local: local.snapshot.fasts,
+    remote: remote.snapshot.fasts,
+    baselineIds: baseline.passThrough?.fasts,
+    deletedEntityKeys,
+    integrity,
+  });
+  const savedMealsDecision = decidePassThrough({
+    table: SAVED_MEALS_TABLE,
+    tag: DELETE_JOURNAL_TAG_BY_TABLE[SAVED_MEALS_TABLE],
+    local: local.snapshot.savedMeals,
+    remote: remote.snapshot.savedMeals,
+    baselineIds: baseline.passThrough?.savedMeals,
+    deletedEntityKeys,
+    integrity,
+  });
 
   // FASTS RIDE THROUGH FROM THE LOCAL SIDE, UNTOUCHED (M132).
   //
@@ -713,12 +868,12 @@ export function mergeSnapshots({
       foodLogs,
       weightEntries,
       profile,
-      // The REMOTE side only when this device cannot speak for the table the
-      // local list came out of, which is an evicted or half-loaded store
-      // (`isTableTrusted`). Local otherwise, always, including when it is
-      // empty on purpose.
-      fasts: canVouchForFasts ? local.snapshot.fasts : remote.snapshot.fasts,
-      savedMeals: canVouchForSavedMeals ? local.snapshot.savedMeals : remote.snapshot.savedMeals,
+      // The REMOTE side only when this device cannot account for the ids its
+      // baseline recorded, which is an evicted store, a half-loaded table, or a
+      // baseline from before the ids were kept (`decidePassThrough`). Local
+      // otherwise, always, including when it is empty on purpose.
+      fasts: fastsDecision.list,
+      savedMeals: savedMealsDecision.list,
       // NOT passed through from `local` like the two above it: the routine is
       // genuinely merged, so a second device adopts it instead of staying
       // blank. See the comment on `SYNC_ENTITY_TYPES.fastingSettings` for why
@@ -733,6 +888,10 @@ export function mergeSnapshots({
       privateStore,
     },
     meta: { perEntity, tombstones },
+    passThrough: {
+      published: [...fastsDecision.published, ...savedMealsDecision.published],
+      refused: [fastsDecision.refused, savedMealsDecision.refused].filter((table) => table !== null),
+    },
   };
 }
 
@@ -750,7 +909,20 @@ export function baselineFromPayload(payload: StampedSnapshot): SyncBaseline {
     const stamp = payload.meta.perEntity[entity.key] ?? { lamport: 0, deviceId: '' };
     perEntity[entity.key] = { lamport: stamp.lamport, deviceId: stamp.deviceId, hash: contentHash(entity.value) };
   }
-  return { perEntity, tombstones: payload.meta.tombstones };
+  return {
+    perEntity,
+    tombstones: payload.meta.tombstones,
+    // THE TWO PASS-THROUGH COLLECTIONS, recorded as plain ids and deliberately
+    // NOT as `perEntity` rows. An entry in `perEntity` is stamped, diffed and
+    // tombstoned by the next `stampSnapshot`, which is the merge these two do
+    // not have; what the next cycle needs from them is only "what did the
+    // account hold when I last agreed with it", so that a shorter list can be
+    // checked against the delete journal before it is published.
+    passThrough: {
+      fasts: payload.snapshot.fasts.map((entry) => entry.id),
+      savedMeals: payload.snapshot.savedMeals.map((entry) => entry.id),
+    },
+  };
 }
 
 /**

@@ -51,9 +51,11 @@ import {
   mergeSnapshots,
   payloadsEqual,
   stampSnapshot,
+  type MergedSnapshot,
   type SnapshotIntegrity,
   type StampedSnapshot,
 } from './snapshot-sync';
+import { DELETE_JOURNAL_TAG_BY_TABLE, FASTS_TABLE, SAVED_MEALS_TABLE } from '#app/lib/local-store/schema';
 import type { Tombstone } from './engine/merge/types';
 import type { PersistedSyncState, SyncStateStore } from './sync-state';
 import { withSyncOrchestratorLock } from './sync-lock';
@@ -183,18 +185,6 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
   // would strand somebody on an empty diary with a perfectly good copy one
   // request away.
   const withheldTombstones = stamped.withheld;
-  // The server refuses a push that shrinks a blob by more than half unless the
-  // client says the shrink is intended. This cycle may only say so when it
-  // published deletes it can PROVE, and never when it withheld one.
-  //
-  // MINTED, NOT `meta.tombstones` (M225). The baseline never compacts its
-  // tombstones, so `meta.tombstones` still names every delete this device ever
-  // published, and a flag computed from it was true forever after the device's
-  // first deleted entry, acknowledging every push it would ever make and
-  // switching the service's guard off for exactly the people most likely to
-  // need it. `minted` is the deletes that are NEW in this push, so a cycle with
-  // nothing to delete acknowledges nothing.
-  const shrinkAcknowledged = stamped.minted.length > 0 && withheldTombstones.length === 0;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const remote = await pullRemotePayload(deps);
@@ -206,18 +196,57 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     // the merge decides whether this device's `fasts` and `savedMeals` can be
     // believed, and that question is about the read that produced this
     // snapshot, not about the storage a moment later.
-    const merged =
-      remote === null ? localPayload : (
-        mergeSnapshots({ local: localPayload, remote: remote.payload, integrity: read.integrity })
-      );
+    const merged: MergedSnapshot =
+      remote === null ?
+        // NO BLOB AT ALL, so there was no other list to weigh this device's
+        // against and no decision to record. `published` stays empty on
+        // purpose: the shrink guard compares a push against a STORED blob, and
+        // there is none, so there is nothing to acknowledge.
+        { ...localPayload, passThrough: { published: [], refused: [] } }
+      : mergeSnapshots({
+          local: localPayload,
+          remote: remote.payload,
+          integrity: read.integrity,
+          baseline: persisted.baseline,
+          deletedEntityKeys: read.integrity.deletedEntityKeys,
+        });
+
+    // The server refuses a push that shrinks a blob by more than half unless
+    // the client says the shrink is intended. This cycle may only say so when
+    // it published removals it can PROVE, and never when it withheld one.
+    //
+    // MINTED, NOT `meta.tombstones` (M225). The baseline never compacts its
+    // tombstones, so `meta.tombstones` still names every delete this device
+    // ever published, and a flag computed from it was true forever after the
+    // device's first deleted entry, acknowledging every push it would ever
+    // make and switching the service's guard off for exactly the people most
+    // likely to need it. `minted` is the deletes that are NEW in this push, so
+    // a cycle with nothing to delete acknowledges nothing.
+    //
+    // AND THE PASS-THROUGH REMOVALS BESIDE THEM. Clearing forty saved meals
+    // mints no tombstone, because saved meals are not merged, so a flag built
+    // from `minted` alone left that push looking like an unexplained shrink and
+    // the service turned it down. It is computed INSIDE the loop because it now
+    // depends on the merge, which depends on the blob this round pulled.
+    const shrinkAcknowledged =
+      (stamped.minted.length > 0 || merged.passThrough.published.length > 0) && withheldTombstones.length === 0;
 
     // Nothing local to contribute: adopt the remote blob as-is and stop. This
     // is the common case on every boot, and skipping the push is what keeps
     // "open the app" from consuming a blob version.
-    if (remote !== null && payloadsEqual(merged, remote.payload)) {
+    //
+    // AND NOTHING PUBLISHED FROM THE TWO PASS-THROUGH LISTS, which the equality
+    // itself cannot see: `canonicalize` weighs neither `fasts` nor `savedMeals`,
+    // so a cycle whose only change is a recorded clear looks equal to a blob
+    // that still holds those rows, and adopting it would commit a baseline
+    // without the cleared ids and prune the journal rows that prove the
+    // removal. The next real push would then shrink the blob with nothing left
+    // to acknowledge it with, which the service refuses. A published removal is
+    // always a push, so the shrink is declared while the evidence still exists.
+    if (remote !== null && payloadsEqual(merged, remote.payload) && merged.passThrough.published.length === 0) {
       await deps.applySnapshot({ merged: merged.snapshot, local });
       const settled = commitState({ deps, merged, blobVersion: baseVersion, at: now() });
-      await forgetPublishedDeletes({ deps, merged });
+      await forgetPublishedDeletes({ deps, merged, deletedEntityKeys: read.integrity.deletedEntityKeys });
       return {
         blobVersion: baseVersion,
         pushed: false,
@@ -250,7 +279,7 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     await deps.applySnapshot({ merged: merged.snapshot, local });
     const at = now();
     commitState({ deps, merged, blobVersion: result.newVersion, at });
-    await forgetPublishedDeletes({ deps, merged });
+    await forgetPublishedDeletes({ deps, merged, deletedEntityKeys: read.integrity.deletedEntityKeys });
     return {
       blobVersion: result.newVersion,
       pushed: true,
@@ -339,11 +368,52 @@ async function pushOrHeal({
  * Both call sites run it on a cycle that has already agreed with a payload, so
  * every tombstone in `merged.meta` is now in the persisted baseline and is
  * carried forward unconditionally from here on.
+ *
+ * THE PASS-THROUGH REMOVALS GO TOO, and they have no tombstone to be found by.
+ * A cleared fast or saved meal is agreed the moment the committed baseline
+ * stops naming it, so the test is exactly that: a journal key whose id is
+ * absent from the list this cycle agreed with. A key whose id is back in the
+ * list is a removal that did NOT survive the merge (the remote list stood), and
+ * it stays in the journal so the next cycle can try again.
  */
-async function forgetPublishedDeletes({ deps, merged }: { deps: SyncCycleDeps; merged: StampedSnapshot }): Promise<void> {
-  const keys = merged.meta.tombstones.map((tombstone) => entityKey(tombstone.entityType, tombstone.entityId));
+async function forgetPublishedDeletes({
+  deps,
+  merged,
+  deletedEntityKeys,
+}: {
+  deps: SyncCycleDeps;
+  merged: StampedSnapshot;
+  deletedEntityKeys: ReadonlySet<string>;
+}): Promise<void> {
+  const keys = [
+    ...merged.meta.tombstones.map((tombstone) => entityKey(tombstone.entityType, tombstone.entityId)),
+    ...passThroughKeysToForget({ merged, deletedEntityKeys }),
+  ];
   if (keys.length === 0) return;
   await deps.forgetPublishedDeletes(keys);
+}
+
+/** The journal keys for fasts and saved meals the agreed payload no longer holds. */
+function passThroughKeysToForget({
+  merged,
+  deletedEntityKeys,
+}: {
+  merged: StampedSnapshot;
+  deletedEntityKeys: ReadonlySet<string>;
+}): string[] {
+  const survivingByTag = new Map<string, Set<string>>([
+    [DELETE_JOURNAL_TAG_BY_TABLE[FASTS_TABLE], new Set(merged.snapshot.fasts.map((entry) => entry.id))],
+    [DELETE_JOURNAL_TAG_BY_TABLE[SAVED_MEALS_TABLE], new Set(merged.snapshot.savedMeals.map((entry) => entry.id))],
+  ]);
+  const forgotten: string[] = [];
+  for (const key of deletedEntityKeys) {
+    const [tag, ...idParts] = key.split(':');
+    const surviving = survivingByTag.get(tag ?? '');
+    if (surviving === undefined) continue;
+    if (surviving.has(idParts.join(':'))) continue;
+    forgotten.push(key);
+  }
+  return forgotten;
 }
 
 interface RemotePayload {

@@ -10,7 +10,12 @@
  * Everything the cycle touches is injected, so these run with no browser, no
  * IndexedDB, no server and no locks, the algorithm is exercised directly.
  */
-import { EVICTED_STORAGE, HEALTHY_STORAGE, withRecordedDeletes } from '../sync-integrity-fixtures';
+import {
+  EVICTED_STORAGE,
+  HEALTHY_STORAGE,
+  NOTHING_TO_ACCOUNT_FOR,
+  withRecordedDeletes,
+} from '../sync-integrity-fixtures';
 import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -309,8 +314,8 @@ test('the merge is symmetric, both devices compute the identical result', () => 
     meta: { perEntity: { 'foodLog:b': { lamport: 1, deviceId: 'device-b' } }, tombstones: [] },
   };
 
-  const fromA = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: a, remote: b });
-  const fromB = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: b, remote: a });
+  const fromA = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: a, remote: b });
+  const fromB = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: b, remote: a });
 
   assert.equal(payloadsEqual(fromA, fromB), true);
   assert.deepEqual(
@@ -329,9 +334,10 @@ test('a higher Lamport wins; an equal one breaks on deviceId, never on time', ()
     meta: { perEntity: { 'foodLog:a': { lamport: 5, deviceId: 'aaa' } }, tombstones: [] },
   };
 
-  assert.equal(mergeSnapshots({ integrity: HEALTHY_STORAGE, local: older, remote: newer }).snapshot.foodLogs[0]?.name, 'New name');
+  assert.equal(mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: older, remote: newer }).snapshot.foodLogs[0]?.name, 'New name');
 
   const tie = mergeSnapshots({
+    ...NOTHING_TO_ACCOUNT_FOR,
     integrity: HEALTHY_STORAGE,
     local: { ...older, meta: { perEntity: { 'foodLog:a': { lamport: 5, deviceId: 'zzz' } }, tombstones: [] } },
     remote: newer,
@@ -352,13 +358,13 @@ test('a tombstone beats an older live value, and loses to a newer one', () => {
     },
   };
 
-  assert.equal(mergeSnapshots({ integrity: HEALTHY_STORAGE, local: live, remote: deleted }).snapshot.foodLogs.length, 0);
+  assert.equal(mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: live, remote: deleted }).snapshot.foodLogs.length, 0);
 
   const editedAfterDelete: StampedSnapshot = {
     ...live,
     meta: { perEntity: { 'foodLog:a': { lamport: 3, deviceId: 'device-a' } }, tombstones: [] },
   };
-  assert.equal(mergeSnapshots({ integrity: HEALTHY_STORAGE, local: editedAfterDelete, remote: deleted }).snapshot.foodLogs.length, 1);
+  assert.equal(mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: editedAfterDelete, remote: deleted }).snapshot.foodLogs.length, 1);
 });
 
 test('baselineFromPayload hashes what was agreed, so the next cycle sees no change', () => {
@@ -816,46 +822,234 @@ test('an EVICTED device pushes the account fasts and saved meals back, not its o
   });
 });
 
-test('THE CONTROL: a HEALTHY device with none of either publishes none, local stays authoritative', async () => {
+/** A device that agrees with the account, so the baseline it commits RECORDS both pass-through ids. */
+function snapshotHoldingBoth(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
+  return { ...snapshot(logs), fasts: [fast('on-the-account')], savedMeals: [savedMeal('on-the-account')] };
+}
+
+/**
+ * The same device on its NEXT cycle, with the two lists cleared and one entry
+ * added.
+ *
+ * The account's own `a` is still here on purpose. Dropping it would leave a
+ * baseline entry this device cannot prove, which is a WITHHELD tombstone, and a
+ * withheld tombstone forbids `shrinkAcknowledged` all by itself. Every flag
+ * asserted below would then be right for a reason that is not the one under
+ * test. The added `c` is what makes the cycle push at all: `payloadsEqual`
+ * weighs neither pass-through collection, so a list emptying is never by itself
+ * a reason to burn a blob version.
+ */
+function snapshotAfterClearing(): SyncedSnapshot {
+  return snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50), log('c', 'Cheese', 30)]);
+}
+
+test('THE CONTROL: a device that RECORDED both removals publishes none of either', async () => {
   const dek = generateDek();
   const service = fakeService(dek);
   await seedTheAccount(service);
+  const storage = createMemoryStorage();
+  const deleted = new Set<string>();
 
-  // Byte for byte the cycle above, with one field of evidence changed. Without
-  // this case that test passes against a merge that always prefers the remote,
-  // which would resurrect every fast and every saved meal anybody ever deleted.
-  const local = { current: snapshot([log('b', 'Bread', 50)]) };
-  const result = await runSyncCycleUnlocked({
-    ...deps({ dek, http: service.client, local, deviceId: 'device-1' }),
-    readSnapshot: async () => ({ snapshot: local.current, integrity: HEALTHY_STORAGE }),
-  });
+  // CYCLE 1 is what makes this a control rather than a coincidence: the device
+  // agrees with the account, so the baseline it commits names both ids, and the
+  // removals below are removals of ids this device can be held to.
+  const local = { current: snapshotHoldingBoth([log('b', 'Bread', 50)]) };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }));
+  const recorded = storage.getItem('openplate.sync.state.v1:42') ?? '';
+  assert.ok(recorded.includes('on-the-account'), 'precondition: the baseline records what the account holds');
+
+  // CYCLE 2: the person clears both, one tap each, and each tap wrote a journal
+  // row. Without this case, the eviction test above passes against a merge that
+  // always prefers the remote, which would resurrect every fast and every saved
+  // meal anybody ever deleted.
+  local.current = snapshotAfterClearing();
+  deleted.add('fast:on-the-account');
+  deleted.add('savedMeal:on-the-account');
+  const result = await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+  );
 
   assert.equal(result.pushed, true);
-  assert.deepEqual(await pushedLists(service), { fasts: [], savedMeals: [] }, 'a real deletion must still stick');
+  assert.deepEqual(await pushedLists(service), { fasts: [], savedMeals: [] }, 'a recorded deletion must still stick');
+});
+
+test('THE OTHER CONTROL: the same removals with nothing recorded leave the account holding both', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTheAccount(service);
+  const storage = createMemoryStorage();
+
+  const local = { current: snapshotHoldingBoth([log('b', 'Bread', 50)]) };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  // Byte for byte the cycle above, with the journal left empty. This is the
+  // shape of the loss: the storage signals all read healthy, because a primed
+  // empty database always does, and the only difference is that nobody wrote a
+  // removal down.
+  local.current = snapshotAfterClearing();
+  const result = await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  assert.equal(result.pushed, true, 'the new entry must still reach the account');
+  assert.deepEqual(await pushedLists(service), { fasts: ['on-the-account'], savedMeals: ['on-the-account'] });
 });
 
 test('a PARTIAL load is weighed per table: the half-read list is spared, the one beside it is not', async () => {
   const dek = generateDek();
   const service = fakeService(dek);
   await seedTheAccount(service);
+  const storage = createMemoryStorage();
+  const deleted = new Set<string>();
 
-  // The database is there, so the whole-database signal says nothing. Only the
-  // fasts table failed to reach memory; the saved meals loaded and are empty
-  // because the person emptied them.
-  const local = { current: snapshot([log('b', 'Bread', 50)]) };
+  const local = { current: snapshotHoldingBoth([log('b', 'Bread', 50)]) };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }));
+
+  // The database is there, so the whole-database signal says nothing. Both
+  // removals are recorded, so the journal says nothing against either. Only the
+  // per-table signal can tell that the fasts table was half read, and it is
+  // enough on its own to spare that one list.
+  local.current = snapshotAfterClearing();
+  deleted.add('fast:on-the-account');
+  deleted.add('savedMeal:on-the-account');
   const result = await runSyncCycleUnlocked({
-    ...deps({ dek, http: service.client, local, deviceId: 'device-1' }),
+    ...deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
     readSnapshot: async () => ({
       snapshot: local.current,
       integrity: {
         hasPersistedDatabase: true,
         isTableLoaded: { [FASTS_TABLE]: false },
         isCompartmentKnown: true,
-        deletedEntityKeys: new Set(),
+        deletedEntityKeys: new Set(deleted),
       },
     }),
   });
 
   assert.equal(result.pushed, true);
   assert.deepEqual(await pushedLists(service), { fasts: ['on-the-account'], savedMeals: [] });
+
+  // AND THE JOURNAL IS PRUNED BY OUTCOME, not by intent: the saved meal really
+  // left, so its row has nothing left to authorise; the fast did not, so its row
+  // stays and the next healthy cycle tries again.
+  assert.deepEqual([...deleted], ['fast:on-the-account'], 'a refused removal must keep its journal row');
+});
+
+test('a push whose only removals are recorded saved meals still acknowledges the shrink', async () => {
+  // THE SECOND HALF OF `shrinkAcknowledged`. Saved meals are not merged, so
+  // clearing forty of them mints no tombstone at all, and a flag built from
+  // `minted` alone leaves that push looking like an unexplained shrink. The
+  // service refuses it, and the person who meant it is told nothing useful.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTheAccount(service);
+  const storage = createMemoryStorage();
+  const deleted = new Set<string>();
+
+  const local = { current: snapshotHoldingBoth([log('b', 'Bread', 50)]) };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }));
+
+  // The REMOVALS in this push are only the saved meal, which is what the flag
+  // below is about.
+  local.current = {
+    ...snapshotAfterClearing(),
+    fasts: [fast('on-the-account')],
+    savedMeals: [],
+  };
+  deleted.add('savedMeal:on-the-account');
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }));
+
+  assert.deepEqual(await pushedLists(service), { fasts: ['on-the-account'], savedMeals: [] });
+  assert.equal(service.shrinkFlags.at(-1), true, 'a recorded pass-through removal is a shrink the client meant');
+});
+
+test('THE CONTROL: the same push with nothing recorded acknowledges nothing, and the account keeps its list', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTheAccount(service);
+  const storage = createMemoryStorage();
+
+  const local = { current: snapshotHoldingBoth([log('b', 'Bread', 50)]) };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  // Without this case the test above passes against a flag that is simply
+  // always true, which switches the service's shrink guard off for everybody.
+  local.current = { ...snapshotAfterClearing(), fasts: [fast('on-the-account')] };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  assert.equal(service.shrinkFlags.at(-1), false, 'nothing was proven, so nothing may be acknowledged');
+  assert.deepEqual(
+    (await pushedLists(service)).savedMeals,
+    ['on-the-account'],
+    'and the envelope must carry the account list back, not this device silence',
+  );
+});
+
+/** The account as another device left it, holding TWO saved meals and one entry. */
+async function seedTwoSavedMeals(service: ReturnType<typeof fakeService>): Promise<void> {
+  await service.seed(
+    {
+      snapshot: {
+        ...snapshot([log('a', 'Apple', 100)]),
+        fasts: [],
+        savedMeals: [savedMeal('first'), savedMeal('second')],
+      },
+      syncMeta: { perEntity: { 'foodLog:a': { lamport: 1, deviceId: 'device-other' } }, tombstones: [] },
+    },
+    1,
+  );
+}
+
+/** The same device holding both of them, so cycle 1 commits a baseline that names both ids. */
+function snapshotHoldingTwoSavedMeals(): SyncedSnapshot {
+  return { ...snapshot([log('a', 'Apple', 100)]), savedMeals: [savedMeal('first'), savedMeal('second')] };
+}
+
+test('a cycle whose ONLY change is two recorded saved-meal removals still pushes', async () => {
+  // THE ADOPT PATH IS BLIND TO THESE TWO LISTS. `canonicalize` weighs neither
+  // `fasts` nor `savedMeals`, so this cycle's payload compares EQUAL to the
+  // blob that still holds both meals. Adopting it would commit a baseline that
+  // no longer names them and prune the journal rows that prove the removal, and
+  // the next real push would then shrink the blob with nothing left to declare.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTwoSavedMeals(service);
+  const storage = createMemoryStorage();
+  const deleted = new Set<string>();
+
+  const local = { current: snapshotHoldingTwoSavedMeals() };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }));
+
+  // CYCLE 2: two taps, two journal rows, and NOTHING else moved. No entry is
+  // added, so the food logs are byte for byte what the account already holds.
+  local.current = { ...snapshotHoldingTwoSavedMeals(), savedMeals: [] };
+  deleted.add('savedMeal:first');
+  deleted.add('savedMeal:second');
+  const result = await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+  );
+
+  assert.equal(result.pushed, true, 'a published removal must burn a blob version, equal payload or not');
+  assert.equal(service.shrinkFlags.at(-1), true, 'and it must declare the shrink while the journal still proves it');
+  assert.deepEqual(await pushedLists(service), { fasts: [], savedMeals: [] });
+  assert.deepEqual([...deleted], [], 'both journal rows are spent once the account agreed');
+});
+
+test('THE CONTROL: the same two removals with nothing recorded adopt, and the account keeps both meals', async () => {
+  // Without this case the test above passes against a cycle that simply never
+  // adopts anything, which would burn a blob version on every boot.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTwoSavedMeals(service);
+  const storage = createMemoryStorage();
+
+  const local = { current: snapshotHoldingTwoSavedMeals() };
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  local.current = { ...snapshotHoldingTwoSavedMeals(), savedMeals: [] };
+  const result = await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  assert.equal(result.pushed, false, 'nothing was proven, so there is nothing to publish');
+  assert.deepEqual(
+    local.current.savedMeals.map((entry) => entry.id).toSorted(),
+    ['first', 'second'],
+    'and the applied snapshot carries the account list back to this device',
+  );
 });

@@ -25,7 +25,13 @@
  * contrast, "fasting is not synced" reads as a rule about the feature instead
  * of a decision about one entity.
  */
-import { EVICTED_STORAGE, HEALTHY_STORAGE } from '../sync-integrity-fixtures';
+import {
+  EVICTED_STORAGE,
+  HEALTHY_STORAGE,
+  NO_PASS_THROUGH_RECORD,
+  NOTHING_TO_ACCOUNT_FOR,
+  passThroughEvidence,
+} from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -37,7 +43,7 @@ import {
   stampSnapshot,
 } from '../../app/lib/sync/snapshot-sync';
 import type { SnapshotIntegrity } from '../../app/lib/sync/snapshot-sync';
-import { FASTS_TABLE } from '../../app/lib/local-store/schema';
+import { FASTS_TABLE, SAVED_MEALS_TABLE } from '../../app/lib/local-store/schema';
 import type { StampedSnapshot } from '../../app/lib/sync/snapshot-sync';
 import type { LocalFast, LocalFastingSettings } from '../../app/lib/local-store/schema';
 import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
@@ -82,7 +88,7 @@ describe('mergeSnapshots and fasts', () => {
   it('keeps the local fasts when the remote payload has none', () => {
     const local = payload([fast('mine')]);
 
-    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote: payload([]) });
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local, remote: payload([]) });
 
     assert.deepEqual(merged.snapshot.fasts, [fast('mine')]);
   });
@@ -91,7 +97,7 @@ describe('mergeSnapshots and fasts', () => {
     const local = payload([fast('mine')]);
     const remote = payload([fast('theirs', { id: 'theirs', startedAt: T + HOUR })]);
 
-    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote });
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local, remote });
 
     assert.deepEqual(
       merged.snapshot.fasts.map((entry) => entry.id),
@@ -101,7 +107,7 @@ describe('mergeSnapshots and fasts', () => {
   });
 
   it('keeps an empty local list empty even when the remote is full', () => {
-    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: payload([]), remote: payload([fast('theirs')]) });
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: payload([]), remote: payload([fast('theirs')]) });
 
     assert.deepEqual(merged.snapshot.fasts, []);
   });
@@ -110,8 +116,8 @@ describe('mergeSnapshots and fasts', () => {
     const local = payload([fast('mine'), fast('older', { id: 'older', endedAt: T + 9 * HOUR })]);
     const remote = payload([fast('theirs')]);
 
-    const once = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote });
-    const twice = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: once, remote });
+    const once = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local, remote });
+    const twice = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: once, remote });
 
     assert.deepEqual(twice.snapshot.fasts, local.snapshot.fasts);
   });
@@ -174,6 +180,7 @@ describe('mergeSnapshots, fasts, and what the device can prove', () => {
     // holds no fasts because its database is gone, not because anybody deleted
     // one, and a pass-through would push that emptiness over the account.
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: EVICTED_STORAGE,
       local: payload([]),
       remote: payload([fast('on-the-account')]),
@@ -190,6 +197,7 @@ describe('mergeSnapshots, fasts, and what the device can prove', () => {
     // Without this, the case above passes against a merge that always prefers
     // the remote, which would resurrect every fast anybody ever deleted.
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: HEALTHY_STORAGE,
       local: payload([]),
       remote: payload([fast('on-the-account')]),
@@ -200,6 +208,7 @@ describe('mergeSnapshots, fasts, and what the device can prove', () => {
 
   it('THE CONTROL, the other half: a healthy device with fasts still ignores the remote list', () => {
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: HEALTHY_STORAGE,
       local: payload([fast('mine')]),
       remote: payload([fast('theirs')]),
@@ -218,6 +227,7 @@ describe('mergeSnapshots, fasts, and what the device can prove', () => {
     // read, and a short list pushed over the account is the same loss as an
     // empty one.
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: FASTS_TABLE_NOT_LOADED,
       local: payload([fast('the-one-that-loaded')]),
       remote: payload([fast('the-one-that-loaded'), fast('the-one-memory-missed')]),
@@ -228,6 +238,98 @@ describe('mergeSnapshots, fasts, and what the device can prove', () => {
       ['the-one-memory-missed', 'the-one-that-loaded'],
       'a half-read table must not be the side that decides what the account holds',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The second half of the pass-through rule: a short list must be ACCOUNTED FOR
+// ---------------------------------------------------------------------------
+
+/**
+ * The device the storage signals call perfectly healthy, and which has lost
+ * everything.
+ *
+ * `persist.ts` primes an empty database before anything reads integrity, so an
+ * evicted device boots into "the database is there, every table agrees at
+ * zero". That is what `HEALTHY_STORAGE` spells, and it is exactly the state
+ * this rule exists to catch: nothing about the storage can tell it from a
+ * person who cleared their fasts. Only the baseline and the journal can.
+ */
+describe('mergeSnapshots, fasts, and accounting for the ids the baseline named', () => {
+  it('refuses a local list that dropped two fasts with nothing recorded: the remote list stands', () => {
+    const merged = mergeSnapshots({
+      ...passThroughEvidence({ fasts: ['fast-one', 'fast-two'] }),
+      integrity: HEALTHY_STORAGE,
+      local: payload([]),
+      remote: payload([fast('fast-one'), fast('fast-two', { id: 'fast-two' })]),
+    });
+
+    assert.deepEqual(
+      merged.snapshot.fasts.map((entry) => entry.id).toSorted(),
+      ['fast-one', 'fast-two'],
+      'two ids this device cannot account for are two ids it may not publish as gone',
+    );
+    assert.deepEqual(merged.passThrough.refused, [FASTS_TABLE], 'and the cycle must say which table it refused');
+    assert.deepEqual(merged.passThrough.published, []);
+  });
+
+  it('lets the same list stand once both removals are in the delete journal', () => {
+    const merged = mergeSnapshots({
+      ...passThroughEvidence({
+        fasts: ['fast-one', 'fast-two'],
+        journal: ['fast:fast-one', 'fast:fast-two'],
+      }),
+      integrity: HEALTHY_STORAGE,
+      local: payload([]),
+      remote: payload([fast('fast-one'), fast('fast-two', { id: 'fast-two' })]),
+    });
+
+    assert.deepEqual(merged.snapshot.fasts, [], 'a recorded removal is a fact, and it must reach the account');
+    assert.deepEqual(merged.passThrough.published.toSorted(), ['fast:fast-one', 'fast:fast-two']);
+    assert.deepEqual(merged.passThrough.refused, []);
+  });
+
+  it('treats a baseline from before the ids were kept as accounting for nothing', () => {
+    // The migration, and the direction it fails in. An absent record is not an
+    // empty one: it says this device never wrote down what the account held, so
+    // its shorter list proves nothing and the account's stands for one cycle.
+    const merged = mergeSnapshots({
+      ...NO_PASS_THROUGH_RECORD,
+      integrity: HEALTHY_STORAGE,
+      local: payload([]),
+      remote: payload([fast('on-the-account')]),
+    });
+
+    assert.deepEqual(
+      merged.snapshot.fasts.map((entry) => entry.id),
+      ['on-the-account'],
+      'a baseline that recorded nothing cannot license an empty list',
+    );
+    assert.deepEqual(
+      merged.passThrough.refused,
+      [FASTS_TABLE, SAVED_MEALS_TABLE],
+      'the record is absent for BOTH collections, so both hand this cycle to the account',
+    );
+  });
+
+  it('still refuses a half-read table, however complete the journal is', () => {
+    // BOTH SIGNALS, ALWAYS. A journal row is honest here and the snapshot
+    // around it is still wrong: the table was half read, so the ids it did not
+    // reach are not in the local list either, and publishing it would take them
+    // with it.
+    const merged = mergeSnapshots({
+      ...passThroughEvidence({ fasts: ['fast-one'], journal: ['fast:fast-one'] }),
+      integrity: FASTS_TABLE_NOT_LOADED,
+      local: payload([]),
+      remote: payload([fast('fast-one'), fast('never-reached-memory', { id: 'never-reached-memory' })]),
+    });
+
+    assert.deepEqual(
+      merged.snapshot.fasts.map((entry) => entry.id).toSorted(),
+      ['fast-one', 'never-reached-memory'],
+      'a proven delete does not make a half-read table speak for the rest of its rows',
+    );
+    assert.deepEqual(merged.passThrough.refused, [FASTS_TABLE]);
   });
 });
 
@@ -264,6 +366,7 @@ describe('mergeSnapshots and the fasting routine', () => {
     // A pass-through would keep `null` here and look like it had worked, which
     // is the failure this whole entity is in the catalog to avoid.
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: HEALTHY_STORAGE,
       local: routinePayload(null),
       remote: routinePayload(settings({ routineProtocolId: '20:4' }), { lamport: 1, deviceId: 'tablet' }),
@@ -277,7 +380,7 @@ describe('mergeSnapshots and the fasting routine', () => {
     const newer = routinePayload(settings({ routineProtocolId: '72h' }), { lamport: 4, deviceId: 'tablet' });
 
     assert.equal(
-      mergeSnapshots({ integrity: HEALTHY_STORAGE, local: older, remote: newer }).snapshot.fastingSettings?.routineProtocolId,
+      mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: older, remote: newer }).snapshot.fastingSettings?.routineProtocolId,
       '72h',
       'the higher stamp must win when it arrives from the remote side',
     );
@@ -285,7 +388,7 @@ describe('mergeSnapshots and the fasting routine', () => {
     // swapping the two sides must swap nothing. A merge that simply preferred
     // `remote` would pass the first assertion and fail this one.
     assert.equal(
-      mergeSnapshots({ integrity: HEALTHY_STORAGE, local: newer, remote: older }).snapshot.fastingSettings?.routineProtocolId,
+      mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: newer, remote: older }).snapshot.fastingSettings?.routineProtocolId,
       '72h',
       'the lower stamp must lose even when it is the local side',
     );
@@ -305,7 +408,7 @@ describe('mergeSnapshots and the fasting routine', () => {
       { lamport: 5, deviceId: 'tablet' },
     );
 
-    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: wallClockNewer, remote: lamportNewer });
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: wallClockNewer, remote: lamportNewer });
 
     assert.equal(merged.snapshot.fastingSettings?.routineProtocolId, '36h');
     assert.equal(merged.snapshot.fastingSettings?.updatedAt, T - 10 * HOUR);

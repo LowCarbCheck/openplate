@@ -139,6 +139,17 @@ const persistedSyncStateSchema = z.object({
   baseline: z.object({
     perEntity: z.record(z.string(), stampedEntitySchema),
     tombstones: z.array(tombstoneSchema),
+    // OPTIONAL, AND THAT IS THE MIGRATION. Every state written before M226 has
+    // no such key, and a REQUIRED field here would fail the whole parse and
+    // discard the baseline, which costs a full re-push and, worse, throws away
+    // the tombstones that keep other devices' deletes buried. Absent means "this
+    // device recorded nothing about its fasts and saved meals", which
+    // `mergeSnapshots` reads as untrusted for exactly one cycle. No
+    // `STATE_FORMAT_VERSION` bump for the same reason: the old shape is still
+    // readable, so nothing is incompatible.
+    passThrough: z
+      .object({ fasts: z.array(z.string()), savedMeals: z.array(z.string()) })
+      .optional(),
   }),
 });
 
@@ -163,7 +174,11 @@ export function parseSyncState(raw: string): PersistedSyncState {
     formatVersion: STATE_FORMAT_VERSION,
     lastBlobVersion: state.data.lastBlobVersion,
     lastSyncedAt: state.data.lastSyncedAt,
-    baseline: { perEntity: state.data.baseline.perEntity, tombstones: state.data.baseline.tombstones },
+    baseline: {
+      perEntity: state.data.baseline.perEntity,
+      tombstones: state.data.baseline.tombstones,
+      passThrough: state.data.baseline.passThrough,
+    },
   };
 }
 

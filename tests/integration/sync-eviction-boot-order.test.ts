@@ -48,11 +48,17 @@ import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engi
 import { baselineFromPayload, type StampedSnapshot } from '../../app/lib/sync/snapshot-sync';
 import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
 import {
+  deleteLocalFast,
   deleteLocalFoodLog,
+  deleteLocalSavedMeal,
+  listLocalFasts,
   listLocalFoodLogs,
+  listLocalSavedMeals,
   putLocalFoodLog,
   SCHEMA_VERSION,
+  type LocalFast,
   type LocalFoodLog,
+  type LocalSavedMeal,
 } from '../../app/lib/local-store';
 import { forgetPublishedDeletes, readLocalSnapshot } from '../../app/lib/sync/local-store-bridge';
 import { readPersistedTableRowCounts } from '../../app/lib/local-store/persist';
@@ -113,16 +119,50 @@ function foodLog(id: string, name: string): LocalFoodLog {
   };
 }
 
-function snapshotOf(foodLogs: LocalFoodLog[]): SyncedSnapshot {
+function snapshotOf(
+  foodLogs: LocalFoodLog[],
+  passThrough: { fasts: LocalFast[]; savedMeals: LocalSavedMeal[] } = { fasts: [], savedMeals: [] },
+): SyncedSnapshot {
   return {
     foods: [],
     foodLogs,
     weightEntries: [],
     profile: null,
-    fasts: [],
-    savedMeals: [],
+    fasts: passThrough.fasts,
+    savedMeals: passThrough.savedMeals,
     fastingSettings: null,
     privateStore: null,
+  };
+}
+
+function fast(id: string): LocalFast {
+  return {
+    id,
+    protocolId: '16:8',
+    targetDurationMs: 57_600_000,
+    plannedStartAt: null,
+    startedAt: 1_770_000_000_000,
+    endedAt: 1_770_000_000_000 + 57_600_000,
+    createdAt: 1_770_000_000_000,
+  };
+}
+
+function savedMeal(id: string): LocalSavedMeal {
+  return {
+    id,
+    name: `Meal ${id}`,
+    items: [
+      {
+        name: 'Eggs',
+        quantityGrams: 120,
+        macros: { carbs: 1, fiber: 0, sugars: 0, polyols: null, protein: 12, fat: 10, kcal: 150 },
+        source: 'manual',
+        aiEstimated: false,
+        curatedSource: null,
+        foodId: null,
+      },
+    ],
+    createdAt: 1_770_000_000_000,
   };
 }
 
@@ -159,9 +199,13 @@ async function signUpFresh(label: string): Promise<string> {
  * and would also open the store, prime the database, and destroy the one
  * condition this file is about.
  */
-async function seedAsIfThisDeviceHadSynced(vault: SyncVault, logs: LocalFoodLog[]): Promise<void> {
+async function seedAsIfThisDeviceHadSynced(
+  vault: SyncVault,
+  logs: LocalFoodLog[],
+  passThrough: { fasts: LocalFast[]; savedMeals: LocalSavedMeal[] } = { fasts: [], savedMeals: [] },
+): Promise<void> {
   const payload: StampedSnapshot = {
-    snapshot: snapshotOf(logs),
+    snapshot: snapshotOf(logs, passThrough),
     meta: {
       perEntity: Object.fromEntries(
         logs.map((log) => [entityKey('foodLog', log.id), { lamport: 1, deviceId: 'device-yesterday' }]),
@@ -189,11 +233,16 @@ async function seedAsIfThisDeviceHadSynced(vault: SyncVault, logs: LocalFoodLog[
   });
 }
 
-/** THE PAYLOAD THE SERVICE ACTUALLY HOLDS, decrypted. Never an in-memory copy of what we hoped was sent. */
-async function payloadOnTheService(vault: SyncVault): Promise<{
+/** What one decrypted blob says the account holds. Named, because an anonymous return type here would widen on every read. */
+interface ServicePayloadView {
   tombstones: SyncPayload['syncMeta']['tombstones'];
   foodLogIds: string[];
-}> {
+  fastIds: string[];
+  savedMealIds: string[];
+}
+
+/** THE PAYLOAD THE SERVICE ACTUALLY HOLDS, decrypted. Never an in-memory copy of what we hoped was sent. */
+async function payloadOnTheService(vault: SyncVault): Promise<ServicePayloadView> {
   const pulled = await vault.http.pullBlob();
   assert.ok(pulled !== null, 'the service must be holding a blob');
   const decrypted = await decryptWithSchemaProbe({
@@ -205,11 +254,17 @@ async function payloadOnTheService(vault: SyncVault): Promise<{
   });
   // SAFETY: `SyncPayload.snapshot` is `unknown` on the wire because the envelope
   // carries whatever schema version wrote it. What this file put there is this
-  // build's own `SyncedSnapshot`, and only its food-log ids are read.
-  const snapshot = decrypted.payload.snapshot as { foodLogs: { id: string }[] };
+  // build's own `SyncedSnapshot`, and only its ids are read.
+  const snapshot = decrypted.payload.snapshot as {
+    foodLogs: { id: string }[];
+    fasts: { id: string }[];
+    savedMeals: { id: string }[];
+  };
   return {
     tombstones: decrypted.payload.syncMeta.tombstones,
     foodLogIds: snapshot.foodLogs.map((log) => log.id).toSorted(),
+    fastIds: snapshot.fasts.map((entry) => entry.id).toSorted(),
+    savedMealIds: snapshot.savedMeals.map((entry) => entry.id).toSorted(),
   };
 }
 
@@ -225,6 +280,11 @@ async function payloadOnTheService(vault: SyncVault): Promise<{
 async function startFromAQuietDevice(): Promise<void> {
   closeSyncSession();
   for (const log of await listLocalFoodLogs()) await deleteLocalFoodLog(log.id);
+  // THE TWO PASS-THROUGH COLLECTIONS GO TOO. The store singleton is per
+  // process, so a case that ran before this one left its fasts and saved meals
+  // behind, and the next case's local list would start out holding them.
+  for (const entry of await listLocalFasts()) await deleteLocalFast(entry.id);
+  for (const meal of await listLocalSavedMeals()) await deleteLocalSavedMeal(meal.id);
   // The deletes just written to the journal are this device's, not the next
   // case's: forgetting them keeps each case's evidence its own.
   await forgetPublishedDeletes((await listLocalFoodLogs()).map((log) => entityKey('foodLog', log.id)));
@@ -238,13 +298,30 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
   // whose store singleton has never been opened.
   await signUpFresh('boot-order');
   const vault = requireVault();
-  await seedAsIfThisDeviceHadSynced(vault, [foodLog('log-boot-1', 'Lentil soup'), foodLog('log-boot-2', 'Rye bread')]);
+  // THE ACCOUNT ALSO HOLDS TWO FASTS AND A SAVED MEAL, which are the two
+  // collections sync passes through whole rather than merging. No tombstone is
+  // involved anywhere in them, so the tombstone rule above cannot protect them:
+  // whichever side's list the merge picks is the entire list that reaches the
+  // account, and an evicted device used to be that side.
+  await seedAsIfThisDeviceHadSynced(
+    vault,
+    [foodLog('log-boot-1', 'Lentil soup'), foodLog('log-boot-2', 'Rye bread')],
+    { fasts: [fast('fast-boot-1'), fast('fast-boot-2')], savedMeals: [savedMeal('meal-boot-1')] },
+  );
 
   // NON-VACUITY 1: the baseline really names both entries, so the cycle below
   // has something it COULD tombstone. Without this the claim at the end passes
   // against an empty baseline, which is no claim at all.
   const named = Object.keys(vault.state.load().baseline.perEntity).filter((key) => key.startsWith('foodLog:'));
   assert.deepEqual(named.toSorted(), ['foodLog:log-boot-1', 'foodLog:log-boot-2']);
+  // And the same for the pass-through pair, which is recorded as plain ids
+  // rather than as stamped entities. Without this the fasts claim at the end
+  // passes against a baseline that never knew about them, which is the state
+  // where the remote list wins for the wrong reason.
+  assert.deepEqual(vault.state.load().baseline.passThrough, {
+    fasts: ['fast-boot-1', 'fast-boot-2'],
+    savedMeals: ['meal-boot-1'],
+  });
 
   // NON-VACUITY 2: this is genuinely the evicted state at the moment of the
   // boot. The probe has not been used before in this process, and it never
@@ -277,6 +354,8 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
   assert.equal(boot.integrity.hasPersistedDatabase, true, 'and the old evidence must indeed read as healthy');
   assert.deepEqual(boot.integrity.isTableLoaded, {}, 'with no table able to contradict it');
   assert.equal(boot.deletedEntityKeys.size, 0, 'while the journal, which fails with the diary, is empty');
+  assert.deepEqual(await listLocalFasts(), [], 'and the device really holds none of the fasts the account does');
+  assert.deepEqual(await listLocalSavedMeals(), [], 'nor the saved meal');
 
   markSyncPending();
   await syncNow();
@@ -285,6 +364,11 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
   const payload = await payloadOnTheService(vault);
   assert.deepEqual(payload.tombstones, [], 'an evicted device must publish no deletes');
   assert.deepEqual(payload.foodLogIds, ['log-boot-1', 'log-boot-2'], 'and the account keeps its diary');
+  // THE PASS-THROUGH HALF. These two have no tombstone to withhold, so the only
+  // thing standing between them and an empty list is the baseline's record of
+  // what the account held, weighed against a journal that names nothing.
+  assert.deepEqual(payload.fastIds, ['fast-boot-1', 'fast-boot-2'], 'and its fasts');
+  assert.deepEqual(payload.savedMealIds, ['meal-boot-1'], 'and its saved meals');
 
   // AND THE DEVICE HEALS: the pull put the rows back through the ordinary apply
   // path, which is what makes withholding the tombstones survivable rather than
@@ -294,6 +378,47 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
     ['log-boot-1', 'log-boot-2'],
     'the entries must be back on the device',
   );
+  assert.deepEqual(
+    (await listLocalFasts()).map((entry) => entry.id).toSorted(),
+    ['fast-boot-1', 'fast-boot-2'],
+    'and so must the fasts, through the ordinary apply path',
+  );
+  closeSyncSession();
+});
+
+test('THE CONTROL: a RECORDED fast deletion on the same boot does reach the account', async () => {
+  // Without this case the claim above passes against a merge that always keeps
+  // the account's list, which would make every deleted fast and every deleted
+  // saved meal come back on the next sync, on every device, forever.
+  await startFromAQuietDevice();
+  await signUpFresh('boot-order-pass-through-control');
+  const vault = requireVault();
+  await seedAsIfThisDeviceHadSynced(vault, [foodLog('log-pt-1', 'Lentil soup')], {
+    fasts: [fast('fast-pt-1'), fast('fast-pt-2')],
+    savedMeals: [],
+  });
+
+  // This device pulls the account's fasts down first, so what it deletes below
+  // is a row it actually holds, which is the only way a person can delete one.
+  markSyncPending();
+  await syncNow();
+  assert.deepEqual(
+    (await listLocalFasts()).map((entry) => entry.id).toSorted(),
+    ['fast-pt-1', 'fast-pt-2'],
+    'precondition: both fasts reached the device',
+  );
+
+  await deleteLocalFast('fast-pt-2');
+  // A second entry is what makes the cycle push at all: neither pass-through
+  // collection is weighed by `payloadsEqual`, so a fast leaving is never by
+  // itself a reason to write a new blob version.
+  await putLocalFoodLog(foodLog('log-pt-2', 'Rye bread'));
+  markSyncPending();
+  await syncNow();
+
+  const payload = await payloadOnTheService(vault);
+  assert.deepEqual(payload.fastIds, ['fast-pt-1'], 'a deletion the device wrote down must reach the account');
+  assert.deepEqual(payload.tombstones, [], 'and it travels as a shorter list, never as a tombstone');
   closeSyncSession();
 });
 

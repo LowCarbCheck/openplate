@@ -10,7 +10,7 @@
  * function would eventually be reached for by a real caller, and the whole
  * point of the argument is that no caller can avoid the question.
  */
-import type { SnapshotIntegrity } from '../app/lib/sync/snapshot-sync';
+import type { SnapshotIntegrity, SyncBaseline } from '../app/lib/sync/snapshot-sync';
 
 /**
  * A HEALTHY DEVICE: the database is there, every table loaded, the compartment
@@ -52,3 +52,62 @@ export const EVICTED_STORAGE: SnapshotIntegrity = {
 export function withRecordedDeletes(base: SnapshotIntegrity, keys: readonly string[]): SnapshotIntegrity {
   return { ...base, deletedEntityKeys: new Set(keys) };
 }
+
+// ---------------------------------------------------------------------------
+// The merge's second question: can this device's fasts and saved meals stand?
+// ---------------------------------------------------------------------------
+
+/**
+ * The two arguments `mergeSnapshots` weighs before it lets this device's
+ * `fasts` and `savedMeals` stand: what the baseline recorded, and what the
+ * delete journal says happened to the ids that are no longer there.
+ */
+export interface PassThroughEvidence {
+  baseline: SyncBaseline;
+  deletedEntityKeys: ReadonlySet<string>;
+}
+
+/**
+ * A baseline that RECORDS the two pass-through lists and holds neither id,
+ * beside an empty journal.
+ *
+ * The ordinary fixture for a merge whose subject is not the pass-through rule:
+ * an empty record accounts for every id it named, which is none, so the local
+ * list stands exactly as it did before the rule existed.
+ *
+ * It is spelled out rather than defaulted because an ABSENT record means
+ * something different and load-bearing: a baseline written before the ids were
+ * kept can account for nothing, and hands that cycle to the remote list.
+ */
+export const NOTHING_TO_ACCOUNT_FOR: PassThroughEvidence = {
+  baseline: { perEntity: {}, tombstones: [], passThrough: { fasts: [], savedMeals: [] } },
+  deletedEntityKeys: new Set(),
+};
+
+/**
+ * A baseline that recorded these ids, beside a journal holding these keys.
+ *
+ * `journal` takes the namespaced keys the delete verbs write (`fast:abc`,
+ * `savedMeal:def`), which is how a fixture says "the person removed this"
+ * rather than "this row is missing".
+ */
+export function passThroughEvidence({
+  fasts = [],
+  savedMeals = [],
+  journal = [],
+}: {
+  fasts?: string[];
+  savedMeals?: string[];
+  journal?: readonly string[];
+}): PassThroughEvidence {
+  return {
+    baseline: { perEntity: {}, tombstones: [], passThrough: { fasts, savedMeals } },
+    deletedEntityKeys: new Set(journal),
+  };
+}
+
+/** A baseline from before the pass-through ids were kept: it can account for nothing. */
+export const NO_PASS_THROUGH_RECORD: PassThroughEvidence = {
+  baseline: { perEntity: {}, tombstones: [] },
+  deletedEntityKeys: new Set(),
+};

@@ -16,6 +16,13 @@
  * `removeEntitiesWithoutJournal`, which is still a local-store function and
  * still takes the same lock, and is the only call site of it in the app.
  *
+ * THE JOURNAL IS READ BY THE MERGE NOW, not only by the stamping. Fasts and
+ * saved meals carry no tombstone, so the journal keys this file hands up are
+ * the only evidence `mergeSnapshots` has that a short local list is short on
+ * purpose; without them the account's list stands. That is why
+ * `deletedEntityKeys` below is read in the same act as the snapshot and why
+ * `forgetPublishedDeletes` prunes pass-through keys as well as tombstones.
+ *
  * Keeping the seam in one small file also makes the blast radius of a
  * local-store refactor exactly one import list.
  */
@@ -83,7 +90,9 @@ export interface LocalSnapshotRead {
    *
    * NOT part of {@link LocalStoreIntegrity}, which is the disk-versus-memory
    * comparison and is also handed to `mergeSnapshots`. The journal answers a
-   * different question and only the stamping asks it.
+   * different question, and BOTH now ask it: the stamping, to authorise a
+   * tombstone, and the merge, to let this device's fasts and saved meals stand
+   * against the account's.
    */
   deletedEntityKeys: ReadonlySet<string>;
 }

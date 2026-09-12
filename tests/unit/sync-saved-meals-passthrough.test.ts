@@ -15,7 +15,13 @@
  * the very first sync, with nothing else in the suite failing, `fasts` had
  * exactly this test and saved meals did not, until this file.
  */
-import { EVICTED_STORAGE, HEALTHY_STORAGE } from '../sync-integrity-fixtures';
+import {
+  EVICTED_STORAGE,
+  HEALTHY_STORAGE,
+  NO_PASS_THROUGH_RECORD,
+  NOTHING_TO_ACCOUNT_FOR,
+  passThroughEvidence,
+} from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -70,7 +76,7 @@ describe('mergeSnapshots and savedMeals', () => {
   it('keeps the local saved meals when the remote payload has none', () => {
     const local = payload([savedMeal('mine')]);
 
-    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote: payload([]) });
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local, remote: payload([]) });
 
     assert.deepEqual(merged.snapshot.savedMeals, [savedMeal('mine')]);
   });
@@ -79,7 +85,7 @@ describe('mergeSnapshots and savedMeals', () => {
     const local = payload([savedMeal('mine')]);
     const remote = payload([savedMeal('theirs', { name: 'Their meal' })]);
 
-    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote });
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local, remote });
 
     assert.deepEqual(
       merged.snapshot.savedMeals.map((entry) => entry.id),
@@ -89,7 +95,7 @@ describe('mergeSnapshots and savedMeals', () => {
   });
 
   it('keeps an empty local list empty even when the remote is full', () => {
-    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: payload([]), remote: payload([savedMeal('theirs')]) });
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: payload([]), remote: payload([savedMeal('theirs')]) });
 
     assert.deepEqual(merged.snapshot.savedMeals, []);
   });
@@ -98,8 +104,8 @@ describe('mergeSnapshots and savedMeals', () => {
     const local = payload([savedMeal('mine'), savedMeal('other', { name: 'Other meal' })]);
     const remote = payload([savedMeal('theirs')]);
 
-    const once = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote });
-    const twice = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: once, remote });
+    const once = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local, remote });
+    const twice = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: once, remote });
 
     assert.deepEqual(twice.snapshot.savedMeals, local.snapshot.savedMeals);
   });
@@ -171,6 +177,7 @@ const ONLY_THE_FASTS_TABLE_NOT_LOADED: SnapshotIntegrity = {
 describe('mergeSnapshots, savedMeals, and what the device can prove', () => {
   it('does NOT let an evicted device empty the account: the remote saved meals survive', () => {
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: EVICTED_STORAGE,
       local: payload([]),
       remote: payload([savedMeal('on-the-account')]),
@@ -187,6 +194,7 @@ describe('mergeSnapshots, savedMeals, and what the device can prove', () => {
     // Without this, the case above passes against a merge that always prefers
     // the remote, which would resurrect every saved meal anybody ever deleted.
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: HEALTHY_STORAGE,
       local: payload([]),
       remote: payload([savedMeal('on-the-account')]),
@@ -197,6 +205,7 @@ describe('mergeSnapshots, savedMeals, and what the device can prove', () => {
 
   it('reads the saved-meals TABLE, so a partial load that dropped only that table is caught too', () => {
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: SAVED_MEALS_TABLE_NOT_LOADED,
       local: payload([savedMeal('the-one-that-loaded')]),
       remote: payload([savedMeal('the-one-that-loaded'), savedMeal('the-one-memory-missed')]),
@@ -215,11 +224,65 @@ describe('mergeSnapshots, savedMeals, and what the device can prove', () => {
     // treated any unloaded table as a broken store, would hand the account's
     // saved meals back here and silently undo a deletion the person made.
     const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
       integrity: ONLY_THE_FASTS_TABLE_NOT_LOADED,
       local: payload([]),
       remote: payload([savedMeal('on-the-account')]),
     });
 
     assert.deepEqual(merged.snapshot.savedMeals, [], 'one broken table says nothing about the one beside it');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The second half of the pass-through rule, one entity over from the fasts
+// ---------------------------------------------------------------------------
+
+describe('mergeSnapshots, savedMeals, and accounting for the ids the baseline named', () => {
+  it('refuses a local list that dropped a saved meal with nothing recorded', () => {
+    // The storage says healthy, because a primed empty database always does.
+    // The baseline names a meal the local list has lost and the journal is
+    // empty, so nothing here is a deletion anybody performed.
+    const merged = mergeSnapshots({
+      ...passThroughEvidence({ savedMeals: ['on-the-account'] }),
+      integrity: HEALTHY_STORAGE,
+      local: payload([]),
+      remote: payload([savedMeal('on-the-account')]),
+    });
+
+    assert.deepEqual(
+      merged.snapshot.savedMeals.map((entry) => entry.id),
+      ['on-the-account'],
+      'an unaccounted-for id must not be published as gone',
+    );
+    assert.deepEqual(merged.passThrough.refused, [SAVED_MEALS_TABLE]);
+  });
+
+  it('lets it stand once the removal is in the delete journal', () => {
+    const merged = mergeSnapshots({
+      ...passThroughEvidence({ savedMeals: ['on-the-account'], journal: ['savedMeal:on-the-account'] }),
+      integrity: HEALTHY_STORAGE,
+      local: payload([]),
+      remote: payload([savedMeal('on-the-account')]),
+    });
+
+    assert.deepEqual(merged.snapshot.savedMeals, [], 'a recorded removal must reach the account');
+    assert.deepEqual(merged.passThrough.published, ['savedMeal:on-the-account']);
+    assert.deepEqual(merged.passThrough.refused, []);
+  });
+
+  it('treats a baseline from before the ids were kept as accounting for nothing', () => {
+    const merged = mergeSnapshots({
+      ...NO_PASS_THROUGH_RECORD,
+      integrity: HEALTHY_STORAGE,
+      local: payload([]),
+      remote: payload([savedMeal('on-the-account')]),
+    });
+
+    assert.deepEqual(
+      merged.snapshot.savedMeals.map((entry) => entry.id),
+      ['on-the-account'],
+      'the migration hands one cycle to the account, and the next cycle is ordinary',
+    );
   });
 });
