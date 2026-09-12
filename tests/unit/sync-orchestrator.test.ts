@@ -926,10 +926,14 @@ test('a PARTIAL load is weighed per table: the half-read list is spared, the one
   assert.equal(result.pushed, true);
   assert.deepEqual(await pushedLists(service), { fasts: ['on-the-account'], savedMeals: [] });
 
-  // AND THE JOURNAL IS PRUNED BY OUTCOME, not by intent: the saved meal really
-  // left, so its row has nothing left to authorise; the fast did not, so its row
-  // stays and the next healthy cycle tries again.
-  assert.deepEqual([...deleted], ['fast:on-the-account'], 'a refused removal must keep its journal row');
+  // AND THE JOURNAL IS EMPTY, both rows spent. This line USED TO KEEP
+  // `fast:on-the-account`, on the old rule that a removal the merge refused
+  // should be retried from its journal row. That rule left four classes of key
+  // in the journal forever, so the prune is now by CYCLE rather than by
+  // outcome: a key the cycle read was weighed by that cycle, and this one was,
+  // it lost, and the fast is back on the device where the applied snapshot put
+  // it. A key that describes a live row is not evidence of anything.
+  assert.deepEqual([...deleted], [], 'every key this cycle weighed is spent, whichever way it went');
 });
 
 test('a push whose only removals are recorded saved meals still acknowledges the shrink', async () => {
@@ -1052,4 +1056,90 @@ test('THE CONTROL: the same two removals with nothing recorded adopt, and the ac
     ['first', 'second'],
     'and the applied snapshot carries the account list back to this device',
   );
+});
+
+// ---------------------------------------------------------------------------
+// The journal prune: after a commit, the journal holds only deletes recorded
+// AFTER that cycle's read
+// ---------------------------------------------------------------------------
+
+test('a key that was never synced at all is forgotten on commit', async () => {
+  // CREATED AND DELETED BETWEEN TWO CYCLES. No baseline ever named the entry,
+  // no blob ever carried it, so `stampSnapshot` mints no tombstone for it and
+  // the merge has nothing to publish. On the old rule, tombstones plus a
+  // pass-through diff, nothing in the cycle could ever name this key, and it
+  // sat in the journal for the life of the device. Multiply by every entry
+  // somebody logs and undoes in the same minute.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = { current: snapshot([log('a', 'Apple', 100)]) };
+  const storage = createMemoryStorage();
+
+  // Cycle 1 commits a baseline naming only `a`.
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  // Between the cycles the person logs `b` and takes it straight back out. The
+  // delete verb wrote the journal row; the snapshot never carried `b` to the
+  // wire. `c` is what makes cycle 2 push at all.
+  local.current = snapshot([log('a', 'Apple', 100), log('c', 'Cheese', 30)]);
+  const deleted = new Set(['foodLog:b']);
+  const result = await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+  );
+
+  // NON-VACUITY: the cycle really committed, and it really minted nothing for
+  // `b`. Without both, an empty journal below would mean nothing happened.
+  assert.equal(result.pushed, true, 'precondition: the cycle must have committed a payload');
+  const pushed = await service.read();
+  assert.deepEqual(
+    pushed.syncMeta.tombstones.filter((tombstone) => tombstone.entityId === 'b'),
+    [],
+    'precondition: an entry no baseline ever named mints no tombstone',
+  );
+
+  // THE CLAIM. Put the old rule back, forget only `merged.meta.tombstones`
+  // plus the pass-through diff, and this line reads `['foodLog:b']`.
+  assert.deepEqual([...deleted], [], 'a key this cycle weighed and could not publish is still spent');
+});
+
+test('a cycle REFUSED with a 400 after the apply forgets nothing', async () => {
+  // THE ORDERING RULE. The journal row is the only thing that can re-authorise
+  // a delete, so it may only be dropped behind a committed baseline that
+  // carries the tombstone. `pushOrHeal` applies the merge and rethrows on a
+  // 400; nothing was stored and nothing was committed, so nothing was weighed.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = { current: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]) };
+  const storage = createMemoryStorage();
+
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  local.current = snapshot([log('a', 'Apple', 100)]);
+  const deleted = new Set(['foodLog:b']);
+  service.refuseTheNextPush();
+  await assert.rejects(
+    () => runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted })),
+    (cause: unknown) => cause instanceof SyncRequestError && cause.kind === 'invalid',
+    'precondition: the refusal must reach the caller',
+  );
+
+  // THE CLAIM. Move either `forgetPublishedDeletes` call above its
+  // `commitState`, or add one to the `catch` in `pushOrHeal`, and this line
+  // reads `[]`, which is a delete nothing on this device or its account can
+  // still prove.
+  assert.deepEqual([...deleted], ['foodLog:b'], 'a cycle that stored nothing must prune nothing');
+
+  // AND IT SETTLES: the surviving row is what lets the next cycle publish the
+  // delete for real, which is the reason the rule is worth keeping.
+  const settled = await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+  );
+  assert.equal(settled.pushed, true);
+  const pushed = await service.read();
+  assert.deepEqual(
+    pushed.syncMeta.tombstones.map((tombstone) => tombstone.entityId),
+    ['b'],
+    'the delete reaches the account on the next cycle',
+  );
+  assert.deepEqual([...deleted], [], 'and only then is its journal row spent');
 });

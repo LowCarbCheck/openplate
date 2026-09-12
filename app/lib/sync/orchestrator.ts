@@ -47,7 +47,6 @@ import type { SyncedSnapshot } from './snapshot-partition';
 import {
   baselineFromPayload,
   countRestoredEntities,
-  entityKey,
   mergeSnapshots,
   payloadsEqual,
   stampSnapshot,
@@ -55,7 +54,6 @@ import {
   type SnapshotIntegrity,
   type StampedSnapshot,
 } from './snapshot-sync';
-import { DELETE_JOURNAL_TAG_BY_TABLE, FASTS_TABLE, SAVED_MEALS_TABLE } from '#app/lib/local-store/schema';
 import type { Tombstone } from './engine/merge/types';
 import type { PersistedSyncState, SyncStateStore } from './sync-state';
 import { withSyncOrchestratorLock } from './sync-lock';
@@ -90,8 +88,8 @@ export interface SyncCycleDeps {
   readSnapshot: () => Promise<ReadSnapshotResult>;
   applySnapshot: (input: { merged: SyncedSnapshot; local: SyncedSnapshot }) => Promise<void>;
   /**
-   * Drops the local delete-journal rows for tombstones this cycle has just
-   * committed to its baseline (`local-store/primary-store.ts`).
+   * Drops the local delete-journal rows for the deletes this cycle has just
+   * weighed and committed (`local-store/primary-store.ts`).
    *
    * A dependency rather than a direct import for the reason every other store
    * touch here is one: this file is the imperative shell and the integration
@@ -246,7 +244,7 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     if (remote !== null && payloadsEqual(merged, remote.payload) && merged.passThrough.published.length === 0) {
       await deps.applySnapshot({ merged: merged.snapshot, local });
       const settled = commitState({ deps, merged, blobVersion: baseVersion, at: now() });
-      await forgetPublishedDeletes({ deps, merged, deletedEntityKeys: read.integrity.deletedEntityKeys });
+      await forgetPublishedDeletes({ deps, deletedEntityKeys: read.integrity.deletedEntityKeys });
       return {
         blobVersion: baseVersion,
         pushed: false,
@@ -279,7 +277,7 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     await deps.applySnapshot({ merged: merged.snapshot, local });
     const at = now();
     commitState({ deps, merged, blobVersion: result.newVersion, at });
-    await forgetPublishedDeletes({ deps, merged, deletedEntityKeys: read.integrity.deletedEntityKeys });
+    await forgetPublishedDeletes({ deps, deletedEntityKeys: read.integrity.deletedEntityKeys });
     return {
       blobVersion: result.newVersion,
       pushed: true,
@@ -360,60 +358,44 @@ async function pushOrHeal({
 }
 
 /**
- * Forgets the delete-journal rows behind the tombstones this cycle committed.
+ * Forgets the delete-journal rows for every delete THIS CYCLE WEIGHED.
+ *
+ * The rule is one line: after a commit, forget every key that was in
+ * `deletedEntityKeys` at THIS cycle's read. Each of those keys was put in front
+ * of the cycle and answered, one of four ways, and all four are finished:
+ *  - it minted a tombstone, which the committed baseline now carries;
+ *  - it published a pass-through removal, which the committed baseline now
+ *    records by no longer naming the id;
+ *  - it lost, the remote list stood and the row is back on the device, so the
+ *    key describes a row that exists;
+ *  - it was never synced at all, created and deleted between two cycles, so
+ *    no baseline ever named it and no peer ever saw it.
+ *
+ * THE OLD RULE WAS TOMBSTONES PLUS A PASS-THROUGH DIFF, and it never pruned
+ * those last two classes, nor the stale keys a mid-flight delete leaves behind
+ * (`local-store-bridge.ts`). The journal only grew.
+ *
+ * KEYS WRITTEN AFTER THE READ ARE NOT IN THE SET and therefore survive, which
+ * is not an accident: that is exactly the mid-flight delete, and its journal
+ * row is the only evidence the NEXT cycle has that the absence it is about to
+ * see is a delete.
  *
  * AFTER `commitState`, never before: the journal row is the only thing that can
- * re-authorise this delete, and dropping it ahead of the baseline that carries
- * the tombstone would leave a window where neither says the delete happened.
- * Both call sites run it on a cycle that has already agreed with a payload, so
- * every tombstone in `merged.meta` is now in the persisted baseline and is
- * carried forward unconditionally from here on.
- *
- * THE PASS-THROUGH REMOVALS GO TOO, and they have no tombstone to be found by.
- * A cleared fast or saved meal is agreed the moment the committed baseline
- * stops naming it, so the test is exactly that: a journal key whose id is
- * absent from the list this cycle agreed with. A key whose id is back in the
- * list is a removal that did NOT survive the merge (the remote list stood), and
- * it stays in the journal so the next cycle can try again.
+ * re-authorise a delete, and dropping it ahead of the baseline that carries the
+ * tombstone would leave a window where neither says the delete happened. Both
+ * call sites run it on a cycle that has already agreed with a payload. The
+ * `400` path in `pushOrHeal` deliberately forgets nothing: nothing was stored,
+ * so nothing was weighed.
  */
 async function forgetPublishedDeletes({
   deps,
-  merged,
   deletedEntityKeys,
 }: {
   deps: SyncCycleDeps;
-  merged: StampedSnapshot;
   deletedEntityKeys: ReadonlySet<string>;
 }): Promise<void> {
-  const keys = [
-    ...merged.meta.tombstones.map((tombstone) => entityKey(tombstone.entityType, tombstone.entityId)),
-    ...passThroughKeysToForget({ merged, deletedEntityKeys }),
-  ];
-  if (keys.length === 0) return;
-  await deps.forgetPublishedDeletes(keys);
-}
-
-/** The journal keys for fasts and saved meals the agreed payload no longer holds. */
-function passThroughKeysToForget({
-  merged,
-  deletedEntityKeys,
-}: {
-  merged: StampedSnapshot;
-  deletedEntityKeys: ReadonlySet<string>;
-}): string[] {
-  const survivingByTag = new Map<string, Set<string>>([
-    [DELETE_JOURNAL_TAG_BY_TABLE[FASTS_TABLE], new Set(merged.snapshot.fasts.map((entry) => entry.id))],
-    [DELETE_JOURNAL_TAG_BY_TABLE[SAVED_MEALS_TABLE], new Set(merged.snapshot.savedMeals.map((entry) => entry.id))],
-  ]);
-  const forgotten: string[] = [];
-  for (const key of deletedEntityKeys) {
-    const [tag, ...idParts] = key.split(':');
-    const surviving = survivingByTag.get(tag ?? '');
-    if (surviving === undefined) continue;
-    if (surviving.has(idParts.join(':'))) continue;
-    forgotten.push(key);
-  }
-  return forgotten;
+  if (deletedEntityKeys.size === 0) return;
+  await deps.forgetPublishedDeletes([...deletedEntityKeys]);
 }
 
 interface RemotePayload {

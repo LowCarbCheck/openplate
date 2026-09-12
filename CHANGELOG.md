@@ -14,6 +14,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Fixed
 
 - **Losing local data no longer wipes your sharing keys from your account.** Your sharing key pair, the clinicians you verified in person and the studies you joined travel in one sealed part of your sync data. The app used to send whatever it could see at that moment. If a browser threw the data away while the app was still running, it saw nothing, sent nothing, and your account's copy was replaced by an empty one. Nothing pointed at a problem, because that part carries no deletion record of its own. The app now writes down each of these removals when you make one, the same way it already does for diary entries and fasts. It only sends a smaller set if every missing item was removed on purpose. Otherwise it sends your account's copy back unchanged, puts the items back on the device, and records that this sync published none of this device's own changes. Unpinning a clinician or leaving a study still reaches your account on the next sync.
+- **A delete made during a sync is no longer undone.** Removing an entry while a sync was already running let that sync write the entry back, and nothing on screen said so. The sync now checks what the device has recorded as deleted immediately before it writes, and the delete reaches the account on the next sync.
+- **The record of deletes waiting to sync no longer grows forever.** Four kinds of entry were written into that record and never removed, including entries created and deleted between two syncs. Every entry a sync has weighed is now cleared once that sync has been agreed with the account.
 
 ## [0.29.4] - 2026-09-12
 

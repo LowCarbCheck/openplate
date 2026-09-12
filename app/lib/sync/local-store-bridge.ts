@@ -20,8 +20,10 @@
  * saved meals carry no tombstone, so the journal keys this file hands up are
  * the only evidence `mergeSnapshots` has that a short local list is short on
  * purpose; without them the account's list stands. That is why
- * `deletedEntityKeys` below is read in the same act as the snapshot and why
- * `forgetPublishedDeletes` prunes pass-through keys as well as tombstones.
+ * `deletedEntityKeys` below is read in the same act as the snapshot. It is read
+ * a SECOND time, later, by `applyMergedSnapshot`, which is a different question
+ * with a different answer on purpose: what has this device written down as
+ * deleted by the moment the merge is about to reach the disk.
  *
  * Keeping the seam in one small file also makes the blast radius of a
  * local-store refactor exactly one import list.
@@ -35,6 +37,15 @@ import {
   type PersistedTablesProbe,
 } from '#app/lib/local-store/persist';
 import { removeEntitiesWithoutJournal } from '#app/lib/local-store/primary-store';
+import {
+  DELETE_JOURNAL_TAG_BY_TABLE,
+  entityKey,
+  FASTS_TABLE,
+  FOOD_LOGS_TABLE,
+  PERSONAL_FOODS_TABLE,
+  SAVED_MEALS_TABLE,
+  WEIGHT_ENTRIES_TABLE,
+} from '#app/lib/local-store/schema';
 import {
   exportBackup,
   forgetDeletedEntityKeys,
@@ -108,13 +119,11 @@ export async function readLocalSnapshot({ store }: { store?: Store } = {}): Prom
 }
 
 /**
- * Drops the journal rows for deletes that are now agreed.
+ * Drops the journal rows for deletes a committed cycle has now weighed.
  *
- * Takes every tombstone key in the payload the cycle just committed, not only
- * the ones this device minted: a tombstone in the committed baseline is
- * carried forward by every later cycle whoever wrote it, so the journal row
- * behind it has nothing left to authorise. Keys the journal does not hold are
- * ignored.
+ * A thin pass-through: WHICH keys those are is the orchestrator's decision
+ * (`orchestrator.ts`), and it is the set the cycle read at its start. Keys the
+ * journal does not hold are ignored.
  */
 export async function forgetPublishedDeletes(keys: readonly string[]): Promise<void> {
   await forgetDeletedEntityKeys(keys);
@@ -224,6 +233,33 @@ export function parseRemoteSnapshot({
  * bug. The delete set is computed by comparing what is here now against what
  * the merge decided, so nothing is removed that the merge did not explicitly
  * resolve as a tombstone.
+ *
+ * ── AND THE JOURNAL IS RE-READ HERE, in the same act as the write ─────────
+ *
+ * A delete can land while the cycle is in flight. Row R is live when the cycle
+ * reads its snapshot, the person deletes R while the pull is on the wire, and
+ * the journal gets R. The merge never heard of that delete, so R is in
+ * `merged`, and the removal loop above only removes rows that `local` holds and
+ * `merged` lacks, so it passes R by and `importBackup` upserts it straight back
+ * onto the device. The cycle then commits a baseline that names R, the next
+ * cycle reads R as live and mints no tombstone, and one delete is silently
+ * undone with a stale journal row left behind it.
+ *
+ * The invariant that closes it is exactly one sentence: THIS APPLY NEVER
+ * RE-CREATES A ROW THIS DEVICE HAS WRITTEN DOWN AS DELETED. The journal read
+ * below is deliberately a second, later read rather than a value handed down
+ * from the cycle's snapshot read: the whole point is the keys that arrived
+ * after that read.
+ *
+ * The journal ROW SURVIVES this, on purpose, and that is what makes the repair
+ * work: the next cycle sees the committed baseline name R, the snapshot lack
+ * R, and the journal hold R, which is the positive evidence `stampSnapshot`
+ * needs to mint the tombstone.
+ *
+ * AN EDIT IN THE SAME WINDOW IS STILL OVERWRITTEN by this cycle's copy, and
+ * that is deliberately out of scope. The journal records deletes and nothing
+ * else, so there is no evidence here that a row was edited mid-flight; the
+ * edit is re-applied on the next cycle from the store's own newer stamp.
  */
 export async function applyMergedSnapshot({
   merged,
@@ -265,5 +301,42 @@ export async function applyMergedSnapshot({
     weightEntryIds: local.weightEntries.filter((entry) => !survivingWeights.has(entry.id)).map((entry) => entry.id),
   });
 
-  await importBackup({ schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data: merged });
+  const writable = withoutJournalledRows({
+    merged,
+    deletedEntityKeys: new Set(await listDeletedEntityKeys()),
+  });
+  await importBackup({ schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data: writable });
+}
+
+/**
+ * The merged snapshot with every row this device has journalled as deleted
+ * dropped from it.
+ *
+ * All five ID-BEARING collections, not just the three merged ones. A fast and a
+ * saved meal carry no tombstone, so a mid-flight clear of either is undone by
+ * the same upsert in exactly the same way, and `mergeSnapshots` hands the
+ * pass-through lists back whole, which makes the account's copy the thing that
+ * lands.
+ *
+ * The singletons are untouched: `profile` and `fastingSettings` have no id and
+ * no delete verb, so no key can name them.
+ */
+function withoutJournalledRows({
+  merged,
+  deletedEntityKeys,
+}: {
+  merged: LocalStoreSnapshot;
+  deletedEntityKeys: ReadonlySet<string>;
+}): LocalStoreSnapshot {
+  if (deletedEntityKeys.size === 0) return merged;
+  const isJournalled = (table: keyof typeof DELETE_JOURNAL_TAG_BY_TABLE, id: string): boolean =>
+    deletedEntityKeys.has(entityKey(DELETE_JOURNAL_TAG_BY_TABLE[table], id));
+  return {
+    ...merged,
+    foods: merged.foods.filter((food) => !isJournalled(PERSONAL_FOODS_TABLE, food.id)),
+    foodLogs: merged.foodLogs.filter((entry) => !isJournalled(FOOD_LOGS_TABLE, entry.id)),
+    weightEntries: merged.weightEntries.filter((entry) => !isJournalled(WEIGHT_ENTRIES_TABLE, entry.id)),
+    fasts: merged.fasts.filter((entry) => !isJournalled(FASTS_TABLE, entry.id)),
+    savedMeals: merged.savedMeals.filter((entry) => !isJournalled(SAVED_MEALS_TABLE, entry.id)),
+  };
 }

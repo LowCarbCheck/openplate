@@ -297,6 +297,13 @@ test('THE CONTROL: one row deleted on a healthy device publishes EXACTLY ONE tom
   // A REAL DELETE, through the verb a person's tap reaches. The database stays
   // where it is, so disk and memory agree and the delete is trusted.
   await deleteLocalFoodLog('log-removed');
+  // AND THE AUTOSAVE HAS TO LAND FIRST, which this line used to leave to luck.
+  // `isTombstoneTrusted` asks the disk-versus-memory record as its second gate,
+  // and between the delete and the flush the disk still holds the row, so
+  // `isTableLoaded.foodLogs` reads false and the tombstone is withheld. A
+  // healthy device settles in milliseconds; a test that races it is asserting
+  // the scheduler, not the rule.
+  await settleAutosave();
   markSyncPending();
   await syncNow();
 
