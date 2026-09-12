@@ -40,12 +40,14 @@
 import { buildEnvelope, parseEnvelope } from './engine/envelope/build-envelope';
 import type { SyncPayload } from './engine/envelope/types';
 import { ENVELOPE_VERSION, MAX_BLOB_BYTES } from './engine/protocol';
-import type { SyncHttpClient } from './engine/client/http-client';
-import { SyncRequestError } from './engine/client/sync-error';
+import type { PushBlobHttpResult, SyncHttpClient } from './engine/client/http-client';
+import { isSyncRequestError, SyncRequestError } from './engine/client/sync-error';
 import { SCHEMA_VERSION } from '#app/lib/local-store';
 import type { SyncedSnapshot } from './snapshot-partition';
 import {
   baselineFromPayload,
+  countRestoredEntities,
+  entityKey,
   mergeSnapshots,
   payloadsEqual,
   stampSnapshot,
@@ -85,6 +87,16 @@ export interface SyncCycleDeps {
    */
   readSnapshot: () => Promise<ReadSnapshotResult>;
   applySnapshot: (input: { merged: SyncedSnapshot; local: SyncedSnapshot }) => Promise<void>;
+  /**
+   * Drops the local delete-journal rows for tombstones this cycle has just
+   * committed to its baseline (`local-store/primary-store.ts`).
+   *
+   * A dependency rather than a direct import for the reason every other store
+   * touch here is one: this file is the imperative shell and the integration
+   * suite drives it against fakes. NOT OPTIONAL, so the question "who forgets
+   * these rows?" is put in front of every caller, including the fixtures.
+   */
+  forgetPublishedDeletes: (keys: string[]) => Promise<void>;
   /**
    * The one veto point, run on the snapshot EXACTLY AS PULLED and before this
    * cycle writes anything (M164/06).
@@ -127,6 +139,16 @@ export interface SyncCycleResult {
    * sentence about it (`storage-heal.ts`) rather than a silent green tick.
    */
   withheldTombstones: Tombstone[];
+  /**
+   * How many of those withheld entities are actually BACK in the payload this
+   * cycle agreed with.
+   *
+   * Not the same number as `withheldTombstones.length`, and the difference is
+   * the notice's honesty. When the pull found no blob, nothing came back, and
+   * saying "your entries were restored from your account" would be a sentence
+   * about a restore that did not happen (`storage-heal.ts`).
+   */
+  restoredEntityCount: number;
 }
 
 /**
@@ -164,7 +186,15 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
   // The server refuses a push that shrinks a blob by more than half unless the
   // client says the shrink is intended. This cycle may only say so when it
   // published deletes it can PROVE, and never when it withheld one.
-  const shrinkAcknowledged = stamped.meta.tombstones.length > 0 && withheldTombstones.length === 0;
+  //
+  // MINTED, NOT `meta.tombstones` (M225). The baseline never compacts its
+  // tombstones, so `meta.tombstones` still names every delete this device ever
+  // published, and a flag computed from it was true forever after the device's
+  // first deleted entry, acknowledging every push it would ever make and
+  // switching the service's guard off for exactly the people most likely to
+  // need it. `minted` is the deletes that are NEW in this push, so a cycle with
+  // nothing to delete acknowledges nothing.
+  const shrinkAcknowledged = stamped.minted.length > 0 && withheldTombstones.length === 0;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const remote = await pullRemotePayload(deps);
@@ -187,12 +217,14 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     if (remote !== null && payloadsEqual(merged, remote.payload)) {
       await deps.applySnapshot({ merged: merged.snapshot, local });
       const settled = commitState({ deps, merged, blobVersion: baseVersion, at: now() });
+      await forgetPublishedDeletes({ deps, merged });
       return {
         blobVersion: baseVersion,
         pushed: false,
         attempts: attempt,
         lastSyncedAt: settled.lastSyncedAt ?? now(),
         withheldTombstones,
+        restoredEntityCount: countRestoredEntities({ withheld: withheldTombstones, snapshot: merged.snapshot }),
       };
     }
 
@@ -212,23 +244,20 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
       });
     }
 
-    const result = await deps.http.pushBlob({
-      baseVersion,
-      envelopeVersion: ENVELOPE_VERSION,
-      ciphertext: envelope.ciphertext,
-      shrinkAcknowledged,
-    });
+    const result = await pushOrHeal({ deps, merged, local, baseVersion, envelope, shrinkAcknowledged });
     if (result.status === 'conflict') continue;
 
     await deps.applySnapshot({ merged: merged.snapshot, local });
     const at = now();
     commitState({ deps, merged, blobVersion: result.newVersion, at });
+    await forgetPublishedDeletes({ deps, merged });
     return {
       blobVersion: result.newVersion,
       pushed: true,
       attempts: attempt,
       lastSyncedAt: at,
       withheldTombstones,
+      restoredEntityCount: countRestoredEntities({ withheld: withheldTombstones, snapshot: merged.snapshot }),
     };
   }
 
@@ -236,6 +265,85 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     kind: 'conflict',
     message: `Sync could not settle after ${maxAttempts} attempts — another device is writing continuously.`,
   });
+}
+
+/**
+ * Pushes, and on a REFUSAL heals this device before the error leaves.
+ *
+ * ── The livelock this closes ──────────────────────────────────────────────
+ *
+ * A `400` from the service means the push was judged and nothing was written.
+ * The one judgement the service makes about a payload it cannot read is the
+ * SHRINK GUARD: a blob under half the size of the stored one, pushed by a
+ * client that did not acknowledge the shrink. The device that trips it is, by
+ * construction, a device that has lost its local copy, and until this
+ * function existed the thrown error skipped `applySnapshot`, so the blob it
+ * had just pulled, holding every entry it was missing, was decrypted, merged
+ * and then discarded. Every later cycle did the same. The guard protected the
+ * account and stranded the person: an empty diary on screen, a sync error
+ * beside it, and the repair one already-completed request away.
+ *
+ * So the merge is applied FIRST and the error is rethrown after. That is the
+ * same write the successful path performs, with the same arguments, and it is
+ * safe for the same reason: `merged` is the local payload combined with the
+ * remote one under the ordinary last-writer-wins rules, so it can only remove
+ * a row the merge itself resolved as buried. The BASELINE is deliberately not
+ * committed, because nothing was stored and this device must still consider
+ * itself behind, and the next cycle stamps the healed snapshot, which no longer
+ * shrinks, and settles.
+ *
+ * ONLY A `400`. A 401, a 429 or a transport failure means the service never
+ * judged this payload; retrying the identical push is exactly right there, and
+ * writing the merge on a cycle that failed before it was read would be doing
+ * work on no evidence.
+ */
+async function pushOrHeal({
+  deps,
+  merged,
+  local,
+  baseVersion,
+  envelope,
+  shrinkAcknowledged,
+}: {
+  deps: SyncCycleDeps;
+  merged: StampedSnapshot;
+  local: SyncedSnapshot;
+  baseVersion: number;
+  envelope: { ciphertext: Uint8Array };
+  shrinkAcknowledged: boolean;
+}): Promise<PushBlobHttpResult> {
+  try {
+    return await deps.http.pushBlob({
+      baseVersion,
+      envelopeVersion: ENVELOPE_VERSION,
+      ciphertext: envelope.ciphertext,
+      shrinkAcknowledged,
+    });
+  } catch (cause) {
+    // AN HTTP 400, and nothing else. `status` is checked beside `kind` because
+    // `invalid` has a second producer with no status at all,
+    // `decryptWithSchemaProbe` below, which cannot reach this `catch` today and
+    // must never start healing on a blob it failed to decrypt if it ever does.
+    if (!isSyncRequestError(cause) || cause.kind !== 'invalid' || cause.status !== 400) throw cause;
+    await deps.applySnapshot({ merged: merged.snapshot, local });
+    throw cause;
+  }
+}
+
+/**
+ * Forgets the delete-journal rows behind the tombstones this cycle committed.
+ *
+ * AFTER `commitState`, never before: the journal row is the only thing that can
+ * re-authorise this delete, and dropping it ahead of the baseline that carries
+ * the tombstone would leave a window where neither says the delete happened.
+ * Both call sites run it on a cycle that has already agreed with a payload, so
+ * every tombstone in `merged.meta` is now in the persisted baseline and is
+ * carried forward unconditionally from here on.
+ */
+async function forgetPublishedDeletes({ deps, merged }: { deps: SyncCycleDeps; merged: StampedSnapshot }): Promise<void> {
+  const keys = merged.meta.tombstones.map((tombstone) => entityKey(tombstone.entityType, tombstone.entityId));
+  if (keys.length === 0) return;
+  await deps.forgetPublishedDeletes(keys);
 }
 
 interface RemotePayload {

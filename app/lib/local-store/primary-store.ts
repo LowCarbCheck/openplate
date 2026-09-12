@@ -15,6 +15,21 @@
  * CRITICAL (M117/01): no function here ever evicts. This store is primary, not a
  * bounded cache, a write never deletes another row. The only deletes are the
  * explicit per-id `delete*` functions.
+ *
+ * EVERY ONE OF THOSE GOES THROUGH `deleteEntity` (M225), which removes the row
+ * and writes the entity's key into the DELETE JOURNAL in the same transaction.
+ * Sync may only mint a tombstone for a key that journal names, so a delete that
+ * reached `delRow` directly is a delete no other device will ever hear about.
+ * Grep for `delRow` in this file before adding a path: the three merged
+ * collections (personal foods, food logs, weight entries) are the only ones
+ * with a delete verb at all. There is ONE other remover,
+ * `removeEntitiesWithoutJournal`, and it is the opposite case, rows a PEER
+ * deleted, which this device must not claim. Its own doc says why.
+ *
+ * The two merged SINGLETONS have no delete verb by design: nothing removes the
+ * profile row or the fasting-settings row, `clearLocal*` and the `patch*`
+ * helpers WRITE a record with cleared fields, so neither can ever be
+ * tombstoned, which is exactly right.
  */
 import type { Store } from 'tinybase';
 import { z } from 'zod';
@@ -24,6 +39,8 @@ import { FAST_NOTE_MAX_LENGTH, selectCurrentFast } from '#app/models/fasting';
 import { EMPTY_BODY_METRICS, normalizeBodyMetrics, readBodyMetrics } from '#app/models/body-metrics';
 import type { BodyMetrics } from '#app/models/body-metrics';
 import {
+  DELETED_AT_CELL,
+  DELETED_ENTITIES_TABLE,
   FASTING_SETTINGS_ROW_ID,
   FASTING_SETTINGS_TABLE,
   FASTS_TABLE,
@@ -44,7 +61,7 @@ import {
 } from './store';
 import { getPrimaryStore, requestPersistentStorage } from './persist';
 import { markDeviceHasDataForTable } from './had-data';
-import { SCHEMA_VERSION } from './schema';
+import { entityKey, SCHEMA_VERSION, SYNC_ENTITY_TYPE_BY_TABLE } from './schema';
 import type {
   FastMood,
   FastProtocolId,
@@ -110,6 +127,118 @@ function writeEntity(store: Store, table: string, id: string, entity: PrimaryEnt
   store.setRow(table, id, { [PRIMARY_ENTITY_CELL]: JSON.stringify(entity) });
 }
 
+/**
+ * Removes one row AND writes down that it was removed, atomically.
+ *
+ * THE ONE PLACE A DELETE BECOMES A FACT. Sync may only mint a tombstone for a
+ * key this journal names (`snapshot-sync.ts`), so a delete that skipped this
+ * function is a delete no peer will ever hear about, and a journal row written
+ * outside the row's own transaction is a device that can end up claiming a
+ * delete it did not perform. `store.transaction` is what makes the pair
+ * indivisible: TinyBase commits both writes together, and the autosave
+ * listener sees one change, so the disk never holds one half.
+ *
+ * A table absent from {@link SYNC_ENTITY_TYPE_BY_TABLE} is not merged by sync
+ * (fasts, saved meals, the owner-private rows), so there is nothing to record
+ * and the row is simply removed. That is not a silent skip: those tables have
+ * no tombstones at all, and a journal row for one would be read by nothing.
+ */
+function deleteEntity(store: Store, table: string, id: string): void {
+  const entityType: string | undefined = Object.entries(SYNC_ENTITY_TYPE_BY_TABLE).find(
+    ([tableId]) => tableId === table,
+  )?.[1];
+  if (entityType === undefined) {
+    store.delRow(table, id);
+    return;
+  }
+  store.transaction(() => {
+    store.delRow(table, id);
+    store.setRow(DELETED_ENTITIES_TABLE, entityKey(entityType, id), { [DELETED_AT_CELL]: Date.now() });
+  });
+}
+
+/**
+ * What a caller must name to remove rows WITHOUT recording a delete.
+ *
+ * A one-member literal union, so the compiler asks the question at every call
+ * site: this is not a delete somebody performed, it is this device catching up
+ * with one a PEER performed. `reason` is never read at runtime, it is not a
+ * guard, it is the sentence the type system forces a future caller to write
+ * down before it can reach the only unjournalled removal path in the app.
+ */
+export interface EntityRemovalWithoutJournal {
+  /** The one case there is. A second value belongs here only with the argument for it written beside it. */
+  reason: 'applied-a-peer-tombstone';
+  /** Personal-food ids the merge resolved as buried elsewhere. */
+  foodIds: readonly string[];
+  /** Food-log ids the merge resolved as buried elsewhere. */
+  foodLogIds: readonly string[];
+  /** Weight-entry ids the merge resolved as buried elsewhere. */
+  weightEntryIds: readonly string[];
+}
+
+/**
+ * Removes rows a PEER deleted, leaving the journal alone.
+ *
+ * THE ONE PATH OUT OF THE JOURNAL, and it exists because the journal means
+ * exactly one thing: a delete THIS DEVICE performed. `applyMergedSnapshot`
+ * removes rows a merge resolved as buried on another device, and routing those
+ * through `deleteLocalFood` and friends made this device claim a peer act as
+ * its own. That claim is not harmless the moment a cycle does not reach its
+ * commit, which prunes the journal: a refused push, or a tab closed between
+ * the apply and the commit, leaves the row behind, and the NEXT cycle mints a
+ * fresh tombstone for it at a HIGHER lamport than the peer's. A peer that
+ * re-added the entity in between can then lose the tie on device id, and the
+ * entity is buried by a device that never deleted it.
+ *
+ * NOT EXPORTED FROM `#app/lib/local-store`. The barrel is the app-facing
+ * surface, every user-facing verb reaches the store through it, and this
+ * function is deliberately not on it, so arriving here takes a deep import,
+ * the word `WithoutJournal` in the call, and a `reason` typed with the one
+ * case there is. `tests/unit/delete-journal-single-writer.test.ts` pins the
+ * call site count, so a second one fails the push rather than a review.
+ */
+export async function removeEntitiesWithoutJournal(
+  removal: EntityRemovalWithoutJournal,
+  { store }: StoreOption = {},
+): Promise<void> {
+  const resolved = await resolveStore(store);
+  resolved.transaction(() => {
+    for (const id of removal.foodIds) resolved.delRow(PERSONAL_FOODS_TABLE, id);
+    for (const id of removal.foodLogIds) resolved.delRow(FOOD_LOGS_TABLE, id);
+    for (const id of removal.weightEntryIds) resolved.delRow(WEIGHT_ENTRIES_TABLE, id);
+  });
+}
+
+/**
+ * Every delete this device has recorded and not yet published, as entity keys.
+ *
+ * Read once per sync cycle by the bridge, beside the snapshot itself, so the
+ * stamping weighs the journal AS OF the read that produced the snapshot.
+ */
+export async function listDeletedEntityKeys({ store }: StoreOption = {}): Promise<string[]> {
+  return (await resolveStore(store)).getRowIds(DELETED_ENTITIES_TABLE);
+}
+
+/**
+ * Drops journal rows whose delete is now agreed.
+ *
+ * Called once a cycle has committed a baseline that carries the tombstone: the
+ * row has done its job, and keeping it would grow a list that only ever grows.
+ * Nothing is lost by dropping it, because a tombstone already in the baseline
+ * is carried forward unconditionally by every later cycle.
+ *
+ * Keys the journal does not hold are ignored, so the caller may hand over
+ * every tombstone in the payload without first working out which are its own.
+ */
+export async function forgetDeletedEntityKeys(keys: readonly string[], { store }: StoreOption = {}): Promise<void> {
+  if (keys.length === 0) return;
+  const resolved = await resolveStore(store);
+  resolved.transaction(() => {
+    for (const key of keys) resolved.delRow(DELETED_ENTITIES_TABLE, key);
+  });
+}
+
 /** Parses one row's entity cell, or null when absent/corrupt (never throws). */
 function readEntity<T>(store: Store, table: string, id: string): T | null {
   if (!store.hasRow(table, id)) return null;
@@ -160,7 +289,7 @@ export async function getLocalFood(id: string, { store }: StoreOption = {}): Pro
 
 /** Removes one personal food by id. */
 export async function deleteLocalFood(id: string, { store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(PERSONAL_FOODS_TABLE, id);
+  deleteEntity(await resolveStore(store), PERSONAL_FOODS_TABLE, id);
 }
 
 // ---------------------------------------------------------------------------
@@ -218,7 +347,7 @@ export async function listLocalFoodLogsForDay(dayKey: string, { store }: StoreOp
 
 /** Removes one food log by id. */
 export async function deleteLocalFoodLog(id: string, { store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(FOOD_LOGS_TABLE, id);
+  deleteEntity(await resolveStore(store), FOOD_LOGS_TABLE, id);
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +370,7 @@ export async function listLocalWeightEntries({ store }: StoreOption = {}): Promi
 
 /** Removes one weight entry by id. */
 export async function deleteLocalWeightEntry(id: string, { store }: StoreOption = {}): Promise<void> {
-  (await resolveStore(store)).delRow(WEIGHT_ENTRIES_TABLE, id);
+  deleteEntity(await resolveStore(store), WEIGHT_ENTRIES_TABLE, id);
 }
 
 /**

@@ -21,7 +21,7 @@
  * `eraseDeviceData` ever stopped taking the baseline with the rows: without
  * that half these fixtures produce the deletion described above.
  */
-import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
+import { HEALTHY_STORAGE, withRecordedDeletes } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -122,14 +122,36 @@ describe('signing in after erase re-downloads the diary', () => {
 
   it('after erase there is no stale marker left to make an empty diary look correct', async () => {
     // The counter-case, built from the same fixtures: a baseline that survived
-    // the rows turns the very next stamp into a delete instruction. This is
+    // the rows is live ammunition, and the very next stamp fires it. This is
     // what the single-step erase prevents, and it is asserted so the prevention
     // has something to be measured against.
+    //
+    // THE TRIGGER IS NOW EXPLICIT (M225). A stale baseline alone no longer
+    // produces a tombstone, the delete journal has to name the entity too, so
+    // this fires it the way a person deleting their last entry by hand
+    // would, with the key recorded. The baseline is still the thing that turns
+    // an empty device into an instruction, and the erase is still what removes
+    // it; the journal is a second, independent lock on the same door.
     const { storage, eraseDeps } = syncedDevice();
     const staleBaseline = createSyncStateStore({ storage, accountId: ACCOUNT_ID }).load().baseline;
 
-    const wouldHappen = stampSnapshot({ snapshot: snapshotOf([]), baseline: staleBaseline, deviceId: DEVICE_ID, integrity: HEALTHY_STORAGE });
+    const wouldHappen = stampSnapshot({
+      snapshot: snapshotOf([]),
+      baseline: staleBaseline,
+      deviceId: DEVICE_ID,
+      integrity: withRecordedDeletes(HEALTHY_STORAGE, Object.keys(staleBaseline.perEntity)),
+    });
     assert.equal(wouldHappen.meta.tombstones.length, 1, 'a kept baseline turns an erased diary into a deletion');
+
+    // AND WITHOUT THE RECORD, THE SAME BASELINE SAYS NOTHING: the erase path's
+    // own device, which lost its rows without ever deleting one.
+    const evicted = stampSnapshot({
+      snapshot: snapshotOf([]),
+      baseline: staleBaseline,
+      deviceId: DEVICE_ID,
+      integrity: HEALTHY_STORAGE,
+    });
+    assert.deepEqual(evicted.meta.tombstones, [], 'a device that recorded no delete must claim none');
 
     await eraseDeviceData({ accountId: ACCOUNT_ID }, eraseDeps);
     const after = createSyncStateStore({ storage, accountId: ACCOUNT_ID }).load().baseline;

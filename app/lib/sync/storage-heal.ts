@@ -43,10 +43,27 @@ export type StorageHealNotice =
 
 /**
  * @param withheld - the tombstones `stampSnapshot` declined to publish.
+ * @param restoredCount - how many of those entities the cycle actually got
+ *   back (`countRestoredEntities`).
+ *
+ * THE COUNT IS WHAT CAME BACK, NEVER WHAT WAS WITHHELD (M225). The two differ
+ * in the one case where the sentence would be a lie: when the pull found no
+ * blob at all, `mergeSnapshots` never runs, the withheld entities do not
+ * return, and they drop out of the baseline on the next commit. Reporting
+ * "your entries were restored from your account" there tells somebody their
+ * diary is safe at the moment it is being forgotten. Nothing is SHOWN in that
+ * case, because there is no restore to describe; the log line below still
+ * fires, and it is the one that carries the diagnosis.
  */
-export function resolveStorageHealNotice(withheld: readonly Tombstone[]): StorageHealNotice {
-  if (withheld.length === 0) return { kind: 'none' };
-  return { kind: 'restored', entryCount: withheld.length };
+export function resolveStorageHealNotice({
+  withheld,
+  restoredCount,
+}: {
+  withheld: readonly Tombstone[];
+  restoredCount: number;
+}): StorageHealNotice {
+  if (withheld.length === 0 || restoredCount === 0) return { kind: 'none' };
+  return { kind: 'restored', entryCount: restoredCount };
 }
 
 /**
@@ -55,20 +72,34 @@ export function resolveStorageHealNotice(withheld: readonly Tombstone[]): Storag
  * NEVER THROWS. It runs at the end of a cycle that already succeeded, and a
  * failure to report must not be reported as a failure to sync.
  */
-export async function healAfterWithheldDeletes(withheld: readonly Tombstone[]): Promise<void> {
-  const notice = resolveStorageHealNotice(withheld);
-  if (notice.kind === 'none') return;
+export async function healAfterWithheldDeletes({
+  withheld,
+  restoredCount,
+}: {
+  withheld: readonly Tombstone[];
+  restoredCount: number;
+}): Promise<void> {
+  if (withheld.length === 0) return;
+  const notice = resolveStorageHealNotice({ withheld, restoredCount });
 
   // STICKY FOR THE SESSION, never cleared by a later clean cycle. Sync runs on
   // boot, on `online` and behind a debounce, so a notice that the next cycle
   // erased would be gone before anybody read it, and this is the one sentence
   // in the app that must not be missable.
-  updateSyncSession({ storageHealNotice: notice });
+  //
+  // The LOGGING below runs whether or not there is a notice: a cycle that
+  // withheld deletes and got nothing back is the state that most needs a trace,
+  // and it is the one with nothing on screen.
+  if (notice.kind !== 'none') updateSyncSession({ storageHealNotice: notice });
   try {
     const storage = await readOriginStorageReport();
     const granted = await requestPersistentStorageAgain();
     log.warn('a sync cycle withheld deletes: this device could not prove they happened', {
       withheldCount: withheld.length,
+      // How many of them the account actually handed back. BELOW the withheld
+      // count means entries this device can no longer see are not on the
+      // server either, which is the shape of loss no notice can undo.
+      restoredCount,
       // The entity TYPES, never an id: an id is diary content and this line
       // goes to a log.
       entityTypes: [...new Set(withheld.map((tombstone) => tombstone.entityType))].toSorted(),

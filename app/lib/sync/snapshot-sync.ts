@@ -43,22 +43,24 @@ import type {
   LocalWeightEntry,
 } from '#app/lib/local-store';
 import {
+  entityKey as buildEntityKey,
   FASTING_SETTINGS_TABLE,
   FASTS_TABLE,
   FOOD_LOGS_TABLE,
   PERSONAL_FOODS_TABLE,
   PROFILE_GOALS_TABLE,
   SAVED_MEALS_TABLE,
+  SYNC_ENTITY_TYPE_BY_TABLE,
   WEIGHT_ENTRIES_TABLE,
 } from '#app/lib/local-store/schema';
 import type { SealedPrivateStore, SyncedSnapshot } from './snapshot-partition';
 
 /** The entity-type tags that appear in tombstones and in namespaced entity keys. */
 export const SYNC_ENTITY_TYPES = {
-  food: 'personalFood',
-  log: 'foodLog',
-  weight: 'weightEntry',
-  profile: 'profile',
+  food: SYNC_ENTITY_TYPE_BY_TABLE[PERSONAL_FOODS_TABLE],
+  log: SYNC_ENTITY_TYPE_BY_TABLE[FOOD_LOGS_TABLE],
+  weight: SYNC_ENTITY_TYPE_BY_TABLE[WEIGHT_ENTRIES_TABLE],
+  profile: SYNC_ENTITY_TYPE_BY_TABLE[PROFILE_GOALS_TABLE],
   /**
    * THE FASTING ROUTINE (the fasting rework), the singleton settings record.
    *
@@ -82,7 +84,7 @@ export const SYNC_ENTITY_TYPES = {
    * the same accepted §3.3 trade-off the profile row has always carried, and
    * a routine is re-set in two taps.
    */
-  fastingSettings: 'fastingSettings',
+  fastingSettings: SYNC_ENTITY_TYPE_BY_TABLE[FASTING_SETTINGS_TABLE],
   /**
    * THE OWNER-PRIVATE COMPARTMENT (M160/07, `openplate-core` ADR-0002's
    * partition amendment), one entity holding the sealed ciphertext and its
@@ -138,10 +140,16 @@ export interface StampedSnapshot {
   meta: SyncMetaPayload;
 }
 
-/** Namespaced entity key: `personalFood:abc`. Namespacing prevents a food and a log that share an id from colliding. */
-export function entityKey(entityType: string, entityId: string): string {
-  return `${entityType}:${entityId}`;
-}
+/**
+ * Namespaced entity key: `personalFood:abc`. Namespacing prevents a food and a
+ * log that share an id from colliding.
+ *
+ * RE-EXPORTED, NOT REDEFINED. The local store's delete journal is keyed the
+ * same way and writes its rows through the same function, so a second spelling
+ * here would record deletes under keys this file never looks up, a failure
+ * that is silent and always in the direction of losing somebody's delete.
+ */
+export const entityKey = buildEntityKey;
 
 // ---------------------------------------------------------------------------
 // Content hashing
@@ -255,12 +263,25 @@ function toFlat(entityType: string, entityId: string, value: SyncEntityValue): F
  * account lost hers in production to exactly this, and the tombstones spread
  * to her second, healthy device on its next pull.
  *
- * So a tombstone now needs POSITIVE EVIDENCE that a delete happened, and this
- * is that evidence, gathered by the imperative shell and handed in. The test
- * is a physical equality between what is on disk and what is in memory, never
- * a ratio and never a threshold: a legitimate bulk delete leaves the two
- * agreeing, including when both are zero, and a failed or partial load leaves
- * the disk ahead.
+ * So a tombstone needs POSITIVE EVIDENCE that a delete happened. There are two
+ * kinds of it here, and they are not equals.
+ *
+ * THE AUTHORITY is the DELETE JOURNAL, `SnapshotIntegrity.deletedEntityKeys`:
+ * the app writes a key down when it removes a row, in the same transaction and
+ * the same database. See that field, and `local-store/schema.ts`, for why
+ * co-location is what makes it evidence.
+ *
+ * THIS RECORD IS THE SECOND SIGNAL, kept but demoted (M225). It is a physical
+ * equality between what is on disk and what is in memory, never a ratio and
+ * never a threshold. It cannot authorise a tombstone, because disk and memory
+ * agree perfectly at zero in every state this rule exists to catch: after
+ * `persist.ts` primes a fresh database, after the `t`-store-emptied incident,
+ * and after a real total delete. Agreement between two things that failed
+ * together is not evidence. What it still does is REFUSE: a table whose disk
+ * copy is ahead of its memory copy was half read, and nothing about it can be
+ * called a delete even with a journal row beside it. It also carries the
+ * partial-load case for `mergeSnapshots`'s two pass-through collections, which
+ * have no tombstones and therefore no journal.
  */
 export interface LocalStoreIntegrity {
   /**
@@ -288,6 +309,22 @@ export interface LocalStoreIntegrity {
 /** Everything {@link stampSnapshot} weighs before it writes a tombstone. */
 export interface SnapshotIntegrity extends LocalStoreIntegrity {
   /**
+   * THE AUTHORITY (M225): the entity keys this device WROTE DOWN as deleted.
+   *
+   * Read out of the delete journal (`local-store/primary-store.ts`), which the
+   * delete verbs write in the same transaction as the row removal and in the
+   * same database as the diary. A key that is not in here was not deleted by
+   * this device, whatever the baseline says about it, so no tombstone is minted
+   * for it.
+   *
+   * Co-location is what makes it evidence rather than another proxy. The
+   * journal fails together with the diary: an evicted database takes both, an
+   * emptied `t` store takes both, and a freshly primed database has neither.
+   * The disk-versus-memory comparison below cannot say that, because disk and
+   * memory agree perfectly at zero in every one of those states.
+   */
+  deletedEntityKeys: ReadonlySet<string>;
+  /**
    * Has this session READ the owner-private compartment?
    *
    * `false` is `sealOwnerPrivateRegion` answering `unknown`: no pull has
@@ -307,13 +344,9 @@ export interface SnapshotIntegrity extends LocalStoreIntegrity {
  * is not a table on disk at all, and its evidence is
  * {@link SnapshotIntegrity.isCompartmentKnown}.
  */
-const ENTITY_TYPE_TABLES = {
-  [SYNC_ENTITY_TYPES.food]: PERSONAL_FOODS_TABLE,
-  [SYNC_ENTITY_TYPES.log]: FOOD_LOGS_TABLE,
-  [SYNC_ENTITY_TYPES.weight]: WEIGHT_ENTRIES_TABLE,
-  [SYNC_ENTITY_TYPES.profile]: PROFILE_GOALS_TABLE,
-  [SYNC_ENTITY_TYPES.fastingSettings]: FASTING_SETTINGS_TABLE,
-} as const;
+const ENTITY_TYPE_TABLES: Record<string, string> = Object.fromEntries(
+  Object.entries(SYNC_ENTITY_TYPE_BY_TABLE).map(([table, entityType]) => [entityType, table]),
+);
 
 /**
  * May this device say that this entity was DELETED, rather than that it cannot
@@ -326,22 +359,41 @@ const ENTITY_TYPE_TABLES = {
  * buried.
  */
 function isTombstoneTrusted({
+  key,
   entityType,
   integrity,
 }: {
+  /** The namespaced key, the same string the delete journal records. */
+  key: string;
   entityType: string;
   integrity: SnapshotIntegrity;
 }): boolean {
   if (entityType === SYNC_ENTITY_TYPES.privateStore) {
+    // THE COMPARTMENT IS NOT IN THE JOURNAL, and must not be asked for. It is
+    // not a store table, so no `delete*` verb records it, and requiring a
+    // journal row here would make the compartment un-tombstonable for good,
+    // a device whose owner really did delete their share identity could never
+    // say so. Its positive evidence is `isCompartmentKnown`, which answers the
+    // same question the journal answers for a table: has this device actually
+    // READ the thing it is about to declare gone?
     return integrity.isCompartmentKnown && integrity.hasPersistedDatabase;
   }
-  // The tag comes off a baseline key, which is a string, so the lookup is a
+  // THE JOURNAL FIRST, AND IT IS THE AUTHORITY. The baseline only says what
+  // was once synced; it says nothing at all about why an entity is missing
+  // now. Only the journal says a delete HAPPENED.
+  if (!integrity.deletedEntityKeys.has(key)) return false;
+  // The tag comes off a baseline key, which is a string, so this lookup is a
   // widening one on purpose: an entity type this map does not name is exactly
   // the case the `undefined` branch below refuses.
-  const table: string | undefined = Object.entries(ENTITY_TYPE_TABLES).find(([tag]) => tag === entityType)?.[1];
+  const table = ENTITY_TYPE_TABLES[entityType];
   // An entity type nobody has mapped to a table has no evidence behind it, and
   // the fail-safe direction is to keep the data.
   if (table === undefined) return false;
+  // SECOND, AND KEPT: the disk-versus-memory comparison is no longer what
+  // authorises a tombstone, but it still refuses one from a table this device
+  // only half read, where a journal row could be genuine and the snapshot
+  // around it still wrong. Defence in depth, and `mergeSnapshots` reads the
+  // same record for the two pass-through collections.
   return isTableTrusted({ table, integrity });
 }
 
@@ -372,6 +424,18 @@ function isTableTrusted({ table, integrity }: { table: string; integrity: LocalS
 export interface StampSnapshotResult {
   meta: SyncMetaPayload;
   baseline: SyncBaseline;
+  /**
+   * The tombstones this cycle MINTED, the deletes that are new in this push.
+   *
+   * A strict subset of `meta.tombstones`, which also carries every tombstone
+   * the baseline already held. The difference is the whole point: the baseline
+   * NEVER COMPACTS its tombstones, so `meta.tombstones.length > 0` is true
+   * forever after a device's first delete, and a shrink acknowledgement
+   * computed from it acknowledges every push that device will ever make. That
+   * defeats the service's guard entirely, on exactly the devices that have
+   * deleted something before.
+   */
+  minted: Tombstone[];
   /**
    * The tombstones this cycle DECLINED to write, because the evidence did not
    * support them.
@@ -440,6 +504,7 @@ export function stampSnapshot({
     if (!liveKeys.has(key)) tombstones.push(tombstone);
   }
 
+  const minted: Tombstone[] = [];
   const withheld: Tombstone[] = [];
   for (const [key, previous] of Object.entries(baseline.perEntity)) {
     if (liveKeys.has(key) || tombstonesByKey.has(key)) continue;
@@ -452,15 +517,40 @@ export function stampSnapshot({
     };
     // THE ONE PLACE AN ABSENCE BECOMES A DELETE. Everything else in this
     // function is arithmetic; this line is the claim.
-    if (isTombstoneTrusted({ entityType: tombstone.entityType, integrity })) tombstones.push(tombstone);
+    if (isTombstoneTrusted({ key, entityType: tombstone.entityType, integrity })) minted.push(tombstone);
     else withheld.push(tombstone);
   }
+  tombstones.push(...minted);
 
   return {
     meta: { perEntity: toWireStamps(perEntity), tombstones },
     baseline: { perEntity, tombstones },
+    minted,
     withheld,
   };
+}
+
+/**
+ * How many of the entities whose deletes were WITHHELD are back in the payload
+ * this cycle agreed with.
+ *
+ * The heal notice is the reason this exists. "This device lost its local copy
+ * and your account put it back" is only true when the account HAD a copy: when
+ * the pull found no blob at all, `mergeSnapshots` never runs, the withheld
+ * entities do not come back, and they drop out of the baseline. Counting
+ * withheld tombstones as restored entries told those people their diary had
+ * been restored while it was being forgotten.
+ */
+export function countRestoredEntities({
+  withheld,
+  snapshot,
+}: {
+  withheld: readonly Tombstone[];
+  /** The snapshot this cycle agreed with, merged or local. */
+  snapshot: SyncedSnapshot;
+}): number {
+  const liveKeys = new Set(flattenSnapshot(snapshot).map((entity) => entity.key));
+  return withheld.filter((tombstone) => liveKeys.has(entityKey(tombstone.entityType, tombstone.entityId))).length;
 }
 
 function toWireStamps(perEntity: Record<string, StampedEntity>): SyncMetaPayload['perEntity'] {

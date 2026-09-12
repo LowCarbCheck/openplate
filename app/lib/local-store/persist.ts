@@ -283,6 +283,32 @@ export async function readOriginStorageReport(): Promise<OriginStorageReport> {
 const PERSISTER_TABLES_OBJECT_STORE = 't';
 
 /**
+ * What a read-only probe of a persisted database found.
+ *
+ * THREE ANSWERS, NOT TWO (M225). `absent` and `blocked` used to share one
+ * `null`, and they mean opposite things: `absent` is "nothing has ever been
+ * persisted here", which is what licenses the priming save below, while
+ * `blocked` is "this database EXISTS and another connection is holding it
+ * open", which licenses nothing.
+ *
+ * `blocked` IS DEFENSIVE, and is not believed to occur. The open below is
+ * VERSIONLESS, and a versionless open of an existing database does not request
+ * a version change, so there is nothing for another connection to block; the
+ * handler is reachable only through the abort this function performs on a
+ * database that does not exist yet. Separating the two answers is still worth
+ * the type, because the cost of being wrong about that is one-directional: a
+ * `blocked` folded into `absent` would license a priming save, and there is no
+ * reading of `blocked` under which an empty save is right.
+ */
+export type PersistedTablesProbe =
+  /** No database, or one with no persister object store: nothing has ever been saved under this name. */
+  | { kind: 'absent' }
+  /** The database exists and could not be opened: another connection is holding it. Inconclusive, never treated as empty. */
+  | { kind: 'blocked' }
+  /** Read: `{ [tableId]: rowCount }`, an empty object when the object store exists but every table in it is empty. */
+  | { kind: 'present'; counts: Record<string, number> };
+
+/**
  * Independently inspects the raw IndexedDB database at `dbName`, bypassing
  * the TinyBase `Store`/`Persister` abstraction entirely, to determine how
  * many rows each table currently holds ON DISK. This is the ground truth
@@ -308,7 +334,7 @@ const PERSISTER_TABLES_OBJECT_STORE = 't';
  * `onerror`, which this function treats as the same "fresh device" outcome
  * `onsuccess`'s missing-object-store branch already resolves to.
  */
-export async function readPersistedTableRowCounts(dbName: string): Promise<Record<string, number> | null> {
+export async function readPersistedTableRowCounts(dbName: string): Promise<PersistedTablesProbe> {
   return new Promise((resolve, reject) => {
     let isFreshDeviceProbe = false;
     const request = indexedDB.open(dbName);
@@ -320,17 +346,19 @@ export async function readPersistedTableRowCounts(dbName: string): Promise<Recor
       isFreshDeviceProbe = true;
       request.transaction?.abort();
     };
-    // Not expected to actually fire from the abort above (there is nothing
-    // else that could be blocking a version change on a database that
-    // doesn't exist yet), but handled the same way defensively — a blocked
-    // open is exactly as inconclusive as "doesn't exist yet" for this probe's
-    // purposes.
+    // NOT EXPECTED TO FIRE AT ALL. The open above is versionless, so it never
+    // requests a version change, and a versionless open of an existing database
+    // has nothing to be blocked by; the abort above is on a database that does
+    // not exist yet, and there is nothing else holding one of those. Handled
+    // anyway, and handled as its OWN answer (M225) rather than as `absent`,
+    // because if it ever does fire it means a database that EXISTS and could
+    // not be read, and that must not license the priming save below.
     request.onblocked = () => {
-      resolve(null);
+      resolve({ kind: 'blocked' });
     };
     request.addEventListener('error', () => {
       if (isFreshDeviceProbe) {
-        resolve(null);
+        resolve({ kind: 'absent' });
         return;
       }
       reject(new Error(`readPersistedTableRowCounts("${dbName}"): indexedDB.open failed`));
@@ -339,7 +367,7 @@ export async function readPersistedTableRowCounts(dbName: string): Promise<Recor
       const db = request.result;
       if (!db.objectStoreNames.contains(PERSISTER_TABLES_OBJECT_STORE)) {
         db.close();
-        resolve(null);
+        resolve({ kind: 'absent' });
         return;
       }
       const getAllRequest = db
@@ -355,7 +383,7 @@ export async function readPersistedTableRowCounts(dbName: string): Promise<Recor
           counts[row.data.k] = tableRows.success ? Object.keys(tableRows.data).length : 0;
         }
         db.close();
-        resolve(counts);
+        resolve({ kind: 'present', counts });
       });
       getAllRequest.addEventListener('error', () => {
         db.close();
@@ -369,10 +397,10 @@ export async function readPersistedTableRowCounts(dbName: string): Promise<Recor
   });
 }
 
-/** Sums a table→rowCount map from {@link readPersistedTableRowCounts}; `null` (no persisted DB yet) sums to 0. */
-export function totalRowCount(counts: Record<string, number> | null): number {
-  if (!counts) return 0;
-  return Object.values(counts).reduce((sum, count) => sum + count, 0);
+/** Sums a {@link readPersistedTableRowCounts} probe; anything but `present` sums to 0, because nothing was read. */
+export function totalRowCount(probe: PersistedTablesProbe): number {
+  if (probe.kind !== 'present') return 0;
+  return Object.values(probe.counts).reduce((sum, count) => sum + count, 0);
 }
 
 /**
@@ -381,13 +409,21 @@ export function totalRowCount(counts: Record<string, number> | null): number {
  * for the looping-error incident this closes. `counts === null` is exactly
  * {@link readPersistedTableRowCounts}'s "genuinely fresh device" outcome: no
  * database, or a database with no `"t"` object store, has ever been
- * persisted for this `dbName`. Priming is safe to skip once counts is a real
- * (possibly empty) map — the object stores already exist in that case, so
+ * persisted for this `dbName`. Priming is safe to skip once the probe answers
+ * `present` with a real (possibly empty) map: the object stores already exist
+ * in that case, so
  * `startAutoLoad`'s `load()` won't hit the `NotFoundError` this predicate
  * exists to prevent.
  */
-export function shouldPrimePersistedDb(counts: Record<string, number> | null): boolean {
-  return counts === null;
+export function shouldPrimePersistedDb(probe: PersistedTablesProbe): boolean {
+  // `absent` ONLY, never `blocked` (M225). A blocked probe is a database that
+  // EXISTS and could not be read, so priming it would write an empty store over
+  // one that is there. That branch is not believed to be reachable, see
+  // `PersistedTablesProbe`, and this line is the cheap half of being wrong
+  // about it: skipping the prime costs nothing worse than the NotFoundError
+  // poll this mechanism exists to avoid, which is recoverable, while an
+  // overwrite is not.
+  return probe.kind === 'absent';
 }
 
 /** Per-table row counts for the in-memory store — the counterpart to {@link readPersistedTableRowCounts}, for telemetry and the empty-store check below. */
@@ -450,7 +486,7 @@ interface LoadStep {
  * itself happens entirely client-side.
  */
 export async function loadAndVerifyOrThrow(store: Store, dbName: string, persister: LoadStep): Promise<void> {
-  let persistedCountsBeforeLoad: Record<string, number> | null;
+  let persistedCountsBeforeLoad: PersistedTablesProbe;
   try {
     persistedCountsBeforeLoad = await readPersistedTableRowCounts(dbName);
   } catch (error) {

@@ -57,7 +57,7 @@ import { constants as zlibConstants, gunzipSync } from 'node:zlib';
 import 'fake-indexeddb/auto';
 import { z } from 'zod';
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
-import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
+import { HEALTHY_STORAGE, withRecordedDeletes } from '../sync-integrity-fixtures';
 import {
   createSyncAccount,
   markSyncPending,
@@ -213,11 +213,18 @@ function deviceDeps({
   deviceId,
   local,
   storage = createMemoryStorage(),
+  deleted = new Set<string>(),
 }: {
   vault: SyncVault;
   deviceId: string;
   local: { current: SyncedSnapshot };
   storage?: ReturnType<typeof createMemoryStorage>;
+  /**
+   * This device's DELETE JOURNAL, the entity keys it recorded as deleted
+   * (M225). Empty by default: dropping an entity from a fixture snapshot is
+   * not a delete, and a test that wants a tombstone says so here as well.
+   */
+  deleted?: Set<string>;
 }) {
   return {
     accountId: vault.accountId,
@@ -225,9 +232,15 @@ function deviceDeps({
     http: vault.http,
     state: createSyncStateStore({ storage, accountId: vault.accountId }),
     deviceId,
-    readSnapshot: async () => ({ snapshot: local.current, integrity: HEALTHY_STORAGE }),
+    readSnapshot: async () => ({
+      snapshot: local.current,
+      integrity: withRecordedDeletes(HEALTHY_STORAGE, [...deleted]),
+    }),
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
+    },
+    forgetPublishedDeletes: async (keys: string[]) => {
+      for (const key of keys) deleted.delete(key);
     },
     // These devices carry the snapshot verbatim and hold no compartment session
     // of their own, so there is nothing here for the veto to check against ,

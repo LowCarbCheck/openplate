@@ -393,9 +393,19 @@ async function pushSeedDiary(account: SeededAccount): Promise<PushOutcome> {
       // cross-check and no baseline to lose: the first cycle has nothing to
       // tombstone, so the trusting values here can only ever apply to an empty
       // set (`snapshot-sync.ts`).
-      integrity: { hasPersistedDatabase: true, isTableLoaded: {}, isCompartmentKnown: true },
+      //
+      // The DELETE JOURNAL is empty for the same reason: nothing was ever
+      // deleted here, so there is nothing to record and nothing to authorise.
+      integrity: {
+        hasPersistedDatabase: true,
+        isTableLoaded: {},
+        isCompartmentKnown: true,
+        deletedEntityKeys: new Set(),
+      },
     }),
     applySnapshot: async () => {},
+    // No journal, so nothing to prune.
+    forgetPublishedDeletes: async () => {},
     // The account was created moments ago, so a pulled blob can only be one
     // this same run wrote. There is nothing for a veto to refuse.
     assertPulledSnapshot: async () => {},

@@ -57,7 +57,19 @@ export type SyncErrorReason =
   | 'reauth-required'
   /** The service is unreachable, or the device is offline. Local editing continues normally. */
   | 'offline'
-  /** Protocol handshake mismatch — one side needs updating before it is safe to sync. */
+  /**
+   * One side needs updating before it is safe to sync.
+   *
+   * NARROWED IN M225, not retired. It used to be what `describeSyncFailure`
+   * returned for EVERY `invalid`, which meant an HTTP 400 as well, and a 400 is
+   * a payload the service refused rather than a version disagreement; the
+   * sentence this renders was false for the people who met the shrink guard.
+   * Its real producer is `orchestrator.ts`'s `decryptWithSchemaProbe`: a pulled
+   * blob that will not verify under any schema version this build knows is a
+   * blob a newer app wrote, and that is this state exactly. The protocol
+   * HANDSHAKE reports separately, through `auth-client.ts`'s own
+   * `ProtocolCompatibility`, and never reaches this type.
+   */
   | 'incompatible'
   /** Anything else. */
   | 'failed';

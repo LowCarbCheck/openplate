@@ -446,6 +446,104 @@ export const RETIRED_GATEWAY_CONNECTION_TABLE = 'gatewayConnection';
 /** The single JSON cell every primary-store row uses to hold its serialized entity. */
 export const PRIMARY_ENTITY_CELL = 'entity';
 
+// ---------------------------------------------------------------------------
+// The delete journal (M225): a delete is a FACT this device wrote down
+// ---------------------------------------------------------------------------
+
+/**
+ * Table: the keys of entities this device DELETED and has not yet published.
+ *
+ * ── Why a journal, and why it lives in this database ──────────────────────
+ *
+ * Sync used to infer a delete: an entity the sync baseline named and the live
+ * snapshot did not was read as "the person removed it". The baseline lives in
+ * `localStorage` and the diary lives in IndexedDB, so a browser that evicts
+ * the second and keeps the first turns a whole diary into a list of deletions.
+ * A person lost hers in production that way.
+ *
+ * M224 answered with a DISK-VERSUS-MEMORY comparison, and that proxy is the
+ * wrong one: disk and memory agree perfectly at zero after a fresh prime,
+ * after the `t`-store-emptied incident `persist.ts` documents, and after a
+ * real total delete. Agreement between two things that failed together is not
+ * evidence. Worse, `persist.ts`'s `primeFreshDatabaseIfNeeded` CREATES an
+ * empty database before any sync cycle can read it, so on the real boot order
+ * the comparison answered "healthy, and empty" to an evicted device.
+ *
+ * So a delete is recorded when it happens, by the verb that performs it, in
+ * the SAME transaction as the row removal, in the SAME database as the diary.
+ * That co-location is the whole point:
+ *
+ *  - the database is evicted: the journal goes with the diary, no tombstone is
+ *    minted, and the pull repopulates the device;
+ *  - the `t` object store is emptied: the same;
+ *  - a fresh database is primed and three meals are typed in offline: the
+ *    journal is empty, the baseline's older entries are WITHHELD, and the
+ *    three new meals still push;
+ *  - somebody really deletes 80 percent of their diary: 80 percent of those
+ *    keys are in the journal, every one of them is trusted, and the shrink is
+ *    acknowledged honestly.
+ *
+ * ── It is device-local bookkeeping and MUST NOT sync ──────────────────────
+ *
+ * It is deliberately absent from `LocalStoreSnapshot`, so `backup.ts` never
+ * exports it and `snapshot-partition.ts` never has to classify it. That is not
+ * an omission: publishing this table would hand the service a list of the
+ * entities somebody deleted, which is diary content described from the other
+ * side. The tombstones the journal AUTHORISES are what travels; the journal
+ * itself never leaves the device.
+ *
+ * No {@link SCHEMA_VERSION} bump for the same reason: that number versions the
+ * ENTITY SHAPES a backup envelope carries and a peer's blob is migrated
+ * against, and this table is in neither. A build that has never heard of it
+ * reads a database containing it unchanged.
+ */
+export const DELETED_ENTITIES_TABLE = 'deletedEntities';
+
+/** Cell: epoch-ms the delete happened. Diagnostics only, nothing branches on it. */
+export const DELETED_AT_CELL = 'deletedAt';
+
+/**
+ * The namespaced key one entity occupies in the delete journal, in the sync
+ * baseline and in a tombstone: `foodLog:abc`.
+ *
+ * ONE definition, here in the local store rather than in the sync layer,
+ * because the journal is written by `primary-store.ts` and read by
+ * `snapshot-sync.ts`, and two spellings of this string would mean a delete
+ * recorded under a key nothing ever looks up, failing silently and always in
+ * the direction of losing the delete.
+ *
+ * Namespacing is what stops a food and a log that share an id from colliding.
+ */
+export function entityKey(entityType: string, entityId: string): string {
+  return `${entityType}:${entityId}`;
+}
+
+/**
+ * The entity-type tag each MERGED store table carries in a tombstone and in an
+ * entity key.
+ *
+ * The one place the table/tag pairing is written down. `primary-store.ts`
+ * records a delete under the tag for the table it just removed a row from, and
+ * `snapshot-sync.ts` derives both its `SYNC_ENTITY_TYPES` tags and its
+ * tag-to-table lookup from this map, so the two cannot drift into a journal
+ * key nothing reads.
+ *
+ * `fasts` and `savedMeals` are absent because they are passed through whole
+ * rather than merged, so they are never stamped and never tombstoned. The
+ * owner-private compartment is absent because it is not a table at all; its
+ * evidence is `SnapshotIntegrity.isCompartmentKnown`.
+ */
+export const SYNC_ENTITY_TYPE_BY_TABLE = {
+  [PERSONAL_FOODS_TABLE]: 'personalFood',
+  [FOOD_LOGS_TABLE]: 'foodLog',
+  [WEIGHT_ENTRIES_TABLE]: 'weightEntry',
+  [PROFILE_GOALS_TABLE]: 'profile',
+  [FASTING_SETTINGS_TABLE]: 'fastingSettings',
+} as const;
+
+/** A merged table's entity-type tag, `undefined` for every table that is not merged. */
+export type SyncEntityTypeTag = (typeof SYNC_ENTITY_TYPE_BY_TABLE)[keyof typeof SYNC_ENTITY_TYPE_BY_TABLE];
+
 /** The fixed row id for the singleton profile/goals row. */
 export const PROFILE_ROW_ID = 'me';
 

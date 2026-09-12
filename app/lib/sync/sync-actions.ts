@@ -48,6 +48,7 @@ import {
   applyMergedSnapshot,
   parseRemoteSnapshot,
   readLocalOwnerPrivateRegion,
+  forgetPublishedDeletes,
   readLocalSnapshot,
 } from './local-store-bridge';
 import { partitionSnapshot, recomposeSnapshot, type SyncedSnapshot } from './snapshot-partition';
@@ -515,6 +516,7 @@ export async function syncNow(): Promise<void> {
       deviceId: vault.deviceId,
       readSnapshot: () => readSyncedSnapshot(vault.privateStore),
       applySnapshot: (input) => applySyncedSnapshot({ session: vault.privateStore, ...input }),
+      forgetPublishedDeletes,
       // The refusal that has to precede the push. `applySyncedSnapshot` below
       // opens the same compartment and throws the same error, and until M164/06
       // that was the ONLY place it happened — one line after `pushBlob`.
@@ -526,7 +528,10 @@ export async function syncNow(): Promise<void> {
     // must not overwrite: `updateSyncSession` merges a patch, and a patch that
     // did not mention the notice would leave a stale one standing, while one
     // that ran after this line would be the clean-sync update erasing it.
-    await healAfterWithheldDeletes(result.withheldTombstones);
+    await healAfterWithheldDeletes({
+      withheld: result.withheldTombstones,
+      restoredCount: result.restoredEntityCount,
+    });
     updateSyncSession({
       phase: 'idle',
       lastSyncedAt: result.lastSyncedAt,
@@ -573,11 +578,17 @@ async function readSyncedSnapshot(session: PrivateStoreSession): Promise<ReadSna
   const seal = await sealOwnerPrivateRegion({ session, region: ownerPrivate });
   return {
     snapshot: { ...shareable, privateStore: sealedCompartmentOrNull(seal) },
-    // THE COMPARTMENT'S EVIDENCE IS THE SEAL'S OWN ANSWER (M223). The snapshot
-    // carries `null` for both `absent` and `unknown` because there is nothing
-    // else for it to carry, and the stamping has to be told which of the two
-    // this is or it will tombstone a compartment nobody deleted.
-    integrity: { ...read.integrity, isCompartmentKnown: seal.kind !== 'unknown' },
+    integrity: {
+      ...read.integrity,
+      // THE DELETE JOURNAL, read in the same act as the snapshot (M225). It is
+      // what authorises a tombstone; see `snapshot-sync.ts`.
+      deletedEntityKeys: read.deletedEntityKeys,
+      // THE COMPARTMENT'S EVIDENCE IS THE SEAL'S OWN ANSWER (M223). The snapshot
+      // carries `null` for both `absent` and `unknown` because there is nothing
+      // else for it to carry, and the stamping has to be told which of the two
+      // this is or it will tombstone a compartment nobody deleted.
+      isCompartmentKnown: seal.kind !== 'unknown',
+    },
   };
 }
 
@@ -680,6 +691,29 @@ export function describeSyncFailure(cause: unknown): SyncFailure {
       };
     }
     if (cause.kind === 'transport') return { reason: 'offline', message: cause.message };
+    // `invalid` HAS TWO PRODUCERS, and they are not the same event (M225).
+    // `status` is what tells them apart, and it is the honest discriminator:
+    // one came back from the service, the other never left this device.
+    //
+    // AN HTTP `400` IS NOT A VERSION MISMATCH. It used to map to
+    // `incompatible`, whose copy tells the person "this app and the sync server
+    // don't speak the same version yet". That sentence is false on a current
+    // build: the protocol version is checked at the handshake, long before a
+    // blob moves. What a 400 means on this path is a payload the service
+    // refused, which today is the shrink guard turning back a device that has
+    // lost its local copy, and telling that person to wait for an update is
+    // advice that cannot help them. `failed` says what is true: sync did not
+    // finish, and the diary on this device is unaffected. The cycle has already
+    // applied the pulled copy by then, so the next one settles
+    // (`orchestrator.ts`'s `pushOrHeal`).
+    if (cause.kind === 'invalid' && cause.status === 400) return { reason: 'failed', message: cause.message };
+    // A LOCALLY THROWN `invalid` KEEPS `incompatible`, because there the
+    // sentence is true. `orchestrator.ts`'s `decryptWithSchemaProbe` raises one
+    // with no status at all when it has walked every schema version down and
+    // the tag still will not verify: a blob a NEWER build wrote is exactly that,
+    // and "one side needs updating" is the right thing to say about it. Its own
+    // message names the other possibility, a wrong passphrase, so nothing here
+    // has to choose between them.
     if (cause.kind === 'invalid') return { reason: 'incompatible', message: cause.message };
     return { reason: 'failed', message: cause.message };
   }

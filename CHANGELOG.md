@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **Your app now writes a deletion down instead of guessing at one.** Yesterday's fix compared what is stored against what was loaded, and that comparison cannot see the difference between a diary somebody emptied and one a browser threw away: both read as zero. On the order the app really starts in, it also creates an empty store before it looks, so an emptied device looked perfectly healthy and its entries were still reported to your account as deleted. From now on the app records each entry you delete, at the moment you delete it, alongside the entry itself. Only a deletion it has written down is ever sent. Lose your local data and there is nothing written down, so nothing is deleted and your account puts the entries back. Delete eighty per cent of your diary on purpose and every one of those is written down, so all of them are sent. Three more things were put right with it: a device that had ever deleted one entry no longer waves through every later shrink of its data, a push your account turns back now applies what it just fetched instead of leaving the device empty and repeating itself, and the message you see when it happens no longer claims the app is out of date. The notice that says your entries were restored is now only shown when they actually were.
+
 ## [0.29.2] - 2026-09-12
 
 ### Fixed

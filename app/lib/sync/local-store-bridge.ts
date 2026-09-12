@@ -10,20 +10,31 @@
  * would quietly bypass all three (see `sync-lock.ts` for the ordering rule
  * this preserves).
  *
+ * ONE removal here is not a `deleteLocal*` call, and could not be:
+ * `applyMergedSnapshot` removes rows a PEER deleted, which must not enter this
+ * device's delete journal. It uses the store's own
+ * `removeEntitiesWithoutJournal`, which is still a local-store function and
+ * still takes the same lock, and is the only call site of it in the app.
+ *
  * Keeping the seam in one small file also makes the blast radius of a
  * local-store refactor exactly one import list.
  */
 import type { Store } from 'tinybase';
 import { PRIMARY_DB_NAME } from '#app/lib/local-store/store';
-import { getPrimaryStore, readPersistedTableRowCounts, storeRowCounts } from '#app/lib/local-store/persist';
 import {
-  deleteLocalFood,
-  deleteLocalFoodLog,
-  deleteLocalWeightEntry,
+  getPrimaryStore,
+  readPersistedTableRowCounts,
+  storeRowCounts,
+  type PersistedTablesProbe,
+} from '#app/lib/local-store/persist';
+import { removeEntitiesWithoutJournal } from '#app/lib/local-store/primary-store';
+import {
   exportBackup,
+  forgetDeletedEntityKeys,
   getLocalResearchIdentity,
   getLocalShareIdentity,
   importBackup,
+  listDeletedEntityKeys,
   listLocalSharePeers,
   listLocalStudyEnrolments,
   migrateEnvelopeForward,
@@ -60,12 +71,44 @@ export interface LocalSnapshotRead {
   snapshot: LocalStoreSnapshot;
   /** What this read can prove about the device's storage. See {@link LocalStoreIntegrity}. */
   integrity: LocalStoreIntegrity;
+  /**
+   * The deletes this device has RECORDED and not yet published, as entity keys
+   * (`SnapshotIntegrity.deletedEntityKeys`).
+   *
+   * Read here, off the same store and in the same act as the snapshot, rather
+   * than fetched separately by the stamping. A journal read a moment later
+   * could describe a different device: a delete that landed in between would be
+   * authorised against a snapshot that still holds the row, and a delete that
+   * landed just before would not.
+   *
+   * NOT part of {@link LocalStoreIntegrity}, which is the disk-versus-memory
+   * comparison and is also handed to `mergeSnapshots`. The journal answers a
+   * different question and only the stamping asks it.
+   */
+  deletedEntityKeys: ReadonlySet<string>;
 }
 
 export async function readLocalSnapshot({ store }: { store?: Store } = {}): Promise<LocalSnapshotRead> {
   const resolved = store ?? (await getPrimaryStore());
   const snapshot = (await exportBackup({ store: resolved })).data;
-  return { snapshot, integrity: await readStoreIntegrity(resolved) };
+  return {
+    snapshot,
+    integrity: await readStoreIntegrity(resolved),
+    deletedEntityKeys: new Set(await listDeletedEntityKeys({ store: resolved })),
+  };
+}
+
+/**
+ * Drops the journal rows for deletes that are now agreed.
+ *
+ * Takes every tombstone key in the payload the cycle just committed, not only
+ * the ones this device minted: a tombstone in the committed baseline is
+ * carried forward by every later cycle whoever wrote it, so the journal row
+ * behind it has nothing left to authorise. Keys the journal does not hold are
+ * ignored.
+ */
+export async function forgetPublishedDeletes(keys: readonly string[]): Promise<void> {
+  await forgetDeletedEntityKeys(keys);
 }
 
 /**
@@ -85,9 +128,18 @@ export async function readLocalSnapshot({ store }: { store?: Store } = {}): Prom
  * which is the direction that keeps the diary.
  */
 async function readStoreIntegrity(store: Store): Promise<LocalStoreIntegrity> {
-  const persisted = await readPersistedTableRowCounts(PRIMARY_DB_NAME).catch(() => null);
-  if (persisted === null) return { hasPersistedDatabase: false, isTableLoaded: {} };
+  const probe = await readPersistedTableRowCounts(PRIMARY_DB_NAME).catch(
+    (): PersistedTablesProbe => ({ kind: 'absent' }),
+  );
+  // `absent` AND `blocked` BOTH ANSWER "cannot speak for it". They are
+  // different facts, one is "nothing was ever saved" and the other is "another
+  // tab is holding the database open", and `persist.ts` must tell them apart
+  // before it primes.
+  // Here they collapse honestly: neither one read a single row, so neither one
+  // may be read as a diary somebody emptied.
+  if (probe.kind !== 'present') return { hasPersistedDatabase: false, isTableLoaded: {} };
 
+  const persisted = probe.counts;
   const inMemory = storeRowCounts(store);
   const isTableLoaded: Record<string, boolean> = {};
   for (const table of new Set([...Object.keys(persisted), ...Object.keys(inMemory)])) {
@@ -191,15 +243,18 @@ export async function applyMergedSnapshot({
   // does not delete on it: the local row, if there is one, is what the merge
   // was built from.
 
-  for (const food of local.foods) {
-    if (!survivingFoods.has(food.id)) await deleteLocalFood(food.id);
-  }
-  for (const log of local.foodLogs) {
-    if (!survivingLogs.has(log.id)) await deleteLocalFoodLog(log.id);
-  }
-  for (const entry of local.weightEntries) {
-    if (!survivingWeights.has(entry.id)) await deleteLocalWeightEntry(entry.id);
-  }
+  // NOT THROUGH `deleteLocalFood` AND FRIENDS, on purpose. Those verbs write
+  // the DELETE JOURNAL, and the journal means one thing: a delete THIS DEVICE
+  // performed. Every row removed here was deleted somewhere else, and a device
+  // that records a peer's delete as its own can mint a second, LATER tombstone
+  // for it on a cycle that never reached its commit, burying an entity the
+  // peer has since re-added. See `removeEntitiesWithoutJournal`.
+  await removeEntitiesWithoutJournal({
+    reason: 'applied-a-peer-tombstone',
+    foodIds: local.foods.filter((food) => !survivingFoods.has(food.id)).map((food) => food.id),
+    foodLogIds: local.foodLogs.filter((log) => !survivingLogs.has(log.id)).map((log) => log.id),
+    weightEntryIds: local.weightEntries.filter((entry) => !survivingWeights.has(entry.id)).map((entry) => entry.id),
+  });
 
   await importBackup({ schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data: merged });
 }

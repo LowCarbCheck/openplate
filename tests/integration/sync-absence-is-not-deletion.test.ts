@@ -178,6 +178,8 @@ test('a RESUMED session pushes the account’s compartment back, never a tombsto
     }),
     applySnapshot: async () => {},
     assertPulledSnapshot: async () => {},
+    // Nothing here records a delete, so there is never a journal row to prune.
+    forgetPublishedDeletes: async () => {},
     // SAFETY: the only payload this cycle can pull back is one it pushed.
     parseRemoteSnapshot: ({ snapshot }) => snapshot as SyncedSnapshot,
   });
@@ -217,6 +219,8 @@ test('a RESUMED session pushes the account’s compartment back, never a tombsto
       await openOwnerPrivateRegion({ session: resumed, sealed: merged.privateStore });
     },
     assertPulledSnapshot: async () => {},
+    // Nothing here records a delete, so there is never a journal row to prune.
+    forgetPublishedDeletes: async () => {},
     // SAFETY: as above.
     parseRemoteSnapshot: ({ snapshot }) => snapshot as SyncedSnapshot,
   });
@@ -252,6 +256,8 @@ test('a HEALTHY second device keeps its rows when its peer could not prove a del
     readSnapshot: async () => ({ snapshot: snapshotOf(shared), integrity: HEALTHY_STORAGE }),
     applySnapshot: async () => {},
     assertPulledSnapshot: async () => {},
+    // Nothing here records a delete, so there is never a journal row to prune.
+    forgetPublishedDeletes: async () => {},
     // SAFETY: the only payload this cycle can pull back is one it pushed.
     parseRemoteSnapshot: ({ snapshot }) => snapshot as SyncedSnapshot,
   });
@@ -272,6 +278,8 @@ test('a HEALTHY second device keeps its rows when its peer could not prove a del
     readSnapshot: async () => ({ snapshot: snapshotOf([]), integrity: EVICTED_STORAGE }),
     applySnapshot: async () => {},
     assertPulledSnapshot: async () => {},
+    // Nothing here records a delete, so there is never a journal row to prune.
+    forgetPublishedDeletes: async () => {},
     // SAFETY: as above.
     parseRemoteSnapshot: ({ snapshot }) => snapshot as SyncedSnapshot,
   });
@@ -294,6 +302,8 @@ test('a HEALTHY second device keeps its rows when its peer could not prove a del
       peer.current = merged;
     },
     assertPulledSnapshot: async () => {},
+    // Nothing here records a delete, so there is never a journal row to prune.
+    forgetPublishedDeletes: async () => {},
     // SAFETY: as above.
     parseRemoteSnapshot: ({ snapshot }) => snapshot as SyncedSnapshot,
   });

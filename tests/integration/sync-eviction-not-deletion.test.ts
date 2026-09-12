@@ -262,7 +262,7 @@ test('a device whose IndexedDB was evicted publishes NO tombstones', async () =>
   // NON-VACUITY 2: the device really is in the evicted state at the moment the
   // cycle runs. A database that quietly came back would make this an ordinary
   // bulk-delete test wearing the wrong name.
-  assert.equal(await readPersistedTableRowCounts(PRIMARY_DB_NAME), null, 'the database must be gone');
+  assert.deepEqual(await readPersistedTableRowCounts(PRIMARY_DB_NAME), { kind: 'absent' }, 'the database must be gone');
   assert.equal((await readLocalSnapshot()).integrity.hasPersistedDatabase, false);
   assert.equal((await listLocalFoodLogs()).length, 0, 'and the device must read as empty');
 
@@ -343,7 +343,8 @@ test('a PARTIAL load withholds that table’s deletes and still pushes the live 
   // NON-VACUITY: the disk really is ahead of memory at the moment the cycle
   // reads, and the bridge really reports that table as not loaded.
   const onDisk = await readPersistedTableRowCounts(PRIMARY_DB_NAME);
-  assert.equal(onDisk?.[FOOD_LOGS_TABLE], 3, 'the disk must hold all three rows');
+  assert.equal(onDisk.kind, 'present', 'the probe must have read the database');
+  assert.equal(onDisk.kind === 'present' ? onDisk.counts[FOOD_LOGS_TABLE] : null, 3, 'the disk must hold all three rows');
   assert.equal((await listLocalFoodLogs()).length, 2, 'and memory must hold two');
   assert.equal((await readLocalSnapshot()).integrity.isTableLoaded[FOOD_LOGS_TABLE], false);
 
@@ -395,7 +396,8 @@ test('a PARTIAL load of the fasts table does not push a shortened list over the 
   // NON-VACUITY 2: the probe really counts this table. The whole rule rests on
   // `fasts` being an ordinary table in the same store, and that is checked
   // here rather than assumed.
-  assert.equal((await readPersistedTableRowCounts(PRIMARY_DB_NAME))?.[FASTS_TABLE], 1);
+  const fastsOnDisk = await readPersistedTableRowCounts(PRIMARY_DB_NAME);
+  assert.equal(fastsOnDisk.kind === 'present' ? fastsOnDisk.counts[FASTS_TABLE] : null, 1);
   assert.equal((await readLocalSnapshot()).integrity.isTableLoaded[FASTS_TABLE], true);
 
   // THE PARTIAL LOAD, built in the one order that survives autosave (see the

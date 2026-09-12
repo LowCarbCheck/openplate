@@ -186,16 +186,18 @@ describe('isStoreEmpty / storeRowCounts', () => {
 });
 
 describe('readPersistedTableRowCounts (fake-indexeddb)', () => {
-  it('resolves null for a database that has never been persisted to', async () => {
-    const counts = await readPersistedTableRowCounts('persist-test-never-existed');
-    assert.equal(counts, null);
+  it('answers `absent` for a database that has never been persisted to', async () => {
+    assert.deepEqual(await readPersistedTableRowCounts('persist-test-never-existed'), { kind: 'absent' });
   });
 
   it('never materializes a database as a side effect of probing a fresh device', async () => {
     const dbName = 'persist-test-probe-does-not-create-db';
 
-    const counts = await readPersistedTableRowCounts(dbName);
-    assert.equal(counts, null, 'precondition: this is the fresh-device probe path');
+    assert.deepEqual(
+      await readPersistedTableRowCounts(dbName),
+      { kind: 'absent' },
+      'precondition: this is the fresh-device probe path',
+    );
 
     // `indexedDB.databases()` is the ground truth for "does a database exist
     // on disk at all" — unlike `readPersistedTableRowCounts`'s own return
@@ -221,23 +223,43 @@ describe('readPersistedTableRowCounts (fake-indexeddb)', () => {
     await seedPersister.save();
     await seedPersister.destroy();
 
-    const counts = await readPersistedTableRowCounts(dbName);
-    assert.deepEqual(counts, { [PERSONAL_FOODS_TABLE]: 1, [WEIGHT_ENTRIES_TABLE]: 1 });
-    assert.equal(totalRowCount(counts), 2);
+    const probe = await readPersistedTableRowCounts(dbName);
+    assert.deepEqual(probe, {
+      kind: 'present',
+      counts: { [PERSONAL_FOODS_TABLE]: 1, [WEIGHT_ENTRIES_TABLE]: 1 },
+    });
+    assert.equal(totalRowCount(probe), 2);
   });
 });
 
 describe('shouldPrimePersistedDb (pure)', () => {
-  it('primes when nothing has ever been persisted (null counts)', () => {
-    assert.equal(shouldPrimePersistedDb(null), true);
+  it('primes when nothing has ever been persisted', () => {
+    assert.equal(shouldPrimePersistedDb({ kind: 'absent' }), true);
   });
 
   it('does not prime when the object stores already exist, even with zero rows in every table', () => {
-    assert.equal(shouldPrimePersistedDb({}), false);
+    assert.equal(shouldPrimePersistedDb({ kind: 'present', counts: {} }), false);
   });
 
   it('does not prime when real rows are already on disk', () => {
-    assert.equal(shouldPrimePersistedDb({ [PERSONAL_FOODS_TABLE]: 3 }), false);
+    assert.equal(shouldPrimePersistedDb({ kind: 'present', counts: { [PERSONAL_FOODS_TABLE]: 3 } }), false);
+  });
+
+  // THE CONTROL FOR THE SPLIT (M225). `blocked` and `absent` shared one `null`
+  // answer, so this case took the branch above it and primed, an empty save over
+  // a database that exists. The branch is DEFENSIVE, a versionless open of an
+  // existing database has nothing to be blocked by, so this is a guard against
+  // being wrong about that rather than a reproduction of a seen failure.
+  // Collapse the two kinds back into one and this line goes red while every
+  // other line here stays green.
+  it('does NOT prime a database it could not open, which exists and is held by another connection', () => {
+    assert.equal(shouldPrimePersistedDb({ kind: 'blocked' }), false);
+  });
+
+  it('sums only what was actually read', () => {
+    assert.equal(totalRowCount({ kind: 'absent' }), 0);
+    assert.equal(totalRowCount({ kind: 'blocked' }), 0);
+    assert.equal(totalRowCount({ kind: 'present', counts: { [PERSONAL_FOODS_TABLE]: 3 } }), 3);
   });
 });
 
@@ -247,16 +269,20 @@ describe('primeFreshDatabaseIfNeeded (fake-indexeddb) — closes the looping Not
     const store = createStore();
     const persister = createIndexedDbPersister(store, dbName);
     try {
-      assert.equal(await readPersistedTableRowCounts(dbName), null, 'precondition: nothing persisted yet');
+      assert.deepEqual(
+        await readPersistedTableRowCounts(dbName),
+        { kind: 'absent' },
+        'precondition: nothing persisted yet',
+      );
 
       await primeFreshDatabaseIfNeeded(dbName, persister);
 
-      // An empty map (object stores exist, zero rows) — not `null` — is exactly
-      // proof the version-2 upgrade ran: `readPersistedTableRowCounts` only
-      // returns `null` when the "t" object store itself is missing.
+      // `present` with an empty map (object stores exist, zero rows), and not
+      // `absent`, is exactly proof the version-2 upgrade ran: the probe only
+      // answers `absent` when the "t" object store itself is missing.
       assert.deepEqual(
         await readPersistedTableRowCounts(dbName),
-        {},
+        { kind: 'present', counts: {} },
         'the priming save must create the object stores even though the store being saved is empty',
       );
     } finally {
@@ -273,10 +299,9 @@ describe('primeFreshDatabaseIfNeeded (fake-indexeddb) — closes the looping Not
     try {
       await primeFreshDatabaseIfNeeded(dbName, persister);
 
-      const counts = await readPersistedTableRowCounts(dbName);
       assert.deepEqual(
-        counts,
-        { [PERSONAL_FOODS_TABLE]: 1 },
+        await readPersistedTableRowCounts(dbName),
+        { kind: 'present', counts: { [PERSONAL_FOODS_TABLE]: 1 } },
         'the seeded row must survive untouched — priming must have been skipped, not run against an empty store',
       );
     } finally {

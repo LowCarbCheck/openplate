@@ -10,7 +10,8 @@
  * Everything the cycle touches is injected, so these run with no browser, no
  * IndexedDB, no server and no locks, the algorithm is exercised directly.
  */
-import { EVICTED_STORAGE, HEALTHY_STORAGE } from '../sync-integrity-fixtures';
+import { EVICTED_STORAGE, HEALTHY_STORAGE, withRecordedDeletes } from '../sync-integrity-fixtures';
+import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runSyncCycleUnlocked } from '../../app/lib/sync/orchestrator';
@@ -83,6 +84,8 @@ function fakeService(dek: Uint8Array) {
   const shrinkFlags: boolean[] = [];
   /** When set, the next push finds that another device wrote first, the real 409 race. */
   let interfereBeforeNextPush: (() => Promise<void>) | null = null;
+  /** When set, the next push is REFUSED with a `400`, the shape of the service's shrink guard. */
+  let refuseNextPush = false;
 
   /** Only the two calls the cycle makes; the rest of the transport is the integration suite's job. */
   const client: Pick<SyncHttpClient, 'pullBlob' | 'pushBlob'> = {
@@ -110,6 +113,12 @@ function fakeService(dek: Uint8Array) {
       }
       const current = stored?.version ?? 0;
       if (input.baseVersion !== current) return { status: 'conflict', currentVersion: current };
+      // THE SHRINK GUARD, as the service spells it: a refusal is a `400`, which
+      // the HTTP client turns into a thrown `invalid`. Nothing is written.
+      if (refuseNextPush) {
+        refuseNextPush = false;
+        throw new SyncRequestError({ kind: 'invalid', status: 400, message: 'This push would delete more than half' });
+      }
       stored = { version: current + 1, ciphertext: input.ciphertext };
       return { status: 'accepted', newVersion: stored.version };
     },
@@ -128,6 +137,10 @@ function fakeService(dek: Uint8Array) {
     /** Arranges for another device to win the race on the very next push. */
     raceOnNextPush(run: () => Promise<void>): void {
       interfereBeforeNextPush = run;
+    },
+    /** Arranges for the service to REFUSE the very next push, writing nothing. */
+    refuseTheNextPush(): void {
+      refuseNextPush = true;
     },
     /** Writes a payload directly, as if another device had pushed it. */
     async seed(payload: SyncPayload, version: number): Promise<void> {
@@ -158,12 +171,24 @@ function deps({
   local,
   deviceId,
   storage = createMemoryStorage(),
+  deleted = new Set<string>(),
 }: {
   dek: Uint8Array;
   http: SyncHttpClient;
   local: { current: SyncedSnapshot };
   deviceId: string;
   storage?: ReturnType<typeof createMemoryStorage>;
+  /**
+   * This device's DELETE JOURNAL, the entity keys it recorded as deleted
+   * (M225). Empty by default, because dropping an entity from a fixture
+   * snapshot is not a delete any more than a browser eviction is: the app
+   * writes the key down in the delete verb's own transaction, and a fixture
+   * that wants a tombstone has to say so here too.
+   *
+   * Mutable and shared with `forgetPublishedDeletes` below, so a fixture can
+   * watch the prune happen the way production does.
+   */
+  deleted?: Set<string>;
 }) {
   return {
     accountId: ACCOUNT_ID,
@@ -171,9 +196,12 @@ function deps({
     http,
     state: createSyncStateStore({ storage, accountId: ACCOUNT_ID }),
     deviceId,
-    readSnapshot: async () => ({ snapshot: local.current, integrity: HEALTHY_STORAGE }),
+    readSnapshot: async () => ({ snapshot: local.current, integrity: withRecordedDeletes(HEALTHY_STORAGE, [...deleted]) }),
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
+    },
+    forgetPublishedDeletes: async (keys: string[]) => {
+      for (const key of keys) deleted.delete(key);
     },
     // No compartment in play in this file: every fixture's `privateStore` is
     // `null`, so there is nothing for the veto to inspect. Named rather than
@@ -228,8 +256,17 @@ test('an entity that disappears becomes a tombstone above its last stamp', () =>
     baseline: { perEntity: {}, tombstones: [] },
     deviceId: 'device-1',
   });
-  const deleted = stampSnapshot({ snapshot: snapshot([]), baseline: first.baseline, deviceId: 'device-1', integrity: HEALTHY_STORAGE });
+  // THE DELETE IS RECORDED, because the app records it (M225): dropping an
+  // entity from a snapshot is what an eviction looks like too, and only the
+  // journal tells the two apart.
+  const deleted = stampSnapshot({
+    snapshot: snapshot([]),
+    baseline: first.baseline,
+    deviceId: 'device-1',
+    integrity: withRecordedDeletes(HEALTHY_STORAGE, ['foodLog:a']),
+  });
 
+  assert.deepEqual(deleted.minted, deleted.meta.tombstones, 'a first delete is all minted, nothing carried forward');
   assert.deepEqual(deleted.meta.tombstones, [
     { entityId: 'a', entityType: 'foodLog', lamport: 2, deviceId: 'device-1' },
   ]);
@@ -243,7 +280,12 @@ test('a re-added entity outranks its own tombstone, deletions do not resurrect',
     baseline: { perEntity: {}, tombstones: [] },
     deviceId: 'device-1',
   });
-  const deleted = stampSnapshot({ snapshot: snapshot([]), baseline: created.baseline, deviceId: 'device-1', integrity: HEALTHY_STORAGE });
+  const deleted = stampSnapshot({
+    snapshot: snapshot([]),
+    baseline: created.baseline,
+    deviceId: 'device-1',
+    integrity: withRecordedDeletes(HEALTHY_STORAGE, ['foodLog:a']),
+  });
   const readded = stampSnapshot({
     integrity: HEALTHY_STORAGE,
     snapshot: snapshot([log('a', 'Apple', 100)]),
@@ -475,11 +517,23 @@ test('a deletion on one device propagates to the other rather than being re-uplo
   );
   assert.equal(deviceTwo.current.foodLogs.length, 2);
 
-  // Device two deletes one entry and syncs.
+  // Device two deletes one entry and syncs. The journal row is what the app's
+  // `deleteLocalFoodLog` writes in the same transaction as the row removal.
   deviceTwo.current = snapshot([log('a', 'Apple', 100)]);
+  const deletedOnTwo = new Set(['foodLog:b']);
   await runSyncCycleUnlocked(
-    deps({ dek, http: service.client, local: deviceTwo, deviceId: 'device-2', storage: storageTwo }),
+    deps({
+      dek,
+      http: service.client,
+      local: deviceTwo,
+      deviceId: 'device-2',
+      storage: storageTwo,
+      deleted: deletedOnTwo,
+    }),
   );
+  // THE PRUNE, observed rather than assumed: the delete is published and agreed,
+  // so the journal row that authorised it is gone.
+  assert.deepEqual([...deletedOnTwo], [], 'a published delete must be forgotten from the journal');
 
   // Device one must adopt the deletion, not push its own stale copy back.
   await runSyncCycleUnlocked(
@@ -548,10 +602,102 @@ test('shrinkAcknowledged is true ONLY for a cycle that published deletes it coul
   await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
   assert.deepEqual(service.shrinkFlags, [false], 'a cycle with no deletes must not claim a shrink');
 
-  // Cycle 2: a REAL delete on a healthy device.
+  // Cycle 2: a REAL delete on a healthy device, recorded in the journal.
   local.current = snapshot([log('a', 'Apple', 100)]);
-  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+  await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted: new Set(['foodLog:b']) }),
+  );
   assert.deepEqual(service.shrinkFlags, [false, true], 'a proven delete must acknowledge the shrink');
+
+  // CYCLE 3, THE ONE THIS TEST WAS MISSING (M225). Nothing new is deleted, but
+  // the baseline still carries cycle 2's tombstone and always will: it never
+  // compacts. A flag computed from `meta.tombstones` is therefore true here,
+  // and stays true for the rest of this device's life, which switches the
+  // service's shrink guard off for exactly the devices most likely to need it.
+  // Compute it from `stamped.meta.tombstones` again and this line goes red.
+  local.current = snapshot([log('a', 'Apple', 100), log('c', 'Cheese', 30)]);
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+  assert.deepEqual(
+    service.shrinkFlags,
+    [false, true, false],
+    'a cycle that deleted nothing must not acknowledge a shrink, however old its tombstones are',
+  );
+});
+
+test('a genuine bulk delete is trusted whole and acknowledged, however much of the diary it takes', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const wholeDiary = Array.from({ length: 10 }, (_, index) => log(`log-${index}`, `Meal ${index}`, 100 + index));
+  const local = { current: snapshot(wholeDiary) };
+  const storage = createMemoryStorage();
+
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  // Somebody deletes eight of their ten entries, one tap at a time. Every one
+  // of those taps wrote a journal row, so there is nothing partial about the
+  // evidence and nothing here is a ratio: the RULE is per entity, and a device
+  // that recorded eight deletes may publish eight.
+  const kept = wholeDiary.slice(0, 2);
+  const removed = wholeDiary.slice(2).map((entry) => `foodLog:${entry.id}`);
+  local.current = snapshot(kept);
+  const deleted = new Set(removed);
+  const result = await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+  );
+
+  assert.deepEqual(result.withheldTombstones, [], 'a recorded delete is never withheld, whatever the proportion');
+  const pushed = await service.read();
+  assert.equal(pushed.syncMeta.tombstones.length, 8, 'all eight deletes must be published');
+  assert.deepEqual(
+    service.shrinkFlags,
+    [false, true],
+    'and the shrink must be acknowledged, or the service refuses a deletion the person meant',
+  );
+  assert.deepEqual([...deleted], [], 'the published journal rows are pruned');
+});
+
+test('a REFUSED push heals the device before the error leaves, so the next cycle can settle', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const storage = createMemoryStorage();
+
+  // The account holds a diary this device cannot see. Its own snapshot is
+  // empty, so the push shrinks, and the service turns it back.
+  await service.seed(
+    {
+      snapshot: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]),
+      syncMeta: { perEntity: { 'foodLog:a': { lamport: 1, deviceId: 'device-2' } }, tombstones: [] },
+    },
+    1,
+  );
+  const local = { current: snapshot([log('c', 'Cheese', 30)]) };
+  service.refuseTheNextPush();
+
+  await assert.rejects(
+    () => runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage })),
+    (cause: unknown) => cause instanceof SyncRequestError && cause.kind === 'invalid',
+  );
+
+  // THE CLAIM. The pulled diary was applied on the way out, so the device is no
+  // longer missing rows its account holds. Before this, the throw skipped
+  // `applySnapshot`, the merge was discarded, and every later cycle repeated
+  // the same refused push against the same empty device: a livelock with an
+  // empty diary on screen and the repair one completed request away.
+  assert.deepEqual(
+    local.current.foodLogs.map((entry) => entry.id).toSorted(),
+    ['a', 'b', 'c'],
+    'the pulled entries must have reached the device even though the push was refused',
+  );
+
+  // AND IT SETTLES. Nothing was committed, so this cycle stamps the healed
+  // snapshot, which no longer shrinks, and the service takes it.
+  const settled = await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+  assert.equal(settled.pushed, true, 'the next cycle must succeed rather than repeat the refusal');
+  // SAFETY: `SyncPayload.snapshot` is `unknown` on the wire because the envelope
+  // carries whatever schema version wrote it. What this test put there is this
+  // file's own fixture shape, and only the ids are read.
+  const settledSnapshot = (await service.read()).snapshot as { foodLogs: { id: string }[] };
+  assert.deepEqual(settledSnapshot.foodLogs.map((entry) => entry.id).toSorted(), ['a', 'b', 'c']);
 });
 
 test('shrinkAcknowledged is false when ANY tombstone was withheld', async () => {
@@ -701,7 +847,12 @@ test('a PARTIAL load is weighed per table: the half-read list is spared, the one
     ...deps({ dek, http: service.client, local, deviceId: 'device-1' }),
     readSnapshot: async () => ({
       snapshot: local.current,
-      integrity: { hasPersistedDatabase: true, isTableLoaded: { [FASTS_TABLE]: false }, isCompartmentKnown: true },
+      integrity: {
+        hasPersistedDatabase: true,
+        isTableLoaded: { [FASTS_TABLE]: false },
+        isCompartmentKnown: true,
+        deletedEntityKeys: new Set(),
+      },
     }),
   });
 

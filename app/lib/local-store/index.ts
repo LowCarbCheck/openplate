@@ -62,6 +62,13 @@ export {
   listLocalWeightEntries,
   deleteLocalWeightEntry,
   upsertLocalWeightEntryForDay,
+  // The DELETE JOURNAL (M225). Every `delete*` verb above records the entity's
+  // key here as it removes the row, and sync may only mint a tombstone for a
+  // key this names, so an evicted database can no longer be read as a diary
+  // somebody emptied. `forgetDeletedEntityKeys` is the prune, run once a
+  // cycle's baseline carries the tombstone.
+  listDeletedEntityKeys,
+  forgetDeletedEntityKeys,
   getLocalProfileGoals,
   putLocalProfileGoals,
   patchLocalProfileGoals,
