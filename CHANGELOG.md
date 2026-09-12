@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.29.4] - 2026-09-12
+
 ### Fixed
 
-- **The app now records deleted fasts and saved meals before syncing.** These two lists do not merge across devices yet. Whichever device syncs next sends its whole list. Until now, that happened whenever a device thought its local storage looked fine. A device that lost its data looked fine, because the app created an empty store before reading it, letting an emptied list overwrite your account copy. The app now writes down each fast and saved meal you delete at the moment you remove it, matching how diary entries work. It only uploads a shorter list if every missing item was removed on purpose. If items are missing without a deletion record, your account keeps its list and sends it back to the device. Clearing a long list still works, because each removal is recorded as you go, showing your account that the reduction was intentional. A device whose record predates this change syncs once to your account, then returns to normal on the next sync.
+- **The app now records deleted fasts and saved meals before syncing.** These two lists do not merge across devices yet. Whichever device syncs next sends its whole list. Until now, that happened whenever a device thought its local storage looked fine. A device that lost its data looked fine, because the app created an empty store before reading it, letting an emptied list overwrite your account copy. The app now writes down each fast and saved meal you delete at the moment you remove it, matching how diary entries work. It only uploads a shorter list if every missing item was removed on purpose. If items are missing without a deletion record, your account keeps its list and sends it back to the device. Clearing a long list still works, because each removal is recorded as you go, showing your account that the reduction was intentional. A device whose record predates this change syncs once to your account, then returns to normal on the next sync. ([129fa9f](https://github.com/LowCarbCheck/openplate/commit/129fa9f))
 
 ## [0.29.3] - 2026-09-12
 
