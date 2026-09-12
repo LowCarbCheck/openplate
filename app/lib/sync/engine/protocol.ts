@@ -406,7 +406,7 @@ export interface PushBlobRequest {
   envelopeVersion: number;
   ciphertext: Base64Bytes;
   /**
-   * "This blob is much smaller than the last one ON PURPOSE" (M223).
+   * "This blob is much smaller than the last one ON PURPOSE" (M224).
    *
    * The service refuses a push whose ciphertext is under half the size of the
    * version it replaces unless this says otherwise, which is the last line of

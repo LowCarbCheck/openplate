@@ -69,7 +69,7 @@ const ACCOUNT_ID = 42;
 /**
  * The BYTES the seal answered, with the answer's KIND asserted on the way past.
  *
- * The seal is three-valued since M223, `sealed`, `absent`, `unknown`, because
+ * The seal is three-valued since M224, `sealed`, `absent`, `unknown`, because
  * "I have not read this compartment" and "this account has none" were the same
  * `null` and the stamping tombstoned the compartment on that. Every call here
  * that used to want a `SealedPrivateStore` still wants one, and this helper is
@@ -224,7 +224,7 @@ describe('the seal after a failed adopt', () => {
       passphraseKek: await privateStoreKekFor('any passphrase'),
     });
 
-    // BEFORE ANY PULL the honest answer is IGNORANCE, not absence (M223). This
+    // BEFORE ANY PULL the honest answer is IGNORANCE, not absence (M224). This
     // is the state every RESUMED session starts in, and reading it as "the
     // account has no compartment" is what tombstoned a live one.
     assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION }), {
@@ -787,7 +787,7 @@ describe('a compartment this session minted, and one it only holds a key to', ()
 
     // NON-VACUITY: the same session WITHOUT the establish knows NOTHING, which
     // is the state this test exists to distinguish from. `unknown` and not a
-    // bare `null` since M223, it has neither minted a compartment nor pulled
+    // bare `null` since M224, it has neither minted a compartment nor pulled
     // one, so it cannot say whether the account has one.
     const untouched = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
     assert.deepEqual(await sealOwnerPrivateRegion({ session: untouched, region: regionWithShareKey(PRIVATE_KEY_MARKER) }), {

@@ -114,7 +114,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     logCount,
     hasEverHadData: await hasEverHadData(),
     // FROM `localStorage`, SYNCHRONOUSLY, and that is the point: it is the one
-    // input here that an IndexedDB eviction cannot take (M223).
+    // input here that an IndexedDB eviction cannot take (M224).
     hasSyncBaseline: session.account !== null && hasSyncBaselineEntities({ accountId: session.account.id }),
     hasSyncAccount: session.account !== null,
     isResumingSession: session.isResuming,

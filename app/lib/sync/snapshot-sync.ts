@@ -491,7 +491,7 @@ export function stampSnapshot({
   baseline: SyncBaseline;
   deviceId: string;
   /**
-   * REQUIRED, and not optional with a permissive default (M223).
+   * REQUIRED, and not optional with a permissive default (M224).
    *
    * A correctness argument nobody is forced to pass is a correctness argument
    * at zero call sites: the gate compiles, the suite is green, and every
@@ -721,7 +721,7 @@ export function mergeSnapshots({
   /**
    * What the LOCAL device can prove about its own storage, the same evidence
    * object `stampSnapshot` weighs, and REQUIRED here for the same reason
-   * (M223, the pass-through half).
+   * (M224, the pass-through half).
    *
    * It decides one thing only: whether this device's `fasts` and `savedMeals`
    * are trusted to be the whole list. Nothing else in this function reads it,

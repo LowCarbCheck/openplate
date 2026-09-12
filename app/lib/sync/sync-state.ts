@@ -183,7 +183,7 @@ export function parseSyncState(raw: string): PersistedSyncState {
 }
 
 /**
- * Has this device ever synced an entity for this account (M223)?
+ * Has this device ever synced an entity for this account (M224)?
  *
  * The onboarding gate's second piece of evidence that a device is not a new
  * person's. `hasEverHadData`, the first, lives in the values partition of

@@ -51,6 +51,8 @@ import {
   deleteLocalFast,
   deleteLocalFoodLog,
   deleteLocalSavedMeal,
+  forgetDeletedEntityKeys,
+  listDeletedEntityKeys,
   listLocalFasts,
   listLocalFoodLogs,
   listLocalSavedMeals,
@@ -60,7 +62,7 @@ import {
   type LocalFoodLog,
   type LocalSavedMeal,
 } from '../../app/lib/local-store';
-import { forgetPublishedDeletes, readLocalSnapshot } from '../../app/lib/sync/local-store-bridge';
+import { readLocalSnapshot } from '../../app/lib/sync/local-store-bridge';
 import { readPersistedTableRowCounts } from '../../app/lib/local-store/persist';
 import { PRIMARY_DB_NAME } from '../../app/lib/local-store/store';
 import { entityKey, FOOD_LOGS_TABLE } from '../../app/lib/local-store/schema';
@@ -286,9 +288,12 @@ async function startFromAQuietDevice(): Promise<void> {
   for (const entry of await listLocalFasts()) await deleteLocalFast(entry.id);
   for (const meal of await listLocalSavedMeals()) await deleteLocalSavedMeal(meal.id);
   // The deletes just written to the journal are this device's, not the next
-  // case's: forgetting them keeps each case's evidence its own.
-  await forgetPublishedDeletes((await listLocalFoodLogs()).map((log) => entityKey('foodLog', log.id)));
-  await forgetPublishedDeletes([...(await readLocalSnapshot()).deletedEntityKeys]);
+  // case's: forget every key the journal holds, not only the food logs, so a
+  // case that left fast or saved-meal rows in it does not leak them forward.
+  // An empty key list is a legitimate journal, not "nothing to forget", so
+  // this must run even when `listDeletedEntityKeys` comes back empty.
+  await forgetDeletedEntityKeys(await listDeletedEntityKeys());
+  assert.deepEqual(await listDeletedEntityKeys(), [], 'the delete journal must be empty once this device is quiet');
 }
 
 // ---------------------------------------------------------------------------

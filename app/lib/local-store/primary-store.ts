@@ -16,17 +16,22 @@
  * bounded cache, a write never deletes another row. The only deletes are the
  * explicit per-id `delete*` functions.
  *
- * EVERY ONE OF THOSE GOES THROUGH `deleteEntity` (M225), which removes the row
- * and writes the entity's key into the DELETE JOURNAL in the same transaction.
- * Sync may only mint a tombstone for a key that journal names, so a delete that
- * reached `delRow` directly is a delete no other device will ever hear about.
- * Grep for `delRow` in this file before adding a path: the three merged
- * collections (personal foods, food logs, weight entries) and the two
- * PASS-THROUGH ones (fasts, saved meals) are the only ones with a delete verb
- * at all. The pass-through pair journals too, and for a sharper reason: no
- * tombstone describes their removals, so the journal is the only evidence
- * `mergeSnapshots` has that this device's list is short on purpose. There is
- * ONE other remover,
+ * `deleteLocalFood`, `deleteLocalFoodLog`, `deleteLocalWeightEntry`,
+ * `deleteLocalFast` and `deleteLocalSavedMeal` GO THROUGH `deleteEntity`
+ * (M225), which removes the row and writes the entity's key into the DELETE
+ * JOURNAL in the same transaction. Sync may only mint a tombstone for a key
+ * that journal names, so a delete that reached `delRow` directly is a delete
+ * no other device will ever hear about. The three merged collections
+ * (personal foods, food logs, weight entries) journal so a peer can tombstone
+ * the row; the two PASS-THROUGH ones (fasts, saved meals) journal for a
+ * sharper reason, no tombstone describes their removals, so the journal is
+ * the only evidence `mergeSnapshots` has that this device's list is short on
+ * purpose. `deleteLocalShareIdentity`, `deleteLocalSharePeer` and
+ * `deleteLocalStudyEnrolment` call `delRow` directly and are outside the
+ * journal: each removes a local-only key or pinning record that is never
+ * mirrored to sync, so no other device is ever owed a tombstone for it, and
+ * each function's own doc says so. Grep for `delRow` in this file before
+ * adding a path. There is ONE other remover,
  * `removeEntitiesWithoutJournal`, and it is the opposite case, rows a PEER
  * deleted, which this device must not claim. Its own doc says why.
  *

@@ -121,7 +121,7 @@ export interface PrivateStoreSession {
    * Has a pull COMPLETED in this session, whatever it carried?
    *
    * The field that tells "this account has no compartment" apart from "I have
-   * not looked yet" (M223). {@link PrivateStoreSession.pulled} cannot: it is
+   * not looked yet" (M224). {@link PrivateStoreSession.pulled} cannot: it is
    * `null` for both, and the sync cycle reads the snapshot BEFORE it pulls, so
    * on the first cycle of every resumed session it is `null` for the second
    * reason while looking exactly like the first.
@@ -260,7 +260,7 @@ export type OwnerPrivateSeal =
   | { kind: 'absent' }
   /**
    * THIS SESSION HAS NOT READ IT YET, which is a different sentence entirely
-   * and used to be the same `null` as the one above (M223).
+   * and used to be the same `null` as the one above (M224).
    *
    * Every RESUMED session starts here: `performResume` opens the vault with
    * no CDK and no pulled bytes, and the sync cycle reads the snapshot BEFORE
@@ -311,7 +311,7 @@ export async function sealOwnerPrivateRegion({
   // {@link hasUnopenedCompartment} reports the state rather than waiting it
   // out.
   if (cdk === null || wraps === null || extras === null) {
-    // THE THREE-VALUED ANSWER (M223). `session.pulled` being `null` here is
+    // THE THREE-VALUED ANSWER (M224). `session.pulled` being `null` here is
     // ignorance, not absence: no pull has carried a compartment INTO THIS
     // SESSION, and this session is the only thing that can say so.
     if (session.pulled !== null) return { kind: 'sealed', value: session.pulled };
@@ -422,7 +422,7 @@ export async function openOwnerPrivateRegion({
   // clearing it: this device's memory of the account's bytes is not evidence
   // that the account has none, and dropping it here would hand the next push
   // the `null` this whole path exists to prevent.
-  // A COMPLETED PULL IS KNOWLEDGE EVEN WHEN IT CARRIED NOTHING (M223), and it
+  // A COMPLETED PULL IS KNOWLEDGE EVEN WHEN IT CARRIED NOTHING (M224), and it
   // is recorded before the early return below for exactly that case: this is
   // the only hop that can narrow the seal's `unknown` to `absent`.
   session.hasPulled = true;

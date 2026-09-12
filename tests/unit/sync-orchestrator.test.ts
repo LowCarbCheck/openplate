@@ -739,7 +739,7 @@ test('shrinkAcknowledged is false when ANY tombstone was withheld', async () => 
  * the whole list that reaches the wire. Which side that is used to be "local,
  * always", and on a device that cannot vouch for its own storage that published
  * an emptiness nobody asked for, over an account that still held the rows. No
- * tombstone is involved anywhere, so M223's guard never sees these two.
+ * tombstone is involved anywhere, so M224's guard never sees these two.
  */
 function fast(id: string): LocalStoreSnapshot['fasts'][number] {
   return {

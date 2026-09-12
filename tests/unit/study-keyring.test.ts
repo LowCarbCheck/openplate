@@ -48,7 +48,7 @@ import {
 /**
  * A diary compartment's BYTES, with the seal's KIND asserted on the way past.
  *
- * The seal is three-valued since M223: `sealed`, `absent` and `unknown`, where
+ * The seal is three-valued since M224: `sealed`, `absent` and `unknown`, where
  * the last two used to be one `null`. These fixtures all want real bytes, and
  * this is what makes "and it really sealed" an assertion instead of a cast.
  */

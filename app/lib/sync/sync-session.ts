@@ -145,7 +145,7 @@ export interface SyncSessionSnapshot {
   error: { reason: SyncErrorReason; message: string } | null;
   /**
    * Whether this device lost its local copy and got it back from the account
-   * (M223).
+   * (M224).
    *
    * NOT an `error`: the cycle succeeded, the diary is here, and nothing is
    * waiting. It is a separate field because the sentence is a different one,

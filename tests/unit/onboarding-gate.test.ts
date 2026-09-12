@@ -277,7 +277,7 @@ describe('the device lock', () => {
 });
 
 /**
- * THE BASELINE IS THE SECOND PIECE OF EVIDENCE (M223).
+ * THE BASELINE IS THE SECOND PIECE OF EVIDENCE (M224).
  *
  * `hasEverHadData` reads the `firstDataAt` marker, which lives in the VALUES
  * partition of `openplate-primary`. That is the right place for the failure it

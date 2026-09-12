@@ -42,7 +42,7 @@ function useLastSyncedLabel(lastSyncedAt: number | null): string {
 
 
 /**
- * THIS DEVICE LOST ITS LOCAL COPY AND GOT IT BACK (M223).
+ * THIS DEVICE LOST ITS LOCAL COPY AND GOT IT BACK (M224).
  *
  * Separate from the error block below it, and above it, because it is a
  * different sentence: the cycle SUCCEEDED and the data is here. Amber like

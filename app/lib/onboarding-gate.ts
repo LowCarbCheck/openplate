@@ -72,7 +72,7 @@ export interface OnboardingGateInput {
   hasEverHadData: boolean;
   /**
    * Does this device hold a non-empty SYNC BASELINE for the account it is
-   * signed into (M223)?
+   * signed into (M224)?
    *
    * THE MARKER ALONE WAS NOT ENOUGH. `hasEverHadData` lives in the values
    * partition of `openplate-primary`, the same database an eviction takes,
@@ -243,7 +243,7 @@ function resolveForGatedPath({
   if (hasProfile && hasCompletedOnboarding) return { kind: 'pass' };
   if (logCount > 0) return { kind: 'self-heal' };
   if (isResumingSession) return { kind: 'wait' };
-  // A NON-EMPTY BASELINE MEANS RECOVER OR WAIT, NEVER ONBOARD (M223). It sits
+  // A NON-EMPTY BASELINE MEANS RECOVER OR WAIT, NEVER ONBOARD (M224). It sits
   // beside the marker rather than replacing it because the two survive
   // different failures: the marker survives a TABLES wipe, and the baseline
   // survives the whole database going. Either one is enough to know that this

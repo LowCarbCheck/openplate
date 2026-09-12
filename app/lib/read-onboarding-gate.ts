@@ -42,7 +42,7 @@ export async function readOnboardingGateKind(): Promise<OnboardingGateOutcome['k
     // The baseline is keyed BY ACCOUNT, so there is nothing to read without a
     // session, and a device with no session cannot be told apart from a new
     // one by this input anyway. `false` there is the honest answer, not a
-    // default (M223).
+    // default (M224).
     hasSyncBaseline: session.account !== null && hasSyncBaselineEntities({ accountId: session.account.id }),
     hasSyncAccount: session.account !== null,
     isResumingSession: session.isResuming,

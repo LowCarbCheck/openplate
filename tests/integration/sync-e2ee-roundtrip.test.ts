@@ -114,7 +114,7 @@ const PLAINTEXT_MARKER = 'ZERO-KNOWLEDGE-CANARY-7f3a91c4-should-never-reach-the-
 const PASSPHRASE = 'seventeen purple lanterns drifting';
 
 
-/** The compartment BYTES a fixture needs, with the seal's three-valued answer asserted on the way past (M223). */
+/** The compartment BYTES a fixture needs, with the seal's three-valued answer asserted on the way past (M224). */
 async function sealedBytes(input: {
   session: PrivateStoreSession;
   region: OwnerPrivateRegion;

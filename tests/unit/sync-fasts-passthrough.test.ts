@@ -176,7 +176,7 @@ const FASTS_TABLE_NOT_LOADED: SnapshotIntegrity = {
 
 describe('mergeSnapshots, fasts, and what the device can prove', () => {
   it('does NOT let an evicted device empty the account: the remote fasts survive', () => {
-    // The eviction, one door over from the tombstones M223 fixed. The device
+    // The eviction, one door over from the tombstones M224 fixed. The device
     // holds no fasts because its database is gone, not because anybody deleted
     // one, and a pass-through would push that emptiness over the account.
     const merged = mergeSnapshots({

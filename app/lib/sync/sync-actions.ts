@@ -583,7 +583,7 @@ async function readSyncedSnapshot(session: PrivateStoreSession): Promise<ReadSna
       // THE DELETE JOURNAL, read in the same act as the snapshot (M225). It is
       // what authorises a tombstone; see `snapshot-sync.ts`.
       deletedEntityKeys: read.deletedEntityKeys,
-      // THE COMPARTMENT'S EVIDENCE IS THE SEAL'S OWN ANSWER (M223). The snapshot
+      // THE COMPARTMENT'S EVIDENCE IS THE SEAL'S OWN ANSWER (M224). The snapshot
       // carries `null` for both `absent` and `unknown` because there is nothing
       // else for it to carry, and the stamping has to be told which of the two
       // this is or it will tombstone a compartment nobody deleted.
