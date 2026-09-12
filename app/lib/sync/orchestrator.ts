@@ -172,7 +172,14 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     // because every round pulls a blob this device has not inspected yet.
     if (remote !== null) await deps.assertPulledSnapshot({ pulled: remote.payload.snapshot });
     const baseVersion = remote?.blobVersion ?? 0;
-    const merged = remote === null ? localPayload : mergeSnapshots({ local: localPayload, remote: remote.payload });
+    // THE SAME EVIDENCE OBJECT the stamping above weighed, not a second read:
+    // the merge decides whether this device's `fasts` and `savedMeals` can be
+    // believed, and that question is about the read that produced this
+    // snapshot, not about the storage a moment later.
+    const merged =
+      remote === null ? localPayload : (
+        mergeSnapshots({ local: localPayload, remote: remote.payload, integrity: read.integrity })
+      );
 
     // Nothing local to contribute: adopt the remote blob as-is and stop. This
     // is the common case on every boot, and skipping the push is what keeps

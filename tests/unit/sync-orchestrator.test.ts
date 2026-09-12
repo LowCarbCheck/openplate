@@ -30,6 +30,7 @@ import {
 } from '../../app/lib/sync/snapshot-sync';
 import { createMemoryStorage, createSyncStateStore, emptySyncState } from '../../app/lib/sync/sync-state';
 import type { PushBlobHttpResult, PulledBlob, SyncHttpClient } from '../../app/lib/sync/engine/client/http-client';
+import { FASTS_TABLE } from '../../app/lib/local-store/schema';
 
 const ACCOUNT_ID = 42;
 
@@ -266,8 +267,8 @@ test('the merge is symmetric, both devices compute the identical result', () => 
     meta: { perEntity: { 'foodLog:b': { lamport: 1, deviceId: 'device-b' } }, tombstones: [] },
   };
 
-  const fromA = mergeSnapshots({ local: a, remote: b });
-  const fromB = mergeSnapshots({ local: b, remote: a });
+  const fromA = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: a, remote: b });
+  const fromB = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: b, remote: a });
 
   assert.equal(payloadsEqual(fromA, fromB), true);
   assert.deepEqual(
@@ -286,9 +287,10 @@ test('a higher Lamport wins; an equal one breaks on deviceId, never on time', ()
     meta: { perEntity: { 'foodLog:a': { lamport: 5, deviceId: 'aaa' } }, tombstones: [] },
   };
 
-  assert.equal(mergeSnapshots({ local: older, remote: newer }).snapshot.foodLogs[0]?.name, 'New name');
+  assert.equal(mergeSnapshots({ integrity: HEALTHY_STORAGE, local: older, remote: newer }).snapshot.foodLogs[0]?.name, 'New name');
 
   const tie = mergeSnapshots({
+    integrity: HEALTHY_STORAGE,
     local: { ...older, meta: { perEntity: { 'foodLog:a': { lamport: 5, deviceId: 'zzz' } }, tombstones: [] } },
     remote: newer,
   });
@@ -308,13 +310,13 @@ test('a tombstone beats an older live value, and loses to a newer one', () => {
     },
   };
 
-  assert.equal(mergeSnapshots({ local: live, remote: deleted }).snapshot.foodLogs.length, 0);
+  assert.equal(mergeSnapshots({ integrity: HEALTHY_STORAGE, local: live, remote: deleted }).snapshot.foodLogs.length, 0);
 
   const editedAfterDelete: StampedSnapshot = {
     ...live,
     meta: { perEntity: { 'foodLog:a': { lamport: 3, deviceId: 'device-a' } }, tombstones: [] },
   };
-  assert.equal(mergeSnapshots({ local: editedAfterDelete, remote: deleted }).snapshot.foodLogs.length, 1);
+  assert.equal(mergeSnapshots({ integrity: HEALTHY_STORAGE, local: editedAfterDelete, remote: deleted }).snapshot.foodLogs.length, 1);
 });
 
 test('baselineFromPayload hashes what was agreed, so the next cycle sees no change', () => {
@@ -574,4 +576,135 @@ test('shrinkAcknowledged is false when ANY tombstone was withheld', async () => 
     !service.shrinkFlags.includes(true),
     'a device that could not prove a delete must never acknowledge a shrink',
   );
+});
+
+// ---------------------------------------------------------------------------
+// The pass-through collections, through a whole cycle
+// ---------------------------------------------------------------------------
+
+/**
+ * `fasts` and `savedMeals` are not merged: whichever side the merge picks is
+ * the whole list that reaches the wire. Which side that is used to be "local,
+ * always", and on a device that cannot vouch for its own storage that published
+ * an emptiness nobody asked for, over an account that still held the rows. No
+ * tombstone is involved anywhere, so M223's guard never sees these two.
+ */
+function fast(id: string): LocalStoreSnapshot['fasts'][number] {
+  return {
+    id,
+    protocolId: '16:8',
+    targetDurationMs: 57_600_000,
+    plannedStartAt: null,
+    startedAt: 1_770_000_000_000,
+    endedAt: null,
+    createdAt: 1_770_000_000_000,
+  };
+}
+
+function savedMeal(id: string): LocalStoreSnapshot['savedMeals'][number] {
+  return {
+    id,
+    name: `Meal ${id}`,
+    items: [
+      {
+        name: 'Eggs',
+        quantityGrams: 120,
+        macros: { carbs: 1, fiber: 0, sugars: 0, polyols: null, protein: 12, fat: 10, kcal: 150 },
+        source: 'manual',
+        aiEstimated: false,
+        curatedSource: null,
+        foodId: null,
+      },
+    ],
+    createdAt: 1_770_000_000_000,
+  };
+}
+
+/** The account as another device left it: one entry, one fast, one saved meal. */
+async function seedTheAccount(service: ReturnType<typeof fakeService>): Promise<void> {
+  await service.seed(
+    {
+      snapshot: {
+        ...snapshot([log('a', 'Apple', 100)]),
+        fasts: [fast('on-the-account')],
+        savedMeals: [savedMeal('on-the-account')],
+      },
+      syncMeta: { perEntity: { 'foodLog:a': { lamport: 1, deviceId: 'device-other' } }, tombstones: [] },
+    },
+    1,
+  );
+}
+
+/** What the service is holding now, read back by decrypting the blob rather than trusting an in-memory copy. */
+async function pushedLists(service: ReturnType<typeof fakeService>): Promise<{ fasts: string[]; savedMeals: string[] }> {
+  const payload = await service.read();
+  // SAFETY: `SyncPayload.snapshot` is `unknown` on the wire because the
+  // envelope carries whatever schema version wrote it; the only thing that
+  // ever reached this fake service is this build's own `SyncedSnapshot`.
+  const pushed = payload.snapshot as SyncedSnapshot;
+  return {
+    fasts: pushed.fasts.map((entry) => entry.id).toSorted(),
+    savedMeals: pushed.savedMeals.map((entry) => entry.id).toSorted(),
+  };
+}
+
+test('an EVICTED device pushes the account fasts and saved meals back, not its own emptiness', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTheAccount(service);
+
+  // The device reads empty because its database is gone. The new entry is what
+  // makes this cycle push at all, which is the moment the loss used to happen.
+  const local = { current: snapshot([log('b', 'Bread', 50)]) };
+  const result = await runSyncCycleUnlocked({
+    ...deps({ dek, http: service.client, local, deviceId: 'device-1' }),
+    readSnapshot: async () => ({ snapshot: local.current, integrity: EVICTED_STORAGE }),
+  });
+
+  // NON-VACUITY: a cycle that pushed nothing would leave the seeded blob
+  // standing and the assertions below would say nothing at all.
+  assert.equal(result.pushed, true, 'this cycle must really have rewritten the blob');
+  assert.deepEqual(await pushedLists(service), {
+    fasts: ['on-the-account'],
+    savedMeals: ['on-the-account'],
+  });
+});
+
+test('THE CONTROL: a HEALTHY device with none of either publishes none, local stays authoritative', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTheAccount(service);
+
+  // Byte for byte the cycle above, with one field of evidence changed. Without
+  // this case that test passes against a merge that always prefers the remote,
+  // which would resurrect every fast and every saved meal anybody ever deleted.
+  const local = { current: snapshot([log('b', 'Bread', 50)]) };
+  const result = await runSyncCycleUnlocked({
+    ...deps({ dek, http: service.client, local, deviceId: 'device-1' }),
+    readSnapshot: async () => ({ snapshot: local.current, integrity: HEALTHY_STORAGE }),
+  });
+
+  assert.equal(result.pushed, true);
+  assert.deepEqual(await pushedLists(service), { fasts: [], savedMeals: [] }, 'a real deletion must still stick');
+});
+
+test('a PARTIAL load is weighed per table: the half-read list is spared, the one beside it is not', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  await seedTheAccount(service);
+
+  // The database is there, so the whole-database signal says nothing. Only the
+  // fasts table failed to reach memory; the saved meals loaded and are empty
+  // because the person emptied them.
+  const local = { current: snapshot([log('b', 'Bread', 50)]) };
+  const result = await runSyncCycleUnlocked({
+    ...deps({ dek, http: service.client, local, deviceId: 'device-1' }),
+    readSnapshot: async () => ({
+      snapshot: local.current,
+      integrity: { hasPersistedDatabase: true, isTableLoaded: { [FASTS_TABLE]: false }, isCompartmentKnown: true },
+    }),
+  });
+
+  assert.equal(result.pushed, true);
+  assert.deepEqual(await pushedLists(service), { fasts: ['on-the-account'], savedMeals: [] });
 });

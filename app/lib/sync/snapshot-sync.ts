@@ -44,9 +44,11 @@ import type {
 } from '#app/lib/local-store';
 import {
   FASTING_SETTINGS_TABLE,
+  FASTS_TABLE,
   FOOD_LOGS_TABLE,
   PERSONAL_FOODS_TABLE,
   PROFILE_GOALS_TABLE,
+  SAVED_MEALS_TABLE,
   WEIGHT_ENTRIES_TABLE,
 } from '#app/lib/local-store/schema';
 import type { SealedPrivateStore, SyncedSnapshot } from './snapshot-partition';
@@ -333,7 +335,6 @@ function isTombstoneTrusted({
   if (entityType === SYNC_ENTITY_TYPES.privateStore) {
     return integrity.isCompartmentKnown && integrity.hasPersistedDatabase;
   }
-  if (!integrity.hasPersistedDatabase) return false;
   // The tag comes off a baseline key, which is a string, so the lookup is a
   // widening one on purpose: an entity type this map does not name is exactly
   // the case the `undefined` branch below refuses.
@@ -341,6 +342,29 @@ function isTombstoneTrusted({
   // An entity type nobody has mapped to a table has no evidence behind it, and
   // the fail-safe direction is to keep the data.
   if (table === undefined) return false;
+  return isTableTrusted({ table, integrity });
+}
+
+/**
+ * Can this device speak for what one store table currently holds?
+ *
+ * BOTH SIGNALS, ALWAYS, and neither one alone is enough:
+ *
+ * - `hasPersistedDatabase` is false when there is no database to compare
+ *   against, and `isTableLoaded` is then `{}`, so every per-table lookup
+ *   falls back to `true`. A per-table check on its own would therefore call an
+ *   evicted device perfectly healthy, which is the exact failure this whole
+ *   rule exists to stop.
+ * - `isTableLoaded[table]` is false when the disk holds MORE of that one table
+ *   than memory does. The database is still there, so the whole-database
+ *   signal says nothing about it, and a check on that signal alone would trust
+ *   a list the device only half read.
+ *
+ * A table nobody wrote is absent from both sides, so it is agreed by
+ * definition and defaults to `true`.
+ */
+function isTableTrusted({ table, integrity }: { table: string; integrity: LocalStoreIntegrity }): boolean {
+  if (!integrity.hasPersistedDatabase) return false;
   return integrity.isTableLoaded[table] ?? true;
 }
 
@@ -480,9 +504,20 @@ function toCandidateMap(payload: StampedSnapshot) {
 export function mergeSnapshots({
   local,
   remote,
+  integrity,
 }: {
   local: StampedSnapshot;
   remote: StampedSnapshot;
+  /**
+   * What the LOCAL device can prove about its own storage, the same evidence
+   * object `stampSnapshot` weighs, and REQUIRED here for the same reason
+   * (M223, the pass-through half).
+   *
+   * It decides one thing only: whether this device's `fasts` and `savedMeals`
+   * are trusted to be the whole list. Nothing else in this function reads it,
+   * and every stamped entity is merged exactly as before.
+   */
+  integrity: LocalStoreIntegrity;
 }): StampedSnapshot {
   const merged = mergeEntityMaps(toCandidateMap(local), toCandidateMap(remote));
 
@@ -545,6 +580,19 @@ export function mergeSnapshots({
     }
   }
 
+  // WHICH SIDE'S LIST SURVIVES, for the two collections that are not merged.
+  //
+  // THE BOUNDARY HAS NOT MOVED: fasts are still not merged across devices, and
+  // the "at most one open fast" question M132 deferred is still open and still
+  // needs its own design pass. This decides something much smaller, and only
+  // in a state that should never happen: when the device CANNOT VOUCH for its
+  // own storage, its emptiness is not a fact about the account, so it must not
+  // be the side that wins. Nothing here combines two lists, and on every
+  // ordinary cycle, including one where the person genuinely holds no fasts at
+  // all, the local list wins exactly as it always has.
+  const canVouchForFasts = isTableTrusted({ table: FASTS_TABLE, integrity });
+  const canVouchForSavedMeals = isTableTrusted({ table: SAVED_MEALS_TABLE, integrity });
+
   // FASTS RIDE THROUGH FROM THE LOCAL SIDE, UNTOUCHED (M132).
   //
   // They are deliberately absent from `SYNC_ENTITY_TYPES`, `flattenSnapshot`
@@ -575,8 +623,12 @@ export function mergeSnapshots({
       foodLogs,
       weightEntries,
       profile,
-      fasts: local.snapshot.fasts,
-      savedMeals: local.snapshot.savedMeals,
+      // The REMOTE side only when this device cannot speak for the table the
+      // local list came out of, which is an evicted or half-loaded store
+      // (`isTableTrusted`). Local otherwise, always, including when it is
+      // empty on purpose.
+      fasts: canVouchForFasts ? local.snapshot.fasts : remote.snapshot.fasts,
+      savedMeals: canVouchForSavedMeals ? local.snapshot.savedMeals : remote.snapshot.savedMeals,
       // NOT passed through from `local` like the two above it: the routine is
       // genuinely merged, so a second device adopts it instead of staying
       // blank. See the comment on `SYNC_ENTITY_TYPES.fastingSettings` for why

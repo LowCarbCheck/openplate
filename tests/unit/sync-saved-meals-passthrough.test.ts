@@ -15,11 +15,13 @@
  * the very first sync, with nothing else in the suite failing, `fasts` had
  * exactly this test and saved meals did not, until this file.
  */
-import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
+import { EVICTED_STORAGE, HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { mergeSnapshots, SYNC_ENTITY_TYPES, stampSnapshot } from '../../app/lib/sync/snapshot-sync';
+import type { SnapshotIntegrity } from '../../app/lib/sync/snapshot-sync';
+import { FASTS_TABLE, SAVED_MEALS_TABLE } from '../../app/lib/local-store/schema';
 import type { StampedSnapshot } from '../../app/lib/sync/snapshot-sync';
 import type { LocalSavedMeal } from '../../app/lib/local-store/schema';
 import type { SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
@@ -68,7 +70,7 @@ describe('mergeSnapshots and savedMeals', () => {
   it('keeps the local saved meals when the remote payload has none', () => {
     const local = payload([savedMeal('mine')]);
 
-    const merged = mergeSnapshots({ local, remote: payload([]) });
+    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote: payload([]) });
 
     assert.deepEqual(merged.snapshot.savedMeals, [savedMeal('mine')]);
   });
@@ -77,7 +79,7 @@ describe('mergeSnapshots and savedMeals', () => {
     const local = payload([savedMeal('mine')]);
     const remote = payload([savedMeal('theirs', { name: 'Their meal' })]);
 
-    const merged = mergeSnapshots({ local, remote });
+    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote });
 
     assert.deepEqual(
       merged.snapshot.savedMeals.map((entry) => entry.id),
@@ -87,7 +89,7 @@ describe('mergeSnapshots and savedMeals', () => {
   });
 
   it('keeps an empty local list empty even when the remote is full', () => {
-    const merged = mergeSnapshots({ local: payload([]), remote: payload([savedMeal('theirs')]) });
+    const merged = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: payload([]), remote: payload([savedMeal('theirs')]) });
 
     assert.deepEqual(merged.snapshot.savedMeals, []);
   });
@@ -96,8 +98,8 @@ describe('mergeSnapshots and savedMeals', () => {
     const local = payload([savedMeal('mine'), savedMeal('other', { name: 'Other meal' })]);
     const remote = payload([savedMeal('theirs')]);
 
-    const once = mergeSnapshots({ local, remote });
-    const twice = mergeSnapshots({ local: once, remote });
+    const once = mergeSnapshots({ integrity: HEALTHY_STORAGE, local, remote });
+    const twice = mergeSnapshots({ integrity: HEALTHY_STORAGE, local: once, remote });
 
     assert.deepEqual(twice.snapshot.savedMeals, local.snapshot.savedMeals);
   });
@@ -139,5 +141,79 @@ describe('mergeSnapshots and savedMeals', () => {
       'fastingSettings',
       'privateStore',
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The boundary of the pass-through: a device that cannot vouch for its storage
+// ---------------------------------------------------------------------------
+
+/** A device whose saved-meals table did NOT finish loading, while everything else about the store is fine. */
+const SAVED_MEALS_TABLE_NOT_LOADED: SnapshotIntegrity = {
+  hasPersistedDatabase: true,
+  isTableLoaded: { [SAVED_MEALS_TABLE]: false },
+  isCompartmentKnown: true,
+};
+
+/** A device whose FASTS table did not load, while the saved meals loaded perfectly. */
+const ONLY_THE_FASTS_TABLE_NOT_LOADED: SnapshotIntegrity = {
+  hasPersistedDatabase: true,
+  isTableLoaded: { [FASTS_TABLE]: false },
+  isCompartmentKnown: true,
+};
+
+describe('mergeSnapshots, savedMeals, and what the device can prove', () => {
+  it('does NOT let an evicted device empty the account: the remote saved meals survive', () => {
+    const merged = mergeSnapshots({
+      integrity: EVICTED_STORAGE,
+      local: payload([]),
+      remote: payload([savedMeal('on-the-account')]),
+    });
+
+    assert.deepEqual(
+      merged.snapshot.savedMeals.map((entry) => entry.id),
+      ['on-the-account'],
+      'a device with no storage must not be the side that decides the list is empty',
+    );
+  });
+
+  it('THE CONTROL: a HEALTHY device with no saved meals keeps the list empty', () => {
+    // Without this, the case above passes against a merge that always prefers
+    // the remote, which would resurrect every saved meal anybody ever deleted.
+    const merged = mergeSnapshots({
+      integrity: HEALTHY_STORAGE,
+      local: payload([]),
+      remote: payload([savedMeal('on-the-account')]),
+    });
+
+    assert.deepEqual(merged.snapshot.savedMeals, [], 'zero saved meals on a healthy device is a real state');
+  });
+
+  it('reads the saved-meals TABLE, so a partial load that dropped only that table is caught too', () => {
+    const merged = mergeSnapshots({
+      integrity: SAVED_MEALS_TABLE_NOT_LOADED,
+      local: payload([savedMeal('the-one-that-loaded')]),
+      remote: payload([savedMeal('the-one-that-loaded'), savedMeal('the-one-memory-missed')]),
+    });
+
+    assert.deepEqual(
+      merged.snapshot.savedMeals.map((entry) => entry.id).toSorted(),
+      ['the-one-memory-missed', 'the-one-that-loaded'],
+      'a half-read table must not be the side that decides what the account holds',
+    );
+  });
+
+  it('is PER TABLE: a fasts table that did not load leaves the saved meals alone', () => {
+    // The sharp end of choosing the per-table signal over the whole-database
+    // one. A merge that reached for `hasPersistedDatabase` alone, or that
+    // treated any unloaded table as a broken store, would hand the account's
+    // saved meals back here and silently undo a deletion the person made.
+    const merged = mergeSnapshots({
+      integrity: ONLY_THE_FASTS_TABLE_NOT_LOADED,
+      local: payload([]),
+      remote: payload([savedMeal('on-the-account')]),
+    });
+
+    assert.deepEqual(merged.snapshot.savedMeals, [], 'one broken table says nothing about the one beside it');
   });
 });

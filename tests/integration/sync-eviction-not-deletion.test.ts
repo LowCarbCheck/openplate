@@ -36,10 +36,19 @@ import { closeSyncSession, getSyncVault, type SyncVault } from '../../app/lib/sy
 import { decryptWithSchemaProbe } from '../../app/lib/sync/orchestrator';
 import type { SyncPayload } from '../../app/lib/sync/engine/envelope/types';
 import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engine/crypto/argon2';
-import { deleteLocalFoodLog, listLocalFoodLogs, putLocalFoodLog, type LocalFoodLog } from '../../app/lib/local-store';
+import {
+  deleteLocalFast,
+  deleteLocalFoodLog,
+  listLocalFasts,
+  listLocalFoodLogs,
+  putLocalFast,
+  putLocalFoodLog,
+  type LocalFast,
+  type LocalFoodLog,
+} from '../../app/lib/local-store';
 import { getPrimaryStore, readPersistedTableRowCounts } from '../../app/lib/local-store/persist';
 import { PRIMARY_DB_NAME } from '../../app/lib/local-store/store';
-import { FOOD_LOGS_TABLE } from '../../app/lib/local-store/schema';
+import { FASTS_TABLE, FOOD_LOGS_TABLE } from '../../app/lib/local-store/schema';
 import { readLocalSnapshot } from '../../app/lib/sync/local-store-bridge';
 import { getSyncSessionSnapshot } from '../../app/lib/sync/sync-session';
 
@@ -131,6 +140,8 @@ async function signUpFresh(label: string): Promise<string> {
 interface BlobOnTheService {
   tombstones: SyncPayload['syncMeta']['tombstones'];
   foodLogIds: string[];
+  /** Not a tombstone question at all: `fasts` are passed through whole, so this is the WHOLE list the account now has. */
+  fastIds: string[];
 }
 
 /** THE PAYLOAD THE SERVICE ACTUALLY HOLDS, decrypted. Never an in-memory copy of what we hoped was sent. */
@@ -148,10 +159,11 @@ async function payloadOnTheService(vault: SyncVault): Promise<BlobOnTheService> 
   // envelope carries whatever schema version wrote it. What this file pushed a
   // line earlier is this build's own `SyncedSnapshot`, and only its food logs
   // are read.
-  const snapshot = decrypted.payload.snapshot as { foodLogs: { id: string }[] };
+  const snapshot = decrypted.payload.snapshot as { foodLogs: { id: string }[]; fasts: { id: string }[] };
   return {
     tombstones: decrypted.payload.syncMeta.tombstones,
     foodLogIds: snapshot.foodLogs.map((log) => log.id).toSorted(),
+    fastIds: snapshot.fasts.map((entry) => entry.id).toSorted(),
   };
 }
 
@@ -163,6 +175,7 @@ async function emptyTheInMemoryStore(): Promise<void> {
 /** Removes every row this file may have left behind, so each case starts from a device it wrote itself. */
 async function clearTheDiary(): Promise<void> {
   for (const log of await listLocalFoodLogs()) await deleteLocalFoodLog(log.id);
+  for (const entry of await listLocalFasts()) await deleteLocalFast(entry.id);
 }
 
 /** Lets the store's autosave run to completion, so the next disk write is the last word. */
@@ -179,13 +192,17 @@ async function settleAutosave(): Promise<void> {
  * own `t` object store, which `persist.ts` already documents as the one
  * implementation detail this codebase reads.
  */
-/** One row of the persister's `t` object store: a table id and that table's whole content. */
-interface PersistedTableRow {
+/**
+ * One row of the persister's `t` object store: a table id and that table's
+ * whole content. Generic in the row, because this file writes both a food log
+ * and a fast this way and the two tables hold different records.
+ */
+interface PersistedTableRow<TRow> {
   k: string;
-  v: Record<string, LocalFoodLog>;
+  v: Record<string, TRow>;
 }
 
-async function putRowOnDiskOnly(tableId: string, rowId: string, row: LocalFoodLog): Promise<void> {
+async function putRowOnDiskOnly<TRow>(tableId: string, rowId: string, row: TRow): Promise<void> {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(PRIMARY_DB_NAME);
     request.addEventListener('success', () => resolve(request.result));
@@ -199,7 +216,7 @@ async function putRowOnDiskOnly(tableId: string, rowId: string, row: LocalFoodLo
       // SAFETY: `persist.ts` documents the persister's row shape as
       // `{k: tableId, v: tableContent}`, and this file only ever reads back
       // what that persister wrote.
-      const existing = read.result as PersistedTableRow | undefined;
+      const existing = read.result as PersistedTableRow<TRow> | undefined;
       objectStore.put({ k: tableId, v: { ...existing?.v, [rowId]: row } });
     });
     transaction.addEventListener('complete', () => {
@@ -340,6 +357,70 @@ test('a PARTIAL load withholds that table’s deletes and still pushes the live 
     payload.foodLogIds.includes('log-partial-2'),
     'and the entry memory could not see must still be on the account',
   );
+
+  closeSyncSession();
+});
+
+// ---------------------------------------------------------------------------
+// The collections no tombstone can protect
+// ---------------------------------------------------------------------------
+
+function fast(id: string): LocalFast {
+  return {
+    id,
+    protocolId: '16:8',
+    targetDurationMs: 57_600_000,
+    plannedStartAt: null,
+    startedAt: 1_770_000_000_000,
+    endedAt: 1_770_057_600_000,
+    createdAt: 1_770_000_000_000,
+  };
+}
+
+test('a PARTIAL load of the fasts table does not push a shortened list over the account', async () => {
+  await clearTheDiary();
+  await signUpFresh('fasts-partial');
+  const vault = requireVault();
+
+  await putLocalFoodLog(foodLog('log-fasts-1', 'Lentil soup'));
+  await putLocalFast(fast('fast-kept'));
+  markSyncPending();
+  await syncNow();
+
+  // NON-VACUITY 1: the fast really reached the account. `fasts` are passed
+  // through, never stamped, so nothing else in this file would notice if the
+  // very first cycle had already dropped them.
+  assert.deepEqual((await payloadOnTheService(vault)).fastIds, ['fast-kept'], 'the account must hold the fast');
+
+  // NON-VACUITY 2: the probe really counts this table. The whole rule rests on
+  // `fasts` being an ordinary table in the same store, and that is checked
+  // here rather than assumed.
+  assert.equal((await readPersistedTableRowCounts(PRIMARY_DB_NAME))?.[FASTS_TABLE], 1);
+  assert.equal((await readLocalSnapshot()).integrity.isTableLoaded[FASTS_TABLE], true);
+
+  // THE PARTIAL LOAD, built in the one order that survives autosave (see the
+  // food-log case above): out of MEMORY first, let the autosave settle, then
+  // back onto DISK behind the store.
+  const store = await getPrimaryStore();
+  store.delRow(FASTS_TABLE, 'fast-kept');
+
+  // A live change rides along, because the loss only happens on a cycle that
+  // pushes, and a device that half loaded one table still logs meals.
+  await putLocalFoodLog(foodLog('log-fasts-2', 'Walnuts'));
+  await settleAutosave();
+  await putRowOnDiskOnly(FASTS_TABLE, 'fast-kept', fast('fast-kept'));
+
+  // NON-VACUITY 3: the device really cannot see the fast at the moment the
+  // cycle reads, and the bridge really reports that table as not loaded.
+  assert.equal((await listLocalFasts()).length, 0, 'memory must have lost the fast');
+  assert.equal((await readLocalSnapshot()).integrity.isTableLoaded[FASTS_TABLE], false);
+
+  markSyncPending();
+  await syncNow();
+
+  const payload = await payloadOnTheService(vault);
+  assert.ok(payload.foodLogIds.includes('log-fasts-2'), 'the cycle must really have pushed');
+  assert.deepEqual(payload.fastIds, ['fast-kept'], 'and the fast memory could not see must still be on the account');
 
   closeSyncSession();
 });

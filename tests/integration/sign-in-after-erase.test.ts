@@ -111,6 +111,7 @@ describe('signing in after erase re-downloads the diary', () => {
     assert.deepEqual(local.meta.tombstones, [], 'an erased device must not claim anything was deleted');
 
     const merged = mergeSnapshots({
+      integrity: HEALTHY_STORAGE,
       local: { snapshot: snapshotOf([]), meta: local.meta },
       remote: serverPayload(),
     });
