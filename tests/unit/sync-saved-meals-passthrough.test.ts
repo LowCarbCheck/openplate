@@ -159,6 +159,9 @@ const SAVED_MEALS_TABLE_NOT_LOADED: SnapshotIntegrity = {
   hasPersistedDatabase: true,
   isTableLoaded: { [SAVED_MEALS_TABLE]: false },
   isCompartmentKnown: true,
+  // Nothing here is about the compartment either: these fixtures reach
+  // `mergeSnapshots`, which never weighs the seal.
+  isCompartmentHeld: false,
   // Nothing here is about a delete: these fixtures test the two PASS-THROUGH
   // collections, which carry no tombstones and therefore no journal rows.
   deletedEntityKeys: new Set(),
@@ -169,6 +172,9 @@ const ONLY_THE_FASTS_TABLE_NOT_LOADED: SnapshotIntegrity = {
   hasPersistedDatabase: true,
   isTableLoaded: { [FASTS_TABLE]: false },
   isCompartmentKnown: true,
+  // Nothing here is about the compartment either: these fixtures reach
+  // `mergeSnapshots`, which never weighs the seal.
+  isCompartmentHeld: false,
   // Nothing here is about a delete: these fixtures test the two PASS-THROUGH
   // collections, which carry no tombstones and therefore no journal rows.
   deletedEntityKeys: new Set(),

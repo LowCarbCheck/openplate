@@ -530,7 +530,14 @@ export async function syncNow(): Promise<void> {
     // that ran after this line would be the clean-sync update erasing it.
     await healAfterWithheldDeletes({
       withheld: result.withheldTombstones,
+      // THE SECOND SHAPE OF THE SAME LOSS: a `fasts` or `savedMeals` list this
+      // device could not account for, replaced by the account's. It mints no
+      // tombstone, so a heal keyed on `withheld` alone said nothing at all.
+      refusedTables: result.refusedPassThroughTables,
       restoredCount: result.restoredEntityCount,
+      // WHOSE RESTORE IT IS. The notice outlives this cycle and survives the
+      // next `openSyncSession`, so it has to name the account it describes.
+      accountId: vault.accountId,
     });
     updateSyncSession({
       phase: 'idle',

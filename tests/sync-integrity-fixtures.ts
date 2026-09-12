@@ -21,6 +21,10 @@ export const HEALTHY_STORAGE: SnapshotIntegrity = {
   hasPersistedDatabase: true,
   isTableLoaded: {},
   isCompartmentKnown: true,
+  // A HEALTHY DEVICE'S SEAL DOES NOT HOLD (M226/M227). The hold is the seal
+  // re-emitting the account's bytes over a region that shrank with nothing
+  // written down, which is the evicted device's state, not this one's.
+  isCompartmentHeld: false,
   // HEALTHY IS NOT THE SAME AS "HAS DELETED SOMETHING" (M225). A healthy device
   // with an empty delete journal has recorded no deletes, so it mints no
   // tombstones however its snapshot shrank, which is the correct reading of a
@@ -35,6 +39,10 @@ export const EVICTED_STORAGE: SnapshotIntegrity = {
   hasPersistedDatabase: false,
   isTableLoaded: {},
   isCompartmentKnown: false,
+  // FALSE EVEN HERE, and it is not the same claim as `isCompartmentKnown`.
+  // This device has not READ the compartment, so no seal of its has held one;
+  // a test about the hold says so by overriding this field.
+  isCompartmentHeld: false,
   // An eviction takes the journal with the diary: they are rows in the same
   // database. A fixture that kept deletes here would be describing a device
   // that cannot exist.

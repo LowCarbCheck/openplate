@@ -371,14 +371,12 @@ export interface SnapshotIntegrity extends LocalStoreIntegrity {
    * same way: a `privateStore` entry in {@link StampSnapshotResult.withheld},
    * which forbids `shrinkAcknowledged` and fires the heal log.
    *
-   * The one OPTIONAL field on this interface, and it is a narrow exception to
-   * the rule its neighbours state. Omitting it says "the seal did not hold",
-   * which is the state of every device on every ordinary cycle and the only
-   * state a fixture that predates the hold can be describing. The single
-   * production producer, `readSyncedSnapshot`, always sets it from the seal's
-   * own answer.
+   * REQUIRED, like every other field here, and for the reason the whole
+   * interface exists: a correctness argument nobody is forced to pass is a
+   * correctness argument at zero call sites. It spent M226 optional only
+   * because one test file was locked while another worker held it.
    */
-  isCompartmentHeld?: boolean;
+  isCompartmentHeld: boolean;
 }
 
 /**
@@ -573,7 +571,7 @@ export function stampSnapshot({
   // untouched because the held bytes hash to what the cache already held. It
   // exists so the shell cannot call this cycle clean, `shrinkAcknowledged`
   // stays false, and the heal log says which entity type went unpublished.
-  if (integrity.isCompartmentHeld === true) {
+  if (integrity.isCompartmentHeld) {
     const key = entityKey(SYNC_ENTITY_TYPES.privateStore, PRIVATE_STORE_ENTITY_ID);
     withheld.push({
       entityId: PRIVATE_STORE_ENTITY_ID,
@@ -591,27 +589,100 @@ export function stampSnapshot({
   };
 }
 
+/** All either count needs of a pass-through row: an identity to compare against another list. */
+interface PassThroughRow {
+  id: string;
+}
+
 /**
- * How many of the entities whose deletes were WITHHELD are back in the payload
- * this cycle agreed with.
+ * One PASS-THROUGH collection, chosen by the table name
+ * {@link PassThroughOutcome.refused} carries.
  *
- * The heal notice is the reason this exists. "This device lost its local copy
- * and your account put it back" is only true when the account HAD a copy: when
- * the pull found no blob at all, `mergeSnapshots` never runs, the withheld
- * entities do not come back, and they drop out of the baseline. Counting
- * withheld tombstones as restored entries told those people their diary had
- * been restored while it was being forgotten.
+ * FAIL FAST on anything else. `decidePassThrough` names these two tables and
+ * no others, so a third name here is a new pass-through collection whose
+ * author has not been asked how it is counted, and guessing would report a
+ * restore of zero to somebody whose rows had just come back.
+ */
+function readPassThroughList({
+  table,
+  snapshot,
+}: {
+  table: string;
+  snapshot: SyncedSnapshot;
+}): readonly PassThroughRow[] {
+  if (table === FASTS_TABLE) return snapshot.fasts;
+  if (table === SAVED_MEALS_TABLE) return snapshot.savedMeals;
+  throw new Error(`No pass-through list is known for the table ${table}.`);
+}
+
+/**
+ * How many DIARY ROWS this cycle got back that this device could not vouch for.
+ *
+ * The definition, and every term in it is load-bearing: a row the device could
+ * not speak for, which the payload this cycle agreed with holds, and which the
+ * apply therefore wrote. It is the number the person is shown, so it may only
+ * count things that are now on their device.
+ *
+ * TWO SOURCES, because there are two ways this device's ignorance is overruled:
+ *
+ *  1. A WITHHELD TOMBSTONE whose entity is live in the agreed payload. The push
+ *     did not carry the delete, the pull carried the row back, and the apply
+ *     wrote it.
+ *  2. A REFUSED PASS-THROUGH TABLE (`mergeSnapshots`), counted as the ids the
+ *     agreed list holds and this device's list did not. Those rows arrive with
+ *     no tombstone anywhere, because the two lists are not merged and carry
+ *     none; counting only withheld tombstones reported a restore of zero to
+ *     somebody whose forty saved meals had just come back.
+ *
+ * AND THE COMPARTMENT IS NEVER COUNTED. A HELD compartment (M226) is pushed
+ * back to the account byte-identical and nothing is written to this device at
+ * all, so it is a withheld publication rather than a restore. It rides in
+ * `withheld` so the cycle cannot be called clean and so the heal log names it,
+ * and it stops there.
  */
 export function countRestoredEntities({
   withheld,
-  snapshot,
+  merged,
+  local,
+  refused,
 }: {
   withheld: readonly Tombstone[];
   /** The snapshot this cycle agreed with, merged or local. */
-  snapshot: SyncedSnapshot;
+  merged: SyncedSnapshot;
+  /** The snapshot this device read, which is what "could not vouch for" is measured against. */
+  local: SyncedSnapshot;
+  /** The tables whose remote list stood ({@link PassThroughOutcome.refused}). */
+  refused: readonly string[];
 }): number {
-  const liveKeys = new Set(flattenSnapshot(snapshot).map((entity) => entity.key));
-  return withheld.filter((tombstone) => liveKeys.has(entityKey(tombstone.entityType, tombstone.entityId))).length;
+  const liveKeys = new Set(flattenSnapshot(merged).map((entity) => entity.key));
+  const restoredEntities = withheld.filter(
+    (tombstone) =>
+      tombstone.entityType !== SYNC_ENTITY_TYPES.privateStore &&
+      liveKeys.has(entityKey(tombstone.entityType, tombstone.entityId)),
+  ).length;
+  return refused.reduce((total, table) => total + countAdoptedRows({ table, merged, local }), restoredEntities);
+}
+
+/**
+ * The rows one refused table's agreed list holds and this device's did not.
+ *
+ * Zero on the MIGRATION cycle, which is the common case for this branch: a
+ * baseline written before the pass-through ids were kept can account for
+ * nothing, so both tables are refused on every healthy device exactly once,
+ * and a healthy device's lists are the account's lists. Nothing is restored and
+ * nothing is said.
+ */
+function countAdoptedRows({
+  table,
+  merged,
+  local,
+}: {
+  table: string;
+  merged: SyncedSnapshot;
+  local: SyncedSnapshot;
+}): number {
+  const localIds = new Set(readPassThroughList({ table, snapshot: local }).map((row) => row.id));
+  return readPassThroughList({ table, snapshot: merged }).filter((row) => !localIds.has(row.id)).length;
 }
 
 function toWireStamps(perEntity: Record<string, StampedEntity>): SyncMetaPayload['perEntity'] {

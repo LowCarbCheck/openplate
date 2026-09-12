@@ -262,11 +262,17 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
   const account = next.authClient.getSession()?.account ?? null;
   const knownAccount = account !== null && !isPendingAccountView(account) ? account : null;
   publish({
-    // CARRIED ACROSS THE OPEN, not reset. A sign-in that follows an eviction is
-    // the likeliest moment for this notice to exist, and opening the session is
-    // what happens next; clearing it here would be the app forgetting the one
-    // thing it had to say.
-    storageHealNotice: snapshot.storageHealNotice,
+    // CARRIED ACROSS THE OPEN, not reset, AND ONLY FOR ITS OWN ACCOUNT. A
+    // sign-in that follows an eviction is the likeliest moment for this notice
+    // to exist, and opening the session is what happens next; clearing it here
+    // would be the app forgetting the one thing it had to say.
+    //
+    // The account test is not belt and braces. `openSyncVault` opens OVER a
+    // live vault without closing it, so signing in as somebody else on a
+    // shared device never publishes `SIGNED_OUT` and never clears anything;
+    // without this line the second person read the first person's restore
+    // count as a statement about their own diary.
+    storageHealNotice: noticeForAccount(snapshot.storageHealNotice, next.accountId),
     account: {
       id: next.accountId,
       email: next.email,
@@ -287,6 +293,19 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
     hasPendingChanges: false,
     error: null,
   });
+}
+
+/**
+ * The notice, but only when it is about the account that is opening.
+ *
+ * A notice names one account (`storage-heal.ts`), and the sentence it renders
+ * is "this device lost YOUR copy and YOUR account put it back". Handing it to
+ * the next person to sign in is a claim about their diary that nothing ever
+ * measured.
+ */
+function noticeForAccount(notice: StorageHealNotice, accountId: number): StorageHealNotice {
+  if (notice.kind === 'none') return notice;
+  return notice.accountId === accountId ? notice : { kind: 'none' };
 }
 
 /**

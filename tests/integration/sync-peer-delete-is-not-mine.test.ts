@@ -200,7 +200,12 @@ function deviceDeps(service: ReturnType<typeof fakeService>, dek: Uint8Array, st
       const { shareable } = partitionSnapshot(read.snapshot);
       return {
         snapshot: { ...shareable, privateStore: null },
-        integrity: { ...read.integrity, deletedEntityKeys: read.deletedEntityKeys, isCompartmentKnown: true },
+        integrity: {
+          ...read.integrity,
+          deletedEntityKeys: read.deletedEntityKeys,
+          isCompartmentKnown: true,
+          isCompartmentHeld: false,
+        },
       };
     },
     applySnapshot: async ({ merged, local }: { merged: SyncedSnapshot; local: SyncedSnapshot }) => {

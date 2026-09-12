@@ -140,13 +140,26 @@ export interface SyncCycleResult {
    */
   withheldTombstones: Tombstone[];
   /**
-   * How many of those withheld entities are actually BACK in the payload this
-   * cycle agreed with.
+   * The store tables whose REMOTE `fasts` or `savedMeals` list stood, because
+   * this device could not account for the ids its own baseline recorded
+   * (`PassThroughOutcome.refused`).
    *
-   * Not the same number as `withheldTombstones.length`, and the difference is
-   * the notice's honesty. When the pull found no blob, nothing came back, and
-   * saying "your entries were restored from your account" would be a sentence
-   * about a restore that did not happen (`storage-heal.ts`).
+   * The SECOND shape of the same loss `withheldTombstones` carries, and it is
+   * reported separately because these two collections are not merged and mint
+   * no tombstone at all. A cycle with an empty `withheldTombstones` and a table
+   * in here still handed somebody their rows back.
+   */
+  refusedPassThroughTables: string[];
+  /**
+   * How many DIARY ROWS this cycle got back that this device could not vouch
+   * for (`countRestoredEntities`).
+   *
+   * Not `withheldTombstones.length`, and the difference is the notice's
+   * honesty. When the pull found no blob, nothing came back, and saying "your
+   * entries were restored from your account" would be a sentence about a
+   * restore that did not happen (`storage-heal.ts`). It counts the rows a
+   * refused pass-through table adopted as well, and it never counts a held
+   * compartment, which writes nothing to this device.
    */
   restoredEntityCount: number;
 }
@@ -251,7 +264,13 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
         attempts: attempt,
         lastSyncedAt: settled.lastSyncedAt ?? now(),
         withheldTombstones,
-        restoredEntityCount: countRestoredEntities({ withheld: withheldTombstones, snapshot: merged.snapshot }),
+        refusedPassThroughTables: merged.passThrough.refused,
+        restoredEntityCount: countRestoredEntities({
+          withheld: withheldTombstones,
+          merged: merged.snapshot,
+          local,
+          refused: merged.passThrough.refused,
+        }),
       };
     }
 
@@ -284,7 +303,13 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
       attempts: attempt,
       lastSyncedAt: at,
       withheldTombstones,
-      restoredEntityCount: countRestoredEntities({ withheld: withheldTombstones, snapshot: merged.snapshot }),
+      refusedPassThroughTables: merged.passThrough.refused,
+      restoredEntityCount: countRestoredEntities({
+        withheld: withheldTombstones,
+        merged: merged.snapshot,
+        local,
+        refused: merged.passThrough.refused,
+      }),
     };
   }
 

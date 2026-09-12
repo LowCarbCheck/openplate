@@ -413,6 +413,9 @@ async function pushSeedDiary(account: SeededAccount): Promise<PushOutcome> {
         hasPersistedDatabase: true,
         isTableLoaded: {},
         isCompartmentKnown: true,
+        // The seal here writes a region this process just built, so it never
+        // shrinks and can never be held.
+        isCompartmentHeld: false,
         deletedEntityKeys: new Set(),
       },
     }),

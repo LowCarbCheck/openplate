@@ -918,6 +918,7 @@ test('a PARTIAL load is weighed per table: the half-read list is spared, the one
         hasPersistedDatabase: true,
         isTableLoaded: { [FASTS_TABLE]: false },
         isCompartmentKnown: true,
+        isCompartmentHeld: false,
         deletedEntityKeys: new Set(deleted),
       },
     }),

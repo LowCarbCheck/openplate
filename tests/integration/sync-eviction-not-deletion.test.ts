@@ -278,8 +278,14 @@ test('a device whose IndexedDB was evicted publishes NO tombstones', async () =>
   assert.deepEqual(payload.foodLogIds, ['log-evicted-1', 'log-evicted-2'], 'the account must still hold both entries');
   assert.equal((await listLocalFoodLogs()).length, 2, 'and the device must have been repopulated');
 
-  // AND THE PERSON WAS TOLD. A silent heal is how the defect survived.
-  assert.deepEqual(getSyncSessionSnapshot().storageHealNotice, { kind: 'restored', entryCount: 2 });
+  // AND THE PERSON WAS TOLD. A silent heal is how the defect survived. The
+  // notice NAMES THE ACCOUNT (M227), because it outlives this cycle and the
+  // next sign-in on this device may be somebody else.
+  assert.deepEqual(getSyncSessionSnapshot().storageHealNotice, {
+    kind: 'restored',
+    entryCount: 2,
+    accountId: vault.accountId,
+  });
 
   closeSyncSession();
 });
