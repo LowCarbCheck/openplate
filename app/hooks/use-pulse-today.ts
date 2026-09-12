@@ -7,13 +7,25 @@
  * surfaces render nothing for `null`, so the page a person sees at 0 ms is the
  * page they would have seen without the pulse at all.
  *
- * The five minute cache and the "a signed out device never fetches" rule are
- * `fetchPulseToday`'s, not this file's: two hooks mounted on one page make two
- * calls and one request.
+ * ── The read waits for the session, it does not race it ──────────────────
+ *
+ * A reload does not have a session yet. `SyncController` resumes one from the
+ * device cache a moment after hydration, and until it has, `getSyncVault()` is
+ * null and a read would answer null without making a request. This hook
+ * therefore watches the session snapshot and keys its effect on
+ * `pulseReadKey`, which changes when the account arrives. Keying on `enabled`
+ * alone was the 0.28 defect: the tile and the fasting line never fetched at
+ * all, and only the header chip worked, because its `enabled` happens to flip
+ * after the resume.
+ *
+ * The five minute cache, the "a signed out device never fetches" rule and the
+ * toggle are `fetchPulseToday`'s, not this file's: two hooks mounted on one
+ * page make two calls and one request.
  */
 import { useEffect, useState } from 'react';
 
-import { fetchPulseToday, type PulseToday } from '#app/lib/pulse';
+import { useSyncSession } from '#app/components/sync-status';
+import { pulseReadKey, startPulseRead, type PulseToday } from '#app/lib/pulse';
 
 /**
  * Today's instance-wide figures, or `null` until (and unless) there are any.
@@ -28,19 +40,19 @@ import { fetchPulseToday, type PulseToday } from '#app/lib/pulse';
  * @returns the last read, or null when it has not arrived, failed, or this device has no account.
  */
 export function usePulseToday({ enabled = true }: { enabled?: boolean } = {}): PulseToday | null {
+  const session = useSyncSession();
   const [today, setToday] = useState<PulseToday | null>(null);
+  const key = pulseReadKey({ enabled, accountId: session.account?.id ?? null });
 
   useEffect(() => {
-    if (!enabled) return;
-    let isCancelled = false;
-    void (async () => {
-      const value = await fetchPulseToday();
-      if (!isCancelled) setToday(value);
-    })();
-    return () => {
-      isCancelled = true;
-    };
-  }, [enabled]);
+    // Signing out, or a caller that no longer wants a read, takes the figures
+    // away with it. Nothing else does: see `startPulseRead`.
+    if (key === null) {
+      setToday(null);
+      return;
+    }
+    return startPulseRead({ onValue: setToday });
+  }, [key]);
 
   return today;
 }

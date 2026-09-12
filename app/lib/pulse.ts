@@ -332,10 +332,15 @@ let cached: { atMs: number; value: PulseToday } | null = null;
  * a longer punishment than the fault deserves; not caching it means the next
  * render tries again. A signed out device never reaches the fetch at all.
  *
- * @returns today's figures, or `null` when there is no account or the read failed.
+ * The READ asks {@link openDoor}, the same gate every send asks, so a device
+ * with the toggle off makes no request in either direction. Reading the totals
+ * while contributing nothing to them is not what the toggle promises, and the
+ * request itself would tell the server that this device is here.
+ *
+ * @returns today's figures, or `null` when the toggle is off, there is no account, or the read failed.
  */
 export async function fetchPulseToday(): Promise<PulseToday | null> {
-  const account = dependencies.readAccount();
+  const account = openDoor();
   if (account === null) return null;
   const now = dependencies.nowMs();
   if (cached !== null && now - cached.atMs < PULSE_CACHE_MS) return cached.value;
@@ -352,6 +357,91 @@ export async function fetchPulseToday(): Promise<PulseToday | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * The one value an effect may watch to decide when to read.
+ *
+ * ── The defect this exists to make impossible ────────────────────────────
+ *
+ * The reader used to key its effect on `enabled` alone. At the moment the
+ * dashboard mounts, the sync session is still being resumed from the device
+ * cache, so `getSyncVault()` is null, `fetchPulseToday` answers null without a
+ * request, and the effect never runs a second time: the tile was absent on
+ * every plain load and reload, and the one surface that did work, the header's
+ * fasting chip, worked only because its `enabled` flips false to true after
+ * the resume has finished and thereby re-ran the effect by accident.
+ *
+ * So the account is part of the key. `null` means "do not read at all", and a
+ * key that CHANGES when the session opens is what makes the read happen once
+ * the vault is there.
+ *
+ * PURE, so the whole rule is pinned without a browser.
+ *
+ * @param input - whether this caller wants a read, and the signed in account id or null.
+ * @returns a key that changes when the answer changes, or null when nothing may be read.
+ */
+export function pulseReadKey({ enabled, accountId }: { enabled: boolean; accountId: number | null }): string | null {
+  if (!enabled) return null;
+  if (accountId === null) return null;
+  return `account:${accountId}`;
+}
+
+/** The tab, as the reader needs it. Injected so a node test can drive a tab that comes back. */
+export interface PulseReadHost {
+  /** Registers a "this tab just became visible" listener and returns its remover. */
+  onVisible: (listener: () => void) => () => void;
+}
+
+/** The real tab. Does nothing at all where there is no document. */
+const BROWSER_READ_HOST: PulseReadHost = {
+  onVisible: (listener) => {
+    if (globalThis.document === undefined) return () => undefined;
+    const handler = (): void => {
+      if (document.visibilityState === 'visible') listener();
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  },
+};
+
+/**
+ * Reads now, and again whenever the tab comes back.
+ *
+ * The five minute window is {@link fetchPulseToday}'s, so a tab that is
+ * switched away from and back ten times in a minute makes ONE request: the
+ * later calls are served from memory. A page left open all afternoon reads
+ * again the first time it is looked at after the window has passed, which is
+ * the only refetch either surface needs. There is no timer, because a timer
+ * would keep a hidden tab talking to the server for no reader.
+ *
+ * A read that answers `null` is NOT reported. Only the gate closing takes a
+ * tile off the screen, and that is the caller's business; a dropped connection
+ * must not blank figures that are already drawn.
+ *
+ * @param input - where to deliver a value, and the tab to listen to.
+ * @returns the stop function; after it is called nothing is delivered.
+ */
+export function startPulseRead({
+  onValue,
+  host = BROWSER_READ_HOST,
+}: {
+  onValue: (value: PulseToday) => void;
+  host?: PulseReadHost;
+}): () => void {
+  let isCancelled = false;
+  const read = (): void => {
+    void (async () => {
+      const value = await fetchPulseToday();
+      if (!isCancelled && value !== null) onValue(value);
+    })();
+  };
+  read();
+  const stopListening = host.onVisible(read);
+  return () => {
+    isCancelled = true;
+    stopListening();
+  };
 }
 
 /**

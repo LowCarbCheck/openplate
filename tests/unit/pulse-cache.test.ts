@@ -1,6 +1,6 @@
 /**
  * The read side: at most one request every five minutes, and none at all from
- * a device with no account.
+ * a device with no account or with the toggle off.
  *
  * THE SIGNED OUT CASE IS THE CONTROL for the cache tests: a reader that never
  * fetched would satisfy "does not fetch twice" trivially, so the first suite
@@ -49,6 +49,7 @@ describe('fetchPulseToday', () => {
     const time = clock(1_000_000);
     setPulseDependencies({
       nowMs: time.nowMs,
+      readEnabled: () => true,
       readAccount: () => ({ serverUrl: 'https://sync.example', accessToken: 'token' }),
       fetchImpl: async () => {
         calls += 1;
@@ -70,6 +71,7 @@ describe('fetchPulseToday', () => {
     const time = clock(1_000_000);
     setPulseDependencies({
       nowMs: time.nowMs,
+      readEnabled: () => true,
       readAccount: () => ({ serverUrl: 'https://sync.example', accessToken: 'token' }),
       fetchImpl: async () => {
         calls += 1;
@@ -87,7 +89,23 @@ describe('fetchPulseToday', () => {
   it('never fetches on a device with no account', async () => {
     let calls = 0;
     setPulseDependencies({
+      readEnabled: () => true,
       readAccount: () => null,
+      fetchImpl: async () => {
+        calls += 1;
+        return new Response(JSON.stringify(TODAY), { status: 200 });
+      },
+    });
+
+    assert.equal(await fetchPulseToday(), null);
+    assert.equal(calls, 0);
+  });
+
+  it('never fetches while the toggle is off, even with an account', async () => {
+    let calls = 0;
+    setPulseDependencies({
+      readEnabled: () => false,
+      readAccount: () => ({ serverUrl: 'https://sync.example', accessToken: 'token' }),
       fetchImpl: async () => {
         calls += 1;
         return new Response(JSON.stringify(TODAY), { status: 200 });
@@ -101,6 +119,7 @@ describe('fetchPulseToday', () => {
   it('returns null on a network error and does not cache the failure', async () => {
     let calls = 0;
     setPulseDependencies({
+      readEnabled: () => true,
       readAccount: () => ({ serverUrl: 'https://sync.example', accessToken: 'token' }),
       fetchImpl: async () => {
         calls += 1;
