@@ -23,6 +23,7 @@ import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import {
   Apple,
+  Bell,
   BookMarked,
   ChevronRight,
   CreditCard,
@@ -41,12 +42,17 @@ import {
 } from 'lucide-react';
 
 import { BUILD } from '#app/lib/build-info';
+import { DEFAULT_PUSH_PREFS, isPushDisabledByUser, readPushPrefs, rememberedEndpoint } from '#app/lib/push';
+import type { PushPrefs } from '#app/lib/push';
 import { getLocalFastingSettings, getLocalProfileGoals, resolveLocalTimezone } from '#app/lib/local-store';
 import type { LocalFastingSettings, LocalProfileGoals } from '#app/lib/local-store';
 // The routine phrase is built ONCE, by the page that owns the setting, and
 // printed here. Two formatters would let the hub and the page disagree about
 // what "16:8, starts 20:00" means.
 import { fastingRowStatus } from './settings.fasting';
+// Same rule for the notifications row: the phrase is built ONCE, by the page
+// that owns the setting, and printed here.
+import { notificationsRowStatus } from './settings.notifications';
 import { readBodyMetrics } from '#app/models/body-metrics';
 import { reproductiveStatusLine } from '#app/lib/reproductive-status-line';
 import { todayInTimezone } from '#app/lib/user-days';
@@ -194,6 +200,24 @@ function useLocalFastingSettings(): LocalFastingSettings | undefined {
   return settings;
 }
 
+/**
+ * The notifications row's status line, read off the device: whether this
+ * device holds a registration, and which kinds it asked for.
+ *
+ * `undefined` until the effect runs, so the row says nothing during SSR and
+ * the first paint rather than claiming "Off" at a person who has push on.
+ */
+function useNotificationsStatus(): string | null {
+  const { t } = useTranslation();
+  const [facts, setFacts] = useState<{ enabled: boolean; prefs: PushPrefs } | undefined>(undefined);
+
+  useEffect(() => {
+    setFacts({ enabled: rememberedEndpoint() !== null && !isPushDisabledByUser(), prefs: readPushPrefs() });
+  }, []);
+
+  return notificationsRowStatus({ enabled: facts?.enabled, prefs: facts?.prefs ?? DEFAULT_PUSH_PREFS, t });
+}
+
 /** "Dark · Deutsch". `null` until the theme is readable, localStorage isn't available during SSR/first paint. */
 function usePreferencesStatus(): string | null {
   const { t, i18n } = useTranslation();
@@ -240,6 +264,11 @@ export interface SettingsHubFacts {
   aiStatus: string | null;
   lifePhaseStatus: string | null;
   preferencesStatus: string | null;
+  /**
+   * The notifications row's status line: what would arrive, or "Off". `null`
+   * while the device read is in flight.
+   */
+  notificationsStatus: string | null;
   /**
    * The device's goals row, `null` when nothing is stored and `undefined`
    * while the first read is in flight. The nutrition row's status line is
@@ -378,6 +407,16 @@ export function buildSettingsHubGroups(facts: SettingsHubFacts): SettingsHubGrou
           status: facts.preferencesStatus,
           isVisible: true,
         },
+        // GATED ON THE SYNC SERVER, like every account row: a push
+        // subscription hangs on an account, and an instance with no server has
+        // nobody to register with and nothing to send.
+        {
+          to: '/settings/notifications',
+          icon: Bell,
+          title: t('settings.hub.notifications.label'),
+          status: facts.notificationsStatus,
+          isVisible: facts.hasSyncServer,
+        },
       ],
     },
     {
@@ -486,6 +525,7 @@ export default function SettingsIndex() {
   const goals = useLocalGoals();
   const fastingSettings = useLocalFastingSettings();
   const preferencesStatus = usePreferencesStatus();
+  const notificationsStatus = useNotificationsStatus();
   // `null` unless the operator set `SYNC_SERVER_URL`. On that instance the
   // account row renders NOTHING, no row, no mention (AGENTS.md: unset means no
   // sync UI anywhere), and the whole group it sits in goes with it.
@@ -502,6 +542,7 @@ export default function SettingsIndex() {
     aiStatus,
     lifePhaseStatus,
     preferencesStatus,
+    notificationsStatus,
     goals,
     fastingSettings,
     accountStatus: session.account === null ? t('settings.rows.account.signedOut') : session.account.email,

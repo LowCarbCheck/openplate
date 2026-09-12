@@ -14,6 +14,7 @@ import { useSyncSession } from './sync-status';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
 import { FastChipSlot } from './fast-chip';
+import { CatchUpWriter } from './catch-up-writer';
 import { PulseHeartbeat } from './pulse-heartbeat';
 import { HeaderStatus } from './header-status';
 import { ProgressBar } from './progress-bar';
@@ -314,6 +315,12 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                   whatever page the person is on (M222). The toggle is asked
                   inside `#app/lib/pulse`, never here. */}
               <PulseHeartbeat />
+              {/* Also no markup: it writes this morning's catch-up into the
+                  notification database so a push that arrives later already
+                  has its words. Mounted here for `PulseHeartbeat`'s own
+                  reason, a log lands on whatever page the person is on
+                  (M223). */}
+              <CatchUpWriter />
               {/* The device menu, at both breakpoints, identity, the theme
                   inline, and the settings people revisit. See
                   `avatar-menu.tsx` for why the theme lives in here rather than

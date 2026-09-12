@@ -1,9 +1,9 @@
 /**
- * The E2EE sync WIRE CONTRACT — the entire shared surface between an openplate
+ * The E2EE sync WIRE CONTRACT, the entire shared surface between an openplate
  * client and a sync service (M128 spec 01).
  *
  * THIS FILE IS MAINTAINED IN TWO REPOS AND MUST STAY IDENTICAL IN SUBSTANCE:
- *  - `openplate/app/lib/sync/engine/protocol.ts`   (this file — the client half)
+ *  - `openplate/app/lib/sync/engine/protocol.ts`   (this file, the client half)
  *  - `openplate-core/src/protocol.ts`              (the service half)
  *
  * They are deliberately NOT a shared package: the two repos ship and version
@@ -11,7 +11,7 @@
  * `openplate-core/PROTOCOL.md` alone without depending on our code. The price
  * of that independence is hand-maintained duplication, so each repo carries a
  * unit test that asserts its local `PROTOCOL_VERSION` (and the size/retention
- * limits) against TRANSCRIBED literals — there is no shared CI, so drift has
+ * limits) against TRANSCRIBED literals, there is no shared CI, so drift has
  * to fail a test rather than rely on a promise in a doc comment
  * (`tests/unit/sync-engine/protocol.test.ts` here,
  * `tests/unit/protocol.test.ts` there).
@@ -35,14 +35,14 @@ import { z } from 'zod';
 export const PROTOCOL_VERSION = 2;
 
 /**
- * The encrypted-blob wire format version — INDEPENDENT of
+ * The encrypted-blob wire format version, INDEPENDENT of
  * {@link PROTOCOL_VERSION}. This one describes what is inside
  * `ciphertext`: `gzip(JSON(payload))` sealed with AES-256-GCM, the 12-byte IV
  * packed as the leading bytes (`engine/envelope/build-envelope.ts`).
  *
  * Bump ONLY for a genuine crypto/framing change (a different cipher, a
  * different compression codec, a different IV packing). Never bump it for a
- * payload SCHEMA change — that is the local store's own
+ * payload SCHEMA change, that is the local store's own
  * `payloadSchemaVersion`, which travels through this protocol as an opaque
  * number bound into the AAD.
  */
@@ -53,9 +53,9 @@ export const ENVELOPE_VERSION = 1;
  * mirrored by the client so it can fail early with a useful message instead
  * of eating a 413.
  *
- * CAPACITY PLAN (counsel, 2026-08-03): food-log JSON runs ~400–700 bytes per
+ * CAPACITY PLAN (counsel, 2026-08-03): food-log JSON runs ~400-700 bytes per
  * entry BEFORE compression, so an un-gzipped whole-store blob would reach
- * this cap within 2–4 years of daily use. `ENVELOPE_VERSION` 1 gzips the
+ * this cap within 2-4 years of daily use. `ENVELOPE_VERSION` 1 gzips the
  * plaintext before encrypting, which buys roughly an order of magnitude of
  * headroom on highly-repetitive JSON. The long-term fix (chunked/per-entity
  * blobs) is a FUTURE PROTOCOL VERSION BUMP, deliberately deferred and
@@ -75,14 +75,14 @@ export const BLOB_VERSION_RETENTION = 5;
  * blob routes sit beside `/v1/auth/*` under one namespace rather than in a
  * leftover mount path from the era when they were grafted onto this app's
  * Express server. `PROTOCOL.md` §7 records it as a pre-1.0 change that does
- * NOT bump `PROTOCOL_VERSION` — zero production blobs exist, there are no
+ * NOT bump `PROTOCOL_VERSION`, zero production blobs exist, there are no
  * third-party implementations, and no deployed client can be broken by it.
  *
  * CROSS-REPO NOTE: this file is the hand-maintained duplicate of
  * `openplate-core/src/protocol.ts`, which is the side that ships the routes
  * and is therefore the one to follow when the two disagree. The drift-guard
  * tests on both sides assert TRANSCRIBED literals rather than each other, so
- * a one-sided edit keeps both suites green while the repos diverge — exactly
+ * a one-sided edit keeps both suites green while the repos diverge, exactly
  * what happened to this constant between spec 02 and spec 03. When you change
  * the contract, change four places: both `protocol.ts` files and both tests.
  */
@@ -103,7 +103,7 @@ export type SyncKeyRecordKind = 'passphrase' | 'recovery';
 export const SYNC_KEY_RECORD_KINDS: readonly SyncKeyRecordKind[] = ['passphrase', 'recovery'];
 
 /**
- * A value that arrived as parsed JSON and has not been decoded yet — the one
+ * A value that arrived as parsed JSON and has not been decoded yet, the one
  * named type for "came off the wire", so that the undecoded-ness of a body is
  * visible in a signature instead of spreading as `unknown`. Mirrors
  * `openplate-core/src/lib/json.ts`, which names the same boundary on the
@@ -142,7 +142,7 @@ export function isSyncKeyRecordKind(value: JsonValue | undefined): value is Sync
  *
  * OPTIONAL for the same reason `notice` is: a service older than the field
  * omits it, and a client that required it would refuse to talk to that service
- * — a compatibility break wearing the clothes of an additive change.
+ *, a compatibility break wearing the clothes of an additive change.
  *
  * `ai` is `null` when the instance proxies no model. That is a MEANING, not an
  * omission: it is how a managed instance says "no AI here", and it is what the
@@ -180,6 +180,16 @@ export type InstanceDescriptor = {
    * a service that says no are the same fact for every reader.
    */
   plans: boolean;
+  /**
+   * Whether this instance sends web push, so `/v1/push/*` exists on it (M223
+   * spec 01). DESCRIPTIVE, NEVER A GRANT, like every other field here.
+   *
+   * OPTIONAL, unlike `plans` above, because the service that sends it is being
+   * built alongside this client: an instance older than the field omits it,
+   * and every reader must treat the absence and a `false` as the same fact,
+   * which is "this instance sends nothing, so offer no switch".
+   */
+  push?: boolean;
   /** The model the instance's AI proxy serves, or `null` when it has no upstream key. */
   ai: { model: string | null } | null;
   /**
@@ -216,10 +226,10 @@ export type ProtocolHandshake = {
   protocolVersion: number;
   /** The highest {@link ENVELOPE_VERSION} the service is willing to accept on a push. */
   envelopeVersion: number;
-  /** Human-readable build identifier — diagnostics only, never compared. */
+  /** Human-readable build identifier, diagnostics only, never compared. */
   serviceVersion: string;
   /**
-   * What the instance says about itself — see {@link InstanceDescriptor}.
+   * What the instance says about itself, see {@link InstanceDescriptor}.
    *
    * OPTIONAL, and it must stay optional, for the reason the deleted
    * `signupMode` field carried in this slot: a service older than the field
@@ -227,7 +237,7 @@ export type ProtocolHandshake = {
    */
   instance?: InstanceDescriptor;
   /**
-   * A short message the operator of that instance wants shown — a planned
+   * A short message the operator of that instance wants shown, a planned
    * migration, a shutdown date, a "read this before you sync again".
    *
    * WHY IT IS HERE AT ALL. The service holds no addresses (M181), so it has no
@@ -241,7 +251,7 @@ export type ProtocolHandshake = {
    * TREAT IT AS HOSTILE INPUT. It comes from whatever server the user pointed
    * at, which on a self-hosted product is not necessarily the operator they
    * think it is. Render `text` as text and never as markup, and never build a
-   * link from `url` without checking its scheme first — see
+   * link from `url` without checking its scheme first, see
    * `#app/components/sync-notice-banner`.
    */
   notice?: OperatorNotice;
@@ -253,13 +263,13 @@ export type OperatorNotice = {
   url?: string;
 };
 
-/** The decoder for {@link OperatorNotice} — a hostile-input boundary, so the body is parsed, never assumed. */
+/** The decoder for {@link OperatorNotice}, a hostile-input boundary, so the body is parsed, never assumed. */
 const operatorNoticeSchema = z.object({
   text: z.string(),
   url: z.string().optional(),
 });
 
-/** The decoder for {@link InstanceDescriptor} — same hostile-input boundary as the notice above. */
+/** The decoder for {@link InstanceDescriptor}, same hostile-input boundary as the notice above. */
 const instanceDescriptorSchema = z.object({
   name: z.string(),
   language: z.string(),
@@ -274,6 +284,11 @@ const instanceDescriptorSchema = z.object({
   // `.catch(false)` for the same reason as the line above: a service with no
   // biller, and a service built before the field, both mean no plan door.
   plans: z.boolean().catch(false),
+  // `.optional()` because the field is younger than this decoder's other
+  // booleans, and `.catch(undefined)` so a nonsense value cannot fail the
+  // whole descriptor and take the AI model down with it. Absent and `false`
+  // are the same fact for every reader; see the type's own doc comment.
+  push: z.boolean().optional().catch(undefined),
   ai: z.object({ model: z.string().nullable() }).nullable(),
   // `.optional()`, exactly like `instance` itself: a service older than the
   // field, or one with reports switched off, sends no key here.
@@ -289,12 +304,12 @@ const instanceDescriptorSchema = z.object({
     .catch(undefined),
 });
 
-/** The decoder for {@link ProtocolHandshake} — the health endpoint is an I/O boundary, so its body is parsed, not assumed. */
+/** The decoder for {@link ProtocolHandshake}, the health endpoint is an I/O boundary, so its body is parsed, not assumed. */
 const protocolHandshakeSchema = z.object({
   protocolVersion: z.number(),
   envelopeVersion: z.number(),
   serviceVersion: z.string(),
-  // `.optional()` is load-bearing, not tidiness — see the field's doc comment.
+  // `.optional()` is load-bearing, not tidiness, see the field's doc comment.
   // A required entry here would reject every service older than the field.
   instance: instanceDescriptorSchema.optional(),
   // Optional for the same reason, and dropped rather than fatal when
@@ -303,7 +318,7 @@ const protocolHandshakeSchema = z.object({
   notice: operatorNoticeSchema.optional(),
 });
 
-/** Result of {@link checkProtocolCompatibility} — `reason` is a user-presentable sentence. */
+/** Result of {@link checkProtocolCompatibility}, `reason` is a user-presentable sentence. */
 export type ProtocolCompatibility = { status: 'compatible' } | { status: 'incompatible'; reason: string };
 
 export function isProtocolHandshake(value: JsonValue | undefined): value is ProtocolHandshake {
@@ -311,7 +326,7 @@ export function isProtocolHandshake(value: JsonValue | undefined): value is Prot
 }
 
 /**
- * The operator notice carried by a `/health` body, or `null` — for a body that
+ * The operator notice carried by a `/health` body, or `null`, for a body that
  * is not a handshake, an instance that set no notice, or a service older than
  * the field.
  *
@@ -326,7 +341,7 @@ export function readHandshakeNotice(value: JsonValue | undefined): OperatorNotic
 }
 
 /**
- * The instance descriptor carried by a `/health` body, or `null` — for a body
+ * The instance descriptor carried by a `/health` body, or `null`, for a body
  * that is not a handshake, and for a service older than the field.
  *
  * Parsed rather than asserted, like the notice above: this is the boundary
@@ -343,7 +358,7 @@ export function readHandshakeInstance(value: JsonValue | undefined): InstanceDes
 /**
  * Decides whether this build may talk to the service that returned `remote`.
  *
- * Pure and total — it never throws and never guesses. A mismatch is REFUSAL
+ * Pure and total, it never throws and never guesses. A mismatch is REFUSAL
  * with a clear message, never a best-effort attempt: pushing an envelope a
  * service can't store, or decrypting one framed by rules this build doesn't
  * know, corrupts an account's only copy of its data. Silent wrongness is the
@@ -366,7 +381,7 @@ export function checkProtocolCompatibility(remote: ProtocolHandshake): ProtocolC
 }
 
 // ---------------------------------------------------------------------------
-// Wire shapes — blobs
+// Wire shapes, blobs
 // ---------------------------------------------------------------------------
 
 /**
@@ -380,11 +395,11 @@ export type Base64Bytes = string;
 /** An ISO-8601 UTC timestamp string, e.g. `2026-08-04T10:11:12.000Z`. */
 export type IsoTimestamp = string;
 
-/** `POST {prefix}/blob` — a compare-and-swap write of the account's single encrypted blob. */
+/** `POST {prefix}/blob`, a compare-and-swap write of the account's single encrypted blob. */
 export interface PushBlobRequest {
   /**
    * The `blobVersion` this client believes is currently stored (`0` for "no
-   * blob exists yet"). The write succeeds only if it still matches — this is
+   * blob exists yet"). The write succeeds only if it still matches, this is
    * the entire concurrency model, and it is never a blind overwrite.
    */
   baseVersion: number;
@@ -392,13 +407,13 @@ export interface PushBlobRequest {
   ciphertext: Base64Bytes;
 }
 
-/** `200` — the CAS write won. */
+/** `200`, the CAS write won. */
 export interface PushBlobAcceptedResponse {
   newVersion: number;
 }
 
 /**
- * `409` — the CAS write lost: another device wrote first. The client must
+ * `409`, the CAS write lost: another device wrote first. The client must
  * pull `currentVersion`, merge (`engine/merge/merge-entities.ts`), and retry
  * with `baseVersion: currentVersion`.
  */
@@ -415,7 +430,7 @@ export interface PullBlobResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Wire shapes — key records
+// Wire shapes, key records
 // ---------------------------------------------------------------------------
 
 /**
@@ -424,7 +439,7 @@ export interface PullBlobResponse {
  * same KEK.
  *
  * CROSS-REPO NOTE: the service half (`openplate-core/src/protocol.ts`) types
- * this field as an opaque `JsonObject` — it stores and echoes the descriptor
+ * this field as an opaque `JsonObject`, it stores and echoes the descriptor
  * verbatim and never interprets it. The client DOES produce and consume it
  * (`client/passphrase-kek.ts`'s `PassphraseKdfDescriptor`, which is
  * structurally this type), so naming the shape here is a client-side
@@ -446,7 +461,7 @@ export interface KeyRecordWire {
   kind: SyncKeyRecordKind;
   /**
    * Argon2id salt + m/t/p parameters for the `passphrase` kind so any device
-   * can re-derive the KEK; ALWAYS `null` for `recovery` (HKDF-only — a
+   * can re-derive the KEK; ALWAYS `null` for `recovery` (HKDF-only, a
    * ≥128-bit random code needs no memory-hard stretch and therefore has no
    * parameters to record). Non-secret by design.
    */
@@ -460,7 +475,7 @@ export interface ListKeyRecordsResponse {
   records: KeyRecordWire[];
 }
 
-/** `PUT {prefix}/key-records/:kind` — also CAS-gated, mirroring the blob endpoint. */
+/** `PUT {prefix}/key-records/:kind`, also CAS-gated, mirroring the blob endpoint. */
 export interface PutKeyRecordRequest {
   kdfDescriptor: KdfDescriptor | null;
   wrappedDek: Base64Bytes;
@@ -469,7 +484,7 @@ export interface PutKeyRecordRequest {
    * any other value asserts "the record I last read had exactly this
    * `updatedAt`" (rotation).
    *
-   * The key MUST be present. An ABSENT key is a `400`, deliberately — a
+   * The key MUST be present. An ABSENT key is a `400`, deliberately, a
    * caller must not be able to skip the concurrency check by forgetting a
    * field.
    */
@@ -502,13 +517,13 @@ export const PROTOCOL_STATUS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Wire shapes — shares (§5.16, `openplate-core` ADR-0002)
+// Wire shapes, shares (§5.16, `openplate-core` ADR-0002)
 // ---------------------------------------------------------------------------
 
 /**
  * These endpoints exist ONLY on a deployment that sets `SYNC_SHARING`.
  * Everywhere else every path below answers the ordinary unknown-route `404`,
- * to every caller, credentialed or not — the terminator is mounted ahead of
+ * to every caller, credentialed or not, the terminator is mounted ahead of
  * authentication, so an unconfigured instance is indistinguishable from one
  * where the feature was never written (ADR-0002 prohibition 10).
  *
@@ -519,19 +534,19 @@ export const PROTOCOL_STATUS = {
 export interface ShareGrantWire {
   /** The clinician's account id. Both sides address a share by the counterpart's account id, never a synthetic share id. */
   granteeAccountId: number;
-  /** Pinning metadata only — the server neither computes nor endorses it (ADR-0002 prohibition 1). */
+  /** Pinning metadata only, the server neither computes nor endorses it (ADR-0002 prohibition 1). */
   recipientKeyFingerprint: string;
   createdAt: IsoTimestamp;
   /** The CAS token for the next `PUT`, exactly as a key record's is. */
   updatedAt: IsoTimestamp;
 }
 
-/** `200` from `GET {prefix}/shares` — the grantor's own grants. NEVER carries `wrappedDek`. */
+/** `200` from `GET {prefix}/shares`, the grantor's own grants. NEVER carries `wrappedDek`. */
 export interface ListSharesResponse {
   shares: ShareGrantWire[];
 }
 
-/** `PUT {prefix}/shares/:granteeAccountId` — CAS-gated exactly as §5.4. */
+/** `PUT {prefix}/shares/:granteeAccountId`, CAS-gated exactly as §5.4. */
 export interface PutShareRequest {
   /** The 125-byte share wrap, base64. See `crypto/share-wrap.ts` for the construction. */
   wrappedDek: Base64Bytes;
@@ -545,7 +560,7 @@ export interface PutShareConflictResponse {
   currentUpdatedAt: IsoTimestamp | null;
 }
 
-/** One share addressed to the calling account — `GET {prefix}/shared`. The wrap DOES travel here; only this caller can open it. */
+/** One share addressed to the calling account, `GET {prefix}/shared`. The wrap DOES travel here; only this caller can open it. */
 export interface ReceivedShareWire {
   grantorAccountId: number;
   wrappedDek: Base64Bytes;
@@ -560,7 +575,7 @@ export interface ListSharedResponse {
 }
 
 /**
- * `200` from `GET {prefix}/shared/:grantorAccountId/blob` — the grantor's
+ * `200` from `GET {prefix}/shared/:grantorAccountId/blob`, the grantor's
  * CURRENT blob and nothing else. No version history, no key records, no
  * profile.
  *
@@ -577,7 +592,7 @@ export interface SharedBlobResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Wire shapes — atomic DEK rotation (§5.17)
+// Wire shapes, atomic DEK rotation (§5.17)
 // ---------------------------------------------------------------------------
 
 /** One re-wrapped key record inside a rotation. There is no per-record CAS token: the submission itself is the concurrency unit. */
@@ -595,7 +610,7 @@ export interface RotateDekShareWire {
 }
 
 /**
- * `POST {prefix}/rotate-dek` — Tier 2 revocation, all of it, in one
+ * `POST {prefix}/rotate-dek`, Tier 2 revocation, all of it, in one
  * transaction (ADR-0002 prohibition 8: a rotation is atomic or it does not
  * exist).
  *
@@ -638,13 +653,13 @@ export interface RotateDekAcceptedResponse {
   revokedShares: number;
 }
 
-/** `409` — the blob CAS did not hold, and NOTHING was written. */
+/** `409`, the blob CAS did not hold, and NOTHING was written. */
 export interface RotateDekConflictResponse {
   currentVersion: number;
 }
 
 // ---------------------------------------------------------------------------
-// Wire shapes — research contributions (§5.18, `openplate-core` ADR-0003)
+// Wire shapes, research contributions (§5.18, `openplate-core` ADR-0003)
 // ---------------------------------------------------------------------------
 
 /**
@@ -655,7 +670,7 @@ export interface RotateDekConflictResponse {
  * prohibition 9). A `404` from a list endpoint is therefore "this server has
  * no research lane", never an error.
  *
- * The two flags are independent — neither implies the other — so a client must
+ * The two flags are independent, neither implies the other, so a client must
  * ask each surface separately and must not infer one from the other.
  *
  * WHAT IS NOT HERE IS THE POINT. There is no contributor account id on any
@@ -665,12 +680,12 @@ export interface RotateDekConflictResponse {
  * shape here imports a re-identification leak.
  *
  * The service builds these documents as literals in its own
- * `server/research-routes.ts` rather than from a mirrored type — `PROTOCOL.md`
+ * `server/research-routes.ts` rather than from a mirrored type, `PROTOCOL.md`
  * §5.18 is the contract both sides answer to, and this file is the client's
  * reading of it.
  */
 export interface PutContributionRequest {
-  /** Computed on the contributor's device. The server stores it and cannot verify it — it never holds the root. */
+  /** Computed on the contributor's device. The server stores it and cannot verify it, it never holds the root. */
   pseudonym: string;
   /** A tier name this protocol revision defines. An unknown name is a `400`, so prohibition 1 has teeth on both sides. */
   schemaTier: string;
@@ -687,7 +702,7 @@ export interface PutContributionRequest {
 }
 
 /**
- * One of the CONTRIBUTOR's own enrolments — `GET {prefix}/contributions`, and
+ * One of the CONTRIBUTOR's own enrolments, `GET {prefix}/contributions`, and
  * the `200` body of a `PUT`.
  *
  * `studyAccountId` is the only account id in this family, and it is the
@@ -720,7 +735,7 @@ export interface PutContributionConflictResponse {
 }
 
 /**
- * One contribution AS THE STUDY SEES IT — `GET {prefix}/study/contributions`.
+ * One contribution AS THE STUDY SEES IT, `GET {prefix}/study/contributions`.
  *
  * Five fields, and the sixth that would matter is absent by construction. Four
  * of §3.5's five AAD fields ride here; the fifth, `studyKeyFingerprint`, the
@@ -749,13 +764,13 @@ export interface ListStudyContributionsResponse {
   contributions: StudyContributionWire[];
 }
 
-/** One tombstone — `GET {prefix}/study/withdrawals`. Pseudonym and time, and nothing else; prohibition 6 forbids an account id here. */
+/** One tombstone, `GET {prefix}/study/withdrawals`. Pseudonym and time, and nothing else; prohibition 6 forbids an account id here. */
 export interface StudyWithdrawalWire {
   pseudonym: string;
   withdrawnAt: IsoTimestamp;
 }
 
-/** `200` from `GET {prefix}/study/withdrawals`. The purge instructions — see `research/study.ts`, where honouring them is not optional. */
+/** `200` from `GET {prefix}/study/withdrawals`. The purge instructions, see `research/study.ts`, where honouring them is not optional. */
 export interface ListStudyWithdrawalsResponse {
   withdrawals: StudyWithdrawalWire[];
 }

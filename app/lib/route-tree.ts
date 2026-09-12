@@ -65,6 +65,14 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   // A root here would make it un-poppable from the hub.
 
   // ---------------------------------------------------------------------------
+  // Under the overview. `/catch-up` declares `handle.backTo: '/dashboard'`, and
+  // a push notification deep links straight to it, which is a jump rather than
+  // a step: `isDeeper` answers for the in-app path, and a deep link simply
+  // replaces, which is what a notification landing should do.
+  // ---------------------------------------------------------------------------
+  { pattern: '/catch-up', parent: '/dashboard' },
+
+  // ---------------------------------------------------------------------------
   // Under the diary.
   // ---------------------------------------------------------------------------
   // One logged entry. `diary.entry.$id.tsx`'s own `handle.backTo` is `/diary`,
@@ -82,6 +90,7 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   // ---------------------------------------------------------------------------
   { pattern: '/settings/ai', parent: '/settings' },
   { pattern: '/settings/preferences', parent: '/settings' },
+  { pattern: '/settings/notifications', parent: '/settings' },
   { pattern: '/settings/profile', parent: '/settings' },
   { pattern: '/settings/nutrition', parent: '/settings' },
   { pattern: '/settings/fasting', parent: '/settings' },

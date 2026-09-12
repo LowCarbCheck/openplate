@@ -263,6 +263,42 @@
       "saved": "Details saved."
     }
   },
+  "catchUp": {
+    "title": "Your daily catch-up",
+    "loading": "Reading your last three days.",
+    "yesterdayHeading": "Yesterday in numbers",
+    "mealOne": "{{count}} meal",
+    "mealMany": "{{count}} meals",
+    "yesterdayFull": "Yesterday: {{meals}}, {{netCarbs}} g net carbs of your {{ceiling}} g ceiling, {{protein}} g protein of your {{floor}} g floor.",
+    "yesterdayCeiling": "Yesterday: {{meals}}, {{netCarbs}} g net carbs of your {{ceiling}} g ceiling, {{protein}} g protein.",
+    "yesterdayFloor": "Yesterday: {{meals}}, {{netCarbs}} g net carbs, {{protein}} g protein of your {{floor}} g floor.",
+    "yesterdayPlain": "Yesterday: {{meals}}, {{netCarbs}} g net carbs, {{protein}} g protein.",
+    "yesterdayFasting": "Yesterday was a fasting day.",
+    "yesterdayEmpty": "Yesterday had no entries. Today starts fresh.",
+    "fastActive": "Your fast has been running for {{duration}}.",
+    "fastScheduled": "Your fast starts at {{time}}.",
+    "fastRoutine": "Your usual fast starts at {{time}}.",
+    "countTwo": "two",
+    "countThree": "three",
+    "nudgeProtein": "Protein came in under your floor on {{days}} of the last three days.",
+    "nudgeFiber": "Fiber came in under the 25 g reference on {{days}} of the last three days.",
+    "nudgeFoods": "{{foods}} would close that gap.",
+    "foodsOr": "{{first}} or {{last}}",
+    "foods": {
+      "eggs": "eggs",
+      "skyr": "skyr",
+      "chickenBreast": "chicken breast",
+      "tuna": "tuna",
+      "tofu": "tofu",
+      "lentils": "lentils",
+      "chiaSeeds": "chia seeds",
+      "raspberries": "raspberries",
+      "avocado": "avocado",
+      "broccoli": "broccoli",
+      "flaxseed": "flaxseed",
+      "almonds": "almonds"
+    }
+  },
   "chrome": {
     "back": "Back",
     "buildStamp": "Build {{label}}",
@@ -859,12 +895,6 @@
       "honesty": "openplate just counts the hours. It doesn't give medical advice.",
       "plannedStartLabel": "Start time",
       "protocol": {
-        "24h": "24 h",
-        "36h": "36 h",
-        "48h": "48 h",
-        "72h": "72 h"
-      },
-      "protocol": {
         "16:8": "16:8",
         "18:6": "18:6",
         "20:4": "20:4",
@@ -1274,6 +1304,7 @@
     "ai": "AI settings · openplate",
     "connectClinician": "Connect a clinician · openplate",
     "connectGateway": "Join a gateway · openplate",
+    "catchUp": "Your daily catch-up · openplate",
     "dashboard": "Overview · openplate",
     "data": "Data & backup · openplate",
     "describe": "Describe a meal · openplate",
@@ -1317,7 +1348,8 @@
     "admin": "Administration",
     "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance is invitation only, and your diary is encrypted on this device before a copy reaches the server.",
     "plan": "Your plan · openplate",
-    "withdrawal": "Right of withdrawal · openplate"
+    "withdrawal": "Right of withdrawal · openplate",
+    "notifications": "Notifications · openplate"
   },
   "nav": {
     "add": "Add",
@@ -2169,6 +2201,43 @@
         "label": "Fasting",
         "description": "{{routine}}, starts {{time}}",
         "none": "No usual fast"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "off": "Off",
+        "catchUp": "Daily catch-up at {{time}}",
+        "fastTarget": "Fast target only",
+        "both": "Daily catch-up at {{time}} and fast target"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "lead": "A quiet word in the morning, and a word when a fast reaches its target.",
+      "master": "Send me notifications",
+      "cap": "At most two a day.",
+      "save": "Save",
+      "saving": "Saving…",
+      "state": {
+        "unsupported": "This browser cannot receive notifications.",
+        "needsInstall": "On iPhone, add openplate to your home screen first.",
+        "blocked": "Notifications are blocked in your browser settings. Allow them there, then come back.",
+        "serverOff": "This instance does not send notifications.",
+        "ready": "Your browser can receive notifications. Turn them on below."
+      },
+      "catchUp": {
+        "label": "Daily catch-up",
+        "time": "Time",
+        "preview": "Tomorrow morning it would say:",
+        "previewEmpty": "Nothing to show yet. A morning with nothing to report gets no notification."
+      },
+      "fastTarget": {
+        "label": "When a fast reaches its target"
+      },
+      "toast": {
+        "on": "Notifications are on.",
+        "off": "Notifications are off.",
+        "saved": "Saved.",
+        "failed": "That did not work. Try again."
       }
     }
   },

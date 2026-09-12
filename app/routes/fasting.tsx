@@ -35,6 +35,7 @@ import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { formatClockTime } from '#app/lib/format-clock-time';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { trackFastEnded, trackFastStarted } from '#app/lib/matomo-events';
+import { fastWakeAtIso, setFastWakeAt } from '#app/lib/push';
 import { todayInTimezone } from '#app/lib/user-days';
 import { cn } from '#app/lib/utils';
 import {
@@ -311,6 +312,26 @@ async function readReproductiveStatus(): Promise<ReproductiveStatus> {
   return (await getLocalBodyMetrics()).reproductiveStatus ?? 'none';
 }
 
+/**
+ * Re-arms the server's one shot for "this fast reached its target".
+ *
+ * `wake_at` is a SERVER SIDE ONE SHOT (M223 spec 01), so every write path that
+ * can change when, or whether, a fast reaches its target has to say so again:
+ * a start arms it, an adjusted start moves it, and an end, a cancel or a delete
+ * clears it. Reading the store back rather than deriving from the submission is
+ * deliberate, it is the same question on all five paths, "what is open now",
+ * and one answer cannot drift from another.
+ *
+ * Never awaited by a caller and never able to throw: the fast is the work, the
+ * notification is not, and `setFastWakeAt` does nothing at all on a device with
+ * no registration or with the fast target kind switched off.
+ */
+function syncFastWakeAt(): void {
+  void (async () => {
+    await setFastWakeAt(fastWakeAtIso(selectCurrentFast(await listLocalFasts())));
+  })();
+}
+
 async function _startFast(formData: FormData) {
   const nowMs = Date.now();
   const submission = parseWithZod(formData, {
@@ -343,6 +364,7 @@ async function _startFast(formData: FormData) {
     throw error;
   }
 
+  syncFastWakeAt();
   const isScheduled = plannedStartAt !== null && plannedStartAt > nowMs;
   // The same flag the toast reads, not the submitted `startMode`: a BACKDATED
   // `later` start is already running, so it is a 'now' fast, not a scheduled one.
@@ -358,6 +380,7 @@ async function _cancelPlan(formData: FormData) {
   // rather than kept as a `cancelled` entry, a history list logging every plan
   // you backed out of is a shame ledger (DESIGN.md §10.1).
   await deleteLocalFast(requireFastId(formData));
+  syncFastWakeAt();
   return redirectWithLocalToast('/fasting', {
     type: 'success',
     description: actionT('fasting.toast.planCancelled'),
@@ -377,6 +400,7 @@ async function _adjustStart(formData: FormData, { allowFuture }: { allowFuture: 
   if (allowFuture) await setLocalFastPlannedStart(id, { plannedStartAt: at });
   else await setLocalFastStart(id, { startedAt: at });
 
+  syncFastWakeAt();
   return redirectWithLocalToast('/fasting', {
     type: 'success',
     description: actionT('fasting.toast.startAdjusted'),
@@ -415,6 +439,7 @@ async function _endFast(formData: FormData) {
     }
     throw error;
   }
+  syncFastWakeAt();
   trackFastEnded();
   return redirectWithLocalToast('/fasting', {
     type: 'success',
@@ -437,6 +462,7 @@ async function _acknowledgeCare() {
 
 async function _deleteFast(formData: FormData) {
   await deleteLocalFast(requireFastId(formData));
+  syncFastWakeAt();
   return redirectWithLocalToast('/fasting', { type: 'success', description: actionT('fasting.toast.deleted') });
 }
 

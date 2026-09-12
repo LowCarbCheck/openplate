@@ -58,6 +58,7 @@ const RICHEST: SettingsHubFacts = {
   aiStatus: null,
   lifePhaseStatus: null,
   preferencesStatus: null,
+  notificationsStatus: null,
   // Nothing stored, which is the account the static line is written for.
   goals: null,
   fastingSettings: null,

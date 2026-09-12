@@ -1,4 +1,4 @@
-// openplate service worker — hand-rolled (no workbox), ported from the SHW
+// openplate service worker, hand-rolled (no workbox), ported from the SHW
 // reference. Versioned named caches with an activate-time purge of stale
 // versions, an app-shell precache with a dedicated /offline fallback, and
 // per-request-type fetch strategies. It also backs the Web Share Target v2 flow
@@ -13,8 +13,19 @@
 // change. Bumping the version is what evicts it.
 // v3 (M123/11): `/recover` and `/onboarding` joined APP_SHELL. Without the
 // bump, an install that already ran the old shell keeps its old pages-v2 cache
-// forever — nothing ever re-adds the two new entries to it.
-const CACHE_VERSION = 'v3';
+// forever, nothing ever re-adds the two new entries to it.
+// v4 (M223/03, 2026-09-12): the worker gained `push` and `notificationclick`
+// and now loads `/sw-push-decision.js` at startup. The bump is not about a
+// cache entry this time: it is what makes every installed device fetch this
+// file again and pick up the two new handlers, instead of a device that took
+// the old worker staying pushable-but-silent forever.
+// The push decision (what a push shows, where a tap lands) lives apart from
+// this file so it can be unit tested without a service worker. This worker is
+// registered as a classic script, so it loads that copy with `importScripts`
+// rather than a static `import`. It attaches `self.openplatePushDecision`.
+importScripts('/sw-push-decision.js');
+
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-${CACHE_VERSION}`;
 const IMAGE_CACHE = `images-${CACHE_VERSION}`;
@@ -30,7 +41,7 @@ const MAX_IMAGE_ENTRIES = 60;
 //
 // `/recover` and `/onboarding` (M123/11) are here for the same reason: both
 // are destinations the `_personal` gate itself redirects to (never something
-// the user typed), so whichever device lands on one needs it already cached —
+// the user typed), so whichever device lands on one needs it already cached ,
 // there is no earlier visit to that path to have populated it on demand.
 // Neither redirects when fetched directly (verified against the route source,
 // not assumed): `/recover` is a plain top-level page and `/onboarding`'s
@@ -38,7 +49,7 @@ const MAX_IMAGE_ENTRIES = 60;
 const APP_SHELL = ['/', '/dashboard', '/diary', '/add', '/offline', '/recover', '/onboarding'];
 
 // ---------------------------------------------------------------------------
-// Install — precache the app shell (resiliently)
+// Install, precache the app shell (resiliently)
 // ---------------------------------------------------------------------------
 self.addEventListener('install', (event) => {
   event.waitUntil(precacheAppShell().then(() => self.skipWaiting()));
@@ -58,14 +69,14 @@ async function precacheAppShell() {
           await cache.put(path, response);
         }
       } catch {
-        // Offline or blocked during install — fill on first visit instead.
+        // Offline or blocked during install, fill on first visit instead.
       }
     }),
   );
 }
 
 // ---------------------------------------------------------------------------
-// Activate — purge old-version caches, keep the share-target cache
+// Activate, purge old-version caches, keep the share-target cache
 // ---------------------------------------------------------------------------
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -87,7 +98,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // ---------------------------------------------------------------------------
-// Fetch — share-target POST, then per-request-type GET strategies
+// Fetch, share-target POST, then per-request-type GET strategies
 // ---------------------------------------------------------------------------
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -104,7 +115,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (!request.url.startsWith('http')) return;
 
-  // Only same-origin GETs are cached — skip external images (avatars, etc.).
+  // Only same-origin GETs are cached, skip external images (avatars, etc.).
   if (!isSameOrigin) return;
 
   // Never touch route data requests (the single-fetch `.data` suffix, with or
@@ -125,7 +136,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ---------------------------------------------------------------------------
-// Share target — stash the shared photo, redirect into the scan flow
+// Share target, stash the shared photo, redirect into the scan flow
 // ---------------------------------------------------------------------------
 async function handleShareTarget(request) {
   try {
@@ -134,7 +145,7 @@ async function handleShareTarget(request) {
     if (photo instanceof File) {
       const cache = await caches.open(SHARE_CACHE);
       // Store under a synthetic GET key the scan page reads once on mount.
-      // Only stamp a type the sender actually provided — a hardcoded binary
+      // Only stamp a type the sender actually provided, a hardcoded binary
       // fallback here would defeat the image/jpeg default applied on read-back
       // and fail photo validation.
       const headers = { 'X-Shared-Filename': encodeURIComponent(photo.name || 'shared-photo') };
@@ -229,7 +240,7 @@ async function networkFirst(request, cacheName, fallbackUrl) {
   }
 }
 
-// FIFO eviction so a cache stays under `maxEntries` — oldest keys drop first.
+// FIFO eviction so a cache stays under `maxEntries`, oldest keys drop first.
 async function trimCache(cache, maxEntries) {
   const keys = await cache.keys();
   if (keys.length <= maxEntries) return;
@@ -239,7 +250,7 @@ async function trimCache(cache, maxEntries) {
 }
 
 // ---------------------------------------------------------------------------
-// Message handler — SKIP_WAITING (update flow) + CLEAR_CACHE
+// Message handler, SKIP_WAITING (update flow) + CLEAR_CACHE
 // ---------------------------------------------------------------------------
 self.addEventListener('message', (event) => {
   const { data } = event;
@@ -253,3 +264,198 @@ self.addEventListener('message', (event) => {
     event.waitUntil(caches.keys().then((names) => Promise.all(names.map((n) => caches.delete(n)))));
   }
 });
+
+// ---------------------------------------------------------------------------
+// Web push, plus the tap that follows it
+// ---------------------------------------------------------------------------
+// The server sends a kind and nothing else (M223): every word shown here is
+// written on this device. The rule the whole section is built around is that a
+// user visible push MUST show a notification. A push handler that resolves
+// without calling `showNotification` makes the browser show its own "this site
+// was updated in the background" line instead, and a few of those cost the
+// permission for good. So every failure below, an unreadable payload, a
+// missing record, a slow database, a thrown error, ends at the generic line
+// rather than at nothing.
+//
+// The decision itself is not here: `self.openplatePushDecision` comes from
+// `/sw-push-decision.js`, loaded at the top of this file, and is unit tested
+// under node. This section only does the I/O around it.
+
+// The catch-up store, mirrored as literals from `app/lib/notify-store.ts`,
+// which is the only writer. A worker cannot import an app module, so these
+// three strings are the seam; change them there first.
+const NOTIFY_DB_NAME = 'openplate-notify';
+const NOTIFY_STORE_NAME = 'catchUp';
+const NOTIFY_RECORD_KEY = 'latest';
+
+// The record has its own tiny database, separate from the app's own stores,
+// and this read is bounded at three seconds. Both halves matter: a push handler
+// that blocks on a database another tab holds open never resolves, and the
+// browser then kills the worker with nothing shown. Three seconds is well
+// inside the time a push handler is given, and a read that has not finished by
+// then is treated exactly like a missing record.
+const NOTIFY_READ_TIMEOUT_MS = 3000;
+
+// The 192px app icon serves as both the art and the badge. It is the icon the
+// manifest already ships, so nothing new is added or resized here: icons come
+// from openplate-brand through the sync script, never from this repo by hand.
+// A proper monochrome badge (Android derives the badge shape from the alpha
+// channel) would have to be added there first.
+const NOTIFICATION_ICON = '/icons/icon-192.png';
+const NOTIFICATION_BADGE = '/icons/icon-192.png';
+
+self.addEventListener('push', (event) => {
+  event.waitUntil(handlePush(event));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  const path = self.openplatePushDecision.notificationPath(event.notification.data || null);
+  event.waitUntil(
+    (async () => {
+      const opened = await openNotificationTarget(path);
+      // Closed only AFTER the window is up. Closing first loses the tap
+      // entirely when `openWindow` is refused: the notification is gone and
+      // there is nothing left to tap a second time.
+      if (opened) event.notification.close();
+    })(),
+  );
+});
+
+async function handlePush(event) {
+  const kind = readPushKind(event);
+  let record = null;
+  if (kind !== 'fast-target') {
+    record = await readLatestCatchUp();
+  }
+
+  let decision;
+  try {
+    decision = self.openplatePushDecision.decidePush(kind, record, Date.now(), workerLanguage());
+  } catch {
+    // The decision is pure and should not throw, but a notification is owed
+    // either way, so a garbage record falls back to the generic line.
+    decision = self.openplatePushDecision.decidePush(kind, null, Date.now(), workerLanguage());
+  }
+
+  await self.registration.showNotification(decision.title, {
+    body: decision.body,
+    data: { url: decision.url },
+    icon: NOTIFICATION_ICON,
+    badge: NOTIFICATION_BADGE,
+    // A tag replaces rather than stacks: a device that was offline through
+    // three pushes wakes up to one line, not three.
+    tag: decision.tag,
+  });
+}
+
+// The payload carries `{ kind }` and nothing else. Anything unreadable is
+// treated as a catch-up, which is the harmless one to show by mistake.
+function readPushKind(event) {
+  try {
+    const payload = event.data ? event.data.json() : null;
+    const kind = payload && payload.kind ? String(payload.kind) : '';
+    return kind === 'fast-target' ? 'fast-target' : 'catch-up';
+  } catch {
+    return 'catch-up';
+  }
+}
+
+function workerLanguage() {
+  return (self.navigator && self.navigator.language) || 'en';
+}
+
+// Read the stored catch-up, or null. Never rejects, and never waits longer
+// than NOTIFY_READ_TIMEOUT_MS: the read is RACED against a timer, so a database
+// another tab holds open cannot leave the push handler hanging with nothing
+// shown. The loser of the race is left to finish and close on its own.
+function readLatestCatchUp() {
+  let timer = null;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(null), NOTIFY_READ_TIMEOUT_MS);
+  });
+  return Promise.race([readNotifyRecord(), timeout]).then((record) => {
+    clearTimeout(timer);
+    return record;
+  });
+}
+
+// Open the small notify database and read the one record out of it. Every
+// failure, a refused open, a database this device has never written, a store
+// that is not there, a read error, resolves null rather than rejecting: the
+// caller has exactly one thing to handle, and it is "no record".
+function readNotifyRecord() {
+  return new Promise((resolve) => {
+    try {
+      const open = indexedDB.open(NOTIFY_DB_NAME);
+      open.addEventListener('error', () => resolve(null));
+      open.addEventListener('blocked', () => resolve(null));
+      open.addEventListener('upgradeneeded', () => {
+        // The app has never written a catch-up on this device. Abort, so the
+        // worker never creates a database the app then has to migrate.
+        open.transaction.abort();
+      });
+      open.addEventListener('success', () => {
+        const db = open.result;
+        try {
+          if (!db.objectStoreNames.contains(NOTIFY_STORE_NAME)) {
+            db.close();
+            resolve(null);
+            return;
+          }
+          const store = db.transaction(NOTIFY_STORE_NAME, 'readonly').objectStore(NOTIFY_STORE_NAME);
+          const request = store.get(NOTIFY_RECORD_KEY);
+          request.addEventListener('success', () => {
+            const record = request.result || null;
+            db.close();
+            resolve(record);
+          });
+          request.addEventListener('error', () => {
+            db.close();
+            resolve(null);
+          });
+        } catch {
+          db.close();
+          resolve(null);
+        }
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+// Raise a window on `path`, returning whether anything came up.
+//
+// The order is deliberate. A visible client is alive, so navigating it is both
+// correct and cheap. When nothing is visible, `openWindow` runs FIRST: on
+// Android the installed app's window is usually discarded while the phone
+// sleeps, and awaiting such a client's `navigate()` burns the transient user
+// activation the tap granted, after which `openWindow` is refused and the tap
+// does nothing at all. The leftovers are navigated only as a fallback.
+async function openNotificationTarget(path) {
+  const url = new URL(path, self.location.origin).href;
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const visible = windows.find((client) => client.visibilityState === 'visible' || client.focused);
+
+  if (visible) {
+    if (visible.url === url) {
+      const focused = await visible.focus().then(() => true, () => false);
+      if (focused) return true;
+    } else {
+      const navigated = await visible.navigate(url).catch(() => null);
+      if (navigated) {
+        await visible.focus().catch(() => {});
+        return true;
+      }
+    }
+  }
+
+  const opened = await self.clients.openWindow(url).catch(() => null);
+  if (opened) return true;
+
+  for (const client of windows) {
+    const navigated = await client.navigate(url).catch(() => null);
+    if (navigated) return true;
+  }
+  return false;
+}

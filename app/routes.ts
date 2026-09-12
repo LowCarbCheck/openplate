@@ -145,6 +145,11 @@ export default [
     // history. This route composes both from existing models and owns no
     // data of its own.
     route('/dashboard', 'routes/dashboard.tsx'),
+    // The morning catch-up (M223 spec 02). The words a push notification
+    // carries, rendered in the app: both come out of `#app/models/catch-up`,
+    // so a tap can never land on a page that says something else. Client-only
+    // like every tracker surface.
+    route('/catch-up', 'routes/catch-up.tsx'),
     route('/diary', 'routes/diary.tsx'),
     route('/diary/entry/:id', 'routes/diary.entry.$id.tsx'),
     route('/scan', 'routes/scan.tsx'),
@@ -180,6 +185,10 @@ export default [
     // App preferences (theme + language), M129/05. Under `_personal` rather
     // than `_public` so it wears the app chrome.
     route('/settings/preferences', 'routes/settings.preferences.tsx'),
+    // Push notifications, on a page of their own (M223 spec 04). It states why
+    // notifications are or are not available here BEFORE it offers a switch,
+    // because a switch the platform will refuse is worse than no switch.
+    route('/settings/notifications', 'routes/settings.notifications.tsx'),
     // The body facts and the weigh-in log (M215 spec 03): height, sex, birth
     // year, the weight log with its unit toggle, and a row to the life phase.
     route('/settings/profile', 'routes/settings.profile.tsx'),

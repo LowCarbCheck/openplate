@@ -263,6 +263,42 @@
       "saved": "Angaben gespeichert."
     }
   },
+  "catchUp": {
+    "title": "Dein Tagesrückblick",
+    "loading": "Lese deine letzten drei Tage.",
+    "yesterdayHeading": "Gestern in Zahlen",
+    "mealOne": "{{count}} Mahlzeit",
+    "mealMany": "{{count}} Mahlzeiten",
+    "yesterdayFull": "Gestern: {{meals}}, {{netCarbs}} g Netto-Kohlenhydrate deiner {{ceiling}} g Obergrenze, {{protein}} g Protein deiner {{floor}} g Untergrenze.",
+    "yesterdayCeiling": "Gestern: {{meals}}, {{netCarbs}} g Netto-Kohlenhydrate deiner {{ceiling}} g Obergrenze, {{protein}} g Protein.",
+    "yesterdayFloor": "Gestern: {{meals}}, {{netCarbs}} g Netto-Kohlenhydrate, {{protein}} g Protein deiner {{floor}} g Untergrenze.",
+    "yesterdayPlain": "Gestern: {{meals}}, {{netCarbs}} g Netto-Kohlenhydrate, {{protein}} g Protein.",
+    "yesterdayFasting": "Gestern war ein Fastentag.",
+    "yesterdayEmpty": "Gestern gab es keine Einträge. Heute fängt neu an.",
+    "fastActive": "Dein Fasten läuft seit {{duration}}.",
+    "fastScheduled": "Dein Fasten beginnt um {{time}}.",
+    "fastRoutine": "Dein gewohntes Fasten beginnt um {{time}}.",
+    "countTwo": "zwei",
+    "countThree": "drei",
+    "nudgeProtein": "Protein lag an {{days}} der letzten drei Tage unter deiner Untergrenze.",
+    "nudgeFiber": "Ballaststoffe lagen an {{days}} der letzten drei Tage unter dem Referenzwert von 25 g.",
+    "nudgeFoods": "{{foods}} würde diese Lücke schließen.",
+    "foodsOr": "{{first}} oder {{last}}",
+    "foods": {
+      "eggs": "Eier",
+      "skyr": "Skyr",
+      "chickenBreast": "Hähnchenbrust",
+      "tuna": "Thunfisch",
+      "tofu": "Tofu",
+      "lentils": "Linsen",
+      "chiaSeeds": "Chiasamen",
+      "raspberries": "Himbeeren",
+      "avocado": "Avocado",
+      "broccoli": "Brokkoli",
+      "flaxseed": "Leinsamen",
+      "almonds": "Mandeln"
+    }
+  },
   "chrome": {
     "back": "Zurück",
     "buildStamp": "Build {{label}}",
@@ -1268,6 +1304,7 @@
     "ai": "KI-Einstellungen · openplate",
     "connectClinician": "Behandler verbinden · openplate",
     "connectGateway": "Gateway beitreten · openplate",
+    "catchUp": "Dein Tagesrückblick · openplate",
     "dashboard": "Übersicht · openplate",
     "data": "Daten & Sicherung · openplate",
     "describe": "Mahlzeit beschreiben · openplate",
@@ -1311,7 +1348,8 @@
     "admin": "Administration",
     "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
     "plan": "Dein Tarif · openplate",
-    "withdrawal": "Widerrufsbelehrung · openplate"
+    "withdrawal": "Widerrufsbelehrung · openplate",
+    "notifications": "Benachrichtigungen · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -2163,6 +2201,43 @@
         "label": "Fasten",
         "description": "{{routine}}, beginnt um {{time}}",
         "none": "Kein gewohntes Fasten"
+      },
+      "notifications": {
+        "label": "Benachrichtigungen",
+        "off": "Aus",
+        "catchUp": "Tagesrückblick um {{time}}",
+        "fastTarget": "Ausschließlich Fastenziel",
+        "both": "Tagesrückblick um {{time}} und Fastenziel"
+      }
+    },
+    "notifications": {
+      "title": "Benachrichtigungen",
+      "lead": "Eine kurze Nachricht am Morgen und eine Nachricht, wenn ein Fasten das Ziel erreicht.",
+      "master": "Benachrichtigungen erhalten",
+      "cap": "Höchstens zwei pro Tag.",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "state": {
+        "unsupported": "Dieser Browser kann keine Benachrichtigungen empfangen.",
+        "needsInstall": "Füge openplate auf dem iPhone zuerst zum Home-Bildschirm hinzu.",
+        "blocked": "Benachrichtigungen sind in deinen Browser-Einstellungen blockiert. Erlaube sie dort und kehre dann zurück.",
+        "serverOff": "Diese Instanz sendet keine Benachrichtigungen.",
+        "ready": "Dein Browser kann Benachrichtigungen empfangen. Schalte sie unten ein."
+      },
+      "catchUp": {
+        "label": "Tagesrückblick",
+        "time": "Uhrzeit",
+        "preview": "Morgen früh würde dort stehen:",
+        "previewEmpty": "Noch gibt es nichts zu sehen. Wenn es morgens nichts zu berichten gibt, kommt keine Benachrichtigung."
+      },
+      "fastTarget": {
+        "label": "Wenn ein Fasten sein Ziel erreicht"
+      },
+      "toast": {
+        "on": "Benachrichtigungen sind eingeschaltet.",
+        "off": "Benachrichtigungen sind ausgeschaltet.",
+        "saved": "Gespeichert.",
+        "failed": "Das hat nicht geklappt. Versuch es noch einmal."
       }
     }
   },
