@@ -16,8 +16,9 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
-import { badgeValueFor } from '../../app/hooks/use-current-fast';
+import { badgeValueFor, badgeValueForCurrent } from '../../app/hooks/use-current-fast';
 import { resolveFastTimeline } from '../../app/models/fasting';
 import type { LocalFast } from '../../app/lib/local-store/schema';
 
@@ -72,5 +73,49 @@ describe('badgeValueFor', () => {
 
     assert.equal(resolveFastTimeline(ended, NOW).status, 'completed', 'fixture guard: this row must be finished');
     assert.equal(badgeFor(ended), 'clear');
+  });
+});
+
+/**
+ * `badgeValueForCurrent` is the whole decision, including the state the hook
+ * spends most of its life in: no open fast at all. It exists so the badge
+ * effect is keyed on ONE expression, which is what makes "the fast went away"
+ * take the number off the icon on the same effect run that sees it go.
+ */
+describe('badgeValueForCurrent', () => {
+  it('clears the badge when there is no open fast', () => {
+    assert.equal(badgeValueForCurrent(null, NOW), 'clear');
+  });
+
+  it('still reports the hours when a fast is open, so the clear arm means something', () => {
+    const started = NOW - (5 * HOUR + 59 * MINUTE);
+
+    assert.equal(badgeValueForCurrent(fast({ startedAt: started, createdAt: started }), NOW), 5);
+  });
+
+  it('agrees with badgeValueFor for every open fast it is given', () => {
+    const justStarted = fast({ startedAt: NOW - 10 * MINUTE, createdAt: NOW - 10 * MINUTE });
+
+    assert.equal(badgeValueForCurrent(justStarted, NOW), badgeValueFor(resolveFastTimeline(justStarted, NOW)));
+  });
+});
+
+/**
+ * The chip lagged every write to a fast by up to a minute, because the hook
+ * re-read only on its own tick. The fix is the primary store's own table
+ * listener, which no unit tier can exercise: it needs IndexedDB and a commit
+ * phase. So the source itself is the assertion, and each check below has a
+ * control that fails if the mechanism is removed or downgraded.
+ */
+describe('the hook re-reads on a store write, not only on the tick', () => {
+  const source = readFileSync(new URL('../../app/hooks/use-current-fast.ts', import.meta.url), 'utf8');
+
+  it('listens to the fasts table of the primary store', () => {
+    assert.match(source, /addTableListener\(FASTS_TABLE/, 'the store change signal is the mechanism');
+    assert.match(source, /delListener\(listenerId\)/, 'the listener must come off on unmount');
+  });
+
+  it('keys the re-read effect on the write counter as well as the clock', () => {
+    assert.match(source, /\}, \[nowMs, writeCount\]\);/, 'a [nowMs] only dependency list is the defect');
   });
 });
