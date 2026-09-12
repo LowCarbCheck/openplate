@@ -44,6 +44,10 @@ import {
   FOOD_LOGS_TABLE,
   PERSONAL_FOODS_TABLE,
   SAVED_MEALS_TABLE,
+  SHARE_IDENTITY_ROW_ID,
+  SHARE_IDENTITY_TABLE,
+  SHARE_PEERS_TABLE,
+  STUDY_ENROLMENTS_TABLE,
   WEIGHT_ENTRIES_TABLE,
 } from '#app/lib/local-store/schema';
 import {
@@ -256,10 +260,13 @@ export function parseRemoteSnapshot({
  * R, and the journal hold R, which is the positive evidence `stampSnapshot`
  * needs to mint the tombstone.
  *
- * AN EDIT IN THE SAME WINDOW IS STILL OVERWRITTEN by this cycle's copy, and
- * that is deliberately out of scope. The journal records deletes and nothing
- * else, so there is no evidence here that a row was edited mid-flight; the
- * edit is re-applied on the next cycle from the store's own newer stamp.
+ * AN EDIT IN THE SAME WINDOW IS STILL LOST, and that is deliberately out of
+ * scope. The journal records deletes and nothing else, so there is no evidence
+ * here that a row was edited mid-flight, and this write overwrites the store's
+ * copy of it. No newer stamp survives the apply, so nothing re-applies the edit
+ * on a later cycle either: the person's change is simply gone. Closing it needs
+ * evidence this seam does not have, a per-row write clock or an edit journal,
+ * and that is its own piece of work.
  */
 export async function applyMergedSnapshot({
   merged,
@@ -312,14 +319,25 @@ export async function applyMergedSnapshot({
  * The merged snapshot with every row this device has journalled as deleted
  * dropped from it.
  *
- * All five ID-BEARING collections, not just the three merged ones. A fast and a
- * saved meal carry no tombstone, so a mid-flight clear of either is undone by
- * the same upsert in exactly the same way, and `mergeSnapshots` hands the
+ * EVERY COLLECTION WITH A DELETE VERB, which is all five id-bearing ones plus
+ * the three that ride inside the owner-private compartment. A fast and a saved
+ * meal carry no tombstone, so a mid-flight clear of either is undone by the
+ * same upsert in exactly the same way, and `mergeSnapshots` hands the
  * pass-through lists back whole, which makes the account's copy the thing that
  * lands.
  *
+ * THE COMPARTMENT IS THE SAME SHAPE ONE LEVEL IN. A seal that HELD
+ * (`private-store.ts`) re-emits the account's bytes, so the region this apply
+ * recomposes still names the peer this device just un-pinned, and
+ * `importBackup` would put the row straight back. The journal is what says the
+ * removal was a person's; the orchestrator KEEPS that key for the next cycle
+ * on a held compartment, which is the other half of this filter and not
+ * optional: the filter alone, with the key forgotten, would wedge the device
+ * between a row it will not write and a shrink it can no longer prove.
+ *
  * The singletons are untouched: `profile` and `fastingSettings` have no id and
- * no delete verb, so no key can name them.
+ * no delete verb, so no key can name them. `researchIdentity` has none either,
+ * which is why the pseudonym root is not filtered here.
  */
 function withoutJournalledRows({
   merged,
@@ -338,5 +356,15 @@ function withoutJournalledRows({
     weightEntries: merged.weightEntries.filter((entry) => !isJournalled(WEIGHT_ENTRIES_TABLE, entry.id)),
     fasts: merged.fasts.filter((entry) => !isJournalled(FASTS_TABLE, entry.id)),
     savedMeals: merged.savedMeals.filter((entry) => !isJournalled(SAVED_MEALS_TABLE, entry.id)),
+    // A SINGLETON, so `null` is the whole removal: `importBackup` writes the
+    // share identity only when the snapshot carries one.
+    //
+    // IDLE TODAY, and correct anyway: `deleteLocalShareIdentity` has no caller
+    // anywhere in `app/`, so nothing writes the key this line reads. It stays
+    // because the day a caller appears is the day the filter is needed, and a
+    // filter added beside a new verb is a filter somebody has to remember.
+    shareIdentity: isJournalled(SHARE_IDENTITY_TABLE, SHARE_IDENTITY_ROW_ID) ? null : merged.shareIdentity,
+    sharePeers: merged.sharePeers.filter((peer) => !isJournalled(SHARE_PEERS_TABLE, peer.id)),
+    studyEnrolments: merged.studyEnrolments.filter((entry) => !isJournalled(STUDY_ENROLMENTS_TABLE, entry.id)),
   };
 }

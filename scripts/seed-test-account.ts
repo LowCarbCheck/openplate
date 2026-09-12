@@ -416,6 +416,7 @@ async function pushSeedDiary(account: SeededAccount): Promise<PushOutcome> {
         // The seal here writes a region this process just built, so it never
         // shrinks and can never be held.
         isCompartmentHeld: false,
+        isCompartmentUnpublished: false,
         deletedEntityKeys: new Set(),
       },
     }),

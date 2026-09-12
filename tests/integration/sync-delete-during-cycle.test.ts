@@ -171,6 +171,7 @@ function deviceDeps(
           deletedEntityKeys: read.deletedEntityKeys,
           isCompartmentKnown: true,
           isCompartmentHeld: false,
+          isCompartmentUnpublished: false,
         },
       };
     },

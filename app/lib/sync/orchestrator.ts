@@ -43,6 +43,15 @@ import { ENVELOPE_VERSION, MAX_BLOB_BYTES } from './engine/protocol';
 import type { PushBlobHttpResult, SyncHttpClient } from './engine/client/http-client';
 import { isSyncRequestError, SyncRequestError } from './engine/client/sync-error';
 import { SCHEMA_VERSION } from '#app/lib/local-store';
+import {
+  DELETE_JOURNAL_TAG_BY_TABLE,
+  entityKey,
+  FASTS_TABLE,
+  SAVED_MEALS_TABLE,
+  SHARE_IDENTITY_TABLE,
+  SHARE_PEERS_TABLE,
+  STUDY_ENROLMENTS_TABLE,
+} from '#app/lib/local-store/schema';
 import type { SyncedSnapshot } from './snapshot-partition';
 import {
   baselineFromPayload,
@@ -257,7 +266,13 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     if (remote !== null && payloadsEqual(merged, remote.payload) && merged.passThrough.published.length === 0) {
       await deps.applySnapshot({ merged: merged.snapshot, local });
       const settled = commitState({ deps, merged, blobVersion: baseVersion, at: now() });
-      await forgetPublishedDeletes({ deps, deletedEntityKeys: read.integrity.deletedEntityKeys });
+      await forgetPublishedDeletes({
+        deps,
+        deletedEntityKeys: read.integrity.deletedEntityKeys,
+        withheld: withheldTombstones,
+        refusedTables: merged.passThrough.refused,
+        isCompartmentUnpublished: read.integrity.isCompartmentUnpublished,
+      });
       return {
         blobVersion: baseVersion,
         pushed: false,
@@ -296,7 +311,13 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     await deps.applySnapshot({ merged: merged.snapshot, local });
     const at = now();
     commitState({ deps, merged, blobVersion: result.newVersion, at });
-    await forgetPublishedDeletes({ deps, deletedEntityKeys: read.integrity.deletedEntityKeys });
+    await forgetPublishedDeletes({
+      deps,
+      deletedEntityKeys: read.integrity.deletedEntityKeys,
+      withheld: withheldTombstones,
+      refusedTables: merged.passThrough.refused,
+      isCompartmentUnpublished: read.integrity.isCompartmentUnpublished,
+    });
     return {
       blobVersion: result.newVersion,
       pushed: true,
@@ -383,27 +404,47 @@ async function pushOrHeal({
 }
 
 /**
- * Forgets the delete-journal rows for every delete THIS CYCLE WEIGHED.
+ * Forgets the delete-journal rows for every delete THIS CYCLE PUBLISHED, and
+ * KEEPS the row for every delete it could not.
  *
- * The rule is one line: after a commit, forget every key that was in
+ * The base rule is one line: after a commit, forget every key that was in
  * `deletedEntityKeys` at THIS cycle's read. Each of those keys was put in front
- * of the cycle and answered, one of four ways, and all four are finished:
+ * of the cycle and answered, and most of the answers are finished:
  *  - it minted a tombstone, which the committed baseline now carries;
  *  - it published a pass-through removal, which the committed baseline now
  *    records by no longer naming the id;
- *  - it lost, the remote list stood and the row is back on the device, so the
- *    key describes a row that exists;
  *  - it was never synced at all, created and deleted between two cycles, so
  *    no baseline ever named it and no peer ever saw it.
  *
- * THE OLD RULE WAS TOMBSTONES PLUS A PASS-THROUGH DIFF, and it never pruned
- * those last two classes, nor the stale keys a mid-flight delete leaves behind
- * (`local-store-bridge.ts`). The journal only grew.
+ * ── THE THREE ANSWERS THAT ARE NOT FINISHED ──────────────────────────────
  *
- * KEYS WRITTEN AFTER THE READ ARE NOT IN THE SET and therefore survive, which
- * is not an accident: that is exactly the mid-flight delete, and its journal
- * row is the only evidence the NEXT cycle has that the absence it is about to
- * see is a delete.
+ * A key is kept when this cycle DECLINED to carry its delete to the account,
+ * because the journal row is then the only evidence the next cycle has that
+ * the absence it will see is a delete. Drop it and the delete is undone in
+ * silence: the next cycle finds no evidence, declines again, and the apply
+ * writes the row back from the account's own copy.
+ *
+ *  - A WITHHELD TOMBSTONE (`stamped.withheld`). The stamping refused to mint
+ *    it, so nothing on the wire says the row is gone.
+ *  - A REFUSED PASS-THROUGH TABLE (`merged.passThrough.refused`). The remote
+ *    `fasts` or `savedMeals` list stood, and `withoutJournalledRows` keeps the
+ *    row off this device, so the row is NOT back here either.
+ *  - AN UNPUBLISHED COMPARTMENT (`integrity.isCompartmentUnpublished`). The
+ *    seal did not write this device's region, so every owner-private removal
+ *    in this read went unpublished. A HELD compartment is one way in, and it
+ *    is the ORDINARY un-pin: `share-actions.ts` deletes the peer and syncs in
+ *    the same breath, and the autosave has not reached the disk yet, so the
+ *    seal cannot prove the shrink. The other ways are a re-emission by a
+ *    session with no key, and the `unknown` that EVERY BOOT'S FIRST CYCLE
+ *    answers, because `readSyncedSnapshot` seals before the cycle pulls, so a resumed
+ *    session has nothing to seal with. Keying this on the hold alone spent the
+ *    un-pin of the tab that closed, and the apply on that same cycle wrote the
+ *    peer straight back out of the account's own compartment (M228).
+ *
+ * KEYS WRITTEN AFTER THE READ ARE NOT IN THE SET and therefore survive too,
+ * which is not an accident: that is the mid-flight delete
+ * (`local-store-bridge.ts`), and its journal row is the only evidence the NEXT
+ * cycle has.
  *
  * AFTER `commitState`, never before: the journal row is the only thing that can
  * re-authorise a delete, and dropping it ahead of the baseline that carries the
@@ -415,12 +456,94 @@ async function pushOrHeal({
 async function forgetPublishedDeletes({
   deps,
   deletedEntityKeys,
+  withheld,
+  refusedTables,
+  isCompartmentUnpublished,
 }: {
   deps: SyncCycleDeps;
   deletedEntityKeys: ReadonlySet<string>;
+  /** The tombstones this cycle declined to mint (`stampSnapshot`'s `withheld`). */
+  withheld: readonly Tombstone[];
+  /** The pass-through tables whose remote list stood (`mergeSnapshots`'s `passThrough.refused`). */
+  refusedTables: readonly string[];
+  /** Did the seal publish none of this device's owner-private removals (`describeCompartmentPublication`)? */
+  isCompartmentUnpublished: boolean;
 }): Promise<void> {
   if (deletedEntityKeys.size === 0) return;
-  await deps.forgetPublishedDeletes([...deletedEntityKeys]);
+  const kept = keysThisCycleCouldNotPublish({ withheld, refusedTables, isCompartmentUnpublished });
+  const spent = [...deletedEntityKeys].filter((key) => !kept.has(journalTag(key)) && !kept.has(key));
+  if (spent.length === 0) return;
+  await deps.forgetPublishedDeletes(spent);
+}
+
+/**
+ * What this cycle may NOT forget: whole journal tags, and single keys.
+ *
+ * A tag is the honest unit for the two collection-shaped refusals. A refused
+ * `fasts` table refused every fast in the read, and a held compartment held
+ * every owner-private row in it; neither one can name the individual keys it
+ * declined without asking the store a second time, and a second read would
+ * describe a different device.
+ *
+ * THE UNPUBLISHED KEYS ARE NAMED BY TAG, and that is a deliberate choice
+ * between the two the seal makes available. `isShrinkProven` knows which lost
+ * keys had no journal row, but those keys are by construction NOT in the
+ * journal, so subtracting them would forget nothing. The keys that must
+ * survive are the opposite ones, the owner-private removals that WERE written
+ * down and went unpublished anyway, and the read set plus the three
+ * owner-private tags names them exactly, with nothing new to plumb out of
+ * `private-store.ts`.
+ */
+function keysThisCycleCouldNotPublish({
+  withheld,
+  refusedTables,
+  isCompartmentUnpublished,
+}: {
+  withheld: readonly Tombstone[];
+  refusedTables: readonly string[];
+  isCompartmentUnpublished: boolean;
+}): ReadonlySet<string> {
+  const kept = new Set<string>();
+  for (const tombstone of withheld) kept.add(entityKey(tombstone.entityType, tombstone.entityId));
+  for (const table of refusedTables) kept.add(passThroughJournalTag(table));
+  if (isCompartmentUnpublished) for (const tag of OWNER_PRIVATE_JOURNAL_TAGS) kept.add(tag);
+  return kept;
+}
+
+/**
+ * The journal tags the owner-private compartment's rows are written under.
+ *
+ * The research identity is absent because nothing deletes it: it has no delete
+ * verb, so no key can ever name it (`snapshot-partition.ts`).
+ */
+const OWNER_PRIVATE_JOURNAL_TAGS: readonly string[] = [
+  DELETE_JOURNAL_TAG_BY_TABLE[SHARE_IDENTITY_TABLE],
+  DELETE_JOURNAL_TAG_BY_TABLE[SHARE_PEERS_TABLE],
+  DELETE_JOURNAL_TAG_BY_TABLE[STUDY_ENROLMENTS_TABLE],
+];
+
+/** The tag half of a journal key, the part before the first colon (`entityKey`). */
+function journalTag(key: string): string {
+  const colon = key.indexOf(':');
+  return colon === -1 ? key : key.slice(0, colon);
+}
+
+/**
+ * The journal tag one pass-through table's removals are written under.
+ *
+ * FAIL FAST on anything else, and written as two comparisons rather than a
+ * lookup: a table name that reached here and answered `undefined` would keep
+ * no keys at all, which is the silent half of the defect this function exists
+ * to close.
+ */
+function passThroughJournalTag(table: string): string {
+  if (table === FASTS_TABLE) return DELETE_JOURNAL_TAG_BY_TABLE[FASTS_TABLE];
+  if (table === SAVED_MEALS_TABLE) return DELETE_JOURNAL_TAG_BY_TABLE[SAVED_MEALS_TABLE];
+  // AFTER `commitState`, always: this runs from the prune, so a table with no
+  // tag leaves every journal key in place and fails the cycle after a push that
+  // already landed. That is the safe direction, since a kept key can only re-prove a
+  // delete, and a forgotten one cannot be recovered.
+  throw new Error(`No delete-journal tag for pass-through table ${table}`);
 }
 
 interface RemotePayload {

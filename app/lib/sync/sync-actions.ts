@@ -56,6 +56,7 @@ import {
   adoptEstablishedCompartment,
   adoptRewrappedSlots,
   assertOwnerPrivateCompartment,
+  describeCompartmentPublication,
   hasUnopenedCompartment,
   openOwnerPrivateRegion,
   sealedCompartmentOrNull,
@@ -604,11 +605,14 @@ async function readSyncedSnapshot(session: PrivateStoreSession): Promise<ReadSna
       // else for it to carry, and the stamping has to be told which of the two
       // this is or it will tombstone a compartment nobody deleted.
       isCompartmentKnown: seal.kind !== 'unknown',
-      // THE SEAL HELD THE ACCOUNT'S BYTES (M226), so this push publishes none
-      // of this device's owner-private changes. The snapshot above carries the
-      // held bytes, which is what makes the push harmless; the stamping is
-      // told so the cycle cannot be reported as a clean one.
-      isCompartmentHeld: seal.kind === 'held',
+      // WHAT THIS SEAL PUBLISHED, both halves from one producer (M228). The
+      // hold is the narrow claim the stamping turns into a withheld entry; the
+      // broad one is "none of this device's owner-private removals reached the
+      // account", which the delete journal's prune reads and which is TRUE ON
+      // EVERY BOOT'S FIRST CYCLE, because the read above happens before the cycle
+      // pulls, so a resumed session seals `unknown`. Deriving the broad claim
+      // from `kind === 'held'` here spent an un-pin that had reached nobody.
+      ...describeCompartmentPublication({ seal, session }),
     },
   };
 }

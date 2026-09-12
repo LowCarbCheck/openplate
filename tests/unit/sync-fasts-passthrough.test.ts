@@ -172,6 +172,7 @@ const FASTS_TABLE_NOT_LOADED: SnapshotIntegrity = {
   // Nothing here is about the compartment either: these fixtures reach
   // `mergeSnapshots`, which never weighs the seal.
   isCompartmentHeld: false,
+  isCompartmentUnpublished: false,
   // Nothing here is about a delete: these fixtures test the two PASS-THROUGH
   // collections, which carry no tombstones and therefore no journal rows.
   deletedEntityKeys: new Set(),

@@ -25,6 +25,12 @@ export const HEALTHY_STORAGE: SnapshotIntegrity = {
   // re-emitting the account's bytes over a region that shrank with nothing
   // written down, which is the evicted device's state, not this one's.
   isCompartmentHeld: false,
+  // AND IT PUBLISHED WHAT IT HAD (M228). A healthy device's seal writes this
+  // device's region, so an owner-private removal in this cycle's read reached
+  // the account and its journal row may be spent. A test about a cycle that
+  // published nothing, a boot's first cycle, a session with no key, a hold,
+  // says so by overriding this field.
+  isCompartmentUnpublished: false,
   // HEALTHY IS NOT THE SAME AS "HAS DELETED SOMETHING" (M225). A healthy device
   // with an empty delete journal has recorded no deletes, so it mints no
   // tombstones however its snapshot shrank, which is the correct reading of a
@@ -43,6 +49,10 @@ export const EVICTED_STORAGE: SnapshotIntegrity = {
   // This device has not READ the compartment, so no seal of its has held one;
   // a test about the hold says so by overriding this field.
   isCompartmentHeld: false,
+  // FALSE for the same reason, and it is the broader claim: this fixture has
+  // no compartment story at all. A test about an unpublished compartment
+  // overrides it.
+  isCompartmentUnpublished: false,
   // An eviction takes the journal with the diary: they are rows in the same
   // database. A fixture that kept deletes here would be describing a device
   // that cannot exist.

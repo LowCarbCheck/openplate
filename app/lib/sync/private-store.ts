@@ -283,8 +283,34 @@ export function adoptEstablishedCompartment({
  * sentence that has to be true of all three.
  */
 export type OwnerPrivateSeal =
-  /** This session read the compartment (or minted it), and these are the bytes to push. */
-  | { kind: 'sealed'; value: SealedPrivateStore }
+  /**
+   * This session read the compartment (or minted it), and these are the bytes
+   * to push.
+   *
+   * `wrote` SPLITS THIS ANSWER IN TWO, and the split is the whole of M228.
+   *
+   * `true` means the bytes STAND FOR THE REGION THIS CALL WAS HANDED: either
+   * freshly sealed from it, or the cache's bytes for exactly that plaintext,
+   * which is the same statement made without burning a blob version on a fresh
+   * IV. A removal that is missing from the region is missing from the account's
+   * copy too, so the journal row that proves it has been spent.
+   *
+   * `false` means the bytes are the ACCOUNT'S OWN, re-emitted verbatim because
+   * this session could not write a plaintext at all (no CDK, no wraps, or a
+   * CDK it has never read with). The compartment is preserved, and NONE of
+   * this device's owner-private removals reached the account, so every journal
+   * row that records one must survive the cycle.
+   *
+   * It is a required field rather than a fourth `kind` on purpose. Nothing
+   * that reads this union switches on it exhaustively. `sealedCompartmentOrNull`
+   * and `sync-actions.ts` both ask `kind === '...'` in a boolean expression,
+   * so a new kind would compile at every reader and make the first of them
+   * answer `null` for a re-emission, which is precisely the loss M164/01
+   * exists to prevent. A required property on `sealed` reddens the only sites
+   * that can answer the question, the three that build this value, and leaves
+   * every reader both compiling and correct.
+   */
+  | { kind: 'sealed'; wrote: boolean; value: SealedPrivateStore }
   /**
    * THERE IS NO COMPARTMENT. A pull carried none, which on an account created
    * before the partition is the truth: nobody has minted one yet. A snapshot
@@ -390,13 +416,20 @@ export async function sealOwnerPrivateRegion({
     // THE THREE-VALUED ANSWER (M224). `session.pulled` being `null` here is
     // ignorance, not absence: no pull has carried a compartment INTO THIS
     // SESSION, and this session is the only thing that can say so.
-    if (session.pulled !== null) return { kind: 'sealed', value: session.pulled };
+    // `wrote: false`: these are the ACCOUNT'S bytes. This session's own
+    // owner-private removals are not in them and did not publish.
+    if (session.pulled !== null) return { kind: 'sealed', wrote: false, value: session.pulled };
     return session.hasPulled ? { kind: 'absent' } : { kind: 'unknown' };
   }
 
   const plaintextHash = sealCacheKey({ region, extras });
   if (session.cache !== null && session.cache.plaintextHash === plaintextHash) {
-    return { kind: 'sealed', value: session.cache.sealed };
+    // `wrote: true`, even though nothing was encrypted here. The cache is keyed
+    // on the hash of THIS region (and extras), so a hit says the bytes already
+    // in hand are the bytes this region seals to, so a row that left the region
+    // left the account's copy with it. Re-sealing would produce different bytes
+    // for the same plaintext and say nothing more.
+    return { kind: 'sealed', wrote: true, value: session.cache.sealed };
   }
 
   // A SESSION MAY WRITE A SMALLER PLAINTEXT THAN THE ONE IT LAST READ ONLY FOR
@@ -439,7 +472,7 @@ export async function sealOwnerPrivateRegion({
   // region against THIS one, so a write is what moves the line, never a read
   // of a region that was refused.
   session.region = region;
-  return { kind: 'sealed', value: sealed };
+  return { kind: 'sealed', wrote: true, value: sealed };
 }
 
 /**
@@ -479,6 +512,79 @@ export function sealedCompartmentOrNull(seal: OwnerPrivateSeal): SealedPrivateSt
   // them, the stamp is carried forward unchanged, and nothing is overwritten.
   // A `null` here would be the very loss the hold exists to prevent.
   return seal.kind === 'sealed' || seal.kind === 'held' ? seal.value : null;
+}
+
+/**
+ * What the sync cycle has to be told about this seal, both halves at once.
+ *
+ * TWO FIELDS AND ONE PRODUCER, because they are two different claims with two
+ * different consequences and setting one without the other is the defect this
+ * exists to prevent (M228). They are derived here, side by side, from the same
+ * seal and the same session, so no call site can answer half the question.
+ */
+export interface CompartmentPublication {
+  /**
+   * DID THIS CYCLE PUBLISH NONE OF THIS DEVICE'S OWNER-PRIVATE REMOVALS?
+   *
+   * The condition the delete journal's prune is keyed on: a key may be spent
+   * only after a cycle whose seal WROTE this device's region, because only
+   * then did the removal it records reach the account.
+   *
+   * `true` for four answers, and only the last of them used to be counted:
+   *
+   *  - `unknown`. Nothing was published at all, and this is EVERY BOOT'S FIRST
+   *    CYCLE: a resumed session holds no CDK and no pulled bytes, and
+   *    `readSyncedSnapshot` seals BEFORE the pull. Forgetting the journal there
+   *    lost the un-pin of the tab that closed, and the apply wrote the peer
+   *    back from the account's own compartment on the very next cycle.
+   *  - a RE-EMITTED `sealed` (`wrote: false`), the account's bytes carried
+   *    through by a session with no key, or with a key it has not read with.
+   *  - `held`. The seal refused an unproven shrink and re-emitted.
+   *  - `absent` while this session stands behind a region that HOLDS ROWS.
+   *    Unreachable today, since every path that gives a session a region also
+   *    gives it a CDK, and it is stated rather than assumed because that is a
+   *    fact about the current entry points and not a property of the type.
+   */
+  isCompartmentUnpublished: boolean;
+  /**
+   * DID THE SEAL HOLD AN UNPROVEN SHRINK (M226)?
+   *
+   * Strictly narrower than the field above, and deliberately so. This one is
+   * the device's data going unpublished while the region SAYS it should have
+   * gone, a shrink nobody wrote down, and `stampSnapshot` turns it into a
+   * withheld `privateStore` entry, which forbids `shrinkAcknowledged` and fires
+   * the heal notice. A boot's `unknown` first cycle is neither of those things:
+   * nothing shrank, nothing is being restored, and reporting it would put a
+   * heal notice on every launch and refuse the first ordinary delete of every
+   * session.
+   */
+  isCompartmentHeld: boolean;
+}
+
+/**
+ * Reads both claims off one seal.
+ *
+ * `session` is needed for the `absent` case alone: the seal's answer does not
+ * carry the region this session stands behind, and that is the only thing that
+ * can say whether an account with no compartment is leaving rows unpublished.
+ */
+export function describeCompartmentPublication({
+  seal,
+  session,
+}: {
+  seal: OwnerPrivateSeal;
+  session: PrivateStoreSession;
+}): CompartmentPublication {
+  const isCompartmentHeld = seal.kind === 'held';
+  if (seal.kind === 'sealed') return { isCompartmentUnpublished: !seal.wrote, isCompartmentHeld };
+  if (seal.kind === 'absent') {
+    const region = session.region;
+    return {
+      isCompartmentUnpublished: region !== null && ownerPrivateRegionKeys(region).length > 0,
+      isCompartmentHeld,
+    };
+  }
+  return { isCompartmentUnpublished: true, isCompartmentHeld };
 }
 
 /**

@@ -205,6 +205,7 @@ function deviceDeps(service: ReturnType<typeof fakeService>, dek: Uint8Array, st
           deletedEntityKeys: read.deletedEntityKeys,
           isCompartmentKnown: true,
           isCompartmentHeld: false,
+          isCompartmentUnpublished: false,
         },
       };
     },

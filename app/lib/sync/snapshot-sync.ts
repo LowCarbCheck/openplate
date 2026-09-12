@@ -371,12 +371,35 @@ export interface SnapshotIntegrity extends LocalStoreIntegrity {
    * same way: a `privateStore` entry in {@link StampSnapshotResult.withheld},
    * which forbids `shrinkAcknowledged` and fires the heal log.
    *
+   * NARROWER THAN {@link SnapshotIntegrity.isCompartmentUnpublished}, and this
+   * is the one that must stay narrow. A hold is a shrink the device meant and
+   * could not prove, which is worth a notice; the other three unpublished
+   * answers include every boot's first cycle, and reporting those here would
+   * put a heal notice on each launch and turn `shrinkAcknowledged` off for the
+   * first ordinary delete of every session.
+   *
    * REQUIRED, like every other field here, and for the reason the whole
    * interface exists: a correctness argument nobody is forced to pass is a
    * correctness argument at zero call sites. It spent M226 optional only
    * because one test file was locked while another worker held it.
    */
   isCompartmentHeld: boolean;
+  /**
+   * Did this cycle publish NONE of this device's owner-private removals
+   * (M228)?
+   *
+   * The delete journal's prune is keyed on this and on nothing else: a journal
+   * row may be spent only after a cycle whose seal wrote this device's region.
+   * `describeCompartmentPublication` (`private-store.ts`) is the only producer,
+   * and it answers `true` for a held compartment, for a re-emitted `sealed`,
+   * and for the `unknown` that EVERY RESUMED SESSION'S FIRST CYCLE gets, the
+   * one the held-only reading missed, which spent the un-pin of the tab that
+   * closed and let the apply write the peer back.
+   *
+   * Implied by {@link SnapshotIntegrity.isCompartmentHeld}: a hold publishes
+   * nothing, so a `true` there with a `false` here is an incoherent device.
+   */
+  isCompartmentUnpublished: boolean;
 }
 
 /**

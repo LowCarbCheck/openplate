@@ -36,7 +36,7 @@ import {
 } from '../../app/lib/sync/snapshot-sync';
 import { createMemoryStorage, createSyncStateStore, emptySyncState } from '../../app/lib/sync/sync-state';
 import type { PushBlobHttpResult, PulledBlob, SyncHttpClient } from '../../app/lib/sync/engine/client/http-client';
-import { FASTS_TABLE } from '../../app/lib/local-store/schema';
+import { FASTS_TABLE, FOOD_LOGS_TABLE } from '../../app/lib/local-store/schema';
 
 const ACCOUNT_ID = 42;
 
@@ -919,6 +919,7 @@ test('a PARTIAL load is weighed per table: the half-read list is spared, the one
         isTableLoaded: { [FASTS_TABLE]: false },
         isCompartmentKnown: true,
         isCompartmentHeld: false,
+        isCompartmentUnpublished: false,
         deletedEntityKeys: new Set(deleted),
       },
     }),
@@ -927,14 +928,19 @@ test('a PARTIAL load is weighed per table: the half-read list is spared, the one
   assert.equal(result.pushed, true);
   assert.deepEqual(await pushedLists(service), { fasts: ['on-the-account'], savedMeals: [] });
 
-  // AND THE JOURNAL IS EMPTY, both rows spent. This line USED TO KEEP
-  // `fast:on-the-account`, on the old rule that a removal the merge refused
-  // should be retried from its journal row. That rule left four classes of key
-  // in the journal forever, so the prune is now by CYCLE rather than by
-  // outcome: a key the cycle read was weighed by that cycle, and this one was,
-  // it lost, and the fast is back on the device where the applied snapshot put
-  // it. A key that describes a live row is not evidence of anything.
-  assert.deepEqual([...deleted], [], 'every key this cycle weighed is spent, whichever way it went');
+  // AND THE JOURNAL KEEPS EXACTLY ONE ROW, which is the claim this case now
+  // carries. The saved meal was published, so its key is spent; the fast was
+  // REFUSED, so nothing on the account says it is gone, and
+  // `withoutJournalledRows` keeps the row off this device too, so the next
+  // cycle's only evidence is this row.
+  //
+  // It read `[]` for one release, on the rule "a key the cycle weighed is spent
+  // whichever way it went", with the reason "the fast is back on the device".
+  // That reason was false: the apply filters every journalled row out before
+  // `importBackup`, so the row is not back, and dropping the key undid the
+  // person's removal in silence on the very next cycle. Put that rule back,
+  // forget the whole read set, and this line reads `[]`.
+  assert.deepEqual([...deleted], ['fast:on-the-account'], 'a refused removal keeps the row that proves it');
 });
 
 test('a push whose only removals are recorded saved meals still acknowledges the shrink', async () => {
@@ -1143,4 +1149,127 @@ test('a cycle REFUSED with a 400 after the apply forgets nothing', async () => {
     'the delete reaches the account on the next cycle',
   );
   assert.deepEqual([...deleted], [], 'and only then is its journal row spent');
+});
+
+test('a WITHHELD tombstone keeps its journal row, and the next healthy cycle publishes it', async () => {
+  // THE SHAPE OF THE LOSS THIS GUARDS. The stamping declined to mint the
+  // tombstone, so nothing on the wire says `b` is gone, and the production
+  // apply keeps `b` off this device because the journal names it. Forget the
+  // key here and the next cycle has no evidence at all: it withholds again,
+  // writes `b` back from the account's copy, and tells the person their entry
+  // was restored. The delete is undone in silence.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = { current: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]) };
+  const storage = createMemoryStorage();
+
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  // The person deletes `b`, and the food-log table reads half loaded: the disk
+  // still holds the row the store no longer does, which is exactly where a
+  // delete sits until the autosave lands.
+  local.current = snapshot([log('a', 'Apple', 100), log('c', 'Cheese', 30)]);
+  const deleted = new Set(['foodLog:b']);
+  const result = await runSyncCycleUnlocked({
+    ...deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+    readSnapshot: async () => ({
+      snapshot: local.current,
+      integrity: {
+        hasPersistedDatabase: true,
+        isTableLoaded: { [FOOD_LOGS_TABLE]: false },
+        isCompartmentKnown: true,
+        isCompartmentHeld: false,
+        isCompartmentUnpublished: false,
+        deletedEntityKeys: new Set(deleted),
+      },
+    }),
+  });
+
+  // NON-VACUITY: the cycle really committed, and it really published nothing
+  // about `b`.
+  assert.equal(result.pushed, true, 'precondition: the cycle must have committed a payload');
+  assert.deepEqual(
+    result.withheldTombstones.map((tombstone) => tombstone.entityId),
+    ['b'],
+    'precondition: the delete must have been withheld',
+  );
+
+  // THE CLAIM. Forget the whole read set, which is the rule this replaced, and
+  // this line reads `[]`.
+  assert.deepEqual([...deleted], ['foodLog:b'], 'a withheld delete keeps the only row that can re-authorise it');
+
+  // AND IT SETTLES. The row survived, so the cycle that CAN prove the delete
+  // publishes it. `local.current` is re-stated because this file's apply is a
+  // plain assignment; production's `applyMergedSnapshot` keeps a journalled row
+  // out of the store for exactly this reason.
+  local.current = snapshot([log('a', 'Apple', 100), log('c', 'Cheese', 30)]);
+  const settled = await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+  );
+  assert.equal(settled.pushed, true);
+  assert.deepEqual(
+    (await service.read()).syncMeta.tombstones.map((tombstone) => tombstone.entityId),
+    ['b'],
+    'the delete reaches the account on the next cycle',
+  );
+  assert.deepEqual([...deleted], [], 'and only then is its journal row spent');
+});
+
+test('a HELD compartment keeps its owner-private journal rows, and spends the diary row beside them', async () => {
+  // THE ORDINARY UN-PIN. `share-actions.ts` deletes the peer and syncs in the
+  // same breath, so the autosave has not reached the disk and the seal cannot
+  // prove the shrink: it re-emits the account's bytes. Nothing about
+  // `sharePeer:9` reached the account, so its row must survive; the food log
+  // beside it was published and must not.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = { current: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]) };
+  const storage = createMemoryStorage();
+
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  local.current = snapshot([log('a', 'Apple', 100), log('c', 'Cheese', 30)]);
+  const deleted = new Set(['foodLog:b', 'sharePeer:9']);
+  const result = await runSyncCycleUnlocked({
+    ...deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+    readSnapshot: async () => ({
+      snapshot: local.current,
+      // BOTH, because a hold is one way to publish nothing and the prune reads
+      // the broader field (M228). `isCompartmentHeld: true` alone would leave
+      // this case describing a device that held its compartment and published
+      // its removals anyway, which is not a state any seal can produce.
+      integrity: {
+        ...HEALTHY_STORAGE,
+        isCompartmentHeld: true,
+        isCompartmentUnpublished: true,
+        deletedEntityKeys: new Set(deleted),
+      },
+    }),
+  });
+
+  assert.equal(result.pushed, true, 'precondition: the cycle must have committed a payload');
+  // THE CLAIM, and its control in the same line: the diary key is spent,
+  // because that delete really did reach the account.
+  assert.deepEqual([...deleted], ['sharePeer:9'], 'a held compartment publishes no owner-private removal');
+});
+
+test('THE CONTROL: the same cycle with the compartment SEALED spends the un-pin too', async () => {
+  // Without this case the test above passes against a rule that simply never
+  // forgets an owner-private key, which is the state M226 left behind: a stale
+  // `sharePeer:9` row authorising a shrink of that key forever.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = { current: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]) };
+  const storage = createMemoryStorage();
+
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  local.current = snapshot([log('a', 'Apple', 100), log('c', 'Cheese', 30)]);
+  const deleted = new Set(['foodLog:b', 'sharePeer:9']);
+  const result = await runSyncCycleUnlocked(
+    deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }),
+  );
+
+  assert.equal(result.pushed, true, 'precondition: the cycle must have committed a payload');
+  assert.deepEqual([...deleted], [], 'a seal that wrote the region published the un-pin with it');
 });

@@ -34,6 +34,7 @@ import {
   adoptEstablishedCompartment,
   adoptRewrappedSlots,
   createPrivateStoreSession,
+  describeCompartmentPublication,
   hasUnopenedCompartment,
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
@@ -1049,5 +1050,129 @@ describe('the seal after the store was emptied under a live session', () => {
     });
 
     assert.equal(seal.kind, 'held', 'an un-pin does not license losing the share identity beside it');
+  });
+});
+
+/**
+ * WHAT THE SEAL PUBLISHED, which is not the same question as what it answered
+ * (M228).
+ *
+ * The cycle prunes the delete journal, and a key may be spent only after a
+ * cycle whose seal WROTE this device's region, which is the only cycle in
+ * which the removal the key records reached the account. Until this spec the
+ * cycle read that off `kind === 'held'`, and three other answers publish
+ * nothing while leaving it false.
+ *
+ * The one that happens to everybody is `unknown`. Every RESUMED session starts
+ * with no CDK, no pulled bytes and `hasPulled: false`, and `readSyncedSnapshot`
+ * seals BEFORE the cycle pulls, so the first cycle after every boot answers
+ * `unknown`. A person who un-pinned a clinician in a held cycle and closed the
+ * tab had that journal row spent on the next launch, and the apply wrote the
+ * peer back out of the account's own compartment.
+ *
+ * So `sealed` carries `wrote`, and these cases pin the mapping at the source.
+ */
+describe('the seal says whether it wrote this device’s region', () => {
+  /** The session a resume builds: `session-cache.ts`'s `openSyncVault` with no compartment session to adopt. */
+  async function sessionAfterAResume(): Promise<PrivateStoreSession> {
+    const session = createPrivateStoreSession({
+      accountId: ACCOUNT_ID,
+      passphraseKek: await privateStoreKekFor('the passphrase that minted it'),
+    });
+    // NON-VACUITY: this really is the boot shape, and every claim below rests
+    // on all three fields being where a fresh resume leaves them.
+    assert.equal(session.cdk, null);
+    assert.equal(session.pulled, null);
+    assert.equal(session.hasPulled, false);
+    return session;
+  }
+
+  it('answers `unknown` on the session a resume builds, and calls the compartment unpublished', async () => {
+    const session = await sessionAfterAResume();
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: EMPTY_OWNER_PRIVATE_REGION,
+      ...NOTHING_WAS_UNPINNED,
+    });
+
+    assert.equal(seal.kind, 'unknown', 'the first cycle of a resume has not read the compartment');
+    // THE CLAIM. Map this off `kind === 'held'`, which is the rule this
+    // replaced, and the line below reads `false`, so the cycle spends every
+    // owner-private journal row on the first launch after the un-pin.
+    assert.deepEqual(describeCompartmentPublication({ seal, session }), {
+      isCompartmentUnpublished: true,
+      isCompartmentHeld: false,
+    });
+  });
+
+  it('a re-emitted `sealed` is a publication of nothing, and says so', async () => {
+    const { session, pulled } = await sessionThatFailedToAdopt();
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: regionWithShareKey('a-local-key-that-never-published'),
+      ...NOTHING_WAS_UNPINNED,
+    });
+
+    // The kind is `sealed` and the bytes are the ACCOUNT'S, which is the whole
+    // reason this answer needed splitting: it looks like every other push.
+    assert.equal(seal.kind, 'sealed');
+    assert.deepEqual(seal.kind === 'sealed' ? seal.value : null, pulled);
+    assert.equal(seal.kind === 'sealed' && seal.wrote, false, 'these bytes are not this device’s region');
+    assert.deepEqual(describeCompartmentPublication({ seal, session }), {
+      isCompartmentUnpublished: true,
+      isCompartmentHeld: false,
+    });
+  });
+
+  it('THE CONTROL: a seal that wrote the region publishes, and the journal may be spent', async () => {
+    // Without this the rule above could be "nothing ever publishes", which
+    // would leave a stale `sharePeer:9` row authorising that shrink forever.
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek, established });
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: regionWithShareKey(PRIVATE_KEY_MARKER),
+      ...NOTHING_WAS_UNPINNED,
+    });
+
+    assert.equal(seal.kind === 'sealed' && seal.wrote, true, 'a fresh seal writes this device’s region');
+    assert.deepEqual(describeCompartmentPublication({ seal, session }), {
+      isCompartmentUnpublished: false,
+      isCompartmentHeld: false,
+    });
+
+    // AND THE CACHE HIT BESIDE IT, which writes no bytes and is still a
+    // publication: the cache is keyed on the hash of this exact region, so a
+    // hit says the account's copy already stands for it.
+    const again = await sealOwnerPrivateRegion({
+      session,
+      region: regionWithShareKey(PRIVATE_KEY_MARKER),
+      ...NOTHING_WAS_UNPINNED,
+    });
+    assert.equal(again.kind === 'sealed' && again.wrote, true, 'the cached bytes are still this device’s region');
+    assert.equal(describeCompartmentPublication({ seal: again, session }).isCompartmentUnpublished, false);
+  });
+
+  it('a HELD compartment is unpublished AND held, never one without the other', async () => {
+    // The two fields are not independent: a hold publishes nothing, so a
+    // device claiming one without the other is a device no seal can produce.
+    const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
+    const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek, established });
+    await sealedBytes({ session, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
+
+    const seal = await sealOwnerPrivateRegion({
+      session,
+      region: EMPTY_OWNER_PRIVATE_REGION,
+      ...NOTHING_WAS_UNPINNED,
+    });
+
+    assert.equal(seal.kind, 'held');
+    assert.deepEqual(describeCompartmentPublication({ seal, session }), {
+      isCompartmentUnpublished: true,
+      isCompartmentHeld: true,
+    });
   });
 });
