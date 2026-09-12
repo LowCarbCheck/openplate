@@ -53,6 +53,7 @@ const SIGNED_OUT: SyncSessionSnapshot = {
   lastSyncedAt: null,
   hasPendingChanges: false,
   error: null,
+  storageHealNotice: { kind: 'none' },
 };
 
 function signedIn(overrides: { dailyAiLimit?: number; allowanceExpiresAt?: string } = {}): SyncSessionSnapshot {

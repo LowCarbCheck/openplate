@@ -43,6 +43,7 @@ function stranger(overrides: Partial<OnboardingGateInput> = {}): OnboardingGateI
     hasCompletedOnboarding: false,
     logCount: 0,
     hasEverHadData: false,
+    hasSyncBaseline: false,
     hasSyncAccount: false,
     isResumingSession: false,
     isDeviceLocked: false,
@@ -58,6 +59,7 @@ function owner(overrides: Partial<OnboardingGateInput> = {}): OnboardingGateInpu
     hasCompletedOnboarding: true,
     logCount: 12,
     hasEverHadData: true,
+  hasSyncBaseline: false,
     hasSyncAccount: true,
     ...overrides,
   });

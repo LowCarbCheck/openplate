@@ -49,6 +49,7 @@ import {
 import {
   createPrivateStoreSession,
   openOwnerPrivateRegion,
+  sealedCompartmentOrNull,
   sealOwnerPrivateRegion,
 } from '../../app/lib/sync/private-store';
 import { rewrapPrivateStoreOnServer, type BlobTransport } from '../../app/lib/sync/private-store-rewrap';
@@ -274,7 +275,7 @@ async function buildPopulatedSnapshot(): Promise<LocalStoreSnapshot> {
   // the same projection again: this is the one that reaches the WIRE, and the
   // moment they diverge a second time this file must be reading the one a
   // clinician can see.
-  return readLocalSnapshot({ store });
+  return (await readLocalSnapshot({ store })).snapshot;
 }
 
 /** An established compartment plus the two doors that open it. */
@@ -302,7 +303,10 @@ async function buildWireSnapshot({
 }): Promise<SyncedSnapshot> {
   const { shareable, ownerPrivate } = partitionSnapshot(snapshot);
   const session = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek, established });
-  return { ...shareable, privateStore: await sealOwnerPrivateRegion({ session, region: ownerPrivate }) };
+  return {
+    ...shareable,
+    privateStore: sealedCompartmentOrNull(await sealOwnerPrivateRegion({ session, region: ownerPrivate })),
+  };
 }
 
 /** An in-memory blob store honouring the one rule the rewrap depends on: compare-and-swap on `blobVersion`. */

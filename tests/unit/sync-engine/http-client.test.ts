@@ -86,20 +86,29 @@ test('pushBlob base64-encodes the ciphertext and sends the CAS baseVersion', asy
     baseVersion: 3,
     envelopeVersion: 1,
     ciphertext: new Uint8Array([0, 1, 250, 255]),
+    shrinkAcknowledged: true,
   });
 
   assert.deepEqual(result, { status: 'accepted', newVersion: 4 });
   const request = requests[0];
   assert.equal(request?.url, `${BASE_URL}${SYNC_API_PREFIX}/blob`);
   assert.equal(request?.method, 'POST');
-  assert.deepEqual(request?.body, { baseVersion: 3, envelopeVersion: 1, ciphertext: 'AAH6/w==' });
+  // `shrinkAcknowledged` is asserted as part of the BODY on purpose: it must
+  // be a body field and not a header, or a browser drops the request after a
+  // green preflight and no Node test can see it (`protocol.ts`).
+  assert.deepEqual(request?.body, {
+    baseVersion: 3,
+    envelopeVersion: 1,
+    ciphertext: 'AAH6/w==',
+    shrinkAcknowledged: true,
+  });
 });
 
 test('a trailing slash on the base URL never produces a double slash in the path', async () => {
   const { fetchImpl, requests } = stubFetch(() => json({ newVersion: 1 }));
   const client = new SyncHttpClient({ baseUrl: `${BASE_URL}/`, tokens: STATIC_TOKENS, fetchImpl });
 
-  await client.pushBlob({ baseVersion: 0, envelopeVersion: 1, ciphertext: new Uint8Array([1]) });
+  await client.pushBlob({ baseVersion: 0, envelopeVersion: 1, ciphertext: new Uint8Array([1]) , shrinkAcknowledged: false});
 
   assert.equal(requests[0]?.url, `${BASE_URL}${SYNC_API_PREFIX}/blob`);
 });
@@ -108,7 +117,7 @@ test('a 409 push is RETURNED as a conflict, never thrown — the CAS loop depend
   const { fetchImpl } = stubFetch(() => json({ currentVersion: 9 }, 409));
   const client = new SyncHttpClient({ baseUrl: BASE_URL, tokens: STATIC_TOKENS, fetchImpl });
 
-  const result = await client.pushBlob({ baseVersion: 3, envelopeVersion: 1, ciphertext: new Uint8Array([1]) });
+  const result = await client.pushBlob({ baseVersion: 3, envelopeVersion: 1, ciphertext: new Uint8Array([1]) , shrinkAcknowledged: false});
 
   assert.deepEqual(result, { status: 'conflict', currentVersion: 9 });
 });
@@ -118,7 +127,7 @@ test('a 413 push throws a too-large error carrying the status', async () => {
   const client = new SyncHttpClient({ baseUrl: BASE_URL, tokens: STATIC_TOKENS, fetchImpl });
 
   await assert.rejects(
-    () => client.pushBlob({ baseVersion: 0, envelopeVersion: 1, ciphertext: new Uint8Array([1]) }),
+    () => client.pushBlob({ baseVersion: 0, envelopeVersion: 1, ciphertext: new Uint8Array([1]) , shrinkAcknowledged: false}),
     (error) => error instanceof SyncRequestError && error.kind === 'too-large' && error.status === 413,
   );
 });

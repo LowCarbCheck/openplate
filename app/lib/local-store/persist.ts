@@ -224,6 +224,49 @@ export function requestPersistentStorage(): void {
   });
 }
 
+/**
+ * Asks again, ignoring the single-shot latch above.
+ *
+ * The latch is right for the ordinary write path, where asking twice is noise.
+ * It is wrong at the one moment the answer has visibly changed: a device whose
+ * IndexedDB was EVICTED is a device whose storage was not persistent, and that
+ * is precisely when it is worth asking (`sync/storage-heal.ts`).
+ *
+ * @returns what the browser said, or `null` where there is no Storage API to ask.
+ */
+export async function requestPersistentStorageAgain(): Promise<boolean | null> {
+  persistRequested = true;
+  if (globalThis.navigator === undefined || !navigator.storage?.persist) return null;
+  return navigator.storage.persist().catch(() => null);
+}
+
+/** What the browser will say about this origin's storage, or `null` where it offers no answer. */
+export interface OriginStorageReport {
+  isPersisted: boolean | null;
+  usageBytes: number | null;
+  quotaBytes: number | null;
+}
+
+/**
+ * Reads `navigator.storage.persisted()` and `estimate()`.
+ *
+ * NEITHER IS OBSERVED ANYWHERE ELSE IN THIS APP, which is why a device that
+ * lost its diary to eviction left no trace saying so. Both are best-effort and
+ * both answer `null` rather than throwing: this runs inside a heal, and a heal
+ * that fails to log must not fail the sync.
+ */
+export async function readOriginStorageReport(): Promise<OriginStorageReport> {
+  const empty: OriginStorageReport = { isPersisted: null, usageBytes: null, quotaBytes: null };
+  if (globalThis.navigator === undefined || navigator.storage === undefined) return empty;
+  const isPersisted = navigator.storage.persisted ? await navigator.storage.persisted().catch(() => null) : null;
+  const estimate = navigator.storage.estimate ? await navigator.storage.estimate().catch(() => null) : null;
+  return {
+    isPersisted,
+    usageBytes: estimate?.usage ?? null,
+    quotaBytes: estimate?.quota ?? null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Mechanism 1: never let an empty in-memory store overwrite a non-empty
 // persisted store (the anti-clobber load-verification invariant).

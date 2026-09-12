@@ -117,6 +117,19 @@ export interface PrivateStoreSession {
    * `null`.
    */
   pulled: SealedPrivateStore | null;
+  /**
+   * Has a pull COMPLETED in this session, whatever it carried?
+   *
+   * The field that tells "this account has no compartment" apart from "I have
+   * not looked yet" (M223). {@link PrivateStoreSession.pulled} cannot: it is
+   * `null` for both, and the sync cycle reads the snapshot BEFORE it pulls, so
+   * on the first cycle of every resumed session it is `null` for the second
+   * reason while looking exactly like the first.
+   *
+   * Written by {@link openOwnerPrivateRegion}, which the apply path runs on
+   * every cycle including the ones that pulled nothing.
+   */
+  hasPulled: boolean;
 }
 
 /** Opens a session view. `established` is present for a first-time setup and absent for a sign-in, which adopts on its first pull instead. */
@@ -140,6 +153,7 @@ export function createPrivateStoreSession({
     cache: null,
     extras: null,
     pulled: null,
+    hasPulled: false,
   };
   // AN ESTABLISH IS KNOWLEDGE, and it is stated by ONE function rather than by
   // each site that mints a compartment (M164/08). The establish branch in
@@ -203,11 +217,19 @@ export function adoptEstablishedCompartment({
  * are opaque, AAD-bound to the account and already the server's own — passing
  * them through costs nothing and preserves everything.
  *
- * Returns `null` ONLY when no pull has carried a compartment — an account
- * created before the partition, whose first device has not yet minted one.
- * That is a DEGRADED but SAFE state: the key material simply stays on this
- * device instead of being published in the clear. Regenerating the recovery
- * code establishes a compartment and ends it (see `sync-actions.ts`).
+ * Answers `unknown` when no pull has carried a compartment INTO THIS SESSION,
+ * which covers both an account created before the partition whose first
+ * device has not yet minted one, and, far more commonly, a session that simply
+ * has not pulled yet. That is a DEGRADED but SAFE state: the key material
+ * stays on this device instead of being published in the clear. Regenerating
+ * the recovery code establishes a compartment and ends it (see
+ * `sync-actions.ts`).
+ *
+ * It narrows to `absent` only once a pull has actually COMPLETED and carried
+ * nothing ({@link PrivateStoreSession.hasPulled}). Before that this function
+ * holds one session's memory and not the account's history, and saying
+ * "absent" from there is precisely the claim that cost a production account
+ * its compartment.
  *
  * ── RE-EMITTING IS ALSO A DROP, and that must be visible ─────────────────
  *
@@ -226,13 +248,41 @@ export function adoptEstablishedCompartment({
  * hasUnopenedCompartment} answers the state, and `sync-actions.ts` owns the
  * sentence that has to be true of all three.
  */
+export type OwnerPrivateSeal =
+  /** This session read the compartment (or minted it), and these are the bytes to push. */
+  | { kind: 'sealed'; value: SealedPrivateStore }
+  /**
+   * THERE IS NO COMPARTMENT. A pull carried none, which on an account created
+   * before the partition is the truth: nobody has minted one yet. A snapshot
+   * may carry `null` for it, and an absence of it in the baseline is a real
+   * absence.
+   */
+  | { kind: 'absent' }
+  /**
+   * THIS SESSION HAS NOT READ IT YET, which is a different sentence entirely
+   * and used to be the same `null` as the one above (M223).
+   *
+   * Every RESUMED session starts here: `performResume` opens the vault with
+   * no CDK and no pulled bytes, and the sync cycle reads the snapshot BEFORE
+   * it pulls. Conflating the two made `stampSnapshot` read "I have not looked"
+   * as "the account has none", mint a tombstone for it, and destroy the
+   * account's share key pair and research pseudonym root on the server. It was
+   * silent: a device that already held the keys kept them, and a NEW device
+   * simply got none.
+   *
+   * A snapshot built from this state carries `null` too, because there is
+   * nothing else to carry, but the stamping is told so and contributes no
+   * candidate for the compartment at all.
+   */
+  | { kind: 'unknown' };
+
 export async function sealOwnerPrivateRegion({
   session,
   region,
 }: {
   session: PrivateStoreSession;
   region: OwnerPrivateRegion;
-}): Promise<SealedPrivateStore | null> {
+}): Promise<OwnerPrivateSeal> {
   const { cdk, wraps, extras } = session;
   // A SESSION MAY ONLY WRITE A PLAINTEXT IT HAS READ (M164/06).
   //
@@ -260,10 +310,18 @@ export async function sealOwnerPrivateRegion({
   // of claim that goes stale when a new entry point is added. It is also why
   // {@link hasUnopenedCompartment} reports the state rather than waiting it
   // out.
-  if (cdk === null || wraps === null || extras === null) return session.pulled;
+  if (cdk === null || wraps === null || extras === null) {
+    // THE THREE-VALUED ANSWER (M223). `session.pulled` being `null` here is
+    // ignorance, not absence: no pull has carried a compartment INTO THIS
+    // SESSION, and this session is the only thing that can say so.
+    if (session.pulled !== null) return { kind: 'sealed', value: session.pulled };
+    return session.hasPulled ? { kind: 'absent' } : { kind: 'unknown' };
+  }
 
   const plaintextHash = sealCacheKey({ region, extras });
-  if (session.cache !== null && session.cache.plaintextHash === plaintextHash) return session.cache.sealed;
+  if (session.cache !== null && session.cache.plaintextHash === plaintextHash) {
+    return { kind: 'sealed', value: session.cache.sealed };
+  }
 
   const ciphertext = await sealPrivateStore({
     cdk,
@@ -279,7 +337,12 @@ export async function sealOwnerPrivateRegion({
   });
   const sealed: SealedPrivateStore = { ciphertext: bytesToBase64(ciphertext), ...wraps };
   session.cache = { plaintextHash, sealed };
-  return sealed;
+  return { kind: 'sealed', value: sealed };
+}
+
+/** The sealed bytes a snapshot carries for this answer. `absent` and `unknown` both have none to carry. */
+export function sealedCompartmentOrNull(seal: OwnerPrivateSeal): SealedPrivateStore | null {
+  return seal.kind === 'sealed' ? seal.value : null;
 }
 
 /**
@@ -359,6 +422,10 @@ export async function openOwnerPrivateRegion({
   // clearing it: this device's memory of the account's bytes is not evidence
   // that the account has none, and dropping it here would hand the next push
   // the `null` this whole path exists to prevent.
+  // A COMPLETED PULL IS KNOWLEDGE EVEN WHEN IT CARRIED NOTHING (M223), and it
+  // is recorded before the early return below for exactly that case: this is
+  // the only hop that can narrow the seal's `unknown` to `absent`.
+  session.hasPulled = true;
   if (sealed === null) return null;
   // Recorded BEFORE the attempt, and for the failure as much as the success —
   // the failure is the case that needs it.

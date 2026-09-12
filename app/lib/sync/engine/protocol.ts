@@ -405,6 +405,24 @@ export interface PushBlobRequest {
   baseVersion: number;
   envelopeVersion: number;
   ciphertext: Base64Bytes;
+  /**
+   * "This blob is much smaller than the last one ON PURPOSE" (M223).
+   *
+   * The service refuses a push whose ciphertext is under half the size of the
+   * version it replaces unless this says otherwise, which is the last line of
+   * defence against a client that has lost its local copy and is about to
+   * publish the loss.
+   *
+   * A BODY FIELD AND NOT A HEADER, deliberately. A new request header has to
+   * be added to the service's `Access-Control-Allow-Headers`, and a browser
+   * that finds one missing drops the request AFTER a green preflight, with no
+   * error anywhere a Node test could see it. That exact class cost this
+   * release a day already.
+   *
+   * A client may only set it when it published deletes it could prove
+   * happened; see `snapshot-sync.ts` on why an absence is not a deletion.
+   */
+  shrinkAcknowledged: boolean;
 }
 
 /** `200`, the CAS write won. */

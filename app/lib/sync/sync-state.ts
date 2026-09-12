@@ -168,6 +168,30 @@ export function parseSyncState(raw: string): PersistedSyncState {
 }
 
 /**
+ * Has this device ever synced an entity for this account (M223)?
+ *
+ * The onboarding gate's second piece of evidence that a device is not a new
+ * person's. `hasEverHadData`, the first, lives in the values partition of
+ * `openplate-primary`; this one lives in `localStorage`, so it survives the
+ * whole database being evicted, which is the failure that put a real person in
+ * front of the first-run wizard with her diary gone.
+ *
+ * @param accountId - the sync account this device is signed into.
+ * @returns `true` when a stored baseline names at least one entity.
+ */
+export function hasSyncBaselineEntities({
+  accountId,
+  storage = deviceStorage(),
+}: {
+  accountId: number;
+  storage?: KeyValueStorage;
+}): boolean {
+  const raw = storage.getItem(syncBaselineStorageKey(accountId));
+  if (raw === null) return false;
+  return Object.keys(parseSyncState(raw).baseline.perEntity).length > 0;
+}
+
+/**
  * This device's stable id — the `(lamport, deviceId)` tie-break's second half.
  *
  * Generated once and reused forever. It only has to be UNIQUE and STABLE: the

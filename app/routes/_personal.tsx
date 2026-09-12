@@ -24,7 +24,7 @@ import { SyncController } from '#app/components/sync-controller';
 import { ErrorFallback } from '#app/components/route-error-boundary';
 import { useSyncSession } from '#app/components/sync-status';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
-import { isDeviceLocked } from '#app/lib/sync/sync-state';
+import { hasSyncBaselineEntities, isDeviceLocked } from '#app/lib/sync/sync-state';
 import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 import { PublicShell } from '#app/components/public-shell';
 import { StrangerNote, strangerNoteVariantForPath } from '#app/components/stranger-note';
@@ -113,6 +113,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     hasCompletedOnboarding,
     logCount,
     hasEverHadData: await hasEverHadData(),
+    // FROM `localStorage`, SYNCHRONOUSLY, and that is the point: it is the one
+    // input here that an IndexedDB eviction cannot take (M223).
+    hasSyncBaseline: session.account !== null && hasSyncBaselineEntities({ accountId: session.account.id }),
     hasSyncAccount: session.account !== null,
     isResumingSession: session.isResuming,
     // THE LOCK (M201 spec 02). Read synchronously from `localStorage`, which is

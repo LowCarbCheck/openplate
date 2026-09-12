@@ -54,7 +54,11 @@ import { deriveArgon2idHash } from '../app/lib/sync/engine/crypto/argon2';
 import { deriveRecoveryAuthHash, generateRecoveryCode } from '../app/lib/sync/engine/client/recovery-kek';
 import { bytesToBase64 } from '../app/lib/sync/engine/crypto/base64';
 import { runSyncCycleUnlocked } from '../app/lib/sync/orchestrator';
-import { createPrivateStoreSession, sealOwnerPrivateRegion } from '../app/lib/sync/private-store';
+import {
+  createPrivateStoreSession,
+  sealedCompartmentOrNull,
+  sealOwnerPrivateRegion,
+} from '../app/lib/sync/private-store';
 import { partitionSnapshot, type SyncedSnapshot } from '../app/lib/sync/snapshot-partition';
 import { createMemoryStorage, createSyncStateStore } from '../app/lib/sync/sync-state';
 import { normalizeInviteToken, parseJoinLinkInput } from '../app/lib/join-link';
@@ -352,7 +356,10 @@ async function createAccount({
     accountId: created.account.id,
     email: created.account.email,
     dek: keys.dek,
-    snapshot: { ...shareable, privateStore: await sealOwnerPrivateRegion({ session, region: ownerPrivate }) },
+    snapshot: {
+      ...shareable,
+      privateStore: sealedCompartmentOrNull(await sealOwnerPrivateRegion({ session, region: ownerPrivate })),
+    },
     http: new SyncHttpClient({ baseUrl, tokens: authClient }),
   };
 }
@@ -380,7 +387,14 @@ async function pushSeedDiary(account: SeededAccount): Promise<PushOutcome> {
     http: account.http,
     state: createSyncStateStore({ storage: createMemoryStorage(), accountId: account.accountId }),
     deviceId: SEED_DEVICE_ID,
-    readSnapshot: async () => account.snapshot,
+    readSnapshot: async () => ({
+      snapshot: account.snapshot,
+      // A GENERATED account with no device behind it. There is no IndexedDB to
+      // cross-check and no baseline to lose: the first cycle has nothing to
+      // tombstone, so the trusting values here can only ever apply to an empty
+      // set (`snapshot-sync.ts`).
+      integrity: { hasPersistedDatabase: true, isTableLoaded: {}, isCompartmentKnown: true },
+    }),
     applySnapshot: async () => {},
     // The account was created moments ago, so a pulled blob can only be one
     // this same run wrote. There is nothing for a veto to refuse.

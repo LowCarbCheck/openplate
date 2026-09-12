@@ -42,6 +42,13 @@ import type {
   LocalProfileGoals,
   LocalWeightEntry,
 } from '#app/lib/local-store';
+import {
+  FASTING_SETTINGS_TABLE,
+  FOOD_LOGS_TABLE,
+  PERSONAL_FOODS_TABLE,
+  PROFILE_GOALS_TABLE,
+  WEIGHT_ENTRIES_TABLE,
+} from '#app/lib/local-store/schema';
 import type { SealedPrivateStore, SyncedSnapshot } from './snapshot-partition';
 
 /** The entity-type tags that appear in tombstones and in namespaced entity keys. */
@@ -231,10 +238,127 @@ function toFlat(entityType: string, entityId: string, value: SyncEntityValue): F
   return { key: entityKey(entityType, entityId), entityType, entityId, value };
 }
 
+// ---------------------------------------------------------------------------
+// Evidence: what makes an absence a deletion
+// ---------------------------------------------------------------------------
+
+/**
+ * ABSENCE IS NOT DELETION.
+ *
+ * The baseline lives in `localStorage`; the diary lives in IndexedDB. A
+ * browser may evict the second and keep the first, and when it does, every
+ * entity this device ever synced is missing from the live snapshot while the
+ * baseline still names it. Read naively that is indistinguishable from "the
+ * person deleted everything", and the difference is a whole diary: a real
+ * account lost hers in production to exactly this, and the tombstones spread
+ * to her second, healthy device on its next pull.
+ *
+ * So a tombstone now needs POSITIVE EVIDENCE that a delete happened, and this
+ * is that evidence, gathered by the imperative shell and handed in. The test
+ * is a physical equality between what is on disk and what is in memory, never
+ * a ratio and never a threshold: a legitimate bulk delete leaves the two
+ * agreeing, including when both are zero, and a failed or partial load leaves
+ * the disk ahead.
+ */
+export interface LocalStoreIntegrity {
+  /**
+   * Does the device's IndexedDB database still exist?
+   *
+   * `false` is `readPersistedTableRowCounts` answering `null`: no database, or
+   * one with no table object store. On a device whose baseline is non-empty
+   * that is eviction, and NO tombstone may be written from it.
+   */
+  hasPersistedDatabase: boolean;
+  /**
+   * Per store table: did every row on disk reach memory?
+   *
+   * `true` when the disk count equals the memory count (zero and zero
+   * included) and when memory is AHEAD of disk, which is an ordinary unsaved
+   * write. `false` only when the disk holds MORE than memory does, which is a
+   * partial or failed load and has no honest reading as a delete.
+   *
+   * A table absent from the record is absent from both sides, so it is agreed
+   * by definition and readers default it to `true`.
+   */
+  isTableLoaded: Record<string, boolean>;
+}
+
+/** Everything {@link stampSnapshot} weighs before it writes a tombstone. */
+export interface SnapshotIntegrity extends LocalStoreIntegrity {
+  /**
+   * Has this session READ the owner-private compartment?
+   *
+   * `false` is `sealOwnerPrivateRegion` answering `unknown`: no pull has
+   * carried a compartment into this session yet, so a snapshot with no
+   * compartment in it says nothing about whether the account has one. Every
+   * RESUMED session starts here, and every one of them tombstoned the
+   * compartment on its first cycle before this field existed.
+   */
+  isCompartmentKnown: boolean;
+}
+
+/**
+ * Which store table each merged entity type is kept in.
+ *
+ * The link between the disk evidence, which is per table, and a tombstone,
+ * which is per entity. `privateStore` is deliberately absent: the compartment
+ * is not a table on disk at all, and its evidence is
+ * {@link SnapshotIntegrity.isCompartmentKnown}.
+ */
+const ENTITY_TYPE_TABLES = {
+  [SYNC_ENTITY_TYPES.food]: PERSONAL_FOODS_TABLE,
+  [SYNC_ENTITY_TYPES.log]: FOOD_LOGS_TABLE,
+  [SYNC_ENTITY_TYPES.weight]: WEIGHT_ENTRIES_TABLE,
+  [SYNC_ENTITY_TYPES.profile]: PROFILE_GOALS_TABLE,
+  [SYNC_ENTITY_TYPES.fastingSettings]: FASTING_SETTINGS_TABLE,
+} as const;
+
+/**
+ * May this device say that this entity was DELETED, rather than that it cannot
+ * see it?
+ *
+ * Called only for a NEW tombstone, one this cycle would mint from an entity
+ * the baseline names and the snapshot does not. A tombstone already in the
+ * baseline is a delete this device published in an earlier cycle and every
+ * peer has agreed with; withholding those would resurrect the rows they
+ * buried.
+ */
+function isTombstoneTrusted({
+  entityType,
+  integrity,
+}: {
+  entityType: string;
+  integrity: SnapshotIntegrity;
+}): boolean {
+  if (entityType === SYNC_ENTITY_TYPES.privateStore) {
+    return integrity.isCompartmentKnown && integrity.hasPersistedDatabase;
+  }
+  if (!integrity.hasPersistedDatabase) return false;
+  // The tag comes off a baseline key, which is a string, so the lookup is a
+  // widening one on purpose: an entity type this map does not name is exactly
+  // the case the `undefined` branch below refuses.
+  const table: string | undefined = Object.entries(ENTITY_TYPE_TABLES).find(([tag]) => tag === entityType)?.[1];
+  // An entity type nobody has mapped to a table has no evidence behind it, and
+  // the fail-safe direction is to keep the data.
+  if (table === undefined) return false;
+  return integrity.isTableLoaded[table] ?? true;
+}
+
 /** What one stamping pass produces: the wire meta to send, and the baseline to persist alongside it. */
 export interface StampSnapshotResult {
   meta: SyncMetaPayload;
   baseline: SyncBaseline;
+  /**
+   * The tombstones this cycle DECLINED to write, because the evidence did not
+   * support them.
+   *
+   * Absent from `meta` and absent from `baseline` on purpose: a withheld
+   * tombstone that landed in the baseline would be carried forward as an
+   * agreed delete by the very next cycle, which is the same loss one cycle
+   * later. It is returned instead so the shell can say so, out loud, and heal
+   * the device.
+   */
+  withheld: Tombstone[];
 }
 
 /**
@@ -247,10 +371,21 @@ export function stampSnapshot({
   snapshot,
   baseline,
   deviceId,
+  integrity,
 }: {
   snapshot: SyncedSnapshot;
   baseline: SyncBaseline;
   deviceId: string;
+  /**
+   * REQUIRED, and not optional with a permissive default (M223).
+   *
+   * A correctness argument nobody is forced to pass is a correctness argument
+   * at zero call sites: the gate compiles, the suite is green, and every
+   * screen is still wrong. Making it required is what puts the question in
+   * front of each caller, including the fixtures, where "what does this device
+   * actually know?" is the only interesting part of the setup.
+   */
+  integrity: SnapshotIntegrity;
 }): StampSnapshotResult {
   const live = flattenSnapshot(snapshot);
   const liveKeys = new Set(live.map((entity) => entity.key));
@@ -274,23 +409,33 @@ export function stampSnapshot({
   }
 
   const tombstones: Tombstone[] = [];
+  // Tombstones this device already published and every peer has agreed with.
+  // They are carried forward unconditionally: withholding one would resurrect
+  // the row it buried, which is the same class of defect from the other side.
   for (const [key, tombstone] of tombstonesByKey) {
     if (!liveKeys.has(key)) tombstones.push(tombstone);
   }
+
+  const withheld: Tombstone[] = [];
   for (const [key, previous] of Object.entries(baseline.perEntity)) {
     if (liveKeys.has(key) || tombstonesByKey.has(key)) continue;
     const [entityType, ...idParts] = key.split(':');
-    tombstones.push({
+    const tombstone: Tombstone = {
       entityId: idParts.join(':'),
       entityType: entityType ?? '',
       lamport: previous.lamport + 1,
       deviceId,
-    });
+    };
+    // THE ONE PLACE AN ABSENCE BECOMES A DELETE. Everything else in this
+    // function is arithmetic; this line is the claim.
+    if (isTombstoneTrusted({ entityType: tombstone.entityType, integrity })) tombstones.push(tombstone);
+    else withheld.push(tombstone);
   }
 
   return {
     meta: { perEntity: toWireStamps(perEntity), tombstones },
     baseline: { perEntity, tombstones },
+    withheld,
   };
 }
 

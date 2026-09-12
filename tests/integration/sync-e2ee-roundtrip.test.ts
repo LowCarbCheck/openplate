@@ -57,6 +57,7 @@ import { constants as zlibConstants, gunzipSync } from 'node:zlib';
 import 'fake-indexeddb/auto';
 import { z } from 'zod';
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
+import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import {
   createSyncAccount,
   markSyncPending,
@@ -73,7 +74,7 @@ import {
   getSyncVault,
   type SyncVault,
 } from '../../app/lib/sync/sync-session';
-import { runSyncCycleUnlocked } from '../../app/lib/sync/orchestrator';
+import { runSyncCycleUnlocked, type ReadSnapshotResult } from '../../app/lib/sync/orchestrator';
 import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engine/crypto/argon2';
 import { bytesToBase64 } from '../../app/lib/sync/engine/crypto/base64';
 import { createMemoryStorage, createSyncStateStore } from '../../app/lib/sync/sync-state';
@@ -82,6 +83,7 @@ import { readLocalSnapshot } from '../../app/lib/sync/local-store-bridge';
 import {
   EMPTY_OWNER_PRIVATE_REGION,
   type OwnerPrivateRegion,
+  type SealedPrivateStore,
   type SyncedSnapshot,
 } from '../../app/lib/sync/snapshot-partition';
 import {
@@ -89,7 +91,9 @@ import {
   createPrivateStoreSession,
   hasUnopenedCompartment,
   openOwnerPrivateRegion,
+  sealedCompartmentOrNull,
   sealOwnerPrivateRegion,
+  type PrivateStoreSession,
 } from '../../app/lib/sync/private-store';
 import { establishPrivateStore, openPrivateStore, unwrapCdk } from '../../app/lib/sync/engine/crypto/private-store';
 import { derivePrivateStoreRecoveryKek, parseRecoveryCode } from '../../app/lib/sync/engine/client/recovery-kek';
@@ -108,6 +112,18 @@ const fastDeriver = (input: { passphrase: string; salt: Uint8Array; params: Argo
  */
 const PLAINTEXT_MARKER = 'ZERO-KNOWLEDGE-CANARY-7f3a91c4-should-never-reach-the-server';
 const PASSPHRASE = 'seventeen purple lanterns drifting';
+
+
+/** The compartment BYTES a fixture needs, with the seal's three-valued answer asserted on the way past (M223). */
+async function sealedBytes(input: {
+  session: PrivateStoreSession;
+  region: OwnerPrivateRegion;
+}): Promise<SealedPrivateStore> {
+  const seal = await sealOwnerPrivateRegion(input);
+  assert.equal(seal.kind, 'sealed', 'the fixture must carry a real compartment, or nothing below is a statement');
+  // SAFETY: the assertion above has already failed the test for every other kind.
+  return (seal as { kind: 'sealed'; value: SealedPrivateStore }).value;
+}
 
 let service: FakeSyncService;
 
@@ -209,7 +225,7 @@ function deviceDeps({
     http: vault.http,
     state: createSyncStateStore({ storage, accountId: vault.accountId }),
     deviceId,
-    readSnapshot: async () => local.current,
+    readSnapshot: async () => ({ snapshot: local.current, integrity: HEALTHY_STORAGE }),
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
     },
@@ -786,8 +802,7 @@ test('a compartment it could not adopt survives the next push', async () => {
     ...EMPTY_OWNER_PRIVATE_REGION,
     shareIdentity: { publicKeyRaw: 'public-key', privateKeyPkcs8: 'the-key-that-must-survive', createdAt: 7_000 },
   };
-  const planted = await sealOwnerPrivateRegion({ session: strangerSession, region: strangerRegion });
-  assert.ok(planted !== null, 'the fixture must carry a real compartment, or nothing below is a statement');
+  const planted = await sealedBytes({ session: strangerSession, region: strangerRegion });
 
   const planter = { current: { ...snapshotOf([foodLog('log-p', 'Planted')]), privateStore: planted } };
   const planted1 = await runSyncCycleUnlocked(
@@ -825,13 +840,15 @@ test('a compartment it could not adopt survives the next push', async () => {
     // starts refusing them, both cycles below fail instead of converging.
     assertPulledSnapshot: ({ pulled }: { pulled: SyncedSnapshot }) =>
       assertOwnerPrivateCompartment({ session: victim.privateStore, sealed: pulled.privateStore }),
-    readSnapshot: async (): Promise<SyncedSnapshot> => ({
-      ...local.current,
-      privateStore: await sealOwnerPrivateRegion({
-        session: victim.privateStore,
-        region: EMPTY_OWNER_PRIVATE_REGION,
-      }),
-    }),
+    readSnapshot: async (): Promise<ReadSnapshotResult> => {
+      const seal = await sealOwnerPrivateRegion({ session: victim.privateStore, region: EMPTY_OWNER_PRIVATE_REGION });
+      return {
+        snapshot: { ...local.current, privateStore: sealedCompartmentOrNull(seal) },
+        // Wired exactly as `readSyncedSnapshot` wires it: the compartment's
+        // evidence is the seal's own answer, never a constant.
+        integrity: { ...HEALTHY_STORAGE, isCompartmentKnown: seal.kind !== 'unknown' },
+      };
+    },
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       await openOwnerPrivateRegion({ session: victim.privateStore, sealed: merged.privateStore });
       local.current = merged;
@@ -942,10 +959,13 @@ test('the diary refuses a study account before writing, and the blob is unchange
   const local = { current: snapshotOf([foodLog('log-diary', 'A private diary entry')]) };
   const diaryDeps = {
     ...deviceDeps({ vault: diary, deviceId: 'device-diary', local }),
-    readSnapshot: async (): Promise<SyncedSnapshot> => ({
-      ...local.current,
-      privateStore: await sealOwnerPrivateRegion({ session: diary.privateStore, region: EMPTY_OWNER_PRIVATE_REGION }),
-    }),
+    readSnapshot: async (): Promise<ReadSnapshotResult> => {
+      const seal = await sealOwnerPrivateRegion({ session: diary.privateStore, region: EMPTY_OWNER_PRIVATE_REGION });
+      return {
+        snapshot: { ...local.current, privateStore: sealedCompartmentOrNull(seal) },
+        integrity: { ...HEALTHY_STORAGE, isCompartmentKnown: seal.kind !== 'unknown' },
+      };
+    },
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       await openOwnerPrivateRegion({ session: diary.privateStore, sealed: merged.privateStore });
       local.current = merged;
@@ -1030,7 +1050,7 @@ test('a session carrying an unopened compartment reports an unopened compartment
     'encrypt',
     'decrypt',
   ]);
-  const planted = await sealOwnerPrivateRegion({
+  const planted = await sealedBytes({
     session: createPrivateStoreSession({
       accountId: planterVault.accountId,
       passphraseKek: strangerKek,
@@ -1041,7 +1061,6 @@ test('a session carrying an unopened compartment reports an unopened compartment
       shareIdentity: { publicKeyRaw: 'public-key', privateKeyPkcs8: 'the-key-this-device-cannot-read', createdAt: 7 },
     },
   });
-  assert.ok(planted !== null, 'the fixture must carry a real compartment, or nothing below is a statement');
   const planter = { current: { ...snapshotOf([foodLog('log-report', 'Planted')]), privateStore: planted } };
   await runSyncCycleUnlocked(deviceDeps({ vault: planterVault, deviceId: 'device-planter', local: planter }));
 

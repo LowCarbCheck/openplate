@@ -14,6 +14,8 @@
  * local-store refactor exactly one import list.
  */
 import type { Store } from 'tinybase';
+import { PRIMARY_DB_NAME } from '#app/lib/local-store/store';
+import { getPrimaryStore, readPersistedTableRowCounts, storeRowCounts } from '#app/lib/local-store/persist';
 import {
   deleteLocalFood,
   deleteLocalFoodLog,
@@ -28,6 +30,7 @@ import {
   SCHEMA_VERSION,
   type LocalStoreSnapshot,
 } from '#app/lib/local-store';
+import type { LocalStoreIntegrity } from './snapshot-sync';
 import {
   partitionSnapshot,
   readSealedPrivateStore,
@@ -53,8 +56,48 @@ import {
  * The store is injectable for the tests that build a snapshot the way
  * production reads one; production passes nothing and gets the singleton.
  */
-export async function readLocalSnapshot({ store }: { store?: Store } = {}): Promise<LocalStoreSnapshot> {
-  return (await exportBackup({ store })).data;
+export interface LocalSnapshotRead {
+  snapshot: LocalStoreSnapshot;
+  /** What this read can prove about the device's storage. See {@link LocalStoreIntegrity}. */
+  integrity: LocalStoreIntegrity;
+}
+
+export async function readLocalSnapshot({ store }: { store?: Store } = {}): Promise<LocalSnapshotRead> {
+  const resolved = store ?? (await getPrimaryStore());
+  const snapshot = (await exportBackup({ store: resolved })).data;
+  return { snapshot, integrity: await readStoreIntegrity(resolved) };
+}
+
+/**
+ * The disk's opinion of what is in memory.
+ *
+ * THE SECOND READ THIS FUNCTION MAKES IS THE SAME DATABASE, and that is why
+ * the ban above allows it: `readPersistedTableRowCounts` opens
+ * `openplate-primary`, reads its table object store and closes it again. It is
+ * not a second database this device may never have opened, which is the thing
+ * the ban is about. (`persist.ts` holds no reusable handle to share: the
+ * TinyBase persister owns its own connection and does not expose it, and this
+ * probe is deliberately written to open, read and close without ever creating
+ * the database as a side effect.)
+ *
+ * A FAILED PROBE IS TREATED AS NO DATABASE. Nothing is trusted from a read
+ * that threw, and "no database" is the answer that withholds every tombstone,
+ * which is the direction that keeps the diary.
+ */
+async function readStoreIntegrity(store: Store): Promise<LocalStoreIntegrity> {
+  const persisted = await readPersistedTableRowCounts(PRIMARY_DB_NAME).catch(() => null);
+  if (persisted === null) return { hasPersistedDatabase: false, isTableLoaded: {} };
+
+  const inMemory = storeRowCounts(store);
+  const isTableLoaded: Record<string, boolean> = {};
+  for (const table of new Set([...Object.keys(persisted), ...Object.keys(inMemory)])) {
+    // EQUALITY, AND MEMORY MAY RUN AHEAD. A table the disk holds MORE of than
+    // memory does is a partial or failed load, and nothing about it can be
+    // read as a delete. Memory ahead of disk is an unsaved write, which is
+    // ordinary and says nothing against a delete beside it.
+    isTableLoaded[table] = (persisted[table] ?? 0) <= (inMemory[table] ?? 0);
+  }
+  return { hasPersistedDatabase: true, isTableLoaded };
 }
 
 /**

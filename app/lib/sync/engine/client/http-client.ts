@@ -249,11 +249,14 @@ export class SyncHttpClient {
     baseVersion: number;
     envelopeVersion: number;
     ciphertext: Uint8Array;
+    /** See `PushBlobRequest.shrinkAcknowledged`. Never defaulted here: the caller is the only thing that knows. */
+    shrinkAcknowledged: boolean;
   }): Promise<PushBlobHttpResult> {
     const body: PushBlobRequest = {
       baseVersion: input.baseVersion,
       envelopeVersion: input.envelopeVersion,
       ciphertext: bytesToBase64(input.ciphertext),
+      shrinkAcknowledged: input.shrinkAcknowledged,
     };
     const response = await this.send({ path: `${SYNC_API_PREFIX}/blob`, method: 'POST', body });
     if (response.status === 409) {

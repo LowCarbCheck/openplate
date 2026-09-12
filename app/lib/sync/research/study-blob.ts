@@ -142,6 +142,9 @@ export async function pushStudyBlob({
       baseVersion: current.blobVersion,
       envelopeVersion: ENVELOPE_VERSION,
       ciphertext: envelope.ciphertext,
+      // The study keyring is append-only through this path; it never publishes
+      // a delete, so it never has one to acknowledge.
+      shrinkAcknowledged: false,
     });
     if (result.status === 'accepted') return result.newVersion;
 

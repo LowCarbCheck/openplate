@@ -135,6 +135,9 @@ export async function rewrapPrivateStoreOnServer(input: RewrapPrivateStoreInput)
       baseVersion: pulled.blobVersion,
       envelopeVersion: ENVELOPE_VERSION,
       ciphertext: envelope.ciphertext,
+      // A rewrap moves a DOOR and changes no entity: the payload it re-seals is
+      // the one it just pulled. There is no delete here to acknowledge.
+      shrinkAcknowledged: false,
     });
     if (result.status === 'conflict') continue;
 

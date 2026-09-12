@@ -273,7 +273,7 @@ export async function submitContributionAction({
     },
     enrolment,
     pseudonymRoot: base64ToBytes(identity.pseudonymRoot),
-    snapshot: await readLocalSnapshot(),
+    snapshot: (await readLocalSnapshot()).snapshot,
     fromDayKey,
     toDayKey,
   });

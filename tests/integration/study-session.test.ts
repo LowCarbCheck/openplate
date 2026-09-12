@@ -505,7 +505,7 @@ test("a whole study session leaves the diary account's blob untouched", async ()
   // study account itself now holds. This device's store has a diary entry in
   // it — the log pushed above — so an empty shareable region here is a
   // statement, not an accident of an empty fixture.
-  const localSnapshot = await readLocalSnapshot();
+  const localSnapshot = (await readLocalSnapshot()).snapshot;
   assert.ok(
     localSnapshot.foodLogs.length > 0,
     'this device must actually hold a diary, or "the study blob carries none" proves nothing',

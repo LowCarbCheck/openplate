@@ -17,7 +17,7 @@
 import { getLocalProfileGoals, hasEverHadData, listLocalFoodLogs } from '#app/lib/local-store';
 import { resolveOnboardingGate, type OnboardingGateOutcome } from '#app/lib/onboarding-gate';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
-import { isDeviceLocked } from '#app/lib/sync/sync-state';
+import { hasSyncBaselineEntities, isDeviceLocked } from '#app/lib/sync/sync-state';
 
 /**
  * Reads the on-device store and returns the gate's verdict.
@@ -39,6 +39,11 @@ export async function readOnboardingGateKind(): Promise<OnboardingGateOutcome['k
     hasCompletedOnboarding,
     logCount,
     hasEverHadData: await hasEverHadData(),
+    // The baseline is keyed BY ACCOUNT, so there is nothing to read without a
+    // session, and a device with no session cannot be told apart from a new
+    // one by this input anyway. `false` there is the honest answer, not a
+    // default (M223).
+    hasSyncBaseline: session.account !== null && hasSyncBaselineEntities({ accountId: session.account.id }),
     hasSyncAccount: session.account !== null,
     isResumingSession: session.isResuming,
     // Both callers have just signed in, and opening a session lifts the lock

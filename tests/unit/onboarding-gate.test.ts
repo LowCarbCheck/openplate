@@ -30,6 +30,7 @@ function newDevice(overrides: Partial<OnboardingGateInput> = {}): OnboardingGate
     hasCompletedOnboarding: false,
     logCount: 0,
     hasEverHadData: false,
+    hasSyncBaseline: false,
     hasSyncAccount: false,
     isResumingSession: false,
     isDeviceLocked: false,
@@ -244,6 +245,7 @@ describe('the device lock', () => {
       hasCompletedOnboarding: true,
       logCount: 12,
       hasEverHadData: true,
+  hasSyncBaseline: false,
       isDeviceLocked: true,
     });
     assert.deepEqual(resolveOnboardingGate(signedOut), { kind: 'welcome' });
@@ -271,5 +273,52 @@ describe('the device lock', () => {
     assert.deepEqual(resolveOnboardingGate(newDevice({ hasProfile: true, hasCompletedOnboarding: true })), {
       kind: 'pass',
     });
+  });
+});
+
+/**
+ * THE BASELINE IS THE SECOND PIECE OF EVIDENCE (M223).
+ *
+ * `hasEverHadData` reads the `firstDataAt` marker, which lives in the VALUES
+ * partition of `openplate-primary`. That is the right place for the failure it
+ * was designed against, a tables wipe. It is the wrong place for the one that
+ * actually happened: the browser evicted the whole database, marker included,
+ * and the device read as brand new.
+ *
+ * The gate then offered the first-run wizard, and a profile written by that
+ * wizard stamps at `previous + 1` and OUTRANKS the server's real profile in
+ * the merge. So the wrong offer does not merely waste somebody's time, it
+ * destroys the copy that would have put their diary back.
+ */
+describe('a sync baseline is evidence that this device is not a new person’s', () => {
+  it('sends a signed-in device with a baseline and nothing else to recovery, never to the wizard', () => {
+    const outcome = resolveOnboardingGate(
+      newDevice({ hasSyncAccount: true, hasSyncBaseline: true, hasEverHadData: false }),
+    );
+    assert.deepEqual(outcome, { kind: 'recover' });
+  });
+
+  it('THE CONTROL: the same device WITHOUT a baseline is a genuinely new account, and does onboard', () => {
+    const outcome = resolveOnboardingGate(
+      newDevice({ hasSyncAccount: true, hasSyncBaseline: false, hasEverHadData: false }),
+    );
+    assert.deepEqual(outcome, { kind: 'onboard' });
+  });
+
+  it('is outranked by a completed profile, so an ordinary signed-in device still passes', () => {
+    const outcome = resolveOnboardingGate(
+      newDevice({ hasProfile: true, hasCompletedOnboarding: true, hasSyncAccount: true, hasSyncBaseline: true }),
+    );
+    assert.deepEqual(outcome, { kind: 'pass' });
+  });
+
+  it('keeps a device with a baseline out of the stranger chrome on an exempt path', () => {
+    const outcome = resolveOnboardingGate(newDevice({ isExemptPath: true, hasSyncBaseline: true }));
+    assert.deepEqual(outcome, { kind: 'pass' });
+  });
+
+  it('THE CONTROL: a real stranger on the same path still gets the public chrome', () => {
+    const outcome = resolveOnboardingGate(newDevice({ isExemptPath: true, hasSyncBaseline: false }));
+    assert.deepEqual(outcome, { kind: 'exempt' });
   });
 });

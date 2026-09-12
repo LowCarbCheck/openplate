@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, RefreshCw, RotateCcw } from 'lucide-react';
+import type { StorageHealNotice } from '#app/lib/sync/storage-heal';
 import {
   getServerSyncSessionSnapshot,
   getSyncSessionSnapshot,
@@ -39,6 +40,34 @@ function useLastSyncedLabel(lastSyncedAt: number | null): string {
   return t('sync.status.lastSynced', { when: formatted });
 }
 
+
+/**
+ * THIS DEVICE LOST ITS LOCAL COPY AND GOT IT BACK (M223).
+ *
+ * Separate from the error block below it, and above it, because it is a
+ * different sentence: the cycle SUCCEEDED and the data is here. Amber like
+ * everything else on this surface, because nothing was lost.
+ *
+ * PROPS-ONLY, and that is not decoration. `SyncStatus` reads the session
+ * through `useSyncExternalStore`, whose server snapshot is a constant, so a
+ * static render can never be made to show this, and a static render is the
+ * only rendering this repo has. Taking the notice as a prop is what makes the
+ * sentence testable at all.
+ */
+export function SyncRestoredNotice({ notice }: { notice: StorageHealNotice }) {
+  const { t } = useTranslation();
+  if (notice.kind !== 'restored') return null;
+  return (
+    <output className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
+      <RotateCcw className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+      <div className="space-y-1">
+        <p className="font-medium">{t('sync.status.restored.title')}</p>
+        <p className="text-xs opacity-80">{t('sync.status.restored.body')}</p>
+      </div>
+    </output>
+  );
+}
+
 export function SyncStatus({ onSyncNow }: { onSyncNow: () => void }) {
   const { t } = useTranslation();
   const session = useSyncSession();
@@ -72,6 +101,8 @@ export function SyncStatus({ onSyncNow }: { onSyncNow: () => void }) {
           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> {t('sync.status.syncNow')}
         </button>
       </div>
+
+      <SyncRestoredNotice notice={session.storageHealNotice} />
 
       {session.error !== null && (
         <output className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">

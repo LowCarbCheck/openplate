@@ -49,13 +49,21 @@ import {
   mergeSnapshots,
   payloadsEqual,
   stampSnapshot,
+  type SnapshotIntegrity,
   type StampedSnapshot,
 } from './snapshot-sync';
+import type { Tombstone } from './engine/merge/types';
 import type { PersistedSyncState, SyncStateStore } from './sync-state';
 import { withSyncOrchestratorLock } from './sync-lock';
 
 /** How many CAS rounds a single cycle will fight for before giving up. */
 export const DEFAULT_MAX_PUSH_ATTEMPTS = 5;
+
+/** What {@link SyncCycleDeps.readSnapshot} hands back: the payload, and the evidence behind it. */
+export interface ReadSnapshotResult {
+  snapshot: SyncedSnapshot;
+  integrity: SnapshotIntegrity;
+}
 
 export interface SyncCycleDeps {
   /** Binds the envelope's AAD — a blob cannot be replayed into another account. */
@@ -65,8 +73,17 @@ export interface SyncCycleDeps {
   http: SyncHttpClient;
   state: SyncStateStore;
   deviceId: string;
-  /** The device snapshot AS SYNCED: the shareable region plus a sealed compartment (`snapshot-partition.ts`). */
-  readSnapshot: () => Promise<SyncedSnapshot>;
+  /**
+   * The device snapshot AS SYNCED (the shareable region plus a sealed
+   * compartment, `snapshot-partition.ts`), AND what this read can prove about
+   * the storage it came out of.
+   *
+   * The evidence rides with the snapshot rather than arriving as its own
+   * dependency because the two are one act: a snapshot is only as trustworthy
+   * as the read that produced it, and an integrity record fetched separately
+   * could describe a different moment.
+   */
+  readSnapshot: () => Promise<ReadSnapshotResult>;
   applySnapshot: (input: { merged: SyncedSnapshot; local: SyncedSnapshot }) => Promise<void>;
   /**
    * The one veto point, run on the snapshot EXACTLY AS PULLED and before this
@@ -101,6 +118,15 @@ export interface SyncCycleResult {
   /** How many CAS rounds it took. `1` is the uncontended case. */
   attempts: number;
   lastSyncedAt: number;
+  /**
+   * The deletes this cycle REFUSED to publish, because the device could not
+   * prove they happened (`snapshot-sync.ts`).
+   *
+   * Empty on every ordinary cycle. Non-empty means this device's local copy is
+   * missing rows its account still has, and the shell above owes the person a
+   * sentence about it (`storage-heal.ts`) rather than a silent green tick.
+   */
+  withheldTombstones: Tombstone[];
 }
 
 /**
@@ -119,10 +145,26 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
   const now = deps.now ?? Date.now;
   const maxAttempts = deps.maxAttempts ?? DEFAULT_MAX_PUSH_ATTEMPTS;
 
-  const local = await deps.readSnapshot();
+  const read = await deps.readSnapshot();
+  const local = read.snapshot;
   const persisted = deps.state.load();
-  const stamped = stampSnapshot({ snapshot: local, baseline: persisted.baseline, deviceId: deps.deviceId });
+  const stamped = stampSnapshot({
+    snapshot: local,
+    baseline: persisted.baseline,
+    deviceId: deps.deviceId,
+    integrity: read.integrity,
+  });
   const localPayload: StampedSnapshot = { snapshot: local, meta: stamped.meta };
+  // THE CYCLE CONTINUES, IT DOES NOT REFUSE. Live entities still push, the
+  // withheld deletes simply do not, and the pull below then hands this device
+  // the server's copy back through the ordinary apply path. Refusing here
+  // would strand somebody on an empty diary with a perfectly good copy one
+  // request away.
+  const withheldTombstones = stamped.withheld;
+  // The server refuses a push that shrinks a blob by more than half unless the
+  // client says the shrink is intended. This cycle may only say so when it
+  // published deletes it can PROVE, and never when it withheld one.
+  const shrinkAcknowledged = stamped.meta.tombstones.length > 0 && withheldTombstones.length === 0;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const remote = await pullRemotePayload(deps);
@@ -143,6 +185,7 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
         pushed: false,
         attempts: attempt,
         lastSyncedAt: settled.lastSyncedAt ?? now(),
+        withheldTombstones,
       };
     }
 
@@ -166,13 +209,20 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
       baseVersion,
       envelopeVersion: ENVELOPE_VERSION,
       ciphertext: envelope.ciphertext,
+      shrinkAcknowledged,
     });
     if (result.status === 'conflict') continue;
 
     await deps.applySnapshot({ merged: merged.snapshot, local });
     const at = now();
     commitState({ deps, merged, blobVersion: result.newVersion, at });
-    return { blobVersion: result.newVersion, pushed: true, attempts: attempt, lastSyncedAt: at };
+    return {
+      blobVersion: result.newVersion,
+      pushed: true,
+      attempts: attempt,
+      lastSyncedAt: at,
+      withheldTombstones,
+    };
   }
 
   throw new SyncRequestError({

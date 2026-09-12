@@ -57,11 +57,13 @@ import {
   assertOwnerPrivateCompartment,
   hasUnopenedCompartment,
   openOwnerPrivateRegion,
+  sealedCompartmentOrNull,
   sealOwnerPrivateRegion,
   type PrivateStoreSession,
 } from './private-store';
 import { rewrapPrivateStoreOnServer } from './private-store-rewrap';
-import { runSyncCycle } from './orchestrator';
+import { runSyncCycle, type ReadSnapshotResult } from './orchestrator';
+import { healAfterWithheldDeletes } from './storage-heal';
 import {
   clearAccountHint,
   getSyncVault,
@@ -520,6 +522,11 @@ export async function syncNow(): Promise<void> {
         assertOwnerPrivateCompartment({ session: vault.privateStore, sealed: pulled.privateStore }),
       parseRemoteSnapshot,
     });
+    // BEFORE the snapshot below, because it publishes the notice this update
+    // must not overwrite: `updateSyncSession` merges a patch, and a patch that
+    // did not mention the notice would leave a stale one standing, while one
+    // that ran after this line would be the clean-sync update erasing it.
+    await healAfterWithheldDeletes(result.withheldTombstones);
     updateSyncSession({
       phase: 'idle',
       lastSyncedAt: result.lastSyncedAt,
@@ -560,9 +567,18 @@ export async function syncNow(): Promise<void> {
  * orchestrator's `readSnapshot` is typed as `SyncedSnapshot` and only this
  * function produces one from the device.
  */
-async function readSyncedSnapshot(session: PrivateStoreSession): Promise<SyncedSnapshot> {
-  const { shareable, ownerPrivate } = partitionSnapshot(await readLocalSnapshot());
-  return { ...shareable, privateStore: await sealOwnerPrivateRegion({ session, region: ownerPrivate }) };
+async function readSyncedSnapshot(session: PrivateStoreSession): Promise<ReadSnapshotResult> {
+  const read = await readLocalSnapshot();
+  const { shareable, ownerPrivate } = partitionSnapshot(read.snapshot);
+  const seal = await sealOwnerPrivateRegion({ session, region: ownerPrivate });
+  return {
+    snapshot: { ...shareable, privateStore: sealedCompartmentOrNull(seal) },
+    // THE COMPARTMENT'S EVIDENCE IS THE SEAL'S OWN ANSWER (M223). The snapshot
+    // carries `null` for both `absent` and `unknown` because there is nothing
+    // else for it to carry, and the stamping has to be told which of the two
+    // this is or it will tombstone a compartment nobody deleted.
+    integrity: { ...read.integrity, isCompartmentKnown: seal.kind !== 'unknown' },
+  };
 }
 
 /**

@@ -50,6 +50,7 @@ const SIGNED_OUT: SyncSessionSnapshot = {
   lastSyncedAt: null,
   hasPendingChanges: false,
   error: null,
+  storageHealNotice: { kind: 'none' },
 };
 
 /** The first moments after a reload: no account yet, and no answer yet either. */

@@ -2621,6 +2621,10 @@
       "lastSynced": "Last synced {{when}}",
       "never": "Not synced from this device yet",
       "pending": "Changes waiting to sync",
+      "restored": {
+        "title": "This device lost its local copy",
+        "body": "Your entries were restored from your account. Nothing was deleted."
+      },
       "shortError": "Sync error",
       "syncNow": "Sync now",
       "syncedAgo": "Synced · {{when}}",

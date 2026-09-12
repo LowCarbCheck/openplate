@@ -171,7 +171,7 @@ test('SyncHttpClient pushes through its DEFAULT fetch without losing the receive
   const { restore } = installBrandCheckedFetch(() => json({ newVersion: 1 }));
   try {
     const client = new SyncHttpClient({ baseUrl: BASE_URL, tokens: TOKENS });
-    const result = await client.pushBlob({ baseVersion: 0, envelopeVersion: 1, ciphertext: new Uint8Array([1]) });
+    const result = await client.pushBlob({ baseVersion: 0, envelopeVersion: 1, ciphertext: new Uint8Array([1]) , shrinkAcknowledged: false});
 
     assert.deepEqual(result, { status: 'accepted', newVersion: 1 });
   } finally {

@@ -10,6 +10,7 @@
  * Everything the cycle touches is injected, so these run with no browser, no
  * IndexedDB, no server and no locks, the algorithm is exercised directly.
  */
+import { EVICTED_STORAGE, HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runSyncCycleUnlocked } from '../../app/lib/sync/orchestrator';
@@ -77,6 +78,8 @@ function snapshot(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
 function fakeService(dek: Uint8Array) {
   let stored: { version: number; ciphertext: Uint8Array } | null = null;
   let pushes = 0;
+  /** Every `shrinkAcknowledged` this service was sent, in order. See `protocol.ts`. */
+  const shrinkFlags: boolean[] = [];
   /** When set, the next push finds that another device wrote first, the real 409 race. */
   let interfereBeforeNextPush: (() => Promise<void>) | null = null;
 
@@ -95,8 +98,10 @@ function fakeService(dek: Uint8Array) {
       baseVersion: number;
       envelopeVersion: number;
       ciphertext: Uint8Array;
+      shrinkAcknowledged: boolean;
     }): Promise<PushBlobHttpResult> {
       pushes += 1;
+      shrinkFlags.push(input.shrinkAcknowledged);
       if (interfereBeforeNextPush !== null) {
         const interfere = interfereBeforeNextPush;
         interfereBeforeNextPush = null;
@@ -115,6 +120,9 @@ function fakeService(dek: Uint8Array) {
     client: client as SyncHttpClient,
     get pushes() {
       return pushes;
+    },
+    get shrinkFlags(): readonly boolean[] {
+      return shrinkFlags;
     },
     /** Arranges for another device to win the race on the very next push. */
     raceOnNextPush(run: () => Promise<void>): void {
@@ -162,7 +170,7 @@ function deps({
     http,
     state: createSyncStateStore({ storage, accountId: ACCOUNT_ID }),
     deviceId,
-    readSnapshot: async () => local.current,
+    readSnapshot: async () => ({ snapshot: local.current, integrity: HEALTHY_STORAGE }),
     applySnapshot: async ({ merged }: { merged: SyncedSnapshot }) => {
       local.current = merged;
     },
@@ -188,6 +196,7 @@ test('stableStringify ignores key ORDER, so an unchanged entity never looks chan
 
 test('an unchanged entity keeps its stamp; a changed one advances it', () => {
   const first = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
     snapshot: snapshot([log('a', 'Apple', 100)]),
     baseline: { perEntity: {}, tombstones: [] },
     deviceId: 'device-1',
@@ -195,6 +204,7 @@ test('an unchanged entity keeps its stamp; a changed one advances it', () => {
   assert.equal(first.meta.perEntity['foodLog:a']?.lamport, 1);
 
   const unchanged = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
     snapshot: snapshot([log('a', 'Apple', 100)]),
     baseline: first.baseline,
     deviceId: 'device-1',
@@ -202,6 +212,7 @@ test('an unchanged entity keeps its stamp; a changed one advances it', () => {
   assert.equal(unchanged.meta.perEntity['foodLog:a']?.lamport, 1, 'an untouched entity must not advance');
 
   const changed = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
     snapshot: snapshot([log('a', 'Apple', 150)]),
     baseline: first.baseline,
     deviceId: 'device-1',
@@ -211,11 +222,12 @@ test('an unchanged entity keeps its stamp; a changed one advances it', () => {
 
 test('an entity that disappears becomes a tombstone above its last stamp', () => {
   const first = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
     snapshot: snapshot([log('a', 'Apple', 100)]),
     baseline: { perEntity: {}, tombstones: [] },
     deviceId: 'device-1',
   });
-  const deleted = stampSnapshot({ snapshot: snapshot([]), baseline: first.baseline, deviceId: 'device-1' });
+  const deleted = stampSnapshot({ snapshot: snapshot([]), baseline: first.baseline, deviceId: 'device-1', integrity: HEALTHY_STORAGE });
 
   assert.deepEqual(deleted.meta.tombstones, [
     { entityId: 'a', entityType: 'foodLog', lamport: 2, deviceId: 'device-1' },
@@ -225,12 +237,14 @@ test('an entity that disappears becomes a tombstone above its last stamp', () =>
 
 test('a re-added entity outranks its own tombstone, deletions do not resurrect', () => {
   const created = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
     snapshot: snapshot([log('a', 'Apple', 100)]),
     baseline: { perEntity: {}, tombstones: [] },
     deviceId: 'device-1',
   });
-  const deleted = stampSnapshot({ snapshot: snapshot([]), baseline: created.baseline, deviceId: 'device-1' });
+  const deleted = stampSnapshot({ snapshot: snapshot([]), baseline: created.baseline, deviceId: 'device-1', integrity: HEALTHY_STORAGE });
   const readded = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
     snapshot: snapshot([log('a', 'Apple', 100)]),
     baseline: deleted.baseline,
     deviceId: 'device-1',
@@ -309,7 +323,7 @@ test('baselineFromPayload hashes what was agreed, so the next cycle sees no chan
     meta: { perEntity: { 'foodLog:a': { lamport: 4, deviceId: 'device-a' } }, tombstones: [] },
   };
   const baseline = baselineFromPayload(payload);
-  const restamped = stampSnapshot({ snapshot: payload.snapshot, baseline, deviceId: 'device-b' });
+  const restamped = stampSnapshot({ snapshot: payload.snapshot, baseline, deviceId: 'device-b', integrity: HEALTHY_STORAGE });
 
   assert.deepEqual(restamped.meta.perEntity['foodLog:a'], { lamport: 4, deviceId: 'device-a' });
 });
@@ -516,4 +530,48 @@ test('a corrupt persisted state is rebuilt rather than fatal', () => {
   const store = createSyncStateStore({ storage, accountId: ACCOUNT_ID });
 
   assert.deepEqual(store.load(), emptySyncState());
+});
+
+// ---------------------------------------------------------------------------
+// `shrinkAcknowledged`: the client's half of the service's shrink refusal
+// ---------------------------------------------------------------------------
+
+test('shrinkAcknowledged is true ONLY for a cycle that published deletes it could prove', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = { current: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]) };
+  const storage = createMemoryStorage();
+
+  // Cycle 1: two new entries, no deletes at all.
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+  assert.deepEqual(service.shrinkFlags, [false], 'a cycle with no deletes must not claim a shrink');
+
+  // Cycle 2: a REAL delete on a healthy device.
+  local.current = snapshot([log('a', 'Apple', 100)]);
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+  assert.deepEqual(service.shrinkFlags, [false, true], 'a proven delete must acknowledge the shrink');
+});
+
+test('shrinkAcknowledged is false when ANY tombstone was withheld', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = { current: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]) };
+  const storage = createMemoryStorage();
+
+  await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage }));
+
+  // The same device after an eviction: the baseline names both entries and the
+  // store reads empty with no database behind it.
+  local.current = snapshot([]);
+  const result = await runSyncCycleUnlocked({
+    ...deps({ dek, http: service.client, local, deviceId: 'device-1', storage }),
+    readSnapshot: async () => ({ snapshot: local.current, integrity: EVICTED_STORAGE }),
+  });
+
+  assert.equal(result.withheldTombstones.length, 2, 'both deletes must have been withheld');
+  // NON-VACUITY: the flag never went true, on any push this whole test made.
+  assert.ok(
+    !service.shrinkFlags.includes(true),
+    'a device that could not prove a delete must never acknowledge a shrink',
+  );
 });

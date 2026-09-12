@@ -71,6 +71,23 @@ export interface OnboardingGateInput {
   /** The `firstDataAt` marker, read from the values partition — survives a tables wipe. */
   hasEverHadData: boolean;
   /**
+   * Does this device hold a non-empty SYNC BASELINE for the account it is
+   * signed into (M223)?
+   *
+   * THE MARKER ALONE WAS NOT ENOUGH. `hasEverHadData` lives in the values
+   * partition of `openplate-primary`, the same database an eviction takes,
+   * so the two states this module exists to tell apart are once again
+   * identical when the whole database goes, and the gate offered the wizard. A
+   * profile written by that wizard stamps at `previous + 1` and OUTRANKS the
+   * server's real profile in the merge, so the offer is not merely wrong, it
+   * destroys the copy that would have fixed it.
+   *
+   * The baseline lives in `localStorage` and survives, and it is positive
+   * evidence of the only kind that matters here: this device has synced
+   * entities for this account before, so it is not a new person.
+   */
+  hasSyncBaseline: boolean;
+  /**
    * Is a session open on this device right now?
    *
    * Read from the session SNAPSHOT, never from the vault: this decision is
@@ -131,6 +148,10 @@ export interface OnboardingGateInput {
  *    writes sets the marker — would be told their data was lost the moment they
  *    navigated into an app route mid-flow. That false positive is both far more
  *    common than the fault and far more alarming, so the narrower test wins.
+ * 3.2 **A non-empty sync baseline is the same evidence, one storage layer up.**
+ *    The marker lives in the values partition of the same database the tables
+ *    are in, so a whole-database eviction takes both and the device reads as
+ *    brand new. The baseline is in `localStorage` and survives it.
  * 3.5 **Still resuming → decide nothing.** Inserted BEFORE the recovery check
  *    and not after it, because a resume can bring back the very tables that
  *    check is about: warning somebody about data loss while their data is on
@@ -191,11 +212,15 @@ function resolveForExemptPath({
   hasProfile,
   logCount,
   hasEverHadData,
+  hasSyncBaseline,
   hasSyncAccount,
   isResumingSession,
   isDeviceLocked,
 }: OnboardingGateInput): OnboardingGateOutcome {
-  const holdsNothing = !hasProfile && logCount === 0 && !hasEverHadData;
+  // The baseline joins the other three for the same reason it joins the gated
+  // order: a device that has synced entities for an account is not a stranger,
+  // whatever its IndexedDB currently says.
+  const holdsNothing = !hasProfile && logCount === 0 && !hasEverHadData && !hasSyncBaseline;
   if (!isResumingSession && !hasSyncAccount && (isDeviceLocked || holdsNothing)) return { kind: 'exempt' };
   if (isResumingSession) return { kind: 'wait' };
   return { kind: 'pass' };
@@ -207,6 +232,7 @@ function resolveForGatedPath({
   hasCompletedOnboarding,
   logCount,
   hasEverHadData,
+  hasSyncBaseline,
   hasSyncAccount,
   isResumingSession,
   isDeviceLocked,
@@ -217,7 +243,12 @@ function resolveForGatedPath({
   if (hasProfile && hasCompletedOnboarding) return { kind: 'pass' };
   if (logCount > 0) return { kind: 'self-heal' };
   if (isResumingSession) return { kind: 'wait' };
-  if (!hasProfile && hasEverHadData) return { kind: 'recover' };
+  // A NON-EMPTY BASELINE MEANS RECOVER OR WAIT, NEVER ONBOARD (M223). It sits
+  // beside the marker rather than replacing it because the two survive
+  // different failures: the marker survives a TABLES wipe, and the baseline
+  // survives the whole database going. Either one is enough to know that this
+  // device is not a new person's.
+  if (!hasProfile && (hasEverHadData || hasSyncBaseline)) return { kind: 'recover' };
   if (hasSyncAccount) return { kind: 'onboard' };
   return { kind: 'welcome' };
 }

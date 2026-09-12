@@ -21,6 +21,7 @@
  * `eraseDeviceData` ever stopped taking the baseline with the rows: without
  * that half these fixtures produce the deletion described above.
  */
+import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -72,7 +73,7 @@ function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
 /** The account's diary as the server holds it: one logged meal, stamped by this device. */
 function serverPayload(): StampedSnapshot {
   const snapshot = snapshotOf([foodLog('log-1')]);
-  const { meta } = stampSnapshot({ snapshot, baseline: { perEntity: {}, tombstones: [] }, deviceId: DEVICE_ID });
+  const { meta } = stampSnapshot({ snapshot, baseline: { perEntity: {}, tombstones: [] }, deviceId: DEVICE_ID, integrity: HEALTHY_STORAGE });
   return { snapshot, meta };
 }
 
@@ -106,7 +107,7 @@ describe('signing in after erase re-downloads the diary', () => {
 
     // The erased device stamps its empty diary against that empty baseline,
     // then merges the pulled one.
-    const local = stampSnapshot({ snapshot: snapshotOf([]), baseline: state.baseline, deviceId: DEVICE_ID });
+    const local = stampSnapshot({ snapshot: snapshotOf([]), baseline: state.baseline, deviceId: DEVICE_ID, integrity: HEALTHY_STORAGE });
     assert.deepEqual(local.meta.tombstones, [], 'an erased device must not claim anything was deleted');
 
     const merged = mergeSnapshots({
@@ -126,7 +127,7 @@ describe('signing in after erase re-downloads the diary', () => {
     const { storage, eraseDeps } = syncedDevice();
     const staleBaseline = createSyncStateStore({ storage, accountId: ACCOUNT_ID }).load().baseline;
 
-    const wouldHappen = stampSnapshot({ snapshot: snapshotOf([]), baseline: staleBaseline, deviceId: DEVICE_ID });
+    const wouldHappen = stampSnapshot({ snapshot: snapshotOf([]), baseline: staleBaseline, deviceId: DEVICE_ID, integrity: HEALTHY_STORAGE });
     assert.equal(wouldHappen.meta.tombstones.length, 1, 'a kept baseline turns an erased diary into a deletion');
 
     await eraseDeviceData({ accountId: ACCOUNT_ID }, eraseDeps);

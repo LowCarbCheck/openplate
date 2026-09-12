@@ -37,6 +37,7 @@ import {
   hasUnopenedCompartment,
   openOwnerPrivateRegion,
   sealOwnerPrivateRegion,
+  type PrivateStoreSession,
 } from '../../app/lib/sync/private-store';
 import { EMPTY_OWNER_PRIVATE_REGION, type OwnerPrivateRegion } from '../../app/lib/sync/snapshot-partition';
 import {
@@ -64,6 +65,27 @@ import { base64ToBytes, bytesToBase64 } from '../../app/lib/sync/engine/crypto/b
 import { z } from 'zod';
 
 const ACCOUNT_ID = 42;
+
+/**
+ * The BYTES the seal answered, with the answer's KIND asserted on the way past.
+ *
+ * The seal is three-valued since M223, `sealed`, `absent`, `unknown`, because
+ * "I have not read this compartment" and "this account has none" were the same
+ * `null` and the stamping tombstoned the compartment on that. Every call here
+ * that used to want a `SealedPrivateStore` still wants one, and this helper is
+ * what makes "and it really was sealed" an assertion rather than a cast.
+ */
+async function sealedBytes(input: {
+  session: PrivateStoreSession;
+  region: OwnerPrivateRegion;
+}): Promise<SealedPrivateStore> {
+  const seal = await sealOwnerPrivateRegion(input);
+  assert.equal(seal.kind, 'sealed', 'expected the seal to answer bytes');
+  // SAFETY: the assertion above has already failed the test for every other kind.
+  return (seal as { kind: 'sealed'; value: SealedPrivateStore }).value;
+}
+
+
 
 /** The marker that must survive every path here: the account's own share private key. */
 const PRIVATE_KEY_MARKER = 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg';
@@ -140,7 +162,7 @@ async function sealedJson({
 async function sessionThatFailedToAdopt() {
   const { established, passphraseKek: ownerKek } = await establishedFor('the passphrase that minted it');
   const owner = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek: ownerKek, established });
-  const pulled = await sealOwnerPrivateRegion({ session: owner, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
+  const pulled = await sealedBytes({ session: owner, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
   assert.ok(pulled !== null, 'the fixture must carry a real compartment, or nothing below is a statement');
 
   const session = createPrivateStoreSession({
@@ -164,7 +186,7 @@ describe('the seal after a failed adopt', () => {
 
     // The push this session would make. Before the fix this was `null`, and
     // the account's key material left the blob on the next cycle.
-    const sealed = await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION });
+    const sealed = await sealedBytes({ session, region: EMPTY_OWNER_PRIVATE_REGION });
     assert.notEqual(sealed, null, 'the seal blanked a compartment this session merely could not open');
 
     // POSITIVE: the key material is still reachable through the door that
@@ -181,7 +203,7 @@ describe('the seal after a failed adopt', () => {
 
   it('re-emits bytes byte-identical to the ones it pulled, never a rebuilt compartment', async () => {
     const { session, pulled } = await sessionThatFailedToAdopt();
-    const sealed = await sealOwnerPrivateRegion({ session, region: regionWithShareKey('a-local-key-that-differs') });
+    const sealed = await sealedBytes({ session, region: regionWithShareKey('a-local-key-that-differs') });
     assert.ok(sealed !== null);
 
     // All three fields, separately: a rebuilt `SealedPrivateStore` would carry
@@ -192,7 +214,7 @@ describe('the seal after a failed adopt', () => {
     assert.equal(sealed.cdkWrapRecovery, pulled.cdkWrapRecovery);
   });
 
-  it('seals to null only when the pull carried no compartment', async () => {
+  it('answers `unknown` before a pull and `absent` after one that carried nothing', async () => {
     // A genuinely compartment-less account: created before the partition, and
     // no device has minted one. This is the documented degraded state, and it
     // must keep working — the key material stays on the device rather than
@@ -201,8 +223,19 @@ describe('the seal after a failed adopt', () => {
       accountId: ACCOUNT_ID,
       passphraseKek: await privateStoreKekFor('any passphrase'),
     });
+
+    // BEFORE ANY PULL the honest answer is IGNORANCE, not absence (M223). This
+    // is the state every RESUMED session starts in, and reading it as "the
+    // account has no compartment" is what tombstoned a live one.
+    assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION }), {
+      kind: 'unknown',
+    });
+
+    // A pull that CARRIED NOTHING is the knowledge that narrows it.
     assert.equal(await openOwnerPrivateRegion({ session, sealed: null }), null);
-    assert.equal(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION }), null);
+    assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION }), {
+      kind: 'absent',
+    });
 
     // NON-VACUITY, and the whole distinction this spec draws: the SAME session
     // stops answering `null` the moment a pull carries a compartment.
@@ -212,11 +245,10 @@ describe('the seal after a failed adopt', () => {
       passphraseKek: await privateStoreKekFor('the passphrase that minted it'),
       established,
     });
-    const pulled = await sealOwnerPrivateRegion({ session: owner, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
-    assert.ok(pulled !== null);
+    const pulled = await sealedBytes({ session: owner, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
 
     await openOwnerPrivateRegion({ session, sealed: pulled });
-    assert.deepEqual(await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION }), pulled);
+    assert.deepEqual(await sealedBytes({ session, region: EMPTY_OWNER_PRIVATE_REGION }), pulled);
   });
 });
 
@@ -305,7 +337,7 @@ describe('the compartment carries its kind', () => {
     // actually try.
     const { established, passphraseKek } = await establishedFor('the passphrase that minted it');
     const owner = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek, established });
-    const pulled = await sealOwnerPrivateRegion({ session: owner, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
+    const pulled = await sealedBytes({ session: owner, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
     assert.ok(pulled !== null);
 
     // Case 1: a device with a compartment OF ITS OWN, handed somebody else's.
@@ -419,7 +451,7 @@ describe('a key this build does not know', () => {
     // RE-SEAL, with a CHANGED region so the seal cache cannot answer and the
     // bytes are genuinely rewritten. Re-emitting the pulled bytes would prove
     // nothing about preservation.
-    const resealed = await sealOwnerPrivateRegion({
+    const resealed = await sealedBytes({
       session,
       region: {
         ...opened,
@@ -678,7 +710,7 @@ describe('the refusal must come before the write', () => {
     // below is not declining for lack of a key.
     assert.notEqual(session.cdk, null, 'the rewrap must have left a CDK, or this proves nothing');
 
-    const resealed = await sealOwnerPrivateRegion({ session, region: EMPTY_OWNER_PRIVATE_REGION });
+    const resealed = await sealedBytes({ session, region: EMPTY_OWNER_PRIVATE_REGION });
     assert.ok(resealed !== null, 'a session holding a CDK must still publish a compartment');
 
     // THE BYTES, not "not null". A session that has never read the plaintext
@@ -700,7 +732,7 @@ describe('the refusal must come before the write', () => {
 
     // AND ONCE IT HAS OPENED, IT SEALS AGAIN. The refusal is about ignorance,
     // not a permanent state — without this the fix could be "never seal".
-    const afterOpen = await sealOwnerPrivateRegion({
+    const afterOpen = await sealedBytes({
       session: nextSession,
       region: { ...EMPTY_OWNER_PRIVATE_REGION, sharePeers: [] },
     });
@@ -738,8 +770,7 @@ describe('a compartment this session minted, and one it only holds a key to', ()
     // account whose compartment predates the partition.
     adoptEstablishedCompartment({ session, established });
 
-    const sealed = await sealOwnerPrivateRegion({ session, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
-    assert.ok(sealed !== null, 'a session that minted the compartment must publish it, not re-emit a null');
+    const sealed = await sealedBytes({ session, region: regionWithShareKey(PRIVATE_KEY_MARKER) });
 
     // POSITIVE: the bytes are this device's own region, sealed under the CDK
     // that was just minted — not a re-emission of anything.
@@ -754,13 +785,14 @@ describe('a compartment this session minted, and one it only holds a key to', ()
       wrapsOf(established),
     );
 
-    // NON-VACUITY: the same session WITHOUT the establish seals nothing, which
-    // is the state this test exists to distinguish from.
+    // NON-VACUITY: the same session WITHOUT the establish knows NOTHING, which
+    // is the state this test exists to distinguish from. `unknown` and not a
+    // bare `null` since M223, it has neither minted a compartment nor pulled
+    // one, so it cannot say whether the account has one.
     const untouched = createPrivateStoreSession({ accountId: ACCOUNT_ID, passphraseKek });
-    assert.equal(
-      await sealOwnerPrivateRegion({ session: untouched, region: regionWithShareKey(PRIVATE_KEY_MARKER) }),
-      null,
-    );
+    assert.deepEqual(await sealOwnerPrivateRegion({ session: untouched, region: regionWithShareKey(PRIVATE_KEY_MARKER) }), {
+      kind: 'unknown',
+    });
   });
 
   it('a session that holds a key it has not read with is reported, never called clean', async () => {

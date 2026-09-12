@@ -25,6 +25,7 @@
  * contrast, "fasting is not synced" reads as a rule about the feature instead
  * of a decision about one entity.
  */
+import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -118,6 +119,7 @@ describe('mergeSnapshots and fasts', () => {
     // stamping a snapshot that holds a fast produces no entity key for it, and
     // deleting it later therefore produces no tombstone either.
     const stamped = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: snapshot([fast('mine')]),
       baseline: { perEntity: {}, tombstones: [] },
       deviceId: 'device-a',
@@ -127,6 +129,7 @@ describe('mergeSnapshots and fasts', () => {
     assert.deepEqual(stamped.meta.tombstones, []);
 
     const afterDelete = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: snapshot([]),
       baseline: stamped.baseline,
       deviceId: 'device-a',
@@ -230,6 +233,7 @@ describe('mergeSnapshots and the fasting routine', () => {
 
   it('stamps the routine on the wire, and advances the stamp only when it changes', () => {
     const first = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: { ...snapshot([]), fastingSettings: settings() },
       baseline: { perEntity: {}, tombstones: [] },
       deviceId: 'device-a',
@@ -239,6 +243,7 @@ describe('mergeSnapshots and the fasting routine', () => {
     // Unchanged content carries the previous stamp forward untouched, so a
     // boot that changes nothing does not burn a blob version.
     const unchanged = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: { ...snapshot([]), fastingSettings: settings() },
       baseline: first.baseline,
       deviceId: 'device-a',
@@ -248,6 +253,7 @@ describe('mergeSnapshots and the fasting routine', () => {
     // A real edit advances it. `updatedAt` alone is enough, which is the one
     // job that field does for sync.
     const edited = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: { ...snapshot([]), fastingSettings: settings({ updatedAt: T + HOUR }) },
       baseline: unchanged.baseline,
       deviceId: 'device-a',
@@ -257,6 +263,7 @@ describe('mergeSnapshots and the fasting routine', () => {
 
   it('never stamps a routine this device has not set, `null` is not an answer competing in the merge', () => {
     const stamped = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: { ...snapshot([]), fastingSettings: null },
       baseline: { perEntity: {}, tombstones: [] },
       deviceId: 'device-a',

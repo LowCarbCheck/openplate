@@ -2621,6 +2621,10 @@
       "lastSynced": "Zuletzt synchronisiert: {{when}}",
       "never": "Von diesem Gerät noch nicht synchronisiert",
       "pending": "Änderungen warten auf den Sync",
+      "restored": {
+        "title": "Dieses Gerät hat seine lokale Kopie verloren",
+        "body": "Deine Einträge wurden aus deinem Konto wiederhergestellt. Es wurde nichts gelöscht."
+      },
       "shortError": "Sync-Fehler",
       "syncNow": "Jetzt synchronisieren",
       "syncedAgo": "Synchronisiert · {{when}}",

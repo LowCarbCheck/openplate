@@ -34,6 +34,7 @@
 import { isPendingAccountView, type SyncAuthClient } from './engine/client/auth-client';
 import type { SyncHttpClient } from './engine/client/http-client';
 import type { PrivateStoreSession } from './private-store';
+import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { browserStorage, unlockDevice } from './sync-state';
 
@@ -130,6 +131,17 @@ export interface SyncSessionSnapshot {
   /** True when this device holds changes the server has not seen. Drives the "waiting to sync" dot. */
   hasPendingChanges: boolean;
   error: { reason: SyncErrorReason; message: string } | null;
+  /**
+   * Whether this device lost its local copy and got it back from the account
+   * (M223).
+   *
+   * NOT an `error`: the cycle succeeded, the diary is here, and nothing is
+   * waiting. It is a separate field because the sentence is a different one,
+   * the error line says "sync is behind", and this one says "your data is
+   * back", and because a device that says nothing at all here is exactly how
+   * a person lost a diary without noticing.
+   */
+  storageHealNotice: StorageHealNotice;
 }
 
 /** Secrets and clients. NEVER referenced from a snapshot, never logged, never serialized. */
@@ -164,6 +176,7 @@ const SIGNED_OUT: SyncSessionSnapshot = {
   lastSyncedAt: null,
   hasPendingChanges: false,
   error: null,
+  storageHealNotice: { kind: 'none' },
 };
 
 /**
@@ -237,6 +250,11 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
   const account = next.authClient.getSession()?.account ?? null;
   const knownAccount = account !== null && !isPendingAccountView(account) ? account : null;
   publish({
+    // CARRIED ACROSS THE OPEN, not reset. A sign-in that follows an eviction is
+    // the likeliest moment for this notice to exist, and opening the session is
+    // what happens next; clearing it here would be the app forgetting the one
+    // thing it had to say.
+    storageHealNotice: snapshot.storageHealNotice,
     account: {
       id: next.accountId,
       email: next.email,

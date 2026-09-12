@@ -15,6 +15,7 @@
  * the very first sync, with nothing else in the suite failing, `fasts` had
  * exactly this test and saved meals did not, until this file.
  */
+import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -107,6 +108,7 @@ describe('mergeSnapshots and savedMeals', () => {
     // entity key for it, and deleting it later therefore produces no
     // tombstone either.
     const stamped = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: snapshot([savedMeal('mine')]),
       baseline: { perEntity: {}, tombstones: [] },
       deviceId: 'device-a',
@@ -116,6 +118,7 @@ describe('mergeSnapshots and savedMeals', () => {
     assert.deepEqual(stamped.meta.tombstones, []);
 
     const afterDelete = stampSnapshot({
+    integrity: HEALTHY_STORAGE,
       snapshot: snapshot([]),
       baseline: stamped.baseline,
       deviceId: 'device-a',

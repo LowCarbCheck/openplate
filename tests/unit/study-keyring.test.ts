@@ -30,8 +30,12 @@ import {
   type StudyCompartmentSession,
 } from '../../app/lib/sync/research/study-compartment';
 import { WrongCompartmentKindError } from '../../app/lib/sync/compartment-kind';
-import { openOwnerPrivateRegion, sealOwnerPrivateRegion } from '../../app/lib/sync/private-store';
-import { EMPTY_OWNER_PRIVATE_REGION } from '../../app/lib/sync/snapshot-partition';
+import {
+  openOwnerPrivateRegion,
+  sealOwnerPrivateRegion,
+  type PrivateStoreSession,
+} from '../../app/lib/sync/private-store';
+import { EMPTY_OWNER_PRIVATE_REGION, type OwnerPrivateRegion, type SealedPrivateStore } from '../../app/lib/sync/snapshot-partition';
 import {
   currentStudyPublicKey,
   EMPTY_STUDY_PRIVATE_REGION,
@@ -39,6 +43,24 @@ import {
   studyKeyPairsOf,
   withNewStudyKeyGeneration,
 } from '../../app/lib/sync/research/study-keyring';
+
+
+/**
+ * A diary compartment's BYTES, with the seal's KIND asserted on the way past.
+ *
+ * The seal is three-valued since M223: `sealed`, `absent` and `unknown`, where
+ * the last two used to be one `null`. These fixtures all want real bytes, and
+ * this is what makes "and it really sealed" an assertion instead of a cast.
+ */
+async function sealedDiaryBytes(input: {
+  session: PrivateStoreSession;
+  region: OwnerPrivateRegion;
+}): Promise<SealedPrivateStore> {
+  const seal = await sealOwnerPrivateRegion(input);
+  assert.equal(seal.kind, 'sealed', 'the fixture must carry a real diary compartment');
+  // SAFETY: the assertion above has already failed the test for every other kind.
+  return (seal as { kind: 'sealed'; value: SealedPrivateStore }).value;
+}
 
 const STUDY_ACCOUNT_ID = 4711;
 
@@ -109,7 +131,7 @@ test('the keyring survives a real compartment seal and open', async () => {
       wraps: null,
       extras: {},
       pulled: null,
-    },
+      },
     sealed,
   });
   assert.deepEqual(opened, region);
@@ -145,7 +167,7 @@ test('a study compartment cannot be opened as another account', async () => {
       wraps: null,
       extras: {},
       pulled: null,
-    },
+      },
     sealed,
   });
   assert.equal(opened, null);
@@ -226,14 +248,13 @@ test('a study compartment this console could not open is re-emitted, never blank
  */
 test('a diary compartment is not an empty study, and is refused', async () => {
   const session = await establishedSession();
-  const diaryCompartment = await sealOwnerPrivateRegion({
-    session: { ...session, cache: null },
+  const diaryCompartment = await sealedDiaryBytes({
+    session: { ...session, cache: null, hasPulled: false },
     region: {
       ...EMPTY_OWNER_PRIVATE_REGION,
       shareIdentity: { publicKeyRaw: 'a-public-key', privateKeyPkcs8: SHARE_KEY_MARKER, createdAt: 6_000 },
     },
   });
-  assert.ok(diaryCompartment !== null, 'the fixture must carry a real diary compartment');
 
   // The console, holding the very key that opens it.
   const researcherConsole = {
@@ -243,6 +264,7 @@ test('a diary compartment is not an empty study, and is refused', async () => {
     wraps: null,
     extras: {},
     pulled: null,
+    hasPulled: false,
   };
   await assert.rejects(
     () => openStudyRegion({ session: researcherConsole, sealed: diaryCompartment }),
@@ -268,7 +290,8 @@ test('a diary compartment is not an empty study, and is refused', async () => {
       cache: null,
       extras: {},
       pulled: null,
-    },
+      hasPulled: false,
+      },
     sealed: diaryCompartment,
   });
   assert.equal(opened?.shareIdentity?.privateKeyPkcs8, SHARE_KEY_MARKER);
@@ -302,7 +325,7 @@ test('an untagged compartment carrying a keyring still opens as a study', async 
       wraps: null,
       extras: {},
       pulled: null,
-    },
+      },
     sealed: { ciphertext: bytesToBase64(ciphertext), ...session.wraps },
   });
   // Not "did not throw": the generation itself is read back, because a lockout
@@ -469,14 +492,13 @@ test('an unrecognised kind is refused by the study open too', async () => {
  */
 test('the study seal refuses a foreign CDK it never adopted', async () => {
   const session = await establishedSession();
-  const diaryCompartment = await sealOwnerPrivateRegion({
-    session: { ...session, cache: null },
+  const diaryCompartment = await sealedDiaryBytes({
+    session: { ...session, cache: null, hasPulled: false },
     region: {
       ...EMPTY_OWNER_PRIVATE_REGION,
       shareIdentity: { publicKeyRaw: 'a-public-key', privateKeyPkcs8: SHARE_KEY_MARKER, createdAt: 6_000 },
     },
   });
-  assert.ok(diaryCompartment !== null, 'the fixture must carry a real diary compartment');
 
   // The researcher's own console, holding the very passphrase KEK that opens
   // her diary compartment — the reachable mistake, not a contrived one.
@@ -521,7 +543,8 @@ test('the study seal refuses a foreign CDK it never adopted', async () => {
       cache: null,
       extras: {},
       pulled: null,
-    },
+      hasPulled: false,
+      },
     sealed,
   });
   assert.equal(opened?.shareIdentity?.privateKeyPkcs8, SHARE_KEY_MARKER);

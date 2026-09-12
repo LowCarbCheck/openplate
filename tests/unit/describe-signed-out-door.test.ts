@@ -59,6 +59,7 @@ const ONBOARDED_SIGNED_OUT: OnboardingGateInput = {
   hasCompletedOnboarding: true,
   logCount: 3,
   hasEverHadData: true,
+  hasSyncBaseline: false,
   hasSyncAccount: false,
   isResumingSession: false,
   isDeviceLocked: false,

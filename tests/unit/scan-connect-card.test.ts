@@ -124,6 +124,7 @@ function snapshot(overrides: Partial<SyncSessionSnapshot> = {}): SyncSessionSnap
     lastSyncedAt: null,
     hasPendingChanges: false,
     error: null,
+    storageHealNotice: { kind: 'none' },
     ...overrides,
   };
 }

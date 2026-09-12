@@ -30,6 +30,7 @@ function session(overrides: Partial<SyncSessionSnapshot> = {}): SyncSessionSnaps
     lastSyncedAt: null,
     hasPendingChanges: false,
     error: null,
+    storageHealNotice: { kind: 'none' },
     ...overrides,
   };
 }
