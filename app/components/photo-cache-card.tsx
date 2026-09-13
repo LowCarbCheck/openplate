@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -12,7 +12,7 @@ import {
   AlertDialogTrigger,
 } from '#app/components/ui/alert-dialog';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { Label } from '#app/components/ui/label';
 import { Switch } from '#app/components/ui/switch';
 import {
@@ -27,7 +27,7 @@ import { trackPhotoCacheCleared } from '#app/lib/matomo-events';
 import { ANONYMOUS_USER_ID } from '#app/lib/local-store/store';
 
 /**
- * "Photos on this device" settings card. Plate photos are a best-effort, device-
+ * "Photos on this device" settings section. Plate photos are a best-effort, device-
  * local cache (never uploaded, never synced); this surfaces their count + rough
  * size, a Clear-all confirm, and an on/off switch (default ON) whose OFF also
  * clears. All state lives in IndexedDB, so it loads in an effect — SSR renders a
@@ -91,44 +91,39 @@ export function PhotoCacheCard() {
     : t('settings.photos.usage', { count: usage.count, size: formatPhotoSize(usage.totalBytes) });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="h-5 w-5" /> {t('settings.photos.title')}
-        </CardTitle>
-        <CardDescription>{t('settings.photos.description', { days: PHOTO_RETENTION_DAYS })}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <Label htmlFor="save-plate-photos" className="text-sm font-normal">
-            {t('settings.photos.switchLabel')}
-          </Label>
-          <Switch id="save-plate-photos" checked={enabled} onCheckedChange={handleToggle} />
-        </div>
+    <SettingsSection
+      label={t('settings.photos.title')}
+      description={t('settings.photos.description', { days: PHOTO_RETENTION_DAYS })}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <Label htmlFor="save-plate-photos" className="text-sm font-normal">
+          {t('settings.photos.switchLabel')}
+        </Label>
+        <Switch id="save-plate-photos" checked={enabled} onCheckedChange={handleToggle} />
+      </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">{usageLine}</p>
-          <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={usage.count === 0}>
-                <Trash2 className="h-4 w-4" /> {t('settings.photos.clearAll')}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">{usageLine}</p>
+        <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={usage.count === 0}>
+              <Trash2 className="h-4 w-4" /> {t('settings.photos.clearAll')}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('settings.photos.clearConfirmTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('settings.photos.clearConfirmDescription')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('settings.photos.cancel')}</AlertDialogCancel>
+              <Button variant="destructive" onClick={() => void handleClear()}>
+                {t('settings.photos.clearAll')}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('settings.photos.clearConfirmTitle')}</AlertDialogTitle>
-                <AlertDialogDescription>{t('settings.photos.clearConfirmDescription')}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t('settings.photos.cancel')}</AlertDialogCancel>
-                <Button variant="destructive" onClick={() => void handleClear()}>
-                  {t('settings.photos.clearAll')}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </CardContent>
-    </Card>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </SettingsSection>
   );
 }

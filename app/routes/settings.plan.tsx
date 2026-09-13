@@ -45,7 +45,7 @@ import type { Route } from './+types/settings.plan';
 import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { useSyncSession } from '#app/components/sync-status';
 import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { checkoutLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
@@ -144,60 +144,58 @@ export function PlanScreen({
   if (state.kind === 'loading') return <p className="text-sm text-muted-foreground">{t('plan.loading')}</p>;
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* WHAT JUST HAPPENED, FIRST. Somebody arriving from Stripe has a
           question this page must answer before it describes anything, and the
           success line does not claim the plan is already active: the webhook
           that records it is a separate delivery. */}
       {checkoutReturn === 'success' && <p className="text-sm">{t('plan.returned.success')}</p>}
-      {checkoutReturn === 'cancelled' && <p className="text-sm text-muted-foreground">{t('plan.returned.cancelled')}</p>}
+      {checkoutReturn === 'cancelled' && (
+        <p className="text-sm text-muted-foreground">{t('plan.returned.cancelled')}</p>
+      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('plan.title')}</CardTitle>
-          <CardDescription>
-            {state.kind === 'ready' ? t(STATUS_KEY_BY_PLAN[state.plan.plan]) : t('plan.unknown')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {state.kind === 'signed-out' && <p className="text-sm text-muted-foreground">{t('plan.signedOut')}</p>}
-          {state.kind === 'absent' && <p className="text-sm text-muted-foreground">{t('plan.absent')}</p>}
-          {state.kind === 'failed' && <p className="text-sm text-muted-foreground">{t('plan.failed')}</p>}
+      <SettingsSection
+        label={t('plan.title')}
+        description={state.kind === 'ready' ? t(STATUS_KEY_BY_PLAN[state.plan.plan]) : t('plan.unknown')}
+        contentClassName="space-y-3"
+      >
+        {state.kind === 'signed-out' && <p className="text-sm text-muted-foreground">{t('plan.signedOut')}</p>}
+        {state.kind === 'absent' && <p className="text-sm text-muted-foreground">{t('plan.absent')}</p>}
+        {state.kind === 'failed' && <p className="text-sm text-muted-foreground">{t('plan.failed')}</p>}
 
-          {state.kind === 'ready' && <PlanPeriod plan={state.plan} />}
+        {state.kind === 'ready' && <PlanPeriod plan={state.plan} />}
 
-          {/* THE PRICE IS NOT HERE, and its absence is deliberate: no number
-              in this app is the price. The gross figure and the words that go
-              with it are decided by the owner and shown by Checkout, which is
-              also where the law requires them. This line states the one thing
-              that is true of every price this instance charges. */}
-          <p className="text-xs text-muted-foreground">{t('plan.vatNote')}</p>
+        {/* THE PRICE IS NOT HERE, and its absence is deliberate: no number
+            in this app is the price. The gross figure and the words that go
+            with it are decided by the owner and shown by Checkout, which is
+            also where the law requires them. This line states the one thing
+            that is true of every price this instance charges. */}
+        <p className="text-xs text-muted-foreground">{t('plan.vatNote')}</p>
 
-          {actionFailed && <p className="text-sm text-destructive">{t('plan.actionFailed')}</p>}
+        {actionFailed && <p className="text-sm text-destructive">{t('plan.actionFailed')}</p>}
 
-          {state.kind === 'ready' && (
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={onStart} disabled={busy !== 'none'}>
-                {busy === 'checkout' ?
+        {state.kind === 'ready' && (
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={onStart} disabled={busy !== 'none'}>
+              {busy === 'checkout' ?
+                <Loader2 className="h-4 w-4 animate-spin" />
+              : <CreditCard className="h-4 w-4" />}
+              {t('plan.start')}
+            </Button>
+            {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
+                biller answers a 404 for an account with no customer, and a
+                button whose only outcome is that 404 is a button that lies. */}
+            {state.plan.portalAvailable && (
+              <Button type="button" variant="secondary" onClick={onManage} disabled={busy !== 'none'}>
+                {busy === 'portal' ?
                   <Loader2 className="h-4 w-4 animate-spin" />
-                : <CreditCard className="h-4 w-4" />}
-                {t('plan.start')}
+                : <ExternalLink className="h-4 w-4" />}
+                {t('plan.manage')}
               </Button>
-              {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
-                  biller answers a 404 for an account with no customer, and a
-                  button whose only outcome is that 404 is a button that lies. */}
-              {state.plan.portalAvailable && (
-                <Button type="button" variant="secondary" onClick={onManage} disabled={busy !== 'none'}>
-                  {busy === 'portal' ?
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  : <ExternalLink className="h-4 w-4" />}
-                  {t('plan.manage')}
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </div>
+        )}
+      </SettingsSection>
     </div>
   );
 }

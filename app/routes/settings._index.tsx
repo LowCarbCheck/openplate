@@ -17,15 +17,12 @@
  * never the key.
  */
 import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
 import type { Route } from './+types/settings._index';
-import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import {
   Apple,
   Bell,
   BookMarked,
-  ChevronRight,
   CreditCard,
   Database,
   FlaskConical,
@@ -61,7 +58,7 @@ import { todayInTimezone } from '#app/lib/user-days';
 import { useAiConnectionStatusLine } from '#app/hooks/use-ai-connection-summary';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { InstallCard } from '#app/components/install-card';
-import { SectionEyebrow } from '#app/components/typography';
+import { SettingsGroup, SettingsRow } from '#app/components/settings/settings-section';
 import { THEME_LABEL_KEYS, getStoredTheme, type Theme } from '#app/components/theme-selector';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useSyncSession } from '#app/components/sync-status';
@@ -84,65 +81,6 @@ export const handle = {
   title: 'Settings',
   titleKey: 'settings.title',
 };
-
-////////////////////////////////////////////////////////////////////////////////
-// Row primitives
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * One settings destination. The whole row is the link (not a trailing "Open"
- * action) so the touch target is the full width, and the status line is
- * `null`, rather than a placeholder string, while the device read that
- * feeds it is still in flight, so the row never flashes a wrong value.
- */
-function SettingsRow({
-  to,
-  icon: Icon,
-  title,
-  status,
-}: {
-  to: string;
-  icon: LucideIcon;
-  title: string;
-  status: string | null;
-}) {
-  return (
-    <Link
-      to={to}
-      className="flex min-h-13 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50 active:bg-muted/70 focus-visible:bg-muted/50"
-    >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
-        <Icon className="size-[18px]" aria-hidden="true" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-medium leading-tight">{title}</span>
-        {/* `line-clamp-2`, not a single-line `truncate`: German subtitles are
-            roughly a third longer than the English ones, and at 390px the
-            "Data & backup" row lost most of its sentence to an ellipsis. Two
-            lines fit every current subtitle in both languages. */}
-        {status !== null && <span className="block line-clamp-2 text-xs text-muted-foreground">{status}</span>}
-      </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
-    </Link>
-  );
-}
-
-/**
- * A labelled group of rows, drawn as one inset list (the native iOS/Android
- * grouped-list pattern): one `rounded-2xl border bg-card` container, rows
- * separated by hairline dividers, no border or radius on the row itself. The
- * label is a real heading, so the page keeps an outline.
- */
-function SettingsGroup({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <SectionEyebrow as="h2" className="px-4">
-        {label}
-      </SectionEyebrow>
-      <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-card">{children}</div>
-    </section>
-  );
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Device reads (all client-side, see the module doc comment)

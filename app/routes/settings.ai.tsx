@@ -54,7 +54,7 @@ import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Badge } from '#app/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -665,35 +665,30 @@ function QuickstartCard({ recommendedProvider }: { recommendedProvider: AiProvid
   const recommendedDefinition = PROVIDER_REGISTRY[recommendedProvider];
   const providerName = t(recommendedDefinition.labelKey);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('settingsAi.quickstart.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        <ol className="list-decimal space-y-1 pl-5">
-          <li>{t('settingsAi.quickstart.step1', { provider: providerName })}</li>
-          <li>
-            <Trans
-              i18nKey="settingsAi.quickstart.step2"
-              values={{ provider: providerName }}
-              components={{
-                providerLink: (
-                  <a
-                    href={recommendedDefinition.keyConsoleUrl ?? undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary underline underline-offset-4"
-                  >
-                    {/* Link text comes from the `providerLink` tag inside the translated string. */}
-                  </a>
-                ),
-              }}
-            />
-          </li>
-          <li>{t('settingsAi.quickstart.step3')}</li>
-        </ol>
-      </CardContent>
-    </Card>
+    <SettingsSection label={t('settingsAi.quickstart.title')} contentClassName="text-sm text-muted-foreground">
+      <ol className="list-decimal space-y-1 pl-5">
+        <li>{t('settingsAi.quickstart.step1', { provider: providerName })}</li>
+        <li>
+          <Trans
+            i18nKey="settingsAi.quickstart.step2"
+            values={{ provider: providerName }}
+            components={{
+              providerLink: (
+                <a
+                  href={recommendedDefinition.keyConsoleUrl ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline underline-offset-4"
+                >
+                  {/* Link text comes from the `providerLink` tag inside the translated string. */}
+                </a>
+              ),
+            }}
+          />
+        </li>
+        <li>{t('settingsAi.quickstart.step3')}</li>
+      </ol>
+    </SettingsSection>
   );
 }
 
@@ -724,64 +719,59 @@ function NotConnectedExplainer({
   // markup; the components map below names each slot.
   const emphasis = { strong: <span className="text-foreground" /> };
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('settingsAi.explainer.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm text-muted-foreground">
-        {/* Everything below this line is written for a visitor who has to go get
-            their own provider key — including the sentence "openplate doesn't
-            run its own AI", which is simply FALSE on an instance whose operator
-            wired one up (M138 spec 06). Rather than fork four paragraphs, say
-            so once, first: the preset panel above is the short path, and the
-            rest of this card is what to do if you'd rather bring your own. */}
-        {hasInstancePreset && <p>{t('settingsAi.preset.explainerNote')}</p>}
-        <p>
-          <Trans i18nKey="settingsAi.explainer.notRequired" components={emphasis} />
-        </p>
-        <p>
-          <Trans i18nKey="settingsAi.explainer.byok" components={emphasis} />
-        </p>
-        <p>
-          <Trans
-            i18nKey="settingsAi.explainer.photosAndCost"
-            components={{
-              ...emphasis,
-              dataLink: <Link to="/settings/data" className="text-primary underline underline-offset-4" />,
-            }}
-          />
-        </p>
-        <p>
-          <Trans
-            i18nKey="settingsAi.explainer.setup"
-            values={{ provider: t(recommendedDefinition.labelKey) }}
-            components={{
-              // Name AND URL both come off the registry entry for whichever
-              // provider is recommended for this UI language — the paragraph
-              // must not send a German reader to OpenRouter while the tab row
-              // above badges Mistral as "Empfohlen".
-              providerLink: (
-                <a
-                  href={recommendedDefinition.keyConsoleUrl ?? undefined}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary underline underline-offset-4"
-                >
-                  {/* Link text comes from the `providerLink` tag inside the translated string. */}
-                </a>
-              ),
-            }}
-          />
-        </p>
-        {/* The one genuinely OpenRouter-specific fact the old setup sentence
-            carried, kept as its own paragraph: it is a statement about how
-            OpenAI's API behaves, not a recommendation, so it stays true
-            whichever provider is recommended above. */}
-        <p>
-          <Trans i18nKey="settingsAi.explainer.setupOpenAiNote" components={emphasis} />
-        </p>
-      </CardContent>
-    </Card>
+    <SettingsSection label={t('settingsAi.explainer.title')} contentClassName="space-y-3 text-sm text-muted-foreground">
+      {/* Everything below this line is written for a visitor who has to go get
+          their own provider key — including the sentence "openplate doesn't
+          run its own AI", which is simply FALSE on an instance whose operator
+          wired one up (M138 spec 06). Rather than fork four paragraphs, say
+          so once, first: the preset panel above is the short path, and the
+          rest of this card is what to do if you'd rather bring your own. */}
+      {hasInstancePreset && <p>{t('settingsAi.preset.explainerNote')}</p>}
+      <p>
+        <Trans i18nKey="settingsAi.explainer.notRequired" components={emphasis} />
+      </p>
+      <p>
+        <Trans i18nKey="settingsAi.explainer.byok" components={emphasis} />
+      </p>
+      <p>
+        <Trans
+          i18nKey="settingsAi.explainer.photosAndCost"
+          components={{
+            ...emphasis,
+            dataLink: <Link to="/settings/data" className="text-primary underline underline-offset-4" />,
+          }}
+        />
+      </p>
+      <p>
+        <Trans
+          i18nKey="settingsAi.explainer.setup"
+          values={{ provider: t(recommendedDefinition.labelKey) }}
+          components={{
+            // Name AND URL both come off the registry entry for whichever
+            // provider is recommended for this UI language — the paragraph
+            // must not send a German reader to OpenRouter while the tab row
+            // above badges Mistral as "Empfohlen".
+            providerLink: (
+              <a
+                href={recommendedDefinition.keyConsoleUrl ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline underline-offset-4"
+              >
+                {/* Link text comes from the `providerLink` tag inside the translated string. */}
+              </a>
+            ),
+          }}
+        />
+      </p>
+      {/* The one genuinely OpenRouter-specific fact the old setup sentence
+          carried, kept as its own paragraph: it is a statement about how
+          OpenAI's API behaves, not a recommendation, so it stays true
+          whichever provider is recommended above. */}
+      <p>
+        <Trans i18nKey="settingsAi.explainer.setupOpenAiNote" components={emphasis} />
+      </p>
+    </SettingsSection>
   );
 }
 
@@ -793,20 +783,18 @@ function NotConnectedExplainer({
 function ScanTroubleshootingCard() {
   const { t } = useTranslation();
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('settingsAi.troubleshooting.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 text-sm text-muted-foreground">
-        <p>{t('settingsAi.troubleshooting.intro')}</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('settingsAi.troubleshooting.credit')}</li>
-          <li>{t('settingsAi.troubleshooting.keyTypo')}</li>
-          <li>{t('settingsAi.troubleshooting.providerDown')}</li>
-        </ul>
-        <p>{t('settingsAi.troubleshooting.reassurance')}</p>
-      </CardContent>
-    </Card>
+    <SettingsSection
+      label={t('settingsAi.troubleshooting.title')}
+      contentClassName="space-y-2 text-sm text-muted-foreground"
+    >
+      <p>{t('settingsAi.troubleshooting.intro')}</p>
+      <ul className="list-disc space-y-1 pl-5">
+        <li>{t('settingsAi.troubleshooting.credit')}</li>
+        <li>{t('settingsAi.troubleshooting.keyTypo')}</li>
+        <li>{t('settingsAi.troubleshooting.providerDown')}</li>
+      </ul>
+      <p>{t('settingsAi.troubleshooting.reassurance')}</p>
+    </SettingsSection>
   );
 }
 
@@ -1041,7 +1029,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
     hasHiddenAdvancedFieldError || (!isConnected && (fields.apiKey.errors?.length ?? 0) > 0);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* Order while disconnected: DO first (quickstart), then the form, then
           the WHY (explainer) and the WHAT-IF (troubleshooting) as reference
           below it. Connected, both first-run cards drop away entirely. */}
@@ -1051,247 +1039,245 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
           that instance's quickstart; the BYOK route stays fully available
           underneath it. */}
       {!isConnected && instancePreset === null && <QuickstartCard recommendedProvider={recommendedProvider} />}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settingsAi.connectCard.title')}</CardTitle>
-          <CardDescription>{t('settingsAi.connectCard.description')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {settings && <ConnectedPanel settings={settings} onDisconnected={() => setSettings(null)} />}
-          {/* The instance's own AI, when its operator configured one (M138 spec
-              06) — first thing in the card, above the key form it makes
-              unnecessary. Renders nothing on an instance without a preset, so
-              this line is invisible in every ordinary deployment. Only offered
-              while nothing is connected: replacing a live connection is
-              disconnect-then-reconnect here, same as for every provider. */}
-          {!isConnected && <InstancePresetConnect onConnected={refreshSettings} />}
-          {settingsUsageLine && <p className="text-xs text-muted-foreground">{settingsUsageLine}</p>}
+      <SettingsSection
+        label={t('settingsAi.connectCard.title')}
+        description={t('settingsAi.connectCard.description')}
+        contentClassName="space-y-6"
+      >
+        {settings && <ConnectedPanel settings={settings} onDisconnected={() => setSettings(null)} />}
+        {/* The instance's own AI, when its operator configured one (M138 spec
+            06) — first thing in the card, above the key form it makes
+            unnecessary. Renders nothing on an instance without a preset, so
+            this line is invisible in every ordinary deployment. Only offered
+            while nothing is connected: replacing a live connection is
+            disconnect-then-reconnect here, same as for every provider. */}
+        {!isConnected && <InstancePresetConnect onConnected={refreshSettings} />}
+        {settingsUsageLine && <p className="text-xs text-muted-foreground">{settingsUsageLine}</p>}
 
-          <Form method="post" {...getFormProps(form)} className="space-y-6">
-            <input type="hidden" name={fields.provider.name} value={providerValue} />
-            {hasCatalog && <input type="hidden" name={fields.model.name} value={effectiveCatalogModel} />}
+        <Form method="post" {...getFormProps(form)} className="space-y-6">
+          <input type="hidden" name={fields.provider.name} value={providerValue} />
+          {hasCatalog && <input type="hidden" name={fields.model.name} value={effectiveCatalogModel} />}
 
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>{t('settingsAi.providerRow.label')}</span>
-              <Badge variant="secondary">{providerLabel({ provider: providerValue, t })}</Badge>
-              <span className="text-xs">
-                {isConnected ? t('settingsAi.providerRow.connectedHint') : t('settingsAi.providerRow.switchHint')}
-              </span>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>{t('settingsAi.providerRow.label')}</span>
+            <Badge variant="secondary">{providerLabel({ provider: providerValue, t })}</Badge>
+            <span className="text-xs">
+              {isConnected ? t('settingsAi.providerRow.connectedHint') : t('settingsAi.providerRow.switchHint')}
+            </span>
+          </div>
 
-            {/* Primary provider tabs — recommended-first for the UI language
-                (M130/04). Only offered before anything is connected: switching
-                a live connection still means disconnect, then reconnect. */}
-            {!isConnected && primaryProviderDefinitions.length > 1 && (
-              <fieldset className="flex flex-wrap gap-2" aria-label={t('settingsAi.providerTabs.legend')}>
-                {primaryProviderDefinitions.map((definition) => {
-                  const isActive = selectedProvider === definition.id;
-                  return (
-                    <button
-                      key={definition.id}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => selectProvider(definition.id)}
-                      className={cn(
-                        'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50',
-                        isActive && 'border-primary bg-accent/40 font-medium',
-                      )}
-                    >
-                      {t(definition.labelKey)}
-                      {definition.id === recommendedProvider && (
-                        <Badge variant="secondary">{t('settingsAi.model.recommended')}</Badge>
-                      )}
-                    </button>
-                  );
-                })}
-              </fieldset>
-            )}
-
-            {!isConnected && selectedProviderBlurbKey && (
-              <p className="text-sm text-muted-foreground">{t(selectedProviderBlurbKey)}</p>
-            )}
-
-            {hasCatalog && (
-              <CatalogModelSection
-                provider={providerValue}
-                catalogModelId={catalogModelId}
-                customModelId={customModelId}
-                onSelectCatalogModel={(id) => {
-                  setCatalogModelId(id);
-                  setCustomModelId('');
-                }}
-                onCustomModelChange={setCustomModelId}
-              />
-            )}
-
-            {/* A connected provider with NO curated catalog (a self-hosted
-                endpoint) keeps model + base URL editable so the model can be
-                tweaked without disconnecting. With a catalog, the picker above
-                already covers it — rendering this too would put a second input
-                named `model` in the same form. */}
-            {isConnected && !hasCatalog && (
-              <>
-                <div className="grid gap-2">
-                  <Label htmlFor={fields.model.id}>{t('settingsAi.field.model')}</Label>
-                  <Input
-                    {...getInputProps(fields.model, { type: 'text' })}
-                    placeholder={MODEL_PLACEHOLDER[providerValue]}
-                  />
-                  <FieldError id={fields.model.errorId} errors={fields.model.errors} />
-                </div>
-
-                {PROVIDER_REGISTRY[providerValue].baseUrl === null && (
-                  <div className="grid gap-2">
-                    <Label htmlFor={fields.baseUrl.id}>{t('settingsAi.field.baseUrl')}</Label>
-                    <Input
-                      {...getInputProps(fields.baseUrl, { type: 'text' })}
-                      placeholder={OPENAI_COMPATIBLE_BASE_URL_PLACEHOLDER}
-                    />
-                    <p className="text-xs text-muted-foreground">{t(OPENAI_COMPATIBLE_BASE_URL_HELP_KEY)}</p>
-                    <FieldError id={fields.baseUrl.errorId} errors={fields.baseUrl.errors} />
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Provider switching and the API-key field belong only to first-time
-                setup. Replacing a key means disconnect, then reconnect. */}
-            {!isConnected && (
-              <>
-                {/* Primary CTA: one click, no key to copy — shown whenever the
-                    currently-selected provider supports it (only openrouter today,
-                    see vision/registry.ts). Rendered off that capability table,
-                    never off a provider literal here. */}
-                {supportsOauthPkce(selectedProvider) && (
-                  <div className="space-y-2">
-                    <OAuthConnectButton className="h-11 w-full" />
-                    <p className="text-center text-xs text-muted-foreground">{t('settingsAi.oauth.noCardNote')}</p>
-                  </div>
-                )}
-
-                <Collapsible
-                  open={isManualEntryOpen || hasHiddenManualEntryFieldError}
-                  onOpenChange={setIsManualEntryOpen}
-                >
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline"
-                    >
-                      <ChevronDown className="h-3.5 w-3.5" />
-                      {supportsOauthPkce(selectedProvider) ?
-                        t('settingsAi.manualEntry.orPasteKey')
-                      : t('settingsAi.manualEntry.enterKey')}
-                    </button>
-                  </CollapsibleTrigger>
-                  {/* forceMount keeps the provider/model/base-URL/api-key inputs in the
-                      DOM (so they always submit) while collapsed — same pattern as the
-                      scan page's "Fine-tune portion & macros" panel. Without it, collapsing
-                      this panel silently drops those values from the form. That in turn
-                      means a validation error can land on any of them while this stays
-                      visually hidden (`data-[state=closed]:hidden`) —
-                      `hasHiddenManualEntryFieldError` above forces the `Collapsible` open
-                      whenever that happens, so the `<FieldError>`s below are never silently
-                      blocking a submit the user can't see a reason for. */}
-                  <CollapsibleContent
-                    forceMount
-                    className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
+          {/* Primary provider tabs — recommended-first for the UI language
+              (M130/04). Only offered before anything is connected: switching
+              a live connection still means disconnect, then reconnect. */}
+          {!isConnected && primaryProviderDefinitions.length > 1 && (
+            <fieldset className="flex flex-wrap gap-2" aria-label={t('settingsAi.providerTabs.legend')}>
+              {primaryProviderDefinitions.map((definition) => {
+                const isActive = selectedProvider === definition.id;
+                return (
+                  <button
+                    key={definition.id}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => selectProvider(definition.id)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50',
+                      isActive && 'border-primary bg-accent/40 font-medium',
+                    )}
                   >
-                    <Collapsible open={isAdvancedOpen || hasHiddenAdvancedFieldError} onOpenChange={setIsAdvancedOpen}>
-                      <CollapsibleTrigger asChild>
+                    {t(definition.labelKey)}
+                    {definition.id === recommendedProvider && (
+                      <Badge variant="secondary">{t('settingsAi.model.recommended')}</Badge>
+                    )}
+                  </button>
+                );
+              })}
+            </fieldset>
+          )}
+
+          {!isConnected && selectedProviderBlurbKey && (
+            <p className="text-sm text-muted-foreground">{t(selectedProviderBlurbKey)}</p>
+          )}
+
+          {hasCatalog && (
+            <CatalogModelSection
+              provider={providerValue}
+              catalogModelId={catalogModelId}
+              customModelId={customModelId}
+              onSelectCatalogModel={(id) => {
+                setCatalogModelId(id);
+                setCustomModelId('');
+              }}
+              onCustomModelChange={setCustomModelId}
+            />
+          )}
+
+          {/* A connected provider with NO curated catalog (a self-hosted
+              endpoint) keeps model + base URL editable so the model can be
+              tweaked without disconnecting. With a catalog, the picker above
+              already covers it — rendering this too would put a second input
+              named `model` in the same form. */}
+          {isConnected && !hasCatalog && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor={fields.model.id}>{t('settingsAi.field.model')}</Label>
+                <Input
+                  {...getInputProps(fields.model, { type: 'text' })}
+                  placeholder={MODEL_PLACEHOLDER[providerValue]}
+                />
+                <FieldError id={fields.model.errorId} errors={fields.model.errors} />
+              </div>
+
+              {PROVIDER_REGISTRY[providerValue].baseUrl === null && (
+                <div className="grid gap-2">
+                  <Label htmlFor={fields.baseUrl.id}>{t('settingsAi.field.baseUrl')}</Label>
+                  <Input
+                    {...getInputProps(fields.baseUrl, { type: 'text' })}
+                    placeholder={OPENAI_COMPATIBLE_BASE_URL_PLACEHOLDER}
+                  />
+                  <p className="text-xs text-muted-foreground">{t(OPENAI_COMPATIBLE_BASE_URL_HELP_KEY)}</p>
+                  <FieldError id={fields.baseUrl.errorId} errors={fields.baseUrl.errors} />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Provider switching and the API-key field belong only to first-time
+              setup. Replacing a key means disconnect, then reconnect. */}
+          {!isConnected && (
+            <>
+              {/* Primary CTA: one click, no key to copy — shown whenever the
+                  currently-selected provider supports it (only openrouter today,
+                  see vision/registry.ts). Rendered off that capability table,
+                  never off a provider literal here. */}
+              {supportsOauthPkce(selectedProvider) && (
+                <div className="space-y-2">
+                  <OAuthConnectButton className="h-11 w-full" />
+                  <p className="text-center text-xs text-muted-foreground">{t('settingsAi.oauth.noCardNote')}</p>
+                </div>
+              )}
+
+              <Collapsible
+                open={isManualEntryOpen || hasHiddenManualEntryFieldError}
+                onOpenChange={setIsManualEntryOpen}
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                    {supportsOauthPkce(selectedProvider) ?
+                      t('settingsAi.manualEntry.orPasteKey')
+                    : t('settingsAi.manualEntry.enterKey')}
+                  </button>
+                </CollapsibleTrigger>
+                {/* forceMount keeps the provider/model/base-URL/api-key inputs in the
+                    DOM (so they always submit) while collapsed — same pattern as the
+                    scan page's "Fine-tune portion & macros" panel. Without it, collapsing
+                    this panel silently drops those values from the form. That in turn
+                    means a validation error can land on any of them while this stays
+                    visually hidden (`data-[state=closed]:hidden`) —
+                    `hasHiddenManualEntryFieldError` above forces the `Collapsible` open
+                    whenever that happens, so the `<FieldError>`s below are never silently
+                    blocking a submit the user can't see a reason for. */}
+                <CollapsibleContent
+                  forceMount
+                  className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
+                >
+                  <Collapsible open={isAdvancedOpen || hasHiddenAdvancedFieldError} onOpenChange={setIsAdvancedOpen}>
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" /> {t('settingsAi.advanced.toggle')}
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent
+                      forceMount
+                      className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
+                    >
+                      {PROVIDER_REGISTRY[selectedProvider].placement === 'advanced' && (
                         <button
                           type="button"
-                          className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline"
+                          onClick={() => selectProvider(recommendedProvider)}
+                          className="text-xs text-muted-foreground underline-offset-4 hover:underline"
                         >
-                          <ChevronDown className="h-3.5 w-3.5" /> {t('settingsAi.advanced.toggle')}
+                          {t('settingsAi.advanced.backToRecommended', {
+                            provider: providerLabel({ provider: recommendedProvider, t }),
+                          })}
                         </button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent
-                        forceMount
-                        className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
-                      >
-                        {PROVIDER_REGISTRY[selectedProvider].placement === 'advanced' && (
-                          <button
-                            type="button"
-                            onClick={() => selectProvider(recommendedProvider)}
-                            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-                          >
-                            {t('settingsAi.advanced.backToRecommended', {
-                              provider: providerLabel({ provider: recommendedProvider, t }),
-                            })}
-                          </button>
-                        )}
-
-                        <div className="grid gap-2">
-                          {ADVANCED_PROVIDER_DEFINITIONS.map((definition) => (
-                            <label key={definition.id} className="flex items-center gap-2 text-sm">
-                              <input
-                                type="radio"
-                                name="advancedProviderChoice"
-                                checked={selectedProvider === definition.id}
-                                onChange={() => selectProvider(definition.id)}
-                              />
-                              {t(ADVANCED_OPTION_KEYS[definition.id] ?? definition.labelKey)}
-                            </label>
-                          ))}
-                        </div>
-
-                        {/* Free text only where there is nothing curated to pick
-                            from; a provider WITH a catalog is served by the
-                            picker above, which owns the `model` field. */}
-                        {!hasCatalog && (
-                          <div className="grid gap-2">
-                            <Label htmlFor={fields.model.id}>{t('settingsAi.field.model')}</Label>
-                            <Input
-                              {...getInputProps(fields.model, { type: 'text' })}
-                              placeholder={MODEL_PLACEHOLDER[selectedProvider]}
-                            />
-                            <FieldError id={fields.model.errorId} errors={fields.model.errors} />
-                          </div>
-                        )}
-
-                        {PROVIDER_REGISTRY[selectedProvider].baseUrl === null && (
-                          <div className="grid gap-2">
-                            <Label htmlFor={fields.baseUrl.id}>{t('settingsAi.field.baseUrl')}</Label>
-                            <Input
-                              {...getInputProps(fields.baseUrl, { type: 'text' })}
-                              placeholder={OPENAI_COMPATIBLE_BASE_URL_PLACEHOLDER}
-                            />
-                            <p className="text-xs text-muted-foreground">{t(OPENAI_COMPATIBLE_BASE_URL_HELP_KEY)}</p>
-                            <FieldError id={fields.baseUrl.errorId} errors={fields.baseUrl.errors} />
-                          </div>
-                        )}
-                      </CollapsibleContent>
-                    </Collapsible>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor={fields.apiKey.id}>{t(API_KEY_LABEL_KEYS[selectedProvider])}</Label>
-                      <Input
-                        {...getInputProps(fields.apiKey, { type: 'password' })}
-                        autoComplete="off"
-                        // Empty string ⇒ no placeholder at all, for a provider
-                        // whose keys carry no telltale prefix (see the table).
-                        placeholder={API_KEY_PLACEHOLDERS[selectedProvider] || undefined}
-                      />
-                      {PROVIDER_REGISTRY[selectedProvider].baseUrl === null && (
-                        <p className="text-xs text-muted-foreground">{t('settingsAi.apiKey.sentToBaseUrl')}</p>
                       )}
-                      <p className="text-xs text-muted-foreground">{t('settingsAi.apiKey.noKeyYet')}</p>
-                      <FieldError id={fields.apiKey.errorId} errors={fields.apiKey.errors} />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </>
-            )}
 
-            <FieldError id={form.errorId} errors={form.errors} />
+                      <div className="grid gap-2">
+                        {ADVANCED_PROVIDER_DEFINITIONS.map((definition) => (
+                          <label key={definition.id} className="flex items-center gap-2 text-sm">
+                            <input
+                              type="radio"
+                              name="advancedProviderChoice"
+                              checked={selectedProvider === definition.id}
+                              onChange={() => selectProvider(definition.id)}
+                            />
+                            {t(ADVANCED_OPTION_KEYS[definition.id] ?? definition.labelKey)}
+                          </label>
+                        ))}
+                      </div>
 
-            <SubmitButton pending={isSubmitting} pendingLabel={savingLabel}>
-              {idleLabel}
-            </SubmitButton>
-          </Form>
-        </CardContent>
-      </Card>
+                      {/* Free text only where there is nothing curated to pick
+                          from; a provider WITH a catalog is served by the
+                          picker above, which owns the `model` field. */}
+                      {!hasCatalog && (
+                        <div className="grid gap-2">
+                          <Label htmlFor={fields.model.id}>{t('settingsAi.field.model')}</Label>
+                          <Input
+                            {...getInputProps(fields.model, { type: 'text' })}
+                            placeholder={MODEL_PLACEHOLDER[selectedProvider]}
+                          />
+                          <FieldError id={fields.model.errorId} errors={fields.model.errors} />
+                        </div>
+                      )}
+
+                      {PROVIDER_REGISTRY[selectedProvider].baseUrl === null && (
+                        <div className="grid gap-2">
+                          <Label htmlFor={fields.baseUrl.id}>{t('settingsAi.field.baseUrl')}</Label>
+                          <Input
+                            {...getInputProps(fields.baseUrl, { type: 'text' })}
+                            placeholder={OPENAI_COMPATIBLE_BASE_URL_PLACEHOLDER}
+                          />
+                          <p className="text-xs text-muted-foreground">{t(OPENAI_COMPATIBLE_BASE_URL_HELP_KEY)}</p>
+                          <FieldError id={fields.baseUrl.errorId} errors={fields.baseUrl.errors} />
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor={fields.apiKey.id}>{t(API_KEY_LABEL_KEYS[selectedProvider])}</Label>
+                    <Input
+                      {...getInputProps(fields.apiKey, { type: 'password' })}
+                      autoComplete="off"
+                      // Empty string ⇒ no placeholder at all, for a provider
+                      // whose keys carry no telltale prefix (see the table).
+                      placeholder={API_KEY_PLACEHOLDERS[selectedProvider] || undefined}
+                    />
+                    {PROVIDER_REGISTRY[selectedProvider].baseUrl === null && (
+                      <p className="text-xs text-muted-foreground">{t('settingsAi.apiKey.sentToBaseUrl')}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">{t('settingsAi.apiKey.noKeyYet')}</p>
+                    <FieldError id={fields.apiKey.errorId} errors={fields.apiKey.errors} />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </>
+          )}
+
+          <FieldError id={form.errorId} errors={form.errors} />
+
+          <SubmitButton pending={isSubmitting} pendingLabel={savingLabel}>
+            {idleLabel}
+          </SubmitButton>
+        </Form>
+      </SettingsSection>
       {!isConnected && (
         <NotConnectedExplainer recommendedProvider={recommendedProvider} hasInstancePreset={instancePreset !== null} />
       )}

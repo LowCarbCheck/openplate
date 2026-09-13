@@ -29,9 +29,8 @@ import { CalendarClock, Github, History, RefreshCw, Scale, Tag, type LucideIcon 
 import { useTranslation } from 'react-i18next';
 
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { SectionEyebrow } from '#app/components/typography';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { BUILD, formatBuildLabel } from '#app/lib/build-info';
 import { useUpdateStatus } from '#app/hooks/use-update-status';
@@ -94,78 +93,71 @@ function UpdatesCard() {
   const nextAllowed = instant(server?.nextCheckAllowedAt ?? null);
 
   return (
-    <Card>
-      <CardHeader>
-        <SectionEyebrow>{t('about.updates.title')}</SectionEyebrow>
-        <CardTitle>{t('about.updates.title')}</CardTitle>
-        <CardDescription>{t('about.updates.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-0">
-        <div>
-          <AboutRow icon={Tag} label={t('about.updates.running')}>
-            <span className="tabular-nums">{formatBuildLabel(BUILD)}</span>
-          </AboutRow>
-          <AboutRow icon={CalendarClock} label={t('about.updates.built')}>
-            <span className="tabular-nums">{instant(BUILD.builtAt) ?? BUILD.builtAt}</span>
-          </AboutRow>
-          <AboutRow icon={RefreshCw} label={t('about.updates.latest')}>
-            {!enabled && <span className="text-muted-foreground">{t('about.updates.disabled')}</span>}
-            {enabled && server?.releaseUrl !== undefined && server.releaseUrl !== null && (
-              <a
-                href={server.releaseUrl}
-                target="_blank"
-                rel="noopener"
-                className="tabular-nums text-primary underline-offset-4 hover:underline"
-              >
-                v{server.latest}
-              </a>
-            )}
-            {enabled && (server === null || server.releaseUrl === null) && (
-              <span className="text-muted-foreground">{t('about.updates.never')}</span>
-            )}
-          </AboutRow>
-          {/* `History`, not the `CalendarClock` of "Built" above: two identical
-              glyphs in one four-row list read as one repeated fact. */}
-          {enabled && (
-            <AboutRow icon={History} label={t('about.updates.lastChecked')}>
-              <span className="text-muted-foreground">{checked ?? t('about.updates.never')}</span>
-            </AboutRow>
-          )}
-        </div>
-
-        {!enabled && <p className="text-sm text-muted-foreground">{t('about.updates.disabledHint')}</p>}
-        {enabled && server?.updateAvailable === true && (
-          <p className="text-sm text-muted-foreground">{t('about.updates.selfHostHint')}</p>
-        )}
-        {enabled && server?.throttled === true && nextAllowed !== null && (
-          <p className="text-sm text-muted-foreground">{t('about.updates.throttled', { when: nextAllowed })}</p>
-        )}
-        {ribbon === 'newer-bundle' && <p className="text-sm text-muted-foreground">{t('about.updates.reloadHint')}</p>}
-
-        <div className="flex flex-wrap gap-2">
-          {enabled && (
-            <Button type="button" variant="outline" size="sm" disabled={status.isChecking} onClick={checkNow}>
-              {status.isChecking ? t('about.updates.checking') : t('about.updates.checkNow')}
-            </Button>
-          )}
-          {/* Only when a reload would actually change something. A permanent
-              button that usually re-serves the same page teaches people it does
-              nothing, which is worse than not offering it. */}
-          {ribbon === 'newer-bundle' && (
-            <Button type="button" size="sm" onClick={updateNow}>
-              {t('about.updates.reload')}
-            </Button>
-          )}
+    <SettingsSection label={t('about.updates.title')} description={t('about.updates.description')}>
+      <div>
+        <AboutRow icon={Tag} label={t('about.updates.running')}>
+          <span className="tabular-nums">{formatBuildLabel(BUILD)}</span>
+        </AboutRow>
+        <AboutRow icon={CalendarClock} label={t('about.updates.built')}>
+          <span className="tabular-nums">{instant(BUILD.builtAt) ?? BUILD.builtAt}</span>
+        </AboutRow>
+        <AboutRow icon={RefreshCw} label={t('about.updates.latest')}>
+          {!enabled && <span className="text-muted-foreground">{t('about.updates.disabled')}</span>}
           {enabled && server?.releaseUrl !== undefined && server.releaseUrl !== null && (
-            <Button asChild variant="ghost" size="sm">
-              <a href={server.releaseUrl} target="_blank" rel="noopener">
-                {t('about.updates.releaseLink')}
-              </a>
-            </Button>
+            <a
+              href={server.releaseUrl}
+              target="_blank"
+              rel="noopener"
+              className="tabular-nums text-primary underline-offset-4 hover:underline"
+            >
+              v{server.latest}
+            </a>
           )}
-        </div>
-      </CardContent>
-    </Card>
+          {enabled && (server === null || server.releaseUrl === null) && (
+            <span className="text-muted-foreground">{t('about.updates.never')}</span>
+          )}
+        </AboutRow>
+        {/* `History`, not the `CalendarClock` of "Built" above: two identical
+            glyphs in one four-row list read as one repeated fact. */}
+        {enabled && (
+          <AboutRow icon={History} label={t('about.updates.lastChecked')}>
+            <span className="text-muted-foreground">{checked ?? t('about.updates.never')}</span>
+          </AboutRow>
+        )}
+      </div>
+
+      {!enabled && <p className="text-sm text-muted-foreground">{t('about.updates.disabledHint')}</p>}
+      {enabled && server?.updateAvailable === true && (
+        <p className="text-sm text-muted-foreground">{t('about.updates.selfHostHint')}</p>
+      )}
+      {enabled && server?.throttled === true && nextAllowed !== null && (
+        <p className="text-sm text-muted-foreground">{t('about.updates.throttled', { when: nextAllowed })}</p>
+      )}
+      {ribbon === 'newer-bundle' && <p className="text-sm text-muted-foreground">{t('about.updates.reloadHint')}</p>}
+
+      <div className="flex flex-wrap gap-2">
+        {enabled && (
+          <Button type="button" variant="outline" size="sm" disabled={status.isChecking} onClick={checkNow}>
+            {status.isChecking ? t('about.updates.checking') : t('about.updates.checkNow')}
+          </Button>
+        )}
+        {/* Only when a reload would actually change something. A permanent
+            button that usually re-serves the same page teaches people it does
+            nothing, which is worse than not offering it. */}
+        {ribbon === 'newer-bundle' && (
+          <Button type="button" size="sm" onClick={updateNow}>
+            {t('about.updates.reload')}
+          </Button>
+        )}
+        {enabled && server?.releaseUrl !== undefined && server.releaseUrl !== null && (
+          <Button asChild variant="ghost" size="sm">
+            <a href={server.releaseUrl} target="_blank" rel="noopener">
+              {t('about.updates.releaseLink')}
+            </a>
+          </Button>
+        )}
+      </div>
+    </SettingsSection>
   );
 }
 
@@ -173,41 +165,31 @@ export default function SettingsAbout() {
   const { t } = useTranslation();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <Card>
-        <CardHeader>
-          <SectionEyebrow>{t('about.eyebrow')}</SectionEyebrow>
-          <CardTitle>{t('about.title')}</CardTitle>
-          <CardDescription>{t('about.description')}</CardDescription>
-        </CardHeader>
-        {/* No version row here. It used to be the only place the build was
-            readable, and it is now the first line of the Updates card directly
-            below, where it sits beside the build time and the latest release it
-            has to be read against. Two identical version strings a few pixels
-            apart read as a discrepancy the reader has to rule out. */}
-        <CardContent className="pt-0">
-          <AboutRow icon={Scale} label={t('about.licence')}>
-            <a
-              href={REPO_LICENSE_URL}
-              target="_blank"
-              rel="noopener"
-              className="text-primary underline-offset-4 hover:underline"
-            >
-              {t('about.licenceValue')}
-            </a>
-          </AboutRow>
-          <AboutRow icon={Github} label={t('about.source')}>
-            <a
-              href={REPO_URL}
-              target="_blank"
-              rel="noopener"
-              className="text-primary underline-offset-4 hover:underline"
-            >
-              {t('about.sourceValue', { appName: APP_NAME })}
-            </a>
-          </AboutRow>
-        </CardContent>
-      </Card>
+    <div className="mx-auto max-w-xl space-y-5">
+      {/* No version row here. It used to be the only place the build was
+          readable, and it is now the first line of the Updates section directly
+          below, where it sits beside the build time and the latest release it
+          has to be read against. Two identical version strings a few pixels
+          apart read as a discrepancy the reader has to rule out. */}
+      {/* `space-y-0`: `AboutRow` draws its own hairline between rows, so the
+          section's default row gap must not reopen a second one. */}
+      <SettingsSection label={t('about.title')} description={t('about.description')} contentClassName="space-y-0">
+        <AboutRow icon={Scale} label={t('about.licence')}>
+          <a
+            href={REPO_LICENSE_URL}
+            target="_blank"
+            rel="noopener"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            {t('about.licenceValue')}
+          </a>
+        </AboutRow>
+        <AboutRow icon={Github} label={t('about.source')}>
+          <a href={REPO_URL} target="_blank" rel="noopener" className="text-primary underline-offset-4 hover:underline">
+            {t('about.sourceValue', { appName: APP_NAME })}
+          </a>
+        </AboutRow>
+      </SettingsSection>
       <UpdatesCard />
     </div>
   );

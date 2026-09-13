@@ -44,3 +44,41 @@ test('every settings row opens a titled page that still fits the phone', async (
     await expectPhoneLayout(page);
   }
 });
+
+/**
+ * The pages already converted to the hub's inset chrome (M225).
+ *
+ * FROZEN, and it grows. Each worker converting a page adds it here in the same
+ * change, so this spec covers what has actually landed instead of asserting a
+ * shape nobody built yet.
+ */
+const CONVERTED_PAGES = [
+  '/settings/about',
+  '/settings/account',
+  '/settings/ai',
+  '/settings/data',
+  '/settings/fasting',
+  '/settings/life-phase',
+  '/settings/notifications',
+  '/settings/nutrition',
+  '/settings/preferences',
+  '/settings/profile',
+  '/settings/research',
+  '/settings/sharing',
+];
+
+test('a converted settings page wears the hub chrome and no card', async ({ page }) => {
+  await completeOnboarding(page);
+
+  for (const destination of CONVERTED_PAGES) {
+    await page.goto(destination);
+    const headings = page.locator('section > h2');
+    const insets = page.locator('section > div.rounded-2xl');
+    await expect(headings.first(), `${destination} must label its sections`).toBeVisible();
+    await expect(insets.first(), `${destination} must draw an inset container`).toBeVisible();
+    // THE CARD SIGNATURE. `ui/card`'s Card is the only thing in the app that
+    // pairs a shadow with this radius, so one of these is a page that went
+    // back to the desktop chrome.
+    expect(await page.locator('.shadow-sm.rounded-2xl').count(), `${destination} still draws a Card`).toBe(0);
+  }
+});

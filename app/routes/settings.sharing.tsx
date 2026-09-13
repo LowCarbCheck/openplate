@@ -25,7 +25,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
-import { Activity, KeyRound, Loader2, Share2 } from 'lucide-react';
+import { Activity, Loader2 } from 'lucide-react';
 
 import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
@@ -34,7 +34,7 @@ import { ShareGrantsPanel } from '#app/components/share-grants-panel';
 import { ShareVerifyStep, type ShareInviteDraft } from '#app/components/share-verify-step';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SETTINGS_INSET_CLASS, SettingsSection } from '#app/components/settings/settings-section';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Switch } from '#app/components/ui/switch';
@@ -51,6 +51,7 @@ import {
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackShareGranted, trackShareKeyRotated, trackShareRevoked } from '#app/lib/matomo-events';
 import { isPulseEnabled, setPulseEnabled } from '#app/lib/pulse';
+import { cn } from '#app/lib/utils';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
   grantShare,
@@ -104,21 +105,13 @@ export default function SettingsSharing() {
   }, [refresh]);
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-primary" aria-hidden="true" /> {t('sharing.title')}
-          </CardTitle>
-          <CardDescription>{t('sharing.intro')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {state.status === 'loading' && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
-          {state.status === 'signed-out' && <SignedOutNotice />}
-          {state.status === 'unavailable' && <UnavailableNotice />}
-          {state.status === 'ready' && <GrantsSection grants={state.grants} onChanged={() => void refresh()} />}
-        </CardContent>
-      </Card>
+    <div className="mx-auto max-w-xl space-y-5">
+      <SettingsSection label={t('sharing.title')} description={t('sharing.intro')}>
+        {state.status === 'loading' && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
+        {state.status === 'signed-out' && <SignedOutNotice />}
+        {state.status === 'unavailable' && <UnavailableNotice />}
+        {state.status === 'ready' && <GrantsSection grants={state.grants} onChanged={() => void refresh()} />}
+      </SettingsSection>
 
       {/* The pulse sits on this page because it is the other thing that can
           leave this device, and it is offered only to a device that HAS an
@@ -159,19 +152,20 @@ function PulseCard() {
     setPulseEnabled(next);
   };
 
+  // NO HEADING, so this is the bare inset container rather than a
+  // `SettingsSection`: the switch's own `Label` names the setting, and a
+  // heading above it would be the same words twice (DESIGN.md 10.7).
   return (
-    <Card>
-      <CardContent className="space-y-3 pt-6">
-        <div className="flex items-center justify-between gap-4">
-          <Label htmlFor="sharing-pulse" className="flex items-center gap-2 text-sm font-medium">
-            <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
-            {t('sharing.pulse.label')}
-          </Label>
-          <Switch id="sharing-pulse" checked={enabled} onCheckedChange={handleToggle} />
-        </div>
-        <p className="text-sm text-muted-foreground">{t('sharing.pulse.help')}</p>
-      </CardContent>
-    </Card>
+    <div className={cn(SETTINGS_INSET_CLASS, 'space-y-3 px-4 py-4')}>
+      <div className="flex items-center justify-between gap-4">
+        <Label htmlFor="sharing-pulse" className="flex items-center gap-2 text-sm font-medium">
+          <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
+          {t('sharing.pulse.label')}
+        </Label>
+        <Switch id="sharing-pulse" checked={enabled} onCheckedChange={handleToggle} />
+      </div>
+      <p className="text-sm text-muted-foreground">{t('sharing.pulse.help')}</p>
+    </div>
   );
 }
 
@@ -317,67 +311,63 @@ function RotationCard({ onRotated }: { onRotated: () => void }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <KeyRound className="h-5 w-5 text-primary" aria-hidden="true" /> {t('sharing.rotate.title')}
-        </CardTitle>
-        <CardDescription>{t('sharing.rotate.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">{t('sharing.rotate.future')}</p>
-        <p className="text-sm text-muted-foreground">{t('sharing.rotate.notThePast')}</p>
-        {drops.length > 0 && (
-          <p className="text-sm text-accent-amber">{t('sharing.rotate.willDrop', { shares: drops.length })}</p>
-        )}
+    <SettingsSection
+      label={t('sharing.rotate.title')}
+      description={t('sharing.rotate.description')}
+      contentClassName="space-y-3"
+    >
+      <p className="text-sm text-muted-foreground">{t('sharing.rotate.future')}</p>
+      <p className="text-sm text-muted-foreground">{t('sharing.rotate.notThePast')}</p>
+      {drops.length > 0 && (
+        <p className="text-sm text-accent-amber">{t('sharing.rotate.willDrop', { shares: drops.length })}</p>
+      )}
 
-        {outcome === null ?
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button type="button" variant="outline" className="h-11">
-                {t('sharing.rotate.open')}
+      {outcome === null ?
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button type="button" variant="outline" className="h-11">
+              {t('sharing.rotate.open')}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('sharing.rotate.confirmTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('sharing.rotate.confirmBody')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="sharing-rotate-passphrase">{t('sharing.rotate.passphraseLabel')}</Label>
+              <Input
+                id="sharing-rotate-passphrase"
+                type="password"
+                autoComplete="current-password"
+                className="h-11"
+                value={passphrase}
+                onChange={(event) => setPassphrase(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t('sharing.rotate.passphraseHint')}</p>
+              {error !== null && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isBusy}>{t('sharing.cancel')}</AlertDialogCancel>
+              <Button disabled={isBusy || passphrase === ''} onClick={() => void handleRotate()}>
+                {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                {t('sharing.rotate.confirmCta')}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('sharing.rotate.confirmTitle')}</AlertDialogTitle>
-                <AlertDialogDescription>{t('sharing.rotate.confirmBody')}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="space-y-2">
-                <Label htmlFor="sharing-rotate-passphrase">{t('sharing.rotate.passphraseLabel')}</Label>
-                <Input
-                  id="sharing-rotate-passphrase"
-                  type="password"
-                  autoComplete="current-password"
-                  className="h-11"
-                  value={passphrase}
-                  onChange={(event) => setPassphrase(event.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">{t('sharing.rotate.passphraseHint')}</p>
-                {error !== null && <p className="text-sm text-destructive">{error}</p>}
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isBusy}>{t('sharing.cancel')}</AlertDialogCancel>
-                <Button disabled={isBusy || passphrase === ''} onClick={() => void handleRotate()}>
-                  {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-                  {t('sharing.rotate.confirmCta')}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        : <div className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-4">
-            <p className="text-sm font-medium">{t('sharing.rotate.doneTitle')}</p>
-            {/* THE COUNTS, and nothing else (M192). A rotation still mints a
-                fresh recovery code, and the card used to print it with a
-                "keep this" note. It is escrowed with the service now and never
-                shown, so there is nothing for a person to write down and
-                nothing here to write it on. */}
-            <p className="text-sm text-muted-foreground">
-              {t('sharing.rotate.doneBody', { kept: outcome.keptShares, revoked: outcome.revokedShares })}
-            </p>
-          </div>
-        }
-      </CardContent>
-    </Card>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      : <div className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm font-medium">{t('sharing.rotate.doneTitle')}</p>
+          {/* THE COUNTS, and nothing else (M192). A rotation still mints a
+              fresh recovery code, and the card used to print it with a
+              "keep this" note. It is escrowed with the service now and never
+              shown, so there is nothing for a person to write down and
+              nothing here to write it on. */}
+          <p className="text-sm text-muted-foreground">
+            {t('sharing.rotate.doneBody', { kept: outcome.keptShares, revoked: outcome.revokedShares })}
+          </p>
+        </div>
+      }
+    </SettingsSection>
   );
 }

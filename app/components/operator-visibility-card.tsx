@@ -36,33 +36,28 @@
  * call site in `settings.account.tsx`.
  */
 import { useTranslation } from 'react-i18next';
-import { Eye } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { OPERATOR_VISIBLE_LINES, USAGE_COUNTER_RETENTION_DAYS } from '#app/lib/admin/operator-visibility';
 
 export function OperatorVisibilityCard() {
   const { t } = useTranslation();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Eye className="h-5 w-5 text-primary" aria-hidden="true" /> {t('account.operatorSees.title')}
-        </CardTitle>
-        <CardDescription>{t('account.operatorSees.intro')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <ul className="list-disc space-y-1 pl-5 text-sm">
-          {OPERATOR_VISIBLE_LINES.map((line) => (
-            <li key={line.field}>{t(line.copyKey)}</li>
-          ))}
-        </ul>
-        <p className="text-sm">{t('account.operatorSees.activity', { days: USAGE_COUNTER_RETENTION_DAYS })}</p>
-        <p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
-          {t('account.operatorSees.notTheDiary')}
-        </p>
-      </CardContent>
-    </Card>
+    <SettingsSection
+      label={t('account.operatorSees.title')}
+      description={t('account.operatorSees.intro')}
+      contentClassName="space-y-3"
+    >
+      <ul className="list-disc space-y-1 pl-5 text-sm">
+        {OPERATOR_VISIBLE_LINES.map((line) => (
+          <li key={line.field}>{t(line.copyKey)}</li>
+        ))}
+      </ul>
+      <p className="text-sm">{t('account.operatorSees.activity', { days: USAGE_COUNTER_RETENTION_DAYS })}</p>
+      <p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+        {t('account.operatorSees.notTheDiary')}
+      </p>
+    </SettingsSection>
   );
 }

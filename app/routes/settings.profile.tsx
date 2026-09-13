@@ -28,8 +28,7 @@ import { z } from 'zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import type { SubmissionResult } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
-import { ChevronRight, HeartPulse } from 'lucide-react';
-import { Link } from '#app/components/link';
+import { HeartPulse } from 'lucide-react';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { todayInTimezone } from '#app/lib/user-days';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
@@ -66,7 +65,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
 import { WeightEntryList, type WeightEntryRow } from '#app/components/weight/weight-entry-list';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SETTINGS_INSET_CLASS, SettingsRow, SettingsSection } from '#app/components/settings/settings-section';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import i18nSingleton from '#app/i18n/i18n';
@@ -286,6 +285,10 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
  * about what week somebody is in. Rendered for EVERY account: the fieldset
  * behind the row has its own rule about who is asked, but a person who never
  * answered the sex question still has to be able to find the page.
+ *
+ * Drawn with the shared `SettingsRow` primitive inside a bare inset
+ * container, the same grouped-list look the settings hub uses, rather than
+ * the old per-row `rounded-xl border bg-card` card.
  */
 function LifePhaseRow({ metrics, today }: { metrics: BodyMetrics; today: string }) {
   const { t } = useTranslation();
@@ -298,17 +301,9 @@ function LifePhaseRow({ metrics, today }: { metrics: BodyMetrics; today: string 
   });
 
   return (
-    <Link
-      to="/settings/life-phase"
-      className="flex min-h-14 items-center gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-    >
-      <HeartPulse className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{t('lifePhase.title')}</span>
-        <span className="block line-clamp-2 text-xs text-muted-foreground">{status}</span>
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-    </Link>
+    <div className={cn(SETTINGS_INSET_CLASS, 'overflow-hidden')}>
+      <SettingsRow to="/settings/life-phase" icon={HeartPulse} title={t('lifePhase.title')} status={status} />
+    </div>
   );
 }
 
@@ -366,58 +361,59 @@ function WeightCard({
   const weightKgForSubmit = toWeightSubmitValue(weightLogText, weightUnit);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <CardTitle>{t('goals.weight.title')}</CardTitle>
-            <CardDescription>{t('goals.weight.description')}</CardDescription>
-          </div>
-          <WeightUnitToggle unit={weightUnit} onChange={onWeightUnitChange} />
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <fetcher.Form method="post" {...getFormProps(form)} className="flex flex-wrap items-end gap-3">
-          <input type="hidden" name="_intent" value={INTENT.LOG_WEIGHT} />
-          <div className="min-w-40 flex-1 space-y-2">
-            <Label htmlFor={fields.weightKg.id}>{t('goals.weight.todayLabel', { unit: weightUnit })}</Label>
-            <Input
-              id={fields.weightKg.id}
-              inputMode="decimal"
-              placeholder={weightUnit === 'kg' ? t('goals.weight.placeholderKg') : t('goals.weight.placeholderLb')}
-              value={weightLogText}
-              onChange={(event) => setWeightLogText(event.target.value)}
-              aria-describedby={fields.weightKg.errorId}
-              aria-invalid={fields.weightKg.errors?.length ? true : undefined}
-              className="h-11 sm:h-9"
-            />
-            <input type="hidden" name={fields.weightKg.name} value={weightKgForSubmit} />
-            <FieldError id={fields.weightKg.errorId} errors={fields.weightKg.errors} />
-          </div>
-          <SubmitButton pending={isLogging} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
-            {todayWeightKg !== null ? t('goals.weight.update') : t('goals.weight.log')}
-          </SubmitButton>
-        </fetcher.Form>
-
-        {todayWeightKg !== null && (
-          <p className="text-xs text-muted-foreground">
-            {t('goals.weight.loggedToday', {
-              weight: formatMacroNumberIn(i18n.language, fromKg(todayWeightKg, weightUnit)),
-              unit: weightUnit,
-            })}
-          </p>
-        )}
-
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">{t('goals.weight.recentHeading')}</h3>
-          <WeightEntryList
-            entries={weighIns.slice(0, RECENT_ENTRY_DISPLAY_LIMIT)}
-            deleteIntent={INTENT.DELETE_WEIGHT}
-            weightUnit={weightUnit}
+    <SettingsSection
+      label={t('goals.weight.title')}
+      description={t('goals.weight.description')}
+      contentClassName="space-y-6"
+    >
+      {/* THE UNIT TOGGLE MOVED INSIDE THE BOX. It used to sit beside the title
+          in the card header, and a settings heading has no slot for a control
+          (see `settings-section.tsx`): the eyebrow is a heading, not a row. It
+          still governs the field under it and the list below, so it opens the
+          box rather than moving to another one. */}
+      <div className="flex justify-end">
+        <WeightUnitToggle unit={weightUnit} onChange={onWeightUnitChange} />
+      </div>
+      <fetcher.Form method="post" {...getFormProps(form)} className="flex flex-wrap items-end gap-3">
+        <input type="hidden" name="_intent" value={INTENT.LOG_WEIGHT} />
+        <div className="min-w-40 flex-1 space-y-2">
+          <Label htmlFor={fields.weightKg.id}>{t('goals.weight.todayLabel', { unit: weightUnit })}</Label>
+          <Input
+            id={fields.weightKg.id}
+            inputMode="decimal"
+            placeholder={weightUnit === 'kg' ? t('goals.weight.placeholderKg') : t('goals.weight.placeholderLb')}
+            value={weightLogText}
+            onChange={(event) => setWeightLogText(event.target.value)}
+            aria-describedby={fields.weightKg.errorId}
+            aria-invalid={fields.weightKg.errors?.length ? true : undefined}
+            className="h-11 sm:h-9"
           />
+          <input type="hidden" name={fields.weightKg.name} value={weightKgForSubmit} />
+          <FieldError id={fields.weightKg.errorId} errors={fields.weightKg.errors} />
         </div>
-      </CardContent>
-    </Card>
+        <SubmitButton pending={isLogging} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+          {todayWeightKg !== null ? t('goals.weight.update') : t('goals.weight.log')}
+        </SubmitButton>
+      </fetcher.Form>
+
+      {todayWeightKg !== null && (
+        <p className="text-xs text-muted-foreground">
+          {t('goals.weight.loggedToday', {
+            weight: formatMacroNumberIn(i18n.language, fromKg(todayWeightKg, weightUnit)),
+            unit: weightUnit,
+          })}
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">{t('goals.weight.recentHeading')}</h3>
+        <WeightEntryList
+          entries={weighIns.slice(0, RECENT_ENTRY_DISPLAY_LIMIT)}
+          deleteIntent={INTENT.DELETE_WEIGHT}
+          weightUnit={weightUnit}
+        />
+      </div>
+    </SettingsSection>
   );
 }
 
@@ -476,101 +472,99 @@ function BodyMetricsCard({ metrics }: { metrics: BodyMetrics }) {
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('bodyMetrics.card.title')}</CardTitle>
-        <CardDescription>{t('bodyMetrics.card.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
-          <input type="hidden" name="_intent" value={INTENT.SAVE_BODY_METRICS} />
+    <SettingsSection
+      label={t('bodyMetrics.card.title')}
+      description={t('bodyMetrics.card.description')}
+      contentClassName="space-y-6"
+    >
+      <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
+        <input type="hidden" name="_intent" value={INTENT.SAVE_BODY_METRICS} />
 
-          <div className="space-y-2">
-            <Label htmlFor={fields.heightCm.id}>{t('bodyMetrics.height.label')}</Label>
-            <p className="text-xs text-muted-foreground">{t('bodyMetrics.height.hint')}</p>
-            {/*
-              Conform owns this field end to end: `getInputProps` supplies the
-              id, the name, the seeded `defaultValue` and the
-              `aria-invalid`/`aria-describedby` pair from the SAME metadata
-              `FieldError` reads. Bound to local React state with hand-rolled
-              `aria-invalid` instead (the shape this had), the input kept its own
-              value while the error lived elsewhere, so a corrected height still
-              read as invalid until the next submit. Presentation-only props go
-              AFTER the spread so they are not clobbered by it.
-            */}
-            <Input
-              {...getInputProps(fields.heightCm, { type: 'text' })}
-              inputMode="numeric"
-              placeholder={t('bodyMetrics.height.placeholder')}
-              className="h-11 sm:h-9"
-            />
-            <FieldError id={fields.heightCm.errorId} errors={fields.heightCm.errors} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={fields.birthYear.id}>{t('bodyMetrics.birthYear.label')}</Label>
-            <p className="text-xs text-muted-foreground">{t('bodyMetrics.birthYear.hint')}</p>
-            <Input
-              {...getInputProps(fields.birthYear, { type: 'text' })}
-              inputMode="numeric"
-              placeholder={t('bodyMetrics.birthYear.placeholder')}
-              className="h-11 sm:h-9"
-            />
-            <FieldError id={fields.birthYear.errorId} errors={fields.birthYear.errors} />
-          </div>
-
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">{t('bodyMetrics.sex.legend')}</legend>
-            <p className="text-xs text-muted-foreground">{t('bodyMetrics.sex.hint')}</p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {sexOptions.map((option) => (
-                <label key={option.value} className={cn('cursor-pointer', settingsChipClass(biologicalSex === option.value))}>
-                  <input
-                    type="radio"
-                    name={fields.biologicalSex.name}
-                    value={option.value}
-                    checked={biologicalSex === option.value}
-                    onChange={() => setBiologicalSex(option.value)}
-                    className="sr-only"
-                  />
-                  {option.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
+        <div className="space-y-2">
+          <Label htmlFor={fields.heightCm.id}>{t('bodyMetrics.height.label')}</Label>
+          <p className="text-xs text-muted-foreground">{t('bodyMetrics.height.hint')}</p>
           {/*
-            THE LIFE PHASE IS NOT ASKED HERE (M215 spec 01). Pregnancy and
-            breastfeeding have their own page at `/settings/life-phase`, which
-            the row at the top of this page opens, and the same shared
-            `ReproductiveStatusFields` renders it there. The sex answer above
-            still gates the fieldset, and `normalizeBodyMetrics` still drops a
-            status the answer contradicts, so saving "male" on this card clears
-            a stored pregnancy exactly as it did before.
+            Conform owns this field end to end: `getInputProps` supplies the
+            id, the name, the seeded `defaultValue` and the
+            `aria-invalid`/`aria-describedby` pair from the SAME metadata
+            `FieldError` reads. Bound to local React state with hand-rolled
+            `aria-invalid` instead (the shape this had), the input kept its own
+            value while the error lived elsewhere, so a corrected height still
+            read as invalid until the next submit. Presentation-only props go
+            AFTER the spread so they are not clobbered by it.
           */}
+          <Input
+            {...getInputProps(fields.heightCm, { type: 'text' })}
+            inputMode="numeric"
+            placeholder={t('bodyMetrics.height.placeholder')}
+            className="h-11 sm:h-9"
+          />
+          <FieldError id={fields.heightCm.errorId} errors={fields.heightCm.errors} />
+        </div>
 
-          <FieldError id={form.errorId} errors={form.errors} />
+        <div className="space-y-2">
+          <Label htmlFor={fields.birthYear.id}>{t('bodyMetrics.birthYear.label')}</Label>
+          <p className="text-xs text-muted-foreground">{t('bodyMetrics.birthYear.hint')}</p>
+          <Input
+            {...getInputProps(fields.birthYear, { type: 'text' })}
+            inputMode="numeric"
+            placeholder={t('bodyMetrics.birthYear.placeholder')}
+            className="h-11 sm:h-9"
+          />
+          <FieldError id={fields.birthYear.errorId} errors={fields.birthYear.errors} />
+        </div>
 
-          <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
-            {t('bodyMetrics.save')}
-          </SubmitButton>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">{t('bodyMetrics.sex.legend')}</legend>
+          <p className="text-xs text-muted-foreground">{t('bodyMetrics.sex.hint')}</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {sexOptions.map((option) => (
+              <label key={option.value} className={cn('cursor-pointer', settingsChipClass(biologicalSex === option.value))}>
+                <input
+                  type="radio"
+                  name={fields.biologicalSex.name}
+                  value={option.value}
+                  checked={biologicalSex === option.value}
+                  onChange={() => setBiologicalSex(option.value)}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {/*
+          THE LIFE PHASE IS NOT ASKED HERE (M215 spec 01). Pregnancy and
+          breastfeeding have their own page at `/settings/life-phase`, which
+          the row at the top of this page opens, and the same shared
+          `ReproductiveStatusFields` renders it there. The sex answer above
+          still gates the fieldset, and `normalizeBodyMetrics` still drops a
+          status the answer contradicts, so saving "male" on this card clears
+          a stored pregnancy exactly as it did before.
+        */}
+
+        <FieldError id={form.errorId} errors={form.errors} />
+
+        <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+          {t('bodyMetrics.save')}
+        </SubmitButton>
+      </fetcher.Form>
+
+      {hasAnyBodyMetric(metrics) && (
+        <fetcher.Form method="post" className="border-t pt-4">
+          <input type="hidden" name="_intent" value={INTENT.CLEAR_BODY_METRICS} />
+          <p className="text-xs text-muted-foreground">{t('bodyMetrics.clear.hint')}</p>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="mt-2 min-h-11 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-60"
+          >
+            {t('bodyMetrics.clear.action')}
+          </button>
         </fetcher.Form>
-
-        {hasAnyBodyMetric(metrics) && (
-          <fetcher.Form method="post" className="border-t pt-4">
-            <input type="hidden" name="_intent" value={INTENT.CLEAR_BODY_METRICS} />
-            <p className="text-xs text-muted-foreground">{t('bodyMetrics.clear.hint')}</p>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="mt-2 min-h-11 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-60"
-            >
-              {t('bodyMetrics.clear.action')}
-            </button>
-          </fetcher.Form>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </SettingsSection>
   );
 }
 
@@ -587,7 +581,7 @@ export default function SettingsProfile({ loaderData }: Route.ComponentProps) {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* KEYED off the stored metrics: the card's fields are uncontrolled
           (Conform seeds them once from `defaultValue`), so when "Remove these
           details" wipes the store and the client loader revalidates, only a

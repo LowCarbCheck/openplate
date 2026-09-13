@@ -36,7 +36,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { PhotoCacheCard } from '#app/components/photo-cache-card';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -239,22 +239,21 @@ export default function SettingsData() {
   const { serverHoldsTheDiary } = useInstancePolicy();
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* `scroll-mt-20`: the backup nudge banner links here by hash, and the
-          pinned app header (see `app-wrapper.tsx`) would otherwise cover it. */}
-      <Card id="your-data" className="scroll-mt-20">
-        <CardHeader>
-          <CardTitle>{t('settings.data.exportTitle')}</CardTitle>
-          <CardDescription>
-            {t(serverHoldsTheDiary ? 'settings.data.descriptionManaged' : 'settings.data.description')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          pinned app header (see `app-wrapper.tsx`) would otherwise cover it.
+          The anchor is a wrapper rather than the section itself, so the id
+          travels with the heading and not with the box under it. */}
+      <div id="your-data" className="scroll-mt-20">
+        <SettingsSection
+          label={t('settings.data.exportTitle')}
+          description={t(serverHoldsTheDiary ? 'settings.data.descriptionManaged' : 'settings.data.description')}
+        >
           <DownloadButtons />
           <p className="text-xs text-muted-foreground">{t('settings.data.photosNote')}</p>
           <ImportBackupSection />
-        </CardContent>
-      </Card>
+        </SettingsSection>
+      </div>
 
       <PhotoCacheCard />
     </div>

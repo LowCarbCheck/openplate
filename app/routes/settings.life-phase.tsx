@@ -51,7 +51,7 @@ import type { ReproductiveStatusValue } from '#app/components/reproductive-statu
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import i18nSingleton from '#app/i18n/i18n';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -146,7 +146,7 @@ function chipClass(isSelected: boolean): string {
   );
 }
 
-function LifePhaseCard({ metrics, today }: { metrics: BodyMetrics; today: string }) {
+function LifePhaseSection({ metrics, today }: { metrics: BodyMetrics; today: string }) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
   const isSaving = fetcher.state !== 'idle';
@@ -178,48 +178,42 @@ function LifePhaseCard({ metrics, today }: { metrics: BodyMetrics; today: string
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('lifePhase.title')}</CardTitle>
-        <CardDescription>{t('lifePhase.description')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
-          {/*
-            The stored sex answer, not a field on this page: this page does not
-            ask for it, and the component's own gate reads it. Someone who
-            answered "male" sees the card's explanation and no chips, which is
-            the same behaviour the body metrics card had.
-          */}
-          <ReproductiveStatusFields
-            biologicalSex={metrics.biologicalSex}
-            value={reproductive}
-            onChange={setReproductive}
-            today={today}
-            statusName={fields.reproductiveStatus.name}
-            dueDateField={{
-              name: fields.pregnancyDueDate.name,
-              id: fields.pregnancyDueDate.id,
-              errorId: fields.pregnancyDueDate.errorId,
-              errors: fields.pregnancyDueDate.errors,
-            }}
-            lactationStartDateField={{
-              name: fields.lactationStartDate.name,
-              id: fields.lactationStartDate.id,
-              errorId: fields.lactationStartDate.errorId,
-              errors: fields.lactationStartDate.errors,
-            }}
-            chipClassName={chipClass}
-          />
+    <SettingsSection label={t('lifePhase.title')} description={t('lifePhase.description')}>
+      <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
+        {/*
+          The stored sex answer, not a field on this page: this page does not
+          ask for it, and the component's own gate reads it. Someone who
+          answered "male" sees the card's explanation and no chips, which is
+          the same behaviour the body metrics card had.
+        */}
+        <ReproductiveStatusFields
+          biologicalSex={metrics.biologicalSex}
+          value={reproductive}
+          onChange={setReproductive}
+          today={today}
+          statusName={fields.reproductiveStatus.name}
+          dueDateField={{
+            name: fields.pregnancyDueDate.name,
+            id: fields.pregnancyDueDate.id,
+            errorId: fields.pregnancyDueDate.errorId,
+            errors: fields.pregnancyDueDate.errors,
+          }}
+          lactationStartDateField={{
+            name: fields.lactationStartDate.name,
+            id: fields.lactationStartDate.id,
+            errorId: fields.lactationStartDate.errorId,
+            errors: fields.lactationStartDate.errors,
+          }}
+          chipClassName={chipClass}
+        />
 
-          <FieldError id={form.errorId} errors={form.errors} />
+        <FieldError id={form.errorId} errors={form.errors} />
 
-          <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
-            {t('bodyMetrics.save')}
-          </SubmitButton>
-        </fetcher.Form>
-      </CardContent>
-    </Card>
+        <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+          {t('bodyMetrics.save')}
+        </SubmitButton>
+      </fetcher.Form>
+    </SettingsSection>
   );
 }
 
@@ -227,12 +221,12 @@ export default function SettingsLifePhase({ loaderData }: Route.ComponentProps) 
   const { bodyMetrics, today } = loaderData;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* KEYED off the stored record, for the same reason the body metrics card
           is: the chips and the dates are seeded once from the store, so only a
           remount can show what a save just wrote. The key moves when the STORE
           moves, never while somebody is typing. */}
-      <LifePhaseCard key={bodyMetricsFormKey(bodyMetrics)} metrics={bodyMetrics} today={today} />
+      <LifePhaseSection key={bodyMetricsFormKey(bodyMetrics)} metrics={bodyMetrics} today={today} />
     </div>
   );
 }

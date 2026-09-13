@@ -49,7 +49,7 @@ import { settingsChipClass } from '#app/components/settings/chip-class';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
@@ -401,84 +401,78 @@ export function FastingRoutineCard({ settings }: { settings: LocalFastingSetting
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('settings.fasting.title')}</CardTitle>
-        <CardDescription>{t('settings.fasting.lead')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
-          <input type="hidden" name={fields.routineProtocolId.name} value={choice} />
+    <SettingsSection label={t('settings.fasting.title')} description={t('settings.fasting.lead')}>
+      <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
+        <input type="hidden" name={fields.routineProtocolId.name} value={choice} />
 
-          <div className="space-y-2">
-            <p className="text-sm font-medium">{t('settings.fasting.routine.label')}</p>
-            <fieldset className="flex flex-wrap gap-2" aria-label={t('fasting.plan.protocolGroup')}>
-              {FAST_PROTOCOLS.map((protocol) => (
-                <button
-                  key={protocol.id}
-                  type="button"
-                  aria-pressed={choice === protocol.id}
-                  // The visible "16:8" would otherwise be read out as a time.
-                  aria-label={t('fasting.plan.protocolAria', {
-                    fastingHours: protocol.fastingHours,
-                    eatingHours: protocol.eatingHours,
-                  })}
-                  onClick={() => setChoice(protocol.id)}
-                  className={settingsChipClass(choice === protocol.id)}
-                >
-                  {protocolLabel(protocol, t)}
-                </button>
-              ))}
+        <div className="space-y-2">
+          <p className="text-sm font-medium">{t('settings.fasting.routine.label')}</p>
+          <fieldset className="flex flex-wrap gap-2" aria-label={t('fasting.plan.protocolGroup')}>
+            {FAST_PROTOCOLS.map((protocol) => (
               <button
+                key={protocol.id}
                 type="button"
-                aria-pressed={choice === 'custom'}
-                onClick={() => setChoice('custom')}
-                className={settingsChipClass(choice === 'custom')}
+                aria-pressed={choice === protocol.id}
+                // The visible "16:8" would otherwise be read out as a time.
+                aria-label={t('fasting.plan.protocolAria', {
+                  fastingHours: protocol.fastingHours,
+                  eatingHours: protocol.eatingHours,
+                })}
+                onClick={() => setChoice(protocol.id)}
+                className={settingsChipClass(choice === protocol.id)}
               >
-                {t('fasting.plan.custom')}
+                {protocolLabel(protocol, t)}
               </button>
-              <button
-                type="button"
-                aria-pressed={choice === ROUTINE_NONE}
-                onClick={() => setChoice(ROUTINE_NONE)}
-                className={settingsChipClass(choice === ROUTINE_NONE)}
-              >
-                {t('settings.fasting.routine.none')}
-              </button>
-            </fieldset>
-          </div>
+            ))}
+            <button
+              type="button"
+              aria-pressed={choice === 'custom'}
+              onClick={() => setChoice('custom')}
+              className={settingsChipClass(choice === 'custom')}
+            >
+              {t('fasting.plan.custom')}
+            </button>
+            <button
+              type="button"
+              aria-pressed={choice === ROUTINE_NONE}
+              onClick={() => setChoice(ROUTINE_NONE)}
+              className={settingsChipClass(choice === ROUTINE_NONE)}
+            >
+              {t('settings.fasting.routine.none')}
+            </button>
+          </fieldset>
+        </div>
 
-          {choice === 'custom' && (
-            <div className="space-y-2">
-              <Label htmlFor={fields.routineCustomHours.id}>{t('fasting.plan.customLabel')}</Label>
-              <Input
-                {...getInputProps(fields.routineCustomHours, { type: 'text' })}
-                inputMode="numeric"
-                placeholder={t('fasting.plan.customPlaceholder')}
-                className="h-11 sm:h-9"
-              />
-              <p className="text-xs text-muted-foreground">
-                {t('fasting.plan.customHint', { min: FAST_MIN_CUSTOM_HOURS, max: FAST_MAX_CUSTOM_HOURS })}
-              </p>
-              <FieldError id={fields.routineCustomHours.errorId} errors={fields.routineCustomHours.errors} />
-            </div>
-          )}
-
+        {choice === 'custom' && (
           <div className="space-y-2">
-            <Label htmlFor={fields.routineStartMinute.id}>{t('settings.fasting.startTime.label')}</Label>
-            <Input {...getInputProps(fields.routineStartMinute, { type: 'time' })} className="h-11 w-40 sm:h-9" />
-            <p className="text-xs text-muted-foreground">{t('settings.fasting.startTime.help')}</p>
-            <FieldError id={fields.routineStartMinute.errorId} errors={fields.routineStartMinute.errors} />
+            <Label htmlFor={fields.routineCustomHours.id}>{t('fasting.plan.customLabel')}</Label>
+            <Input
+              {...getInputProps(fields.routineCustomHours, { type: 'text' })}
+              inputMode="numeric"
+              placeholder={t('fasting.plan.customPlaceholder')}
+              className="h-11 sm:h-9"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('fasting.plan.customHint', { min: FAST_MIN_CUSTOM_HOURS, max: FAST_MAX_CUSTOM_HOURS })}
+            </p>
+            <FieldError id={fields.routineCustomHours.errorId} errors={fields.routineCustomHours.errors} />
           </div>
+        )}
 
-          <FieldError id={form.errorId} errors={form.errors} />
+        <div className="space-y-2">
+          <Label htmlFor={fields.routineStartMinute.id}>{t('settings.fasting.startTime.label')}</Label>
+          <Input {...getInputProps(fields.routineStartMinute, { type: 'time' })} className="h-11 w-40 sm:h-9" />
+          <p className="text-xs text-muted-foreground">{t('settings.fasting.startTime.help')}</p>
+          <FieldError id={fields.routineStartMinute.errorId} errors={fields.routineStartMinute.errors} />
+        </div>
 
-          <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
-            {t('settings.fasting.save')}
-          </SubmitButton>
-        </fetcher.Form>
-      </CardContent>
-    </Card>
+        <FieldError id={form.errorId} errors={form.errors} />
+
+        <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+          {t('settings.fasting.save')}
+        </SubmitButton>
+      </fetcher.Form>
+    </SettingsSection>
   );
 }
 
@@ -498,24 +492,19 @@ export function FastingCareCard({ settings }: { settings: LocalFastingSettings }
   const hasAcknowledged = settings.extendedAcknowledgedAt !== null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('settings.fasting.care.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          {hasAcknowledged ? t('settings.fasting.care.acknowledged') : t('settings.fasting.care.pending')}
-        </p>
-        {hasAcknowledged && (
-          <fetcher.Form method="post">
-            <input type="hidden" name="_intent" value={INTENT.RESET_CARE} />
-            <Button type="submit" variant="outline" disabled={isSaving} className="h-11 sm:h-9">
-              {t('settings.fasting.care.reset')}
-            </Button>
-          </fetcher.Form>
-        )}
-      </CardContent>
-    </Card>
+    <SettingsSection label={t('settings.fasting.care.title')}>
+      <p className="text-sm text-muted-foreground">
+        {hasAcknowledged ? t('settings.fasting.care.acknowledged') : t('settings.fasting.care.pending')}
+      </p>
+      {hasAcknowledged && (
+        <fetcher.Form method="post">
+          <input type="hidden" name="_intent" value={INTENT.RESET_CARE} />
+          <Button type="submit" variant="outline" disabled={isSaving} className="h-11 sm:h-9">
+            {t('settings.fasting.care.reset')}
+          </Button>
+        </fetcher.Form>
+      )}
+    </SettingsSection>
   );
 }
 
@@ -523,7 +512,7 @@ export default function SettingsFasting({ loaderData }: Route.ComponentProps) {
   const { settings } = loaderData;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* KEYED off the stored record, for the same reason the life-phase card
           is: the chips are seeded once from the store, so only a remount can
           show what a save just wrote. */}

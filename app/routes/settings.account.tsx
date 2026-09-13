@@ -32,7 +32,7 @@ import type { FormEvent } from 'react';
 import { useLoaderData } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
-import { Loader2, LogOut, MailPlus, RefreshCw, Trash2, UserRound } from 'lucide-react';
+import { Loader2, LogOut, RefreshCw, Trash2 } from 'lucide-react';
 
 import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
@@ -42,7 +42,7 @@ import { OperatorVisibilityCard } from '#app/components/operator-visibility-card
 import { PasswordFields } from '#app/components/password-fields';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import {
@@ -134,7 +134,7 @@ export default function SettingsAccount() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* The operator's notice, above everything: it is the one message on
           this page that did not come from us, and it may be the only warning
           somebody gets that their instance is moving or closing. */}
@@ -173,18 +173,12 @@ export default function SettingsAccount() {
           {canSendMemberInvites({ memberInvites, invitesLeft: account.invitesLeft }) && (
             <InviteCard invitesLeft={account.invitesLeft ?? 0} />
           )}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('account.devices.title')}</CardTitle>
-              <CardDescription>{t('account.devices.body')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <SyncStatus onSyncNow={() => void syncNow().catch(() => undefined)} />
-              <p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
-                {t('account.devices.photosStayHere')}
-              </p>
-            </CardContent>
-          </Card>
+          <SettingsSection label={t('account.devices.title')} description={t('account.devices.body')}>
+            <SyncStatus onSyncNow={() => void syncNow().catch(() => undefined)} />
+            <p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+              {t('account.devices.photosStayHere')}
+            </p>
+          </SettingsSection>
           {/* AFTER the devices card and before the password one, because it
               is a fact about this account rather than an action on it, and it
               answers the question the two cards above raise: this instance
@@ -204,17 +198,11 @@ export default function SettingsAccount() {
 function SignedOutCard() {
   const { t } = useTranslation();
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('account.signedOut.title')}</CardTitle>
-        <CardDescription>{t('account.signedOut.body')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Link to="/sign-in" className="text-sm text-primary underline-offset-4 hover:underline">
-          {t('account.signedOut.signIn')}
-        </Link>
-      </CardContent>
-    </Card>
+    <SettingsSection label={t('account.signedOut.title')} description={t('account.signedOut.body')}>
+      <Link to="/sign-in" className="text-sm text-primary underline-offset-4 hover:underline">
+        {t('account.signedOut.signIn')}
+      </Link>
+    </SettingsSection>
   );
 }
 
@@ -259,49 +247,42 @@ function IdentityCard({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserRound className="h-5 w-5 text-primary" aria-hidden="true" /> {t('account.title')}
-        </CardTitle>
-        <CardDescription>{email}</CardDescription>
-        {/* UNDER THE ADDRESS, because it is the second fact about this account
-            and the first one somebody comes looking for when a scan stops
-            working. `AllowanceCard` below explains it; this line is the
-            number (M192/06). */}
-        {allowance !== null && allowance.dailyLimit > 0 && (
-          <CardDescription>
-            {t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })}
-          </CardDescription>
+    <SettingsSection label={t('account.title')} description={email}>
+      {/* STILL UNDER THE ADDRESS, because it is the second fact about this
+          account and the first one somebody comes looking for when a scan stops
+          working. `AllowanceCard` below explains it; this line is the
+          number (M192/06). It sits inside the box now rather than beside the
+          heading: a section carries ONE description, and the address is it. */}
+      {allowance !== null && allowance.dailyLimit > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })}
+        </p>
+      )}
+      <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
+        <div className="space-y-2">
+          <Label htmlFor="account-display-name">{t('account.name.label')}</Label>
+          <Input
+            id="account-display-name"
+            type="text"
+            autoComplete="name"
+            maxLength={64}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="h-11"
+          />
+          <p className="text-xs text-muted-foreground">{t('account.name.hint')}</p>
+        </div>
+        {message !== null && (
+          <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
+            {message.text}
+          </p>
         )}
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="space-y-2">
-            <Label htmlFor="account-display-name">{t('account.name.label')}</Label>
-            <Input
-              id="account-display-name"
-              type="text"
-              autoComplete="name"
-              maxLength={64}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="h-11"
-            />
-            <p className="text-xs text-muted-foreground">{t('account.name.hint')}</p>
-          </div>
-          {message !== null && (
-            <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
-              {message.text}
-            </p>
-          )}
-          <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isBusy}>
-            {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-            {t('account.name.save')}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isBusy}>
+          {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {t('account.name.save')}
+        </Button>
+      </form>
+    </SettingsSection>
   );
 }
 
@@ -343,47 +324,45 @@ function AllowanceCard({
 }) {
   const { t } = useTranslation();
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('account.allowance.title')}</CardTitle>
-        <CardDescription>
-          {dailyLimit === 0 ?
-            t('account.allowance.none')
-          : t('account.allowance.body', { used: usedToday, limit: dailyLimit })}
-        </CardDescription>
-        {/* THE DATE, BESIDE THE NUMBER IT BOUNDS. A DATE and not a phrase: "in
-            3 days" is a sentence baked in one language and computed against
-            the reader's clock, and this is the one fact somebody checks when a
-            scan stops working. The ended form is chosen by the door, so this
-            line and the sentence below cannot disagree about the same date. */}
-        {expiresAt !== null && (
-          <CardDescription>
-            {door.kind === 'allowance-ended' ?
-              t('account.allowance.expired', { date: new Date(expiresAt).toLocaleDateString() })
-            : t('account.allowance.expires', { date: new Date(expiresAt).toLocaleDateString() })}
-          </CardDescription>
-        )}
-      </CardHeader>
-      <CardContent>
-        {/* THE SENTENCE THAT USED TO NAME A PERSON WHO MAY NOT EXIST. On an
-            instance whose accounts invite each other there is no
-            administrator, so the card stops at the description above, which
-            already says photo estimates are not switched on for this account.
-            The ended case has something true left to say, and it is the
-            date. */}
-        {door.kind === 'ask-admin' && <p className="text-xs text-muted-foreground">{t('account.allowance.askAdmin')}</p>}
-        {/* THE PAGE THAT CHANGES IT, where there is one. Drawn whatever the
-            door says, because a person with a working allowance also has to
-            be able to reach the page that cancels it. */}
-        {plansAvailable && (
-          <p className="mt-2 text-xs">
-            <Link to={PLAN_PAGE_HREF} className="text-primary underline-offset-4 hover:underline">
-              {t('account.allowance.planLink')}
-            </Link>
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <SettingsSection
+      label={t('account.allowance.title')}
+      description={
+        dailyLimit === 0 ?
+          t('account.allowance.none')
+        : t('account.allowance.body', { used: usedToday, limit: dailyLimit })
+      }
+    >
+      {/* THE DATE, BESIDE THE NUMBER IT BOUNDS. A DATE and not a phrase: "in
+          3 days" is a sentence baked in one language and computed against
+          the reader's clock, and this is the one fact somebody checks when a
+          scan stops working. The ended form is chosen by the door, so this
+          line and the sentence below cannot disagree about the same date. */}
+      {expiresAt !== null && (
+        <p className="text-sm text-muted-foreground">
+          {door.kind === 'allowance-ended' ?
+            t('account.allowance.expired', { date: new Date(expiresAt).toLocaleDateString() })
+          : t('account.allowance.expires', { date: new Date(expiresAt).toLocaleDateString() })}
+        </p>
+      )}
+      {/* THE SENTENCE THAT USED TO NAME A PERSON WHO MAY NOT EXIST. On an
+          instance whose accounts invite each other there is no
+          administrator, so the card stops at the description above, which
+          already says photo estimates are not switched on for this account.
+          The ended case has something true left to say, and it is the
+          date. */}
+      {door.kind === 'ask-admin' && <p className="text-xs text-muted-foreground">{t('account.allowance.askAdmin')}</p>}
+      {/* THE PAGE THAT CHANGES IT, where there is one. Drawn whatever the
+          door says, because a person with a working allowance also has to
+          be able to reach the page that cancels it. The section spaces its
+          own children, so this line carries no margin of its own any more. */}
+      {plansAvailable && (
+        <p className="text-xs">
+          <Link to={PLAN_PAGE_HREF} className="text-primary underline-offset-4 hover:underline">
+            {t('account.allowance.planLink')}
+          </Link>
+        </p>
+      )}
+    </SettingsSection>
   );
 }
 
@@ -430,44 +409,38 @@ function InviteCard({ invitesLeft }: { invitesLeft: number }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MailPlus className="h-5 w-5 text-primary" aria-hidden="true" /> {t('account.invites.title')}
-        </CardTitle>
-        <CardDescription>{t('account.invites.body')}</CardDescription>
-        <CardDescription>
-          {invitesLeft === 0 ? t('account.invites.none') : t('account.invites.left', { left: invitesLeft })}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="space-y-2">
-            <Label htmlFor="account-invite-email">{t('account.invites.label')}</Label>
-            <Input
-              id="account-invite-email"
-              type="email"
-              autoComplete="off"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="h-11"
-            />
-          </div>
-          {message !== null && (
-            <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
-              {message.text}
-            </p>
-          )}
-          {/* DISABLED AT ZERO, and still refused by the service if a client
-              believed otherwise: `invitesLeft` is drawn, never trusted. */}
-          <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isBusy || invitesLeft === 0}>
-            {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-            {t('account.invites.send')}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <SettingsSection label={t('account.invites.title')} description={t('account.invites.body')}>
+      {/* The count is the second line the header used to carry, and a section
+          takes one description, so it opens the box instead. */}
+      <p className="text-sm text-muted-foreground">
+        {invitesLeft === 0 ? t('account.invites.none') : t('account.invites.left', { left: invitesLeft })}
+      </p>
+      <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
+        <div className="space-y-2">
+          <Label htmlFor="account-invite-email">{t('account.invites.label')}</Label>
+          <Input
+            id="account-invite-email"
+            type="email"
+            autoComplete="off"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="h-11"
+          />
+        </div>
+        {message !== null && (
+          <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
+            {message.text}
+          </p>
+        )}
+        {/* DISABLED AT ZERO, and still refused by the service if a client
+            believed otherwise: `invitesLeft` is drawn, never trusted. */}
+        <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isBusy || invitesLeft === 0}>
+          {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {t('account.invites.send')}
+        </Button>
+      </form>
+    </SettingsSection>
   );
 }
 
@@ -518,52 +491,50 @@ function ChangePasswordCard() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('account.password.title')}</CardTitle>
-        <CardDescription>{t('account.password.body')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {message !== null && (
-          <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
-            {message.text}
-          </p>
-        )}
-        {!isOpen ?
-          <Button type="button" variant="outline" className="h-11 w-full sm:w-auto" onClick={() => setIsOpen(true)}>
-            <RefreshCw className="h-4 w-4" aria-hidden="true" /> {t('account.password.open')}
-          </Button>
-        : <form {...getFormProps(form)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="account-current-password">{t('account.password.currentLabel')}</Label>
-              <Input
-                id="account-current-password"
-                type="password"
-                required
-                autoComplete="current-password"
-                value={current}
-                onChange={(event) => setCurrent(event.target.value)}
-                className="h-11"
-              />
-            </div>
-            <PasswordFields
-              passphrase={fields.passphrase}
-              confirmPassphrase={fields.confirmPassphrase}
-              passwordLabel={t('account.password.newLabel')}
+    <SettingsSection
+      label={t('account.password.title')}
+      description={t('account.password.body')}
+      contentClassName="space-y-3"
+    >
+      {message !== null && (
+        <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
+          {message.text}
+        </p>
+      )}
+      {!isOpen ?
+        <Button type="button" variant="outline" className="h-11 w-full sm:w-auto" onClick={() => setIsOpen(true)}>
+          <RefreshCw className="h-4 w-4" aria-hidden="true" /> {t('account.password.open')}
+        </Button>
+      : <form {...getFormProps(form)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="account-current-password">{t('account.password.currentLabel')}</Label>
+            <Input
+              id="account-current-password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={current}
+              onChange={(event) => setCurrent(event.target.value)}
+              className="h-11"
             />
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button type="submit" className="h-11" disabled={isBusy}>
-                {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                {t('account.password.submit')}
-              </Button>
-              <Button type="button" variant="ghost" className="h-11" onClick={() => setIsOpen(false)}>
-                {t('sync.cancel')}
-              </Button>
-            </div>
-          </form>
-        }
-      </CardContent>
-    </Card>
+          </div>
+          <PasswordFields
+            passphrase={fields.passphrase}
+            confirmPassphrase={fields.confirmPassphrase}
+            passwordLabel={t('account.password.newLabel')}
+          />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button type="submit" className="h-11" disabled={isBusy}>
+              {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {t('account.password.submit')}
+            </Button>
+            <Button type="button" variant="ghost" className="h-11" onClick={() => setIsOpen(false)}>
+              {t('sync.cancel')}
+            </Button>
+          </div>
+        </form>
+      }
+    </SettingsSection>
   );
 }
 
@@ -598,64 +569,60 @@ function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('account.danger.title')}</CardTitle>
-        <CardDescription>{t('account.danger.body')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* THE OLD DOOR, KEPT (M201 spec 02). The header menu is where sign-out
-            belongs and now is, and this one stays: a person who has learned to
-            look here must not find the control gone. What changed is that both
-            open the SAME dialog, so the erase choice and the confirmation
-            cannot mean one thing in the chrome and another on this page.
-            Signing out still revokes the token family server-side, which is
-            what ends a session left open on a lost phone. */}
-        <SignOutDialog
-          trigger={
-            <Button type="button" variant="outline" className="h-11 w-full sm:w-auto">
-              <LogOut className="h-4 w-4" aria-hidden="true" /> {t('account.signOut.cta')}
-            </Button>
-          }
-        />
-        <p className="text-xs text-muted-foreground">{t('account.signOut.note')}</p>
+    <SettingsSection
+      label={t('account.danger.title')}
+      description={t('account.danger.body')}
+      contentClassName="space-y-3"
+    >
+      {/* THE OLD DOOR, KEPT (M201 spec 02). The header menu is where sign-out
+          belongs and now is, and this one stays: a person who has learned to
+          look here must not find the control gone. What changed is that both
+          open the SAME dialog, so the erase choice and the confirmation
+          cannot mean one thing in the chrome and another on this page.
+          Signing out still revokes the token family server-side, which is
+          what ends a session left open on a lost phone. */}
+      <SignOutDialog
+        trigger={
+          <Button type="button" variant="outline" className="h-11 w-full sm:w-auto">
+            <LogOut className="h-4 w-4" aria-hidden="true" /> {t('account.signOut.cta')}
+          </Button>
+        }
+      />
+      <p className="text-xs text-muted-foreground">{t('account.signOut.note')}</p>
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button type="button" variant="destructive" className="h-11 w-full sm:w-auto">
-              <Trash2 className="h-4 w-4" aria-hidden="true" /> {t('account.delete.cta')}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button type="button" variant="destructive" className="h-11 w-full sm:w-auto">
+            <Trash2 className="h-4 w-4" aria-hidden="true" /> {t('account.delete.cta')}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('account.delete.confirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('account.delete.confirmBody', { email: accountEmail })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="account-delete-password">{t('account.delete.passwordLabel')}</Label>
+            <Input
+              id="account-delete-password"
+              type="password"
+              autoComplete="current-password"
+              value={passphrase}
+              onChange={(event) => setPassphrase(event.target.value)}
+              className="h-11"
+            />
+            {error !== null && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBusy}>{t('sync.cancel')}</AlertDialogCancel>
+            <Button variant="destructive" disabled={isBusy || passphrase === ''} onClick={() => void handleDelete()}>
+              {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {t('account.delete.confirmCta')}
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('account.delete.confirmTitle')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('account.delete.confirmBody', { email: accountEmail })}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="account-delete-password">{t('account.delete.passwordLabel')}</Label>
-              <Input
-                id="account-delete-password"
-                type="password"
-                autoComplete="current-password"
-                value={passphrase}
-                onChange={(event) => setPassphrase(event.target.value)}
-                className="h-11"
-              />
-              {error !== null && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isBusy}>{t('sync.cancel')}</AlertDialogCancel>
-              <Button variant="destructive" disabled={isBusy || passphrase === ''} onClick={() => void handleDelete()}>
-                {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                {t('account.delete.confirmCta')}
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        <p className="text-xs text-muted-foreground">{t('account.delete.note')}</p>
-      </CardContent>
-    </Card>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <p className="text-xs text-muted-foreground">{t('account.delete.note')}</p>
+    </SettingsSection>
   );
 }

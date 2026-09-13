@@ -35,7 +35,7 @@ import type { Route } from './+types/settings.notifications';
 import { InstallAffordanceAction } from '#app/components/install-card';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Switch } from '#app/components/ui/switch';
@@ -527,40 +527,38 @@ export default function SettingsNotifications() {
   }, [dismissals, isOn, prefs, t]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settings.notifications.title')}</CardTitle>
-          <CardDescription>{t('settings.notifications.lead')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {availability !== null && (
-            <AvailabilityNotice availability={availability} install={availability === 'needs-install' ? install : null} />
-          )}
+    <div className="mx-auto max-w-xl space-y-5">
+      <SettingsSection
+        label={t('settings.notifications.title')}
+        description={t('settings.notifications.lead')}
+        contentClassName="space-y-6"
+      >
+        {availability !== null && (
+          <AvailabilityNotice availability={availability} install={availability === 'needs-install' ? install : null} />
+        )}
 
-          {availability === 'ready' && (
-            <div className="flex items-center justify-between gap-4">
-              <Label htmlFor="push-master">{t('settings.notifications.master')}</Label>
-              <Switch
-                id="push-master"
-                checked={isOn}
-                disabled={isSaving}
-                onCheckedChange={(next) => void handleToggle(next)}
-              />
-            </div>
-          )}
-
-          {availability === 'ready' && isOn && (
-            <NotificationKinds
-              prefs={prefs}
-              previewLines={previewLines}
-              isSaving={isSaving}
-              onChange={setPrefs}
-              onSave={() => void handleSave()}
+        {availability === 'ready' && (
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="push-master">{t('settings.notifications.master')}</Label>
+            <Switch
+              id="push-master"
+              checked={isOn}
+              disabled={isSaving}
+              onCheckedChange={(next) => void handleToggle(next)}
             />
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+
+        {availability === 'ready' && isOn && (
+          <NotificationKinds
+            prefs={prefs}
+            previewLines={previewLines}
+            isSaving={isSaving}
+            onChange={setPrefs}
+            onSave={() => void handleSave()}
+          />
+        )}
+      </SettingsSection>
     </div>
   );
 }

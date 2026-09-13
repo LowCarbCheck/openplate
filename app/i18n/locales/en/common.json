@@ -1,7 +1,6 @@
 {
   "about": {
     "description": "openplate is open source. Here is the build you are running, and where its code lives.",
-    "eyebrow": "About",
     "licence": "Licence",
     "licenceValue": "MIT",
     "source": "Source code",
@@ -1644,10 +1643,8 @@
   },
   "preferences": {
     "cardDescription": "Theme and language, kept on this device.",
-    "eyebrow": "Appearance",
     "language": {
       "description": "The language openplate speaks on this device.",
-      "eyebrow": "Language",
       "reloadNote": "Switching reloads the page so everything changes at once.",
       "title": "Display language"
     },

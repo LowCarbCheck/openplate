@@ -67,7 +67,7 @@ import { settingsChipClass } from '#app/components/settings/chip-class';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import i18nSingleton from '#app/i18n/i18n';
@@ -410,50 +410,44 @@ function EatingStyleCard({
   const caution = styleCaution(selectedStyle, reproductiveStatus);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('settings.style.title')}</CardTitle>
-        <CardDescription>{t('settings.style.lead')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
-          <input type="hidden" name="_intent" value={INTENT.SAVE_EATING_STYLE} />
+    <SettingsSection label={t('settings.style.title')} description={t('settings.style.lead')}>
+      <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
+        <input type="hidden" name="_intent" value={INTENT.SAVE_EATING_STYLE} />
 
-          <EatingStylePicker
-            selectedStyle={selectedStyle}
-            onSelectStyle={setSelectedStyle}
-            styleFieldName={fields.eatingStyle.name}
-            carbField={{
-              name: fields.carbPresetCeiling.name,
-              id: fields.carbPresetCeiling.id,
-              errorId: fields.carbPresetCeiling.errorId,
-              errors: fields.carbPresetCeiling.errors,
-            }}
-            carbPresetCeiling={carbPresetCeiling}
-            onCarbPresetCeilingChange={setCarbPresetCeiling}
-            kcalField={{
-              name: fields.kcalTarget.name,
-              id: fields.kcalTarget.id,
-              errorId: fields.kcalTarget.errorId,
-              errors: fields.kcalTarget.errors,
-            }}
-            kcalTarget={kcalTarget}
-            onKcalTargetChange={setKcalTarget}
-            needsWeight={styleNeedsWeight({ style: selectedStyle, latestWeightKg })}
-          />
+        <EatingStylePicker
+          selectedStyle={selectedStyle}
+          onSelectStyle={setSelectedStyle}
+          styleFieldName={fields.eatingStyle.name}
+          carbField={{
+            name: fields.carbPresetCeiling.name,
+            id: fields.carbPresetCeiling.id,
+            errorId: fields.carbPresetCeiling.errorId,
+            errors: fields.carbPresetCeiling.errors,
+          }}
+          carbPresetCeiling={carbPresetCeiling}
+          onCarbPresetCeilingChange={setCarbPresetCeiling}
+          kcalField={{
+            name: fields.kcalTarget.name,
+            id: fields.kcalTarget.id,
+            errorId: fields.kcalTarget.errorId,
+            errors: fields.kcalTarget.errors,
+          }}
+          kcalTarget={kcalTarget}
+          onKcalTargetChange={setKcalTarget}
+          needsWeight={styleNeedsWeight({ style: selectedStyle, latestWeightKg })}
+        />
 
-          <FieldError id={form.errorId} errors={form.errors} />
+        <FieldError id={form.errorId} errors={form.errors} />
 
-          <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
-            {t('settings.style.save')}
-          </SubmitButton>
-        </fetcher.Form>
+        <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+          {t('settings.style.save')}
+        </SubmitButton>
+      </fetcher.Form>
 
-        {/* Under the card, and only for the combinations `styleCaution` names.
-            A note, never a block and never a number (M210 spec 04). */}
-        {caution !== null && <EatingStyleCautionNote />}
-      </CardContent>
-    </Card>
+      {/* Under the form, and only for the combinations `styleCaution` names.
+          A note, never a block and never a number (M210 spec 04). */}
+      {caution !== null && <EatingStyleCautionNote />}
+    </SettingsSection>
   );
 }
 
@@ -526,159 +520,153 @@ function GoalsCard({
   const targetWeightKgForSubmit = toWeightSubmitValue(targetWeightText, weightUnit);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('goals.card.title')}</CardTitle>
-        <CardDescription>{t('goals.card.description')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor={fields.goalNetCarbsCeilingG.id}>{t('goals.carbs.label')}</Label>
-            <p className="text-xs text-muted-foreground">{t('goals.carbs.hint')}</p>
-            <div className="flex flex-wrap gap-2">
-              {CARB_PRESETS.map((preset) => {
-                const isSelected = carbNumber === preset.ceiling;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => setCarbCeiling(String(preset.ceiling))}
-                    className={settingsChipClass(isSelected)}
-                  >
-                    {t('onboarding.carbPreset.chipWithCeiling', { label: t(preset.labelKey), ceiling: preset.ceiling })}
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                aria-pressed={isCustomSelected}
-                onClick={() => {
-                  setCarbCeiling('');
-                  carbInputRef.current?.focus();
-                }}
-                className={settingsChipClass(isCustomSelected)}
-              >
-                {t('goals.carbs.custom')}
-              </button>
-            </div>
-            <Input
-              ref={carbInputRef}
-              id={fields.goalNetCarbsCeilingG.id}
-              name={fields.goalNetCarbsCeilingG.name}
-              inputMode="decimal"
-              placeholder={t('goals.carbs.placeholder')}
-              value={carbCeiling}
-              onChange={(event) => setCarbCeiling(event.target.value)}
-              aria-describedby={fields.goalNetCarbsCeilingG.errorId}
-              aria-invalid={fields.goalNetCarbsCeilingG.errors?.length ? true : undefined}
-              className="h-11 sm:h-9"
-            />
-            <FieldError id={fields.goalNetCarbsCeilingG.errorId} errors={fields.goalNetCarbsCeilingG.errors} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={fields.goalProteinFloorG.id}>{t('goals.protein.label')}</Label>
-            <p className="text-xs text-muted-foreground">{t('goals.protein.hint')}</p>
-            {/* A suggestion the person taps, never an auto-fill, and never an
-                unnamed number: the line under the chip says which of the two
-                methods produced it and that it is an estimate, so a target that
-                changes because the basis changed is visible rather than silent
-                (M200 spec 03). No chip at all when neither method can answer. */}
-            {proteinSuggestion !== null ?
-              <div className="space-y-2">
+    <SettingsSection label={t('goals.card.title')} description={t('goals.card.description')}>
+      <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor={fields.goalNetCarbsCeilingG.id}>{t('goals.carbs.label')}</Label>
+          <p className="text-xs text-muted-foreground">{t('goals.carbs.hint')}</p>
+          <div className="flex flex-wrap gap-2">
+            {CARB_PRESETS.map((preset) => {
+              const isSelected = carbNumber === preset.ceiling;
+              return (
                 <button
+                  key={preset.id}
                   type="button"
-                  aria-pressed={isSuggestedProteinSelected}
-                  onClick={() => setProteinFloor(String(proteinSuggestion.grams))}
-                  className={cn(settingsChipClass(isSuggestedProteinSelected), 'tabular-nums')}
+                  aria-pressed={isSelected}
+                  onClick={() => setCarbCeiling(String(preset.ceiling))}
+                  className={settingsChipClass(isSelected)}
                 >
-                  {t('goals.protein.recommended', { grams: proteinSuggestion.grams })}
+                  {t('onboarding.carbPreset.chipWithCeiling', { label: t(preset.labelKey), ceiling: preset.ceiling })}
                 </button>
-                <p className="text-xs text-muted-foreground">
-                  {t('goals.protein.method', { basis: t(`goals.protein.basis.${proteinSuggestion.method}`) })}
-                </p>
-              </div>
-            : <p className="text-xs text-muted-foreground">{t('goals.protein.suggestionUnavailable')}</p>}
-            <Input
-              id={fields.goalProteinFloorG.id}
-              name={fields.goalProteinFloorG.name}
-              inputMode="decimal"
-              placeholder={t('goals.protein.placeholder')}
-              value={proteinFloor}
-              onChange={(event) => setProteinFloor(event.target.value)}
-              aria-describedby={fields.goalProteinFloorG.errorId}
-              aria-invalid={fields.goalProteinFloorG.errors?.length ? true : undefined}
-              className="h-11 sm:h-9"
-            />
-            <FieldError id={fields.goalProteinFloorG.errorId} errors={fields.goalProteinFloorG.errors} />
+              );
+            })}
+            <button
+              type="button"
+              aria-pressed={isCustomSelected}
+              onClick={() => {
+                setCarbCeiling('');
+                carbInputRef.current?.focus();
+              }}
+              className={settingsChipClass(isCustomSelected)}
+            >
+              {t('goals.carbs.custom')}
+            </button>
           </div>
+          <Input
+            ref={carbInputRef}
+            id={fields.goalNetCarbsCeilingG.id}
+            name={fields.goalNetCarbsCeilingG.name}
+            inputMode="decimal"
+            placeholder={t('goals.carbs.placeholder')}
+            value={carbCeiling}
+            onChange={(event) => setCarbCeiling(event.target.value)}
+            aria-describedby={fields.goalNetCarbsCeilingG.errorId}
+            aria-invalid={fields.goalNetCarbsCeilingG.errors?.length ? true : undefined}
+            className="h-11 sm:h-9"
+          />
+          <FieldError id={fields.goalNetCarbsCeilingG.errorId} errors={fields.goalNetCarbsCeilingG.errors} />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={fields.goalKcalTarget.id}>{t('goals.kcal.label')}</Label>
-            <p className="text-xs text-muted-foreground">{t('goals.kcal.hint')}</p>
-            {/* Suggestion, never auto-fill, the same contract the protein chip
-                above already keeps. It only appears when a weight AND all three
-                body metrics are on file; missing any of them means no chip at
-                all, never a figure built on a guessed height. */}
-            {suggestedKcalTarget !== null ?
+        <div className="space-y-2">
+          <Label htmlFor={fields.goalProteinFloorG.id}>{t('goals.protein.label')}</Label>
+          <p className="text-xs text-muted-foreground">{t('goals.protein.hint')}</p>
+          {/* A suggestion the person taps, never an auto-fill, and never an
+              unnamed number: the line under the chip says which of the two
+              methods produced it and that it is an estimate, so a target that
+              changes because the basis changed is visible rather than silent
+              (M200 spec 03). No chip at all when neither method can answer. */}
+          {proteinSuggestion !== null ?
+            <div className="space-y-2">
               <button
                 type="button"
-                aria-pressed={isSuggestedKcalSelected}
-                onClick={() => setKcalTarget(String(suggestedKcalTarget))}
-                // `tabular-nums` because the chip carries a LIVE figure, it
-                // moves with every weigh-in, and DESIGN.md section 4 keeps
-                // changing numbers in `font-sans` with tabular digits. Same
-                // treatment the fasting summary line gives its interpolated
-                // number.
-                className={cn(settingsChipClass(isSuggestedKcalSelected), 'tabular-nums')}
+                aria-pressed={isSuggestedProteinSelected}
+                onClick={() => setProteinFloor(String(proteinSuggestion.grams))}
+                className={cn(settingsChipClass(isSuggestedProteinSelected), 'tabular-nums')}
               >
-                {t('goals.kcal.suggested', { kcal: suggestedKcalTarget })}
+                {t('goals.protein.recommended', { grams: proteinSuggestion.grams })}
               </button>
-            : <p className="text-xs text-muted-foreground">{t('goals.kcal.suggestionUnavailable')}</p>}
-            <Input
-              id={fields.goalKcalTarget.id}
-              name={fields.goalKcalTarget.name}
-              inputMode="numeric"
-              placeholder={t('goals.kcal.placeholder')}
-              value={kcalTarget}
-              onChange={(event) => setKcalTarget(event.target.value)}
-              aria-describedby={fields.goalKcalTarget.errorId}
-              aria-invalid={fields.goalKcalTarget.errors?.length ? true : undefined}
-              className="h-11 sm:h-9"
-            />
-            <p className="text-xs text-muted-foreground">{t('goals.kcal.approximateNote')}</p>
-            <FieldError id={fields.goalKcalTarget.errorId} errors={fields.goalKcalTarget.errors} />
-          </div>
+              <p className="text-xs text-muted-foreground">
+                {t('goals.protein.method', { basis: t(`goals.protein.basis.${proteinSuggestion.method}`) })}
+              </p>
+            </div>
+          : <p className="text-xs text-muted-foreground">{t('goals.protein.suggestionUnavailable')}</p>}
+          <Input
+            id={fields.goalProteinFloorG.id}
+            name={fields.goalProteinFloorG.name}
+            inputMode="decimal"
+            placeholder={t('goals.protein.placeholder')}
+            value={proteinFloor}
+            onChange={(event) => setProteinFloor(event.target.value)}
+            aria-describedby={fields.goalProteinFloorG.errorId}
+            aria-invalid={fields.goalProteinFloorG.errors?.length ? true : undefined}
+            className="h-11 sm:h-9"
+          />
+          <FieldError id={fields.goalProteinFloorG.errorId} errors={fields.goalProteinFloorG.errors} />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={fields.targetWeightKg.id}>{t('goals.targetWeight.label', { unit: weightUnit })}</Label>
-            <p className="text-xs text-muted-foreground">{t('goals.targetWeight.hint')}</p>
-            <Input
-              id={fields.targetWeightKg.id}
-              inputMode="decimal"
-              placeholder={
-                weightUnit === 'kg' ? t('goals.targetWeight.placeholderKg') : t('goals.targetWeight.placeholderLb')
-              }
-              value={targetWeightText}
-              onChange={(event) => setTargetWeightText(event.target.value)}
-              aria-describedby={fields.targetWeightKg.errorId}
-              aria-invalid={fields.targetWeightKg.errors?.length ? true : undefined}
-              className="h-11 sm:h-9"
-            />
-            <input type="hidden" name={fields.targetWeightKg.name} value={targetWeightKgForSubmit} />
-            <FieldError id={fields.targetWeightKg.errorId} errors={fields.targetWeightKg.errors} />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor={fields.goalKcalTarget.id}>{t('goals.kcal.label')}</Label>
+          <p className="text-xs text-muted-foreground">{t('goals.kcal.hint')}</p>
+          {/* Suggestion, never auto-fill, the same contract the protein chip
+              above already keeps. It only appears when a weight AND all three
+              body metrics are on file; missing any of them means no chip at
+              all, never a figure built on a guessed height. */}
+          {suggestedKcalTarget !== null ?
+            <button
+              type="button"
+              aria-pressed={isSuggestedKcalSelected}
+              onClick={() => setKcalTarget(String(suggestedKcalTarget))}
+              // `tabular-nums` because the chip carries a LIVE figure, it
+              // moves with every weigh-in, and DESIGN.md section 4 keeps
+              // changing numbers in `font-sans` with tabular digits. Same
+              // treatment the fasting summary line gives its interpolated
+              // number.
+              className={cn(settingsChipClass(isSuggestedKcalSelected), 'tabular-nums')}
+            >
+              {t('goals.kcal.suggested', { kcal: suggestedKcalTarget })}
+            </button>
+          : <p className="text-xs text-muted-foreground">{t('goals.kcal.suggestionUnavailable')}</p>}
+          <Input
+            id={fields.goalKcalTarget.id}
+            name={fields.goalKcalTarget.name}
+            inputMode="numeric"
+            placeholder={t('goals.kcal.placeholder')}
+            value={kcalTarget}
+            onChange={(event) => setKcalTarget(event.target.value)}
+            aria-describedby={fields.goalKcalTarget.errorId}
+            aria-invalid={fields.goalKcalTarget.errors?.length ? true : undefined}
+            className="h-11 sm:h-9"
+          />
+          <p className="text-xs text-muted-foreground">{t('goals.kcal.approximateNote')}</p>
+          <FieldError id={fields.goalKcalTarget.errorId} errors={fields.goalKcalTarget.errors} />
+        </div>
 
-          <FieldError id={form.errorId} errors={form.errors} />
+        <div className="space-y-2">
+          <Label htmlFor={fields.targetWeightKg.id}>{t('goals.targetWeight.label', { unit: weightUnit })}</Label>
+          <p className="text-xs text-muted-foreground">{t('goals.targetWeight.hint')}</p>
+          <Input
+            id={fields.targetWeightKg.id}
+            inputMode="decimal"
+            placeholder={
+              weightUnit === 'kg' ? t('goals.targetWeight.placeholderKg') : t('goals.targetWeight.placeholderLb')
+            }
+            value={targetWeightText}
+            onChange={(event) => setTargetWeightText(event.target.value)}
+            aria-describedby={fields.targetWeightKg.errorId}
+            aria-invalid={fields.targetWeightKg.errors?.length ? true : undefined}
+            className="h-11 sm:h-9"
+          />
+          <input type="hidden" name={fields.targetWeightKg.name} value={targetWeightKgForSubmit} />
+          <FieldError id={fields.targetWeightKg.errorId} errors={fields.targetWeightKg.errors} />
+        </div>
 
-          <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
-            {t('goals.save')}
-          </SubmitButton>
-        </fetcher.Form>
-      </CardContent>
-    </Card>
+        <FieldError id={form.errorId} errors={form.errors} />
+
+        <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+          {t('goals.save')}
+        </SubmitButton>
+      </fetcher.Form>
+    </SettingsSection>
   );
 }
 
@@ -692,7 +680,7 @@ export default function SettingsNutrition({ loaderData }: Route.ComponentProps) 
   const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {/* First on the page: the style decides which of the numbers below are
           kept at all, so it is asked before them. KEYED off the stored style
           AND the stored goals: a save that changes the style resets the card's

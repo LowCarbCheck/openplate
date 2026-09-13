@@ -31,7 +31,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
-import { FlaskConical, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { CONFIG } from '#app/config';
 import { Link } from '#app/components/link';
@@ -40,7 +40,7 @@ import { ResearchSubmitPanel } from '#app/components/research-submit-panel';
 import { ResearchWindowLine } from '#app/components/research-window-line';
 import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { SettingsSection } from '#app/components/settings/settings-section';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -111,32 +111,22 @@ export default function SettingsResearch() {
   }, [refresh]);
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FlaskConical className="h-5 w-5 text-primary" aria-hidden="true" /> {t('research.title')}
-          </CardTitle>
-          <CardDescription>{t('research.intro')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* The two caveats ride above every list state, including the empty
-              one: what a study receives is pseudonymised, and a stable
-              pseudonym is not the same as being unidentifiable (ADR-0003's
-              first-ranked attack). */}
-          <p className="text-sm text-muted-foreground">{t('research.caveats.pseudonymised')}</p>
-          <p className="text-sm text-muted-foreground">{t('research.caveats.auxiliaryJoin')}</p>
+    <div className="mx-auto max-w-xl space-y-5">
+      <SettingsSection label={t('research.title')} description={t('research.intro')}>
+        {/* The two caveats ride above every list state, including the empty
+            one: what a study receives is pseudonymised, and a stable
+            pseudonym is not the same as being unidentifiable (ADR-0003's
+            first-ranked attack). */}
+        <p className="text-sm text-muted-foreground">{t('research.caveats.pseudonymised')}</p>
+        <p className="text-sm text-muted-foreground">{t('research.caveats.auxiliaryJoin')}</p>
 
-          {state.status === 'loading' && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
-          {state.status === 'signed-out' && <SignedOutNotice />}
-          {state.status === 'unavailable' && (
-            <p className="text-sm text-muted-foreground">{t('research.unavailable')}</p>
-          )}
-          {state.status === 'ready' && (
-            <EnrolmentsSection enrolments={state.enrolments} onChanged={() => void refresh()} />
-          )}
-        </CardContent>
-      </Card>
+        {state.status === 'loading' && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
+        {state.status === 'signed-out' && <SignedOutNotice />}
+        {state.status === 'unavailable' && <p className="text-sm text-muted-foreground">{t('research.unavailable')}</p>}
+        {state.status === 'ready' && (
+          <EnrolmentsSection enrolments={state.enrolments} onChanged={() => void refresh()} />
+        )}
+      </SettingsSection>
     </div>
   );
 }

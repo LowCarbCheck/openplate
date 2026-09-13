@@ -1,7 +1,6 @@
 {
   "about": {
     "description": "openplate ist Open Source. Hier siehst du, welche Version du nutzt und wo der Code liegt.",
-    "eyebrow": "Über",
     "licence": "Lizenz",
     "licenceValue": "MIT",
     "source": "Quellcode",
@@ -1644,10 +1643,8 @@
   },
   "preferences": {
     "cardDescription": "Design und Sprache, gespeichert auf diesem Gerät.",
-    "eyebrow": "Darstellung",
     "language": {
       "description": "Die Sprache, in der openplate auf diesem Gerät mit dir spricht.",
-      "eyebrow": "Sprache",
       "reloadNote": "Beim Wechseln lädt die Seite neu, damit alles auf einmal umschaltet.",
       "title": "Anzeigesprache"
     },
