@@ -24,3 +24,8 @@ node_modules
 
 # The default output of `pnpm seed:test-account`. A test fixture, never a commit.
 /seed-diary.json
+
+# Playwright smoke tier (`pnpm test:e2e`): traces, screenshots and the HTML
+# report are per-run artifacts, never a commit.
+/test-results/
+/playwright-report/

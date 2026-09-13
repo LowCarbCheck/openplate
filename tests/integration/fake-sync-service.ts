@@ -463,7 +463,19 @@ export interface FakeSyncService {
   close(): Promise<void>;
 }
 
-export async function startFakeSyncService(): Promise<FakeSyncService> {
+/**
+ * Starts the service on an ephemeral port, or on the one the caller names.
+ *
+ * A NAMED PORT EXISTS FOR ONE CALLER: the Playwright tier, whose app server is
+ * handed `SYNC_SERVER_URL` from a statically evaluated config, so the address
+ * has to be decided before anything is listening. Every node test leaves the
+ * argument off and keeps the ephemeral bind, which is what lets several test
+ * files hold a service at once.
+ *
+ * @param options - `port` 0, the default, means "any free port".
+ * @returns the running service.
+ */
+export async function startFakeSyncService(options: { port?: number } = {}): Promise<FakeSyncService> {
   const accounts = new Map<number, StoredAccount>();
   const invites = new Map<string, StoredInvite>();
   const resets = new Map<string, StoredReset>();
@@ -475,6 +487,37 @@ export async function startFakeSyncService(): Promise<FakeSyncService> {
   let nextAccountId = 1;
 
   const app: Express = express();
+
+  // ── CORS, because a BROWSER is now one of the callers ───────────────────
+  //
+  // Every node suite in this directory calls the service from the same
+  // process, where CORS does not exist. The Playwright tier calls it from a
+  // page served by the app's own origin, where it is the whole story: without
+  // these headers the sign-in dies on a preflight the browser never reports to
+  // the page, and no assertion anywhere can see it.
+  //
+  // The ORIGIN IS REFLECTED and the requested headers echoed, which is wider
+  // than the real service's allow list on purpose: this fake takes every
+  // request from loopback and the narrow version is the service's own rule to
+  // enforce and to test. What matters here is that the preflight is ANSWERED,
+  // so a client that forgets a header still fails, and fails visibly.
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin !== undefined) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    if (req.method !== 'OPTIONS') {
+      next();
+      return;
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] ?? 'Content-Type,Authorization');
+    res.setHeader('Access-Control-Max-Age', '600');
+    res.status(204).end();
+  });
+
   app.use(express.json({ limit: Math.ceil((MAX_BLOB_BYTES * 4) / 3) + 4096 }));
   app.use((req, res, next) => {
     const record: ObservedRequest = {
@@ -1340,8 +1383,8 @@ export async function startFakeSyncService(): Promise<FakeSyncService> {
   });
 
   const server: Server = createServer(app);
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  // SAFETY: `listen(0, '127.0.0.1')` binds a TCP socket, and `Server#address()`
+  await new Promise<void>((resolve) => server.listen(options.port ?? 0, '127.0.0.1', resolve));
+  // SAFETY: `listen(<port>, '127.0.0.1')` binds a TCP socket, and `Server#address()`
   // returns `AddressInfo` for every TCP bind — the `string` form is reachable
   // only from a pipe/UDS bind, which this server never performs.
   const address = server.address() as AddressInfo | null;

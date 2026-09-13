@@ -33,6 +33,8 @@ app/
 types/                 # Cross-cutting types shared outside app/ (route handles, domain enums)
 tests/
 ├── unit/              # node:test against pure functions (vision schema, macros, local store, ...)
+├── integration/       # node:test over real HTTP against the in-repo fake sync service
+├── e2e/               # Playwright smoke tier: one phone, the production build, five specs
 .claude/               # AI assistant rules, skills, and commands
 .adr/                  # Architecture decision records
 ```
@@ -46,6 +48,8 @@ pnpm start            # Production server (tsx ./server.ts, NODE_ENV=production)
 pnpm typecheck        # react-router typegen && tsc — never run bare `tsc` (emits .js files)
 pnpm lint             # eslint --max-warnings 0
 pnpm test:unit        # node --test against tests/unit/**
+pnpm test:integration # node --test against tests/integration/** (real HTTP, fake sync service)
+pnpm test:e2e         # Playwright smoke tier. HOST SHELL ONLY (no Chromium in the toolbox), needs `pnpm build` first
 ```
 
 ## Key Documentation

@@ -8,7 +8,16 @@
 # PRODUCTION BUILD is part of this gate.
 #
 # Runs: docs manifest -> changelog -> lint -> typecheck -> unit tests -> integration tests
-#       -> production build.
+#       -> production build -> browser smoke tier.
+#
+# The browser smoke tier (added 2026-09-13) is LAST because it needs the build the stage
+# before it makes, and it is the one stage that does not run in the toolbox:
+# the ts-dev container has no Chromium and cannot be given one (eleven shared
+# libraries missing, no sudo). It therefore runs on the HOST, straight out of
+# node_modules, against `~/.cache/ms-playwright`. A push from inside the
+# toolbox fails here BY DESIGN, with the sentence that says so; it is never
+# skipped, because a stage that skips itself when the browser is missing is a
+# stage that is always missing.
 #
 # The integration project joined the gate 2026-08-28 (M163/04). It is the only
 # place a COMPOSITION ROOT is exercised — the real actions, over real HTTP,
@@ -85,5 +94,20 @@ run pnpm test:integration
 
 echo "▶ pre-push: production build (react-router build — the Argo image runs this)"
 run pnpm build
+
+# ── LAST TIER: five specs in a real browser, against the build above ────────
+# Deliberately NOT wrapped in `run`: Chromium cannot start inside the ts-dev
+# toolbox, so this stage is the one that must execute on the host. `pnpm` and
+# `node` are on the host PATH; if the browser is not there, say which shell to
+# push from rather than waving the stage through.
+echo "▶ pre-push: browser smoke tier (host only, the toolbox has no Chromium)"
+# A REAL LAUNCH, not a path check: the toolbox has the browser bytes on a
+# shared cache and still cannot start them, which is the case this has to
+# catch.
+if ! pnpm exec node -e "const {chromium}=require('@playwright/test');chromium.launch().then((b)=>b.close()).then(()=>process.exit(0),()=>process.exit(1))" >/dev/null 2>&1; then
+  echo "✖ pre-push: Chromium will not start here. Push from the host shell, the toolbox has no Chromium."
+  exit 1
+fi
+CI=true pnpm test:e2e
 
 echo "✅ pre-push: all gates passed"
