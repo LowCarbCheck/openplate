@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.29.7] - 2026-09-13
+
 ### Changed
 
-- **Every settings page now uses the same grouped layout as the settings list.** Each section on a settings page is a labelled inset panel, like the rows on the settings screen, instead of a desktop-style card with its own large heading. Nothing behind the sections changed: the same fields, switches and links, in the same order.
+- **Every settings page now uses the same grouped layout as the settings list.** Each section on a settings page is a labelled inset panel, like the rows on the settings screen, instead of a desktop-style card with its own large heading. Nothing behind the sections changed: the same fields, switches and links, in the same order. ([20b5936](https://github.com/LowCarbCheck/openplate/commit/20b5936))
 
 ## [0.29.6] - 2026-09-13
 
