@@ -109,28 +109,37 @@ function SettingsRow({
   return (
     <Link
       to={to}
-      className="flex min-h-14 items-center gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+      className="flex min-h-13 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50 active:bg-muted/70 focus-visible:bg-muted/50"
     >
-      <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
+        <Icon className="size-[18px]" aria-hidden="true" />
+      </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{title}</span>
+        <span className="block text-[15px] font-medium leading-tight">{title}</span>
         {/* `line-clamp-2`, not a single-line `truncate`: German subtitles are
             roughly a third longer than the English ones, and at 390px the
             "Data & backup" row lost most of its sentence to an ellipsis. Two
             lines fit every current subtitle in both languages. */}
         {status !== null && <span className="block line-clamp-2 text-xs text-muted-foreground">{status}</span>}
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
     </Link>
   );
 }
 
-/** A labelled group of rows. The label is a real heading, so the page keeps an outline. */
+/**
+ * A labelled group of rows, drawn as one inset list (the native iOS/Android
+ * grouped-list pattern): one `rounded-2xl border bg-card` container, rows
+ * separated by hairline dividers, no border or radius on the row itself. The
+ * label is a real heading, so the page keeps an outline.
+ */
 function SettingsGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section className="space-y-2">
-      <SectionEyebrow as="h2">{label}</SectionEyebrow>
-      <div className="space-y-2">{children}</div>
+      <SectionEyebrow as="h2" className="px-4">
+        {label}
+      </SectionEyebrow>
+      <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-card">{children}</div>
     </section>
   );
 }
@@ -554,7 +563,7 @@ export default function SettingsIndex() {
   });
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
       {groups.map((group) => (
         <SettingsGroup key={group.label} label={group.label}>
           {group.rows.map((row) => (

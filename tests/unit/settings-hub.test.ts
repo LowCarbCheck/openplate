@@ -210,6 +210,51 @@ function renderHub(config: PublicConfig): string {
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
+/** Counts non-overlapping occurrences of `needle` in `haystack`. */
+function countOf(haystack: string, needle: string): number {
+  return haystack.split(needle).length - 1;
+}
+
+/** The `class="..."` value of every `<a>` in `markup`, one row link per entry. */
+function anchorClassLists(markup: string): string[] {
+  return [...markup.matchAll(/<a\b[^>]*\bclass="([^"]*)"/g)].map((match) => match[1] ?? '');
+}
+
+describe('the hub reads as one inset grouped list, not a stack of cards', () => {
+  const markup = renderHub(NO_SYNC_CONFIG);
+  const renderedGroupCount = EXPECTED_LABELS.filter((label) => label !== enCommon.settings.groups.account).length;
+
+  it('draws exactly one list container, with one hairline divider set, per rendered group', () => {
+    // CONTROL: the old per-row card markup (`rounded-xl border bg-card` on
+    // every row, `space-y-2` between rows) carried zero `rounded-2xl` and zero
+    // `divide-y` anywhere, so either count would be 0 against 5 rendered
+    // groups if the grouped-list container regressed back to one box per row.
+    assert.equal(
+      countOf(markup, 'rounded-2xl'),
+      renderedGroupCount,
+      `expected one rounded-2xl list container per rendered group (${renderedGroupCount})`,
+    );
+    assert.equal(
+      countOf(markup, 'divide-y'),
+      renderedGroupCount,
+      `expected one divide-y row-divider set per rendered group (${renderedGroupCount})`,
+    );
+  });
+
+  it('gives no row its own box: no row Link carries rounded-xl or a border of its own', () => {
+    const rowClassLists = anchorClassLists(markup);
+    // CONTROL for the control: the page really does render row links, so an
+    // empty list here would make the assertions below pass for the wrong
+    // reason (nothing to check).
+    assert.ok(rowClassLists.length > 0, 'expected at least one row <a> in the rendered hub');
+    for (const classList of rowClassLists) {
+      const tokens = classList.split(/\s+/);
+      assert.ok(!tokens.includes('rounded-xl'), `a row link still carries its own rounded-xl box: "${classList}"`);
+      assert.ok(!tokens.includes('border'), `a row link still carries its own border: "${classList}"`);
+    }
+  });
+});
+
 describe('an empty group', () => {
   it('is dropped from the model when every one of its rows is hidden', () => {
     const groups = buildSettingsHubGroups({
