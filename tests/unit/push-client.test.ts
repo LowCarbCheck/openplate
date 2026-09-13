@@ -19,19 +19,24 @@
  * Dropping the `previousEndpoint === endpoint` guard in `subscribeBody` fails
  * the re-registration case. Deleting the `fastTargetEnabled` guard in
  * `setFastWakeAt` fails the "kind off" case, which is the one that keeps a
- * screen nobody was on from arming a notification.
+ * screen nobody was on from arming a notification. Collapsing `dismissed`
+ * back into `blocked` fails the answer cases, and awaiting the key before the
+ * prompt leaves the ordering case waiting for a prompt that never comes.
  */
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
   DEFAULT_PUSH_PREFS,
+  decodePublicKey,
   disablePush,
   enablePush,
   isPushDisabledByUser,
+  isSubscriptionForKey,
   PUSH_DISABLED_STORAGE_KEY,
   PUSH_ENDPOINT_STORAGE_KEY,
   PUSH_PREFS_STORAGE_KEY,
+  PushSetupError,
   fastWakeAtIso,
   resetPush,
   setFastWakeAt,
@@ -83,11 +88,16 @@ const SUBSCRIPTION: PushSubscriptionJSON = {
 function installDevice({
   storage = fakeStorage(),
   permission = 'granted',
+  answer = 'granted',
   configStatus = 200,
+  putStatus = 204,
 }: {
   storage?: PushStorage & { entries: Map<string, string> };
   permission?: NotificationPermission;
+  /** What the prompt resolves with, for the three answers a browser can give. */
+  answer?: NotificationPermission;
   configStatus?: number;
+  putStatus?: number;
 } = {}) {
   const calls: RecordedCall[] = [];
   let unsubscribed = false;
@@ -96,7 +106,7 @@ function installDevice({
     storage,
     readAccount: () => ({ serverUrl: 'https://sync.example.test', accessToken: 'token-abc' }),
     readPermission: () => permission,
-    requestPermission: async () => 'granted',
+    requestPermission: async () => answer,
     subscribeToPush: async () => SUBSCRIPTION,
     unsubscribeFromPush: async () => {
       unsubscribed = true;
@@ -117,6 +127,7 @@ function installDevice({
       if (url.endsWith('/v1/push/config')) {
         return new Response(JSON.stringify({ publicKey: 'BPublicKeyBytes' }), { status: configStatus });
       }
+      if (init?.method === 'PUT') return new Response(null, { status: putStatus });
       return new Response(null, { status: 204 });
     },
   });
@@ -127,6 +138,27 @@ function installDevice({
 afterEach(() => {
   resetPush();
 });
+
+/**
+ * Why an attempt gave up, as a plain string a test can compare.
+ *
+ * The refusal is read in a `catch` rather than in an `assert.rejects`
+ * predicate, so nothing here takes an unparsed parameter. The two sentinels
+ * make the negative cases readable: a failure that is not a
+ * {@link PushSetupError} and an attempt that did not fail at all are both
+ * reported rather than passing quietly.
+ *
+ * @param run - the attempt.
+ * @returns the reason, `'other-error'`, or `'no-error'`.
+ */
+async function reasonOf(run: () => Promise<void>): Promise<string> {
+  try {
+    await run();
+  } catch (caught) {
+    return caught instanceof PushSetupError ? caught.reason : 'other-error';
+  }
+  return 'no-error';
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // The body
@@ -364,5 +396,186 @@ describe('the fast wake instant', () => {
     await setFastWakeAt('2026-09-13T12:00:00.000Z');
 
     assert.deepEqual(device.calls, []);
+  });
+});
+
+//////////////////////////////////////////////////////////////////////////////
+// What the three permission answers mean
+//////////////////////////////////////////////////////////////////////////////
+
+describe('the answer to the prompt', () => {
+  it('a closed question is `dismissed`, because asking again is allowed', async () => {
+    installDevice({ permission: 'default', answer: 'default' });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'dismissed');
+  });
+
+  it('THE CONTROL: an actual refusal is `blocked`, which a person undoes in browser settings', async () => {
+    installDevice({ permission: 'default', answer: 'denied' });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'blocked');
+  });
+
+  it('a granted question registers, so neither reason above is the only outcome', async () => {
+    const device = installDevice({ permission: 'default', answer: 'granted' });
+
+    await enablePush(DEFAULT_PUSH_PREFS);
+
+    assert.deepEqual(
+      device.calls.map((call) => call.method),
+      ['GET', 'PUT'],
+    );
+  });
+});
+
+//////////////////////////////////////////////////////////////////////////////
+// The prompt is inside the click
+//////////////////////////////////////////////////////////////////////////////
+
+/** How long the prompt is waited for before the ordering case gives up and says so. */
+const PROMPT_DEADLINE_MS = 2000;
+
+/**
+ * A promise the test releases by hand.
+ *
+ * The resolver is held on a record rather than in a bare `let`, because the
+ * assignment happens inside the executor and the compiler cannot see it.
+ */
+interface Gate {
+  release: (() => void) | null;
+}
+
+describe('the order of the prompt and the key', () => {
+  it('asks while the config fetch is still in flight, so the activation is not spent on a network read', async () => {
+    const order: string[] = [];
+    // Held in records rather than in bare `let`s: the assignment happens inside
+    // the executor, which the compiler cannot see, so a plain binding would
+    // still read as `null` at the call sites below.
+    const configGate: Gate = { release: null };
+    const configArrived = new Promise<void>((resolve) => {
+      configGate.release = resolve;
+    });
+    const promptGate: Gate = { release: null };
+    const prompted = new Promise<void>((resolve) => {
+      promptGate.release = resolve;
+    });
+    let isConfigPending = false;
+    let wasConfigPendingAtPrompt: boolean | null = null;
+
+    setPushDependencies({
+      storage: fakeStorage(),
+      readAccount: () => ({ serverUrl: 'https://sync.example.test', accessToken: 'token-abc' }),
+      readPermission: () => 'default',
+      requestPermission: async () => {
+        wasConfigPendingAtPrompt = isConfigPending;
+        order.push('prompt');
+        promptGate.release?.();
+        return 'granted';
+      },
+      subscribeToPush: async () => SUBSCRIPTION,
+      unsubscribeFromPush: async () => undefined,
+      readTimeZone: () => 'Europe/Berlin',
+      readLocale: () => 'de',
+      fetchImpl: async (input, init) => {
+        const url = String(input);
+        order.push(`${init?.method ?? 'GET'} ${url}`);
+        if (!url.endsWith('/v1/push/config')) return new Response(null, { status: 204 });
+        isConfigPending = true;
+        await configArrived;
+        isConfigPending = false;
+        return new Response(JSON.stringify({ publicKey: 'BPublicKeyBytes' }), { status: 200 });
+      },
+    });
+
+    const pending = enablePush(DEFAULT_PUSH_PREFS);
+    // Bounded, so a client that awaits the key first FAILS here with a
+    // sentence instead of waiting for a prompt that is never reached.
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      prompted,
+      new Promise<never>((_resolve, reject) => {
+        deadline = setTimeout(
+          () => reject(new Error('the prompt was never asked while the key was still in flight')),
+          PROMPT_DEADLINE_MS,
+        );
+      }),
+    ]);
+    clearTimeout(deadline);
+
+    assert.equal(wasConfigPendingAtPrompt, true);
+    assert.deepEqual(order, ['GET https://sync.example.test/v1/push/config', 'prompt']);
+
+    // THE CONTROL: the key is still read and still needed. Releasing it sends
+    // the PUT, so the prompt was moved ahead of the fetch rather than the
+    // fetch being dropped.
+    configGate.release?.();
+    await pending;
+    assert.deepEqual(order, [
+      'GET https://sync.example.test/v1/push/config',
+      'prompt',
+      'PUT https://sync.example.test/v1/push/subscriptions',
+    ]);
+  });
+});
+
+//////////////////////////////////////////////////////////////////////////////
+// A refusal about who is asking
+//////////////////////////////////////////////////////////////////////////////
+
+describe('an ended session', () => {
+  it('reads a 401 on the config as `signed-out`, not as an instance with push off', async () => {
+    installDevice({ configStatus: 401 });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'signed-out');
+  });
+
+  it('THE CONTROL: a 500 on the config is still `server-off`', async () => {
+    installDevice({ configStatus: 500 });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'server-off');
+  });
+
+  it('THE OTHER CONTROL: a 403 is `server-off` too, because signing in again changes nothing', async () => {
+    installDevice({ configStatus: 403 });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'server-off');
+  });
+
+  it('reads a 401 on the registration as `signed-out` too', async () => {
+    installDevice({ putStatus: 401 });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'signed-out');
+  });
+
+  it('THE CONTROL: a 500 on the registration is a plain failure, not a reason with a sentence', async () => {
+    installDevice({ putStatus: 500 });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'other-error');
+  });
+
+  it('THE OTHER CONTROL: a 403 on the registration is a plain failure too, not an ended session', async () => {
+    installDevice({ putStatus: 403 });
+
+    assert.equal(await reasonOf(() => enablePush(DEFAULT_PUSH_PREFS)), 'other-error');
+  });
+});
+
+//////////////////////////////////////////////////////////////////////////////
+// A subscription left over from another key
+//////////////////////////////////////////////////////////////////////////////
+
+describe('matching a browser subscription against the instance key', () => {
+  it('says yes to the same bytes', () => {
+    const bytes = decodePublicKey('BPublicKeyBytes');
+    assert.equal(isSubscriptionForKey(bytes.buffer, 'BPublicKeyBytes'), true);
+  });
+
+  it('THE CONTROL: says no to another instance\'s key, which would receive nothing', () => {
+    const bytes = decodePublicKey('BAnotherKeyEntirely');
+    assert.equal(isSubscriptionForKey(bytes.buffer, 'BPublicKeyBytes'), false);
+  });
+
+  it('says no when the browser holds no key at all', () => {
+    assert.equal(isSubscriptionForKey(null, 'BPublicKeyBytes'), false);
   });
 });

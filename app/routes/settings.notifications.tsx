@@ -57,7 +57,7 @@ import {
   rememberedEndpoint,
   updatePushSchedule,
 } from '#app/lib/push';
-import type { PushAvailability, PushPrefs } from '#app/lib/push';
+import type { PushAvailability, PushBlockedReason, PushPrefs } from '#app/lib/push';
 import { publishStatus } from '#app/lib/status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 // The SAME formatter the fasting routine uses for a minute of the day, because
@@ -98,6 +98,69 @@ export const AVAILABILITY_KEYS = {
   'server-off': 'settings.notifications.state.serverOff',
   ready: 'settings.notifications.state.ready',
 } satisfies Record<PushAvailability, string>;
+
+/**
+ * One sentence per REASON an attempt gave up, which is the five states above
+ * plus the two outcomes that are not states.
+ *
+ * Written out entry by entry rather than spread from {@link AVAILABILITY_KEYS},
+ * so a reason added to the union without a sentence fails to compile here
+ * instead of rendering a key at a person.
+ */
+export const REASON_KEYS = {
+  unsupported: 'settings.notifications.state.unsupported',
+  'needs-install': 'settings.notifications.state.needsInstall',
+  blocked: 'settings.notifications.state.blocked',
+  'server-off': 'settings.notifications.state.serverOff',
+  dismissed: 'settings.notifications.state.dismissed',
+  'signed-out': 'settings.notifications.state.signedOut',
+} satisfies Record<PushBlockedReason, string>;
+
+/**
+ * How many dismissals it takes before the page stops saying "tap again".
+ *
+ * Chrome's QUIET NOTIFICATION UI resolves `default` without ever drawing a
+ * dialog, so a person told to tap again can tap forever and see nothing. One
+ * unanswered attempt is explainable; a second one means the browser has
+ * stopped asking, and the only way through is the site settings.
+ */
+const DISMISSALS_BEFORE_SITE_SETTINGS = 1;
+
+/**
+ * The sentence a failed attempt gets, which for a dismissal depends on how
+ * many times this page has already been dismissed.
+ *
+ * PURE, and it takes the count rather than reading it, so both escalation
+ * steps are pinned without a browser.
+ *
+ * @param reason - why the attempt gave up.
+ * @param priorDismissals - how many dismissals this page has already seen.
+ * @returns the catalog key to publish.
+ */
+export function reasonKey(reason: PushBlockedReason, priorDismissals: number): string {
+  if (reason === 'dismissed' && priorDismissals >= DISMISSALS_BEFORE_SITE_SETTINGS) {
+    return 'settings.notifications.state.dismissedAgain';
+  }
+  return REASON_KEYS[reason];
+}
+
+/**
+ * What the page's availability becomes after a failed attempt, or `null` when
+ * it must not change at all.
+ *
+ * A DISMISSED PROMPT AND AN ENDED SESSION LEAVE THE SWITCH ON SCREEN. Both are
+ * things the person fixes and retries, so overwriting `ready` with them would
+ * take away the control they need to try again. The four real states are
+ * environment facts, and the page adopts them.
+ *
+ * @param reason - why the attempt gave up.
+ * @returns the state to show, or null to leave the page as it was.
+ */
+export function availabilityAfterFailure(reason: PushBlockedReason): PushAvailability | null {
+  if (reason === 'dismissed') return null;
+  if (reason === 'signed-out') return null;
+  return reason;
+}
 
 /** The app's translator, narrowed to what this module asks of it. */
 type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
@@ -317,11 +380,20 @@ export default function SettingsNotifications() {
   const [prefs, setPrefs] = useState<PushPrefs>(DEFAULT_PUSH_PREFS);
   const [isOn, setIsOn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // How many times THIS page has watched the permission question go
+  // unanswered. Reset by a successful enable, so a person who allows
+  // notifications later is not still being sent to the site settings.
+  const [dismissals, setDismissals] = useState(0);
   const [previewLines, setPreviewLines] = useState<string[]>([]);
 
   const instancePush = instance?.push === true;
 
-  useEffect(() => {
+  // The environment read, as a function rather than as the body of one effect:
+  // a person who leaves for the browser's own settings, allows notifications
+  // there and comes back must find the page already agreeing with them, not a
+  // stale "blocked" that only a reload clears.
+  const readAvailability = useCallback((): void => {
+    if (globalThis.window === undefined) return;
     const environment = readPushEnvironment({
       isIos: isIosDevice({ userAgent: navigator.userAgent, maxTouchPoints: navigator.maxTouchPoints }),
       isStandalone: isRunningStandalone({
@@ -334,9 +406,53 @@ export default function SettingsNotifications() {
       instancePush,
     });
     setAvailability(pushAvailability(environment));
+  }, [instancePush]);
+
+  useEffect(() => {
+    readAvailability();
     setPrefs(readPushPrefs());
     setIsOn(rememberedEndpoint() !== null && !isPushDisabledByUser());
-  }, [instancePush]);
+  }, [readAvailability]);
+
+  // Three ways back: the tab becoming visible again, the window regaining
+  // focus, and, where the browser has it, the permission itself changing while
+  // the page is open. The third is the exact one; the first two are what
+  // Safari, which has no permission status to listen to, leaves us.
+  useEffect(() => {
+    if (globalThis.window === undefined) return;
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') readAvailability();
+    };
+    const onFocus = () => readAvailability();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onFocus);
+
+    let status: PermissionStatus | null = null;
+    let isCancelled = false;
+    void (async () => {
+      try {
+        // SAFETY: lib.dom declares `navigator.permissions` as always present,
+        // but it is absent in several browsers this app runs in, so the read
+        // is widened to admit the absence rather than trusting the type.
+        const permissions = navigator.permissions as Permissions | undefined;
+        if (permissions === undefined) return;
+        const result = await permissions.query({ name: 'notifications' });
+        if (isCancelled) return;
+        status = result;
+        result.addEventListener('change', onFocus);
+      } catch {
+        // A browser that refuses the query keeps the two events above, which
+        // are enough. Ignored by design.
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onFocus);
+      if (status !== null) status.removeEventListener('change', onFocus);
+    };
+  }, [readAvailability]);
 
   // Tomorrow morning's ACTUAL lines, off this device's last three days. A
   // separate effect because it is asynchronous and language-dependent, while
@@ -364,14 +480,17 @@ export default function SettingsNotifications() {
         }
         await enablePush(prefs);
         setIsOn(true);
+        setDismissals(0);
         publishStatus({ text: t('settings.notifications.toast.on'), tone: 'success' });
       } catch (caught) {
         // A refusal has a sentence of its own, and it is the SAME sentence the
         // state machine would have shown, so a person who denied the browser
         // prompt reads "blocked" rather than a generic failure.
         if (caught instanceof PushSetupError) {
-          setAvailability(caught.reason);
-          publishStatus({ text: t(AVAILABILITY_KEYS[caught.reason]), tone: 'error' });
+          const nextAvailability = availabilityAfterFailure(caught.reason);
+          if (nextAvailability !== null) setAvailability(nextAvailability);
+          publishStatus({ text: t(reasonKey(caught.reason, dismissals)), tone: 'error' });
+          if (caught.reason === 'dismissed') setDismissals(dismissals + 1);
           return;
         }
         publishStatus({ text: t('settings.notifications.toast.failed'), tone: 'error' });
@@ -379,7 +498,7 @@ export default function SettingsNotifications() {
         setIsSaving(false);
       }
     },
-    [prefs, t],
+    [dismissals, prefs, t],
   );
 
   const handleSave = useCallback(async (): Promise<void> => {
@@ -391,18 +510,21 @@ export default function SettingsNotifications() {
       if (isOn) await updatePushSchedule(prefs);
       else await enablePush(prefs);
       setIsOn(true);
+      setDismissals(0);
       publishStatus({ text: t('settings.notifications.toast.saved'), tone: 'success' });
     } catch (caught) {
       if (caught instanceof PushSetupError) {
-        setAvailability(caught.reason);
-        publishStatus({ text: t(AVAILABILITY_KEYS[caught.reason]), tone: 'error' });
+        const next = availabilityAfterFailure(caught.reason);
+        if (next !== null) setAvailability(next);
+        publishStatus({ text: t(reasonKey(caught.reason, dismissals)), tone: 'error' });
+        if (caught.reason === 'dismissed') setDismissals(dismissals + 1);
         return;
       }
       publishStatus({ text: t('settings.notifications.toast.failed'), tone: 'error' });
     } finally {
       setIsSaving(false);
     }
-  }, [isOn, prefs, t]);
+  }, [dismissals, isOn, prefs, t]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

@@ -2220,8 +2220,11 @@
       "state": {
         "unsupported": "Dieser Browser kann keine Benachrichtigungen empfangen.",
         "needsInstall": "Füge openplate auf dem iPhone zuerst zum Home-Bildschirm hinzu.",
-        "blocked": "Benachrichtigungen sind in deinen Browser-Einstellungen blockiert. Erlaube sie dort und kehre dann zurück.",
+        "blocked": "Dein Browser blockiert Benachrichtigungen. Erlaube sie und kehre hierher zurück.",
         "serverOff": "Diese Instanz sendet keine Benachrichtigungen.",
+        "dismissed": "Die Anfrage schloss sich oder erschien nicht. Tippe den Schalter erneut an.",
+        "dismissedAgain": "Dein Browser fragt nicht mehr. Erlaube Benachrichtigungen in den Website-Einstellungen.",
+        "signedOut": "Abgemeldet. Melde dich an und schalte Benachrichtigungen ein.",
         "ready": "Dein Browser kann Benachrichtigungen empfangen. Schalte sie unten ein."
       },
       "catchUp": {

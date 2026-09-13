@@ -2220,8 +2220,11 @@
       "state": {
         "unsupported": "This browser cannot receive notifications.",
         "needsInstall": "On iPhone, add openplate to your home screen first.",
-        "blocked": "Notifications are blocked in your browser settings. Allow them there, then come back.",
+        "blocked": "Your browser settings block notifications for this site. Allow them, then come back.",
         "serverOff": "This instance does not send notifications.",
+        "dismissed": "The question closed, or your browser never asked it. Tap the switch again.",
+        "dismissedAgain": "Your browser stopped asking. Allow notifications in your browser's site settings.",
+        "signedOut": "You are signed out on this device. Sign in, then turn notifications on.",
         "ready": "Your browser can receive notifications. Turn them on below."
       },
       "catchUp": {

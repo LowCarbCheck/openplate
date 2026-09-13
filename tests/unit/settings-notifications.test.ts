@@ -26,10 +26,18 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import i18next from '../../app/i18n/i18n';
 import enCommon from '../../app/i18n/locales/en/common.json';
+import deCommon from '../../app/i18n/locales/de/common.json';
 import { withI18n } from './trends-i18n-harness';
-import { AvailabilityNotice, notificationsRowStatus, parseTimeInput } from '../../app/routes/settings.notifications';
+import {
+  availabilityAfterFailure,
+  AvailabilityNotice,
+  notificationsRowStatus,
+  parseTimeInput,
+  REASON_KEYS,
+  reasonKey,
+} from '../../app/routes/settings.notifications';
 import { DEFAULT_PUSH_PREFS } from '../../app/lib/push';
-import type { PushAvailability } from '../../app/lib/push';
+import type { PushAvailability, PushBlockedReason } from '../../app/lib/push';
 
 /** The REAL catalog: every sentence below is resolved, not transcribed. */
 const t = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) =>
@@ -154,4 +162,129 @@ describe('the time field', () => {
     assert.equal(parseTimeInput('half eight'), null);
     assert.equal(parseTimeInput('24:00'), null);
   });
+});
+
+//////////////////////////////////////////////////////////////////////////////
+// Every reason an attempt can give up
+//////////////////////////////////////////////////////////////////////////////
+
+/** Where every reason's sentence lives, so a key outside it reads as missing. */
+const STATE_PREFIX = 'settings.notifications.state.';
+
+/**
+ * One state sentence out of a catalog, by the key the page publishes.
+ *
+ * Reads the catalog JSON rather than asking i18next, so a German key that was
+ * never added reads as missing instead of falling back to the English one.
+ *
+ * @param state - one catalog's `settings.notifications.state` record.
+ * @param key - the dotted key the page publishes.
+ * @returns the sentence, or null when the catalog has none.
+ */
+function lookupSentence(state: Record<string, string>, key: string): string | null {
+  if (!key.startsWith(STATE_PREFIX)) return null;
+  return state[key.slice(STATE_PREFIX.length)] ?? null;
+}
+
+describe('the reason sentences', () => {
+  // Written out rather than read off `REASON_KEYS`, so a reason added to the
+  // union without a sentence fails to compile here.
+  const reasons: readonly PushBlockedReason[] = [
+    'unsupported',
+    'needs-install',
+    'blocked',
+    'server-off',
+    'dismissed',
+    'signed-out',
+  ];
+
+  for (const reason of reasons) {
+    it(`gives ${reason} a sentence in both catalogs`, () => {
+      const key = REASON_KEYS[reason];
+      for (const [language, state] of [
+        ['en', enCommon.settings.notifications.state],
+        ['de', deCommon.settings.notifications.state],
+      ] as const) {
+        const sentence = lookupSentence(state, key);
+        assert.ok(sentence !== null && sentence.length > 0, `${language} has no sentence for ${key}`);
+      }
+    });
+  }
+
+  it('THE CONTROL: a key the catalogs do not carry resolves to nothing', () => {
+    assert.equal(lookupSentence(enCommon.settings.notifications.state, `${STATE_PREFIX}notAKey`), null);
+    assert.equal(lookupSentence(deCommon.settings.notifications.state, `${STATE_PREFIX}notAKey`), null);
+    assert.equal(lookupSentence(enCommon.settings.notifications.state, 'settings.notifications.title'), null);
+  });
+
+  it('names a different sentence for a dismissed prompt than for a blocked one', () => {
+    assert.notEqual(REASON_KEYS.dismissed, REASON_KEYS.blocked);
+    assert.notEqual(
+      lookupSentence(enCommon.settings.notifications.state, REASON_KEYS.dismissed),
+      lookupSentence(enCommon.settings.notifications.state, REASON_KEYS.blocked),
+    );
+  });
+});
+
+describe('the escalation after a second dismissal', () => {
+  it('says "tap again" the first time, because one unanswered question explains itself', () => {
+    assert.equal(reasonKey('dismissed', 0), REASON_KEYS.dismissed);
+  });
+
+  it('sends a person to the site settings once the browser has stopped asking', () => {
+    const escalated = 'settings.notifications.state.dismissedAgain';
+    assert.equal(reasonKey('dismissed', 1), escalated);
+    assert.equal(reasonKey('dismissed', 5), escalated);
+  });
+
+  it('THE CONTROL: the count changes nothing for any other reason', () => {
+    assert.equal(reasonKey('blocked', 5), REASON_KEYS.blocked);
+    assert.equal(reasonKey('signed-out', 5), REASON_KEYS['signed-out']);
+    assert.equal(reasonKey('server-off', 5), REASON_KEYS['server-off']);
+  });
+});
+
+describe('what the page shows after a failed attempt', () => {
+  it('keeps the switch on screen for a dismissed prompt and for an ended session', () => {
+    assert.equal(availabilityAfterFailure('dismissed'), null);
+    assert.equal(availabilityAfterFailure('signed-out'), null);
+  });
+
+  it('THE CONTROL: a blocked browser really does become the blocked state', () => {
+    assert.equal(availabilityAfterFailure('blocked'), 'blocked');
+    assert.equal(availabilityAfterFailure('unsupported'), 'unsupported');
+    assert.equal(availabilityAfterFailure('needs-install'), 'needs-install');
+    assert.equal(availabilityAfterFailure('server-off'), 'server-off');
+  });
+});
+
+//////////////////////////////////////////////////////////////////////////////
+// What the header status slot can hold
+//////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The longest a state sentence may be.
+ *
+ * These sentences are not only rendered on the page: a failed attempt
+ * publishes one through the header status channel, and that slot is three
+ * lines of `text-xs` at a 390 px viewport, which holds about 100 characters.
+ * A longer sentence is clipped, so the reason a person cannot turn
+ * notifications on is the half they cannot read.
+ */
+const STATE_SENTENCE_LIMIT = 100;
+
+describe('the length of a state sentence', () => {
+  for (const [language, state] of [
+    ['en', enCommon.settings.notifications.state],
+    ['de', deCommon.settings.notifications.state],
+  ] as const) {
+    for (const [name, sentence] of Object.entries(state)) {
+      it(`fits the header status slot: ${language} ${name}`, () => {
+        assert.ok(
+          sentence.length <= STATE_SENTENCE_LIMIT,
+          `${language} ${name} is ${sentence.length} characters, over ${STATE_SENTENCE_LIMIT}`,
+        );
+      });
+    }
+  }
 });

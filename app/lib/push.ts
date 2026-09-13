@@ -124,8 +124,16 @@ export function pushAvailability(environment: PushEnvironment): PushAvailability
   return 'ready';
 }
 
-/** Every state except `ready`: a reason an attempt to turn push on gave up. */
-export type PushBlockedReason = Exclude<PushAvailability, 'ready'>;
+/**
+ * Why an ATTEMPT to turn push on gave up, which is a larger set than the
+ * states of the environment.
+ *
+ * `dismissed` and `signed-out` are outcomes, not states: the browser closed
+ * the question without an answer, or the session on this device ended. Neither
+ * belongs in {@link PushAvailability}, because neither describes a device that
+ * cannot be offered the switch. The page keeps the switch on screen for both.
+ */
+export type PushBlockedReason = Exclude<PushAvailability, 'ready'> | 'dismissed' | 'signed-out';
 
 /** Thrown by {@link enablePush} when the platform, the person or the instance refused. */
 export class PushSetupError extends Error {
@@ -335,8 +343,16 @@ async function pushOperation<T>(operation: Promise<T>): Promise<T> {
   }
 }
 
-/** The base64url VAPID key as the bytes `pushManager.subscribe` wants. */
-function decodePublicKey(base64: string): Uint8Array<ArrayBuffer> {
+/**
+ * The base64url VAPID key as the bytes `pushManager.subscribe` wants.
+ *
+ * Exported so a test can build the same bytes the browser would hold, rather
+ * than transcribing a second copy of this decoding.
+ *
+ * @param base64 - the instance's VAPID public key, base64url.
+ * @returns the raw bytes.
+ */
+export function decodePublicKey(base64: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const normalised = (base64 + padding).replaceAll('-', '+').replaceAll('_', '/');
   const raw = atob(normalised);
@@ -345,12 +361,41 @@ function decodePublicKey(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
+/**
+ * Whether a browser subscription already on this device was minted for THIS
+ * instance's VAPID key.
+ *
+ * An instance that rotated its key, or a device whose last account was a
+ * different instance, leaves a subscription the push service still accepts and
+ * this server can never encrypt for. Reusing it registers an endpoint that
+ * silently receives nothing, so the bytes are compared rather than assumed.
+ *
+ * @param existingKey - `subscription.options.applicationServerKey`, or null.
+ * @param publicKey - the instance's VAPID public key, base64url.
+ * @returns true when the two are byte-for-byte the same key.
+ */
+export function isSubscriptionForKey(existingKey: ArrayBuffer | null, publicKey: string): boolean {
+  if (existingKey === null) return false;
+  const expected = decodePublicKey(publicKey);
+  const actual = new Uint8Array(existingKey);
+  if (actual.length !== expected.length) return false;
+  for (let index = 0; index < expected.length; index += 1) {
+    if (actual[index] !== expected[index]) return false;
+  }
+  return true;
+}
+
 /** Registers the worker, subscribes, and hands back the browser's JSON. The real browser path. */
 async function subscribeInBrowser(publicKey: string): Promise<PushSubscriptionJSON> {
   await pushOperation(navigator.serviceWorker.register('/sw.js'));
   const registration = await pushOperation(navigator.serviceWorker.ready);
   const existing = await pushOperation(registration.pushManager.getSubscription());
-  if (existing !== null) return existing.toJSON();
+  // A STALE SUBSCRIPTION IS NOT A HEAD START: one minted for another VAPID key
+  // would be registered happily and then never decrypt a single send.
+  if (existing !== null && isSubscriptionForKey(existing.options.applicationServerKey, publicKey)) {
+    return existing.toJSON();
+  }
+  if (existing !== null) await pushOperation(existing.unsubscribe());
   const subscription = await pushOperation(
     registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: decodePublicKey(publicKey) }),
   );
@@ -476,12 +521,30 @@ function authHeaders(account: PushAccount, hasBody: boolean): Headers {
   return headers;
 }
 
+/**
+ * Whether a refusal was about WHO is asking rather than about the instance.
+ *
+ * A 401 AND ONLY A 401. It means the session on this device ended, which a
+ * person fixes by signing in again, and calling that "this instance does not
+ * send notifications" sends them to the wrong place entirely. A 403 is the
+ * opposite case: the session is fine and the account is simply not allowed
+ * push here, so signing in again changes nothing and the instance-side answer
+ * is the honest one.
+ *
+ * @param status - the HTTP status the server answered with.
+ * @returns true for the one status that means the session is gone.
+ */
+function isSignedOut(status: number): boolean {
+  return status === 401;
+}
+
 /** The instance's VAPID public key, or a thrown `server-off` when push is not configured there. */
 async function readPublicKey(account: PushAccount): Promise<string> {
   const response = await dependencies.fetchImpl(`${account.serverUrl}/v1/push/config`, {
     method: 'GET',
     headers: authHeaders(account, false),
   });
+  if (isSignedOut(response.status)) throw new PushSetupError('signed-out');
   if (!response.ok) throw new PushSetupError('server-off');
   // SAFETY: the 200 body of `GET /v1/push/config` is defined by M223 spec 01
   // as exactly this shape; every non-2xx returned above.
@@ -496,23 +559,39 @@ async function readPublicKey(account: PushAccount): Promise<string> {
  *
  * THROWS rather than returning a flag, because every failure here has a
  * different sentence on the page: a refused permission is not an instance with
- * no VAPID key. The order matters: the key is read BEFORE the permission
- * prompt, so an instance that sends nothing never costs a person a permission
- * dialog they gain nothing from.
+ * no VAPID key.
+ *
+ * ── Why the prompt comes first ───────────────────────────────────────────
+ *
+ * THE PROMPT MUST BE INSIDE THE CLICK'S TRANSIENT ACTIVATION. Firefox and
+ * Safari refuse a permission request that is not made during a user gesture,
+ * and awaiting a network read first spends that activation on a fetch. So the
+ * key read is STARTED here and awaited only after the question is asked. The
+ * prompt is not wasted either way: the switch is drawn only when the instance
+ * advertises push on its handshake, so an instance that sends nothing has no
+ * switch to click in the first place.
  *
  * @param prefs - the two kinds as the person left them, usually {@link DEFAULT_PUSH_PREFS}.
  * @throws PushSetupError when the person, the platform or the instance refused.
  */
 export async function enablePush(prefs: PushPrefs): Promise<void> {
   const account = requireAccount();
-  const publicKey = await readPublicKey(account);
+  const pendingKey = readPublicKey(account);
+  // A key that rejects while the prompt is open must not surface as an
+  // unhandled rejection; the real error is still thrown at the await below.
+  void pendingKey.catch(() => undefined);
 
   if (dependencies.readPermission() === 'denied') throw new PushSetupError('blocked');
   if (dependencies.readPermission() !== 'granted') {
-    const granted = await dependencies.requestPermission();
-    if (granted !== 'granted') throw new PushSetupError('blocked');
+    const answer = await dependencies.requestPermission();
+    // A CLOSED QUESTION IS NOT A REFUSAL: `default` means the browser never
+    // showed it, or the person dismissed it without answering, and asking
+    // again is allowed. `denied` is the one a person undoes in settings.
+    if (answer === 'denied') throw new PushSetupError('blocked');
+    if (answer !== 'granted') throw new PushSetupError('dismissed');
   }
 
+  const publicKey = await pendingKey;
   const subscription = await dependencies.subscribeToPush(publicKey);
   const body = subscribeBody(subscription, rememberedEndpoint(), {
     timeZone: dependencies.readTimeZone(),
@@ -526,6 +605,7 @@ export async function enablePush(prefs: PushPrefs): Promise<void> {
     headers: authHeaders(account, true),
     body: JSON.stringify(body),
   });
+  if (isSignedOut(response.status)) throw new PushSetupError('signed-out');
   if (!response.ok) throw new Error(`push registration refused: ${response.status}`);
 
   // Only after the server took it: a failed attempt keeps the remembered
