@@ -63,6 +63,25 @@ describe('MODEL_CATALOG integrity', () => {
     }
   });
 
+  it('modelrunner ids are namespaced — the platform addresses owner/alias', () => {
+    for (const model of MODEL_CATALOG.modelrunner) {
+      assert.match(model.id, NAMESPACED_MODEL_ID_PATTERN, `"${model.id}" is not a well-formed owner/alias id`);
+    }
+  });
+
+  it('modelrunner lists only the one image-capable model, recommended by default', () => {
+    assert.deepStrictEqual(
+      MODEL_CATALOG.modelrunner.map((model) => model.id),
+      ['alibaba/qwen3.8-max'],
+    );
+    const recommended = getRecommendedModel('modelrunner');
+    assert.strictEqual(recommended?.id, 'alibaba/qwen3.8-max');
+    assert.deepStrictEqual({ inPerM: recommended?.inPerM, outPerM: recommended?.outPerM }, { inPerM: 2, outPerM: 6 });
+    // No reasoning flag: the platform documents no reasoning parameter, so
+    // there is nothing for the adapter to send.
+    assert.strictEqual(recommended?.disableReasoning, undefined);
+  });
+
   it('anthropic ids are bare — that is what the direct API takes', () => {
     for (const model of MODEL_CATALOG.anthropic) {
       assert.match(model.id, BARE_MODEL_ID_PATTERN, `"${model.id}" should carry no vendor namespace`);

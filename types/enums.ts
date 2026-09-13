@@ -30,7 +30,13 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
  * in the enum because `createVisionProvider` dispatches on it, and putting it
  * anywhere else would mean a second dispatch beside the registry.
  */
-export type AiProviderType = 'openrouter' | 'mistral' | 'openai-compatible' | 'anthropic' | 'managed';
+export type AiProviderType =
+  | 'openrouter'
+  | 'mistral'
+  | 'modelrunner'
+  | 'openai-compatible'
+  | 'anthropic'
+  | 'managed';
 
 /**
  * Outcome of a single plate-identification provider call, recorded on every

@@ -141,6 +141,7 @@ const ADVANCED_PROVIDER_DEFINITIONS = getProvidersByPlacement('advanced');
  */
 const ADVANCED_OPTION_KEYS = {
   'openai-compatible': 'settingsAi.advanced.openaiCompatibleOption',
+  modelrunner: 'settingsAi.advanced.modelrunnerOption',
   anthropic: 'settingsAi.advanced.anthropicOption',
   openrouter: undefined,
   mistral: undefined,
@@ -166,6 +167,8 @@ const ADVANCED_OPTION_KEYS = {
 const PROVIDER_BLURB_KEYS = {
   openrouter: 'settingsAi.providerBlurb.openrouter',
   mistral: 'settingsAi.providerBlurb.mistral',
+  // No blurb, like the other providers behind "Advanced".
+  modelrunner: undefined,
   'openai-compatible': undefined,
   anthropic: undefined,
   managed: undefined,
@@ -177,6 +180,8 @@ const MODEL_PLACEHOLDER = {
   anthropic: 'claude-sonnet-5',
   openrouter: undefined,
   mistral: undefined,
+  // Curated catalog, so the picker renders and this is never used.
+  modelrunner: undefined,
   // NEVER RENDERED. `managed` has no tab, no card and no key field on this
   // page (`placement: 'derived'` in the registry) — its endpoint, model and
   // bearer all come from the open session. The entry exists because the map is
@@ -228,6 +233,7 @@ export function modelBlurbKey(modelId: string): string {
 const API_KEY_LABEL_KEYS = {
   openrouter: 'settingsAi.apiKey.label.openrouter',
   mistral: 'settingsAi.apiKey.label.mistral',
+  modelrunner: 'settingsAi.apiKey.label.modelrunner',
   'openai-compatible': 'settingsAi.apiKey.label.openaiCompatible',
   anthropic: 'settingsAi.apiKey.label.anthropic',
   // Never rendered — `managed` has no key field. See `ADVANCED_OPTION_KEYS`.
@@ -244,6 +250,8 @@ const API_KEY_LABEL_KEYS = {
 const API_KEY_PLACEHOLDERS = {
   openrouter: 'sk-or-v1-...',
   mistral: '',
+  // 64 bare hex characters, no prefix — nothing to teach, same as Mistral.
+  modelrunner: '',
   'openai-compatible': 'sk-...',
   anthropic: 'sk-ant-...',
   managed: '',
