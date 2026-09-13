@@ -45,6 +45,21 @@ function readZIndex(className: string): number {
   return Number(match![1]);
 }
 
+/** The literal className of the one line opening `<HeaderStatus>`'s direct parent div. */
+function readHeaderStatusParentClassName(source: string): string {
+  const headerStatusAt = source.indexOf('<HeaderStatus>');
+  assert.notEqual(headerStatusAt, -1, 'app-wrapper.tsx no longer mounts <HeaderStatus>; this test needs updating.');
+
+  const parentDivAt = source.lastIndexOf('<div', headerStatusAt);
+  assert.notEqual(parentDivAt, -1, '<HeaderStatus> is no longer inside a <div> in app-wrapper.tsx.');
+
+  const openingTag = source.slice(parentDivAt, source.indexOf('>', parentDivAt));
+  const match = /className="([^"]*)"/.exec(openingTag);
+  assert.notEqual(match, null, `<HeaderStatus>'s parent <div> has no literal className: ${openingTag}`);
+  // SAFETY: the assertion above rules out null.
+  return match![1]!;
+}
+
 const source = readFileSync(APP_WRAPPER_PATH, 'utf8');
 
 describe('the app header sticks to the top of the viewport', () => {
@@ -71,6 +86,21 @@ describe('the app header sticks to the top of the viewport', () => {
       `The app header is z-${z}. It must be at most z-40. Radix portals (Popover, Sheet, Dialog) render at z-50, ` +
         `so a header at z-50 or above would cover the diary's open calendar popover. BottomNav and the scan action ` +
         `bar are z-40; the header belongs on that same layer, not above it.`,
+    );
+  });
+});
+
+describe('the header status row can shrink below its text width', () => {
+  it('gives <HeaderStatus>\'s direct parent flex div `min-w-0`', () => {
+    const className = readHeaderStatusParentClassName(source);
+    // Exact match, not `.includes('min-w-0')`: the old line was
+    // `"flex flex-1 items-center justify-between gap-2"`, which contains
+    // neither `min-w-0` nor `min-w`, so this fails against it as written.
+    assert.equal(
+      className,
+      'flex min-w-0 flex-1 items-center justify-between gap-2',
+      `<HeaderStatus>'s parent div must carry \`min-w-0\` alongside \`flex-1\`, or a long status can't shrink ` +
+        `below its text's intrinsic width and the header overflows the viewport. Got: ${className}`,
     );
   });
 });

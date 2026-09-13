@@ -252,7 +252,7 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
           already sits on `bg-card`, an opaque fill, so it needs no backdrop
           blur to stay readable over scrolling content. */}
       <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center gap-2 border-b border-primary/20 bg-card">
-        <div className="flex items-center gap-2.5 px-4 w-full">
+        <div className="flex min-w-0 items-center gap-2.5 px-4 w-full">
           {/* Desktop only: below `md` the drawer's own brand-mark trigger (see
               `NavDrawer`) opens the same list, and a second hamburger beside it
               would just be two triggers for one sheet. Only the desktop sidebar
@@ -261,7 +261,13 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
           <NavDrawer />
-          <div className="flex flex-1 items-center justify-between gap-2">
+          {/* `min-w-0` so this flex child can shrink below its status text's
+              intrinsic width; without it a long status (a blocked-notification
+              error, especially the longer German string) pushes the header
+              past the viewport instead of wrapping inside `HeaderStatusRow`.
+              `tests/unit/app-wrapper-sticky-header.test.ts` pins this line's
+              exact class list. */}
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
             {/* The header's title slot is also the app's ONE notification
                 surface. While `#app/lib/status` holds a message,
                 `HeaderStatus` renders it here instead of the two lines below,

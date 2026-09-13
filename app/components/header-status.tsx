@@ -22,10 +22,16 @@ import { clearStatus, registerStatusHost, useStatus, type StatusMessage, type St
  * drawer above.
  *
  * THE HEADER NEVER MOVES. This component swaps `children` for the status row
- * inside the same box. The row carries `min-h-11`, well under the header's own
- * `min-h-16`, so the bar's height is fixed by the header either way, and the
- * `AvatarMenu` and the drawer trigger are siblings of this component rather
- * than children of it, so neither shifts by a pixel.
+ * inside the same box. An error persists until dismissed, so its text wraps
+ * instead of truncating to an unreadable one: `text-sm line-clamp-2` for
+ * every other tone, but an ERROR drops to `text-xs font-semibold leading-4
+ * line-clamp-3` (or `line-clamp-2` when it also carries a description) so a
+ * long sentence, in German especially, fits whole rather than clipping after
+ * two lines of the larger size (M225 follow-up). Three lines at `leading-4`
+ * (16px) plus a 16px description is 64px, so the bar's height is still fixed
+ * by the header's own `min-h-16`, and the `AvatarMenu` and the drawer trigger
+ * are siblings of this component rather than children of it, so neither
+ * shifts by a pixel.
  *
  * THE `h1` IS NOT RENDERED while a status shows. That is deliberate and not an
  * oversight: for those seconds the status IS what the header says, and it is
@@ -64,6 +70,16 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
   // way out. A status carrying an action gets the same control for a different
   // reason: it is offering a choice, and "neither" has to be one of them.
   const isDismissable = status.tone === 'error' || status.action !== null;
+  const isError = status.tone === 'error';
+  const hasDescription = status.description !== null;
+  // An error is smaller AND taller than every other tone: dropping to
+  // `text-xs` buys a third line before the header's `min-h-16` is at risk, so
+  // a long sentence (the German notifications-blocked copy is the one that
+  // forced this) has somewhere to go instead of clipping at two lines of
+  // `text-sm`. Two lines, not three, when a description is also showing, so
+  // the two together still fit the same budget.
+  const textRowClass = isError ? 'text-xs font-semibold leading-4' : 'text-sm font-semibold';
+  const textClampClass = isError && !hasDescription ? 'line-clamp-3' : 'line-clamp-2';
 
   return (
     <div
@@ -74,12 +90,19 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
           polite live region this needs. A `role` or an `aria-live` beside it
           would be a second, redundant declaration of the same thing. */}
       <output className={cn('flex min-w-0 flex-1 flex-col justify-center gap-px', TONE_CLASS[status.tone])}>
-        <span className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold">
-          <Icon className="size-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{status.text}</span>
+        {/* `items-start`, not `items-center`: the text below can wrap to a
+            second or third line, and the icon sits on the first line rather
+            than centering across all of them. `line-clamp-2`/`line-clamp-3`
+            plus `break-words` replaces `truncate` here (M225): an error stays
+            on screen until dismissed, so cutting it to one line with an
+            ellipsis made it unreadable. The description below keeps
+            `truncate`, it is supplementary, never the whole message. */}
+        <span className={cn('flex min-w-0 items-start gap-1.5', textRowClass)}>
+          <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span className={cn(textClampClass, 'break-words')}>{status.text}</span>
         </span>
         {status.description !== null && (
-          <span className="truncate text-xs text-muted-foreground">{status.description}</span>
+          <span className="truncate text-xs leading-4 text-muted-foreground">{status.description}</span>
         )}
       </output>
       {status.action !== null && (

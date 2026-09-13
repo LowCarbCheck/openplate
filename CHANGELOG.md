@@ -18,6 +18,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Fixed
 
 - **Turning notifications on now reports what actually happened.** A permission question you closed without answering was reported as blocked and took the switch off the page, so there was no way to ask again; it now says the question went unanswered and leaves the switch there, and if a second tap goes unanswered too, because some browsers quietly stop asking, it points you at your browser's site settings instead. A session that ended on this device reads as signed out rather than as an instance that sends nothing, and a subscription left over from another notification key is dropped instead of registered to an address the instance can never reach. The page re-reads the browser permission when you come back to it, so allowing notifications in your browser settings takes effect without a reload.
+- **A long status message no longer pushes the page wider than the screen.** An error banner in the header, such as a blocked-notifications warning, could stretch past the edge of a phone screen instead of wrapping. It now wraps to up to three lines at a smaller size, and the header keeps its fixed height.
 
 ## [0.29.5] - 2026-09-13
 
