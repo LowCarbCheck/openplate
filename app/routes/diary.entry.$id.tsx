@@ -19,7 +19,7 @@ import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import type { SubmissionResult } from '@conform-to/react';
 import { dayBoundsInTimezone, todayInTimezone } from '#app/lib/user-days';
-import { diaryHrefForDate } from '#app/lib/diary-href';
+import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { randomUuid } from '#app/lib/uuid';
 import type { Macros } from '#app/lib/macros';
 import { reconstructPer100g } from '#app/lib/per-hundred';
@@ -457,7 +457,10 @@ export async function clientLoader({ params }: Route.ClientLoaderArgs) {
   // entry's OWN calendar day, not always "today" — bare `/diary` when that day
   // is today (clean URL, matches the add/scan convention), else `/diary?date=`.
   // `_personal.tsx` reads this `backTo` off the loader data for the Back link.
-  const backTo = diaryHrefForDate(todayInTimezone(timezone, new Date(log.loggedAt)), todayInTimezone(timezone));
+  const backTo = buildAddHref('/diary', {
+    date: todayInTimezone(timezone, new Date(log.loggedAt)),
+    today: todayInTimezone(timezone),
+  });
 
   return {
     userId: ANONYMOUS_USER_ID,
@@ -502,7 +505,12 @@ async function handleDelete(id: string, timezone: string): Promise<Response> {
   // Returns to the entry's own day (falling back to a bare `/diary` if the
   // log was already gone, e.g. a stale tab).
   if (!existing) return redirect('/diary');
-  return redirect(diaryHrefForDate(todayInTimezone(timezone, new Date(existing.loggedAt)), todayInTimezone(timezone)));
+  return redirect(
+    buildAddHref('/diary', {
+      date: todayInTimezone(timezone, new Date(existing.loggedAt)),
+      today: todayInTimezone(timezone),
+    }),
+  );
 }
 
 async function handleLogAgain(id: string) {

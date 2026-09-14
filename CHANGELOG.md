@@ -20,6 +20,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The compose files name the Postgres image with its registry.** `postgres:17-alpine` is now `docker.io/library/postgres:17-alpine` in `compose.sync.yml` and `compose.full.yml`, because rootless Podman refuses to guess a registry for a short name without a terminal. The same files stop forwarding `SIGNUP_MODE`, which openplate-core rejects at boot, and declare the sync service's `/health` check, which Podman otherwise drops on pull. The generated Quadlet units gain `TimeoutStartSec=300` beside `Notify=healthy` and each service name as a network alias; both came out of starting every scenario rootless on a Fedora host, recorded in each `docker/quadlet/<scenario>/README.md`.
 
+### Fixed
+
+- **The add button in the bottom bar logs to the day you are looking at.** Its camera, its Type row and its Speak row always went to today, even while you were reading an earlier day in the diary, so a photo or a typed meal quietly landed on the wrong date and nothing said so. All three now carry the day on screen.
+
 ## [0.30.0] - 2026-09-14
 
 ### Added

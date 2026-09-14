@@ -27,7 +27,7 @@ import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { dayKeyToLocalDate, localDateToDayKey } from '#app/lib/day-key-date';
 import { resolveDiaryEmptyState } from '#app/lib/diary-empty-state';
 import type { DiaryEmptyState } from '#app/lib/diary-empty-state';
-import { diaryHrefForDate } from '#app/lib/diary-href';
+import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { useDaySwipe } from '#app/hooks/use-day-swipe';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
@@ -85,7 +85,7 @@ import type { LocalDailyTotals, LocalFoodLog, LocalFrequentChip, LocalRecentFood
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { trackEntryRestored, trackFoodLogged, trackMealSaved } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { AddFoodActions } from '#app/components/add-food-actions';
+import { AddFoodActionsComposer } from '#app/components/add-food-actions-composer';
 import { BackupNudgeBanner } from '#app/components/backup-nudge-banner';
 import { HabitStrip } from '#app/components/habit-strip';
 import { StickySubheader } from '#app/components/sticky-subheader';
@@ -2446,7 +2446,7 @@ function FirstEverEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: st
           <p className="text-sm text-muted-foreground">{t('diary.empty.firstEver.subtitle')}</p>
         </div>
         <div className="flex flex-col items-center">
-          <AddFoodActions describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
         {/*
           `Trans` rather than three sentence fragments glued around two links:
@@ -2491,7 +2491,7 @@ function WelcomeBackEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: 
           <p className="text-sm text-muted-foreground">{t('diary.empty.welcomeBack.subtitle')}</p>
         </div>
         <div className="flex flex-col items-center">
-          <AddFoodActions describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2512,7 +2512,7 @@ function OrdinaryEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: str
         <PlateGlyph className="h-16 w-16 text-primary/60" />
         <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>
         <div className="flex w-full flex-col items-center">
-          <AddFoodActions describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2527,7 +2527,7 @@ function OrdinaryEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: str
  * The diary's swipe-between-days gesture (M129/04) — a BONUS affordance layered
  * over the chevrons and the date picker, which remain the visible, discoverable
  * controls. It navigates to exactly the same URLs `DateNav` does (via
- * `diaryHrefForDate`), and honours the same upper bound: swiping forward on
+ * `buildAddHref`), and honours the same upper bound: swiping forward on
  * today does nothing, because there is no tomorrow to log.
  *
  * All the intent logic is elsewhere and testable — thresholds in
@@ -2543,7 +2543,7 @@ function useDiaryDaySwipe({ date, today }: { date: string; today: string }) {
   return useDaySwipe((direction) => {
     if (direction === 'next' && date >= today) return;
     const target = shiftDate(date, direction === 'next' ? 1 : -1);
-    navigate(diaryHrefForDate(target, today));
+    navigate(buildAddHref('/diary', { date: target, today }));
   });
 }
 
@@ -2599,9 +2599,9 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
   // meal; `/add` is the database SEARCH, and it is still what a food
   // SUGGESTION links to, because a suggestion already names one exact food and
   // rides in on `?q=`.
-  const describeTo = isToday ? '/describe' : `/describe?date=${date}`;
-  const addTo = isToday ? '/add' : `/add?date=${date}`;
-  const scanTo = isToday ? '/scan' : `/scan?date=${date}`;
+  const describeTo = buildAddHref('/describe', { date, today });
+  const addTo = buildAddHref('/add', { date, today });
+  const scanTo = buildAddHref('/scan', { date, today });
   const emptyState: DiaryEmptyState = resolveDiaryEmptyState({
     hasAnyLogs,
     isToday,
@@ -2682,7 +2682,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
       {!hasLogs && emptyState === 'returning-after-gap' && <WelcomeBackEmpty describeTo={describeTo} scanTo={scanTo} />}
       {!hasLogs && emptyState === 'ordinary' && <OrdinaryEmpty describeTo={describeTo} scanTo={scanTo} />}
 
-      {hasLogs && <AddFoodActions describeTo={describeTo} scanTo={scanTo} />}
+      {hasLogs && <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} />}
     </div>
   );
 }

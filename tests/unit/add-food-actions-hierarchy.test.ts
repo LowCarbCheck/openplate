@@ -1,8 +1,11 @@
 /**
  * The add-food hierarchy: three equal ways in, side by side.
  *
- * `/diary`'s three empty states and `/dashboard`'s today hero all render
- * `AddFoodActions`, so this one component decides what "add food" means.
+ * `AddFoodActions` decided what "add food" means on `/diary` and `/dashboard`
+ * until `AddFoodActionsComposer` took both. It renders only in
+ * `/dev/playground` now, and this file stays because the strip inherits every
+ * rule below: the pair, read together, is what stops the next restructure
+ * quietly demoting typing again.
  *
  * WHAT CHANGED. It used to be a full-width photograph button with typing and
  * speaking shrunk underneath it. All three now reach the same AI review screen
@@ -28,8 +31,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-
-import { speakHref } from '../../app/components/add-food-actions';
 
 const source = readFileSync(new URL('../../app/components/add-food-actions.tsx', import.meta.url), 'utf8');
 
@@ -62,10 +63,10 @@ describe('the add-food actions', () => {
     assert.match(source, /t\('launcher\.type'\)/);
     assert.match(source, /t\('launcher\.speak'\)/);
     assert.match(source, /<Link to=\{describeTo\}>/);
-    assert.match(source, /<Link to=\{speakHref\(describeTo\)\}>/);
+    assert.match(source, /<Link to=\{buildAddHref\(describeTo, \{ speak: true \}\)\}>/);
     // One flex row holds all three, so they share the width rather than
     // stacking the two quiet ones under a full-width primary.
-    assert.match(source, /<div className="flex gap-2">[\s\S]*onClick=\{capture\}[\s\S]*speakHref\(describeTo\)/);
+    assert.match(source, /<div className="flex gap-2">[\s\S]*onClick=\{capture\}[\s\S]*buildAddHref\(describeTo, \{ speak: true \}\)/);
   });
 
   it('gives all three the same generous target', () => {
@@ -97,21 +98,7 @@ describe('the add-food actions', () => {
     assert.doesNotMatch(source, /speech-input-button/, 'the removed speech module is imported again');
     // The control: the row must still HAVE the speak action, or the check
     // above would pass on a component that simply dropped it.
-    assert.match(source, /<Link to=\{speakHref\(describeTo\)\}>/);
+    assert.match(source, /<Link to=\{buildAddHref\(describeTo, \{ speak: true \}\)\}>/);
     assert.doesNotMatch(source, /\{canSpeak && \(/, 'the speak action is conditional again');
-  });
-});
-
-describe('speakHref', () => {
-  it('adds speak=1 to a bare destination', () => {
-    assert.equal(speakHref('/describe'), '/describe?speak=1');
-  });
-
-  it('keeps a query the destination already carries', () => {
-    assert.equal(speakHref('/describe?date=2026-09-07'), '/describe?date=2026-09-07&speak=1');
-  });
-
-  it('does not add a second speak=1', () => {
-    assert.equal(speakHref('/describe?speak=1'), '/describe?speak=1');
   });
 });

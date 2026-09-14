@@ -62,6 +62,7 @@ import { Label } from '#app/components/ui/label';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
+import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { offerTypedText } from '#app/lib/scan-handoff';
 import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
 import { selectRepeatYesterday } from '#app/lib/copy-day';
@@ -82,11 +83,6 @@ export const handle = {
   titleKey: 'describe.title',
   backTo: '/diary',
 };
-
-/** Where the words go, carrying the day the person is looking at. */
-export function describeScanHref(logDate: string | null): string {
-  return logDate === null ? '/scan' : `/scan?date=${logDate}`;
-}
 
 /**
  * Parks the words and leaves for `/scan`.
@@ -310,7 +306,8 @@ export default function DescribeRoute() {
   // normalizes a today-valued date against the device's own timezone, so
   // nothing here has to read the local store to do it a second time.
   const logDate = parseDateParam(searchParams.get('date'));
-  const scanHref = describeScanHref(logDate);
+  // Where the words go, carrying the day the person is looking at.
+  const scanHref = buildAddHref('/scan', { date: logDate });
   const searchHref = logDate === null ? '/add' : `/add?date=${logDate}`;
 
   const { connection: aiConnection, door } = useAiIntake();

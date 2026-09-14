@@ -20,6 +20,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { buildAddHref } from '../../app/lib/add-food-hrefs';
+import { parseDateParam } from '../../app/lib/user-days';
+
 const source = readFileSync(new URL('../../app/components/add/use-camera-capture.ts', import.meta.url), 'utf8');
 
 /**
@@ -110,13 +113,20 @@ describe('a back-dated day survives the photo path', () => {
   const diary = readFileSync(new URL('../../app/routes/diary.tsx', import.meta.url), 'utf8');
 
   it('/diary dates the scan target on any day but today', () => {
-    assert.match(diary, /const scanTo = isToday \? '\/scan' : `\/scan\?date=\$\{date\}`;/);
+    assert.match(diary, /const scanTo = buildAddHref\('\/scan', \{ date, today \}\);/);
+    assert.equal(buildAddHref('/scan', { date: '2026-09-07', today: '2026-09-14' }), '/scan?date=2026-09-07');
+    assert.equal(buildAddHref('/scan', { date: '2026-09-14', today: '2026-09-14' }), '/scan');
   });
 
-  it('every AddFoodActions on /diary is given it', () => {
-    const renders = diary.match(/<AddFoodActions [^>]*\/>/g) ?? [];
+  it('every add-entry surface on /diary is given it', () => {
+    // The diary renders the composer strip now, the same one `/dashboard` got
+    // after the playground review. The count and the `scanTo` check are the
+    // point, not the component's name: a surface that forgets the target
+    // writes a back-dated photo to today with nothing on screen saying so.
+    const renders = diary.match(/<AddFoodActionsComposer [^>]*\/>/g) ?? [];
     assert.equal(renders.length, 4, 'three empty states plus the non-empty day');
     for (const render of renders) assert.match(render, /scanTo=\{scanTo\}/);
+    assert.doesNotMatch(diary, /<AddFoodActions [^>]*\/>/, 'a three-button row is back on the diary');
   });
 
   it('each empty state takes it as a prop rather than inventing one', () => {
@@ -133,7 +143,13 @@ describe('a back-dated day survives the photo path', () => {
 });
 
 describe('the surfaces that capture', () => {
-  const surfaces = ['../../app/components/add-launcher.tsx', '../../app/components/add-food-actions.tsx'];
+  const surfaces = [
+    '../../app/components/add-launcher.tsx',
+    '../../app/components/add-food-actions.tsx',
+    // The composer strip `/dashboard` renders. It carries its own camera key,
+    // so it is a capturing surface and the gesture rule applies to it too.
+    '../../app/components/add-food-actions-composer.tsx',
+  ];
 
   for (const surface of surfaces) {
     const text = readFileSync(new URL(surface, import.meta.url), 'utf8');
@@ -147,4 +163,55 @@ describe('the surfaces that capture', () => {
       assert.match(text, /<input ref=\{inputRef\} \{\.\.\.inputProps\} \/>/);
     });
   }
+});
+
+/**
+ * THE LAUNCHER LOGS TO THE DAY ON SCREEN.
+ *
+ * This bar renders under every route, `/diary?date=<an earlier day>` included,
+ * and its three doors used to be hardcoded: `/scan` through the hook with no
+ * argument, `/describe` and `/describe?speak=1` as literal links. Tapping any
+ * of them while looking at Saturday wrote the meal to today, and nothing on
+ * screen said so.
+ *
+ * The chain is asserted the way the photo path above is, link by link: the
+ * launcher must read the day out of the URL, and the builder must turn that
+ * day into a dated href. Either half alone passes while the day is still lost.
+ */
+describe('the launcher carries the day the person is looking at', () => {
+  const launcher = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
+
+  it('reads the day from the current URL, not from a prop it is never given', () => {
+    // `AddLauncher` is rendered prop-less from the global bottom nav, so the
+    // URL is the only place the viewed day can come from.
+    assert.match(launcher, /const viewedDate = parseDateParam\(new URLSearchParams\(location\.search\)\.get\('date'\)\);/);
+  });
+
+  it('builds all three doors through the shared builder', () => {
+    assert.match(launcher, /const describeTo = buildAddHref\('\/describe', \{ date: viewedDate \}\);/);
+    assert.match(launcher, /const speakTo = buildAddHref\('\/describe', \{ date: viewedDate, speak: true \}\);/);
+    assert.match(launcher, /scanTo: buildAddHref\('\/scan', \{ date: viewedDate \}\)/);
+  });
+
+  it('has no hardcoded destination left in its markup', () => {
+    // The control for the three checks above: they would all pass on a file
+    // that computed the hrefs and then rendered the old literals anyway.
+    assert.doesNotMatch(launcher, /to="\/describe/, 'a launcher row points at an undated /describe again');
+    assert.match(launcher, /<Link to=\{speakTo\}/);
+    assert.match(launcher, /<Link to=\{describeTo\}/);
+  });
+
+  it('turns a dated diary URL into dated doors, and a bare one into bare doors', () => {
+    // The other half of the chain, run for real: the same two calls the file
+    // above makes, over the search string `/diary?date=` actually produces.
+    const dayOnScreen = parseDateParam(new URLSearchParams('?date=2026-09-07').get('date'));
+    assert.equal(buildAddHref('/describe', { date: dayOnScreen }), '/describe?date=2026-09-07');
+    assert.equal(buildAddHref('/describe', { date: dayOnScreen, speak: true }), '/describe?date=2026-09-07&speak=1');
+    assert.equal(buildAddHref('/scan', { date: dayOnScreen }), '/scan?date=2026-09-07');
+
+    const today = parseDateParam(new URLSearchParams('').get('date'));
+    assert.equal(buildAddHref('/describe', { date: today }), '/describe');
+    assert.equal(buildAddHref('/describe', { date: today, speak: true }), '/describe?speak=1');
+    assert.equal(buildAddHref('/scan', { date: today }), '/scan');
+  });
 });

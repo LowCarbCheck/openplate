@@ -51,7 +51,8 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
-import { DescribeComposer, describeScanHref, handOffDescription } from '../../app/routes/describe';
+import { DescribeComposer, handOffDescription } from '../../app/routes/describe';
+import { buildAddHref } from '../../app/lib/add-food-hrefs';
 import { takeIntakeHandoff } from '../../app/lib/scan-handoff';
 import type { AiConnection, AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import type { RepeatYesterdayOffer } from '../../app/lib/copy-day';
@@ -363,8 +364,12 @@ describe('the hand-off to /scan', () => {
   });
 
   it('carries the day the person is looking at', () => {
-    assert.equal(describeScanHref(null), '/scan');
-    assert.equal(describeScanHref('2026-09-07'), '/scan?date=2026-09-07');
+    // The route builds the scan target through the shared helper now, so the
+    // day it hands on is the day the URL it renders under carries.
+    const source = readFileSync(new URL('../../app/routes/describe.tsx', import.meta.url), 'utf8');
+    assert.match(source, /const scanHref = buildAddHref\('\/scan', \{ date: logDate \}\);/);
+    assert.equal(buildAddHref('/scan', { date: null }), '/scan');
+    assert.equal(buildAddHref('/scan', { date: '2026-09-07' }), '/scan?date=2026-09-07');
   });
 
   it('spends nothing on an empty box', () => {

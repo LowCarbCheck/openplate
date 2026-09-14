@@ -6,7 +6,9 @@ import { Link } from '#app/components/link';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
 import { useCameraCapture } from '#app/components/add/use-camera-capture';
+import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { hasMovedBeyondPressTolerance, LONG_PRESS_MS, type PointerPosition } from '#app/lib/long-press';
+import { parseDateParam } from '#app/lib/user-days';
 import type { NavigationItem } from './app-sidebar';
 
 /** One sheet row: full width, 44px of hit area, no decoration competing with the label. */
@@ -26,11 +28,25 @@ const LAUNCHER_ITEM_CLASS =
  *
  * The chevron beside it is the discoverable route to everything else. The
  * long press is a shortcut on top of it, never the only way in.
+ *
+ * IT CARRIES THE VIEWED DAY. This bar sits under every screen, including
+ * `/diary?date=<an earlier day>`. It used to send all three of its doors to
+ * today: a photo, a typed meal or a dictated one, logged to the wrong day with
+ * nothing on screen saying so. The day is read out of the current URL and
+ * threaded through `buildAddHref`, so the launcher logs to the day the person
+ * is looking at.
  */
 export function AddLauncher({ tab }: { tab: NavigationItem }) {
   const { t } = useTranslation();
   const location = useLocation();
-  const { capture, triggerRef, inputRef, inputProps } = useCameraCapture();
+  // `null` on today's view and on any screen that carries no day, which is
+  // exactly what a bare destination means.
+  const viewedDate = parseDateParam(new URLSearchParams(location.search).get('date'));
+  const describeTo = buildAddHref('/describe', { date: viewedDate });
+  const speakTo = buildAddHref('/describe', { date: viewedDate, speak: true });
+  const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({
+    scanTo: buildAddHref('/scan', { date: viewedDate }),
+  });
   const pressStartRef = useRef<PointerPosition | null>(null);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Set when a long press already opened the sheet, so the click that follows it does not also open the camera. */
@@ -165,13 +181,13 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
               search is still one tap away, from the nav and from a link on the
               composer itself. */}
           <SheetClose asChild>
-            <Link to="/describe?speak=1" className={LAUNCHER_ITEM_CLASS}>
+            <Link to={speakTo} className={LAUNCHER_ITEM_CLASS}>
               <Mic className="h-5 w-5 shrink-0" aria-hidden="true" />
               {t('launcher.speak')}
             </Link>
           </SheetClose>
           <SheetClose asChild>
-            <Link to="/describe" className={LAUNCHER_ITEM_CLASS}>
+            <Link to={describeTo} className={LAUNCHER_ITEM_CLASS}>
               <Keyboard className="h-5 w-5 shrink-0" aria-hidden="true" />
               {t('launcher.type')}
             </Link>

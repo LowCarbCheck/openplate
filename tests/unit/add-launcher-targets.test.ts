@@ -19,14 +19,28 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { buildAddHref } from '../../app/lib/add-food-hrefs';
+
 const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
 
-/** The `<Link>` whose body renders the given label key. */
-function linkFor(labelKey: string): string {
-  const pattern = new RegExp(`<Link to="([^"]+)"[\\s\\S]{0,240}?t\\('${labelKey}'\\)`);
-  const found = pattern.exec(LAUNCHER);
-  assert.ok(found !== null, `no launcher row renders ${labelKey}`);
-  return found[1] ?? '';
+/**
+ * The destination of the `<Link>` whose body renders the given label key.
+ *
+ * The rows carry the viewed day now, so each `to=` is a binding rather than a
+ * literal: the name is read out of the markup, the `buildAddHref` call that
+ * defines it is read out of the same file, and the call is RUN, for today and
+ * for a back-dated day. A row wired to the wrong binding, or a binding built
+ * from the wrong path, fails here.
+ */
+function linkFor(labelKey: string, date: string | null = null): string {
+  const link = new RegExp(`<Link to=\\{([A-Za-z][A-Za-z0-9]*)\\}[\\s\\S]{0,240}?t\\('${labelKey}'\\)`).exec(LAUNCHER);
+  assert.ok(link !== null, `no launcher row renders ${labelKey}`);
+  const binding = link[1] ?? '';
+  const built = new RegExp(`const ${binding} = buildAddHref\\('([^']+)', \\{ date: viewedDate(, speak: (true|false))? \\}\\);`).exec(
+    LAUNCHER,
+  );
+  assert.ok(built !== null, `${binding} is not built from the viewed day by buildAddHref`);
+  return buildAddHref(built[1] ?? '', { date, speak: built[3] === 'true' });
 }
 
 describe('the launcher sheet', () => {
@@ -38,6 +52,13 @@ describe('the launcher sheet', () => {
   it('sends Speak to the composer with the microphone armed', () => {
     assert.equal(linkFor('launcher.speak'), '/describe?speak=1');
     assert.notEqual(linkFor('launcher.speak'), '/add?speak=1', 'the Speak row is a search form again');
+  });
+
+  it('takes both rows to the day on screen, not to today', () => {
+    // The bar renders under `/diary?date=<an earlier day>` too. Undated rows
+    // there wrote the meal to today and said nothing about it.
+    assert.equal(linkFor('launcher.type', '2026-09-07'), '/describe?date=2026-09-07');
+    assert.equal(linkFor('launcher.speak', '2026-09-07'), '/describe?date=2026-09-07&speak=1');
   });
 
   it('leaves no row pointing at the search screen', () => {

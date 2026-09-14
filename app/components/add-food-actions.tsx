@@ -24,12 +24,18 @@
  * job. So the row is always three columns, on every browser, and the speak
  * button promises a place to dictate INTO rather than a recording.
  *
- * BOTH destinations are passed in, and both carry the viewed day. `/diary`
+ * WHERE IT STILL RENDERS. `/dashboard` moved to `AddFoodActionsComposer` after
+ * a playground review, and `/diary` followed, so the only live render left is
+ * `/dev/playground`, where it is the before picture beside the strip. The rules
+ * above are kept because the strip inherits every one of them; read this file
+ * as what the strip must not lose.
+ *
+ * BOTH destinations are passed in, and both carry the viewed day: a caller
  * sends `/describe?date=...` and `/scan?date=...` when the user is not looking
  * at today, so a back-dated log, typed OR photographed, lands on the day in
- * front of them. `/dashboard` is always today and takes the defaults. The
- * speak destination is `describeTo` with `speak=1`, which focuses the composer
- * and shows the dictation hint.
+ * front of them. A today-only surface takes the defaults. The speak destination
+ * is `describeTo` with `speak=1`, which focuses the composer and shows the
+ * dictation hint.
  *
  * TYPE AND SPEAK GO TO `/describe`, not to `/add`. `/add` is the database
  * search, which answers "which food is this" for one item; these two buttons
@@ -42,15 +48,8 @@ import { Camera, Keyboard, Mic } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Button } from '#app/components/ui/button';
 import { useCameraCapture } from '#app/components/add/use-camera-capture';
+import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { cn } from '#app/lib/utils';
-
-/** A destination with `speak=1` added, whether or not it already carries a query. It focuses the composer's field; nothing records. */
-export function speakHref(destination: string): string {
-  const [path = destination, query = ''] = destination.split('?');
-  const params = new URLSearchParams(query);
-  params.set('speak', '1');
-  return `${path}?${params.toString()}`;
-}
 
 /**
  * The shared geometry of one action. Tall enough (h-14) that the icon and its
@@ -89,7 +88,7 @@ export function AddFoodActions({
           </Link>
         </Button>
         <Button asChild variant="outline" className={cn(ACTION_CLASS, 'border-primary/50 text-primary')}>
-          <Link to={speakHref(describeTo)}>
+          <Link to={buildAddHref(describeTo, { speak: true })}>
             <Mic className="h-5 w-5" aria-hidden="true" />
             {t('launcher.speak')}
           </Link>
