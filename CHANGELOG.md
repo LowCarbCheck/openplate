@@ -15,6 +15,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **Generated Podman Quadlet units ship for every openplate deployment shape.** The directory `docker/quadlet/<scenario>/` holds the `.container`, `.volume`, and `.network` files that Podman needs to run openplate as a systemd service. These units are generated directly from existing compose files instead of written by hand. A push gate check regenerates and verifies them, so a stale unit never reaches you.
 
+### Changed
+
+- **The compose files name the Postgres image with its registry.** `postgres:17-alpine` is now `docker.io/library/postgres:17-alpine` in `compose.sync.yml` and `compose.full.yml`, because rootless Podman refuses to guess a registry for a short name without a terminal. The same files stop forwarding `SIGNUP_MODE`, which openplate-core rejects at boot, and declare the sync service's `/health` check, which Podman otherwise drops on pull. The generated Quadlet units gain `TimeoutStartSec=300` beside `Notify=healthy` and each service name as a network alias; both came out of starting every scenario rootless on a Fedora host, recorded in each `docker/quadlet/<scenario>/README.md`.
+
 ## [0.30.0] - 2026-09-14
 
 ### Added

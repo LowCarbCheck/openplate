@@ -12,11 +12,12 @@ HealthInterval=5s
 HealthRetries=10
 HealthTimeout=5s
 Notify=healthy
-Image=postgres:17-alpine
-Network=openplate-with-sync.network
+Image=docker.io/library/postgres:17-alpine
+Network=openplate-with-sync.network:alias=postgres
 Volume=pg-data.volume:/var/lib/postgresql/data
 
 [Service]
+TimeoutStartSec=300
 Restart=always
 
 [Install]

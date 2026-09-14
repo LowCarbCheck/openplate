@@ -17,10 +17,11 @@ HealthStartPeriod=30s
 HealthTimeout=5s
 Notify=healthy
 Image=ghcr.io/lowcarbcheck/openplate:latest
-Network=openplate-with-sync.network
+Network=openplate-with-sync.network:alias=app
 PublishPort=3000:3000
 
 [Service]
+TimeoutStartSec=300
 Restart=always
 
 [Install]

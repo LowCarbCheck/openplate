@@ -41,7 +41,7 @@ services:
   # opaque ciphertext blobs. The app never connects to it and has no database
   # of its own (.adr/0006-the-app-server-holds-no-accounts.md).
   postgres:
-    image: postgres:17-alpine
+    image: docker.io/library/postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-openplate}
@@ -111,12 +111,25 @@ services:
 
   # ── The sync service ──────────────────────────────────────────────────────
   # An account service that stores an email address and opaque ciphertext. It
-  # holds no key for that ciphertext and cannot be made to decrypt it. Its
-  # image ships its own HEALTHCHECK against the unauthenticated /health
-  # endpoint, so none is repeated here.
+  # holds no key for that ciphertext and cannot be made to decrypt it.
   sync:
     image: ghcr.io/lowcarbcheck/openplate-core:latest
     restart: unless-stopped
+    healthcheck:
+      # The image bakes the same check in, but Podman drops a HEALTHCHECK when
+      # it pulls an OCI manifest, which is what GHCR serves. Declared here it
+      # holds under both engines and Quadlet turns it into Notify=healthy.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     depends_on:
       postgres:
         condition: service_healthy
@@ -135,11 +148,10 @@ services:
       # passphrase reset. Changing it has the same effect as losing it.
       SERVER_SECRET: ${SERVER_SECRET:?generate one with `openssl rand -hex 32` and put it in .env}
 
-      # Who may create an account: open | invite | closed. `invite` and
-      # `closed` leave existing accounts working. Consider one of them once
-      # your household has signed up. The older SIGNUPS_OPEN name is a boot
-      # failure, so it is not forwarded here.
-      SIGNUP_MODE: ${SIGNUP_MODE:-open}
+      # Signup is INVITE-ONLY, always: there is no mode to set. SIGNUP_MODE
+      # and the older SIGNUPS_OPEN are both boot failures in openplate-core,
+      # so neither is forwarded here. Mint an invite from /admin in the app
+      # or with `pnpm sync-api invites create --email ...` in openplate-core.
 
       # GET THIS RIGHT — it is the other setting that can hurt you. Set it to
       # the number of reverse proxies in front of this service. Left at 0

@@ -57,6 +57,23 @@ volume, which is what `openplate-core/docker/compose.yml` and openplate's
 `compose.sync.yml` and `compose.full.yml` already use, solves this
 automatically: Podman creates the volume with the right ownership. If you
 switch to a bind-mounted host directory instead, fix its ownership first,
-from the host, with `podman unshare chown -R 999:999 ./pg-data` (999 is the
-Postgres image's own user), or the container fails to start with a
+from the host, with `podman unshare chown -R 70:70 ./pg-data` (70 is the
+`postgres` user in the `postgres:17-alpine` image these files pin; the
+Debian-based image uses 999), or the container fails to start with a
 permissions error. Touches rungs 2 and 4.
+
+## Quadlet units
+
+Every compose file above also ships as a set of rootless systemd units,
+generated from it by `scripts/quadlet.sh` and committed under
+`docker/quadlet/`. A unit set survives a reboot under `systemctl --user`
+with no compose process attached. Each directory has a README with the
+install steps, the `.env` it needs, and a record of the run that started
+it on a Fedora host with SELinux enforcing:
+
+- [app](../docker/quadlet/app/README.md): rung 1, the app alone
+- [sync](../docker/quadlet/sync/README.md): rung 2, Postgres, the app and openplate-core
+- [inference](../docker/quadlet/inference/README.md): rung 3, openplate-inference and the app
+- [full](../docker/quadlet/full/README.md): rung 4, all four
+- [openplate-core](https://github.com/LowCarbCheck/openplate-core/blob/main/docker/quadlet/core/README.md): the sync service on its own
+- [openplate-inference](https://github.com/LowCarbCheck/openplate-inference/blob/main/docker/quadlet/inference/README.md): the inference endpoint on its own

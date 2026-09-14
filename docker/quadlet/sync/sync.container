@@ -9,17 +9,23 @@ After=postgres.service
 [Container]
 Environment=PORT=3000
 Environment=DATABASE_URL=postgres://openplate:openplate@postgres:5432/openplate_sync
-Environment=SIGNUP_MODE=open
 Environment=TRUST_PROXY=0
 Environment=LOG_LEVEL=info
 Environment=SYNC_NOTICE=
 Environment=SYNC_NOTICE_URL=
 EnvironmentFile=openplate-with-sync.env
+HealthCmd=["node","-e","fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+HealthInterval=30s
+HealthRetries=3
+HealthStartPeriod=20s
+HealthTimeout=5s
+Notify=healthy
 Image=ghcr.io/lowcarbcheck/openplate-core:latest
-Network=openplate-with-sync.network
+Network=openplate-with-sync.network:alias=sync
 PublishPort=3001:3000
 
 [Service]
+TimeoutStartSec=300
 Restart=always
 
 [Install]
