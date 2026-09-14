@@ -16,6 +16,13 @@
  * "0 g". The confirm path threads the basis through a hidden field, which is
  * why the saved entry was right and only the screen lied.
  *
+ * THE SECOND DEFECT, same item, same cause (M226). `checkMacroSanity` takes
+ * the basis too, and suppresses its fibre-vs-carbs comparisons on an
+ * `available` panel, because fibre above the printed carbohydrate figure is
+ * ordinary there. The call site passed three of its four arguments, so the
+ * card also printed a warning this item never earned. Asserted below on the
+ * same card, in the same visit.
+ *
  * WHY THE ITEM HAS MORE FIBRE THAN CARBS. That is what makes the double
  * subtraction visible instead of merely wrong: 5.5 g carbs less 8 g fibre is
  * negative, so the floor turns a real figure into a confident zero. A low-carb
@@ -209,6 +216,20 @@ test('the review card reports the same net carbs the logged entry does', async (
   // THE CONTROL, on the same badge: the reported defect, stated as the thing
   // that must not be on the screen.
   await expect(netCarbsBadge).not.toHaveText(fill(EN.scan.review.netCarbsForPortion, { value: FLOORED_NET_CARBS }));
+
+  // THE SECOND DEFECT ON THE SAME CARD, same cause (M226). The plausibility
+  // check ran basis-blind while the figure beside it did not, so this ordinary
+  // EU panel was told its fibre could not exceed its carbohydrate figure. The
+  // amber issues box prints one paragraph per issue; the sentence is built from
+  // the shipped catalog rather than transcribed, so a reword is not a failure.
+  const fibreOverCarbs = fill(EN.scan.review.sanity.componentOverTotal, {
+    component: EN.scan.review.sanity.macro.fiber,
+    componentValue: String(MACROS_PER_100G.fiber),
+    total: EN.scan.review.sanity.macro.carbs,
+    totalValue: String(MACROS_PER_100G.carbs),
+  });
+  await expect(itemCard.getByText(fibreOverCarbs)).toHaveCount(0);
+
   await expectPhoneLayout(page);
 
   await page.getByRole('button', { name: EN.scan.review.confirmAndLog }).click();

@@ -16,6 +16,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **The photo review card now shows the right net carbs for a food read from a nutrition label.** European labels already leave out fibre from total carbohydrates. The review step previously subtracted fibre a second time, which could show 0 g net carbs while the saved entry was correct. The review card now handles these labels the same way the saved entry does, so the two figures match.
 
 - **The notification badge is now the openplate glyph instead of a white circle.** Android generates status bar icons from the app icon silhouette. Because the main icon is a solid disc, the badge appeared as a plain dot. The notification now uses a cut-out version of the mark.
+- **The review step no longer flags an error when fibre exceeds carbohydrates on European nutrition labels.** European labels list carbohydrates with fibre already subtracted. Foods high in fibre often show a higher fibre count than carbohydrate count. The review step used to treat this as an impossible calculation and asked you to verify the entry. It now applies the regional label convention used for net carbs. Standard European labels will not trigger a false warning, but impossible numbers still will.
 
 ## [0.29.7] - 2026-09-13
 

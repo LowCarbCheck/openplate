@@ -44,6 +44,7 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
+import { parseWithZod } from '@conform-to/zod/v4';
 
 import i18next from '../../app/i18n/i18n';
 import { SearchResultRow } from '../../app/components/add/search-result-row';
@@ -52,11 +53,15 @@ import { EntryReceipt, EditEntry } from '../../app/routes/diary.entry.$id';
 import { formatEntryNetCarbs } from '../../app/routes/diary';
 import { localFoodToCandidate } from '../../app/lib/local-store/local-quick-add';
 import { computeMacroPreview } from '../../app/lib/portion-preview';
-import { computeReviewItemPreview } from '../../app/routes/scan';
+import { ConfirmDraftForm, ConfirmDraftSchema, computeReviewItemPreview } from '../../app/routes/scan';
+import { toCuratedSource } from '../../app/services/food-resolution/apply-match';
+import { formatMacroNumberIn } from '../../app/lib/format-macro-number';
 import { carbStatusBadgeClass } from '../../app/utils/carb-status';
 import type { LocalFoodLog, LocalPersonalFood } from '../../app/lib/local-store/schema';
 import type { Macros } from '../../app/lib/macros';
+import type { CarbBasis } from '../../app/lib/net-carbs';
 import type { AppliedMatchSnapshot } from '../../app/services/food-resolution/apply-match';
+import type { FoodMatch } from '../../app/services/food-resolution/types';
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shared EU-basis fixture
@@ -371,5 +376,172 @@ describe('the plate-scan review card honours a label item\'s own panel conventio
       appliedSnapshot: { ...NO_APPLIED_MATCH, netCarbsPer100g: 3.2 },
     });
     assert.equal(preview?.netCarbsPer100g, 3.2);
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// Surface 5b: the same review card's SANITY WARNING
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The second half of the same wiring, and a second defect (M226): the card's
+ * plausibility check ran basis-blind while the figure beside it did not.
+ *
+ * `checkMacroSanity`'s fourth parameter suppresses the fibre-vs-carbs
+ * comparisons on an `available` basis, because an EU panel prints a
+ * carbohydrate figure that already excludes the fibre row below it, so fibre
+ * above carbs is ordinary there (a seed cracker, wheat bran). The call site
+ * passed three arguments, so a perfectly normal EU panel was told its numbers
+ * were impossible. The basis is now resolved ONCE per item and handed to both
+ * `computeReviewItemPreview` and `checkMacroSanity`, so the figure and the
+ * warning cannot disagree about which panel the item was read from.
+ *
+ * These tests drive the real card, not the checker: the checker's own rules
+ * are covered by `tests/unit/macro-sanity.test.ts`. What can only be caught
+ * here is the argument going missing again.
+ */
+
+const SANITY_FOOD_NAME = 'EU panel seed cracker';
+
+/** The item's macro fields, as strings, exactly as the confirm form carries them. */
+const SCAN_MACRO_FIELD_VALUES = {
+  carbs: String(SCAN_CARBS_PER_100G),
+  fiber: String(SCAN_FIBER_PER_100G),
+  sugars: '',
+  polyols: '',
+  protein: '10',
+  fat: '20',
+  kcal: '300',
+} satisfies Record<string, string>;
+
+/** The wheat-bran match the card may have applied: `origin: 'bls'`, which derives an `available` basis. */
+function euBasisMatch(): FoodMatch {
+  return {
+    slug: 'eu-panel-seed-cracker',
+    locale: 'en',
+    title: SANITY_FOOD_NAME,
+    canonicalName: SANITY_FOOD_NAME,
+    url: null,
+    imageUrl: null,
+    macrosPer100g: {
+      kcal: 300,
+      protein: 10,
+      fat: 20,
+      carbs: SCAN_CARBS_PER_100G,
+      fiber: SCAN_FIBER_PER_100G,
+      sugars: null,
+      polyols: null,
+    },
+    netCarbsPer100g: SCAN_CARBS_PER_100G,
+    attribution: null,
+    score: 0.95,
+    origin: 'bls',
+    portionSize: 100,
+  };
+}
+
+/** The identification for one item, with or without the panel convention the model read. */
+function sanityIdentification(carbBasis: CarbBasis | undefined) {
+  return {
+    unreadable: false,
+    foods: [
+      {
+        name: SANITY_FOOD_NAME,
+        estimatedGrams: 100,
+        confidence: 'high' as const,
+        macroSource: carbBasis === undefined ? ('estimated' as const) : ('label' as const),
+        carbBasis,
+        macrosPer100g: {
+          kcal: 300,
+          protein: 10,
+          fat: 20,
+          carbs: SCAN_CARBS_PER_100G,
+          fiber: SCAN_FIBER_PER_100G,
+        },
+      },
+    ],
+  };
+}
+
+/** The confirm form's field values for that one item. */
+function sanityFormData(appliedCuratedSource: string): FormData {
+  const formData = new FormData();
+  formData.set('items[0].include', 'on');
+  formData.set('items[0].name', SANITY_FOOD_NAME);
+  formData.set('items[0].estimatedGrams', '100');
+  formData.set('items[0].confidence', 'high');
+  formData.set('items[0].curatedSource', appliedCuratedSource);
+  for (const [key, value] of Object.entries(SCAN_MACRO_FIELD_VALUES)) {
+    formData.set(`items[0].macros.${key}`, value);
+  }
+  return formData;
+}
+
+/**
+ * Renders the REAL review card, through the real re-validation path.
+ *
+ * @param options.carbBasis - the model's answer for this item, `undefined` for a plain estimate.
+ * @param options.applyMatch - whether a curated `bls` match is applied to the item.
+ * @returns the rendered markup.
+ */
+function renderReviewCard({ carbBasis, applyMatch }: { carbBasis: CarbBasis | undefined; applyMatch: boolean }): string {
+  const match = euBasisMatch();
+  const formData = sanityFormData(applyMatch ? toCuratedSource(match.slug) : '');
+  const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
+  const element = createElement(ConfirmDraftForm, {
+    intakeSource: 'photo' as const,
+    identification: sanityIdentification(carbBasis),
+    modelId: 'test-model',
+    matches: [[match]],
+    lastResult: submission.reply({ formErrors: ['Select at least one food to log.'] }),
+    logDate: null,
+    logDateLabel: null,
+    photoFile: null,
+    userId: 0,
+    defaultMealType: null,
+    typedText: null,
+  });
+  const router = createMemoryRouter([{ path: '/scan', element }], { initialEntries: ['/scan'] });
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+}
+
+/** The exact sentence the card prints when it thinks fibre exceeds carbs, from the shipped catalog. */
+const FIBRE_OVER_CARBS_ISSUE = i18next.t('scan.review.sanity.componentOverTotal', {
+  component: i18next.t('scan.review.sanity.macro.fiber'),
+  componentValue: formatMacroNumberIn(i18next.language, SCAN_FIBER_PER_100G),
+  total: i18next.t('scan.review.sanity.macro.carbs'),
+  totalValue: formatMacroNumberIn(i18next.language, SCAN_CARBS_PER_100G),
+});
+
+describe('the plate-scan review card checks plausibility against the same panel convention it displays', () => {
+  it('CONTROL: with no basis at all (a plain plate estimate) the same macros DO raise the fibre-vs-carbs warning', () => {
+    const html = renderReviewCard({ carbBasis: undefined, applyMatch: false });
+    assert.ok(
+      html.includes(FIBRE_OVER_CARBS_ISSUE),
+      `a basis-blind reading must still warn, so the assertions below can fail:\n${FIBRE_OVER_CARBS_ISSUE}`,
+    );
+  });
+
+  it('an EU-panel item raises no fibre-vs-carbs warning, its printed carbs figure already excludes the fibre', () => {
+    const html = renderReviewCard({ carbBasis: 'available', applyMatch: false });
+    assert.equal(
+      html.includes(FIBRE_OVER_CARBS_ISSUE),
+      false,
+      'the card warned about an ordinary EU panel, so the resolved basis never reached `checkMacroSanity`',
+    );
+  });
+
+  it('takes the applied match\'s basis when the item carries none, the same fallback the figure uses', () => {
+    const html = renderReviewCard({ carbBasis: undefined, applyMatch: true });
+    assert.equal(
+      html.includes(FIBRE_OVER_CARBS_ISSUE),
+      false,
+      'an applied `bls` match means an `available` basis, and the warning must follow it',
+    );
+  });
+
+  it('a `total`-basis item still warns, the suppression is the basis and nothing else', () => {
+    const html = renderReviewCard({ carbBasis: 'total', applyMatch: false });
+    assert.ok(html.includes(FIBRE_OVER_CARBS_ISSUE), 'a US panel with fibre above carbs is genuinely impossible');
   });
 });

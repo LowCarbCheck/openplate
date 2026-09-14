@@ -3011,10 +3011,16 @@ export function ConfirmDraftForm({
       matches: foodMatches,
       editedMacrosPer100g: macrosPer100g,
     });
+    // The item's panel convention, resolved ONCE: the model's answer for this
+    // item first, the applied curated match's second. Both readers below take
+    // it from this one binding, so the figure on the card and the plausibility
+    // check beside it can never disagree about which panel it was read from
+    // (M226), which is how they came to disagree in the first place.
+    const carbBasis = identification?.foods[index]?.carbBasis ?? appliedSnapshot.carbBasis;
     const preview = computeReviewItemPreview({
       macrosPer100g,
       grams: currentGrams,
-      identifiedCarbBasis: identification?.foods[index]?.carbBasis,
+      identifiedCarbBasis: carbBasis,
       appliedSnapshot,
     });
     return {
@@ -3027,15 +3033,11 @@ export function ConfirmDraftForm({
       currentGrams,
       preview,
       appliedSnapshot,
-      // No `carbBasis` argument here, unlike `computeReviewItemPreview` above.
-      // The old reasoning for both, that a plate item never carries a basis,
-      // stopped being true with the M138 label merge, so this one is now a
-      // known gap and not a decision: an EU panel whose fibre legitimately
-      // exceeds its carbohydrate figure raises a fibre-vs-carbs warning it
-      // should not. It is left alone here because nothing guards it yet, and
-      // because it shows a warning rather than a wrong number, which is the
-      // harmless direction. `checkMacroSanity` already takes the argument.
-      sanityIssues: preview ? checkMacroSanity(macrosPer100g, t, i18n.language) : [],
+      // The same basis the preview above was built from. It governs only the
+      // fibre-vs-carbs comparisons: on an EU panel the printed carbohydrate
+      // figure already excludes the fibre row below it, so fibre above carbs
+      // is ordinary there and used to raise a warning the item never earned.
+      sanityIssues: preview ? checkMacroSanity(macrosPer100g, t, i18n.language, carbBasis) : [],
       selectedMultiplier: hasChips ? derivePortionMultiplier({ baseGrams, currentGrams }) : null,
       // SAFETY: `confidence` is populated only by this route's own confirm-draft
       // schema, which parses it with the `ConfidenceLevel` enum before it ever
