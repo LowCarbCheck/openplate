@@ -28,14 +28,35 @@
  * header's fixed 64px). `expectPhoneLayout` in `helpers.ts` reads exactly
  * those two numbers back, so a regression that overflows the document shows up
  * as a failed spec rather than as a screenshot somebody has to look at.
+ *
+ * ── The font configuration is stated, not inherited ──────────────────────
+ *
+ * Every budget above is a measurement in CSS pixels, and a measurement of
+ * text is a measurement of a font. The browser carries its own fontconfig and
+ * reads the HOST's `/etc/fonts/fonts.conf`, which is a file the host's package
+ * manager changes without asking. `tests/e2e/fonts.conf` is the configuration
+ * this tier uses instead, and that file records the breakage that made it
+ * necessary.
  */
 import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
 
 import { E2E_APP_PORT, E2E_APP_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
 
 /** The build artefact the production server serves. */
 const SERVER_BUNDLE = 'build/server/index.js';
+
+/** The font configuration this tier renders in. See that file for why it exists. */
+const FONTS_CONF = fileURLToPath(new URL('./tests/e2e/fonts.conf', import.meta.url));
+
+// SET HERE, at module load, because this file is evaluated in the runner AND
+// in every worker process, and a worker is what launches the browser. A
+// `globalSetup` assignment would sit in the runner's environment only.
+//
+// It is skipped when the shell already names one, so a host with a working
+// system configuration, or a person debugging one, keeps the last word.
+process.env.FONTCONFIG_FILE ??= FONTS_CONF;
 
 // REFUSED HERE, not in `globalSetup`. Playwright starts the `webServer` BEFORE
 // the global setup runs, so a check down there arrives after the server has
