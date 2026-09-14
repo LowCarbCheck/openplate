@@ -46,9 +46,9 @@ test('every settings row opens a titled page that still fits the phone', async (
   expect(eyebrowCount, 'the hub must render several groups').toBeGreaterThan(1);
   expect(await lists.count(), 'one inset list per group, never one card per row').toBe(eyebrowCount);
 
-  const destinations = await lists.locator('a[href]').evaluateAll((links) =>
-    links.map((link) => link.getAttribute('href') ?? ''),
-  );
+  const destinations = await lists
+    .locator('a[href]')
+    .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
   expect(destinations.length, 'the hub must offer several rows').toBeGreaterThan(3);
 
   for (const destination of destinations) {
@@ -99,7 +99,9 @@ test('a converted settings page wears the hub chrome and no card', async ({ page
 });
 
 /** The device menu's language strip, opened from the header and measured. */
-async function measureLanguageStrip(page: Page): Promise<{ cells: number; scrollWidth: number; clientWidth: number; right: number }> {
+async function measureLanguageStrip(
+  page: Page,
+): Promise<{ cells: number; scrollWidth: number; clientWidth: number; right: number }> {
   await page.locator('header button[aria-haspopup="menu"]').first().click();
   const strip = page.locator(`[data-slot="${LANGUAGE_STRIP_SLOT}"]`);
   await expect(strip).toBeVisible();
@@ -113,19 +115,29 @@ async function measureLanguageStrip(page: Page): Promise<{ cells: number; scroll
   return measured;
 }
 
-test('every settings page fits the phone in every language, and so does the language strip', async ({ page }) => {
-  await completeOnboarding(page);
+/**
+ * ONE TEST PER LOCALE, not one test looping all six.
+ *
+ * Six locales times the settings hub's rows used to run inside a single test
+ * with the default 30 s timeout, and it timed out on the last locale
+ * (Turkish) under a loaded machine. The fix is not a longer timeout, it is a
+ * smaller test: each locale now gets its own 30 s budget. The body is the
+ * loop's body unchanged, one locale at a time, so every assertion and every
+ * message below is the one the loop already ran.
+ */
+for (const locale of SUPPORTED_LANGUAGES) {
+  test(`every settings page fits the phone in ${locale}, and so does the language strip`, async ({ page }) => {
+    await completeOnboarding(page);
 
-  for (const locale of SUPPORTED_LANGUAGES) {
     await useLanguage(page, locale);
     await page.goto('/settings');
     expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
 
     const lists = page.locator('section > div.rounded-2xl');
     await expect(lists.first()).toBeVisible();
-    const destinations = await lists.locator('a[href]').evaluateAll((links) =>
-      links.map((link) => link.getAttribute('href') ?? ''),
-    );
+    const destinations = await lists
+      .locator('a[href]')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
     expect(destinations.length, `${locale}: the hub must offer several rows`).toBeGreaterThan(3);
 
     const strip = await measureLanguageStrip(page);
@@ -139,5 +151,5 @@ test('every settings page fits the phone in every language, and so does the lang
       await expect(title, `${locale}: ${destination} must name itself`).toBeVisible();
       await expectPhoneLayout(page);
     }
-  }
-});
+  });
+}
