@@ -17,3 +17,9 @@ devices; the in-app JSON export is what moves it anywhere else.
 
 Each file's header comments carry the setup steps and the values you must edit.
 Read the file you picked before running it.
+
+Every file here also runs under `podman compose`, the same way. That is a
+different tool from `podman-compose`; see
+[docs/podman.md](../../docs/podman.md) for the distinction, and for the
+rootless notes (SELinux volume labels, ports below 1024, and Postgres's data
+directory) that apply to shapes 2 through 4.

@@ -15,6 +15,10 @@ Every compose file is annotated line by line;
 [`docker/topologies/README.md`](../docker/topologies/README.md) is the same map from the
 compose side.
 
+Every command below also runs under [Podman](https://podman.io): use
+`podman compose`, not `podman-compose`, which is a different, less complete
+tool. See [podman.md](podman.md).
+
 ---
 
 ## Rung 0: run nothing
@@ -47,6 +51,11 @@ the JSON export from **Profile → Your data** regularly, or move to rung 1.
 ```bash
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
 docker compose -f compose.yml up -d
+```
+
+```bash
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
+podman compose -f compose.yml up -d
 ```
 
 Rung 1 changes one box. The page comes from a container you run, and the photo path is
@@ -109,6 +118,14 @@ echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 docker compose -f compose.sync.yml up -d
 ```
 
+```bash
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
+echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
+echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
+echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
+podman compose -f compose.sync.yml up -d
+```
+
 The service cannot read a single entry, which also means it cannot recover one on its own: a
 forgotten password is reset by a mailed link, and the server holds an escrowed recovery code
 that unwraps the data key after the reset. [sync.md](sync.md) states that trade-off in full,
@@ -162,6 +179,8 @@ flowchart LR
 make the endpoint reachable **from your browsers** (the photo goes device → endpoint, so a
 compose hostname does not work here).
 **Compose file:** [`docker/topologies/compose.inference.yml`](../docker/topologies/compose.inference.yml).
+
+Podman runs this the same way: `podman compose -f compose.inference.yml up -d`.
 
 This rung is for two kinds of people:
 
@@ -222,6 +241,8 @@ hardware, with nothing going to any third party).
 **You operate:** all of it. App, sync service, Postgres, model runtime, and browser-reachable
 addresses for two of them.
 **Compose file:** [`docker/topologies/compose.full.yml`](../docker/topologies/compose.full.yml).
+
+Podman runs this the same way: `podman compose -f compose.full.yml up -d`.
 
 There is nothing new to learn at this rung. It is the union of the two above, with the same
 `SERVER_SECRET`, the same backup obligation, and the same hardware floor.

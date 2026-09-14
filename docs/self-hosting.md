@@ -26,6 +26,14 @@ curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/com
 docker compose -f compose.yml up -d
 ```
 
+```bash
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
+podman compose -f compose.yml up -d
+```
+
+Podman needs the `compose` subcommand, not the separate `podman-compose`
+tool: see [podman.md](podman.md).
+
 One container, no database, no `.env` step, no secret to generate. The app is reachable at
 `http://localhost:3000`.
 
@@ -40,6 +48,11 @@ root, because the build context is written relative to that file):
 ```bash
 docker compose --project-directory . -f docker/compose.yml build
 docker compose --project-directory . -f docker/compose.yml up -d
+```
+
+```bash
+podman compose --project-directory . -f docker/compose.yml build
+podman compose --project-directory . -f docker/compose.yml up -d
 ```
 
 Every other shape (sync, self-hosted inference, both) is a separate file under
@@ -65,6 +78,17 @@ echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
 
 docker compose -f compose.sync.yml up -d
+```
+
+```bash
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
+
+echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
+
+echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
+echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
+
+podman compose -f compose.sync.yml up -d
 ```
 
 **Read [openplate-core's README](https://github.com/LowCarbCheck/openplate-core) before you
@@ -119,6 +143,13 @@ Also change the `ports:` line to `'127.0.0.1:3000:3000'`, then apply it the same
 leave it as `'3000:3000'` and the app keeps answering plain HTTP on port 3000 to the whole
 network, beside the HTTPS address you just set up.
 
+Podman recreates the service the same way, with
+`podman compose -f compose.yml up -d`. One rootless difference to know
+before you skip the reverse proxy: a rootless Podman container cannot bind a
+host port below 1024 without extra setup, so publishing straight to port 80
+or 443 needs `sudo sysctl net.ipv4.ip_unprivileged_port_start=80` first. See
+[podman.md](podman.md).
+
 **Tailscale Serve** (no domain, no port-forwarding, HTTPS on your own tailnet):
 
 ```bash
@@ -146,11 +177,21 @@ docker compose -f compose.sync.yml exec postgres \
   pg_dump -U openplate openplate_sync > sync-backup.sql
 ```
 
+```bash
+podman compose -f compose.sync.yml exec postgres \
+  pg_dump -U openplate openplate_sync > sync-backup.sql
+```
+
 ## Upgrading
 
 ```bash
 docker compose -f compose.yml pull
 docker compose -f compose.yml up -d
+```
+
+```bash
+podman compose -f compose.yml pull
+podman compose -f compose.yml up -d
 ```
 
 Use the same `-f` file you deployed with. If you brought up a topology from

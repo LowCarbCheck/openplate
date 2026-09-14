@@ -112,6 +112,7 @@ Run any subset. Only the first one is required.
 | [**Topologies**](./docs/topologies.md) | What to run, from a browser-only install up to a self-hosted household |
 | [**Family setup**](./docs/family-setup.md) | Sharing one AI bill across a household, with a spend limit and revocation per person |
 | [**Legal review**](./docs/legal-review.md) | Status of the German legal text, machine-translated and awaiting a lawyer |
+| [**Podman**](./docs/podman.md) | Running these compose files and containers under Podman instead of Docker: the `podman compose` vs. `podman-compose` distinction, and the rootless notes |
 
 Repository-level specifications live at the root: [`.adr/`](.adr/) (architecture decision
 records). Start with
