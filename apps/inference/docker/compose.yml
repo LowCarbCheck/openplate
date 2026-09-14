@@ -93,3 +93,4 @@ services:
 
 volumes:
   inference-models:
+    driver: local

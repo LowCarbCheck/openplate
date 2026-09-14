@@ -9,9 +9,9 @@ Environment=LATENCY_CEILING_MS=0
 Environment=CONCURRENCY=2
 Environment=FOOD_SOURCE=fdc
 Image=ghcr.io/lowcarbcheck/openplate-inference:latest
-Network=openplate-inference.network
+Network=openplate-inference.network:alias=inference
 PublishPort=8300:8300
-Volume=inference-models:/models
+Volume=inference-models.volume:/models
 
 [Service]
 Restart=always
