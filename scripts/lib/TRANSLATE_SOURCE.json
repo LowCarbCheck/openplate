@@ -1,0 +1,40 @@
+{
+  "repo": "LowCarbCheck/openplate-website",
+  "commit": "659533a91721956a4dc8f650a11031afb37f7d8f",
+  "producedBy": "openplate, scripts/sync-translate-lib.ts",
+  "rewrites": [
+    {
+      "from": "../../app/i18n/language",
+      "to": "./translate-language"
+    },
+    {
+      "from": "../../app/lib/docs-i18n.server",
+      "to": "./translate-shims/docs-i18n.server"
+    },
+    {
+      "from": "../../app/lib/docs",
+      "to": "./translate-shims/docs"
+    }
+  ],
+  "files": {
+    "scripts/lib/translate.ts": {
+      "from": "scripts/lib/translate.ts",
+      "upstream": "28da0ae93b1da2d6ba5623e9b653a80b1318b884945f1e524af6dae14704c5a9",
+      "vendored": "307ae78f809951b9057538bbad0e6ae271caa0b19ea41b280e894788c99ff4b3"
+    },
+    "scripts/lib/translate-ui.ts": {
+      "from": "scripts/lib/translate-ui.ts",
+      "upstream": "d7630f95400ae2049160de2b06cff688cdeadbdcffd4da7c451344314e97ecc6",
+      "vendored": "29633335b34ddcb8fdbb5d69398b291d2c31556da52fa33320512a94af90846a"
+    },
+    "scripts/lib/translate-language.ts": {
+      "from": "app/i18n/language.ts",
+      "upstream": "24cd84bd153a3f10d3b5eb3fb095410d7cc389702b8f086195851a7d781d559c",
+      "vendored": "24cd84bd153a3f10d3b5eb3fb095410d7cc389702b8f086195851a7d781d559c"
+    }
+  },
+  "shimmed": {
+    "app/lib/docs-i18n.server.ts": "9e969ac0999af8d4fae25342fb0a05c45972e0da525296e0d045de8e7be25cff",
+    "app/lib/docs.ts": "e013d872b0da6a0009c391e9c43f898af548bf705107d3861ec785859bda5087"
+  }
+}

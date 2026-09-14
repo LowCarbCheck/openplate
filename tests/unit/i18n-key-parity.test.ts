@@ -1,12 +1,12 @@
 /**
- * Key parity between the shipped locales.
+ * Key parity between the shipped locales, over every namespace.
  *
  * `fallbackLng: 'en'` means a missing German key doesn't crash — it silently
  * renders English, which is exactly the kind of half-translated page nobody
  * notices in review and every German user notices immediately. There is no
  * cloud CI on this repo (see the workspace CLAUDE.md), so this test is the
- * gate: a key added to `en/common.json` without its German counterpart fails
- * the local pre-push run.
+ * gate: a key added to `en/common.json` or `en/legal.json` without its German
+ * counterpart fails the local pre-push run.
  *
  * The assertion is one-directional on purpose — `de ⊇ en`. English is the
  * source catalog, so an extra German key is dead weight rather than a bug,
@@ -15,6 +15,13 @@
  * It also compares the SHAPE, not just the leaf paths: a key that is an object
  * in one locale and a string in the other is a bug i18next reports only as a
  * missing translation at runtime.
+ *
+ * ── THE FOUR CHECKS ARE FUNCTIONS, SO THEY CAN BE PROVEN TO FAIL ──
+ * Each check returns the offending paths, the suite asserts that list is empty
+ * for every namespace, and the last block hands each check a catalog pair built
+ * to trip it. An assertion that cannot fail is the failure mode this repo has
+ * met before (`markup.includes('disabled')`), and a parity test is the easiest
+ * kind to write that way: two identical files pass every comparison.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,18 +30,21 @@ import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
+/** Every catalog the app ships, `app/i18n/locales/<locale>/<namespace>.json`. */
+const NAMESPACES = ['common', 'legal'] as const;
+
 /** A translation catalog: nested groups of keys bottoming out in translated strings. */
-type Catalog = { [key: string]: string | Catalog };
+interface Catalog {
+  [key: string]: string | Catalog;
+}
 
 /** The on-disk catalog, parsed rather than asserted — a stray non-string leaf fails loudly here. */
-const catalogSchema: z.ZodType<Catalog> = z.lazy(() =>
-  z.record(z.string(), z.union([z.string(), catalogSchema])),
-);
+const catalogSchema: z.ZodType<Catalog> = z.lazy(() => z.record(z.string(), z.union([z.string(), catalogSchema])));
 
 const leafSchema = z.string();
 
-function loadCatalog(locale: string): Catalog {
-  const url = new URL(`../../app/i18n/locales/${locale}/common.json`, import.meta.url);
+function loadCatalog(locale: string, namespace: string): Catalog {
+  const url = new URL(`../../app/i18n/locales/${locale}/${namespace}.json`, import.meta.url);
   return catalogSchema.parse(JSON.parse(readFileSync(fileURLToPath(url), 'utf8')));
 }
 
@@ -64,67 +74,161 @@ function placeholders(value: string): (string | undefined)[] {
   return [...value.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).toSorted();
 }
 
-const en = loadCatalog('en');
-const de = loadCatalog('de');
+// ── the four checks ──────────────────────────────────────────────────────────
 
-describe('locale catalogs', () => {
-  it('translates every English key into German — no silent English fallback', () => {
-    const enPaths = leafPaths(en);
-    const dePaths = new Set(leafPaths(de));
-    const missing = enPaths.filter((path) => !dePaths.has(path));
+/** English keys the German catalog does not answer. */
+function missingKeys(en: Catalog, de: Catalog): string[] {
+  const dePaths = new Set(leafPaths(de));
+  return leafPaths(en).filter((path) => !dePaths.has(path));
+}
 
-    assert.deepEqual(
-      missing,
-      [],
-      `Missing German translations for ${missing.length} key(s):\n  ${missing.join('\n  ')}`,
-    );
+/** German keys with no English source string. */
+function orphanKeys(en: Catalog, de: Catalog): string[] {
+  const enPaths = new Set(leafPaths(en));
+  return leafPaths(de).filter((path) => !enPaths.has(path));
+}
+
+/**
+ * English SENTENCES sitting byte-identical in the German catalog.
+ *
+ * Plenty of entries are legitimately identical in both languages — proper
+ * nouns (OpenRouter, Keto, Anthropic), words German borrowed outright
+ * (Name, Snack, System, Admin), and templates that are nothing but
+ * placeholders and punctuation ("{{where}} — {{when}}"). Flagging those
+ * would make this test noise, and noise gets its threshold bumped until it
+ * catches nothing.
+ *
+ * So the bar is a SENTENCE: three or more substantial words once the
+ * placeholders are stripped. No real sentence survives translation
+ * byte-identical, which makes this a zero-tolerance check on the failure it
+ * actually exists to catch — someone copying `en/common.json` over `de/`
+ * and calling the locale done.
+ */
+function untranslatedSentences(en: Catalog, de: Catalog): string[] {
+  return leafPaths(en).filter((path) => {
+    const source = read(en, path);
+    if (source === undefined || source !== read(de, path)) return false;
+    const words = source.replace(/\{\{\w+\}\}/g, ' ').match(/\p{L}{4,}/gu) ?? [];
+    return words.length >= 3;
   });
+}
 
-  it('has no orphaned German keys — every one traces back to an English source string', () => {
-    const enPaths = new Set(leafPaths(en));
-    const orphans = leafPaths(de).filter((path) => !enPaths.has(path));
-
-    assert.deepEqual(orphans, [], `German keys with no English counterpart:\n  ${orphans.join('\n  ')}`);
+/**
+ * Keys whose `{{name}}` placeholders differ between the two languages. A
+ * placeholder dropped or misspelled during translation renders the raw token to
+ * the user, or silently omits the value — both invisible in an English-only
+ * review.
+ */
+function placeholderMismatches(en: Catalog, de: Catalog): string[] {
+  return leafPaths(en).filter((path) => {
+    const source = read(en, path);
+    const target = read(de, path);
+    if (source === undefined || target === undefined) return false;
+    return placeholders(source).join(',') !== placeholders(target).join(',');
   });
+}
 
-  it('has no untranslated English SENTENCE sitting in the German catalog', () => {
-    // Plenty of entries are legitimately identical in both languages — proper
-    // nouns (OpenRouter, Keto, Anthropic), words German borrowed outright
-    // (Name, Snack, System, Admin), and templates that are nothing but
-    // placeholders and punctuation ("{{where}} — {{when}}"). Flagging those
-    // would make this test noise, and noise gets its threshold bumped until it
-    // catches nothing.
-    //
-    // So the bar is a SENTENCE: three or more substantial words once the
-    // placeholders are stripped. No real sentence survives translation
-    // byte-identical, which makes this a zero-tolerance check on the failure it
-    // actually exists to catch — someone copying `en/common.json` over `de/`
-    // and calling the locale done.
-    const untranslated = leafPaths(en).filter((path) => {
-      const source = read(en, path);
-      if (source === undefined || source !== read(de, path)) return false;
-      const words = source.replace(/\{\{\w+\}\}/g, ' ').match(/\p{L}{4,}/gu) ?? [];
-      return words.length >= 3;
+// ── over the shipped catalogs ────────────────────────────────────────────────
+
+for (const namespace of NAMESPACES) {
+  const en = loadCatalog('en', namespace);
+  const de = loadCatalog('de', namespace);
+
+  describe(`${namespace}.json`, () => {
+    it('holds enough strings that the checks below are not passing on an empty file', () => {
+      assert.ok(leafPaths(en).length >= 50, `${namespace}.json has ${leafPaths(en).length} English strings`);
     });
 
-    assert.deepEqual(
-      untranslated,
-      [],
-      `${untranslated.length} German values are byte-identical English sentences:\n  ${untranslated.join('\n  ')}`,
-    );
-  });
-
-  it('keeps interpolation placeholders intact in every translation', () => {
-    // `{{name}}` dropped or misspelled during translation renders the raw
-    // token to the user, or silently omits the value — both invisible in an
-    // English-only review.
-    const mismatched = leafPaths(en).filter((path) => {
-      const source = read(en, path);
-      const target = read(de, path);
-      if (source === undefined || target === undefined) return false;
-      return placeholders(source).join(',') !== placeholders(target).join(',');
+    it('translates every English key into German — no silent English fallback', () => {
+      const missing = missingKeys(en, de);
+      assert.deepEqual(
+        missing,
+        [],
+        `Missing German translations for ${missing.length} key(s) in ${namespace}.json:\n  ${missing.join('\n  ')}`,
+      );
     });
 
-    assert.deepEqual(mismatched, [], `Interpolation placeholders differ between en and de:\n  ${mismatched.join('\n  ')}`);
+    it('has no orphaned German keys — every one traces back to an English source string', () => {
+      const orphans = orphanKeys(en, de);
+      assert.deepEqual(
+        orphans,
+        [],
+        `German keys with no English counterpart in ${namespace}.json:\n  ${orphans.join('\n  ')}`,
+      );
+    });
+
+    it('has no untranslated English SENTENCE sitting in the German catalog', () => {
+      const untranslated = untranslatedSentences(en, de);
+      assert.deepEqual(
+        untranslated,
+        [],
+        `${untranslated.length} German values in ${namespace}.json are byte-identical English sentences:\n  ${untranslated.join('\n  ')}`,
+      );
+    });
+
+    it('keeps interpolation placeholders intact in every translation', () => {
+      const mismatched = placeholderMismatches(en, de);
+      assert.deepEqual(
+        mismatched,
+        [],
+        `Interpolation placeholders differ between en and de in ${namespace}.json:\n  ${mismatched.join('\n  ')}`,
+      );
+    });
+  });
+}
+
+// ── the checks themselves ────────────────────────────────────────────────────
+
+describe('the checks themselves', () => {
+  const EN_BODY = 'A food diary that stays on your own device.';
+  const DE_BODY = 'Ein Tagebuch, das auf deinem Gerät bleibt.';
+  const DE_PRICE = '{{price}} pro {{period}}';
+  const en: Catalog = {
+    nav: { diary: 'Diary', fasting: 'Fasting' },
+    hero: { body: EN_BODY, price: '{{price}} per {{period}}' },
+  };
+  const de: Catalog = {
+    nav: { diary: 'Tagebuch', fasting: 'Fasten' },
+    hero: { body: DE_BODY, price: DE_PRICE },
+  };
+
+  it('pass a faithful translation, so the failures below are the checks and not the fixture', () => {
+    assert.deepEqual(missingKeys(en, de), []);
+    assert.deepEqual(orphanKeys(en, de), []);
+    assert.deepEqual(untranslatedSentences(en, de), []);
+    assert.deepEqual(placeholderMismatches(en, de), []);
+  });
+
+  it('would fail on a missing key, and only in the direction en to de', () => {
+    const short: Catalog = { nav: { diary: 'Tagebuch', fasting: 'Fasten' }, hero: { body: DE_BODY } };
+    assert.deepEqual(missingKeys(en, short), ['hero.price']);
+    assert.deepEqual(orphanKeys(en, short), []);
+  });
+
+  it('would fail on an orphaned German key, and only in the direction de to en', () => {
+    const grown: Catalog = { ...de, footer: { legal: 'Impressum' } };
+    assert.deepEqual(orphanKeys(en, grown), ['footer.legal']);
+    assert.deepEqual(missingKeys(en, grown), []);
+  });
+
+  it('would fail on a key that is a string in one locale and a group in the other', () => {
+    const collapsed: Catalog = { ...de, nav: 'Navigation' };
+    assert.deepEqual(missingKeys(en, collapsed), ['nav.diary', 'nav.fasting']);
+  });
+
+  it('would fail on an English sentence left in the German catalog, and pass a short label left in it', () => {
+    const copied: Catalog = { ...de, hero: { body: EN_BODY, price: DE_PRICE } };
+    assert.deepEqual(untranslatedSentences(en, copied), ['hero.body']);
+    const label: Catalog = { ...de, nav: { diary: 'Diary', fasting: 'Fasten' } };
+    assert.deepEqual(untranslatedSentences(en, label), []);
+  });
+
+  it('would fail on a renamed placeholder and on a dropped one, and pass a moved one', () => {
+    const renamed: Catalog = { ...de, hero: { body: DE_BODY, price: '{{preis}} pro {{period}}' } };
+    assert.deepEqual(placeholderMismatches(en, renamed), ['hero.price']);
+    const dropped: Catalog = { ...de, hero: { body: DE_BODY, price: 'pro {{period}}' } };
+    assert.deepEqual(placeholderMismatches(en, dropped), ['hero.price']);
+    const moved: Catalog = { ...de, hero: { body: DE_BODY, price: 'pro {{period}}: {{price}}' } };
+    assert.deepEqual(placeholderMismatches(en, moved), []);
   });
 });
