@@ -2,34 +2,42 @@
  * WIRING guard for spec 13 (M123): `carbBasis` computed correctly at its
  * source and then silently dropped by a consumer, the exact defect class
  * `authoritative-net-carbs-wiring.test.ts` documents for
- * `authoritativeNetCarbsPer100g` — this file is that same class, one field
+ * `authoritativeNetCarbsPer100g`, this file is that same class, one field
  * over. `tests/unit/carb-basis.test.ts` already covers `computeNetCarbsFromParts`
  * thoroughly AS A FUNCTION; it could not catch a caller that built the value
  * correctly and then forgot to pass it through. So this file drives the REAL
  * render path of every surface that shows a per-100g net-carb figure for a
  * food with no authoritative figure of its own, against one shared EU-basis
- * fixture, and asserts the pixels — both the number and the traffic-light
+ * fixture, and asserts the pixels, both the number and the traffic-light
  * colour.
  *
  * The fixture: a hand-typed / label-scanned food whose printed panel is EU
- * convention (`carbBasis: 'available'`) — 21.7 g carbs, 42.8 g fibre already
+ * convention (`carbBasis: 'available'`), 21.7 g carbs, 42.8 g fibre already
  * excluded from that figure, and NO authoritative `netCarbsPer100g` (the
- * state of every `source: 'user'` personal food and its logs — see
+ * state of every `source: 'user'` personal food and its logs, see
  * `LocalPersonalFood.carbBasis`'s doc comment in `#app/lib/local-store/schema`).
  * The naive `carbs - fiber - polyols` fallback computes a confident, wrong
  * `-21.1` (clamped/floored to a GREEN "low carb" reading depending on the
  * surface) for this fixture; the correct, basis-aware answer is 21.7 (RED,
  * "high"). If a surface stops threading `carbBasis` through to
  * `computeMacroPreview`/`chipCarbStatus`, it silently reverts to the wrong
- * number and the wrong colour — exactly the failure mode this file exists to
+ * number and the wrong colour, exactly the failure mode this file exists to
  * catch, and exactly what the M123/10 checkpoint that opened spec 13
  * described as "the dangerous direction" for a low-carb tracker.
  *
- * One surface is deliberately NOT tested here: the plate-scan confirm card
- * (`ConfirmDraftForm` in `app/routes/scan.tsx`). A plate item is an AI
- * estimate off a photo of food, never a transcribed printed panel, so it has
- * no `carbBasis` to carry — see the comment beside its `computeMacroPreview`
- * call for the full reasoning.
+ * The plate-scan review card (`ConfirmDraftForm` in `app/routes/scan.tsx`)
+ * used to be listed here as deliberately NOT tested, on the reasoning that a
+ * plate item is an AI estimate off a photo of food and so never carries a
+ * `carbBasis`. That stopped being true with the M138 label merge (ADR-0005's
+ * amendment): one photo task now answers per ITEM, so a plate item may come
+ * back with `macroSource: 'label'` and the panel convention it was read from
+ * (`IdentifiedFood.carbBasis`). The card kept computing without it, and that
+ * is exactly where the defect lived, reported by the operator on 2026-09-14:
+ * an item with 5.5 g carbs and 8 g fibre on an EU panel showed "0 g net
+ * carbs" on the review card while the saved entry read 5.5 g, because only
+ * the confirm path's hidden field threaded the basis through. The card is
+ * covered below, through `computeReviewItemPreview`, the one function it
+ * calls for that figure.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,8 +52,11 @@ import { EntryReceipt, EditEntry } from '../../app/routes/diary.entry.$id';
 import { formatEntryNetCarbs } from '../../app/routes/diary';
 import { localFoodToCandidate } from '../../app/lib/local-store/local-quick-add';
 import { computeMacroPreview } from '../../app/lib/portion-preview';
+import { computeReviewItemPreview } from '../../app/routes/scan';
 import { carbStatusBadgeClass } from '../../app/utils/carb-status';
 import type { LocalFoodLog, LocalPersonalFood } from '../../app/lib/local-store/schema';
+import type { Macros } from '../../app/lib/macros';
+import type { AppliedMatchSnapshot } from '../../app/services/food-resolution/apply-match';
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shared EU-basis fixture
@@ -74,7 +85,7 @@ function euBasisPersonalFood(overrides: Partial<LocalPersonalFood> = {}): LocalP
     source: 'user',
     createdAt: Date.parse(`${DAY_KEY}T00:00:00Z`),
     carbBasis: 'available',
-    // `netCarbsPer100g` deliberately absent — this is exactly the
+    // `netCarbsPer100g` deliberately absent, this is exactly the
     // compute-from-parts fallback path `carbBasis` has to reach.
     ...overrides,
   };
@@ -145,7 +156,7 @@ function entryLoaderData(log: LocalFoodLog) {
     siblings,
     grams: log.quantityGrams,
     snapshotMacros: log.macros,
-    // No linked food (`foodId: null`) — the basis reconstructs from the log's
+    // No linked food (`foodId: null`), the basis reconstructs from the log's
     // own per-serving snapshot, exactly `derivePer100gBasis`'s "no honest
     // upstream basis" branch.
     basisPer100g: log.macros,
@@ -198,7 +209,7 @@ describe('carbBasis reaches every surface that displays a compute-from-parts net
       macrosPer100g: euBasisPersonalFood().macrosPer100g,
       grams: SERVING_GRAMS,
     });
-    // 21.7 - 42.8 = -21.1, clamped at 0 by `computeMacroPreview` — a
+    // 21.7 - 42.8 = -21.1, clamped at 0 by `computeMacroPreview`, a
     // confident, wrong "0 g net carbs" for a food whose real figure is 21.7.
     assert.equal(naive?.netCarbsPer100g, 0);
     assert.notEqual(AVAILABLE_CARBS_PER_100G, 0);
@@ -209,7 +220,7 @@ describe('carbBasis reaches every surface that displays a compute-from-parts net
     assert.equal(figure, String(AVAILABLE_CARBS_PER_100G));
   });
 
-  it('colours the search-result traffic light from the basis-aware figure — must not render green/low', () => {
+  it('colours the search-result traffic light from the basis-aware figure, must not render green/low', () => {
     const { classes } = findNetCarbBadge(renderSearchResultRow(euBasisCandidate()));
     assert.ok(classes.includes(carbStatusBadgeClass.high), `expected the high-carb palette, got: ${classes}`);
     assert.equal(classes.includes('green'), false, `a 21.7 g net-carb food rendered a low-carb badge: ${classes}`);
@@ -238,13 +249,13 @@ describe('carbBasis reaches every surface that displays a compute-from-parts net
     assert.equal(figure, String(AVAILABLE_CARBS_PER_100G));
   });
 
-  it('colours the receipt hero from the basis-aware figure — a 21.7 g entry must not read green', () => {
+  it('colours the receipt hero from the basis-aware figure, a 21.7 g entry must not read green', () => {
     const { classes } = findNetCarbBadge(renderEntryReceipt(euBasisLog()));
     assert.ok(classes.includes(carbStatusBadgeClass.high), `expected the high-carb palette, got: ${classes}`);
     assert.equal(classes.includes('green'), false, `a 21.7 g net-carb entry rendered a low-carb badge: ${classes}`);
   });
 
-  it('the live edit-form preview shows the basis-aware figure — the exact surface a macro edit always reaches (netCarbsPer100g clears, carbBasis does not)', () => {
+  it('the live edit-form preview shows the basis-aware figure, the exact surface a macro edit always reaches (netCarbsPer100g clears, carbBasis does not)', () => {
     const { figure } = findNetCarbBadge(renderEditEntry(euBasisLog()));
     assert.equal(figure, String(AVAILABLE_CARBS_PER_100G));
   });
@@ -255,24 +266,110 @@ describe('carbBasis reaches every surface that displays a compute-from-parts net
     assert.equal(classes.includes('green'), false, `a 21.7 g net-carb entry rendered a low-carb badge: ${classes}`);
   });
 
-  it('the receipt hero and the diary row agree on the same entry, to the character — the exact disagreement spec 13 was reopened over', () => {
+  it('the receipt hero and the diary row agree on the same entry, to the character, the exact disagreement spec 13 was reopened over', () => {
     const log = euBasisLog();
     const heroFigure = findNetCarbBadge(renderEntryReceipt(log)).figure;
     assert.equal(`${heroFigure} g net carbs`, formatEntryNetCarbs(log, i18next.t, 'en'));
   });
 
-  it('a `total`-basis food is unaffected — still subtracts fibre, still renders correctly', () => {
+  it('a `total`-basis food is unaffected, still subtracts fibre, still renders correctly', () => {
     const candidate = euBasisCandidate({ carbBasis: 'total' });
     const { figure, classes } = findNetCarbBadge(renderSearchResultRow(candidate));
-    // 21.7 - 42.8 clamped at 0 — the correct `total`-basis answer for these
+    // 21.7 - 42.8 clamped at 0, the correct `total`-basis answer for these
     // parts, and genuinely low-carb (0 <= 5).
     assert.equal(figure, '0');
     assert.ok(classes.includes(carbStatusBadgeClass.low), `expected the low-carb palette, got: ${classes}`);
   });
 
-  it('an UNKNOWN basis (absent, every pre-spec-13 row) is unaffected — still today\'s formula, unchanged', () => {
+  it('an UNKNOWN basis (absent, every pre-spec-13 row) is unaffected, still today\'s formula, unchanged', () => {
     const candidate = euBasisCandidate({ carbBasis: undefined });
     const { figure } = findNetCarbBadge(renderSearchResultRow(candidate));
     assert.equal(figure, '0');
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// Surface 5: the plate-scan review card
+////////////////////////////////////////////////////////////////////////////////
+
+/** The reported item: an EU panel whose fibre exceeds its carbohydrate figure. */
+const SCAN_CARBS_PER_100G = 5.5;
+const SCAN_FIBER_PER_100G = 8;
+
+/** The item's live per-100g macro field values, as the review card reads them off the form. */
+const SCAN_MACROS_PER_100G: Macros = {
+  carbs: SCAN_CARBS_PER_100G,
+  fiber: SCAN_FIBER_PER_100G,
+  sugars: null,
+  polyols: null,
+  protein: 10,
+  fat: 20,
+  kcal: 300,
+};
+
+/**
+ * No curated match applied, which is the state the report was made in: every
+ * field `undefined`/`null`, so `authoritativeNetCarbsPer100g` is absent and the
+ * card is on the compute-from-parts path the basis governs.
+ */
+const NO_APPLIED_MATCH: AppliedMatchSnapshot = {
+  netCarbsPer100g: undefined,
+  carbBasis: undefined,
+  attribution: null,
+  micronutrientsPer100g: undefined,
+};
+
+describe('the plate-scan review card honours a label item\'s own panel convention', () => {
+  it('an EU-panel item reports its printed carbohydrate figure, not the double-subtracted one', () => {
+    const preview = computeReviewItemPreview({
+      macrosPer100g: SCAN_MACROS_PER_100G,
+      grams: 100,
+      identifiedCarbBasis: 'available',
+      appliedSnapshot: NO_APPLIED_MATCH,
+    });
+    assert.equal(preview?.netCarbsPer100g, SCAN_CARBS_PER_100G);
+  });
+
+  it('CONTROL: the same macros with no basis (a plain plate estimate) still floor to 0, so the basis is what changes the number', () => {
+    const preview = computeReviewItemPreview({
+      macrosPer100g: SCAN_MACROS_PER_100G,
+      grams: 100,
+      identifiedCarbBasis: undefined,
+      appliedSnapshot: NO_APPLIED_MATCH,
+    });
+    // 5.5 - 8 = -2.5, floored at 0 by `computeMacroPreview`. Correct for a
+    // `total`-basis reading, and the confident zero the operator saw.
+    assert.equal(preview?.netCarbsPer100g, 0);
+    assert.notEqual(SCAN_CARBS_PER_100G, 0);
+  });
+
+  it('falls back to the applied match\'s basis when the item carries none, exactly as the hidden `carbBasis` field does', () => {
+    const preview = computeReviewItemPreview({
+      macrosPer100g: SCAN_MACROS_PER_100G,
+      grams: 100,
+      identifiedCarbBasis: undefined,
+      appliedSnapshot: { ...NO_APPLIED_MATCH, carbBasis: 'available' },
+    });
+    assert.equal(preview?.netCarbsPer100g, SCAN_CARBS_PER_100G);
+  });
+
+  it('the item\'s own panel wins over the applied match\'s basis, again exactly as the hidden field resolves it', () => {
+    const preview = computeReviewItemPreview({
+      macrosPer100g: SCAN_MACROS_PER_100G,
+      grams: 100,
+      identifiedCarbBasis: 'available',
+      appliedSnapshot: { ...NO_APPLIED_MATCH, carbBasis: 'total' },
+    });
+    assert.equal(preview?.netCarbsPer100g, SCAN_CARBS_PER_100G);
+  });
+
+  it('an applied match\'s authoritative figure still wins outright, basis or not', () => {
+    const preview = computeReviewItemPreview({
+      macrosPer100g: SCAN_MACROS_PER_100G,
+      grams: 100,
+      identifiedCarbBasis: 'available',
+      appliedSnapshot: { ...NO_APPLIED_MATCH, netCarbsPer100g: 3.2 },
+    });
+    assert.equal(preview?.netCarbsPer100g, 3.2);
   });
 });

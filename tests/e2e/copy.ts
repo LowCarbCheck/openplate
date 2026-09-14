@@ -44,6 +44,21 @@ const catalogSchema = z.object({
     action: z.object({ delete: z.string() }),
     toast: z.object({ removed: z.string(), undo: z.string() }),
   }),
+  scan: z.object({
+    review: z.object({
+      heading: z.string(),
+      fromLabel: z.string(),
+      netCarbsForPortion: z.string(),
+      confirmAndLog: z.string(),
+    }),
+  }),
+  diary: z.object({
+    netCarbsValue: z.string(),
+  }),
+  settingsAi: z.object({
+    advanced: z.object({ toggle: z.string(), openaiCompatibleOption: z.string() }),
+    save: z.object({ settings: z.string() }),
+  }),
   settings: z.object({
     notifications: z.object({
       master: z.string(),

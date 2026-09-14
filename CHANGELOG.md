@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The photo review card now shows the right net carbs for a food read from a nutrition label.** European labels already leave out fibre from total carbohydrates. The review step previously subtracted fibre a second time, which could show 0 g net carbs while the saved entry was correct. The review card now handles these labels the same way the saved entry does, so the two figures match.
+
 ## [0.29.7] - 2026-09-13
 
 ### Changed

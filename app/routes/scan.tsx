@@ -24,6 +24,7 @@ import type { PlateImageInput, VisionProvider } from '#app/services/vision';
 import { INTAKE_SOURCES } from '#app/lib/intake-source';
 import type { IntakeSource, TypedIntakeSource } from '#app/lib/intake-source';
 import { parseCarbBasis } from '#app/lib/net-carbs';
+import type { CarbBasis } from '#app/lib/net-carbs';
 import { reportPhotoParsed } from '#app/lib/pulse';
 import { estimateScanCostUsd, formatScanCost, formatTokenCount } from '#app/services/vision/cost';
 import type { FoodMatch } from '#app/services/food-resolution';
@@ -32,6 +33,7 @@ import {
   resolveAppliedMatchSnapshot,
   toCuratedSource,
 } from '#app/services/food-resolution/apply-match';
+import type { AppliedMatchSnapshot } from '#app/services/food-resolution/apply-match';
 import { fetchFoodMatches } from '#app/lib/food-matches-client';
 import { randomUuid } from '#app/lib/uuid';
 import { useInstanceInferencePreset, useInstancePolicy } from '#app/hooks/use-public-config';
@@ -2774,6 +2776,54 @@ const PORTION_SCALE_LABEL_KEY = new Map<number, string>([
   [2, 'scan.review.portionScale.double'],
 ]);
 
+/**
+ * The review card's own preview, as one pure function so a unit test can drive
+ * exactly what the card renders instead of re-assembling the arguments beside
+ * it. `ConfirmDraftForm` calls nothing else for this figure.
+ *
+ * Passing the authoritative figure is what stops a bls/curated match's
+ * fibre-exclusive carbs from being double-subtracted by the local
+ * `carbs - fiber - polyols` formula: without it this card rendered a green
+ * "0 g net carbs" while the match card directly below it read "21.7g".
+ *
+ * THE BASIS IS RESOLVED EXACTLY AS THE HIDDEN `carbBasis` FIELD RESOLVES IT,
+ * item first and applied match second, and that identity is the point. Since
+ * the M138 label merge one photo task answers per ITEM, so a plate item can
+ * come back as a transcribed panel (`macroSource: 'label'`) carrying the
+ * convention it was read from. Only the confirm path threaded that through,
+ * so the card and the row it saved disagreed: the operator reported on
+ * 2026-09-14 that an EU-panel item with more fibre than carbohydrate read
+ * "0 g net carbs" on the review card while its diary entry read 5.5 g. The
+ * fibre was subtracted a second time from a figure that already excluded it,
+ * went negative, and the floor turned it into a confident zero. Understating
+ * carbs is the dangerous direction for a low-carb tracker, so the card reads
+ * the same basis the saved row does.
+ *
+ * @param options.macrosPer100g - the item's live per-100g macro field values.
+ * @param options.grams - the portion currently in the grams field.
+ * @param options.identifiedCarbBasis - the model's answer for this item, if any.
+ * @param options.appliedSnapshot - the applied curated match's facts.
+ * @returns the preview, or `null` when net carbs are unknown.
+ */
+export function computeReviewItemPreview({
+  macrosPer100g,
+  grams,
+  identifiedCarbBasis,
+  appliedSnapshot,
+}: {
+  macrosPer100g: Macros;
+  grams: number;
+  identifiedCarbBasis: CarbBasis | undefined;
+  appliedSnapshot: AppliedMatchSnapshot;
+}): MacroPreview | null {
+  return computeMacroPreview({
+    macrosPer100g,
+    grams,
+    authoritativeNetCarbsPer100g: appliedSnapshot.netCarbsPer100g,
+    carbBasis: identifiedCarbBasis ?? appliedSnapshot.carbBasis,
+  });
+}
+
 export function ConfirmDraftForm({
   identification,
   provider,
@@ -2961,22 +3011,11 @@ export function ConfirmDraftForm({
       matches: foodMatches,
       editedMacrosPer100g: macrosPer100g,
     });
-    // Passing the authoritative figure here is what stops a bls/curated match's
-    // fibre-exclusive carbs from being double-subtracted by the local
-    // `carbs - fiber - polyols` formula: without it this card rendered a green
-    // "0 g net carbs" while the match card directly below it read "21.7g".
-    //
-    // No `carbBasis` argument here, deliberately (spec 13, M123): a plate item
-    // is an AI ESTIMATE off a photo of food, never a transcribed printed
-    // panel, and `FoodMatch` (the only other fact this item can carry) has no
-    // basis field of its own, it always brings its own authoritative figure
-    // above instead, so the compute-from-parts fallback below is only ever
-    // reached for a plain, unmatched estimate with no basis to report. There
-    // is no "EU vs US" distinction to make on a plate of food.
-    const preview = computeMacroPreview({
+    const preview = computeReviewItemPreview({
       macrosPer100g,
       grams: currentGrams,
-      authoritativeNetCarbsPer100g: appliedSnapshot.netCarbsPer100g,
+      identifiedCarbBasis: identification?.foods[index]?.carbBasis,
+      appliedSnapshot,
     });
     return {
       itemField,
@@ -2988,11 +3027,14 @@ export function ConfirmDraftForm({
       currentGrams,
       preview,
       appliedSnapshot,
-      // No `carbBasis` argument, for the identical reason `computeMacroPreview`
-      // above gets none: a plate item never carries one (M123/13 review
-      // finding). `undefined` keeps `checkMacroSanity`'s fibre-vs-carbs
-      // comparisons running, which is correct here, a plate estimate has no
-      // EU/US panel to misclassify.
+      // No `carbBasis` argument here, unlike `computeReviewItemPreview` above.
+      // The old reasoning for both, that a plate item never carries a basis,
+      // stopped being true with the M138 label merge, so this one is now a
+      // known gap and not a decision: an EU panel whose fibre legitimately
+      // exceeds its carbohydrate figure raises a fibre-vs-carbs warning it
+      // should not. It is left alone here because nothing guards it yet, and
+      // because it shows a warning rather than a wrong number, which is the
+      // harmless direction. `checkMacroSanity` already takes the argument.
       sanityIssues: preview ? checkMacroSanity(macrosPer100g, t, i18n.language) : [],
       selectedMultiplier: hasChips ? derivePortionMultiplier({ baseGrams, currentGrams }) : null,
       // SAFETY: `confidence` is populated only by this route's own confirm-draft

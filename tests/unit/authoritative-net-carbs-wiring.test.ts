@@ -550,6 +550,23 @@ function renderConfirmStep(formData: FormData): string {
 /** The hidden input the confirm step emits to carry the authoritative figure into the log write. */
 const CONFIRM_NET_CARBS_FIELD = /<input[^>]*name="items\[0\]\.netCarbsPer100g"[^>]*value="([^"]*)"[^>]*>/;
 
+/** The hidden input the confirm step emits to carry the panel convention into the log write. */
+const CONFIRM_CARB_BASIS_FIELD = /<input[^>]*name="items\[0\]\.carbBasis"[^>]*value="([^"]*)"[^>]*>/;
+
+/**
+ * The panel convention the rendered confirm step would save for item 0.
+ *
+ * @param markup - the rendered confirm step.
+ * @returns the field's value, empty string when it carries none.
+ */
+function emittedConfirmCarbBasis(markup: string): string {
+  const match = CONFIRM_CARB_BASIS_FIELD.exec(markup);
+  assert.ok(match, `expected a hidden carbBasis input in the confirm markup, found none:\n${markup}`);
+  const [, value] = match;
+  assert.ok(value !== undefined, 'the carbBasis regex must capture a value');
+  return value;
+}
+
 function emittedConfirmNetCarbs(html: string): string {
   const match = CONFIRM_NET_CARBS_FIELD.exec(html);
   assert.ok(match, `the confirm step emitted no items[0].netCarbsPer100g input at all:\n${html.slice(0, 400)}`);
@@ -697,9 +714,10 @@ describe('the scan confirm step carries an applied match’s authoritative net c
   });
 
   it('WITHDRAWS the figure once the macros are hand-edited, a snapshot of numbers that are no longer there is a lie', () => {
+    const editedCarbsPer100g = 30;
     const edited = confirmFormData({
       ...APPLIED,
-      macros: { ...matchMacrosToFormValues(wheatBranMatch().macrosPer100g), carbs: '30' },
+      macros: { ...matchMacrosToFormValues(wheatBranMatch().macrosPer100g), carbs: String(editedCarbsPer100g) },
     });
     assert.equal(
       emittedConfirmNetCarbs(renderConfirmStep(edited)),
@@ -710,9 +728,25 @@ describe('the scan confirm step carries an applied match’s authoritative net c
     // consulted and had none", a captured fact. After a user edit there is no
     // upstream source in play at all.
     assert.equal(confirmedEntryFromScanFlow(edited).netCarbsPer100g, undefined);
-    // And the preview follows the numbers the person actually typed.
-    const badges = confirmBadges(renderConfirmStep(edited));
-    assert.equal(badges[0]?.figure, '0', '30 − 42.8 clamps to 0, the user’s own parts, not the stale 21.7');
+    // The BASIS does not clear with it, by design (`resolveAppliedMatchSnapshot`):
+    // which convention the printed panel used is a fact about the source, not
+    // about the numbers now in the form. The card emits it for the log write,
+    // and the same render is read for both halves below, so the number on the
+    // screen and the convention the saved row carries cannot disagree.
+    const markup = renderConfirmStep(edited);
+    assert.equal(emittedConfirmCarbBasis(markup), 'available');
+    // So the preview follows the numbers the person actually typed, read on
+    // that convention: 30 g of "available" carbohydrate is 30 g of net carbs,
+    // the fibre was never counted in it. This asserted '0' until 2026-09-14,
+    // which was the review card double-subtracting the fibre while the row it
+    // emitted right beside the figure said the fibre was already excluded,
+    // the disagreement the operator reported.
+    const badges = confirmBadges(markup);
+    assert.equal(
+      badges[0]?.figure,
+      String(editedCarbsPer100g),
+      'the review card ignored the panel convention its own emitted row carries',
+    );
   });
 
   it('a scanned-then-matched food totals the authoritative figure on the diary, not 0', () => {
