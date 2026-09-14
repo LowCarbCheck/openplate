@@ -10,6 +10,15 @@ JSON export/import, the whole interface: identical to the hosted instance, becau
 same image. The only thing the hosted deployment adds is that we operate the optional sync
 service for you, and that is also open source, for you to run yourself.
 
+## What you can run
+
+- **The app on its own.** Adds one container. You gain a fast setup with no database or secrets to manage. You risk losing your diary if you clear the browser, there is no sync across devices, and scans require a cloud AI key.
+- **The app plus the sync service.** Adds `openplate-core` and Postgres. You gain encrypted sync across devices and an optional shared AI bill. You risk data loss if you do not back up the database, the secret, and your recovery key.
+- **The app plus self-hosted inference.** Adds `openplate-inference`. You gain local plate scans with no cloud account and no photos leaving your network. You risk hardware strain, and every browser must reach the inference container directly.
+- **Everything.** Sync and inference together, four containers in all. You gain complete data privacy with multi-device sync. You risk the highest operational maintenance and resource load.
+
+Each shape is one compose file under [`docker/topologies/`](../docker/topologies/); [topologies.md](topologies.md) explains how to choose.
+
 ## The app on its own
 
 ```bash
