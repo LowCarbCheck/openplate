@@ -13,8 +13,9 @@
  *
  * It shipped to `/dashboard` after a playground review, and `/diary` followed:
  * all four of its add-entry surfaces, the three empty states and the one under
- * a day that has entries, render this strip. `AddFoodActions` survives only in
- * `/dev/playground`, as the before picture.
+ * a day that has entries, render this strip. `AddFoodActions`, the three-button
+ * row this strip replaced, is deleted (M232/02); it no longer survives as a
+ * before picture anywhere, including `/dev/playground`.
  *
  * ── The behaviour is the row's behaviour, unchanged ──────────────────────
  *

@@ -1,11 +1,11 @@
 /**
  * An alternate STRUCTURE for the add-entry row, for review only.
  *
- * The shipped row is `#app/components/add-food-actions`: three separate buttons
- * with gaps between them, which the eye reads as three competing offers. The
- * concept here collapses that into ONE object, and it keeps photograph, type
- * and speak at equal rank, because demoting typing was a defect the shipped row
- * already fixed once and is not worth re-introducing.
+ * The old row was `#app/components/add-food-actions`, now deleted (M232/02):
+ * three separate buttons with gaps between them, which the eye reads as three
+ * competing offers. The concept here collapses that into ONE object, and it
+ * keeps photograph, type and speak at equal rank, because demoting typing was
+ * a defect the old row already fixed once and is not worth re-introducing.
  *
  * Concept A, the composer strip, WAS REVIEWED AND SHIPPED: it lives at
  * `#app/components/add-food-actions-composer` and `/dashboard` renders it. The

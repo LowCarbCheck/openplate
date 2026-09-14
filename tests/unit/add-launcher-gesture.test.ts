@@ -135,19 +135,14 @@ describe('a back-dated day survives the photo path', () => {
       assert.match(diary, new RegExp(`<${state} describeTo=\\{describeTo\\} scanTo=\\{scanTo\\} />`));
     }
   });
-
-  it('the actions component passes it straight into the hook', () => {
-    const actions = readFileSync(new URL('../../app/components/add-food-actions.tsx', import.meta.url), 'utf8');
-    assert.match(actions, /useCameraCapture\(\{ scanTo \}\)/);
-  });
 });
 
 describe('the surfaces that capture', () => {
   const surfaces = [
     '../../app/components/add-launcher.tsx',
-    '../../app/components/add-food-actions.tsx',
-    // The composer strip `/dashboard` renders. It carries its own camera key,
-    // so it is a capturing surface and the gesture rule applies to it too.
+    // The composer strip `/dashboard` and `/diary` render. It carries its own
+    // camera key, so it is a capturing surface and the gesture rule applies to
+    // it too.
     '../../app/components/add-food-actions-composer.tsx',
   ];
 
