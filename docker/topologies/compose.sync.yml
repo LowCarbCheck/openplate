@@ -171,14 +171,15 @@ services:
       SYNC_NOTICE: ${SYNC_NOTICE:-}
       SYNC_NOTICE_URL: ${SYNC_NOTICE_URL:-}
 
-      # THIS SERVICE SENDS NO MAIL and stores no email address. An account is
-      # a HANDLE plus a passphrase, and a lost passphrase is recovered with
-      # the recovery code the client showed at signup. Lose both and the
-      # account is gone — there is no third path, because a reset the server
-      # could perform would mean a server that can open your data.
+      # Signup is invite-only, and an account has an email address; mint one
+      # with `pnpm sync-api invites create --email ...` in openplate-core.
+      # Mail is optional: set MAIL_API_* and this service sends the invite
+      # and the password reset itself, leave it unset and both come back as
+      # links to paste. SERVER_PUBLIC_URL and CLIENT_BASE_URL are optional,
+      # needed together to build the link in an invitation and a reset mail.
       #
-      # Setting CLIENT_BASE_URL, REQUIRE_EMAIL_VERIFICATION, EMAIL_FROM, any
-      # SMTP_*, or any PIGEON_* is a BOOT FAILURE, not a no-op.
+      # Setting SIGNUP_MODE, SIGNUPS_OPEN, EMAIL_FROM, any SMTP_*, any
+      # PIGEON_*, or REQUIRE_EMAIL_VERIFICATION is a BOOT FAILURE, not a no-op.
 
 volumes:
   pg-data:
