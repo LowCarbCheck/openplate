@@ -14,6 +14,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Added
 
 - **Generated Podman Quadlet units ship for every openplate deployment shape.** The directory `docker/quadlet/<scenario>/` holds the `.container`, `.volume`, and `.network` files that Podman needs to run openplate as a systemd service. These units are generated directly from existing compose files instead of written by hand. A push gate check regenerates and verifies them, so a stale unit never reaches you.
+- **openplate now speaks French, Italian, Spanish and Turkish too.** The whole app, the legal pages included, is available in six languages. A language strip sits in the device menu at the top right, right under the theme choice, so you can switch without opening Settings; Settings keeps its own list. Picking a language reloads the page in it, exactly as before.
 
 ### Changed
 

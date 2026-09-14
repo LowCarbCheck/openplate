@@ -40,8 +40,8 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { type Unit, hash } from './translate-shims/docs-i18n.server';
-import { type Usage, DASH, KEEP, translate } from './translate';
+import { type Memo, type Memory, type Unit, hash } from './translate-shims/docs-i18n.server';
+import { type Usage, DASH, KEEP, MODEL, translate } from './translate';
 
 /** A catalog as it exists on disk: a tree of names whose leaves are sentences. */
 export interface CatalogTree {
@@ -169,18 +169,22 @@ export function readCatalog(file: string): CatalogTree {
  * target bundle already holds, which is how a hand-written translation and a
  * skipped proper noun both survive a run that did not buy them. The English
  * last, so a brand new key renders its source rather than a blank.
+ *
+ * The memory is read by `unitKey(path, english)`, never by the English alone;
+ * see "keyed by path and English" below for why.
  */
-export function withTranslations(
+export function rebuildByPath(
+  namespace: string,
   english: CatalogTree,
   memory: Map<string, string>,
   existing: CatalogTree,
-  prefix = '',
 ): CatalogTree {
   const held = new Map(leaves(existing).map((leaf) => [leaf.key, leaf.value]));
-  return rebuildTree(english, memory, held, prefix);
+  return rebuildTree(namespace, english, memory, held, '');
 }
 
 function rebuildTree(
+  namespace: string,
   english: CatalogTree,
   memory: Map<string, string>,
   held: Map<string, string>,
@@ -189,13 +193,13 @@ function rebuildTree(
   const out: Record<string, string | CatalogTree> = {};
   for (const [name, child] of Object.entries(english)) {
     const key = prefix === '' ? name : `${prefix}.${name}`;
-    out[name] = child instanceof Object ? rebuildTree(child, memory, held, key) : answer(child, key, memory, held);
+    if (child instanceof Object) {
+      out[name] = rebuildTree(namespace, child, memory, held, key);
+      continue;
+    }
+    out[name] = memory.get(unitKey(pathOf(namespace, key), child)) ?? held.get(key) ?? child;
   }
   return out;
-}
-
-function answer(source: string, key: string, memory: Map<string, string>, held: Map<string, string>): string {
-  return memory.get(hash(source)) ?? held.get(key) ?? source;
 }
 
 /**
@@ -220,29 +224,122 @@ export function saveCatalog(file: string, tree: CatalogTree, writable: boolean):
 
 /** One catalog leaf that is prose, ready to be looked up or bought. */
 export interface UnitOfLeaf extends Unit {
-  /** The dotted path it came from. Reporting only; the memory is keyed by the hash. */
+  /** The full path it came from, `common:pages.home.hero.body`. Part of the memory key, see `unitKey`. */
   key: string;
 }
 
+/** One prose leaf of one namespace. `leaf` is the dotted key inside its own catalog, which is what the target catalog is read by. */
+export interface CatalogUnit extends UnitOfLeaf {
+  leaf: string;
+}
+
 /**
- * Every leaf of every namespace that is worth translating, by hash.
+ * ── KEYED BY PATH AND ENGLISH, NOT BY ENGLISH ALONE ──
+ * This memory used to be keyed by `hash(english)`, the bargain the docs pipeline
+ * makes: two keys carrying one English sentence were one unit, bought once. On a
+ * catalog that is right until it is not, and the app's catalog showed when: 2130
+ * strings, and 26 of them changed value when a rebuild put one entry's answer
+ * under every key with that English. `nav.fasting` ("Fasten") became "Fasten
+ * läuft", the eyebrow of the active-fast card; `scan.capture.takePhoto` became
+ * the landing headline. Those are not splits to unify. They are one English word
+ * doing two jobs, and German has two words for them. This site's own catalog
+ * carries eleven such pairs today ("App", "Docs", "Privacy", "Documentation" as
+ * a nav label and as a page title) and every one of them happened to agree, so
+ * the defect had nowhere to show; the app's did not, and the same code path ran.
  *
- * Keyed by hash rather than by path on purpose, and it is the same bargain the
- * docs pipeline makes: two keys carrying the same English sentence are one unit
- * and are bought once. "Documentation" is a nav label and a page title, and
- * paying twice for it would be paying for the accident that it is written in two
- * places.
+ * So the key is `hash(path + english)`, the app's keying, brought back into the
+ * library the app vendors. A key keeps its own translation, an English edit still
+ * invalidates exactly that one key, and the price is that an English sentence
+ * written under two paths is bought twice, which at a hundred strings is cents.
+ * `path` is written into every memo beside the English, because a person greps
+ * the memory by what they can read and a hash is not that.
  */
-export function collectLeaves(catalogs: CatalogTree[]): Map<string, UnitOfLeaf> {
-  const units = new Map<string, UnitOfLeaf>();
-  for (const catalog of catalogs) {
-    for (const leaf of leaves(catalog)) {
-      if (skipReason(leaf.value) !== null) continue;
-      const key = hash(leaf.value);
-      if (!units.has(key)) units.set(key, { hash: key, source: leaf.value, key: leaf.key });
+
+/** `common:nav.docs`: the namespace and the dotted path, which together name one leaf. */
+export function pathOf(namespace: string, key: string): string {
+  return `${namespace}:${key}`;
+}
+
+/**
+ * The key one leaf is remembered under. The newline is the separator because it
+ * cannot occur in a path, and a leaf that carried one would be two lines of
+ * JSON, not a catalog string.
+ */
+export function unitKey(path: string, source: string): string {
+  return hash(`${path}\n${source}`);
+}
+
+/** Every leaf of one namespace that is prose, keyed for the memory. */
+export function collectByPath(namespace: string, tree: CatalogTree): CatalogUnit[] {
+  return leaves(tree)
+    .filter((leaf) => skipReason(leaf.value) === null)
+    .map((leaf) => {
+      const path = pathOf(namespace, leaf.key);
+      return { hash: unitKey(path, leaf.value), source: leaf.value, key: path, leaf: leaf.key };
+    });
+}
+
+/** One remembered leaf. `path` is what a person greps for; the memory is keyed by its hash with the English. */
+export function memoAt(entry: { unit: UnitOfLeaf; target: string; locale: string; at: string; model?: string }): Memo {
+  const { unit, target, locale, at, model = MODEL } = entry;
+  return { en: unit.source, path: unit.key, model, at, [locale]: target };
+}
+
+/**
+ * An entry written under the old keying, `hash(english)` with no `path`, as
+ * `rekeyByPath` finds it and as nothing else should ever see it again.
+ */
+export function isKeyedByEnglish(entry: Memo): boolean {
+  return entry.path === undefined;
+}
+
+/**
+ * The memory as it stands, moved from `hash(english)` to `hash(path + english)`,
+ * without losing one translation.
+ *
+ * ── THE BUNDLE IS THE VALUE, THE OLD ENTRY IS THE PROVENANCE ──
+ * The old memory was keyed by English alone, so a leaf whose English is written
+ * under two paths had one entry, and which path's translation it held was
+ * decided by directory order. The target bundle on disk is the one record that
+ * has a value PER PATH, and it is what a reader has been seeing, so every new
+ * entry takes the bundle's value at its own path. The old entry contributes the
+ * `model` and `at` where its answer is the same string, which is what keeps
+ * `hand-written` on the strings a person wrote; a bundle value the old memory
+ * did not have is a hand edit that the old keying would have undone on the next
+ * run, and it is recorded as `hand-written` today rather than lost.
+ *
+ * Entries written under the old keying are DROPPED from the result, because a
+ * memory holding both keyings answers nothing twice and grows forever. An entry
+ * that already carries a `path` is kept as it is.
+ */
+export function rekeyByPath(
+  memory: Memory,
+  locale: string,
+  catalogs: { namespace: string; english: CatalogTree; target: CatalogTree }[],
+  today: string,
+): Memory {
+  const out: Memory = {};
+  for (const [key, entry] of Object.entries(memory)) {
+    if (!isKeyedByEnglish(entry)) out[key] = entry;
+  }
+  for (const { namespace, english, target } of catalogs) {
+    const held = new Map(leaves(target).map((leaf) => [leaf.key, leaf.value]));
+    for (const unit of collectByPath(namespace, english)) {
+      if (out[unit.hash] !== undefined) continue;
+      const value = held.get(unit.leaf);
+      if (value === undefined || value === '') continue;
+      const old = memory[hash(unit.source)];
+      const inherited = old !== undefined && old[locale] === value;
+      out[unit.hash] = memoAt({
+        unit,
+        target: value,
+        locale,
+        at: inherited ? old.at : today,
+        model: inherited ? old.model : 'hand-written',
+      });
     }
   }
-  return units;
+  return out;
 }
 
 // ── what the CLI buys ────────────────────────────────────────────────────────

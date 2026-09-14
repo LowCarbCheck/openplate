@@ -1,6 +1,6 @@
 {
   "repo": "LowCarbCheck/openplate-website",
-  "commit": "a05947bdae895970a990b7524965d47e5d997f44",
+  "commit": "a4e21595a3025090b07f6b43ddd74a2a02269f39",
   "producedBy": "openplate, scripts/sync-translate-lib.ts",
   "rewrites": [
     {
@@ -23,18 +23,18 @@
   "files": {
     "scripts/lib/translate.ts": {
       "from": "scripts/lib/translate.ts",
-      "upstream": "28da0ae93b1da2d6ba5623e9b653a80b1318b884945f1e524af6dae14704c5a9",
-      "vendored": "307ae78f809951b9057538bbad0e6ae271caa0b19ea41b280e894788c99ff4b3"
+      "upstream": "850fd319acfb62bff6073c955823250797f5e45ee16ed9871899503e13f00ed0",
+      "vendored": "fa3429842ff2b511b6ab12a1efd86d9c9ca502d963f8c7161eb13d03e003c79b"
     },
     "scripts/lib/translate-ui.ts": {
       "from": "scripts/lib/translate-ui.ts",
-      "upstream": "d7630f95400ae2049160de2b06cff688cdeadbdcffd4da7c451344314e97ecc6",
-      "vendored": "29633335b34ddcb8fdbb5d69398b291d2c31556da52fa33320512a94af90846a"
+      "upstream": "ee38d773b3f4b37dc2b7fac399e0dd37a1789489f4213d56873f22cf70fdac6e",
+      "vendored": "5fceae8ffcc386088937d175eae2faabb69f9bdab6f8028074494d16a1866cc6"
     },
     "scripts/lib/translate-language.ts": {
       "from": "app/i18n/language.ts",
-      "upstream": "24cd84bd153a3f10d3b5eb3fb095410d7cc389702b8f086195851a7d781d559c",
-      "vendored": "24cd84bd153a3f10d3b5eb3fb095410d7cc389702b8f086195851a7d781d559c"
+      "upstream": "c5cdf522aec7507234a1e7dd3d6a6853a9d51f11acb20af0ec208ce2c07ada64",
+      "vendored": "c5cdf522aec7507234a1e7dd3d6a6853a9d51f11acb20af0ec208ce2c07ada64"
     },
     "scripts/lib/merge-memory.ts": {
       "from": "scripts/merge-memory.ts",
@@ -43,7 +43,7 @@
     }
   },
   "shimmed": {
-    "app/lib/docs-i18n.server.ts": "9e969ac0999af8d4fae25342fb0a05c45972e0da525296e0d045de8e7be25cff",
+    "app/lib/docs-i18n.server.ts": "e16418e6fcdae315155daa2f44d519e20083a419d2b6d96c69888dd045e5b168",
     "app/lib/docs.ts": "e013d872b0da6a0009c391e9c43f898af548bf705107d3861ec785859bda5087"
   }
 }

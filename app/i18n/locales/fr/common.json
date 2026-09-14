@@ -1,0 +1,3183 @@
+{
+  "about": {
+    "description": "openplate est open source. Voici la version que tu utilises, et l'endroit où se trouve son code.",
+    "licence": "Licence",
+    "licenceValue": "MIT",
+    "source": "Code source",
+    "sourceValue": "{{appName}} sur GitHub",
+    "title": "À propos d'openplate",
+    "updates": {
+      "built": "Compilé",
+      "checkNow": "Vérifier maintenant",
+      "checking": "Vérification en cours",
+      "description": "Ce que cette instance exécute, et ce que le projet a publié.",
+      "disabled": "Vérifications désactivées",
+      "disabledHint": "Cette instance n'interroge pas GitHub pour les nouvelles versions. L'administrateur a désactivé cette option.",
+      "lastChecked": "Dernière vérification",
+      "latest": "Dernière version",
+      "never": "Pas encore",
+      "releaseLink": "Notes de version",
+      "reload": "Recharger pour mettre à jour",
+      "reloadHint": "Ce serveur fournit une version plus récente de l'application que celle affichée sur cette page.",
+      "running": "En cours d'exécution",
+      "selfHostHint": "La mise à jour du serveur lui-même passe par une nouvelle image, pas par un bouton ici.",
+      "throttled": "Vérifié il y a un instant. La prochaine vérification est autorisée à {{when}}.",
+      "title": "Mises à jour"
+    }
+  },
+  "add": {
+    "custom": {
+      "caloriesSummary": "{{value}} calories",
+      "cancel": "Annuler",
+      "carbBasis": {
+        "available": "Format UE (les glucides excluent déjà les fibres)",
+        "hint": "Les étiquettes américaines comptent les fibres dans le total des glucides, alors que les étiquettes européennes indiquent les fibres sur une ligne dédiée et les excluent déjà. Bien choisir évite de soustraire les fibres deux fois.",
+        "legend": "Méthode de calcul des glucides de cet aliment",
+        "notSure": "Pas certain",
+        "total": "Format US (les glucides incluent les fibres)"
+      },
+      "carbsSummary": "{{value}} g de glucides",
+      "description": "Les aliments que tu as ajoutés toi-même. Modifie les valeurs ou supprimes-en un ici.",
+      "editAria": "Modifier {{name}}",
+      "empty": "Tu n'as encore ajouté aucun aliment. Utilise « Ajouter manuellement » pour en créer un. Il apparaîtra ici.",
+      "fallbackName": "Aliment",
+      "name": "Nom",
+      "per100g": "pour 100 g : {{summary}}",
+      "per100gToggle": "Pour 100 g",
+      "perServingToggle": "Par portion",
+      "remove": "Supprimer",
+      "removeAria": "Supprimer {{name}}",
+      "removeDescription": "Cette action le retire de tes aliments. Tout ce que tu as déjà consigné avec reste dans ton journal.",
+      "removeTitle": "Supprimer {{name}} ?",
+      "removed": "{{name}} supprimé.",
+      "save": "Enregistrer",
+      "savePending": "Enregistrement…",
+      "servingSize": "Taille de la portion (g)",
+      "title": "Tes aliments",
+      "trigger": "Tes aliments",
+      "triggerWithCount": "Tes aliments ({{total}})",
+      "updated": "{{name}} mis à jour."
+    },
+    "errors": {
+      "carbsRequired": "Les glucides sont requis pour enregistrer un aliment.",
+      "gramsNotANumber": "Saisis un nombre valide",
+      "gramsNotPositive": "Le nombre de grammes doit être supérieur à 0",
+      "gramsRequired": "Saisis le nombre de grammes",
+      "nameRequired": "Le nom est requis",
+      "saveFailed": "Impossible d'enregistrer. Vérifie le nom et réessaie."
+    },
+    "loading": "Chargement…",
+    "macros": {
+      "carbs": "Glucides",
+      "fat": "Lipides",
+      "fiber": "Fibres",
+      "kcal": "Calories",
+      "polyols": "Polyols",
+      "protein": "Protéines",
+      "sugars": "Sucres"
+    },
+    "manual": {
+      "description": "Saisis le nom d'un aliment et sa quantité, soit pour 100 g, soit par portion telle qu'indiquée sur l'étiquette.",
+      "grams": "Grammes",
+      "mealOptional": "Repas (facultatif)",
+      "name": "Nom",
+      "namePlaceholder": "Poulet grillé",
+      "nutritionHint": "Ajoute les glucides pour enregistrer aussi cet aliment pour la prochaine fois. Ignore cette étape pour l'ajouter seulement cette fois-ci.",
+      "nutritionToggle": "Valeurs nutritionnelles (facultatif)",
+      "per100g": "Pour 100 g",
+      "perServing": "Par portion",
+      "servingSize": "Taille de la portion (g)",
+      "submit": "Ajouter l'entrée",
+      "submitPending": "Ajout en cours…",
+      "title": "Ajouter manuellement"
+    },
+    "meal": {
+      "breakfast": "Petit-déjeuner",
+      "dinner": "Dîner",
+      "lunch": "Déjeuner",
+      "none": "Aucun repas",
+      "snack": "Collation"
+    },
+    "portion": {
+      "back": "Retour à la recherche",
+      "calories": "{{value}} calories",
+      "fallback": {
+        "large": "Grand ({{grams}} g)",
+        "medium": "Moyen ({{grams}} g)",
+        "small": "Petit ({{grams}} g)"
+      },
+      "fat": "Lipides {{value}} g",
+      "grams": "Grammes",
+      "macrosUnknown": "Macronutriments inconnus, enregistré avec le nom uniquement.",
+      "meal": "Repas",
+      "netCarbs": "{{value}} g de glucides nets",
+      "protein": "Protéines {{value}} g",
+      "source": {
+        "curated": "De notre base d'aliments",
+        "custom": "De tes aliments",
+        "recent": "De tes aliments récents"
+      },
+      "submit": "Ajouter au journal",
+      "submitPending": "Ajout en cours…",
+      "viewDetails": "Voir les détails de l'aliment"
+    },
+    "results": {
+      "calories": "{{value}} calories",
+      "loggedTimes": "Enregistré {{times}}×",
+      "matchTier": {
+        "likely": "Correspondance possible",
+        "strong": "Correspondance forte",
+        "weak": "Correspondance approximative"
+      },
+      "netCarbs": "{{value}} g de glucides nets",
+      "per100g": "pour 100 g : {{summary}}",
+      "provenance": {
+        "custom": "Ton aliment",
+        "recent": "Récent"
+      }
+    },
+    "search": {
+      "addManually": "Introuvable ? Ajoute-le manuellement",
+      "empty": {
+        "firstTime": "Recherche un aliment à enregistrer, ou ajoute-en un manuellement ci-dessous.",
+        "noMatches": "Aucun résultat pour « {{query}} ». Ajoute-le manuellement ci-dessous.",
+        "startTyping": "Commence à écrire pour rechercher dans tes aliments."
+      },
+      "label": "Rechercher des aliments",
+      "offlineBanner": "Tu es hors ligne. La recherche de nouveaux aliments nécessite une connexion. Tes aliments récents et enregistrés restent accessibles.",
+      "offlinePending": "La recherche de nouveaux aliments nécessite une connexion, elle reprendra dès ta reconnexion.",
+      "parts": {
+        "lead": "Rechercher plutôt chaque composant :"
+      },
+      "pause": {
+        "minute": "dans environ une minute",
+        "minutes": "dans quelques minutes",
+        "seconds": "dans quelques secondes"
+      },
+      "placeholder": "Rechercher un aliment…",
+      "scanInstead": "Scanne plutôt ton assiette",
+      "sections": {
+        "curated": "Résultats de recherche",
+        "custom": "Tes aliments",
+        "recent": "Aliments récents"
+      },
+      "starters": {
+        "banana": "Banane",
+        "broccoli": "Brocoli",
+        "chickenBreast": "Blanc de poulet",
+        "eggs": "Œufs",
+        "greekYogurt": "Yaourt à la grecque",
+        "rice": "Riz"
+      },
+      "throttled": "La recherche fait une courte pause. Réessaie {{when}}. Tes aliments récents et enregistrés restent accessibles ci-dessous."
+    },
+    "title": "Ajouter un aliment",
+    "aiIntake": {
+      "submit": "Enregistrer avec l'IA",
+      "hint": "Décris un repas complet d'un coup, par exemple 3 œufs, 2 tranches de pain grillé, un verre de jus d'orange.",
+      "needsProvider": "Connecte un fournisseur d'IA pour enregistrer un repas complet en une seule phrase. La recherche fonctionne sans cela.",
+      "connect": "Configurer l'IA"
+    }
+  },
+  "banners": {
+    "backupDismiss": "Ignorer le rappel de sauvegarde",
+    "backupExportNow": "Exporter maintenant",
+    "backupLastExport_one": "Ton journal n'existe qu'ici : un seul appareil, aucun cloud. Dernière sauvegarde il y a {{count}} jour.",
+    "backupLastExport_other": "Ton journal n'existe qu'ici : un seul appareil, aucun cloud. Dernière sauvegarde il y a {{count}} jours.",
+    "backupNeverExported": "Ton journal n'existe qu'ici : un seul appareil, aucun cloud. Sauvegarde-le en 10 secondes.",
+    "loggingTo": "Enregistrement sur <day>{{label}}</day>",
+    "offlineDefault": "Tu es hors ligne. Les jours récents restent consultables ; les nouvelles entrées se synchroniseront dès ta reconnexion.",
+    "reproductiveStatusPromptDismiss": "Pas maintenant",
+    "reproductiveStatusPromptDueDate": "La date prévue pour ton accouchement est passée. Toujours enceinte, ou est-il temps de mettre à jour tes paramètres ?",
+    "reproductiveStatusPromptLactation": "Tu allaites depuis plus de deux ans. Toujours en cours d'allaitement, ou est-il temps de mettre à jour tes paramètres ?",
+    "reproductiveStatusPromptUpdate": "Mettre à jour",
+    "switchToToday": "Passer à aujourd'hui"
+  },
+  "bodyMetrics": {
+    "birthYear": {
+      "hint": "Les valeurs de référence sont regroupées par grandes tranches d'âge, l'année suffit donc, sans jamais avoir besoin de ta date de naissance complète.",
+      "label": "Année de naissance",
+      "placeholder": "par ex. 1985"
+    },
+    "card": {
+      "description": "Tous facultatifs. Ces détails permettent d'adapter les apports de référence en vitamines et minéraux à ton profil et de suggérer un objectif de calories. Ils restent sur cet appareil comme le reste de ton journal, et aucune de ces données n'est transmise lors d'une recherche d'aliment.",
+      "title": "À propos de toi"
+    },
+    "clear": {
+      "action": "Supprimer ces informations",
+      "hint": "Tu as changé d'avis ? Cela supprime de cet appareil toutes les informations ci-dessus."
+    },
+    "errors": {
+      "birthYear": "Saisis une année à quatre chiffres, comme 1985",
+      "height": "Saisis une taille en centimètres, comme 175"
+    },
+    "height": {
+      "hint": "Sert, avec ton poids, à estimer l'énergie que tu dépenses par jour.",
+      "label": "Taille (cm)",
+      "placeholder": "par ex. 175"
+    },
+    "reproductive": {
+      "derivedMonths_one": "{{count}} mois d'allaitement.",
+      "derivedMonths_other": "{{count}} mois d'allaitement.",
+      "derivedNotSet": "Aucune date pour l'instant. Tant que tu n'en ajoutes pas, nous appliquons l'apport de référence le plus élevé pour cette réponse.",
+      "derivedTrimester": "{{trimester}}, semaine {{week}}.",
+      "dueDate": {
+        "hint": "La date que l'on t'a donnée. Nous en déduisons la semaine pour que le calcul reste juste sans que tu aies besoin de revenir la modifier.",
+        "label": "Date d'accouchement prévue"
+      },
+      "errors": {
+        "dueDatePast": "Cette date est dépassée. Saisis la date d'aujourd'hui ou une date ultérieure.",
+        "dueDateRange": "Saisis une date d'accouchement prévue dans les {{weeks}} prochaines semaines.",
+        "startDateFuture": "Cette date est dans le futur. Saisis la date d'aujourd'hui ou une date antérieure."
+      },
+      "hint": "L'une comme l'autre modifie les apports de référence de plusieurs nutriments. Choisis « Aucun des deux » dès que tu veux les réinitialiser.",
+      "lactating": "Allaitement",
+      "legend": "Enceinte ou allaitante ?",
+      "none": "Aucun des deux",
+      "pregnant": "Enceinte",
+      "startDate": {
+        "hint": "Nous comptons les mois d'allaitement à partir de cette date, et les apports de référence changent au bout de six mois.",
+        "label": "Date de naissance de ton bébé"
+      },
+      "trimester": {
+        "first": "Premier trimestre",
+        "second": "Deuxième trimestre",
+        "third": "Troisième trimestre"
+      },
+      "weeksAlong": {
+        "hint": "Indique ta semaine actuelle et nous renseignerons la date d'accouchement prévue ci-dessus. Seule la date est enregistrée.",
+        "label": "Ou la semaine dans laquelle tu te trouves aujourd'hui"
+      }
+    },
+    "save": "Enregistrer les détails",
+    "sex": {
+      "female": "Femme",
+      "hint": "Les apports de référence pour plusieurs vitamines et minéraux diffèrent entre les femmes et les hommes.",
+      "legend": "Sexe biologique",
+      "male": "Homme",
+      "unset": "Ne souhaite pas préciser"
+    },
+    "toast": {
+      "cleared": "Détails supprimés.",
+      "saved": "Détails enregistrés."
+    }
+  },
+  "catchUp": {
+    "title": "Ton point quotidien",
+    "loading": "Lecture de tes trois derniers jours.",
+    "yesterdayHeading": "La journée d'hier en chiffres",
+    "mealOne": "{{count}} repas",
+    "mealMany": "{{count}} repas",
+    "yesterdayFull": "Hier : {{meals}}, {{netCarbs}} g de glucides nets sur ton plafond de {{ceiling}} g, {{protein}} g de protéines sur ton plancher de {{floor}} g.",
+    "yesterdayCeiling": "Hier : {{meals}}, {{netCarbs}} g de glucides nets sur ton plafond de {{ceiling}} g, {{protein}} g de protéines.",
+    "yesterdayFloor": "Hier : {{meals}}, {{netCarbs}} g de glucides nets, {{protein}} g de protéines sur ton plancher de {{floor}} g.",
+    "yesterdayPlain": "Hier : {{meals}}, {{netCarbs}} g de glucides nets, {{protein}} g de protéines.",
+    "yesterdayFasting": "Hier était une journée de jeûne.",
+    "yesterdayEmpty": "Hier ne contient aucune entrée. La journée d'aujourd'hui commence à zéro.",
+    "fastActive": "Ton jeûne est en cours depuis {{duration}}.",
+    "fastScheduled": "Ton jeûne commence à {{time}}.",
+    "fastRoutine": "Ton jeûne habituel commence à {{time}}.",
+    "countTwo": "deux",
+    "countThree": "trois",
+    "nudgeProtein": "Ton apport en protéines était sous ton plancher sur {{days}} des trois derniers jours.",
+    "nudgeFiber": "Ton apport en fibres était sous la référence de 25 g sur {{days}} des trois derniers jours.",
+    "nudgeFoods": "{{foods}} permettraient de combler cet écart.",
+    "foodsOr": "{{first}} ou {{last}}",
+    "foods": {
+      "eggs": "œufs",
+      "skyr": "skyr",
+      "chickenBreast": "blanc de poulet",
+      "tuna": "thon",
+      "tofu": "tofu",
+      "lentils": "lentilles",
+      "chiaSeeds": "graines de chia",
+      "raspberries": "framboises",
+      "avocado": "avocat",
+      "broccoli": "brocoli",
+      "flaxseed": "graines de lin",
+      "almonds": "amandes"
+    }
+  },
+  "chrome": {
+    "back": "Retour",
+    "buildStamp": "Version {{label}}",
+    "deviceMenuLabel": "Cet appareil, ouvrir le menu",
+    "footerTagline": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire qui reste sur ton appareil",
+    "footerTaglineManaged": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire que tu es le seul à pouvoir lire",
+    "imprint": "Mentions légales",
+    "installApp": "Installer l'application",
+    "language": "Langue",
+    "licence": "Licence MIT",
+    "licenceShort": "Licence",
+    "loading": "Chargement…",
+    "logoMenuLabel": "Menu openplate",
+    "navDrawerDescription": "Tous les écrans accessibles dans openplate",
+    "openTracker": "Ouvrir le suivi",
+    "preferences": "Préférences",
+    "privacy": "Confidentialité",
+    "requestAccess": "Demander un accès",
+    "requestAccessBody": "Les comptes se créent ici avec un lien d'invitation. Un administrateur délivre ces invitations, demande donc à la personne qui gère cette instance de t'en envoyer une.",
+    "requestAccessClose": "Fermer",
+    "requestAccessTitle": "Cette instance est accessible uniquement sur invitation",
+    "signIn": "Connexion",
+    "source": "Code source",
+    "sourceShort": "Source",
+    "status": {
+      "dismiss": "Ignorer ce message"
+    },
+    "terms": "Conditions",
+    "thisDevice": "Cet appareil",
+    "update": {
+      "badge": "Mettre à jour",
+      "bundleReady": "Une version plus récente de cette page est prête",
+      "dismiss": "Ignorer",
+      "releaseAvailable": "openplate {{version}} est disponible",
+      "reload": "Recharger",
+      "view": "Modifications apportées"
+    }
+  },
+  "clinicianLink": {
+    "copied": "Copié",
+    "copy": "Copier le lien",
+    "copyFailed": "Impossible de copier",
+    "description": "Envoie ceci à la personne qui veut partager son journal avec toi, ou laisse-la scanner ton écran.",
+    "nameHint": "Facultatif. Cette information circule dans le lien, considère-la donc comme une simple déclaration sur toi-même, pas comme une preuve.",
+    "nameLabel": "Le nom qui s'affichera chez cette personne",
+    "notSecret": "Ce lien n'est pas secret : il contient ta clé publique, qui permet uniquement de chiffrer des données à ton intention. De plus, il n'atteint aucun serveur : tout ce qui suit le # reste dans le navigateur.",
+    "qrTitle": "Ton lien de connexion sous forme de code à scanner",
+    "stillReadAloud": "Une fois le lien ouvert, lis ces douze caractères à ton interlocuteur : {{fingerprint}}. Rien n'est partagé tant qu'il ne les a pas saisis.",
+    "title": "Ton lien de connexion"
+  },
+  "confirm": {
+    "cancel": "Annuler",
+    "continue": "Continuer"
+  },
+  "connectClinician": {
+    "backToSharing": "Retour au partage",
+    "claimed": {
+      "account": "Compte numéro {{accountId}}",
+      "named": "D'après le lien, il s'agit de {{name}}.",
+      "unnamed": "Le lien ne précise pas de qui il s'agit.",
+      "unverified": "Toute personne capable d'écrire le lien peut inscrire ce nom. L'empreinte ci-dessous sert de preuve d'identité."
+    },
+    "description": "On t'a envoyé un lien pour que tu puisses partager ton journal avec cette personne.",
+    "granted": {
+      "body": "Cette personne peut désormais lire ton journal. Tu peux arrêter cela à tout moment sur la page de partage.",
+      "cta": "Aller au partage",
+      "title": "Partagé. Tu as vérifié :"
+    },
+    "invalidLink": {
+      "body": "Une partie manque ou a été coupée. Demande-lui de le renvoyer, ou de te montrer le code sur son écran.",
+      "title": "Ce lien semble incorrect"
+    },
+    "keyChanged": {
+      "body": "Tu as vérifié {{pinned}} auparavant ; ce lien contient {{offered}}. Cela arrive quand quelqu'un génère une nouvelle clé, et aussi quand quelqu'un la remplace. Refais la vérification avec cette personne, à voix haute, avant de continuer.",
+      "title": "Sa clé a changé"
+    },
+    "noSync": {
+      "body": "Le partage d'un journal nécessite la synchronisation, et la personne qui gère cet openplate ne l'a pas configurée. Rien ici ne peut être utilisé.",
+      "title": "Cet openplate n'a pas de synchronisation"
+    },
+    "queryString": {
+      "askAgain": "Demande-lui de le renvoyer, ou plutôt de te montrer le code sur son écran.",
+      "body": "La clé se trouvait dans la partie de l'adresse envoyée aux serveurs, elle n'est donc pas restée entre vous deux. Cela signifie généralement qu'une application de messagerie ou d'e-mail a modifié le lien en cours de route.",
+      "parameters": "Envoyé dans l'adresse : {{parameters}}.",
+      "title": "Ce lien n'est pas sûr"
+    },
+    "reading": "Lecture du lien…",
+    "sharingOff": {
+      "body": "Le partage n'est pas activé sur ton serveur de synchronisation. La clé que tu as vérifiée est conservée sur cet appareil, tu pourras donc partager sans refaire la vérification dès qu'il sera activé.",
+      "title": "Vérifié, mais rien n'a encore été partagé"
+    },
+    "signedOut": {
+      "body": "Ouvre d'abord ta session de synchronisation. Le partage scelle ton journal avec ta clé, et cette clé n'est présente qu'une fois connecté."
+    },
+    "title": "Connecter un médecin"
+  },
+  "connectGateway": {
+    "audit": {
+      "body": "Cette passerelle déclare que son administrateur peut examiner tes envois, y compris les photos. C'est ce que la passerelle indique elle-même. openplate ne peut pas le vérifier.",
+      "title": "Cette passerelle indique pouvoir examiner ce que tu envoies"
+    },
+    "backToAiSettings": "Retour aux paramètres d'IA",
+    "blocked": {
+      "operatorBody": "La personne qui gère cet openplate doit ajouter {{origin}} au paramètre CSP_CONNECT_EXTRA et le redémarrer. D'ici là, le navigateur bloque chaque requête vers cette passerelle. (Si tu l'héberges toi-même, c'est une ligne dans ton .env.)",
+      "operatorTitle": "La personne qui gère cet openplate doit l'autoriser",
+      "title": "Cette application n'est pas autorisée à communiquer avec cette passerelle"
+    },
+    "checking": "Vérification de cette passerelle…",
+    "confirm": {
+      "body": "Rien d'autre ne change : ton journal reste sur cet appareil, et tu peux te déconnecter à tout moment dans les paramètres d'IA.",
+      "button": "Rejoindre cette passerelle",
+      "join": "Rejoindre {{name}}",
+      "joining": "Connexion en cours…",
+      "replaces": "Cela remplace ta connexion IA actuelle ({{current}}). Rien n'est révoqué nulle part. Tu pourras la reconfigurer plus tard.",
+      "routing": "Tes photos de repas seront envoyées via {{origin}} pour analyse."
+    },
+    "description": "Quelqu'un a invité cet appareil à utiliser l'IA sur une passerelle qu'il administre.",
+    "invalidLink": {
+      "body": "Une partie du lien manque ou a été coupée par l'application d'e-mail. Demande à la personne qui t'a invité de le renvoyer.",
+      "title": "Ce lien d'invitation ne semble pas correct"
+    },
+    "inviteInvalid": {
+      "body": "Demande un nouveau lien à la personne qui t'a invité.",
+      "continue": "Continuer vers l'application",
+      "title": "Cette invitation n'est pas valide ou a expiré"
+    },
+    "joined": "Connecté à {{name}}.",
+    "saveFailed": "Impossible d'enregistrer la connexion sur cet appareil. Réessaie.",
+    "title": "Rejoindre une passerelle",
+    "unreachable": {
+      "body": "La passerelle n'a pas répondu. Vérifie l'adresse, ou demande à la personne qui t'a invité si elle fonctionne.",
+      "title": "Impossible de joindre {{origin}}"
+    },
+    "saveRetry": "Une erreur est survenue lors de l'enregistrement sur cet appareil. Rien n'est perdu. Réessaie.",
+    "retry": "Réessayer"
+  },
+  "dashboard": {
+    "loading": "Chargement de ta journée…",
+    "ridge": {
+      "caption": {
+        "kcal": "Objectif {{goal}} kcal",
+        "netCarbs": "Objectif {{goal}} g",
+        "none": "Aucun objectif défini",
+        "protein": "Au moins {{goal}} g"
+      },
+      "day": {
+        "entries_one": "{{day}}, {{count}} entrée enregistrée",
+        "entries_other": "{{day}}, {{count}} entrées enregistrées",
+        "kcal": {
+          "met": "{{day}}, {{value}} sur {{goal}} kcal, dans le budget",
+          "over": "{{day}}, {{value}} sur {{goal}} kcal, budget dépassé"
+        },
+        "logged": "{{day}}, enregistré, non noté",
+        "netCarbs": {
+          "met": "{{day}}, {{value}} sur {{goal}} g de glucides nets, dans le budget",
+          "over": "{{day}}, {{value}} sur {{goal}} g de glucides nets, budget dépassé"
+        },
+        "none": "{{day}}, rien d'enregistré",
+        "protein": {
+          "met": "{{day}}, {{value}} sur {{goal}} g de protéines, objectif atteint",
+          "under": "{{day}}, {{value}} sur {{goal}} g de protéines, objectif non atteint"
+        }
+      },
+      "srSummary": "Tes {{total}} derniers jours, une barre par jour. Tu as enregistré des données sur {{logged}} d'entre eux. Chaque barre ouvre ce jour dans le journal.",
+      "srSummaryReadOnly": "Tes {{total}} derniers jours, une barre par jour. Tu as rempli ton journal {{logged}} de ces jours. Touche la tuile pour voir ta progression."
+    },
+    "title": "Vue d'ensemble",
+    "today": {
+      "openDiary": "Ouvrir le journal d'aujourd'hui"
+    },
+    "week": {
+      "empty": "Aucun jour enregistré pour l'instant. Aujourd'hui peut être le premier.",
+      "title": "Tes 7 derniers jours"
+    },
+    "weight": {
+      "link": "Enregistrer une pesée",
+      "since": "{{delta}} sur les 7 derniers jours"
+    }
+  },
+  "describe": {
+    "title": "Décris ton repas",
+    "lead": "Écris ce que tu as mangé. L'IA détermine les aliments à partir de tes mots, tout comme elle le fait à partir d'une photo. Tu vérifies chaque entrée avant tout enregistrement.",
+    "label": "Qu'as-tu mangé ?",
+    "placeholder": "2 œufs au plat, une tranche de pain grillé beurrée, un café noir",
+    "send": "Envoyer",
+    "sendHint": "Entrée pour envoyer. Maj et Entrée pour aller à la ligne.",
+    "dictateHint": "Touche l'icône du micro sur ton clavier pour dicter ton repas.",
+    "needsProvider": "Décrire un repas nécessite une connexion à une IA sur cet appareil.",
+    "connect": "Connecter un fournisseur",
+    "searchInstead": "Rechercher plutôt dans la base de données alimentaire"
+  },
+  "diary": {
+    "actions": {
+      "photograph": "Photographier le repas",
+      "undo": "Annuler"
+    },
+    "budget": {
+      "calories": "Calories",
+      "grams": "{{value}} g",
+      "gramsLeft": "jusqu'à {{value}} g en plus",
+      "gramsOver": "{{value}} g en trop",
+      "left": "jusqu'à {{value}} en plus",
+      "over": "{{value}} en trop",
+      "progress": "{{consumed}} sur {{target}}",
+      "progressGrams": "{{consumed}} sur {{target}} g",
+      "srRowGrams": "{{label}} : {{consumed}} sur {{target}} g. {{status}}.",
+      "srRowNoTarget": "{{label}}: {{status}}."
+    },
+    "caveat": {
+      "estimates": "Comprend des estimations par IA",
+      "missingData": "Certains éléments ont des données manquantes"
+    },
+    "celebration": {
+      "firstLog": "Tu as enregistré ton premier aliment. Rien d'autre à configurer, continue simplement.",
+      "firstScan": "Voici ta première assiette identifiée par ton propre fournisseur d'IA.",
+      "streak7": "Sept jours consécutifs enregistrés.",
+      "targetWeight": "Tu as atteint ton poids cible."
+    },
+    "chips": {
+      "favorites": "Favoris",
+      "quickAdd": "Ajout rapide"
+    },
+    "copy": {
+      "all": "Tout ({{total}})",
+      "cancel": "Annuler",
+      "chooseEntries": "Choisir des entrées…",
+      "copySelected": "Copier la sélection ({{count}})",
+      "copying": "Copie en cours…",
+      "door": "Comme hier",
+      "doorHint": "Copier les {{count}} entrées d'hier vers aujourd'hui",
+      "meal": "{{meal}} ({{n}})",
+      "title": "Comme hier"
+    },
+    "drilldown": {
+      "netCarbsDefinition": "Glucides nets = glucides moins fibres, moins les polyols éventuels.",
+      "noTarget": "Aucune cible définie",
+      "derivedTag": "selon tes cibles",
+      "referenceTag": "référence",
+      "referenceTagDateMissing": "référence, ajoute ta date d'accouchement",
+      "referenceTagBirthDateMissing": "référence, ajoute la date de naissance",
+      "setTargets": "Définis tes propres cibles",
+      "whatYouAte": "Ce que tu as mangé"
+    },
+    "empty": {
+      "firstEver": {
+        "noData": "Aucune donnée sur cet appareil pour l'instant. Tu utilises déjà openplate ailleurs ? <backup>Importe une sauvegarde</backup> ou <sync>active la synchronisation</sync> pour récupérer les données d'un autre appareil.",
+        "noDataBackupOnly": "Aucune donnée sur cet appareil pour l'instant. Tu utilises déjà openplate ailleurs ? <backup>Importe une sauvegarde</backup> pour les transférer.",
+        "subtitle": "Pointe la caméra vers ton assiette, ou saisis ce que tu as mangé.",
+        "title": "Enregistre ton premier aliment"
+      },
+      "ordinary": {
+        "line": "Assiette vide pour l'instant."
+      },
+      "welcomeBack": {
+        "subtitle": "Une nouvelle journée commence.",
+        "title": "Bon retour"
+      }
+    },
+    "entry": {
+      "aiEstimated": "Estimé par l'IA",
+      "calories": "calories",
+      "fat": "lipides",
+      "fromDatabase": "Depuis notre base d'aliments",
+      "justAdded": "Ajouté à l'instant",
+      "netCarbsUnknown": "glucides nets inconnus",
+      "protein": "protéines"
+    },
+    "gap": {
+      "headroom": "Encore {{value}} g de marge",
+      "logged": "{{value}} g enregistrés",
+      "overBy": "Dépassé de {{value}} g",
+      "reached": "Atteint",
+      "toGo": "Encore {{value}} g nécessaires"
+    },
+    "habit": {
+      "logged": "{{date}}, enregistré",
+      "met": "{{date}}, objectif de glucides atteint",
+      "none": "{{date}}, aucun enregistrement",
+      "over": "{{date}}, objectif de glucides dépassé",
+      "overGoal": "au-dessus de l'objectif",
+      "summary": "{{logged}} des {{total}} derniers jours enregistrés",
+      "underGoal": "sous l'objectif"
+    },
+    "hero": {
+      "absolute": "g de glucides nets",
+      "calories": "calories",
+      "eyebrow": "Aujourd'hui jusqu'ici",
+      "kcalLeftOf": "restant sur {{target}}",
+      "kcalOverToday": "en trop aujourd'hui",
+      "leftOf": "g restant sur {{ceiling}}",
+      "netCarbs": "glucides nets",
+      "overToday": "g en trop aujourd'hui",
+      "srAbsolute": "{{value}} g de glucides nets aujourd'hui.",
+      "srCarbsLeft": "Il te reste aujourd'hui {{value}} g sur ton objectif de {{ceiling}} g de glucides nets.",
+      "srCarbsOver": "Tu dépasses aujourd'hui de {{value}} g ton objectif de {{ceiling}} g de glucides nets.",
+      "srKcalLeft": "Il te reste aujourd'hui {{value}} calories sur ton objectif de {{target}} calories.",
+      "srKcalOver": "{{value}} calories de plus que ton objectif de {{target}} calories aujourd'hui."
+    },
+    "impact": {
+      "againstGoal": "par rapport à ton objectif de {{value}} g",
+      "ariaLabel": "{{label}}, {{reference}}",
+      "high": "Impact glucidique élevé",
+      "kcal": {
+        "near": "Proche de ton objectif calorique",
+        "over": "Au-dessus de ton objectif calorique",
+        "sr": "{{label}}, {{eaten}} sur {{target}} kcal",
+        "within": "Dans ton objectif calorique"
+      },
+      "low": "Faible impact glucidique",
+      "moderate": "Impact glucidique modéré",
+      "protein": {
+        "met": "Objectif de protéines atteint",
+        "sr": "{{label}}, {{eaten}} sur {{floor}} g de protéines",
+        "toGo": "Encore {{value}} g de protéines"
+      }
+    },
+    "kcal": {
+      "absolute": "{{value}} calories"
+    },
+    "loading": "Chargement de ton journal…",
+    "macroRatio": {
+      "empty": "Aucun macro enregistré pour le moment",
+      "label": "Ratio de macros : {{ratio}}",
+      "segment": "{{percent}}% {{macro}}"
+    },
+    "macros": {
+      "breakdownLine": "Glucides {{carbs}} g · Fibres {{fiber}} g · Protéines {{protein}} g · Lipides {{fat}} g · {{kcal}} calories",
+      "carbs": "Glucides",
+      "fat": "Lipides",
+      "fiber": "Fibres",
+      "netCarbs": "Glucides nets",
+      "protein": "Protéines",
+      "unknown": "inconnu"
+    },
+    "meals": {
+      "breakfast": "Petit-déjeuner",
+      "dinner": "Dîner",
+      "lunch": "Déjeuner",
+      "none": "Aucun repas",
+      "snack": "Collation"
+    },
+    "nav": {
+      "alreadyToday": "Tu consultes déjà la journée d'aujourd'hui",
+      "jumpToToday": "Aller à aujourd'hui",
+      "nextDay": "Jour suivant",
+      "openCalendar": "Affichage du {{day}}. Ouvre le calendrier pour aller à un autre jour.",
+      "previousDay": "Jour précédent"
+    },
+    "netCarbsValue": "{{value}} g de glucides nets",
+    "nutrients": {
+      "carbs": "glucides",
+      "fat": "lipides",
+      "fiber": "fibres",
+      "protein": "protéines"
+    },
+    "saveMeal": {
+      "hint": {
+        "dismiss": "Pas maintenant",
+        "title": "Enregistrer ceci comme repas ?"
+      },
+      "namePlaceholder": "Nom du repas",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "toast_one": "{{name}} enregistré, {{count}} aliment.",
+      "toast_other": "{{name}} enregistré, {{count}} aliments.",
+      "trigger": "Enregistrer comme repas"
+    },
+    "suggestions": {
+      "attribution": "Données nutritionnelles issues de lowcarbcheck.org.",
+      "disclosureFiber_one": "{{count}} aliment pour combler le manque de fibres",
+      "disclosureFiber_other": "{{count}} aliments pour combler le manque de fibres",
+      "disclosureProtein_one": "{{count}} aliment pour combler le manque de protéines",
+      "disclosureProtein_other": "{{count}} aliments pour combler le manque de protéines",
+      "introFiber": "Aliments riches en fibres qui entament peu ton quota restant de glucides.",
+      "introProtein": "Aliments riches en protéines qui entament peu ton quota restant de glucides.",
+      "reason": "+{{gain}} g de {{nutrient}} · {{carbs}} g de glucides nets"
+    },
+    "title": "Journal",
+    "toast": {
+      "addedMany": "{{n}} aliments ajoutés",
+      "addedOne": "{{name}} ajouté",
+      "copiedMany": "{{n}} aliments copiés",
+      "copiedOne": "{{name}} copié",
+      "description": "{{where}}, {{when}}",
+      "onDay": "{{carbs}} de glucides nets le {{day}}.",
+      "restored": "{{name}} est de retour dans ton journal.",
+      "soFarToday": "{{carbs}} glucides nets consommés aujourd'hui.",
+      "toMeal": "Dans {{meal}}"
+    }
+  },
+  "entry": {
+    "action": {
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "logAgain": "Enregistrer à nouveau aujourd'hui",
+      "logAgainPending": "Enregistrement…"
+    },
+    "edit": {
+      "cancel": "Annuler",
+      "date": "Date",
+      "decreaseGrams": "Diminuer les grammes",
+      "fineTune": "Ajuster pour 100 g",
+      "grams": "Grammes",
+      "increaseGrams": "Augmenter les grammes",
+      "meal": "Repas (facultatif)",
+      "name": "Nom",
+      "noMeal": "Aucun repas",
+      "per100gHint": "Les macronutriments sont indiqués pour 100 g. Laisse un champ vide s'il est inconnu.",
+      "save": "Enregistrer les modifications",
+      "saving": "Enregistrement…",
+      "subtitle": "Ajuste d'abord la portion. Les macronutriments suivront.",
+      "time": "Heure",
+      "title": "Modifier l'entrée",
+      "when": "Quand"
+    },
+    "errors": {
+      "dateInFuture": "La date ne peut pas être dans le futur",
+      "gramsPositive": "Le nombre de grammes doit être supérieur à 0",
+      "invalidDate": "Saisis une date valide",
+      "invalidTime": "Saisis une heure valide",
+      "nameRequired": "Le nom est obligatoire"
+    },
+    "fact": {
+      "polyols": "Polyols",
+      "portion": "Portion"
+    },
+    "favorite": {
+      "add": "Ajouter {{name}} aux favoris",
+      "remove": "Retirer {{name}} des favoris"
+    },
+    "hero": {
+      "netCarbsPerServing": "Glucides nets · par portion",
+      "per100gBadge": "{{value}} g de glucides nets / 100 g"
+    },
+    "loading": "Chargement de l'entrée…",
+    "loggedTogether": "Enregistrés ensemble",
+    "macro": {
+      "carbs": "Glucides",
+      "fat": "Lipides",
+      "fiber": "Fibres",
+      "kcal": "Calories",
+      "polyols": "Polyols",
+      "protein": "Protéines",
+      "sugars": "Sucres"
+    },
+    "macrosUnknown": "Macros inconnus, enregistrés par le nom uniquement.",
+    "meal": {
+      "breakfast": "Petit déjeuner",
+      "dinner": "Dîner",
+      "lunch": "Déjeuner",
+      "snack": "Collation"
+    },
+    "netCarbsFormula": "Glucides nets (ci-dessus) = Glucides moins Fibres, moins les éventuels polyols.",
+    "photo": {
+      "alt": "Ton assiette pour {{name}}",
+      "caption": "Stocké uniquement sur cet appareil"
+    },
+    "portionScale": {
+      "asShown": "Tel quel",
+      "bigger": "Plus grand",
+      "double": "Double",
+      "smaller": "Plus petit"
+    },
+    "preview": {
+      "calories": "{{value}} calories",
+      "fat": "Lipides {{value}} g",
+      "netCarbsBadge": "{{value}} g de glucides nets",
+      "protein": "Protéines {{value}} g"
+    },
+    "provenance": {
+      "adapted": {
+        "badge": "Modifié par toi",
+        "note": "Tu as modifié ces chiffres, ils t'appartiennent désormais. Ils provenaient au départ de notre base de données alimentaires : la mention ci-dessous concerne ces données d'origine."
+      },
+      "ai": {
+        "badge": "Estimé par l'IA",
+        "note": "Ces macronutriments sont une estimation par l'IA à partir de ta photo d'assiette, vérifie-les si les valeurs exactes comptent."
+      },
+      "curated": {
+        "badge": "Issu de notre base de données alimentaires",
+        "note": "Données nutritionnelles issues de notre base de données alimentaires vérifiée."
+      },
+      "manual": {
+        "note": "Saisie manuelle."
+      }
+    },
+    "title": "Entrée",
+    "toast": {
+      "loggedAgain": "{{name}} consigné à nouveau.",
+      "removed": "{{name}} supprimé.",
+      "undo": "Annuler",
+      "updated": "Entrée mise à jour."
+    },
+    "report": {
+      "button": "Les chiffres semblent faux ? Signale cette entrée",
+      "queued": "Signalement mis en attente. Il partira la prochaine fois que tu seras en ligne.",
+      "failed": "Impossible de mettre le signalement en attente. Réessaie.",
+      "sending": "Mise en attente…",
+      "consent": {
+        "title": "Envoyer cette entrée aux personnes qui gèrent ce serveur",
+        "whatIsSentWithPhoto": "Tu envoies la photo de cette assiette et les chiffres de cette entrée. Rien d'autre de ton journal n'est transmis. La personne qui administre ce serveur peut ouvrir cette photo et lire ces chiffres.",
+        "whatIsSentFiguresOnly": "Cette entrée n'a pas de photo, donc aucune photo n'est envoyée. Tu envoies les chiffres de cette entrée, et rien d'autre de ton journal. La personne qui administre ce serveur peut les lire.",
+        "retentionWithPhoto": "La photo et les chiffres sont conservés pendant {{days}} jours, puis supprimés.",
+        "retentionFiguresOnly": "Les chiffres sont conservés pendant {{days}} jours, puis supprimés.",
+        "unencrypted": "Tout le reste de ce que tu synchronises est chiffré sur cet appareil avant son départ. Ce signalement ne l'est pas. C'est la seule chose que tu envoies que le serveur peut lire.",
+        "agree": "D'accord, envoyer",
+        "decline": "Non, ne pas envoyer"
+      }
+    }
+  },
+  "errors": {
+    "backToDiary": "Retour à ton journal",
+    "backToHome": "Retour à l'accueil",
+    "loadFailed": "Une erreur est survenue lors du chargement de cette page.",
+    "notFoundDetails": "La page que tu cherches n'existe pas.",
+    "notFoundTitle": "Introuvable",
+    "statusHeading": "Erreur {{status}}",
+    "title": "Erreur",
+    "tryAgain": "Réessaie",
+    "unexpectedDetails": "Une erreur inattendue est survenue.",
+    "unexpectedHeading": "Une erreur est survenue",
+    "notANumber": "Saisis un nombre valide"
+  },
+  "fasting": {
+    "active": {
+      "adjustLabel": "Heure de début",
+      "adjustSave": "Enregistrer l'heure de début",
+      "adjustStart": "Ajuster",
+      "complete": "Terminer",
+      "elapsedLabel": "écoulé",
+      "end": "Arrêter le jeûne",
+      "endBodyEarly": "Tu en es à {{elapsed}} sur {{target}}. Arrêter maintenant enregistre ces {{elapsed}} dans ton historique.",
+      "endBodyReached": "Tu en es à {{elapsed}}, au-delà de ton objectif de {{target}}. Arrêter l'enregistre dans ton historique.",
+      "endTitle": "Arrêter ce jeûne ?",
+      "eyebrow": "Jeûne",
+      "goalReached": "Objectif atteint",
+      "overtime": "{{duration}} après ton objectif de {{target}}",
+      "remaining": "encore {{duration}}",
+      "srAnnounce": "Ton jeûne a commencé.",
+      "srLabel": "Jeûne de {{elapsed}}. Objectif : {{target}}.",
+      "startedAt": "Commencé à {{time}}"
+    },
+    "care": {
+      "pregnancyNotice": "Le jeûne est déconseillé pendant la grossesse ou l'allaitement, le NHS l'indique clairement. Ton journal et tes objectifs ne changent pas.",
+      "stop": "Arrête et mange si tu as un malaise, des vertiges qui persistent, le cœur qui s'emballe, si tu te sens désorienté, si tu as des douleurs thoraciques ou si tu vomis plus d'une fois.",
+      "title": "Avant un jeûne prolongé",
+      "understood": "Compris",
+      "water": "Bois de l'eau tout au long de la journée et ajoute-y un peu de sel. Au-delà de 72 heures, l'application ne peut plus te guider.",
+      "who": "Le jeûne est déconseillé pendant la grossesse ou l'allaitement, en cas de trouble alimentaire actuel ou passé, de diabète de type 1, de prise de médicaments pour la glycémie, ou avant 18 ans."
+    },
+    "chip": {
+      "activeLabel": "Jeûne en cours depuis {{duration}}, ouvrir le minuteur",
+      "scheduledLabel": "Le jeûne commence dans {{duration}}, ouvrir le minuteur",
+      "startsIn": "dans {{duration}}"
+    },
+    "duration": {
+      "hoursMinutes": "{{hours}} h {{minutes}} min",
+      "hoursOnly": "{{hours}} h",
+      "minutesOnly": "{{minutes}} min"
+    },
+    "end": {
+      "confirm": "Enregistrer le jeûne",
+      "mood": {
+        "good": "Bien",
+        "ok": "Correct",
+        "rough": "Difficile"
+      },
+      "moodLabel": "Comment cela s'est passé ?",
+      "note": "Une remarque à noter ?",
+      "title": "Terminer ce jeûne"
+    },
+    "errors": {
+      "alreadyRunning": "Un jeûne est déjà en cours.",
+      "customHours": "Saisis un nombre entier d'heures compris entre {{min}} et {{max}}.",
+      "noteTooLong": "Limite la note à moins de {{max}} caractères.",
+      "startInFuture": "Choisis une heure déjà passée.",
+      "startTooFarAhead": "Choisis une heure dans les sept prochains jours.",
+      "startTooFarBack": "Choisis une heure dans les deux derniers jours.",
+      "startUnreadable": "Choisis une date et une heure."
+    },
+    "history": {
+      "achieved": "{{achieved}} sur {{target}}",
+      "deleteBody": "Il disparaît de ton historique. Rien d'autre ne change.",
+      "deleteLabel": "Supprimer le jeûne du {{when}}",
+      "deleteTitle": "Supprimer ce jeûne ?",
+      "empty": "Aucun jeûne pour l'instant. Ton premier s'affichera ici.",
+      "stillOpen": "Encore en cours",
+      "stillOpenHint": "Commencé le {{when}}, jamais terminé.",
+      "title": "Tes jeûnes"
+    },
+    "loading": "Chargement de ton jeûne…",
+    "plan": {
+      "custom": "Personnalisé",
+      "customHint": "Entre {{min}} et {{max}} heures.",
+      "customLabel": "Heures de jeûne",
+      "customPlaceholder": "ex. 24",
+      "description": "Le premier nombre correspond aux heures de jeûne, le second aux heures d'alimentation.",
+      "eyebrow": "Prévoir un jeûne",
+      "honesty": "openplate compte simplement les heures. Il ne donne aucun conseil médical.",
+      "plannedStartLabel": "Heure de début",
+      "protocol": {
+        "16:8": "16:8",
+        "18:6": "18:6",
+        "20:4": "20:4",
+        "24h": "24 h",
+        "36h": "36 h",
+        "48h": "48 h",
+        "72h": "72 h"
+      },
+      "protocolAria": "{{fastingHours}} heures de jeûne, {{eatingHours}} heures pour manger",
+      "protocolGroup": "Fenêtre de jeûne",
+      "saving": "Enregistrement…",
+      "startAtRoutine": "Commencer à {{time}}",
+      "startLater": "Commencer plus tard",
+      "startModeLabel": "Quand commencer",
+      "startNow": "Commencer maintenant",
+      "submitBackdated": "Commencer à partir de cette heure",
+      "submitNow": "Commencer le jeûne",
+      "submitScheduled": "Planifier",
+      "title": "Choisir une fenêtre"
+    },
+    "scheduled": {
+      "adjust": "Modifier l'heure de début",
+      "adjustSave": "Enregistrer l'heure de début",
+      "cancel": "Annuler ce plan",
+      "cancelBody": "Rien n'a encore commencé, rien n'ira donc dans ton historique.",
+      "cancelTitle": "Annuler ce plan ?",
+      "detail": "{{protocol}} · {{when}}",
+      "eyebrow": "Jeûne planifié",
+      "srAnnounce": "Ton jeûne est planifié pour {{when}}.",
+      "startsIn": "Commence dans {{duration}}",
+      "startsNow": "Commence maintenant"
+    },
+    "stages": {
+      "early": {
+        "name": "Début du jeûne",
+        "sentence": "L'insuline baisse et ton corps commence à puiser dans le sucre stocké par le foie."
+      },
+      "entered": "Entré dans {{name}} à {{time}}",
+      "extended": {
+        "name": "Jeûne prolongé",
+        "sentence": "Au-delà de la pratique courante. L'application ne prend pas en charge les jeûnes de plus de 72 heures."
+      },
+      "fed": {
+        "name": "Digestion",
+        "sentence": "Ton organisme digère encore ton dernier repas."
+      },
+      "fromHours": "dès {{hours}} h",
+      "hedge": "Ce sont des moyennes, pas tes mesures personnelles. En mangeant pauvre en glucides, tu franchis les premières étapes plus vite.",
+      "ketosis": {
+        "name": "Cétose",
+        "sentence": "Beaucoup atteignent ici une cétose mesurable, et le cerveau utilise davantage les cétones. Des études animales suggèrent que le nettoyage cellulaire augmente aussi, mais les preuves chez l'humain restent limitées."
+      },
+      "listTitle": "Ce qui se passe et quand",
+      "low-stores": {
+        "name": "Réserves du foie faibles",
+        "sentence": "Le glycogène hépatique est en grande partie épuisé chez la plupart des personnes, et la combustion des graisses s'accélère."
+      },
+      "next": "Étape suivante : {{name}} dès {{hours}} h",
+      "rising-ketones": {
+        "name": "Montée des cétones",
+        "sentence": "Les corps cétoniques sanguins commencent en général à grimper ici, plus vite si tu manges déjà pauvre en glucides."
+      }
+    },
+    "stats": {
+      "completed": "Jeûnes terminés",
+      "longest": "Le plus long",
+      "streak": "Série de jours",
+      "week": "Heures cette semaine"
+    },
+    "strip": {
+      "activeLine": "{{elapsed}} écoulés · reste {{remaining}}",
+      "fasting": "En jeûne",
+      "overtimeLine": "{{elapsed}} écoulés · {{overtime}} après l'objectif",
+      "scheduled": "Jeûne planifié",
+      "scheduledLine": "Commence dans {{duration}}"
+    },
+    "summary": {
+      "line": "Tu as jeûné pendant {{achieved}}.",
+      "metTarget": "Ton objectif de {{target}} est atteint.",
+      "scheduleNext": "Planifier le suivant pour {{time}}",
+      "targetWas": "Ton objectif était de {{target}}."
+    },
+    "title": "En jeûne",
+    "toast": {
+      "deleted": "Jeûne supprimé.",
+      "ended": "Jeûne enregistré, {{achieved}}.",
+      "planCancelled": "Programme annulé.",
+      "scheduled": "Jeûne planifié.",
+      "startAdjusted": "Heure de début mise à jour.",
+      "started": "Jeûne commencé."
+    }
+  },
+  "goals": {
+    "carbs": {
+      "custom": "Personnalisé",
+      "hint": "Ce calcul prend en compte les glucides nets : fibres et polyols déjà déduits, soit la valeur suivie dans ton journal. Choisis un point de départ ci-dessous, ou saisis ta propre valeur en grammes.",
+      "label": "Limite quotidienne de glucides",
+      "placeholder": "ex. 20"
+    },
+    "card": {
+      "description": "Chaque objectif ci-dessous est facultatif. Définis ce qui t'aide et laisse le reste vide. Vider un champ supprime l'objectif correspondant ; rien ici n'est une règle absolue, ce sont juste des repères.",
+      "title": "Tes objectifs"
+    },
+    "errors": {
+      "positiveOrBlank": "Saisis un nombre supérieur à 0, ou vide le champ pour supprimer l'objectif"
+    },
+    "kcal": {
+      "approximateNote": "Nous afficherons ta progression sous forme d'estimation, car les calories des aliments sont souvent approximatives plutôt qu'exactes.",
+      "hint": "Les calories mesurent l'énergie contenue dans les aliments, un peu comme une jauge de carburant. Il n'y a pas de valeur idéale unique, tout dépend de toi. Si tu hésites, beaucoup de gens débutent entre 1 600 et 2 200 par jour, mais un médecin ou un diététicien saura t'indiquer un chiffre réellement adapté.",
+      "label": "Objectif quotidien de calories",
+      "placeholder": "ex. 2000",
+      "suggested": "Utiliser {{kcal}} kcal par jour (activité légère)",
+      "suggestionUnavailable": "Indique ta taille, ton année de naissance et ton sexe ci-dessous, ainsi qu'une pesée, pour obtenir une suggestion de départ."
+    },
+    "protein": {
+      "basis": {
+        "height": "ta taille et ton sexe",
+        "weight": "ta dernière pesée"
+      },
+      "hint": "Les protéines favorisent la satiété et préservent la masse musculaire, ce qui compte d'autant plus si tu réduis tes glucides ou tes calories. Il s'agit d'une cible à viser, en grammes. Rester en dessous n'est pas un échec.",
+      "label": "Objectif quotidien de protéines",
+      "method": "Il s'agit d'une estimation calculée à partir de {{basis}}. Saisis ta propre valeur si tu en as une.",
+      "placeholder": "ex. 100",
+      "recommended": "Utiliser cette estimation ({{grams}} g)",
+      "suggestionUnavailable": "Indique ta taille et ton sexe ci-dessous, ou enregistre un poids, pour obtenir une suggestion."
+    },
+    "save": "Enregistrer les objectifs",
+    "saving": "Enregistrement…",
+    "targetWeight": {
+      "hint": "Ne définis ceci que si tu vises un chiffre précis.",
+      "label": "Poids cible ({{unit}})",
+      "placeholderKg": "ex. 70",
+      "placeholderLb": "par ex. 154"
+    },
+    "toast": {
+      "saved": "Objectifs enregistrés.",
+      "weightLogged": "Poids enregistré.",
+      "weightRemoved": "Pesée supprimée."
+    },
+    "weight": {
+      "description": "Enregistre le poids du jour. Une seule pesée par jour, une nouvelle saisie remplace celle d'aujourd'hui.",
+      "errors": {
+        "notANumber": "Saisis un nombre valide",
+        "outOfRange": "Saisis un poids compris entre {{min}} et {{max}} kg",
+        "required": "Saisis ton poids"
+      },
+      "log": "Enregistrer le poids",
+      "loggedToday": "Enregistré aujourd'hui : {{weight}} {{unit}}.",
+      "placeholderKg": "par ex. 72,5",
+      "placeholderLb": "par ex. 160",
+      "recentHeading": "Pesées récentes",
+      "title": "Poids",
+      "todayLabel": "Poids du jour ({{unit}})",
+      "unitToggleLabel": "Unité de poids",
+      "update": "Mettre à jour"
+    }
+  },
+  "install": {
+    "action": "Installer {{appName}}",
+    "description": "Ajoute {{appName}} à ton écran d'accueil pour obtenir une application plein écran qui s'ouvre instantanément et reste utilisable hors ligne.",
+    "iosInstructions": "Touche le bouton <share>Partager</share> dans Safari, puis choisis <addToHome>Sur l'écran d'accueil</addToHome>.",
+    "phoneNote": "Tu peux installer {{appName}} sur un téléphone, où elle s'ouvre comme n'importe quelle application plutôt que dans un onglet de navigateur.",
+    "title": "Installer {{appName}}"
+  },
+  "join": {
+    "description": "Définis un mot de passe et ton journal est prêt.",
+    "foreignServer": {
+      "body": "Le lien pointe vers {{origin}}. Ouvre-le plutôt à cette adresse.",
+      "bodyUnknown": "Le lien pointe vers un emplacement inconnu de cette application. Ouvre-le dans l'application à laquelle tu as reçu une invitation.",
+      "title": "Ce lien concerne un autre openplate"
+    },
+    "invalidLink": {
+      "body": "Il ne contient aucune invitation. Demande à la personne qui t'a invité de renvoyer le lien.",
+      "title": "Ce lien est incomplet"
+    },
+    "managed": {
+      "connecting": "Configuration de ta connexion d'IA."
+    },
+    "title": "Tu as reçu une invitation",
+    "invitedAs": "Tu as reçu une invitation sous l'adresse {{email}}.",
+    "inviteInvalid": {
+      "title": "Cette invitation n'est plus valide",
+      "body": "Elle a peut-être déjà servi, ou elle a expiré. Demande une nouvelle invitation à la personne qui t'a invité.",
+      "continue": "Continuer sans compte"
+    },
+    "unreachable": {
+      "title": "Impossible de joindre le serveur",
+      "retry": "Ton invitation est sans doute encore bonne. Réessaie avec ce lien dans un instant."
+    },
+    "signedInElsewhere": {
+      "title": "Tu es connecté sous un autre compte",
+      "body": "Cet appareil est connecté en tant que {{signedInAs}}, alors que l'invitation s'adresse à {{invitedEmail}}. Déconnecte-toi d'abord pour l'utiliser.",
+      "signOut": "Se déconnecter"
+    },
+    "alreadyRegistered": {
+      "title": "Un compte existe déjà avec cette adresse",
+      "body": "Un compte existe déjà pour {{email}}. Connecte-toi avec le mot de passe que tu as choisi.",
+      "signIn": "Aller à la connexion"
+    },
+    "working": "Configuration de ton compte"
+  },
+  "landing": {
+    "close": {
+      "body": "Rien à créer, rien à configurer. Enregistre un aliment et openplate a tout ce qu'il lui faut.",
+      "bodyManaged": "Rien à configurer. Connecte-toi, enregistre un aliment et openplate a tout ce qu'il lui faut.",
+      "eyebrow": "Commencer maintenant",
+      "star": "Ou ajoute une étoile sur GitHub, licence MIT",
+      "title": "Commencer par le premier repas du jour"
+    },
+    "cta": {
+      "howItWorks": "Voir le fonctionnement",
+      "readSource": "Ou lire le code source, licence MIT",
+      "readSourcePlain": "Lire le code source, licence MIT",
+      "tryIt": "Essaie maintenant, c'est entièrement gratuit",
+      "tryItFree": "Essaie, c'est gratuit et sans compte",
+      "tryItFreeManaged": "Se connecter"
+    },
+    "features": {
+      "byok": {
+        "body": "Connecte toi-même un fournisseur d'IA : OpenRouter, Mistral, Anthropic ou tout point d'accès compatible OpenAI. La clé reste sur cet appareil et la photo part directement de ton navigateur vers leurs serveurs. La facturation se fait directement chez eux, pas chez nous.",
+        "title": "Les photos se transforment en macronutriments avec ta propre clé"
+      },
+      "eyebrow": "Ce que tu obtiens",
+      "install": {
+        "body": "Ajoute openplate à ton écran d'accueil et l'application s'ouvrira comme les autres, en plein écran et sans l'interface du navigateur. Elle s'ouvre même sans connexion.",
+        "title": "Elle s'installe sur ton téléphone"
+      },
+      "local": {
+        "body": "Chaque aliment enregistré est stocké directement dans la mémoire de ce navigateur. Le serveur n'en garde aucune copie : il n'a aucune base de données, donc aucune de tes données ne peut y fuiter. Exporte l'ensemble sous forme de fichier quand tu le souhaites.",
+        "bodyManaged": "Chaque aliment que tu enregistres est écrit dans le stockage propre de ce navigateur. Le serveur conserve une copie chiffrée dans une base de données et ne peut pas la lire, car la clé ne voyage jamais avec le journal. Exporte l'ensemble sous la forme d'un fichier quand tu veux.",
+        "title": "Le journal réside sur cet appareil",
+        "titleManaged": "Le journal réside sur cet appareil, et la copie du serveur est verrouillée"
+      },
+      "noTracking": {
+        "body": "Il n'y a aucun outil de mesure d'audience, aucune publicité et aucun pixel de suivi dans openplate. Rien de ce que tu fais dans l'application n'est comptabilisé, et aucune information n'est envoyée nulle part.",
+        "title": "Sans pub, sans suivi",
+        "titleAnalytics": "Sans pub, et sans suivi de ton journal",
+        "bodyAnalytics": "openplate ne contient aucune publicité. Cette instance comptabilise les visites et l'utilisation des fonctionnalités avec son propre Matomo sans cookie, jamais ce que tu manges, pèses ou enregistres ; ton journal reste sur cet appareil. Héberge openplate toi-même et absolument rien n'est comptabilisé.",
+        "bodyAnalyticsManaged": "openplate ne contient aucune publicité. Cette instance comptabilise les visites et l'utilisation des fonctionnalités avec son propre Matomo sans cookie, jamais ce que tu manges, pèses ou enregistres ; ton journal est chiffré sur cet appareil avant qu'une copie n'atteigne le serveur. Héberge openplate toi-même et absolument rien n'est comptabilisé.",
+        "bodyPageviews": "openplate ne contient aucune publicité. Cette instance comptabilise les visites de pages avec son propre Matomo sans cookie. Elle n'enregistre pas les fonctionnalités que tu utilises. Elle ne sait jamais ce que tu manges, pèses ou enregistres. Ton journal reste sur cet appareil. Héberge openplate toi-même, et absolument rien n'est comptabilisé.",
+        "bodyPageviewsManaged": "openplate ne contient aucune publicité. Cette instance comptabilise les visites de pages avec son propre Matomo sans cookie. Elle n'enregistre pas les fonctionnalités que tu utilises. Elle ne sait jamais ce que tu manges, pèses ou enregistres. Ton journal est chiffré sur cet appareil avant qu'une copie n'atteigne le serveur. Héberge openplate toi-même, et absolument rien n'est comptabilisé.",
+        "bodyResearch": "openplate ne contient aucune publicité. Cette instance exécute son propre Matomo sans cookie au niveau recherche. En plus des visites et de l'utilisation des fonctionnalités, elle comptabilise la survenue d'un jeûne, d'une saisie de poids, d'un partage clinique ou d'une contribution à une étude. Elle ne sait jamais ce que tu manges, pèses ou enregistres. Ton journal reste sur cet appareil. Héberge openplate toi-même, et absolument rien n'est comptabilisé.",
+        "bodyResearchManaged": "openplate ne contient aucune publicité. Cette instance exécute son propre Matomo sans cookie au niveau recherche. En plus des visites et de l'utilisation des fonctionnalités, elle comptabilise la survenue d'un jeûne, d'une saisie de poids, d'un partage clinique ou d'une contribution à une étude. Elle ne sait jamais ce que tu manges, pèses ou enregistres. Ton journal est chiffré sur cet appareil avant qu'une copie n'atteigne le serveur. Héberge openplate toi-même, et absolument rien n'est comptabilisé."
+      },
+      "selfHost": {
+        "body": "Un seul conteneur sans état, aucune base de données à faire tourner et aucun secret à configurer. Le fichier compose se trouve dans le dépôt, et le tout se résume à un téléchargement et une seule commande.",
+        "title": "Auto-héberge-le dans un seul conteneur"
+      },
+      "source": {
+        "body": "Lis chaque ligne avant de lui confier une journée de tes repas. Forke-le, modifie-le, distribue-le dans l'une de tes créations. La licence n'exige que la mention de droit d'auteur, et rien d'autre.",
+        "title": "Open source, sous licence MIT"
+      },
+      "subtitle": "Aucun de ces points n'est une promesse de feuille de route. Chacun d'eux est dans le dépôt dès aujourd'hui.",
+      "title": "Six affirmations que tu peux vérifier dans le code source",
+      "byokManaged": {
+        "title": "Les photos deviennent des macros, sans clé nécessaire",
+        "body": "L'analyse par IA est incluse avec ton compte. Tu n'as pas besoin de configurer de clés ni de payer un fournisseur. Ta photo est envoyée au serveur de cette instance, qui la transmet au service d'IA. Le serveur n'en conserve aucune copie."
+      }
+    },
+    "goals": {
+      "body": "Choisis un plafond quotidien de glucides nets, un plancher de protéines, une cible calorique, ou rien du tout. openplate n'invente jamais une cible que tu n'as pas fixée.",
+      "points": {
+        "grid": "La vue de progression conserve un historique de 13 semaines des jours où tu as atteint tes objectifs, jours creux compris.",
+        "ring": "Un anneau sur ton journal indique ce qu'il reste pour aujourd'hui.",
+        "tone": "Dépasser un objectif s'affiche sous la forme d'un nombre orange. Ce n'est jamais un blâme contre toi.",
+        "weight": "Pèse-toi quand tu le souhaites ; le graphique atténue le bruit d'un jour sur l'autre."
+      },
+      "shotAlt": "L'écran des objectifs sur un téléphone : une limite quotidienne de glucides avec des préréglages keto, pauvre en glucides et modéré, accompagnée sous celle-ci de cibles facultatives pour les protéines et les calories.",
+      "title": "Fixe une cible, puis regarde l'historique se construire"
+    },
+    "hero": {
+      "shotAlt": "Le journal openplate sur un ordinateur portable : un anneau de progression pour la journée, avec le petit-déjeuner, le déjeuner et le dîner listés en dessous, et les glucides, protéines, lipides et calories de chaque repas à côté.",
+      "shotCaption": "Un exemple de journée, pas tes données.",
+      "tagline": "openplate est un journal alimentaire axé d'abord sur les glucides qui réside sur ton appareil : prends une photo d'assiette ou recherche ce que tu as mangé, et observe où en est ta journée.",
+      "taglineManaged": "openplate est un journal alimentaire axé sur les glucides qui conserve une copie chiffrée de bout en bout sur le serveur de l'opérateur : prends une photo d'assiette ou recherche ce que tu as mangé, et regarde où en est ta journée.",
+      "ticks": "Sans compte · S'installe comme une application · Fonctionne hors ligne · L'analyse des photos utilise ta propre clé d'IA",
+      "ticksManaged": "Sur invitation uniquement · S'installe comme une application · Fonctionne hors ligne · Estimations par photo incluses"
+    },
+    "how": {
+      "eyebrow": "Chaque jour",
+      "scan": {
+        "body": "Ton propre fournisseur d'IA lit la photo et évalue son contenu. Tu vérifies les chiffres avant le moindre enregistrement.",
+        "shotAlt": "L'écran d'analyse sur un téléphone, proposant une connexion en un clic à OpenRouter.",
+        "title": "Prends une photo d'assiette",
+        "bodyManaged": "L'estimation par photo est incluse avec ton compte. Tu vérifies les chiffres avant le moindre enregistrement."
+      },
+      "search": {
+        "body": "Saisis ce que tu as mangé. Les aliments proviennent de la base vérifiée lowcarbcheck.org, et tout ce que tu saisis souvent devient un bouton accessible en un clic.",
+        "shotAlt": "L'écran d'ajout d'aliment sur un téléphone, affichant les aliments récents avec leurs glucides nets.",
+        "title": "Ou fais simplement une recherche"
+      },
+      "see": {
+        "body": "Ton journal met en avant ce qu'il reste pour la journée, pas une montagne de chiffres. Chaque valeur estimée est signalée comme telle.",
+        "shotAlt": "Le journal sur un téléphone : l'anneau de la journée, puis les repas enregistrés en dessous.",
+        "title": "Regarde où en est la journée"
+      },
+      "subtitle": "Voici à quoi ressemble l'utilisation d'openplate au quotidien : les mêmes quelques gestes, chaque jour.",
+      "title": "Enregistre un repas en quelques secondes"
+    },
+    "newsletter": {
+      "awaitingChallenge": "En attente de la vérification anti-robot…",
+      "body": "Un court e-mail quand une version en vaut la peine. Rien d'autre, et tu peux te désinscrire de chacun d'entre eux.",
+      "consent": "Oui, envoyez-moi l'actualité d'openplate. Je peux me désinscrire à tout moment.",
+      "emailLabel": "Adresse e-mail",
+      "emailPlaceholder": "toi@example.com",
+      "pending": "Inscription en cours…",
+      "privacy": "L'utilisation de ton adresse est expliquée dans la <privacy>politique de confidentialité</privacy>.",
+      "status": {
+        "alreadySubscribed": "Tu es déjà sur la liste. Rien de plus à faire.",
+        "challengeUnavailable": "La vérification anti-robot n'a pas pu se charger, l'inscription est donc indisponible pour le moment.",
+        "checkInbox": "Un e-mail de confirmation t'attend déjà. Ouvre le lien qu'il contient pour terminer.",
+        "invalidEmail": "Cette adresse n'a pas été acceptée. Vérifie-la et réessaie.",
+        "invalidToken": "La vérification a expiré. Essaie encore une fois.",
+        "noConsent": "Coche la case ci-dessus pour que nous puissions l'envoyer.",
+        "subscribed": "Presque fini. Ouvre le lien dans l'e-mail que nous venons d'envoyer, et tu seras sur la liste.",
+        "tooManyAttempts": "Cela fait beaucoup de tentatives en peu de temps. Attends une minute, puis réessaie.",
+        "unavailable": "L'inscription ne répond pas pour le moment. Réessaie plus tard."
+      },
+      "submit": "M'inscrire",
+      "title": "Recevoir les nouveautés"
+    },
+    "setup": {
+      "cta": "Commencer par la première étape",
+      "ctaManaged": "Se connecter pour commencer",
+      "eyebrow": "Configuration unique",
+      "shotAlt": "L'écran de vue d'ensemble sur un téléphone, avec l'anneau du jour, les sept derniers jours et la dernière pesée.",
+      "steps": {
+        "connect": {
+          "body": "Un clic suffit pour connecter OpenRouter : tu valides sur leur site, la clé revient sur cet appareil et n'en bouge plus. Tout point de terminaison compatible avec OpenAI fonctionne aussi. L'analyse d'une assiette coûte généralement bien moins d'un centime par photo, et ton fournisseur te facture directement. Tu peux ignorer cette étape et la recherche marchera quand même : la clé ne sert qu'à lire les photos.",
+          "title": "Connecter un fournisseur, ou ignorer"
+        },
+        "connectManaged": {
+          "body": "L'IA est fournie avec cette instance, tu n'as donc aucune clé à apporter ni aucun fournisseur à payer. Ton administrateur fixe le nombre de photos qui peuvent être lues pour toi chaque jour. La recherche d'aliments n'est jamais décomptée de ce quota, car seules les photos nécessitent une lecture.",
+          "title": "L'IA est déjà configurée pour toi"
+        },
+        "open": {
+          "body": "Le journal est créé sur cet appareil dès que tu saisis ton premier aliment.",
+          "title": "Ouvrir le suivi"
+        },
+        "scan": {
+          "body": "Ton fournisseur lit la photo et propose des aliments. Tu vérifies les chiffres, tu enregistres, et le total de la journée s'actualise.",
+          "title": "Photographier ta première assiette",
+          "bodyManaged": "L'IA de cette instance lit la photo et propose des aliments. Tu vérifies les chiffres, tu enregistres, et le total de la journée s'actualise."
+        }
+      },
+      "subtitle": "Tu ne fais cela qu'une seule fois. Trois étapes, et seule celle du milieu te demande d'intervenir.",
+      "subtitleManaged": "Tu ne fais cela qu'une seule fois. Trois étapes, et celle du milieu est déjà prête.",
+      "title": "Opérationnel en une minute environ"
+    },
+    "sync": {
+      "body": "Saisis ton déjeuner sur ton téléphone, puis consulte la semaine sur ton ordinateur. La synchronisation est facultative et chiffrée de bout en bout : le texte chiffré réside sur un serveur openplate-core (le nôtre, ou un que tu héberges toi-même), et ce serveur n'a aucune clé de déchiffrement, car la clé est générée à partir d'un mot de passe qu'il ne voit jamais.",
+      "link": "Créer un compte",
+      "photos": "Les photos d'assiette ne bougent pas d'ici. Elles ne font jamais partie d'un blob de synchronisation.",
+      "shotAlt": "L'écran de compte sur un téléphone, déconnecté, avec un lien pour se connecter.",
+      "title": "Deux appareils, un journal",
+      "bodyManaged": "Saisis ton déjeuner sur ton téléphone, puis passe en revue ta semaine sur ton ordinateur. Chaque compte fonctionne ainsi par défaut. Ton journal est chiffré sur ton appareil, et le serveur ne stocke que le texte chiffré. L'administrateur conserve aussi une clé de récupération. Cette clé te permet de restaurer ton journal après une réinitialisation de mot de passe, ce qui signifie que l'administrateur peut techniquement déchiffrer tes données.",
+      "linkManaged": "Se connecter à ton compte"
+    }
+  },
+  "launcher": {
+    "moreOptions": "D'autres manières d'ajouter des aliments",
+    "sheetTitle": "Ajouter un aliment",
+    "platePhoto": "Photo d'assiette",
+    "speak": "Parler",
+    "type": "Saisir",
+    "photo": "Photo",
+    "photoAnything": "Photographier le repas"
+  },
+  "nutrition": {
+    "title": "Alimentation et cibles",
+    "loading": "Chargement…"
+  },
+  "profile": {
+    "title": "À propos de toi",
+    "loading": "Chargement…"
+  },
+  "lifePhase": {
+    "title": "Période de vie",
+    "description": "Toi seul vois cela, et ce n'est jamais utilisé pour rechercher un aliment.",
+    "loading": "Chargement…",
+    "inactive": "Inactif",
+    "summary": {
+      "pregnant": "Grossesse, semaine {{week}}",
+      "lactating_one": "Allaitement, {{count}} mois",
+      "lactating_other": "Allaitement, {{count}} mois"
+    }
+  },
+  "meals": {
+    "description": "Repas enregistrés sous forme de lot. Enregistre-en un d'un simple geste, ou supprime-le ici.",
+    "empty": "Tu n'as pas encore enregistré de repas. Fais-le depuis le journal : regroupe les aliments saisis et donne-leur un nom.",
+    "itemCount_one": "{{count}} aliment",
+    "itemCount_other": "{{count}} aliments",
+    "logNow": "Enregistrer maintenant",
+    "logging": "Enregistrement…",
+    "removeAria": "Supprimer {{name}}",
+    "removeDescription": "Cela supprime le repas enregistré. Tout ce que tu as déjà consigné reste dans ton journal.",
+    "removeTitle": "Supprimer {{name}} ?",
+    "toast": {
+      "deleted": "{{name}} supprimé.",
+      "logged_one": "{{name}} consigné, {{count}} aliment.",
+      "logged_other": "{{name}} consigné, {{count}} aliments."
+    }
+  },
+  "meta": {
+    "about": "À propos · openplate",
+    "add": "Ajouter un aliment · openplate",
+    "ai": "Paramètres de l'IA · openplate",
+    "connectClinician": "Associer un médecin · openplate",
+    "connectGateway": "Rejoindre une passerelle · openplate",
+    "catchUp": "Ton point quotidien · openplate",
+    "dashboard": "Vue d'ensemble · openplate",
+    "data": "Données et sauvegarde · openplate",
+    "describe": "Décrire un repas · openplate",
+    "diary": "Journal · openplate",
+    "entry": "Modifier l'entrée · openplate",
+    "error": "Une erreur est survenue · openplate",
+    "fasting": "Jeûne · openplate",
+    "fastingSettings": "Paramètres de jeûne · openplate",
+    "foods": "Tes aliments · openplate",
+    "imprint": "Mentions légales · openplate",
+    "join": "Rejoindre · openplate",
+    "joinStudy": "Rejoindre une étude · openplate",
+    "landing": "openplate, un suivi alimentaire qui reste sur ton appareil",
+    "landingManaged": "openplate, un suivi alimentaire que toi seul peux lire",
+    "landingDescription": "Prends une photo d'assiette ou recherche ce que tu as mangé. openplate calcule les glucides en quelques secondes et les compare à l'objectif quotidien fixé. Gratuit, sans compte, et chaque élément saisi reste sur ton appareil.",
+    "lifePhase": "Période de vie · openplate",
+    "nutrition": "Alimentation et objectifs · openplate",
+    "profile": "À propos de toi · openplate",
+    "meals": "Repas enregistrés · openplate",
+    "notFound": "Page introuvable · openplate",
+    "nutrients": "Nutriments · openplate",
+    "offline": "Tu es hors ligne · openplate",
+    "onboarding": "Bienvenue sur openplate",
+    "preferences": "Préférences · openplate",
+    "privacy": "Politique de confidentialité · openplate",
+    "recover": "Récupérer ton journal · openplate",
+    "research": "Contributions à la recherche · openplate",
+    "scan": "Scanne ton assiette · openplate",
+    "settings": "Paramètres · openplate",
+    "shared": "Partagé avec toi · openplate",
+    "sharing": "Partage · openplate",
+    "signIn": "Connexion · openplate",
+    "study": "Console d'étude · openplate",
+    "sync": "Compte · openplate",
+    "terms": "Conditions d'utilisation · openplate",
+    "trends": "Progression · openplate",
+    "welcome": "Bienvenue · openplate",
+    "forgot": "Mot de passe oublié",
+    "reset": "Définir un nouveau mot de passe",
+    "account": "Compte",
+    "admin": "Administration",
+    "landingDescriptionManaged": "Prends ta photo d'assiette ou recherche ce que tu as mangé. openplate calcule les glucides en quelques secondes et les compare à l'objectif quotidien que tu as fixé. Cette instance est accessible uniquement sur invitation, et ton journal est chiffré sur cet appareil avant qu'une copie n'arrive sur le serveur.",
+    "plan": "Ton forfait · openplate",
+    "withdrawal": "Droit de rétractation · openplate",
+    "notifications": "Notifications · openplate"
+  },
+  "nav": {
+    "add": "Ajouter",
+    "admin": "Administration",
+    "dashboard": "Vue d'ensemble",
+    "diary": "Journal",
+    "fasting": "Jeûne",
+    "goals": "Objectifs",
+    "groupYourDay": "Ta journée",
+    "nutrients": "Nutriments",
+    "scan": "Scanner",
+    "settings": "Paramètres",
+    "trends": "Progression"
+  },
+  "nutrients": {
+    "amount": {
+      "ofLimit": "sur une limite de {{amount}} {{unit}}",
+      "ofReference": "sur {{amount}} {{unit}}",
+      "perDay": "{{amount}} {{unit}} par jour"
+    },
+    "band": {
+      "14-18": "14-18",
+      "19-30": "19-30",
+      "31-50": "31-50",
+      "51-70": "51-70",
+      "over_70": "71 ans et plus"
+    },
+    "context": {
+      "betaCarotene": "Comprend {{amount}} {{unit}} de bêtacarotène, déjà comptabilisés dans la valeur de vitamine A ci-dessus."
+    },
+    "coverage": {
+      "notEnoughData": "Pas assez de données",
+      "notEnoughDataDetail": "Seuls {{share}} de ce que tu as consigné sur cette période comportent une valeur pour cet élément, il n'y a donc aucun total pertinent à afficher.",
+      "why": "Seuls les aliments de la base LowCarbCheck comportent des valeurs pour les vitamines et les minéraux. Les assiettes estimées par l'IA et les aliments saisis à la main n'en ont pas, ils comptent donc pour ce que tu as mangé mais pas pour ce qui est mesurable."
+    },
+    "hero": {
+      "addDetails": "Renseigne ton année de naissance et ton sexe biologique, et les valeurs de référence adaptées à ton profil apparaîtront ici. D'ici là, aucune hypothèse n'est faite.",
+      "covered": "{{covered}} nutriments sur {{total}} disposent d'assez de données",
+      "empty": "Assiette vide pour le moment.",
+      "eyebrow": "Ton journal",
+      "loggedDays": "Tu as consigné des repas {{logged}} jours sur les {{days}} derniers jours."
+    },
+    "limit": {
+      "badge": "Limite",
+      "over": "Au-dessus de la limite de référence. Il s'agit d'un plafond à ne pas dépasser, pas d'une cible à atteindre.",
+      "under": "En dessous de la limite de référence. Il s'agit d'un plafond à ne pas dépasser, pas d'une cible à atteindre."
+    },
+    "list": {
+      "empty": "Assiette vide pour le moment. Consigne quelques repas et cette section se remplira.",
+      "title": "Tous les nutriments"
+    },
+    "loading": "Lecture de ton journal…",
+    "name": {
+      "calcium": "Calcium",
+      "iron": "Fer",
+      "magnesium": "Magnésium",
+      "phosphorus": "Phosphore",
+      "potassium": "Potassium",
+      "sodium": "Sodium",
+      "vitaminA": "Vitamine A",
+      "vitaminB1": "Vitamine B1 (thiamine)",
+      "vitaminB12": "Vitamine B12",
+      "vitaminB2": "Vitamine B2 (riboflavine)",
+      "vitaminB6": "Vitamine B6",
+      "vitaminB9": "Folate",
+      "vitaminC": "Vitamine C",
+      "vitaminD": "Vitamine D",
+      "vitaminE": "Vitamine E",
+      "zinc": "Zinc"
+    },
+    "range": {
+      "group": "Période",
+      "month": "30 jours",
+      "twoWeeks": "14 jours",
+      "week": "7 jours"
+    },
+    "reference": {
+      "ageOutOfBands": "Les valeurs de référence publiées commencent à 14 ans, il n'y en a donc aucune à afficher pour l'année de naissance que tu as enregistrée.",
+      "footnote": "{{segment}} · {{source}}",
+      "noBodyMetricsAction": "Ajoute tes informations",
+      "notPublished": "Aucune valeur de référence publiée pour cet élément.",
+      "segmentLactation": "Allaitement",
+      "segmentPregnancy": "Grossesse",
+      "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "suggestions": {
+      "forNutrient": "Plus riche en {{nutrient}}",
+      "lead": "Ton journal en manquait le plus sur cette période. Les aliments ci-dessous en contiennent davantage pour 100 g.",
+      "per100g": "{{amount}} {{unit}} pour 100 g",
+      "source": "Données nutritionnelles issues de la base de données LowCarbCheck.",
+      "title": "Aliments à privilégier"
+    },
+    "title": "Nutriments"
+  },
+  "oauth": {
+    "callback": {
+      "alreadyConnected": "Ce fournisseur est déjà connecté sur cet appareil, il n'y a rien d'autre à faire ici.",
+      "connectedUnverified": "Enregistré, mais impossible de vérifier la clé pour l'instant. Il s'agit généralement d'un problème temporaire chez le fournisseur, pas de la connexion elle-même. Tu peux quand même essayer d'analyser une photo.",
+      "connectedVerified": "Connecté et fonctionnel, tout est prêt.",
+      "description": "Finalisation de la connexion commencée dans les paramètres d'IA ou sur l'écran d'analyse.",
+      "error": {
+        "denied": {
+          "body": "Aucun problème, rien n'a été connecté. Réessaie quand tu veux.",
+          "title": "Connexion annulée"
+        },
+        "exchangeFailed": {
+          "body": "Une erreur est survenue lors de la finalisation de la connexion avec OpenRouter. Réessaie dans un instant.",
+          "title": "Impossible de finaliser la connexion"
+        },
+        "expired": {
+          "body": "Cette tentative de connexion a pris trop de temps et a expiré. Essaie de te reconnecter.",
+          "title": "Délai dépassé"
+        },
+        "missingVerifier": {
+          "body": "Cet appareil a perdu la trace de la tentative de connexion. Cela arrive parfois si tu as changé d'application pendant la connexion. Réessaie, cela devrait fonctionner directement.",
+          "title": "Connexion perdue"
+        },
+        "stateMismatch": {
+          "body": "Cette connexion ne correspond pas à celle initiée par cet appareil. Réessaie de te connecter.",
+          "title": "Cette connexion ne correspond pas"
+        }
+      },
+      "goToScanning": "Passer à la numérisation",
+      "manualInstead": "Coller plutôt une clé manuellement",
+      "redirecting": "Redirection…",
+      "title": "Connexion à OpenRouter en cours",
+      "tryAgain": "Réessayer",
+      "working": "Finalisation de ta connexion à OpenRouter…"
+    },
+    "connect": {
+      "button": "Se connecter avec OpenRouter",
+      "continue": "Continuer vers OpenRouter",
+      "dialogTitle": "Connecter un fournisseur d'IA payant ?",
+      "leaveNote": "Tu vas quitter openplate un instant pour te connecter à OpenRouter, puis tu reviendras directement ici.",
+      "notNow": "Pas maintenant",
+      "photoNote": "Chaque photo que tu numérises ensuite est analysée par le fournisseur choisi et n'est jamais stockée par openplate.",
+      "redirecting": "Redirection…",
+      "spendingCap": "L'écran de confirmation d'OpenRouter te permet de définir un plafond de dépenses avant de continuer, ce qui vaut la peine d'être utilisé.",
+      "startFailed": "Impossible de démarrer la connexion. Vérifie ta connexion et réessaie."
+    }
+  },
+  "offline": {
+    "heading": "Aucune connexion pour le moment",
+    "body": "Ton journal, et tout ce que tu y as déjà consigné, reste sur cet appareil et fonctionne toujours hors ligne. Seule cette page ne peut pas encore être chargée : soit elle est nouvelle sur cet appareil, soit elle doit accéder à Internet (comme pour analyser une photo). Réessaie une fois connecté.",
+    "bodyManaged": "Ton journal, et tout ce que tu y as déjà consigné, reste sur cet appareil et fonctionne toujours hors ligne. Le serveur conserve une copie chiffrée qu'il ne peut pas lire, car la clé ne quitte jamais cet appareil. Seule cette page ne peut pas encore être chargée : soit elle est nouvelle sur cet appareil, soit elle doit accéder à Internet (comme pour analyser une photo). Réessaie une fois connecté.",
+    "cta": "Accéder à ton journal"
+  },
+  "onboarding": {
+    "actions": {
+      "continue": "Continuer",
+      "saving": "Enregistrement…",
+      "skip": "Ignorer pour le moment",
+      "skipping": "Ignorer…"
+    },
+    "carbPreset": {
+      "chipWithCeiling": "{{label}}, moins de {{ceiling}} g",
+      "keto": {
+        "detail": "Moins de 20 g de glucides nets par jour",
+        "label": "Keto"
+      },
+      "later": {
+        "detail": "Choisis un objectif quand tu le souhaites",
+        "label": "Décider plus tard"
+      },
+      "legend": "Combien de glucides par jour ?",
+      "lowCarb": {
+        "detail": "Moins de 50 g de glucides nets par jour",
+        "label": "Faible en glucides"
+      },
+      "moderate": {
+        "detail": "Moins de 100 g de glucides nets par jour",
+        "label": "Modéré"
+      },
+      "errors": {
+        "required": "Choisis une limite de glucides pour ce style."
+      }
+    },
+    "firstFood": {
+      "finishing": "Finalisation…",
+      "keyNote": "L'analyse des photos est facultative. Elle se connecte à un service d'IA que tu configures toi-même, comme OpenAI. Cette connexion reste aussi sur cet appareil, tout comme ton journal.",
+      "keyNoteLink": "Configure-le quand tu veux dans les Paramètres.",
+      "later": "Je le ferai plus tard",
+      "opening": "Ouverture…",
+      "managedNote": "Les estimations par photo sont incluses. Prends une photo d'assiette et les glucides sont calculés pour toi."
+    },
+    "focus": {
+      "calories": {
+        "description": "Le même nombre de calories que sur une étiquette nutritionnelle. Définis un objectif quotidien.",
+        "label": "Calories"
+      },
+      "habit": {
+        "description": "Aucun objectif à atteindre, enregistre simplement ce que tu manges, et ta série s'affiche dans Tendances.",
+        "label": "Juste l'habitude"
+      },
+      "netCarbs": {
+        "description": "Glucides totaux moins les fibres, la valeur à surveiller si tu réduis les glucides.",
+        "label": "Glucides nets"
+      },
+      "recommended": "Recommandé"
+    },
+    "kcal": {
+      "hint": "Laisse vide pour décider plus tard. Tu peux le définir dans les Paramètres à tout moment.",
+      "label": "Objectif calorique quotidien (facultatif)",
+      "placeholder": "par ex. 2000",
+      "errors": {
+        "required": "Ce style nécessite un objectif calorique quotidien."
+      },
+      "requiredLabel": "Objectif calorique quotidien"
+    },
+    "loading": "Chargement…",
+    "localFirst": "Tes données restent sur <strong>cet appareil</strong>. Nous ne les voyons jamais. Le journal que tu t'apprêtes à commencer reste local, toujours.",
+    "localFirstManaged": "Ton journal réside sur <strong>cet appareil</strong> et se synchronise avec le serveur sous forme chiffrée. L'opérateur gère l'IA, les photos envoyées pour estimation transitent donc par ce serveur. La politique de confidentialité détaille les accès possibles de l'opérateur.",
+    "step": {
+      "body": {
+        "description": "Facultatif. Ces informations permettent d'adapter les apports nutritionnels de référence et de suggérer un nombre de calories, et comme tout le reste, elles restent sur cet appareil.",
+        "title": "Un peu sur toi ?"
+      },
+      "firstFood": {
+        "description": "Tout est prêt. Tu as trois façons d'ajouter des aliments dans ton journal. Choisis-en une pour commencer.",
+        "title": "Enregistre ton premier aliment"
+      },
+      "focus": {
+        "description": "Choisis l'un, les deux, ou note simplement ce que tu manges. Tu peux modifier cela à tout moment dans les Paramètres.",
+        "title": "Que suis-tu ?"
+      },
+      "weight": {
+        "description": "Optionnel. Renseigne ton poids du jour et un objectif si tu veux. Cela alimentera tes tendances plus tard.",
+        "title": "Suivre ton poids ?"
+      },
+      "style": {
+        "description": "Choisis ton mode d'alimentation. Chaque chiffre du journal en découle."
+      }
+    },
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "style": {
+      "caution": "La grossesse et l'allaitement augmentent tes besoins en énergie et en glucides. Parle à ta sage-femme ou à ton médecin avant de limiter l'un ou l'autre. Riche en protéines ou Suivi simple te conviendront peut-être mieux. Lis <source>les conseils de la DGE</source>.",
+      "highProtein": {
+        "detail": "1,6 g de protéines par kg de poids corporel",
+        "label": "Riche en protéines"
+      },
+      "hint": "La plupart des personnes commencent ici",
+      "justTrack": {
+        "detail": "Aucun objectif, seulement les chiffres",
+        "label": "Suivi simple"
+      },
+      "lowCarb": {
+        "detail": "Garder les glucides sous une limite quotidienne",
+        "label": "Faible en glucides"
+      },
+      "lowCarbLowKcal": {
+        "detail": "Une limite de glucides et un objectif de calories",
+        "label": "Faible en glucides et calories"
+      },
+      "lowKcal": {
+        "detail": "Un seul objectif de calories par jour",
+        "label": "Calories"
+      },
+      "needsWeight": "Renseigne ton poids pour calculer cet objectif. D'ici là, ton objectif en protéines reste à la valeur de référence.",
+      "sourceLabel": "Société allemande de nutrition (DGE), s'ouvre dans un nouvel onglet",
+      "title": "Comment manges-tu ?",
+      "errors": {
+        "required": "Choisis un mode pour continuer."
+      }
+    },
+    "waysToLog": {
+      "photo": {
+        "title": "Prends-le en photo",
+        "description": "Une assiette entière, un aliment isolé ou le tableau imprimé d'un emballage. Vise avec l'appareil et openplate calcule le reste."
+      },
+      "type": {
+        "title": "Écris-le",
+        "description": "Saisis un repas entier sur une seule ligne, comme 3 œufs et 2 tranches de pain de mie. L'IA l'interprète à partir de ton texte, exactement comme avec une photo. La recherche dans la base de données reste disponible pour un aliment précis."
+      },
+      "speak": {
+        "title": "Dicte-le",
+        "description": "Dis ce que tu as mangé et vérifie les éléments avant qu'ils ne soient enregistrés. Pratique quand tu as les mains prises."
+      },
+      "speechPrivacyNote": "openplate n'a pas de microphone propre. Appuie sur la touche micro de ton clavier, qui convertit ta voix en texte avec Google ou Apple. Seul le texte arrive à openplate et à ton fournisseur d'IA."
+    },
+    "weight": {
+      "current": "Poids actuel",
+      "errors": {
+        "notANumber": "Saisis un nombre comme 72.5 ou 72,5"
+      },
+      "fieldLabel": "{{label}} ({{unit}})",
+      "hint": "Pas d'obligation, laisse ces champs vides et remplis-les quand tu veux.",
+      "placeholder": "par ex. {{value}}",
+      "target": "Poids visé",
+      "unitToggleLabel": "Unité de poids",
+      "units": "Unités"
+    }
+  },
+  "preferences": {
+    "cardDescription": "Thème et langue, conservés sur cet appareil.",
+    "language": {
+      "description": "La langue employée par openplate sur cet appareil.",
+      "reloadNote": "Changer de langue recharge la page pour que tout bascule d'un coup.",
+      "title": "Langue d'affichage"
+    },
+    "open": "Ouvrir les préférences",
+    "theme": {
+      "dark": "Sombre",
+      "description": "Clair, sombre, ou selon le réglage actuel de ton appareil.",
+      "light": "Clair",
+      "system": "Système",
+      "title": "Thème"
+    },
+    "title": "Préférences"
+  },
+  "portions": {
+    "unit": {
+      "apple_one": "{{count}} pomme",
+      "apple_other": "{{count}} pommes",
+      "banana_one": "{{count}} banane",
+      "banana_other": "{{count}} bananes",
+      "cup_one": "{{count}} tasse",
+      "cup_other": "{{count}} tasses",
+      "egg_one": "{{count}} œuf",
+      "egg_other": "{{count}} œufs",
+      "serving_one": "{{count}} portion",
+      "serving_other": "{{count}} portions",
+      "slice_one": "{{count}} tranche de pain",
+      "slice_other": "{{count}} tranches de pain",
+      "tablespoon_one": "{{count}} cuillère à soupe",
+      "tablespoon_other": "{{count}} cuillères à soupe"
+    }
+  },
+  "pulse": {
+    "fasting": {
+      "others_one": "{{count}} autre personne jeûne en ce moment",
+      "others_other": "{{count}} autres personnes jeûnent en ce moment"
+    },
+    "tile": {
+      "kcal": "Calories suivies",
+      "meals": "Repas enregistrés",
+      "photos": "Photos analysées",
+      "protein": "Protéines suivies",
+      "title": "Aujourd'hui, tout le monde ici"
+    }
+  },
+  "recover": {
+    "firstDataAt": "Cet appareil a stocké des données pour la première fois le {{date}}.",
+    "lead": "Cet appareil a déjà stocké des données openplate, mais la copie présente dans ce navigateur est vide actuellement. openplate garde tout sur ton appareil et n'envoie rien à un serveur, il n'existe donc aucune autre copie à récupérer.",
+    "leadManaged": "Cet appareil a déjà stocké des données openplate, mais la copie présente dans ce navigateur est vide actuellement. Ton journal est aussi conservé sur le serveur de cette instance, chiffré de sorte que toi seul puisses l'ouvrir. Reconnecte-toi et cet appareil le récupère.",
+    "noBackupBody": "Alors il ne reste rien à récupérer, et nous en sommes désolés, c'est la stricte vérité. Tu peux démarrer un nouveau journal à partir d'ici, et si une sauvegarde réapparaît plus tard, tu pourras toujours la restaurer par-dessus.",
+    "noBackupHeading": "Si tu n'as pas de sauvegarde",
+    "restoreBody": "Si tu as téléchargé une sauvegarde openplate (un fichier .json), ouvre-la ici. Tout son contenu est réimporté sur cet appareil.",
+    "restoreButton": "Choisir un fichier de sauvegarde",
+    "restoreError": "Ce fichier n'a pas pu être lu comme une sauvegarde openplate. Vérifie que tu as sélectionné le bon fichier, puis réessaie.",
+    "restoreHeading": "Restaurer à partir d'un fichier de sauvegarde",
+    "restoring": "Restauration…",
+    "startFresh": "Démarrer un nouveau journal",
+    "title": "Impossible de trouver ton journal sur cet appareil"
+  },
+  "research": {
+    "title": "Contributions à la recherche",
+    "intro": "Les études auxquelles tu participes, les données transmises à chacune et la marche à suivre pour te retirer.",
+    "unavailable": "Ce serveur de synchronisation ne dispose d'aucun canal de recherche. Rien ne peut y être envoyé ni retiré.",
+    "needsSession": "Les contributions à la recherche nécessitent le mot de passe de ton compte. Connecte-toi d'abord sur cet appareil.",
+    "needsSessionCta": "Aller au compte",
+    "loadFailed": "Tes études n'ont pas pu être chargées.",
+    "caveats": {
+      "pseudonymised": "Ce qu'une étude reçoit est pseudonymisé, jamais ton nom, elle a accès à un pseudonyme stable pour toi et à tes totaux quotidiens.",
+      "auxiliaryJoin": "Un pseudonyme stable ne signifie pas être anonyme. Quiconque dispose d'un autre jeu de données sur les mêmes personnes peut parvenir à te réidentifier en le croisant avec celui-ci.",
+      "unknownMacro": "Un macronutriment inconnu pour une entrée n'ajoute rien au total du jour, donc un total bas peut signifier inconnu plutôt que peu consommé. L'étude est invitée à lire le nombre d'entrées à côté de chaque total."
+    },
+    "enrolments": {
+      "title": "Études auxquelles tu participes",
+      "empty": "Tu ne participes à aucune étude. Pour en rejoindre une, saisis l'empreinte figurant dans ses documents de consentement.",
+      "unnamed": "Étude {{studyAccountId}}",
+      "tier": "Reçoit : {{tier}}",
+      "window": "Des jours civils complets dans la période que tu transmets, une ligne par jour, et jamais d'heure, de nom d'aliment ou de photo.",
+      "sentWindow": "Envoyé du {{from}} au {{to}}, jours civils complets, une ligne par jour, et jamais d'heure, de nom d'aliment ou de photo.",
+      "fields": "Chaque jour contient l'énergie, les protéines, les glucides, les lipides, les fibres, et le nombre d'entrées de la journée.",
+      "joined": "Inscrit le {{at}}",
+      "lastSent": "Dernier envoi le {{at}} · version {{version}}",
+      "neverSent": "Rien n'a encore été envoyé à cette étude.",
+      "pseudonymLabel": "Ton pseudonyme pour cette étude",
+      "pseudonymHint": "Voici ce que l'étude voit de toi. Transmets-le si tu demandes à un chercheur de confirmer la prise en compte de ton retrait.",
+      "pseudonymUnknown": "Cet appareil ne peut pas déterminer ton pseudonyme : sa clé de recherche est manquante."
+    },
+    "withdrawal": {
+      "open": "Se retirer",
+      "confirmTitle": "Se retirer de {{name}} ?",
+      "instructedToDelete": "L'étude reçoit l'instruction de supprimer ta contribution, et les outils d'étude d'openplate l'écartent à chaque récupération.",
+      "alreadyDownloaded": "Une copie que l'étude a déjà téléchargée ne peut pas être récupérée. Respecter cette instruction est une obligation énoncée par le système, qu'il ne peut pas imposer.",
+      "noNewData": "Aucune nouvelle donnée ne sera envoyée à cette étude.",
+      "samePseudonymOnRejoin": "Quitter l'étude ne te donne pas une nouvelle identité. Si tu la rejoins à nouveau, tu présenteras le même pseudonyme, donc quiconque a conservé une ancienne copie pourrait lier les deux.",
+      "rejoinNeedsCeremony": "Cet appareil oublie l'étude, donc la rejoindre à nouveau exige de saisir une fois de plus son empreinte depuis les documents de consentement.",
+      "confirmCta": "Se retirer",
+      "cancel": "Annuler",
+      "done": "Retiré. L'étude a reçu l'instruction de supprimer les données en sa possession.",
+      "failed": "Le retrait n'a pas abouti. Tu participes toujours, tu peux donc réessayer.",
+      "unavailable": "Ce serveur n'a pas de voie de recherche, donc rien n'a été retiré. Tu participes toujours ici."
+    },
+    "export": {
+      "pseudonymisedNotice": "Ces données sont PSEUDONYMISÉES, et non anonymes : chaque participant est désigné par un pseudonyme stable plutôt que par un nom, et quiconque détient un second jeu de données sur les mêmes personnes peut parvenir à les réidentifier par croisement.",
+      "tier": "Niveau de schéma : {{tier}}",
+      "window": "Période : du {{from}} au {{to}} (inclus)",
+      "participants": "Participants dans ce fichier : {{participants}}",
+      "withdrawn": "Retirées et purgées avant cet export : {{withdrawn}}. Leurs lignes ne figurent pas dans ce fichier et ne doivent pas être récupérées depuis un fichier antérieur.",
+      "unopenable": "Scellées avec une clé absente de cet appareil : {{unopenable}} contributions sur {{total}}. Elles ne figurent pas dans ce fichier. C'est un problème de clé, pas un problème de données.",
+      "malformed": "Illisibles par cette version : {{malformed}} contributions. Un nombre différent de zéro signale un bogue à rapporter.",
+      "unknownMacroCaveat": "Un macronutriment inconnu pour une entrée n'ajoute rien au total du jour, donc un total bas peut signifier une valeur inconnue plutôt qu'un apport faible. Lis loggedEntryCount à côté de chaque total, et traite un total à zéro avec un décompte non nul comme non quantifié."
+    },
+    "anomaly": {
+      "serverRetainedWithdrawn": "AVERTISSEMENT DESTINÉ À LA PERSONNE GÉRANT LE SYSTÈME : ce serveur a fourni {{retained}} contribution(s) qu'il avait déjà reçu l'ordre de supprimer. Elles ont été purgées ici, et ce déploiement doit être examiné."
+    },
+    "join": {
+      "title": "Rejoindre une étude",
+      "description": "Une étude t'a envoyé un lien. Pour la rejoindre, saisis l'empreinte imprimée dans ses documents de consentement.",
+      "reading": "Lecture du lien…",
+      "backToResearch": "Retour à tes études",
+      "failed": "L'adhésion n'a pas abouti. Rien n'a été enregistré, tu peux donc réessayer.",
+      "mismatch": "Cette empreinte ne correspond pas à cette clé. Rien n'a été enregistré. Vérifie les caractères dans les documents de consentement et saisis-les à nouveau.",
+      "claimed": {
+        "named": "Le lien indique qu'il s'agit de {{name}}.",
+        "unnamed": "Le lien n'indique pas de quelle étude il s'agit.",
+        "account": "Numéro de compte pour l'étude {{studyAccountId}}",
+        "unverified": "Quiconque peut écrire le lien peut écrire ce nom. Ce qui prouve qu'il s'agit bien de l'étude, c'est l'empreinte ci-dessous."
+      },
+      "labelLabel": "Ton nom pour cette étude",
+      "labelHint": "Uniquement pour toi, sur cet appareil. L'étude ne le verra jamais.",
+      "fingerprintLabel": "Empreinte figurant sur le document de consentement",
+      "fingerprintHint": "Saisis les douze caractères imprimés dans les documents de consentement de l'étude. Ne les copie pas depuis cet écran ni depuis le lien.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "Le lien a transmis la clé, la page imprimée prouve que la clé appartient à cette étude. Deux canaux distincts pour t'atteindre, et c'est ce qui donne toute sa valeur à cette vérification.",
+      "submit": "Rejoindre cette étude",
+      "enrolled": {
+        "title": "Tu as rejoint l'étude.",
+        "body": "Rien n'a encore été envoyé. Tu choisis les jours à transmettre et le moment de l'envoi sur la page de tes études.",
+        "cta": "Accéder à tes études"
+      },
+      "compartmentMissing": {
+        "title": "Ce compte ne peut pas encore rejoindre d'étude",
+        "body": "Pour rejoindre une étude, ce compte doit avoir une identité stable, et cet appareil n'en a pas encore. Définir un nouveau mot de passe permet de la créer.",
+        "why": "Une étude te verrait comme une personne différente à chaque fois, et tes journées précédentes se retrouveraient isolées. Configure un code de récupération, puis ouvre à nouveau le lien.",
+        "cta": "Définir un nouveau mot de passe"
+      },
+      "invalidLink": {
+        "title": "Ce lien semble incorrect",
+        "body": "Une partie est manquante ou a été coupée. Demande à l'étude de la renvoyer."
+      },
+      "queryString": {
+        "title": "Ce lien n'est pas sûr",
+        "body": "La clé de l'étude se trouvait dans la partie de l'adresse envoyée aux serveurs, elle n'est donc pas restée confidentielle entre l'étude et toi. Cela signifie généralement qu'une application d'e-mail ou de messagerie a modifié le lien en cours de route.",
+        "parameters": "Envoyé dans l'adresse : {{parameters}}.",
+        "askAgain": "Demande à l'étude de renvoyer le lien, ou ouvre-le depuis les documents de consentement."
+      },
+      "noSync": {
+        "title": "Cet openplate n'a pas de synchronisation",
+        "body": "La participation à une étude passe par la synchronisation, et la personne qui gère cet openplate ne l'a pas configurée."
+      },
+      "signedOut": {
+        "body": "Ouvre d'abord ta session de synchronisation. Rejoindre une étude enregistre une clé qui n'existe qu'une fois connecté."
+      }
+    },
+    "submit": {
+      "title": "Envoyer des journées à cette étude",
+      "description": "Choisis toi-même le premier et le dernier jour. Rien ne quitte cet appareil avant d'avoir appuyé sur envoyer.",
+      "fromLabel": "Premier jour",
+      "toLabel": "Dernier jour",
+      "cta": "Envoyer ces journées",
+      "failed": "Rien n'a été envoyé. Tu peux réessayer.",
+      "outcome": {
+        "submitted": "Période du {{from}} au {{to}} envoyée · version {{version}}.",
+        "conflict": "Un autre de tes appareils a envoyé des données à cette étude avant celui-ci. Sélectionne à nouveau les jours et envoie-les.",
+        "tooLarge": "Cet intervalle est plus large que ce que l'étude accepte. Choisis une période plus courte, tu pourras envoyer le reste après.",
+        "unknownStudy": "Ce serveur ne connaît pas cette étude, rien n'a donc été envoyé.",
+        "unavailable": "Ce serveur ne dispose pas d'accès recherche, rien n'a donc été envoyé."
+      }
+    },
+    "console": {
+      "title": "Console de l'étude",
+      "description": "Le volet recherche : le compte propre à cette étude, sa clé et la cohorte que ce compte permet d'ouvrir.",
+      "separateAccount": "Il s'agit du compte de l'étude, pas de ton propre compte openplate. Connecte-toi avec l'adresse et le mot de passe de l'étude, jamais avec les tiens. Rien sur cet écran ne lit ni n'envoie le journal de cet appareil.",
+      "noSync": {
+        "title": "Cet openplate n'a pas de synchronisation",
+        "body": "Une étude lit les contributions via la synchronisation, et la personne qui gère cet openplate ne l'a pas configurée."
+      },
+      "signIn": {
+        "title": "Ouvrir le compte de l'étude",
+        "passphraseLabel": "Mot de passe du compte de l'étude",
+        "signIn": "Ouvrir la console",
+        "create": "Créer un nouveau compte d'étude",
+        "failed": "Impossible d'ouvrir le compte de l'étude. Rien n'a été modifié."
+      },
+      "identity": {
+        "title": "Clé de cette étude",
+        "account": "Numéro de compte de l'étude {{accountId}}",
+        "noKey": "Cette étude ne possède encore aucune clé. Crées-en une avant d'imprimer ses formulaires de consentement.",
+        "unopened": "Cette console n'a pas pu ouvrir les clés de cette étude, elle ne peut donc en afficher aucune ni ouvrir aucune contribution. Le plus souvent, elles ont été scellées avec un mot de passe différent : connecte-toi avec celui utilisé lors de leur création. Rien n'a été perdu : les clés sont toujours sur le serveur, sans qu'il ne les ait lues.",
+        "fingerprintLabel": "Empreinte de la clé actuelle",
+        "fingerprintHint": "Imprime ces douze caractères dans le formulaire de consentement de l'étude. Un contributeur les saisit depuis cette page lorsqu'il la rejoint. Cette console ne les envoie nulle part et il n'y a rien ici pour les publier.",
+        "generations": "Générations de clés conservées : {{generations}}. Chacune d'elles est testée à l'ouverture d'une contribution, afin de ne rien perdre de ce qui a été scellé avec une clé plus ancienne.",
+        "generate": "Créer une nouvelle génération de clé",
+        "generating": "Création en cours…",
+        "generateHint": "Une nouvelle génération s'ajoute à celles déjà conservées, sans jamais les remplacer. Seule la plus récente doit figurer dans un formulaire de consentement en cours d'impression.",
+        "failed": "Impossible de créer la clé. Rien n'a été modifié."
+      },
+      "cohort": {
+        "title": "Récupérer la cohorte",
+        "description": "Ce que cette étude peut ouvrir, après purge de chaque retrait.",
+        "fromLabel": "Premier jour de la période demandée",
+        "toLabel": "Dernier jour de la période demandée",
+        "pull": "Récupérer la cohorte",
+        "pulling": "Récupération en cours…",
+        "unavailable": "Ce serveur n'a pas de voie de recherche, il n'y a donc aucune cohorte à récupérer.",
+        "failed": "Impossible de récupérer la cohorte.",
+        "empty": "Aucune contribution n'a encore été apportée à cette étude.",
+        "summaryTitle": "Contenu du fichier",
+        "export": "Télécharger la cohorte au format CSV",
+        "exportHint": "Le fichier contient les lignes ci-dessus, mot pour mot, avant le tableau."
+      },
+      "created": {
+        "title": "Compte créé",
+        "body": "Tu es connecté. Génère une clé ci-dessous pour en publier une dans ton formulaire de consentement."
+      }
+    }
+  },
+  "scan": {
+    "analyzing": {
+      "analyzing": "Analyse de ton assiette en cours…",
+      "analyzingText": "Identification des aliments en cours…",
+      "starting": "Démarrage de l'analyse…",
+      "stillWorking": "Traitement en cours, cela peut prendre un moment…",
+      "uploading": "Téléversement de la photo en cours…",
+      "sendingText": "Envoi de tes mots en cours…"
+    },
+    "capture": {
+      "addWithoutPhoto": "Ajouter un aliment sans photo",
+      "analyze": "Analyser",
+      "cancel": "Annuler",
+      "chooseLibrary": "Choisir dans la bibliothèque",
+      "description": "Ta photo est envoyée directement à ton propre fournisseur d'IA pour identifier le contenu de ton assiette. Elle reste ensuite uniquement sur cet appareil (pas sur le serveur d'openplate) pour que tu puisses la revoir sur l'entrée, tu peux désactiver cela ou l'effacer à tout moment sous Données et sauvegarde dans les paramètres.",
+      "emptyHint": "Analysée par ton propre fournisseur d'IA, puis conservée uniquement sur cet appareil.",
+      "emptyTitle": "Prends ton assiette en photo ou choisis une image",
+      "photoLabel": "Photo d'assiette",
+      "preparing": "Préparation de ta photo…",
+      "previewAlt": "Photo d'assiette sélectionnée",
+      "takePhoto": "Prends ton assiette en photo",
+      "title": "Identifier les aliments à partir d'une photo d'assiette",
+      "managedDescription": "Ta photo est lue une seule fois pour déterminer ce qui se trouve dans ton assiette, sans être conservée. Elle reste ensuite uniquement sur cet appareil pour que tu puisses la revoir sur l'entrée. Tu peux désactiver cette option ou la supprimer à tout moment sous Données et sauvegarde dans les paramètres."
+    },
+    "errors": {
+      "attemptCost": "Cette tentative a utilisé {{amount}} de tes crédits API. Elle est enregistrée dans ton utilisation.",
+      "attemptRecorded": "Cette tentative est enregistrée dans ton utilisation.",
+      "connectProvider": "Connecte ton fournisseur d'IA dans les paramètres avant de pouvoir identifier des aliments.",
+      "endpointUnreachable": "Impossible de joindre ce point de terminaison depuis le navigateur, probablement parce que la politique de sécurité du contenu bloque une URL de base autre que localhost, ou parce que le point de terminaison n'autorise pas les requêtes du navigateur (CORS). Consulte les paramètres d'IA pour plus de détails.",
+      "identifyFailed": "Impossible d'identifier les aliments à partir de la photo.",
+      "identifyFailedText": "Impossible d'identifier les aliments à partir de ta description.",
+      "missingBaseUrl": "Il manque une URL de base à cette connexion. Ouvre les paramètres d'IA et définis-en une, ou passe à OpenRouter.",
+      "noFoods": "Impossible d'identifier des aliments sur cette photo. Essaie avec une prise de vue plus nette.",
+      "noFoodsText": "Impossible d'identifier des aliments dans cette description. Essaie de nommer chaque aliment et sa quantité.",
+      "openrouterRateLimit": "Tu as atteint la limite de requêtes du fournisseur. Les analyses du niveau gratuit se réinitialisent chaque jour, ou ajoute des crédits sur OpenRouter pour en faire plus. Tous les crédits ajoutés vont directement à OpenRouter (pas à openplate), restent entièrement facultatifs et constituent un solde prépayé, pas un abonnement.",
+      "photo": {
+        "empty": "Choisis une photo à téléverser.",
+        "tooLarge": "La photo est trop volumineuse (max 8 Mo).",
+        "undecodableFormat": "Ce format ne fonctionne pas dans ce navigateur, utilise plutôt un JPEG ou un PNG.",
+        "unsupportedType": "Type d'image non pris en charge. Utilise JPEG, PNG, WEBP ou HEIC.",
+        "unreadable": "Cette photo n'a pas pu être lue. Réessaie avec un meilleur éclairage, de plus près, sans bouger.",
+        "unreadableWithReason": "Cette photo n'a pas pu être lue ({{reason}}). Réessaie avec un meilleur éclairage, de plus près, sans bouger."
+      },
+      "photoQualityBody": "Tu peux en essayer une autre ? Un bon éclairage et une vue du dessus facilitent l'analyse.",
+      "provider": {
+        "auth": "Le fournisseur a rejeté ta clé API. Vérifie-la dans les réglages de l'IA et réessaie.",
+        "credit": "Le compte chez ton fournisseur n'a plus de crédit. Ajoutes-en chez ton fournisseur et réessaie.",
+        "modelNotFound": "Le fournisseur ne reconnaît pas ce modèle. Choisis un autre modèle dans les réglages de l'IA et réessaie.",
+        "rateLimit": "Le fournisseur limite le débit des requêtes en ce moment. Attends un instant et réessaie.",
+        "reconsentRequired": "Les paramètres de confidentialité de cette passerelle ont changé, elle n'accepte donc plus cet appareil. Demande un nouveau lien d'invitation à la personne qui t'a invité.",
+        "photoTooLarge": "La photo est trop volumineuse pour ce serveur. Essaie avec une photo plus petite.",
+        "aiNotAllowed": "Les estimations par l'IA ne sont pas activées pour ton compte. Demande à ton administrateur.",
+        "accountSuspended": "Ton compte est suspendu. Demande à ton administrateur.",
+        "rateLimitMinute": "Tu as envoyé plusieurs requêtes très rapprochées. Réessaie dans une minute.",
+        "allowanceSpent": "Tu as épuisé tes estimations par l'IA pour aujourd'hui. Réessaie demain.",
+        "allowanceExpired": "Ton quota d'estimations par photo est épuisé. Tout le reste fonctionne toujours dans openplate.",
+        "allowanceExpiredOn": "Ton quota d'estimations par photo a pris fin le {{date}}. Tout le reste fonctionne toujours dans openplate.",
+        "instanceCeiling": "Cette instance a traité toutes les photos possibles aujourd'hui. Réessaie demain. Ton compte n'a aucun problème."
+      },
+      "readPhoto": "Impossible de lire cette photo. Essaie avec une autre.",
+      "titles": {
+        "auth": "Ta clé IA ne fonctionne pas",
+        "credit": "Ton fournisseur d'IA n'a plus de crédit",
+        "invalidRequest": "Le fournisseur n'a pas pu traiter cette requête",
+        "modelNotFound": "Ce modèle n'est pas disponible",
+        "noLuck": "Impossible d'exploiter cette photo",
+        "rateLimit": "Trop de requêtes en ce moment",
+        "reconsentRequired": "Cette passerelle demande une nouvelle invitation",
+        "transient": "Le fournisseur a eu du mal à répondre",
+        "photoTooLarge": "Cette photo est trop grande",
+        "aiNotAllowed": "Les estimations par l'IA sont désactivées",
+        "accountSuspended": "Ton compte est suspendu",
+        "allowanceExpired": "Tes estimations par photo sont épuisées",
+        "instanceCeiling": "Cette instance a atteint sa capacité maximale aujourd'hui"
+      },
+      "text": {
+        "empty": "Écris d'abord ce que tu as mangé.",
+        "title": "Impossible d'exploiter cette description",
+        "qualityBody": "Impossible d'en déduire des aliments. Essaie de nommer chaque aliment avec sa quantité, comme 3 œufs, 2 tranches de pain grillé."
+      }
+    },
+    "loading": "Chargement de l'analyse…",
+    "offline": "Tu es hors ligne. L'analyse de l'assiette nécessite une connexion. Recherche dans tes aliments récents pour enregistrer maintenant.",
+    "review": {
+      "addingSummary_one": "Ajout de {{count}} aliment · ~{{netCarbs}} g de glucides nets",
+      "addingSummary_other": "Ajout de {{count}} aliments · ~{{netCarbs}} g de glucides nets",
+      "confirmAndLog": "Confirmer et enregistrer",
+      "costLine": "Coût estimé de cette analyse : {{cost}} ({{inputTokens}} jetons en entrée / {{outputTokens}} jetons en sortie)",
+      "doubleCheck": "Vérifie bien cet élément",
+      "errors": {
+        "carbsRequired": "Les glucides sont requis",
+        "gramsPositive": "Le poids en grammes doit être supérieur à 0",
+        "invalidBatchId": "Identifiant de lot invalide",
+        "invalidDate": "Date invalide",
+        "nameRequired": "Le nom est requis",
+        "selectAtLeastOne": "Sélectionne au moins un aliment à enregistrer."
+      },
+      "fineTune": "Ajuster la portion et les valeurs nutritionnelles",
+      "foodLabel": "Aliment",
+      "gramsLabel": "Grammes",
+      "heading": "Voici ton assiette. Si le résultat te convient, confirme simplement.",
+      "include": "Inclure",
+      "macroLabels": {
+        "carbs": "Glucides (requis)",
+        "fat": "Lipides",
+        "fiber": "Fibres",
+        "kcal": "Calories",
+        "polyols": "Polyols",
+        "protein": "Protéines",
+        "sugars": "Sucres"
+      },
+      "macrosPer100gNote": "Les macronutriments sont indiqués pour 100 g.",
+      "macrosUnknown": "Macronutriments inconnus, seul le nom est enregistré.",
+      "match": {
+        "applied": "Appliqué",
+        "calories": "{{value}} calories",
+        "carbs": "{{value}} g de glucides",
+        "dismiss": "Ignorer la suggestion",
+        "fiber": "{{value}} g de fibres",
+        "foundIn": "Trouvé dans LowCarbCheck",
+        "netCarbs": "{{value}} g de glucides nets",
+        "per100g": "pour 100 g : {{summary}}",
+        "useThisData": "Utiliser ces données",
+        "viewOnLcc": "Voir sur lowcarbcheck.org"
+      },
+      "matchTier": {
+        "likely": "Correspondance possible",
+        "strong": "Correspondance forte",
+        "weak": "Correspondance approximative"
+      },
+      "netCarbsForPortion": "{{value}} g de glucides nets",
+      "noneSelected": "Aucun aliment sélectionné. Ajoutes-en au moins un pour enregistrer.",
+      "plateFallbackName": "assiette",
+      "portionGrams": "~{{grams}} g",
+      "portionScale": {
+        "asShown": "Tel quel",
+        "bigger": "Plus grand",
+        "double": "Double",
+        "smaller": "Plus petit"
+      },
+      "portionWithHint": "{{hint}} · ~{{grams}} g",
+      "preview": {
+        "calories": "{{value}} calories",
+        "fat": "Lipides {{value}} g",
+        "protein": "Protéines {{value}} g"
+      },
+      "sanity": {
+        "componentOverTotal": "{{component}} vaut {{componentValue}} g pour 100 g, ce qui dépasse le total de {{total}} de {{totalValue}} g, vérifie bien avant d'enregistrer.",
+        "componentSumOverTotal": "{{firstComponent}} et {{secondComponent}} totalisent {{componentValue}} g pour 100 g, ce qui dépasse le total de {{total}} de {{totalValue}} g, vérifie bien avant d'enregistrer.",
+        "kcalMismatch": "Ces valeurs semblent incohérentes ({{stated}} kcal contre ~{{computed}} d'après les macros), vérifie bien avant d'enregistrer.",
+        "labelColumnsDisagree": "Les deux colonnes de l'étiquette ne concordent pas pour {{label}} ({{printed}} pour 100 g imprimé contre {{converted}} calculé d'après la colonne par portion), l'une d'elles a probablement été mal lue.",
+        "macro": {
+          "carbs": "Glucides",
+          "fat": "Lipides",
+          "fiber": "Fibres",
+          "kcal": "Calories",
+          "polyols": "Polyols",
+          "protein": "Protéines",
+          "sugars": "Sucres"
+        },
+        "macroSumOver100": "Glucides, protéines et lipides totalisent {{sum}} g pour 100 g, vérifie bien avant d'enregistrer.",
+        "singleMacroOver100": "{{label}} affiche {{value}} g pour 100 g, ce qui est impossible, vérifie bien avant d'enregistrer."
+      },
+      "saving": "Enregistrement…",
+      "seeOtherMatches": "Incorrect ? Voir d'autres résultats",
+      "subheading": "Touche une portion pour ajuster, ou affine les détails ci-dessous.",
+      "unnamedFood": "Aliment sans nom",
+      "fromLabel": "Depuis l'étiquette"
+    },
+    "setup": {
+      "connectOpenRouter": "Se connecter avec OpenRouter",
+      "crisp": {
+        "selfHosted": "Connecte une IA pour analyser tes photos. Ta photo part uniquement vers cette IA.",
+        "managedWhat": "Prends une photo d'assiette, et l'IA calcule les glucides pour toi.",
+        "managedWho": "Ta photo part vers {{host}}, un serveur géré par l'opérateur de cette instance openplate."
+      },
+      "description": "Prends une photo d'assiette et un service d'IA évalue les glucides pour toi.",
+      "manualSetup": "Ou configure un fournisseur manuellement dans les paramètres",
+      "sharedPhotoAlt": "La photo que tu as partagée",
+      "sharedPhotoNote": "Nous avons bien reçu ta photo partagée, mais impossible d'y identifier des aliments pour le moment. Tu dois d'abord connecter un fournisseur d'IA. Connectes-en un ci-dessous, puis partage ou choisis à nouveau cette photo.",
+      "title": "Prends une photo, évite la saisie",
+      "managedMissing": {
+        "body": "Les estimations par photo ne sont pas activées pour ce compte.",
+        "askAdmin": "Demande à ton administrateur de les activer. Tu peux ajouter des aliments sans photo en attendant.",
+        "expired": "Les estimations par photo pour ce compte ont pris fin le {{date}}. Tu peux toujours ajouter des aliments sans photo."
+      },
+      "managed": {
+        "description": "Prends une photo d'assiette et les glucides sont calculés pour toi."
+      }
+    },
+    "title": "Scanner l'assiette",
+    "textIntake": {
+      "title": "Lecture de ta saisie",
+      "label": "Ce que tu as saisi",
+      "description": "Tes mots vont directement à ton propre fournisseur d'IA, qui les transforme en entrées que tu vérifies avant tout enregistrement.",
+      "managedDescription": "Tes mots vont à l'IA qu'exécute ton instance, qui les transforme en entrées que tu vérifies avant tout enregistrement."
+    }
+  },
+  "settings": {
+    "data": {
+      "description": "Ton journal reste sur cet appareil : télécharge une copie complète à tout moment, sans verrouillage, sans attente d'export.",
+      "descriptionManaged": "Ton journal reste sur cet appareil, et le serveur conserve une copie chiffrée qu'il ne peut pas lire : la clé ne quitte jamais cet appareil. Télécharge une copie complète à tout moment, sans verrouillage, sans attente d'export.",
+      "downloadCsv": "Télécharger le journal (CSV)",
+      "downloadJson": "Tout télécharger (JSON)",
+      "exportTitle": "Tes données",
+      "importButton": "Importer une sauvegarde (JSON)",
+      "importDescription": "Restaure sur cet appareil une sauvegarde exportée depuis openplate (JSON), le moyen de transférer tes données depuis un autre appareil sans synchronisation.",
+      "importError": "Impossible d'importer ce fichier. Vérifie qu'il s'agit bien d'une sauvegarde openplate (JSON).",
+      "importHeading": "Importer une sauvegarde",
+      "importSuccess": "Sauvegarde importée. Ton journal inclut désormais les données importées.",
+      "importing": "Importation…",
+      "photosNote": "Les photos d'assiette ne sont pas incluses dans ce téléchargement : elles sont conservées uniquement sur cet appareil (voir « Photos sur cet appareil » ci-dessous), sans jamais être intégrées dans une sauvegarde ou un export. Ton téléchargement ne contient que les chiffres saisis.",
+      "preparing": "Préparation…",
+      "title": "Données et sauvegarde"
+    },
+    "groups": {
+      "profile": "À propos de toi",
+      "nutrition": "Alimentation et objectifs",
+      "scanning": "Numérisation et IA",
+      "appearance": "Apparence et langue",
+      "account": "Compte et forfait",
+      "lists": "Mes listes et données",
+      "about": "À propos d'openplate"
+    },
+    "photos": {
+      "cancel": "Annuler",
+      "clearAll": "Tout effacer",
+      "clearConfirmDescription": "Cette action supprime toutes les photos d'assiette en cache sur cet appareil. Tes entrées enregistrées et leurs chiffres sont conservés. Seules les images stockées sur l'appareil sont supprimées. Cette opération est irréversible.",
+      "clearConfirmTitle": "Effacer toutes les photos sur cet appareil ?",
+      "description": "Quand tu numérises une assiette, sa photo est conservée uniquement sur cet appareil pour que tu puisses la revoir sur l'entrée. Elle n'est jamais téléversée ni synchronisée. Les photos plus anciennes sont automatiquement supprimées après {{days}} jours ; désactive cette option pour cesser d'en enregistrer de nouvelles.",
+      "switchLabel": "Enregistrer les photos d'assiette sur cet appareil",
+      "title": "Photos sur cet appareil",
+      "usageEmpty": "Aucune photo stockée sur cet appareil.",
+      "usage_one": "{{count}} photo · {{size}}",
+      "usage_other": "{{count}} photos · {{size}}"
+    },
+    "rows": {
+      "about": {
+        "status": "Version {{version}} · Licence MIT",
+        "title": "À propos d'openplate"
+      },
+      "ai": {
+        "connected": "{{provider}} · {{model}}",
+        "notConnected": "Non connecté",
+        "title": "Fournisseur d'IA"
+      },
+      "data": {
+        "status": "Téléchargement, importation, photos sur cet appareil",
+        "title": "Données et sauvegarde"
+      },
+      "foods": {
+        "title": "Tes aliments"
+      },
+      "goals": {
+        "calories": "{{kcal}} calories par jour",
+        "carbs": "{{grams}} g de glucides nets par jour"
+      },
+      "meals": {
+        "title": "Repas enregistrés"
+      },
+      "preferences": {
+        "title": "Préférences"
+      },
+      "sharing": {
+        "title": "Partage",
+        "status": "Partage ton journal avec un diététicien"
+      },
+      "sync": {
+        "notSetUp": "Non configuré",
+        "title": "Compte"
+      },
+      "research": {
+        "title": "Recherche",
+        "status": "Études auxquelles tu participes"
+      },
+      "account": {
+        "title": "Compte et synchronisation",
+        "signedOut": "Déconnecté"
+      },
+      "admin": {
+        "title": "Administration",
+        "status": "Invitations et comptes"
+      },
+      "profile": {
+        "status": "Taille, poids, année de naissance"
+      },
+      "nutrition": {
+        "status": "Régime alimentaire et objectifs"
+      },
+      "plan": {
+        "title": "Formule",
+        "status": "Ta formule et ton paiement"
+      }
+    },
+    "style": {
+      "lead": "Ton style détermine l'objectif utilisé pour évaluer la journée.",
+      "save": "Enregistrer le style",
+      "saved": "Style enregistré",
+      "title": "Régime alimentaire"
+    },
+    "title": "Paramètres",
+    "fasting": {
+      "title": "Jeûne",
+      "lead": "Ton jeûne habituel. Le minuteur le présélectionne, et une heure de début habituelle te permet de démarrer d'un geste à cette heure-là.",
+      "routine": {
+        "label": "Ton jeûne habituel",
+        "none": "Aucun",
+        "customHours": "{{hours}} h"
+      },
+      "startTime": {
+        "label": "Heure de début habituelle",
+        "help": "Facultatif. Laisse vide pour toujours démarrer manuellement.",
+        "invalid": "Saisis une heure entre 00:00 et 23:59."
+      },
+      "care": {
+        "title": "Avant un jeûne long",
+        "pending": "La note pour les jeûnes de 24 heures ou plus s'affiche une fois, avant ton premier jeûne long.",
+        "acknowledged": "Tu as lu la note pour les jeûnes de 24 heures ou plus.",
+        "reset": "La réafficher la prochaine fois",
+        "resetSaved": "La note s'affichera de nouveau avant ton prochain jeûne long."
+      },
+      "save": "Enregistrer les réglages du jeûne",
+      "saved": "Réglages du jeûne enregistrés."
+    },
+    "hub": {
+      "fasting": {
+        "label": "Jeûne",
+        "description": "{{routine}}, commence à {{time}}",
+        "none": "Aucun jeûne habituel"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "off": "Désactivées",
+        "catchUp": "Bilan quotidien à {{time}}",
+        "fastTarget": "Objectif de jeûne seulement",
+        "both": "Bilan quotidien à {{time}} et objectif de jeûne"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "lead": "Un mot discret le matin, et un mot quand un jeûne atteint son objectif.",
+      "master": "M'envoyer des notifications",
+      "cap": "Au maximum deux par jour.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "state": {
+        "unsupported": "Ce navigateur ne peut pas recevoir de notifications.",
+        "needsInstall": "Sur iPhone, ajoute d'abord openplate à ton écran d'accueil.",
+        "blocked": "Les paramètres de ton navigateur bloquent les notifications pour ce site. Autorise-les, puis reviens.",
+        "serverOff": "Cette instance n'envoie pas de notifications.",
+        "dismissed": "La demande s'est fermée ou ton navigateur ne l'a jamais affichée. Appuie à nouveau sur le bouton.",
+        "dismissedAgain": "Ton navigateur ne pose plus la question. Autorise les notifications dans les paramètres de site de ton navigateur.",
+        "signedOut": "Tu es déconnecté sur cet appareil. Connecte-toi, puis active les notifications.",
+        "ready": "Ton navigateur peut recevoir des notifications. Active-les ci-dessous."
+      },
+      "catchUp": {
+        "label": "Bilan quotidien",
+        "time": "Heure",
+        "preview": "Demain matin, il afficherait :",
+        "previewEmpty": "Rien à afficher pour le moment. Une matinée sans rien à signaler ne reçoit aucune notification."
+      },
+      "fastTarget": {
+        "label": "Quand un jeûne atteint son objectif"
+      },
+      "toast": {
+        "on": "Les notifications sont activées.",
+        "off": "Les notifications sont désactivées.",
+        "saved": "Enregistré.",
+        "failed": "L'opération a échoué. Réessaie."
+      }
+    }
+  },
+  "settingsAi": {
+    "advanced": {
+      "anthropicOption": "Anthropic direct",
+      "backToRecommended": "← Utiliser plutôt {{provider}} (recommandé)",
+      "openaiCompatibleOption": "Point de terminaison auto-hébergé / local (Ollama, vLLM, LM Studio...), localhost uniquement sur l'instance hébergée",
+      "toggle": "Avancé : utiliser un autre fournisseur"
+    },
+    "apiKey": {
+      "label": {
+        "anthropic": "Clé d'API Anthropic",
+        "mistral": "Clé d'API Mistral",
+        "openaiCompatible": "Clé d'API (pour ton point de terminaison)",
+        "openrouter": "Clé d'API OpenRouter"
+      },
+      "noKeyYet": "Aucune clé configurée pour l'instant, stockée uniquement sur cet appareil.",
+      "sentToBaseUrl": "Envoyée à l'URL de base configurée ci-dessus."
+    },
+    "baseUrl": {
+      "help": "Sur l'instance hébergée, seul un point de terminaison localhost/127.0.0.1 est joignable : la politique de sécurité du contenu bloque les autres hôtes par conception, pour protéger ta clé si cette page venait à être compromise. Tu auto-héberges ? Définis CSP_CONNECT_EXTRA pour autoriser ton propre point de terminaison distant (voir le README). L'adresse directe api.openai.com n'est jamais joignable non plus. Utilise OpenRouter pour les modèles OpenAI."
+    },
+    "connectCard": {
+      "description": "Les photos d'assiette sont envoyées directement au fournisseur de ton choix pour être analysées. openplate en conserve une copie uniquement sur cet appareil pour que tu puisses la consulter plus tard, jamais sur notre serveur. Gère ou supprime ces copies à tout moment dans Données et sauvegarde, dans les paramètres. Ta clé ne quitte jamais cet appareil, sauf pour contacter le fournisseur sélectionné ci-dessous.",
+      "title": "Connecter ton fournisseur d'IA"
+    },
+    "connected": {
+      "status": "Connecté à <strong>{{provider}}</strong>, {{model}}"
+    },
+    "cost": {
+      "approxCents": "environ {{cents}} ¢ par photo",
+      "underCent": "moins d'un centime par photo"
+    },
+    "disconnect": {
+      "button": "Déconnecter",
+      "notRevoked": "Cela supprime uniquement la clé de <strong>cet appareil</strong>. Cela ne la révoque <strong>pas</strong> chez {{provider}}.",
+      "oauthKeyStillThere": "La clé apparaît toujours dans tes <keyLink>paramètres de clé {{provider}}</keyLink> (nommée \"openplate\", ou \"Une application\" sur les instances d'où le fournisseur n'a pas encore vu passer de trafic) et continue d'y fonctionner tant que tu ne la révoques pas toi-même.",
+      "stops": "L'identification par photo cessera de fonctionner jusqu'à ce que tu reconnectes un fournisseur.",
+      "title": "Déconnecter le fournisseur d'IA ?"
+    },
+    "errors": {
+      "apiKeyRequired": "Une clé d'API est requise.",
+      "apiKeyRequiredFirstTime": "Une clé d'API est requise pour la configuration initiale.",
+      "baseUrlRequired": "Une URL de base est requise pour un point de terminaison auto-hébergé ou local.",
+      "baseUrlScheme": "L'URL de base doit commencer par http:// ou https://",
+      "disconnectToSwitch": "Déconnecte d'abord pour changer de fournisseur.",
+      "keyRejected": "La clé a été rejetée par le fournisseur. Vérifie-la et réessaie.",
+      "modelRequired": "Le modèle est requis"
+    },
+    "explainer": {
+      "byok": "Toujours partant ? Voici le principe : openplate n'héberge pas sa propre IA, donc l'application ne peut pas offrir d'analyses photo gratuites. À la place, tu fournis <strong>ta propre clé</strong> obtenue chez un fournisseur d'IA, et openplate l'utilise pour lire tes photos d'assiette : ta clé, ton fournisseur, tes données. La clé reste uniquement sur cet appareil : openplate ne l'envoie nulle part ailleurs qu'au fournisseur choisi ci-dessous, et ne la voit ni ne la stocke jamais sur son propre serveur.",
+      "notRequired": "<strong>Rien sur cette page n'est obligatoire.</strong> Ton journal, tes objectifs et tes tendances fonctionnent tous sans cela. Si t'inscrire à un service d'IA payant et coller une clé ne te convient pas, ferme cette page et continue de saisir tes repas à la main, tu ne perds rien d'autre.",
+      "photosAndCost": "Chaque photo est envoyée directement à ce fournisseur, juste le temps d'analyser ton assiette. openplate ne garde jamais de copie sur son propre serveur, mais par défaut, l'application en conserve une sur <strong>cet appareil</strong> (dans le stockage de ton navigateur) pendant environ 90 jours pour que tu puisses la revoir plus tard sur l'entrée correspondante. Tu peux désactiver cette option ou vider ce stockage à tout moment dans <dataLink>Données et sauvegarde</dataLink>, dans les paramètres. Cela coûte de l'argent, mais très peu : en général moins d'un centime par photo, facturé directement par ton fournisseur. Même en analysant chaque repas, la plupart des gens dépensent bien moins de 5 $ par mois. Tu ne paies que ce que tu analyses.",
+      "setup": "Pour la configuration, rends-toi d'abord sur le site du fournisseur : crées-y un compte gratuit et ajoute un moyen de paiement (leur interface de paiement, pas la nôtre : openplate ne voit jamais ta carte). La solution la plus simple est d'obtenir une clé chez <providerLink>{{provider}}</providerLink> : c'est l'onglet placé en premier ci-dessous, et une seule clé couvre chaque modèle listé dessous.",
+      "setupOpenAiNote": "Une exception à connaître : le service direct d'OpenAI ne répond pas aux requêtes envoyées directement depuis un navigateur, donc <strong>les modèles d'OpenAI ne sont accessibles ici que via OpenRouter</strong>, dont la clé unique couvre aussi les modèles de Google.",
+      "title": "Prends une photo, obtiens les macros"
+    },
+    "field": {
+      "baseUrl": "URL de base",
+      "model": "Modèle"
+    },
+    "loading": "Chargement de tes paramètres d'IA…",
+    "manualEntry": {
+      "enterKey": "Saisis ta clé d'API",
+      "orPasteKey": "Ou colle une clé d'API manuellement"
+    },
+    "model": {
+      "blurb": {
+        "claude-haiku-4-5": "Rapide et précis sur le détail des aliments",
+        "claude-sonnet-5": "Plus grande précision pour les assiettes complexes",
+        "google-gemini-3-1-flash-lite": "Peu coûteux et efficace, excellent choix par défaut pour les photos d'assiette",
+        "google-gemini-3-5-flash-lite": "Choix par défaut après connexion à OpenRouter, retenu pour la confidentialité, pas pour le prix : aucun entraînement sur tes photos",
+        "ministral-14b-2512": "Une option économique très convenable, nomme les plats de façon un peu maladroite",
+        "ministral-3b-2512": "Le moins cher de la gamme, pour des assiettes simples aux éléments bien séparés",
+        "ministral-8b-2512": "Niveau économique avec un peu plus de marge",
+        "mistral-large-2512": "Tarif haut de gamme, analyse de l'assiette la plus faible de la gamme",
+        "mistral-medium-2604": "Le plus précis sur de vraies assiettes, le choix à privilégier",
+        "mistral-small-2603": "Entrée peu coûteuse, mais il a mal interprété deux de nos trois assiettes de test",
+        "openai-gpt-5-4-mini": "Polyvalent, rapide et peu coûteux",
+        "openai-gpt-5-5": "Option haut de gamme",
+        "openai-gpt-5-6-luna": "L'option la moins chère ici, récente, pas encore comparée sur de vraies assiettes"
+      },
+      "createKeyLink": "Obtiens une clé auprès de {{provider}}",
+      "customHint": "Remplace le modèle sélectionné plus haut s'il est renseigné.",
+      "customPlaceholder": "par ex. {{example}}",
+      "customPlaceholderGeneric": "l'identifiant du modèle servi par ton endpoint",
+      "customToggle": "Utiliser plutôt un identifiant de modèle personnalisé",
+      "pickIntro": "Choisis un modèle.",
+      "recommended": "Recommandé"
+    },
+    "oauth": {
+      "noCardNote": "Aucune carte bancaire requise pour commencer, tu pourras en ajouter une plus tard sur OpenRouter."
+    },
+    "preset": {
+      "badge": "Fourni par cet openplate",
+      "body": "La personne qui a configuré cet openplate fait tourner une IA d'analyse d'assiettes en parallèle. Connecte-la en un appui, sans compte nulle part, sans clé à récupérer, sans rien payer. Tes photos partent directement de cet appareil vers cet endpoint, et nulle part ailleurs.",
+      "byokStillAvailable": "Tu préfères ton propre fournisseur d'IA ? Tu peux tout de même en configurer un plus bas, et il remplacera celui-ci quand tu le souhaites.",
+      "connect": "Utiliser l'IA de cet openplate",
+      "connected": "Connecté à l'IA propre à cet openplate.",
+      "connectedUnverified": "Connecté, mais l'IA de cet openplate n'a pas répondu à l'instant. Tente un scan. En cas d'échec, la personne qui gère cette instance doit vérifier ce qui se passe.",
+      "connecting": "Connexion en cours…",
+      "disconnectNote": "Rien n'est révoqué nulle part : aucun compte ni aucune clé ne t'appartient ici. Cet openplate continue de proposer son IA, tu peux donc te reconnecter en un appui quand tu le veux.",
+      "explainerNote": "Tu n'as besoin de rien de tout cela : cet openplate fournit sa propre IA, accessible en un appui au-dessus. Le reste de cette page sert à utiliser ton propre fournisseur à la place.",
+      "failed": "Impossible d'enregistrer la connexion. Réessaie.",
+      "title": "Cet openplate fournit sa propre IA"
+    },
+    "provider": {
+      "anthropic": "Anthropic",
+      "mistral": "Mistral",
+      "openaiCompatible": "Endpoint auto-hébergé / local",
+      "openrouter": "OpenRouter",
+      "managed": "Cette instance"
+    },
+    "providerBlurb": {
+      "mistral": "Mistral est une entreprise française qui fait tourner ses modèles sur des serveurs situés dans l'UE. Son offre gratuite demande un numéro de téléphone, mais pas de carte bancaire.",
+      "openrouter": "Une seule clé pour tous les modèles, y compris ceux d'OpenAI et de Google. Connecte-toi en un clic, aucune carte bancaire n'est requise pour commencer."
+    },
+    "providerRow": {
+      "connectedHint": "Pour changer de fournisseur, déconnecte-toi d'abord.",
+      "label": "Fournisseur :",
+      "switchHint": "Choisis-en un ci-dessous, ou ouvre Avancé pour un point de terminaison auto-hébergé."
+    },
+    "providerTabs": {
+      "legend": "Choisir un fournisseur d'IA"
+    },
+    "quickstart": {
+      "step1": "Choisis un fournisseur ci-dessous. {{provider}} est celui recommandé.",
+      "step2": "Crée une clé d'API dans la <providerLink>console {{provider}}</providerLink>.",
+      "step3": "Colle-la ci-dessous et analyse ta première assiette.",
+      "title": "Trois étapes, environ deux minutes"
+    },
+    "save": {
+      "model": "Enregistrer le modèle",
+      "savingModel": "Enregistrement…",
+      "settings": "Enregistrer les paramètres",
+      "verifyingAndSaving": "Vérification et enregistrement…"
+    },
+    "title": "Paramètres d'IA",
+    "toast": {
+      "disconnected": "Fournisseur d'IA déconnecté.",
+      "nothingToDisconnect": "Il n'y avait rien à déconnecter.",
+      "saved": "Paramètres vérifiés et enregistrés.",
+      "unverified": "Enregistré, impossible de vérifier la clé pour le moment.",
+      "unverifiedOpenaiCompatible": "Enregistré, impossible de vérifier la clé pour le moment (souvent la politique de sécurité du contenu qui bloque un point de terminaison non-localhost, ou le point de terminaison qui n'autorise pas les requêtes CORS du navigateur, voir l'aide de l'URL de base ci-dessus)."
+    },
+    "troubleshooting": {
+      "credit": "Ton compte chez le fournisseur a besoin d'un moyen de paiement ou d'un ajout de crédit pour répondre aux requêtes.",
+      "intro": "Quelques causes habituelles :",
+      "keyTypo": "La clé a été copiée avec un espace en trop ou un caractère en moins. Essaie de la copier et de la coller à nouveau.",
+      "providerDown": "Le fournisseur est temporairement saturé ou indisponible. Attends une minute et réessaie.",
+      "reassurance": "Rien de tout cela n'affecte le reste d'openplate, tu peux toujours noter tes repas manuellement à la place.",
+      "title": "Si une analyse échoue"
+    },
+    "usage": {
+      "scanCount_one": "{{count}} analyse",
+      "scanCount_other": "{{count}} analyses",
+      "thisMonth": "Ce mois-ci : {{cost}} · {{scans}}",
+      "thisMonthUnknown": "Ce mois-ci : {{scans}} · coût inconnu",
+      "failed_one": "{{count}} a échoué",
+      "failed_other": "{{count}} ont échoué"
+    }
+  },
+  "sharing": {
+    "cancel": "Annuler",
+    "pulse": {
+      "help": "Envoie de petits nombres arrondis : un repas, ses calories arrondies à 50 et ses protéines arrondies à 5 g, une photo, ainsi qu'un court signal « jeûne en cours » pendant que tu jeûnes. Jamais les aliments, l'heure, la photo ou tes objectifs. Le signal de jeûne reste lié à ton compte pendant 30 minutes, puis est supprimé.",
+      "label": "Partager un aperçu"
+    },
+    "title": "Partage",
+    "intro": "Permets à un diététicien ou à un médecin de lire ton journal. Il reste chiffré de bout en bout : ils reçoivent une copie de ta clé scellée avec la leur, et le serveur ne peut toujours rien lire.",
+    "unavailable": "Ce serveur de synchronisation ne propose pas le partage. Rien n'est activé ici, et rien n'a été envoyé.",
+    "needsSession": "Le partage nécessite le mot de passe de ton compte. Connecte-toi d'abord sur cet appareil.",
+    "needsSessionCta": "Aller au compte",
+    "identity": {
+      "title": "Ta clé de partage",
+      "description": "La clé sur laquelle les autres scellent leur journal. Elle est créée sur cet appareil et suit ton compte.",
+      "none": "Cet appareil n'a pas encore créé de clé de partage.",
+      "generate": "Créer ma clé de partage",
+      "failed": "Impossible de créer une clé de partage.",
+      "fingerprintLabel": "Ton empreinte",
+      "readAloud": "Dicte ces douze caractères à la personne qui partage avec toi, et elle les saisit. Cette application les a calculés ici, à partir de ta propre clé.",
+      "publicKeyLabel": "Ta clé publique",
+      "publicKeyHint": "Tu peux l'envoyer par e-mail ou l'afficher sous forme de code en toute sécurité. Seule, elle ne peut rien déchiffrer.",
+      "recoveryNote": "Conserve ton code de récupération en lieu sûr. Il protège l'accès de tes patients ainsi que le tien. Si tu le perds en plus de ton mot de passe, chaque journal partagé avec toi devient inaccessible."
+    },
+    "grant": {
+      "title": "Partager avec quelqu'un",
+      "description": "Fais cela avec cette personne, dans la même pièce ou lors d'un appel. Tu as besoin de son numéro de compte, de sa clé et de l'empreinte qu'elle te dicte.",
+      "accountLabel": "Leur numéro de compte",
+      "accountHint": "La personne peut le voir sur sa propre page de partage.",
+      "keyLabel": "Leur clé publique",
+      "keyHint": "Colle la clé reçue dans son invitation. Elle est publique : elle sert uniquement à lui sceller des données, et rien d'autre.",
+      "labelLabel": "Nom affiché",
+      "labelHint": "Conservé uniquement sur tes appareils. Le serveur ne le voit jamais.",
+      "fingerprintLabel": "L'empreinte qu'elle a dictée",
+      "fingerprintHint": "Demande-lui de lire les douze caractères sur son écran. Saisis ce que tu entends.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "La saisie sert de vérification. Si quelqu'un a remplacé sa clé en chemin, ce que tu entends ne correspondra pas, et rien n'est partagé.",
+      "submit": "Partager mon journal",
+      "badAccount": "Ce numéro de compte semble incorrect.",
+      "mismatch": "Ce n'est pas l'empreinte de cette clé. Rien n'a été partagé. Vérifie les caractères avec cette personne et réessaie.",
+      "keyChanged": "La clé de cette personne a changé. Tu as vérifié {{pinned}}, cette invitation porte {{offered}}. Rien n'a été partagé. Refais la vérification de l'empreinte avec elle avant de continuer.",
+      "unknownGrantee": "Aucun compte ne porte ce numéro sur ce serveur. Rien n'a été partagé.",
+      "conflict": "Un autre de tes appareils vient de modifier ce partage. Réessaie.",
+      "failed": "Impossible de partager. Rien n'a été modifié.",
+      "done": "Partagé. Tu as vérifié {{fingerprint}}."
+    },
+    "grants": {
+      "title": "Personnes avec qui tu partages",
+      "empty": "Tu ne partages ton journal avec personne.",
+      "unnamed": "Compte {{accountId}}",
+      "verified": "Vérifié sur cet appareil · {{fingerprint}}",
+      "verifiedHelp": "Vous avez vérifié cette empreinte ensemble. Chaque mise à jour ultérieure est scellée avec cette même clé.",
+      "unpinned": "Non vérifié sur cet appareil",
+      "unpinnedHelp": "Cet appareil ne conserve aucune trace de la clé utilisée pour ce partage, il ne peut donc pas afficher d'empreinte. Le partage fonctionne toujours. Refais la vérification de l'empreinte avec cette personne pour l'afficher ici.",
+      "keyChanged": "Sa clé a changé",
+      "keyChangedHelp": "La clé enregistrée n'est pas celle que tu as vérifiée. Plus aucun nouvel élément n'est scellé avec elle tant que tu n'as pas refait la vérification de l'empreinte.",
+      "revoke": "Arrêter le partage",
+      "revokeConfirmTitle": "Arrêter de partager avec {{name}} ?",
+      "revokeConfirmCutoff": "{{name}} ne pourra plus accéder à ton journal via openplate.",
+      "revokeConfirmResidue": "Tout ce que cette personne a déjà consulté peut rester sur son appareil.",
+      "revokeConfirmCta": "Arrêter le partage",
+      "revokeFailed": "Impossible d'arrêter le partage. Rien n'a été modifié."
+    },
+    "rotate": {
+      "title": "Remplacer ta clé de données",
+      "description": "Scelle à nouveau ton journal pour la suite, avec une toute nouvelle clé.",
+      "future": "À partir de maintenant, tout est scellé avec une clé que les personnes avec qui tu as arrêté le partage n'ont jamais eue.",
+      "notThePast": "Le passé reste inchangé. Tout ce qui a déjà été consulté peut rester sur leur appareil.",
+      "willDrop": "{{shares}} de tes partages ne peuvent pas être scellés à nouveau depuis cet appareil et vont prendre fin.",
+      "open": "Remplacer ma clé de données",
+      "confirmTitle": "Remplacer ta clé de données ?",
+      "confirmBody": "Tout ce que tu as consigné est chiffré à nouveau avec une nouvelle clé, et chaque personne avec qui tu partages encore reçoit une copie fraîchement chiffrée. Tu recevras un nouveau code de récupération, et l'ancien cessera de fonctionner.",
+      "passphraseLabel": "Confirme avec ton mot de passe",
+      "passphraseHint": "Cette étape est nécessaire, car la nouvelle clé doit être scellée avec ton mot de passe, et une erreur te bloquerait l'accès à ton propre journal.",
+      "confirmCta": "Remplacer la clé",
+      "failed": "Impossible de remplacer la clé. Rien n'a été modifié.",
+      "doneTitle": "Ta clé de données a été remplacée.",
+      "doneBody": "{{kept}} partage(s) conservé(s), {{revoked}} interrompu(s)."
+    },
+    "clinician": {
+      "title": "Partagé avec toi",
+      "description": "Journaux partagés avec toi. Chacun est déchiffré ici, sur cet appareil.",
+      "empty": "Personne n'a encore partagé de journal avec toi.",
+      "patientTitle": "Compte {{accountId}}",
+      "sharedSince": "Partagé depuis le {{at}}",
+      "open": "Ouvrir",
+      "drop": "Supprimer",
+      "dropFailed": "Impossible de supprimer ce partage.",
+      "back": "Retour à la liste",
+      "readOnly": "Lecture seule. Tu ne peux rien modifier ici.",
+      "lastUpdated": "Dernière mise à jour : {{at}}",
+      "noEntries": "Aucune entrée dans ce journal pour le moment.",
+      "dayNetCarbs": "{{grams}} g de glucides nets",
+      "entryGrams": "{{grams}} g",
+      "gone": "Ce journal n'est pas disponible. Le partage a peut-être été interrompu, ou rien n'a encore été synchronisé."
+    }
+  },
+  "signIn": {
+    "title": "Se connecter",
+    "body": "Ton adresse e-mail et ton mot de passe.",
+    "pulling": "Récupération de ton journal…",
+    "pullFailedTitle": "Ton journal n'est pas arrivé",
+    "pullFailedBody": "Tu es connecté, mais ton journal n'est pas encore arrivé.",
+    "unavailable": "Les comptes sont désactivés sur ce serveur.",
+    "forgot": "Mot de passe oublié ?"
+  },
+  "signOut": {
+    "menuItem": "Se déconnecter",
+    "title": "Déconnexion",
+    "body": "Tu restes déconnecté jusqu'à ta prochaine connexion. Ton journal reste sur cet appareil.",
+    "bodyManaged": "Ton journal est associé à ton compte. Une fois déconnecté, cet appareil ne l'affiche plus tant que tu ne te reconnectes pas.",
+    "confirm": "Se déconnecter",
+    "erase": {
+      "label": "Effacer aussi le journal de cet appareil"
+    },
+    "outbox": {
+      "counting": "Vérification des données en attente d'envoi.",
+      "empty": "Tout le contenu de cet appareil a atteint le serveur.",
+      "waiting_one": "Une entrée n'a pas encore atteint le serveur. L'effacer la supprimera définitivement.",
+      "waiting_other": "{{count}} entrées n'ont pas encore atteint le serveur. Les effacer les supprimera définitivement."
+    },
+    "eraseFailed": "Impossible d'effacer le journal, car openplate est ouvert dans un autre onglet. Ferme-le et réessaie."
+  },
+  "strangerNote": {
+    "device": "Tu n'es pas connecté. Ce paramètre s'applique à cet appareil.",
+    "home": "Accueil",
+    "needsSignIn": "Cette page nécessite une connexion."
+  },
+  "sync": {
+    "cancel": "Annuler",
+    "changePassphrase": {
+      "currentLabel": "Mot de passe actuel",
+      "description": "Définit un nouveau mot de passe et déconnecte tes autres appareils. Tes données synchronisées restent exactement là où elles sont.",
+      "done": "Mot de passe modifié. Tes autres appareils te demanderont le nouveau.",
+      "failed": "Impossible de modifier le mot de passe. Rien n'a été modifié.",
+      "newLabel": "Nouveau mot de passe",
+      "open": "Modifier le mot de passe",
+      "recoveryNote": "Ton code de récupération reste valide, il n'est pas lié au mot de passe que tu remplaces.",
+      "submit": "Enregistrer le nouveau mot de passe",
+      "title": "Changer le mot de passe"
+    },
+    "connected": {
+      "description": "Connecté sous le nom {{handle}}.",
+      "photosStayHere": "Les photos d'assiette restent sur l'appareil qui les a prises, elles ne font jamais partie d'une synchronisation, tu ne les verras donc pas sur tes autres appareils.",
+      "title": "Compte"
+    },
+    "create": {
+      "cta": "Créer un compte",
+      "inviteLabel": "Code d'invitation",
+      "inviteHint": "Cette instance est accessible uniquement sur invitation. Colle le code que tu as reçu, ou ouvre le lien d'invitation.",
+      "inviteRequired": "Cette invitation n'est pas valide. Elle a peut-être déjà été utilisée ou a expiré. Demande-en une nouvelle.",
+      "inviteMissing": "Colle ton code d'invitation, ou ouvre le lien d'invitation que tu as reçu.",
+      "inviteMalformed": "Cela ne ressemble pas à un code d'invitation. Ils commencent par {{prefix}}.",
+      "accountExists": "Cette adresse est déjà associée à un compte ici. Connecte-toi plutôt."
+    },
+    "danger": {
+      "description": "Les deux options laissent le journal intact sur cet appareil.",
+      "title": "Se déconnecter ou supprimer le compte"
+    },
+    "delete": {
+      "confirmBody": "Cette action supprime le compte {{handle}} et chaque copie chiffrée conservée par le serveur. Il n'y a ni annulation possible ni délai de grâce. Ton journal sur cet appareil reste intact.",
+      "confirmCta": "Supprimer définitivement",
+      "confirmTitle": "Supprimer ce compte ?",
+      "cta": "Supprimer le compte",
+      "failed": "Impossible de supprimer le compte. Rien n'a été modifié.",
+      "note": "Nous te redemandons ton mot de passe car une session laissée ouverte sur un appareil partagé ne devrait pas suffire à supprimer un compte.",
+      "passphraseLabel": "Confirme avec ton mot de passe"
+    },
+    "intro": "Facultatif. Synchronise ton journal d'un appareil à l'autre, chiffré sur cet appareil avant son départ.",
+    "notice": {
+      "dismiss": "Ignorer ce message de la personne administrant le serveur",
+      "readMore": "Lire la suite"
+    },
+    "passphrase": {
+      "strength": {
+        "fair": "Correct. Quelques mots de plus rendraient la devinette bien plus difficile.",
+        "strong": "Bien, assez long pour être véritablement difficile à deviner.",
+        "weak": "Les mots de passe courts sont ici le point faible, la longueur aide davantage que les symboles."
+      }
+    },
+    "passphraseLabel": "Mot de passe",
+    "photosStayHere": "Les photos d'assiette restent sur l'appareil qui les a prises. Elles ne sont jamais téléversées.",
+    "profileCard": {
+      "manage": "Compte",
+      "setUp": "Créer un compte"
+    },
+    "promise": "Le serveur stocke uniquement des données chiffrées qu'il ne peut pas lire.",
+    "setup": {
+      "complete": "Ton compte est configuré sur cet appareil.",
+      "confirmLabel": "Confirme le mot de passe",
+      "continue": "Continuer",
+      "generating": "Configuration de ton compte…",
+      "passphraseIntro": "Choisis un mot de passe pour ton compte.",
+      "passphraseLabel": "Mot de passe",
+      "passphraseMismatch": "Ces deux mots de passe ne correspondent pas.",
+      "passphraseTooShort": "Utilise au moins {{min}} caractères.",
+      "retry": "Réessayer",
+      "setupFailed": "Une erreur est survenue lors de la configuration de ton compte. Rien n'a été enregistré, tu peux réessayer sans risque."
+    },
+    "signIn": {
+      "cta": "Se connecter",
+      "emailHint": "L'adresse utilisée pour créer ton compte. Les majuscules n'ont aucune importance.",
+      "failed": "L'opération a échoué. Vérifie l'adresse e-mail et le mot de passe, puis réessaie.",
+      "finishSetup": "Ce compte a été créé, mais ses clés n'ont jamais été finalisées. Faisons-le maintenant. Cela se termine par un code de récupération qui te permet de te connecter sur un autre appareil, même si ce compte ne peut être ouvert qu'avec son mot de passe.",
+      "forgot": "J'ai oublié mon mot de passe",
+      "intro": "Saisis ton mot de passe une fois pour te connecter sur cet appareil. Tu restes connecté jusqu'à ta déconnexion explicite.",
+      "submit": "Se connecter",
+      "working": "Connexion en cours…",
+      "passphraseRequired": "Saisis ton mot de passe.",
+      "notYou": "Ce n'est pas toi ?"
+    },
+    "status": {
+      "error": {
+        "failed": "La synchronisation n'a pas abouti. Ton journal sur cet appareil reste intact.",
+        "incompatible": "Cette application et le serveur de synchronisation n'utilisent pas encore la même version, la synchronisation est donc volontairement suspendue.",
+        "offline": "Impossible de joindre le serveur de synchronisation. Ton journal est en sécurité sur cet appareil et sera mis à jour plus tard.",
+        "reauth-required": "Ta session a expiré. Reconnecte-toi pour continuer la synchronisation. Rien n'a été perdu."
+      },
+      "lastSynced": "Dernière synchronisation {{when}}",
+      "never": "Pas encore synchronisé depuis cet appareil",
+      "pending": "Modifications en attente de synchronisation",
+      "restored": {
+        "title": "Cet appareil a perdu sa copie locale",
+        "body": "Tes entrées ont été restaurées depuis ton compte. Rien n'a été supprimé."
+      },
+      "shortError": "Erreur de synchronisation",
+      "syncNow": "Synchroniser maintenant",
+      "syncedAgo": "Synchronisé · {{when}}",
+      "syncing": "Synchronisation en cours…"
+    },
+    "title": "Compte",
+    "passwordNote": "Ton mot de passe chiffre aussi ton journal. Nous ne pouvons pas le réinitialiser, conserve donc précieusement ton code de récupération.",
+    "managed": {
+      "inviteOnly": "Les comptes se créent ici avec un lien d'invitation. Si tu en as un, ouvre-le pour commencer."
+    },
+    "emailLabel": "Adresse e-mail",
+    "email": {
+      "required": "Saisis l'adresse e-mail à laquelle tu as reçu l'invitation.",
+      "invalid": "Cette adresse ne ressemble pas à une adresse e-mail.",
+      "tooLong": "Cette adresse dépasse {{max}} caractères."
+    },
+    "displayNameLabel": "Ton nom (facultatif)",
+    "suspended": "Un administrateur a suspendu ce compte. Demande-lui de le réactiver."
+  },
+  "trends": {
+    "chart": {
+      "bar": {
+        "atLeast": " au moins",
+        "calories": "{{date}} :{{atLeast}} {{value}} calories{{estimate}}",
+        "empty": "{{date}} : rien de consigné",
+        "estimate": ", en partie estimé",
+        "incomputable": "{{date}} : consigné, mais impossible de calculer les calories",
+        "netCarbs": "{{date}} :{{atLeast}} {{value}} g de glucides nets{{estimate}}{{overGoal}}",
+        "overGoal": ", au-dessus de ton objectif"
+      },
+      "goalTagPrefix": "Ton objectif : ",
+      "slotOnly": "Affichage de {{meal}} uniquement.",
+      "sparseHint": "Encore quelques jours et cela deviendra un graphique.",
+      "tapHint": "Touche un jour pour voir ce que tu as consigné.",
+      "titleCalories": "Calories quotidiennes",
+      "titleNetCarbs": "Glucides nets quotidiens"
+    },
+    "controls": {
+      "metricGroup": "Indicateur",
+      "rangeGroup": "Période",
+      "slotGroup": "Repas"
+    },
+    "empty": {
+      "body": "Dès que tu as consigné quelques repas, cette page affiche les jours où tu as atteint tes objectifs, récapitule ta semaine et trace la courbe de ton poids, fidèlement, sans masquer les manques.",
+      "cta": "Ajoute ton premier aliment",
+      "description": "Consigne quelques jours et ta progression s'affichera ici."
+    },
+    "grid": {
+      "a11yLabel": "Objectifs atteints par jour, 13 dernières semaines",
+      "a11yLabelActivity": "Jours consignés, 13 dernières semaines",
+      "against": {
+        "of": "sur {{goal}}",
+        "over": "au-dessus de {{goal}}",
+        "under": "sous {{goal}}"
+      },
+      "aria": {
+        "day": "{{date}}: {{headline}}. {{detail}}"
+      },
+      "captionIdle": "Choisis un jour pour voir le résultat.",
+      "cell": {
+        "level": "Objectifs atteints : niveau {{level}} sur 4.",
+        "logged": "Tu as saisi des données.",
+        "metCount": "{{met}} objectifs atteints sur {{total}}",
+        "today": "Aujourd'hui, en cours.",
+        "unrated": "Saisi, mais les détails manquent pour vérifier tes objectifs."
+      },
+      "description": "Les 13 dernières semaines. Plus un carré est sombre, plus tu as atteint d'objectifs ce jour-là.",
+      "descriptionActivity": "Les 13 dernières semaines. Un carré plein correspond à un jour où tu as saisi des données.",
+      "empty": "Rien de saisi lors des 13 dernières semaines. Chaque jour enregistré remplit un carré.",
+      "goal": {
+        "calories": "calories",
+        "netCarbs": "glucides nets",
+        "protein": "protéines"
+      },
+      "legendLess": "Moins",
+      "legendLogged": "Tu as saisi",
+      "legendMore": "Plus",
+      "legendRamp": "Objectifs atteints",
+      "legendUnrated": "Pas assez de détails",
+      "noGoalsCta": "Définis tes objectifs",
+      "noGoalsHint": "Définis un objectif quotidien et ces carrés indiqueront à quel point tu t'en approches chaque jour.",
+      "summary": "Tu as atteint tous tes objectifs {{days}} jours sur les {{logged}} où tu as saisi des données.",
+      "summaryActivity": "Tu as saisi des données {{days}} jours sur les {{total}} derniers.",
+      "title": "Jours avec objectifs atteints",
+      "titleActivity": "Jours où tu as saisi",
+      "verdict": {
+        "met": "atteint",
+        "missed": "non atteint"
+      }
+    },
+    "legend": {
+      "goal": "Ton objectif",
+      "incomplete": "Peut-être incomplet, la barre représente un minimum",
+      "noEntry": "Aucune entrée",
+      "overGoal": "Au-dessus de ton objectif"
+    },
+    "loading": "Chargement de ta progression…",
+    "metric": {
+      "calories": "Calories",
+      "netCarbs": "Glucides nets"
+    },
+    "range": {
+      "month": "Mois",
+      "twoWeeks": "2 semaines",
+      "week": "Semaine"
+    },
+    "recap": {
+      "averageDay": "Une journée moyenne",
+      "averaged": "Tu as consommé en moyenne <strong>{{value}}</strong> de glucides nets par jour",
+      "eatingWindow": "Plage horaire des repas médiane de ~{{duration}} sur {{days}} jours",
+      "estimateShare": "~{{percent}} % des calories de cette semaine sont estimées par l'IA",
+      "macro": {
+        "carbs": "Glucides",
+        "fat": "Lipides",
+        "fiber": "Fibres",
+        "protein": "Protéines"
+      },
+      "metProtein": "{{days}} jours enregistrés sur {{total}} ont atteint ton objectif de {{goal}} g de protéines",
+      "noChange": "aucun changement",
+      "noEntries": "Aucune entrée enregistrée cette semaine pour l'instant.",
+      "title": "Cette semaine",
+      "underGoal": "{{days}} jours enregistrés sur {{total}} étaient sous ton objectif de {{goal}} g de glucides nets",
+      "vsLastWeek": "({{delta}} par rapport à la semaine dernière)",
+      "weight": "Poids {{first}} → {{last}} kg ({{delta}})",
+      "weightNoisy": ", le poids au jour le jour fluctue beaucoup"
+    },
+    "slot": {
+      "all": "Tous les repas"
+    },
+    "sparse": {
+      "body": "Le graphique apparaîtra ici après {{days}} jours enregistrés. Rien n'est perdu entre-temps, chaque jour que tu renseignes se trouve déjà dans ton journal.",
+      "countNone": "aucun sur cette période",
+      "headline": "Les tendances nécessitent quelques jours de plus pour être représentatives, tu en as {{logged}}."
+    },
+    "streak": {
+      "active_one": "{{count}} jour consécutif, continue comme ça.",
+      "active_other": "{{count}} jours consécutifs, continue comme ça.",
+      "empty": "Enregistre un aliment aujourd'hui pour démarrer une série.",
+      "overGoal": "Tu as enregistré des entrées aujourd'hui. Ton objectif de glucides a été dépassé, la série n'augmente donc pas, car elle compte les jours situés en dessous.",
+      "title": "Ta série"
+    },
+    "title": "Progrès",
+    "weight": {
+      "caption": "La ligne représente ta tendance lissée, les points correspondent aux mesures réelles de la balance.",
+      "chartEmpty": "Enregistre ta première pesée pour afficher ta tendance.",
+      "chartLabel": "Tendance de ton poids sur les 13 dernières semaines, en {{unit}}",
+      "deleteConfirm": "Supprimer",
+      "deleteDescription": "Cette action retire la pesée de ton historique de poids. Tu peux l'enregistrer à nouveau à tout moment.",
+      "deleteLabel": "Supprimer la pesée du {{date}}",
+      "deleteTitle": "Supprimer cette pesée ?",
+      "description": "Ta tendance lissée par rapport à ton objectif. Une pesée par jour suffit largement.",
+      "empty": "Aucune pesée pour l'instant.",
+      "point": {
+        "raw": "sur la balance",
+        "trend": "tendance"
+      },
+      "pointCaptionIdle": "Parcours le graphique pour lire la valeur d'un jour donné.",
+      "singleEntry": "Une seule pesée enregistrée, il en faut encore quelques-unes pour tracer une tendance.",
+      "stat": {
+        "atTarget": "À ton objectif",
+        "change": "13 dernières semaines",
+        "latest": "Dernière mesure",
+        "latestOn": "Pesée du {{date}}",
+        "noTarget": "Aucun objectif défini",
+        "setTarget": "Définir un poids cible",
+        "toTarget": "Reste pour l'objectif"
+      },
+      "target": "cible {{value}} {{unit}}",
+      "title": "Poids",
+      "unitKilograms": "kilogrammes",
+      "unitPounds": "livres"
+    }
+  },
+  "ui": {
+    "sidebar": {
+      "title": "Barre latérale",
+      "description": "Affiche la barre latérale pour mobile.",
+      "toggle": "Basculer la barre latérale"
+    },
+    "sheet": {
+      "close": "Fermer"
+    }
+  },
+  "welcome": {
+    "body": "Cet appareil n'a pas encore de journal. Démarres-en un nouveau, ou connecte-toi à ton compte.",
+    "haveAccount": "J'ai déjà un compte",
+    "managed": {
+      "body": "Connecte-toi à ton compte, ou ouvre le lien d'invitation qu'on t'a envoyé.",
+      "haveInvite": "J'ai un lien d'invitation",
+      "pasteTitle": "Colle ton lien d'invitation",
+      "pasteLabel": "Lien d'invitation",
+      "pasteHint": "Colle le lien entier, exactement comme tu l'as reçu.",
+      "pasteContinue": "Continuer",
+      "pasteInvalid": "Cela ne ressemble pas à un lien d'invitation. Colle le lien entier, exactement comme tu l'as reçu."
+    },
+    "returning": "Cet appareil était connecté à un compte auparavant.",
+    "signIn": "Se connecter",
+    "signInAs": "Se connecter en tant que {{name}}",
+    "start": "Démarrer",
+    "startFresh": "Repartir de zéro",
+    "title": "Bienvenue sur openplate"
+  },
+  "forgot": {
+    "title": "Mot de passe oublié ?",
+    "body": "Saisis ton adresse e-mail et nous t'enverrons un lien pour en définir un nouveau.",
+    "submit": "Envoyer le lien",
+    "sent": "S'il existe un compte pour cette adresse, le lien est en route.",
+    "sentHint": "Le lien fonctionne pendant une heure. Vérifie le dossier des indésirables s'il n'arrive pas.",
+    "backToSignIn": "Retour à la connexion"
+  },
+  "reset": {
+    "title": "Définir un nouveau mot de passe",
+    "body": "Choisis un nouveau mot de passe. Ton journal reste inchangé.",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "submit": "Définir le mot de passe",
+    "working": "Définition de ton mot de passe",
+    "failed": "Impossible de définir le mot de passe. Réessaie avec le lien dans un instant.",
+    "invalid": {
+      "title": "Ce lien ne fonctionne plus",
+      "body": "Il a peut-être déjà servi, ou il a expiré. Demandes-en un nouveau.",
+      "otherApp": "Ce lien appartient à un autre openplate. Ouvre-le plutôt là-bas.",
+      "askAgain": "Envoie-moi un nouveau lien"
+    }
+  },
+  "account": {
+    "title": "Compte",
+    "name": {
+      "label": "Ton nom",
+      "hint": "Facultatif. Visible par toi et par un administrateur.",
+      "save": "Enregistrer",
+      "saved": "Enregistré.",
+      "failed": "Impossible d'enregistrer le nom."
+    },
+    "allowance": {
+      "title": "Estimations par photo",
+      "body": "{{used}} sur {{limit}} utilisés aujourd'hui.",
+      "none": "Les estimations par photo ne sont pas activées pour ce compte.",
+      "askAdmin": "C'est ton administrateur qui configure cela.",
+      "today": "Estimations par photo aujourd'hui : {{used}} sur {{limit}}",
+      "expires": "Les estimations par photo pour ce compte sont actives jusqu'au {{date}}.",
+      "expired": "Les estimations par photo pour ce compte ont pris fin le {{date}}.",
+      "planLink": "Voir ton forfait"
+    },
+    "devices": {
+      "title": "Tes appareils",
+      "body": "Ton journal est synchronisé sur chaque appareil où tu te connectes.",
+      "photosStayHere": "Les photos restent sur l'appareil qui les a prises. Elles ne sont jamais copiées vers un autre appareil."
+    },
+    "operatorSees": {
+      "title": "Ce que ton administrateur peut voir",
+      "intro": "Une organisation héberge cette instance pour toi. Quiconque l'administre peut ouvrir ton compte et voir tout ceci :",
+      "email": "Ton adresse e-mail.",
+      "displayName": "Le nom que tu as choisi, si tu en as choisi un.",
+      "createdAt": "Le jour où ton compte a été créé.",
+      "lastSeenAt": "La date de ta dernière connexion, ou de la dernière analyse d'une photo.",
+      "aiUsedToday": "Le nombre de photos analysées pour toi aujourd'hui.",
+      "dailyAiLimit": "Le nombre de photos qui peuvent être analysées pour toi chaque jour.",
+      "role": "Si tu peux administrer toi-même cette instance.",
+      "suspendedAt": "Si ton compte est suspendu.",
+      "activity": "Ces personnes peuvent aussi voir combien de photos ont été analysées pour toi lors de chacun des {{days}} derniers jours. Les décomptes quotidiens plus anciens sont supprimés.",
+      "notTheDiary": "Ce que tu manges ne figure pas sur ces pages. Ton journal est chiffré sur cet appareil avant qu'une copie n'en sorte, il ne peut donc pas y être lu.",
+      "allowanceExpiresAt": "La date de fin de ton quota.",
+      "invitesLeft": "Le nombre d'invitations qu'il te reste."
+    },
+    "password": {
+      "title": "Mot de passe",
+      "body": "Modifie le mot de passe qui te sert à te connecter.",
+      "open": "Modifier le mot de passe",
+      "currentLabel": "Mot de passe actuel",
+      "newLabel": "Nouveau mot de passe",
+      "submit": "Modifier le mot de passe",
+      "done": "Mot de passe modifié.",
+      "failed": "Impossible de modifier le mot de passe."
+    },
+    "danger": {
+      "title": "Se déconnecter et supprimer",
+      "body": "Ces deux actions ferment ce compte sur tous les appareils."
+    },
+    "signOut": {
+      "cta": "Se déconnecter partout",
+      "note": "Déconnecte ce compte de tous les appareils. Ton journal reste sur celui-ci."
+    },
+    "delete": {
+      "cta": "Supprimer le compte",
+      "confirmTitle": "Supprimer ce compte ?",
+      "confirmBody": "Tout ce qui est stocké pour {{email}} est supprimé de façon définitive. Le journal sur cet appareil reste conservé.",
+      "passwordLabel": "Ton mot de passe",
+      "confirmCta": "Le supprimer",
+      "failed": "Impossible de supprimer le compte.",
+      "note": "Saisis ton mot de passe pour confirmer. Cette action est irréversible."
+    },
+    "signedOut": {
+      "title": "Tu es déconnecté",
+      "body": "Connecte-toi pour voir ton compte.",
+      "signIn": "Se connecter"
+    },
+    "invites": {
+      "title": "Inviter quelqu'un",
+      "body": "Envoie une invitation par e-mail. La personne invitée obtient son propre compte sur cette instance, avec son propre journal.",
+      "label": "Adresse e-mail",
+      "left": "Invitations restantes : {{left}}",
+      "none": "Tu as utilisé toutes tes invitations.",
+      "send": "Envoyer l'invitation",
+      "sent": "Si cette adresse peut recevoir une invitation, le message est en route. Nous répondons toujours la même chose, afin que personne ne puisse utiliser cette fonction pour savoir qui a déjà un compte.",
+      "failed": "L'invitation n'a pas pu être envoyée. Réessaie dans un instant."
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Invite des personnes, définis le nombre de photos qu'elles peuvent analyser chaque jour et gère leurs comptes.",
+    "notAdmin": {
+      "title": "Tu n'administres pas cette instance",
+      "body": "Cette page est réservée aux personnes qui gèrent cette instance. Demande à l'une d'entre elles si tu dois modifier un paramètre de ton compte.",
+      "back": "Retour aux paramètres"
+    },
+    "stats": {
+      "people": "Utilisateurs",
+      "admins": "Administrateurs",
+      "pending": "Invitations en attente",
+      "photosToday": "Photos analysées aujourd'hui"
+    },
+    "people": {
+      "title": "Personnes",
+      "empty": "Personne n'a encore de compte ici.",
+      "loading": "Chargement",
+      "failed": "La liste n'a pas pu être chargée.",
+      "retry": "Réessayer"
+    },
+    "columns": {
+      "person": "Personne",
+      "role": "Rôle",
+      "allowance": "Photos par jour",
+      "usedToday": "Utilisées aujourd'hui",
+      "standing": "Statut",
+      "lastSeen": "Dernière connexion",
+      "recentDays": "{{days}} derniers jours",
+      "photosRead": "Photos analysées",
+      "joined": "Date d'inscription",
+      "actions": "Actions"
+    },
+    "usage": "{{used}} sur {{limit}}",
+    "usageNone": "Aucune photo",
+    "lastSeen": {
+      "never": "Jamais connecté"
+    },
+    "person": {
+      "back": "Retour à la liste",
+      "activityTitle": "Photos lues par jour",
+      "activityWindow": "Les {{days}} derniers jours, du {{from}} au {{to}}.",
+      "activityTotal": "Photos lues sur cette période : {{photos}}",
+      "activityQuiet": "Rien n'a été lu sur cette période.",
+      "activityLegend": "Un carré représente un jour. Un carré vide est un jour sans lecture. Les jours antérieurs à cette période ne sont pas conservés.",
+      "day": "{{day}}: {{photos}}",
+      "activityLoading": "Chargement",
+      "activityFailed": "Impossible de charger les totaux quotidiens.",
+      "activityRetry": "Réessayer",
+      "noDiary": "Voici tout ce qui est conservé ici sur la façon dont cette personne utilise l'instance. Son journal est chiffré sur son propre appareil et ne peut pas être lu ici.",
+      "selfNote": "Il s'agit de ton propre compte. Tu ne peux pas le suspendre ni le supprimer ici, afin que la dernière personne pouvant administrer cette instance ne se retrouve pas bloquée dehors.",
+      "notFound": "Il n'y a personne à cette adresse."
+    },
+    "role": {
+      "label": "Rôle",
+      "admin": "Administrateur",
+      "standard": "Standard"
+    },
+    "standing": {
+      "active": "Actif",
+      "suspended": "Suspendu"
+    },
+    "you": "Toi",
+    "noName": "Sans nom",
+    "edit": {
+      "open": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "allowanceLabel": "Photos par jour",
+      "allowanceHint": "0 désactive la lecture de photos pour cette personne.",
+      "saved": "Enregistré.",
+      "failed": "Cette modification n'a pas été appliquée."
+    },
+    "suspend": {
+      "cta": "Suspendre",
+      "confirmTitle": "Suspendre {{email}} ?",
+      "confirmBody": "La personne est déconnectée de tous ses appareils et ne peut plus se reconnecter tant que tu ne la réactives pas. Son journal est conservé.",
+      "confirmCta": "Suspendre"
+    },
+    "reactivate": {
+      "cta": "Réactiver"
+    },
+    "resetMail": {
+      "cta": "Envoyer un lien de réinitialisation",
+      "sent": "Lien de réinitialisation envoyé à {{email}}.",
+      "noMail": "Cette instance n'envoie pas d'e-mail, transmets donc le lien toi-même à {{email}}.",
+      "failed": "Impossible d'envoyer le lien de réinitialisation."
+    },
+    "delete": {
+      "cta": "Supprimer",
+      "confirmTitle": "Supprimer {{email}} ?",
+      "confirmBody": "Le compte et toutes les données stockées ici pour lui sont supprimés. Cette action est irréversible.",
+      "typeLabel": "Saisis l'adresse pour confirmer",
+      "confirmCta": "Supprimer définitivement",
+      "failed": "Impossible de supprimer le compte."
+    },
+    "invites": {
+      "title": "Invitations en attente",
+      "empty": "Aucune invitation en attente.",
+      "expires": "Valide jusqu'au {{date}}",
+      "resend": "Renvoyer",
+      "resent": "Une nouvelle invitation a été envoyée à {{email}}.",
+      "revoke": "Révoquer",
+      "revokeConfirmTitle": "Révoquer l'invitation pour {{email}} ?",
+      "revokeConfirmBody": "Leur lien cesse de fonctionner. Tu peux les réinviter quand tu veux.",
+      "revokeConfirmCta": "Révoquer",
+      "failed": "L'opération a échoué.",
+      "loadFailed": "Impossible de charger les invitations."
+    },
+    "invite": {
+      "cta": "Inviter quelqu'un",
+      "title": "Inviter quelqu'un",
+      "body": "La personne reçoit un e-mail avec un lien. Il lui demande un mot de passe et l'amène directement dans l'application.",
+      "emailLabel": "Adresse e-mail",
+      "emailRequired": "Une adresse e-mail est requise.",
+      "nameLabel": "Nom",
+      "nameHint": "Facultatif. Visible par cette personne, et par toi dans la liste.",
+      "allowanceLabel": "Photos par jour",
+      "allowanceHint": "Nombre de photos d'assiette analysables par jour. Mettre 0 pour désactiver.",
+      "expiryLabel": "Le lien reste valide pendant",
+      "expiryHint": "En jours. 30 au maximum.",
+      "submit": "Envoyer l'invitation",
+      "sending": "Envoi en cours",
+      "sentTitle": "Invitation envoyée à {{email}}",
+      "sentBody": "La personne peut définir un mot de passe et commencer tout de suite.",
+      "linkTitle": "Invitation prête pour {{email}}",
+      "linkBody": "Cette instance n'envoie pas de courriel, transmets donc le lien toi-même. Quiconque le possède peut ouvrir le compte, envoie-le donc comme tu enverrais un mot de passe.",
+      "linkCopy": "Copier le lien",
+      "linkCopied": "Copié",
+      "again": "Inviter quelqu'un d'autre",
+      "failed": "Impossible de créer l'invitation.",
+      "exists": "{{email}} a déjà un compte ici.",
+      "back": "Retour à la liste"
+    },
+    "tabs": {
+      "label": "Sections de la console",
+      "people": "Utilisateurs",
+      "invitations": "Invitations",
+      "activity": "Activité",
+      "feedback": "Rapports"
+    },
+    "filter": {
+      "searchLabel": "Recherche",
+      "searchPlaceholder": "Nom ou adresse courriel",
+      "groupLabel": "Afficher",
+      "everybody": "Tout le monde",
+      "active": "Actifs",
+      "suspended": "Suspendus",
+      "administrators": "Administrateurs",
+      "noneQuery": "Personne ici ne correspond à « {{query}} ».",
+      "noneGroup": "Personne ici n'appartient à « {{group}} ».",
+      "noneBoth": "Personne dans « {{group}} » ne correspond à « {{query}} »."
+    },
+    "activity": {
+      "title": "Qui l'utilise encore",
+      "body": "Une ligne par personne, de la plus récente à la plus ancienne.",
+      "windowLabel": "Fenêtre",
+      "windowDays": "{{days}} jours",
+      "failed": "Impossible de charger les décomptes quotidiens. La liste des personnes reste affichée."
+    },
+    "feedback": {
+      "title": "Estimations signalées",
+      "body": "Ce que les personnes ont envoyé lorsqu'une mesure semblait incorrecte. Chaque signalement s'efface {{days}} jours après sa réception.",
+      "empty": "Rien n'a été signalé.",
+      "loading": "Chargement",
+      "failed": "Impossible de charger les signalements.",
+      "retry": "Réessayer",
+      "reportTitle": "Signalement {{id}}",
+      "person": "Compte {{id}}",
+      "reportedAt": "Signalé le {{date}}",
+      "deletesAt": "S'efface le {{date}}",
+      "hasPhoto": "Avec photo",
+      "noPhoto": "Sans photo, repas saisi au clavier",
+      "photoAlt": "La photo envoyée avec le signalement {{id}}",
+      "photoLoading": "Chargement de la photo",
+      "photoGone": "La photo a déjà été supprimée.",
+      "photoFailed": "Impossible de charger la photo.",
+      "back": "Retour aux signalements",
+      "notFound": "Il n'y a rien à cette adresse.",
+      "noName": "Cette entrée n'avait pas de nom.",
+      "grams": "{{value}} g",
+      "calories": "{{value}} kcal",
+      "figureNone": "Aucun renseigné",
+      "aiEstimated": "Estimé par le modèle",
+      "notAiEstimated": "Non estimé par le modèle",
+      "source": "Saisi depuis {{source}}",
+      "consentTitle": "Ce qui a été convenu",
+      "consentAgreed": "Accepté le {{date}}",
+      "consentWording": "Version {{version}} du texte",
+      "deleteCta": "Supprimer maintenant",
+      "deleteConfirmTitle": "Supprimer le rapport {{id}} ?",
+      "deleteConfirmBody": "Les chiffres et la photo disparaissent maintenant, sans attendre l'expiration du délai. Cette action est irréversible.",
+      "deleteConfirmCta": "Supprimer définitivement",
+      "deleteFailed": "Impossible de supprimer le rapport."
+    }
+  },
+  "aiIntake": {
+    "noAllowance": "Les entrées par IA ne sont pas activées pour ce compte. Demande à ton administrateur de les activer. La recherche dans la base de données alimentaire fonctionne sans elles.",
+    "allowanceEnded": "Les entrées par IA pour ce compte ont pris fin le {{date}}. La recherche dans la base de données alimentaire fonctionne toujours.",
+    "notSwitchedOn": "Les entrées par IA ne sont pas activées pour ce compte. La recherche dans la base de données alimentaire fonctionne sans elles.",
+    "plansEnded": "Ton essai a pris fin le {{date}}. Choisis un forfait pour continuer à utiliser les entrées par IA. La recherche dans la base de données alimentaire fonctionne toujours.",
+    "plansNotSwitchedOn": "Les entrées par IA ne sont pas encore activées pour ce compte. Choisis un forfait pour les activer. La recherche dans la base de données alimentaire fonctionne sans elles.",
+    "plansLink": "Consulter les forfaits"
+  },
+  "plan": {
+    "title": "Ton forfait",
+    "loading": "Lecture de ton forfait en cours.",
+    "unknown": "Ton forfait n'a pas encore été lu.",
+    "signedOut": "Connecte-toi pour voir ton forfait.",
+    "absent": "Il n'y a aucun forfait sur cette instance.",
+    "failed": "Impossible de lire ton forfait. Réessaie dans un instant.",
+    "actionFailed": "Impossible d'ouvrir cet élément. Réessaie dans un instant.",
+    "status": {
+      "none": "Tu utilises la version gratuite d'openplate.",
+      "trialing": "Ton essai est en cours.",
+      "active": "Ton forfait est payé et actif.",
+      "pastDue": "Ton dernier paiement n'a pas abouti.",
+      "canceled": "Ton forfait a pris fin."
+    },
+    "renewsOn": "Il se renouvelle le {{date}}, sauf si tu résilies.",
+    "endsOn": "Tu as résilié. Ton accès reste valable jusqu'au {{date}}, puis s'arrête.",
+    "vatNote": "Les prix incluent la TVA allemande.",
+    "start": "Souscrire un forfait",
+    "manage": "Gérer ton forfait",
+    "returned": {
+      "success": "Merci. Ton paiement est bien passé. L'affichage peut prendre un instant ici.",
+      "cancelled": "Tu as fermé la page de paiement. Rien n'a été débité."
+    }
+  },
+  "usual": {
+    "title": {
+      "breakfast": "Ton petit-déjeuner habituel",
+      "lunch": "Ton déjeuner habituel",
+      "dinner": "Ton dîner habituel",
+      "snack": "Ton en-cas habituel"
+    },
+    "itemCount_one": "{{count}} aliment",
+    "itemCount_other": "{{count}} aliments",
+    "toast": {
+      "logged_one": "{{name}} enregistré.",
+      "logged_other": "{{name}} enregistré, {{count}} aliments."
+    }
+  }
+}

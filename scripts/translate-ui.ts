@@ -26,10 +26,10 @@
  * `app/i18n/memory/de.json` (find the entry by its `path` field), or delete that entry to have
  * the string bought again. `app/i18n/memory/README.md` says the same thing next to the file.
  *
- * ── KEYED BY PATH AND ENGLISH, WHERE THE WEBSITE KEYS BY ENGLISH ALONE ──
- * `scripts/lib/translate-bundles.ts` says why, with the two regressions the other keying
- * produced on this catalog. The consequence for a reader of the memory: one entry per catalog
- * key, and an English sentence under two keys is two entries.
+ * ── KEYED BY PATH AND ENGLISH ──
+ * The vendored `scripts/lib/translate-ui.ts` says why, with the two regressions the English-only
+ * keying produced on this catalog. The consequence for a reader of the memory: one entry per
+ * catalog key, and an English sentence under two keys is two entries.
  *
  * ── `--adopt`, ONCE ──
  * German was hand-written before this script existed. A first ordinary run would see an empty
@@ -53,22 +53,17 @@ import { resolve } from 'node:path';
 import { SUPPORTED_LANGUAGES } from '../app/i18n/language-prefs';
 import { type Memory } from './lib/translate-shims/docs-i18n.server';
 import { MODEL, type Quote, type Usage, dashOffenders, loadMemory, lookup, price, saveMemory } from './lib/translate';
-import {
-  MEMORY_DIR,
-  SOURCE_LANGUAGE,
-  buyByBundle,
-  collectByPath,
-  groupByBundle,
-  memoAt,
-  rebuildByPath,
-} from './lib/translate-bundles';
+import { MEMORY_DIR, SOURCE_LANGUAGE, buyByBundle, groupByBundle } from './lib/translate-bundles';
 import {
   type CatalogTree,
   type UnitOfLeaf,
   catalogPath,
+  collectByPath,
   leaves,
+  memoAt,
   namespacesOf,
   readCatalog,
+  rebuildByPath,
   saveCatalog,
   skipReason,
 } from './lib/translate-ui';

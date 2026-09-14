@@ -35,6 +35,7 @@
  * (M223's principle). What leaves here is an endpoint, its two keys, a time
  * zone, a language, one minute of the day and two booleans.
  */
+import { readDeviceLanguage } from '#app/i18n/language-prefs';
 import { createComponentLogger } from '#app/lib/logger';
 import { getSyncVault } from '#app/lib/sync/sync-session';
 
@@ -429,7 +430,9 @@ const DEFAULT_DEPENDENCIES: PushDependencies = {
   unsubscribeFromPush: unsubscribeInBrowser,
   readPermission: readBrowserPermission,
   readTimeZone: () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-  readLocale: () => (globalThis.navigator === undefined ? 'en' : navigator.language),
+  // The app's own bare code, never `navigator.language`: the server takes `en`
+  // and refuses `en-US` with a 400, and the switcher sets exactly this cookie.
+  readLocale: readDeviceLanguage,
   storage: browserStorage,
 };
 

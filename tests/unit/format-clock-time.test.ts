@@ -65,7 +65,7 @@ describe('formatClockTime', () => {
 
   it('falls back to English for an unsupported language rather than throwing', () => {
     assert.strictEqual(
-      normalizeSpaces(formatClockTime(EVENING_UTC, { timezone: 'Europe/Berlin', language: 'fr' })),
+      normalizeSpaces(formatClockTime(EVENING_UTC, { timezone: 'Europe/Berlin', language: 'pt' })),
       '8:32 PM',
     );
   });

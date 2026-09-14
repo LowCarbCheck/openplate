@@ -27,8 +27,13 @@ export const LANGUAGE_COOKIE = 'openplate-language';
 /** Same key as the cookie so i18next's detector can use one lookup name for both. */
 export const LANGUAGE_STORAGE_KEY = 'openplate-language';
 
-/** The languages the app ships translations for. `en` is the fallback for every missing key. */
-export const SUPPORTED_LANGUAGES = ['en', 'de'] as const;
+/**
+ * The languages the app ships translations for, in the order the switcher lists them. `en` is
+ * the fallback for every missing key. Every `Record<LanguageCode, ...>` in the app is checked
+ * with `satisfies`, so a seventh entry here is a typecheck failure in each place that names a
+ * language until it has been given one.
+ */
+export const SUPPORTED_LANGUAGES = ['en', 'de', 'fr', 'it', 'es', 'tr'] as const;
 
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -48,6 +53,10 @@ export const DEFAULT_LANGUAGE: LanguageCode = 'en';
 export const LANGUAGE_LABELS = {
   en: 'English',
   de: 'Deutsch',
+  fr: 'Français',
+  it: 'Italiano',
+  es: 'Español',
+  tr: 'Türkçe',
 } satisfies Record<LanguageCode, string>;
 
 /**
@@ -138,6 +147,22 @@ export function writeStoredLanguage(code: LanguageCode): void {
   } catch {
     /* storage blocked — the cookie still carries the preference */
   }
+}
+
+/**
+ * CLIENT: the language this device is set to, as the bare code the app ships.
+ *
+ * The cookie first, because the server rendered this document from it and
+ * i18next detects from it alone, so this is the language on screen. The
+ * storage mirror second, for a cookie that was evicted. `DEFAULT_LANGUAGE`
+ * last. NEVER `navigator.language`: that is a region tag (`en-US`, `de-AT`),
+ * and the sync server's push registration accepts only the six bare codes
+ * and answers 400 to anything else, which is how a push subscription from
+ * this app once died on `en-US` (M230). Anything that sends the app's
+ * language over the wire reads it here.
+ */
+export function readDeviceLanguage(): LanguageCode {
+  return readLanguageCookie() ?? readStoredLanguage() ?? DEFAULT_LANGUAGE;
 }
 
 /**

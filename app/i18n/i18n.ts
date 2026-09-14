@@ -1,9 +1,9 @@
 /**
  * i18n.ts — the shared i18next singleton.
  *
- * Both locale bundles are inline ESM imports, so they are part of the app
+ * Every locale bundle is an inline ESM import, so they are part of the app
  * bundle: no runtime fetch, no async loading state, and — the reason it
- * matters here — the PWA keeps working fully offline in either language
+ * matters here, the PWA keeps working fully offline in every language
  * without a separate cache entry for the translations.
  *
  * TWO NAMESPACES. `common` is the UI, loaded on every page. `legal` is the
@@ -24,22 +24,46 @@ import i18next from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 
-import { DEFAULT_LANGUAGE, LANGUAGE_COOKIE } from './language-prefs';
+import { DEFAULT_LANGUAGE, LANGUAGE_COOKIE, SUPPORTED_LANGUAGES, type LanguageCode } from './language-prefs';
 import enCommon from './locales/en/common.json';
 import deCommon from './locales/de/common.json';
+import frCommon from './locales/fr/common.json';
+import itCommon from './locales/it/common.json';
+import esCommon from './locales/es/common.json';
+import trCommon from './locales/tr/common.json';
 import enLegal from './locales/en/legal.json';
 import deLegal from './locales/de/legal.json';
+import frLegal from './locales/fr/legal.json';
+import itLegal from './locales/it/legal.json';
+import esLegal from './locales/es/legal.json';
+import trLegal from './locales/tr/legal.json';
+
+/** A translation catalog: nested objects bottoming out in strings. */
+interface Catalog {
+  readonly [key: string]: string | Catalog;
+}
+
+/**
+ * Every shipped catalog, keyed by language. The keys are an object literal, which no grep for a
+ * language code finds, so `satisfies` is what makes a language added to `SUPPORTED_LANGUAGES`
+ * without a catalog here a typecheck failure rather than a silently English UI.
+ */
+const RESOURCES = {
+  en: { common: enCommon, legal: enLegal },
+  de: { common: deCommon, legal: deLegal },
+  fr: { common: frCommon, legal: frLegal },
+  it: { common: itCommon, legal: itLegal },
+  es: { common: esCommon, legal: esLegal },
+  tr: { common: trCommon, legal: trLegal },
+} satisfies Record<LanguageCode, { common: Catalog; legal: Catalog }>;
 
 void i18next
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: {
-      en: { common: enCommon, legal: enLegal },
-      de: { common: deCommon, legal: deLegal },
-    },
+    resources: RESOURCES,
     fallbackLng: DEFAULT_LANGUAGE,
-    supportedLngs: ['en', 'de'],
+    supportedLngs: [...SUPPORTED_LANGUAGES],
     defaultNS: 'common',
     ns: ['common', 'legal'],
     detection: {

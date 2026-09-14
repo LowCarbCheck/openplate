@@ -1,15 +1,16 @@
 /**
- * Key parity between the shipped locales, over every namespace.
+ * Key parity between the shipped locales, over every namespace and every
+ * translated language in `SUPPORTED_LANGUAGES` (M230: de, fr, it, es, tr).
  *
- * `fallbackLng: 'en'` means a missing German key doesn't crash — it silently
+ * `fallbackLng: 'en'` means a missing key doesn't crash, it silently
  * renders English, which is exactly the kind of half-translated page nobody
- * notices in review and every German user notices immediately. There is no
- * cloud CI on this repo (see the workspace CLAUDE.md), so this test is the
- * gate: a key added to `en/common.json` or `en/legal.json` without its German
- * counterpart fails the local pre-push run.
+ * notices in review and every reader of that language notices immediately.
+ * There is no cloud CI on this repo (see the workspace CLAUDE.md), so this
+ * test is the gate: a key added to `en/common.json` or `en/legal.json`
+ * without its counterparts fails the local pre-push run.
  *
- * The assertion is one-directional on purpose — `de ⊇ en`. English is the
- * source catalog, so an extra German key is dead weight rather than a bug,
+ * The assertion is one-directional on purpose, `target ⊇ en`. English is the
+ * source catalog, so an extra translated key is dead weight rather than a bug,
  * and it gets its own softer check below.
  *
  * It also compares the SHAPE, not just the leaf paths: a key that is an object
@@ -29,6 +30,14 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
+
+import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
+
+/** The source catalog, which the others are checked against. */
+const SOURCE = 'en';
+
+/** Every language that is translated, which is every one that is not the source. */
+const TARGETS = SUPPORTED_LANGUAGES.filter((code) => code !== SOURCE);
 
 /** Every catalog the app ships, `app/i18n/locales/<locale>/<namespace>.json`. */
 const NAMESPACES = ['common', 'legal'] as const;
@@ -130,51 +139,60 @@ function placeholderMismatches(en: Catalog, de: Catalog): string[] {
 
 // ── over the shipped catalogs ────────────────────────────────────────────────
 
-for (const namespace of NAMESPACES) {
-  const en = loadCatalog('en', namespace);
-  const de = loadCatalog('de', namespace);
-
-  describe(`${namespace}.json`, () => {
-    it('holds enough strings that the checks below are not passing on an empty file', () => {
-      assert.ok(leafPaths(en).length >= 50, `${namespace}.json has ${leafPaths(en).length} English strings`);
-    });
-
-    it('translates every English key into German — no silent English fallback', () => {
-      const missing = missingKeys(en, de);
-      assert.deepEqual(
-        missing,
-        [],
-        `Missing German translations for ${missing.length} key(s) in ${namespace}.json:\n  ${missing.join('\n  ')}`,
-      );
-    });
-
-    it('has no orphaned German keys — every one traces back to an English source string', () => {
-      const orphans = orphanKeys(en, de);
-      assert.deepEqual(
-        orphans,
-        [],
-        `German keys with no English counterpart in ${namespace}.json:\n  ${orphans.join('\n  ')}`,
-      );
-    });
-
-    it('has no untranslated English SENTENCE sitting in the German catalog', () => {
-      const untranslated = untranslatedSentences(en, de);
-      assert.deepEqual(
-        untranslated,
-        [],
-        `${untranslated.length} German values in ${namespace}.json are byte-identical English sentences:\n  ${untranslated.join('\n  ')}`,
-      );
-    });
-
-    it('keeps interpolation placeholders intact in every translation', () => {
-      const mismatched = placeholderMismatches(en, de);
-      assert.deepEqual(
-        mismatched,
-        [],
-        `Interpolation placeholders differ between en and de in ${namespace}.json:\n  ${mismatched.join('\n  ')}`,
-      );
-    });
+describe('the language list', () => {
+  it('names several translated languages, so the loop below is not over an empty list', () => {
+    assert.ok(TARGETS.length >= 5, `only ${TARGETS.length} translated language(s)`);
+    assert.ok(TARGETS.includes('de'));
   });
+});
+
+for (const locale of TARGETS) {
+  for (const namespace of NAMESPACES) {
+    const en = loadCatalog(SOURCE, namespace);
+    const target = loadCatalog(locale, namespace);
+
+    describe(`${locale}/${namespace}.json`, () => {
+      it('holds enough strings that the checks below are not passing on an empty file', () => {
+        assert.ok(leafPaths(en).length >= 50, `${namespace}.json has ${leafPaths(en).length} English strings`);
+      });
+
+      it(`translates every English key into ${locale}, no silent English fallback`, () => {
+        const missing = missingKeys(en, target);
+        assert.deepEqual(
+          missing,
+          [],
+          `Missing ${locale} translations for ${missing.length} key(s) in ${namespace}.json:\n  ${missing.join('\n  ')}`,
+        );
+      });
+
+      it(`has no orphaned ${locale} keys, every one traces back to an English source string`, () => {
+        const orphans = orphanKeys(en, target);
+        assert.deepEqual(
+          orphans,
+          [],
+          `${locale} keys with no English counterpart in ${namespace}.json:\n  ${orphans.join('\n  ')}`,
+        );
+      });
+
+      it(`has no untranslated English SENTENCE sitting in the ${locale} catalog`, () => {
+        const untranslated = untranslatedSentences(en, target);
+        assert.deepEqual(
+          untranslated,
+          [],
+          `${untranslated.length} ${locale} values in ${namespace}.json are byte-identical English sentences:\n  ${untranslated.join('\n  ')}`,
+        );
+      });
+
+      it('keeps interpolation placeholders intact in every translation', () => {
+        const mismatched = placeholderMismatches(en, target);
+        assert.deepEqual(
+          mismatched,
+          [],
+          `Interpolation placeholders differ between en and ${locale} in ${namespace}.json:\n  ${mismatched.join('\n  ')}`,
+        );
+      });
+    });
+  }
 }
 
 // ── the checks themselves ────────────────────────────────────────────────────

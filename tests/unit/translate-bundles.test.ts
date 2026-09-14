@@ -7,22 +7,40 @@
  * The bundle cases name a namespace that is NOT legal beside the one that is. The keying cases
  * assert two keys with the same English get two entries, and then that the same key with an edited
  * English gets a new one, so the property is "path and English", not "path" and not "English".
+ *
+ * ── THE LIBRARY'S KEYING READS THE APP'S MEMORY ──
+ * The path keying was written here first and moved into the website's library in M230. The
+ * committed memories under `app/i18n/memory/` were written by the app's copy; the case below
+ * rebuilds every committed catalog from them through the LIBRARY's functions and compares the
+ * bytes, with the English tree as the held fallback so a value can only come from the memory.
+ * The control is an empty memory, which must produce the English file instead.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { type Unit } from '../../scripts/lib/translate-shims/docs-i18n.server';
-import { type Usage, style } from '../../scripts/lib/translate';
-import { type CatalogTree, type TranslateFn, bundleForNamespace } from '../../scripts/lib/translate-ui';
+import { type Usage, loadMemory, lookup, style } from '../../scripts/lib/translate';
 import {
-  buyByBundle,
+  type CatalogTree,
+  type TranslateFn,
+  bundleForNamespace,
+  catalogPath,
   collectByPath,
-  groupByBundle,
+  leaves,
   memoAt,
+  namespacesOf,
   pathOf,
+  readCatalog,
   rebuildByPath,
+  skipReason,
   unitKey,
-} from '../../scripts/lib/translate-bundles';
+} from '../../scripts/lib/translate-ui';
+import { MEMORY_DIR, SOURCE_LANGUAGE, buyByBundle, groupByBundle } from '../../scripts/lib/translate-bundles';
+
+const ROOT = resolve(import.meta.dirname, '../..');
 
 const ENGLISH: CatalogTree = {
   nav: { fasting: 'Fasting' },
@@ -128,6 +146,73 @@ describe('the rebuild', () => {
     assert.deepEqual(Object.keys(rebuilt), ['intro', 'nav']);
     assert.deepEqual(rebuilt, { intro: { hello: 'Hello there' }, nav: { fasting: 'Fasten' } });
   });
+});
+
+/** A flat key map back into a tree, for `rebuildByPath`'s `existing` argument. */
+function treeOf(flat: Map<string, string>): CatalogTree {
+  type Node = Record<string, string | CatalogTree>;
+  const root: Node = {};
+  const nodes = new Map<string, Node>([['', root]]);
+  for (const [key, value] of flat) {
+    const parts = key.split('.');
+    let prefix = '';
+    let node = root;
+    for (const part of parts.slice(0, -1)) {
+      prefix = prefix === '' ? part : `${prefix}.${part}`;
+      let next = nodes.get(prefix);
+      if (next === undefined) {
+        next = {};
+        nodes.set(prefix, next);
+        node[part] = next;
+      }
+      node = next;
+    }
+    node[parts[parts.length - 1] ?? ''] = value;
+  }
+  return root;
+}
+
+describe('the committed memory, read by the library', () => {
+  const namespaces = namespacesOf(ROOT, SOURCE_LANGUAGE);
+  const english = new Map(namespaces.map((namespace) => [namespace, readCatalog(catalogPath(ROOT, SOURCE_LANGUAGE, namespace))]));
+
+  /**
+   * The target catalog with every prose leaf put back to its English, so only a leaf the
+   * translator skips (a number, a placeholder, a name) still carries the target's own value.
+   * A prose leaf can then only be answered by the memory, which is what the proof is about.
+   */
+  function heldSkippedOnly(namespace: string, target: CatalogTree): CatalogTree {
+    const tree = english.get(namespace);
+    assert.ok(tree !== undefined);
+    const held = new Map(leaves(target).filter((leaf) => skipReason(leaf.value) !== null).map((leaf) => [leaf.key, leaf.value]));
+    return rebuildByPath(namespace, tree, new Map(), treeOf(held));
+  }
+
+  for (const locale of ['de'] as const) {
+    it(`rebuilds every ${locale} catalog byte for byte from the memory, with only skipped leaves held`, () => {
+      const memory = loadMemory(resolve(ROOT, MEMORY_DIR, `${locale}.json`));
+      const done = lookup(memory, locale);
+      assert.ok(done.size > 0);
+      for (const namespace of namespaces) {
+        const tree = english.get(namespace);
+        assert.ok(tree !== undefined);
+        const committed = readFileSync(catalogPath(ROOT, locale, namespace), 'utf8');
+        const held = heldSkippedOnly(namespace, readCatalog(catalogPath(ROOT, locale, namespace)));
+        const rebuilt = `${JSON.stringify(rebuildByPath(namespace, tree, done, held), null, 2)}\n`;
+        assert.equal(rebuilt, committed, `${locale}/${namespace}.json`);
+      }
+    });
+
+    it(`does not give the ${locale} catalog back from an empty memory, so the case above proves the memory`, () => {
+      for (const namespace of namespaces) {
+        const tree = english.get(namespace);
+        assert.ok(tree !== undefined);
+        const held = heldSkippedOnly(namespace, readCatalog(catalogPath(ROOT, locale, namespace)));
+        const rebuilt = `${JSON.stringify(rebuildByPath(namespace, tree, new Map(), held), null, 2)}\n`;
+        assert.notEqual(rebuilt, readFileSync(catalogPath(ROOT, locale, namespace), 'utf8'));
+      }
+    });
+  }
 });
 
 describe('the buy loop, through the library seam', () => {

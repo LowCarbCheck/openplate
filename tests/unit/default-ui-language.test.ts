@@ -45,15 +45,16 @@ describe('parseDefaultUiLanguage', () => {
   });
 
   it('THROWS on a language we do not ship, rather than quietly serving English', () => {
-    // The whole point of the rule: `fr` is a request for French. Answering it
-    // with English would be wrong on every page, forever, and silent.
-    assert.throws(() => parseDefaultUiLanguage('fr'), /DEFAULT_UI_LANGUAGE/);
+    // The whole point of the rule: `pt` is a request for Portuguese, which the
+    // app does not ship (`fr` does, since M230). Answering it with English would
+    // be wrong on every page, forever, and silent.
+    assert.throws(() => parseDefaultUiLanguage('pt'), /DEFAULT_UI_LANGUAGE/);
     assert.throws(() => parseDefaultUiLanguage('de-DE'), /DEFAULT_UI_LANGUAGE/);
     assert.throws(() => parseDefaultUiLanguage('english'), /DEFAULT_UI_LANGUAGE/);
   });
 
   it('names the value it refused, so the operator can see their own typo', () => {
-    assert.throws(() => parseDefaultUiLanguage('fr'), /"fr"/);
+    assert.throws(() => parseDefaultUiLanguage('pt'), /"pt"/);
   });
 });
 
@@ -72,7 +73,7 @@ describe('resolveRequestLanguage', () => {
   });
 
   it('falls back to the instance default when the cookie is junk', () => {
-    assert.equal(resolveRequestLanguage(`${LANGUAGE_COOKIE}=fr`, 'de'), 'de');
+    assert.equal(resolveRequestLanguage(`${LANGUAGE_COOKIE}=pt`, 'de'), 'de');
     assert.equal(resolveRequestLanguage(`${LANGUAGE_COOKIE}=`, 'de'), 'de');
   });
 });

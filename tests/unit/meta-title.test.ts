@@ -43,7 +43,7 @@ describe('metaTitle', () => {
   });
 
   it('falls back to English for an unsupported or tampered language', () => {
-    assert.strictEqual(metaTitle('fr', 'meta.settings'), 'Settings · openplate');
+    assert.strictEqual(metaTitle('pt', 'meta.settings'), 'Settings · openplate');
     assert.strictEqual(metaTitle(null, 'meta.settings'), 'Settings · openplate');
     assert.strictEqual(metaTitle(undefined, 'meta.settings'), 'Settings · openplate');
   });
@@ -92,7 +92,7 @@ describe('metaLanguage', () => {
   });
 
   it('falls back to English for a junk language — the cookie is not httpOnly', () => {
-    assert.strictEqual(metaLanguage(matches('fr')), 'en');
+    assert.strictEqual(metaLanguage(matches('pt')), 'en');
     assert.strictEqual(metaLanguage(matches(42)), 'en');
     assert.strictEqual(metaLanguage(matches(null)), 'en');
   });

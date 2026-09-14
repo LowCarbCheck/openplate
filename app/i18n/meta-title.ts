@@ -32,17 +32,25 @@ import { z } from 'zod';
 import { DEFAULT_LANGUAGE, isLanguageCode, type LanguageCode } from './language-prefs';
 import enCommon from './locales/en/common.json';
 import deCommon from './locales/de/common.json';
+import frCommon from './locales/fr/common.json';
+import itCommon from './locales/it/common.json';
+import esCommon from './locales/es/common.json';
+import trCommon from './locales/tr/common.json';
 
 /** A translation catalog: nested objects bottoming out in strings. */
 type Catalog = { readonly [key: string]: string | Catalog };
 
 /**
- * Both shipped catalogs, keyed by language. Static imports — the same bundles
+ * Every shipped catalog, keyed by language. Static imports, the same bundles
  * `i18n.ts` feeds i18next, so a title can never drift from the rest of the UI.
  */
 const CATALOGS = {
   en: enCommon,
   de: deCommon,
+  fr: frCommon,
+  it: itCommon,
+  es: esCommon,
+  tr: trCommon,
 } satisfies Record<LanguageCode, Catalog>;
 
 /** The root route's id, as registered by React Router for `app/root.tsx`. */

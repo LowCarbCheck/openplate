@@ -4,8 +4,8 @@
  * This site is prerendered to static HTML at build time, so the language cannot
  * come from a cookie, a header or a stored preference: those are read at
  * request time, and there is no request. Every page therefore exists once per
- * language, at its German path and again under `/en` and `/fr`, and the prefix
- * in the URL IS the language. A crawler, a shared link and a browser back
+ * language, at its German path and again under `/en`, `/fr`, `/it`, `/es` and
+ * `/tr`, and the prefix in the URL IS the language. A crawler, a shared link and a browser back
  * button all agree on which document they are looking at, and every copy is
  * cacheable forever.
  *
@@ -33,7 +33,7 @@
  */
 
 /** The languages the site ships copy for, in the order the switcher names them. */
-export const SUPPORTED_LANGUAGES = ['de', 'en', 'fr'] as const;
+export const SUPPORTED_LANGUAGES = ['de', 'en', 'fr', 'it', 'es', 'tr'] as const;
 
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -55,6 +55,9 @@ export const LANGUAGE_LABELS = {
   de: 'Deutsch',
   en: 'English',
   fr: 'Français',
+  it: 'Italiano',
+  es: 'Español',
+  tr: 'Türkçe',
 } satisfies Record<LanguageCode, string>;
 
 /**
@@ -66,6 +69,9 @@ export const LANGUAGE_PREFIXES = {
   de: '',
   en: '/en',
   fr: '/fr',
+  it: '/it',
+  es: '/es',
+  tr: '/tr',
 } satisfies Record<LanguageCode, string>;
 
 /**

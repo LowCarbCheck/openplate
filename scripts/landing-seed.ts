@@ -97,7 +97,12 @@ const SEED_CURATED_SOURCE = 'landing-seed';
 type SeedMeal = {
   /** Stable, readable id fragment. Appears in every generated row id. */
   id: string;
-  names: Record<LanguageCode, string>;
+  /**
+   * English always, a translation where a capture is taken in that language. The landing shots
+   * exist in the languages the website's manifest names; a locale without a name here shows the
+   * English food name in its capture, which is a cue to add one, not a broken diary.
+   */
+  names: Partial<Record<LanguageCode, string>> & { en: string };
   meal: MealType;
   hourLocal: number;
   minuteLocal: number;
@@ -209,7 +214,7 @@ function foodId(meal: SeedMeal): string {
 function buildFoods(language: LanguageCode): LocalPersonalFood[] {
   return SEED_MEALS.map((meal) => ({
     id: foodId(meal),
-    name: meal.names[language],
+    name: meal.names[language] ?? meal.names.en,
     brand: null,
     macrosPer100g: meal.macrosPer100g,
     source: 'user',
@@ -228,7 +233,7 @@ function buildFoodLogs(language: LanguageCode): LocalFoodLog[] {
     );
     return {
       id: `seed-log-${SEED_DAY_PARTS.key}-${meal.id}`,
-      name: meal.names[language],
+      name: meal.names[language] ?? meal.names.en,
       quantityGrams: meal.grams,
       macros: scaleToServing(meal.macrosPer100g, meal.grams),
       mealType: meal.meal,

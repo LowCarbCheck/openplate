@@ -250,7 +250,11 @@ export function AvailabilityNotice({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">{t(AVAILABILITY_KEYS[availability])}</p>
+      {/* `data-slot` is what the browser tier measures this sentence by, in every
+          language (`tests/e2e/notification-badge.spec.ts`). */}
+      <p data-slot="push-availability" className="text-sm text-muted-foreground">
+        {t(AVAILABILITY_KEYS[availability])}
+      </p>
       {availability === 'needs-install' && install !== null && (
         <InstallAffordanceAction affordance={install.affordance} promptInstall={install.promptInstall} />
       )}

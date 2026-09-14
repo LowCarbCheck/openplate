@@ -126,6 +126,19 @@ describe('HeaderStatus', () => {
     assert.ok(markup.includes('text-sm font-semibold'), 'a success status lost the full text-sm size');
   });
 
+  it('gives a status that carries an action the compact three-line treatment, like an error', () => {
+    publishStatus({ text: 'Removed Greek yogurt', tone: 'success', action: { label: 'Undo', onClick: () => {} } });
+    const markup = render();
+    assert.ok(
+      markup.includes('line-clamp-3 break-words">Removed Greek yogurt'),
+      'a status with an action did not get the third line the button costs it',
+    );
+    assert.ok(markup.includes('text-xs font-semibold leading-4'), 'a status with an action stayed at text-sm');
+    // CONTROL: the same text with no action keeps the full-size two-line row,
+    // which the case above this one asserts directly.
+    assert.equal(countOf(markup, 'line-clamp-2 break-words">Removed Greek yogurt'), 0);
+  });
+
   it('renders the description as a second line', () => {
     publishStatus({ text: 'Added Greek yogurt', description: 'To Breakfast, 12 g net carbs so far today.' });
     const markup = render();

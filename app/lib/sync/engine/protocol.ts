@@ -151,7 +151,7 @@ export function isSyncKeyRecordKind(value: JsonValue | undefined): value is Sync
 export type InstanceDescriptor = {
   /** The operator's name for this instance. Display only, and hostile input like every other field here. */
   name: string;
-  /** The language the instance writes its mail in (`en` or `de` today). Display only. */
+  /** The language the instance writes its mail in, a bare code such as `en` or `tr`. Display only. */
   language: string;
   /** Whether the instance can send mail. `false` means an invite or a reset is a link somebody copies by hand. */
   mail: boolean;

@@ -97,7 +97,7 @@ describe('formatPortionLabel', () => {
   });
 
   it('degrades an unknown language to English rather than throwing', () => {
-    assert.equal(formatPortionLabel({ unit: 'egg', quantity: 2, language: 'fr' }), '2 eggs');
+    assert.equal(formatPortionLabel({ unit: 'egg', quantity: 2, language: 'pt' }), '2 eggs');
     assert.equal(formatPortionLabel({ unit: 'egg', quantity: 2, language: null }), '2 eggs');
   });
 });

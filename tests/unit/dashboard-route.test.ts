@@ -79,7 +79,7 @@ describe('dashboard route meta', () => {
   it('falls back to English for a tampered language cookie', () => {
     // SAFETY: as above — only `matches` is read out of the arg object.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above.
-    assert.equal(titleOf(meta({ matches: matches('fr') } as any)), 'Overview · openplate');
+    assert.equal(titleOf(meta({ matches: matches('pt') } as any)), 'Overview · openplate');
   });
 });
 

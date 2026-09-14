@@ -45,6 +45,7 @@ import {
   updatePushSchedule,
 } from '../../app/lib/push';
 import type { PushStorage } from '../../app/lib/push';
+import { LANGUAGE_COOKIE, readDeviceLanguage } from '../../app/i18n/language-prefs';
 
 //////////////////////////////////////////////////////////////////////////////
 // The fakes
@@ -262,6 +263,46 @@ describe('turning push on', () => {
       device.calls.map((call) => call.method),
       ['GET'],
     );
+  });
+});
+
+/**
+ * A `document` with one cookie on `globalThis`, so the REAL locale reader can
+ * run under a fake cookie with the rest of the device still faked.
+ */
+function installCookie(cookie: string): void {
+  Object.defineProperty(globalThis, 'document', { value: { cookie }, configurable: true });
+}
+
+describe('the locale on the wire', () => {
+  // The server accepts the six bare codes and answers 400 to a region tag, and
+  // this client once sent `navigator.language` (`en-US`).
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, 'document');
+  });
+
+  it('is the bare code of the language on screen, read from the app cookie', async () => {
+    const device = installDevice();
+    setPushDependencies({ readLocale: readDeviceLanguage });
+    installCookie(`${LANGUAGE_COOKIE}=tr`);
+
+    await enablePush(DEFAULT_PUSH_PREFS);
+
+    assert.equal(device.calls[1]?.body?.locale, 'tr');
+  });
+
+  it('THE CONTROL: a region tag never reaches the body, not from the browser and not from a cookie', async () => {
+    const device = installDevice();
+    setPushDependencies({ readLocale: readDeviceLanguage });
+    // Node's navigator says `en-US`, as a browser's would. A cookie tampered to a region tag is refused too.
+    assert.match(String(globalThis.navigator.language), /^[a-z]{2}-[A-Z]{2}$/u);
+    installCookie(`${LANGUAGE_COOKIE}=en-US`);
+
+    await enablePush(DEFAULT_PUSH_PREFS);
+
+    const locale = device.calls[1]?.body?.locale;
+    assert.equal(locale, 'en');
+    assert.doesNotMatch(String(locale), /-/u);
   });
 });
 

@@ -1,0 +1,3183 @@
+{
+  "about": {
+    "description": "openplate açık kaynaklıdır. Çalıştırdığın derleme ve kodunun nerede bulunduğu buradadır.",
+    "licence": "Lisans",
+    "licenceValue": "MIT",
+    "source": "Kaynak kodu",
+    "sourceValue": "GitHub üzerinde {{appName}}",
+    "title": "openplate hakkında",
+    "updates": {
+      "built": "Derleme tarihi",
+      "checkNow": "Şimdi denetle",
+      "checking": "Denetleniyor",
+      "description": "Bu örneğin ne çalıştırdığı ve projenin ne yayımladığı.",
+      "disabled": "Denetlemeler devre dışı",
+      "disabledHint": "Bu örnek yeni sürümler için GitHub'a sormaz. Yönetici bu ayarı kapattı.",
+      "lastChecked": "Son denetleme",
+      "latest": "Son sürüm",
+      "never": "Henüz yok",
+      "releaseLink": "Sürüm notları",
+      "reload": "Güncellemek için yeniden yükle",
+      "reloadHint": "Bu sunucu, bu sayfanın çalıştırdığından daha yeni bir uygulama sürümü sunuyor.",
+      "running": "Çalışıyor",
+      "selfHostHint": "Sunucunun kendisini güncellemek buradaki bir düğmeyle değil, yeni bir imajla yapılır.",
+      "throttled": "Az önce denetlendi. Bir sonraki denetlemeye {{when}} zamanında izin verilir.",
+      "title": "Güncellemeler"
+    }
+  },
+  "add": {
+    "custom": {
+      "caloriesSummary": "{{value}} kalori",
+      "cancel": "İptal",
+      "carbBasis": {
+        "available": "AB tarzı (karbonhidrat lifi zaten içermez)",
+        "hint": "ABD etiketleri lifi \"Toplam Karbonhidrat\" içinde sayar, AB etiketleri ise lifi ayrı bir satırda listeler ve lifi zaten hariç tutar. Bunu doğru ayarlamak lifin iki kez düşülmesini engeller.",
+        "legend": "Bu yiyeceğin karbonhidratı nasıl sayılır",
+        "notSure": "Emin değilim",
+        "total": "ABD tarzı (karbonhidrat lifi içerir)"
+      },
+      "carbsSummary": "{{value}} g karbonhidrat",
+      "description": "Kendi eklediğin yiyecekler. Değerleri buradan düzenle veya birini kaldır.",
+      "editAria": "{{name}} ögesini düzenle",
+      "empty": "Henüz hiç yiyecek eklemedin. Bir tane oluşturmak için \"Elle ekle\" seçeneğini kullan. Burada görünecektir.",
+      "fallbackName": "Yiyecek",
+      "name": "Ad",
+      "per100g": "100 g başına: {{summary}}",
+      "per100gToggle": "100 g başına",
+      "perServingToggle": "Porsiyon başına",
+      "remove": "Kaldır",
+      "removeAria": "{{name}} ögesini kaldır",
+      "removeDescription": "Bu işlem ögeyi yiyeceklerinden kaldırır. Bununla günlüğüne daha önce kaydettiğin her şey günlüğünde kalır.",
+      "removeTitle": "{{name}} kaldırılsın mı?",
+      "removed": "{{name}} kaldırıldı.",
+      "save": "Kaydet",
+      "savePending": "Kaydediliyor…",
+      "servingSize": "Porsiyon boyutu (g)",
+      "title": "Yiyeceklerin",
+      "trigger": "Yiyeceklerin",
+      "triggerWithCount": "Yiyeceklerin ({{total}})",
+      "updated": "{{name}} güncellendi."
+    },
+    "errors": {
+      "carbsRequired": "Bir yiyeceği kaydetmek için karbonhidrat miktarı gereklidir.",
+      "gramsNotANumber": "Geçerli bir sayı gir",
+      "gramsNotPositive": "Gram değeri 0'dan büyük olmalıdır",
+      "gramsRequired": "Kaç gram olduğunu gir",
+      "nameRequired": "Ad zorunludur",
+      "saveFailed": "Kaydedilemedi. Adı kontrol et ve tekrar dene."
+    },
+    "loading": "Yükleniyor…",
+    "macros": {
+      "carbs": "Karbonhidrat",
+      "fat": "Yağ",
+      "fiber": "Lif",
+      "kcal": "Kalori",
+      "polyols": "Şeker alkolleri (polioller)",
+      "protein": "Protein",
+      "sugars": "Şekerler"
+    },
+    "manual": {
+      "description": "Bir yiyecek adı ve etikette basılı olduğu şekliyle 100 g veya porsiyon başına miktarını gir.",
+      "grams": "Gram",
+      "mealOptional": "Öğün (isteğe bağlı)",
+      "name": "Ad",
+      "namePlaceholder": "Izgara tavuk",
+      "nutritionHint": "Bir dahaki sefere yiyeceklerinden biri olarak kaydetmek için karbonhidrat ekle. Sadece bir kez kaydetmek için burayı geç.",
+      "nutritionToggle": "Besin değerleri (isteğe bağlı)",
+      "per100g": "100 g başına",
+      "perServing": "Porsiyon başına",
+      "servingSize": "Porsiyon boyutu (g)",
+      "submit": "Girdi ekle",
+      "submitPending": "Ekleniyor…",
+      "title": "Elle ekle"
+    },
+    "meal": {
+      "breakfast": "Kahvaltı",
+      "dinner": "Akşam yemeği",
+      "lunch": "Öğle yemeği",
+      "none": "Öğün yok",
+      "snack": "Ara öğün"
+    },
+    "portion": {
+      "back": "Aramaya dön",
+      "calories": "{{value}} kalori",
+      "fallback": {
+        "large": "Büyük ({{grams}} g)",
+        "medium": "Orta ({{grams}} g)",
+        "small": "Küçük ({{grams}} g)"
+      },
+      "fat": "Yağ {{value}} g",
+      "grams": "Gram",
+      "macrosUnknown": "Makrolar bilinmiyor, yalnızca ad olarak kaydedildi.",
+      "meal": "Öğün",
+      "netCarbs": "{{value}} g net karbonhidrat",
+      "protein": "Protein {{value}} g",
+      "source": {
+        "curated": "Besin veri tabanımızdan",
+        "custom": "Kendi besinlerinden",
+        "recent": "Son besinlerinden"
+      },
+      "submit": "Günlüğe ekle",
+      "submitPending": "Ekleniyor…",
+      "viewDetails": "Besin ayrıntılarını görüntüle"
+    },
+    "results": {
+      "calories": "{{value}} kalori",
+      "loggedTimes": "{{times}} kez günlüğe kaydedildi",
+      "matchTier": {
+        "likely": "Olası eşleşme",
+        "strong": "Güçlü eşleşme",
+        "weak": "Yaklaşık eşleşme"
+      },
+      "netCarbs": "{{value}} g net karbonhidrat",
+      "per100g": "100 g başına: {{summary}}",
+      "provenance": {
+        "custom": "Kendi besinin",
+        "recent": "Son kullanılanlar"
+      }
+    },
+    "search": {
+      "addManually": "Bulamadın mı? Elle ekle",
+      "empty": {
+        "firstTime": "Günlüğe kaydetmek için bir besin ara veya aşağıdan elle ekle.",
+        "noMatches": "\"{{query}}\" için eşleşme yok. Aşağıdan elle ekle.",
+        "startTyping": "Besinlerinde aramak için yazmaya başla."
+      },
+      "label": "Besin ara",
+      "offlineBanner": "Çevrim dışısın. Yeni besinleri aramak bağlantı gerektirir. Son kullanılan ve kayıtlı besinlerin çalışmaya devam eder.",
+      "offlinePending": "Yeni besinleri aramak bağlantı gerektirir, yeniden bağlandığında devam eder.",
+      "parts": {
+        "lead": "Bunun yerine her parçayı ayrı ara:"
+      },
+      "pause": {
+        "minute": "yaklaşık bir dakika içinde",
+        "minutes": "birkaç dakika içinde",
+        "seconds": "birkaç saniye içinde"
+      },
+      "placeholder": "Bir besin ara…",
+      "scanInstead": "Bunun yerine tabağını tara",
+      "sections": {
+        "curated": "Arama sonuçları",
+        "custom": "Yiyeceklerin",
+        "recent": "Son yiyecekler"
+      },
+      "starters": {
+        "banana": "Muz",
+        "broccoli": "Brokoli",
+        "chickenBreast": "Tavuk göğsü",
+        "eggs": "Yumurta",
+        "greekYogurt": "Süzme yoğurt",
+        "rice": "Pirinç"
+      },
+      "throttled": "Arama kısa bir ara veriyor. {{when}} tekrar dene. Son ve kayıtlı yiyeceklerin aşağıda çalışmaya devam eder."
+    },
+    "title": "Yiyecek ekle",
+    "aiIntake": {
+      "submit": "Yapay zeka ile kaydet",
+      "hint": "Tüm bir öğünü tek seferde yaz, örneğin 3 yumurta, 2 dilim kızarmış ekmek, bir bardak portakal suyu.",
+      "needsProvider": "Tüm bir öğünü tek cümlede kaydetmek için bir yapay zeka sağlayıcısı bağla. Arama bunu yapmadan da çalışır.",
+      "connect": "Yapay zekayı ayarla"
+    }
+  },
+  "banners": {
+    "backupDismiss": "Yedekleme hatırlatıcısını kapat",
+    "backupExportNow": "Şimdi dışa aktar",
+    "backupLastExport_one": "Günlüğün yalnızca burada tutulur: tek cihaz, bulut yok. Son yedekleme: {{count}} gün önce.",
+    "backupLastExport_other": "Günlüğün yalnızca burada tutulur: tek cihaz, bulut yok. Son yedekleme: {{count}} gün önce.",
+    "backupNeverExported": "Günlüğün yalnızca burada tutulur: tek cihaz, bulut yok. 10 saniyede yedekle.",
+    "loggingTo": "<day>{{label}}</day> gününe kaydediliyor",
+    "offlineDefault": "Çevrimdışısın. Son günler okunabilir, yeni kayıtlar yeniden bağlandığında eşitlenir.",
+    "reproductiveStatusPromptDismiss": "Şimdi değil",
+    "reproductiveStatusPromptDueDate": "Tahmini doğum tarihin geçti. Hâlâ hamile misin, yoksa ayarlarını güncelleme vakti geldi mi?",
+    "reproductiveStatusPromptLactation": "İki yılı aşkın süredir emziriyorsun. Hâlâ emziriyor musun, yoksa ayarlarını güncelleme vakti geldi mi?",
+    "reproductiveStatusPromptUpdate": "Güncelle",
+    "switchToToday": "Bugüne geç"
+  },
+  "bodyMetrics": {
+    "birthYear": {
+      "hint": "Referans miktarları geniş yaş aralıklarına göre gruplanır, bu yüzden tam doğum tarihin yerine sadece doğum yılın yeterlidir.",
+      "label": "Doğum yılı",
+      "placeholder": "ör. 1985"
+    },
+    "card": {
+      "description": "Tümü isteğe bağlıdır. Bunlar vitamin ve mineral referans miktarlarını sana göre ayarlamamızı ve bir kalori değeri önermemizi sağlar. Günlüğünün geri kalanı gibi bu cihazda kalırlar ve buradaki hiçbir bilgi bir yiyecek aramasıyla birlikte dışarı aktarılmaz.",
+      "title": "Senin hakkında"
+    },
+    "clear": {
+      "action": "Bu ayrıntıları kaldır",
+      "hint": "Fikrini mi değiştirdin? Bu işlem yukarıdaki tüm ayrıntıları bu cihazdan kaldırır."
+    },
+    "errors": {
+      "birthYear": "1985 gibi dört basamaklı bir yıl gir",
+      "height": "175 gibi santimetre cinsinden bir boy gir"
+    },
+    "height": {
+      "hint": "Bir günde yaktığın enerjiyi tahmin etmek için kilonla birlikte kullanılır.",
+      "label": "Boy (cm)",
+      "placeholder": "ör. 175"
+    },
+    "reproductive": {
+      "derivedMonths_one": "{{count}} aylık emzirme.",
+      "derivedMonths_other": "{{count}} aylık emzirme.",
+      "derivedNotSet": "Henüz tarih yok. Sen bir tarih ekleyene kadar bu yanıt için en yüksek referans miktarını kullanırız.",
+      "derivedTrimester": "{{trimester}}, {{week}}. hafta.",
+      "dueDate": {
+        "hint": "Sana verilen tarih. Haftayı bu tarihten hesaplarız, böylece tekrar gelip değiştirmene gerek kalmadan doğru kalır.",
+        "label": "Tahmini doğum tarihi"
+      },
+      "errors": {
+        "dueDatePast": "Bu tarih geçti. Bugünü veya daha sonraki bir tarihi gir.",
+        "dueDateRange": "Sonraki {{weeks}} hafta içinde bir tahmini doğum tarihi gir.",
+        "startDateFuture": "Bu tarih gelecekte. Bugünü veya daha önceki bir tarihi gir."
+      },
+      "hint": "Her ikisi de birkaç besin maddesinin referans miktarlarını değiştirir. Kaldırmak istediğin zaman \"Hiçbiri\" seçeneğini seç.",
+      "lactating": "Emzirme",
+      "legend": "Hamile veya emziriyor musun?",
+      "none": "Hiçbiri",
+      "pregnant": "Hamile",
+      "startDate": {
+        "hint": "Emzirme aylarını bu günden itibaren sayarız ve referans miktarları altı aydan sonra değişir.",
+        "label": "Bebeğinin doğum tarihi"
+      },
+      "trimester": {
+        "first": "İlk üç aylık dönem",
+        "second": "İkinci üç aylık dönem",
+        "third": "Üçüncü üç aylık dönem"
+      },
+      "weeksAlong": {
+        "hint": "İçinde bulunduğun haftayı yaz, yukarıdaki tahmini doğum tarihini biz dolduralım. Yalnızca tarih kaydedilir.",
+        "label": "Ya da bugün içinde bulunduğun hafta"
+      }
+    },
+    "save": "Ayrıntıları kaydet",
+    "sex": {
+      "female": "Kadın",
+      "hint": "Bazı vitamin ve minerallerin referans miktarları kadınlar ile erkekler arasında farklılık gösterir.",
+      "legend": "Biyolojik cinsiyet",
+      "male": "Erkek",
+      "unset": "Belirtmek istemiyorum"
+    },
+    "toast": {
+      "cleared": "Ayrıntılar kaldırıldı.",
+      "saved": "Ayrıntılar kaydedildi."
+    }
+  },
+  "catchUp": {
+    "title": "Günlük özetin",
+    "loading": "Son üç günün okunuyor.",
+    "yesterdayHeading": "Sayılarla dün",
+    "mealOne": "{{count}} öğün",
+    "mealMany": "{{count}} öğün",
+    "yesterdayFull": "Dün: {{meals}}, {{ceiling}} g tavanından {{netCarbs}} g net karbonhidrat, {{floor}} g tabanından {{protein}} g protein.",
+    "yesterdayCeiling": "Dün: {{meals}}, {{ceiling}} g tavanından {{netCarbs}} g net karbonhidrat, {{protein}} g protein.",
+    "yesterdayFloor": "Dün: {{meals}}, {{netCarbs}} g net karbonhidrat, {{floor}} g tabanından {{protein}} g protein.",
+    "yesterdayPlain": "Dün: {{meals}}, {{netCarbs}} g net karbonhidrat, {{protein}} g protein.",
+    "yesterdayFasting": "Dün oruç günüydü.",
+    "yesterdayEmpty": "Dün hiç girdi yoktu. Bugün sıfırdan başlıyor.",
+    "fastActive": "Orucunun üzerinden {{duration}} geçti.",
+    "fastScheduled": "Orucun {{time}} vaktinde başlıyor.",
+    "fastRoutine": "Genel orucun {{time}} vaktinde başlıyor.",
+    "countTwo": "iki",
+    "countThree": "üç",
+    "nudgeProtein": "Protein, son üç günün {{days}} gününde tabanının altında kaldı.",
+    "nudgeFiber": "Lif, son üç günün {{days}} gününde 25 g referansının altında kaldı.",
+    "nudgeFoods": "{{foods}} bu açığı kapatabilir.",
+    "foodsOr": "{{first}} veya {{last}}",
+    "foods": {
+      "eggs": "yumurta",
+      "skyr": "skyr",
+      "chickenBreast": "tavuk göğsü",
+      "tuna": "ton balığı",
+      "tofu": "tofu",
+      "lentils": "mercimek",
+      "chiaSeeds": "chia tohumu",
+      "raspberries": "ahududu",
+      "avocado": "avokado",
+      "broccoli": "brokoli",
+      "flaxseed": "keten tohumu",
+      "almonds": "badem"
+    }
+  },
+  "chrome": {
+    "back": "Geri",
+    "buildStamp": "Sürüm {{label}}",
+    "deviceMenuLabel": "Bu cihaz, menüyü aç",
+    "footerTagline": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, verilerini cihazında tutan bir beslenme takipçisi",
+    "footerTaglineManaged": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, yalnızca senin okuyabildiğin bir beslenme takipçisi",
+    "imprint": "Künye",
+    "installApp": "Uygulamayı yükle",
+    "language": "Dil",
+    "licence": "MIT lisansı",
+    "licenceShort": "Lisans",
+    "loading": "Yükleniyor…",
+    "logoMenuLabel": "openplate menüsü",
+    "navDrawerDescription": "openplate içinde gidebileceğin her yer",
+    "openTracker": "Takipçiyi aç",
+    "preferences": "Tercihler",
+    "privacy": "Gizlilik",
+    "requestAccess": "Erişim iste",
+    "requestAccessBody": "Buradaki hesaplar bir davet bağlantısıyla oluşturulur. Bu davetleri bir yönetici tanımlar, bu yüzden bu örneği çalıştıran kişiden sana bir davet göndermesini iste.",
+    "requestAccessClose": "Kapat",
+    "requestAccessTitle": "Bu örnek yalnızca davetle çalışır",
+    "signIn": "Giriş yap",
+    "source": "Kaynak kod",
+    "sourceShort": "Kaynak",
+    "status": {
+      "dismiss": "Bu iletiyi kapat"
+    },
+    "terms": "Koşullar",
+    "thisDevice": "Bu cihaz",
+    "update": {
+      "badge": "Güncelle",
+      "bundleReady": "Bu sayfanın daha yeni bir sürümü hazır",
+      "dismiss": "Kapat",
+      "releaseAvailable": "openplate {{version}} hazır",
+      "reload": "Yeniden yükle",
+      "view": "Neler değişti"
+    }
+  },
+  "clinicianLink": {
+    "copied": "Kopyalandı",
+    "copy": "Bağlantıyı kopyala",
+    "copyFailed": "Kopyalanamadı",
+    "description": "Bunu günlüğünü seninle paylaşmak isteyen birine gönder ya da ekranından taramasına izin ver.",
+    "nameHint": "İsteğe bağlı. Bağlantı içinde iletilir, bu yüzden bunu bir kanıt olarak değil, kendin hakkında söylediğin bir şey olarak değerlendir.",
+    "nameLabel": "Görecekleri ad",
+    "notSecret": "Bağlantı gizli değildir: verileri yalnızca senin için mühürleyebilen açık anahtarını taşır. Ayrıca hiçbir sunucuya ulaşmaz: # işaretinden sonraki her şey tarayıcıda kalır.",
+    "qrTitle": "Taranabilir bir kod olarak bağlantı kurma bağlantın",
+    "stillReadAloud": "Açtıktan sonra, bu on iki karakteri onlara oku: {{fingerprint}}. Onlar bunları yazana kadar hiçbir şey paylaşılmaz.",
+    "title": "Bağlantı kurma bağlantın"
+  },
+  "confirm": {
+    "cancel": "İptal",
+    "continue": "Devam et"
+  },
+  "connectClinician": {
+    "backToSharing": "Paylaşıma geri dön",
+    "claimed": {
+      "account": "Hesap numarası {{accountId}}",
+      "named": "Bağlantı, bunun {{name}} olduğunu belirtiyor.",
+      "unnamed": "Bağlantı, bunun kim olduğunu belirtmiyor.",
+      "unverified": "Bağlantıyı yazabilen herkes bu adı da yazabilir. Onlar olduğunu kanıtlayan şey, aşağıdaki parmak izidir."
+    },
+    "description": "Biri, günlüğünü kendisiyle paylaşabilmen için sana bir bağlantı gönderdi.",
+    "granted": {
+      "body": "Artık günlüğünü okuyabilirler. Bunu paylaşım sayfasından istediğin zaman durdurabilirsin.",
+      "cta": "Paylaşıma git",
+      "title": "Paylaşıldı. Doğruladığın:"
+    },
+    "invalidLink": {
+      "body": "Bir kısmı eksik veya kesilmiş. Tekrar göndermelerini veya kodu kendi ekranlarında sana göstermelerini iste.",
+      "title": "Bu bağlantı doğru görünmüyor"
+    },
+    "keyChanged": {
+      "body": "Daha önce {{pinned}} doğrulamıştın; bu bağlantı ise {{offered}} taşıyor. Bu durum biri yeni bir anahtar oluşturduğunda veya bir anahtarı değiştirdiğinde meydana gelir. Devam etmeden önce kontrolü onlarla birlikte, sesli olarak tekrar yap.",
+      "title": "Anahtarları değişti"
+    },
+    "noSync": {
+      "body": "Bir günlüğü paylaşmak eşitleme gerektirir ve bu openplate uygulamasını çalıştıran kişi bunu ayarlamamış. Buradaki hiçbir şey kullanılamaz.",
+      "title": "Bu openplate üzerinde eşitleme yok"
+    },
+    "queryString": {
+      "askAgain": "Tekrar göndermelerini veya bunun yerine kodu kendi ekranlarında sana göstermelerini iste.",
+      "body": "Anahtar, adresin sunuculara gönderilen kısmında geldi, bu yüzden ikinizin arasında kalmadı. Bu genelde bir e-posta veya sohbet uygulamasının yoldayken bağlantıyı değiştirdiği anlamına gelir.",
+      "parameters": "Adres içinde gönderilen: {{parameters}}.",
+      "title": "Bu bağlantıyı kullanmak güvenli değil"
+    },
+    "reading": "Bağlantı okunuyor…",
+    "sharingOff": {
+      "body": "Eşitleme sunucunda paylaşım açık değil. Kontrol ettiğin anahtar bu cihazda tutulur, bu sayede özellik açıldığında kontrolü tekrar yapmadan paylaşabilirsin.",
+      "title": "Doğrulandı, ancak henüz hiçbir şey paylaşılmadı"
+    },
+    "signedOut": {
+      "body": "Önce eşitleme oturumunu aç. Paylaşım, günlüğünü anahtarınla mühürler ve bu anahtar yalnızca giriş yaptığında hazır olur."
+    },
+    "title": "Bir hekim bağla"
+  },
+  "connectGateway": {
+    "audit": {
+      "body": "Bu ağ geçidi, yöneticisinin fotoğraflar da dahil olmak üzere gönderilerini inceleyebileceğini bildiriyor. Ağ geçidinin kendisinin bildirdiği budur. openplate bunu doğrulayamaz.",
+      "title": "Bu ağ geçidi, gönderdiklerini inceleyebileceğini belirtiyor"
+    },
+    "backToAiSettings": "Yapay zeka ayarlarına dön",
+    "blocked": {
+      "operatorBody": "Bu openplate uygulamasını çalıştıran kişi {{origin}} değerini CSP_CONNECT_EXTRA ayarına eklemeli ve uygulamayı yeniden başlatmalıdır. O zamana kadar tarayıcı, bu ağ geçidine yapılan her isteği engeller. (Kendin çalıştırıyorsan, .env dosyan içinde tek bir satırdır.)",
+      "operatorTitle": "Bu openplate uygulamasının işletmecisi buna izin vermeli",
+      "title": "Bu uygulamanın söz konusu ağ geçidiyle iletişim kurmasına izin verilmiyor"
+    },
+    "checking": "Ağ geçidi kontrol ediliyor…",
+    "confirm": {
+      "body": "Başka hiçbir şey değişmez: günlüğün bu cihazda kalır ve dilediğin zaman yapay zeka ayarlarından bağlantıyı kesebilirsin.",
+      "button": "Bu ağ geçidine katıl",
+      "join": "{{name}} ağ geçidine katıl",
+      "joining": "Katılınıyor…",
+      "replaces": "Bu işlem geçerli yapay zeka bağlantının ({{current}}) yerini alır. Hiçbir yerde hiçbir erişim iptal edilmez. Daha sonra yeniden ayarlayabilirsin.",
+      "routing": "Yemek fotoğrafların analiz için {{origin}} üzerinden gönderilecek."
+    },
+    "description": "Biri bu cihazı, kendi çalıştırdığı bir ağ geçidindeki yapay zekayı kullanmaya davet etti.",
+    "invalidLink": {
+      "body": "Bağlantının bir kısmı eksik veya e-posta uygulaması tarafından kesilmiş. Seni davet eden kişiden bağlantıyı tekrar göndermesini iste.",
+      "title": "Bu davet bağlantısı doğru görünmüyor"
+    },
+    "inviteInvalid": {
+      "body": "Seni davet eden kişiden yeni bir bağlantı iste.",
+      "continue": "Uygulamaya devam et",
+      "title": "Bu davet geçerli değil veya süresi dolmuş"
+    },
+    "joined": "{{name}} bağlantısı kuruldu.",
+    "saveFailed": "Bağlantı bu cihaza kaydedilemedi. Tekrar dene.",
+    "title": "Bir ağ geçidine katıl",
+    "unreachable": {
+      "body": "Ağ geçidi yanıt vermedi. Adresi kontrol et veya seni davet eden kişiye ağ geçidinin çalışıp çalışmadığını sor.",
+      "title": "{{origin}} adresine ulaşılamıyor"
+    },
+    "saveRetry": "Bu cihaza kaydederken bir sorun oluştu. Hiçbir veri kaybolmadı. Tekrar dene.",
+    "retry": "Tekrar dene"
+  },
+  "dashboard": {
+    "loading": "Günün yükleniyor…",
+    "ridge": {
+      "caption": {
+        "kcal": "Hedef {{goal}} kcal",
+        "netCarbs": "Hedef {{goal}} g",
+        "none": "Hedef belirlenmedi",
+        "protein": "En az {{goal}} g"
+      },
+      "day": {
+        "entries_one": "{{day}}, {{count}} kayıt girildi",
+        "entries_other": "{{day}}, {{count}} kayıt girildi",
+        "kcal": {
+          "met": "{{day}}, {{goal}} kcal üzerinden {{value}} kcal, bütçe dahilinde",
+          "over": "{{day}}, {{goal}} kcal üzerinden {{value}} kcal, bütçe aşıldı"
+        },
+        "logged": "{{day}}, kaydedildi, puanlanmadı",
+        "netCarbs": {
+          "met": "{{day}}, {{goal}} g net karbonhidrat üzerinden {{value}} g, bütçe dahilinde",
+          "over": "{{day}}, {{goal}} g net karbonhidrat üzerinden {{value}} g, bütçe aşıldı"
+        },
+        "none": "{{day}}, hiçbir şey kaydedilmedi",
+        "protein": {
+          "met": "{{day}}, {{goal}} g protein üzerinden {{value}} g, hedefe ulaşıldı",
+          "under": "{{day}}, {{goal}} g protein üzerinden {{value}} g, hedefe ulaşılamadı"
+        }
+      },
+      "srSummary": "Son {{total}} günün, her gün için bir çubuk. Bunların {{logged}} tanesinde kayıt girdin. Her çubuk, o günü günlükte açar.",
+      "srSummaryReadOnly": "Son {{total}} günün, her gün için bir çubuk. Bunların {{logged}} tanesinde kayıt girdin. İlerlemeni görmek için kutucuğa dokun."
+    },
+    "title": "Genel bakış",
+    "today": {
+      "openDiary": "Bugünün günlüğünü aç"
+    },
+    "week": {
+      "empty": "Henüz kayıt girilmiş bir gün yok. Bugün ilki olabilir.",
+      "title": "Son 7 günün"
+    },
+    "weight": {
+      "link": "Kilo kaydı gir",
+      "since": "Son 7 günde {{delta}}"
+    }
+  },
+  "describe": {
+    "title": "Öğününü tarif et",
+    "lead": "Ne yediğini yaz. Yapay zeka, tıpkı bir fotoğraftan çıkardığı gibi yazdıklarından da yiyecekleri çıkarır. Hiçbir şey kaydedilmeden önce her girdiyi sen kontrol edersin.",
+    "label": "Ne yedin?",
+    "placeholder": "2 sahanda yumurta, bir dilim tereyağlı kızarmış ekmek, sade kahve",
+    "send": "Gönder",
+    "sendHint": "Enter tuşu gönderir. Shift ve Enter yeni satır açar.",
+    "dictateHint": "Öğününü sesle yazdırmak için klavyendeki mikrofon tuşuna dokun.",
+    "needsProvider": "Bir öğünü tarif etmek için bu cihazda bir yapay zeka bağlantısı gerekir.",
+    "connect": "Bir sağlayıcı bağla",
+    "searchInstead": "Bunun yerine yiyecek veritabanında ara"
+  },
+  "diary": {
+    "actions": {
+      "photograph": "Yiyeceğin fotoğrafını çek",
+      "undo": "Geri al"
+    },
+    "budget": {
+      "calories": "Kalori",
+      "grams": "{{value}} g",
+      "gramsLeft": "en fazla {{value}} g daha",
+      "gramsOver": "{{value}} g aşıldı",
+      "left": "en fazla {{value}} daha",
+      "over": "{{value}} aşıldı",
+      "progress": "{{consumed}} / {{target}}",
+      "progressGrams": "{{consumed}} / {{target}} g",
+      "srRowGrams": "{{label}}: {{consumed}} / {{target}} g. {{status}}.",
+      "srRowNoTarget": "{{label}}: {{status}}."
+    },
+    "caveat": {
+      "estimates": "Yapay zeka tahminlerini içerir",
+      "missingData": "Bazı öğelerde eksik veri var"
+    },
+    "celebration": {
+      "firstLog": "İlk yiyeceğini kaydettin. Başka bir şey ayarlamana gerek yok, kaydetmeye devam et.",
+      "firstScan": "İlk tabağın kendi yapay zeka sağlayıcın tarafından tanımlandı.",
+      "streak7": "Üst üste yedi gün kaydettin.",
+      "targetWeight": "Hedef kilona ulaştın."
+    },
+    "chips": {
+      "favorites": "Favoriler",
+      "quickAdd": "Hızlı ekle"
+    },
+    "copy": {
+      "all": "Tümü ({{total}})",
+      "cancel": "İptal",
+      "chooseEntries": "Kayıtları seç…",
+      "copySelected": "Seçilenleri kopyala ({{count}})",
+      "copying": "Kopyalanıyor…",
+      "door": "Dünkü gibi",
+      "doorHint": "Dünün {{count}} kaydını bugüne kopyala",
+      "meal": "{{meal}} ({{n}})",
+      "title": "Dünkü gibi"
+    },
+    "drilldown": {
+      "netCarbsDefinition": "Net karbonhidrat = karbonhidrat eksi lif, eksi şeker alkolleri.",
+      "noTarget": "Hedef belirlenmedi",
+      "derivedTag": "hedeflerinden",
+      "referenceTag": "referans",
+      "referenceTagDateMissing": "referans, tahmini doğum tarihini ekle",
+      "referenceTagBirthDateMissing": "referans, doğum tarihini ekle",
+      "setTargets": "Kendi hedeflerini belirle",
+      "whatYouAte": "Ne yedin"
+    },
+    "empty": {
+      "firstEver": {
+        "noData": "Bu cihazda henüz veri yok. openplate uygulamasını başka bir yerde kullandın mı? Başka bir cihazdan veri çekmek için <backup>bir yedeği içe aktar</backup> veya <sync>eşitlemeyi etkinleştir</sync>.",
+        "noDataBackupOnly": "Bu cihazda henüz veri yok. openplate uygulamasını başka bir yerde kullandın mı? Verilerini aktarmak için <backup>bir yedeği içe aktar</backup>.",
+        "subtitle": "Kamerayı tabağına doğrult veya ne yediğini yaz.",
+        "title": "İlk yiyeceğini kaydet"
+      },
+      "ordinary": {
+        "line": "Şimdilik tabak boş."
+      },
+      "welcomeBack": {
+        "subtitle": "Bugün yeni bir başlangıç.",
+        "title": "Tekrar hoş geldin"
+      }
+    },
+    "entry": {
+      "aiEstimated": "YZ tahmini",
+      "calories": "kalori",
+      "fat": "yağ",
+      "fromDatabase": "Besin veritabanımızdan",
+      "justAdded": "Yeni eklendi",
+      "netCarbsUnknown": "net karbonhidrat bilinmiyor",
+      "protein": "protein"
+    },
+    "gap": {
+      "headroom": "Kalan pay {{value}} g",
+      "logged": "{{value}} g kaydedildi",
+      "overBy": "{{value}} g aşıldı",
+      "reached": "Ulaşıldı",
+      "toGo": "Hâlâ {{value}} g gerekiyor"
+    },
+    "habit": {
+      "logged": "{{date}}, kaydedildi",
+      "met": "{{date}}, karbonhidrat hedefine ulaşıldı",
+      "none": "{{date}}, kayıt yok",
+      "over": "{{date}}, karbonhidrat hedefin aşıldı",
+      "overGoal": "hedefin üzerinde",
+      "summary": "Son {{total}} günün {{logged}} günü kaydedildi",
+      "underGoal": "hedefin altında"
+    },
+    "hero": {
+      "absolute": "g net karbonhidrat",
+      "calories": "kalori",
+      "eyebrow": "Bugün şu ana kadar",
+      "kcalLeftOf": "{{target}} değerinden kalan",
+      "kcalOverToday": "bugün aşılan miktar",
+      "leftOf": "{{ceiling}} sınırından kalan g",
+      "netCarbs": "net karbonhidrat",
+      "overToday": "bugün aşılan miktar (g)",
+      "srAbsolute": "Bugün {{value}} g net karbonhidrat.",
+      "srCarbsLeft": "{{ceiling}} g net karbonhidrat hedefinden bugün {{value}} g kaldı.",
+      "srCarbsOver": "Bugün {{ceiling}} g net karbonhidrat hedefini {{value}} g aştın.",
+      "srKcalLeft": "Bugün {{target}} kalorilik hedefinden geriye {{value}} kalori kaldı.",
+      "srKcalOver": "Bugün {{target}} kalorilik hedefini {{value}} kalori aştın."
+    },
+    "impact": {
+      "againstGoal": "{{value}} g hedefine göre",
+      "ariaLabel": "{{label}}, {{reference}}",
+      "high": "Yüksek karbonhidrat etkisi",
+      "kcal": {
+        "near": "Kalori hedefine yakın",
+        "over": "Kalori hedefinin üstünde",
+        "sr": "{{label}}, {{target}} kcal içinden {{eaten}}",
+        "within": "Kalori hedefinin içinde"
+      },
+      "low": "Düşük karbonhidrat etkisi",
+      "moderate": "Orta düzey karbonhidrat etkisi",
+      "protein": {
+        "met": "Protein hedefine ulaşıldı",
+        "sr": "{{label}}, {{floor}} g protein içinden {{eaten}}",
+        "toGo": "Hedefe {{value}} g protein kaldı"
+      }
+    },
+    "kcal": {
+      "absolute": "{{value}} kalori"
+    },
+    "loading": "Günlüğün yükleniyor…",
+    "macroRatio": {
+      "empty": "Henüz bir makro kaydedilmedi",
+      "label": "Makro oranı: {{ratio}}",
+      "segment": "{{percent}}% {{macro}}"
+    },
+    "macros": {
+      "breakdownLine": "Karbonhidrat {{carbs}} g · Lif {{fiber}} g · Protein {{protein}} g · Yağ {{fat}} g · {{kcal}} kalori",
+      "carbs": "Karbonhidrat",
+      "fat": "Yağ",
+      "fiber": "Lif",
+      "netCarbs": "Net karbonhidrat",
+      "protein": "Protein",
+      "unknown": "bilinmiyor"
+    },
+    "meals": {
+      "breakfast": "Kahvaltı",
+      "dinner": "Akşam yemeği",
+      "lunch": "Öğle yemeği",
+      "none": "Öğün yok",
+      "snack": "Ara öğün"
+    },
+    "nav": {
+      "alreadyToday": "Zaten bugünü görüntülüyorsun",
+      "jumpToToday": "Bugüne git",
+      "nextDay": "Sonraki gün",
+      "openCalendar": "{{day}} görüntüleniyor. Farklı bir güne geçmek için takvimi aç.",
+      "previousDay": "Önceki gün"
+    },
+    "netCarbsValue": "{{value}} g net karbonhidrat",
+    "nutrients": {
+      "carbs": "karbonhidrat",
+      "fat": "yağ",
+      "fiber": "lif",
+      "protein": "protein"
+    },
+    "saveMeal": {
+      "hint": {
+        "dismiss": "Şimdi değil",
+        "title": "Bu bir öğün olarak kaydedilsin mi?"
+      },
+      "namePlaceholder": "Öğün adı",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor…",
+      "toast_one": "{{name}} kaydedildi, {{count}} yiyecek.",
+      "toast_other": "{{name}} kaydedildi, {{count}} yiyecek.",
+      "trigger": "Öğün olarak kaydet"
+    },
+    "suggestions": {
+      "attribution": "Besin verileri lowcarbcheck.org kaynağından alınmıştır.",
+      "disclosureFiber_one": "Lif açığını kapatacak {{count}} yiyecek",
+      "disclosureFiber_other": "Lif açığını kapatacak {{count}} yiyecek",
+      "disclosureProtein_one": "Protein açığını kapatacak {{count}} yiyecek",
+      "disclosureProtein_other": "Protein açığını kapatacak {{count}} yiyecek",
+      "introFiber": "Kalan karbonhidrat kotandan az harcayan, lif açısından zengin yiyecekler.",
+      "introProtein": "Kalan karbonhidrat kotandan az harcayan, protein açısından zengin yiyecekler.",
+      "reason": "+{{gain}} g {{nutrient}} · {{carbs}} g net karbonhidrat"
+    },
+    "title": "Günlük",
+    "toast": {
+      "addedMany": "{{n}} yiyecek eklendi",
+      "addedOne": "{{name}} eklendi",
+      "copiedMany": "{{n}} yiyecek kopyalandı",
+      "copiedOne": "{{name}} kopyalandı",
+      "description": "{{where}}, {{when}}",
+      "onDay": "{{day}} günü {{carbs}} net karbonhidrat.",
+      "restored": "{{name}} tekrar günlüğünde.",
+      "soFarToday": "Bugün şu ana kadar {{carbs}} net karbonhidrat.",
+      "toMeal": "{{meal}} öğününe"
+    }
+  },
+  "entry": {
+    "action": {
+      "delete": "Sil",
+      "edit": "Düzenle",
+      "logAgain": "Bugün tekrar kaydet",
+      "logAgainPending": "Kaydediliyor…"
+    },
+    "edit": {
+      "cancel": "İptal",
+      "date": "Tarih",
+      "decreaseGrams": "Gramı azalt",
+      "fineTune": "100 g başına ince ayar yap",
+      "grams": "Gram",
+      "increaseGrams": "Gramı artır",
+      "meal": "Öğün (isteğe bağlı)",
+      "name": "İsim",
+      "noMeal": "Öğün yok",
+      "per100gHint": "Makrolar 100 g içindir. Bilinmiyorsa alanı boş bırak.",
+      "save": "Değişiklikleri kaydet",
+      "saving": "Kaydediliyor…",
+      "subtitle": "Önce porsiyonu ayarla. Makrolar buna göre değişir.",
+      "time": "Saat",
+      "title": "Kaydı düzenle",
+      "when": "Zaman"
+    },
+    "errors": {
+      "dateInFuture": "Tarih gelecekte olamaz",
+      "gramsPositive": "Gram 0'dan büyük olmalı",
+      "invalidDate": "Geçerli bir tarih gir",
+      "invalidTime": "Geçerli bir saat gir",
+      "nameRequired": "İsim zorunlu"
+    },
+    "fact": {
+      "polyols": "Şeker alkolleri",
+      "portion": "Porsiyon"
+    },
+    "favorite": {
+      "add": "{{name}} ögesini favorilere ekle",
+      "remove": "{{name}} ögesini favorilerden çıkar"
+    },
+    "hero": {
+      "netCarbsPerServing": "Net karbonhidrat · porsiyon başına",
+      "per100gBadge": "100 g başına {{value}} g net karbonhidrat"
+    },
+    "loading": "Girdi yükleniyor…",
+    "loggedTogether": "Birlikte kaydedildi",
+    "macro": {
+      "carbs": "Karbonhidrat",
+      "fat": "Yağ",
+      "fiber": "Lif",
+      "kcal": "Kalori",
+      "polyols": "Şeker alkolleri (polioller)",
+      "protein": "Protein",
+      "sugars": "Şeker"
+    },
+    "macrosUnknown": "Makrolar bilinmiyor, yalnızca isim olarak kaydedildi.",
+    "meal": {
+      "breakfast": "Kahvaltı",
+      "dinner": "Akşam yemeği",
+      "lunch": "Öğle yemeği",
+      "snack": "Atıştırmalık"
+    },
+    "netCarbsFormula": "Net karbonhidrat (yukarıda) = Karbonhidrat eksi Lif, eksi şeker alkolleri.",
+    "photo": {
+      "alt": "{{name}} için tabağın",
+      "caption": "Yalnızca bu cihazda saklanır"
+    },
+    "portionScale": {
+      "asShown": "Göründüğü gibi",
+      "bigger": "Daha büyük",
+      "double": "İki katı",
+      "smaller": "Daha küçük"
+    },
+    "preview": {
+      "calories": "{{value}} kalori",
+      "fat": "Yağ {{value}} g",
+      "netCarbsBadge": "{{value}} g net karbonhidrat",
+      "protein": "Protein {{value}} g"
+    },
+    "provenance": {
+      "adapted": {
+        "badge": "Senin tarafından düzenlendi",
+        "note": "Bu sayıları sen değiştirdin, dolayısıyla artık sana aitler. Besin veri tabanımızdan yola çıkılarak oluşturuldular; aşağıdaki atıf orijinal veri içindir."
+      },
+      "ai": {
+        "badge": "Yapay zeka tarafından tahmin edildi",
+        "note": "Bu makro değerleri tabak fotoğrafından yapılan bir yapay zeka tahminidir, tam değerler önemliyse bunları tekrar kontrol et."
+      },
+      "curated": {
+        "badge": "Besin veri tabanımızdan",
+        "note": "Besin değerleri derlenmiş besin veri tabanımızdan alındı."
+      },
+      "manual": {
+        "note": "Elle giriş."
+      }
+    },
+    "title": "Kayıt",
+    "toast": {
+      "loggedAgain": "{{name}} tekrar günlüğe kaydedildi.",
+      "removed": "{{name}} kaldırıldı.",
+      "undo": "Geri al",
+      "updated": "Kayıt güncellendi."
+    },
+    "report": {
+      "button": "Sayılar hatalı mı görünüyor? Bu kaydı bildir",
+      "queued": "Bildirim sıraya alındı. Tekrar çevrim içi olduğunda gönderilir.",
+      "failed": "Bildirim sıraya alınamadı. Tekrar dene.",
+      "sending": "Sıraya alınıyor…",
+      "consent": {
+        "title": "Bu kaydı bu sunucuyu işleten kişilere gönder",
+        "whatIsSentWithPhoto": "Bu tabağın fotoğrafını ve bu kayıttaki değerleri gönderirsin. Günlüğünden başka hiçbir şey bununla birlikte gitmez. Bu sunucunun bir yöneticisi o fotoğrafı açabilir ve bu değerleri okuyabilir.",
+        "whatIsSentFiguresOnly": "Bu kayıtta fotoğraf yok, bu yüzden hiçbir fotoğraf gönderilmez. Bu kayıttaki değerleri gönderirsin, günlüğünden başka hiçbir şey gitmez. Bu sunucunun bir yöneticisi bunları okuyabilir.",
+        "retentionWithPhoto": "Fotoğraf ve değerler {{days}} gün boyunca saklanır, ardından silinir.",
+        "retentionFiguresOnly": "Değerler {{days}} gün boyunca saklanır, ardından silinir.",
+        "unencrypted": "Eşitlediğin diğer her şey buradan ayrılmadan önce bu cihazda şifrelenir. Yalnızca bu bildirim şifrelenmez. Gönderdiğin şeyler arasında sunucunun okuyabildiği tek şey budur.",
+        "agree": "Kabul ediyorum, gönder",
+        "decline": "Hayır, gönderme"
+      }
+    }
+  },
+  "errors": {
+    "backToDiary": "Günlüğüne dön",
+    "backToHome": "Ana sayfaya dön",
+    "loadFailed": "Bu sayfa yüklenirken bir hata oluştu.",
+    "notFoundDetails": "Aradığın sayfa mevcut değil.",
+    "notFoundTitle": "Bulunamadı",
+    "statusHeading": "Hata {{status}}",
+    "title": "Hata",
+    "tryAgain": "Tekrar dene",
+    "unexpectedDetails": "Beklenmeyen bir hata oluştu.",
+    "unexpectedHeading": "Bir şeyler ters gitti",
+    "notANumber": "Geçerli bir sayı gir"
+  },
+  "fasting": {
+    "active": {
+      "adjustLabel": "Başlangıç zamanı",
+      "adjustSave": "Başlangıç zamanını kaydet",
+      "adjustStart": "Ayarla",
+      "complete": "Tamamla",
+      "elapsedLabel": "geçen süre",
+      "end": "Orucu bitir",
+      "endBodyEarly": "{{target}} hedefinin {{elapsed}} süresindesin. Şimdi bitirmek, bu {{elapsed}} süreyi geçmişine kaydeder.",
+      "endBodyReached": "{{elapsed}} süresindesin, {{target}} hedefini aştın. Bitirmek bunu geçmişine kaydeder.",
+      "endTitle": "Bu oruç bitirilsin mi?",
+      "eyebrow": "Oruç",
+      "goalReached": "Hedefe ulaşıldı",
+      "overtime": "{{target}} hedefini {{duration}} aştın",
+      "remaining": "kalan süre {{duration}}",
+      "srAnnounce": "Orucun başladı.",
+      "srLabel": "{{elapsed}} süredir oruçtasın. Hedef {{target}}.",
+      "startedAt": "Başlangıç: {{time}}"
+    },
+    "care": {
+      "pregnancyNotice": "Hamileyken veya emzirirken oruç tutulması önerilmez, NHS bunu açıkça belirtir. Günlüğün ve hedeflerin olduğu gibi kalır.",
+      "stop": "Bayılırsan, geçmeyen bir baş dönmesi hissedersen, kalp çarpıntısı fark edersen, zihnin bulanırsa, göğüs ağrısı çekersen veya birden fazla kez kusarsan dur ve bir şeyler ye.",
+      "title": "Uzun bir oruçtan önce",
+      "understood": "Anlaşıldı",
+      "water": "Gün boyunca su iç ve içine biraz tuz ekle. 72 saati aşan hiçbir durum bu uygulamanın rehberlik edebileceği kapsamda değildir.",
+      "who": "Hamileyken veya emzirirken, şu anda veya geçmişte yeme bozukluğu varsa, tip 1 diyabet ya da kan şekeri ilacı kullanımında veya 18 yaşın altındayken oruç tutulması önerilmez."
+    },
+    "chip": {
+      "activeLabel": "{{duration}} süredir oruçtasın, sayacı aç",
+      "scheduledLabel": "Oruç {{duration}} içinde başlayacak, sayacı aç",
+      "startsIn": "{{duration}} içinde"
+    },
+    "duration": {
+      "hoursMinutes": "{{hours}} sa {{minutes}} dk",
+      "hoursOnly": "{{hours}} sa",
+      "minutesOnly": "{{minutes}} dk"
+    },
+    "end": {
+      "confirm": "Orucu kaydet",
+      "mood": {
+        "good": "İyi",
+        "ok": "Fena değil",
+        "rough": "Zor"
+      },
+      "moodLabel": "Nasıl geçti?",
+      "note": "Eklemek istediğin bir not var mı?",
+      "title": "Bu orucu bitir"
+    },
+    "errors": {
+      "alreadyRunning": "Zaten devam eden bir oruç var.",
+      "customHours": "{{min}} ile {{max}} arasında tam sayı olarak bir saat gir.",
+      "noteTooLong": "Notu en fazla {{max}} karakter tut.",
+      "startInFuture": "Geçmişte kalmış bir zaman seç.",
+      "startTooFarAhead": "Gelecek yedi gün içinde bir zaman seç.",
+      "startTooFarBack": "Son iki gün içinde bir zaman seç.",
+      "startUnreadable": "Bir tarih ve saat seç."
+    },
+    "history": {
+      "achieved": "{{target}} hedeften {{achieved}} tamamlandı",
+      "deleteBody": "Geçmişinden silinir. Başka hiçbir şey değişmez.",
+      "deleteLabel": "{{when}} tarihindeki orucu sil",
+      "deleteTitle": "Bu oruç silinsin mi?",
+      "empty": "Henüz oruç yok. İlk orucun burada görünür.",
+      "stillOpen": "Hâlâ açık",
+      "stillOpenHint": "{{when}} başladı, hiç bitmedi.",
+      "title": "Oruçların"
+    },
+    "loading": "Orucun yükleniyor…",
+    "plan": {
+      "custom": "Özel",
+      "customHint": "{{min}} ile {{max}} saat arasında herhangi bir süre.",
+      "customLabel": "Oruç saatleri",
+      "customPlaceholder": "ör. 24",
+      "description": "İlk sayı oruç tuttuğun saatleri, ikinci sayı ise yemek yediğin saatleri gösterir.",
+      "eyebrow": "Oruç planla",
+      "honesty": "openplate yalnızca saatleri sayar. Tıbbi tavsiye vermez.",
+      "plannedStartLabel": "Başlangıç zamanı",
+      "protocol": {
+        "16:8": "16:8",
+        "18:6": "18:6",
+        "20:4": "20:4",
+        "24h": "24 sa",
+        "36h": "36 sa",
+        "48h": "48 sa",
+        "72h": "72 sa"
+      },
+      "protocolAria": "{{fastingHours}} saat oruç, {{eatingHours}} saat yeme",
+      "protocolGroup": "Oruç aralığı",
+      "saving": "Kaydediliyor…",
+      "startAtRoutine": "{{time}} zamanında başlat",
+      "startLater": "Daha sonra başlat",
+      "startModeLabel": "Ne zaman başlasın",
+      "startNow": "Şimdi başlat",
+      "submitBackdated": "Bu zamandan itibaren başlat",
+      "submitNow": "Orucu başlat",
+      "submitScheduled": "Planla",
+      "title": "Bir aralık seç"
+    },
+    "scheduled": {
+      "adjust": "Başlangıç zamanını değiştir",
+      "adjustSave": "Başlangıç zamanını kaydet",
+      "cancel": "Bu planı iptal et",
+      "cancelBody": "Henüz hiçbir şey başlamadı, bu yüzden geçmişine hiçbir şey kaydedilmez.",
+      "cancelTitle": "Bu plan iptal edilsin mi?",
+      "detail": "{{protocol}} · {{when}}",
+      "eyebrow": "Oruç planlandı",
+      "srAnnounce": "Orucun {{when}} için planlandı.",
+      "startsIn": "{{duration}} içinde başlar",
+      "startsNow": "Şimdi başlıyor"
+    },
+    "stages": {
+      "early": {
+        "name": "Erken oruç",
+        "sentence": "İnsülin düşer ve vücudun karaciğerde depolanan şekeri kullanmaya başlar."
+      },
+      "entered": "{{time}} zamanında {{name}} girildi",
+      "extended": {
+        "name": "Uzatılmış oruç",
+        "sentence": "Çoğu insanın uyguladığının ötesinde. 72 saati aşan her durum, bu uygulamanın rehberlik edebileceği kapsamın dışındadır."
+      },
+      "fed": {
+        "name": "Sindiriliyor",
+        "sentence": "Vücudun son öğününü hâlâ sindiriyor."
+      },
+      "fromHours": "{{hours}} saaten itibaren",
+      "hedge": "Ortalamalardır, senin kişisel ölçümün değildir. Düşük karbonhidratta erken evreleri daha çabuk geçersin.",
+      "ketosis": {
+        "name": "Ketozis",
+        "sentence": "Birçok kişi bu noktada ölçülebilir ketozise ulaşır ve beyin daha çok ketonlarla çalışır. Bazı hayvan çalışmaları hücresel temizliğin de arttığını öne sürmektedir, insanlara dair kanıtlar ise sınırlıdır."
+      },
+      "listTitle": "Ne zaman ne olur",
+      "low-stores": {
+        "name": "Düşük karaciğer depoları",
+        "sentence": "Çoğu insanda depolanmış karaciğer şekeri büyük oranda tükenir ve yağ yakımı artar."
+      },
+      "next": "Sırada: {{hours}} saatten itibaren {{name}}",
+      "rising-ketones": {
+        "name": "Yükselen ketonlar",
+        "sentence": "Kandaki ketonlar genelde bu noktada yükselmeye başlar, zaten düşük karbonhidratla besleniyorsan daha da erken yükselir."
+      }
+    },
+    "stats": {
+      "completed": "Tamamlanan oruçlar",
+      "longest": "En uzun",
+      "streak": "Gün serisi",
+      "week": "Bu haftaki saatler"
+    },
+    "strip": {
+      "activeLine": "{{elapsed}} geçti · {{remaining}} kaldı",
+      "fasting": "Oruç tutuluyor",
+      "overtimeLine": "{{elapsed}} geçti · hedef {{overtime}} aşıldı",
+      "scheduled": "Oruç planlandı",
+      "scheduledLine": "{{duration}} içinde başlıyor"
+    },
+    "summary": {
+      "line": "{{achieved}} süreyle oruç tuttun.",
+      "metTarget": "{{target}} hedefini tamamladın.",
+      "scheduleNext": "Bir sonrakini {{time}} için planla",
+      "targetWas": "Hedefin {{target}} idi."
+    },
+    "title": "Oruç tutuluyor",
+    "toast": {
+      "deleted": "Oruç kaldırıldı.",
+      "ended": "Oruç kaydedildi, {{achieved}}.",
+      "planCancelled": "Plan iptal edildi.",
+      "scheduled": "Oruç zamanlandı.",
+      "startAdjusted": "Başlangıç saati güncellendi.",
+      "started": "Oruç başladı."
+    }
+  },
+  "goals": {
+    "carbs": {
+      "custom": "Özel",
+      "hint": "Bu değer net karbonhidratı sayar: lif ve şeker alkolleri zaten çıkarılmıştır, günlüğünün takip ettiği değerle aynıdır. Aşağıdan yaygın bir başlangıç noktası seç veya kendi miktarını gram cinsinden yaz.",
+      "label": "Günlük karbonhidrat sınırı",
+      "placeholder": "ör. 20"
+    },
+    "card": {
+      "description": "Aşağıdaki hedeflerin her biri isteğe bağlıdır. İşine yarayanı belirle, gerisini boş bırak. Bir alanı temizlemek o hedefi kaldırır; buradaki hiçbir şey katı bir kural değildir, sadece ulaşmaya çalışacağın sayılardır.",
+      "title": "Hedeflerin"
+    },
+    "errors": {
+      "positiveOrBlank": "0'dan büyük bir sayı gir veya hedefi kaldırmak için alanı temizle"
+    },
+    "kcal": {
+      "approximateNote": "Yiyeceklerden alınan kalori miktarları genellikle kesin sayılar yerine tahminlerden ibaret olduğu için, bu hedefe doğru ilerlemeni yaklaşık olarak göstereceğiz.",
+      "hint": "Kalori, yiyeceklerdeki enerjiyi ölçer. Bunu bir yakıt göstergesi gibi düşünebilirsin. Tek bir doğru sayı yoktur; bu sana bağlıdır. Nereden başlayacağından emin değil misin? Çoğu kişi günde 1.600 ile 2.200 arasında bir değerle başlar, ancak bir doktor veya diyetisyen sana gerçekten uyan bir sayı verebilir.",
+      "label": "Günlük kalori hedefi",
+      "placeholder": "ör. 2000",
+      "suggested": "Günde {{kcal}} kcal kullan (hafif hareketli)",
+      "suggestionUnavailable": "Aşağıya boyunu, doğum yılını ve cinsiyetini ekle, bir de tartı kaydı gir; sana bir başlangıç sayısı önerebiliriz."
+    },
+    "protein": {
+      "basis": {
+        "height": "boyun ve cinsiyetin",
+        "weight": "son tartı kaydın"
+      },
+      "hint": "Protein tok hissetmene ve kaslarını korumana yardımcı olur; ne kadar az karbonhidrat veya kalori alırsan bu o kadar önem kazanır. Bu, gram cinsinden ulaşmaya çalışacağın bir miktardır. Altında kalmak bir başarısızlık değildir.",
+      "label": "Günlük protein hedefi",
+      "method": "Bu, {{basis}} üzerinden hesaplanan bir tahmindir. Aklında bir miktar varsa kendin yaz.",
+      "placeholder": "ör. 100",
+      "recommended": "Bu tahmini kullan ({{grams}} g)",
+      "suggestionUnavailable": "Aşağıya boyunu ve cinsiyetini ekle veya bir kilo kaydet; sana bir miktar önerebiliriz."
+    },
+    "save": "Hedefleri kaydet",
+    "saving": "Kaydediliyor…",
+    "targetWeight": {
+      "hint": "Bunu yalnızca belirli bir sayıya ulaşmaya çalışıyorsan ayarla.",
+      "label": "Hedef kilo ({{unit}})",
+      "placeholderKg": "örn. 70",
+      "placeholderLb": "örn. 154"
+    },
+    "toast": {
+      "saved": "Hedefler kaydedildi.",
+      "weightLogged": "Kilo kaydedildi.",
+      "weightRemoved": "Tartı kaydı silindi."
+    },
+    "weight": {
+      "description": "Bugünkü kilonu kaydet. Günde bir tartı kaydı tutulur, tekrar kaydetmek bugünkünün yerine geçer.",
+      "errors": {
+        "notANumber": "Geçerli bir sayı gir",
+        "outOfRange": "{{min}} ile {{max}} kg arasında bir kilo gir",
+        "required": "Kilonu gir"
+      },
+      "log": "Kiloyu kaydet",
+      "loggedToday": "Bugün kaydedilen: {{weight}} {{unit}}.",
+      "placeholderKg": "örn. 72,5",
+      "placeholderLb": "örn. 160",
+      "recentHeading": "Son tartı kayıtları",
+      "title": "Kilo",
+      "todayLabel": "Bugünkü kilo ({{unit}})",
+      "unitToggleLabel": "Kilo birimi",
+      "update": "Güncelle"
+    }
+  },
+  "install": {
+    "action": "{{appName}} uygulamasını yükle",
+    "description": "Anında açılan ve çevrimdışıyken de çalışmaya devam eden tam ekran bir uygulama için {{appName}} uygulamasını ana ekranına ekle.",
+    "iosInstructions": "Safari uygulamasında <share>Paylaş</share> düğmesine dokun, ardından <addToHome>Ana Ekrana Ekle</addToHome> seçeneğini seç.",
+    "phoneNote": "{{appName}} uygulamasını bir telefona yükleyebilirsin, böylece bir tarayıcı sekmesi yerine diğer tüm uygulamalar gibi açılır.",
+    "title": "{{appName}} uygulamasını yükle"
+  },
+  "join": {
+    "description": "Bir parola belirle, günlüğün hazır olsun.",
+    "foreignServer": {
+      "body": "Bağlantı {{origin}} adresini gösteriyor. Bunun yerine orada aç.",
+      "bodyUnknown": "Bağlantı bu uygulamanın bilmediği bir yeri gösteriyor. Davet edildiğin uygulamada aç.",
+      "title": "Bu bağlantı başka bir openplate için"
+    },
+    "invalidLink": {
+      "body": "Davet içermiyor. Seni davet eden kişiden bağlantıyı tekrar göndermesini iste.",
+      "title": "Bu bağlantı eksik"
+    },
+    "managed": {
+      "connecting": "Yapay zeka bağlantın kuruluyor."
+    },
+    "title": "Davet edildin",
+    "invitedAs": "{{email}} olarak davet edildin.",
+    "inviteInvalid": {
+      "title": "Bu davet artık geçerli değil",
+      "body": "Daha önce kullanılmış veya süresi dolmuş olabilir. Seni davet eden kişiden yeni bir davet iste.",
+      "continue": "Hesap olmadan devam et"
+    },
+    "unreachable": {
+      "title": "Sunucuya ulaşılamadı",
+      "retry": "Davetin muhtemelen geçerlidir. Bağlantıyı birazdan tekrar dene."
+    },
+    "signedInElsewhere": {
+      "title": "Başka biri olarak oturum açtın",
+      "body": "Bu cihazda {{signedInAs}} olarak oturum açılmış, davet ise {{invitedEmail}} adresi için. Daveti kullanmak için önce oturumu kapat.",
+      "signOut": "Oturumu kapat"
+    },
+    "alreadyRegistered": {
+      "title": "Bu adresin zaten bir hesabı var",
+      "body": "{{email}} için zaten bir hesap var. Belirlediğin parolayla oturum aç.",
+      "signIn": "Oturum açmaya git"
+    },
+    "working": "Hesabın kuruluyor"
+  },
+  "landing": {
+    "close": {
+      "body": "Kayıt olacak bir şey yok, yapılandırılacak bir şey yok. Tek bir yiyecek kaydet, openplate gereken her şeye sahip olur.",
+      "bodyManaged": "Yapılandırılacak bir şey yok. Oturum aç, tek bir yiyecek kaydet, openplate gereken her şeye sahip olur.",
+      "eyebrow": "Şimdi başla",
+      "star": "Veya GitHub üzerinde kaynağa yıldız ver, MIT lisanslı",
+      "title": "Günün ilk öğünüyle başla"
+    },
+    "cta": {
+      "howItWorks": "Nasıl çalıştığını gör",
+      "readSource": "Veya kaynağı oku, MIT lisanslı",
+      "readSourcePlain": "Kaynağı oku, MIT lisanslı",
+      "tryIt": "Şimdi dene, tamamen ücretsiz",
+      "tryItFree": "Dene, ücretsiz, hesap gerekmez",
+      "tryItFreeManaged": "Oturum aç"
+    },
+    "features": {
+      "byok": {
+        "body": "Bir yapay zeka sağlayıcısını kendin bağla: OpenRouter, Mistral, Anthropic veya OpenAI uyumlu herhangi bir uç nokta. Anahtar bu cihazda kalır ve fotoğraf doğrudan tarayıcından onlara gider. Ücreti bize değil, sana yansıtırlar.",
+        "title": "Kendi anahtarınla fotoğraflar makrolara dönüşür"
+      },
+      "eyebrow": "Elde ettiklerin",
+      "install": {
+        "body": "openplate uygulamasını ana ekranına ekle; diğer uygulamalar gibi tam ekran ve tarayıcı arayüzü olmadan açılır. Bağlantın olmadığında da açılmaya devam eder.",
+        "title": "Telefonuna kurulur"
+      },
+      "local": {
+        "body": "Kaydettiğin her yiyecek doğrudan bu tarayıcının kendi depolama alanına yazılır. Sunucu hiçbir kopyayı tutmaz: veritabanı bulunmaz, bu nedenle sunucuda sızdırılabilecek hiçbir bilgin yoktur. İstediğin zaman tümünü tek bir dosya olarak dışa aktar.",
+        "bodyManaged": "Kaydettiğin her yiyecek doğrudan bu tarayıcının kendi depolama alanına yazılır. Sunucu bir veritabanında şifreli bir kopya tutar ama anahtar asla günlük ile birlikte iletilmediğinden bunu okuyamaz. İstediğin zaman tümünü tek bir dosya olarak dışa aktar.",
+        "title": "Günlük bu cihazda tutulur",
+        "titleManaged": "Günlük bu cihazda tutulur ve sunucudaki kopya kilitlidir"
+      },
+      "noTracking": {
+        "body": "openplate içinde analiz aracı, reklam ve takip pikseli yoktur. Uygulamada yaptığın hiçbir şey sayılmaz ve buna dair hiçbir bilgi bir yere gönderilmez.",
+        "title": "Reklam yok, takip yok",
+        "titleAnalytics": "Reklam yok ve günlüğünün takibi yok",
+        "bodyAnalytics": "openplate reklam içermez. Bu kurulum, ziyaretleri ve özellik kullanımını çerezsiz kendi Matomo kurulumuyla sayar; ne yediğini, kilonu veya ne kaydettiğini asla saymaz; günlüğün bu cihazda kalır. openplate kurulumunu kendin çalıştırırsan hiçbir şey sayılmaz.",
+        "bodyAnalyticsManaged": "openplate reklam içermez. Bu kurulum, ziyaretleri ve özellik kullanımını çerezsiz kendi Matomo kurulumuyla sayar; ne yediğini, kilonu veya ne kaydettiğini asla saymaz; günlüğün kopyası sunucuya ulaşmadan önce bu cihazda şifrelenir. openplate kurulumunu kendin çalıştırırsan hiçbir şey sayılmaz.",
+        "bodyPageviews": "openplate reklam içermez. Bu kurulum, sayfa ziyaretlerini çerezsiz kendi Matomo kurulumuyla sayar. Hangi özellikleri kullandığını kaydetmez. Ne yediğin, kilon veya ne kaydettiğin sunucuya asla bildirilmez. Günlüğün bu cihazda kalır. openplate kurulumunu kendin çalıştırırsan hiçbir şey sayılmaz.",
+        "bodyPageviewsManaged": "openplate reklam içermez. Bu kurulum, sayfa ziyaretlerini çerezsiz kendi Matomo kurulumuyla sayar. Hangi özellikleri kullandığını kaydetmez. Ne yediğin, kilon veya ne kaydettiğin sunucuya asla bildirilmez. Günlüğün kopyası sunucuya ulaşmadan önce bu cihazda şifrelenir. openplate kurulumunu kendin çalıştırırsan hiçbir şey sayılmaz.",
+        "bodyResearch": "openplate reklam içermez. Bu kurulum, araştırma düzeyinde çalışan çerezsiz kendi Matomo kurulumunu kullanır. Ziyaretler ve özellik kullanımının yanında oruç tutma, kilo kaydı, hekimle paylaşım veya araştırmaya katkı işlemlerinin yapıldığını sayar. Ne yediğin, kilon veya ne kaydettiğin sunucuya asla bildirilmez. Günlüğün bu cihazda kalır. openplate kurulumunu kendin çalıştırırsan hiçbir şey sayılmaz.",
+        "bodyResearchManaged": "openplate reklam içermez. Bu kurulum, araştırma düzeyinde çalışan çerezsiz kendi Matomo kurulumunu kullanır. Ziyaretler ve özellik kullanımının yanında oruç tutma, kilo kaydı, hekimle paylaşım veya araştırmaya katkı işlemlerinin yapıldığını sayar. Ne yediğin, kilon veya ne kaydettiğin sunucuya asla bildirilmez. Günlüğün kopyası sunucuya ulaşmadan önce bu cihazda şifrelenir. openplate kurulumunu kendin çalıştırırsan hiçbir şey sayılmaz."
+      },
+      "selfHost": {
+        "body": "Durumsuz tek bir konteyner, çalıştırılacak veritabanı yok ve yapılandırılacak gizli anahtar yok. compose dosyası depoda bulunur; kurulum bir indirme ve tek bir komuttan ibarettir.",
+        "title": "Tek bir konteyner içinde kendin barındır"
+      },
+      "source": {
+        "body": "Bir günlük beslenmeni emanet etmeden önce her satırı oku. Çatalla, değiştir, kendi projelerine ekle. Lisans, telif hakkı bildirimi dışında hiçbir şey talep etmez.",
+        "title": "Açık kaynak, MIT Lisansı altında"
+      },
+      "subtitle": "Bunların hiçbiri yol haritası maddesi değildir. Hepsi bugün depoda mevcuttur.",
+      "title": "Kaynak kodunda kontrol edebileceğin altı iddia",
+      "byokManaged": {
+        "title": "Fotoğraflar makrolara dönüşür, anahtar gerekmez",
+        "body": "Yapay zeka ile tarama hesabınla birlikte gelir. Anahtar yapılandırman veya bir sağlayıcıya ödeme yapman gerekmez. Fotoğrafın bu kurulumun sunucusuna gönderilir, sunucu da bunu yapay zeka servisine iletir. Sunucu bir kopyasını tutmaz."
+      }
+    },
+    "goals": {
+      "body": "Günlük net karbonhidrat tavanı, protein tabanı, kalori hedefi belirle veya hiçbirini seçme. openplate senin ayarlamadığın hiçbir hedefi kendiliğinden üretmez.",
+      "points": {
+        "grid": "İlerleme bölümü, aradaki boşluklar dahil, hedeflerine ulaştığın günlerin 13 haftalık kaydını tutar.",
+        "ring": "Günlüğündeki bir halka, bugünden geriye ne kaldığını gösterir.",
+        "tone": "Hedefi aşmak kehribar renginde bir sayıyla gösterilir. Asla aleyhine bir ceza puanı değildir.",
+        "weight": "İstediğin zaman tartıl; grafik, günden güne oluşan dalgalanmaları düzeltir."
+      },
+      "shotAlt": "Telefonda hedefler ekranı: keto, düşük karbonhidrat ve dengeli ön ayarlarıyla günlük karbonhidrat sınırı ve altında isteğe bağlı protein ile kalori hedefleri.",
+      "title": "Bir hedef belirle, ardından kayıtların oluşmasını izle"
+    },
+    "hero": {
+      "shotAlt": "Dizüstü bilgisayarda openplate günlüğü: gün için bir ilerleme halkası, altında listelenen kahvaltı, öğle ve akşam yemekleri ile her öğünün yanında karbonhidrat, protein, yağ ve kalori değerleri.",
+      "shotCaption": "Örnek bir gün, kendi verilerin değil.",
+      "tagline": "openplate, cihazında çalışan ve önceliği karbonhidrat olan bir besin günlüğüdür: tabağının fotoğrafını çek veya ne yediğini ara, günün durumunu gör.",
+      "taglineManaged": "openplate, işleticinin sunucusunda uçtan uca şifreli bir kopyasını tutan ve önceliği karbonhidrat olan bir besin günlüğüdür: tabağının fotoğrafını çek veya ne yediğini ara, günün durumunu gör.",
+      "ticks": "Hesap gerektirmez · Uygulama gibi kurulur · Çevrimdışı çalışır · Fotoğraf taramaları kendi yapay zeka anahtarını kullanır",
+      "ticksManaged": "Yalnızca davetle · Uygulama gibi kurulur · Çevrimdışı çalışır · Fotoğraf tahminleri dahildir"
+    },
+    "how": {
+      "eyebrow": "Her gün",
+      "scan": {
+        "body": "Fotoğrafı kendi yapay zeka sağlayıcın okur ve içindekileri tahmin eder. Herhangi bir şey kaydedilmeden önce sayıları sen kontrol edersin.",
+        "shotAlt": "Bir telefondaki tarama ekranı, OpenRouter için tek tıkla bağlantı sunuyor.",
+        "title": "Tabağının fotoğrafını çek",
+        "bodyManaged": "Fotoğraf tahmini hesabına dahildir. Herhangi bir şey kaydedilmeden önce sayıları sen kontrol edersin."
+      },
+      "search": {
+        "body": "Ne yediğini yaz. Besinler, özenle hazırlanan lowcarbcheck.org veritabanından gelir ve sık kaydettiğin her şey tek dokunuşluk bir düğmeye dönüşür.",
+        "shotAlt": "Bir telefondaki besin ekleme ekranı, son besinleri net karbonhidrat değerleriyle listeliyor.",
+        "title": "Veya sadece ara"
+      },
+      "see": {
+        "body": "Günlüğün bir sayı yığınıyla değil, günün geri kalanıyla öne çıkar. Tahmin edilen her şey açıkça belirtilir.",
+        "shotAlt": "Bir telefondaki günlük: gün halkası, ardından altında kaydedilen öğünler.",
+        "title": "Günün durumunu gör"
+      },
+      "subtitle": "openplate sana ait olduğunda kullanımı böyle görünür: her gün aynı birkaç dokunuş.",
+      "title": "Birkaç saniyede bir öğün kaydet"
+    },
+    "newsletter": {
+      "awaitingChallenge": "Bot kontrolünün bitmesi bekleniyor…",
+      "body": "Yalnızca vaktine değecek bir sürüm çıktığında kısa bir e-posta. Başka hiçbir şey gönderilmez ve dilediğin e-postadan abonelikten çıkabilirsin.",
+      "consent": "Evet, bana openplate bültenini gönder. İstediğim zaman abonelikten çıkabilirim.",
+      "emailLabel": "E-posta adresi",
+      "emailPlaceholder": "sen@example.com",
+      "pending": "Kaydın yapılıyor…",
+      "privacy": "Adresine ne yapılacağı <privacy>gizlilik politikasında</privacy> açıklanmaktadır.",
+      "status": {
+        "alreadySubscribed": "Zaten listedesin. Başka bir şey yapmana gerek yok.",
+        "challengeUnavailable": "Bot kontrolü yüklenemedi, bu nedenle şu anda kayıt yapılamıyor.",
+        "checkInbox": "Seni bekleyen bir onay e-postası zaten var. Tamamlamak için içindeki bağlantıyı aç.",
+        "invalidEmail": "Bu adres kabul edilmedi. Kontrol edip tekrar dene.",
+        "invalidToken": "Kontrolün süresi doldu. Bir kez daha dene.",
+        "noConsent": "Yukarıdaki kutuyu işaretlediğinde gönderebiliriz.",
+        "subscribed": "Neredeyse bitti. Az önce gönderdiğimiz e-postadaki bağlantıyı aç, listeye eklenmiş olacaksın.",
+        "tooManyAttempts": "Kısa sürede çok fazla deneme yapıldı. Bir dakika bekle, sonra tekrar dene.",
+        "unavailable": "Kayıt işlemi şu anda yanıt vermiyor. Lütfen daha sonra tekrar dene."
+      },
+      "submit": "Beni kaydet",
+      "title": "Yeni bir sürüm çıktığında haberin olsun"
+    },
+    "setup": {
+      "cta": "Birinci adımla başla",
+      "ctaManaged": "Başlamak için giriş yap",
+      "eyebrow": "Tek seferlik kurulum",
+      "shotAlt": "Bir telefonda gün halkasını, son yedi günü ve en son tartı ölçümünü gösteren genel bakış ekranı.",
+      "steps": {
+        "connect": {
+          "body": "Tek tıkla OpenRouter bağlantısı kurulur: orada onay verirsin, anahtar bu cihaza geri döner ve burada kalır. OpenAI ile uyumlu herhangi bir uç nokta da çalışır. Bir tabağı okutmak fotoğraf başına genellikle bir sentin çok altındadır ve sağlayıcın faturayı doğrudan sana keser. Bu adımı atlarsan arama çalışmaya devam eder: anahtar yalnızca fotoğraf okutmak için gereklidir.",
+          "title": "Bir sağlayıcı bağla veya bu adımı atla"
+        },
+        "connectManaged": {
+          "body": "Yapay zeka bu örnekle birlikte gelir, bu yüzden anahtar getirmez ve sağlayıcıya ödeme yapmazsın. Yöneticin senin için her gün kaç fotoğraf okunabileceğini belirler. Yiyecek aramak bu sayıdan asla düşmez, çünkü yalnızca fotoğrafın okunması gerekir.",
+          "title": "Yapay zeka senin için hazırlandı bile"
+        },
+        "open": {
+          "body": "İlk yiyeceği kaydettiğin anda günlük bu cihazda oluşturulur.",
+          "title": "Takipçiyi aç"
+        },
+        "scan": {
+          "body": "Sağlayıcın fotoğrafı okur ve yiyecekleri önerir. Sayıları kontrol edersin, kaydedersin ve günün toplamı güncellenir.",
+          "title": "İlk tabağının fotoğrafını çek",
+          "bodyManaged": "Bu örneğin yapay zekası fotoğrafı okur ve yiyecekleri önerir. Sayıları kontrol edersin, kaydedersin ve günün toplamı güncellenir."
+        }
+      },
+      "subtitle": "Bunu bir kez yaparsın ve sonra bir daha yapmazsın. Üç adım vardır ve yalnızca ortadaki adım senden bir şey ister.",
+      "subtitleManaged": "Bunu bir kez yaparsın ve sonra bir daha yapmazsın. Üç adım vardır ve ortadaki adım senin için zaten tamamlanmıştır.",
+      "title": "Yaklaşık bir dakikada çalışır"
+    },
+    "sync": {
+      "body": "Öğle yemeğini telefonuna kaydet, sonra dizüstü bilgisayarından haftaya bak. Eşitleme isteğe bağlıdır ve uçtan uca şifrelidir: şifreli metin bir openplate-core sunucusunda durur (bizimkinde ya da kendi çalıştırdığın bir sunucuda) ve anahtar sunucunun hiç görmediği bir paroladan üretildiği için o sunucuda bunun anahtarı yoktur.",
+      "link": "Hesap oluştur",
+      "photos": "Tabak fotoğrafları oldukları yerde kalır. Hiçbir zaman eşitleme verisinin parçası olmazlar.",
+      "shotAlt": "Bir telefonda, oturumu kapatılmış ve giriş bağlantısı içeren hesap ekranı.",
+      "title": "İki cihaz, tek günlük",
+      "bodyManaged": "Öğle yemeğini telefonuna kaydet, sonra dizüstü bilgisayarından haftanı incele. Her hesap varsayılan olarak bu şekilde çalışır. Günlüğün cihazında şifrelenir ve sunucu yalnızca şifreli metni saklar. İşletmeci ayrıca bir kurtarma anahtarı tutar. Bu anahtar parola sıfırlamanın ardından günlüğünü geri yüklemeni sağlar ve teknik olarak işletmecinin verilerini çözebileceği anlamına gelir.",
+      "linkManaged": "Hesabına giriş yap"
+    }
+  },
+  "launcher": {
+    "moreOptions": "Yiyecek eklemenin diğer yolları",
+    "sheetTitle": "Yiyecek ekle",
+    "platePhoto": "Tabak fotoğrafı",
+    "speak": "Konuş",
+    "type": "Yaz",
+    "photo": "Fotoğraf",
+    "photoAnything": "Yemeğin fotoğrafını çek"
+  },
+  "nutrition": {
+    "title": "Yeme ve hedefler",
+    "loading": "Yükleniyor…"
+  },
+  "profile": {
+    "title": "Senin hakkında",
+    "loading": "Yükleniyor…"
+  },
+  "lifePhase": {
+    "title": "Yaşam evresi",
+    "description": "Bunu yalnızca sen görürsün ve hiçbir zaman bir gıda aramasının parçası olmaz.",
+    "loading": "Yükleniyor…",
+    "inactive": "Etkin değil",
+    "summary": {
+      "pregnant": "Hamile, {{week}}. hafta",
+      "lactating_one": "Emzirme, {{count}} aylık",
+      "lactating_other": "Emzirme, {{count}} aylık"
+    }
+  },
+  "meals": {
+    "description": "Paket olarak kaydettiğin öğünler. Tek bir dokunuşla kaydet veya buradan kaldır.",
+    "empty": "Henüz bir öğün kaydetmedin. Günlükten bir tane kaydet: girdiğin yiyecekleri paketle ve onlara bir ad ver.",
+    "itemCount_one": "{{count}} yiyecek",
+    "itemCount_other": "{{count}} yiyecek",
+    "logNow": "Şimdi kaydet",
+    "logging": "Kaydediliyor…",
+    "removeAria": "{{name}} öğesini kaldır",
+    "removeDescription": "Bu işlem kayıtlı öğünü kaldırır. Ondan daha önce günlüğüne kaydettiğin her şey günlüğünde kalır.",
+    "removeTitle": "{{name}} kaldırılsın mı?",
+    "toast": {
+      "deleted": "{{name}} kaldırıldı.",
+      "logged_one": "{{name}} kaydedildi, {{count}} yiyecek.",
+      "logged_other": "{{name}} kaydedildi, {{count}} yiyecek."
+    }
+  },
+  "meta": {
+    "about": "Hakkında · openplate",
+    "add": "Yiyecek ekle · openplate",
+    "ai": "Yapay zeka ayarları · openplate",
+    "connectClinician": "Klinisyen bağla · openplate",
+    "connectGateway": "Ağ geçidine katıl · openplate",
+    "catchUp": "Günlük durumun · openplate",
+    "dashboard": "Genel bakış · openplate",
+    "data": "Veri ve yedekleme · openplate",
+    "describe": "Öğün tarif et · openplate",
+    "diary": "Günlük · openplate",
+    "entry": "Girdiyi düzenle · openplate",
+    "error": "Bir sorun oluştu · openplate",
+    "fasting": "Açlık takibi · openplate",
+    "fastingSettings": "Açlık ayarları · openplate",
+    "foods": "Besinlerin · openplate",
+    "imprint": "Künye · openplate",
+    "join": "Katıl · openplate",
+    "joinStudy": "Çalışmaya katıl · openplate",
+    "landing": "openplate, cihazında kalan bir besin takip uygulaması",
+    "landingManaged": "openplate, yalnızca senin okuyabildiğin bir besin takip uygulaması",
+    "landingDescription": "Tabağının fotoğrafını çek veya yediklerini ara. openplate karbonhidrat miktarını saniyeler içinde gösterir ve belirlediğin günlük hedefe göre takip eder. Ücretsiz, hesap gerekmez ve kaydettiğin her şey kendi cihazında kalır.",
+    "lifePhase": "Yaşam evresi · openplate",
+    "nutrition": "Beslenme ve hedefler · openplate",
+    "profile": "Senin hakkında · openplate",
+    "meals": "Kayıtlı öğünler · openplate",
+    "notFound": "Sayfa bulunamadı · openplate",
+    "nutrients": "Besin ögeleri · openplate",
+    "offline": "Çevrimdışısın · openplate",
+    "onboarding": "openplate uygulamasına hoş geldin",
+    "preferences": "Tercihler · openplate",
+    "privacy": "Gizlilik politikası · openplate",
+    "recover": "Günlüğünü kurtar · openplate",
+    "research": "Araştırma katkıları · openplate",
+    "scan": "Tabağını tara · openplate",
+    "settings": "Ayarlar · openplate",
+    "shared": "Seninle paylaşılanlar · openplate",
+    "sharing": "Paylaşım · openplate",
+    "signIn": "Giriş yap · openplate",
+    "study": "Çalışma konsolu · openplate",
+    "sync": "Hesap · openplate",
+    "terms": "Hizmet şartları · openplate",
+    "trends": "İlerleme · openplate",
+    "welcome": "Hoş geldin · openplate",
+    "forgot": "Şifreni mi unuttun",
+    "reset": "Yeni bir şifre belirle",
+    "account": "Hesap",
+    "admin": "Yönetim",
+    "landingDescriptionManaged": "Tabağının fotoğrafını çek veya ne yediğini ara. openplate karbonhidrat miktarını saniyeler içinde gösterir ve belirlediğin günlük hedefe göre takip eder. Bu sunucu örneği yalnızca davetiyelidir ve bir kopyası sunucuya ulaşmadan önce günlüğün bu cihazda şifrelenir.",
+    "plan": "Planın · openplate",
+    "withdrawal": "Cayma hakkı · openplate",
+    "notifications": "Bildirimler · openplate"
+  },
+  "nav": {
+    "add": "Ekle",
+    "admin": "Yönetim",
+    "dashboard": "Genel bakış",
+    "diary": "Günlük",
+    "fasting": "Aralıklı oruç",
+    "goals": "Hedefler",
+    "groupYourDay": "Günün",
+    "nutrients": "Besin ögeleri",
+    "scan": "Tara",
+    "settings": "Ayarlar",
+    "trends": "İlerleme"
+  },
+  "nutrients": {
+    "amount": {
+      "ofLimit": "/ {{amount}} {{unit}} sınır",
+      "ofReference": "/ {{amount}} {{unit}}",
+      "perDay": "günde {{amount}} {{unit}}"
+    },
+    "band": {
+      "14-18": "14-18",
+      "19-30": "19-30",
+      "31-50": "31-50",
+      "51-70": "51-70",
+      "over_70": "71 ve üzeri"
+    },
+    "context": {
+      "betaCarotene": "Yukarıdaki A vitamini değerine zaten dahil edilmiş olan {{amount}} {{unit}} beta-karoten içerir."
+    },
+    "coverage": {
+      "notEnoughData": "Yetersiz veri",
+      "notEnoughDataDetail": "Bu zaman aralığında kaydettiğin verilerin yalnızca %{{share}} kadarı bunun için bir değer içeriyor, bu yüzden gösterilmeye değer bir toplam yok.",
+      "why": "Yalnızca LowCarbCheck veritabanındaki gıdalar vitamin ve mineral değerleri taşır. Yapay zekanın tahmin ettiği tabaklar ve kendi yazdığın gıdalar bu değerleri içermez, dolayısıyla yedigin şeylere dahil edilirler ancak ölçülebilir olanlara dahil edilmezler."
+    },
+    "hero": {
+      "addDetails": "Doğum yılını ve biyolojik cinsiyetini eklediğinde, seninle eşleşen referans değerler burada görünür. O zamana kadar hiçbir varsayımda bulunulmaz.",
+      "covered": "{{total}} besin maddesinden {{covered}} tanesi için yeterli veri var",
+      "empty": "Şimdilik tabak boş.",
+      "eyebrow": "Kaydın",
+      "loggedDays": "Son {{days}} günün {{logged}} gününde gıda kaydı girdin."
+    },
+    "limit": {
+      "badge": "Sınır",
+      "over": "Referans sınırın üstünde. Bu bir hedef miktar değil, altında kalınması gereken bir üst sınırdır.",
+      "under": "Referans sınırın altında. Bu bir hedef miktar değil, altında kalınması gereken bir üst sınırdır."
+    },
+    "list": {
+      "empty": "Şimdilik tabak boş. Birkaç öğün kaydet, burası dolar.",
+      "title": "Tüm besin maddeleri"
+    },
+    "loading": "Kaydın okunuyor…",
+    "name": {
+      "calcium": "Kalsiyum",
+      "iron": "Demir",
+      "magnesium": "Magnezyum",
+      "phosphorus": "Fosfor",
+      "potassium": "Potasyum",
+      "sodium": "Sodyum",
+      "vitaminA": "A Vitamini",
+      "vitaminB1": "B1 Vitamini (tiamin)",
+      "vitaminB12": "B12 Vitamini",
+      "vitaminB2": "B2 Vitamini (riboflavin)",
+      "vitaminB6": "B6 Vitamini",
+      "vitaminB9": "Folat",
+      "vitaminC": "C Vitamini",
+      "vitaminD": "D Vitamini",
+      "vitaminE": "E Vitamini",
+      "zinc": "Çinko"
+    },
+    "range": {
+      "group": "Aralık",
+      "month": "30 gün",
+      "twoWeeks": "14 gün",
+      "week": "7 gün"
+    },
+    "reference": {
+      "ageOutOfBands": "Yayımlanan referans miktarları 14 yaşında başlar, bu nedenle kaydettiğin doğum yılı için gösterilecek bir değer yok.",
+      "footnote": "{{segment}} · {{source}}",
+      "noBodyMetricsAction": "Bilgilerini ekle",
+      "notPublished": "Bunun için yayımlanmış bir referans miktarı yok.",
+      "segmentLactation": "Emzirme",
+      "segmentPregnancy": "Hamilelik",
+      "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "suggestions": {
+      "forNutrient": "Daha yüksek {{nutrient}}",
+      "lead": "Bu aralıkta günlüğün en çok bunlarda yetersiz kaldı. Aşağıdaki besinler, 100 g başına bunlardan daha fazla içerir.",
+      "per100g": "100 g başına {{amount}} {{unit}}",
+      "source": "Besin verileri LowCarbCheck veri tabanından alınmıştır.",
+      "title": "Göz atılacak besinler"
+    },
+    "title": "Besin ögeleri"
+  },
+  "oauth": {
+    "callback": {
+      "alreadyConnected": "Bu sağlayıcı bu cihazda zaten bağlı, burada yapacak başka bir şey yok.",
+      "connectedUnverified": "Kaydedildi, ancak anahtar şu anda doğrulanamadı. Bu durum genelde bağlantının kendisinden değil, sağlayıcıdaki geçici bir aksaklıktan kaynaklanır. Yine de bir fotoğraf taramayı deneyebilirsin.",
+      "connectedVerified": "Bağlandı ve çalışıyor, hazırsın.",
+      "description": "Yapay zeka ayarlarında veya tarama ekranında başlattığın bağlantı tamamlanıyor.",
+      "error": {
+        "denied": {
+          "body": "Sorun yok, hiçbir şey bağlanmadı. Hazır olduğunda tekrar dene.",
+          "title": "Bağlantı iptal edildi"
+        },
+        "exchangeFailed": {
+          "body": "OpenRouter ile bağlantı tamamlanırken bir sorun oluştu. Birazdan tekrar dene.",
+          "title": "Bağlantı tamamlanamadı"
+        },
+        "expired": {
+          "body": "Bu bağlantı denemesi çok uzun sürdü ve zaman aşımına uğradı. Tekrar bağlanmayı dene.",
+          "title": "Çok uzun sürdü"
+        },
+        "missingVerifier": {
+          "body": "Bu cihaz bağlantı denemesinin izini kaybetti. Giriş yaparken uygulamalar arasında geçiş yaptıysan bu durum oluşabilir. Tekrar dene, doğrudan tamamlanacaktır.",
+          "title": "Bağlantının izi kaybedildi"
+        },
+        "stateMismatch": {
+          "body": "Bu bağlantı, bu cihazın başlattığı bağlantıyla eşleşmiyor. Yeniden bağlanmayı dene.",
+          "title": "Bu bağlantı eşleşmiyor"
+        }
+      },
+      "goToScanning": "Taramaya git",
+      "manualInstead": "Bunun yerine bir anahtarı elle yapıştır",
+      "redirecting": "Yönlendiriliyor…",
+      "title": "OpenRouter'a bağlanıyor",
+      "tryAgain": "Tekrar dene",
+      "working": "OpenRouter bağlantın tamamlanıyor…"
+    },
+    "connect": {
+      "button": "OpenRouter ile bağlan",
+      "continue": "OpenRouter'a devam et",
+      "dialogTitle": "Ücretli bir yapay zeka sağlayıcısı bağlansın mı?",
+      "leaveNote": "OpenRouter ile giriş yapmak için openplate'ten kısa bir süre ayrılacak, ardından doğrudan buraya döneceksin.",
+      "notNow": "Şimdi değil",
+      "photoNote": "Sonrasında taradığın her fotoğraf seçtiğin sağlayıcı tarafından analiz edilir ve openplate tarafından asla saklanmaz.",
+      "redirecting": "Yönlendiriliyor…",
+      "spendingCap": "OpenRouter'ın kendi onay ekranı, devam etmeden önce bir harcama limiti belirlemene olanak tanır, kullanmaya değer.",
+      "startFailed": "Bağlantı başlatılamadı. Bağlantını kontrol et ve tekrar dene."
+    }
+  },
+  "offline": {
+    "heading": "Şu anda bağlantı yok",
+    "body": "Günlüğün ve şimdiye kadar kaydettiğin her şey bu cihazda durur, bağlantı olmadan da çalışmaya devam eder. Yalnızca bu sayfa henüz yüklenemiyor: sayfa ya bu cihaz için yeni ya da internete erişmesi gerekiyor (fotoğraf taramak gibi). Tekrar çevrim içi olduğunda yeniden dene.",
+    "bodyManaged": "Günlüğün ve şimdiye kadar kaydettiğin her şey bu cihazda durur, bağlantı olmadan da çalışmaya devam eder. Sunucu, anahtar bu cihazdan hiç ayrılmadığı için okuyamadığı şifrelenmiş bir kopyayı tutar. Yalnızca bu sayfa henüz yüklenemiyor: sayfa ya bu cihaz için yeni ya da internete erişmesi gerekiyor (fotoğraf taramak gibi). Tekrar çevrim içi olduğunda yeniden dene.",
+    "cta": "Günlüğüne git"
+  },
+  "onboarding": {
+    "actions": {
+      "continue": "Devam et",
+      "saving": "Kaydediliyor…",
+      "skip": "Şimdilik atla",
+      "skipping": "Atlanıyor…"
+    },
+    "carbPreset": {
+      "chipWithCeiling": "{{label}}, {{ceiling}} g altı",
+      "keto": {
+        "detail": "Günde 20 g net karbonhidrat altı",
+        "label": "Keto"
+      },
+      "later": {
+        "detail": "İstediğin zaman bir hedef seç",
+        "label": "Daha sonra karar ver"
+      },
+      "legend": "Günde kaç karbonhidrat?",
+      "lowCarb": {
+        "detail": "Günde 50 g altında net karbonhidrat",
+        "label": "Düşük karbonhidrat"
+      },
+      "moderate": {
+        "detail": "Günde 100 g altında net karbonhidrat",
+        "label": "Orta düzey"
+      },
+      "errors": {
+        "required": "Bu tarz için bir karbonhidrat sınırı seç."
+      }
+    },
+    "firstFood": {
+      "finishing": "Tamamlanıyor…",
+      "keyNote": "Fotoğraf tarama isteğe bağlıdır. OpenAI gibi kendi kurduğun bir yapay zeka servisine bağlanır. Bu bağlantı da, tıpkı günlüğün gibi bu cihazda kalır.",
+      "keyNoteLink": "İstediğin zaman Ayarlar'dan kurabilirsin.",
+      "later": "Daha sonra yapacağım",
+      "opening": "Açılıyor…",
+      "managedNote": "Fotoğraftan tahminler dahildir. Bir tabak fotoğrafı çek, karbonhidratlar senin için hesaplansın."
+    },
+    "focus": {
+      "calories": {
+        "description": "Besin etiketinde göreceğin kalori miktarının aynısı. Günlük bir hedef belirle.",
+        "label": "Kalori"
+      },
+      "habit": {
+        "description": "Tutturman gereken bir hedef yok, sadece yediklerini kaydet, serin Eğilimler'de görünsün.",
+        "label": "Yalnızca alışkanlık"
+      },
+      "netCarbs": {
+        "description": "Toplam karbonhidrattan lifin çıkarılmasıyla bulunur, karbonhidratı azaltıyorsan izlemen gereken değerdir.",
+        "label": "Net karbonhidrat"
+      },
+      "recommended": "Önerilen"
+    },
+    "kcal": {
+      "hint": "Daha sonra karar vermek için boş bırak. İstediğin zaman Ayarlar'dan belirleyebilirsin.",
+      "label": "Günlük kalori hedefi (isteğe bağlı)",
+      "placeholder": "ör. 2000",
+      "errors": {
+        "required": "Bu tarz için günlük bir kalori hedefi gerekir."
+      },
+      "requiredLabel": "Günlük kalori hedefi"
+    },
+    "loading": "Yükleniyor…",
+    "localFirst": "Verilerin <strong>bu cihazda</strong> tutulur. Biz onları asla görmeyiz. Başlamak üzere olduğun günlük her zaman yerel kalır.",
+    "localFirstManaged": "Günlüğün <strong>bu cihazda</strong> tutulur ve sunucuya şifrelenmiş biçimde eşitlenir. Yapay zekayı işletmeci yönetir, bu nedenle tahmin için gönderilen fotoğraflar aktarım sırasında bu sunucudan geçer. İşletmecinin nelere erişebileceği gizlilik politikasında ayrıntılarıyla anlatılır.",
+    "step": {
+      "body": {
+        "description": "İsteğe bağlı. Bunlar besin referans miktarlarını uyarlamamızı ve bir kalori değeri önermemizi sağlar, diğer her şey gibi bu cihazda kalırlar.",
+        "title": "Biraz kendinden bahseder misin?"
+      },
+      "firstFood": {
+        "description": "Her şey hazır. Günlüğüne yiyecek eklemenin üç yolu var. Başlamak için birini seç.",
+        "title": "İlk yiyeceğini kaydet"
+      },
+      "focus": {
+        "description": "Birini veya ikisini birden seç ya da sadece ne yediğini kaydet. Bunu Ayarlar'dan istediğin zaman değiştirebilirsin.",
+        "title": "Neleri takip ediyorsun?"
+      },
+      "weight": {
+        "description": "İsteğe bağlı. İstersen bugünkü kilonu ve bir hedef gir. Daha sonra eğilimlerini bu veriler oluşturur.",
+        "title": "Kilonu takip etmek ister misin?"
+      },
+      "style": {
+        "description": "Beslenme tarzını seç. Günlükteki tüm sayılar buna göre belirlenir."
+      }
+    },
+    "stepOf": "Adım {{current}} / {{total}}",
+    "style": {
+      "caution": "Hamilelik ve emzirme dönemleri enerji ve karbonhidrat ihtiyacını artırır. Bunlardan birini kısıtlamadan önce ebenle veya doktorunla görüş. Yüksek protein ya da Sadece takip et sana daha uygun olabilir. <source>DGE'nin önerilerini</source> oku.",
+      "highProtein": {
+        "detail": "Vücut ağırlığının her bir kg'ı için 1,6 g protein",
+        "label": "Yüksek protein"
+      },
+      "hint": "Çoğu kişi buradan başlar",
+      "justTrack": {
+        "detail": "Hedef yok, yalnızca sayılar",
+        "label": "Sadece takip et"
+      },
+      "lowCarb": {
+        "detail": "Karbonhidratı günlük bir sınırın altında tut",
+        "label": "Düşük karbonhidrat"
+      },
+      "lowCarbLowKcal": {
+        "detail": "Karbonhidrat sınırı ve kalori hedefi",
+        "label": "Düşük karbonhidrat ve kalori"
+      },
+      "lowKcal": {
+        "detail": "Günde tek bir kalori hedefi",
+        "label": "Kalori"
+      },
+      "needsWeight": "Bu hedefi hesaplayabilmemiz için kilonu kaydet. Sen kaydedene kadar protein hedefin referans değerde kalır.",
+      "sourceLabel": "Alman Beslenme Derneği (DGE), yeni sekmede açılır",
+      "title": "Nasıl besleniyorsun?",
+      "errors": {
+        "required": "Devam etmek için bir tarz seç."
+      }
+    },
+    "waysToLog": {
+      "photo": {
+        "title": "Fotoğrafını çek",
+        "description": "Dolu bir tabak, tek bir yiyecek veya ambalaj üzerindeki basılı tablo. Kamerayı doğrult, gerisini openplate halleder."
+      },
+      "type": {
+        "title": "Yaz",
+        "description": "3 yumurta ve 2 dilim kızarmış ekmek gibi tüm bir öğünü tek bir satıra yaz. Tıpkı fotoğrafta olduğu gibi, yapay zeka yazdıklarını çözümler. Tek bir ürünü net olarak aramak için yiyecek veritabanı da hala kullanılabilir."
+      },
+      "speak": {
+        "title": "Söyle",
+        "description": "Ne yediğini söyle ve girdileri kaydedilmeden önce kontrol et. Ellerin doluyken kullanışlıdır."
+      },
+      "speechPrivacyNote": "openplate uygulamasının kendine ait bir mikrofonu yoktur. Klavyendeki mikrofon tuşuna dokun, bu tuş Google veya Apple aracılığıyla konuşmanı metne dönüştürür. openplate ve yapay zeka sağlayıcına yalnızca bu metin ulaşır."
+    },
+    "weight": {
+      "current": "Mevcut kilo",
+      "errors": {
+        "notANumber": "72.5 veya 72,5 gibi bir sayı gir"
+      },
+      "fieldLabel": "{{label}} ({{unit}})",
+      "hint": "Acele etme, bunları boş bırakabilir ve dilediğin zaman ekleyebilirsin.",
+      "placeholder": "ör. {{value}}",
+      "target": "Hedef kilo",
+      "unitToggleLabel": "Kilo birimi",
+      "units": "Birimler"
+    }
+  },
+  "preferences": {
+    "cardDescription": "Bu cihazda tutulan tema ve dil.",
+    "language": {
+      "description": "openplate uygulamasının bu cihazda kullandığı dil.",
+      "reloadNote": "Dil değiştirmek sayfayı yeniden yükler, böylece her şey tek seferde değişir.",
+      "title": "Görüntüleme dili"
+    },
+    "open": "Tercihleri aç",
+    "theme": {
+      "dark": "Koyu",
+      "description": "Açık, koyu veya cihazının ayarı neyse o.",
+      "light": "Açık",
+      "system": "Sistem",
+      "title": "Tema"
+    },
+    "title": "Tercihler"
+  },
+  "portions": {
+    "unit": {
+      "apple_one": "{{count}} elma",
+      "apple_other": "{{count}} elma",
+      "banana_one": "{{count}} muz",
+      "banana_other": "{{count}} muz",
+      "cup_one": "{{count}} fincan",
+      "cup_other": "{{count}} fincan",
+      "egg_one": "{{count}} yumurta",
+      "egg_other": "{{count}} yumurta",
+      "serving_one": "{{count}} porsiyon",
+      "serving_other": "{{count}} porsiyon",
+      "slice_one": "{{count}} dilim ekmek",
+      "slice_other": "{{count}} dilim ekmek",
+      "tablespoon_one": "{{count}} yemek kaşığı",
+      "tablespoon_other": "{{count}} yemek kaşığı"
+    }
+  },
+  "pulse": {
+    "fasting": {
+      "others_one": "Şu anda {{count}} kişi daha oruç tutuyor",
+      "others_other": "Şu anda {{count}} kişi daha oruç tutuyor"
+    },
+    "tile": {
+      "kcal": "Takip edilen kalori",
+      "meals": "Kaydedilen öğün",
+      "photos": "Ayrıştırılan fotoğraf",
+      "protein": "Takip edilen protein",
+      "title": "Bugün buradaki herkes"
+    }
+  },
+  "recover": {
+    "firstDataAt": "Bu cihaz verileri ilk kez {{date}} tarihinde depoladı.",
+    "lead": "Bu cihaz daha önce openplate verilerini depoladı, ancak bu tarayıcıdaki kopya şu anda boş. openplate her şeyi cihazında tutar ve bir sunucuya hiçbir şey göndermez, bu nedenle alabileceğimiz başka bir kopya yok.",
+    "leadManaged": "Bu cihaz daha önce openplate verilerini depoladı, ancak bu tarayıcıdaki kopya şu anda boş. Günlüğün ayrıca bu örneğin sunucusunda, yalnızca senin açabileceğin şekilde şifrelenmiş olarak tutulur. Yeniden giriş yap, bu cihaz onu geri getirir.",
+    "noBackupBody": "O zaman geri getirilecek hiçbir şey kalmadı, üzgünüz, dürüst cevap bu. Buradan yeni bir günlük başlatabilirsin, daha sonra bir yedek çıkarsa üzerine yine de geri yükleyebilirsin.",
+    "noBackupHeading": "Yedeğin yoksa",
+    "restoreBody": "Bir openplate yedeği (.json dosyası) indirdiysen buradan aç. İçindeki her şey bu cihaza geri gelir.",
+    "restoreButton": "Bir yedek dosyası seç",
+    "restoreError": "Bu dosya bir openplate yedeği olarak okunamadı. Doğru dosyayı seçtiğini kontrol et, ardından tekrar dene.",
+    "restoreHeading": "Bir yedek dosyasından geri yükle",
+    "restoring": "Geri yükleniyor…",
+    "startFresh": "Yeni bir günlük başlat",
+    "title": "Günlüğünü bu cihazda bulamıyoruz"
+  },
+  "research": {
+    "title": "Araştırma katkıları",
+    "intro": "Katkıda bulunduğun çalışmalar, her birinin ne aldığı ve nasıl ayrılacağın.",
+    "unavailable": "Bu eşitleme sunucusunun araştırma kanalı yok. Burada hiçbir şey gönderilemez veya geri çekilemez.",
+    "needsSession": "Araştırma katkıları için hesap şifren gerekir. Önce bu cihazda giriş yap.",
+    "needsSessionCta": "Hesaba git",
+    "loadFailed": "Çalışmaların yüklenemedi.",
+    "caveats": {
+      "pseudonymised": "Bir çalışmanın aldığı veriler takma adlıdır, asla adın yer almaz: senin için sabit bir takma ad ve günlük toplamlarını görür.",
+      "auxiliaryJoin": "Sabit bir takma ad kullanmak, kimliğin belirlenemez olmasıyla aynı şey değildir. Aynı kişiler hakkında başka bir veri kümesine sahip olan herhangi biri, bu kümeyle birleştirerek kimliğini yeniden tespit edebilir.",
+      "unknownMacro": "Bir girdi için bilinmeyen bir makro besin değeri o günün toplamına hiçbir şey eklemez, bu yüzden düşük bir toplam az yemekten ziyade verinin bilinmediği anlamına gelebilir. Araştırmaya, her toplamın yanındaki girdi sayısını okuması bildirilir."
+    },
+    "enrolments": {
+      "title": "Katkıda bulunduğun araştırmalar",
+      "empty": "Herhangi bir araştırmaya katkıda bulunmuyorsun. Bir araştırmaya katılmak için onam belgelerinde basılı olan parmak izi gerekir.",
+      "unnamed": "Araştırma {{studyAccountId}}",
+      "tier": "Aldığı veri: {{tier}}",
+      "window": "Gönderdiğin zaman aralığındaki tam takvim günleri, gün başına bir satır, hiçbir zaman bir saat, yemek adı veya fotoğraf içermez.",
+      "sentWindow": "{{from}} ile {{to}} arası gönderildi, tam takvim günleri, gün başına bir satır, hiçbir zaman bir saat, yemek adı veya fotoğraf içermez.",
+      "fields": "Her gün enerji, protein, karbonhidrat, yağ, lif ve o günün kaç girdi içerdiği bilgisini taşır.",
+      "joined": "{{at}} tarihinde katıldın",
+      "lastSent": "Son gönderim {{at}} · sürüm {{version}}",
+      "neverSent": "Bu araştırmaya henüz hiçbir şey gönderilmedi.",
+      "pseudonymLabel": "Bu araştırma için takma adın",
+      "pseudonymHint": "Araştırmanın senin hakkında gördüğü bilgi budur. Bir araştırmacıdan ayrılma talebinin yerine getirildiğini doğrulamasını istersen bu değeri belirt.",
+      "pseudonymUnknown": "Bu cihaz takma adını hesaplayamıyor: araştırma anahtarı eksik."
+    },
+    "withdrawal": {
+      "open": "Ayrıl",
+      "confirmTitle": "{{name}} araştırmasından ayrılmak istiyor musun?",
+      "instructedToDelete": "Araştırmaya katkılarını silmesi talimatı verilir ve openplate araştırma araçları her çekme işleminde bu verileri çıkarır.",
+      "alreadyDownloaded": "Araştırmanın önceden indirdiği bir kopya geri alınamaz. Bu talimata uymak, bu sistemin belirttiği ancak zorunlu kılamayacağı bir yükümlülüktür.",
+      "noNewData": "Bu araştırmaya yeni veri gönderilmeyecek.",
+      "samePseudonymOnRejoin": "Ayrılmak sana yeni bir kimlik kazandırmaz. Bu araştırmaya tekrar katılırsan aynı takma adı sunarsın, bu yüzden eski bir kopyayı saklayan biri ikisini birbiriyle ilişkilendirebilir.",
+      "rejoinNeedsCeremony": "Bu cihaz araştırmayı unutur, bu nedenle tekrar katılmak onam belgelerindeki parmak izini bir kez daha yazmak anlamına gelir.",
+      "confirmCta": "Ayrıl",
+      "cancel": "İptal",
+      "done": "Ayrıldın. Araştırmaya elindekileri silmesi talimatı verildi.",
+      "failed": "Ayrılma işlemi gerçekleşmedi. Hâlâ katkıda bulunuyorsun, tekrar deneyebilirsin.",
+      "unavailable": "Bu sunucunun araştırma kanalı yok, bu yüzden hiçbir şey geri çekilmedi. Burada katkıda bulunmaya devam ediyorsun."
+    },
+    "export": {
+      "pseudonymisedNotice": "Bu veriler ANONİMLEŞTİRİLMEMİŞTİR, TAKMA ADLA İŞLENMİŞTİR: her katılımcı bir isim yerine sabit bir takma addır ve aynı kişiler hakkında ikinci bir veri kümesine sahip olan herkes bu verileri birleştirerek kişilerin kimliğini yeniden tespit edebilir.",
+      "tier": "Şema katmanı: {{tier}}",
+      "window": "Aralık: {{from}} ile {{to}} arası (dahil)",
+      "participants": "Bu dosyadaki katılımcılar: {{participants}}",
+      "withdrawn": "Bu dışa aktarmadan önce çekilen ve temizlenenler: {{withdrawn}}. Satırları bu dosyada yer almaz ve önceki bir dosyadan geri getirilmemelidir.",
+      "unopenable": "Bu cihazda bulunmayan bir anahtarla mühürlenmiş: {{total}} katkıdan {{unopenable}} tanesi. Bu dosyada yer almazlar. Bu bir veri sorunu değil, bir anahtar sorunudur.",
+      "malformed": "Bu sürüm tarafından okunamıyor: {{malformed}} katkı. Buradaki sıfırdan farklı bir sayı, bildirilmeye değer bir hatadır.",
+      "unknownMacroCaveat": "Bir girdi için bilinmeyen bir makro, o günün toplamına hiçbir katkı sağlamaz, bu yüzden düşük bir toplam, düşük alımdan ziyade bilinmeyen anlamına gelebilir. Her toplamın yanında loggedEntryCount değerini oku ve sıfır olmayan bir sayıya sahip sıfır toplamı ölçülmemiş olarak kabul et."
+    },
+    "anomaly": {
+      "serverRetainedWithdrawn": "İŞLETİCİ İÇİN UYARI: bu sunucu, daha önce silinmesi talimatı verilmiş {{retained}} katkıyı teslim etti. Bunlar burada temizlendi ve bu dağıtımın incelenmesi gerekiyor."
+    },
+    "join": {
+      "title": "Bir çalışmaya katıl",
+      "description": "Bir çalışma sana bir bağlantı gönderdi. Katılmak için onam belgelerinde basılı olan parmak izi gerekir.",
+      "reading": "Bağlantı okunuyor…",
+      "backToResearch": "Çalışmalarına geri dön",
+      "failed": "Katılım gerçekleşmedi. Hiçbir şey kaydedilmedi, bu yüzden tekrar deneyebilirsin.",
+      "mismatch": "Bu, bu anahtarın parmak izi değil. Hiçbir şey kaydedilmedi. Onam belgelerindeki karakterleri kontrol et ve tekrar yaz.",
+      "claimed": {
+        "named": "Bağlantı bunun {{name}} olduğunu söylüyor.",
+        "unnamed": "Bağlantı bunun hangi çalışma olduğunu belirtmiyor.",
+        "account": "Çalışma hesap numarası {{studyAccountId}}",
+        "unverified": "Bağlantıyı yazabilen herkes bu adı da yazabilir. Çalışmanın o olduğunu kanıtlayan şey aşağıdaki parmak izidir."
+      },
+      "labelLabel": "Bu çalışma için senin belirlediğin ad",
+      "labelHint": "Yalnızca senin için, bu cihazda. Çalışma bunu asla görmez.",
+      "fingerprintLabel": "Onam belgesindeki parmak izi",
+      "fingerprintHint": "Çalışmanın onam belgelerinde basılı olan on iki karakteri yaz. Bunları bu ekrandan veya bağlantıdan alma.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "Bağlantı anahtarı getirdi, basılı sayfa ise anahtarın bu çalışmaya ait olduğunu kanıtlar. Sana ulaşmanın iki ayrı yolu, kontrolü değerli kılan da budur.",
+      "submit": "Bu çalışmaya katıl",
+      "enrolled": {
+        "title": "Katıldın.",
+        "body": "Henüz hiçbir şey gönderilmedi. Hangi günlerin ne zaman gideceğini çalışmalar sayfasından sen seçersin.",
+        "cta": "Çalışmalarına git"
+      },
+      "compartmentMissing": {
+        "title": "Bu hesap henüz bir çalışmaya katılamaz",
+        "body": "Katılmak için bu hesap adına kalıcı bir kimlik gerekir ve bu cihazda henüz bir kimlik yok. Yeni bir parola belirlemek bunu oluşturur.",
+        "why": "Bir çalışma seni her seferinde farklı bir kişi olarak görür ve önceki günlerin tek başına kalır. Bir kurtarma kodu ayarla, ardından bağlantıyı tekrar aç.",
+        "cta": "Yeni bir parola belirle"
+      },
+      "invalidLink": {
+        "title": "Bu bağlantı doğru görünmüyor",
+        "body": "Bir kısmı eksik veya kesilmiş. Çalışmayı yürütenlerden bağlantıyı tekrar göndermelerini iste."
+      },
+      "queryString": {
+        "title": "Bu bağlantıyı kullanmak güvenli değil",
+        "body": "Çalışmanın anahtarı adresin sunuculara gönderilen kısmında yer aldı, yani seninle çalışma arasında gizli kalmadı. Bu durum genellikle bir e-posta veya sohbet uygulamasının iletim sırasında bağlantıyı değiştirdiği anlamına gelir.",
+        "parameters": "Adres içinde gönderilen: {{parameters}}.",
+        "askAgain": "Çalışmayı yürütenlerden bağlantıyı tekrar göndermelerini iste veya bağlantıyı onay belgelerinden aç."
+      },
+      "noSync": {
+        "title": "Bu openplate eşitleme yapmıyor",
+        "body": "Bir çalışmaya katkıda bulunmak eşitleme üzerinden gerçekleşir ve bu openplate örneğini çalıştıran kişi eşitlemeyi kurmamış."
+      },
+      "signedOut": {
+        "body": "Önce eşitleme oturumunu aç. Bir çalışmaya katılmak, yalnızca oturum açtığında var olan bir anahtarı yazar."
+      }
+    },
+    "submit": {
+      "title": "Bu çalışmaya günleri gönder",
+      "description": "İlk ve son günü kendin seç. Sen gönder düğmesine basana kadar bu cihazdan hiçbir şey çıkmaz.",
+      "fromLabel": "İlk gün",
+      "toLabel": "Son gün",
+      "cta": "Bu günleri gönder",
+      "failed": "Hiçbir şey gönderilmedi. Tekrar deneyebilirsin.",
+      "outcome": {
+        "submitted": "{{from}} ile {{to}} arası gönderildi · sürüm {{version}}.",
+        "conflict": "Bu çalışmaya önce başka bir cihazın gönderim yaptı. Günleri tekrar seç ve gönder.",
+        "tooLarge": "Bu aralık, çalışmanın kabul ettiğinden daha geniş. Daha kısa bir aralık dene, kalanını daha sonra gönderebilirsin.",
+        "unknownStudy": "Bu sunucu bu çalışmayı tanımıyor, bu nedenle hiçbir şey gönderilmedi.",
+        "unavailable": "Bu sunucunun araştırma kanalı yok, bu nedenle hiçbir şey gönderilmedi."
+      }
+    },
+    "console": {
+      "title": "Çalışma konsolu",
+      "description": "Araştırmacı tarafı: bu çalışmanın kendi hesabı, anahtarı ve bu hesabın açabildiği kohort.",
+      "separateAccount": "Bu, kendi openplate hesabın değil, çalışmanın hesabıdır. Kendi bilgilerinle değil, çalışmanın adresi ve parolasıyla oturum aç. Bu ekrandaki hiçbir şey bu cihazın günlüğünü okumaz veya göndermez.",
+      "noSync": {
+        "title": "Bu openplate eşitleme yapmıyor",
+        "body": "Bir çalışma, katkıları eşitleme üzerinden okur ve bu openplate örneğini çalıştıran kişi eşitlemeyi kurmamış."
+      },
+      "signIn": {
+        "title": "Çalışmanın hesabını aç",
+        "passphraseLabel": "Çalışma hesabının parolası",
+        "signIn": "Konsolu aç",
+        "create": "Yeni bir çalışma hesabı oluştur",
+        "failed": "Çalışma hesabı açılamadı. Hiçbir şey değiştirilmedi."
+      },
+      "identity": {
+        "title": "Bu çalışmanın anahtarı",
+        "account": "Çalışma hesap numarası {{accountId}}",
+        "noKey": "Bu çalışmanın henüz bir anahtarı yok. Onam belgeleri basılmadan önce bir tane üret.",
+        "unopened": "Bu konsol bu çalışmanın anahtarlarını açamadı, bu yüzden hiçbirini gösteremiyor ve hiçbir katkıyı açamıyor. Çoğunlukla farklı bir parolayla mühürlenmişlerdir: üretildikleri parolayla giriş yap. Hiçbir şey kaybolmadı: anahtarlar sunucuda duruyor, sunucu tarafından okunmadı.",
+        "fingerprintLabel": "Geçerli anahtarın parmak izi",
+        "fingerprintHint": "Bu on iki karakteri çalışmanın onam belgesine bas. Katılımcı katılırken o sayfadan bu karakterleri yazar. Bu konsol onları hiçbir yere göndermez ve burada onları yayımlayacak bir şey yoktur.",
+        "generations": "Tutulan anahtar nesilleri: {{generations}}. Bir katkı açılırken her biri denenir, böylece daha eski bir anahtarla mühürlenmiş hiçbir şey kaybolmaz.",
+        "generate": "Yeni bir anahtar nesli üret",
+        "generating": "Üretiliyor…",
+        "generateHint": "Yeni bir nesil, halihazırda tutulanların yerine değil, onların yanına eklenir. Yalnızca en yenisi şu anda basılmakta olan bir onam belgesinde yer almalıdır.",
+        "failed": "Anahtar üretilemedi. Hiçbir şey değiştirilmedi."
+      },
+      "cohort": {
+        "title": "Kohortu çek",
+        "description": "Bu çalışmanın açabileceği veriler, geri çekilenlerin tümü önceden temizlenmiş halde.",
+        "fromLabel": "İstediğin aralığın ilk günü",
+        "toLabel": "İstediğin aralığın son günü",
+        "pull": "Kohortu çek",
+        "pulling": "Çekiliyor…",
+        "unavailable": "Bu sunucunun araştırma hattı yok, bu yüzden çekilecek bir kohort bulunmuyor.",
+        "failed": "Kohort çekilemedi.",
+        "empty": "Bu çalışmaya henüz hiçbir şey katkıda bulunulmadı.",
+        "summaryTitle": "Dosyanın içeriği",
+        "export": "Kohortu CSV olarak indir",
+        "exportHint": "Dosya, tablodan önce yukarıdaki satırları kelimesi kelimesine içerir."
+      },
+      "created": {
+        "title": "Hesap oluşturuldu",
+        "body": "Giriş yaptın. Onam belgen için yayımlamak üzere aşağıda bir anahtar oluştur."
+      }
+    }
+  },
+  "scan": {
+    "analyzing": {
+      "analyzing": "Tabağın çözümleniyor…",
+      "analyzingText": "Yiyecekler belirleniyor…",
+      "starting": "Çözümleme başlatılıyor…",
+      "stillWorking": "İşlem sürüyor, bu biraz zaman alabilir…",
+      "uploading": "Fotoğraf yükleniyor…",
+      "sendingText": "İfadelerin gönderiliyor…"
+    },
+    "capture": {
+      "addWithoutPhoto": "Fotoğrafsız yiyecek ekle",
+      "analyze": "Çözümle",
+      "cancel": "İptal",
+      "chooseLibrary": "Kitaplıktan seç",
+      "description": "Tabağındakileri belirlemek için fotoğrafın doğrudan kendi yapay zeka sağlayıcına gönderilir. Ardından, kayıtta tekrar görebilmen için yalnızca bu cihazda tutulur (openplate sunucusunda değil), bunu ayarlardaki Veri ve yedekleme altından dilediğin zaman kapatabilir veya silebilirsin.",
+      "emptyHint": "Kendi yapay zeka sağlayıcın tarafından çözümlendi, ardından yalnızca bu cihazda tutuldu.",
+      "emptyTitle": "Tabağının fotoğrafını çek veya bir görsel seç",
+      "photoLabel": "Tabak fotoğrafı",
+      "preparing": "Fotoğrafın hazırlanıyor…",
+      "previewAlt": "Seçilen tabak fotoğrafı",
+      "takePhoto": "Tabağının fotoğrafını çek",
+      "title": "Tabak fotoğrafından yiyecekleri belirle",
+      "managedDescription": "Tabağında ne olduğunu anlamak için fotoğrafın bir kez okunur ve saklanmaz. Ardından, kayıtta tekrar görebilmen için yalnızca bu cihazda kalır. Bunu ayarlardaki Veri ve yedekleme altından dilediğin zaman kapatabilir veya silebilirsin."
+    },
+    "errors": {
+      "attemptCost": "Bu deneme {{amount}} API kredini kullandı. Kullanımına kaydedildi.",
+      "attemptRecorded": "Bu deneme kullanımına kaydedildi.",
+      "connectProvider": "Yiyecekleri senin için belirleyebilmesi amacıyla ayarlardan yapay zeka sağlayıcını bağla.",
+      "endpointUnreachable": "Bu uç noktaya tarayıcıdan erişilemedi, içerik güvenlik politikasının localhost dışındaki bir temel URL'yi engellemesi veya uç noktanın tarayıcı (CORS) isteklerine izin vermemesi olasıdır. Ayrıntılar için yapay zeka ayarlarına bak.",
+      "identifyFailed": "Fotoğraftaki yiyecekler belirlenemedi.",
+      "identifyFailedText": "Açıklamandan yiyecekler belirlenemedi.",
+      "missingBaseUrl": "Bu bağlantıda bir temel URL eksik. Yapay zeka ayarlarını açıp bir tane belirle veya OpenRouter seçeneğine geç.",
+      "noFoods": "O fotoğrafta hiçbir yiyecek belirlenemedi. Daha net bir çekim dene.",
+      "noFoodsText": "Bu açıklamada hiçbir yiyecek belirlenemedi. Her yiyeceğin adını ve miktarını belirtmeyi dene.",
+      "openrouterRateLimit": "Sağlayıcının istek sınırına ulaştın. Ücretsiz katman taramaları günlük olarak sıfırlanır veya daha fazlası için OpenRouter üzerinden kredi ekleyebilirsin. Eklediğin krediler doğrudan OpenRouter tarafına gider (openplate tarafına değil), tamamen isteğe bağlıdır ve abonelik değil, harcadıkça azalan bir bakiyedir.",
+      "photo": {
+        "empty": "Lütfen yüklemek için bir fotoğraf seç.",
+        "tooLarge": "Fotoğraf çok büyük (en fazla 8 MB).",
+        "undecodableFormat": "Bu biçim bu tarayıcıda çalışmaz, JPEG veya PNG çalışır.",
+        "unsupportedType": "Desteklenmeyen görsel türü. JPEG, PNG, WEBP veya HEIC kullan.",
+        "unreadable": "Bu fotoğraf okunamadı. Daha iyi ışıkta, daha yakından ve titretmeden tekrar dene.",
+        "unreadableWithReason": "Bu fotoğraf okunamadı ({{reason}}). Daha iyi ışıkta, daha yakından ve titretmeden tekrar dene."
+      },
+      "photoQualityBody": "Başka bir tane denemek ister misin? İyi ışık ve yukarıdan dik bir açı yardımcı olur.",
+      "provider": {
+        "auth": "API anahtarın sağlayıcı tarafından reddedildi. Yapay zeka ayarlarından anahtarı denetle ve tekrar dene.",
+        "credit": "Sağlayıcı hesabındaki kredi tükendi. Sağlayıcına kredi ekle ve tekrar dene.",
+        "modelNotFound": "Sağlayıcı bu modeli tanımıyor. Yapay zeka ayarlarından farklı bir model seç ve tekrar dene.",
+        "rateLimit": "Sağlayıcı şu anda istekleri hız sınırına takıyor. Biraz bekle ve tekrar dene.",
+        "reconsentRequired": "Bu ağ geçidinin gizlilik ayarları değiştiği için bu cihazı kabul etmeyi bıraktı. Seni davet eden kişiden yeni bir davet bağlantısı iste.",
+        "photoTooLarge": "Fotoğraf bu sunucu için çok büyük. Daha küçük bir fotoğraf dene.",
+        "aiNotAllowed": "Hesabın için yapay zeka tahminleri açık değil. Yöneticine danış.",
+        "accountSuspended": "Hesabın askıya alındı. Yöneticine danış.",
+        "rateLimitMinute": "Kısa sürede art arda çok sayıda istek gönderildi. Bir dakika içinde tekrar dene.",
+        "allowanceSpent": "Bugünkü yapay zeka tahminlerini tükettin. Yarın tekrar dene.",
+        "allowanceExpired": "Fotoğraf tahminleri için kotan doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
+        "allowanceExpiredOn": "Fotoğraf tahminleri için kotan {{date}} tarihinde doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
+        "instanceCeiling": "Bu kurulum bugün okuyabileceği azami fotoğraf sayısına ulaştı. Yarın tekrar dene. Hesabında herhangi bir sorun yok."
+      },
+      "readPhoto": "Fotoğraf okunamadı. Başka bir tane dene.",
+      "titles": {
+        "auth": "Yapay zeka anahtarın çalışmıyor",
+        "credit": "Yapay zeka sağlayıcının kredisi bitti",
+        "invalidRequest": "Sağlayıcı bu isteği işleyemedi",
+        "modelNotFound": "Bu model kullanılamıyor",
+        "noLuck": "Fotoğraf işlenemedi",
+        "rateLimit": "Şu anda çok fazla istek var",
+        "reconsentRequired": "Bu ağ geçidi için yeni bir davet gerekiyor",
+        "transient": "Sağlayıcı yanıt verirken sorun yaşadı",
+        "photoTooLarge": "Bu fotoğraf çok büyük",
+        "aiNotAllowed": "Yapay zeka tahminleri kapalı",
+        "accountSuspended": "Hesabın askıya alındı",
+        "allowanceExpired": "Fotoğraf tahminlerin sona erdi",
+        "instanceCeiling": "Bu kurulumun bugünkü kapasitesi doldu"
+      },
+      "text": {
+        "empty": "Önce ne yediğini yaz.",
+        "title": "Bu açıklama işlenemedi",
+        "qualityBody": "Bunu yiyeceklere dönüştüremedik. 3 yumurta, 2 dilim tost ekmeği gibi her yiyeceği ve miktarını belirterek yazmayı dene."
+      }
+    },
+    "loading": "Tarama yükleniyor…",
+    "offline": "Çevrimdışısın. Tabak taraması bağlantı gerektirir. Şimdi kaydetmek için son yiyeceklerinde arama yap.",
+    "review": {
+      "addingSummary_one": "{{count}} yiyecek ekleniyor · ~{{netCarbs}} g net karbonhidrat",
+      "addingSummary_other": "{{count}} yiyecek ekleniyor · ~{{netCarbs}} g net karbonhidrat",
+      "confirmAndLog": "Onayla ve kaydet",
+      "costLine": "Bu taramanın tahmini maliyeti: {{cost}} ({{inputTokens}} girdi / {{outputTokens}} çıktı belirteci)",
+      "doubleCheck": "Bunu tekrar kontrol et",
+      "errors": {
+        "carbsRequired": "Karbonhidrat zorunludur",
+        "gramsPositive": "Gram değeri 0'dan büyük olmalıdır",
+        "invalidBatchId": "Geçersiz toplu işlem kimliği",
+        "invalidDate": "Geçersiz tarih",
+        "nameRequired": "Ad zorunludur",
+        "selectAtLeastOne": "Kaydetmek için en az bir yiyecek seç."
+      },
+      "fineTune": "Porsiyonu ve besin değerlerini ayarla",
+      "foodLabel": "Yiyecek",
+      "gramsLabel": "Gram",
+      "heading": "Tabağın burada. Doğru görünüyorsa onayla.",
+      "include": "Dahil et",
+      "macroLabels": {
+        "carbs": "Karbonhidrat (zorunlu)",
+        "fat": "Yağ",
+        "fiber": "Lif",
+        "kcal": "Kalori",
+        "polyols": "Şeker alkolleri (polioller)",
+        "protein": "Protein",
+        "sugars": "Şeker"
+      },
+      "macrosPer100gNote": "Makrolar 100 g içindir.",
+      "macrosUnknown": "Makrolar bilinmiyor, yalnızca ad olarak kaydedildi.",
+      "match": {
+        "applied": "Uygulandı",
+        "calories": "{{value}} kalori",
+        "carbs": "{{value}} g karbonhidrat",
+        "dismiss": "Öneriyi yoksay",
+        "fiber": "{{value}} g lif",
+        "foundIn": "LowCarbCheck içinde bulundu",
+        "netCarbs": "{{value}} g net karbonhidrat",
+        "per100g": "100 g başına: {{summary}}",
+        "useThisData": "Bu veriyi kullan",
+        "viewOnLcc": "lowcarbcheck.org üzerinde görüntüle"
+      },
+      "matchTier": {
+        "likely": "Olası eşleşme",
+        "strong": "Güçlü eşleşme",
+        "weak": "Yaklaşık eşleşme"
+      },
+      "netCarbsForPortion": "{{value}} g net karbonhidrat",
+      "noneSelected": "Hiçbir yiyecek seçilmedi. Günlüğe kaydetmek için en az bir tane ekle.",
+      "plateFallbackName": "tabak",
+      "portionGrams": "~{{grams}} g",
+      "portionScale": {
+        "asShown": "Göründüğü gibi",
+        "bigger": "Daha büyük",
+        "double": "İki katı",
+        "smaller": "Daha küçük"
+      },
+      "portionWithHint": "{{hint}} · ~{{grams}} g",
+      "preview": {
+        "calories": "{{value}} kalori",
+        "fat": "Yağ {{value}} g",
+        "protein": "Protein {{value}} g"
+      },
+      "sanity": {
+        "componentOverTotal": "100 g başına {{component}} miktarı {{componentValue}} g, bu değer {{totalValue}} g olan {{total}} toplamından fazla, günlüğe kaydetmeden önce tekrar kontrol et.",
+        "componentSumOverTotal": "100 g başına {{firstComponent}} ve {{secondComponent}} toplamı {{componentValue}} g ediyor, bu değer {{totalValue}} g olan {{total}} toplamından fazla, günlüğe kaydetmeden önce tekrar kontrol et.",
+        "kcalMismatch": "Bu sayılar tutarsız görünüyor (makrolardan hesaplanan ~{{computed}} değerine karşılık belirtilen {{stated}} kcal), günlüğe kaydetmeden önce tekrar kontrol et.",
+        "labelColumnsDisagree": "Etiketteki iki sütun {{label}} konusunda uyuşmuyor (yazdırılan 100 g başına {{printed}} değerine karşılık porsiyon sütunundan hesaplanan {{converted}}), muhtemelen biri yanlış okundu.",
+        "macro": {
+          "carbs": "Karbonhidrat",
+          "fat": "Yağ",
+          "fiber": "Lif",
+          "kcal": "Kalori",
+          "polyols": "Şeker alkolleri",
+          "protein": "Protein",
+          "sugars": "Şekerler"
+        },
+        "macroSumOver100": "Karbonhidrat, protein ve yağın toplamı 100 g başına {{sum}} g ediyor, kaydetmeden önce tekrar kontrol et.",
+        "singleMacroOver100": "100 g başına {{label}} değeri {{value}} g, bu doğru olamaz, kaydetmeden önce tekrar kontrol et."
+      },
+      "saving": "Kaydediliyor…",
+      "seeOtherMatches": "Doğru değil mi? Diğer eşleşmelere bak",
+      "subheading": "Ayarlamak için bir porsiyona dokun veya aşağıdaki her şeyi ince ayarla.",
+      "unnamedFood": "İsimsiz yiyecek",
+      "fromLabel": "Etiketten"
+    },
+    "setup": {
+      "connectOpenRouter": "OpenRouter ile bağlan",
+      "crisp": {
+        "selfHosted": "Fotoğraflarını okuması için bir yapay zeka bağla. Fotoğrafın yalnızca o yapay zekaya gider.",
+        "managedWhat": "Bir tabak fotoğrafı çek, yapay zeka karbonhidratı senin için hesaplasın.",
+        "managedWho": "Fotoğrafın, bu openplate örneğini işleten kişinin çalıştırdığı bir sunucu olan {{host}} adresine gider."
+      },
+      "description": "Bir tabak fotoğrafı çek, bir yapay zeka servisi karbonhidratı senin için tahmin etsin.",
+      "manualSetup": "Veya ayarlardan bir sağlayıcıyı el ile kur",
+      "sharedPhotoAlt": "Paylaştığın fotoğraf",
+      "sharedPhotoNote": "Paylaştığın fotoğrafı aldık ancak içindeki yiyecekleri henüz tanımlayamıyoruz. Bunun için önce bir yapay zeka sağlayıcısının bağlanması gerekir. Aşağıdan birini bağla, ardından bu fotoğrafı tekrar paylaş veya seç.",
+      "title": "Fotoğraf çek, yazmayı atla",
+      "managedMissing": {
+        "body": "Bu hesap için fotoğraflı tahminler açılmamış.",
+        "askAdmin": "Yöneticinden bunları açmasını iste. Bu sırada fotoğraf olmadan da yiyecek ekleyebilirsin.",
+        "expired": "Bu hesap için fotoğraflı tahminler {{date}} tarihinde sona erdi. Fotoğraf olmadan yiyecek eklemeye devam edebilirsin."
+      },
+      "managed": {
+        "description": "Bir tabak fotoğrafı çek, karbonhidrat senin için hesaplansın."
+      }
+    },
+    "title": "Tabağı tara",
+    "textIntake": {
+      "title": "Yazdıkların okunuyor",
+      "label": "Girdiğin metin",
+      "description": "Kelimelerin doğrudan kendi yapay zeka sağlayıcına gider, o da herhangi bir şey kaydedilmeden önce kontrol edeceğin girdilere dönüştürür.",
+      "managedDescription": "Kelimelerin, örneğinin çalıştırdığı yapay zekaya gider, o da herhangi bir şey kaydedilmeden önce kontrol edeceğin girdilere dönüştürür."
+    }
+  },
+  "settings": {
+    "data": {
+      "description": "Günlüğün bu cihazda tutulur: istediğin zaman tam bir kopyasını indir, platforma bağımlılık yok, talep edip bekleme yok.",
+      "descriptionManaged": "Günlüğün bu cihazda tutulur, sunucu ise okuyamadığı şifreli bir kopyayı saklar: anahtar bu cihazdan asla çıkmaz. İstediğin zaman tam bir kopyasını indir, platforma bağımlılık yok, talep edip bekleme yok.",
+      "downloadCsv": "Günlüğü indir (CSV)",
+      "downloadJson": "Her şeyi indir (JSON)",
+      "exportTitle": "Verilerin",
+      "importButton": "Yedek içe aktar (JSON)",
+      "importDescription": "openplate üzerinden dışa aktarılmış bir yedeği (JSON) bu cihaza geri yükle; verileri eşitleme olmadan başka bir cihazdan aktarmanın yolu budur.",
+      "importError": "Bu dosya içe aktarılamadı. Dosyanın bir openplate yedeği (JSON) olduğundan emin ol.",
+      "importHeading": "Yedek içe aktar",
+      "importSuccess": "Yedek içe aktarıldı. Günlüğün artık içe aktarılan verileri içeriyor.",
+      "importing": "İçe aktarılıyor…",
+      "photosNote": "Tabak fotoğrafları bu indirmeye dahil edilmez: yalnızca bu cihazda tutulurlar (aşağıdaki \"Bu cihazdaki fotoğraflar\" bölümüne bak), hiçbir zaman bir yedeğe veya dışa aktarıma eklenmezler. İndirdiğin dosya yalnızca kaydettiğin sayıları içerir.",
+      "preparing": "Hazırlanıyor…",
+      "title": "Veriler ve yedekleme"
+    },
+    "groups": {
+      "profile": "Hakkında",
+      "nutrition": "Beslenme ve hedefler",
+      "scanning": "Tarama ve yapay zeka",
+      "appearance": "Görünüm ve dil",
+      "account": "Hesap ve plan",
+      "lists": "Listelerim ve verilerim",
+      "about": "openplate hakkında"
+    },
+    "photos": {
+      "cancel": "İptal",
+      "clearAll": "Tümünü temizle",
+      "clearConfirmDescription": "Bu işlem bu cihazda önbelleğe alınan her tabak fotoğrafını kaldırır. Kaydedilen girdilerin ve sayıları tutulur. Yalnızca cihazdaki görseller silinir. Bu işlem geri alınamaz.",
+      "clearConfirmTitle": "Bu cihazdaki tüm fotoğraflar temizlensin mi?",
+      "description": "Bir tabağı taradığında, fotoğrafa girdide tekrar bakabilmen için fotoğraf yalnızca bu cihazda tutulur. Asla karşıya yüklenmez ve hiçbir zaman eşitlenmez. Daha eski fotoğraflar {{days}} gün sonra kendiliğinden otomatik olarak temizlenir; yenilerinin kaydedilmesini durdurmak için bunu kapat.",
+      "switchLabel": "Tabak fotoğraflarını bu cihazda sakla",
+      "title": "Bu cihazdaki fotoğraflar",
+      "usageEmpty": "Bu cihazda saklanan fotoğraf yok.",
+      "usage_one": "{{count}} fotoğraf · {{size}}",
+      "usage_other": "{{count}} fotoğraf · {{size}}"
+    },
+    "rows": {
+      "about": {
+        "status": "Sürüm {{version}} · MIT lisansı",
+        "title": "openplate hakkında"
+      },
+      "ai": {
+        "connected": "{{provider}} · {{model}}",
+        "notConnected": "Bağlı değil",
+        "title": "Yapay zeka sağlayıcısı"
+      },
+      "data": {
+        "status": "Bu cihazdaki fotoğrafları indir, içe aktar",
+        "title": "Veri ve yedekleme"
+      },
+      "foods": {
+        "title": "Yiyeceklerin"
+      },
+      "goals": {
+        "calories": "Günde {{kcal}} kalori",
+        "carbs": "Günde {{grams}} g net karbonhidrat"
+      },
+      "meals": {
+        "title": "Kayıtlı öğünler"
+      },
+      "preferences": {
+        "title": "Tercihler"
+      },
+      "sharing": {
+        "title": "Paylaşım",
+        "status": "Günlüğünü bir diyetisyenle paylaş"
+      },
+      "sync": {
+        "notSetUp": "Ayarlanmadı",
+        "title": "Hesap"
+      },
+      "research": {
+        "title": "Araştırma",
+        "status": "Katkıda bulunduğun çalışmalar"
+      },
+      "account": {
+        "title": "Hesap ve eşitleme",
+        "signedOut": "Oturum kapatıldı"
+      },
+      "admin": {
+        "title": "Yönetim",
+        "status": "Davetler ve hesaplar"
+      },
+      "profile": {
+        "status": "Boy, kilo, doğum yılı"
+      },
+      "nutrition": {
+        "status": "Beslenme tarzı ve hedefler"
+      },
+      "plan": {
+        "title": "Plan",
+        "status": "Planın ve ödeme"
+      }
+    },
+    "style": {
+      "lead": "Günün hangi hedefe göre değerlendirileceğini beslenme tarzın belirler.",
+      "save": "Tarzı kaydet",
+      "saved": "Tarz kaydedildi",
+      "title": "Beslenme tarzı"
+    },
+    "title": "Ayarlar",
+    "fasting": {
+      "title": "Oruç",
+      "lead": "Her zamanki orucun. Zamanlayıcı bunu önceden seçer, her zamanki bir başlangıç saati ise o saatte tek dokunuşla başlatmanı sağlar.",
+      "routine": {
+        "label": "Her zamanki orucun",
+        "none": "Yok",
+        "customHours": "{{hours}} sa"
+      },
+      "startTime": {
+        "label": "Her zamanki başlangıç saati",
+        "help": "İsteğe bağlı. Her zaman elle başlatmak için boş bırak.",
+        "invalid": "00:00 ile 23:59 arasında bir saat gir."
+      },
+      "care": {
+        "title": "Uzun bir oruçtan önce",
+        "pending": "24 saat veya daha uzun süren oruçlara ilişkin not, ilk uzun orucundan önce bir kez görünür.",
+        "acknowledged": "24 saat veya daha uzun süren oruçlara ilişkin notu okudun.",
+        "reset": "Bir dahaki sefere tekrar göster",
+        "resetSaved": "Not, bir sonraki uzun orucundan önce tekrar görünür."
+      },
+      "save": "Oruç ayarlarını kaydet",
+      "saved": "Oruç ayarları kaydedildi."
+    },
+    "hub": {
+      "fasting": {
+        "label": "Oruç",
+        "description": "{{routine}}, {{time}} vaktinde başlar",
+        "none": "Her zamanki bir oruç yok"
+      },
+      "notifications": {
+        "label": "Bildirimler",
+        "off": "Kapalı",
+        "catchUp": "Her gün {{time}} vaktinde durum özeti",
+        "fastTarget": "Yalnızca oruç hedefi",
+        "both": "Her gün {{time}} vaktinde durum özeti ve oruç hedefi"
+      }
+    },
+    "notifications": {
+      "title": "Bildirimler",
+      "lead": "Sabahları kısa bir bilgilendirme ve bir oruç hedefine ulaştığında bir bildirim.",
+      "master": "Bana bildirim gönder",
+      "cap": "Günde en fazla iki tane.",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor…",
+      "state": {
+        "unsupported": "Bu tarayıcı bildirim alamaz.",
+        "needsInstall": "iPhone'da, önce openplate uygulamasını ana ekranına ekle.",
+        "blocked": "Tarayıcı ayarların bu site için bildirimleri engelliyor. İzin ver, ardından geri gel.",
+        "serverOff": "Bu kurulum bildirim göndermez.",
+        "dismissed": "İstek kapandı veya tarayıcın hiç sormadı. Düğmeye tekrar dokun.",
+        "dismissedAgain": "Tarayıcın sormayı bıraktı. Tarayıcının site ayarlarından bildirimlere izin ver.",
+        "signedOut": "Bu cihazda oturumun kapalı. Oturum aç, ardından bildirimleri aç.",
+        "ready": "Tarayıcın bildirim alabilir. Aşağıdan bildirimleri aç."
+      },
+      "catchUp": {
+        "label": "Günlük özet",
+        "time": "Saat",
+        "preview": "Yarın sabah şöyle diyecek:",
+        "previewEmpty": "Henüz gösterilecek bir şey yok. Bildirilecek bir şey olmayan bir sabah bildirim almaz."
+      },
+      "fastTarget": {
+        "label": "Bir oruç hedefine ulaştığında"
+      },
+      "toast": {
+        "on": "Bildirimler açık.",
+        "off": "Bildirimler kapalı.",
+        "saved": "Kaydedildi.",
+        "failed": "İşe yaramadı. Tekrar dene."
+      }
+    }
+  },
+  "settingsAi": {
+    "advanced": {
+      "anthropicOption": "Doğrudan Anthropic",
+      "backToRecommended": "← Bunun yerine {{provider}} kullan (önerilen)",
+      "openaiCompatibleOption": "Kendi sunucunda barındırılan / yerel uç nokta (Ollama, vLLM, LM Studio...), barındırılan kurulumda yalnızca localhost",
+      "toggle": "Gelişmiş: farklı bir sağlayıcı kullan"
+    },
+    "apiKey": {
+      "label": {
+        "anthropic": "Anthropic API anahtarı",
+        "mistral": "Mistral API anahtarı",
+        "openaiCompatible": "API anahtarı (uç noktan için)",
+        "openrouter": "OpenRouter API anahtarı"
+      },
+      "noKeyYet": "Henüz bir anahtar yapılandırılmadı, yalnızca bu cihazda saklanır.",
+      "sentToBaseUrl": "Yukarıda yapılandırılan temel URL'ye gönderilir."
+    },
+    "baseUrl": {
+      "help": "Barındırılan kurulumda yalnızca bir localhost/127.0.0.1 uç noktasına erişilebilir: bu sayfa ele geçirilirse anahtarını korumak için içerik güvenlik ilkesi tasarım gereği diğer ana makineleri engeller. Kendi sunucunda mı barındırıyorsun? Kendi uzak uç noktana izin vermek için CSP_CONNECT_EXTRA ayarla (README dosyasına bak). Doğrudan api.openai.com adresine her iki durumda da asla erişilemez. OpenAI modelleri için OpenRouter kullan."
+    },
+    "connectCard": {
+      "description": "Tabak fotoğrafları okunmak üzere doğrudan seçtiğin sağlayıcıya gider. openplate, sonradan görüntüleyebilmen için bir kopyayı yalnızca bu cihazda tutar, asla sunucumuzda tutmaz. Kopyaları dilediğin zaman ayarlardaki Veri ve yedekleme altından yönet veya temizle. Anahtarın, aşağıda seçilen sağlayıcı haricinde bu cihazdan asla çıkmaz.",
+      "title": "Yapay zeka sağlayıcını bağla"
+    },
+    "connected": {
+      "status": "<strong>{{provider}}</strong>, {{model}} bağlandı"
+    },
+    "cost": {
+      "approxCents": "fotoğraf başına yaklaşık {{cents}}¢",
+      "underCent": "fotoğraf başına bir sentin altında"
+    },
+    "disconnect": {
+      "button": "Bağlantıyı kes",
+      "notRevoked": "Bu işlem anahtarı yalnızca <strong>bu cihazdan</strong> kaldırır. Anahtarı {{provider}} üzerinde <strong>iptal etmez</strong>.",
+      "oauthKeyStillThere": "Anahtar, <keyLink>{{provider}} anahtar ayarlarında</keyLink> görünmeye devam eder (\"openplate\" olarak etiketlenir veya sağlayıcının henüz trafik görmediği kurulumlarda \"An app\" olarak geçer) ve sen kendin iptal edene kadar orada çalışmayı sürdürür.",
+      "stops": "Bir sağlayıcıyı yeniden bağlayana kadar fotoğraf tanımlama çalışmaz.",
+      "title": "Yapay zeka sağlayıcısının bağlantısı kesilsin mi?"
+    },
+    "errors": {
+      "apiKeyRequired": "Bir API anahtarı gereklidir.",
+      "apiKeyRequiredFirstTime": "İlk kurulum için bir API anahtarı gereklidir.",
+      "baseUrlRequired": "Kendi barındırdığın ya da yerel bir uç nokta için bir temel URL gereklidir.",
+      "baseUrlScheme": "Temel URL http:// veya https:// ile başlamalıdır",
+      "disconnectToSwitch": "Sağlayıcı değiştirmek için önce bağlantıyı kes.",
+      "keyRejected": "Anahtar sağlayıcı tarafından reddedildi. Kontrol et ve tekrar dene.",
+      "modelRequired": "Model gereklidir"
+    },
+    "explainer": {
+      "byok": "Hâlâ ilgileniyor musun? Olay şu: openplate kendi yapay zekasını çalıştırmaz, bu yüzden ücretsiz fotoğraf taramaları sunamaz. Bunun yerine bir yapay zeka şirketinden <strong>kendi anahtarını</strong> getirirsin ve openplate bunu tabak fotoğraflarını okumak için kullanır: senin anahtarın, senin sağlayıcın, senin verilerin. Anahtar yalnızca bu cihazda durur: openplate bunu aşağıda seçeceğin sağlayıcı dışında hiçbir yere göndermez ve kendi sunucusunda asla saklamaz veya görmez.",
+      "notRequired": "<strong>Bu sayfadaki hiçbir şey zorunlu değildir.</strong> Günlüğün, hedeflerin ve eğilimlerin hepsi bu olmadan da çalışır. Ücretli bir yapay zeka hizmetine kaydolup bir anahtar yapıştırmak sana göre değilse, bu sayfayı kapat ve elle kaydetmeye devam et, başka hiçbir şey kaybetmezsin.",
+      "photosAndCost": "Her fotoğraf, yalnızca tabağını okumaya yetecek kadar bir süre boyunca doğrudan o sağlayıcıya gönderilir. openplate hiçbir zaman kendi sunucusunda bir kopyasını tutmaz, ancak daha sonra o kayıtta tekrar görebilmen için varsayılan olarak ardından <strong>bu cihazda</strong> (tarayıcının depolama alanında) yaklaşık 90 gün boyunca bir kopyasını saklar. Bunu ayarlardaki <dataLink>Veri ve yedekleme</dataLink> altından kapatabilir veya dilediğin zaman temizleyebilirsin. Maliyeti vardır ama çok azdır: genellikle fotoğraf başına bir sentin altındadır ve faturası sağlayıcın tarafından doğrudan sana kesilir. Her öğünü tarasan bile çoğu kişi ayda 5 doların çok altında harcar. Yalnızca gerçekten taradığın kadarını ödersin.",
+      "setup": "Kurulum, önce sağlayıcının kendi sitesini ziyaret etmek anlamına gelir: orada ücretsiz bir hesap oluştur ve bir ödeme yöntemi ekle (bizim değil onların ödeme sayfası: openplate kartını asla görmez). En basit yol <providerLink>{{provider}}</providerLink> üzerinden bir anahtar almaktır: aşağıda ilk sıraya koyduğumuz sekme budur ve tek bir anahtar altındaki tüm modelleri kapsar.",
+      "setupOpenAiNote": "Bilinmesi gereken bir istisna: OpenAI'ın kendi hizmeti doğrudan bir tarayıcıdan gönderilen isteklere yanıt vermez, bu yüzden <strong>OpenAI modellerine burada yalnızca OpenRouter üzerinden erişilebilir</strong>; onun tek anahtarı Google'ın modellerini de kapsar.",
+      "title": "Fotoğraf çek, makroları al"
+    },
+    "field": {
+      "baseUrl": "Temel URL",
+      "model": "Model"
+    },
+    "loading": "Yapay zeka ayarların yükleniyor…",
+    "manualEntry": {
+      "enterKey": "API anahtarını gir",
+      "orPasteKey": "Veya bir API anahtarını elle yapıştır"
+    },
+    "model": {
+      "blurb": {
+        "claude-haiku-4-5": "Yemek ayrıntılarında hızlı ve isabetli",
+        "claude-sonnet-5": "Zor tabaklar için daha yüksek isabet",
+        "google-gemini-3-1-flash-lite": "Ucuz ve yetenekli, tabak fotoğrafları için harika bir varsayılan",
+        "google-gemini-3-5-flash-lite": "OpenRouter bağlandıktan sonraki varsayılan, fiyat için değil gizlilik için seçildi: fotoğrafların üzerinde eğitim yapılmaz",
+        "ministral-14b-2512": "Kabul edilebilir bir bütçe tabanı, yemekleri adlandırırken biraz hantal",
+        "ministral-3b-2512": "Ailenin en ucuzu, sade ve net şekilde ayrılmış tabaklar için",
+        "ministral-8b-2512": "Biraz daha pay bırakan bütçe dostu katman",
+        "mistral-large-2512": "Amiral gemisi fiyatı, ailenin en zayıf tabak ayrıştırması",
+        "mistral-medium-2604": "Gerçek tabaklarda en doğru sonucu veren, seçilmesi gereken seçenek",
+        "mistral-small-2603": "Girdisi ucuz ama üç test tabağımızdan ikisini yanlış okudu",
+        "openai-gpt-5-4-mini": "Hızlı, hesaplı, çok yönlü model",
+        "openai-gpt-5-5": "Üst düzey seçenek",
+        "openai-gpt-5-6-luna": "Buradaki en ucuz seçenek, yeni, gerçek tabaklarda henüz kıyaslanmadı"
+      },
+      "createKeyLink": "{{provider}} üzerinden bir anahtar al",
+      "customHint": "Doldurulduğunda, yukarıda seçilen modeli geçersiz kılar.",
+      "customPlaceholder": "ör. {{example}}",
+      "customPlaceholderGeneric": "uç noktanın sunduğu model kimliği",
+      "customToggle": "Bunun yerine özel bir model kimliği kullan",
+      "pickIntro": "Bir model seç.",
+      "recommended": "Önerilen"
+    },
+    "oauth": {
+      "noCardNote": "Başlamak için kredi kartı gerekmez, daha sonra OpenRouter üzerinden ekleyebilirsin."
+    },
+    "preset": {
+      "badge": "Bu openplate tarafından sağlanır",
+      "body": "Bu openplate kurulumunu yapan kişi, yanında tabak okuyan bir yapay zeka da çalıştırır. Hiçbir yerde hesap açmadan, anahtar almadan ve ödeme yapmadan tek dokunuşla bağla. Fotoğrafların doğrudan bu cihazdan o uç noktaya gider, başka hiçbir yere gönderilmez.",
+      "byokStillAvailable": "Kendi yapay zeka sağlayıcını mı tercih ediyorsun? Aşağıdan yine de bir sağlayıcı ayarlayabilirsin, istediğin an bunun yerine geçer.",
+      "connect": "Bu openplate kurulumunun yapay zekasını kullan",
+      "connected": "Bu openplate kurulumunun kendi yapay zekasına bağlandı.",
+      "connectedUnverified": "Bağlandı, ancak bu openplate kurulumunun yapay zekası az önce yanıt vermedi. Bir tarama dene. Başarısız olursa, bu örneği çalıştıran kişinin incelemesi gerekir.",
+      "connecting": "Bağlanıyor…",
+      "disconnectNote": "Hiçbir yerde hiçbir erişim iptal edilmedi: sana ait bir hesap veya anahtar kullanılmıyor. Bu openplate kendi yapay zekasını sunmaya devam eder, bu sayede istediğin zaman tek dokunuşla yeniden bağlanabilirsin.",
+      "explainerNote": "Bunların hiçbirine ihtiyacın yok: bu openplate, yukarıdaki tek dokunuşla kendi yapay zekasını sunar. Bu sayfanın geri kalanı, bunun yerine kendi sağlayıcını eklemen içindir.",
+      "failed": "Bağlantı kaydedilemedi. Tekrar dene.",
+      "title": "Bu openplate kendi yapay zekasını sunar"
+    },
+    "provider": {
+      "anthropic": "Anthropic",
+      "mistral": "Mistral",
+      "openaiCompatible": "Kendi sunucunda barındırılan / yerel uç nokta",
+      "openrouter": "OpenRouter",
+      "managed": "Bu kurulum"
+    },
+    "providerBlurb": {
+      "mistral": "Mistral bir Fransız şirketidir ve modellerini AB içindeki sunucularda çalıştırır. Ücretsiz katmanı telefon numarası ister, ancak kredi kartı istemez.",
+      "openrouter": "OpenAI ve Google modelleri dahil, her model için tek bir anahtar. Tek tıklamayla bağlan, başlamak için kredi kartı gerekmez."
+    },
+    "providerRow": {
+      "connectedHint": "Sağlayıcı değiştirmek için önce bağlantıyı kes.",
+      "label": "Sağlayıcı:",
+      "switchHint": "Aşağıdakilerden birini seç veya kendi barındırdığın bir uç nokta için Gelişmiş seçeneğini aç."
+    },
+    "providerTabs": {
+      "legend": "Bir yapay zeka sağlayıcısı seç"
+    },
+    "quickstart": {
+      "step1": "Aşağıdan bir sağlayıcı seç. Önerilen sağlayıcı {{provider}}.",
+      "step2": "<providerLink>{{provider}} konsolunda</providerLink> bir API anahtarı oluştur.",
+      "step3": "Aşağıya yapıştır ve ilk tabağını tara.",
+      "title": "Üç adım, yaklaşık iki dakika"
+    },
+    "save": {
+      "model": "Modeli kaydet",
+      "savingModel": "Kaydediliyor…",
+      "settings": "Ayarları kaydet",
+      "verifyingAndSaving": "Doğrulanıyor ve kaydediliyor…"
+    },
+    "title": "Yapay Zeka Ayarları",
+    "toast": {
+      "disconnected": "Yapay zeka sağlayıcısının bağlantısı kesildi.",
+      "nothingToDisconnect": "Bağlantısı kesilecek bir şey yoktu.",
+      "saved": "Ayarlar doğrulandı ve kaydedildi.",
+      "unverified": "Kaydedildi, anahtar şu an doğrulanamadı.",
+      "unverifiedOpenaiCompatible": "Kaydedildi, anahtar şu an doğrulanamadı (genellikle içerik güvenlik politikasının localhost dışındaki bir uç noktayı engellemesi ya da uç noktanın tarayıcı CORS isteklerine izin vermemesi nedeniyle, yukarıdaki temel URL yardım metnine bak)."
+    },
+    "troubleshooting": {
+      "credit": "Sağlayıcıdaki hesabının isteklere yanıt verebilmesi için bir ödeme yöntemi veya bakiye eklenmesi gerekiyor.",
+      "intro": "Genellikle bunun birkaç nedeni olur:",
+      "keyTypo": "Anahtar fazladan bir boşlukla veya eksik bir karakterle kopyalandı. Yeniden kopyalayıp yapıştırmayı dene.",
+      "providerDown": "Sağlayıcı geçici olarak meşgul veya hizmet dışı. Bir dakika bekle ve yeniden dene.",
+      "reassurance": "Bunların hiçbiri openplate uygulamasının kalanını etkilemez, yiyecekleri her zaman elle de günlüğe kaydedebilirsin.",
+      "title": "Bir tarama çalışmazsa"
+    },
+    "usage": {
+      "scanCount_one": "{{count}} tarama",
+      "scanCount_other": "{{count}} tarama",
+      "thisMonth": "Bu ay: {{cost}} · {{scans}}",
+      "thisMonthUnknown": "Bu ay: {{scans}} · maliyet bilinmiyor",
+      "failed_one": "{{count}} başarısız oldu",
+      "failed_other": "{{count}} başarısız oldu"
+    }
+  },
+  "sharing": {
+    "cancel": "İptal",
+    "pulse": {
+      "help": "Küçük yuvarlanmış sayılar gönderir: bir öğün, 50'ye yuvarlanmış kalorisi ve 5 g'a yuvarlanmış proteini, bir fotoğraf ve oruç tuttuğun sürece kısa bir 'hâlâ oruçta' sinyali. Yiyecekler, saat, fotoğraf veya hedeflerin asla gönderilmez. Oruç sinyali hesabına 30 dakika boyunca bağlı kalır, ardından silinir.",
+      "label": "Bir nabız paylaş"
+    },
+    "title": "Paylaşım",
+    "intro": "Bir diyetisyenin veya doktorun günlüğünü okumasına izin ver. Baştan sona şifreli kalır: anahtarının onlarınkine mühürlenmiş bir kopyasını alırlar ve sunucu hiçbir şeyi okuyamaz.",
+    "unavailable": "Bu eşitleme sunucusu paylaşım sunmuyor. Burada hiçbir şey açılmadı ve hiçbir şey gönderilmedi.",
+    "needsSession": "Paylaşım için hesap şifren gerekir. Önce bu cihazda oturum aç.",
+    "needsSessionCta": "Hesaba git",
+    "identity": {
+      "title": "Paylaşım anahtarın",
+      "description": "Diğer kişilerin günlüklerini mühürlediği anahtar. Bu cihazda üretilir ve hesabınla birlikte taşınır.",
+      "none": "Bu cihaz henüz bir paylaşım anahtarı üretmedi.",
+      "generate": "Paylaşım anahtarımı üret",
+      "failed": "Paylaşım anahtarı üretilemedi.",
+      "fingerprintLabel": "Parmak izin",
+      "readAloud": "Bu on iki karakteri seninle paylaşım yapan kişiye sesli oku, onlar da yazsın. Bu uygulama onları burada, kendi anahtarından hesapladı.",
+      "publicKeyLabel": "Ortak anahtarın",
+      "publicKeyHint": "E-postayla göndermek veya kod olarak göstermek güvenlidir. Tek başına hiçbir şifreyi çözemez.",
+      "recoveryNote": "Kurtarma kodunu güvenli bir yerde tut. Kendi erişiminin yanı sıra hastalarının erişimini de korur. Onu ve şifreni kaybedersen, seninle paylaşılan her günlük açılmaz hale gelir."
+    },
+    "grant": {
+      "title": "Biriyle paylaş",
+      "description": "Bunu onlarla birlikte, aynı odada veya bir görüşmedeyken yap. Onların hesap numarasına, anahtarına ve sesli okudukları parmak izine ihtiyacın var.",
+      "accountLabel": "Onların hesap numarası",
+      "accountHint": "Bunu kendi paylaşım sayfalarında görebilirler.",
+      "keyLabel": "Onların ortak anahtarı",
+      "keyHint": "Davetlerindeki anahtarı yapıştır. Ortaktır: verileri onlara mühürleyebilir, başka hiçbir şey yapamaz.",
+      "labelLabel": "Onlara ne ad verilsin",
+      "labelHint": "Yalnızca senin cihazlarında tutulur. Sunucu bunu asla görmez.",
+      "fingerprintLabel": "Sesli okudukları parmak izi",
+      "fingerprintHint": "Ekranlarındaki on iki karakteri okumalarını iste. Duyduğunu yaz.",
+      "fingerprintPlaceholder": "AB12-CD34-EF56",
+      "fingerprintWhy": "Bunu yazman denetimdir. Birisi sana ulaşmadan önce anahtarlarını değiştirdiyse, duyduğun şey uyuşmaz ve hiçbir şey paylaşılmaz.",
+      "submit": "Günlüğümü paylaş",
+      "badAccount": "Bu hesap numarası doğru görünmüyor.",
+      "mismatch": "Bu, söz konusu anahtarın parmak izi değil. Hiçbir şey paylaşılmadı. Karakterleri onlarla kontrol et ve tekrar dene.",
+      "keyChanged": "Bu kişinin anahtarı değişti. Sen {{pinned}} değerini doğrulamıştın, bu davet ise {{offered}} değerini taşıyor. Hiçbir şey paylaşılmadı. Devam etmeden önce parmak izi denetimini onlarla birlikte tekrar yap.",
+      "unknownGrantee": "Bu sunucuda bu numaraya sahip bir hesap yok. Hiçbir şey paylaşılmadı.",
+      "conflict": "Cihazlarından bir başkası bu paylaşımı az önce değiştirdi. Tekrar dene.",
+      "failed": "Paylaşılamadı. Hiçbir şey değiştirilmedi.",
+      "done": "Paylaşıldı. {{fingerprint}} değerini doğruladın."
+    },
+    "grants": {
+      "title": "Paylaşımda bulunduğun kişiler",
+      "empty": "Günlüğünü kimseyle paylaşmıyorsun.",
+      "unnamed": "Hesap {{accountId}}",
+      "verified": "Bu cihazda doğrulandı · {{fingerprint}}",
+      "verifiedHelp": "Bu parmak izini birlikte kontrol ettiniz. Sonraki her güncelleme aynı anahtarla mühürlenir.",
+      "unpinned": "Bu cihazda doğrulanmadı",
+      "unpinnedHelp": "Bu cihazda, bu paylaşımın yapıldığı anahtarın kaydı yok, bu yüzden sana bir parmak izi gösteremez. Paylaşım yine de çalışır. Buraya geri getirmek için parmak izi denetimini onlarla tekrar yap.",
+      "keyChanged": "Anahtarları değişti",
+      "keyChangedHelp": "Kayıttaki anahtar doğruladığın anahtar değil. Parmak izi denetimini tekrar yapana kadar yeni hiçbir şey bu anahtarla mühürlenmez.",
+      "revoke": "Paylaşımı durdur",
+      "revokeConfirmTitle": "{{name}} ile paylaşım durdurulsun mu?",
+      "revokeConfirmCutoff": "{{name}} artık günlüğüne openplate üzerinden erişemez.",
+      "revokeConfirmResidue": "Önceden görüntüledikleri her şey cihazlarında kalabilir.",
+      "revokeConfirmCta": "Paylaşımı durdur",
+      "revokeFailed": "Paylaşım durdurulamadı. Hiçbir şey değiştirilmedi."
+    },
+    "rotate": {
+      "title": "Veri anahtarını değiştir",
+      "description": "Bundan sonra günlüğünü yepyeni bir anahtarla yeniden mühürler.",
+      "future": "Bundan sonraki her şey, paylaşımı durdurduğun hiç kimsenin asla sahip olmadığı bir anahtarla mühürlenir.",
+      "notThePast": "Geçmişi geri alamaz. Önceden görüntülenen her şey onların cihazında kalabilir.",
+      "willDrop": "Paylaşımlarından {{shares}} tanesi bu cihazdan yeniden mühürlenemez ve sonlandırılır.",
+      "open": "Veri anahtarımı değiştir",
+      "confirmTitle": "Veri anahtarını değiştirmek istiyor musun?",
+      "confirmBody": "Kaydettiğin her şey yeni bir anahtarla yeniden mühürlenir ve paylaşmaya devam ettiğin herkes mühürlenmiş yeni bir kopya alır. Yeni bir kurtarma kodu alırsın, eskisi ise çalışmayı durdurur.",
+      "passphraseLabel": "Parolanla onayla",
+      "passphraseHint": "Bunu soruyoruz çünkü yeni anahtarın parolana mühürlenmesi gerekir, yanlış bir parola ise seni kendi günlüğünün dışında bırakır.",
+      "confirmCta": "Anahtarı değiştir",
+      "failed": "Anahtar değiştirilemedi. Hiçbir şey değiştirilmedi.",
+      "doneTitle": "Veri anahtarın değiştirildi.",
+      "doneBody": "{{kept}} paylaşım korundu, {{revoked}} paylaşım sonlandırıldı."
+    },
+    "clinician": {
+      "title": "Seninle paylaşılanlar",
+      "description": "İnsanların seninle paylaştığı günlükler. Her birinin şifresi burada, bu cihazda çözülür.",
+      "empty": "Henüz kimse seninle bir günlük paylaşmadı.",
+      "patientTitle": "Hesap {{accountId}}",
+      "sharedSince": "Paylaşım başlangıcı: {{at}}",
+      "open": "Aç",
+      "drop": "Kaldır",
+      "dropFailed": "Bu paylaşım kaldırılamadı.",
+      "back": "Listeye dön",
+      "readOnly": "Yalnızca okunur. Burada hiçbir şeyi değiştiremezsin.",
+      "lastUpdated": "Son güncellemeleri: {{at}}",
+      "noEntries": "Bu günlükte henüz girdi yok.",
+      "dayNetCarbs": "{{grams}} g net karbonhidrat",
+      "entryGrams": "{{grams}} g",
+      "gone": "Bu günlük kullanılamıyor. Paylaşım durdurulmuş olabilir veya henüz hiçbir şey eşitlenmemiştir."
+    }
+  },
+  "signIn": {
+    "title": "Giriş yap",
+    "body": "E-posta adresin ve parolan.",
+    "pulling": "Günlüğün alınıyor…",
+    "pullFailedTitle": "Günlüğün gelmedi",
+    "pullFailedBody": "Giriş yaptın, ancak günlüğün henüz gelmedi.",
+    "unavailable": "Bu sunucuda hesaplar kapalı.",
+    "forgot": "Şifreni mi unuttun?"
+  },
+  "signOut": {
+    "menuItem": "Çıkış yap",
+    "title": "Çıkış yap",
+    "body": "Tekrar giriş yapana kadar oturumun kapalı kalır. Günlüğün bu cihazda kalır.",
+    "bodyManaged": "Günlüğün hesabına aittir. Çıkış yaptıktan sonra, tekrar giriş yapana kadar bu cihaz günlüğü göstermez.",
+    "confirm": "Çıkış yap",
+    "erase": {
+      "label": "Günlüğü bu cihazdan da sil"
+    },
+    "outbox": {
+      "counting": "Hâlâ gönderilmeyi bekleyenler denetleniyor.",
+      "empty": "Bu cihazdaki her şey sunucuya ulaştı.",
+      "waiting_one": "Bir girdi henüz sunucuya ulaşmadı. Silersen kaybolur.",
+      "waiting_other": "{{count}} girdi henüz sunucuya ulaşmadı. Silersen kaybolurlar."
+    },
+    "eraseFailed": "openplate başka bir sekmede açık olduğu için günlük silinemedi. O sekmeyi kapatıp yeniden dene."
+  },
+  "strangerNote": {
+    "device": "Giriş yapmadın. Bu ayar bu cihaz için geçerlidir.",
+    "home": "Ana sayfa",
+    "needsSignIn": "Bu sayfa için giriş yapmak gerekir."
+  },
+  "sync": {
+    "cancel": "İptal",
+    "changePassphrase": {
+      "currentLabel": "Mevcut şifre",
+      "description": "Yeni bir şifre belirler ve diğer cihazlarındaki oturumları kapatır. Eşitlenen verilerin olduğu gibi kalır.",
+      "done": "Şifre değiştirildi. Diğer cihazların yeni şifreyi isteyecek.",
+      "failed": "Şifre değiştirilemedi. Hiçbir şey değiştirilmedi.",
+      "newLabel": "Yeni şifre",
+      "open": "Şifreyi değiştir",
+      "recoveryNote": "Kurtarma kodun çalışmaya devam eder, değiştirdiğin şifreye bağlı değildir.",
+      "submit": "Yeni şifreyi kaydet",
+      "title": "Şifreyi değiştir"
+    },
+    "connected": {
+      "description": "{{handle}} olarak giriş yapıldı.",
+      "photosStayHere": "Tabak fotoğrafları çekildikleri cihazda kalır, hiçbir zaman eşitlemeye dahil edilmezler, bu yüzden onları diğer cihazlarında göremezsin.",
+      "title": "Hesap"
+    },
+    "create": {
+      "cta": "Hesap oluştur",
+      "inviteLabel": "Davet kodu",
+      "inviteHint": "Bu sunucu yalnızca davetle çalışır. Sana gönderilen kodu yapıştır ya da davet bağlantısını aç.",
+      "inviteRequired": "Bu davet geçerli değil. Önceden kullanılmış veya süresi dolmuş olabilir. Yeni bir davet iste.",
+      "inviteMissing": "Davet kodunu yapıştır ya da sana gönderilen davet bağlantısını aç.",
+      "inviteMalformed": "Bu bir davet koduna benzemiyor. Davet kodları {{prefix}} ile başlar.",
+      "accountExists": "Bu adresle burada zaten bir hesap açılmış. Bunun yerine giriş yap."
+    },
+    "danger": {
+      "description": "İki seçenek de bu cihazdaki günlüğe dokunmaz.",
+      "title": "Çıkış yap veya hesabı sil"
+    },
+    "delete": {
+      "confirmBody": "Bu işlem, {{handle}} hesabını ve sunucudaki her şifreli kopyayı siler. Geri alma işlemi veya ek süre yoktur. Bu cihazdaki günlüğüne dokunulmaz.",
+      "confirmCta": "Kalıcı olarak sil",
+      "confirmTitle": "Bu hesap silinsin mi?",
+      "cta": "Hesabı sil",
+      "failed": "Hesap silinemedi. Hiçbir şey değiştirilmedi.",
+      "note": "Ortak kullanılan bir cihazda açık bırakılan bir oturum hesap silmek için yeterli olmasın diye parolanı tekrar soruyoruz.",
+      "passphraseLabel": "Parolanla onayla"
+    },
+    "intro": "İsteğe bağlı. Günlüğünü bu cihazdan çıkmadan önce şifreleyerek cihazların arasında eşzamanlı tut.",
+    "notice": {
+      "dismiss": "Sunucu yöneticisinden gelen bu bildirimi kapat",
+      "readMore": "Daha fazla bilgi al"
+    },
+    "passphrase": {
+      "strength": {
+        "fair": "Fena değil. Birkaç sözcük daha eklersen tahmin edilmesi çok daha zor olur.",
+        "strong": "İyi, gerçekten tahmin edilmesi zor olacak kadar uzun.",
+        "weak": "Buradaki zayıf nokta kısa parolalardır, uzunluk sembollerden daha çok işe yarar."
+      }
+    },
+    "passphraseLabel": "Parola",
+    "photosStayHere": "Tabak fotoğrafları çekildikleri cihazda kalır. Asla karşıya yüklenmezler.",
+    "profileCard": {
+      "manage": "Hesap",
+      "setUp": "Hesap oluştur"
+    },
+    "promise": "Sunucu yalnızca okuyamadığı şifrelenmiş verileri saklar.",
+    "setup": {
+      "complete": "Hesabın bu cihazda kuruldu.",
+      "confirmLabel": "Parolayı onayla",
+      "continue": "Devam et",
+      "generating": "Hesabın kuruluyor…",
+      "passphraseIntro": "Hesabın için bir parola seç.",
+      "passphraseLabel": "Parola",
+      "passphraseMismatch": "Bu iki parola eşleşmiyor.",
+      "passphraseTooShort": "En az {{min}} karakter kullan.",
+      "retry": "Tekrar dene",
+      "setupFailed": "Hesabın kurulurken bir sorun çıktı. Hiçbir şey kaydedilmedi, güvenle tekrar deneyebilirsin."
+    },
+    "signIn": {
+      "cta": "Giriş yap",
+      "emailHint": "Hesabının oluşturulduğu adres. Büyük veya küçük harf fark etmez.",
+      "failed": "İşe yaramadı. E-posta adresini ve parolayı kontrol edip tekrar dene.",
+      "finishSetup": "Bu hesap oluşturuldu ancak anahtarları hiçbir zaman tamamlanmadı. Bunu şimdi yapalım. İşlem başka bir cihazda oturum açmanı sağlayan bir kurtarma kodu ile biter, ancak bu hesaba yalnızca parolasıyla giriş yapılabilir.",
+      "forgot": "Parolamı unuttum",
+      "intro": "Bu cihazda oturum açmak için parolanı bir kez gir. Çıkış yapana kadar oturumun açık kalır.",
+      "submit": "Giriş yap",
+      "working": "Giriş yapılıyor…",
+      "passphraseRequired": "Parolanı gir.",
+      "notYou": "Sen değil misin?"
+    },
+    "status": {
+      "error": {
+        "failed": "Eşitleme tamamlanmadı. Bu cihazdaki günlüğün bundan etkilenmedi.",
+        "incompatible": "Bu uygulama ve eşitleme sunucusu henüz aynı sürümü konuşmuyor, bu nedenle eşitleme bilerek duraklatıldı.",
+        "offline": "Eşitleme sunucusuna ulaşılamadı. Günlüğün bu cihazda güvende ve daha sonra eşitlenecek.",
+        "reauth-required": "Oturumun sona erdi. Eşitlemeyi sürdürmek için tekrar giriş yap. Hiçbir şey kaybolmadı."
+      },
+      "lastSynced": "Son eşitleme: {{when}}",
+      "never": "Bu cihazdan henüz eşitlenmedi",
+      "pending": "Eşitlenmeyi bekleyen değişiklikler",
+      "restored": {
+        "title": "Bu cihaz yerel kopyasını kaybetti",
+        "body": "Girdilerin hesabından geri yüklendi. Hiçbir şey silinmedi."
+      },
+      "shortError": "Eşitleme hatası",
+      "syncNow": "Şimdi eşitle",
+      "syncedAgo": "Eşitlendi · {{when}}",
+      "syncing": "Eşitleniyor…"
+    },
+    "title": "Hesap",
+    "passwordNote": "Parolan günlüğünü de şifreler. Parolayı biz sıfırlayamayız, bu yüzden kurtarma kodunu sakla.",
+    "managed": {
+      "inviteOnly": "Buradaki hesaplar bir davet bağlantısıyla oluşturulur. Bir bağlantın varsa başlamak için aç."
+    },
+    "emailLabel": "E-posta adresi",
+    "email": {
+      "required": "Davet aldığın e-posta adresini gir.",
+      "invalid": "Bu bir e-posta adresine benzemiyor.",
+      "tooLong": "Bu adres {{max}} karakterden daha uzun."
+    },
+    "displayNameLabel": "Adın (isteğe bağlı)",
+    "suspended": "Bir yönetici bu hesabı askıya aldı. Hesabı yeniden etkinleştirmesini iste."
+  },
+  "trends": {
+    "chart": {
+      "bar": {
+        "atLeast": " en az",
+        "calories": "{{date}}:{{atLeast}} {{value}} kalori{{estimate}}",
+        "empty": "{{date}}: hiçbir şey kaydedilmedi",
+        "estimate": ", kısmen tahmini",
+        "incomputable": "{{date}}: kaydedildi, ancak kalori hesaplanamadı",
+        "netCarbs": "{{date}}:{{atLeast}} {{value}} g net karbonhidrat{{estimate}}{{overGoal}}",
+        "overGoal": ", hedefini aşıyor"
+      },
+      "goalTagPrefix": "Hedefin: ",
+      "slotOnly": "Yalnızca {{meal}} gösteriliyor.",
+      "sparseHint": "Birkaç gün daha geçtiğinde bu bir grafiğe dönüşecek.",
+      "tapHint": "Neler kaydettiğini görmek için bir güne dokun.",
+      "titleCalories": "Günlük kalori",
+      "titleNetCarbs": "Günlük net karbonhidrat"
+    },
+    "controls": {
+      "metricGroup": "Metrik",
+      "rangeGroup": "Zaman aralığı",
+      "slotGroup": "Öğün"
+    },
+    "empty": {
+      "body": "Birkaç öğün kaydettiğinde bu sayfa hedeflerine ulaştığın günleri gösterir, haftanı özetler ve boşluklar dahil kilonu dürüstçe grafiğe döker.",
+      "cta": "İlk yiyeceğini ekle",
+      "description": "Birkaç gün kayıt yap, ilerlemen burada görünür."
+    },
+    "grid": {
+      "a11yLabel": "Günde ulaşılan hedefler, son 13 hafta",
+      "a11yLabelActivity": "Kayıt yapılan günler, son 13 hafta",
+      "against": {
+        "of": "/ {{goal}}",
+        "over": "{{goal}} üstünde",
+        "under": "{{goal}} altında"
+      },
+      "aria": {
+        "day": "{{date}}: {{headline}}. {{detail}}"
+      },
+      "captionIdle": "Nasıl geçtiğini görmek için bir gün seç.",
+      "cell": {
+        "level": "Hedefler tutturuldu: 4 seviyeden {{level}}.",
+        "logged": "Bir şeyler kaydettin.",
+        "metCount": "{{total}} hedefin {{met}} tanesi tutturuldu",
+        "today": "Bugün, devam ediyor.",
+        "unrated": "Kaydedildi, ancak hedeflerini kontrol etmek için yeterli ayrıntı yoktu."
+      },
+      "description": "Son 13 hafta. Bir kare ne kadar koyuysa, o gün o kadar çok hedefini tutturdun demektir.",
+      "descriptionActivity": "Son 13 hafta. Dolu bir kare, bir şeyler kaydettiğin bir günü gösterir.",
+      "empty": "Son 13 haftada henüz bir şey kaydedilmedi. Kayıt girdiğin her gün bir kareyi doldurur.",
+      "goal": {
+        "calories": "kalori",
+        "netCarbs": "net karbonhidrat",
+        "protein": "protein"
+      },
+      "legendLess": "Daha az",
+      "legendLogged": "Kaydettin",
+      "legendMore": "Daha fazla",
+      "legendRamp": "Hedefler tutturuldu",
+      "legendUnrated": "Yeterli ayrıntı yok",
+      "noGoalsCta": "Hedeflerini belirle",
+      "noGoalsHint": "Günlük bir hedef belirle, bu kareler her gün hedefine ne kadar yaklaştığını göstermeye başlasın.",
+      "summary": "Kayıt girdiğin {{logged}} günün {{days}} gününde her hedefini tutturdun.",
+      "summaryActivity": "Son {{total}} günün {{days}} gününde kayıt girdin.",
+      "title": "Hedef günleri",
+      "titleActivity": "Kayıt girdiğin günler",
+      "verdict": {
+        "met": "tutturuldu",
+        "missed": "tutturulmadı"
+      }
+    },
+    "legend": {
+      "goal": "Hedefin",
+      "incomplete": "Eksik olabilir, çubuk bir alt sınırdır",
+      "noEntry": "Girdi yok",
+      "overGoal": "Hedefinin üzerinde"
+    },
+    "loading": "İlerlemen yükleniyor…",
+    "metric": {
+      "calories": "Kalori",
+      "netCarbs": "Net karbonhidrat"
+    },
+    "range": {
+      "month": "Ay",
+      "twoWeeks": "2 hafta",
+      "week": "Hafta"
+    },
+    "recap": {
+      "averageDay": "Ortalama bir gün",
+      "averaged": "Günde ortalama <strong>{{value}}</strong> net karbonhidrat aldın",
+      "eatingWindow": "{{days}} gün boyunca medyan yeme aralığı ~{{duration}}",
+      "estimateShare": "Bu haftaki kalorilerin ~%{{percent}} kadarı yapay zeka tarafından tahmin edildi",
+      "macro": {
+        "carbs": "Karbonhidrat",
+        "fat": "Yağ",
+        "fiber": "Lif",
+        "protein": "Protein"
+      },
+      "metProtein": "Kayıtlı {{total}} günün {{days}} gününde {{goal}} g protein hedefine ulaştın",
+      "noChange": "değişiklik yok",
+      "noEntries": "Bu hafta henüz bir girdi kaydedilmedi.",
+      "title": "Bu hafta",
+      "underGoal": "Kayıtlı {{total}} günün {{days}} gününde {{goal}} g net karbonhidrat hedefinin altında kaldın",
+      "vsLastWeek": "(geçen haftaya kıyasla {{delta}})",
+      "weight": "Kilo {{first}} → {{last}} kg ({{delta}})",
+      "weightNoisy": ", günden güne kilo dalgalanabilir"
+    },
+    "slot": {
+      "all": "Tüm öğünler"
+    },
+    "sparse": {
+      "body": "{{days}} gün kayıt girildiğinde grafik burada görünür. Bu süreçte hiçbir şey kaybolmaz, kaydettiğin her gün zaten günlüğündedir.",
+      "countNone": "bu aralıkta hiç yok",
+      "headline": "Eğilimlerin bir anlam ifade etmesi için birkaç gün daha gerekiyor, şu an {{logged}} günün var."
+    },
+    "streak": {
+      "active_one": "Üst üste {{count}} gün, böyle devam et.",
+      "active_other": "Üst üste {{count}} gün, böyle devam et.",
+      "empty": "Seri başlatmak için bugün bir yiyecek kaydet.",
+      "overGoal": "Bugün kayıt girdin. Karbonhidrat hedefini aştığı için seriye eklenmez, seri hedefin altındaki günleri sayar.",
+      "title": "Serin"
+    },
+    "title": "İlerleme",
+    "weight": {
+      "caption": "Çizgi düzeltilmiş eğilimindir, noktalar ise tartının gerçekte gösterdiği değerlerdir.",
+      "chartEmpty": "Eğilimini görmek için ilk tartımını kaydet.",
+      "chartLabel": "{{unit}} cinsinden son 13 haftadaki kilo eğilimi",
+      "deleteConfirm": "Sil",
+      "deleteDescription": "Bu işlem kaydı kilo geçmişinden kaldırır. İstediğin zaman yeniden kaydedebilirsin.",
+      "deleteLabel": "{{date}} tarihli tartımı sil",
+      "deleteTitle": "Bu tartım silinsin mi?",
+      "description": "Hedefine kıyasla düzeltilmiş eğilimin. Günde bir tartım fazlasıyla yeterlidir.",
+      "empty": "Henüz tartım yok.",
+      "point": {
+        "raw": "tartıda",
+        "trend": "eğilim"
+      },
+      "pointCaptionIdle": "Bir günü okumak için grafik üzerinde gezin.",
+      "singleEntry": "Şimdiye kadar bir tartım var, bir eğilim için birkaç tane daha gerekir.",
+      "stat": {
+        "atTarget": "Hedefindesin",
+        "change": "Son 13 hafta",
+        "latest": "En son",
+        "latestOn": "Tartım tarihi {{date}}",
+        "noTarget": "Hedef belirlenmedi",
+        "setTarget": "Hedef kilo belirle",
+        "toTarget": "Hedefe kalan"
+      },
+      "target": "hedef {{value}} {{unit}}",
+      "title": "Kilo",
+      "unitKilograms": "kilogram",
+      "unitPounds": "libre"
+    }
+  },
+  "ui": {
+    "sidebar": {
+      "title": "Kenar çubuğu",
+      "description": "Mobil kenar çubuğunu görüntüler.",
+      "toggle": "Kenar Çubuğunu Aç/Kapat"
+    },
+    "sheet": {
+      "close": "Kapat"
+    }
+  },
+  "welcome": {
+    "body": "Bu cihazda henüz bir günlük yok. Yeni bir tane başlat veya hesabına giriş yap.",
+    "haveAccount": "Zaten bir hesabım var",
+    "managed": {
+      "body": "Hesabına giriş yap veya sana gönderilen davet bağlantısını aç.",
+      "haveInvite": "Davet bağlantım var",
+      "pasteTitle": "Davet bağlantını yapıştır",
+      "pasteLabel": "Davet bağlantısı",
+      "pasteHint": "Bağlantının tamamını, sana ulaştığı haliyle yapıştır.",
+      "pasteContinue": "Devam et",
+      "pasteInvalid": "Bu bir davet bağlantısına benzemiyor. Bağlantının tamamını, sana ulaştığı haliyle yapıştır."
+    },
+    "returning": "Bu cihazda daha önce bir hesaba giriş yapılmıştı.",
+    "signIn": "Giriş yap",
+    "signInAs": "{{name}} olarak giriş yap",
+    "start": "Başla",
+    "startFresh": "Sıfırdan başla",
+    "title": "openplate uygulamasına hoş geldin"
+  },
+  "forgot": {
+    "title": "Parolanı mı unuttun?",
+    "body": "E-posta adresini yaz, yeni bir parola belirlemen için sana bir bağlantı gönderelim.",
+    "submit": "Bağlantıyı gönder",
+    "sent": "Bu adrese ait bir hesap varsa, bağlantı yola çıktı bile.",
+    "sentHint": "Bağlantı bir saat boyunca geçerlidir. Ulaşmazsa istenmeyen e-posta klasörünü kontrol et.",
+    "backToSignIn": "Giriş yapmaya geri dön"
+  },
+  "reset": {
+    "title": "Yeni bir parola belirle",
+    "body": "Yeni bir parola seç. Günlüğün olduğu gibi kalır.",
+    "newPasswordLabel": "Yeni parola",
+    "submit": "Parolayı belirle",
+    "working": "Parolan belirleniyor",
+    "failed": "Parola belirlenemedi. Birazdan bağlantıyı tekrar dene.",
+    "invalid": {
+      "title": "Bu bağlantı artık çalışmıyor",
+      "body": "Daha önce kullanılmış veya süresi dolmuş olabilir. Yeni bir tane iste.",
+      "otherApp": "Bu bağlantı başka bir openplate örneğine ait. Bağlantıyı orada aç.",
+      "askAgain": "Bana yeni bir bağlantı gönder"
+    }
+  },
+  "account": {
+    "title": "Hesap",
+    "name": {
+      "label": "Adın",
+      "hint": "İsteğe bağlı. Sana ve bir yöneticiye gösterilir.",
+      "save": "Kaydet",
+      "saved": "Kaydedildi.",
+      "failed": "Ad kaydedilemedi."
+    },
+    "allowance": {
+      "title": "Fotoğraf tahminleri",
+      "body": "Bugün {{used}} / {{limit}} kullanıldı.",
+      "none": "Bu hesap için fotoğraf tahminleri etkinleştirilmemiş.",
+      "askAdmin": "Bunu yöneticin belirler.",
+      "today": "Bugünkü fotoğraf tahminleri: {{used}} / {{limit}}",
+      "expires": "Bu hesap için fotoğraf tahminleri {{date}} tarihine kadar geçerlidir.",
+      "expired": "Bu hesap için fotoğraf tahminleri {{date}} tarihinde sona erdi.",
+      "planLink": "Planını gör"
+    },
+    "devices": {
+      "title": "Cihazların",
+      "body": "Günlüğün, giriş yaptığın tüm cihazlar arasında eşitlenir.",
+      "photosStayHere": "Fotoğraflar çekildikleri cihazda kalır. Asla başka bir cihaza kopyalanmazlar."
+    },
+    "operatorSees": {
+      "title": "Yöneticinin görebildikleri",
+      "intro": "Bu örneği senin için bir kuruluş çalıştırıyor. Burayı yöneten kişi hesabını açabilir ve şunların tümünü görebilir:",
+      "email": "E-posta adresin.",
+      "displayName": "Seçtiysen, belirlediğin ad.",
+      "createdAt": "Hesabının oluşturulduğu gün.",
+      "lastSeenAt": "En son ne zaman giriş yaptığın veya en son ne zaman bir fotoğrafın okunduğu.",
+      "aiUsedToday": "Bugün senin için kaç fotoğrafın okunduğu.",
+      "dailyAiLimit": "Senin için her gün kaç fotoğrafın okunabileceği.",
+      "role": "Bu örneği bizzat yönetme yetkinin olup olmadığı.",
+      "suspendedAt": "Hesabının askıya alınıp alınmadığı.",
+      "activity": "Ayrıca son {{days}} günün her birinde senin için kaç fotoğrafın okunduğunu da görebilirler. Daha eski günlük sayımlar silinir.",
+      "notTheDiary": "Ne yediğin o sayfalarda yer almaz. Günlüğün herhangi bir kopyası bu cihazdan çıkmadan önce burada şifrelenir, bu nedenle orada okunamaz.",
+      "allowanceExpiresAt": "Kotanın bittiği tarih.",
+      "invitesLeft": "Kalan davetiye sayın."
+    },
+    "password": {
+      "title": "Parola",
+      "body": "Giriş yaptığın parolayı değiştir.",
+      "open": "Parolayı değiştir",
+      "currentLabel": "Mevcut parola",
+      "newLabel": "Yeni parola",
+      "submit": "Parolayı değiştir",
+      "done": "Parola değiştirildi.",
+      "failed": "Parola değiştirilemedi."
+    },
+    "danger": {
+      "title": "Oturumu kapat ve sil",
+      "body": "Bunların ikisi de bu hesabı her cihazda sonlandırır."
+    },
+    "signOut": {
+      "cta": "Tüm cihazlarda oturumu kapat",
+      "note": "Bu hesabın oturumunu her cihazda kapatır. Günlüğün bu cihazda kalır."
+    },
+    "delete": {
+      "cta": "Hesabı sil",
+      "confirmTitle": "Bu hesap silinsin mi?",
+      "confirmBody": "{{email}} için saklanan her şey kaldırılır ve geri getirilemez. Bu cihazdaki günlük kalır.",
+      "passwordLabel": "Parolan",
+      "confirmCta": "Sil",
+      "failed": "Hesap silinemedi.",
+      "note": "Onaylamak için parolanı yaz. Bu işlem geri alınamaz."
+    },
+    "signedOut": {
+      "title": "Oturumun kapalı",
+      "body": "Hesabını görmek için giriş yap.",
+      "signIn": "Giriş yap"
+    },
+    "invites": {
+      "title": "Birini davet et",
+      "body": "E-posta ile bir davetiye gönder. Kimi davet edersen, bu örnek üzerinde kendi günlüğü olan ayrı bir hesaba sahip olur.",
+      "label": "E-posta adresi",
+      "left": "Kalan davetiyelerin: {{left}}",
+      "none": "Tüm davetiyelerini kullandın.",
+      "send": "Davet gönder",
+      "sent": "Bu adres davet edilebiliyorsa davetiye yola çıktı. Kimlerin zaten burada olduğunu kimse bu yolla öğrenemesin diye her seferinde aynı yanıtı veririz.",
+      "failed": "Davet gönderilemedi. Birazdan tekrar dene."
+    }
+  },
+  "admin": {
+    "title": "Yönetim",
+    "subtitle": "Kişileri davet et, günde kaç fotoğraf okuyabileceklerini belirle ve hesaplarını yönet.",
+    "notAdmin": {
+      "title": "Bu örneği sen çalıştırmıyorsun",
+      "body": "Bu sayfa sistemi çalıştıran kişilere aittir. Hesabında bir değişiklik yapılması gerekiyorsa onlardan birine danış.",
+      "back": "Ayarlara dön"
+    },
+    "stats": {
+      "people": "Kişiler",
+      "admins": "Yöneticiler",
+      "pending": "Açık davetler",
+      "photosToday": "Bugün okunan fotoğraflar"
+    },
+    "people": {
+      "title": "Kişiler",
+      "empty": "Burada henüz kimsenin hesabı yok.",
+      "loading": "Yükleniyor",
+      "failed": "Liste yüklenemedi.",
+      "retry": "Tekrar dene"
+    },
+    "columns": {
+      "person": "Kişi",
+      "role": "Rol",
+      "allowance": "Günlük fotoğraf",
+      "usedToday": "Bugün kullanılan",
+      "standing": "Durum",
+      "lastSeen": "Son giriş",
+      "recentDays": "Son {{days}} gün",
+      "photosRead": "Okunan fotoğraflar",
+      "joined": "Katılım",
+      "actions": "İşlemler"
+    },
+    "usage": "{{used}} / {{limit}}",
+    "usageNone": "Fotoğraf yok",
+    "lastSeen": {
+      "never": "Hiç giriş yapmadı"
+    },
+    "person": {
+      "back": "Listeye dön",
+      "activityTitle": "Gün başına okunan fotoğraf sayısı",
+      "activityWindow": "Son {{days}} gün, {{from}} ile {{to}} arası.",
+      "activityTotal": "Bu aralıkta okunan fotoğraflar: {{photos}}",
+      "activityQuiet": "Bu aralıkta hiçbir şey okunmadı.",
+      "activityLegend": "Her kare bir gündür. Boş kare, hiçbir şeyin okunmadığı bir günü gösterir. Bu aralıktan önceki günler tutulmaz.",
+      "day": "{{day}}: {{photos}}",
+      "activityLoading": "Yükleniyor",
+      "activityFailed": "Günlük sayılar yüklenemedi.",
+      "activityRetry": "Tekrar dene",
+      "noDiary": "Bu kişinin örneği nasıl kullandığına dair burada tutulan her şey bundan ibarettir. Günlükleri kendi cihazlarında şifrelenir ve buradan okunamaz.",
+      "selfNote": "Bu senin kendi hesabındır. Bu örneği yönetebilecek son kişinin kendi erişimini kaybetmesini önlemek için hesabı askıya alma ve silme işlemleri burada sunulmaz.",
+      "notFound": "Bu adreste kimse yok."
+    },
+    "role": {
+      "label": "Rol",
+      "admin": "Yönetici",
+      "standard": "Standart"
+    },
+    "standing": {
+      "active": "Etkin",
+      "suspended": "Askıya alındı"
+    },
+    "you": "Sen",
+    "noName": "İsimsiz",
+    "edit": {
+      "open": "Değiştir",
+      "save": "Kaydet",
+      "cancel": "İptal",
+      "allowanceLabel": "Gün başına fotoğraf",
+      "allowanceHint": "0 değeri, bu kişi için fotoğraf okumayı kapatır.",
+      "saved": "Kaydedildi.",
+      "failed": "Bu değişiklik uygulanamadı."
+    },
+    "suspend": {
+      "cta": "Askıya al",
+      "confirmTitle": "{{email}} askıya alınsın mı?",
+      "confirmBody": "Tüm cihazlardaki oturumları kapatılır ve sen onları geri getirene kadar yeniden oturum açamazlar. Günlükleri saklanır.",
+      "confirmCta": "Askıya al"
+    },
+    "reactivate": {
+      "cta": "Geri getir"
+    },
+    "resetMail": {
+      "cta": "Sıfırlama bağlantısı gönder",
+      "sent": "Sıfırlama bağlantısı {{email}} adresine gönderildi.",
+      "noMail": "Bu sunucu e-posta göndermiyor, bağlantıyı {{email}} adresine kendin ilet.",
+      "failed": "Sıfırlama bağlantısı gönderilemedi."
+    },
+    "delete": {
+      "cta": "Sil",
+      "confirmTitle": "{{email}} silinsin mi?",
+      "confirmBody": "Hesap ve burada onun için saklanan her şey kaldırılır. Bu işlem geri alınamaz.",
+      "typeLabel": "Onaylamak için adresi yaz",
+      "confirmCta": "Kalıcı olarak sil",
+      "failed": "Hesap silinemedi."
+    },
+    "invites": {
+      "title": "Açık davetler",
+      "empty": "Bekleyen davet yok.",
+      "expires": "{{date}} tarihine kadar geçerli",
+      "resend": "Tekrar gönder",
+      "resent": "{{email}} adresine yeni bir davet gönderildi.",
+      "revoke": "Geri çek",
+      "revokeConfirmTitle": "{{email}} için davet geri çekilsin mi?",
+      "revokeConfirmBody": "Bağlantıları çalışmaz hale gelir. İstediğin zaman onları tekrar davet edebilirsin.",
+      "revokeConfirmCta": "Geri çek",
+      "failed": "İşlem tamamlanamadı.",
+      "loadFailed": "Davetler yüklenemedi."
+    },
+    "invite": {
+      "cta": "Birini davet et",
+      "title": "Birini davet et",
+      "body": "İçinde bağlantı olan bir e-posta alırlar. Bağlantı bir parola belirlemelerini ister ve doğrudan uygulamaya aktarır.",
+      "emailLabel": "E-posta adresi",
+      "emailRequired": "Bir e-posta adresi gerekli.",
+      "nameLabel": "Ad",
+      "nameHint": "İsteğe bağlı. Kendilerine ve listede sana gösterilir.",
+      "allowanceLabel": "Günlük fotoğraf",
+      "allowanceHint": "Her gün kaç tabak fotoğrafı okutabilecekleri. 0 değeri özelliği kapatır.",
+      "expiryLabel": "Bağlantının geçerlilik süresi:",
+      "expiryHint": "Gün cinsinden. En fazla 30.",
+      "submit": "Daveti gönder",
+      "sending": "Gönderiliyor",
+      "sentTitle": "Davet {{email}} adresine gönderildi",
+      "sentBody": "Bir parola belirleyip hemen başlayabilirler.",
+      "linkTitle": "Davet {{email}} için hazır",
+      "linkBody": "Bu örnek e-posta göndermez, bu yüzden bağlantıyı kendin ilet. Bağlantıya sahip olan herkes hesabı açabilir, bu nedenle bir parolayı nasıl iletiyorsan öyle gönder.",
+      "linkCopy": "Bağlantıyı kopyala",
+      "linkCopied": "Kopyalandı",
+      "again": "Başka birini davet et",
+      "failed": "Davet oluşturulamadı.",
+      "exists": "{{email}} adresinin burada zaten bir hesabı var.",
+      "back": "Listeye geri dön"
+    },
+    "tabs": {
+      "label": "Konsol bölümleri",
+      "people": "Kişiler",
+      "invitations": "Davetler",
+      "activity": "Etkinlik",
+      "feedback": "Raporlar"
+    },
+    "filter": {
+      "searchLabel": "Ara",
+      "searchPlaceholder": "İsim veya e-posta adresi",
+      "groupLabel": "Göster",
+      "everybody": "Herkes",
+      "active": "Etkin",
+      "suspended": "Askıya alındı",
+      "administrators": "Yöneticiler",
+      "noneQuery": "Burada \"{{query}}\" ile eşleşen kimse yok.",
+      "noneGroup": "Burada \"{{group}}\" içinde kimse yok.",
+      "noneBoth": "\"{{group}}\" içinde \"{{query}}\" ile eşleşen kimse yok."
+    },
+    "activity": {
+      "title": "Hala kimler kullanıyor",
+      "body": "Kişi başına bir satır, en son gelen ilk sırada.",
+      "windowLabel": "Pencere",
+      "windowDays": "{{days}} gün",
+      "failed": "Günlük sayımlar yüklenemedi. Kişiler hala listeleniyor."
+    },
+    "feedback": {
+      "title": "Bildirilen tahminler",
+      "body": "Bir ölçüm hatalı göründüğünde kullanıcıların gönderdikleri. Her bildirim, ulaştıktan {{days}} gün sonra kendi kendini siler.",
+      "empty": "Hiçbir bildirim yapılmadı.",
+      "loading": "Yükleniyor",
+      "failed": "Bildirimler yüklenemedi.",
+      "retry": "Tekrar dene",
+      "reportTitle": "{{id}} numaralı bildirim",
+      "person": "{{id}} numaralı hesap",
+      "reportedAt": "Bildirim tarihi: {{date}}",
+      "deletesAt": "{{date}} tarihinde kendi kendini siler",
+      "hasPhoto": "Fotoğraflı",
+      "noPhoto": "Fotoğraf yok, yazılmış öğün",
+      "photoAlt": "{{id}} numaralı bildirimle gönderilen fotoğraf",
+      "photoLoading": "Fotoğraf yükleniyor",
+      "photoGone": "Fotoğraf zaten silinmiş.",
+      "photoFailed": "Fotoğraf yüklenemedi.",
+      "back": "Bildirimlere geri dön",
+      "notFound": "Bu adreste hiçbir şey yok.",
+      "noName": "Bu girdinin adı yoktu.",
+      "grams": "{{value}} g",
+      "calories": "{{value}} kcal",
+      "figureNone": "Belirtilmedi",
+      "aiEstimated": "Model tarafından tahmin edildi",
+      "notAiEstimated": "Model tarafından tahmin edilmedi",
+      "source": "{{source}} kaynağından girildi",
+      "consentTitle": "Nelerin kabul edildiği",
+      "consentAgreed": "{{date}} tarihinde kabul edildi",
+      "consentWording": "Metin sürümü {{version}}",
+      "deleteCta": "Şimdi sil",
+      "deleteConfirmTitle": "{{id}} numaralı rapor silinsin mi?",
+      "deleteConfirmBody": "Rakamlar ve fotoğraf, sürenin dolması beklenmeden hemen silinir. Bu işlem geri alınamaz.",
+      "deleteConfirmCta": "Kalıcı olarak sil",
+      "deleteFailed": "Rapor silinemedi."
+    }
+  },
+  "aiIntake": {
+    "noAllowance": "Bu hesap için yapay zeka girdileri açık değil. Yöneticinden bunları açmasını iste. Besin veri tabanında arama yapmak bunlar olmadan da çalışır.",
+    "allowanceEnded": "Bu hesap için yapay zeka girdileri {{date}} tarihinde sona erdi. Besin veri tabanında arama yapmak halen çalışır.",
+    "notSwitchedOn": "Bu hesap için yapay zeka girdileri açık değil. Besin veri tabanında arama yapmak bunlar olmadan da çalışır.",
+    "plansEnded": "Deneme süren {{date}} tarihinde bitti. Yapay zeka girdilerini kullanmaya devam etmek için bir plan seç. Besin veri tabanında arama yapmak halen çalışır.",
+    "plansNotSwitchedOn": "Bu hesap için yapay zeka girdileri henüz açık değil. Bunları açmak için bir plan seç. Besin veri tabanında arama yapmak bunlar olmadan da çalışır.",
+    "plansLink": "Planları gör"
+  },
+  "plan": {
+    "title": "Planın",
+    "loading": "Planın okunuyor.",
+    "unknown": "Planın henüz okunmadı.",
+    "signedOut": "Planını görmek için giriş yap.",
+    "absent": "Bu kurulumda hiç plan yok.",
+    "failed": "Planın okunamadı. Birazdan tekrar dene.",
+    "actionFailed": "Açılamadı. Birazdan tekrar dene.",
+    "status": {
+      "none": "openplate uygulamasının ücretsiz kısmındasın.",
+      "trialing": "Deneme süren devam ediyor.",
+      "active": "Planının ödemesi yapıldı ve devrede.",
+      "pastDue": "Son ödemen gerçekleşmedi.",
+      "canceled": "Planın sona erdi."
+    },
+    "renewsOn": "Sen iptal edene kadar {{date}} tarihinde yenilenir.",
+    "endsOn": "İptal ettin. Erişimin {{date}} tarihine kadar devam eder ve ardından durur.",
+    "vatNote": "Fiyatlara Almanya KDV dahildir.",
+    "start": "Bir plan başlat",
+    "manage": "Planını yönet",
+    "returned": {
+      "success": "Teşekkürler. Ödemen alındı. Buraya yansıması biraz zaman alabilir.",
+      "cancelled": "Ödeme sayfasını kapattın. Hiçbir ücret alınmadı."
+    }
+  },
+  "usual": {
+    "title": {
+      "breakfast": "Her zamanki kahvaltın",
+      "lunch": "Her zamanki öğle yemeğin",
+      "dinner": "Her zamanki akşam yemeğin",
+      "snack": "Her zamanki atıştırmalığın"
+    },
+    "itemCount_one": "{{count}} yiyecek",
+    "itemCount_other": "{{count}} yiyecek",
+    "toast": {
+      "logged_one": "{{name}} günlüğe kaydedildi.",
+      "logged_other": "{{name}} günlüğe kaydedildi, {{count}} yiyecek."
+    }
+  }
+}

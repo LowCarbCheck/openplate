@@ -15,30 +15,20 @@
  * library's and is imported rather than restated, so the two repositories cannot answer that one
  * question differently. What is this app's is the grouping and the buy loop around it.
  *
- * ── THE MEMORY IS KEYED BY PATH AND ENGLISH, NOT BY ENGLISH ALONE ──
- * The website keys its memory by `hash(english)`, so two keys holding the same English are one
- * entry and are bought once. That is right for a site of a hundred strings and wrong for this app,
- * and the first `--adopt` over the German catalog showed why: 2130 strings, and 26 of them changed
- * value when the rebuild put one entry's answer under every key with that English. `nav.fasting`
- * ("Fasten") became "Fasten läuft", the eyebrow of the active-fast card; `scan.capture.takePhoto`
- * ("Teller-Foto aufnehmen") became the landing headline "Fotografier deinen Teller". Those are not
- * splits to unify, they are the same English word doing two jobs, and German has two words for
- * them. So the key here is `hash(path + english)`: a key keeps its own German, an English edit
- * still invalidates exactly that one key, and the price is that an English sentence written under
- * two paths is bought twice, which at this corpus size is cents.
+ * ── THE MEMORY KEY IS THE LIBRARY'S NOW ──
+ * The memory is keyed by `hash(path + english)`, not by English alone. That keying was born here:
+ * the first `--adopt` over the German catalog rewrote 26 values when an English-keyed rebuild put
+ * one entry's answer under every key with that English (`nav.fasting` "Fasten" became "Fasten
+ * läuft", `scan.capture.takePhoto` became the landing headline). The website took the keying into
+ * `scripts/lib/translate-ui.ts` in M230, so `pathOf`, `unitKey`, `collectByPath`, `memoAt` and
+ * `rebuildByPath` are imported from the vendored copy and no longer restated here. The key format
+ * is unchanged, `hash(path\nenglish)`, so the memory written under the app's own copy reads back
+ * under the library's; `tests/unit/translate-bundles.test.ts` proves the de bundles rebuild byte
+ * for byte from the committed memory.
  */
 import { type LanguageCode } from '../../app/i18n/language-prefs';
-import { type Memo, hash } from './translate-shims/docs-i18n.server';
-import { CHUNK, MODEL, type Usage, chunk, translate } from './translate';
-import {
-  type CatalogTree,
-  type TranslateFn,
-  type UnitOfLeaf,
-  bundleForNamespace,
-  buy,
-  leaves,
-  skipReason,
-} from './translate-ui';
+import { CHUNK, type Usage, chunk, translate } from './translate';
+import { type TranslateFn, type UnitOfLeaf, bundleForNamespace, buy } from './translate-ui';
 
 /**
  * The language every other catalog is made from, and the key the memory is filed under.
@@ -118,75 +108,4 @@ export async function buyByBundle(pending: Map<string, UnitOfLeaf[]>, run: BuyRu
     }
   }
   return 'done';
-}
-
-// ── the memory key ───────────────────────────────────────────────────────────
-
-/** `common:nav.fasting`: the namespace and the dotted path, which together name one leaf. */
-export function pathOf(namespace: string, key: string): string {
-  return `${namespace}:${key}`;
-}
-
-/**
- * The key one leaf is remembered under. The newline is the separator because it cannot occur in
- * a path and a leaf that carried one would be two lines of JSON, not a catalog string.
- */
-export function unitKey(path: string, source: string): string {
-  return hash(`${path}\n${source}`);
-}
-
-/** One prose leaf of one namespace, ready to be looked up or bought. `key` is the full path. */
-export interface CatalogUnit extends UnitOfLeaf {
-  /** The dotted key inside its own catalog, `nav.fasting`, which is what the target catalog is read by. */
-  leaf: string;
-}
-
-/** Every leaf of one namespace that is prose, keyed for this app's memory. */
-export function collectByPath(namespace: string, tree: CatalogTree): CatalogUnit[] {
-  return leaves(tree)
-    .filter((leaf) => skipReason(leaf.value) === null)
-    .map((leaf) => {
-      const path = pathOf(namespace, leaf.key);
-      return { hash: unitKey(path, leaf.value), source: leaf.value, key: path, leaf: leaf.key };
-    });
-}
-
-/** One remembered leaf. `path` is what a person greps for; the memory is keyed by its hash with the English. */
-export function memoAt(entry: { unit: UnitOfLeaf; target: string; locale: string; at: string; model?: string }): Memo {
-  const { unit, target, locale, at, model = MODEL } = entry;
-  return { en: unit.source, path: unit.key, model, at, [locale]: target };
-}
-
-/**
- * The English tree with each leaf replaced by the best answer there is for it, in the English
- * tree's own order: the memory first, then whatever the target catalog already holds, then the
- * English itself so a brand new key renders its source rather than a blank.
- */
-export function rebuildByPath(
-  namespace: string,
-  english: CatalogTree,
-  done: Map<string, string>,
-  existing: CatalogTree,
-): CatalogTree {
-  const held = new Map(leaves(existing).map((leaf) => [leaf.key, leaf.value]));
-  return rebuildTree(namespace, english, done, held, '');
-}
-
-function rebuildTree(
-  namespace: string,
-  english: CatalogTree,
-  done: Map<string, string>,
-  held: Map<string, string>,
-  prefix: string,
-): CatalogTree {
-  const out: Record<string, string | CatalogTree> = {};
-  for (const [name, child] of Object.entries(english)) {
-    const key = prefix === '' ? name : `${prefix}.${name}`;
-    if (child instanceof Object) {
-      out[name] = rebuildTree(namespace, child, done, held, key);
-      continue;
-    }
-    out[name] = done.get(unitKey(pathOf(namespace, key), child)) ?? held.get(key) ?? child;
-  }
-  return out;
 }

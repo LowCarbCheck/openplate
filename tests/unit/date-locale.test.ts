@@ -37,7 +37,7 @@ describe('locale fallbacks', () => {
   // The language cookie is not httpOnly, so these inputs are user-writable. A
   // tampered or stale value must degrade to English, never throw — a bad
   // cookie cannot be allowed to blank the diary.
-  for (const bad of ['fr', 'de-CH', '', 'not-a-language'] as const) {
+  for (const bad of ['pt', 'de-CH', '', 'not-a-language'] as const) {
     it(`falls back to the English tags for ${JSON.stringify(bad)}`, () => {
       assert.equal(dateLabelLocale(bad), 'en-GB');
       assert.equal(clockLocale(bad), 'en-US');

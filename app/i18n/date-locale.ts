@@ -18,7 +18,10 @@
  *  - CLOCK TIMES use `en-US`, not `en-GB`: English-speaking users of this app
  *    expect a 12-hour clock ("8:32 AM"), which `en-GB` does not give (it is
  *    24-hour). German gets `de-DE`, which is 24-hour ("08:32") — the correct
- *    convention there.
+ *    convention there. French, Italian, Spanish and Turkish take the country
+ *    tag of the language's home country; all four write a 24-hour clock and
+ *    the day before the month, so the zero-padded hour below applies to them
+ *    exactly as it does to German.
  *
  * Pure: no i18next singleton, no React, no `document`. Callers pass the active
  * language in (`i18n.language` in a component, an explicit parameter in a pure
@@ -30,18 +33,45 @@ import { DEFAULT_LANGUAGE, isLanguageCode, type LanguageCode } from './language-
 const DATE_LABEL_LOCALES = {
   en: 'en-GB',
   de: 'de-DE',
+  fr: 'fr-FR',
+  it: 'it-IT',
+  es: 'es-ES',
+  tr: 'tr-TR',
 } satisfies Record<LanguageCode, string>;
 
 /** Tag used for wall-clock times — see the module doc for why English is `en-US`. */
 const CLOCK_LOCALES = {
   en: 'en-US',
   de: 'de-DE',
+  fr: 'fr-FR',
+  it: 'it-IT',
+  es: 'es-ES',
+  tr: 'tr-TR',
 } satisfies Record<LanguageCode, string>;
 
 /** Tag used for plain numbers (thousands separators): `1,467` in English, `1.467` in German. */
 const NUMBER_LOCALES = {
   en: 'en-US',
   de: 'de-DE',
+  fr: 'fr-FR',
+  it: 'it-IT',
+  es: 'es-ES',
+  tr: 'tr-TR',
+} satisfies Record<LanguageCode, string>;
+
+/**
+ * The `og:locale` value for the landing page's Open Graph tags: `language_TERRITORY`, an
+ * underscore rather than the BCP-47 hyphen, which is the one format the protocol reads. Same
+ * territory choices as the number tag, and English is `en_US` because that is the value every
+ * consumer defaults to when the tag is missing.
+ */
+const OPEN_GRAPH_LOCALES = {
+  en: 'en_US',
+  de: 'de_DE',
+  fr: 'fr_FR',
+  it: 'it_IT',
+  es: 'es_ES',
+  tr: 'tr_TR',
 } satisfies Record<LanguageCode, string>;
 
 /**
@@ -102,4 +132,14 @@ export function clockTimeOptions(language: string | null | undefined): Intl.Date
  */
 export function numberLocale(language: string | null | undefined): string {
   return NUMBER_LOCALES[toLanguageCode(language)];
+}
+
+/**
+ * The Open Graph `og:locale` value for `language`.
+ *
+ * @param language - the active UI language.
+ * @returns a `language_TERRITORY` tag for the landing page's meta.
+ */
+export function openGraphLocale(language: string | null | undefined): string {
+  return OPEN_GRAPH_LOCALES[toLanguageCode(language)];
 }

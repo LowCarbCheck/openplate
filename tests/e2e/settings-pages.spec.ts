@@ -11,10 +11,25 @@
  * section (`rounded-2xl divide-y`), not a card per row, so the number of those
  * containers must equal the number of section headings. A regression to
  * per-row cards multiplies the first count and leaves the second alone.
+ *
+ * THE THIRD WALK IS EVERY LANGUAGE (M230). A machine translation can be
+ * correct and still overflow a row or a strip, and only a render at the phone
+ * width sees that. The walk is measured, never photographed: the document's
+ * `scrollWidth` on every page, and the device menu's language strip against
+ * its own `clientWidth`. Both were shown red once before they were trusted: an
+ * unbreakable 46-character row title pushed the document to 433px, and an
+ * unbreakable 40-character language name pushed the strip to 317px inside its
+ * 246px. A per-row `scrollHeight` check was tried and dropped: a settings row
+ * has `min-h-13` and no height cap, and its status line's `line-clamp-2` is
+ * overridden by the `block` beside it (`settings-section.tsx`), so a long
+ * sentence grows the row instead of clipping and the check could not be made
+ * to fail.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
-import { completeOnboarding, expectPhoneLayout } from './helpers';
+import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
+import { LANGUAGE_STRIP_SLOT } from '../../app/components/language-switcher';
+import { PHONE_WIDTH, completeOnboarding, expectPhoneLayout, useLanguage } from './helpers';
 
 test('every settings row opens a titled page that still fits the phone', async ({ page }) => {
   await completeOnboarding(page);
@@ -80,5 +95,49 @@ test('a converted settings page wears the hub chrome and no card', async ({ page
     // pairs a shadow with this radius, so one of these is a page that went
     // back to the desktop chrome.
     expect(await page.locator('.shadow-sm.rounded-2xl').count(), `${destination} still draws a Card`).toBe(0);
+  }
+});
+
+/** The device menu's language strip, opened from the header and measured. */
+async function measureLanguageStrip(page: Page): Promise<{ cells: number; scrollWidth: number; clientWidth: number; right: number }> {
+  await page.locator('header button[aria-haspopup="menu"]').first().click();
+  const strip = page.locator(`[data-slot="${LANGUAGE_STRIP_SLOT}"]`);
+  await expect(strip).toBeVisible();
+  const measured = await strip.evaluate((element) => ({
+    cells: element.querySelectorAll('[role="menuitemradio"]').length,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+    right: element.getBoundingClientRect().right,
+  }));
+  await page.keyboard.press('Escape');
+  return measured;
+}
+
+test('every settings page fits the phone in every language, and so does the language strip', async ({ page }) => {
+  await completeOnboarding(page);
+
+  for (const locale of SUPPORTED_LANGUAGES) {
+    await useLanguage(page, locale);
+    await page.goto('/settings');
+    expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
+
+    const lists = page.locator('section > div.rounded-2xl');
+    await expect(lists.first()).toBeVisible();
+    const destinations = await lists.locator('a[href]').evaluateAll((links) =>
+      links.map((link) => link.getAttribute('href') ?? ''),
+    );
+    expect(destinations.length, `${locale}: the hub must offer several rows`).toBeGreaterThan(3);
+
+    const strip = await measureLanguageStrip(page);
+    expect(strip.cells, `${locale}: one cell per language`).toBe(SUPPORTED_LANGUAGES.length);
+    expect(strip.scrollWidth, `${locale}: the language strip must not scroll sideways`).toBe(strip.clientWidth);
+    expect(strip.right, `${locale}: the language strip must end inside the phone`).toBeLessThanOrEqual(PHONE_WIDTH);
+
+    for (const destination of destinations) {
+      await page.goto(destination);
+      const title = page.locator('h1').first();
+      await expect(title, `${locale}: ${destination} must name itself`).toBeVisible();
+      await expectPhoneLayout(page);
+    }
   }
 });

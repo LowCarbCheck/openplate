@@ -78,8 +78,15 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
   // forced this) has somewhere to go instead of clipping at two lines of
   // `text-sm`. Two lines, not three, when a description is also showing, so
   // the two together still fit the same budget.
-  const textRowClass = isError ? 'text-xs font-semibold leading-4' : 'text-sm font-semibold';
-  const textClampClass = isError && !hasDescription ? 'line-clamp-3' : 'line-clamp-2';
+  //
+  // A status WITH AN ACTION gets the same compact treatment (M230): the
+  // action button and the dismiss control take width from the sentence, and
+  // the German "{{name}} entfernt." beside "Rückgängig" needed a third line
+  // at 390px, which `line-clamp-2` cut. The browser tier walks that delete in
+  // every language (`tests/e2e/header-status.spec.ts`).
+  const isCompact = isError || status.action !== null;
+  const textRowClass = isCompact ? 'text-xs font-semibold leading-4' : 'text-sm font-semibold';
+  const textClampClass = isCompact && !hasDescription ? 'line-clamp-3' : 'line-clamp-2';
 
   return (
     <div

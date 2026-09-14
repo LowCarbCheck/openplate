@@ -52,6 +52,7 @@ import {
 import { instancePolicyForMode } from '#app/config/instance-policy';
 import { readInstancePolicy } from '#app/lib/read-instance-policy';
 import { hasDeviceSyncSession } from '#app/lib/sync/session-cache';
+import { openGraphLocale } from '#app/i18n/date-locale';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
@@ -105,7 +106,7 @@ export const meta: Route.MetaFunction = ({ matches, loaderData }) => {
     { property: 'og:title', content: title },
     { property: 'og:description', content: description },
     { property: 'og:url', content: `${origin}/` },
-    { property: 'og:locale', content: language === 'de' ? 'de_DE' : 'en_US' },
+    { property: 'og:locale', content: openGraphLocale(language) },
     { property: 'og:image', content: image },
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: title },

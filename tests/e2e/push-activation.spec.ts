@@ -110,6 +110,20 @@ async function routeSubscriptionAccepted(page: Page): Promise<void> {
 }
 
 /**
+ * The `locale` field of the next subscription PUT, read off the request the
+ * browser actually sends. The real server accepts the six bare codes and
+ * answers 400 to a region tag, and this client once sent `navigator.language`
+ * (`en-US`), which no unit test saw because every unit fake read `'de'`.
+ *
+ * @param page - the page, before the switch is flipped.
+ */
+function nextSubscriptionLocale(page: Page): Promise<string> {
+  return page
+    .waitForRequest((request) => request.url().endsWith('/v1/push/subscriptions') && request.method() === 'PUT')
+    .then((request) => String(request.postDataJSON()?.locale));
+}
+
+/**
  * Fixes what the browser will say about notification permission.
  *
  * @param page - the page, before its first navigation.
@@ -238,10 +252,20 @@ test('an allowed prompt registers this device with the instance key', async ({ p
   await stubPushSubscribe(page);
   await openNotificationsSignedIn(page);
 
+  const localeSent = nextSubscriptionLocale(page);
   await masterSwitch(page).click();
 
   await expect.poll(() => headerStatusText(page)).toContain(EN.settings.notifications.toast.on);
   await expect(masterSwitch(page)).toBeChecked();
+
+  // The language on the wire is the document's own bare code, never the
+  // browser's region tag. Headless Chromium reports `en-US` as
+  // `navigator.language`, which is the control this assertion needs: a client
+  // that read it would send exactly that and fail here.
+  expect(await page.evaluate(() => navigator.language)).toMatch(/^[a-z]{2}-[A-Z]{2}$/u);
+  expect(await localeSent, 'the registration carries the bare code').toBe(
+    await page.locator('html').getAttribute('lang'),
+  );
 
   // The bytes the client subscribed with, against this spec's own decoding of
   // the key the routed config answered. An independent reading on purpose: the

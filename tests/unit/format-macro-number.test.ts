@@ -64,7 +64,7 @@ describe('formatMacroNumberIn', () => {
   });
 
   it('falls back to English for an unsupported or absent language', () => {
-    assert.strictEqual(formatMacroNumberIn('fr', 346.7), '346.7');
+    assert.strictEqual(formatMacroNumberIn('pt', 346.7), '346.7');
     assert.strictEqual(formatMacroNumberIn(null, 346.7), '346.7');
     assert.strictEqual(formatMacroNumberIn(undefined, 346.7), '346.7');
   });

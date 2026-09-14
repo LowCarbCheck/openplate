@@ -117,17 +117,52 @@ export interface GlossaryTerm {
 export const GLOSSARY: readonly GlossaryTerm[] = [
   // German: the majority answer of the corpus as it stood, so pinning it re-bought five units and
   // left the other twenty-six alone. French: from wordsmith, the workspace's own prose judge.
-  { en: 'ciphertext', say: { de: 'Geheimtext', fr: 'texte chiffré' } },
-  { en: 'plate photo', say: { de: 'Tellerfoto', fr: "photo d'assiette" } },
-  { en: 'diary', say: { de: 'Tagebuch', fr: 'journal' } },
-  { en: 'allowance', say: { de: 'Kontingent', fr: 'quota' } },
-  { en: 'sync server', say: { de: 'Sync-Server', fr: 'serveur de synchronisation' } },
-  { en: 'recovery code', say: { de: 'Wiederherstellungscode', fr: 'code de récupération' } },
+  // Italian, Spanish and Turkish: from wordsmith too, asked once per language on 2026-09-14 with
+  // the seven terms and one line of context each, before a single sentence was bought in them.
+  {
+    en: 'ciphertext',
+    say: { de: 'Geheimtext', fr: 'texte chiffré', it: 'testo cifrato', es: 'texto cifrado', tr: 'şifreli metin' },
+  },
+  {
+    en: 'plate photo',
+    say: { de: 'Tellerfoto', fr: "photo d'assiette", it: 'foto del piatto', es: 'foto del plato', tr: 'tabak fotoğrafı' },
+  },
+  { en: 'diary', say: { de: 'Tagebuch', fr: 'journal', it: 'diario', es: 'diario', tr: 'günlük' } },
+  { en: 'allowance', say: { de: 'Kontingent', fr: 'quota', it: 'quota', es: 'cuota', tr: 'kota' } },
+  {
+    en: 'sync server',
+    say: {
+      de: 'Sync-Server',
+      fr: 'serveur de synchronisation',
+      it: 'server di sincronizzazione',
+      es: 'servidor de sincronización',
+      tr: 'eşitleme sunucusu',
+    },
+  },
+  {
+    en: 'recovery code',
+    say: {
+      de: 'Wiederherstellungscode',
+      fr: 'code de récupération',
+      it: 'codice di recupero',
+      es: 'código de recuperación',
+      tr: 'kurtarma kodu',
+    },
+  },
   // German: wordsmith's answer, fixing a split between "Inference-Runtime" (nav, stack) and
   // "Inferenz-Laufzeit" (page title, docs component) in the hand-written bundle. French: the term
   // the site already shipped, self-consistent across nav, stack and page title before this entry
   // existed, so no new wording was invented for it.
-  { en: 'inference runtime', say: { de: 'Inferenz-Runtime', fr: "moteur d'inférence" } },
+  {
+    en: 'inference runtime',
+    say: {
+      de: 'Inferenz-Runtime',
+      fr: "moteur d'inférence",
+      it: 'runtime di inferenza',
+      es: 'runtime de inferencia',
+      tr: 'çıkarım çalışma zamanı',
+    },
+  },
 ];
 
 /**
@@ -219,16 +254,42 @@ function informalRegister(locale: string): string {
       'real French term where one exists rather than an English loan word.',
     ].join(' ');
   }
+  // THE SAME DECISION FOR THE THREE THAT FOLLOWED. Italian, Spanish and Turkish technical prose
+  // commonly default to a formal or an impersonal register, so the generic line below would have
+  // bought a corpus in a voice the product does not speak, silently, because both registers render
+  // a page. Each is named here so the milestone's "informal in every language" is a branch and not
+  // a hope.
+  if (locale === 'it') {
+    return [
+      'Italian: address the reader as "tu", which is what the openplate app itself does in its other',
+      'languages. Idiomatic Italian technical prose, never a calque of the English clause order, and a',
+      'real Italian term where one exists rather than an English loan word.',
+    ].join(' ');
+  }
+  if (locale === 'es') {
+    return [
+      'Spanish: address the reader as "tú", which is what the openplate app itself does in its other',
+      'languages. Idiomatic Spanish technical prose, never a calque of the English clause order, and a',
+      'real Spanish term where one exists rather than an English loan word.',
+    ].join(' ');
+  }
+  if (locale === 'tr') {
+    return [
+      'Turkish: address the reader as "sen", which is what the openplate app itself does in its other',
+      'languages. Idiomatic Turkish technical prose, never a calque of the English clause order, and a',
+      'real Turkish term where one exists rather than an English loan word.',
+    ].join(' ');
+  }
   return "Use the register that language's own technical documentation is written in.";
 }
 
 /**
  * The formal counterpart, for a `legal` bundle: a contract or a privacy notice
  * is addressed formally even in a language whose product otherwise says "du"
- * or "tu". Written for every language this workspace names as a target,
- * including `es` and `tr`, which are not shipped by any site yet: the table
- * is complete the day a third bundle or a fourth language arrives, rather
- * than an ad hoc addition made under a deadline.
+ * or "tu". Written for every language this workspace names as a target, and
+ * `es` and `tr` were here before the site shipped them: the table was complete
+ * the day the languages arrived, rather than an ad hoc addition made under a
+ * deadline. Italian joined it with the site.
  */
 function formalRegister(locale: string): string {
   if (locale === 'de') {
@@ -243,6 +304,12 @@ function formalRegister(locale: string): string {
       'French: address the reader as "vous", the formal register. This is a legal document, and formal',
       'address is the French convention for legal and contractual text, even where the rest of the',
       'product says "tu".',
+    ].join(' ');
+  }
+  if (locale === 'it') {
+    return [
+      'Italian: address the reader as "Lei", the formal register. This is a legal document, and',
+      'formal address is the Italian convention for legal and contractual text.',
     ].join(' ');
   }
   if (locale === 'es') {

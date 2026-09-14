@@ -1,5 +1,5 @@
 /**
- * The English catalog, read off disk at test time.
+ * The shipped catalogs, read off disk at test time.
  *
  * NO SPEC PINS A SENTENCE. Copy in this repository is owned by the wordsmith
  * pass and is rephrased whenever it reads badly; a test that transcribed
@@ -105,10 +105,24 @@ const catalogSchema = z.object({
   }),
 });
 
+/** Every string this tier reads, in one language, validated against that language's shipped bundle. */
+export type Copy = z.infer<typeof catalogSchema>;
+
+/**
+ * The catalog of one language. The locale walks (M230) drive the same flows in
+ * every language the app ships, so a delete button is found by what the
+ * French bundle calls it, never by its English name.
+ *
+ * @param locale - one of `SUPPORTED_LANGUAGES`.
+ */
+export function catalogFor(locale: string): Copy {
+  return catalogSchema.parse(
+    JSON.parse(readFileSync(resolve(process.cwd(), `app/i18n/locales/${locale}/common.json`), 'utf8')),
+  );
+}
+
 /** Every English string this tier reads, validated against the shipped bundle. */
-export const EN = catalogSchema.parse(
-  JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8')),
-);
+export const EN = catalogFor('en');
 
 /**
  * A catalog sentence with its `{{placeholders}}` filled, the way i18next would.

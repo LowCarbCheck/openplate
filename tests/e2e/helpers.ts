@@ -12,7 +12,8 @@
  */
 import { expect, type Page } from '@playwright/test';
 
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE } from './env';
+import { LANGUAGE_COOKIE, type LanguageCode } from '../../app/i18n/language-prefs';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_APP_URL } from './env';
 import { EN } from './copy';
 
 /** The phone this tier emulates, and the width the layout budget is written against. */
@@ -23,6 +24,24 @@ export const HEADER_HEIGHT = 64;
 
 /** The eating style with no follow-up questions, so the first onboarding step is one click. */
 const NEUTRAL_EATING_STYLE = 'just-track';
+
+/**
+ * Puts the device in `locale` for its NEXT document load.
+ *
+ * THE COOKIE, because that is the app's own mechanism: the server renders
+ * `<html lang>` and every string from `openplate-language` and nothing else
+ * (`app/i18n/language-prefs.ts`), and a switch in the UI writes exactly this
+ * cookie before reloading. Writing it here rather than clicking the switcher
+ * keeps a per-locale layout walk from spending six reloads on the way in;
+ * the switcher itself has its own check. It takes effect on the next `goto`,
+ * never on the page already open.
+ *
+ * @param page - the page whose context gets the cookie.
+ * @param locale - the language to render the next document in.
+ */
+export async function useLanguage(page: Page, locale: LanguageCode): Promise<void> {
+  await page.context().addCookies([{ name: LANGUAGE_COOKIE, value: locale, url: E2E_APP_URL }]);
+}
 
 /**
  * Walks a fresh device from `/welcome` to the diary, through the real

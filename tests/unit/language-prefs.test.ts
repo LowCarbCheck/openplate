@@ -14,10 +14,36 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_LANGUAGE,
   LANGUAGE_COOKIE,
+  LANGUAGE_LABELS,
+  LANGUAGE_STORAGE_KEY,
+  SUPPORTED_LANGUAGES,
   applyLanguageChange,
   isLanguageCode,
   parseLanguageCookie,
+  readDeviceLanguage,
 } from '../../app/i18n/language-prefs';
+
+/**
+ * A browser's `document` and `localStorage`, as far as `readDeviceLanguage`
+ * reads them, installed on `globalThis` for one case and removed after. The
+ * region tag on `navigator.language` is the CONTROL: Node's own navigator
+ * reports `en-US`, and the reader must never return it.
+ */
+function withBrowser(state: { cookie: string; stored: string | null }, run: () => void): void {
+  const store = new Map<string, string>();
+  if (state.stored !== null) store.set(LANGUAGE_STORAGE_KEY, state.stored);
+  Object.defineProperty(globalThis, 'document', { value: { cookie: state.cookie }, configurable: true });
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: { getItem: (key: string) => store.get(key) ?? null },
+    configurable: true,
+  });
+  try {
+    run();
+  } finally {
+    Reflect.deleteProperty(globalThis, 'document');
+    Reflect.deleteProperty(globalThis, 'localStorage');
+  }
+}
 
 describe('parseLanguageCookie', () => {
   it('reads a supported language out of a real cookie header', () => {
@@ -33,7 +59,8 @@ describe('parseLanguageCookie', () => {
   it('rejects an unsupported or tampered value instead of trusting it', () => {
     // A locale we removed, or a hand-edited cookie, must not reach i18next as
     // a language — it would resolve to an empty catalog, not to English.
-    assert.equal(parseLanguageCookie(`${LANGUAGE_COOKIE}=tr`), null);
+    // `tr` ships since M230; `pt` is the one that does not.
+    assert.equal(parseLanguageCookie(`${LANGUAGE_COOKIE}=pt`), null);
     assert.equal(parseLanguageCookie(`${LANGUAGE_COOKIE}=../../etc/passwd`), null);
   });
 
@@ -44,11 +71,19 @@ describe('parseLanguageCookie', () => {
 
 describe('isLanguageCode', () => {
   it('accepts exactly the shipped locales', () => {
-    assert.equal(isLanguageCode('en'), true);
-    assert.equal(isLanguageCode('de'), true);
-    assert.equal(isLanguageCode('fr'), false);
+    for (const code of SUPPORTED_LANGUAGES) assert.equal(isLanguageCode(code), true, code);
+    assert.equal(isLanguageCode('pt'), false);
+    assert.equal(isLanguageCode('en-US'), false);
     assert.equal(isLanguageCode(undefined), false);
     assert.equal(isLanguageCode(42), false);
+  });
+
+  it('ships six languages, each named in its own language (M230)', () => {
+    assert.deepEqual([...SUPPORTED_LANGUAGES].toSorted(), ['de', 'en', 'es', 'fr', 'it', 'tr']);
+    assert.equal(LANGUAGE_LABELS.fr, 'Français');
+    assert.equal(LANGUAGE_LABELS.it, 'Italiano');
+    assert.equal(LANGUAGE_LABELS.es, 'Español');
+    assert.equal(LANGUAGE_LABELS.tr, 'Türkçe');
   });
 
   it('names English as the default — the fallback catalog and the cookie default agree', () => {
@@ -80,5 +115,28 @@ describe('applyLanguageChange', () => {
       },
     });
     assert.equal(reloaded, true);
+  });
+});
+
+describe('readDeviceLanguage', () => {
+  it('is the default on the server, where there is no document', () => {
+    assert.equal(globalThis.document, undefined);
+    assert.equal(readDeviceLanguage(), DEFAULT_LANGUAGE);
+  });
+
+  it('is the cookie first, the storage mirror second, the default last', () => {
+    withBrowser({ cookie: `${LANGUAGE_COOKIE}=tr`, stored: 'fr' }, () => assert.equal(readDeviceLanguage(), 'tr'));
+    withBrowser({ cookie: '', stored: 'fr' }, () => assert.equal(readDeviceLanguage(), 'fr'));
+    withBrowser({ cookie: '', stored: null }, () => assert.equal(readDeviceLanguage(), DEFAULT_LANGUAGE));
+  });
+
+  it('THE CONTROL: never a region tag, not from the cookie and not from the browser', () => {
+    // Node's navigator says `en-US`, exactly what a browser would; the reader must not consult it.
+    assert.match(String(globalThis.navigator.language), /^[a-z]{2}-[A-Z]{2}$/u);
+    withBrowser({ cookie: `${LANGUAGE_COOKIE}=en-US`, stored: null }, () => {
+      const read = readDeviceLanguage();
+      assert.equal(read, DEFAULT_LANGUAGE);
+      assert.doesNotMatch(read, /-/u);
+    });
   });
 });

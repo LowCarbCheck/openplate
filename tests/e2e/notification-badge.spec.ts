@@ -26,8 +26,18 @@
  * The same routine runs over `/icons/icon-192.png`, the teal disc, and must
  * report `monochrome: false`. Without it, a bug in the reader, an empty
  * canvas, a failed decode, would pass the badge silently.
+ *
+ * ── The notifications page, in every language (M230) ────────────────────
+ *
+ * The badge's own page is `/settings/notifications`, and what it says about
+ * push on this device is one long sentence that a longer language can push
+ * off the phone. The last spec walks every language and measures that
+ * sentence's box against the viewport and its own `clientWidth`.
  */
 import { expect, test } from '@playwright/test';
+
+import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
+import { PHONE_WIDTH, completeOnboarding, expectPhoneLayout, useLanguage } from './helpers';
 
 /** How much of the badge must be opaque, so an empty or blank PNG cannot pass. */
 const MIN_OPAQUE_FRACTION = 0.05;
@@ -123,4 +133,33 @@ test('the service worker still points its badge at the silhouette', async ({ pag
     source,
     'pointing the badge back at the 192 icon is the 2026-09-14 white circle, returning',
   ).toMatch(/NOTIFICATION_BADGE = '\/icons\/badge-96\.png'/);
+});
+
+test('the notifications page and its availability sentence fit the phone in every language', async ({ page }) => {
+  await completeOnboarding(page);
+
+  for (const locale of SUPPORTED_LANGUAGES) {
+    await useLanguage(page, locale);
+    await page.goto('/settings/notifications');
+    expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
+
+    const sentence = page.locator('[data-slot="push-availability"]');
+    await expect(sentence, `${locale}: the page says what push can do here`).toBeVisible();
+    const box = await sentence.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+        text: (element.textContent ?? '').trim(),
+      };
+    });
+    // NON-VACUITY: a sentence with no words has no width to measure.
+    expect(box.text.length, `${locale}: the sentence has words`).toBeGreaterThan(10);
+    expect(box.left, `${locale}: the sentence starts on the phone`).toBeGreaterThanOrEqual(0);
+    expect(box.right, `${locale}: the sentence ends on the phone`).toBeLessThanOrEqual(PHONE_WIDTH);
+    expect(box.scrollWidth, `${locale}: the sentence must wrap, not scroll`).toBeLessThanOrEqual(box.clientWidth);
+    await expectPhoneLayout(page);
+  }
 });
