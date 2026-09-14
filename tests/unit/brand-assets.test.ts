@@ -57,10 +57,11 @@ describe('BRAND.json', () => {
     assert.equal(provenance.producedBy, 'openplate-brand, scripts/ship.ts');
   });
 
-  it('names all six assets the app installs', () => {
+  it('names all seven assets the app installs', () => {
     assert.deepEqual(Object.keys(provenance.files).toSorted(), [
       'favicon.ico',
       'icons/apple-touch-icon.png',
+      'icons/badge-96.png',
       'icons/icon-192.png',
       'icons/icon-512.png',
       'icons/icon-maskable-192.png',

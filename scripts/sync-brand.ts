@@ -17,10 +17,11 @@
  * Pulling from a ref by script means a redraw upstream reaches this app on the next sync and shows
  * up in review as bytes that changed.
  *
- * ── THIS APP TAKES ALL SIX ICONS, THE WEBSITE TAKES FOUR ──
+ * ── THIS APP TAKES ALL SEVEN ASSETS, THE WEBSITE TAKES FOUR ──
  * `public/site.webmanifest` declares both maskable variants, because this is the installable
- * application. `openplate-website` deliberately serves neither. That difference is an allowlist
- * decision in each consumer, not a difference in the brand repository.
+ * application. `openplate-website` deliberately serves neither, and it has no push notifications,
+ * so it takes no badge either. That difference is an allowlist decision in each consumer, not a
+ * difference in the brand repository.
  *
  * ── HAND-RUN ONLY, DELIBERATELY NOT IN CI AND NOT IN THE PRE-PUSH GATE ──
  * `openplate-brand` is PRIVATE and this script clones it over SSH. Wiring the sync into CI or into
@@ -70,6 +71,8 @@ const ASSETS: Asset[] = [
   // Both maskable variants, because `public/site.webmanifest` declares both.
   { name: 'icon-maskable-192.png', to: 'icons/icon-maskable-192.png' },
   { name: 'icon-maskable-512.png', to: 'icons/icon-maskable-512.png' },
+  // The notification badge, a silhouette because Android draws a badge from alpha alone.
+  { name: 'badge-96.png', to: 'icons/badge-96.png' },
 ];
 
 const PUBLIC_DIR = resolve('public');

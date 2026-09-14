@@ -296,13 +296,17 @@ const NOTIFY_RECORD_KEY = 'latest';
 // then is treated exactly like a missing record.
 const NOTIFY_READ_TIMEOUT_MS = 3000;
 
-// The 192px app icon serves as both the art and the badge. It is the icon the
-// manifest already ships, so nothing new is added or resized here: icons come
-// from openplate-brand through the sync script, never from this repo by hand.
-// A proper monochrome badge (Android derives the badge shape from the alpha
-// channel) would have to be added there first.
+// The art and the badge are two different pictures, and they have to be.
+// The art is the 192px app icon, drawn as it is. The badge is a SILHOUETTE:
+// Android does not draw a badge's colours, it reads the alpha channel and
+// fills every opaque pixel with its own tint. The app icon is a solid disc on
+// transparency, so it arrived in the status bar as a plain white circle with
+// the glyph inside it gone (reported 2026-09-14). `badge-96.png` is the
+// cut-out openplate-brand ships for this, white on transparency, and like
+// every other picture here it comes through `pnpm sync:brand`, never from
+// this repo by hand. `tests/e2e/notification-badge.spec.ts` reads its pixels.
 const NOTIFICATION_ICON = '/icons/icon-192.png';
-const NOTIFICATION_BADGE = '/icons/icon-192.png';
+const NOTIFICATION_BADGE = '/icons/badge-96.png';
 
 self.addEventListener('push', (event) => {
   event.waitUntil(handlePush(event));
