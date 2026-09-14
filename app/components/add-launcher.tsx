@@ -5,7 +5,7 @@ import { ChevronUp } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
 import { useCameraCapture, type CameraCapture } from '#app/components/add/use-camera-capture';
-import { AddFoodActionsComposer } from '#app/components/add-food-actions-composer';
+import { AddComposer } from '#app/components/add/add-composer';
 import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { hasMovedBeyondPressTolerance, LONG_PRESS_MS, type PointerPosition } from '#app/lib/long-press';
 import { parseDateParam } from '#app/lib/user-days';
@@ -213,7 +213,7 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
               props are pinned as literals by the unit tier, and letting the
               formatter split them would break those regexes for nothing. */}
           {/* prettier-ignore */}
-          <AddFoodActionsComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} variant="embedded" />
+          <AddComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} variant="embedded" />
         </div>
       </SheetContent>
     </Sheet>

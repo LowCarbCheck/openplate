@@ -29,7 +29,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { AddFoodActionsComposer } from '../../app/components/add-food-actions-composer';
+import { AddComposer } from '../../app/components/add/add-composer';
 import { BottomNav } from '../../app/components/bottom-nav';
 import type { CameraCapture } from '../../app/components/add/use-camera-capture';
 import { buildAddHref } from '../../app/lib/add-food-hrefs';
@@ -103,7 +103,7 @@ function inputCount(html: string): number {
 
 /** The strip exactly as the launcher's sheet renders it, for a given viewed day. */
 function sheetStrip(date: string | null): ReactElement {
-  return createElement(AddFoodActionsComposer, {
+  return createElement(AddComposer, {
     describeTo: buildAddHref('/describe', { date }),
     capture: BORROWED_CAPTURE,
     label: 'Type',
@@ -112,7 +112,7 @@ function sheetStrip(date: string | null): ReactElement {
 
 describe('the launcher sheet renders the composer strip', () => {
   it('hands the strip its own camera rather than letting it open a second one', () => {
-    assert.match(LAUNCHER, /<AddFoodActionsComposer[^>]*capture=\{sheetCapture\}/);
+    assert.match(LAUNCHER, /<AddComposer[^>]*capture=\{sheetCapture\}/);
     assert.match(LAUNCHER, /const sheetCapture: CameraCapture = \{/);
   });
 
@@ -149,7 +149,7 @@ describe('where the sheet doors go', () => {
     // the day out of the URL and builds the destination with `buildAddHref`.
     assert.match(LAUNCHER, /const viewedDate = parseDateParam\(new URLSearchParams\(location\.search\)\.get\('date'\)\);/);
     assert.match(LAUNCHER, /const describeTo = buildAddHref\('\/describe', \{ date: viewedDate \}\);/);
-    assert.match(LAUNCHER, /<AddFoodActionsComposer describeTo=\{describeTo\}/);
+    assert.match(LAUNCHER, /<AddComposer describeTo=\{describeTo\}/);
   });
 });
 
@@ -167,7 +167,7 @@ describe('how many capture inputs the bar has', () => {
     // exists to refuse: the same strip with no `capture` prop renders the
     // input itself, which inside a sheet is an element that unmounts while the
     // camera it opened is still opening.
-    assert.equal(inputCount(render(createElement(AddFoodActionsComposer, { describeTo: '/describe' }))), 1);
+    assert.equal(inputCount(render(createElement(AddComposer, { describeTo: '/describe' }))), 1);
   });
 
   it('keeps that one input outside the sheet', () => {

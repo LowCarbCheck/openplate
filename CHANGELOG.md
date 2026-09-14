@@ -25,6 +25,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The camera in the add sheet is drawn as an outline, not a filled key.** The raised round button in the bottom bar sits a few pixels below that sheet and is already a filled camera, so two filled cameras were competing for the same tap. Only the sheet changes. On the home screen and in the diary the camera keeps its filled look, because there it is the one camera on the page, and on a desktop or a tablet there is no round button at all.
 
+- **The home screen's Like yesterday button is now a preview card.** It shows the day it repeats, with dashed rows sketching the entries it would copy and a caption underneath for the count. Tapping the card still copies the same whole day as before. The pill button on the write screen is unchanged.
+
 ### Fixed
 
 - **The add button in the bottom bar logs to the day you are looking at.** Its camera, its Type row and its Speak row always went to today, even while you were reading an earlier day in the diary, so a photo or a typed meal quietly landed on the wrong date and nothing said so. All three now carry the day on screen.

@@ -94,6 +94,11 @@ export default [
   // what redirects here, and the backup file it reads never leaves the browser.
   route('/recover', 'routes/recover.tsx'),
 
+  // A temporary review page for component variants (dev only). Its
+  // `clientLoader` answers 404 in a production build, and it is top-level so it
+  // depends on no layout loader and no onboarding gate.
+  route('/dev/playground', 'routes/dev.playground.tsx'),
+
   // Legacy path redirects (the /log → /diary and /log/plate → /scan rename,
   // and /profile → /settings once the profile card-hub became the settings hub).
   route('/log', 'routes/redirects/legacy-log.tsx'),

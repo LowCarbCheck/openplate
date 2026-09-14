@@ -123,7 +123,7 @@ describe('a back-dated day survives the photo path', () => {
     // after the playground review. The count and the `scanTo` check are the
     // point, not the component's name: a surface that forgets the target
     // writes a back-dated photo to today with nothing on screen saying so.
-    const renders = diary.match(/<AddFoodActionsComposer [^>]*\/>/g) ?? [];
+    const renders = diary.match(/<AddComposer [^>]*\/>/g) ?? [];
     assert.equal(renders.length, 4, 'three empty states plus the non-empty day');
     for (const render of renders) assert.match(render, /scanTo=\{scanTo\}/);
     assert.doesNotMatch(diary, /<AddFoodActions [^>]*\/>/, 'a three-button row is back on the diary');
@@ -143,7 +143,7 @@ describe('the surfaces that capture', () => {
     // The composer strip `/dashboard` and `/diary` render. It carries its own
     // camera key, so it is a capturing surface and the gesture rule applies to
     // it too.
-    '../../app/components/add-food-actions-composer.tsx',
+    '../../app/components/add/add-composer.tsx',
   ];
 
   for (const surface of surfaces) {
@@ -188,7 +188,7 @@ describe("the sheet key opens the bar's own camera, inside the tap", () => {
     // close are the sheet's own.
     assert.match(launcher, /const sheetCapture: CameraCapture = \{\n\s*\.\.\.launcherCapture,/);
     assert.match(launcher, /capture: capturePhotoFromSheet,/);
-    assert.match(launcher, /<AddFoodActionsComposer[^>]*capture=\{sheetCapture\}/);
+    assert.match(launcher, /<AddComposer[^>]*capture=\{sheetCapture\}/);
   });
 
   it('awaits nothing between the sheet tap and the capture, and closes only after it', () => {
@@ -251,7 +251,7 @@ describe('the launcher carries the day the person is looking at', () => {
     // that computed the hrefs and then rendered the old literals anyway.
     assert.doesNotMatch(launcher, /to="\/describe/, 'a launcher row points at an undated /describe again');
     assert.doesNotMatch(launcher, /to="\/scan/, 'a launcher row points at an undated /scan again');
-    assert.match(launcher, /<AddFoodActionsComposer describeTo=\{describeTo\}/);
+    assert.match(launcher, /<AddComposer describeTo=\{describeTo\}/);
   });
 
   it('turns a dated diary URL into dated doors, and a bare one into bare doors', () => {

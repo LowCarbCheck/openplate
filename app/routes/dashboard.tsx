@@ -74,8 +74,8 @@ import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-day
 import { buildAdherenceGrid } from '#app/models/adherence-grid';
 import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
 import type { StreakSnapshot } from '#app/lib/streak-message';
-import { AddFoodActions } from '#app/components/add-food-actions';
-import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
+import { AddComposer } from '#app/components/add/add-composer';
+import { RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
 import { PulseTileSlot } from '#app/components/pulse-tile';
 import { StreakGridCard } from '#app/components/dashboard/streak-grid-card';
@@ -395,12 +395,18 @@ function TodayHeroCard({
       {/*
         CONDITIONAL, and above the add row (M217). Somebody who eats the same
         thing every day thinks "wie gestern" on this screen, not on `/diary`,
-        so the door is here; it renders nothing at all on a day with nothing to
+        so the offer is here; it renders nothing at all on a day with nothing to
         repeat, which leaves the no-scroll phone page untouched in the common
         case. It posts `/diary`'s existing copy intent and owns no write.
+
+        The GHOST card, not the pill button the other surfaces use: a fourth
+        thing to press beside the add controls was the complaint, and a card
+        that draws the day it would bring over is a different kind of object
+        from the strip under it. The strip is the composer, one control with
+        the camera and the microphone in its frame, for the same reason.
       */}
-      <RepeatYesterdayDoor offer={repeatYesterday} />
-      <AddFoodActions describeTo="/describe" />
+      <RepeatYesterdayGhost offer={repeatYesterday} />
+      <AddComposer describeTo="/describe" />
       <Link to="/diary" className={HANDOFF_LINK_CLASS}>
         {t('dashboard.today.openDiary')}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />

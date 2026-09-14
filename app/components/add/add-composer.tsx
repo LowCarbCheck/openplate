@@ -80,7 +80,7 @@ import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { cn } from '#app/lib/utils';
 
 /** Where this strip is drawn, which decides the camera key's weight and nothing else. */
-export type AddFoodActionsComposerVariant = 'standalone' | 'embedded';
+export type AddComposerVariant = 'standalone' | 'embedded';
 
 /**
  * The camera key's weight, per context. See the module header for why the
@@ -89,9 +89,9 @@ export type AddFoodActionsComposerVariant = 'standalone' | 'embedded';
 const CAMERA_KEY_CLASS = {
   standalone: 'bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90',
   embedded: 'border border-primary/40 text-primary hover:bg-primary/10 active:bg-primary/15',
-} satisfies Record<AddFoodActionsComposerVariant, string>;
+} satisfies Record<AddComposerVariant, string>;
 
-interface AddFoodActionsComposerBaseProps {
+interface AddComposerBaseProps {
   /** The composer, carrying the viewed day. Typing goes here; dictating goes here with the field focused. */
   describeTo: string;
   className?: string;
@@ -106,7 +106,7 @@ interface AddFoodActionsComposerBaseProps {
    * `/dashboard` and `/diary` want; `'embedded'` outlines it, for the
    * launcher's sheet, where the raised circle beside it is already filled.
    */
-  variant?: AddFoodActionsComposerVariant;
+  variant?: AddComposerVariant;
 }
 
 /**
@@ -117,7 +117,7 @@ interface AddFoodActionsComposerBaseProps {
  * and lose `scanTo` in silence, so the choice is a discriminated union
  * instead, and passing both is a compile error at the call site.
  */
-export type AddFoodActionsComposerProps = AddFoodActionsComposerBaseProps &
+export type AddComposerProps = AddComposerBaseProps &
   (
     | {
         /**
@@ -134,7 +134,7 @@ export type AddFoodActionsComposerProps = AddFoodActionsComposerBaseProps &
       }
   );
 
-export function AddFoodActionsComposer(props: AddFoodActionsComposerProps): ReactElement {
+export function AddComposer(props: AddComposerProps): ReactElement {
   const { describeTo, className, label, variant } = props;
   // The shared half of the props, named once so both branches carry the same
   // set and adding a base prop cannot reach one branch and miss the other.
@@ -149,7 +149,7 @@ export function AddFoodActionsComposer(props: AddFoodActionsComposerProps): Reac
 function ComposerWithOwnCamera({
   scanTo = '/scan',
   ...rest
-}: AddFoodActionsComposerBaseProps & { scanTo?: string }): ReactElement {
+}: AddComposerBaseProps & { scanTo?: string }): ReactElement {
   const camera = useCameraCapture({ scanTo });
   const { inputRef, inputProps } = camera;
 
@@ -171,7 +171,7 @@ function ComposerStrip({
   variant = 'standalone',
   camera,
   children,
-}: AddFoodActionsComposerBaseProps & {
+}: AddComposerBaseProps & {
   camera: CameraCapture;
   /** The capture input, rendered only by the caller that owns the camera. */
   children?: ReactNode;

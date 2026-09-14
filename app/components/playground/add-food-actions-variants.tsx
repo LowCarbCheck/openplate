@@ -8,7 +8,7 @@
  * a defect the old row already fixed once and is not worth re-introducing.
  *
  * Concept A, the composer strip, WAS REVIEWED AND SHIPPED: it lives at
- * `#app/components/add-food-actions-composer` and `/dashboard` renders it. The
+ * `#app/components/add/add-composer` and `/dashboard` renders it. The
  * playground imports it from there rather than keeping a second copy.
  *
  * The variant keeps the shipped behaviour: the camera gesture is a button so

@@ -85,7 +85,7 @@ import type { LocalDailyTotals, LocalFoodLog, LocalFrequentChip, LocalRecentFood
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { trackEntryRestored, trackFoodLogged, trackMealSaved } from '#app/lib/matomo-events';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { AddFoodActionsComposer } from '#app/components/add-food-actions-composer';
+import { AddComposer } from '#app/components/add/add-composer';
 import { BackupNudgeBanner } from '#app/components/backup-nudge-banner';
 import { HabitStrip } from '#app/components/habit-strip';
 import { StickySubheader } from '#app/components/sticky-subheader';
@@ -2446,7 +2446,7 @@ function FirstEverEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: st
           <p className="text-sm text-muted-foreground">{t('diary.empty.firstEver.subtitle')}</p>
         </div>
         <div className="flex flex-col items-center">
-          <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
         {/*
           `Trans` rather than three sentence fragments glued around two links:
@@ -2491,7 +2491,7 @@ function WelcomeBackEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: 
           <p className="text-sm text-muted-foreground">{t('diary.empty.welcomeBack.subtitle')}</p>
         </div>
         <div className="flex flex-col items-center">
-          <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2512,7 +2512,7 @@ function OrdinaryEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: str
         <PlateGlyph className="h-16 w-16 text-primary/60" />
         <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>
         <div className="flex w-full flex-col items-center">
-          <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
+          <AddComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
         </div>
       </CardContent>
     </Card>
@@ -2682,7 +2682,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
       {!hasLogs && emptyState === 'returning-after-gap' && <WelcomeBackEmpty describeTo={describeTo} scanTo={scanTo} />}
       {!hasLogs && emptyState === 'ordinary' && <OrdinaryEmpty describeTo={describeTo} scanTo={scanTo} />}
 
-      {hasLogs && <AddFoodActionsComposer describeTo={describeTo} scanTo={scanTo} />}
+      {hasLogs && <AddComposer describeTo={describeTo} scanTo={scanTo} />}
     </div>
   );
 }

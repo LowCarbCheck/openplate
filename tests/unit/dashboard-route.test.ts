@@ -118,8 +118,11 @@ describe('the Wie gestern door on the today card (M217/02)', () => {
   it('renders the door inside the hero, above the add actions', () => {
     const hero = dashboardSource.indexOf('function TodayHeroCard({');
     assert.notEqual(hero, -1, 'TodayHeroCard is gone');
-    const doorAt = dashboardSource.indexOf('<RepeatYesterdayDoor offer={repeatYesterday} />', hero);
-    const addActionsAt = dashboardSource.indexOf('<AddFoodActions describeTo="/describe" />', hero);
+    // The dashboard's two surfaces are the reviewed ones: the ghost card over
+    // the composer strip. `/describe` keeps the pill door and `/diary` keeps
+    // the three-button row, so the names here are deliberately the new ones.
+    const doorAt = dashboardSource.indexOf('<RepeatYesterdayGhost offer={repeatYesterday} />', hero);
+    const addActionsAt = dashboardSource.indexOf('<AddComposer describeTo="/describe" />', hero);
 
     assert.notEqual(doorAt, -1, 'the today card lost its Wie gestern door');
     assert.notEqual(addActionsAt, -1, 'the today card lost its add actions');

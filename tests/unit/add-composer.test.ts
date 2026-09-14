@@ -24,10 +24,10 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { AddFoodActionsComposer, type AddFoodActionsComposerProps } from '#app/components/add-food-actions-composer';
+import { AddComposer, type AddComposerProps } from '#app/components/add/add-composer';
 import type { CameraCapture } from '#app/components/add/use-camera-capture';
 
-const source = readFileSync(new URL('../../app/components/add-food-actions-composer.tsx', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../app/components/add/add-composer.tsx', import.meta.url), 'utf8');
 const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
 const DASHBOARD = readFileSync(new URL('../../app/routes/dashboard.tsx', import.meta.url), 'utf8');
 const DIARY = readFileSync(new URL('../../app/routes/diary.tsx', import.meta.url), 'utf8');
@@ -70,7 +70,7 @@ function cameraKeyClass(html: string): string {
  * the call below would throw. This one exists purely so `tsc` checks the
  * argument's type; it does nothing when node:test actually runs it.
  */
-function typeCheckOnly(_props: AddFoodActionsComposerProps): void {}
+function typeCheckOnly(_props: AddComposerProps): void {}
 
 describe('the composer strip', () => {
   it('drives the camera through the shared hook, with the caller its scan target', () => {
@@ -98,7 +98,7 @@ describe('the composer strip', () => {
     // Before M232/03's follow-up fix, `capture` and `scanTo` were two
     // independent optional fields, so a caller could pass both and `scanTo`
     // was quietly dropped mid-spread with no diagnostic anywhere. The
-    // discriminated union in `AddFoodActionsComposerProps` forbids the
+    // discriminated union in `AddComposerProps` forbids the
     // combination at the call site instead; the real assertion is the
     // `@ts-expect-error` below, which `pnpm typecheck` enforces.
     // SAFETY: an empty object stands in for a real capture here; only its type,
@@ -174,13 +174,13 @@ describe("the camera key's weight", () => {
   const OUTLINE = 'border-primary/40';
 
   it('fills the key on a page that owns no camera, which is /dashboard and /diary', () => {
-    const classes = cameraKeyClass(render(createElement(AddFoodActionsComposer, { describeTo: '/describe' })));
+    const classes = cameraKeyClass(render(createElement(AddComposer, { describeTo: '/describe' })));
     assert.ok(classes.includes(FILLED), `the standalone camera key lost its fill: ${classes}`);
     assert.ok(!classes.includes(OUTLINE), 'the standalone key is drawn as an outline');
   });
 
   it('outlines the key inside the launcher sheet, where a filled camera is already on screen', () => {
-    const embedded = createElement(AddFoodActionsComposer, {
+    const embedded = createElement(AddComposer, {
       describeTo: '/describe',
       capture: BORROWED_CAPTURE,
       label: 'Type',
@@ -195,7 +195,7 @@ describe("the camera key's weight", () => {
     // The control that makes the pair above mean something: a strip given a
     // caller's capture but no variant is a `/dashboard`-weight key, so the
     // demotion cannot ride in on `capture` by accident.
-    const borrowedButStandalone = createElement(AddFoodActionsComposer, {
+    const borrowedButStandalone = createElement(AddComposer, {
       describeTo: '/describe',
       capture: BORROWED_CAPTURE,
     });
@@ -205,9 +205,9 @@ describe("the camera key's weight", () => {
   });
 
   it('asks for the outline at exactly one call site, the sheet', () => {
-    assert.match(LAUNCHER, /<AddFoodActionsComposer[^>]*variant="embedded"/, 'the sheet stopped asking for it');
-    assert.doesNotMatch(DASHBOARD, /<AddFoodActionsComposer[^>]*variant=/, '/dashboard took the sheet treatment');
-    const diaryStrips = DIARY.match(/<AddFoodActionsComposer[^>]*\/>/g) ?? [];
+    assert.match(LAUNCHER, /<AddComposer[^>]*variant="embedded"/, 'the sheet stopped asking for it');
+    assert.doesNotMatch(DASHBOARD, /<AddComposer[^>]*variant=/, '/dashboard took the sheet treatment');
+    const diaryStrips = DIARY.match(/<AddComposer[^>]*\/>/g) ?? [];
     assert.equal(diaryStrips.length, 4, '/diary no longer has its four add-entry surfaces');
     for (const strip of diaryStrips) {
       assert.doesNotMatch(strip, /variant=/, '/diary took the sheet treatment');
