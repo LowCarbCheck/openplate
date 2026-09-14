@@ -1,11 +1,10 @@
 /**
  * The composer strip: one control, three ways in.
  *
- * `/dashboard` renders this instead of the three-button row after the
- * playground review, and `/diary` renders it on all four of its add-entry
- * surfaces. The row itself is unchanged and still ships in `/dev/playground`,
- * so `add-food-actions-hierarchy.test.ts` keeps pinning it and this file pins
- * only what the new structure must not lose.
+ * `/dashboard` and `/diary` both render `AddComposer` on their add-entry
+ * surfaces; the old three-button row (`add-food-actions.tsx`) and its pin
+ * test (`add-food-actions-hierarchy.test.ts`) are gone, and this file pins
+ * the invariants that structure must not lose.
  *
  * THREE THINGS SURVIVE THE RESTRUCTURE, and each one is a defect this repo has
  * already paid for once: the camera opens inside the tap that asked for it,
