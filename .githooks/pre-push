@@ -7,8 +7,8 @@
 # typecheck + unit tests: neither runs `react-router build`, so the
 # PRODUCTION BUILD is part of this gate.
 #
-# Runs: docs manifest -> changelog -> lint -> typecheck -> unit tests -> integration tests
-#       -> production build -> browser smoke tier.
+# Runs: docs manifest -> quadlet units -> changelog -> lint -> typecheck -> unit tests
+#       -> integration tests -> production build -> browser smoke tier.
 #
 # The browser smoke tier (added 2026-09-13) is LAST because it needs the build the stage
 # before it makes, and it is the one stage that does not run in the toolbox:
@@ -56,6 +56,16 @@ fi
 # watching. M193 spec 05.
 echo "▶ pre-push: the README Documentation table against docs/"
 ./scripts/check-docs-manifest.sh
+
+# ── QUADLET UNITS: generated, never hand-edited ─────────────────────────────
+# docker/quadlet/<scenario>/ is what podlet writes from the compose files.
+# This regenerates every scenario into a temp dir and diffs it against the
+# committed copy, so a compose edit without `scripts/quadlet.sh generate`, or a
+# unit somebody touched by hand, stops here. podlet is a HOST tool (Homebrew),
+# not a toolbox one, like the browser tier; the script says how to install it.
+# M231 spec 02.
+echo "▶ pre-push: the quadlet units against a fresh podlet run"
+./scripts/quadlet.sh check
 
 # TS commands need the ts-dev toolbox (the host lacks native build tools), but
 # must run bare when the hook itself is already executing inside a container.

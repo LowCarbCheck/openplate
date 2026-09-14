@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **Generated Podman Quadlet units ship for every openplate deployment shape.** The directory `docker/quadlet/<scenario>/` holds the `.container`, `.volume`, and `.network` files that Podman needs to run openplate as a systemd service. These units are generated directly from existing compose files instead of written by hand. A push gate check regenerates and verifies them, so a stale unit never reaches you.
+
 ## [0.30.0] - 2026-09-14
 
 ### Added
