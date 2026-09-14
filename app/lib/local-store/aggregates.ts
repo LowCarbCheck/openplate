@@ -21,6 +21,7 @@ import type { FoodLogMacroSnapshot } from '#app/models/food-log-summary';
 import { enumerateDates } from '#app/lib/user-days';
 import { NUTRIENT_KEYS, readNutrientPer100g } from '#app/lib/micronutrients';
 import type { NutrientKey } from '#app/lib/micronutrients';
+import type { MealType } from '#types/enums';
 import { listLocalFoodLogs } from './primary-store';
 import type { LocalFoodLog } from './schema';
 
@@ -122,6 +123,38 @@ export function computeDailyTotalsInRange(
       estimateShare: totals.estimateShare,
     };
   });
+}
+
+/**
+ * The same per-day totals as `computeDailyTotalsInRange`, but counting ONLY the
+ * entries that went into one meal slot. Pure. Used by `/trends` to chart one
+ * slot across days (M227/02).
+ *
+ * It filters and then delegates rather than re-summing, deliberately: the macro
+ * arithmetic, the authoritative-net-carbs precedence and the unknown handling
+ * all have to agree to the gram with the whole-day figure, and a second copy of
+ * that sum is how they would stop agreeing.
+ *
+ * A day with entries in OTHER slots only comes back as a GAP DAY (`hasLogs`
+ * false, `summary` null, `entryCount` 0), present in the series rather than
+ * dropped from it. That is the honest reading: the person logged that day, and
+ * they logged no snack on it. Every consumer already draws a gap day as "nothing
+ * logged" rather than as a zero bar, which is exactly what should be shown.
+ *
+ * @param logs - every local food log, any order.
+ * @param range - the inclusive `YYYY-MM-DD` window.
+ * @param slot - the meal slot to count. Entries with no meal (`mealType` null) are never counted.
+ * @returns one totals entry per calendar day in the range, oldest first.
+ */
+export function computeSlotTotalsInRange(
+  logs: readonly LocalFoodLog[],
+  { fromDate, toDate }: { fromDate: string; toDate: string },
+  slot: MealType,
+): LocalDailyTotals[] {
+  return computeDailyTotalsInRange(
+    logs.filter((log) => log.mealType === slot),
+    { fromDate, toDate },
+  );
 }
 
 // ---------------------------------------------------------------------------

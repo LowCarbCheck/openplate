@@ -72,6 +72,25 @@ export async function signInFixtureAccount(page: Page): Promise<void> {
   await page.waitForURL('**/diary');
 }
 
+/** One hand-typed entry, as `logFoodManually` posts it. */
+export interface ManualFood {
+  /** The name to type. */
+  name: string;
+  /** How many grams of it, as the field takes it. */
+  grams: string;
+  /**
+   * Grams of carbohydrate PER 100 g, typed into the nutrition panel. Left out,
+   * the entry carries no macros at all and every chart reads it as "logged,
+   * nothing computable", so any spec that needs a bar with a HEIGHT has to
+   * pass this. With fibre and polyols absent, net carbs come out equal to it.
+   */
+  carbs?: string;
+  /** The meal slot to pick, or left out for "no meal". */
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  /** A back-dated `YYYY-MM-DD` day to log onto, or left out for today. */
+  date?: string;
+}
+
 /**
  * Logs one food through `/add`'s manual form and waits for the diary.
  *
@@ -79,20 +98,38 @@ export async function signInFixtureAccount(page: Page): Promise<void> {
  * asks the food database over the network, and a smoke tier must not go red
  * because somebody else's service was slow.
  *
+ * The nutrition panel is a collapsible. Its fields are `forceMount`ed, so they
+ * are in the DOM while it is closed, but they are `display:none` and cannot be
+ * typed into, which is why `carbs` opens it first rather than filling through
+ * the fold. The meal picker is a Radix `<Select>` rather than a `<select>`, so
+ * it is opened and its row clicked, never assigned to.
+ *
  * @param page - a page on a device that is past onboarding.
- * @param food - the name to type and how many grams of it.
+ * @param food - what to type, and optionally which meal and which day.
  */
-export async function logFoodManually(page: Page, food: { name: string; grams: string }): Promise<void> {
-  await page.goto('/add');
+export async function logFoodManually(page: Page, food: ManualFood): Promise<void> {
+  await page.goto(food.date === undefined ? '/add' : `/add?date=${food.date}`);
   await page.getByRole('button', { name: EN.add.search.addManually }).click();
 
   const manual = page.locator('form').filter({ has: page.locator('input[name="_intent"][value="manual"]') });
   await manual.locator('input[name="name"]').fill(food.name);
   await manual.locator('input[name="quantityGrams"]').fill(food.grams);
+  if (food.carbs !== undefined) {
+    await manual.getByRole('button', { name: EN.add.manual.nutritionToggle }).click();
+    await manual.locator('input[name="carbs"]').fill(food.carbs);
+  }
+  if (food.mealType !== undefined) {
+    await manual.getByRole('combobox').click();
+    await page.getByRole('option', { name: EN.add.meal[food.mealType], exact: true }).click();
+  }
   await manual.getByRole('button', { name: EN.add.manual.submit }).click();
 
-  await page.waitForURL('**/diary');
-  await expect(page.getByText(food.name)).toBeVisible();
+  await page.waitForURL('**/diary**');
+  // Inside `main`, so the header's own "Added <name>" status line is not what
+  // is being read back: everything under `main` is rendered from the local
+  // store, so a match there is evidence the write landed. `.first()` because
+  // the diary also offers the same food as a quick-add chip once it is known.
+  await expect(page.locator('main').getByText(food.name).first()).toBeVisible();
 }
 
 /**

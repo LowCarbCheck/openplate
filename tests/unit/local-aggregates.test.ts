@@ -9,9 +9,14 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { computeDailyEntry } from '../../app/models/daily-totals';
-import { computeDailyTotalsInRange, computeStreak } from '../../app/lib/local-store/aggregates';
+import {
+  computeDailyTotalsInRange,
+  computeSlotTotalsInRange,
+  computeStreak,
+} from '../../app/lib/local-store/aggregates';
 import type { LocalDailyTotals } from '../../app/lib/local-store/aggregates';
 import type { LocalFoodLog } from '../../app/lib/local-store/schema';
+import type { MealType } from '../../types/enums';
 
 /** A minimal food log on `dayKey`; fiber/polyols zeroed so `netCarbs === carbs`. */
 function foodLog(id: string, dayKey: string, carbs: number): LocalFoodLog {
@@ -30,6 +35,11 @@ function foodLog(id: string, dayKey: string, carbs: number): LocalFoodLog {
     createdAt: Date.parse(`${dayKey}T12:00:00Z`),
     logBatchId: null,
   };
+}
+
+/** The same minimal log, in a named meal slot. */
+function mealLog(id: string, dayKey: string, carbs: number, mealType: MealType): LocalFoodLog {
+  return { ...foodLog(id, dayKey, carbs), mealType };
 }
 
 /** A day's totals: logged with `netCarbs` when given, else a gap day — for streak fixtures. */
@@ -159,5 +169,61 @@ describe('computeStreak', () => {
   it('breaks the streak once the rounded value exceeds the rounded ceiling (98.6 vs 98)', () => {
     const days = [dailyTotal('2026-07-01', 98.6)];
     assert.equal(computeStreak(days, { netCarbsCeiling: 98 }), 0);
+  });
+});
+
+describe('computeSlotTotalsInRange', () => {
+  /** The window every case below is read over. */
+  const WINDOW = { fromDate: '2026-07-01', toDate: '2026-07-03' };
+
+  it('counts only the entries in the chosen slot on a day that mixes two', () => {
+    const logs = [
+      mealLog('snack', '2026-07-01', 30, 'snack'),
+      mealLog('dinner', '2026-07-01', 10, 'dinner'),
+    ];
+
+    const snacks = computeSlotTotalsInRange(logs, WINDOW, 'snack');
+    const wholeDay = computeDailyTotalsInRange(logs, WINDOW);
+
+    // The control: the same logs, unfiltered, DO add up to 40. Without it the
+    // assertion below would pass against an aggregator that counted nothing.
+    assert.equal(wholeDay[0].summary?.netCarbs, 40);
+    assert.equal(snacks[0].summary?.netCarbs, 30);
+    assert.equal(snacks[0].entryCount, 1);
+  });
+
+  it('reads a day with entries in OTHER slots only as empty, and keeps it in the series', () => {
+    const logs = [mealLog('dinner', '2026-07-02', 10, 'dinner')];
+
+    const snacks = computeSlotTotalsInRange(logs, WINDOW, 'snack');
+
+    // Present, not omitted: three days in, three days out.
+    assert.equal(snacks.length, 3);
+    assert.equal(snacks[1].date, '2026-07-02');
+    assert.equal(snacks[1].hasLogs, false);
+    assert.equal(snacks[1].entryCount, 0);
+    assert.equal(snacks[1].summary, null);
+  });
+
+  it('never counts an entry that was logged with no meal at all', () => {
+    // `foodLog` leaves `mealType` null, which is "this entry has no meal".
+    const snacks = computeSlotTotalsInRange([foodLog('loose', '2026-07-01', 30)], WINDOW, 'snack');
+
+    assert.equal(snacks[0].hasLogs, false);
+  });
+
+  it('keeps the same day bucketing as the whole-day aggregate, boundaries included', () => {
+    const logs = [
+      mealLog('first', '2026-07-01', 5, 'lunch'),
+      mealLog('last', '2026-07-03', 7, 'lunch'),
+      mealLog('outside', '2026-07-04', 9, 'lunch'),
+    ];
+
+    const lunches = computeSlotTotalsInRange(logs, WINDOW, 'lunch');
+
+    assert.deepEqual(
+      lunches.map((day) => day.summary?.netCarbs ?? null),
+      [5, null, 7],
+    );
   });
 });

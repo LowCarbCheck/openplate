@@ -133,12 +133,28 @@ export {
 
 // Pure saved-meal builders (no store), the "save as meal"/"re-log a saved
 // meal" arithmetic, kept testable without a store or a DOM.
-export { buildSavedMealFromLogs, buildLogsFromSavedMeal } from './saved-meals';
+export {
+  buildSavedMealFromLogs,
+  buildLogsFromSavedMeal,
+  buildLogsFromSavedMealItems,
+  savedMealItemFromLog,
+} from './saved-meals';
+
+// Pure "your usual <slot>" ranking (no store): which foods and saved meals
+// this person normally eats at the time of day the calling screen resolved.
+export {
+  computeSlotSuggestions,
+  findSlotSuggestion,
+  toUsualAtSlotOffer,
+  SLOT_SUGGESTION_LIMIT,
+} from './local-slot-suggestions';
+export type { SlotSuggestion, SlotSuggestionKind, UsualAtSlotOffer } from './local-slot-suggestions';
 
 // Local aggregates (daily totals / streak / trend / habit strip), no network read.
 export {
   computeDailyTotals,
   computeDailyTotalsInRange,
+  computeSlotTotalsInRange,
   computeStreak,
   computeNetCarbTrendSeries,
   computeLocalHabitStrip,

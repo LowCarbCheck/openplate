@@ -28,7 +28,7 @@
  */
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import type { BarGeometry, TrendChartModel, TrendMetric } from '#app/lib/trend-chart';
+import type { BarFill, BarGeometry, TrendChartModel, TrendMetric } from '#app/lib/trend-chart';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 
 /**
@@ -62,6 +62,27 @@ function statusColorClass(bar: BarGeometry): string {
   return bar.isOverGoal ? 'text-accent-amber' : 'text-primary';
 }
 
+/**
+ * What a bar element carries about itself, in the DOM.
+ *
+ * The browser tier measures bar HEIGHTS with `getBoundingClientRect`, never a
+ * screenshot (see `tests/e2e/trends-slot-filter.spec.ts` for why), and a bar has
+ * nothing else to be found by: the tappable link above it is full-height by
+ * design, so its box says nothing about the value. `data-fill` rides along
+ * because an unlogged day is drawn as a hairline, which HAS a height, so a
+ * height alone cannot tell a small bar from no bar.
+ */
+interface BarMarkers {
+  'data-slot': 'trend-bar';
+  'data-date': string;
+  'data-fill': BarFill;
+}
+
+/** The DOM markers for one bar (see `BarMarkers`). */
+function barMarkers(bar: BarGeometry): BarMarkers {
+  return { 'data-slot': 'trend-bar', 'data-date': bar.date, 'data-fill': bar.fill };
+}
+
 /** The visible fill classes/attrs per bar state, keyed off `BarGeometry.fill`. */
 function BarColumn({ bar, index }: { bar: BarGeometry; index: number }) {
   const barWidth = SLOT_WIDTH * BAR_WIDTH_RATIO;
@@ -73,6 +94,7 @@ function BarColumn({ bar, index }: { bar: BarGeometry; index: number }) {
   if (bar.fill === 'empty') {
     return (
       <line
+        {...barMarkers(bar)}
         x1={centerX}
         y1={PLOT_HEIGHT}
         x2={centerX}
@@ -91,6 +113,7 @@ function BarColumn({ bar, index }: { bar: BarGeometry; index: number }) {
   if (bar.value === null) {
     return (
       <rect
+        {...barMarkers(bar)}
         x={x}
         y={PLOT_HEIGHT - INCOMPLETE_NUB_UNITS}
         width={barWidth}
@@ -111,7 +134,7 @@ function BarColumn({ bar, index }: { bar: BarGeometry; index: number }) {
   if (bar.fill === 'incomplete') {
     const capHeight = Math.min(CAP_UNITS, height);
     return (
-      <g className={colorClass}>
+      <g {...barMarkers(bar)} className={colorClass}>
         <rect x={x} y={y} width={barWidth} height={height} rx={0.8} fill="currentColor" fillOpacity={FLOOR_FILL_OPACITY} />
         <rect x={x} y={y} width={barWidth} height={capHeight} rx={0.8} fill="currentColor" />
       </g>
@@ -120,6 +143,7 @@ function BarColumn({ bar, index }: { bar: BarGeometry; index: number }) {
 
   return (
     <rect
+      {...barMarkers(bar)}
       x={x}
       y={y}
       width={barWidth}
@@ -163,6 +187,7 @@ function GoalLine({ goalFraction }: { goalFraction: number }) {
   const y = PLOT_HEIGHT * (1 - goalFraction);
   return (
     <line
+      data-slot="trend-goal-line"
       x1={0}
       y1={y}
       x2="100%"

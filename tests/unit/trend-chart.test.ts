@@ -271,3 +271,57 @@ describe('buildTrendChart — the axis top tracks the data closely', () => {
     assert.strictEqual(domainFor(1800), 2000);
   });
 });
+
+describe('buildTrendChart, a meal slot has no goal (M227/02)', () => {
+  /** A ceiling every fixture day sits over, so a goal that survived would be visible. */
+  const CEILING = 20;
+
+  it('draws the goal line for the whole day, as it always did', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 40 }) });
+    const { goalFraction } = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: CEILING, slot: 'all' });
+
+    assert.notStrictEqual(goalFraction, null);
+  });
+
+  it('defaults to the whole day when no slot is named at all', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 40 }) });
+    const { goalFraction } = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: CEILING });
+
+    assert.notStrictEqual(goalFraction, null);
+  });
+
+  it('hides the goal line once a slot is chosen, because the goal is a whole-day figure', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 40 }) });
+    const { goalFraction } = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: CEILING, slot: 'snack' });
+
+    assert.strictEqual(goalFraction, null);
+  });
+
+  it('stops flagging a slot bar as over goal, so no bar is painted against a line that is gone', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 40 }) });
+    const overWholeDay = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: CEILING, slot: 'all' });
+    const overSlot = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: CEILING, slot: 'snack' });
+
+    // The control: the same day, the same ceiling, IS over when the whole day
+    // is charted. Without this the assertion below would pass on any bar.
+    assert.strictEqual(overWholeDay.bars[0].isOverGoal, true);
+    assert.strictEqual(overSlot.bars[0].isOverGoal, false);
+  });
+
+  it('stops propping the axis top up with a goal no bar is measured against', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 4 }) });
+    const wholeDay = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: 100, slot: 'all' });
+    const slotOnly = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: 100, slot: 'snack' });
+
+    assert.strictEqual(wholeDay.domainMax, 100);
+    assert.strictEqual(slotOnly.domainMax, 4);
+  });
+
+  it('leaves the bar values themselves alone, the caller has already filtered the days', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 12 }) });
+    const { bars } = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: null, slot: 'lunch' });
+
+    assert.strictEqual(bars[0].value, 12);
+    assert.strictEqual(bars[0].fill, 'solid');
+  });
+});

@@ -21,9 +21,20 @@
 import type { DailyTotals, KcalBasis } from '#app/models/daily-totals';
 import type { DaySummary } from '#app/models/food-log-summary';
 import { computeCarbGoalProgress } from '#app/lib/goal-progress';
+import type { MealType } from '#types/enums';
 
 /** The two plottable series: the signature net-carbs metric and calories. */
 export type TrendMetric = 'net-carbs' | 'calories';
+
+/** The chart's "every meal" setting, i.e. no slot filter at all. */
+export const ALL_MEALS = 'all';
+
+/**
+ * The chart's meal dimension (M227/02): one slot across the days, or the whole
+ * day. The days handed in are already filtered by the caller; this is here so
+ * the model knows a bar is a PART of a day and can drop the goal accordingly.
+ */
+export type TrendSlot = MealType | typeof ALL_MEALS;
 
 /**
  * How a single bar should be drawn:
@@ -79,21 +90,31 @@ type SummarizedDay = TrendDay & { summary: DaySummary };
  * @param input.days - the per-day totals, oldest day first.
  * @param input.metric - which series to plot.
  * @param input.goalValue - the relevant goal (net-carb ceiling or kcal target), or null.
+ * @param input.slot - the meal slot the days were filtered to, or `ALL_MEALS` (the default) for whole days.
  * @returns the bars, shared domain, and goal-line fraction.
  */
 export function buildTrendChart({
   days,
   metric,
   goalValue,
+  slot = ALL_MEALS,
 }: {
   days: readonly TrendDay[];
   metric: TrendMetric;
   goalValue: number | null;
+  slot?: TrendSlot;
 }): TrendChartModel {
-  const valued = days.map((day) => ({ day, ..._barValue(day, metric, goalValue) }));
+  // A SLOT HAS NO GOAL. Every goal this app stores is a WHOLE-day figure, and
+  // nothing in the schema says how much of a day's ceiling belongs to lunch, so
+  // the goal is dropped here, at the model, rather than hidden at the renderer.
+  // Hiding only the line would leave `isOverGoal` painting a snack amber against
+  // a ceiling the chart no longer draws, and would leave the axis top propped up
+  // by a figure no bar is being measured against.
+  const effectiveGoal = slot === ALL_MEALS ? goalValue : null;
+  const valued = days.map((day) => ({ day, ..._barValue(day, metric, effectiveGoal) }));
   const domainMax = _computeDomainMax(
     valued.map((entry) => entry.value),
-    goalValue,
+    effectiveGoal,
   );
   const bars = valued.map(({ day, value, fill, isOverGoal }) => ({
     date: day.date,
@@ -104,7 +125,7 @@ export function buildTrendChart({
     isOverGoal,
     heightFraction: value !== null && value > 0 ? Math.min(value / domainMax, 1) : 0,
   }));
-  const goalFraction = goalValue !== null && goalValue > 0 ? Math.min(goalValue / domainMax, 1) : null;
+  const goalFraction = effectiveGoal !== null && effectiveGoal > 0 ? Math.min(effectiveGoal / domainMax, 1) : null;
   return { bars, domainMax, goalFraction };
 }
 

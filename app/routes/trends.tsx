@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { parseWithZod } from '@conform-to/zod/v4';
 import {
   computeDailyTotalsInRange,
+  computeSlotTotalsInRange,
   getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalFoodLogs,
@@ -14,8 +15,9 @@ import {
 } from '#app/lib/local-store';
 import { enumerateDates, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { startOfWeek } from '#app/lib/trend-week';
-import { buildTrendChart } from '#app/lib/trend-chart';
-import type { TrendMetric } from '#app/lib/trend-chart';
+import { ALL_MEALS, buildTrendChart } from '#app/lib/trend-chart';
+import type { TrendMetric, TrendSlot } from '#app/lib/trend-chart';
+import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
 import { computeWeeklyRecap } from '#app/lib/trend-recap';
 import { computeWeeklyWeightChange } from '#app/lib/trend-weight';
 import { computeEatingWindow } from '#app/lib/trend-eating-window';
@@ -79,6 +81,19 @@ const WEIGHT_WINDOW_DAYS = GRID_WEEKS * DAYS_IN_WEEK;
  */
 const actionT = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>): string => i18n.t(key, params ?? {});
 
+/**
+ * Parses the `slot` search param into a meal slot, falling back to "every meal"
+ * on anything the picker could not have produced. A bad value reads as no
+ * filter rather than as an error: the worst outcome is the view the plain
+ * `/trends` URL already gives.
+ *
+ * @param raw - the raw search-param value, or null when it is absent.
+ * @returns the slot to chart.
+ */
+function _parseSlot(raw: string | null): TrendSlot {
+  return MEAL_TYPES.find((meal) => meal === raw) ?? ALL_MEALS;
+}
+
 /** Parses an explicit `range` search param, falling back to the default on anything invalid. */
 function _parseRange(raw: string): TrendRange {
   const value = Number(raw);
@@ -141,14 +156,23 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   const allLogs = await listLocalFoodLogs();
 
-  const rawRange = new URL(request.url).searchParams.get('range');
+  const searchParams = new URL(request.url).searchParams;
+  const rawRange = searchParams.get('range');
   const range =
     rawRange === null ?
       pickDefaultRange({ earliestLoggedDate: _earliestDayKey(allLogs), today })
     : _parseRange(rawRange);
+  const slot = _parseSlot(searchParams.get('slot'));
 
-  // The chart window: `range` days ending on the user's local today.
-  const entries = computeDailyTotalsInRange(allLogs, { fromDate: shiftDate(today, -(range - 1)), toDate: today });
+  // The chart window: `range` days ending on the user's local today. With a
+  // slot chosen, each day counts only the entries that went into that slot
+  // (M227/02); a day whose entries all sit in OTHER slots comes back as a gap
+  // day, which the chart draws as "nothing logged" rather than as a zero.
+  const chartWindow = { fromDate: shiftDate(today, -(range - 1)), toDate: today };
+  const entries =
+    slot === ALL_MEALS ?
+      computeDailyTotalsInRange(allLogs, chartWindow)
+    : computeSlotTotalsInRange(allLogs, chartWindow, slot);
 
   // Two Monday→Sunday weeks (this week + last) computed as one contiguous
   // range, then split by date for the recap comparison.
@@ -221,6 +245,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     entries,
     goals,
     range,
+    slot,
     recap,
     weight,
     eatingWindow,
@@ -298,6 +323,7 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     entries,
     goals,
     range,
+    slot,
     recap,
     weight,
     eatingWindow,
@@ -330,14 +356,19 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
   }
 
   const goalValue = metric === 'net-carbs' ? goals.netCarbsCeiling : goals.kcalTarget;
-  const chart = buildTrendChart({ days: entries, metric, goalValue });
+  // `slot` goes to the model rather than being applied to the goal here: every
+  // stored goal is a whole-day figure, and `buildTrendChart` is the one place
+  // that decides a part-day bar has nothing to be measured against.
+  const chart = buildTrendChart({ days: entries, metric, goalValue, slot });
   // Two whole-sentence keys rather than "Daily {{metric}}" + a metric noun:
   // German inflects the adjective with the noun's gender, so the two halves
   // can't be translated independently.
   const chartTitle = metric === 'calories' ? t('trends.chart.titleCalories') : t('trends.chart.titleNetCarbs');
   // Below the threshold the chart is replaced, not drawn sparse — see
-  // `SparseTrendNotice`. Counted over the SELECTED window, so widening the range
-  // to 30 days can reveal a chart the 7-day window couldn't honestly show.
+  // `SparseTrendNotice`. Counted over the SELECTED window AND the selected slot,
+  // because those are the days this chart would actually draw: widening the
+  // range to 30 days can reveal a chart the 7-day window couldn't honestly show,
+  // and filtering to a slot the person rarely logs honestly has too little.
   const loggedDaysInRange = entries.filter((day) => day.hasLogs).length;
   const hasEnoughDays = loggedDaysInRange >= MIN_TREND_DAYS;
 
@@ -383,8 +414,15 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
             <CardDescription>
               {hasEnoughDays ? t('trends.chart.tapHint') : t('trends.chart.sparseHint')}
             </CardDescription>
+            {/* The title still says "Daily net carbs", which is only half true
+                once a slot is chosen, so the slot is named right under it. */}
+            {slot !== ALL_MEALS && (
+              <p className="text-xs font-medium text-muted-foreground">
+                {t('trends.chart.slotOnly', { meal: t(MEAL_LABEL_KEYS[slot]) })}
+              </p>
+            )}
           </div>
-          <TrendControls metric={metric} onMetricChange={setMetric} range={range} />
+          <TrendControls metric={metric} onMetricChange={setMetric} range={range} slot={slot} />
         </CardHeader>
         <CardContent className="space-y-4">
           {hasEnoughDays ?

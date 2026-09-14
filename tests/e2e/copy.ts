@@ -37,8 +37,15 @@ const catalogSchema = z.object({
       name: z.string(),
       grams: z.string(),
       submit: z.string(),
+      nutritionToggle: z.string(),
     }),
     search: z.object({ addManually: z.string() }),
+    meal: z.object({
+      breakfast: z.string(),
+      lunch: z.string(),
+      dinner: z.string(),
+      snack: z.string(),
+    }),
   }),
   entry: z.object({
     action: z.object({ delete: z.string() }),
@@ -50,10 +57,17 @@ const catalogSchema = z.object({
       fromLabel: z.string(),
       netCarbsForPortion: z.string(),
       confirmAndLog: z.string(),
+      sanity: z.object({
+        componentOverTotal: z.string(),
+        macro: z.object({ carbs: z.string(), fiber: z.string() }),
+      }),
     }),
   }),
   diary: z.object({
     netCarbsValue: z.string(),
+  }),
+  trends: z.object({
+    slot: z.object({ all: z.string() }),
   }),
   settingsAi: z.object({
     advanced: z.object({ toggle: z.string(), openaiCompatibleOption: z.string() }),
