@@ -653,6 +653,10 @@
       "protein": "Eiweiß"
     },
     "saveMeal": {
+      "hint": {
+        "dismiss": "Nicht jetzt",
+        "title": "Als Mahlzeit speichern?"
+      },
       "namePlaceholder": "Name der Mahlzeit",
       "save": "Speichern",
       "saving": "Wird gespeichert…",

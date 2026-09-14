@@ -45,6 +45,9 @@ import { useCelebration } from '#app/hooks/use-celebration';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { useCopyYesterdayToast } from '#app/hooks/use-copy-yesterday-toast';
 import { remapInstantToTargetDay } from '#app/lib/copy-day';
+import { selectRepeatedMealSlots } from '#app/lib/repeated-meal';
+import { dismissSaveMealHint, readDismissedSaveMealHints } from '#app/lib/save-meal-hint';
+import type { MealType } from '#types/enums';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { encodeDisplayPortion, formatPortionLabel, portionField } from '#app/lib/portions';
 import { chipCarbStatus } from '#app/lib/frequent-chips';
@@ -895,6 +898,30 @@ export function toggleFavoriteName(names: ReadonlySet<string>, name: string): Se
   return next;
 }
 
+/**
+ * The slots whose "Save this as a meal?" hint this device has waved away.
+ *
+ * Empty outside a browser, the same guard the favorites read above uses, and
+ * for the same reason: this runs in the client loader, which never sees a
+ * server.
+ *
+ * @returns the dismissed slots.
+ */
+function readDismissedHints(): Set<MealType> {
+  if (globalThis.localStorage === undefined) return new Set();
+  return readDismissedSaveMealHints(globalThis.localStorage);
+}
+
+/**
+ * Records a slot's hint as dismissed on this device.
+ *
+ * @param slot - the slot the person waved away.
+ */
+function dismissHint(slot: MealType): void {
+  if (globalThis.localStorage === undefined) return;
+  dismissSaveMealHint(globalThis.localStorage, slot);
+}
+
 /** Reads the current favorite-name set from localStorage. Empty outside a browser (SSR/Node) or on a fresh device. */
 function readFavoriteNames(): Set<string> {
   if (globalThis.localStorage === undefined) return new Set();
@@ -1052,6 +1079,14 @@ export interface DiaryData {
   calendarDayLevels: Record<string, CalendarDayLevel>;
   /** Whether the calendar's colours are a goal-adherence ramp or a plain logged/not record, for `AdherenceLegend`. */
   calendarMode: AdherenceMode;
+  /**
+   * The slots whose group on this day repeats the two days before it and has
+   * not been waved away, so the header can offer to save it as a meal
+   * (M227/03). Resolved in the loader rather than in the component because the
+   * dismissals live in `localStorage`, which the favorites above already read
+   * here for the same reason.
+   */
+  saveMealHintSlots: MealType[];
 }
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise<DiaryData> {
@@ -1180,6 +1215,15 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
   // day yet, so the legend is right even before the first log lands.
   const calendarMode: AdherenceMode = countConfiguredGoals(adherenceGoals) > 0 ? 'adherence' : 'activity';
 
+  // The nudge toward "save as meal" (M227/03). The run itself is decided by a
+  // pure selector over every entry on the device; this only subtracts the
+  // slots the person has already waved away, so a dismissal survives a reload
+  // without the component having to remember anything.
+  const dismissedHints = readDismissedHints();
+  const saveMealHintSlots = selectRepeatedMealSlots({ logs: allLogs, date }).filter(
+    (slot) => !dismissedHints.has(slot),
+  );
+
   return {
     date,
     today,
@@ -1216,6 +1260,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     }),
     calendarDayLevels,
     calendarMode,
+    saveMealHintSlots,
   };
 }
 clientLoader.hydrate = true as const;
@@ -1863,12 +1908,20 @@ function MealGroupSection({
   group,
   justAddedLogId,
   timezone,
+  hintSlot,
 }: {
   group: MealGroup;
   justAddedLogId: string | null;
   timezone: string;
+  /** The slot to offer the "save this as a meal" hint for, or null for no hint. */
+  hintSlot: MealType | null;
 }) {
   const { t, i18n } = useTranslation();
+  // LIFTED, so the hint and the header button drive ONE naming form and one
+  // write. A hint with its own form would be a second way to save a meal, and
+  // two ways is how the two paths drift apart.
+  const [isNaming, setIsNaming] = useState(false);
+  const [isHintDismissed, setIsHintDismissed] = useState(false);
   return (
     // The meal is named on the ELEMENT, not only in the translated heading, so
     // a browser check can assert an entry landed in a particular slot without
@@ -1890,8 +1943,22 @@ function MealGroupSection({
             value: formatNetCarbGrams(group.subtotal.netCarbs, group.subtotal.hasEstimates, i18n.language),
           })}
         </span>
-        <SaveMealButton group={group} />
+        <SaveMealButton group={group} isNaming={isNaming} onNamingChange={setIsNaming} />
       </div>
+      {/* The condition is spelled out rather than aliased so `hintSlot` is
+          narrowed where it is passed. The hint hides itself while the naming
+          field is open, because at that point the person has already said yes
+          and a question under an answer is noise. */}
+      {hintSlot !== null && !isHintDismissed && !isNaming && (
+        <SaveMealHint
+          slot={hintSlot}
+          onSave={() => setIsNaming(true)}
+          onDismiss={(slot) => {
+            dismissHint(slot);
+            setIsHintDismissed(true);
+          }}
+        />
+      )}
       <div className="space-y-2">
         {group.logs.map((log) => (
           <LogEntryCard
@@ -1907,6 +1974,61 @@ function MealGroupSection({
 }
 
 /**
+ * The one-line nudge toward the button above (M227/03).
+ *
+ * WHY IT EXISTS. "Save as meal" has been on every meal header since M123/07,
+ * and two people in five days never found it. The icon is a door, this is the
+ * app saying the door is there, on the one morning the person has just logged
+ * the same breakfast for the third day in a row (`selectRepeatedMealSlots`).
+ *
+ * IT WRITES NOTHING. The English reads "Save this as a meal?" (the copy is
+ * `diary.saveMeal.hint.title`), and its action only OPENS the naming field
+ * that `SaveMealButton` already owns, so the bundle is built by the one
+ * handler and announced by the one status message. A second form here would
+ * be a second write path.
+ *
+ * THE DISMISSAL IS PER SLOT and per device, held in `localStorage` (see
+ * `#app/lib/save-meal-hint`), so waving away the breakfast question does not
+ * silence dinner and does not travel in a backup.
+ */
+function SaveMealHint({
+  slot,
+  onSave,
+  onDismiss,
+}: {
+  slot: MealType;
+  /** Opens the naming field the header button owns. */
+  onSave: () => void;
+  /** Records the dismissal, taking the slot back so no closure has to narrow it. */
+  onDismiss: (slot: MealType) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      data-slot="save-meal-hint"
+      data-meal={slot}
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-dashed border-primary/40 bg-card/60 px-3 py-1.5 text-xs text-muted-foreground"
+    >
+      <span className="min-w-0 flex-1">{t('diary.saveMeal.hint.title')}</span>
+      <button
+        type="button"
+        onClick={onSave}
+        className="shrink-0 rounded-full px-2 py-0.5 font-medium text-primary transition-colors hover:bg-primary/10"
+      >
+        {t('diary.saveMeal.trigger')}
+      </button>
+      <button
+        type="button"
+        onClick={() => onDismiss(slot)}
+        className="shrink-0 rounded-full px-2 py-0.5 transition-colors hover:bg-primary/10 hover:text-foreground"
+      >
+        {t('diary.saveMeal.hint.dismiss')}
+      </button>
+    </div>
+  );
+}
+
+/**
  * "Save as meal" (item 1, M123/07): a small button on the meal header that
  * bundles every entry in THIS group into a named, reusable `LocalSavedMeal`
  * (re-logged/deleted from `/meals`). Local UI state, own fetcher — the same
@@ -1914,11 +2036,20 @@ function MealGroupSection({
  * picker already established, so a person familiar with one recognizes the
  * other.
  */
-function SaveMealButton({ group }: { group: MealGroup }) {
+function SaveMealButton({
+  group,
+  isNaming,
+  onNamingChange,
+}: {
+  group: MealGroup;
+  /** Whether the naming field is open. Owned by `MealGroupSection`, because the hint opens it too. */
+  isNaming: boolean;
+  /** Opens or closes the naming field. */
+  onNamingChange: (isNaming: boolean) => void;
+}) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
   const shownRef = useRef(false);
-  const [isNaming, setIsNaming] = useState(false);
   const [name, setName] = useState('');
   const isSaving = fetcher.state !== 'idle';
 
@@ -1927,15 +2058,15 @@ function SaveMealButton({ group }: { group: MealGroup }) {
     if (!data || !('intent' in data) || data.intent !== 'save-meal' || shownRef.current) return;
     shownRef.current = true;
     publishStatus({ text: t('diary.saveMeal.toast', { name: data.name, count: data.count }), tone: 'success' });
-    setIsNaming(false);
+    onNamingChange(false);
     setName('');
-  }, [fetcher.data, t]);
+  }, [fetcher.data, onNamingChange, t]);
 
   if (!isNaming) {
     return (
       <button
         type="button"
-        onClick={() => setIsNaming(true)}
+        onClick={() => onNamingChange(true)}
         aria-label={t('diary.saveMeal.trigger')}
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
       >
@@ -1968,7 +2099,7 @@ function SaveMealButton({ group }: { group: MealGroup }) {
       <Button type="submit" size="sm" className="h-7 px-2 text-xs" disabled={isSaving || name.trim().length === 0}>
         {isSaving ? t('diary.saveMeal.saving') : t('diary.saveMeal.save')}
       </Button>
-      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setIsNaming(false)}>
+      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onNamingChange(false)}>
         {t('diary.copy.cancel')}
       </Button>
     </fetcher.Form>
@@ -2444,6 +2575,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     aiEstimatedLogCount,
     calendarDayLevels,
     calendarMode,
+    saveMealHintSlots,
   } = loaderData;
   const justAddedLogId = useJustAddedLogId(logs);
   // One-time celebrations for genuine firsts only — see `#app/lib/celebration`
@@ -2536,6 +2668,11 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
               group={group}
               justAddedLogId={justAddedLogId}
               timezone={timezone}
+              /* Null for the "no meal" bucket, which is never a routine: see
+                 `selectRepeatedMealSlots`. */
+              hintSlot={
+                group.mealType !== null && saveMealHintSlots.includes(group.mealType) ? group.mealType : null
+              }
             />
           ))}
         </div>

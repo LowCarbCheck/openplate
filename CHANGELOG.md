@@ -15,6 +15,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The progress chart can now show a single meal over time.** A new filter sits beside the net carbs and calories toggle on the progress screen. You can pick all meals, breakfast, lunch, dinner, or snacks. When you select one meal, the chart bars display only the food logged to that slot across the days. The daily goal line disappears in this view, since goals apply to the whole day. The page URL saves your filter choice, so it stays active when you refresh.
 - **The app now suggests frequent foods based on the time of day.** You will see your regular items under the add search box and below the scan camera. The list uses your past diary entries. Foods you log most often at that hour appear first, along with saved meals you usually eat then. One tap adds the item to your log, and the undo button clears it in one step. If you do not have logged habits for that specific hour, the row stays empty.
+- **The diary now offers to save meals you log three days in a row.** When a meal group has the same foods and portions as the two days before it, a line under the header asks to save it. Saving uses the existing header button, and the meal goes into your saved meals. You can dismiss the prompt per meal. It stays dismissed on that device.
 
 ### Fixed
 

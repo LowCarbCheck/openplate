@@ -48,7 +48,7 @@ const catalogSchema = z.object({
     }),
   }),
   entry: z.object({
-    action: z.object({ delete: z.string() }),
+    action: z.object({ delete: z.string(), logAgain: z.string() }),
     toast: z.object({ removed: z.string(), undo: z.string() }),
   }),
   scan: z.object({
@@ -66,6 +66,11 @@ const catalogSchema = z.object({
   diary: z.object({
     netCarbsValue: z.string(),
     meals: z.object({ breakfast: z.string(), dinner: z.string() }),
+    copy: z.object({ door: z.string(), title: z.string() }),
+    saveMeal: z.object({
+      trigger: z.string(),
+      hint: z.object({ title: z.string(), dismiss: z.string() }),
+    }),
   }),
   trends: z.object({
     slot: z.object({ all: z.string() }),

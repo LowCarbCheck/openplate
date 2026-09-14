@@ -653,6 +653,10 @@
       "protein": "protein"
     },
     "saveMeal": {
+      "hint": {
+        "dismiss": "Not now",
+        "title": "Save this as a meal?"
+      },
       "namePlaceholder": "Meal name",
       "save": "Save",
       "saving": "Saving…",
