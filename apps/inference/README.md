@@ -54,6 +54,18 @@ docker run -d --name openplate-inference \
   ghcr.io/lowcarbcheck/openplate-inference:latest
 ```
 
+```bash
+podman run -d --name openplate-inference \
+  -p 8300:8300 \
+  -v openplate-models:/models \
+  -e MODEL_PROFILE=lite \
+  ghcr.io/lowcarbcheck/openplate-inference:latest
+```
+
+Podman takes the same flags Docker does here. See openplate's
+[podman.md](https://github.com/LowCarbCheck/openplate/blob/main/docs/podman.md)
+for the `podman compose` notes that apply to the compose file linked below.
+
 That is the whole CPU install. On a machine with an NVIDIA GPU, add `--gpus all` and use the CUDA image. The container detects the GPU and offloads every layer by itself, there is no flag to set:
 
 ```bash
@@ -64,6 +76,18 @@ docker run -d --name openplate-inference \
   -e MODEL_PROFILE=quality \
   ghcr.io/lowcarbcheck/openplate-inference:cuda
 ```
+
+```bash
+podman run -d --name openplate-inference \
+  --gpus all \
+  -p 8300:8300 \
+  -v openplate-models:/models \
+  -e MODEL_PROFILE=quality \
+  ghcr.io/lowcarbcheck/openplate-inference:cuda
+```
+
+Podman's `--gpus all` takes the same value Docker's does, and currently
+supports NVIDIA devices only, same as here.
 
 Building from source is always an option, and the one to take any time you want
 to see exactly what you are running:
@@ -148,6 +172,7 @@ DEFAULT_INFERENCE_MODEL=openplate-plate-1
 
 A ready-to-edit two-service compose file (openplate and this service wired together) lives in the openplate repo at [`docker/topologies/compose.inference.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.inference.yml).
 To run this service on its own, use [`docker/compose.yml`](docker/compose.yml).
+That file also runs with `podman compose -f docker/compose.yml up -d`.
 
 #### Path B: bring your own key (per person, nothing on the server)
 
