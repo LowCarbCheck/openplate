@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronUp, Keyboard, Mic, Camera } from 'lucide-react';
-import { Link } from '#app/components/link';
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
+import { ChevronUp } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
-import { useCameraCapture } from '#app/components/add/use-camera-capture';
+import { useCameraCapture, type CameraCapture } from '#app/components/add/use-camera-capture';
+import { AddFoodActionsComposer } from '#app/components/add-food-actions-composer';
 import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { hasMovedBeyondPressTolerance, LONG_PRESS_MS, type PointerPosition } from '#app/lib/long-press';
 import { parseDateParam } from '#app/lib/user-days';
 import type { NavigationItem } from './app-sidebar';
-
-/** One sheet row: full width, 44px of hit area, no decoration competing with the label. */
-const LAUNCHER_ITEM_CLASS =
-  'flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-base font-medium hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden';
 
 /**
  * The tab bar's flagship action: **the intent is the tap.**
@@ -35,6 +31,13 @@ const LAUNCHER_ITEM_CLASS =
  * nothing on screen saying so. The day is read out of the current URL and
  * threaded through `buildAddHref`, so the launcher logs to the day the person
  * is looking at.
+ *
+ * THE SHEET RENDERS THE COMPOSER STRIP (M232/03), not a row list of its own.
+ * It used to hand-roll three rows with the same three destinations the strip
+ * already offers on `/dashboard` and `/diary`, which is two implementations of
+ * one door. The strip is given THIS component's capture, so the page still has
+ * exactly one hook instance and exactly one hidden input, and that input still
+ * sits outside the sheet where closing the sheet cannot unmount it.
  */
 export function AddLauncher({ tab }: { tab: NavigationItem }) {
   const { t } = useTranslation();
@@ -43,11 +46,20 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
   // exactly what a bare destination means.
   const viewedDate = parseDateParam(new URLSearchParams(location.search).get('date'));
   const describeTo = buildAddHref('/describe', { date: viewedDate });
-  const speakTo = buildAddHref('/describe', { date: viewedDate, speak: true });
-  const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({
-    scanTo: buildAddHref('/scan', { date: viewedDate }),
-  });
+  const scanTo = buildAddHref('/scan', { date: viewedDate });
+  const launcherCapture = useCameraCapture({ scanTo });
+  const { capture, triggerRef, inputRef, inputProps } = launcherCapture;
   const pressStartRef = useRef<PointerPosition | null>(null);
+  /**
+   * The sheet's own photo key.
+   *
+   * A SECOND REF, deliberately, not the hook's. Both keys are on the page at
+   * once while the sheet is open, and one ref cannot hold two elements: the
+   * sheet's key would take it on open and null it on close, leaving the raised
+   * circle with nothing to return focus to after a dismissed camera. The hook
+   * closes over its own ref, so the focus still comes back to the circle.
+   */
+  const sheetPhotoRef = useRef<HTMLButtonElement>(null);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Set when a long press already opened the sheet, so the click that follows it does not also open the camera. */
   const longPressFiredRef = useRef(false);
@@ -62,6 +74,13 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
   };
 
   useEffect(() => clearPressTimer, []);
+
+  // The strip's type and speak keys are ordinary links, so nothing closes the
+  // sheet behind them the way the old rows' `SheetClose` did. A navigation
+  // closes it, whichever door inside it started the navigation.
+  useEffect(() => {
+    setIsSheetOpen(false);
+  }, [location.key]);
 
   const handleLauncherClick = () => {
     if (longPressFiredRef.current) {
@@ -87,18 +106,31 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
     if (hasMovedBeyondPressTolerance({ start, current: { x: event.clientX, y: event.clientY } })) clearPressTimer();
   };
 
+  /**
+   * The sheet's photo key: the SAME gesture, and then the sheet gets out of
+   * the way. `capture()` first and nothing awaited before it, so the camera
+   * still opens inside the tap; the close that follows cannot reach the input,
+   * which lives outside the sheet.
+   */
   const capturePhotoFromSheet = () => {
     capture();
     setIsSheetOpen(false);
   };
 
+  /** This component's capture, wearing the sheet's own trigger and close. The strip renders no input for it. */
+  const sheetCapture: CameraCapture = {
+    ...launcherCapture,
+    capture: capturePhotoFromSheet,
+    triggerRef: sheetPhotoRef,
+  };
+
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
       <div className="relative flex flex-1 flex-col items-center justify-end">
-        {/* The single hidden capture input every photo path goes through — the
-            launcher's own tap and both photo rows in the sheet. It sits
-            outside the sheet on purpose, so closing the sheet cannot unmount
-            the element whose `click()` is still on the gesture stack. */}
+        {/* The single hidden capture input every photo path goes through, the
+            raised circle's own tap and the strip's camera key in the sheet. It
+            sits outside the sheet on purpose, so closing the sheet cannot
+            unmount the element whose `click()` is still on the gesture stack. */}
         <input ref={inputRef} {...inputProps} />
 
         <button
@@ -158,40 +190,18 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
         <SheetHeader>
           <SheetTitle>{t('launcher.sheetTitle')}</SheetTitle>
         </SheetHeader>
-        <div className="flex flex-col gap-1 px-4 pb-4">
-          {/* ONE photo row. There used to be a second for a nutrition panel,
-              which asked the person to classify their own photograph before
-              taking it; the model classifies each item now (amends ADR-0005,
-              2026-09-08), so a packet, a plate and a panel are all this row. */}
-          <button type="button" onClick={capturePhotoFromSheet} className={LAUNCHER_ITEM_CLASS}>
-            <Camera className="h-5 w-5 shrink-0" aria-hidden="true" />
-            {t('launcher.photoAnything')}
-          </button>
-          {/* Navigations stay links: `SheetClose` closes the sheet, the link
-              does the travelling. `?speak=1` focuses the composer's field and
-              shows the line that names the keyboard's dictation key. This app
-              has no microphone of its own (M203 removed the Web Speech one),
-              so the row offers a place to dictate INTO, never a recording.
+        <div className="px-4 pb-4">
+          {/* THE SAME STRIP `/dashboard` AND `/diary` DRAW, given this
+              component's camera. Its three keys are the three doors the sheet
+              used to hand-roll: type, dictate, photograph. All three carry the
+              viewed day, and none of them points at `/add`, the database
+              search, which answers "which food is this" for one item rather
+              than taking a written meal.
 
-              BOTH ROWS POINT AT `/describe` NOW, not at `/add`. Speaking and
-              typing are the same act here, words about a meal, and `/add` is
-              the database SEARCH, which answers a different question. Sending
-              somebody who tapped "Type" to a search field was handing them a
-              box that wants one noun when they came to write a sentence. The
-              search is still one tap away, from the nav and from a link on the
-              composer itself. */}
-          <SheetClose asChild>
-            <Link to={speakTo} className={LAUNCHER_ITEM_CLASS}>
-              <Mic className="h-5 w-5 shrink-0" aria-hidden="true" />
-              {t('launcher.speak')}
-            </Link>
-          </SheetClose>
-          <SheetClose asChild>
-            <Link to={describeTo} className={LAUNCHER_ITEM_CLASS}>
-              <Keyboard className="h-5 w-5 shrink-0" aria-hidden="true" />
-              {t('launcher.type')}
-            </Link>
-          </SheetClose>
+              `label` is "Type" here, not the strip's own invitation: the
+              heading above already says "Add food", and the same words twice,
+              stacked, read as a mistake. */}
+          <AddFoodActionsComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} />
         </div>
       </SheetContent>
     </Sheet>

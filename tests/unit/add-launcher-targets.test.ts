@@ -1,82 +1,181 @@
 /**
- * Where the launcher sheet's rows go.
+ * Where the launcher sheet's doors go, and how many cameras the bar has.
  *
- * The sheet is the discoverable door to every way of adding food. Two of its
- * three rows pointed at `/add`, the database SEARCH: "Type" opened a one-line
- * field with a food list under it, and "Speak" opened the same screen with its
- * microphone armed. Both rows promise words about a meal, and both landed on a
- * box that wants one noun. They point at `/describe` now, which is a composer
- * and nothing else.
+ * The sheet used to hand-roll three rows. It renders the composer strip now
+ * (M232/03), the same one `/dashboard` and `/diary` draw, so the three doors
+ * are one implementation instead of two. This file is rewritten against that
+ * shape: the old version counted `LAUNCHER_ITEM_CLASS` occurrences and
+ * `SheetClose` tags, which describe rows that no longer exist.
  *
- * Source-level, like `add-launcher-gesture.test.ts` beside it: the sheet's
- * content lives in a Radix portal, which renders to nothing under
- * `renderToStaticMarkup`, so the hrefs cannot be read out of markup.
+ * MOSTLY RENDERED, NOT READ. The strip is an ordinary component, so its
+ * destinations and its input can be counted in real markup. Only the wiring
+ * between the launcher and the strip is read out of the source, because the
+ * sheet's body lives in a Radix portal and `renderToStaticMarkup` draws a
+ * portal as nothing.
  *
- * Each assertion is paired with the control that fails if a row goes back to
- * the search screen.
+ * THE INVARIANT THIS FILE EXISTS FOR. There is exactly ONE capture input on
+ * the page, the bar's own, and it sits outside the sheet: closing a sheet must
+ * not unmount the element whose `click()` is still on the gesture stack
+ * (`app/components/add/use-camera-capture.ts`). A strip that opened its own
+ * camera inside the sheet would put a second one there, and the pair of counts
+ * below is what says so.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createElement, type ReactElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { RouterProvider, createMemoryRouter } from 'react-router';
+import i18next from 'i18next';
+import { initReactI18next } from 'react-i18next';
 
+import { AddFoodActionsComposer } from '../../app/components/add-food-actions-composer';
+import { BottomNav } from '../../app/components/bottom-nav';
+import type { CameraCapture } from '../../app/components/add/use-camera-capture';
 import { buildAddHref } from '../../app/lib/add-food-hrefs';
+
+/**
+ * A hermetic catalog, like `bottom-nav.test.ts` beside it: this file asserts
+ * which keys the strip asks for and where its doors point, never what the
+ * shipped bundle says today. Inline resources make `init` resolve
+ * synchronously, so the first render already sees them.
+ */
+void i18next.use(initReactI18next).init({
+  lng: 'en',
+  resources: {
+    en: {
+      translation: {
+        nav: { diary: 'Diary', scan: 'Scan', add: 'Add' },
+        launcher: {
+          moreOptions: 'More ways to add food',
+          sheetTitle: 'Add food',
+          speak: 'Speak',
+          type: 'Type',
+          photo: 'Photo',
+        },
+      },
+    },
+  },
+  react: { useSuspense: false },
+});
 
 const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
 
 /**
- * The destination of the `<Link>` whose body renders the given label key.
+ * A capture the caller already owns, as the launcher hands one to the strip.
  *
- * The rows carry the viewed day now, so each `to=` is a binding rather than a
- * literal: the name is read out of the markup, the `buildAddHref` call that
- * defines it is read out of the same file, and the call is RUN, for today and
- * for a back-dated day. A row wired to the wrong binding, or a binding built
- * from the wrong path, fails here.
+ * It opens nothing: this file counts inputs and reads hrefs, and the gesture
+ * itself is `add-launcher-gesture.test.ts`'s subject.
  */
-function linkFor(labelKey: string, date: string | null = null): string {
-  const link = new RegExp(`<Link to=\\{([A-Za-z][A-Za-z0-9]*)\\}[\\s\\S]{0,240}?t\\('${labelKey}'\\)`).exec(LAUNCHER);
-  assert.ok(link !== null, `no launcher row renders ${labelKey}`);
-  const binding = link[1] ?? '';
-  const built = new RegExp(`const ${binding} = buildAddHref\\('([^']+)', \\{ date: viewedDate(, speak: (true|false))? \\}\\);`).exec(
-    LAUNCHER,
-  );
-  assert.ok(built !== null, `${binding} is not built from the viewed day by buildAddHref`);
-  return buildAddHref(built[1] ?? '', { date, speak: built[3] === 'true' });
+const BORROWED_CAPTURE: CameraCapture = {
+  capture: () => {},
+  triggerRef: { current: null },
+  inputRef: { current: null },
+  inputProps: { type: 'file' },
+};
+
+/**
+ * One component's static markup, inside a DATA router.
+ *
+ * A data router rather than a `MemoryRouter` for the reason `bottom-nav.test.ts`
+ * records: the capture hook reads this instance's policy through the root
+ * loader's public config, which throws outside one.
+ */
+function render(element: ReactElement): string {
+  const router = createMemoryRouter([{ path: '*', element }], { initialEntries: ['/diary'] });
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
-describe('the launcher sheet', () => {
-  it('sends Type to the composer, never to the database search', () => {
-    assert.equal(linkFor('launcher.type'), '/describe');
-    assert.notEqual(linkFor('launcher.type'), '/add', 'the Type row is a search form again');
+/**
+ * Every `href="..."` in the markup, in document order.
+ *
+ * The ampersand between two query parameters is escaped in an attribute, so it
+ * is put back: this file compares addresses, not encodings.
+ */
+function hrefsOf(html: string): string[] {
+  return [...html.matchAll(/href="([^"]*)"/g)].map((match) => (match[1] ?? '').replaceAll('&amp;', '&'));
+}
+
+/** How many `<input>` elements the markup has. The strip has no other kind. */
+function inputCount(html: string): number {
+  return (html.match(/<input\b/g) ?? []).length;
+}
+
+/** The strip exactly as the launcher's sheet renders it, for a given viewed day. */
+function sheetStrip(date: string | null): ReactElement {
+  return createElement(AddFoodActionsComposer, {
+    describeTo: buildAddHref('/describe', { date }),
+    capture: BORROWED_CAPTURE,
+    label: 'Type',
+  });
+}
+
+describe('the launcher sheet renders the composer strip', () => {
+  it('hands the strip its own camera rather than letting it open a second one', () => {
+    assert.match(LAUNCHER, /<AddFoodActionsComposer[^>]*capture=\{sheetCapture\}/);
+    assert.match(LAUNCHER, /const sheetCapture: CameraCapture = \{/);
   });
 
-  it('sends Speak to the composer with the microphone armed', () => {
-    assert.equal(linkFor('launcher.speak'), '/describe?speak=1');
-    assert.notEqual(linkFor('launcher.speak'), '/add?speak=1', 'the Speak row is a search form again');
+  it('has no hand-rolled row list left', () => {
+    // The control for the line above: a file that rendered the strip AND kept
+    // its three rows would satisfy every destination check in this file.
+    assert.doesNotMatch(LAUNCHER, /LAUNCHER_ITEM_CLASS/, 'the sheet hand-rolls its rows again');
+    assert.doesNotMatch(LAUNCHER, /<SheetClose/, 'the sheet hand-rolls its rows again');
   });
 
-  it('takes both rows to the day on screen, not to today', () => {
-    // The bar renders under `/diary?date=<an earlier day>` too. Undated rows
-    // there wrote the meal to today and said nothing about it.
-    assert.equal(linkFor('launcher.type', '2026-09-07'), '/describe?date=2026-09-07');
-    assert.equal(linkFor('launcher.speak', '2026-09-07'), '/describe?date=2026-09-07&speak=1');
+  it('says "Add food" once, in the heading, and lets the strip say "Type"', () => {
+    assert.equal((LAUNCHER.match(/t\('launcher\.sheetTitle'\)/g) ?? []).length, 1);
+    assert.match(LAUNCHER, /label=\{t\('launcher\.type'\)\}/);
+  });
+});
+
+describe('where the sheet doors go', () => {
+  it('sends typing and speaking to the composer, never to the database search', () => {
+    assert.deepEqual(hrefsOf(render(sheetStrip(null))), ['/describe', '/describe?speak=1']);
+    // The blunt control: `/add` is the database SEARCH, which wants one noun
+    // from somebody who came to write a sentence.
+    assert.ok(!hrefsOf(render(sheetStrip(null))).includes('/add'));
   });
 
-  it('leaves no row pointing at the search screen', () => {
-    // The blunt control over both checks above: a fourth row added later that
-    // quietly reintroduces the defect fails here even if it uses a new label.
-    assert.doesNotMatch(LAUNCHER, /<Link to="\/add/, 'a launcher row points at the database search again');
+  it('takes both doors to the day on screen, not to today', () => {
+    assert.deepEqual(hrefsOf(render(sheetStrip('2026-09-07'))), [
+      '/describe?date=2026-09-07',
+      '/describe?date=2026-09-07&speak=1',
+    ]);
   });
 
-  it('still has exactly three rows: one photo, one spoken, one typed', () => {
-    // The photo row is a BUTTON, not a link: a navigation cannot open a
-    // camera. Counting it separately is what stops "three rows" from being
-    // satisfied by three links and no shutter.
-    assert.equal((LAUNCHER.match(/className=\{LAUNCHER_ITEM_CLASS\}/g) ?? []).length, 3);
-    assert.match(LAUNCHER, /onClick=\{capturePhotoFromSheet\}/, 'the photo row stopped opening the camera itself');
-    assert.equal(
-      (LAUNCHER.match(/<SheetClose asChild>/g) ?? []).length,
-      2,
-      'the two navigation rows are no longer two',
-    );
+  it('builds the day it hands over through the shared builder', () => {
+    // The other end of the chain, which no render can see: the launcher reads
+    // the day out of the URL and builds the destination with `buildAddHref`.
+    assert.match(LAUNCHER, /const viewedDate = parseDateParam\(new URLSearchParams\(location\.search\)\.get\('date'\)\);/);
+    assert.match(LAUNCHER, /const describeTo = buildAddHref\('\/describe', \{ date: viewedDate \}\);/);
+    assert.match(LAUNCHER, /<AddFoodActionsComposer describeTo=\{describeTo\}/);
+  });
+});
+
+describe('how many capture inputs the bar has', () => {
+  it('draws exactly one, on the bar itself', () => {
+    assert.equal(inputCount(render(createElement(BottomNav))), 1);
+  });
+
+  it('adds none when the sheet opens, because the strip was given a camera', () => {
+    assert.equal(inputCount(render(sheetStrip(null))), 0);
+  });
+
+  it('would draw a second one if the strip opened its own camera', () => {
+    // THE CONTROL for the line above, and the naive implementation this spec
+    // exists to refuse: the same strip with no `capture` prop renders the
+    // input itself, which inside a sheet is an element that unmounts while the
+    // camera it opened is still opening.
+    assert.equal(inputCount(render(createElement(AddFoodActionsComposer, { describeTo: '/describe' }))), 1);
+  });
+
+  it('keeps that one input outside the sheet', () => {
+    const sheetStart = LAUNCHER.indexOf('<SheetContent');
+    assert.notEqual(sheetStart, -1);
+    const inputAt = LAUNCHER.indexOf('<input ref={inputRef} {...inputProps} />');
+    assert.notEqual(inputAt, -1, 'the bar no longer renders the input the hook owns');
+    assert.ok(inputAt < sheetStart, 'the capture input moved inside the sheet, where a close can unmount it');
+    assert.equal((LAUNCHER.match(/<input\b/g) ?? []).length, 1);
   });
 });

@@ -161,6 +161,61 @@ describe('the surfaces that capture', () => {
 });
 
 /**
+ * THE SHEET'S PHOTO KEY IS THE BAR'S PHOTO KEY (M232/03).
+ *
+ * The sheet renders the composer strip now, and a strip that opened a camera
+ * of its own would put a second hidden input INSIDE the sheet, where the close
+ * that follows the tap unmounts the very element whose `click()` is still on
+ * the gesture stack. That is the exact failure `use-camera-capture.ts`'s header
+ * names, so the wiring is pinned here: one hook call in the whole file, one
+ * input, and the sheet's key driving the same `capture` the raised circle does.
+ *
+ * `add-launcher-targets.test.ts` counts the inputs in real markup. This file
+ * owns the other half, which no render can see: that nothing is awaited on the
+ * way from the sheet's tap to `.click()`.
+ */
+describe("the sheet key opens the bar's own camera, inside the tap", () => {
+  const launcher = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
+
+  it('calls the hook once, so there is one capture and one input on the page', () => {
+    assert.equal((launcher.match(/useCameraCapture\(/g) ?? []).length, 1);
+    assert.equal((launcher.match(/<input\b/g) ?? []).length, 1);
+  });
+
+  it('hands the strip that same capture rather than a second one', () => {
+    // A SPREAD OF THE HOOK RESULT, so the input, and therefore the `click()`
+    // target, is the one the bar already renders. Only the trigger and the
+    // close are the sheet's own.
+    assert.match(launcher, /const sheetCapture: CameraCapture = \{\n\s*\.\.\.launcherCapture,/);
+    assert.match(launcher, /capture: capturePhotoFromSheet,/);
+    assert.match(launcher, /<AddFoodActionsComposer[^>]*capture=\{sheetCapture\}/);
+  });
+
+  it('awaits nothing between the sheet tap and the capture, and closes only after it', () => {
+    const start = launcher.indexOf('const capturePhotoFromSheet = () => {');
+    assert.notEqual(start, -1, 'the sheet photo key no longer has a handler');
+    const end = /^ {2}};$/m.exec(launcher.slice(start));
+    assert.ok(end !== null, 'the handler has no closing line at its own indentation');
+    const body = launcher.slice(start, start + end.index);
+
+    const captureIndex = body.indexOf('capture()');
+    assert.notEqual(captureIndex, -1, 'the sheet key stopped opening the camera');
+    assert.doesNotMatch(body.slice(0, captureIndex), /\bawait\b/);
+    assert.doesNotMatch(body, /\basync\b/);
+    // The close comes AFTER, which is what makes it harmless: an unmount can
+    // only reach the strip's button, never the input outside the sheet.
+    assert.ok(body.indexOf('setIsSheetOpen(false)') > captureIndex);
+  });
+
+  it('gives the sheet key its own trigger ref, so a dismissed camera still finds the circle', () => {
+    // One ref cannot hold two elements. Sharing the hook's would leave the
+    // raised circle with nothing to focus once the sheet had been opened once.
+    assert.match(launcher, /triggerRef: sheetPhotoRef,/);
+    assert.match(launcher, /const sheetPhotoRef = useRef<HTMLButtonElement>\(null\);/);
+  });
+});
+
+/**
  * THE LAUNCHER LOGS TO THE DAY ON SCREEN.
  *
  * This bar renders under every route, `/diary?date=<an earlier day>` included,
@@ -182,18 +237,21 @@ describe('the launcher carries the day the person is looking at', () => {
     assert.match(launcher, /const viewedDate = parseDateParam\(new URLSearchParams\(location\.search\)\.get\('date'\)\);/);
   });
 
-  it('builds all three doors through the shared builder', () => {
+  it('builds both doors it owns through the shared builder', () => {
+    // TWO, not three: the sheet renders the composer strip now (M232/03), and
+    // the strip derives the spoken door from the typed one. Where those two
+    // land is `add-launcher-targets.test.ts`, which renders them.
     assert.match(launcher, /const describeTo = buildAddHref\('\/describe', \{ date: viewedDate \}\);/);
-    assert.match(launcher, /const speakTo = buildAddHref\('\/describe', \{ date: viewedDate, speak: true \}\);/);
-    assert.match(launcher, /scanTo: buildAddHref\('\/scan', \{ date: viewedDate \}\)/);
+    assert.match(launcher, /const scanTo = buildAddHref\('\/scan', \{ date: viewedDate \}\);/);
+    assert.match(launcher, /useCameraCapture\(\{ scanTo \}\)/);
   });
 
   it('has no hardcoded destination left in its markup', () => {
-    // The control for the three checks above: they would all pass on a file
+    // The control for the two checks above: they would both pass on a file
     // that computed the hrefs and then rendered the old literals anyway.
     assert.doesNotMatch(launcher, /to="\/describe/, 'a launcher row points at an undated /describe again');
-    assert.match(launcher, /<Link to=\{speakTo\}/);
-    assert.match(launcher, /<Link to=\{describeTo\}/);
+    assert.doesNotMatch(launcher, /to="\/scan/, 'a launcher row points at an undated /scan again');
+    assert.match(launcher, /<AddFoodActionsComposer describeTo=\{describeTo\}/);
   });
 
   it('turns a dated diary URL into dated doors, and a bare one into bare doors', () => {

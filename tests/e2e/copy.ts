@@ -47,6 +47,10 @@ const catalogSchema = z.object({
       snack: z.string(),
     }),
   }),
+  launcher: z.object({
+    moreOptions: z.string(),
+    photo: z.string(),
+  }),
   entry: z.object({
     action: z.object({ delete: z.string(), logAgain: z.string() }),
     toast: z.object({ removed: z.string(), undo: z.string() }),

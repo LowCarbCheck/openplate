@@ -10989,13 +10989,6 @@
     "at": "2026-09-14",
     "es": "Enviar"
   },
-  "a425719f755a8133": {
-    "en": "Photograph food",
-    "path": "common:launcher.photoAnything",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "es": "Fotografiar comida"
-  },
   "a43040b5bf5b4b2a": {
     "en": "An unexpected error occurred.",
     "path": "common:errors.unexpectedDetails",

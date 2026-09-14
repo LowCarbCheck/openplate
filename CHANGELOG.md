@@ -18,7 +18,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Changed
 
+- **The diary adds food through the same one-line composer as the home screen.** The three separate photo, type and speak buttons are now a single field: the wide part opens the composer for writing, and a microphone and a camera sit inside the same frame to the right of it. All four places the diary offered them use it, the three empty days and the bar under a day that already has entries. Every one still carries the day you are looking at, so a back-dated photo or sentence lands on that day, not on today. The copy-from-yesterday chips are unchanged.
 - **The compose files name the Postgres image with its registry.** `postgres:17-alpine` is now `docker.io/library/postgres:17-alpine` in `compose.sync.yml` and `compose.full.yml`, because rootless Podman refuses to guess a registry for a short name without a terminal. The same files stop forwarding `SIGNUP_MODE`, which openplate-core rejects at boot, and declare the sync service's `/health` check, which Podman otherwise drops on pull. The generated Quadlet units gain `TimeoutStartSec=300` beside `Notify=healthy` and each service name as a network alias; both came out of starting every scenario rootless on a Fedora host, recorded in each `docker/quadlet/<scenario>/README.md`.
+
+- **The add sheet in the bottom bar shows the same composer as the rest of the app.** Its three rows are gone. In their place is the one-line field you already use on the home screen and in the diary: write on the wide part, dictate with the microphone, photograph with the camera. The sheet still carries the day you are looking at, and its camera is the same one the raised button opens, so a photo taken from the sheet still reaches the camera on iPhone.
 
 ### Fixed
 

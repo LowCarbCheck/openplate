@@ -10989,13 +10989,6 @@
     "at": "2026-09-14",
     "de": "Senden"
   },
-  "a425719f755a8133": {
-    "en": "Photograph food",
-    "path": "common:launcher.photoAnything",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Essen fotografieren"
-  },
   "a43040b5bf5b4b2a": {
     "en": "An unexpected error occurred.",
     "path": "common:errors.unexpectedDetails",

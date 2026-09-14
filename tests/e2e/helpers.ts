@@ -91,6 +91,48 @@ export async function signInFixtureAccount(page: Page): Promise<void> {
   await page.waitForURL('**/diary');
 }
 
+/**
+ * Gives the device an AI provider, so the camera gesture opens a camera.
+ *
+ * WHY A SPEC WOULD WANT ONE. `useCameraCapture` refuses to ask for a camera on
+ * a device that has no provider: it navigates to `/scan` and shows the connect
+ * card instead. A spec about the capture gesture therefore has to connect
+ * something first, or it is asserting the fallback.
+ *
+ * THE ENDPOINT IS THIS APP'S OWN ORIGIN, on a path nothing serves, for the two
+ * reasons `scan-review.spec.ts` records at length: the production CSP only
+ * allows an origin it knows about plus `'self'`, and a same-origin address
+ * needs no CORS preflight, which `page.route` does not answer. The one request
+ * this makes, the key check, is answered here. Nothing is spent and nothing
+ * leaves the machine.
+ *
+ * NO SHORTCUT WRITE: the settings row is written by the real form, for the
+ * reason at the top of this file.
+ *
+ * @param page - a page on a device that is past onboarding.
+ */
+export async function connectStubAiProvider(page: Page): Promise<void> {
+  const baseUrl = `${E2E_APP_URL}/e2e-stub-provider/v1`;
+
+  // The key check `settings.ai` runs before it saves (`verify-key.ts`). Any
+  // answer that is not a 401 or a 403 means "reachable, key not refused".
+  await page.route(`${baseUrl}/models`, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) }),
+  );
+
+  await page.goto('/settings/ai');
+  await page.getByRole('button', { name: EN.settingsAi.advanced.toggle }).click();
+  await page.getByRole('radio', { name: EN.settingsAi.advanced.openaiCompatibleOption }).check();
+  await page.locator('input[name="model"]').fill('e2e-stub-model');
+  await page.locator('input[name="baseUrl"]').fill(baseUrl);
+  await page.locator('input[name="apiKey"]').fill('e2e-not-a-real-key');
+  await page.getByRole('button', { name: EN.settingsAi.save.settings }).click();
+
+  // A verified first connect returns to the diary, which is the one signal
+  // that the row was written rather than refused by the key check.
+  await page.waitForURL('**/diary');
+}
+
 /** One hand-typed entry, as `logFoodManually` posts it. */
 export interface ManualFood {
   /** The name to type. */

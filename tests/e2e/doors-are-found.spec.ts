@@ -5,7 +5,7 @@
  *
  * | Feature | Route | Component | i18n key of the visible label |
  * | --- | --- | --- | --- |
- * | repeat | `/dashboard` | `RepeatYesterdayDoor` | `diary.copy.door` |
+ * | repeat | `/dashboard` | `RepeatYesterdayGhost` | `diary.copy.door` |
  * | repeat | `/describe` | `RepeatYesterdayDoor` | `diary.copy.door` |
  * | repeat | `/diary` | `CopyFromYesterday` | `diary.copy.title`, then `diary.copy.all` / `diary.copy.meal` per chip |
  * | repeat | `/diary` | `CopyFromYesterday` | `diary.copy.chooseEntries` |
@@ -35,7 +35,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { EN } from './copy';
-import { PHONE_WIDTH, completeOnboarding, expectPhoneLayout, logFoodManually } from './helpers';
+import {
+  PHONE_WIDTH,
+  completeOnboarding,
+  connectStubAiProvider,
+  expectPhoneLayout,
+  logFoodManually,
+} from './helpers';
 
 /** Names no food database would return, so a match can only be these entries. */
 const BREAKFAST_NAME = 'Doors tier porridge';
@@ -207,5 +213,77 @@ test('every repeat, save-as-meal and usual door is visible on the phone', async 
     page.getByRole('button', { name: EN.entry.action.logAgain }),
     "the entry page's log-again button",
   );
+  await expectPhoneLayout(page);
+});
+
+/**
+ * The launcher sheet's own door, and the camera behind it (M232/03).
+ *
+ * The sheet renders the composer strip instead of three hand-rolled rows. The
+ * strip normally opens its own camera, and inside a sheet that would be a
+ * defect this repo already knows by name: a browser only honours a
+ * programmatic `input.click()` while the gesture that asked for it is on the
+ * stack, so the element that was clicked must not unmount while the camera is
+ * opening, and closing a sheet unmounts everything inside it. The bar's input
+ * therefore lives OUTSIDE the sheet and the strip is handed that capture.
+ *
+ * THIS IS WRITTEN TO FAIL AGAINST THE NAIVE VERSION. A strip that opened a
+ * camera of its own puts a second `input[type=file]` inside the sheet, which
+ * the count below reads directly, and it changes the set of inputs on the page
+ * while the sheet is open, which the serial numbers read. Both were confirmed
+ * red against exactly that implementation before this one was written.
+ *
+ * A PROVIDER IS CONNECTED FIRST, because the gesture refuses to ask for a
+ * camera on a device with no AI: it would navigate to `/scan` instead, and the
+ * file chooser below, which is the proof the click reached a live input, would
+ * never open.
+ */
+test('the launcher sheet borrows the bar camera, and closing it keeps the input', async ({ page }) => {
+  await completeOnboarding(page);
+  await connectStubAiProvider(page);
+  await page.goto('/diary');
+
+  const captureInputs = page.locator('input[type="file"][capture]');
+  await expect(captureInputs).not.toHaveCount(0);
+
+  /** Every capture input on the page, by the serial this spec wrote onto it. */
+  const serials = (): Promise<string[]> =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('input[type="file"][capture]')].map(
+        (input) => input.getAttribute('data-e2e-capture') ?? 'unnumbered',
+      ),
+    );
+
+  // NUMBERED BEFORE THE SHEET OPENS, so a later read tells a surviving element
+  // from a fresh one with the same shape. An input that unmounted and came
+  // back would read `unnumbered`, and one that was taken away would be missing.
+  await page.evaluate(() =>
+    document
+      .querySelectorAll('input[type="file"][capture]')
+      .forEach((input, index) => input.setAttribute('data-e2e-capture', String(index))),
+  );
+  const before = await serials();
+
+  await page.getByRole('button', { name: EN.launcher.moreOptions, exact: true }).click();
+  const sheet = page.locator('[data-slot="sheet-content"]');
+  await expect(sheet).toBeVisible();
+  await expectVisibleLabel(sheet.getByLabel(EN.launcher.photo, { exact: true }), "the sheet's photo key");
+
+  // THE LINE THE NAIVE VERSION FAILS: the sheet carries no capture input of
+  // its own, and opening it added none to the page.
+  await expect(sheet.locator('input[type="file"]')).toHaveCount(0);
+  expect(await serials()).toEqual(before);
+
+  // The file chooser only opens if the click reached a LIVE input inside its
+  // own gesture, which is the whole invariant, and it is the thing no unit
+  // test can see.
+  const chooser = page.waitForEvent('filechooser');
+  await sheet.getByLabel(EN.launcher.photo, { exact: true }).click();
+  await chooser;
+
+  // The sheet gets out of the way afterwards, and the input it never owned is
+  // still there, still the same element.
+  await expect(sheet).toBeHidden();
+  expect(await serials()).toEqual(before);
   await expectPhoneLayout(page);
 });
