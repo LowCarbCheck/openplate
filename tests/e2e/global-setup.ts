@@ -1,12 +1,16 @@
 /**
  * What has to exist before a single page is opened.
  *
- * TWO JOBS, in this order:
+ * THREE JOBS, in this order:
  *
- *  1. STAND UP THE FAKE SYNC SERVICE on the port `playwright.config.ts` has
+ *  1. RESET THIS TIER'S FONTCONFIG CACHE. A run the harness kills for low
+ *     memory can leave a truncated cache file that crashes every later run
+ *     before a single page opens; see `font-cache.ts` for why and how.
+ *
+ *  2. STAND UP THE FAKE SYNC SERVICE on the port `playwright.config.ts` has
  *     already handed the app as `SYNC_SERVER_URL`.
  *
- *  2. PUT ONE ACCOUNT ON IT. `push-activation` needs a device with a session,
+ *  3. PUT ONE ACCOUNT ON IT. `push-activation` needs a device with a session,
  *     because `enablePush` asks the vault for an account before it asks the
  *     browser for permission. The invite is minted here, through the service's
  *     own test seam, and redeemed by a child process; see
@@ -21,8 +25,9 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { startFakeSyncService } from '../integration/fake-sync-service';
-import { holdFakeService } from './fake-service-handle';
 import { E2E_ACCOUNT_EMAIL, E2E_INVITE_TOKEN_VAR, E2E_SYNC_PORT } from './env';
+import { holdFakeService } from './fake-service-handle';
+import { resetFontconfigCache } from './font-cache';
 
 /** The ceremony that redeems the invite, run under `tsx`. */
 const REDEEM_SCRIPT = fileURLToPath(new URL('./create-fixture-account.ts', import.meta.url));
@@ -54,6 +59,8 @@ async function redeemInvite(inviteToken: string): Promise<void> {
 }
 
 export default async function globalSetup(): Promise<void> {
+  await resetFontconfigCache();
+
   const service = await startFakeSyncService({ port: E2E_SYNC_PORT });
   holdFakeService(service);
 
