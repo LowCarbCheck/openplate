@@ -221,6 +221,41 @@ What changes when it is set:
 Everything above is unchanged on an open instance (`INSTANCE_MODE` unset or `open`), and a test
 pins both variants side by side.
 
+### Member invites
+
+On a managed instance, an administrator is not the only person who can invite. Three
+openplate-core variables decide whether an ordinary member may invite someone, and on what terms.
+They are set on the sync server, not on the app.
+
+| Variable                       | Default                | Description                                                                                                                    |
+| ------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `MEMBER_INVITE_DAILY_AI_LIMIT` | unset (invites off)    | How many AI requests per UTC day the invited account gets. Set this and `MEMBER_INVITE_ALLOWANCE_DAYS`, or neither.              |
+| `MEMBER_INVITE_ALLOWANCE_DAYS` | unset (invites off)    | How many days after signup that allowance lasts. Set this and `MEMBER_INVITE_DAILY_AI_LIMIT`, or neither.                        |
+| `MEMBER_INVITE_LIFETIME_CAP`   | `5`                    | How many invitations one member may send in total, ever. An integer of 0 or more. Needs the two above to be set.                 |
+
+**The first two are both or neither.** Setting one alone stops the boot and names the one you
+left out. With neither set, which is the default, members cannot invite anybody and
+`POST /v1/auth/invites` answers 404 to everyone. You then mint every invitation yourself.
+
+**What an invitation grants is the trial.** The invited person gets their own account and their
+own diary, plus `MEMBER_INVITE_DAILY_AI_LIMIT` AI requests per day for
+`MEMBER_INVITE_ALLOWANCE_DAYS` days after they sign up. When the window closes, the AI proxy
+answers 403. Their diary keeps working. Sync is never gated on an allowance. The inviter chooses
+none of this. They send an address and nothing else.
+
+**The cap counts letters, not successes.** Withdrawing an invitation does not give it back. The
+count is per account, not per instance. `MEMBER_INVITE_LIFETIME_CAP=0` leaves the route mounted
+and gives every member nothing to spend. That is different from unsetting the pair and taking the
+route away. Read the cap together with `AI_INSTANCE_DAILY_LIMIT`. The daily allowance above is
+multiplied by every member on the instance times the cap before it reaches your provider bill.
+
+**Administrators are exempt.** The cap does not apply to them, and neither does the rule that an
+address which already spent a member invitation gets no second one. They invite from `/admin` as
+often as they like.
+
+A member sees how many invitations they have left in the app. It is in **Settings, Account**,
+under **Invite somebody**. That section only appears on an instance where the feature is on.
+
 ## Custom AI endpoints
 
 [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) is a self-hosted,

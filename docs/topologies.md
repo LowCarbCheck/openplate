@@ -136,6 +136,13 @@ flowchart LR
   sync -->|"photo"| upstream["Cloud provider, or inference"]
 ```
 
+**Let members invite each other, but keep the number small.** On a managed instance, set
+`MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS` on the sync server. This lets
+an ordinary member invite somebody without asking you first. If you pay for the provider key, set
+`MEMBER_INVITE_LIFETIME_CAP=2` as well. The default is 5, which suits an instance where the AI
+bill is shared. Setting it to 2 is enough for a partner and a friend, and it keeps growth slow
+enough to watch. See [configuration.md#member-invites](configuration.md#member-invites).
+
 ## Rung 3: add self-hosted inference
 
 Rung 3 runs the scan on your hardware. The browser sends photos directly to the inference container. Your browsers must resolve that container's address. The model identifies each food and estimates weight in grams. openplate-inference reads macros from your configured food source.
