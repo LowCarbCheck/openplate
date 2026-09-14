@@ -59,9 +59,17 @@ const COPIES: Copy[] = [
   // languages and the copy would not compile against this app's shorter list. The app's own
   // languages are gated in `scripts/translate-ui.ts` before the library sees a locale.
   { from: 'app/i18n/language.ts', to: 'scripts/lib/translate-language.ts' },
+  // The union of two memory directories, which `.github/workflows/translate-ui.yml` runs when its
+  // commit conflicts with a moved `main`. The website keeps it at `scripts/merge-memory.ts`; it
+  // lands under `scripts/lib/` here so its `./lib/translate` import becomes the sibling
+  // `./translate`, and its type import is served by the same shim as the rest of the library.
+  { from: 'scripts/merge-memory.ts', to: 'scripts/lib/merge-memory.ts' },
 ];
 
-/** One import specifier the copy may not keep, and what it becomes. Relative to `scripts/lib/`. */
+/**
+ * One import specifier the copy may not keep, and what it becomes. `from` is the specifier exactly
+ * as the upstream file spells it; `to` is relative to `scripts/lib/`, where every copy lands.
+ */
 interface Rewrite {
   from: string;
   to: string;
@@ -71,6 +79,9 @@ const REWRITES: Rewrite[] = [
   { from: '../../app/i18n/language', to: './translate-language' },
   { from: '../../app/lib/docs-i18n.server', to: './translate-shims/docs-i18n.server' },
   { from: '../../app/lib/docs', to: './translate-shims/docs' },
+  // The same upstream module as the entry above, spelled from `scripts/` rather than
+  // `scripts/lib/`, because `merge-memory.ts` lives one directory up in the website.
+  { from: '../app/lib/docs-i18n.server', to: './translate-shims/docs-i18n.server' },
 ];
 
 /** The upstream modules the shims stand in for. Hashed, never copied. */

@@ -1,0 +1,392 @@
+# Translate the app's own UI catalogs after an English string changes.
+#
+# ── A COPY OF THE WEBSITE'S WORKFLOW, BEHIND A GATE ──
+# `openplate-website/.github/workflows/translate-ui.yml` is the specification
+# for this file (M229 spec 03). The translate step, the per-language loop, the
+# exit-code handling, the bot identity and the fetch-rebase-regenerate recovery
+# are that workflow's, deliberately. What differs is written down below: this
+# repository has no cloud CI, its pre-push hook is its only gate, and a bot
+# commit to `main` that skipped that gate would be the first thing here that
+# ever did. So the `translate` job `needs: gate`, and `gate` is the pre-push
+# hook, stage for stage, on a GitHub-hosted runner.
+#
+# ── WHY IT PUSHES WITH THE DEFAULT `GITHUB_TOKEN`, NOT A PAT ──
+# The website needs a PAT because a push made with `GITHUB_TOKEN` triggers no
+# workflows, and there the bot's commit has to trigger the deploy that changes
+# what readers see. Here the opposite is the safe property. openplate deploys
+# from `v*` tags (`release-image.yml`; Bay pins the semver), never from a push
+# to `main`, so a bot commit that triggers nothing is the loop guard for free:
+# this workflow cannot re-run on its own output, and it needs no new secret.
+# The one thing that does not happen is the `latest` image moving for the bot
+# commit; it moves again on the next push a person makes, and nothing deploys
+# `latest`. The `paths` filter below is a second, independent guard: the bot
+# never writes under `app/i18n/locales/en/`.
+#
+# ── WHY THE GATE RUNS THE BROWSER TIER ──
+# The hook's last stage is five Playwright specs against the production build.
+# Before this file it had only ever run on a host with a cached Chromium; a
+# runner starts with none, so the gate installs Chromium and its system
+# libraries first. It is in the gate because a stage the runner skips is a
+# stage a bot commit can break.
+#
+# ── WHY THERE IS NO SCHEDULE ──
+# Nothing moves the English bundle except a commit to this repository, and that
+# commit is the trigger. The `workflow_dispatch` below covers a run somebody
+# wants on purpose: approving a spend that was refused on cost, or the one bulk
+# buy that brings in a new language.
+name: Translate UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # The SOURCE bundle only. A change to a translated bundle is this job's own
+      # output, or a hand edit somebody made deliberately, and re-running on
+      # either would be a loop or an overwrite.
+      - 'app/i18n/locales/en/**'
+  workflow_dispatch:
+    inputs:
+      budget:
+        description: >-
+          Spend ceiling in USD for ONE language; the run may spend this much per
+          language. The default covers an ordinary push, a handful of edited
+          strings. The bulk first buy of a new language needs it raised: the app
+          has about 2400 strings, the website's dry run priced 117 strings at
+          about 0.012 USD, so one whole language is about 0.25 USD, and the legal
+          namespace is long sentences, so set 0.50 for a bulk buy. Four new
+          languages at once is at most 4 x 0.50 = 2.00 USD.
+        default: '0.05'
+
+# Never two at once, and never cancel one mid-flight: a cancelled run has already
+# paid for the strings it bought, and they are only saved at the end of each
+# chunk.
+concurrency:
+  group: translate-ui
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  # ── THE PRE-PUSH HOOK, STAGE FOR STAGE ──
+  # `.githooks/pre-push` runs: docs manifest -> quadlet units -> changelog ->
+  # lint -> typecheck -> unit tests -> integration tests -> production build ->
+  # browser smoke tier. The same order here, so what a laptop refuses to push
+  # this workflow refuses to translate on top of. Nothing in this job writes a
+  # tracked file.
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # POSIX shell over the README table and docs/. No node, no install.
+      - name: The README Documentation table against docs/
+        run: ./scripts/check-docs-manifest.sh
+
+      # podlet is a host tool on a laptop (Homebrew). The script downloads its
+      # own pinned release, checks the sha256 against the one it carries, and
+      # refuses a mismatch. python3, curl, sha256sum and tar are all on the
+      # runner image.
+      - name: Install the pinned podlet
+        run: |
+          ./scripts/quadlet.sh --install "$RUNNER_TEMP/podlet"
+          echo "$RUNNER_TEMP/podlet" >> "$GITHUB_PATH"
+      - name: The quadlet units against a fresh podlet run
+        run: ./scripts/quadlet.sh check
+
+      # The same file runs again inside the unit tier; the hook runs it first
+      # so a bullet the release page could not print fails before lint does.
+      - name: The changelog the release page is built from
+        run: pnpm exec node --import tsx --test tests/unit/release-notes.test.ts
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:unit
+      # Real HTTP against the in-repo fake sync service. No database, no
+      # service container: `tests/integration` reads nothing from the environment.
+      - run: pnpm test:integration
+      - run: pnpm build
+
+      # ── THE BROWSER SMOKE TIER ──
+      # `playwright.config.ts` never builds; it refuses a run with no
+      # `build/server/index.js`, so the build step above is what this needs.
+      # `--with-deps` installs the shared libraries and the fonts Chromium needs;
+      # `tests/e2e/fonts.conf` names `/usr/share/fonts`, which is where they land.
+      # The tier starts its own production server on 127.0.0.1:5299 and the fake
+      # sync service on 127.0.0.1:5298 (`tests/e2e/env.ts`); both are free on a
+      # fresh runner. Its fontconfig cache goes under `$XDG_CACHE_HOME` or
+      # `~/.cache`, which the runner user owns.
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      # The hook's own probe, kept: a real launch, not a path check, so a
+      # Chromium that is present and cannot start says so in one sentence.
+      - name: Prove Chromium starts here
+        run: pnpm exec node -e "const {chromium}=require('@playwright/test');chromium.launch().then((b)=>b.close()).then(()=>process.exit(0),()=>process.exit(1))"
+      - name: Browser smoke tier against the production build
+        run: CI=true pnpm test:e2e
+
+  translate:
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        # No `token:`. `actions/checkout` leaves the default `GITHUB_TOKEN` in
+        # the checkout, and that is the token the push below uses. See the
+        # header for why a PAT is not wanted here.
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # ── ONE PASS PER LANGUAGE, AND THE BUDGET IS PER LANGUAGE TOO ──
+      # `translate-ui.ts` takes one `--locale`, for the reason the website's
+      # script states: a shared budget, a shared exit code and a shared partial
+      # write across unrelated corpora means one language's outage stops another
+      # from saving what it bought. So the loop is here.
+      #
+      # THE CONSEQUENCE IS WRITTEN DOWN RATHER THAN HIDDEN: `budget` is the
+      # ceiling for ONE language, so the most this step can spend is that number
+      # times the number of translated languages. At the default that is
+      # 1 x $0.05 = $0.05 today. An ordinary run buys the handful of strings one
+      # commit edited, which is a fraction of a cent.
+      #
+      # The list comes from `app/i18n/language-prefs.ts`, minus the source
+      # language the catalogs are made from (`scripts/lib/translate-bundles.ts`),
+      # and not from a line in this file. A new language must not need a
+      # workflow edit to be translated, because that edit is the one that would
+      # be forgotten, and what it ships is a language whose catalogs are
+      # silently English.
+      - name: Translate what changed, one language at a time
+        id: translate
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          set +e
+          locales=$(node --import tsx --input-type=module \
+            -e "import { SUPPORTED_LANGUAGES } from './app/i18n/language-prefs.ts'; import { SOURCE_LANGUAGE } from './scripts/lib/translate-bundles.ts'; console.log(SUPPORTED_LANGUAGES.filter((l) => l !== SOURCE_LANGUAGE).join(' '));")
+          if [ -z "$locales" ]; then
+            echo "could not read the language list" >&2
+            exit 1
+          fi
+          : > "$RUNNER_TEMP/translate-ui.log"
+          worst=0
+          for locale in $locales; do
+            echo "── $locale ──" | tee -a "$RUNNER_TEMP/translate-ui.log"
+            pnpm run translate:ui --locale "$locale" --budget "${{ inputs.budget || '0.05' }}" \
+              | tee -a "$RUNNER_TEMP/translate-ui.log"
+            code=${PIPESTATUS[0]}
+            echo "translate:ui --locale $locale exited $code" | tee -a "$RUNNER_TEMP/translate-ui.log"
+            # 2 is "refused on cost". The English catalog is correct and current
+            # and already on main; only the translation waits for someone to
+            # approve the number. Anything else non-zero is a real break and
+            # stops the job here.
+            #
+            # A REFUSAL ON ONE LANGUAGE DOES NOT STOP THE NEXT ONE. They are
+            # separate memories and separate bundles.
+            if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then
+              echo "code=$code" >> "$GITHUB_OUTPUT"
+              exit 1
+            fi
+            if [ "$code" -eq 2 ]; then worst=2; fi
+          done
+          echo "code=$worst" >> "$GITHUB_OUTPUT"
+
+      # ── THE TREE THE BOT COMMITS, NOT ONLY THE TREE THAT WAS PUSHED ──
+      # The gate proved the commit that triggered this run. These three prove
+      # the tree after the translator wrote into it, which is the tree that
+      # lands on main. They are the stages a catalog can break: typecheck (the
+      # bundles are imported with types), the unit tier (`i18n-key-parity` and
+      # `translate-bundles` live there, so a lost placeholder or a missing key
+      # stops here rather than reaching a phone), and the production build (the
+      # catalogs are bundled). The docs manifest, the quadlet units, lint, the
+      # integration tier and the browser tier read nothing the translator writes.
+      - run: pnpm typecheck
+      - run: pnpm test:unit
+      - run: pnpm build
+
+      - name: Commit
+        id: commit
+        run: |
+          # SC2086 is the one shellcheck rule this script breaks on purpose:
+          # `$paths` is two directories and `$merge_memory` is a command with
+          # arguments, and both are meant to split. Each site is marked, because
+          # actionlint does not honour a script-level directive.
+          set -euo pipefail
+          # The translated bundles and the memory that produced them. The ENGLISH
+          # bundle is not in this list: it is the input, it is hand-written, and
+          # a job that could write it would be a job that can rewrite the source
+          # of truth. `git add app/i18n/locales` still stages nothing under `en/`
+          # because the translator never writes there; the paths filter above
+          # is what would loop if it ever did.
+          paths="app/i18n/locales app/i18n/memory"
+          # Named once because the recovery below treats it differently from the
+          # bundles: it is unioned rather than replaced.
+          memory="app/i18n/memory"
+          # `set -e` and a bare `[ ... ] && ...` do not mix: a false test is a
+          # non-zero status and would end the step here, silently, without a
+          # commit. Written as an `if` for that reason alone.
+          # shellcheck disable=SC2086
+          if [ -z "$(git status --porcelain $paths)" ]; then
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+            echo "Nothing moved. The catalogs are already translated." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "changed=1" >> "$GITHUB_OUTPUT"
+
+          subject="chore(i18n): translate the app catalogs"
+
+          git config user.name "openplate-docs-bot"
+          git config user.email "partners@sportsight.de"
+          # `git add`, never `-A`: this job owns these two trees and nothing else.
+          # shellcheck disable=SC2086
+          git add $paths
+          git commit -m "$subject"
+          # THE COMMIT THE CHECKS ABOVE RAN ON. Every recovery below reapplies
+          # this tree rather than merging into it, so the name is worth having.
+          run_commit="$(git rev-parse HEAD)"
+
+          # The same two seams the website's workflow carries, and for the same
+          # test: they are never set by this workflow. `merge-memory.ts` is the
+          # website's, vendored under `scripts/lib/` by `pnpm sync:translate-lib`
+          # and hashed by `tests/unit/translate-lib-provenance.test.ts`.
+          merge_memory="${MERGE_MEMORY:-node --import tsx scripts/lib/merge-memory.ts}"
+          pause="${RETRY_PAUSE:-5}"
+
+          # One file per line of a commit's memory directory, copied out. The
+          # directory also holds a README, which the union ignores: it reads
+          # `*.json` only and writes `*.json` only. A commit that carries no
+          # memory at all leaves an empty directory, which the union reads as an
+          # empty side. Unquoted on purpose, twice over: `$(git ls-tree ...)` is
+          # one path per line and the file names carry no spaces, and
+          # `$merge_memory` is a command with arguments.
+          export_memory() {
+            for path in $(git ls-tree -r --name-only "$1" -- "$memory"); do
+              git show "$1:$path" > "$2/$(basename "$path")"
+            done
+          }
+
+          # ── WHY THIS IS NOT `git pull --rebase` IN A LOOP ──
+          # The website's sync-docs.yml records the day it was: one conflict
+          # left the tree mid rebase with no abort, and attempts 2 and 3 both
+          # died on "Pulling is not possible because you have unmerged files".
+          # `fetch` plus `rebase` rather than `pull` so the recovery can name
+          # `origin/main` as a commit, and so an unmerged tree does not refuse
+          # outright.
+          #
+          # No SKIP_TESTS here, unlike the website: this repository has no
+          # `prepare` script, `core.hooksPath` is set by `make hooks` on a
+          # laptop and by nothing on a runner, so no pre-push hook runs on this
+          # push. The tiers it would run are the gate above and the three
+          # checks before this step.
+          for attempt in 1 2 3; do
+            git fetch --quiet origin main
+            if ! git rebase origin/main; then
+              # ABORTING IS NECESSARY AND NOT SUFFICIENT. Without it the next
+              # attempt cannot start. With it and nothing else the next attempt
+              # conflicts again on the same files forever: both runs rebuild the
+              # whole bundle from the English tree, so their outputs differ
+              # wherever the English moved, and git cannot know one is newer.
+              # So the resolution is the one a person would reach for: throw the
+              # merge away, take the branch, and reapply this run's generation.
+              echo "::notice::attempt ${attempt}: the branch moved and the catalogs conflicted. Regenerating onto it."
+              git rebase --abort || true
+              git reset --hard origin/main
+
+              # NO `--ours` AND NO `--theirs`. During a rebase those two are
+              # INVERTED against every intuition, because the rebase checks out
+              # the upstream first and replays your work onto it. Both commits
+              # are named outright instead.
+              branch_memory="$(mktemp -d)"
+              run_memory="$(mktemp -d)"
+              export_memory origin/main "$branch_memory"
+              export_memory "$run_commit" "$run_memory"
+
+              # `git rm` first, then `git checkout`: a checkout restores what the
+              # named commit has and says nothing about what it does not. Without
+              # the removal, a key deleted from the English bundle upstream would
+              # survive the recovery in the translated ones.
+              # shellcheck disable=SC2086
+              git rm -r --quiet --ignore-unmatch -- $paths
+              # shellcheck disable=SC2086
+              git checkout "$run_commit" -- $paths
+
+              # THE ONE TREE THAT IS NOT REGENERATED, BECAUSE IT IS BOUGHT. The
+              # memory records strings a model was PAID to translate. Taking this
+              # run's copy whole would drop what another run bought minutes
+              # earlier and the next run would buy it again.
+              # shellcheck disable=SC2086
+              $merge_memory --branch "$branch_memory" --run "$run_memory" --out "$memory"
+              # shellcheck disable=SC2086
+              git add $paths
+
+              # ── STILL REFUSES TO PUSH A TREE ITS CHECKS HAVE NOT SEEN ──
+              # The three steps above ran on `$run_commit`. Everything staged
+              # here has to be that same tree, the memory excepted and named. A
+              # tripwire rather than a likely failure: it is what turns a future
+              # edit that starts merging catalogs in here into a red run instead
+              # of a published tree nobody checked.
+              # shellcheck disable=SC2086
+              if ! git diff --cached --quiet "$run_commit" -- $paths ":(exclude)$memory"; then
+                echo "::error::the resolved tree differs from the one the checks ran on, outside the translation memory. Refusing to push." >&2
+                exit 1
+              fi
+              # A recovery can end with nothing to stage: the branch already
+              # carries exactly this generation. Here so that case exits green
+              # instead of dying on `git commit`'s "nothing to commit" under
+              # `set -e`.
+              if git diff --cached --quiet; then
+                echo "The branch already carries this generation. Nothing to push." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              git commit --quiet -m "$subject"
+              run_commit="$(git rev-parse HEAD)"
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            sleep "$pause"
+          done
+          # LOUD, AND IT NAMES WHAT IT LOST TO. A step that just exits 1 sends
+          # whoever reads the run to guess between a token, a protected branch
+          # and a race.
+          echo "::error::Could not land the translated catalogs after 3 attempts. origin/main is now $(git rev-parse --short origin/main) \"$(git log -1 --format=%s origin/main)\"." >&2
+          exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Translate UI"
+            echo
+            echo "Triggered by \`${{ github.event_name }}\`."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/translate-ui.log" 2>/dev/null || echo "(the translator did not run)"
+            echo '```'
+            if [ "${{ steps.translate.outputs.code }}" = "2" ]; then
+              echo
+              echo "### Refused on cost"
+              echo
+              echo "The English catalog is on main. The translation was not bought."
+              echo "Approve it by running this workflow again with a higher \`budget\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # LAST, so the commit above still happens. Over budget is a red run that
+      # the operator clears with one click, not a reason to leave the app
+      # untranslated.
+      - name: Fail if the translation was refused on cost
+        if: steps.translate.outputs.code == '2'
+        run: |
+          echo "translate:ui refused the spend. English shipped; the translation is waiting." >&2
+          exit 1

@@ -1,10 +1,10 @@
 /**
  * The vendored translator, against the provenance the sync left behind, M229 spec 02.
  *
- * `scripts/lib/translate.ts`, `translate-ui.ts` and `translate-language.ts` are copies of
- * `openplate-website`'s, written by `pnpm sync:translate-lib` and by nothing else. The spec's
- * worry is that a copy edited in place becomes a second client in substance, one convenient fix at
- * a time, and no diff ever says so. This is the check that says so: it re-hashes every vendored
+ * `scripts/lib/translate.ts`, `translate-ui.ts`, `translate-language.ts` and `merge-memory.ts` are
+ * copies of `openplate-website`'s, written by `pnpm sync:translate-lib` and by nothing else. The
+ * spec's worry is that a copy edited in place becomes a second client in substance, one convenient
+ * fix at a time, and no diff ever says so. This is the check that says so: it re-hashes every vendored
  * file against `scripts/lib/TRANSLATE_SOURCE.json` and fails when a byte differs. Fix the library
  * in the website, then sync.
  *
@@ -57,8 +57,9 @@ function importsOf(text: string): string[] {
 }
 
 describe('TRANSLATE_SOURCE.json', () => {
-  it('names the three files the sync vendors', () => {
+  it('names the four files the sync vendors', () => {
     assert.deepEqual(Object.keys(provenance.files).toSorted(), [
+      'scripts/lib/merge-memory.ts',
       'scripts/lib/translate-language.ts',
       'scripts/lib/translate-ui.ts',
       'scripts/lib/translate.ts',

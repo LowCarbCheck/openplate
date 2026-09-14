@@ -1,6 +1,6 @@
 {
   "repo": "LowCarbCheck/openplate-website",
-  "commit": "659533a91721956a4dc8f650a11031afb37f7d8f",
+  "commit": "a05947bdae895970a990b7524965d47e5d997f44",
   "producedBy": "openplate, scripts/sync-translate-lib.ts",
   "rewrites": [
     {
@@ -14,6 +14,10 @@
     {
       "from": "../../app/lib/docs",
       "to": "./translate-shims/docs"
+    },
+    {
+      "from": "../app/lib/docs-i18n.server",
+      "to": "./translate-shims/docs-i18n.server"
     }
   ],
   "files": {
@@ -31,6 +35,11 @@
       "from": "app/i18n/language.ts",
       "upstream": "24cd84bd153a3f10d3b5eb3fb095410d7cc389702b8f086195851a7d781d559c",
       "vendored": "24cd84bd153a3f10d3b5eb3fb095410d7cc389702b8f086195851a7d781d559c"
+    },
+    "scripts/lib/merge-memory.ts": {
+      "from": "scripts/merge-memory.ts",
+      "upstream": "a7982a1f1593449f1800142a7254d3a276ee296c14e595c284e10ea351bc8484",
+      "vendored": "f5702e1bfea75ef35328b09de5dfee6ed9c261a59f0c98882d9e04feb25965a8"
     }
   },
   "shimmed": {
