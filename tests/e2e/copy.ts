@@ -65,9 +65,13 @@ const catalogSchema = z.object({
   }),
   diary: z.object({
     netCarbsValue: z.string(),
+    meals: z.object({ breakfast: z.string(), dinner: z.string() }),
   }),
   trends: z.object({
     slot: z.object({ all: z.string() }),
+  }),
+  usual: z.object({
+    title: z.object({ breakfast: z.string(), dinner: z.string() }),
   }),
   settingsAi: z.object({
     advanced: z.object({ toggle: z.string(), openaiCompatibleOption: z.string() }),

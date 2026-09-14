@@ -288,6 +288,13 @@ export function trackScanStartedFromShare(): void {
  * never carried facts about items. A member nothing can emit is a dead name
  * that would quietly read as zero volume rather than as no such path.
  */
+/**
+ * Which of the two things the "Your usual <slot>" section offers was tapped.
+ * A fixed union, like every other argument in this file, so a food name can
+ * never be passed here.
+ */
+export type UsualAtSlotKind = 'saved-meal' | 'food';
+
 export type LogInputPath =
   | 'add-search'
   | 'add-manual'
@@ -297,10 +304,32 @@ export type LogInputPath =
   | 'diary-chip'
   | 'diary-copy-day'
   | 'entry-log-again'
-  | 'saved-meal';
+  | 'saved-meal'
+  | 'usual-saved-meal'
+  | 'usual-food';
 
 export function trackFoodLogged(path: LogInputPath): void {
   trackEvent('product', 'Diary', 'logged', path);
+}
+
+/**
+ * A tap on the "Your usual <slot>" section (M227/01), which is a new way into
+ * the diary and therefore a new INPUT PATH, not a new event: whether the
+ * section earns its place is the same question `Diary / logged` already
+ * answers for every other door, and a second event name would make the two
+ * unaddable.
+ *
+ * Two paths rather than one, because the section offers two things and only
+ * one of them can be improved by making saved meals easier to create. Both
+ * names describe the DOOR. Neither says which food, which slot, how many rows
+ * or how many carbs, and there is no value slot to put any of that in. The
+ * slot is deliberately NOT carried: a meal time is a health fact about the
+ * person, exactly the kind of thing this module's header forbids.
+ *
+ * @param kind - whether the tapped offer was a saved bundle or a single food.
+ */
+export function trackUsualAtSlotLogged(kind: UsualAtSlotKind): void {
+  trackFoodLogged(kind === 'saved-meal' ? 'usual-saved-meal' : 'usual-food');
 }
 
 export function trackEntryEdited(): void {

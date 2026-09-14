@@ -2656,6 +2656,7 @@
         "overGoal": ", über deinem Ziel"
       },
       "goalTagPrefix": "Dein Ziel: ",
+      "slotOnly": "Nur {{meal}} wird angezeigt.",
       "sparseHint": "Noch ein paar Tage, dann wird daraus ein Diagramm.",
       "tapHint": "Tipp auf einen Tag, um zu sehen, was du eingetragen hast.",
       "titleCalories": "Kalorien pro Tag",
@@ -2663,7 +2664,8 @@
     },
     "controls": {
       "metricGroup": "Kennzahl",
-      "rangeGroup": "Zeitraum"
+      "rangeGroup": "Zeitraum",
+      "slotGroup": "Mahlzeit"
     },
     "empty": {
       "body": "Sobald du einige Mahlzeiten eingetragen hast, zeigt diese Seite die Tage, an denen du deine Ziele erreicht hast, fasst deine Woche zusammen und stellt dein Gewicht dar: ganz ehrlich, inklusive aller Lücken.",
@@ -2748,6 +2750,9 @@
       "vsLastWeek": "({{delta}} gegenüber der Vorwoche)",
       "weight": "Gewicht {{first}} → {{last}} kg ({{delta}})",
       "weightNoisy": ", das tägliche Gewicht schwankt oft"
+    },
+    "slot": {
+      "all": "Alle Mahlzeiten"
     },
     "sparse": {
       "body": "Ab {{days}} erfassten Tagen erscheint hier das Diagramm. In der Zwischenzeit geht nichts verloren: Jeder Tag, den du einträgst, ist bereits in deinem Tagebuch.",
@@ -3154,6 +3159,20 @@
     "returned": {
       "success": "Vielen Dank! Deine Zahlung war erfolgreich. Es kann einen Moment dauern, bis sie hier zu sehen ist.",
       "cancelled": "Du hast die Bezahlseite geschlossen. Es wurde nichts berechnet."
+    }
+  },
+  "usual": {
+    "title": {
+      "breakfast": "Dein übliches Frühstück",
+      "lunch": "Dein übliches Mittagessen",
+      "dinner": "Dein übliches Abendessen",
+      "snack": "Dein üblicher Snack"
+    },
+    "itemCount_one": "{{count}} Lebensmittel",
+    "itemCount_other": "{{count}} Lebensmittel",
+    "toast": {
+      "logged_one": "{{name}} eingetragen.",
+      "logged_other": "{{name}} eingetragen, {{count}} Lebensmittel."
     }
   }
 }

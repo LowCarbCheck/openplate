@@ -2656,6 +2656,7 @@
         "overGoal": ", over your goal"
       },
       "goalTagPrefix": "Your goal: ",
+      "slotOnly": "Showing {{meal}} only.",
       "sparseHint": "A few more days and this becomes a chart.",
       "tapHint": "Tap a day to see what you logged.",
       "titleCalories": "Daily calories",
@@ -2663,7 +2664,8 @@
     },
     "controls": {
       "metricGroup": "Metric",
-      "rangeGroup": "Time span"
+      "rangeGroup": "Time span",
+      "slotGroup": "Meal"
     },
     "empty": {
       "body": "Once you’ve logged some meals, this page shows the days you hit your goals, recaps your week, and charts your weight, honestly, gaps and all.",
@@ -2748,6 +2750,9 @@
       "vsLastWeek": "({{delta}} vs last week)",
       "weight": "Weight {{first}} → {{last}} kg ({{delta}})",
       "weightNoisy": ", day-to-day weight is noisy"
+    },
+    "slot": {
+      "all": "All meals"
     },
     "sparse": {
       "body": "At {{days}} logged days the chart shows up here. Nothing is lost in the meantime, every day you log is already in your diary.",
@@ -3154,6 +3159,20 @@
     "returned": {
       "success": "Thank you. Your payment went through. It can take a moment to show here.",
       "cancelled": "You closed the payment page. Nothing was charged."
+    }
+  },
+  "usual": {
+    "title": {
+      "breakfast": "Your usual breakfast",
+      "lunch": "Your usual lunch",
+      "dinner": "Your usual dinner",
+      "snack": "Your usual snack"
+    },
+    "itemCount_one": "{{count}} food",
+    "itemCount_other": "{{count}} foods",
+    "toast": {
+      "logged_one": "Logged {{name}}.",
+      "logged_other": "Logged {{name}}, {{count}} foods."
     }
   }
 }

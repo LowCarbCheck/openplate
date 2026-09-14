@@ -16,8 +16,14 @@ import type { LocalFoodLog, LocalSavedMeal, LocalSavedMealItem } from './schema'
  * to recreate it, minus placement (`dayKey`/`loggedAt`/`mealType`/
  * `logBatchId`), which a saved meal deliberately does not carry: it is a
  * template, not a pinned-to-a-day log.
+ *
+ * EXPORTED since M227/01, because "your usual breakfast" offers a single food
+ * the same way it offers a saved meal: one tap, one batch id, the same fields
+ * carried onto the fresh entry. A second copy of this list is how a re-logged
+ * food quietly loses its licence credit or its micronutrients, which is the
+ * defect `localRecentFoodToCandidate` already documents one module over.
  */
-function toSavedMealItem(log: LocalFoodLog): LocalSavedMealItem {
+export function savedMealItemFromLog(log: LocalFoodLog): LocalSavedMealItem {
   return {
     name: log.name,
     quantityGrams: log.quantityGrams,
@@ -57,12 +63,70 @@ export function buildSavedMealFromLogs({
   id: string;
   createdAtMs: number;
 }): LocalSavedMeal {
-  return { id, name, items: logs.map(toSavedMealItem), createdAt: createdAtMs };
+  return { id, name, items: logs.map(savedMealItemFromLog), createdAt: createdAtMs };
+}
+
+/**
+ * The shared body of a "log this bundle now" action: one fresh `LocalFoodLog`
+ * per item, every one carrying the SAME placement (day/time/meal) and the SAME
+ * `logBatchId`, so the write groups and undoes as one unit.
+ *
+ * Split out of `buildLogsFromSavedMeal` in M227/01 so the slot-suggestion tap
+ * ("your usual breakfast") writes through exactly this list of fields rather
+ * than a second copy of it. It takes ITEMS rather than a meal because a single
+ * food suggestion has no saved meal behind it.
+ *
+ * @param options.items - the bundle to log, in the order the entries are written.
+ * @param options.makeId - called once per item to mint that entry's fresh local id.
+ * @param options.dayKey - the device-local calendar day the write lands on.
+ * @param options.loggedAtMs - the instant every written item is stamped with.
+ * @param options.mealType - the meal slot every written item is stamped with.
+ * @param options.logBatchId - the shared batch id grouping this write for one-tap undo.
+ * @param options.createdAtMs - the instant these rows are created on-device.
+ * @returns one fresh entry per item, in the input order.
+ */
+export function buildLogsFromSavedMealItems({
+  items,
+  makeId,
+  dayKey,
+  loggedAtMs,
+  mealType,
+  logBatchId,
+  createdAtMs,
+}: {
+  items: readonly LocalSavedMealItem[];
+  makeId: () => string;
+  dayKey: string;
+  loggedAtMs: number;
+  mealType: LocalFoodLog['mealType'];
+  logBatchId: string;
+  createdAtMs: number;
+}): LocalFoodLog[] {
+  return items.map((item) => ({
+    id: makeId(),
+    name: item.name,
+    quantityGrams: item.quantityGrams,
+    macros: item.macros,
+    mealType,
+    source: item.source,
+    aiEstimated: item.aiEstimated,
+    curatedSource: item.curatedSource,
+    foodId: item.foodId,
+    dayKey,
+    loggedAt: loggedAtMs,
+    createdAt: createdAtMs,
+    logBatchId,
+    portion: item.portion,
+    attribution: item.attribution,
+    netCarbsPer100g: item.netCarbsPer100g,
+    carbBasis: item.carbBasis,
+    micronutrientsPer100g: item.micronutrientsPer100g,
+  }));
 }
 
 /**
  * Builds the fresh `LocalFoodLog` entries a "re-log this saved meal" action
- * persists — one per item, every one sharing the SAME placement (day/time/
+ * persists, one per item, every one sharing the SAME placement (day/time/
  * meal) and the SAME `logBatchId`, so the re-log groups and undoes as one
  * unit exactly like a copy-yesterday batch does (`diary.tsx`'s
  * `buildCopiedEntry`/`handleCopyYesterday`).
@@ -93,24 +157,13 @@ export function buildLogsFromSavedMeal({
   logBatchId: string;
   createdAtMs: number;
 }): LocalFoodLog[] {
-  return meal.items.map((item) => ({
-    id: makeId(),
-    name: item.name,
-    quantityGrams: item.quantityGrams,
-    macros: item.macros,
-    mealType,
-    source: item.source,
-    aiEstimated: item.aiEstimated,
-    curatedSource: item.curatedSource,
-    foodId: item.foodId,
+  return buildLogsFromSavedMealItems({
+    items: meal.items,
+    makeId,
     dayKey,
-    loggedAt: loggedAtMs,
-    createdAt: createdAtMs,
+    loggedAtMs,
+    mealType,
     logBatchId,
-    portion: item.portion,
-    attribution: item.attribution,
-    netCarbsPer100g: item.netCarbsPer100g,
-    carbBasis: item.carbBasis,
-    micronutrientsPer100g: item.micronutrientsPer100g,
-  }));
+    createdAtMs,
+  });
 }

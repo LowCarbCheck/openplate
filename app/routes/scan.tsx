@@ -68,12 +68,13 @@ import {
   getLocalAiSettings,
   getLocalMonthlyAiUsage,
   getLocalProfileGoals,
+  listLocalFoodLogs,
   putLocalFood,
   putLocalFoodLog,
   recordLocalAiUsageEvent,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
-import type { LocalFoodLog, LocalPersonalFood } from '#app/lib/local-store';
+import type { LocalFoodLog, LocalPersonalFood, UsualAtSlotOffer } from '#app/lib/local-store';
 import { instantOnDate, parseDateParam, todayInTimezone } from '#app/lib/user-days';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { createOptionalNonNegativeNumberSchema, createRequiredNonNegativeNumberSchema } from '#app/lib/zod-numeric';
@@ -94,6 +95,8 @@ import {
 import { takeIntakeHandoff } from '#app/lib/scan-handoff';
 import { MEAL_LABEL_KEYS, mealTypeFormField } from '#app/lib/meal-choice';
 import { mealTypeForCapture } from '#app/lib/scan-capture-time';
+import { handleLogUsual, readUsualAtSlot, LOG_USUAL_INTENT } from '#app/lib/usual-at-slot';
+import { UsualAtSlot } from '#app/components/usual-at-slot';
 import { MealSelectField } from '#app/components/meal-select-field';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
@@ -471,7 +474,24 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const logDateLabel = logDate ? formatDayLabel(logDate, currentLanguage()) : null;
   // The zone travels because the confirm step reads a meal slot off the
   // PHOTO's timestamp, and a slot is a local wall-clock fact (M202).
-  return { userId: ANONYMOUS_USER_ID, settings, monthlyUsage, logDate, logDateLabel, timezone };
+  // "Your usual <slot>" before a photo is taken. The slot comes from THIS
+  // route's own resolver with no file to read (`mealTypeForCapture` then
+  // answers for the clock), never from a second copy of the window rule, and
+  // never from `/add`'s call: this screen is allowed to disagree with that one
+  // when a photo's own timestamp says so.
+  const nowMs = Date.now();
+  const usualSlot = mealTypeForCapture({ fileLastModifiedMs: null, nowMs, timezone });
+  const usualOffers = await readUsualAtSlot({ logs: await listLocalFoodLogs(), slot: usualSlot, nowMs });
+  return {
+    userId: ANONYMOUS_USER_ID,
+    settings,
+    monthlyUsage,
+    logDate,
+    logDateLabel,
+    timezone,
+    usualSlot,
+    usualOffers,
+  };
 }
 clientLoader.hydrate = true as const;
 
@@ -1254,6 +1274,10 @@ export async function clientAction({
     return handleConfirm(formData, resolveLocalTimezone(profile));
   }
 
+  // The "Your usual <slot>" tap, on the SAME handler `/add` routes to, so one
+  // tap writes one batch the same way on both screens.
+  if (intent === LOG_USUAL_INTENT) return handleLogUsual(formData);
+
   return handleClientIdentify(formData);
 }
 
@@ -1323,6 +1347,8 @@ function ScanFlow({
   logDateLabel,
   userId,
   timezone,
+  usualSlot,
+  usualOffers,
 }: {
   /** The instance's own AI, when this screen resolved one. `null` for an ordinary BYOK scan. */
   managedAi: ManagedAiSettings | null;
@@ -1334,6 +1360,10 @@ function ScanFlow({
   userId: number;
   /** The device's IANA zone, because a meal slot is a local wall-clock fact. */
   timezone: string;
+  /** The slot the loader resolved for now, with no photo to read a timestamp off. */
+  usualSlot: MealType;
+  /** What this person usually eats at that slot. Empty renders nothing. */
+  usualOffers: UsualAtSlotOffer[];
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
@@ -1653,30 +1683,39 @@ function ScanFlow({
     );
   }
 
+  // BEFORE THERE IS AN INTAKE, and only then. "Your usual <slot>" is an offer
+  // to skip the camera; once a photo or a sentence is in hand, the person has
+  // already answered that offer and a row of one-tap alternatives under their
+  // picture would just be a way to log the wrong thing.
+  const showUsual = state.phase === 'idle' && file === null && typedText === null;
+
   return (
-    <UploadForm
-      phase={state.phase}
-      file={file}
-      typedText={typedText}
-      previewUrl={previewUrl}
-      isProcessing={isProcessing}
-      selectionError={selectionError}
-      elapsedSeconds={elapsedSeconds}
-      error={failedIdentify?.error ?? silentFailure}
-      failureCause={failedIdentify?.failureCause}
-      retryAfterSeconds={failedIdentify?.retryAfterSeconds}
-      allowanceEndsAt={allowanceEndsAt}
-      plansAvailable={plansAvailable}
-      provider={failedIdentify?.provider}
-      usage={failedIdentify?.usage}
-      modelId={failedIdentify?.modelId}
-      monthlyUsage={monthlyUsage}
-      logDate={logDate}
-      logDateLabel={logDateLabel}
-      onPick={handlePick}
-      onCancel={() => dispatch({ type: 'cancel' })}
-      onRetry={handleRetry}
-    />
+    <>
+      <UploadForm
+        phase={state.phase}
+        file={file}
+        typedText={typedText}
+        previewUrl={previewUrl}
+        isProcessing={isProcessing}
+        selectionError={selectionError}
+        elapsedSeconds={elapsedSeconds}
+        error={failedIdentify?.error ?? silentFailure}
+        failureCause={failedIdentify?.failureCause}
+        retryAfterSeconds={failedIdentify?.retryAfterSeconds}
+        allowanceEndsAt={allowanceEndsAt}
+        plansAvailable={plansAvailable}
+        provider={failedIdentify?.provider}
+        usage={failedIdentify?.usage}
+        modelId={failedIdentify?.modelId}
+        monthlyUsage={monthlyUsage}
+        logDate={logDate}
+        logDateLabel={logDateLabel}
+        onPick={handlePick}
+        onCancel={() => dispatch({ type: 'cancel' })}
+        onRetry={handleRetry}
+      />
+      {showUsual && <UsualAtSlot slot={usualSlot} offers={usualOffers} className="mt-4" />}
+    </>
   );
 }
 
@@ -2271,10 +2310,7 @@ function useKeylessSharedPhotoPreview(): string | null {
  * reasoning, which applies here unchanged.
  */
 export type ConnectCardVariant =
-  | { kind: 'self-hosted' }
-  | { kind: 'instance-ai'; host: string }
-  | { kind: 'managed-missing' }
-  | { kind: 'resuming' };
+  { kind: 'self-hosted' } | { kind: 'instance-ai'; host: string } | { kind: 'managed-missing' } | { kind: 'resuming' };
 
 /** Whether this device holds a session, as this card has to ask it. */
 export type ConnectSessionState = 'resuming' | 'signed-out' | 'signed-in';
@@ -3526,6 +3562,8 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
         logDateLabel={loaderData.logDateLabel}
         userId={loaderData.userId}
         timezone={loaderData.timezone}
+        usualSlot={loaderData.usualSlot}
+        usualOffers={loaderData.usualOffers}
       />
     </>
   );

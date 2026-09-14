@@ -1870,7 +1870,11 @@ function MealGroupSection({
 }) {
   const { t, i18n } = useTranslation();
   return (
-    <div className="space-y-2">
+    // The meal is named on the ELEMENT, not only in the translated heading, so
+    // a browser check can assert an entry landed in a particular slot without
+    // pinning a wordsmith-owned sentence (the `data-slot="trend-bar"`
+    // precedent, one screen over).
+    <div className="space-y-2" data-slot="meal-group" data-meal={group.mealType ?? 'none'}>
       {/*
         Meal headers carry the app's shared brand eyebrow (M129 soul pass):
         teal, uppercase, with a hairline running from the label to the

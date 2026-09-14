@@ -18,6 +18,7 @@ import { randomUuid } from '#app/lib/uuid';
 import type { FoodMatch } from '#app/services/food-resolution';
 import { scaleMacrosPer100gToServing, type Macros } from '#app/lib/macros';
 import { mealTypeForTime } from '#app/lib/meal-time';
+import type { MealType } from '#types/enums';
 import { MEAL_LABEL_KEYS, mealTypeFormField } from '#app/lib/meal-choice';
 import { MealSelectField } from '#app/components/meal-select-field';
 import { instantOnDate, parseDateParam, todayInTimezone } from '#app/lib/user-days';
@@ -63,7 +64,9 @@ import {
   putLocalFoodLog,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
-import type { LocalFoodLog, LocalPersonalFood, LocalRecentFood } from '#app/lib/local-store';
+import type { LocalFoodLog, LocalPersonalFood, LocalRecentFood, UsualAtSlotOffer } from '#app/lib/local-store';
+import { handleLogUsual, readUsualAtSlot, LOG_USUAL_INTENT } from '#app/lib/usual-at-slot';
+import { UsualAtSlot } from '#app/components/usual-at-slot';
 import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
@@ -546,6 +549,16 @@ export interface AddData {
   query: string;
   returnTo: string;
   defaultMealType: string;
+  /**
+   * The SAME slot as `defaultMealType` above, narrowed to the enum, for the
+   * "Your usual <slot>" section. Two fields rather than one narrowed field
+   * because `defaultMealType` feeds a `<Select>` whose value is a plain string
+   * (the "no meal" sentinel included), while the section only ever offers one
+   * of the four real slots.
+   */
+  usualSlot: MealType;
+  /** What this person usually eats at `usualSlot`, top first. Empty renders nothing. */
+  usualOffers: UsualAtSlotOffer[];
   candidates: AddSearchCandidate[];
   /** Every locally-saved food, unfiltered — feeds the "Your foods" management sheet (defect: custom foods used to be write-only). */
   customFoods: LocalPersonalFood[];
@@ -567,6 +580,10 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
   const defaultMealType = mealTypeForTime({ at: new Date(), timezone });
 
   const allLogs = await listLocalFoodLogs();
+  // Off the SAME read the recent-foods ranking uses, and off the SAME slot the
+  // portion step will preselect, so the section can never offer for one meal
+  // while the entry lands in another.
+  const usualOffers = await readUsualAtSlot({ logs: allLogs, slot: defaultMealType, nowMs: Date.now() });
   const recentFoods = computeLocalRecentFoods(allLogs, { limit: RECENT_SCAN_LIMIT });
   const matchedRecents = filterLocalRecentsByQuery({ recentFoods, query, limit: RECENT_DISPLAY_LIMIT });
 
@@ -614,6 +631,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     query,
     returnTo,
     defaultMealType,
+    usualSlot: defaultMealType,
+    usualOffers,
     candidates,
     customFoods,
     hasAnyRecent: recentFoods.length > 0,
@@ -1012,6 +1031,10 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   // returnTo context below — they mutate a saved food directly, not a log.
   if (intent === 'deleteFood') return handleDeleteFood({ formData });
   if (intent === 'editFood') return handleEditFood({ formData });
+  // The "Your usual <slot>" tap. Its own handler, shared with `/scan`, because
+  // it writes a BUNDLE under one `logBatchId` rather than the single entry
+  // `handleLog` below builds from a portion form.
+  if (intent === LOG_USUAL_INTENT) return handleLogUsual(formData);
 
   const returnTo = sanitizeReturnTo(z.string().safeParse(formData.get('returnTo')).data ?? null);
   const profile = await getLocalProfileGoals();
@@ -1619,6 +1642,8 @@ function SearchStep({
   hasAnyRecent,
   throttled,
   retryAfterMs,
+  usualSlot,
+  usualOffers,
   manualResult,
   onSelect,
 }: {
@@ -1630,6 +1655,8 @@ function SearchStep({
   hasAnyRecent: boolean;
   throttled: boolean;
   retryAfterMs: number | null;
+  usualSlot: MealType;
+  usualOffers: UsualAtSlotOffer[];
   manualResult: SubmissionResult<string[]> | undefined;
   onSelect: (candidate: AddSearchCandidate) => void;
 }) {
@@ -1786,6 +1813,13 @@ function SearchStep({
         )}
       </div>
 
+      {/* "Your usual <slot>", directly under the intake input: the one tap that
+          beats typing for somebody who eats the same thing at this hour every
+          day. Renders nothing at all when there is no habit yet, so a first
+          week looks exactly as it did. The slot is the loader's, never
+          re-derived here (see `UsualAtSlot`). */}
+      <UsualAtSlot slot={usualSlot} offers={usualOffers} />
+
       {logContext.date && logContext.label && (
         <LoggingToBanner label={logContext.label} switchToTodayHref={logContext.switchToTodayHref} />
       )}
@@ -1867,6 +1901,8 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
     logDateLabel,
     throttled,
     retryAfterMs,
+    usualSlot,
+    usualOffers,
   } = loaderData;
   const [selected, setSelected] = useState<AddSearchCandidate | null>(null);
   const logResult = actionData?.intent === 'log' ? actionData.submission : undefined;
@@ -1903,6 +1939,8 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
       hasAnyRecent={hasAnyRecent}
       throttled={throttled}
       retryAfterMs={retryAfterMs}
+      usualSlot={usualSlot}
+      usualOffers={usualOffers}
       manualResult={manualResult}
       onSelect={setSelected}
     />
