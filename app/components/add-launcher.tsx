@@ -200,8 +200,20 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
 
               `label` is "Type" here, not the strip's own invitation: the
               heading above already says "Add food", and the same words twice,
-              stacked, read as a mistake. */}
-          <AddFoodActionsComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} />
+              stacked, read as a mistake.
+
+              `variant` is "embedded" ONLY here (M232/04): the raised circle a
+              few pixels below this panel is already a filled camera, so the
+              strip's own camera key steps back to an outline rather than
+              competing with it. `/dashboard` and `/diary` pass no variant and
+              keep the filled key, which is the only prominent camera those
+              pages have on a desktop.
+
+              One line past the print width on purpose: three of these four
+              props are pinned as literals by the unit tier, and letting the
+              formatter split them would break those regexes for nothing. */}
+          {/* prettier-ignore */}
+          <AddFoodActionsComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} variant="embedded" />
         </div>
       </SheetContent>
     </Sheet>

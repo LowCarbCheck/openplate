@@ -18,11 +18,52 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createElement, type ReactElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { RouterProvider, createMemoryRouter } from 'react-router';
+import i18next from 'i18next';
+import { initReactI18next } from 'react-i18next';
 
-import type { AddFoodActionsComposerProps } from '#app/components/add-food-actions-composer';
+import { AddFoodActionsComposer, type AddFoodActionsComposerProps } from '#app/components/add-food-actions-composer';
 import type { CameraCapture } from '#app/components/add/use-camera-capture';
 
 const source = readFileSync(new URL('../../app/components/add-food-actions-composer.tsx', import.meta.url), 'utf8');
+const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
+const DASHBOARD = readFileSync(new URL('../../app/routes/dashboard.tsx', import.meta.url), 'utf8');
+const DIARY = readFileSync(new URL('../../app/routes/diary.tsx', import.meta.url), 'utf8');
+
+/**
+ * A hermetic catalog, as `add-launcher-targets.test.ts` uses: this file asserts
+ * which keys the strip asks for, never what the shipped bundle says today.
+ * Inline resources make `init` resolve synchronously, so the first render
+ * already sees them.
+ */
+void i18next.use(initReactI18next).init({
+  lng: 'en',
+  resources: {
+    en: { translation: { launcher: { sheetTitle: 'Add food', speak: 'Speak', type: 'Type', photo: 'Photo' } } },
+  },
+  react: { useSuspense: false },
+});
+
+/**
+ * One strip's static markup, inside a DATA router: the capture hook reads this
+ * instance's policy through the root loader's public config, which throws
+ * outside one.
+ */
+function render(element: ReactElement): string {
+  const router = createMemoryRouter([{ path: '*', element }], { initialEntries: ['/diary'] });
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+}
+
+/** The camera key's class attribute, found by the only name it carries. */
+function cameraKeyClass(html: string): string {
+  const key = /<button[^>]*aria-label="Photo"[^>]*>/.exec(html);
+  assert.ok(key !== null, 'the camera key is gone from the rendered strip');
+  const classAttribute = /class="([^"]*)"/.exec(key[0]);
+  assert.ok(classAttribute !== null, 'the camera key carries no classes at all');
+  return classAttribute[1] ?? '';
+}
 
 /**
  * A real function, not `declare`: `declare` erases to nothing at runtime and
@@ -33,7 +74,10 @@ function typeCheckOnly(_props: AddFoodActionsComposerProps): void {}
 
 describe('the composer strip', () => {
   it('drives the camera through the shared hook, with the caller its scan target', () => {
-    assert.match(source, /import \{ useCameraCapture, type CameraCapture \} from '#app\/components\/add\/use-camera-capture'/);
+    assert.match(
+      source,
+      /import \{ useCameraCapture, type CameraCapture \} from '#app\/components\/add\/use-camera-capture'/,
+    );
     assert.match(source, /const camera = useCameraCapture\(\{ scanTo \}\)/);
   });
 
@@ -99,5 +143,74 @@ describe('the composer strip', () => {
   it('keeps the capture input outside every conditional, so it cannot unmount mid-gesture', () => {
     assert.match(source, /<input ref=\{inputRef\} \{\.\.\.inputProps\} \/>/);
     assert.doesNotMatch(source, /&& <input ref=\{inputRef\}/);
+  });
+});
+
+/**
+ * TWO INTENTIONAL STATES, NOT ONE GLOBAL CHANGE (M232/04).
+ *
+ * The filled camera key was a deliberate call and it survives: a photo costs a
+ * permission prompt, and on `/dashboard` and `/diary` this strip is the only
+ * prominent camera a desktop or tablet has, because the tab bar's raised
+ * circle is phone-only. The sheet is the single exception, since that circle
+ * is already on screen a few pixels below it.
+ *
+ * So each half is asserted against the other: whatever says "filled" here must
+ * be absent from the embedded render, and the reverse, and a single treatment
+ * applied everywhere would fail one of the two.
+ */
+describe("the camera key's weight", () => {
+  /** A capture the caller already owns, as the launcher's sheet hands one down. It opens nothing. */
+  const BORROWED_CAPTURE: CameraCapture = {
+    capture: () => {},
+    triggerRef: { current: null },
+    inputRef: { current: null },
+    inputProps: { type: 'file' },
+  };
+
+  // The pair, not `bg-primary` alone: the outline's own hover class contains
+  // that substring, so the looser literal would pass against either variant.
+  const FILLED = 'bg-primary text-primary-foreground';
+  const OUTLINE = 'border-primary/40';
+
+  it('fills the key on a page that owns no camera, which is /dashboard and /diary', () => {
+    const classes = cameraKeyClass(render(createElement(AddFoodActionsComposer, { describeTo: '/describe' })));
+    assert.ok(classes.includes(FILLED), `the standalone camera key lost its fill: ${classes}`);
+    assert.ok(!classes.includes(OUTLINE), 'the standalone key is drawn as an outline');
+  });
+
+  it('outlines the key inside the launcher sheet, where a filled camera is already on screen', () => {
+    const embedded = createElement(AddFoodActionsComposer, {
+      describeTo: '/describe',
+      capture: BORROWED_CAPTURE,
+      label: 'Type',
+      variant: 'embedded',
+    });
+    const classes = cameraKeyClass(render(embedded));
+    assert.ok(classes.includes(OUTLINE), `the embedded camera key is not an outline: ${classes}`);
+    assert.ok(!classes.includes(FILLED), 'the embedded key is still drawn filled');
+  });
+
+  it('demotes the key only where the variant says so, never by borrowing a camera', () => {
+    // The control that makes the pair above mean something: a strip given a
+    // caller's capture but no variant is a `/dashboard`-weight key, so the
+    // demotion cannot ride in on `capture` by accident.
+    const borrowedButStandalone = createElement(AddFoodActionsComposer, {
+      describeTo: '/describe',
+      capture: BORROWED_CAPTURE,
+    });
+    const classes = cameraKeyClass(render(borrowedButStandalone));
+    assert.ok(classes.includes(FILLED), 'borrowing a camera quietly demoted the key');
+    assert.ok(!classes.includes(OUTLINE), 'borrowing a camera quietly demoted the key');
+  });
+
+  it('asks for the outline at exactly one call site, the sheet', () => {
+    assert.match(LAUNCHER, /<AddFoodActionsComposer[^>]*variant="embedded"/, 'the sheet stopped asking for it');
+    assert.doesNotMatch(DASHBOARD, /<AddFoodActionsComposer[^>]*variant=/, '/dashboard took the sheet treatment');
+    const diaryStrips = DIARY.match(/<AddFoodActionsComposer[^>]*\/>/g) ?? [];
+    assert.equal(diaryStrips.length, 4, '/diary no longer has its four add-entry surfaces');
+    for (const strip of diaryStrips) {
+      assert.doesNotMatch(strip, /variant=/, '/diary took the sheet treatment');
+    }
   });
 });

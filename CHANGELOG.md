@@ -23,6 +23,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The add sheet in the bottom bar shows the same composer as the rest of the app.** Its three rows are gone. In their place is the one-line field you already use on the home screen and in the diary: write on the wide part, dictate with the microphone, photograph with the camera. The sheet still carries the day you are looking at, and its camera is the same one the raised button opens, so a photo taken from the sheet still reaches the camera on iPhone.
 
+- **The camera in the add sheet is drawn as an outline, not a filled key.** The raised round button in the bottom bar sits a few pixels below that sheet and is already a filled camera, so two filled cameras were competing for the same tap. Only the sheet changes. On the home screen and in the diary the camera keeps its filled look, because there it is the one camera on the page, and on a desktop or a tablet there is no round button at all.
+
 ### Fixed
 
 - **The add button in the bottom bar logs to the day you are looking at.** Its camera, its Type row and its Speak row always went to today, even while you were reading an earlier day in the diary, so a photo or a typed meal quietly landed on the wrong date and nothing said so. All three now carry the day on screen.

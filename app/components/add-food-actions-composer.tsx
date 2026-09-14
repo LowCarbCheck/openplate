@@ -49,6 +49,26 @@
  * a capture or it does not, for the whole life of that mount, so the two cases
  * are two components underneath one signature. Nothing here can turn an input
  * off while the camera is opening, because nothing here ever turns one off.
+ *
+ * ── HOW HEAVY THE CAMERA KEY IS (M232/04) ────────────────────────────────
+ *
+ * The key is filled by default and outlined inside the launcher's sheet, and
+ * that is the ONLY difference between the two variants.
+ *
+ * Filled everywhere was the original, deliberate call: a photo costs a camera
+ * permission prompt, so it is worth naming first, and on `/dashboard` and
+ * `/diary` this strip is the only prominent camera on the page. The tab bar's
+ * raised circle is `md:hidden`, and the desktop sidebar carries `/scan` as a
+ * flat link, so demoting the key everywhere would leave desktop and tablet
+ * with no camera worth seeing.
+ *
+ * Inside the sheet the page already has that raised circle, a few pixels
+ * outside the panel, filled and owning the camera-first language by itself.
+ * A second filled camera there competes with it and says nothing new, so the
+ * embedded variant draws an outline instead.
+ *
+ * The variant is an explicit prop rather than something read off `capture`,
+ * so the treatment a call site gets can be audited at that call site.
  */
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -58,6 +78,18 @@ import { Link } from '#app/components/link';
 import { useCameraCapture, type CameraCapture } from '#app/components/add/use-camera-capture';
 import { buildAddHref } from '#app/lib/add-food-hrefs';
 import { cn } from '#app/lib/utils';
+
+/** Where this strip is drawn, which decides the camera key's weight and nothing else. */
+export type AddFoodActionsComposerVariant = 'standalone' | 'embedded';
+
+/**
+ * The camera key's weight, per context. See the module header for why the
+ * sheet is the one place that steps back.
+ */
+const CAMERA_KEY_CLASS = {
+  standalone: 'bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90',
+  embedded: 'border border-primary/40 text-primary hover:bg-primary/10 active:bg-primary/15',
+} satisfies Record<AddFoodActionsComposerVariant, string>;
 
 interface AddFoodActionsComposerBaseProps {
   /** The composer, carrying the viewed day. Typing goes here; dictating goes here with the field focused. */
@@ -69,6 +101,12 @@ interface AddFoodActionsComposerBaseProps {
    * because its own heading already carries the invitation.
    */
   label?: string;
+  /**
+   * How heavy the camera key is drawn. `'standalone'` fills it, which is what
+   * `/dashboard` and `/diary` want; `'embedded'` outlines it, for the
+   * launcher's sheet, where the raised circle beside it is already filled.
+   */
+  variant?: AddFoodActionsComposerVariant;
 }
 
 /**
@@ -97,11 +135,14 @@ export type AddFoodActionsComposerProps = AddFoodActionsComposerBaseProps &
   );
 
 export function AddFoodActionsComposer(props: AddFoodActionsComposerProps): ReactElement {
-  const { describeTo, className, label } = props;
+  const { describeTo, className, label, variant } = props;
+  // The shared half of the props, named once so both branches carry the same
+  // set and adding a base prop cannot reach one branch and miss the other.
+  const base = { describeTo, className, label, variant };
   if (props.capture !== undefined) {
-    return <ComposerStrip describeTo={describeTo} className={className} label={label} camera={props.capture} />;
+    return <ComposerStrip {...base} camera={props.capture} />;
   }
-  return <ComposerWithOwnCamera describeTo={describeTo} className={className} label={label} scanTo={props.scanTo} />;
+  return <ComposerWithOwnCamera {...base} scanTo={props.scanTo} />;
 }
 
 /** The strip on a page with no camera of its own: it opens one, and it renders the input for it. */
@@ -127,6 +168,7 @@ function ComposerStrip({
   describeTo,
   className,
   label,
+  variant = 'standalone',
   camera,
   children,
 }: AddFoodActionsComposerBaseProps & {
@@ -160,7 +202,10 @@ function ComposerStrip({
           type="button"
           onClick={capture}
           aria-label={t('launcher.photo')}
-          className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/30 transition-transform hover:bg-primary/90 motion-safe:active:scale-95"
+          className={cn(
+            'flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors motion-safe:active:scale-95',
+            CAMERA_KEY_CLASS[variant],
+          )}
         >
           <Camera className="size-5" aria-hidden="true" />
         </button>
