@@ -135,7 +135,7 @@ export interface DayBudgetTotals {
  * The protein and fiber ROWS still read their targets off `DayGaps`, never off
  * this, so there is no second source of truth for what protein's floor means.
  * `proteinFloor` is here for one unrelated job: it is a term in the fat row's
- * energy arithmetic (see `deriveFatReferenceG`). A caller that omits it gets
+ * energy arithmetic (see `deriveFatTargetG`). A caller that omits it gets
  * the absolute fat row, which is the same answer as a person who never set a
  * floor.
  */
@@ -341,14 +341,27 @@ const DERIVED_FAT_MINIMUM_G = 10;
  * Requires ALL THREE inputs. Two of them would mean guessing the third, which
  * is the one thing this module never does.
  *
- * @param goals - the day's budgets.
- * @returns the derived reference in grams, or `null` to keep the absolute row.
+ * Exported since M233/03, so the recipe selector (`#app/lib/remaining-day`) can
+ * ask what fat budget a day has without copying the arithmetic. An options
+ * object because all three inputs are the same nullable-number type, and a
+ * swapped pair would still compile while producing a plausible wrong figure.
+ *
+ * @param kcalTarget - the day's calorie target as displayed, or `null`.
+ * @param netCarbsCeilingG - the net-carb ceiling in grams, or `null`.
+ * @param proteinFloorG - the protein floor the person typed in, or `null`.
+ * @returns the derived target in grams, or `null` when there is nothing to derive from.
  */
-function deriveFatReferenceG(goals: DayBudgetGoals): number | null {
-  const proteinFloor = goals.proteinFloor ?? null;
-  if (goals.kcalTarget === null || goals.netCarbsCeiling === null || proteinFloor === null) return null;
-  const fatKcal =
-    goals.kcalTarget - KCAL_PER_GRAM_CARB * goals.netCarbsCeiling - KCAL_PER_GRAM_PROTEIN * proteinFloor;
+export function deriveFatTargetG({
+  kcalTarget,
+  netCarbsCeilingG,
+  proteinFloorG,
+}: {
+  kcalTarget: number | null;
+  netCarbsCeilingG: number | null;
+  proteinFloorG: number | null;
+}): number | null {
+  if (kcalTarget === null || netCarbsCeilingG === null || proteinFloorG === null) return null;
+  const fatKcal = kcalTarget - KCAL_PER_GRAM_CARB * netCarbsCeilingG - KCAL_PER_GRAM_PROTEIN * proteinFloorG;
   const grams = Math.round(fatKcal / KCAL_PER_GRAM_FAT);
   return grams >= DERIVED_FAT_MINIMUM_G ? grams : null;
 }
@@ -406,7 +419,7 @@ function absoluteFatRow({
  * nothing ever asks for.
  *
  * @param totals - the day's figures.
- * @param referenceG - the derived reference in whole grams, already vetted by `deriveFatReferenceG`.
+ * @param referenceG - the derived reference in whole grams, already vetted by `deriveFatTargetG`.
  * @param t - the caller's translator.
  * @param language - the active UI language.
  * @returns the fat row.
@@ -472,7 +485,11 @@ function fatRow({
   t: Translate;
   language: string | null | undefined;
 }): DayBudgetRow {
-  const referenceG = deriveFatReferenceG(goals);
+  const referenceG = deriveFatTargetG({
+    kcalTarget: goals.kcalTarget,
+    netCarbsCeilingG: goals.netCarbsCeiling,
+    proteinFloorG: goals.proteinFloor ?? null,
+  });
   if (referenceG === null) return absoluteFatRow({ totals, t, language });
   return referencedFatRow({ totals, referenceG, t, language });
 }
