@@ -19,18 +19,24 @@
  * (`nicotinepouch-org` and `selfhostedworld-com`).
  */
 /**
- * The operator's telephone number, and it is NOT SET.
+ * The operator's telephone number.
  *
- * OPTIONAL, AND EMPTY TODAY. Anlage 1 zu Artikel 246a § 1 Absatz 2 Satz 2
- * EGBGB, Gestaltungshinweis 2, has required a telephone number inside the
- * withdrawal instruction since the 2022 amendment. Nothing in this repository
- * may invent one, so `/withdrawal` prints the number only when it is present
- * and leaves no gap where it would go. Declared here, rather than inline in
- * `OPERATOR`, so the absence carries its type without a type assertion.
+ * Anlage 1 zu Artikel 246a § 1 Absatz 2 Satz 2 EGBGB, Gestaltungshinweis 2,
+ * has required a telephone number inside the withdrawal instruction since the
+ * 2022 amendment (M214/07). Declared here, rather than inline in `OPERATOR`,
+ * so it is assembled into the withdrawal instruction and the imprint's
+ * contact block the same way every other identifier on this page is, from
+ * one place.
  *
- * TODO(owner): supply the business telephone number (M214/07).
+ * Typed as `string | undefined`, not narrowed to the literal below, because
+ * two call sites still branch on its presence: `operatorContactLine()` in
+ * `withdrawal.tsx` filters it out of the identifier run, and the imprint's
+ * contact block renders its row only when it is set. Both guards stay live
+ * on purpose, the same way they would need to if a future business change
+ * required pulling the number again; nothing here should have to change
+ * shape to represent that.
  */
-const OPERATOR_PHONE: string | undefined = undefined;
+const OPERATOR_PHONE: string | undefined = '015236105896';
 
 export const OPERATOR = {
   /** The legal person. Not "LowCarbCheck", which is a product name. */

@@ -127,9 +127,19 @@ describe('Imprint — Section 5 DDG provider identification', () => {
       /Amtsgericht Charlottenburg/,
       /DE312546809/,
       /info@sprqvntrs\.com/,
+      /015236105896/, // the operator's telephone number (M214/07)
     ]) {
       assert.match(html, required);
     }
+  });
+
+  it('renders the telephone number beside the e-mail, and only because the operator has one', () => {
+    // OPERATOR.phone (M214/07). Positive AND control in one test, the same
+    // shape as the negative check two tests up: the number really is printed
+    // where the contact block puts it, and a plausible wrong number is not.
+    const html = renderImprint();
+    assert.match(html, /Phone: 015236105896/);
+    assert.doesNotMatch(html, /015236105897/, 'a number nobody holds rendered');
   });
 
   it('omits the Section 18(2) MStV section — openplate publishes no editorial content', () => {

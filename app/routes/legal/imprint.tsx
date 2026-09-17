@@ -95,6 +95,12 @@ export function ImprintContent() {
         <H2 variant="default">{t('imprint.contactHeading')}</H2>
         <P className="mt-4">
           {t('imprint.emailLabel')}: <a href={`mailto:${OPERATOR.imprintEmail}`}>{OPERATOR.imprintEmail}</a>
+          {OPERATOR.phone !== undefined && (
+            <>
+              <br />
+              {t('imprint.phoneLabel')}: {OPERATOR.phone}
+            </>
+          )}
         </P>
       </section>
 

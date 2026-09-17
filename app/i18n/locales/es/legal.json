@@ -12,6 +12,7 @@
     "vatLabel": "Número de identificación a efectos del IVA (Umsatzsteuer-ID) según la sección 27a de la Ley alemana del IVA (UStG)",
     "contactHeading": "Contacto",
     "emailLabel": "Correo electrónico",
+    "phoneLabel": "Teléfono",
     "disputeHeading": "Resolución de litigios en línea en materia de consumo",
     "disputeBody": "No tenemos la disposición ni la obligación de participar en procedimientos de resolución de litigios ante una junta de arbitraje de consumo (Verbraucherschlichtungsstelle)."
   },

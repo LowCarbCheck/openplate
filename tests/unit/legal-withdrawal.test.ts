@@ -147,14 +147,32 @@ describe('/withdrawal, the operator is named from operator.ts', () => {
     }
   });
 
-  it('prints no empty gap where the missing telephone number belongs', () => {
-    // `OPERATOR.phone` is absent today (Gestaltungshinweis 2 requires one, and
-    // nothing here may invent it). What must not happen is a dangling ", ,".
-    const text = plainText(render('de'));
-    assert.equal(text.includes(', ,'), false);
-    // The control: the run of details really is being assembled, so the pieces
-    // around the hole are adjacent.
-    assert.ok(text.includes(`${OPERATOR.country}, ${OPERATOR.imprintEmail}`));
+  it('prints the telephone number in the operator run, in both languages (M214/07)', () => {
+    // `OPERATOR.phone` is set. This is not just "the digits appear somewhere
+    // on the page": finding it BETWEEN the country and the e-mail proves it
+    // landed inside the SAME run Gestaltungshinweis 2 assembles, in the
+    // position the model text lists it, not in some unrelated paragraph.
+    //
+    // The assertion below fails if `OPERATOR.phone` is ever unset again: with
+    // no value to interpolate, the template literal reads
+    // "undefined", which the render never contains.
+    assert.ok(OPERATOR.phone, 'this test requires OPERATOR.phone to be set');
+    for (const language of ['de', 'en'] as const) {
+      const text = plainText(render(language));
+      assert.ok(
+        text.includes(`${OPERATOR.country}, ${OPERATOR.phone}, ${OPERATOR.imprintEmail}`),
+        `the ${language} page did not place the telephone number between the country and the e-mail`,
+      );
+    }
+    // The control: a number nobody holds does not appear either, so the
+    // assertion above is not satisfied by any run of thirteen digits.
+    assert.equal(plainText(render('de')).includes('015236105897'), false, 'a number nobody holds rendered');
+  });
+
+  it('holds the telephone number in operator.ts, not in either locale bundle', () => {
+    assert.ok(OPERATOR.phone, 'this test requires OPERATOR.phone to be set');
+    const haystack = JSON.stringify(enLegal.withdrawal) + JSON.stringify(deLegal.withdrawal);
+    assert.equal(haystack.includes(OPERATOR.phone), false, 'the telephone number must live in operator.ts, not in a locale bundle');
   });
 });
 

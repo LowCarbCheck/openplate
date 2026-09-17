@@ -20,8 +20,10 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
  * as the imprint and the seller sentence in the terms are. `legal-locales.test.ts`
  * pins that arrangement.
  *
- * The telephone number is absent today (see `OPERATOR.phone`), so it is dropped
- * from the run rather than printed as an empty gap.
+ * The telephone number is set (see `OPERATOR.phone`) and is part of the run.
+ * The `.filter()` below still guards a future where it is unset again, so the
+ * run would drop it rather than print an empty gap, the same as it does
+ * today for any identifier that is absent.
  */
 function operatorContactLine(): string {
   return [
@@ -62,7 +64,7 @@ function operatorFormLine(): string {
  *
  *  - Hinweis 1 variant a): the period runs from "des Vertragsabschlusses";
  *  - Hinweis 2: our name, address, telephone number and e-mail, from
- *    `operator.ts`, telephone still missing (see `OPERATOR.phone`);
+ *    `operator.ts` (see `OPERATOR.phone`);
  *  - Hinweis 3: NOT inserted, see the note below;
  *  - Hinweis 4 and 5: omitted, they concern goods and we deliver none;
  *  - Hinweis 6: inserted, with "Wasser/Gas/Strom/Fernwärme" struck as the

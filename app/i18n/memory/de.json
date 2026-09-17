@@ -2897,6 +2897,13 @@
     "at": "2026-09-14",
     "de": "Zuletzt geprüft"
   },
+  "283c930c1117a707": {
+    "en": "Phone",
+    "path": "legal:imprint.phoneLabel",
+    "model": "hand-written",
+    "at": "2026-09-17",
+    "de": "Telefon"
+  },
   "2855609a5d65723c": {
     "en": "Try again",
     "path": "common:errors.tryAgain",

@@ -12,6 +12,7 @@
     "vatLabel": "Numéro d'identification à la TVA (Umsatzsteuer-ID) selon l'article 27a de la loi allemande relative à la TVA (UStG)",
     "contactHeading": "Contact",
     "emailLabel": "E-mail",
+    "phoneLabel": "Téléphone",
     "disputeHeading": "Règlement des litiges de consommation",
     "disputeBody": "Nous ne sommes ni disposés ni tenus de participer à des procédures de règlement des litiges devant un conseil d'arbitrage de la consommation (Verbraucherschlichtungsstelle)."
   },

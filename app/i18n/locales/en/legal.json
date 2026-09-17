@@ -12,6 +12,7 @@
     "vatLabel": "VAT identification number (Umsatzsteuer-ID) per Section 27a of the German VAT Act (UStG)",
     "contactHeading": "Contact",
     "emailLabel": "Email",
+    "phoneLabel": "Phone",
     "disputeHeading": "Consumer Dispute Resolution",
     "disputeBody": "We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board (Verbraucherschlichtungsstelle)."
   },
