@@ -1539,6 +1539,13 @@
     "at": "2026-09-14",
     "es": "Desconéctate primero para cambiar de proveedor."
   },
+  "15ad7e2c464e8c40": {
+    "en": "Calories",
+    "path": "common:recipes.macros.kcal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Calorías"
+  },
   "15beb0ed880123af": {
     "en": "Withdraw",
     "path": "common:admin.invites.revokeConfirmCta",
@@ -4038,6 +4045,13 @@
     "at": "2026-09-14",
     "es": "Tu resumen diario · openplate"
   },
+  "3d2c80ccd23f42b2": {
+    "en": "Recipes · openplate",
+    "path": "common:meta.recipes",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Recetas · openplate"
+  },
   "3d3071f756a756aa": {
     "en": "Loading entry…",
     "path": "common:entry.loading",
@@ -4436,6 +4450,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Este enlace no parece correcto"
+  },
+  "43a8b6268f15e081": {
+    "en": "We could not put a meal together. Try again in a moment.",
+    "path": "common:recipes.errors.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "No pudimos organizar una comida. Vuelve a intentarlo en un momento."
   },
   "43c2e1bfc5c7008e": {
     "en": "Male",
@@ -4843,6 +4864,13 @@
     "at": "2026-09-14",
     "es": "Un contenedor sin estado, sin base de datos que ejecutar y sin secretos que configurar. El archivo compose está en el repositorio, y todo se reduce a una descarga y un solo comando."
   },
+  "4a704ca4e8e13d9e": {
+    "en": "Log this",
+    "path": "common:recipes.logThis",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Registrar esto"
+  },
   "4a81ae5fe5522592": {
     "en": "Tap a day to see what you logged.",
     "path": "common:trends.chart.tapHint",
@@ -5249,6 +5277,13 @@
     "at": "2026-09-14",
     "es": "Conecta tu proveedor de IA en los ajustes antes de que pueda identificar comida por ti."
   },
+  "4ffe2b079c758529": {
+    "en": "Meal",
+    "path": "common:recipes.slotLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Comida"
+  },
   "500b9b90ca7cc831": {
     "en": "{{count}} foods that would close the protein gap",
     "path": "common:diary.suggestions.disclosureProtein_other",
@@ -5269,6 +5304,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Gramos"
+  },
+  "504e9b2cc6132032": {
+    "en": "Ingredients",
+    "path": "common:recipes.ingredients",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Ingredientes"
   },
   "5066efdf1aed23dc": {
     "en": "openplate {{version}} is available",
@@ -5402,6 +5444,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Añadir alimento"
+  },
+  "51ec3ac416f74605": {
+    "en": "Working out what fits...",
+    "path": "common:recipes.asking",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Calculando qué encaja..."
   },
   "52182c0f9e8bf1ac": {
     "en": "Beyond what most people practise. Anything past 72 hours is outside what this app can guide.",
@@ -5703,6 +5752,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Estos términos regulan el uso que usted haga de la instancia de openplate que nosotros, {{operator}}, operamos para usuarios invitados. Los datos de nuestro proveedor figuran en el <imprint>aviso legal</imprint>. openplate es una herramienta de seguimiento de alimentos local-first. En esta instancia, la IA que lee una foto del plato se ejecuta a través de nuestro servidor en lugar de hacerlo mediante un proveedor que usted aporte. Al usar una cuenta en esta instancia, usted acepta estos términos. openplate es de código abierto y permite el alojamiento propio. Si ejecuta su propia copia, estos términos se aplican únicamente a nuestro despliegue y no regulan su instancia."
+  },
+  "55914de19063bb16": {
+    "en": "Recipes",
+    "path": "common:recipes.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Recetas"
   },
   "55d2e79aaf03f22a": {
     "en": "An administrator of this instance can open your account in the app and view your account records. This includes your email address, your display name, the account creation date, the time of your last sign-in, and the time of your last photo scan. It also includes your scan count for today, your daily scan limit, the date your scan allowance ends, your remaining invitations, your administrative permissions, and your account suspension status. An administrator can also view your scan count for each of the last {{usageDays}} days. Daily counts older than that are deleted automatically. Beyond this data, the storage server only records the size of a stored file and the upload timestamp. That storage runs as a separate service from the application server described in Section 3.",
@@ -9106,6 +9162,13 @@
     "at": "2026-09-14",
     "es": "Proteína"
   },
+  "86d89b04f61af127": {
+    "en": "Protein",
+    "path": "common:recipes.macros.protein",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Proteínas"
+  },
   "86df10a25dd1ac4c": {
     "en": "Recent foods",
     "path": "common:add.search.sections.recent",
@@ -10471,6 +10534,13 @@
     "at": "2026-09-14",
     "es": "Macronutrientes desconocidos, registrado solo con el nombre."
   },
+  "9a6cbea5fa73c115": {
+    "en": "not in your pantry",
+    "path": "common:recipes.notInPantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "no está en tu despensa"
+  },
   "9a89a960f6dcf217": {
     "en": "The key came in the part of the address that gets sent to servers, so it did not stay between the two of you. That usually means an email or chat app rewrote the link on the way.",
     "path": "common:connectClinician.queryString.body",
@@ -11570,6 +11640,13 @@
     "at": "2026-09-14",
     "es": "Bajo en carbohidratos"
   },
+  "aa4f1114754ca0e0": {
+    "en": "What you could cook next from your pantry, sized to what is left in your day.",
+    "path": "common:recipes.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Lo que podrías cocinar con lo que tienes en la despensa, adaptado a lo que te queda de día."
+  },
   "aa9767e8f4fd42af": {
     "en": "Cheap input, but it misread two of our three test plates",
     "path": "common:settingsAi.model.blurb.mistral-small-2603",
@@ -11905,6 +11982,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{hours}} h {{minutes}} min"
+  },
+  "afdf19797f5fe01a": {
+    "en": "That did not work",
+    "path": "common:recipes.errors.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "No ha funcionado"
   },
   "b0b201218a18f83b": {
     "en": "Your email address and your password.",
@@ -12563,6 +12647,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Carbohidratos"
+  },
+  "bb0d4785c4ca45c4": {
+    "en": "Steps",
+    "path": "common:recipes.steps",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Pasos"
   },
   "bb43ba92205b510d": {
     "en": "Getting your diary…",
@@ -13907,6 +13998,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "En una instancia gestionada para usted por una organización, su foto del plato se envía al propio proxy de IA de dicha organización en lugar de a un proveedor que usted haya seleccionado. La foto se lee una vez para determinar qué contiene el plato y no se conserva allí."
+  },
+  "d143bebea2aea441": {
+    "en": "of {{left}} left",
+    "path": "common:recipes.macros.ofLeft",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "de {{left}} restantes"
   },
   "d14d27e993cdd7fc": {
     "en": "2. What stays on your device",
@@ -15602,6 +15700,13 @@
     "at": "2026-09-14",
     "es": "Preferencias"
   },
+  "e9709243c54700f1": {
+    "en": "{{minutes}} min",
+    "path": "common:recipes.prepMinutes",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "{{minutes}} min"
+  },
   "e996760989fdf478": {
     "en": "End this fast",
     "path": "common:fasting.end.title",
@@ -16092,6 +16197,13 @@
     "at": "2026-09-14",
     "es": "13. Contacto"
   },
+  "f0a95079c2adf7eb": {
+    "en": "Saving...",
+    "path": "common:recipes.logging",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Guardando..."
+  },
   "f103758930ca7e14": {
     "en": "{{count}} foods",
     "path": "common:usual.itemCount_other",
@@ -16204,6 +16316,13 @@
     "at": "2026-09-14",
     "es": "Número de cuenta {{accountId}}"
   },
+  "f299755bf81a8fd0": {
+    "en": "Net carbs",
+    "path": "common:recipes.macros.netCarbs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Carbohidratos netos"
+  },
   "f299993941971c13": {
     "en": "{{value}} calories",
     "path": "common:add.portion.calories",
@@ -16217,6 +16336,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Tu seudónimo para este estudio"
+  },
+  "f2d54cda6729d83b": {
+    "en": "Fat",
+    "path": "common:recipes.macros.fat",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Grasas"
   },
   "f2d7768329d1205a": {
     "en": "Protein",
@@ -16469,6 +16595,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Las últimas 13 semanas. Un cuadrado relleno indica un día en el que registraste algo."
+  },
+  "f6b6de8182cd1cb2": {
+    "en": "Fibre",
+    "path": "common:recipes.macros.fiber",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Fibra"
   },
   "f6c28a8d71ec55c3": {
     "en": "Protein",

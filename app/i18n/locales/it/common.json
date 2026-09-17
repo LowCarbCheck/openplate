@@ -1353,7 +1353,8 @@
     "plan": "Il tuo piano · openplate",
     "withdrawal": "Diritto di recesso · openplate",
     "notifications": "Notifiche · openplate",
-    "pantry": "Dispensa · openplate"
+    "pantry": "Dispensa · openplate",
+    "recipes": "Ricette · openplate"
   },
   "nav": {
     "add": "Aggiungi",
@@ -3218,6 +3219,30 @@
       "title": "Non ha funzionato",
       "failed": "Impossibile leggere il contenuto. Riprova tra poco.",
       "nothingFound": "Nessun alimento trovato. Prova con una foto più da vicino o scrivi la lista."
+    }
+  },
+  "recipes": {
+    "title": "Ricette",
+    "lead": "Cosa potresti cucinare con gli ingredienti della tua dispensa, proporzionato a quanto ti resta nella giornata.",
+    "slotLabel": "Pasto",
+    "asking": "Calcolo delle opzioni adatte in corso...",
+    "prepMinutes": "{{minutes}} min",
+    "ingredients": "Ingredienti",
+    "notInPantry": "non presente in dispensa",
+    "steps": "Passaggi",
+    "logThis": "Registra questo pasto",
+    "logging": "Salvataggio in corso...",
+    "macros": {
+      "kcal": "Calorie",
+      "protein": "Proteine",
+      "netCarbs": "Carboidrati netti",
+      "fiber": "Fibre",
+      "fat": "Grassi",
+      "ofLeft": "su {{left}} rimanenti"
+    },
+    "errors": {
+      "title": "Operazione non riuscita",
+      "failed": "Non siamo riusciti a comporre un pasto. Riprova tra un momento."
     }
   }
 }

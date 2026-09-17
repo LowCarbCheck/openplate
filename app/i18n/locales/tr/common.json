@@ -1353,7 +1353,8 @@
     "plan": "Planın · openplate",
     "withdrawal": "Cayma hakkı · openplate",
     "notifications": "Bildirimler · openplate",
-    "pantry": "Kiler · openplate"
+    "pantry": "Kiler · openplate",
+    "recipes": "Tarifler · openplate"
   },
   "nav": {
     "add": "Ekle",
@@ -3218,6 +3219,30 @@
       "title": "Bu işe yaramadı",
       "failed": "Bu okunamadı. Birazdan tekrar dene.",
       "nothingFound": "Bunda yiyecek bulunamadı. Daha yakından çekmeyi dene veya listeyi yaz."
+    }
+  },
+  "recipes": {
+    "title": "Tarifler",
+    "lead": "Kilerindekilerle pişirebileceğin, gününden geriye kalan kotana göre ayarlanmış yemekler.",
+    "slotLabel": "Öğün",
+    "asking": "Neyin uyduğu hesaplanıyor...",
+    "prepMinutes": "{{minutes}} dk",
+    "ingredients": "Malzemeler",
+    "notInPantry": "kilerinde yok",
+    "steps": "Adımlar",
+    "logThis": "Bunu günlüğe kaydet",
+    "logging": "Kaydediliyor...",
+    "macros": {
+      "kcal": "Kalori",
+      "protein": "Protein",
+      "netCarbs": "Net karbonhidrat",
+      "fiber": "Lif",
+      "fat": "Yağ",
+      "ofLeft": "/ {{left}} kaldı"
+    },
+    "errors": {
+      "title": "Bu işe yaramadı",
+      "failed": "Bir öğün oluşturamadık. Birazdan tekrar dene."
     }
   }
 }

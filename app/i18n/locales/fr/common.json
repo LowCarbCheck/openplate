@@ -1353,7 +1353,8 @@
     "plan": "Ton forfait · openplate",
     "withdrawal": "Droit de rétractation · openplate",
     "notifications": "Notifications · openplate",
-    "pantry": "Garde-manger · openplate"
+    "pantry": "Garde-manger · openplate",
+    "recipes": "Recettes · openplate"
   },
   "nav": {
     "add": "Ajouter",
@@ -3218,6 +3219,30 @@
       "title": "L'opération a échoué",
       "failed": "Impossible de lire cela. Réessaie dans un instant.",
       "nothingFound": "Aucun aliment n'a été détecté. Prends une photo de plus près, ou écris la liste."
+    }
+  },
+  "recipes": {
+    "title": "Recettes",
+    "lead": "Ce que tu pourrais cuisiner avec les réserves de ton garde-manger, selon ce qu'il te reste pour la journée.",
+    "slotLabel": "Repas",
+    "asking": "Calcul des options possibles...",
+    "prepMinutes": "{{minutes}} min",
+    "ingredients": "Ingrédients",
+    "notInPantry": "absent de ton garde-manger",
+    "steps": "Étapes",
+    "logThis": "Enregistrer",
+    "logging": "Enregistrement...",
+    "macros": {
+      "kcal": "Calories",
+      "protein": "Protéines",
+      "netCarbs": "Glucides nets",
+      "fiber": "Fibres",
+      "fat": "Lipides",
+      "ofLeft": "sur {{left}} restant"
+    },
+    "errors": {
+      "title": "L'opération a échoué",
+      "failed": "Impossible de composer un repas. Réessaie dans un instant."
     }
   }
 }

@@ -181,6 +181,11 @@ export default [
     // provider call is the browser's own (BYOK) and the list lives in the
     // on-device primary store, so there is nothing for a server loader to do.
     route('/pantry', 'routes/pantry.tsx'),
+    // Recipes from the pantry (M233/04): two or three things to cook next,
+    // fitted to what is still open in today's targets, one tap to log one
+    // serving. Client-only for the same two reasons `/pantry` is, plus a
+    // third: the day it reasons about is the on-device diary.
+    route('/pantry/recipes', 'routes/pantry.recipes.tsx'),
     // The nutrient screen (M135/06). Client-only like every tracker surface:
     // the log and the body metrics are on-device, and the published reference
     // intakes come from the `/api/nutrients` resource route below.

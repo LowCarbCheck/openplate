@@ -1353,7 +1353,8 @@
     "plan": "Dein Tarif · openplate",
     "withdrawal": "Widerrufsbelehrung · openplate",
     "notifications": "Benachrichtigungen · openplate",
-    "pantry": "Vorratskammer · openplate"
+    "pantry": "Vorratskammer · openplate",
+    "recipes": "Rezepte · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -3218,6 +3219,30 @@
       "title": "Das hat nicht geklappt",
       "failed": "Das konnte nicht gelesen werden. Versuche es gleich noch einmal.",
       "nothingFound": "Darin wurden keine Lebensmittel gefunden. Versuche es mit einer Nahaufnahme oder schreibe die Liste."
+    }
+  },
+  "recipes": {
+    "title": "Rezepte",
+    "lead": "Was du als Nächstes aus deinem Vorrat kochen könntest, angepasst an dein restliches Tageskontingent.",
+    "slotLabel": "Mahlzeit",
+    "asking": "Berechne passende Optionen...",
+    "prepMinutes": "{{minutes}} Min.",
+    "ingredients": "Zutaten",
+    "notInPantry": "nicht in deinem Vorrat",
+    "steps": "Schritte",
+    "logThis": "Eintragen",
+    "logging": "Speichern...",
+    "macros": {
+      "kcal": "Kalorien",
+      "protein": "Protein",
+      "netCarbs": "Netto-Kohlenhydrate",
+      "fiber": "Ballaststoffe",
+      "fat": "Fett",
+      "ofLeft": "von {{left}} übrig"
+    },
+    "errors": {
+      "title": "Das hat nicht geklappt",
+      "failed": "Wir konnten keine Mahlzeit zusammenstellen. Versuche es gleich noch einmal."
     }
   }
 }

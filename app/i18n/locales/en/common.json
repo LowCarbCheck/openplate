@@ -1353,7 +1353,8 @@
     "plan": "Your plan · openplate",
     "withdrawal": "Right of withdrawal · openplate",
     "notifications": "Notifications · openplate",
-    "pantry": "Pantry · openplate"
+    "pantry": "Pantry · openplate",
+    "recipes": "Recipes · openplate"
   },
   "nav": {
     "add": "Add",
@@ -3218,6 +3219,30 @@
       "title": "That did not work",
       "failed": "We could not read that. Try again in a moment.",
       "nothingFound": "No food was found in that. Try a closer picture, or write the list."
+    }
+  },
+  "recipes": {
+    "title": "Recipes",
+    "lead": "What you could cook next from your pantry, sized to what is left in your day.",
+    "slotLabel": "Meal",
+    "asking": "Working out what fits...",
+    "prepMinutes": "{{minutes}} min",
+    "ingredients": "Ingredients",
+    "notInPantry": "not in your pantry",
+    "steps": "Steps",
+    "logThis": "Log this",
+    "logging": "Saving...",
+    "macros": {
+      "kcal": "Calories",
+      "protein": "Protein",
+      "netCarbs": "Net carbs",
+      "fiber": "Fibre",
+      "fat": "Fat",
+      "ofLeft": "of {{left}} left"
+    },
+    "errors": {
+      "title": "That did not work",
+      "failed": "We could not put a meal together. Try again in a moment."
     }
   }
 }

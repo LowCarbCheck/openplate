@@ -76,6 +76,12 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   { pattern: '/catch-up', parent: '/dashboard' },
 
   // ---------------------------------------------------------------------------
+  // Under the pantry. The recipe screen is only ever reached from the list,
+  // and Back from it belongs on the list it was built from.
+  // ---------------------------------------------------------------------------
+  { pattern: '/pantry/recipes', parent: '/pantry' },
+
+  // ---------------------------------------------------------------------------
   // Under the diary.
   // ---------------------------------------------------------------------------
   // One logged entry. `diary.entry.$id.tsx`'s own `handle.backTo` is `/diary`,

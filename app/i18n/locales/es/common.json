@@ -1353,7 +1353,8 @@
     "plan": "Tu plan · openplate",
     "withdrawal": "Derecho de desistimiento · openplate",
     "notifications": "Notificaciones · openplate",
-    "pantry": "Despensa · openplate"
+    "pantry": "Despensa · openplate",
+    "recipes": "Recetas · openplate"
   },
   "nav": {
     "add": "Añadir",
@@ -3218,6 +3219,30 @@
       "title": "Eso no ha funcionado",
       "failed": "No hemos podido leer eso. Inténtalo de nuevo en un momento.",
       "nothingFound": "No se ha encontrado comida ahí. Prueba con una foto más de cerca o escribe la lista."
+    }
+  },
+  "recipes": {
+    "title": "Recetas",
+    "lead": "Lo que podrías cocinar con lo que tienes en la despensa, adaptado a lo que te queda de día.",
+    "slotLabel": "Comida",
+    "asking": "Calculando qué encaja...",
+    "prepMinutes": "{{minutes}} min",
+    "ingredients": "Ingredientes",
+    "notInPantry": "no está en tu despensa",
+    "steps": "Pasos",
+    "logThis": "Registrar esto",
+    "logging": "Guardando...",
+    "macros": {
+      "kcal": "Calorías",
+      "protein": "Proteínas",
+      "netCarbs": "Carbohidratos netos",
+      "fiber": "Fibra",
+      "fat": "Grasas",
+      "ofLeft": "de {{left}} restantes"
+    },
+    "errors": {
+      "title": "No ha funcionado",
+      "failed": "No pudimos organizar una comida. Vuelve a intentarlo en un momento."
     }
   }
 }

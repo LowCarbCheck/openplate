@@ -16,6 +16,10 @@ export * from './task';
 // tasks for the same reason they are: a consumer names a task and then names
 // the shape it answers with, and both come from this one entry point.
 export * from './pantry-schema';
+// The RECIPE wire schema and its result type (M233/04), exported beside the
+// pantry's for exactly the same reason: `/pantry/recipes` names the task and
+// then names the shape it answers with, and both come from this entry point.
+export * from './recipe-schema';
 
 export interface CreateVisionProviderOptions {
   provider: AiProviderType;

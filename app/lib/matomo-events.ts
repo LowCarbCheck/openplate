@@ -306,7 +306,12 @@ export type LogInputPath =
   | 'entry-log-again'
   | 'saved-meal'
   | 'usual-saved-meal'
-  | 'usual-food';
+  | 'usual-food'
+  // A recipe proposed from the pantry, logged into its slot in one tap
+  // (M233/04). A new DOOR into the diary, so a new member here rather than a
+  // second event: whether the door earns its place is the question this event
+  // already answers for every other one. It says nothing about the recipe.
+  | 'recipe';
 
 export function trackFoodLogged(path: LogInputPath): void {
   trackEvent('product', 'Diary', 'logged', path);

@@ -30,6 +30,13 @@
  */
 import type { PlateIdentification, ScanResultBase, ScanTokenUsage } from './types';
 import type { PantryIdentification } from './pantry-schema';
+import type { RecipeProposals } from './recipe-schema';
+import {
+  RECIPE_PROPOSALS_JSON_SCHEMA,
+  parseRecipeProposalsJson,
+  validateRecipeProposals,
+} from './recipe-schema';
+import { RECIPE_PROPOSAL_SYSTEM_PROMPT } from './recipe-prompt';
 import {
   PANTRY_IDENTIFICATION_JSON_SCHEMA,
   parsePantryIdentificationJson,
@@ -171,6 +178,34 @@ export const PANTRY_TEXT_TASK: IntakeTaskDescriptor<PantryIdentification> = {
   toolDescription: 'Record the ingredients the person says they have at home.',
   parse: parsePantryIdentificationJson,
   validate: validatePantryIdentification,
+};
+
+/**
+ * The shelf plus the rest of the day, into two or three things to cook next
+ * (M233/04).
+ *
+ * A TEXT TASK WHOSE TEXT IS A PROMPT BLOCK. Nothing is being read here: there
+ * is no photograph and no sentence a person wrote, only facts the app already
+ * holds, assembled by `buildRecipeProposalUserPrompt` and handed over as the
+ * call's text. That is why the static `userPrompt` below is one line of
+ * hand-over rather than the instruction: the instruction is in the block, and
+ * the block changes with every slot.
+ *
+ * Its own result type for the same reason the pantry has one: a proposal
+ * carries steps and a per-serving nutrition claim, and neither fits a shape
+ * built to describe food somebody already ate.
+ */
+export const RECIPE_PROPOSAL_TASK: IntakeTaskDescriptor<RecipeProposals> = {
+  mode: 'text',
+  systemPrompt: RECIPE_PROPOSAL_SYSTEM_PROMPT,
+  userPrompt:
+    'Here is what the person has at home and what is still open in their day. Propose the recipes as the system prompt describes.',
+  jsonSchema: RECIPE_PROPOSALS_JSON_SCHEMA,
+  schemaName: 'recipe_proposals',
+  toolName: 'record_recipe_proposals',
+  toolDescription: 'Record the recipes proposed from the pantry for the next meal slot.',
+  parse: parseRecipeProposalsJson,
+  validate: validateRecipeProposals,
 };
 
 /**
