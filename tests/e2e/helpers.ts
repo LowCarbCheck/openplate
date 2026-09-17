@@ -202,6 +202,13 @@ export async function logFoodManually(page: Page, food: ManualFood): Promise<voi
  * because its fixed height is the promise the status channel is allowed to
  * write into.
  *
+ * THE HEIGHT READ POLLS, because a first visit registers the service worker
+ * and reloads once, remounting the header between one call and the next: a
+ * single `boundingBox()` after `toBeVisible()` can land on the instant the old
+ * header is gone and the new one is not yet there, and read null. Polling to
+ * a fixed number keeps the check honest, a wrong height still times out and
+ * fails.
+ *
  * @param page - the page to measure.
  */
 export async function expectPhoneLayout(page: Page): Promise<void> {
@@ -211,9 +218,15 @@ export async function expectPhoneLayout(page: Page): Promise<void> {
 
   const header = page.locator('header').first();
   await expect(header).toBeVisible();
-  const box = await header.boundingBox();
-  expect(box, 'the header must have a box to measure').not.toBeNull();
-  expect(Math.round(box?.height ?? 0)).toBe(HEADER_HEIGHT);
+  await expect
+    .poll(
+      async () => {
+        const box = await page.locator('header').first().boundingBox();
+        return box === null ? null : Math.round(box.height);
+      },
+      { message: 'the first header must measure the fixed header height' },
+    )
+    .toBe(HEADER_HEIGHT);
 }
 
 /** The header's status line, or `''` when nothing is being said. */
