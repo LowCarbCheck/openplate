@@ -48,6 +48,7 @@ function recipe(title: string) {
   return {
     title,
     servings: 2,
+    servingGrams: 350,
     ingredients,
     steps: ['Beat the eggs.', 'Cook them.'],
     perServing: { kcal: 320, proteinG: 22, carbsG: 4, fiberG: 2, fatG: 24 },
@@ -91,6 +92,18 @@ describe('RecipeProposalsSchema, the fields', () => {
     assert.equal(RecipeProposalsSchema.safeParse(missing).success, false);
   });
 
+  it('rejects a recipe with no serving weight', () => {
+    const weightless = proposals(2);
+    // SAFETY: a deliberately malformed fixture. The weight is the base every
+    // macro on the card is computed from, so an answer without one must not
+    // reach a screen (M233/06).
+    delete (weightless.recipes[0] as { servingGrams?: number }).servingGrams;
+    assert.equal(RecipeProposalsSchema.safeParse(weightless).success, false);
+    // The control: the same two proposals WITH the weight parse, so the
+    // rejection is about the missing field.
+    assert.equal(validateRecipeProposals(proposals(2)).recipes[0].servingGrams, 350);
+  });
+
   it('drops a unit that has no amount', () => {
     const stray = proposals(2);
     stray.recipes[0].ingredients[0] = { name: 'Butter', amount: null, unit: 'g', fromPantry: true };
@@ -120,6 +133,7 @@ describe('RECIPE_PROPOSALS_JSON_SCHEMA', () => {
     assert.deepEqual(item?.required, [
       'title',
       'servings',
+      'servingGrams',
       'ingredients',
       'steps',
       'perServing',

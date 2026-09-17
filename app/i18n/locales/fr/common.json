@@ -3230,8 +3230,15 @@
     "ingredients": "Ingrédients",
     "notInPantry": "absent de ton garde-manger",
     "steps": "Étapes",
-    "logThis": "Enregistrer",
     "logging": "Enregistrement...",
+    "servingWeight": "Environ {{grams}} g",
+    "servingsEaten": {
+      "label": "Portions consommées",
+      "decrease": "Diminuer les portions",
+      "increase": "Ajouter des portions",
+      "logOne": "Enregistrer {{count}} portion",
+      "logOf": "Enregistrer {{count}} portion sur {{servings}}"
+    },
     "macros": {
       "kcal": "Calories",
       "protein": "Protéines",

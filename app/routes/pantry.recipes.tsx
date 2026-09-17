@@ -32,10 +32,10 @@
  * `components/intake/` rather than copied.
  */
 import type { Route } from './+types/pantry.recipes';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import { redirect, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Clock, ShoppingBasket } from 'lucide-react';
+import { Clock, Minus, Plus, ShoppingBasket } from 'lucide-react';
 
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
@@ -51,6 +51,9 @@ import { MEAL_TYPES } from '#app/lib/meal-choice';
 import { mealTypeForTime } from '#app/lib/meal-time';
 import { trackFoodLogged } from '#app/lib/matomo-events';
 import { buildRecipeLogEntry } from '#app/lib/recipe-log';
+import { keepServableRecipes, roundServingGramsForDisplay, servingsEatenOptions } from '#app/lib/recipe-serving';
+import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { Label } from '#app/components/ui/label';
 import { dayTotalsFromLogs } from '#app/lib/day-totals-from-logs';
 import { computeRemainingDay, describeRemainingDayForPrompt } from '#app/lib/remaining-day';
 import type { Remaining, RemainingDay } from '#app/lib/remaining-day';
@@ -202,8 +205,7 @@ async function proposeRecipes({
       provider: triple.provider,
       model: triple.model,
       baseUrl: triple.baseUrl,
-      credential:
-        effective.source === 'managed' ? managedAiCredential() : { apiKey: effective.settings.apiKey ?? '' },
+      credential: effective.source === 'managed' ? managedAiCredential() : { apiKey: effective.settings.apiKey ?? '' },
     });
     const proposals = await provider.runTextIntake({
       task: RECIPE_PROPOSAL_TASK,
@@ -250,15 +252,43 @@ function leftOf(row: Remaining | null): number | null {
   return row === null ? null : row.remaining;
 }
 
-/** The five lines, in the order the diary reads its macros. */
-function macroLines(recipe: RecipeProposal, day: RemainingDay, t: (key: string) => string): MacroLine[] {
+/**
+ * The five lines, in the order the diary reads its macros, SCALED BY THE
+ * SERVINGS the stepper is showing.
+ *
+ * The scale is applied here rather than at the render, so what the card shows
+ * beside "of 420 left" and what `buildRecipeLogEntry` writes are the same
+ * multiplication of the same figures.
+ */
+function macroLines(
+  recipe: RecipeProposal,
+  day: RemainingDay,
+  servingsEaten: number,
+  t: (key: string) => string,
+): MacroLine[] {
+  const eaten = (perServing: number): number => perServing * servingsEaten;
   return [
-    { label: t('recipes.macros.kcal'), value: recipe.perServing.kcal, remaining: leftOf(day.kcal) },
-    { label: t('recipes.macros.protein'), value: recipe.perServing.proteinG, remaining: leftOf(day.protein) },
-    { label: t('recipes.macros.netCarbs'), value: recipe.perServing.carbsG, remaining: leftOf(day.netCarbs) },
-    { label: t('recipes.macros.fiber'), value: recipe.perServing.fiberG, remaining: leftOf(day.fiber) },
-    { label: t('recipes.macros.fat'), value: recipe.perServing.fatG, remaining: leftOf(day.fat) },
+    { label: t('recipes.macros.kcal'), value: eaten(recipe.perServing.kcal), remaining: leftOf(day.kcal) },
+    { label: t('recipes.macros.protein'), value: eaten(recipe.perServing.proteinG), remaining: leftOf(day.protein) },
+    { label: t('recipes.macros.netCarbs'), value: eaten(recipe.perServing.carbsG), remaining: leftOf(day.netCarbs) },
+    { label: t('recipes.macros.fiber'), value: eaten(recipe.perServing.fiberG), remaining: leftOf(day.fiber) },
+    { label: t('recipes.macros.fat'), value: eaten(recipe.perServing.fatG), remaining: leftOf(day.fat) },
   ];
+}
+
+/**
+ * The next rung of the half-serving ladder in `direction`, or the current one
+ * at either end.
+ *
+ * Walked as an INDEX into the ladder rather than added to, because the ladder
+ * is the authority on what a person may choose: an arithmetic step would walk
+ * straight past `servings` on a recipe whose top rung is not a multiple of the
+ * step.
+ */
+function stepServings(options: readonly number[], current: number, direction: 1 | -1): number {
+  const index = options.indexOf(current);
+  const next = index === -1 ? 0 : index + direction;
+  return options[Math.min(Math.max(next, 0), options.length - 1)] ?? current;
 }
 
 /**
@@ -277,9 +307,23 @@ export function RecipeCard({
   recipe: RecipeProposal;
   day: RemainingDay;
   isLogging: boolean;
-  onLog: () => void;
+  onLog: (servingsEaten: number) => void;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const options = servingsEatenOptions(recipe.servings);
+  // ONE WHOLE SERVING is the default, because that is what the card was built
+  // around and what the model sized against the slot's share. The stepper is
+  // there for the person who ate half of it or went back for more.
+  const [servingsEaten, setServingsEaten] = useState(1);
+  const servingsText = formatMacroNumberIn(i18n.language, servingsEaten);
+  const stepperId = useId();
+  const logLabel =
+    recipe.servings <= 1 ?
+      t('recipes.servingsEaten.logOne', { count: servingsText })
+    : t('recipes.servingsEaten.logOf', {
+        count: servingsText,
+        servings: formatMacroNumberIn(i18n.language, recipe.servings),
+      });
   return (
     <Card>
       <CardHeader>
@@ -294,7 +338,7 @@ export function RecipeCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
-          {macroLines(recipe, day, t).map((line) => (
+          {macroLines(recipe, day, servingsEaten, t).map((line) => (
             <div key={line.label} className="flex flex-col">
               <dt className="text-xs text-muted-foreground">{line.label}</dt>
               <dd>
@@ -313,6 +357,16 @@ export function RecipeCard({
             </div>
           ))}
         </dl>
+
+        {/* THE WEIGHT, SAID AS AN ESTIMATE AND ROUNDED TO 10 G. The figures
+            above are per weight, so a card without one asks a person to log a
+            portion nobody named. "About" and the rounding are the honest
+            frame: the model estimated this from its own ingredient amounts. */}
+        <p className="text-xs text-muted-foreground">
+          {t('recipes.servingWeight', {
+            grams: roundServingGramsForDisplay(recipe.servingGrams * servingsEaten),
+          })}
+        </p>
 
         <div className="space-y-1">
           <h3 className="text-xs font-medium text-muted-foreground">{t('recipes.ingredients')}</h3>
@@ -339,9 +393,7 @@ export function RecipeCard({
         </div>
 
         <details className="text-sm">
-          <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
-            {t('recipes.steps')}
-          </summary>
+          <summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t('recipes.steps')}</summary>
           <ol className="mt-2 list-decimal space-y-1 pl-5">
             {recipe.steps.map((step) => (
               <li key={step}>{step}</li>
@@ -349,8 +401,44 @@ export function RecipeCard({
           </ol>
         </details>
 
-        <Button type="button" className="w-full" onClick={onLog} disabled={isLogging}>
-          {isLogging ? t('recipes.logging') : t('recipes.logThis')}
+        {/* HOW MANY SERVINGS THEY ATE. The same shape as the scan review's
+            grams stepper: two 44 px icon buttons around a read-only figure,
+            each with its own label, because a bare "+" is unreachable by
+            anyone who is not looking at it. */}
+        <div className="grid gap-1">
+          <Label htmlFor={stepperId}>{t('recipes.servingsEaten.label')}</Label>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              aria-label={t('recipes.servingsEaten.decrease')}
+              onClick={() => setServingsEaten((current) => stepServings(options, current, -1))}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <output id={stepperId} className="w-16 text-center text-sm tabular-nums">
+              {servingsText}
+            </output>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              aria-label={t('recipes.servingsEaten.increase')}
+              onClick={() => setServingsEaten((current) => stepServings(options, current, 1))}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <Button type="button" className="w-full" onClick={() => onLog(servingsEaten)} disabled={isLogging}>
+          {/* A RECIPE THAT MAKES ONE SERVING HIDES "of 1" (see `logLabel`):
+              there is nothing to choose between, and naming the total would
+              read as a second figure the person has to reconcile. */}
+          {isLogging ? t('recipes.logging') : logLabel}
         </Button>
       </CardContent>
     </Card>
@@ -363,9 +451,7 @@ export function RecipeCard({
 
 /** What the screen is doing right now. One value, so "asking" and "failed" cannot both be true. */
 type RecipePhase =
-  | { kind: 'asking' }
-  | { kind: 'ready'; recipes: RecipeProposal[] }
-  | { kind: 'failed'; message: string };
+  { kind: 'asking' } | { kind: 'ready'; recipes: RecipeProposal[] } | { kind: 'failed'; message: string };
 
 export default function PantryRecipes({ loaderData }: Route.ComponentProps): ReactElement {
   const { t, i18n } = useTranslation();
@@ -420,16 +506,28 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
         setPhase({ kind: 'failed', message: result.error });
         return;
       }
-      setPhase({ kind: 'ready', recipes: result.proposals.recipes });
+      // A RECIPE WHOSE SERVING WEIGHT IS NOT PLAUSIBLE IS NOT SHOWN. See
+      // `#app/lib/recipe-serving`: the weight is the base every macro on the
+      // card and every figure in the log entry is computed from, so a wrong
+      // one is not a cosmetic problem. Nothing is clamped, so an answer that
+      // loses every recipe is the same outcome as an answer that never
+      // arrived, and it says so with the same alert.
+      const servable = keepServableRecipes(result.proposals.recipes);
+      if (servable.length === 0) {
+        setPhase({ kind: 'failed', message: t('recipes.errors.failed') });
+        return;
+      }
+      setPhase({ kind: 'ready', recipes: servable });
     })();
   }, [effective, slot, i18n.language, t]);
 
   const logRecipe = useCallback(
-    async (recipe: RecipeProposal): Promise<void> => {
+    async (recipe: RecipeProposal, servingsEaten: number): Promise<void> => {
       setIsLogging(true);
       try {
         const { food, log } = buildRecipeLogEntry({
           recipe,
+          servingsEaten,
           slot,
           dayKey: loaderData.dayKey,
           now: Date.now(),
@@ -493,7 +591,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
             recipe={recipe}
             day={day}
             isLogging={isLogging}
-            onLog={() => void logRecipe(recipe)}
+            onLog={(servingsEaten) => void logRecipe(recipe, servingsEaten)}
           />
         ))}
     </div>

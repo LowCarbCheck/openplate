@@ -3230,8 +3230,15 @@
     "ingredients": "Ingredienti",
     "notInPantry": "non presente in dispensa",
     "steps": "Passaggi",
-    "logThis": "Registra questo pasto",
     "logging": "Salvataggio in corso...",
+    "servingWeight": "Circa {{grams}} g",
+    "servingsEaten": {
+      "label": "Porzioni consumate",
+      "decrease": "Riduci le porzioni",
+      "increase": "Aggiungi porzioni",
+      "logOne": "Registra {{count}} porzione",
+      "logOf": "Registra {{count}} di {{servings}} porzioni"
+    },
     "macros": {
       "kcal": "Calorie",
       "protein": "Proteine",

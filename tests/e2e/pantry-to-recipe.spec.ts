@@ -61,10 +61,25 @@ const SPINACH = 'Smoke tier spinach';
 /** The one that is removed before the list is kept, and the one with no amount. */
 const FETA = 'Smoke tier feta';
 
-/** The recipe that gets logged. */
+/** The recipe that gets logged. Its serving weight is inside the servable range. */
 const FIRST_RECIPE = 'Smoke tier spinach omelette';
-/** The recipe that must NOT get logged. The control. */
+/**
+ * The recipe that must NOT be shown at all.
+ *
+ * Its `servingGrams` is 9000, far past `RECIPE_SERVING_MAX_GRAMS`, so
+ * `keepServableRecipes` drops it before a card is ever drawn (M233/06). It is
+ * also the control for the first card: two recipes are answered, one appears.
+ */
 const SECOND_RECIPE = 'Smoke tier feta bake';
+
+/** What one serving of the first recipe weighs, cooked. The walk logs 1.5 of them. */
+const FIRST_SERVING_GRAMS = 350;
+
+/** How many servings the walk says were eaten: one press of the card's "+" from the default of 1. */
+const SERVINGS_EATEN = 1.5;
+
+/** How that quantity is written on a portion label: `formatPortionLabel`'s own glyph for 1.5. */
+const SERVINGS_EATEN_GLYPH = '1\u00bd';
 
 /** A valid 1 x 1 RGBA PNG, the smallest thing `validatePhoto` and the canvas downscale both accept. */
 const PIXEL_PNG = Buffer.from(
@@ -102,7 +117,10 @@ const RECIPE_ANSWER = {
   recipes: [
     {
       title: FIRST_RECIPE,
-      servings: 1,
+      // TWO SERVINGS, so the stepper has a rung above its default of 1 and the
+      // walk can say it ate one and a half of them.
+      servings: 2,
+      servingGrams: FIRST_SERVING_GRAMS,
       ingredients: [
         { name: EGGS, amount: 3, unit: 'piece', fromPantry: true },
         { name: SPINACH, amount: 80, unit: 'g', fromPantry: true },
@@ -116,6 +134,9 @@ const RECIPE_ANSWER = {
     {
       title: SECOND_RECIPE,
       servings: 2,
+      // NINE KILOGRAMS OF FOOD. A figure nobody estimated, which is exactly
+      // what the range exists to catch: it is dropped, never clamped.
+      servingGrams: 9000,
       ingredients: [
         { name: SPINACH, amount: 120, unit: 'g', fromPantry: true },
         { name: 'Cream', amount: 50, unit: 'ml', fromPantry: false },
@@ -344,14 +365,19 @@ test('a photographed shelf becomes a pantry, a recipe and one logged entry', asy
   // the shape every Card draws and narrowed by the title inside them.
   const cards = page.locator('main div.rounded-2xl.bg-card');
   const firstCard = cards.filter({ hasText: FIRST_RECIPE });
-  const secondCard = cards.filter({ hasText: SECOND_RECIPE });
   await expect(firstCard).toHaveCount(1);
-  await expect(secondCard).toHaveCount(1);
 
-  // A "LEFT" FIGURE ON EACH CARD. Located through the catalog sentence rather
+  // EXACTLY ONE CARD. The fake answered with two recipes and the second one
+  // weighs nine kilograms a serving, so the servable filter dropped it before
+  // anything was drawn. Asserted twice on purpose: the count, which fails if
+  // a second card appears under any title, and the absent title, which is the
+  // control saying the surviving card is the one that was supposed to survive.
+  await expect(cards).toHaveCount(1);
+  await expect(page.locator('main').getByText(SECOND_RECIPE)).toHaveCount(0);
+
+  // A "LEFT" FIGURE ON THE CARD. Located through the catalog sentence rather
   // than by transcribing it, so the wordsmith pass owns the wording.
   await expect(firstCard.getByText(ofLeftPattern()).first()).toBeVisible();
-  await expect(secondCard.getByText(ofLeftPattern()).first()).toBeVisible();
 
   // THE PAGE FITS THE PHONE. `scrollWidth` against `clientWidth` on the
   // document element, which IS this app's scroll container, never a screenshot:
@@ -367,11 +393,32 @@ test('a photographed shelf becomes a pantry, a recipe and one logged entry', asy
   const slot = await page.locator('main input[type="hidden"][name="meal"]').inputValue();
   expect(slot).not.toBe('');
 
-  await firstCard.getByRole('button', { name: EN.recipes.logThis }).click();
+  // ONE AND A HALF SERVINGS. The stepper starts at one whole serving, so a
+  // single press of "+" is the half step up, and the button's own text then
+  // has to say so.
+  await firstCard.getByRole('button', { name: EN.recipes.servingsEaten.increase }).click();
+  const logButton = firstCard.getByRole('button', {
+    name: fill(EN.recipes.servingsEaten.logOf, { count: '1.5', servings: '2' }),
+  });
+  await expect(logButton).toHaveCount(1);
+  await logButton.click();
   await page.waitForURL('**/diary**');
 
   const logged = page.locator(`[data-slot="meal-group"][data-meal="${slot}"] a[href^="/diary/entry/"]`);
-  await expect(logged.filter({ hasText: FIRST_RECIPE })).toHaveCount(1);
-  // THE CONTROL: the other proposal was read and not logged.
-  await expect(page.locator('main').getByText(SECOND_RECIPE)).toHaveCount(0);
+  const entry = logged.filter({ hasText: FIRST_RECIPE });
+  await expect(entry).toHaveCount(1);
+
+  // THE ENTRY CARRIES THE SERVINGS AND THE WEIGHT, which is the whole of
+  // M233/06: a nominal 100 g used to be logged whatever the recipe was. The
+  // portion label is read out of the shipped catalog (`formatPortionLabel`
+  // resolves `portions.unit.serving_other` with the 1½ glyph), never
+  // transcribed, so a reword of the unit noun passes and a missing portion
+  // fails. The gram figure beside it is this recipe's own weight times the
+  // servings, formatted with the app's no-break space.
+  await expect(entry).toContainText(fill(EN.portions.unit.serving_other, { count: SERVINGS_EATEN_GLYPH }));
+  await expect(entry).toContainText(`${FIRST_SERVING_GRAMS * SERVINGS_EATEN}\u00a0g`);
+
+  // THE CONTROL for the line above: one whole serving would read as this
+  // recipe's bare weight, and that is not what is on the page.
+  await expect(entry).not.toContainText(`${FIRST_SERVING_GRAMS}\u00a0g`);
 });

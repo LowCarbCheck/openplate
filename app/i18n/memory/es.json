@@ -3177,6 +3177,13 @@
     "at": "2026-09-14",
     "es": "No utilizamos publicidad ni analítica de terceros. Esta instancia mide las visitas y el uso de funciones mediante nuestra propia instalación de Matomo, ejecutada en nuestro propio servidor, por lo que ningún dato llega a una empresa de analítica. No define cookies y nunca recibe información sobre lo que usted come, pesa o registra: ningún contenido del diario llega a ella. Consulte la Sección 9a para saber exactamente qué se registra y cómo oponerse. Una instancia que aloje usted mismo tiene la analítica desactivada a menos que usted la active."
   },
+  "2d251922979fc75c": {
+    "en": "Add servings",
+    "path": "common:recipes.servingsEaten.increase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Añadir raciones"
+  },
   "2d32febd5cbdd4eb": {
     "en": "Logged {{logged}} of the last {{total}} days",
     "path": "common:diary.habit.summary",
@@ -8518,6 +8525,13 @@
     "at": "2026-09-14",
     "es": "Ayuno eliminado."
   },
+  "7daa324a10f747f6": {
+    "en": "Log {{count}} serving",
+    "path": "common:recipes.servingsEaten.logOne",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Registrar {{count}} ración"
+  },
   "7dd5a32cfeff05e4": {
     "en": "You have used all of your invitations.",
     "path": "common:account.invites.none",
@@ -12774,6 +12788,13 @@
     "at": "2026-09-14",
     "es": "Conectando con OpenRouter"
   },
+  "bc416d7ceb77d23a": {
+    "en": "Reduce servings",
+    "path": "common:recipes.servingsEaten.decrease",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Reducir raciones"
+  },
   "bc4489c9361f0583": {
     "en": "Saving…",
     "path": "common:fasting.plan.saving",
@@ -15462,6 +15483,13 @@
     "at": "2026-09-14",
     "es": "brócoli"
   },
+  "e6063e6aa6dc9196": {
+    "en": "Servings eaten",
+    "path": "common:recipes.servingsEaten.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Raciones consumidas"
+  },
   "e62caab52f6361eb": {
     "en": "e.g. {{value}}",
     "path": "common:onboarding.weight.placeholder",
@@ -15489,6 +15517,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "No hay planes en esta instancia."
+  },
+  "e67574856b17a1d4": {
+    "en": "Log {{count}} of {{servings}} servings",
+    "path": "common:recipes.servingsEaten.logOf",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Registrar {{count}} de {{servings}} raciones"
   },
   "e688a7296b8fd3c8": {
     "en": "You have used today's AI estimates. Try again tomorrow.",
@@ -16973,6 +17008,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Entrada manual."
+  },
+  "fc75a3d4c2c861f3": {
+    "en": "About {{grams}} g",
+    "path": "common:recipes.servingWeight",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Aproximadamente {{grams}} g"
   },
   "fc7a32a9cdfb696d": {
     "en": "Reload to update",

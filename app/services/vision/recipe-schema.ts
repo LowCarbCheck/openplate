@@ -71,6 +71,14 @@ const RawRecipePerServingSchema = z.object({
 const RawRecipeSchema = z.object({
   title: z.string(),
   servings: z.number(),
+  /**
+   * What ONE serving weighs, cooked, in grams. Required and never nullable:
+   * the diary stores a food per 100 g and a log by weight, so a proposal with
+   * no weight can only be logged against an invented base (M233/06). A figure
+   * outside the plausible range is dropped by `keepServableRecipes`, never
+   * clamped.
+   */
+  servingGrams: z.number(),
   ingredients: z.array(RawRecipeIngredientSchema),
   steps: z.array(z.string()),
   perServing: RawRecipePerServingSchema,
@@ -119,6 +127,8 @@ export interface RecipePerServing {
 export interface RecipeProposal {
   title: string;
   servings: number;
+  /** What one serving weighs, cooked, in grams. See the wire schema's field. */
+  servingGrams: number;
   ingredients: RecipeIngredient[];
   steps: string[];
   perServing: RecipePerServing;
@@ -151,6 +161,7 @@ export function normalizeRecipeProposals(raw: RawRecipeProposals): RecipeProposa
     recipes: raw.recipes.map((recipe) => ({
       title: recipe.title.trim(),
       servings: recipe.servings,
+      servingGrams: recipe.servingGrams,
       ingredients: recipe.ingredients.map((ingredient) => ({
         name: ingredient.name.trim(),
         amount: ingredient.amount,

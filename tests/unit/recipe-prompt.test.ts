@@ -15,6 +15,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  RECIPE_PROPOSAL_SYSTEM_PROMPT,
   buildRecipeProposalUserPrompt,
   type RecipePromptPantryItem,
 } from '../../app/services/vision/recipe-prompt';
@@ -112,5 +113,18 @@ describe('buildRecipeProposalUserPrompt', () => {
     const prompt = promptFor(SHELF);
     assert.ok(prompt.includes('dinner'));
     assert.ok(prompt.includes('de'));
+  });
+});
+
+describe('RECIPE_PROPOSAL_SYSTEM_PROMPT', () => {
+  it('asks for the weight of one serving, and names what makes it hard', () => {
+    assert.ok(RECIPE_PROPOSAL_SYSTEM_PROMPT.includes('"servingGrams"'), 'the field must be asked for by name');
+    assert.match(RECIPE_PROPOSAL_SYSTEM_PROMPT, /water lost in cooking/u);
+    assert.match(RECIPE_PROPOSAL_SYSTEM_PROMPT, /small amount, never plenty/u);
+
+    // THE CONTROL. A field name the schema does not have is absent, so the
+    // assertions above are a reading of this prompt rather than the fact that
+    // a long string contains most words.
+    assert.ok(!RECIPE_PROPOSAL_SYSTEM_PROMPT.includes('servingWeightGrams'));
   });
 });

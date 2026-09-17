@@ -65,6 +65,13 @@ THE PER-SERVING FIGURES ARE HONEST ESTIMATES:
 - "carbsG" is NET carbs: carbohydrate with the fibre already taken out. "fiberG" is the fibre itself, reported separately.
 - Estimate them from the ingredients and the amounts you chose. They are estimates and they will be shown as estimates, so keep them plausible rather than precise, and never copy a figure from a different dish.
 
+WEIGH ONE SERVING:
+- "servingGrams" is the weight of ONE serving as it is eaten, cooked, in grams. It is a whole-number estimate, not a measurement.
+- Work it out from the ingredient amounts you chose, divided by "servings", and allow for water lost in cooking: a cooked portion weighs less than the raw ingredients that went into it.
+- Size it so one serving fits the slot's share of what is left, the same share the figures above must fit.
+- An ingredient whose pantry amount you were not given is a small amount, never plenty, so it never inflates the weight.
+- A plate of food a person eats at one sitting is somewhere between 30 and 1500 grams. A figure outside that is dropped and the recipe is never shown.
+
 AMOUNTS AND TIME:
 - Give "amount" and "unit" for every ingredient you can. The unit must be one of "g", "ml", "piece", "tbsp" or "tsp". For something measured by taste, set BOTH "amount" and "unit" to null.
 - "prepMinutes" is the time from starting to eating. Set it to null rather than guessing wildly.
@@ -80,6 +87,7 @@ Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary 
     {
       "title": "string",
       "servings": 2,
+      "servingGrams": 0,
       "ingredients": [
         { "name": "string", "amount": 0, "unit": "g | ml | piece | tbsp | tsp or null", "fromPantry": true }
       ],

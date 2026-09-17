@@ -3230,8 +3230,15 @@
     "ingredients": "Malzemeler",
     "notInPantry": "kilerinde yok",
     "steps": "Adımlar",
-    "logThis": "Bunu günlüğe kaydet",
     "logging": "Kaydediliyor...",
+    "servingWeight": "Yaklaşık {{grams}} g",
+    "servingsEaten": {
+      "label": "Yenen porsiyon",
+      "decrease": "Porsiyonu azalt",
+      "increase": "Porsiyon ekle",
+      "logOne": "{{count}} porsiyon kaydet",
+      "logOf": "{{servings}} porsiyondan {{count}} tanesini kaydet"
+    },
     "macros": {
       "kcal": "Kalori",
       "protein": "Protein",

@@ -73,8 +73,11 @@ const catalogSchema = z.object({
     recipes: z.object({ link: z.string() }),
   }),
   recipes: z.object({
-    logThis: z.string(),
+    servingsEaten: z.object({ increase: z.string(), logOf: z.string() }),
     macros: z.object({ ofLeft: z.string() }),
+  }),
+  portions: z.object({
+    unit: z.object({ serving_other: z.string() }),
   }),
   diary: z.object({
     netCarbsValue: z.string(),

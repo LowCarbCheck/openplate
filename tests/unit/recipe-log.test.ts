@@ -14,12 +14,16 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildRecipeLogEntry, RECIPE_SERVING_NOMINAL_GRAMS } from '../../app/lib/recipe-log';
+import { buildRecipeLogEntry } from '../../app/lib/recipe-log';
 import type { RecipeProposal } from '../../app/services/vision/recipe-schema';
+
+/** The weight one serving of the fixture is estimated at. Inside the servable range. */
+const SERVING_GRAMS = 350;
 
 const RECIPE: RecipeProposal = {
   title: 'Spinach omelette',
   servings: 2,
+  servingGrams: SERVING_GRAMS,
   ingredients: [
     { name: 'Eggs', amount: 3, unit: 'piece', fromPantry: true },
     { name: 'Olive oil', amount: 1, unit: 'tbsp', fromPantry: false },
@@ -33,8 +37,8 @@ const RECIPE: RecipeProposal = {
 const IDS = { foodId: 'food-1', logId: 'log-1', logBatchId: 'batch-1' };
 const NOW = 1_757_000_000_000;
 
-function build(slot: 'breakfast' | 'lunch' | 'dinner' | 'snack', dayKey = '2026-09-17') {
-  return buildRecipeLogEntry({ recipe: RECIPE, slot, dayKey, now: NOW, ids: IDS });
+function build(slot: 'breakfast' | 'lunch' | 'dinner' | 'snack', dayKey = '2026-09-17', servingsEaten = 1) {
+  return buildRecipeLogEntry({ recipe: RECIPE, servingsEaten, slot, dayKey, now: NOW, ids: IDS });
 }
 
 describe('buildRecipeLogEntry', () => {
@@ -61,11 +65,11 @@ describe('buildRecipeLogEntry', () => {
     assert.equal(breakfast.log.dayKey, '2026-09-18');
   });
 
-  it('logs ONE serving, with the per-serving macros the card showed', () => {
+  it('logs ONE serving at its estimated weight, with the macros the card showed', () => {
     const { food, log } = build('lunch');
 
-    assert.equal(log.quantityGrams, RECIPE_SERVING_NOMINAL_GRAMS);
-    assert.deepEqual(log.portion, { unit: 'serving', quantity: 1, gramsPerUnit: RECIPE_SERVING_NOMINAL_GRAMS });
+    assert.equal(log.quantityGrams, SERVING_GRAMS);
+    assert.deepEqual(log.portion, { unit: 'serving', quantity: 1, gramsPerUnit: SERVING_GRAMS });
     assert.equal(log.macros.kcal, 320);
     assert.equal(log.macros.protein, 22);
     assert.equal(log.macros.fat, 24);
@@ -73,11 +77,35 @@ describe('buildRecipeLogEntry', () => {
     // lands back on the model's own net figure of 4.
     assert.equal(log.macros.carbs, 6);
     assert.equal(log.macros.fiber, 2);
-    // The serving IS the 100 g, so the food carries the same figures.
-    assert.equal(food.macrosPer100g.kcal, 320);
+    // THE FOOD IS PER 100 G AND THE LOG IS PER SERVING, and they are no longer
+    // the same number: 320 kcal in 350 g is 91.4 per 100 g. That difference is
+    // the whole point of M233/06, so it is asserted rather than assumed.
+    assert.equal(food.macrosPer100g.kcal, 91.4);
+    assert.notEqual(food.macrosPer100g.kcal, log.macros.kcal);
     // Never fabricated: nothing here knows the sugars or the polyols.
     assert.equal(log.macros.sugars, null);
     assert.equal(log.macros.polyols, null);
+  });
+
+  it('scales the weight, the portion and the macros by the servings eaten', () => {
+    const { food, log } = build('lunch', '2026-09-17', 1.5);
+
+    assert.equal(log.quantityGrams, SERVING_GRAMS * 1.5);
+    assert.deepEqual(log.portion, { unit: 'serving', quantity: 1.5, gramsPerUnit: SERVING_GRAMS });
+    assert.equal(log.macros.kcal, 480);
+    assert.equal(log.macros.protein, 33);
+    // THE FOOD ROW DOES NOT MOVE. It describes 100 g of the dish, which is the
+    // same dish however much of it somebody ate, and a per-100 g row that
+    // scaled with the portion would double-count on every read.
+    assert.equal(food.macrosPer100g.kcal, 91.4);
+
+    // THE CONTROL. One whole serving answers with the unscaled figures, so
+    // every assertion above is about the count being threaded rather than
+    // about a constant that happens to read 1.5.
+    const one = build('lunch');
+    assert.equal(one.log.quantityGrams, SERVING_GRAMS);
+    assert.equal(one.log.portion?.quantity, 1);
+    assert.equal(one.log.macros.kcal, 320);
   });
 
   it('declares itself an estimate, the way a scanned plate does', () => {

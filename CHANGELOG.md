@@ -13,7 +13,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Added
 
-- **The app keeps a pantry, and cooks the rest of your day out of it.** Photograph a shelf or a fridge, or write what you have, and openplate turns it into a list of ingredients on the new Pantry screen, which you can correct line by line. The list stays on your device. From it, Suggest a meal proposes two or three recipes for the next meal, sized to the calories, protein, carbs and fat still open in your day, so a protein-heavy breakfast is not followed by a protein-heavy lunch. Each recipe shows what one serving costs against what is left, and Log this writes that serving into the meal in one tap.
+- **The app keeps a pantry, and cooks the rest of your day out of it.** Photograph a shelf or a fridge, or write what you have, and openplate turns it into a list of ingredients on the new Pantry screen, which you can correct line by line. The list stays on your device. From it, Suggest a meal proposes two or three recipes for the next meal, sized to the calories, protein, carbs and fat still open in your day, so a protein-heavy breakfast is not followed by a protein-heavy lunch. Each recipe shows what one serving costs against what is left and about what it weighs, you say how many servings you ate, and one tap writes them into the meal at that weight.
 
 ## [0.31.0] - 2026-09-14
 

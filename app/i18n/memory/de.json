@@ -3177,6 +3177,13 @@
     "at": "2026-09-14",
     "de": "Wir setzen weder Werbung noch Analysedienste Dritter ein. Diese Instanz misst Besuche und Funktionsnutzung mit unserem eigenen Matomo, das wir auf unserem eigenen Server betreiben, sodass keine Daten an ein Analyseunternehmen gelangen. Es setzt keine Cookies und erfährt niemals, was Sie essen, wiegen oder eintragen: Es gelangen keinerlei Tagebuchinhalte dorthin. Siehe Abschnitt 9a für genaue Angaben darüber, was erfasst wird und wie Sie widersprechen können. Bei einer Instanz, die Sie selbst hosten, ist die Analyse standardmäßig deaktiviert, sofern Sie sie nicht einschalten."
   },
+  "2d251922979fc75c": {
+    "en": "Add servings",
+    "path": "common:recipes.servingsEaten.increase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "de": "Portionen hinzufügen"
+  },
   "2d32febd5cbdd4eb": {
     "en": "Logged {{logged}} of the last {{total}} days",
     "path": "common:diary.habit.summary",
@@ -8518,6 +8525,13 @@
     "at": "2026-09-14",
     "de": "Fasten entfernt."
   },
+  "7daa324a10f747f6": {
+    "en": "Log {{count}} serving",
+    "path": "common:recipes.servingsEaten.logOne",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "de": "{{count}} Portion eintragen"
+  },
   "7dd5a32cfeff05e4": {
     "en": "You have used all of your invitations.",
     "path": "common:account.invites.none",
@@ -12774,6 +12788,13 @@
     "at": "2026-09-14",
     "de": "Verbindung mit OpenRouter"
   },
+  "bc416d7ceb77d23a": {
+    "en": "Reduce servings",
+    "path": "common:recipes.servingsEaten.decrease",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "de": "Portionen verringern"
+  },
   "bc4489c9361f0583": {
     "en": "Saving…",
     "path": "common:fasting.plan.saving",
@@ -15462,6 +15483,13 @@
     "at": "2026-09-14",
     "de": "Brokkoli"
   },
+  "e6063e6aa6dc9196": {
+    "en": "Servings eaten",
+    "path": "common:recipes.servingsEaten.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "de": "Gegessene Portionen"
+  },
   "e62caab52f6361eb": {
     "en": "e.g. {{value}}",
     "path": "common:onboarding.weight.placeholder",
@@ -15489,6 +15517,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Auf dieser Instanz gibt es keine Tarife."
+  },
+  "e67574856b17a1d4": {
+    "en": "Log {{count}} of {{servings}} servings",
+    "path": "common:recipes.servingsEaten.logOf",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "de": "{{count}} von {{servings}} Portionen eintragen"
   },
   "e688a7296b8fd3c8": {
     "en": "You have used today's AI estimates. Try again tomorrow.",
@@ -16973,6 +17008,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Selbst eingetragen."
+  },
+  "fc75a3d4c2c861f3": {
+    "en": "About {{grams}} g",
+    "path": "common:recipes.servingWeight",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "de": "Etwa {{grams}} g"
   },
   "fc7a32a9cdfb696d": {
     "en": "Reload to update",

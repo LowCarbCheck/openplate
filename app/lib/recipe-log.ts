@@ -18,16 +18,22 @@
  * `aiEstimated`, the same `curatedSource`, the same three instants, the same
  * shared `logBatchId`.
  *
- * ── One serving is a nominal 100 g ───────────────────────────────────────
+ * ── A serving has a real weight, and the person says how many ────────────
  *
- * The store holds a food PER 100 g and a log by weight, and a recipe serving
- * has no weight: nobody knows what a bowl of it weighs, and inventing a figure
- * would put a number in front of the person that looks measured. So a serving
- * is declared to be 100 g of itself: `macrosPer100g` IS the per-serving figure
- * and `quantityGrams` is 100, which makes the stored log's macros exactly the
- * serving the card showed. The `portion` says "1 serving" so the diary renders
- * the unit the person actually chose rather than a bare gram figure, and a
- * later re-portion still rescales correctly, in servings.
+ * The store holds a food PER 100 g and a log BY WEIGHT, so both numbers need a
+ * weight for one serving. It comes from the model, as `servingGrams`, checked
+ * against a plausible range in `#app/lib/recipe-serving` before this is ever
+ * called. The food's `macrosPer100g` is therefore a real conversion, the log's
+ * `quantityGrams` is `servingGrams` times the servings the person said they
+ * ate, and the `portion` records exactly that: "1½ servings", each serving
+ * frozen at the weight it was proposed with.
+ *
+ * THIS REPLACES A NOMINAL 100 G (M233/06). A serving used to be DECLARED to
+ * weigh 100 g so that `macrosPer100g` could be the per-serving figure
+ * unchanged. The operator rejected it on 2026-09-17 for the reason it was
+ * always going to be rejected: an entry edited afterwards to its real weight
+ * rescales against that fake base, so correcting "1 serving" to "350 g" multiplied
+ * every macro by three and a half.
  *
  * ── Net carbs, told the way the store tells them ─────────────────────────
  *
@@ -42,14 +48,8 @@
 import type { LocalFoodLog, LocalPersonalFood } from '#app/lib/local-store/schema';
 import type { Macros } from '#app/lib/macros';
 import type { RecipeProposal } from '#app/services/vision/recipe-schema';
+import { macrosPer100gFromServing } from '#app/lib/recipe-serving';
 import type { MealType } from '#types/enums';
-
-/**
- * The weight one serving is declared to be. See the header: it is a unit of
- * account, not a measurement, and it is 100 so the per-100 g food row and the
- * per-serving log row carry the same numbers.
- */
-export const RECIPE_SERVING_NOMINAL_GRAMS = 100;
 
 /** The three ids one tap mints, passed in so this stays pure. */
 export interface RecipeLogIds {
@@ -67,18 +67,25 @@ export interface RecipeLogEntry {
   log: LocalFoodLog;
 }
 
-/** One serving's macros in the store's own shape. See the header for the carbs reconstruction. */
-function servingMacros(recipe: RecipeProposal): Macros {
+/**
+ * The macros of what was actually eaten, in the store's own shape.
+ *
+ * Scaled straight from the model's per-serving figures rather than from the
+ * rounded per-100 g row above them, so one whole serving logs exactly the
+ * numbers the card showed instead of those numbers put through two roundings.
+ * See the header for the carbs reconstruction.
+ */
+function eatenMacros(recipe: RecipeProposal, servingsEaten: number): Macros {
   return {
-    carbs: recipe.perServing.carbsG + recipe.perServing.fiberG,
-    fiber: recipe.perServing.fiberG,
+    carbs: (recipe.perServing.carbsG + recipe.perServing.fiberG) * servingsEaten,
+    fiber: recipe.perServing.fiberG * servingsEaten,
     // NEITHER IS KNOWN, and null is the honest answer the whole store rests
     // on: a 0 here would claim the dish contains no sugar and no polyols.
     sugars: null,
     polyols: null,
-    protein: recipe.perServing.proteinG,
-    fat: recipe.perServing.fatG,
-    kcal: recipe.perServing.kcal,
+    protein: recipe.perServing.proteinG * servingsEaten,
+    fat: recipe.perServing.fatG * servingsEaten,
+    kcal: recipe.perServing.kcal * servingsEaten,
   };
 }
 
@@ -86,6 +93,7 @@ function servingMacros(recipe: RecipeProposal): Macros {
  * The food and the log one "Log this" writes, from one proposed recipe.
  *
  * @param options.recipe - the proposal as the card showed it.
+ * @param options.servingsEaten - how many servings the person said they ate, from the card's stepper.
  * @param options.slot - the meal slot the person chose at the top of the screen.
  * @param options.dayKey - the device-local calendar day, always today here.
  * @param options.now - epoch-ms, used for all three instants: this is one act.
@@ -94,25 +102,28 @@ function servingMacros(recipe: RecipeProposal): Macros {
  */
 export function buildRecipeLogEntry({
   recipe,
+  servingsEaten,
   slot,
   dayKey,
   now,
   ids,
 }: {
   recipe: RecipeProposal;
+  servingsEaten: number;
   slot: MealType;
   dayKey: string;
   now: number;
   ids: RecipeLogIds;
 }): RecipeLogEntry {
-  const macros = servingMacros(recipe);
+  const macrosPer100g = macrosPer100gFromServing(recipe.perServing, recipe.servingGrams);
+  const eaten = eatenMacros(recipe, servingsEaten);
   return {
     food: {
       id: ids.foodId,
       name: recipe.title,
       // NO MANUFACTURER. Somebody cooked this; there is nobody to name.
       brand: null,
-      macrosPer100g: macros,
+      macrosPer100g,
       // The same source a photographed plate's food gets: the figures are a
       // model's estimate, not a panel the person read off a package.
       source: 'plate_ai',
@@ -122,11 +133,10 @@ export function buildRecipeLogEntry({
       id: ids.logId,
       foodId: ids.foodId,
       name: recipe.title,
-      quantityGrams: RECIPE_SERVING_NOMINAL_GRAMS,
-      // Per-serving, and identical to `macrosPer100g` above by construction,
-      // because the serving IS the 100 g. Cloned rather than aliased so the
-      // food's macros and the log's never share object identity.
-      macros: { ...macros },
+      quantityGrams: recipe.servingGrams * servingsEaten,
+      // WHAT WAS EATEN, not what one serving is worth: this is the snapshot
+      // every diary reader adds up, so it has to describe `quantityGrams`.
+      macros: eaten,
       mealType: slot,
       source: 'plate_ai',
       aiEstimated: true,
@@ -135,10 +145,13 @@ export function buildRecipeLogEntry({
       loggedAt: now,
       createdAt: now,
       logBatchId: ids.logBatchId,
-      // "1 serving", so the diary renders the unit the person chose. The
-      // grams per unit is the nominal weight above, frozen here exactly as
-      // every other portion freezes the figure it was resolved with.
-      portion: { unit: 'serving', quantity: 1, gramsPerUnit: RECIPE_SERVING_NOMINAL_GRAMS },
+      // The servings the person chose, so the diary renders "1½ servings"
+      // rather than a bare gram figure. The grams per unit is the proposal's
+      // own weight, FROZEN here exactly as every other portion freezes the
+      // figure it was resolved with: a later re-portion rescales in servings
+      // against the weight this recipe was logged with, not against a number
+      // some other recipe would have.
+      portion: { unit: 'serving', quantity: servingsEaten, gramsPerUnit: recipe.servingGrams },
       // No source to credit: nothing here came out of a licensed database.
       attribution: null,
     },

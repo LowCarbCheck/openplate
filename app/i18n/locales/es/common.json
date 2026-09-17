@@ -3230,8 +3230,15 @@
     "ingredients": "Ingredientes",
     "notInPantry": "no está en tu despensa",
     "steps": "Pasos",
-    "logThis": "Registrar esto",
     "logging": "Guardando...",
+    "servingWeight": "Aproximadamente {{grams}} g",
+    "servingsEaten": {
+      "label": "Raciones consumidas",
+      "decrease": "Reducir raciones",
+      "increase": "Añadir raciones",
+      "logOne": "Registrar {{count}} ración",
+      "logOf": "Registrar {{count}} de {{servings}} raciones"
+    },
     "macros": {
       "kcal": "Calorías",
       "protein": "Proteínas",

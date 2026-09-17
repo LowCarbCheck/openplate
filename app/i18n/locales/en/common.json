@@ -3230,8 +3230,15 @@
     "ingredients": "Ingredients",
     "notInPantry": "not in your pantry",
     "steps": "Steps",
-    "logThis": "Log this",
     "logging": "Saving...",
+    "servingWeight": "About {{grams}} g",
+    "servingsEaten": {
+      "label": "Servings eaten",
+      "decrease": "Reduce servings",
+      "increase": "Add servings",
+      "logOne": "Log {{count}} serving",
+      "logOf": "Log {{count}} of {{servings}} servings"
+    },
     "macros": {
       "kcal": "Calories",
       "protein": "Protein",

@@ -3177,6 +3177,13 @@
     "at": "2026-09-14",
     "tr": "Reklam ve üçüncü taraf analitiği kullanmıyoruz. Bu örnek, ziyaretleri ve özellik kullanımını kendi sunucumuzda çalıştırdığımız kendi Matomo kurulumumuzla ölçer, böylece hiçbir veri bir analitik şirketine ulaşmaz. Çerez ayarlamaz ve ne yediğiniz, kilonuz veya ne kaydettiğiniz ona asla iletilmez: hiçbir günlük içeriği ona asla ulaşmaz. Tam olarak neyin kaydedildiği ve nasıl itiraz edileceği hakkında bilgi için Bölüm 9a'ya bakın. Kendi barındırdığınız bir örnekte, siz açmadığınız sürece analitik kapalıdır."
   },
+  "2d251922979fc75c": {
+    "en": "Add servings",
+    "path": "common:recipes.servingsEaten.increase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "tr": "Porsiyon ekle"
+  },
   "2d32febd5cbdd4eb": {
     "en": "Logged {{logged}} of the last {{total}} days",
     "path": "common:diary.habit.summary",
@@ -8518,6 +8525,13 @@
     "at": "2026-09-14",
     "tr": "Oruç kaldırıldı."
   },
+  "7daa324a10f747f6": {
+    "en": "Log {{count}} serving",
+    "path": "common:recipes.servingsEaten.logOne",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "tr": "{{count}} porsiyon kaydet"
+  },
   "7dd5a32cfeff05e4": {
     "en": "You have used all of your invitations.",
     "path": "common:account.invites.none",
@@ -12774,6 +12788,13 @@
     "at": "2026-09-14",
     "tr": "OpenRouter'a bağlanıyor"
   },
+  "bc416d7ceb77d23a": {
+    "en": "Reduce servings",
+    "path": "common:recipes.servingsEaten.decrease",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "tr": "Porsiyonu azalt"
+  },
   "bc4489c9361f0583": {
     "en": "Saving…",
     "path": "common:fasting.plan.saving",
@@ -15462,6 +15483,13 @@
     "at": "2026-09-14",
     "tr": "brokoli"
   },
+  "e6063e6aa6dc9196": {
+    "en": "Servings eaten",
+    "path": "common:recipes.servingsEaten.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "tr": "Yenen porsiyon"
+  },
   "e62caab52f6361eb": {
     "en": "e.g. {{value}}",
     "path": "common:onboarding.weight.placeholder",
@@ -15489,6 +15517,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu kurulumda hiç plan yok."
+  },
+  "e67574856b17a1d4": {
+    "en": "Log {{count}} of {{servings}} servings",
+    "path": "common:recipes.servingsEaten.logOf",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "tr": "{{servings}} porsiyondan {{count}} tanesini kaydet"
   },
   "e688a7296b8fd3c8": {
     "en": "You have used today's AI estimates. Try again tomorrow.",
@@ -16973,6 +17008,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Elle giriş."
+  },
+  "fc75a3d4c2c861f3": {
+    "en": "About {{grams}} g",
+    "path": "common:recipes.servingWeight",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "tr": "Yaklaşık {{grams}} g"
   },
   "fc7a32a9cdfb696d": {
     "en": "Reload to update",

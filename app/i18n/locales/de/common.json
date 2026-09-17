@@ -3230,8 +3230,15 @@
     "ingredients": "Zutaten",
     "notInPantry": "nicht in deinem Vorrat",
     "steps": "Schritte",
-    "logThis": "Eintragen",
     "logging": "Speichern...",
+    "servingWeight": "Etwa {{grams}} g",
+    "servingsEaten": {
+      "label": "Gegessene Portionen",
+      "decrease": "Portionen verringern",
+      "increase": "Portionen hinzufügen",
+      "logOne": "{{count}} Portion eintragen",
+      "logOf": "{{count}} von {{servings}} Portionen eintragen"
+    },
     "macros": {
       "kcal": "Kalorien",
       "protein": "Protein",
