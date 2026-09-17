@@ -252,13 +252,25 @@ const nutrientWireSchema = z.object({
   // `'target'` via `normalizeNutrientKind`, not fail the envelope and blank
   // every reference amount on the screen.
   kind: z.string().nullish(),
-  // Only the EU block is parsed. Offering an EU/US toggle would mean two
-  // reference bases on one screen, and a person comparing "78%" against "71%"
-  // across a toggle is comparing two different documents' definitions of a
-  // reference intake. One basis, named on screen with its source, is the
-  // honest shape — and parsing only one makes mixing them structurally
-  // impossible rather than merely discouraged.
+  // All three published blocks are parsed, and they are kept APART: one list
+  // per basis, never one list with three numbers on a row. The promise this
+  // used to keep by parsing a single block is unchanged, it just moved one
+  // step later. Offering a toggle would mean two reference bases on one
+  // screen, and a person comparing "78%" against "71%" across it is comparing
+  // two different documents' definitions of a reference intake. One basis,
+  // named on screen with its source, is the honest shape.
+  //
+  // WHERE THE GUARANTEE LIVES NOW: `parseNutrientReferences` returns a
+  // `NutrientReferenceDocument`, three disjoint lists, and the instance picks
+  // exactly one of them per request in `app/routes/api.nutrients.ts` from its
+  // `NUTRIENT_REFERENCE_BASIS` setting or an explicit `?basis=`. Nothing
+  // downstream of that route can see a second basis, and a nutrient with no
+  // block on the chosen basis reports "no published reference" rather than
+  // borrowing a number from another document. Mixing stays structurally
+  // impossible, it is now impossible by partition rather than by omission.
+  rdaDe: rdaSchema.nullish(),
   rdaEu: rdaSchema.nullish(),
+  rdaUs: rdaSchema.nullish(),
 });
 
 const nutrientListWireSchema = z.object({
@@ -292,6 +304,45 @@ export class NutrientReferenceParseError extends Error {
   }
 }
 
+/**
+ * The published reference bases an instance can serve.
+ *
+ * `dge` is the German DGE's Referenzwerte, `efsa` the EU authority's DRVs,
+ * `us` the NASEM/IOM DRIs. They are three separate documents with three
+ * separate definitions of a reference intake, which is why an instance serves
+ * exactly one of them and says which on screen.
+ */
+export const NUTRIENT_REFERENCE_BASES = ['dge', 'efsa', 'us'] as const;
+
+/** One of `NUTRIENT_REFERENCE_BASES`. */
+export type NutrientReferenceBasis = (typeof NUTRIENT_REFERENCE_BASES)[number];
+
+/** The basis an instance serves when its operator has chosen none. */
+export const DEFAULT_NUTRIENT_REFERENCE_BASIS: NutrientReferenceBasis = 'dge';
+
+const NUTRIENT_REFERENCE_BASIS_SET: ReadonlySet<string> = new Set(NUTRIENT_REFERENCE_BASES);
+
+/** Narrows an arbitrary query-string or environment value to a supported basis. */
+export function isNutrientReferenceBasis(value: string): value is NutrientReferenceBasis {
+  return NUTRIENT_REFERENCE_BASIS_SET.has(value);
+}
+
+/**
+ * Every basis's list, parsed from ONE upstream body.
+ *
+ * Three disjoint lists rather than one list of three-way rows: see the note on
+ * the wire schema for why the separation is the point, and
+ * `app/routes/api.nutrients.ts` for where exactly one of them is chosen.
+ */
+export type NutrientReferenceDocument = {
+  readonly [K in NutrientReferenceBasis]: NutrientReference[];
+};
+
+/** A document with nothing in it, which every fail-open path answers with. */
+export function emptyNutrientReferenceDocument(): NutrientReferenceDocument {
+  return { dge: [], efsa: [], us: [] };
+}
+
 /** One region's reference intakes for one nutrient, as this app owns them. */
 export interface NutrientRda {
   /** Publishing body / document. Rendered — an unsourced reference number reads as invented. */
@@ -312,7 +363,7 @@ export interface NutrientReference {
   unit: string;
   /** Whether the reference amount is an amount to reach or a limit to stay under. See `NutrientKind`. */
   kind: NutrientKind;
-  /** EFSA reference intakes, or null when none is published for this nutrient. */
+  /** The chosen basis's reference intakes, or null when that basis publishes none for this nutrient. */
   rda: NutrientRda | null;
 }
 
@@ -382,6 +433,18 @@ const KEY_BY_SLUG: ReadonlyMap<string, NutrientKey> = new Map(
   Object.entries(NUTRIENT_SLUGS).map(([key, slug]) => [slug, key as NutrientKey]),
 );
 
+/** Maps one wire `rda*` block onto the owned shape. An absent block is no reference, never a borrowed one. */
+function toNutrientRda(raw: z.infer<typeof rdaSchema> | null | undefined): NutrientRda | null {
+  if (!raw) return null;
+  return {
+    source: raw.source,
+    male: raw.male,
+    female: raw.female,
+    pregnancy: raw.pregnancy ?? null,
+    lactation: raw.lactation ?? null,
+  };
+}
+
 /**
  * Validates a `/api/v1/nutrients` body and maps it onto owned types.
  *
@@ -390,10 +453,10 @@ const KEY_BY_SLUG: ReadonlyMap<string, NutrientKey> = new Map(
  * as a nutrient, and a new row appearing there must not blank this screen.
  *
  * @param json - an already-parsed JSON value.
- * @returns one entry per recognised nutrient.
+ * @returns one list per basis, each with one entry per recognised nutrient.
  * @throws NutrientReferenceParseError when the envelope itself is unrecognisable.
  */
-export function parseNutrientReferences(json: JsonValue): NutrientReference[] {
+export function parseNutrientReferences(json: JsonValue): NutrientReferenceDocument {
   const result = nutrientListWireSchema.safeParse(json);
   if (!result.success) {
     throw new NutrientReferenceParseError('Nutrient reference response did not match the expected shape', {
@@ -401,28 +464,28 @@ export function parseNutrientReferences(json: JsonValue): NutrientReference[] {
     });
   }
 
-  const references: NutrientReference[] = [];
+  const dge: NutrientReference[] = [];
+  const efsa: NutrientReference[] = [];
+  const us: NutrientReference[] = [];
+
   for (const raw of result.data.nutrients) {
     const key = KEY_BY_SLUG.get(raw.slug);
     if (key === undefined) continue;
-    references.push({
+    const identity = {
       key,
       slug: raw.slug,
       unit: raw.unit ?? NUTRIENT_UNITS[key],
       kind: normalizeNutrientKind(raw.kind),
-      rda:
-        raw.rdaEu ?
-          {
-            source: raw.rdaEu.source,
-            male: raw.rdaEu.male,
-            female: raw.rdaEu.female,
-            pregnancy: raw.rdaEu.pregnancy ?? null,
-            lactation: raw.rdaEu.lactation ?? null,
-          }
-        : null,
-    });
+    };
+    // The nutrient appears on every basis; only its `rda` differs, and a basis
+    // that publishes nothing for it gets `null` rather than a neighbour's
+    // number. That null is what the screen renders as "no published reference".
+    dge.push({ ...identity, rda: toNutrientRda(raw.rdaDe) });
+    efsa.push({ ...identity, rda: toNutrientRda(raw.rdaEu) });
+    us.push({ ...identity, rda: toNutrientRda(raw.rdaUs) });
   }
-  return references;
+
+  return { dge, efsa, us };
 }
 
 /**

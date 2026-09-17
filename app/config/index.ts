@@ -28,6 +28,12 @@ import {
   parseSyncServerUrl,
 } from './public-config';
 import { SUPPORTED_LANGUAGES, isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
+import {
+  DEFAULT_NUTRIENT_REFERENCE_BASIS,
+  NUTRIENT_REFERENCE_BASES,
+  isNutrientReferenceBasis,
+} from '#app/lib/nutrient-reference';
+import type { NutrientReferenceBasis } from '#app/lib/nutrient-reference';
 import { parseAnalyticsConfig } from '#app/config/analytics';
 import { parseNewsletterConfig } from './newsletter';
 
@@ -132,6 +138,34 @@ export function parseDefaultUiLanguage(raw: string | undefined): LanguageCode {
       `Invalid DEFAULT_UI_LANGUAGE: expected one of ${SUPPORTED_LANGUAGES.join('/')}, got "${raw}". ` +
         'It is refused rather than ignored because ignoring it would serve the wrong language to every ' +
         'visitor with no cookie, and log nothing.',
+    );
+  }
+  return value;
+}
+
+/**
+ * Parses `NUTRIENT_REFERENCE_BASIS` (M234 spec 05), the published reference
+ * document an instance's `/nutrients` screen quotes.
+ *
+ * Unset and empty both mean `dge`, the German DGE values, because this
+ * instance's people are advised by that body. The basis is per INSTANCE and
+ * never per language or per person: language and reference body are
+ * orthogonal, and a Turkish speaker in Germany is advised by the same body as
+ * a German speaker.
+ *
+ * An unrecognised value throws at boot for the same reason
+ * `DEFAULT_UI_LANGUAGE` does. An operator who typed `efas` wants EFSA, and
+ * silently serving DGE instead would put the wrong document's numbers in front
+ * of every visitor and say nothing.
+ */
+export function parseNutrientReferenceBasis(raw: string | undefined): NutrientReferenceBasis {
+  const value = raw?.trim().toLowerCase();
+  if (value === undefined || value === '') return DEFAULT_NUTRIENT_REFERENCE_BASIS;
+  if (!isNutrientReferenceBasis(value)) {
+    throw new Error(
+      `Invalid NUTRIENT_REFERENCE_BASIS: expected one of ${NUTRIENT_REFERENCE_BASES.join('/')}, got "${raw}". ` +
+        'It is refused rather than ignored because ignoring it would quote the wrong standards body to ' +
+        'every visitor, under a footnote naming a document nobody chose.',
     );
   }
   return value;
@@ -265,6 +299,19 @@ export const CONFIG = {
    * `FOOD_DB_API_URL` to an empty string.
    */
   foodDb: parseFoodDbConfig(process.env.FOOD_DB_API_URL),
+
+  /**
+   * Micronutrient reference basis (M234 spec 05)
+   *
+   * Which published document the `/nutrients` screen quotes: the German DGE
+   * (default), EFSA, or the US NASEM/IOM values. One basis per instance, named
+   * on screen by its own `source` string. `/api/nutrients?basis=` overrides it
+   * per request; see that route for why a typo there is a 400 rather than a
+   * quiet fall back to this default.
+   */
+  nutrients: {
+    referenceBasis: parseNutrientReferenceBasis(process.env.NUTRIENT_REFERENCE_BASIS),
+  },
 
   /**
    * E2EE Sync (M128 spec 04)

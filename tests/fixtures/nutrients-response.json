@@ -1,0 +1,1125 @@
+{
+  "nutrients": [
+    {
+      "slug": "beta-carotene",
+      "name": "Beta-Carotene (ß-Carotene)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "µg",
+      "foodKey": "betaCarotene",
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "calcium",
+      "name": "Calcium",
+      "type": "mineral",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "calcium",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2015)",
+        "male": {
+          "14-18": 1150,
+          "19-30": 1000,
+          "31-50": 950,
+          "51-70": 950,
+          "over_70": 950
+        },
+        "female": {
+          "14-18": 1150,
+          "19-30": 1000,
+          "31-50": 950,
+          "51-70": 950,
+          "over_70": 950
+        },
+        "pregnancy": 950,
+        "lactation": 950
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 2011)",
+        "male": {
+          "14-18": 1300,
+          "19-30": 1000,
+          "31-50": 1000,
+          "51-70": 1000,
+          "over_70": 1200
+        },
+        "female": {
+          "14-18": 1300,
+          "19-30": 1000,
+          "31-50": 1000,
+          "51-70": 1200,
+          "over_70": 1200
+        },
+        "pregnancy": 1000,
+        "lactation": 1000
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Calcium",
+        "male": {
+          "14-18": 1200,
+          "19-30": 1000,
+          "31-50": 1000,
+          "51-70": 1000,
+          "over_70": 1000
+        },
+        "female": {
+          "14-18": 1200,
+          "19-30": 1000,
+          "31-50": 1000,
+          "51-70": 1000,
+          "over_70": 1000
+        },
+        "pregnancy": 1000,
+        "lactation": 1000
+      }
+    },
+    {
+      "slug": "carbohydrates",
+      "name": "Carbohydrates",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "dietary-fat",
+      "name": "Dietary Fat",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "dietary-fiber",
+      "name": "Dietary Fiber",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "folic-acid-folate",
+      "name": "Folic Acid (Folate)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "µg",
+      "foodKey": "vitaminB9",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2014)",
+        "male": {
+          "14-18": 330,
+          "19-30": 330,
+          "31-50": 330,
+          "51-70": 330,
+          "over_70": 330
+        },
+        "female": {
+          "14-18": 330,
+          "19-30": 330,
+          "31-50": 330,
+          "51-70": 330,
+          "over_70": 330
+        },
+        "pregnancy": 600,
+        "lactation": 500
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 1998)",
+        "male": {
+          "14-18": 400,
+          "19-30": 400,
+          "31-50": 400,
+          "51-70": 400,
+          "over_70": 400
+        },
+        "female": {
+          "14-18": 400,
+          "19-30": 400,
+          "31-50": 400,
+          "51-70": 400,
+          "over_70": 400
+        },
+        "pregnancy": 600,
+        "lactation": 500
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Folat",
+        "male": {
+          "14-18": 300,
+          "19-30": 300,
+          "31-50": 300,
+          "51-70": 300,
+          "over_70": 300
+        },
+        "female": {
+          "14-18": 300,
+          "19-30": 300,
+          "31-50": 300,
+          "51-70": 300,
+          "over_70": 300
+        },
+        "pregnancy": 550,
+        "lactation": 450
+      }
+    },
+    {
+      "slug": "fructose",
+      "name": "Fructose",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "gluten",
+      "name": "Gluten",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "iron",
+      "name": "Iron",
+      "type": "mineral",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "iron",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2015)",
+        "male": {
+          "14-18": 11,
+          "19-30": 11,
+          "31-50": 11,
+          "51-70": 11,
+          "over_70": 11
+        },
+        "female": {
+          "14-18": 13,
+          "19-30": 16,
+          "31-50": 16,
+          "51-70": 11,
+          "over_70": 11
+        },
+        "pregnancy": 16,
+        "lactation": 16
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 2001)",
+        "male": {
+          "14-18": 11,
+          "19-30": 8,
+          "31-50": 8,
+          "51-70": 8,
+          "over_70": 8
+        },
+        "female": {
+          "14-18": 15,
+          "19-30": 18,
+          "31-50": 18,
+          "51-70": 8,
+          "over_70": 8
+        },
+        "pregnancy": 27,
+        "lactation": 9
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Eisen",
+        "male": {
+          "14-18": 11,
+          "19-30": 11,
+          "31-50": 11,
+          "51-70": 11,
+          "over_70": 11
+        },
+        "female": {
+          "14-18": 16,
+          "19-30": 16,
+          "31-50": 16,
+          "51-70": 16,
+          "over_70": 14
+        },
+        "pregnancy": 27,
+        "lactation": 16
+      }
+    },
+    {
+      "slug": "lactose",
+      "name": "Lactose",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "magnesium",
+      "name": "Magnesium",
+      "type": "mineral",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "magnesium",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2015)",
+        "male": {
+          "14-18": 300,
+          "19-30": 350,
+          "31-50": 350,
+          "51-70": 350,
+          "over_70": 350
+        },
+        "female": {
+          "14-18": 250,
+          "19-30": 300,
+          "31-50": 300,
+          "51-70": 300,
+          "over_70": 300
+        },
+        "pregnancy": 300,
+        "lactation": 300
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 1997)",
+        "male": {
+          "14-18": 410,
+          "19-30": 400,
+          "31-50": 420,
+          "51-70": 420,
+          "over_70": 420
+        },
+        "female": {
+          "14-18": 360,
+          "19-30": 310,
+          "31-50": 320,
+          "51-70": 320,
+          "over_70": 320
+        },
+        "pregnancy": 350,
+        "lactation": 310
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Magnesium",
+        "male": {
+          "14-18": 330,
+          "19-30": 350,
+          "31-50": 350,
+          "51-70": 350,
+          "over_70": 350
+        },
+        "female": {
+          "14-18": 260,
+          "19-30": 300,
+          "31-50": 300,
+          "51-70": 300,
+          "over_70": 300
+        },
+        "pregnancy": 300,
+        "lactation": 300
+      }
+    },
+    {
+      "slug": "phosphorus",
+      "name": "Phosphorus",
+      "type": "mineral",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "phosphorus",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2015)",
+        "male": {
+          "14-18": 640,
+          "19-30": 550,
+          "31-50": 550,
+          "51-70": 550,
+          "over_70": 550
+        },
+        "female": {
+          "14-18": 640,
+          "19-30": 550,
+          "31-50": 550,
+          "51-70": 550,
+          "over_70": 550
+        },
+        "pregnancy": 550,
+        "lactation": 550
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 1997)",
+        "male": {
+          "14-18": 1250,
+          "19-30": 700,
+          "31-50": 700,
+          "51-70": 700,
+          "over_70": 700
+        },
+        "female": {
+          "14-18": 1250,
+          "19-30": 700,
+          "31-50": 700,
+          "51-70": 700,
+          "over_70": 700
+        },
+        "pregnancy": 700,
+        "lactation": 700
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Phosphor",
+        "male": {
+          "14-18": 660,
+          "19-30": 550,
+          "31-50": 550,
+          "51-70": 550,
+          "over_70": 550
+        },
+        "female": {
+          "14-18": 660,
+          "19-30": 550,
+          "31-50": 550,
+          "51-70": 550,
+          "over_70": 550
+        },
+        "pregnancy": 550,
+        "lactation": 550
+      }
+    },
+    {
+      "slug": "potassium",
+      "name": "Potassium",
+      "type": "mineral",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "potassium",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2016)",
+        "male": {
+          "14-18": 3500,
+          "19-30": 3500,
+          "31-50": 3500,
+          "51-70": 3500,
+          "over_70": 3500
+        },
+        "female": {
+          "14-18": 3500,
+          "19-30": 3500,
+          "31-50": 3500,
+          "51-70": 3500,
+          "over_70": 3500
+        },
+        "pregnancy": 3500,
+        "lactation": 4000
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (NASEM, 2019)",
+        "male": {
+          "14-18": 3000,
+          "19-30": 3400,
+          "31-50": 3400,
+          "51-70": 3400,
+          "over_70": 3400
+        },
+        "female": {
+          "14-18": 2300,
+          "19-30": 2600,
+          "31-50": 2600,
+          "51-70": 2600,
+          "over_70": 2600
+        },
+        "pregnancy": 2900,
+        "lactation": 2800
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Kalium",
+        "male": {
+          "14-18": 4000,
+          "19-30": 4000,
+          "31-50": 4000,
+          "51-70": 4000,
+          "over_70": 4000
+        },
+        "female": {
+          "14-18": 4000,
+          "19-30": 4000,
+          "31-50": 4000,
+          "51-70": 4000,
+          "over_70": 4000
+        },
+        "pregnancy": 4000,
+        "lactation": 4400
+      }
+    },
+    {
+      "slug": "protein",
+      "name": "Protein",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "sodium",
+      "name": "Sodium",
+      "type": "mineral",
+      "kind": "ceiling",
+      "unit": "mg",
+      "foodKey": "sodium",
+      "rdaEu": {
+        "source": "EFSA safe and adequate intake (2019)",
+        "male": {
+          "14-18": 2000,
+          "19-30": 2000,
+          "31-50": 2000,
+          "51-70": 2000,
+          "over_70": 2000
+        },
+        "female": {
+          "14-18": 2000,
+          "19-30": 2000,
+          "31-50": 2000,
+          "51-70": 2000,
+          "over_70": 2000
+        },
+        "pregnancy": 2000,
+        "lactation": 2000
+      },
+      "rdaUs": {
+        "source": "US Chronic Disease Risk Reduction intake (NASEM, 2019)",
+        "male": {
+          "14-18": 2300,
+          "19-30": 2300,
+          "31-50": 2300,
+          "51-70": 2300,
+          "over_70": 2300
+        },
+        "female": {
+          "14-18": 2300,
+          "19-30": 2300,
+          "31-50": 2300,
+          "51-70": 2300,
+          "over_70": 2300
+        },
+        "pregnancy": 2300,
+        "lactation": 2300
+      },
+      "rdaDe": {
+        "source": "DGE Orientierungswert für die Speisesalzzufuhr (6 g Speisesalz als Natrium)",
+        "male": {
+          "14-18": 2400,
+          "19-30": 2400,
+          "31-50": 2400,
+          "51-70": 2400,
+          "over_70": 2400
+        },
+        "female": {
+          "14-18": 2400,
+          "19-30": 2400,
+          "31-50": 2400,
+          "51-70": 2400,
+          "over_70": 2400
+        },
+        "pregnancy": null,
+        "lactation": null
+      }
+    },
+    {
+      "slug": "vitamin-a-retinol",
+      "name": "Vitamin A (Retinol)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "µg",
+      "foodKey": "vitaminA",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2015)",
+        "male": {
+          "14-18": 750,
+          "19-30": 750,
+          "31-50": 750,
+          "51-70": 750,
+          "over_70": 750
+        },
+        "female": {
+          "14-18": 650,
+          "19-30": 650,
+          "31-50": 650,
+          "51-70": 650,
+          "over_70": 650
+        },
+        "pregnancy": 700,
+        "lactation": 1300
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 2001)",
+        "male": {
+          "14-18": 900,
+          "19-30": 900,
+          "31-50": 900,
+          "51-70": 900,
+          "over_70": 900
+        },
+        "female": {
+          "14-18": 700,
+          "19-30": 700,
+          "31-50": 700,
+          "51-70": 700,
+          "over_70": 700
+        },
+        "pregnancy": 770,
+        "lactation": 1300
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Vitamin A",
+        "male": {
+          "14-18": 950,
+          "19-30": 850,
+          "31-50": 850,
+          "51-70": 850,
+          "over_70": 800
+        },
+        "female": {
+          "14-18": 800,
+          "19-30": 700,
+          "31-50": 700,
+          "51-70": 700,
+          "over_70": 700
+        },
+        "pregnancy": 800,
+        "lactation": 1300
+      }
+    },
+    {
+      "slug": "vitamin-b-12-cobalamin",
+      "name": "Vitamin B 12 (Cobalamin)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "µg",
+      "foodKey": "vitaminB12",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2015)",
+        "male": {
+          "14-18": 4,
+          "19-30": 4,
+          "31-50": 4,
+          "51-70": 4,
+          "over_70": 4
+        },
+        "female": {
+          "14-18": 4,
+          "19-30": 4,
+          "31-50": 4,
+          "51-70": 4,
+          "over_70": 4
+        },
+        "pregnancy": 4.5,
+        "lactation": 5
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 1998)",
+        "male": {
+          "14-18": 2.4,
+          "19-30": 2.4,
+          "31-50": 2.4,
+          "51-70": 2.4,
+          "over_70": 2.4
+        },
+        "female": {
+          "14-18": 2.4,
+          "19-30": 2.4,
+          "31-50": 2.4,
+          "51-70": 2.4,
+          "over_70": 2.4
+        },
+        "pregnancy": 2.6,
+        "lactation": 2.8
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Vitamin B12",
+        "male": {
+          "14-18": 4,
+          "19-30": 4,
+          "31-50": 4,
+          "51-70": 4,
+          "over_70": 4
+        },
+        "female": {
+          "14-18": 4,
+          "19-30": 4,
+          "31-50": 4,
+          "51-70": 4,
+          "over_70": 4
+        },
+        "pregnancy": 4.5,
+        "lactation": 5.5
+      }
+    },
+    {
+      "slug": "vitamin-b-1-thiamine",
+      "name": "Vitamin B 1 (Thiamine)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "vitaminB1",
+      "rdaEu": null,
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 1998)",
+        "male": {
+          "14-18": 1.2,
+          "19-30": 1.2,
+          "31-50": 1.2,
+          "51-70": 1.2,
+          "over_70": 1.2
+        },
+        "female": {
+          "14-18": 1,
+          "19-30": 1.1,
+          "31-50": 1.1,
+          "51-70": 1.1,
+          "over_70": 1.1
+        },
+        "pregnancy": 1.4,
+        "lactation": 1.4
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Thiamin",
+        "male": {
+          "14-18": 1.4,
+          "19-30": 1.3,
+          "31-50": 1.2,
+          "51-70": 1.2,
+          "over_70": 1.1
+        },
+        "female": {
+          "14-18": 1.1,
+          "19-30": 1,
+          "31-50": 1,
+          "51-70": 1,
+          "over_70": 1
+        },
+        "pregnancy": 1.3,
+        "lactation": 1.3
+      }
+    },
+    {
+      "slug": "vitamin-b-2-riboflavin",
+      "name": "Vitamin B 2 (Riboflavin)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "vitaminB2",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2017)",
+        "male": {
+          "14-18": 1.6,
+          "19-30": 1.6,
+          "31-50": 1.6,
+          "51-70": 1.6,
+          "over_70": 1.6
+        },
+        "female": {
+          "14-18": 1.6,
+          "19-30": 1.6,
+          "31-50": 1.6,
+          "51-70": 1.6,
+          "over_70": 1.6
+        },
+        "pregnancy": 1.9,
+        "lactation": 2
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 1998)",
+        "male": {
+          "14-18": 1.3,
+          "19-30": 1.3,
+          "31-50": 1.3,
+          "51-70": 1.3,
+          "over_70": 1.3
+        },
+        "female": {
+          "14-18": 1,
+          "19-30": 1.1,
+          "31-50": 1.1,
+          "51-70": 1.1,
+          "over_70": 1.1
+        },
+        "pregnancy": 1.4,
+        "lactation": 1.6
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Riboflavin",
+        "male": {
+          "14-18": 1.6,
+          "19-30": 1.4,
+          "31-50": 1.4,
+          "51-70": 1.3,
+          "over_70": 1.3
+        },
+        "female": {
+          "14-18": 1.2,
+          "19-30": 1.1,
+          "31-50": 1.1,
+          "51-70": 1,
+          "over_70": 1
+        },
+        "pregnancy": 1.4,
+        "lactation": 1.4
+      }
+    },
+    {
+      "slug": "vitamin-b-6-pyridoxine",
+      "name": "Vitamin B 6 (Pyridoxine)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "vitaminB6",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2016)",
+        "male": {
+          "14-18": 1.7,
+          "19-30": 1.7,
+          "31-50": 1.7,
+          "51-70": 1.7,
+          "over_70": 1.7
+        },
+        "female": {
+          "14-18": 1.6,
+          "19-30": 1.6,
+          "31-50": 1.6,
+          "51-70": 1.6,
+          "over_70": 1.6
+        },
+        "pregnancy": 1.8,
+        "lactation": 1.7
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 1998)",
+        "male": {
+          "14-18": 1.3,
+          "19-30": 1.3,
+          "31-50": 1.3,
+          "51-70": 1.7,
+          "over_70": 1.7
+        },
+        "female": {
+          "14-18": 1.2,
+          "19-30": 1.3,
+          "31-50": 1.3,
+          "51-70": 1.5,
+          "over_70": 1.5
+        },
+        "pregnancy": 1.9,
+        "lactation": 2
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Vitamin B6",
+        "male": {
+          "14-18": 1.6,
+          "19-30": 1.6,
+          "31-50": 1.6,
+          "51-70": 1.6,
+          "over_70": 1.6
+        },
+        "female": {
+          "14-18": 1.4,
+          "19-30": 1.4,
+          "31-50": 1.4,
+          "51-70": 1.4,
+          "over_70": 1.4
+        },
+        "pregnancy": 1.8,
+        "lactation": 1.6
+      }
+    },
+    {
+      "slug": "vitamin-c",
+      "name": "Vitamin C",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "vitaminC",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2013)",
+        "male": {
+          "14-18": 100,
+          "19-30": 110,
+          "31-50": 110,
+          "51-70": 110,
+          "over_70": 110
+        },
+        "female": {
+          "14-18": 90,
+          "19-30": 95,
+          "31-50": 95,
+          "51-70": 95,
+          "over_70": 95
+        },
+        "pregnancy": 105,
+        "lactation": 155
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 2000)",
+        "male": {
+          "14-18": 75,
+          "19-30": 90,
+          "31-50": 90,
+          "51-70": 90,
+          "over_70": 90
+        },
+        "female": {
+          "14-18": 65,
+          "19-30": 75,
+          "31-50": 75,
+          "51-70": 75,
+          "over_70": 75
+        },
+        "pregnancy": 85,
+        "lactation": 120
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Vitamin C",
+        "male": {
+          "14-18": 105,
+          "19-30": 110,
+          "31-50": 110,
+          "51-70": 110,
+          "over_70": 110
+        },
+        "female": {
+          "14-18": 90,
+          "19-30": 95,
+          "31-50": 95,
+          "51-70": 95,
+          "over_70": 95
+        },
+        "pregnancy": 105,
+        "lactation": 125
+      }
+    },
+    {
+      "slug": "vitamin-d",
+      "name": "Vitamin D",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "µg",
+      "foodKey": "vitaminD",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2016)",
+        "male": {
+          "14-18": 15,
+          "19-30": 15,
+          "31-50": 15,
+          "51-70": 15,
+          "over_70": 15
+        },
+        "female": {
+          "14-18": 15,
+          "19-30": 15,
+          "31-50": 15,
+          "51-70": 15,
+          "over_70": 15
+        },
+        "pregnancy": 15,
+        "lactation": 15
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 2011)",
+        "male": {
+          "14-18": 15,
+          "19-30": 15,
+          "31-50": 15,
+          "51-70": 15,
+          "over_70": 20
+        },
+        "female": {
+          "14-18": 15,
+          "19-30": 15,
+          "31-50": 15,
+          "51-70": 15,
+          "over_70": 20
+        },
+        "pregnancy": 15,
+        "lactation": 15
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Vitamin D",
+        "male": {
+          "14-18": 20,
+          "19-30": 20,
+          "31-50": 20,
+          "51-70": 20,
+          "over_70": 20
+        },
+        "female": {
+          "14-18": 20,
+          "19-30": 20,
+          "31-50": 20,
+          "51-70": 20,
+          "over_70": 20
+        },
+        "pregnancy": 20,
+        "lactation": 20
+      }
+    },
+    {
+      "slug": "vitamin-e-tocopherole",
+      "name": "Vitamin E (Tocopherole)",
+      "type": "vitamin",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "vitaminE",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2015)",
+        "male": {
+          "14-18": 13,
+          "19-30": 13,
+          "31-50": 13,
+          "51-70": 13,
+          "over_70": 13
+        },
+        "female": {
+          "14-18": 11,
+          "19-30": 11,
+          "31-50": 11,
+          "51-70": 11,
+          "over_70": 11
+        },
+        "pregnancy": 11,
+        "lactation": 11
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 2000)",
+        "male": {
+          "14-18": 15,
+          "19-30": 15,
+          "31-50": 15,
+          "51-70": 15,
+          "over_70": 15
+        },
+        "female": {
+          "14-18": 15,
+          "19-30": 15,
+          "31-50": 15,
+          "51-70": 15,
+          "over_70": 15
+        },
+        "pregnancy": 15,
+        "lactation": 19
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Vitamin E",
+        "male": {
+          "14-18": 8,
+          "19-30": 8,
+          "31-50": 8,
+          "51-70": 8,
+          "over_70": 8
+        },
+        "female": {
+          "14-18": 8,
+          "19-30": 8,
+          "31-50": 8,
+          "51-70": 8,
+          "over_70": 8
+        },
+        "pregnancy": 8,
+        "lactation": 13
+      }
+    },
+    {
+      "slug": "water",
+      "name": "Water",
+      "type": null,
+      "kind": "target",
+      "unit": null,
+      "foodKey": null,
+      "rdaEu": null,
+      "rdaUs": null,
+      "rdaDe": null
+    },
+    {
+      "slug": "zinc",
+      "name": "Zinc",
+      "type": "mineral",
+      "kind": "target",
+      "unit": "mg",
+      "foodKey": "zinc",
+      "rdaEu": {
+        "source": "EFSA Dietary Reference Values (2014), 600 mg/day phytate level",
+        "male": {
+          "14-18": 14.2,
+          "19-30": 11.7,
+          "31-50": 11.7,
+          "51-70": 11.7,
+          "over_70": 11.7
+        },
+        "female": {
+          "14-18": 11.9,
+          "19-30": 9.3,
+          "31-50": 9.3,
+          "51-70": 9.3,
+          "over_70": 9.3
+        },
+        "pregnancy": 10.9,
+        "lactation": 12.2
+      },
+      "rdaUs": {
+        "source": "US Dietary Reference Intakes (IOM, 2001)",
+        "male": {
+          "14-18": 11,
+          "19-30": 11,
+          "31-50": 11,
+          "51-70": 11,
+          "over_70": 11
+        },
+        "female": {
+          "14-18": 9,
+          "19-30": 8,
+          "31-50": 8,
+          "51-70": 8,
+          "over_70": 8
+        },
+        "pregnancy": 11,
+        "lactation": 12
+      },
+      "rdaDe": {
+        "source": "DGE Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025), Zink",
+        "male": {
+          "14-18": 14,
+          "19-30": 14,
+          "31-50": 14,
+          "51-70": 14,
+          "over_70": 14
+        },
+        "female": {
+          "14-18": 11,
+          "19-30": 8,
+          "31-50": 8,
+          "51-70": 8,
+          "over_70": 8
+        },
+        "pregnancy": 11,
+        "lactation": 13
+      }
+    }
+  ]
+}

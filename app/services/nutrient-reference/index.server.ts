@@ -16,8 +16,9 @@
  * ever leaves the device's own server is a nutrient slug drawn from a fixed
  * 17-entry allowlist (`KNOWN_NUTRIENT_SLUGS`).
  *
- * Caching: reference intakes are near-static published figures — EFSA does not
- * revise a DRV between two page loads — so they are cached process-wide for
+ * Caching: reference intakes are near-static published figures (no standards
+ * body revises a reference value between two page loads) so they are cached
+ * process-wide for
  * `REFERENCE_CACHE_TTL_MS` and the source rankings for `FOODS_CACHE_TTL_MS`.
  * Only a GENUINE (schema-valid) response is ever cached, mirroring
  * `food-resolution`'s rule: caching a fail-open outcome would let one transient
@@ -29,8 +30,13 @@ import { z } from 'zod';
 
 import { CONFIG } from '#app/config';
 import { createComponentLogger } from '#app/lib/logger';
-import { KNOWN_NUTRIENT_SLUGS, parseNutrientReferences, parseNutrientSourceFoods } from '#app/lib/nutrient-reference';
-import type { NutrientReference, NutrientSourceFood } from '#app/lib/nutrient-reference';
+import {
+  KNOWN_NUTRIENT_SLUGS,
+  emptyNutrientReferenceDocument,
+  parseNutrientReferences,
+  parseNutrientSourceFoods,
+} from '#app/lib/nutrient-reference';
+import type { NutrientReferenceDocument, NutrientSourceFood } from '#app/lib/nutrient-reference';
 
 const logger = createComponentLogger('nutrient-reference');
 
@@ -59,7 +65,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-const referenceCache = new Map<string, CacheEntry<NutrientReference[]>>();
+const referenceCache = new Map<string, CacheEntry<NutrientReferenceDocument>>();
 const foodsCache = new Map<string, CacheEntry<NutrientSourceFood[]>>();
 
 /** Test-only escape hatch — clears cached state so unit tests don't leak between cases. */
@@ -116,29 +122,35 @@ async function fetchJson(url: string): Promise<UnvalidatedNutrientJson | null> {
 }
 
 /**
- * Every nutrient's published EU reference intakes.
+ * Every nutrient's published reference intakes, on EVERY basis upstream sends.
+ *
+ * The cache holds the whole document and is keyed on the API URL alone, exactly
+ * as it was when one basis was parsed. It deliberately never holds a CHOICE:
+ * the basis is picked per request in `app/routes/api.nutrients.ts`, so an
+ * operator who changes the setting is served the new basis on the next request
+ * rather than up to twelve hours later.
  *
  * @param options - the food-DB integration settings; defaults to `CONFIG.foodDb`.
- * @returns the recognised references, or `[]` on any failure or when the integration is off.
+ * @returns the recognised references per basis, or an empty document on any failure or when the integration is off.
  */
 export async function fetchNutrientReferences(
   options: NutrientApiOptions = configuredOptions(),
-): Promise<NutrientReference[]> {
-  if (!options.enabled) return [];
+): Promise<NutrientReferenceDocument> {
+  if (!options.enabled) return emptyNutrientReferenceDocument();
 
   const cached = readCache(referenceCache, options.apiUrl);
   if (cached) return cached;
 
   const json = await fetchJson(new URL('/api/v1/nutrients', options.apiUrl).toString());
-  if (json === null) return [];
+  if (json === null) return emptyNutrientReferenceDocument();
 
   try {
-    const references = parseNutrientReferences(json);
-    referenceCache.set(options.apiUrl, { value: references, expiresAt: Date.now() + REFERENCE_CACHE_TTL_MS });
-    return references;
+    const document = parseNutrientReferences(json);
+    referenceCache.set(options.apiUrl, { value: document, expiresAt: Date.now() + REFERENCE_CACHE_TTL_MS });
+    return document;
   } catch {
     logger.debug('LowCarbCheck nutrient list failed validation');
-    return [];
+    return emptyNutrientReferenceDocument();
   }
 }
 

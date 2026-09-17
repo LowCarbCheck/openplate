@@ -26,6 +26,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
@@ -48,9 +49,17 @@ import {
   parseNutrientSourceFoods,
   pickLightestNutrients,
   resolveReferenceAmount,
+  NUTRIENT_REFERENCE_BASES,
   NutrientReferenceParseError,
 } from '../../app/lib/nutrient-reference';
-import type { NutrientKind, NutrientReference, NutrientSourceFood } from '../../app/lib/nutrient-reference';
+import type {
+  JsonValue,
+  NutrientKind,
+  NutrientReference,
+  NutrientReferenceBasis,
+  NutrientReferenceDocument,
+  NutrientSourceFood,
+} from '../../app/lib/nutrient-reference';
 
 const FROM = '2026-08-01';
 const TO = '2026-08-07';
@@ -488,12 +497,12 @@ describe('nutrient kind', () => {
   it('reads the wire field, and treats an older response with no field at all as a target', () => {
     const [withKind] = parseNutrientReferences({
       nutrients: [{ slug: 'sodium', unit: 'mg', foodKey: 'sodium', kind: 'ceiling', rdaEu: null }],
-    });
+    }).efsa;
     assert.equal(withKind.kind, 'ceiling');
 
     const [withoutKind] = parseNutrientReferences({
       nutrients: [{ slug: 'sodium', unit: 'mg', foodKey: 'sodium', rdaEu: null }],
-    });
+    }).efsa;
     assert.equal(withoutKind.kind, 'target');
   });
 
@@ -502,7 +511,7 @@ describe('nutrient kind', () => {
     // blank every reference amount on the screen over one unknown string.
     const [reference] = parseNutrientReferences({
       nutrients: [{ slug: 'sodium', unit: 'mg', foodKey: 'sodium', kind: 'guideline-daily-amount', rdaEu: null }],
-    });
+    }).efsa;
     assert.equal(reference.kind, 'target');
   });
 });
@@ -651,11 +660,11 @@ describe('parseNutrientReferences', () => {
       ],
     });
 
-    assert.equal(references.length, 1);
-    assert.equal(references[0].key, 'magnesium');
-    assert.equal(references[0].unit, 'mg');
-    assert.equal(references[0].rda?.source, 'EFSA DRV');
-    assert.equal(references[0].rda?.pregnancy, null);
+    assert.equal(references.efsa.length, 1);
+    assert.equal(references.efsa[0].key, 'magnesium');
+    assert.equal(references.efsa[0].unit, 'mg');
+    assert.equal(references.efsa[0].rda?.source, 'EFSA DRV');
+    assert.equal(references.efsa[0].rda?.pregnancy, null);
   });
 
   it('drops entries this app has no nutrient key for rather than failing the parse', () => {
@@ -665,7 +674,7 @@ describe('parseNutrientReferences', () => {
       ],
     });
 
-    assert.deepEqual(references, []);
+    assert.deepEqual(references, { dge: [], efsa: [], us: [] });
   });
 
   it('keeps a nutrient with no published reference, so the row can say so', () => {
@@ -673,12 +682,149 @@ describe('parseNutrientReferences', () => {
       nutrients: [{ slug: 'vitamin-d', unit: 'µg', foodKey: 'vitaminD', rdaEu: null }],
     });
 
-    assert.equal(references[0].key, 'vitaminD');
-    assert.equal(references[0].rda, null);
+    assert.equal(references.efsa[0].key, 'vitaminD');
+    assert.equal(references.efsa[0].rda, null);
   });
 
   it('throws on an unrecognisable envelope, for the fail-open shell to swallow', () => {
     assert.throws(() => parseNutrientReferences({ oops: true }), NutrientReferenceParseError);
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// Three bases, kept apart (M234 spec 05)
+////////////////////////////////////////////////////////////////////////////////
+
+/** The shared cross-repo wire fixture. Byte identical to LowCarbCheck's copy; see `tests/fixtures/README.md`. */
+const WIRE_FIXTURE_PATH = fileURLToPath(new URL('../fixtures/nutrients-response.json', import.meta.url));
+
+/**
+ * The SHA-256 the OTHER repo pins for the same bytes.
+ *
+ * LowCarbCheck serves this shape and openplate transcribes it by hand; neither
+ * repo imports the other, so this literal is the only thing tying the two
+ * transcriptions together. Changing it means copying the file across and
+ * editing the literal in both places, deliberately.
+ */
+const WIRE_FIXTURE_SHA256 = 'a60159701f3b6b21d1f45cf836d42d51db19bb016928ab878c528735398cb647';
+
+/** Reads the shared fixture as JSON, the way the service hands a parsed body to the parser. */
+function readWireFixture(): JsonValue {
+  // SAFETY: the file is a committed `GET /api/v1/nutrients` body, and the
+  // parser validates every field of it in the very next call. `JSON.parse`
+  // types its result as `any`, which this narrows back to the closed JSON
+  // value type the parser takes.
+  return JSON.parse(readFileSync(WIRE_FIXTURE_PATH, 'utf8')) as JsonValue;
+}
+
+/** The 31 to 50 female reference for one nutrient on one basis, resolved the way the screen resolves it. */
+function femaleThirtyOneToFifty(document: NutrientReferenceDocument, basis: NutrientReferenceBasis, key: NutrientKey) {
+  const reference = document[basis].find((entry) => entry.key === key) ?? null;
+  return resolveReferenceAmount({
+    reference,
+    metrics: metricsFor({ biologicalSex: 'female', birthYear: CURRENT_YEAR - 40 }),
+    currentYear: CURRENT_YEAR,
+  });
+}
+
+it('the shared wire fixture parses on all three bases, and its bytes hash to the literal LowCarbCheck pins', () => {
+  const bytes = readFileSync(WIRE_FIXTURE_PATH);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), WIRE_FIXTURE_SHA256);
+
+  const document = parseNutrientReferences(readWireFixture());
+  for (const basis of NUTRIENT_REFERENCE_BASES) {
+    assert.ok(document[basis].length > 0, `no nutrients parsed on the ${basis} basis`);
+  }
+  // The control: a hash test that only hashes proves the file is unchanged
+  // while saying nothing about it being the right file. Naming the German
+  // document fails if someone pins the bytes of a body with no DGE block.
+  const iron = document.dge.find((entry) => entry.key === 'iron');
+  assert.match(iron?.rda?.source ?? '', /DGE/);
+});
+
+it('the chosen basis has no block, so the nutrient refuses instead of borrowing another basis’s number', () => {
+  // Hand built rather than taken from the fixture, because the fixture's
+  // beta-carotene has no block on ANY basis: a pass there could also mean
+  // "nothing was borrowed because there was nothing to borrow". Here EFSA
+  // publishes a number and DGE does not, so a borrowed one would show up.
+  const document = parseNutrientReferences({
+    nutrients: [
+      {
+        slug: 'vitamin-d',
+        unit: 'µg',
+        foodKey: 'vitaminD',
+        rdaDe: null,
+        rdaEu: {
+          source: 'EFSA Dietary Reference Values (2016)',
+          male: { '14-18': 15, '19-30': 15, '31-50': 15, '51-70': 15, over_70: 15 },
+          female: { '14-18': 15, '19-30': 15, '31-50': 15, '51-70': 15, over_70: 15 },
+          pregnancy: 15,
+          lactation: 15,
+        },
+        rdaUs: null,
+      },
+    ],
+  });
+
+  // The control arm: the SAME nutrient on the basis that does publish it
+  // resolves to a number, so the refusal below cannot be an empty parse.
+  const efsa = femaleThirtyOneToFifty(document, 'efsa', 'vitaminD');
+  assert.equal(efsa.kind, 'available');
+  assert.equal(efsa.kind === 'available' && efsa.amount, 15);
+
+  const dge = femaleThirtyOneToFifty(document, 'dge', 'vitaminD');
+  assert.equal(dge.kind, 'not-published');
+});
+
+describe('reference bases', () => {
+  it('resolves the same person and nutrient to a different number on each basis', () => {
+    const document = parseNutrientReferences(readWireFixture());
+
+    const dge = femaleThirtyOneToFifty(document, 'dge', 'iron');
+    const us = femaleThirtyOneToFifty(document, 'us', 'iron');
+    assert.equal(dge.kind, 'available');
+    assert.equal(us.kind, 'available');
+    const dgeAmount = dge.kind === 'available' ? dge.amount : null;
+    const usAmount = us.kind === 'available' ? us.amount : null;
+
+    // Asserted FIRST: two bases that happened to publish the same figure would
+    // let every equality below pass while proving nothing about the split.
+    assert.notEqual(dgeAmount, usAmount);
+    assert.equal(dgeAmount, 16);
+    assert.equal(usAmount, 18);
+  });
+
+  it('names its own document in the footnote source, per basis', () => {
+    const document = parseNutrientReferences(readWireFixture());
+    const sourceOf = (basis: NutrientReferenceBasis) =>
+      document[basis].find((entry) => entry.key === 'iron')?.rda?.source ?? '';
+
+    assert.match(sourceOf('dge'), /DGE/);
+    assert.match(sourceOf('efsa'), /EFSA/);
+    assert.match(sourceOf('us'), /US Dietary Reference Intakes/);
+    // The control: three distinct strings, so no basis is quoting another's document.
+    assert.equal(new Set([sourceOf('dge'), sourceOf('efsa'), sourceOf('us')]).size, 3);
+  });
+
+  it('carries beta-carotene on every basis and publishes a reference on none of them', () => {
+    const document = parseNutrientReferences(readWireFixture());
+
+    for (const basis of NUTRIENT_REFERENCE_BASES) {
+      const betaCarotene = document[basis].find((entry) => entry.key === 'betaCarotene');
+      assert.ok(betaCarotene, `beta-carotene missing from the ${basis} list`);
+      assert.equal(betaCarotene.rda, null);
+    }
+    // The control: the same lookup on a nutrient DGE does publish returns a
+    // block, so the nulls above are beta-carotene's own state, not a broken find.
+    assert.ok(document.dge.find((entry) => entry.key === 'iron')?.rda);
+  });
+
+  it('keeps the three lists the same length, so a basis is a choice of numbers and never of nutrients', () => {
+    const document = parseNutrientReferences(readWireFixture());
+    const slugsOf = (basis: NutrientReferenceBasis) => document[basis].map((entry) => entry.slug);
+
+    assert.deepEqual(slugsOf('dge'), slugsOf('efsa'));
+    assert.deepEqual(slugsOf('dge'), slugsOf('us'));
   });
 });
 

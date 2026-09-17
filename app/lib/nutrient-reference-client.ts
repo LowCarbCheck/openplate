@@ -20,7 +20,12 @@
  * near-static public data.
  */
 import { readNutrientReferenceBody, readNutrientSourceFoodsBody } from '#app/lib/nutrient-reference';
-import type { JsonValue, NutrientReference, NutrientSourceFood } from '#app/lib/nutrient-reference';
+import type {
+  JsonValue,
+  NutrientReference,
+  NutrientReferenceBasis,
+  NutrientSourceFood,
+} from '#app/lib/nutrient-reference';
 
 /** Long enough that switching windows or leaving and returning never re-fetches; short enough that a corrected figure lands the same day. */
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -33,8 +38,18 @@ interface CacheEntry<T> {
 const referenceCache = new Map<string, CacheEntry<NutrientReference[]>>();
 const foodsCache = new Map<string, CacheEntry<NutrientSourceFood[]>>();
 
-/** Cache key for the (single) reference list — a constant, kept named so the two caches read alike. */
-const REFERENCE_CACHE_KEY = 'nutrients';
+/**
+ * Cache key for one basis's reference list (M234 spec 05).
+ *
+ * One slot per basis, never one shared slot: two bases answer with different
+ * numbers for the same nutrient, so a single key would let a list fetched on
+ * one basis be served for another. A `null` basis is "whatever this instance's
+ * server default is", which the browser cannot name and which therefore gets
+ * its own slot rather than being filed under a guess.
+ */
+function referenceCacheKey(basis: NutrientReferenceBasis | null): string {
+  return `nutrients::${basis ?? 'instance-default'}`;
+}
 
 /** Test-only escape hatch — clears cached state so unit tests don't leak between cases. */
 export function clearNutrientReferenceClientCache(): void {
@@ -64,19 +79,26 @@ async function fetchJson(url: string): Promise<JsonValue | null> {
 }
 
 /**
- * Every nutrient's published reference intakes.
+ * Every nutrient's published reference intakes, on ONE basis.
  *
- * @returns the references, or `[]` on any failure — never throws.
+ * @param options.basis - the basis to ask for, or `null` (the default) to take
+ *   the instance's own `NUTRIENT_REFERENCE_BASIS`. Nothing in the browser knows
+ *   that setting yet; the parameter is the seam an administrator's choice will
+ *   arrive through.
+ * @returns the references, or `[]` on any failure. Never throws.
  */
-export async function fetchNutrientReferenceList(): Promise<NutrientReference[]> {
-  const cached = readCache(referenceCache, REFERENCE_CACHE_KEY);
+export async function fetchNutrientReferenceList({
+  basis = null,
+}: { basis?: NutrientReferenceBasis | null } = {}): Promise<NutrientReference[]> {
+  const cacheKey = referenceCacheKey(basis);
+  const cached = readCache(referenceCache, cacheKey);
   if (cached) return cached;
 
-  const json = await fetchJson('/api/nutrients');
+  const json = await fetchJson(basis === null ? '/api/nutrients' : `/api/nutrients?basis=${basis}`);
   if (json === null) return [];
 
   const value = readNutrientReferenceBody(json);
-  referenceCache.set(REFERENCE_CACHE_KEY, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+  referenceCache.set(cacheKey, { value, expiresAt: Date.now() + CACHE_TTL_MS });
   return value;
 }
 
