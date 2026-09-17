@@ -54,7 +54,7 @@ import { withI18n } from './trends-i18n-harness';
 import { DescribeComposer, handOffDescription } from '../../app/routes/describe';
 import { buildIntakeHref } from '../../app/lib/intake-hrefs';
 import { takeIntakeHandoff } from '../../app/lib/intake-handoff';
-import { parseIntakeConsumer } from '../../app/lib/intake-consumers';
+import { parseIntakeConsumer, type IntakeConsumer } from '../../app/lib/intake-consumers';
 import type { AiConnection, AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import type { RepeatYesterdayOffer } from '../../app/lib/copy-day';
 
@@ -63,6 +63,8 @@ const describeCopySchema = z.object({
   describe: z.object({
     title: z.string(),
     lead: z.string(),
+    /** The pantry's own question and example (M233 review, finding 4). */
+    pantry: z.object({ title: z.string(), placeholder: z.string() }),
     label: z.string(),
     placeholder: z.string(),
     send: z.string(),
@@ -106,12 +108,14 @@ function renderComposer({
   aiConnection = 'connected',
   door = { kind: 'byok' },
   speakArmed = false,
+  consumer = '/scan',
   repeatYesterday = null,
 }: {
   text?: string;
   aiConnection?: AiConnection;
   door?: AiIntakeDoor;
   speakArmed?: boolean;
+  consumer?: IntakeConsumer;
   repeatYesterday?: RepeatYesterdayOffer | null;
 } = {}): string {
   const element = createElement(DescribeComposer, {
@@ -121,6 +125,7 @@ function renderComposer({
     aiConnection,
     door,
     speakArmed,
+    consumer,
     searchHref: '/add',
     repeatYesterday,
   });
@@ -486,5 +491,53 @@ describe('the composer offers a repeat of yesterday', () => {
     assert.doesNotMatch(SOURCE, /^export function HydrateFallback/m, '/describe grew a hydrate fallback');
     // The offer is read after the first paint instead.
     assert.ok(SOURCE.includes('selectRepeatYesterday'), 'the composer stopped asking the selector');
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The same composer, asked for a shelf instead of a meal (M233 review)
+////////////////////////////////////////////////////////////////////////////////
+
+describe('the composer the pantry sends people to', () => {
+  it('asks about the shelf, not about a meal', () => {
+    const markup = renderComposer({ consumer: '/pantry' });
+
+    assert.ok(markup.includes(CATALOG.describe.pantry.title), 'the pantry heading is gone');
+    assert.ok(markup.includes(CATALOG.describe.pantry.placeholder), 'the pantry example is gone');
+    assert.ok(!markup.includes(COPY.title), 'the pantry screen still asks what the person ate');
+  });
+
+  it('asks about a meal for the diary, which is the control', () => {
+    // Without this, a composer that had simply swapped both sentences for the
+    // pantry's would pass the test above on every screen.
+    const markup = renderComposer({ consumer: '/scan' });
+
+    assert.ok(markup.includes(COPY.title));
+    assert.ok(markup.includes(COPY.placeholder));
+    assert.ok(!markup.includes(CATALOG.describe.pantry.title), 'the diary screen asks the pantry question');
+  });
+
+  it('offers no food search, because a search adds a food to the DIARY', () => {
+    const markup = renderComposer({ consumer: '/pantry' });
+
+    assert.doesNotMatch(markup, /href="\/add/u, 'the pantry composer links into the food search');
+    assert.ok(!markup.includes(COPY.searchInstead), 'the search sentence is on the pantry composer');
+  });
+
+  it('offers no repeat of yesterday, because that copies yesterday MEALS', () => {
+    const markup = renderComposer({ consumer: '/pantry', repeatYesterday: REPEAT_OFFER });
+
+    assert.equal(doorFormIndex(markup), -1, 'the pantry composer drew the repeat door');
+    assert.ok(!markup.includes(DOOR_COPY.door), 'the repeat label is on the pantry composer');
+  });
+
+  it('offers both to the diary with the same inputs, which is the control', () => {
+    // Without this the two absences above would pass against a composer that
+    // had lost the search link and the door for everybody.
+    const markup = renderComposer({ consumer: '/scan', repeatYesterday: REPEAT_OFFER });
+
+    assert.match(markup, /href="\/add"/u);
+    assert.ok(markup.includes(COPY.searchInstead));
+    assert.notEqual(doorFormIndex(markup), -1);
   });
 });

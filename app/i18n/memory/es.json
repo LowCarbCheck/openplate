@@ -1294,6 +1294,13 @@
     "at": "2026-09-14",
     "es": "g de carbohidratos netos"
   },
+  "12c0921bba09b0eb": {
+    "en": "We could not log that. Try again in a moment.",
+    "path": "common:recipes.errors.logFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "No pudimos registrar eso. Inténtalo de nuevo en un momento."
+  },
   "12dd86f5bdd31ea0": {
     "en": "Scan",
     "path": "common:nav.scan",
@@ -2547,6 +2554,13 @@
     "at": "2026-09-14",
     "es": "Las entradas con IA no están activadas para esta cuenta. Las búsquedas en la base de datos de alimentos funcionan sin ellas."
   },
+  "22813a1bb51d9a40": {
+    "en": "half a cabbage, six eggs, a tub of feta, 500 g of rice",
+    "path": "common:describe.pantry.placeholder",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "medio repollo, seis huevos, una tarrina de feta, 500 g de arroz"
+  },
   "22849ebd336db48f": {
     "en": "Your usual dinner",
     "path": "common:usual.title.dinner",
@@ -3505,6 +3519,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Escribe los doce caracteres impresos en los materiales de consentimiento del estudio. No los copies de esta pantalla ni del enlace."
+  },
+  "342f7692f7725fa4": {
+    "en": "We could not save your list. It is still on this screen, so try again.",
+    "path": "common:pantry.errors.saveFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "No pudimos guardar tu lista. Sigue en esta pantalla, así que inténtalo de nuevo."
   },
   "34311b3549bec8a8": {
     "en": "{{email}} already has an account here.",
@@ -17008,6 +17029,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Entrada manual."
+  },
+  "fc67e8350596a2d4": {
+    "en": "What do you have at home?",
+    "path": "common:describe.pantry.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "¿Qué tienes en casa?"
   },
   "fc75a3d4c2c861f3": {
     "en": "About {{grams}} g",

@@ -27,6 +27,7 @@
  * already use for the sibling features.
  */
 import { randomUuid } from '#app/lib/uuid';
+import type { PantryCapturePath } from '#app/lib/matomo-events';
 import type { LocalPantryItem, PantryCategory, PantryUnit } from '#app/lib/local-store/schema';
 
 /** One row as a capture or a review form hands it over: everything but an identity and a clock. */
@@ -132,4 +133,142 @@ export function mergePantry({
   }
 
   return merged;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// From the rows on screen to the list that is written
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * One line as the form holds it while a person edits.
+ *
+ * `amount` is a STRING, not a number, because it is the text in the box: a
+ * half-typed "1." and a cleared field are both states a `number | null` cannot
+ * hold, and a form that reinterpreted them mid-keystroke would delete digits
+ * under the person's thumb. It becomes a number once, on confirm.
+ *
+ * It lives here rather than beside the screen because the two functions below
+ * are the whole of what a save does, and they are pure.
+ */
+export interface PantryDraftRow {
+  /** Stable key for the list, never stored. A row's stored id is decided by the merge. */
+  key: string;
+  name: string;
+  amount: string;
+  unit: PantryUnit | null;
+  category: PantryCategory;
+}
+
+/**
+ * The amount box as a number, or null.
+ *
+ * A DECIMAL COMMA IS A DECIMAL POINT. Most of the languages this app ships in
+ * write 1,5 for one and a half, and phone keyboards in those locales offer a
+ * comma on the number pad, so `Number.parseFloat` would quietly read 1,5 as 1
+ * and store a third of the yoghurt. One comma with no point anywhere is
+ * therefore rewritten before parsing. A string with both, or with two commas,
+ * is not a decimal in any convention this app can name, so it stays
+ * unparseable and the row is stored with no amount at all.
+ *
+ * @param text - the text in the amount box.
+ * @returns the number it names, or null for blank, unparseable or negative.
+ */
+function parseAmount(text: string): number | null {
+  const trimmed = text.trim();
+  if (trimmed === '') return null;
+  const decimal = !trimmed.includes('.') && trimmed.split(',').length === 2 ? trimmed.replace(',', '.') : trimmed;
+  // A TRAILING REMAINDER IS NOT A NUMBER. `Number.parseFloat` stops at the
+  // first character it cannot use and answers with what it has, so "1,5,5"
+  // and "-2" would otherwise be stored as 1 and as 2. A half-typed "1." is
+  // still a number, because it is what a person sees while they type.
+  if (!/^(?:\d+\.?\d*|\.\d+)$/u.test(decimal)) return null;
+  const parsed = Number.parseFloat(decimal);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * The draft rows as the merge wants them.
+ *
+ * A BLANK AMOUNT IS NULL, never 0, and an unparseable one is null too. Zero is
+ * a claim ("there is none of this"), and a person who cleared the box was
+ * saying they do not know. A row with no name is dropped here rather than in
+ * the merge, so an "add a line" nobody filled in never reaches the store.
+ *
+ * @param rows - the draft rows, in the order they are shown.
+ * @param source - how these rows arrived, stamped on every one of them.
+ * @returns one captured item per named row.
+ */
+export function capturedFromDrafts(rows: readonly PantryDraftRow[], source: PantryCapturePath): CapturedPantryItem[] {
+  const captured: CapturedPantryItem[] = [];
+  for (const row of rows) {
+    if (row.name.trim() === '') continue;
+    const amount = parseAmount(row.amount);
+    captured.push({
+      name: row.name,
+      amount,
+      unit: amount === null ? null : row.unit,
+      category: row.category,
+      source,
+    });
+  }
+  return captured;
+}
+
+/**
+ * Whether the rows on screen still hold this merged item.
+ *
+ * Matching is by NAME through {@link pantryNameKey}, the merge's OWN folding
+ * rule rather than a second spelling of it, because a row the person typed has
+ * no id until the merge gives it one, and two foldings would drop rows the
+ * merge had just kept.
+ */
+function rowsHold(rows: readonly PantryDraftRow[], item: LocalPantryItem): boolean {
+  const key = pantryNameKey(item.name);
+  return rows.some((row) => pantryNameKey(row.name) === key);
+}
+
+/**
+ * The whole pantry after one save, ready for `replaceLocalPantry`.
+ *
+ * ── THE ROWS ON SCREEN MEAN TWO DIFFERENT THINGS ─────────────────────────
+ *
+ * `/pantry` renders one row editor for two arrivals, and what the rows in it
+ * ARE differs:
+ *
+ *  - From the LIST (`path` is `'manual'`), the rows are the whole pantry. A
+ *    line the person deleted is a removal, so the merged list is reconciled
+ *    against them and anything they no longer show is gone.
+ *  - From a READING (`'photo'` or `'text'`), the rows are that reading and
+ *    nothing else. The stored items it did not name are not removals, they are
+ *    simply things the camera could not see, so the save is ADDITIVE and
+ *    nothing is reconciled away.
+ *
+ * One filter for both arrivals is the defect this function was extracted to
+ * fix: a second photograph deleted everything the first one had found
+ * (`tests/e2e/pantry-second-photo.spec.ts`). A person who wants an item gone
+ * removes it in the list, which is the arrival where removal means something.
+ *
+ * @param stored - the pantry as the store holds it.
+ * @param rows - the rows on screen, as the person left them.
+ * @param path - how those rows arrived, which decides whether this is the whole list.
+ * @param now - epoch-ms to stamp every touched row with.
+ * @param makeId - id source for new rows, defaulting to the app's own.
+ * @returns the complete new pantry.
+ */
+export function nextPantry({
+  stored,
+  rows,
+  path,
+  now,
+  makeId = randomUuid,
+}: {
+  stored: readonly LocalPantryItem[];
+  rows: readonly PantryDraftRow[];
+  path: PantryCapturePath;
+  now: number;
+  makeId?: () => string;
+}): LocalPantryItem[] {
+  const merged = mergePantry({ existing: stored, captured: capturedFromDrafts(rows, path), now, makeId });
+  if (path !== 'manual') return merged;
+  return merged.filter((item) => rowsHold(rows, item));
 }

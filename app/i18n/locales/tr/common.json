@@ -487,7 +487,11 @@
     "dictateHint": "Öğününü sesle yazdırmak için klavyendeki mikrofon tuşuna dokun.",
     "needsProvider": "Bir öğünü tarif etmek için bu cihazda bir yapay zeka bağlantısı gerekir.",
     "connect": "Bir sağlayıcı bağla",
-    "searchInstead": "Bunun yerine yiyecek veritabanında ara"
+    "searchInstead": "Bunun yerine yiyecek veritabanında ara",
+    "pantry": {
+      "title": "Evinde ne var?",
+      "placeholder": "yarım lahana, altı yumurta, bir kutu beyaz peynir, 500 g pirinç"
+    }
   },
   "diary": {
     "actions": {
@@ -3218,7 +3222,8 @@
     "errors": {
       "title": "Bu işe yaramadı",
       "failed": "Bu okunamadı. Birazdan tekrar dene.",
-      "nothingFound": "Bu fotoğrafta yiyecek bulunamadı. Daha yakından çek veya listeyi yaz."
+      "nothingFound": "Bu fotoğrafta yiyecek bulunamadı. Daha yakından çek veya listeyi yaz.",
+      "saveFailed": "Listen kaydedilemedi. Hâlâ bu ekranda duruyor, yeniden dene."
     }
   },
   "recipes": {
@@ -3249,7 +3254,8 @@
     },
     "errors": {
       "title": "Bu işe yaramadı",
-      "failed": "Bir yemek oluşturamadık. Birazdan tekrar dene."
+      "failed": "Bir yemek oluşturamadık. Birazdan tekrar dene.",
+      "logFailed": "Bu günlüğe kaydedilemedi. Birazdan yeniden dene."
     }
   }
 }

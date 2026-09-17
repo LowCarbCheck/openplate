@@ -64,7 +64,7 @@ import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/componen
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
 import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { offerTypedText } from '#app/lib/intake-handoff';
-import { parseIntakeConsumer } from '#app/lib/intake-consumers';
+import { parseIntakeConsumer, type IntakeConsumer } from '#app/lib/intake-consumers';
 import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
 import { selectRepeatYesterday } from '#app/lib/copy-day';
 import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
@@ -148,7 +148,19 @@ interface DescribeComposerProps {
   door: AiIntakeDoor;
   /** `?speak=1`: focus the field and show the dictation hint. Nothing records. */
   speakArmed: boolean;
-  /** The database search, for one exact item. */
+  /**
+   * WHO THE WORDS ARE FOR, and the one thing that changes this screen.
+   *
+   * The diary asks for a meal, the pantry asks for a shelf (M233/01), and the
+   * two want different questions: "2 fried eggs and toast" is not a sentence
+   * anybody writes about their fridge. It also decides which of the two doors
+   * below belong here at all, because both lead into the DIARY: the database
+   * search adds a food to the day, and the repeat of yesterday copies a day of
+   * meals. Offering either to somebody stocking a pantry is offering to do
+   * something else entirely.
+   */
+  consumer: IntakeConsumer;
+  /** The database search, for one exact item. Not rendered for the pantry. */
   searchHref: string;
   /**
    * The "Wie gestern" offer (M217), or null for no door. Optional because the
@@ -182,11 +194,18 @@ export function DescribeComposer({
   aiConnection,
   door,
   speakArmed,
+  consumer,
   searchHref,
   repeatYesterday = null,
 }: DescribeComposerProps) {
   const { t } = useTranslation();
   const hasAiProvider = aiConnection === 'connected';
+  // The pantry's own question, and its own example. Two keys rather than a
+  // conditional sentence, so each one is written for the screen it appears on
+  // and translated as itself.
+  const isForPantry = consumer === '/pantry';
+  const title = isForPantry ? t('describe.pantry.title') : t('describe.title');
+  const placeholder = isForPantry ? t('describe.pantry.placeholder') : t('describe.placeholder');
   const canSend = hasAiProvider && text.trim() !== '';
   const fieldRef = useRef<HTMLTextAreaElement>(null);
 
@@ -216,9 +235,9 @@ export function DescribeComposer({
           composer is pinned to the bottom by `mt-auto`, so a door that arrives
           after the first paint pushes the heading down and leaves Send exactly
           where the thumb found it. */}
-      <RepeatYesterdayDoor offer={repeatYesterday} />
+      <RepeatYesterdayDoor offer={isForPantry ? null : repeatYesterday} />
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold">{t('describe.title')}</h1>
+        <h1 className="text-xl font-semibold">{title}</h1>
         <p className="text-sm text-muted-foreground">{t('describe.lead')}</p>
       </div>
 
@@ -265,7 +284,7 @@ export function DescribeComposer({
               event.preventDefault();
               onSend();
             }}
-            placeholder={t('describe.placeholder')}
+            placeholder={placeholder}
             className="max-h-42 min-h-9 flex-1 resize-none border-0 bg-transparent py-1.5 text-base outline-hidden focus-visible:outline-hidden"
           />
           {/* Round, icon-only, inside the box, at the bottom so it stays
@@ -292,9 +311,14 @@ export function DescribeComposer({
             own and not this app's. */}
         {speakArmed && <p className="text-xs text-muted-foreground">{t('describe.dictateHint')}</p>}
 
-        <Link to={searchHref} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
-          {t('describe.searchInstead')}
-        </Link>
+        {/* THE FOOD DATABASE, which adds a food to the DIARY. Absent for the
+            pantry: a search that logs a meal is not a second way to say what
+            is in the fridge, it is a different screen wearing a link. */}
+        {!isForPantry && (
+          <Link to={searchHref} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+            {t('describe.searchInstead')}
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -331,6 +355,10 @@ export default function DescribeRoute() {
   // the first paint, and the door appears above the title when it lands.
   const [repeatYesterday, setRepeatYesterday] = useState<RepeatYesterdayOffer | null>(null);
   useEffect(() => {
+    // NOT EVEN READ for the pantry: the door copies yesterday's MEALS into
+    // today, which has nothing to do with a shelf, so the whole diary read is
+    // skipped rather than resolved and then hidden.
+    if (intakeConsumer === '/pantry') return;
     let isMounted = true;
     async function readOffer(): Promise<void> {
       const profile = await getLocalProfileGoals();
@@ -344,7 +372,7 @@ export default function DescribeRoute() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [intakeConsumer]);
 
   const handleSend = useCallback((): void => {
     if (!hasAiProvider) return;
@@ -359,6 +387,7 @@ export default function DescribeRoute() {
       aiConnection={aiConnection}
       door={door}
       speakArmed={speakArmed}
+      consumer={intakeConsumer}
       searchHref={searchHref}
       repeatYesterday={repeatYesterday}
     />

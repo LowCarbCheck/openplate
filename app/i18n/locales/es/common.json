@@ -487,7 +487,11 @@
     "dictateHint": "Toca la tecla del micrófono en tu teclado para dictar tu comida.",
     "needsProvider": "Describir una comida requiere una conexión a una IA en este dispositivo.",
     "connect": "Conectar un proveedor",
-    "searchInstead": "Buscar en la base de datos de alimentos"
+    "searchInstead": "Buscar en la base de datos de alimentos",
+    "pantry": {
+      "title": "¿Qué tienes en casa?",
+      "placeholder": "medio repollo, seis huevos, una tarrina de feta, 500 g de arroz"
+    }
   },
   "diary": {
     "actions": {
@@ -3218,7 +3222,8 @@
     "errors": {
       "title": "Eso no ha funcionado",
       "failed": "No hemos podido leer eso. Inténtalo de nuevo en un momento.",
-      "nothingFound": "No se encontró comida en esa imagen. Toma una foto más de cerca o escribe la lista."
+      "nothingFound": "No se encontró comida en esa imagen. Toma una foto más de cerca o escribe la lista.",
+      "saveFailed": "No pudimos guardar tu lista. Sigue en esta pantalla, así que inténtalo de nuevo."
     }
   },
   "recipes": {
@@ -3249,7 +3254,8 @@
     },
     "errors": {
       "title": "No ha funcionado",
-      "failed": "No pudimos crear una comida. Inténtalo de nuevo en un momento."
+      "failed": "No pudimos crear una comida. Inténtalo de nuevo en un momento.",
+      "logFailed": "No pudimos registrar eso. Inténtalo de nuevo en un momento."
     }
   }
 }

@@ -69,7 +69,12 @@ const catalogSchema = z.object({
   }),
   pantry: z.object({
     door: z.object({ title: z.string() }),
-    review: z.object({ title: z.string(), removeAria: z.string(), confirm: z.string() }),
+    review: z.object({
+      title: z.string(),
+      removeAria: z.string(),
+      confirm: z.string(),
+      saveList: z.string(),
+    }),
     recipes: z.object({ link: z.string() }),
   }),
   recipes: z.object({

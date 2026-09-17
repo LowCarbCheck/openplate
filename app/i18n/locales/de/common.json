@@ -487,7 +487,11 @@
     "dictateHint": "Tippe auf die Mikrofontaste deiner Tastatur, um deine Mahlzeit zu diktieren.",
     "needsProvider": "Mahlzeiten beschreiben erfordert eine KI-Verbindung auf diesem Gerät.",
     "connect": "Anbieter verbinden",
-    "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen"
+    "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen",
+    "pantry": {
+      "title": "Was hast du zu Hause?",
+      "placeholder": "ein halber Kohl, sechs Eier, eine Packung Feta, 500 g Reis"
+    }
   },
   "diary": {
     "actions": {
@@ -3218,7 +3222,8 @@
     "errors": {
       "title": "Das hat nicht geklappt",
       "failed": "Das konnte nicht gelesen werden. Versuche es gleich noch einmal.",
-      "nothingFound": "Auf diesem Bild wurde kein Essen gefunden. Nimm ein näheres Foto auf oder schreibe die Liste."
+      "nothingFound": "Auf diesem Bild wurde kein Essen gefunden. Nimm ein näheres Foto auf oder schreibe die Liste.",
+      "saveFailed": "Wir konnten deine Liste nicht speichern. Sie ist noch auf diesem Bildschirm, versuche es also erneut."
     }
   },
   "recipes": {
@@ -3249,7 +3254,8 @@
     },
     "errors": {
       "title": "Das hat nicht geklappt",
-      "failed": "Es konnte keine Mahlzeit zusammengestellt werden. Versuche es gleich noch einmal."
+      "failed": "Es konnte keine Mahlzeit zusammengestellt werden. Versuche es gleich noch einmal.",
+      "logFailed": "Wir konnten das nicht eintragen. Versuche es gleich noch einmal."
     }
   }
 }

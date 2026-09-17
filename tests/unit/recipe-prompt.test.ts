@@ -111,8 +111,19 @@ describe('buildRecipeProposalUserPrompt', () => {
 
   it('names the slot and the answer language', () => {
     const prompt = promptFor(SHELF);
-    assert.ok(prompt.includes('dinner'));
-    assert.ok(prompt.includes('de'));
+
+    assert.ok(prompt.includes('Meal slot to cook for: dinner'));
+    // THE WHOLE LINE, not the two letters. `prompt.includes('de')` is satisfied
+    // by "described", by "provided" and by half the system prompt, so it passed
+    // against a builder that never named a language at all.
+    assert.ok(
+      prompt.includes('Write the title, the steps, the ingredient names and whyItFits in this language: de'),
+      'the line that names the answer language is gone',
+    );
+
+    // THE CONTROL. A code the caller did not ask for is absent from that same
+    // line, so the assertion above is about the argument.
+    assert.ok(!prompt.includes('in this language: fr'));
   });
 });
 

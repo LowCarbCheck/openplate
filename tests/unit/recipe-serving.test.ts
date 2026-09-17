@@ -19,6 +19,8 @@ import assert from 'node:assert/strict';
 import {
   RECIPE_SERVING_MAX_GRAMS,
   RECIPE_SERVING_MIN_GRAMS,
+  RECIPE_SERVINGS_MAX,
+  RECIPE_SERVINGS_MIN,
   SERVINGS_STEP,
   keepServableRecipes,
   macrosPer100gFromServing,
@@ -75,6 +77,25 @@ describe('keepServableRecipes', () => {
     // The control: the same two titles with real weights are kept, so the
     // rejection is about the value rather than about the fixtures.
     assert.deepEqual(survivors(recipe('NaN', 400), recipe('Infinite', 400)), ['NaN', 'Infinite']);
+  });
+
+  it('drops a serving COUNT nobody could divide a dish into', () => {
+    // The count is what the stepper is built out of: zero empties it, a
+    // fraction is a recipe the model did not think through, and thirteen is
+    // catering. All three weigh a perfectly plausible 350 g, so only the count
+    // can explain the drop.
+    assert.deepEqual(survivors(recipe('None', 350, 0), recipe('Many', 350, 13), recipe('Half', 350, 2.5)), []);
+  });
+
+  it('keeps both ends of the serving range, which is the control', () => {
+    // Without this the case above passes against a filter that refuses every
+    // count, and the screen would say it could not build a meal every time.
+    assert.deepEqual(survivors(recipe('One', 350, RECIPE_SERVINGS_MIN)), ['One']);
+    assert.deepEqual(survivors(recipe('Twelve', 350, RECIPE_SERVINGS_MAX)), ['Twelve']);
+    // And one step past each bound is out, so "the bound is inside" is a claim
+    // about the bound.
+    assert.deepEqual(survivors(recipe('Under', 350, RECIPE_SERVINGS_MIN - 1)), []);
+    assert.deepEqual(survivors(recipe('Over', 350, RECIPE_SERVINGS_MAX + 1)), []);
   });
 
   it('keeps the order the model answered in', () => {

@@ -70,6 +70,13 @@ const RawRecipePerServingSchema = z.object({
 
 const RawRecipeSchema = z.object({
   title: z.string(),
+  /**
+   * How many servings the dish makes. Bounded to a whole number from
+   * `RECIPE_SERVINGS_MIN` to `RECIPE_SERVINGS_MAX` by `keepServableRecipes`,
+   * not here: a bound on this field would fail the whole answer over one
+   * implausible recipe, and the screen would rather show the other two. See
+   * that function for the range and why it is where it is.
+   */
   servings: z.number(),
   /**
    * What ONE serving weighs, cooked, in grams. Required and never nullable:

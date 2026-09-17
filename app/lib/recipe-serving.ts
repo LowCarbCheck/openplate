@@ -28,6 +28,10 @@
  * plausible number. The person would then log a weight that came out of this
  * file. So a recipe outside the range is not shown at all, and a screen with
  * no survivors says it could not build a meal, which is the truth.
+ *
+ * The SERVING COUNT is bounded the same way and for the same reason: it is the
+ * number the stepper is built out of, so a zero empties it and a nine hundred
+ * fills the page.
  */
 import type { Macros } from '#app/lib/macros';
 import type { RecipePerServing, RecipeProposal } from '#app/services/vision/recipe-schema';
@@ -37,6 +41,15 @@ export const RECIPE_SERVING_MIN_GRAMS = 30;
 
 /** Above this it is the whole pot, or grams confused with something else. */
 export const RECIPE_SERVING_MAX_GRAMS = 1500;
+
+/** A recipe makes at least one serving. Zero servings is a dish nobody can eat a share of. */
+export const RECIPE_SERVINGS_MIN = 1;
+
+/**
+ * And at most twelve. Past that it is catering, and the stepper the card draws
+ * would be a ladder of twenty-five rungs on a phone.
+ */
+export const RECIPE_SERVINGS_MAX = 12;
 
 /** The half-serving ladder the stepper walks. Half a portion is the smallest real answer. */
 export const SERVINGS_STEP = 0.5;
@@ -48,13 +61,33 @@ function isServableWeight(grams: number): boolean {
 }
 
 /**
- * The proposals whose serving weight is inside the plausible range.
+ * Whether the number of servings is a count this app can divide a dish into.
+ *
+ * A WHOLE NUMBER, because `servingsEatenOptions` builds its ladder by flooring
+ * it and a "2.5 servings" recipe is one the model did not think through. Zero
+ * and a negative both empty the stepper, and a huge one fills it: 900 servings
+ * is 1800 rungs, which is a page nobody can use, built out of a figure nobody
+ * estimated.
+ */
+function isServableCount(servings: number): boolean {
+  if (!Number.isInteger(servings)) return false;
+  return servings >= RECIPE_SERVINGS_MIN && servings <= RECIPE_SERVINGS_MAX;
+}
+
+/**
+ * The proposals this app will show: a plausible serving weight, and a serving
+ * count it can divide the dish into.
+ *
+ * BOTH BOUNDS DROP THE RECIPE RATHER THAN THE ANSWER. They are deliberately
+ * not on `RecipeProposalsSchema`: a Zod bound on an array element fails the
+ * WHOLE parse, so one implausible recipe out of three would turn a usable
+ * answer into "we could not build a meal". Here the other two survive it.
  *
  * @param recipes - every recipe the parse returned, in the order it returned them.
  * @returns the survivors, order preserved. An empty array is a real answer.
  */
 export function keepServableRecipes(recipes: readonly RecipeProposal[]): RecipeProposal[] {
-  return recipes.filter((recipe) => isServableWeight(recipe.servingGrams));
+  return recipes.filter((recipe) => isServableWeight(recipe.servingGrams) && isServableCount(recipe.servings));
 }
 
 /**

@@ -487,7 +487,11 @@
     "dictateHint": "Tocca il tasto del microfono sulla tua tastiera per dettare il pasto.",
     "needsProvider": "Descrivere un pasto richiede una connessione a un'IA su questo dispositivo.",
     "connect": "Connetti un fornitore",
-    "searchInstead": "Cerca invece nel database degli alimenti"
+    "searchInstead": "Cerca invece nel database degli alimenti",
+    "pantry": {
+      "title": "Cosa hai a casa?",
+      "placeholder": "mezzo cavolo, sei uova, una vaschetta di feta, 500 g di riso"
+    }
   },
   "diary": {
     "actions": {
@@ -3218,7 +3222,8 @@
     "errors": {
       "title": "Non ha funzionato",
       "failed": "Impossibile leggere il contenuto. Riprova tra poco.",
-      "nothingFound": "Nessun alimento trovato in quella foto. Scatta più da vicino, oppure scrivi l'elenco."
+      "nothingFound": "Nessun alimento trovato in quella foto. Scatta più da vicino, oppure scrivi l'elenco.",
+      "saveFailed": "Impossibile salvare il tuo elenco. Si trova ancora in questa schermata, quindi riprova."
     }
   },
   "recipes": {
@@ -3249,7 +3254,8 @@
     },
     "errors": {
       "title": "Operazione non riuscita",
-      "failed": "Non è stato possibile creare un pasto. Riprova tra poco."
+      "failed": "Non è stato possibile creare un pasto. Riprova tra poco.",
+      "logFailed": "Impossibile registrarlo. Riprova tra poco."
     }
   }
 }

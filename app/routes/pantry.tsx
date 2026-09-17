@@ -40,7 +40,7 @@
  * job, through the diary's own store functions.
  */
 import type { Route } from './+types/pantry';
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
@@ -60,7 +60,7 @@ import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/manag
 import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { takeIntakeHandoff, type ScanHandoff } from '#app/lib/intake-handoff';
-import { mergePantry, pantryNameKey, type CapturedPantryItem } from '#app/lib/pantry-merge';
+import { nextPantry, type PantryDraftRow } from '#app/lib/pantry-merge';
 import { trackPantryCaptured, type PantryCapturePath } from '#app/lib/matomo-events';
 import { fileToBase64 } from '#app/lib/file-to-base64';
 import {
@@ -69,7 +69,7 @@ import {
   recordLocalAiUsageEvent,
   replaceLocalPantry,
 } from '#app/lib/local-store';
-import type { LocalPantryItem, PantryCategory, PantryUnit } from '#app/lib/local-store';
+import type { LocalPantryItem, PantryUnit } from '#app/lib/local-store';
 import {
   createVisionProvider,
   PANTRY_PHOTO_TASK,
@@ -185,21 +185,11 @@ async function readPantry({
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * One line as the form holds it while a person edits.
- *
- * `amount` is a STRING, not a number, because it is the text in the box: a
- * half-typed "1." and a cleared field are both states a `number | null` cannot
- * hold, and a form that reinterpreted them mid-keystroke would delete digits
- * under the person's thumb. It becomes a number once, on confirm.
+ * The row shape and the save rule both live in `#app/lib/pantry-merge`, which
+ * is pure and has a unit test of its own. Re-exported here because this screen
+ * is where a row is edited, so a reader of the file finds the type it renders.
  */
-export interface PantryDraftRow {
-  /** Stable key for the list, never stored. A row's stored id is decided by the merge. */
-  key: string;
-  name: string;
-  amount: string;
-  unit: PantryUnit | null;
-  category: PantryCategory;
-}
+export type { PantryDraftRow };
 
 /** The sentinel the unit select uses for "no unit", since a Radix item cannot carry an empty value. */
 const NO_UNIT_VALUE = 'none';
@@ -236,34 +226,6 @@ export function draftFromReading(item: PantryIdentification['items'][number], ke
     unit: item.unit,
     category: item.category,
   };
-}
-
-/**
- * The draft rows as the merge wants them.
- *
- * A BLANK AMOUNT IS NULL, never 0, and an unparseable one is null too. Zero is
- * a claim ("there is none of this"), and a person who cleared the box was
- * saying they do not know. A row with no name is dropped here rather than in
- * the merge, so an "add a line" nobody filled in never reaches the store.
- *
- * @param rows - the draft rows, in the order they are shown.
- * @param source - how these rows arrived, stamped on every one of them.
- */
-export function capturedFromDrafts(rows: readonly PantryDraftRow[], source: PantryCapturePath): CapturedPantryItem[] {
-  const captured: CapturedPantryItem[] = [];
-  for (const row of rows) {
-    if (row.name.trim() === '') continue;
-    const parsed = Number.parseFloat(row.amount);
-    const amount = row.amount.trim() === '' || !Number.isFinite(parsed) || parsed < 0 ? null : parsed;
-    captured.push({
-      name: row.name,
-      amount,
-      unit: amount === null ? null : row.unit,
-      category: row.category,
-      source,
-    });
-  }
-  return captured;
 }
 
 /** An empty line, for "add a line". */
@@ -377,11 +339,14 @@ export function PantryList({
   onSave,
   isSaving,
   hasStoredItems,
+  alert = null,
 }: {
   rows: readonly PantryDraftRow[];
   onChange: (rows: PantryDraftRow[]) => void;
   onSave: () => void;
   isSaving: boolean;
+  /** Anything that went wrong on the last save, rendered above the list. Null on an ordinary render. */
+  alert?: ReactNode;
   /**
    * Whether the STORE holds anything, which is what the recipes door asks.
    *
@@ -394,6 +359,7 @@ export function PantryList({
   const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-xl space-y-4">
+      {alert}
       <p className="text-sm text-muted-foreground">{hasStoredItems ? t('pantry.lead') : t('pantry.empty')}</p>
       <IntakeComposer describeTo={PANTRY_DESCRIBE_HREF} scanTo="/pantry" label={t('pantry.composerLabel')} />
       {hasStoredItems && (
@@ -441,6 +407,7 @@ export function PantryReview({
   onDiscard,
   isSaving,
   notes,
+  alert = null,
 }: {
   rows: readonly PantryDraftRow[];
   onChange: (rows: PantryDraftRow[]) => void;
@@ -449,10 +416,19 @@ export function PantryReview({
   isSaving: boolean;
   /** Anything the model said about the reading as a whole, or null. */
   notes: string | null;
+  /**
+   * Anything that went wrong on the last save, rendered above the rows.
+   *
+   * The reading STAYS ON SCREEN behind it: a store write that failed has
+   * thrown nothing away, and a screen that fell back to the stored list would
+   * lose a reading the person has already paid for and corrected.
+   */
+  alert?: ReactNode;
 }): ReactElement {
   const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-xl space-y-4">
+      {alert}
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">{t('pantry.review.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('pantry.review.lead')}</p>
@@ -490,6 +466,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
   const [rows, setRows] = useState<PantryDraftRow[]>(() => loaderData.items.map(draftFromStored));
   const [phase, setPhase] = useState<PantryPhase>({ kind: 'list' });
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Holds the freshest reader so the hand-off effect below can run it without
   // re-subscribing every render, the same pair `/scan` uses.
@@ -545,21 +522,35 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
   const save = useCallback(
     async (path: PantryCapturePath): Promise<void> => {
       setIsSaving(true);
+      setSaveError(null);
       try {
-        const merged = mergePantry({ existing: stored, captured: capturedFromDrafts(rows, path), now: Date.now() });
-        // The whole list, in one write: the rows on screen ARE the pantry
-        // after this change, including the ones the person removed.
-        const written = await replaceLocalPantry(merged.filter((item) => rowsHold(rows, item)));
+        // ONE WRITE, and what it contains depends on where the rows came from:
+        // a reading ADDS to the shelf, the list IS the shelf. See `nextPantry`.
+        const written = await replaceLocalPantry(nextPantry({ stored, rows, path, now: Date.now() }));
         setStored(written);
         setRows(written.map(draftFromStored));
         trackPantryCaptured(path);
         setPhase({ kind: 'list' });
+      } catch {
+        // THE ROWS STAY EXACTLY WHERE THEY ARE. A store write that failed threw
+        // nothing away, so the phase is untouched and the person can press the
+        // button again; a screen that silently returned to the list would look
+        // like it had saved.
+        setSaveError(t('pantry.errors.saveFailed'));
       } finally {
         setIsSaving(false);
       }
     },
-    [rows, stored],
+    [rows, stored, t],
   );
+
+  /** The last save's failure, or null. Rendered above whichever surface is showing. */
+  const saveAlert =
+    saveError === null ? null : (
+      <IntakeFailureAlert subject="text" title={t('pantry.errors.title')}>
+        {saveError}
+      </IntakeFailureAlert>
+    );
 
   if (effective === null) {
     return <ConnectCard logDate={null} />;
@@ -585,6 +576,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
           onSave={() => void save('manual')}
           isSaving={isSaving}
           hasStoredItems={stored.length > 0}
+          alert={saveAlert}
         />
       </div>
     );
@@ -602,6 +594,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
         }}
         isSaving={isSaving}
         notes={phase.notes}
+        alert={saveAlert}
       />
     );
   }
@@ -613,25 +606,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
       onSave={() => void save('manual')}
       isSaving={isSaving}
       hasStoredItems={stored.length > 0}
+      alert={saveAlert}
     />
   );
-}
-
-/**
- * Whether the rows on screen still hold this merged item.
- *
- * The merge answers "what does the pantry look like after this capture", and
- * it only ever adds or updates, because a capture is not a statement about the
- * rows it did not mention. REMOVAL is the person's own act, in the form, and
- * this is where the two are reconciled: an item the merge kept from the stored
- * list but the form no longer shows was removed on purpose.
- *
- * Matching is by NAME through `pantryNameKey`, the merge's OWN folding rule
- * rather than a second spelling of it, because a row the person typed has no
- * id until the merge gives it one, and two foldings would drop rows the merge
- * had just kept.
- */
-function rowsHold(rows: readonly PantryDraftRow[], item: LocalPantryItem): boolean {
-  const key = pantryNameKey(item.name);
-  return rows.some((row) => pantryNameKey(row.name) === key);
 }

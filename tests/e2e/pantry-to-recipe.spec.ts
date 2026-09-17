@@ -40,11 +40,11 @@
  * screen actually used rather than about a slot recomputed here at a different
  * instant.
  */
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { EN, fill } from './copy';
 import { E2E_APP_URL } from './env';
-import { completeOnboarding } from './helpers';
+import { completeOnboarding, pantryRows, pantryRowNames, pantryRowsOnDisk } from './helpers';
 
 /** The fake provider's base URL: this app's own origin, on a path nothing serves. */
 const VISION_BASE_URL = `${E2E_APP_URL}/e2e-pantry/v1`;
@@ -251,66 +251,6 @@ function ofLeftPattern(): RegExp {
 /** One literal piece of a catalog sentence, safe to put inside a pattern. */
 function escapeForRegExp(part: string): string {
   return part.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
-}
-
-/**
- * How many pantry rows are ON DISK, read straight out of IndexedDB.
- *
- * A WAIT, NEVER AN ASSERTION. The store writes through TinyBase, whose
- * persister saves asynchronously after the transaction that changed it
- * (`app/lib/local-store/persist.ts` documents the window at length), so a
- * reload fired the instant the screen updates can beat the save and lose the
- * write for real. Polling this before the reload is how the walk waits for the
- * save it is about to check. What the pantry then holds is asserted on the
- * reloaded PAGE, through the app's own read, so this probe can never stand in
- * for the thing under test.
- *
- * @param page - a page on the app's origin.
- * @returns the number of rows the persisted `pantryItems` table holds.
- */
-async function pantryRowsOnDisk(page: Page): Promise<number> {
-  return page.evaluate(
-    () =>
-      new Promise<number>((resolve, reject) => {
-        // The database and object store `persist.ts` names: `openplate-primary`,
-        // and TinyBase's own tables store `t`, one record per table.
-        const request = indexedDB.open('openplate-primary');
-        request.addEventListener('error', () => reject(new Error('the primary database could not be opened')));
-        request.addEventListener('success', () => {
-          const db = request.result;
-          if (!db.objectStoreNames.contains('t')) {
-            db.close();
-            resolve(0);
-            return;
-          }
-          const read = db.transaction('t', 'readonly').objectStore('t').get('pantryItems');
-          read.addEventListener('success', () => {
-            db.close();
-            // SAFETY: TinyBase's IndexedDB persister stores one record per
-            // table as `{ k, v }`, with `v` an object keyed by row id. An
-            // absent record is a table nothing has saved yet.
-            const record = read.result as { v?: object } | undefined;
-            resolve(Object.keys(record?.v ?? {}).length);
-          });
-          read.addEventListener('error', () => {
-            db.close();
-            reject(new Error('the pantry table could not be read'));
-          });
-        });
-      }),
-  );
-}
-
-/** Every editable pantry row on screen, review form or stored list: they are one component. */
-function pantryRows(page: Page): Locator {
-  return page.locator('main input[id^="pantry-name-"]');
-}
-
-/** What those rows are named, in the order they are drawn. */
-async function pantryRowNames(page: Page): Promise<string[]> {
-  // SAFETY: the locator selects `input` elements by id prefix, and an input is
-  // the only element in the DOM that carries a `value` property.
-  return pantryRows(page).evaluateAll((elements) => elements.map((element) => (element as HTMLInputElement).value));
 }
 
 test('a photographed shelf becomes a pantry, a recipe and one logged entry', async ({ page }) => {

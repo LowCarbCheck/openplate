@@ -487,7 +487,11 @@
     "dictateHint": "Tap the microphone key on your keyboard to dictate your meal.",
     "needsProvider": "Describing a meal needs an AI connection on this device.",
     "connect": "Connect a provider",
-    "searchInstead": "Search the food database instead"
+    "searchInstead": "Search the food database instead",
+    "pantry": {
+      "title": "What do you have at home?",
+      "placeholder": "half a cabbage, six eggs, a tub of feta, 500 g of rice"
+    }
   },
   "diary": {
     "actions": {
@@ -3218,7 +3222,8 @@
     "errors": {
       "title": "That did not work",
       "failed": "We could not read that. Try again in a moment.",
-      "nothingFound": "No food found in that picture. Take a closer shot, or write the list."
+      "nothingFound": "No food found in that picture. Take a closer shot, or write the list.",
+      "saveFailed": "We could not save your list. It is still on this screen, so try again."
     }
   },
   "recipes": {
@@ -3249,7 +3254,8 @@
     },
     "errors": {
       "title": "That did not work",
-      "failed": "We could not build a meal. Try again in a moment."
+      "failed": "We could not build a meal. Try again in a moment.",
+      "logFailed": "We could not log that. Try again in a moment."
     }
   }
 }

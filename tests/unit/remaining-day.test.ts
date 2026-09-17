@@ -20,6 +20,7 @@ import {
   describeRemainingDayForPrompt,
   DEFAULT_PROTEIN_FLOOR_G,
   LIGHT_EMPHASIS_MAX_REMAINING_FRACTION,
+  LOW_CARB_EMPHASIS_MAX_REMAINING_FRACTION,
   PROTEIN_EMPHASIS_MIN_REMAINING_FRACTION,
   type RemainingDay,
   type RemainingDayTotals,
@@ -237,6 +238,95 @@ describe('computeRemainingDay, a person with no goals', () => {
     assert.equal(day.protein.remaining, 0);
     assert.equal(day.fiber.remaining, 0);
     assert.equal(row(day.fat).remaining, 0);
+  });
+});
+
+describe('computeRemainingDay, the low-carb rule', () => {
+  /** 600 kcal of a 2000 kcal day, so nothing here can be explained by the energy. */
+  const DAY_KCAL = 600;
+
+  it('asks the next meal to lean low carb once the ceiling is nearly spent', () => {
+    // 35 g of a 50 g ceiling eaten, so 30 percent of it is left, inside
+    // `LOW_CARB_EMPHASIS_MAX_REMAINING_FRACTION`. The profile sets a ceiling
+    // and a calorie target, which is the carb lens.
+    const day = computeRemainingDay({
+      totals: totals({ kcal: DAY_KCAL, netCarbs: 35, protein: 100, fiber: 20, fatG: 30 }),
+      goals: profile(),
+      slot: 'lunch',
+      slotsLeft: 2,
+    });
+
+    assert.equal(day.lens, 'carb', 'this case only means something under the carb lens');
+    assert.ok(
+      row(day.netCarbs).remaining / row(day.netCarbs).target < LOW_CARB_EMPHASIS_MAX_REMAINING_FRACTION,
+      'the headroom must be inside the threshold for this case to mean anything',
+    );
+    assert.ok(day.emphasis.includes('lowCarb'), `expected a lowCarb emphasis, got ${day.emphasis.join(', ')}`);
+  });
+
+  it('does not, on the same day with half the ceiling still open', () => {
+    // THE CONTROL. Identical day, 25 g of carbs instead of 35 g, so 50 percent
+    // is left and only the carb figure can explain the different answer.
+    const day = computeRemainingDay({
+      totals: totals({ kcal: DAY_KCAL, netCarbs: 25, protein: 100, fiber: 20, fatG: 30 }),
+      goals: profile(),
+      slot: 'lunch',
+      slotsLeft: 2,
+    });
+
+    assert.ok(!day.emphasis.includes('lowCarb'), `expected no lowCarb emphasis, got ${day.emphasis.join(', ')}`);
+  });
+
+  it('never asks for it without a ceiling to be low against', () => {
+    // The second control: the same carb intake for somebody who set no ceiling
+    // has no fraction to compare, so the rule cannot fire at all.
+    const day = computeRemainingDay({
+      totals: totals({ kcal: DAY_KCAL, netCarbs: 35, protein: 100, fiber: 20, fatG: 30 }),
+      goals: null,
+      slot: 'lunch',
+      slotsLeft: 2,
+    });
+
+    assert.equal(day.netCarbs, null);
+    assert.ok(!day.emphasis.includes('lowCarb'));
+  });
+});
+
+describe('computeRemainingDay, the fibre rule', () => {
+  /** 600 kcal of a 2000 kcal day: 70 percent of the energy is still open. */
+  const DAY_KCAL = 600;
+
+  it('asks the next meal to lean on fibre when the floor is behind the day', () => {
+    // No fibre eaten at all, so 100 percent of the reference is open against 70
+    // percent of the energy: a lead of 30 points, past
+    // `BEHIND_THE_DAY_MIN_FRACTION_LEAD`.
+    const day = computeRemainingDay({
+      totals: totals({ kcal: DAY_KCAL, netCarbs: 8, protein: 100, fiber: 0, fatG: 30 }),
+      goals: profile(),
+      slot: 'lunch',
+      slotsLeft: 2,
+    });
+
+    assert.equal(day.fiber.remaining, DEFAULT_FIBER_REFERENCE_G);
+    assert.ok(day.emphasis.includes('fiber'), `expected a fiber emphasis, got ${day.emphasis.join(', ')}`);
+  });
+
+  it('does not, on the same day eaten AHEAD on fibre', () => {
+    // THE CONTROL. Identical day, 20 g of the 25 g reference already eaten, so
+    // a fifth of the floor is open against seven tenths of the energy and the
+    // floor is ahead rather than behind.
+    const day = computeRemainingDay({
+      totals: totals({ kcal: DAY_KCAL, netCarbs: 8, protein: 100, fiber: 20, fatG: 30 }),
+      goals: profile(),
+      slot: 'lunch',
+      slotsLeft: 2,
+    });
+
+    assert.ok(
+      day.fiber.remaining / day.fiber.target < row(day.kcal).remaining / row(day.kcal).target,
+      'the floor must be ahead of the energy pace for this control to mean anything',
+    );
+    assert.ok(!day.emphasis.includes('fiber'), `expected no fiber emphasis, got ${day.emphasis.join(', ')}`);
   });
 });
 

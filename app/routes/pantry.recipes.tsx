@@ -460,6 +460,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
   const [searchParams, setSearchParams] = useSearchParams();
   const [phase, setPhase] = useState<RecipePhase>({ kind: 'asking' });
   const [isLogging, setIsLogging] = useState(false);
+  const [logError, setLogError] = useState<string | null>(null);
 
   // The clock's own slot, read ONCE: a screen that re-read it every render
   // would move the person's default under them as the hour turned.
@@ -524,6 +525,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
   const logRecipe = useCallback(
     async (recipe: RecipeProposal, servingsEaten: number): Promise<void> => {
       setIsLogging(true);
+      setLogError(null);
       try {
         const { food, log } = buildRecipeLogEntry({
           recipe,
@@ -539,11 +541,17 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
         await putLocalFoodLog(log);
         trackFoodLogged('recipe');
         void navigate('/diary');
+      } catch {
+        // THE CARDS STAY ON SCREEN. Nothing about the proposal changed, and it
+        // cost an allowance unit to ask for, so the person keeps it and the
+        // button; a screen that navigated to the diary anyway would claim a
+        // meal that is not in it.
+        setLogError(t('recipes.errors.logFailed'));
       } finally {
         setIsLogging(false);
       }
     },
-    [loaderData.dayKey, navigate, slot],
+    [loaderData.dayKey, navigate, slot, t],
   );
 
   if (effective === null) {
@@ -576,6 +584,12 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
         <output className="block py-16 text-center text-sm text-muted-foreground" aria-live="polite">
           {t('recipes.asking')}
         </output>
+      )}
+
+      {logError !== null && (
+        <IntakeFailureAlert subject="text" title={t('recipes.errors.title')}>
+          {logError}
+        </IntakeFailureAlert>
       )}
 
       {phase.kind === 'failed' && (

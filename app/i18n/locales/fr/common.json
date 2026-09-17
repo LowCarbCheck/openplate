@@ -487,7 +487,11 @@
     "dictateHint": "Touche l'icône du micro sur ton clavier pour dicter ton repas.",
     "needsProvider": "Décrire un repas nécessite une connexion à une IA sur cet appareil.",
     "connect": "Connecter un fournisseur",
-    "searchInstead": "Rechercher plutôt dans la base de données alimentaire"
+    "searchInstead": "Rechercher plutôt dans la base de données alimentaire",
+    "pantry": {
+      "title": "Qu'est-ce que tu as chez toi ?",
+      "placeholder": "un demi-chou, six œufs, un pot de feta, 500 g de riz"
+    }
   },
   "diary": {
     "actions": {
@@ -3218,7 +3222,8 @@
     "errors": {
       "title": "L'opération a échoué",
       "failed": "Impossible de lire cela. Réessaie dans un instant.",
-      "nothingFound": "Aucun aliment trouvé sur cette photo. Rapproche-toi, ou saisis la liste."
+      "nothingFound": "Aucun aliment trouvé sur cette photo. Rapproche-toi, ou saisis la liste.",
+      "saveFailed": "Impossible d'enregistrer ta liste. Elle est toujours affichée sur cet écran, réessaie."
     }
   },
   "recipes": {
@@ -3249,7 +3254,8 @@
     },
     "errors": {
       "title": "L'opération a échoué",
-      "failed": "Impossible de composer un repas. Réessaie dans un instant."
+      "failed": "Impossible de composer un repas. Réessaie dans un instant.",
+      "logFailed": "Impossible d'enregistrer cela dans ton journal. Réessaie dans un instant."
     }
   }
 }
