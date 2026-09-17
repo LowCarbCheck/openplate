@@ -11,13 +11,15 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-09-17
+
 ### Added
 
-- **The app keeps a pantry, and cooks the rest of your day out of it.** Photograph a shelf or a fridge, or write what you have, and openplate turns it into a list of ingredients on the new Pantry screen, which you can correct line by line. The list stays on your device. From it, Suggest a meal proposes two or three recipes for the next meal, sized to the calories, protein, carbs and fat still open in your day, so a protein-heavy breakfast is not followed by a protein-heavy lunch. Each recipe shows what one serving costs against what is left and about what it weighs, you say how many servings you ate, and one tap writes them into the meal at that weight.
+- **The app keeps a pantry, and cooks the rest of your day out of it.** Photograph a shelf or a fridge, or write what you have, and openplate turns it into a list of ingredients on the new Pantry screen, which you can correct line by line. The list stays on your device. From it, Suggest a meal proposes two or three recipes for the next meal, sized to the calories, protein, carbs and fat still open in your day, so a protein-heavy breakfast is not followed by a protein-heavy lunch. Each recipe shows what one serving costs against what is left and about what it weighs, you say how many servings you ate, and one tap writes them into the meal at that weight. ([1326c77](https://github.com/LowCarbCheck/openplate/commit/1326c77)) ([7b609ac](https://github.com/LowCarbCheck/openplate/commit/7b609ac)) ([a21545f](https://github.com/LowCarbCheck/openplate/commit/a21545f)) ([69b3d7f](https://github.com/LowCarbCheck/openplate/commit/69b3d7f)) ([d7b0605](https://github.com/LowCarbCheck/openplate/commit/d7b0605)) ([745574e](https://github.com/LowCarbCheck/openplate/commit/745574e))
 
 ### Fixed
 
-- **A second photograph of your shelf no longer empties the pantry.** Confirming a reading only ever kept the lines that reading named, so photographing the fridge on Monday and the cupboard on Tuesday left you with the cupboard alone, and nothing said the rest had gone. A photograph or a written list now adds to the pantry, and removing a line in the list is still the way to take something off it. Two smaller repairs went with it: a list that fails to save says so and stays on screen instead of looking saved, and an amount typed as 1,5 is read as one and a half rather than as one.
+- **A second photograph of your shelf no longer empties the pantry.** Confirming a reading only ever kept the lines that reading named, so photographing the fridge on Monday and the cupboard on Tuesday left you with the cupboard alone, and nothing said the rest had gone. A photograph or a written list now adds to the pantry, and removing a line in the list is still the way to take something off it. Two smaller repairs went with it: a list that fails to save says so and stays on screen instead of looking saved, and an amount typed as 1,5 is read as one and a half rather than as one. ([196b907](https://github.com/LowCarbCheck/openplate/commit/196b907))
 
 ## [0.31.0] - 2026-09-14
 
