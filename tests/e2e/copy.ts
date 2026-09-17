@@ -40,6 +40,7 @@ const catalogSchema = z.object({
       nutritionToggle: z.string(),
     }),
     search: z.object({ addManually: z.string() }),
+    portion: z.object({ submit: z.string() }),
     meal: z.object({
       breakfast: z.string(),
       lunch: z.string(),
@@ -47,6 +48,7 @@ const catalogSchema = z.object({
       snack: z.string(),
     }),
   }),
+  bodyMetrics: z.object({ save: z.string(), sex: z.object({ male: z.string() }) }),
   launcher: z.object({
     moreOptions: z.string(),
     photo: z.string(),

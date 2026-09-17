@@ -3077,12 +3077,30 @@
       "exists": "{{email}} a déjà un compte ici.",
       "back": "Retour à la liste"
     },
+    "settings": {
+      "title": "Valeurs de référence",
+      "body": "Choisis quelles valeurs de référence pour les micronutriments cette instance affiche. Ce choix s'applique à tout le monde ici, dans toutes les langues.",
+      "basisLegend": "Publié par",
+      "basis": {
+        "dge": "Société allemande de nutrition (DGE)",
+        "efsa": "Autorité européenne de sécurité des aliments (EFSA)",
+        "us": "Académies nationales des États-Unis (NASEM)"
+      },
+      "reloadNotice": "Toute personne ayant déjà l'application ouverte continue de voir les anciennes valeurs jusqu'à ce qu'elle recharge la page, toi y compris. Chaque appareil lit ce paramètre une fois à l'ouverture d'un onglet.",
+      "submit": "Enregistrer",
+      "saving": "Enregistrement",
+      "saved": "Enregistré. Recharge la page pour voir les nouvelles valeurs.",
+      "failed": "Cette modification n'a pas abouti.",
+      "invalid": "Choisis l'une des trois options.",
+      "unavailable": "Ce serveur ne publie aucun paramètre de valeurs de référence, il n'y a donc rien à modifier ici."
+    },
     "tabs": {
       "label": "Sections de la console",
       "people": "Utilisateurs",
       "invitations": "Invitations",
       "activity": "Activité",
-      "feedback": "Rapports"
+      "feedback": "Rapports",
+      "settings": "Paramètres"
     },
     "filter": {
       "searchLabel": "Recherche",

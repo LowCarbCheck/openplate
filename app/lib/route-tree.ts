@@ -139,6 +139,7 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   { pattern: '/admin/activity', parent: '/admin' },
   { pattern: '/admin/people/:id', parent: '/admin' },
   { pattern: '/admin/invite', parent: '/admin' },
+  { pattern: '/admin/settings', parent: '/admin' },
   { pattern: '/admin/feedback', parent: '/admin' },
   { pattern: '/admin/feedback/:id', parent: '/admin/feedback' },
 ];

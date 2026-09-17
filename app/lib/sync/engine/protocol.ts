@@ -208,7 +208,46 @@ export type InstanceDescriptor = {
    * person is deciding whether to send a photograph of their food.
    */
   feedback?: { retentionDays: number };
+  /**
+   * Which body's micronutrient reference values this instance shows, or ABSENT
+   * on a service that has no answer to give (`PROTOCOL.md` §5.6, M234).
+   *
+   * TRANSCRIBED, like every literal in this file: `openplate-core` is the
+   * normative document and the two repositories cannot import each other, so
+   * the three names live here as a union a test pins.
+   *
+   * OPTIONAL, and it must stay optional. A service older than the field says
+   * nothing, a self-hoster running no core says nothing, and in both cases
+   * this client must send NO `basis` parameter and take the server's own
+   * default. A basis invented in the browser would show one body's numbers
+   * under another body's name.
+   *
+   * IT IS THE ONE FIELD HERE AN ADMINISTRATOR CAN CHANGE WITHOUT A REDEPLOY,
+   * through `PATCH /v1/admin/settings`. The handshake is read once per tab
+   * (`use-server-instance.ts`), so a person with the app already open keeps
+   * seeing the old basis until they reload, and the form that writes it says
+   * so.
+   */
+  nutrientReferenceBasis?: NutrientReferenceBasis;
 };
+
+/**
+ * The three bodies an instance may publish reference values from: the German
+ * DGE, the EU's EFSA, or the US NASEM figures.
+ *
+ * ONE BASIS PER INSTANCE, never per language and never per person. The type is
+ * spelled out here rather than imported from `#app/lib/nutrient-reference`
+ * because this file is the WIRE, and the two have to be free to disagree: a
+ * service could name a fourth body before this app knows what to do with it.
+ */
+export type NutrientReferenceBasis = 'dge' | 'efsa' | 'us';
+
+/** Every basis this client understands on the wire, in the order `PROTOCOL.md` lists them. */
+export const NUTRIENT_REFERENCE_BASES: readonly NutrientReferenceBasis[] = ['dge', 'efsa', 'us'];
+
+export function isNutrientReferenceBasis(value: JsonValue | undefined): value is NutrientReferenceBasis {
+  return NUTRIENT_REFERENCE_BASES.some((basis) => basis === value);
+}
 
 /**
  * What a service reports about itself, read by the client BEFORE its first
@@ -302,6 +341,13 @@ const instanceDescriptorSchema = z.object({
     .object({ retentionDays: z.number().int().positive() })
     .optional()
     .catch(undefined),
+  // `.optional()` because a service older than M234, and one with no answer to
+  // give, both send no key. `.catch(undefined)` because a fourth name is a
+  // basis this build cannot render: dropping it leaves the client asking for
+  // nothing and taking the server's default, which is the only honest
+  // degradation, and it must not fail the whole descriptor and take the AI
+  // model down with it.
+  nutrientReferenceBasis: z.enum(['dge', 'efsa', 'us']).optional().catch(undefined),
 });
 
 /** The decoder for {@link ProtocolHandshake}, the health endpoint is an I/O boundary, so its body is parsed, not assumed. */

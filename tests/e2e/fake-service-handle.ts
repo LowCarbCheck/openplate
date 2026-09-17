@@ -8,8 +8,10 @@
  * caching) on a good day and re-run the account creation on a bad one.
  */
 import type { FakeSyncService } from '../integration/fake-sync-service';
+import type { FakeFoodDb } from './fake-food-db';
 
 let running: FakeSyncService | null = null;
+let foodDb: FakeFoodDb | null = null;
 
 /** Records the service the setup started. */
 export function holdFakeService(service: FakeSyncService): void {
@@ -26,5 +28,18 @@ export async function releaseFakeService(): Promise<void> {
   if (running === null) return;
   const service = running;
   running = null;
+  await service.close();
+}
+
+/** Records the fake food database the setup started (M234 spec 07). */
+export function holdFakeFoodDb(service: FakeFoodDb): void {
+  foodDb = service;
+}
+
+/** Closes and forgets it. A listening socket here keeps the runner alive exactly as the sync one does. */
+export async function releaseFakeFoodDb(): Promise<void> {
+  if (foodDb === null) return;
+  const service = foodDb;
+  foodDb = null;
   await service.close();
 }

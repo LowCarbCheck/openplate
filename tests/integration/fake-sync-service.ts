@@ -485,6 +485,8 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
   const withdrawals: StoredWithdrawal[] = [];
   const observed: ObservedRequest[] = [];
   let nextAccountId = 1;
+  /** What `/health` says about reference values. `dge` is the service's own default (M234). */
+  let nutrientReferenceBasis: 'dge' | 'efsa' | 'us' = 'dge';
 
   const app: Express = express();
 
@@ -641,8 +643,42 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
       // Protocol 2's instance block. `ai.model` is what the client's derived
       // managed settings read; `mail: false` says an invite or a reset is a
       // link somebody copies by hand, which is what this fake does.
-      instance: { name: 'openplate-fake', language: 'en', mail: false, ai: { model: 'fake/vision-1' } },
+      instance: {
+        name: 'openplate-fake',
+        language: 'en',
+        mail: false,
+        // WHOSE REFERENCE VALUES THIS INSTANCE SHOWS (M234). Held in a
+        // variable rather than written out here, because the whole point of
+        // the field is that it changes while the service runs: an
+        // administrator writes it and the next read of this document carries
+        // the new answer.
+        nutrientReferenceBasis,
+        ai: { model: 'fake/vision-1' },
+      },
     });
+  });
+
+  /**
+   * `POST /__e2e__/instance-settings` — the reference basis, set from outside
+   * this process.
+   *
+   * NOT PROTOCOL, AND DELIBERATELY NOT SPELLED LIKE IT. The real service
+   * changes this with `PATCH /v1/admin/settings`, behind an administrator's
+   * token, and this fake implements no admin API at all. What the browser tier
+   * needs is the OTHER half of that story: an instance whose `/health` says
+   * something new on the next read. The Playwright runner starts this service
+   * in one process and runs its specs in another, so the seam has to be
+   * reachable over HTTP; the `__e2e__` prefix is there so nobody mistakes it
+   * for a route a client may call.
+   */
+  app.post('/__e2e__/instance-settings', (req, res) => {
+    const parsed = z.object({ nutrientReferenceBasis: z.enum(['dge', 'efsa', 'us']) }).safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'nutrientReferenceBasis must be one of dge, efsa, us' });
+      return;
+    }
+    nutrientReferenceBasis = parsed.data.nutrientReferenceBasis;
+    res.json({ settings: { nutrientReferenceBasis } });
   });
 
   // ---------------------------------------------------------------------

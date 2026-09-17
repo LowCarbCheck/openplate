@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **An administrator chooses whose reference values the instance shows.** A new Settings tab in the administration console picks between the German DGE, the EU's EFSA and the US NASEM figures, and every device on the instance follows it on the Nutrients screen, in every language. The footnote under each nutrient still names the document the number came from, so the change is visible where the number is. A device that already has the app open keeps showing the old values until the page is reloaded, and the form says so. An instance running no openplate-core, or one older than this setting, is unaffected and keeps whatever its own server was configured with.
+
 ## [0.32.0] - 2026-09-17
 
 ### Added

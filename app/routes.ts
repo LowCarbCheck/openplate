@@ -280,6 +280,11 @@ export default [
       route('activity', 'routes/admin.activity.tsx'),
       route('people/:id', 'routes/admin.people.$id.tsx'),
       route('invite', 'routes/admin.invite.tsx'),
+      // The instance's own settings (M234 spec 07), the one field on the
+      // handshake an administrator can change without a redeploy. A tab rather
+      // than a row on a list, because it is about the instance and not about
+      // whoever is on screen.
+      route('settings', 'routes/admin.settings.tsx'),
       // Reported estimates (M200 spec 06). A SECOND gate on top of the
       // layout's: both routes 404 on an instance whose server accepts no
       // reports, because the service answers 404 on that whole subtree and an

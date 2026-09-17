@@ -8,7 +8,7 @@
  * service has to be told to take it. `tests/integration/fake-sync-service.ts`
  * grew its `port` option for exactly this caller and for no other.
  *
- * The two ports are in the 52xx range so a dev server on 3000 and a seeded
+ * The three ports are in the 52xx range so a dev server on 3000 and a seeded
  * instance on 3007 can both keep running while this tier does.
  */
 
@@ -18,11 +18,23 @@ export const E2E_APP_PORT = 5299;
 /** Where the fake sync service listens for this tier. */
 export const E2E_SYNC_PORT = 5298;
 
+/** Where the fake LowCarbCheck listens for this tier (M234 spec 07). */
+export const E2E_FOOD_DB_PORT = 5297;
+
 /** The app's base URL, also `use.baseURL` and the `webServer` readiness probe. */
 export const E2E_APP_URL = `http://127.0.0.1:${E2E_APP_PORT}`;
 
 /** The sync service's base URL, handed to the app as `SYNC_SERVER_URL`. */
 export const E2E_SYNC_SERVER_URL = `http://127.0.0.1:${E2E_SYNC_PORT}`;
+
+/**
+ * The food database's base URL, handed to the app as `FOOD_DB_API_URL`.
+ *
+ * NAMED HERE FOR EVERY SPEC, not only the one that reads reference values:
+ * without it the production server would ask the real lowcarbcheck.org on
+ * every search, which is somebody else's uptime inside this tier.
+ */
+export const E2E_FOOD_DB_URL = `http://127.0.0.1:${E2E_FOOD_DB_PORT}`;
 
 /**
  * The fixture account, created once in `global-setup.ts`.

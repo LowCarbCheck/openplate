@@ -1427,6 +1427,13 @@
     "at": "2026-09-14",
     "it": "Il tuo piano è terminato."
   },
+  "13d65e3748a7e2e8": {
+    "en": "German Nutrition Society (DGE)",
+    "path": "common:admin.settings.basis.dge",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Società tedesca di nutrizione (DGE)"
+  },
   "13da6e390cffe678": {
     "en": "Fingerprint of the current key",
     "path": "common:research.console.identity.fingerprintLabel",
@@ -1825,6 +1832,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Il tuo account è configurato su questo dispositivo."
+  },
+  "1985b8cb26ede307": {
+    "en": "Save",
+    "path": "common:admin.settings.submit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Salva"
   },
   "1993915d65b18af9": {
     "en": "The diary lives on this device",
@@ -2512,6 +2526,13 @@
     "at": "2026-09-14",
     "it": "Tutti i dati su questo dispositivo hanno raggiunto il server."
   },
+  "21d559836f8882bb": {
+    "en": "Published by",
+    "path": "common:admin.settings.basisLegend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Pubblicati da"
+  },
   "21deed37db8d6403": {
     "en": "Add to diary",
     "path": "common:add.portion.submit",
@@ -2897,6 +2918,13 @@
     "at": "2026-09-14",
     "it": "Ultimo controllo"
   },
+  "283c930c1117a707": {
+    "en": "Phone",
+    "path": "legal:imprint.phoneLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Telefono"
+  },
   "2855609a5d65723c": {
     "en": "Try again",
     "path": "common:errors.tryAgain",
@@ -3260,6 +3288,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Annulla"
+  },
+  "2e5e40215e40366c": {
+    "en": "Settings",
+    "path": "common:admin.tabs.settings",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Impostazioni"
   },
   "2e72364c71e11afa": {
     "en": "AI plate identification is bring-your-own-key (BYOK) and runs entirely on your device. You connect your own AI provider (an OpenAI-compatible endpoint or Anthropic) and supply your own API key. That key is stored only on your device, and when you scan a plate the photo is sent straight from your browser to your provider using your key. Neither the key nor the photo ever passes through our servers. Your AI provider is a separate third party that you choose and that bills you directly under your own account. We have no relationship with, and no liability for, that provider’s service, pricing, availability, output, or how it handles your photo; that is governed by the provider’s own terms and privacy policy, not by us. You are responsible for your own usage costs with your provider.",
@@ -3947,6 +3982,13 @@
     "at": "2026-09-14",
     "it": "Riprova"
   },
+  "3a262e2d552d89ac": {
+    "en": "Saving",
+    "path": "common:admin.settings.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Salvataggio in corso"
+  },
   "3a2b7d3a0375aaa0": {
     "en": "Each photo you scan afterward is analyzed by your chosen provider and is never stored by openplate.",
     "path": "common:oauth.connect.photoNote",
@@ -4233,6 +4275,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Carboidrati netti (sopra) = Carboidrati meno Fibre, meno eventuali polioli."
+  },
+  "3fb0022b9e1ca172": {
+    "en": "European Food Safety Authority (EFSA)",
+    "path": "common:admin.settings.basis.efsa",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Autorità europea per la sicurezza alimentare (EFSA)"
   },
   "3fc696a53c2db27a": {
     "en": "Plate photo",
@@ -5851,6 +5900,13 @@
     "at": "2026-09-14",
     "it": "Vitamina B1 (tiamina)"
   },
+  "5650abe1b150a2ec": {
+    "en": "Anyone with the app already open keeps seeing the old values until they reload the page, and that includes you. Each device reads this setting once when it opens a tab.",
+    "path": "common:admin.settings.reloadNotice",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Chi ha già l'app aperta continuerà a vedere i vecchi valori fino al ricaricamento della pagina, te compreso. Ogni dispositivo legge questa impostazione una sola volta quando apre una scheda."
+  },
   "56777c9c29007f41": {
     "en": "Remove {{name}}?",
     "path": "common:add.custom.removeTitle",
@@ -6004,6 +6060,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Registrazione in corso…"
+  },
+  "5857b88cc8b73175": {
+    "en": "This server publishes no reference values setting, so there is nothing to change here.",
+    "path": "common:admin.settings.unavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Questo server non pubblica alcuna impostazione sui valori di riferimento, quindi non c'è nulla da modificare."
   },
   "587a31397c63c476": {
     "en": "Cancel",
@@ -6494,6 +6557,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Scegli voci…"
+  },
+  "5f6b1e4af32fc3ff": {
+    "en": "Saved. Reload the page to see the new values.",
+    "path": "common:admin.settings.saved",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Salvataggio completato. Ricarica la pagina per vedere i nuovi valori."
   },
   "5f95cce3486dc611": {
     "en": "Enter your password.",
@@ -8189,6 +8259,13 @@
     "at": "2026-09-14",
     "it": "Avete verificato questa impronta insieme. Ogni aggiornamento successivo viene sigillato con la stessa chiave."
   },
+  "7821543e91f2fa31": {
+    "en": "That change did not go through.",
+    "path": "common:admin.settings.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "La modifica non è andata a buon fine."
+  },
   "7837aed7b87cebac": {
     "en": "Latest",
     "path": "common:trends.weight.stat.latest",
@@ -9834,6 +9911,13 @@
     "at": "2026-09-14",
     "it": "Informativa sulla privacy · openplate"
   },
+  "8e87affb1602c8ec": {
+    "en": "US National Academies (NASEM)",
+    "path": "common:admin.settings.basis.us",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Accademie nazionali statunitensi (NASEM)"
+  },
   "8e8aebfa1bd0cfc4": {
     "en": "{{name}} is back in your diary.",
     "path": "common:diary.toast.restored",
@@ -11066,6 +11150,13 @@
     "at": "2026-09-14",
     "it": "Vuoi eliminare questa pesata?"
   },
+  "a1276b1d8954f540": {
+    "en": "Choose whose micronutrient reference values this instance shows. The choice applies to everybody here, in every language.",
+    "path": "common:admin.settings.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Scegli i valori di riferimento per i micronutrienti mostrati da questa istanza. La scelta si applica a tutte le persone che la usano, in qualsiasi lingua."
+  },
   "a168fe81a91f0c7d": {
     "en": "Goals met",
     "path": "common:trends.grid.legendRamp",
@@ -12038,6 +12129,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "it": "Operazione non riuscita"
+  },
+  "b09b8b6047637931": {
+    "en": "Reference values",
+    "path": "common:admin.settings.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Valori di riferimento"
   },
   "b0b201218a18f83b": {
     "en": "Your email address and your password.",
@@ -16112,6 +16210,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Grammi"
+  },
+  "eed9155e2803ff21": {
+    "en": "Pick one of the three.",
+    "path": "common:admin.settings.invalid",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "it": "Scegline uno tra i tre."
   },
   "eee87c290883e744": {
     "en": "{{carbs}} net carbs on {{day}}.",

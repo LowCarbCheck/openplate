@@ -3077,12 +3077,30 @@
       "exists": "{{email}} adresinin burada zaten bir hesabı var.",
       "back": "Listeye geri dön"
     },
+    "settings": {
+      "title": "Referans değerler",
+      "body": "Bu kurulumun hangi mikro besin referans değerlerini göstereceğini seç. Bu seçim buradaki herkes için her dilde geçerli olur.",
+      "basisLegend": "Yayımlayan:",
+      "basis": {
+        "dge": "Alman Beslenme Derneği (DGE)",
+        "efsa": "Avrupa Gıda Güvenliği Otoritesi (EFSA)",
+        "us": "ABD Ulusal Akademileri (NASEM)"
+      },
+      "reloadNotice": "Uygulamayı zaten açmış olan herkes, sen de dahil, sayfayı yeniden yükleyene kadar eski değerleri görmeye devam eder. Her cihaz, bir sekme açtığında bu ayarı bir kez okur.",
+      "submit": "Kaydet",
+      "saving": "Kaydediliyor",
+      "saved": "Kaydedildi. Yeni değerleri görmek için sayfayı yeniden yükle.",
+      "failed": "Bu değişiklik uygulanamadı.",
+      "invalid": "Üçünden birini seç.",
+      "unavailable": "Bu sunucu bir referans değerleri ayarı yayımlamıyor, bu yüzden burada değiştirilecek bir şey yok."
+    },
     "tabs": {
       "label": "Konsol bölümleri",
       "people": "Kişiler",
       "invitations": "Davetler",
       "activity": "Etkinlik",
-      "feedback": "Raporlar"
+      "feedback": "Raporlar",
+      "settings": "Ayarlar"
     },
     "filter": {
       "searchLabel": "Ara",

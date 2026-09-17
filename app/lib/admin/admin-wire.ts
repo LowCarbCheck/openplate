@@ -300,3 +300,37 @@ export const feedbackListSchema = z.object({
   total: z.number().int(),
 });
 export const feedbackReportResponseSchema = z.object({ report: feedbackReportDetailSchema });
+
+// ─── The instance's own settings ────────────────────────────────────────────
+//
+// `PATCH /v1/admin/settings`, transcribed from `openplate-core/PROTOCOL.md`
+// §5.20's route table and §5.6's handshake paragraph. The request is
+// `{"nutrientReferenceBasis": "dge" | "efsa" | "us"}` and the answer is
+// `{"settings": {...}}`, WRAPPED like every other admin response, which is the
+// shape `adminStatsResponseSchema` above records getting wrong once.
+//
+// The same three names are transcribed a second time, in
+// `#app/lib/sync/engine/protocol`, because that is where `/health` publishes
+// the value. Both copies are pinned by `tests/unit/admin-wire.test.ts`, and
+// openplate-core pins its own in `tests/unit/admin-contract.test.ts`.
+
+/** Whose micronutrient reference values this instance shows. `'dge' | 'efsa' | 'us'` on the wire. */
+export const nutrientReferenceBasisSchema = z.union([z.literal('dge'), z.literal('efsa'), z.literal('us')]);
+export type NutrientReferenceBasis = z.infer<typeof nutrientReferenceBasisSchema>;
+
+/** The three, in the order `PROTOCOL.md` lists them, for a form that has to draw one control per choice. */
+export const NUTRIENT_REFERENCE_BASES: readonly NutrientReferenceBasis[] = ['dge', 'efsa', 'us'];
+
+/**
+ * What the instance holds after the write.
+ *
+ * READ BACK, NEVER ECHOED. The service answers with what its process now
+ * holds rather than with the request body, so a page that reported "saved"
+ * for a write that did not land would have to be lied to by the service
+ * itself.
+ */
+export const instanceSettingsSchema = z.object({ nutrientReferenceBasis: nutrientReferenceBasisSchema });
+export type AdminInstanceSettings = z.infer<typeof instanceSettingsSchema>;
+
+/** The envelope `PATCH /v1/admin/settings` answers in. */
+export const instanceSettingsResponseSchema = z.object({ settings: instanceSettingsSchema });

@@ -1,5 +1,5 @@
 /**
- * The console's three tabs: people, invitations, activity.
+ * The console's tabs: people, invitations, activity, reports, settings.
  *
  * ── Links, not a widget ──────────────────────────────────────────────────
  *
@@ -30,10 +30,10 @@ import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 
 /** The tabs, by name. A detail page is not one of them; it lights the list it came from. */
-export type AdminTab = 'people' | 'invitations' | 'activity' | 'feedback';
+export type AdminTab = 'people' | 'invitations' | 'activity' | 'feedback' | 'settings';
 
 /** Every tab this console can draw, in the order they are shown. Whether the last one is drawn is an instance's answer. */
-export const ADMIN_TABS: readonly AdminTab[] = ['people', 'invitations', 'activity', 'feedback'];
+export const ADMIN_TABS: readonly AdminTab[] = ['people', 'invitations', 'activity', 'feedback', 'settings'];
 
 /** Where each tab goes. */
 export const ADMIN_TAB_PATH = {
@@ -41,6 +41,7 @@ export const ADMIN_TAB_PATH = {
   invitations: '/admin/invitations',
   activity: '/admin/activity',
   feedback: '/admin/feedback',
+  settings: '/admin/settings',
 } satisfies Record<AdminTab, string>;
 
 /** The copy key for each tab's label. */
@@ -49,6 +50,7 @@ export const ADMIN_TAB_LABEL_KEY = {
   invitations: 'admin.tabs.invitations',
   activity: 'admin.tabs.activity',
   feedback: 'admin.tabs.feedback',
+  settings: 'admin.tabs.settings',
 } satisfies Record<AdminTab, string>;
 
 /**
@@ -60,6 +62,10 @@ export const ADMIN_TAB_LABEL_KEY = {
  * console.
  */
 export function activeAdminTab(pathname: string): AdminTab {
+  // BEFORE the invitations line, which would otherwise never be reached for
+  // this path: `/admin/settings` does not start with `/admin/invite`, but the
+  // two names are close enough that the order is worth stating.
+  if (pathname.startsWith('/admin/settings')) return 'settings';
   if (pathname.startsWith('/admin/invitations') || pathname.startsWith('/admin/invite')) return 'invitations';
   if (pathname.startsWith('/admin/activity')) return 'activity';
   // Before the fall-through, and it covers `/admin/feedback/:id` too: one

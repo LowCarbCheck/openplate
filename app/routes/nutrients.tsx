@@ -66,6 +66,8 @@ import {
 } from '#app/lib/nutrient-reference';
 import type { NutrientRow, NutrientSourceFood, ReferenceAmount } from '#app/lib/nutrient-reference';
 import { fetchNutrientReferenceList, fetchNutrientSources } from '#app/lib/nutrient-reference-client';
+import { readCachedServerInstance } from '#app/hooks/use-server-instance';
+import { CONFIG } from '#app/config';
 import type { NutrientKey } from '#app/lib/micronutrients';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
@@ -122,9 +124,19 @@ function parseRange(raw: string | null): NutrientRange {
 // public, person-independent reference table fetched from the client)
 //////////////////////////////////////////////////////////////////////////////
 
-/** No server work. Present so an offline client-side navigation resolves without a `.data` fetch. */
+/**
+ * ONE ANSWER: does this instance have a sync server, and where.
+ *
+ * That is the address the browser asks whose reference values to show
+ * (`/health`, M234 spec 07). It is read here rather than in the client loader
+ * because `CONFIG` is server-side: the browser never holds it.
+ *
+ * `null` is an instance with no server, which is the default and the
+ * self-hoster's ordinary state. The client loader then asks `/api/nutrients`
+ * for nothing in particular and takes this app's own default basis.
+ */
 export async function loader() {
-  return {};
+  return { syncServerUrl: CONFIG.sync.syncServerUrl };
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -151,7 +163,13 @@ export interface NutrientsData {
   hasReferenceMetrics: boolean;
 }
 
-export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise<NutrientsData> {
+export async function clientLoader({ request, serverLoader }: Route.ClientLoaderArgs): Promise<NutrientsData> {
+  // FAIL OPEN ON THE SERVER READ, like everything else on this screen. On
+  // hydration this is the document's own data and costs no request; on a
+  // client-side navigation it is one `.data` fetch, and offline it rejects.
+  // A rejection here must not take the log down with it, so it degrades to
+  // "no server", which degrades to "no basis", which is the server's default.
+  const config = await serverLoader().catch(() => ({ syncServerUrl: null }));
   const profile = await getLocalProfileGoals();
   const timezone = resolveLocalTimezone(profile);
   const toDate = todayInTimezone(timezone);
@@ -166,9 +184,16 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     },
   );
 
+  // WHOSE REFERENCE VALUES THIS INSTANCE SHOWS, straight off the handshake
+  // the app already reads once per tab (M234 spec 07). ABSENT IS NOT A
+  // DEFAULT: a service older than the field, and an instance with no server at
+  // all, both leave this `null`, and the request then names no basis and takes
+  // whatever this app's own server is configured with. A basis invented here
+  // would show one body's numbers under another body's name.
+  const instance = config.syncServerUrl === null ? null : await readCachedServerInstance(config.syncServerUrl);
   // Fail-open: `[]` here (API off, offline, upstream down) means every row
   // reports "no published reference" and the screen still shows the log.
-  const references = await fetchNutrientReferenceList();
+  const references = await fetchNutrientReferenceList({ basis: instance?.nutrientReferenceBasis ?? null });
   const metrics = readBodyMetrics(profile);
   const rows = buildNutrientRows({
     byNutrient: window.byNutrient,
@@ -276,8 +301,11 @@ function ReferenceFootnote({ reference }: { reference: ReferenceAmount }): React
         band: t(`nutrients.band.${reference.segment.band}`),
       });
 
+  // `data-slot` because the browser tier reads these lines back to check that
+  // the screen followed the instance's reference basis, and the only stable
+  // handle on a line of prose is the one the markup states.
   return (
-    <p className="text-xs text-muted-foreground">
+    <p data-slot="reference-footnote" className="text-xs text-muted-foreground">
       {t('nutrients.reference.footnote', { segment, source: reference.source })}
     </p>
   );

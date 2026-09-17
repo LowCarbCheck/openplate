@@ -34,6 +34,7 @@ import {
   deliverySchema,
   feedbackListSchema,
   feedbackReportResponseSchema,
+  instanceSettingsResponseSchema,
   inviteCreatedSchema,
   inviteListSchema,
   type AccountRole,
@@ -44,10 +45,12 @@ import {
   type AdminActivityWindow,
   type AdminFeedbackReport,
   type AdminFeedbackReportDetail,
+  type AdminInstanceSettings,
   type AdminStats,
   type Delivery,
   type InviteCreated,
   type InviteView,
+  type NutrientReferenceBasis,
 } from './admin-wire';
 import type { AuthorizedBytes, AuthorizedMethod } from '../sync/engine/client/auth-client';
 import type { JsonValue } from '../sync/engine/protocol';
@@ -388,6 +391,34 @@ export class AdminClient {
       if (isSyncRequestError(error) && error.kind === 'not-found') return { status: 'ok', value: undefined };
       throw error;
     }
+  }
+
+  /**
+   * Sets the instance-wide micronutrient reference basis (M234).
+   *
+   * THE ONE WRITE ON THIS CLIENT THAT CHANGES WHAT EVERYBODY SEES, rather than
+   * what one account may do. It is here rather than on a settings client of its
+   * own because it is behind the same door as everything else on this page: an
+   * administrator's own access token, and a `403` that is a value the form
+   * renders.
+   *
+   * A `400` THROWS. The form has already refused anything that is not one of
+   * the three names, so a refusal from the service means the two disagree about
+   * the contract, which is a failure to report rather than an outcome to draw.
+   *
+   * A `404` THROWS TOO, and it is the ordinary answer from a service older than
+   * M234. There is nothing a page can do about that except say the change did
+   * not go through, which is what the caller's failure branch says.
+   */
+  async patchSettings(input: { nutrientReferenceBasis: NutrientReferenceBasis }): Promise<
+    AdminOutcome<AdminInstanceSettings>
+  > {
+    return this.send({
+      path: `${ADMIN_API_PREFIX}/settings`,
+      method: 'PATCH',
+      body: { nutrientReferenceBasis: input.nutrientReferenceBasis },
+      parse: (body) => instanceSettingsResponseSchema.parse(body).settings,
+    });
   }
 
   /** The four counts across the top of the page, unwrapped from the `{"stats": …}` envelope. */

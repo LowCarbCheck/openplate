@@ -42,7 +42,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
 
-import { E2E_APP_PORT, E2E_APP_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
+import { E2E_APP_PORT, E2E_APP_URL, E2E_FOOD_DB_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
 
 /** The build artefact the production server serves. */
 const SERVER_BUNDLE = 'build/server/index.js';
@@ -105,7 +105,12 @@ export default defineConfig({
   webServer: {
     command:
       `cross-env NODE_ENV=production PORT=${E2E_APP_PORT} HOST=127.0.0.1 ` +
-      `APP_URL=${E2E_APP_URL} SYNC_SERVER_URL=${E2E_SYNC_SERVER_URL} tsx ./server.ts`,
+      `APP_URL=${E2E_APP_URL} SYNC_SERVER_URL=${E2E_SYNC_SERVER_URL} ` +
+      // THE FOOD DATABASE IS A FAKE IN THIS TIER (`tests/e2e/fake-food-db.ts`).
+      // Left unset, the production server asks the real lowcarbcheck.org, so a
+      // smoke tier would depend on somebody else's uptime and assert against
+      // numbers this repository does not hold.
+      `FOOD_DB_API_URL=${E2E_FOOD_DB_URL} tsx ./server.ts`,
     url: `${E2E_APP_URL}/`,
     // NEVER REUSE. A server left over from an earlier run is serving an earlier
     // build, which is the "you verified yesterday's build" failure.

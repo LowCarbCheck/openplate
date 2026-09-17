@@ -3077,12 +3077,30 @@
       "exists": "{{email}} already has an account here.",
       "back": "Back to the list"
     },
+    "settings": {
+      "title": "Reference values",
+      "body": "Choose whose micronutrient reference values this instance shows. The choice applies to everybody here, in every language.",
+      "basisLegend": "Published by",
+      "basis": {
+        "dge": "German Nutrition Society (DGE)",
+        "efsa": "European Food Safety Authority (EFSA)",
+        "us": "US National Academies (NASEM)"
+      },
+      "reloadNotice": "Anyone with the app already open keeps seeing the old values until they reload the page, and that includes you. Each device reads this setting once when it opens a tab.",
+      "submit": "Save",
+      "saving": "Saving",
+      "saved": "Saved. Reload the page to see the new values.",
+      "failed": "That change did not go through.",
+      "invalid": "Pick one of the three.",
+      "unavailable": "This server publishes no reference values setting, so there is nothing to change here."
+    },
     "tabs": {
       "label": "Console sections",
       "people": "People",
       "invitations": "Invitations",
       "activity": "Activity",
-      "feedback": "Reports"
+      "feedback": "Reports",
+      "settings": "Settings"
     },
     "filter": {
       "searchLabel": "Search",

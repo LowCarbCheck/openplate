@@ -7,8 +7,8 @@
  *     memory can leave a truncated cache file that crashes every later run
  *     before a single page opens; see `font-cache.ts` for why and how.
  *
- *  2. STAND UP THE FAKE SYNC SERVICE on the port `playwright.config.ts` has
- *     already handed the app as `SYNC_SERVER_URL`.
+ *  2. STAND UP THE TWO FAKE SERVICES on the ports `playwright.config.ts` has
+ *     already handed the app as `SYNC_SERVER_URL` and `FOOD_DB_API_URL`.
  *
  *  3. PUT ONE ACCOUNT ON IT. `push-activation` needs a device with a session,
  *     because `enablePush` asks the vault for an account before it asks the
@@ -25,8 +25,9 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { startFakeSyncService } from '../integration/fake-sync-service';
-import { E2E_ACCOUNT_EMAIL, E2E_INVITE_TOKEN_VAR, E2E_SYNC_PORT } from './env';
-import { holdFakeService } from './fake-service-handle';
+import { E2E_ACCOUNT_EMAIL, E2E_FOOD_DB_PORT, E2E_INVITE_TOKEN_VAR, E2E_SYNC_PORT } from './env';
+import { holdFakeFoodDb, holdFakeService } from './fake-service-handle';
+import { startFakeFoodDb } from './fake-food-db';
 import { resetFontconfigCache } from './font-cache';
 
 /** The ceremony that redeems the invite, run under `tsx`. */
@@ -63,6 +64,11 @@ export default async function globalSetup(): Promise<void> {
 
   const service = await startFakeSyncService({ port: E2E_SYNC_PORT });
   holdFakeService(service);
+
+  // The published food and reference data the app reads through its own
+  // server. On the port `playwright.config.ts` already handed it as
+  // `FOOD_DB_API_URL`, for the same reason the sync one is named.
+  holdFakeFoodDb(await startFakeFoodDb({ port: E2E_FOOD_DB_PORT }));
 
   await redeemInvite(service.createInvite({ email: E2E_ACCOUNT_EMAIL }));
 }

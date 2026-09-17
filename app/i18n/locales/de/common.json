@@ -3077,12 +3077,30 @@
       "exists": "{{email}} hat hier bereits ein Konto.",
       "back": "Zurück zur Liste"
     },
+    "settings": {
+      "title": "Referenzwerte",
+      "body": "Wähle aus, wessen Mikronährstoff-Referenzwerte diese Instanz anzeigt. Die Auswahl gilt für alle hier, in jeder Sprache.",
+      "basisLegend": "Veröffentlicht von",
+      "basis": {
+        "dge": "Deutsche Gesellschaft für Ernährung (DGE)",
+        "efsa": "Europäische Behörde für Lebensmittelsicherheit (EFSA)",
+        "us": "US-amerikanische Nationale Akademien (NASEM)"
+      },
+      "reloadNotice": "Jeder, der die App bereits geöffnet hat, sieht weiterhin die alten Werte, bis die Seite neu geladen wird, und das schließt dich ein. Jedes Gerät liest diese Einstellung einmalig beim Öffnen eines Tabs aus.",
+      "submit": "Speichern",
+      "saving": "Wird gespeichert",
+      "saved": "Gespeichert. Lade die Seite neu, um die neuen Werte zu sehen.",
+      "failed": "Diese Änderung wurde nicht übernommen.",
+      "invalid": "Wähle eine der drei Optionen.",
+      "unavailable": "Dieser Server gibt keine Einstellung für Referenzwerte vor, daher kann hier nichts geändert werden."
+    },
     "tabs": {
       "label": "Bereiche",
       "people": "Personen",
       "invitations": "Einladungen",
       "activity": "Aktivität",
-      "feedback": "Meldungen"
+      "feedback": "Meldungen",
+      "settings": "Einstellungen"
     },
     "filter": {
       "searchLabel": "Suche",
