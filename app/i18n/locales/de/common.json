@@ -3187,7 +3187,7 @@
     "lead": "Was du zu Hause hast. Fotografiere ein Regal oder schreibe die Liste.",
     "empty": "Hier ist noch nichts. Fotografiere deinen Kühlschrank oder schreibe auf, was du hast.",
     "composerLabel": "Was hast du da?",
-    "reading": "Bestand wird gelesen...",
+    "reading": "Einträge werden gelesen...",
     "door": {
       "title": "Was ist im Kühlschrank?",
       "line": "Fotografiere ein Regal und behalte die Liste auf diesem Gerät."
@@ -3200,14 +3200,14 @@
     },
     "review": {
       "title": "Liste prüfen",
-      "lead": "Korrigiere Fehler, dann speichere den Eintrag.",
+      "lead": "Korrigiere Fehler und speichere den Eintrag anschließend.",
       "nameLabel": "Eintrag",
       "amountLabel": "Menge",
       "unitLabel": "Einheit",
       "unitNone": "Keine Menge",
       "removeAria": "{{name}} entfernen",
-      "addLine": "Zeile hinzufügen",
-      "confirm": "Diese Liste behalten",
+      "addLine": "Eintrag hinzufügen",
+      "confirm": "Diese Liste speichern",
       "discard": "Verwerfen",
       "saveList": "Liste speichern",
       "saving": "Wird gespeichert..."
@@ -3218,14 +3218,14 @@
     "errors": {
       "title": "Das hat nicht geklappt",
       "failed": "Das konnte nicht gelesen werden. Versuche es gleich noch einmal.",
-      "nothingFound": "Darin wurden keine Lebensmittel gefunden. Versuche es mit einer Nahaufnahme oder schreibe die Liste."
+      "nothingFound": "Auf diesem Bild wurde kein Essen gefunden. Nimm ein näheres Foto auf oder schreibe die Liste."
     }
   },
   "recipes": {
     "title": "Rezepte",
-    "lead": "Was du als Nächstes aus deinem Vorrat kochen könntest, angepasst an dein restliches Tageskontingent.",
+    "lead": "Mahlzeiten, die du aus deinem Vorrat kochen kannst, angepasst an das restliche Kontingent deines Tages.",
     "slotLabel": "Mahlzeit",
-    "asking": "Berechne passende Optionen...",
+    "asking": "Es wird geprüft, was passt...",
     "prepMinutes": "{{minutes}} Min.",
     "ingredients": "Zutaten",
     "notInPantry": "nicht in deinem Vorrat",
@@ -3242,7 +3242,7 @@
     },
     "errors": {
       "title": "Das hat nicht geklappt",
-      "failed": "Wir konnten keine Mahlzeit zusammenstellen. Versuche es gleich noch einmal."
+      "failed": "Es konnte keine Mahlzeit zusammengestellt werden. Versuche es gleich noch einmal."
     }
   }
 }

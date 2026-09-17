@@ -3187,7 +3187,7 @@
     "lead": "Evde neyin var. Bir rafın fotoğrafını çek veya listeyi yaz.",
     "empty": "Burada henüz bir şey yok. Buzdolabının fotoğrafını çek veya elindekileri yaz.",
     "composerLabel": "Neyin var?",
-    "reading": "Elindekiler okunuyor...",
+    "reading": "Öğelerin okunuyor...",
     "door": {
       "title": "Buzdolabında ne var?",
       "line": "Bir rafın fotoğrafını çek ve listeyi bu cihazda tut."
@@ -3200,14 +3200,14 @@
     },
     "review": {
       "title": "Listeyi kontrol et",
-      "lead": "Yanlış olan her şeyi düzelt, ardından sakla.",
+      "lead": "Yanlış olanları düzelt, ardından kaydet.",
       "nameLabel": "Öğe",
       "amountLabel": "Miktar",
       "unitLabel": "Birim",
       "unitNone": "Miktar yok",
       "removeAria": "{{name}} öğesini kaldır",
-      "addLine": "Satır ekle",
-      "confirm": "Bu listeyi sakla",
+      "addLine": "Öğe ekle",
+      "confirm": "Bu listeyi kaydet",
       "discard": "Sil",
       "saveList": "Listeyi kaydet",
       "saving": "Kaydediliyor..."
@@ -3218,14 +3218,14 @@
     "errors": {
       "title": "Bu işe yaramadı",
       "failed": "Bu okunamadı. Birazdan tekrar dene.",
-      "nothingFound": "Bunda yiyecek bulunamadı. Daha yakından çekmeyi dene veya listeyi yaz."
+      "nothingFound": "Bu fotoğrafta yiyecek bulunamadı. Daha yakından çek veya listeyi yaz."
     }
   },
   "recipes": {
     "title": "Tarifler",
-    "lead": "Kilerindekilerle pişirebileceğin, gününden geriye kalan kotana göre ayarlanmış yemekler.",
+    "lead": "Kilerindekilerle pişirebileceğin, gününden geriye kalanlara göre porsiyonlanmış yemekler.",
     "slotLabel": "Öğün",
-    "asking": "Neyin uyduğu hesaplanıyor...",
+    "asking": "Neyin uyduğu kontrol ediliyor...",
     "prepMinutes": "{{minutes}} dk",
     "ingredients": "Malzemeler",
     "notInPantry": "kilerinde yok",
@@ -3242,7 +3242,7 @@
     },
     "errors": {
       "title": "Bu işe yaramadı",
-      "failed": "Bir öğün oluşturamadık. Birazdan tekrar dene."
+      "failed": "Bir yemek oluşturamadık. Birazdan tekrar dene."
     }
   }
 }

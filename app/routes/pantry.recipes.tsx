@@ -46,28 +46,27 @@ import { MealSelectField } from '#app/components/meal-select-field';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
+import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { MEAL_TYPES } from '#app/lib/meal-choice';
 import { mealTypeForTime } from '#app/lib/meal-time';
 import { trackFoodLogged } from '#app/lib/matomo-events';
 import { buildRecipeLogEntry } from '#app/lib/recipe-log';
+import { dayTotalsFromLogs } from '#app/lib/day-totals-from-logs';
 import { computeRemainingDay, describeRemainingDayForPrompt } from '#app/lib/remaining-day';
-import type { Remaining, RemainingDay, RemainingDayTotals } from '#app/lib/remaining-day';
+import type { Remaining, RemainingDay } from '#app/lib/remaining-day';
 import { todayInTimezone } from '#app/lib/user-days';
 import { randomUuid } from '#app/lib/uuid';
-import { computeDailyEntry } from '#app/models/daily-totals';
 import {
   getLocalAiSettings,
   getLocalProfileGoals,
   listLocalFoodLogsForDay,
   listLocalPantryItems,
-  localFoodLogToSnapshot,
   putLocalFood,
   putLocalFoodLog,
   recordLocalAiUsageEvent,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
-import type { LocalFoodLog, LocalPantryItem } from '#app/lib/local-store';
-import { resolveProviderTriple } from '#app/routes/pantry';
+import type { LocalPantryItem } from '#app/lib/local-store';
 import {
   createVisionProvider,
   RECIPE_PROPOSAL_TASK,
@@ -121,25 +120,6 @@ export function mainSlotsLeft(slot: MealType): number {
 
 /** The table {@link mainSlotsLeft} reads. `satisfies`, so a fifth slot is a compile error here. */
 const SLOTS_LEFT_BY_SLOT = { breakfast: 3, lunch: 2, dinner: 1, snack: 1 } satisfies Record<MealType, number>;
-
-/**
- * Today's logs as the totals `computeRemainingDay` reads.
- *
- * Through `computeDailyEntry` and `localFoodLogToSnapshot`, never a second
- * hand-rolled rollup: the authoritative net-carbs figure has been dropped by
- * exactly such a copy before (see `localFoodLogToSnapshot`'s own doc).
- */
-export function dayTotalsFromLogs(logs: readonly LocalFoodLog[]): RemainingDayTotals {
-  const totals = computeDailyEntry(logs.map(localFoodLogToSnapshot));
-  const summary = totals.summary;
-  return {
-    netCarbs: summary?.netCarbs ?? 0,
-    protein: summary?.protein ?? 0,
-    fiber: summary?.fiber ?? 0,
-    kcal: totals.kcal.total,
-    fatG: summary?.fat ?? null,
-  };
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // The loader

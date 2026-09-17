@@ -3187,7 +3187,7 @@
     "lead": "What you have at home. Photograph a shelf, or write the list.",
     "empty": "Nothing here yet. Photograph your fridge, or write what you have.",
     "composerLabel": "What do you have?",
-    "reading": "Reading what you have...",
+    "reading": "Reading your items...",
     "door": {
       "title": "What is in the fridge?",
       "line": "Photograph a shelf and keep the list on this device."
@@ -3200,14 +3200,14 @@
     },
     "review": {
       "title": "Check the list",
-      "lead": "Correct anything that is wrong, then keep it.",
+      "lead": "Correct anything that is wrong, then save it.",
       "nameLabel": "Item",
       "amountLabel": "Amount",
       "unitLabel": "Unit",
       "unitNone": "No amount",
       "removeAria": "Remove {{name}}",
-      "addLine": "Add a line",
-      "confirm": "Keep this list",
+      "addLine": "Add an item",
+      "confirm": "Save this list",
       "discard": "Discard",
       "saveList": "Save the list",
       "saving": "Saving..."
@@ -3218,14 +3218,14 @@
     "errors": {
       "title": "That did not work",
       "failed": "We could not read that. Try again in a moment.",
-      "nothingFound": "No food was found in that. Try a closer picture, or write the list."
+      "nothingFound": "No food found in that picture. Take a closer shot, or write the list."
     }
   },
   "recipes": {
     "title": "Recipes",
-    "lead": "What you could cook next from your pantry, sized to what is left in your day.",
+    "lead": "Meals you can cook from your pantry, sized to what is left in your day.",
     "slotLabel": "Meal",
-    "asking": "Working out what fits...",
+    "asking": "Checking what fits...",
     "prepMinutes": "{{minutes}} min",
     "ingredients": "Ingredients",
     "notInPantry": "not in your pantry",
@@ -3242,7 +3242,7 @@
     },
     "errors": {
       "title": "That did not work",
-      "failed": "We could not put a meal together. Try again in a moment."
+      "failed": "We could not build a meal. Try again in a moment."
     }
   }
 }

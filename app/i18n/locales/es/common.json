@@ -3187,7 +3187,7 @@
     "lead": "Lo que tienes en casa. Haz una foto a un estante o escribe la lista.",
     "empty": "Todavía no hay nada aquí. Haz una foto a tu nevera o escribe lo que tienes.",
     "composerLabel": "¿Qué tienes?",
-    "reading": "Leyendo lo que tienes...",
+    "reading": "Leyendo tus elementos...",
     "door": {
       "title": "¿Qué hay en la nevera?",
       "line": "Haz una foto a un estante y guarda la lista en este dispositivo."
@@ -3200,14 +3200,14 @@
     },
     "review": {
       "title": "Revisa la lista",
-      "lead": "Corrige lo que esté mal y luego consérvalo.",
+      "lead": "Corrige lo que esté mal y luego guárdalo.",
       "nameLabel": "Elemento",
       "amountLabel": "Cantidad",
       "unitLabel": "Unidad",
       "unitNone": "Sin cantidad",
       "removeAria": "Eliminar {{name}}",
-      "addLine": "Añadir una línea",
-      "confirm": "Conservar esta lista",
+      "addLine": "Añadir un elemento",
+      "confirm": "Guardar esta lista",
       "discard": "Descartar",
       "saveList": "Guardar la lista",
       "saving": "Guardando..."
@@ -3218,14 +3218,14 @@
     "errors": {
       "title": "Eso no ha funcionado",
       "failed": "No hemos podido leer eso. Inténtalo de nuevo en un momento.",
-      "nothingFound": "No se ha encontrado comida ahí. Prueba con una foto más de cerca o escribe la lista."
+      "nothingFound": "No se encontró comida en esa imagen. Toma una foto más de cerca o escribe la lista."
     }
   },
   "recipes": {
     "title": "Recetas",
-    "lead": "Lo que podrías cocinar con lo que tienes en la despensa, adaptado a lo que te queda de día.",
+    "lead": "Comidas que puedes preparar con tu despensa, ajustadas a lo que te queda en el día.",
     "slotLabel": "Comida",
-    "asking": "Calculando qué encaja...",
+    "asking": "Comprobando qué encaja...",
     "prepMinutes": "{{minutes}} min",
     "ingredients": "Ingredientes",
     "notInPantry": "no está en tu despensa",
@@ -3242,7 +3242,7 @@
     },
     "errors": {
       "title": "No ha funcionado",
-      "failed": "No pudimos organizar una comida. Vuelve a intentarlo en un momento."
+      "failed": "No pudimos crear una comida. Inténtalo de nuevo en un momento."
     }
   }
 }

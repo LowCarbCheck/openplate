@@ -41,6 +41,7 @@
  */
 import type { Route } from './+types/pantry';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -56,6 +57,7 @@ import { ConnectCard, ScanLoading } from '#app/components/intake/intake-connect-
 import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
+import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { takeIntakeHandoff, type ScanHandoff } from '#app/lib/intake-handoff';
 import { mergePantry, pantryNameKey, type CapturedPantryItem } from '#app/lib/pantry-merge';
@@ -78,7 +80,6 @@ import {
   type ScanTokenUsage,
 } from '#app/services/vision';
 import { estimateScanCostUsd } from '#app/services/vision/cost';
-import type { AiProviderType } from '#types/enums';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -110,37 +111,6 @@ export function HydrateFallback(): ReactElement {
 ////////////////////////////////////////////////////////////////////////////////
 // The provider call
 ////////////////////////////////////////////////////////////////////////////////
-
-/**
- * The three values `createVisionProvider` needs, out of whichever kind of
- * settings this instance resolved.
- *
- * PURE, and exported, because it is the one place a managed instance and a
- * BYOK device are collapsed into one triple, and a mistake here is a scan sent
- * to the wrong endpoint with the wrong key. `null` means this device cannot
- * call anything, which the screen renders as the connect card rather than as
- * an error: a managed instance with an upstream key but no advertised model
- * has nothing to send, and inventing a model id would fail upstream with a
- * message nobody on this side could explain.
- *
- * @param effective - what `useEffectiveAiSettings` resolved, never `null` here.
- * @returns the provider, model and base URL to call with, or `null` when there is no usable triple.
- */
-export function resolveProviderTriple(
-  effective: EffectiveAiSettings,
-): { provider: AiProviderType; model: string; baseUrl: string | null } | null {
-  if (effective.source === 'managed') {
-    if (effective.model === null) return null;
-    return { provider: effective.provider, model: effective.model, baseUrl: effective.baseUrl };
-  }
-  const { settings } = effective;
-  if (settings.model === '') return null;
-  // A row saved before the base-URL requirement shipped can still carry
-  // `baseUrl: null` for an openai-compatible provider. Caught here rather than
-  // letting `createVisionProvider`'s own guard throw, so the screen can say so.
-  if (settings.provider === 'openai-compatible' && (settings.baseUrl ?? '').trim() === '') return null;
-  return { provider: settings.provider, model: settings.model, baseUrl: settings.baseUrl };
-}
 
 /** What one pantry reading attempt answers with: rows, or a sentence saying why not. */
 type PantryReadResult = { ok: true; identification: PantryIdentification } | { ok: false; error: string };
@@ -514,16 +484,16 @@ type PantryPhase =
 
 export default function Pantry({ loaderData }: Route.ComponentProps): ReactElement {
   const { t } = useTranslation();
+  const location = useLocation();
   const effective = useEffectiveAiSettings(loaderData.settings);
   const [stored, setStored] = useState<LocalPantryItem[]>(loaderData.items);
   const [rows, setRows] = useState<PantryDraftRow[]>(() => loaderData.items.map(draftFromStored));
   const [phase, setPhase] = useState<PantryPhase>({ kind: 'list' });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Holds the freshest reader so the mount-only hand-off effect below can run
-  // it without re-subscribing every render, the same pair `/scan` uses.
+  // Holds the freshest reader so the hand-off effect below can run it without
+  // re-subscribing every render, the same pair `/scan` uses.
   const readRef = useRef<(handoff: ScanHandoff) => void>(() => {});
-  const handoffHandledRef = useRef(false);
 
   const effectiveRef = useRef(effective);
   effectiveRef.current = effective;
@@ -553,16 +523,24 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
     };
   });
 
-  // THE HAND-OFF, taken once on mount. `takeIntakeHandoff` empties the slot as
-  // it reads, so a remount, a StrictMode double-effect or a later visit can
-  // never re-run (and re-charge for) an intake that was already handled.
+  // THE HAND-OFF, taken on every ARRIVAL rather than once on mount.
+  //
+  // This screen is the one place that hands an intake to ITSELF: the composer
+  // on it points its camera at `/pantry`, so a photograph taken here arrives
+  // through a navigation to the route that is already mounted, and a
+  // mount-only effect never runs again. The photo was then held forever and
+  // the screen sat on its empty list as if nothing had been taken, which is
+  // what `tests/e2e/pantry-to-recipe.spec.ts` walks.
+  //
+  // `location.key` is new for every navigation, including one to the same URL,
+  // so it is the arrival itself. Nothing can be read twice: `takeIntakeHandoff`
+  // empties the slot as it reads, so a re-render, a revalidation or a
+  // StrictMode double-effect all find it empty and no intake is re-charged.
   useEffect(() => {
-    if (handoffHandledRef.current) return;
-    handoffHandledRef.current = true;
     const handed = takeIntakeHandoff();
     if (handed === null) return;
     readRef.current(handed);
-  }, []);
+  }, [location.key]);
 
   const save = useCallback(
     async (path: PantryCapturePath): Promise<void> => {

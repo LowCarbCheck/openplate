@@ -3187,7 +3187,7 @@
     "lead": "Ce que tu as chez toi. Prends une étagère en photo, ou écris la liste.",
     "empty": "Rien ici pour le moment. Prends ton frigo en photo, ou écris ce que tu as.",
     "composerLabel": "Qu'est-ce que tu as ?",
-    "reading": "Lecture de ce que tu as...",
+    "reading": "Lecture de tes éléments...",
     "door": {
       "title": "Qu'y a-t-il dans le frigo ?",
       "line": "Prends une étagère en photo et garde la liste sur cet appareil."
@@ -3200,14 +3200,14 @@
     },
     "review": {
       "title": "Vérifie la liste",
-      "lead": "Corrige les erreurs éventuelles, puis conserve-la.",
+      "lead": "Corrige ce qui ne va pas, puis enregistre.",
       "nameLabel": "Article",
       "amountLabel": "Quantité",
       "unitLabel": "Unité",
       "unitNone": "Sans quantité",
       "removeAria": "Supprimer {{name}}",
-      "addLine": "Ajouter une ligne",
-      "confirm": "Garder cette liste",
+      "addLine": "Ajouter un élément",
+      "confirm": "Enregistrer cette liste",
       "discard": "Ignorer",
       "saveList": "Enregistrer la liste",
       "saving": "Enregistrement..."
@@ -3218,14 +3218,14 @@
     "errors": {
       "title": "L'opération a échoué",
       "failed": "Impossible de lire cela. Réessaie dans un instant.",
-      "nothingFound": "Aucun aliment n'a été détecté. Prends une photo de plus près, ou écris la liste."
+      "nothingFound": "Aucun aliment trouvé sur cette photo. Rapproche-toi, ou saisis la liste."
     }
   },
   "recipes": {
     "title": "Recettes",
-    "lead": "Ce que tu pourrais cuisiner avec les réserves de ton garde-manger, selon ce qu'il te reste pour la journée.",
+    "lead": "Des repas à cuisiner avec les réserves de ton garde-manger, calibrés selon ce qu'il te reste pour la journée.",
     "slotLabel": "Repas",
-    "asking": "Calcul des options possibles...",
+    "asking": "Vérification de ce qui convient...",
     "prepMinutes": "{{minutes}} min",
     "ingredients": "Ingrédients",
     "notInPantry": "absent de ton garde-manger",

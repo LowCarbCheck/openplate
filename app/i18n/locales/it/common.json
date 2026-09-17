@@ -3187,7 +3187,7 @@
     "lead": "Quello che hai a casa. Fotografa uno scaffale o scrivi la lista.",
     "empty": "Non c'è ancora nulla qui. Fotografa il frigo o scrivi quello che hai.",
     "composerLabel": "Cosa hai?",
-    "reading": "Lettura di quello che hai in corso...",
+    "reading": "Lettura degli alimenti in corso...",
     "door": {
       "title": "Cosa c'è in frigo?",
       "line": "Fotografa uno scaffale e conserva la lista su questo dispositivo."
@@ -3200,14 +3200,14 @@
     },
     "review": {
       "title": "Controlla la lista",
-      "lead": "Correggi ciò che non torna, poi salvalo.",
+      "lead": "Correggi ciò che non è corretto, poi salva.",
       "nameLabel": "Elemento",
       "amountLabel": "Quantità",
       "unitLabel": "Unità",
       "unitNone": "Nessuna quantità",
       "removeAria": "Rimuovi {{name}}",
-      "addLine": "Aggiungi una riga",
-      "confirm": "Mantieni questa lista",
+      "addLine": "Aggiungi un alimento",
+      "confirm": "Salva questo elenco",
       "discard": "Scarta",
       "saveList": "Salva la lista",
       "saving": "Salvataggio in corso..."
@@ -3218,14 +3218,14 @@
     "errors": {
       "title": "Non ha funzionato",
       "failed": "Impossibile leggere il contenuto. Riprova tra poco.",
-      "nothingFound": "Nessun alimento trovato. Prova con una foto più da vicino o scrivi la lista."
+      "nothingFound": "Nessun alimento trovato in quella foto. Scatta più da vicino, oppure scrivi l'elenco."
     }
   },
   "recipes": {
     "title": "Ricette",
-    "lead": "Cosa potresti cucinare con gli ingredienti della tua dispensa, proporzionato a quanto ti resta nella giornata.",
+    "lead": "Pasti che puoi cucinare con ciò che hai in dispensa, dosati in base a ciò che ti resta nella giornata.",
     "slotLabel": "Pasto",
-    "asking": "Calcolo delle opzioni adatte in corso...",
+    "asking": "Verifica della compatibilità in corso...",
     "prepMinutes": "{{minutes}} min",
     "ingredients": "Ingredienti",
     "notInPantry": "non presente in dispensa",
@@ -3242,7 +3242,7 @@
     },
     "errors": {
       "title": "Operazione non riuscita",
-      "failed": "Non siamo riusciti a comporre un pasto. Riprova tra un momento."
+      "failed": "Non è stato possibile creare un pasto. Riprova tra poco."
     }
   }
 }

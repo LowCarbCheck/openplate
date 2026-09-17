@@ -67,6 +67,15 @@ const catalogSchema = z.object({
       }),
     }),
   }),
+  pantry: z.object({
+    door: z.object({ title: z.string() }),
+    review: z.object({ title: z.string(), removeAria: z.string(), confirm: z.string() }),
+    recipes: z.object({ link: z.string() }),
+  }),
+  recipes: z.object({
+    logThis: z.string(),
+    macros: z.object({ ofLeft: z.string() }),
+  }),
   diary: z.object({
     netCarbsValue: z.string(),
     meals: z.object({ breakfast: z.string(), dinner: z.string() }),

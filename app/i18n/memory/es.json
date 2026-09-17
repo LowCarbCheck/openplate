@@ -713,6 +713,13 @@
     "at": "2026-09-14",
     "es": "Personas con las que compartes"
   },
+  "0ac9a3ad551dcade": {
+    "en": "Checking what fits...",
+    "path": "common:recipes.asking",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Comprobando qué encaja..."
+  },
   "0acb5e96fba4af08": {
     "en": "Add food without a photo",
     "path": "common:scan.capture.addWithoutPhoto",
@@ -992,6 +999,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Añadir manualmente"
+  },
+  "0e2480ec37fa7cb2": {
+    "en": "We could not build a meal. Try again in a moment.",
+    "path": "common:recipes.errors.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "No pudimos crear una comida. Inténtalo de nuevo en un momento."
   },
   "0e4c38e23743dabd": {
     "en": "{{value}} g",
@@ -2141,13 +2155,6 @@
     "at": "2026-09-14",
     "es": "El diario en un teléfono: el anillo del día y, debajo, las comidas registradas."
   },
-  "1d5cfebacc81a4d2": {
-    "en": "Correct anything that is wrong, then keep it.",
-    "path": "common:pantry.review.lead",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "Corrige lo que esté mal y luego consérvalo."
-  },
   "1d73252258ccaa6f": {
     "en": "Your diary did not arrive",
     "path": "common:signIn.pullFailedTitle",
@@ -2315,6 +2322,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Usar {{kcal}} kcal al día (actividad ligera)"
+  },
+  "1f5ecf8a704760d1": {
+    "en": "Add an item",
+    "path": "common:pantry.review.addLine",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Añadir un elemento"
   },
   "1f6ed6083518398c": {
     "en": "They can read your diary from now on. You can stop that at any time on the sharing page.",
@@ -3303,6 +3317,13 @@
     "at": "2026-09-14",
     "es": "Solo objetivo de ayuno"
   },
+  "301b934a1d4531d2": {
+    "en": "No food found in that picture. Take a closer shot, or write the list.",
+    "path": "common:pantry.errors.nothingFound",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "No se encontró comida en esa imagen. Toma una foto más de cerca o escribe la lista."
+  },
   "301dd14f1a76bcdc": {
     "en": "Banana",
     "path": "common:add.search.starters.banana",
@@ -4150,6 +4171,13 @@
     "at": "2026-09-14",
     "es": "{{count}} rebanadas de pan"
   },
+  "3f1e35171fb389e1": {
+    "en": "Save this list",
+    "path": "common:pantry.review.confirm",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Guardar esta lista"
+  },
   "3f670054e9cae4d1": {
     "en": "Food",
     "path": "common:add.custom.fallbackName",
@@ -4450,13 +4478,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Este enlace no parece correcto"
-  },
-  "43a8b6268f15e081": {
-    "en": "We could not put a meal together. Try again in a moment.",
-    "path": "common:recipes.errors.failed",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "No pudimos organizar una comida. Vuelve a intentarlo en un momento."
   },
   "43c2e1bfc5c7008e": {
     "en": "Male",
@@ -5445,13 +5466,6 @@
     "at": "2026-09-14",
     "es": "Añadir alimento"
   },
-  "51ec3ac416f74605": {
-    "en": "Working out what fits...",
-    "path": "common:recipes.asking",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "Calculando qué encaja..."
-  },
   "52182c0f9e8bf1ac": {
     "en": "Beyond what most people practise. Anything past 72 hours is outside what this app can guide.",
     "path": "common:fasting.stages.extended.sentence",
@@ -5591,6 +5605,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Bajo en carbohidratos y calorías"
+  },
+  "53a78076e21501e8": {
+    "en": "Meals you can cook from your pantry, sized to what is left in your day.",
+    "path": "common:recipes.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Comidas que puedes preparar con tu despensa, ajustadas a lo que te queda en el día."
   },
   "53bb078718e307aa": {
     "en": "None of this affects the rest of openplate, you can always log food by hand instead.",
@@ -7040,13 +7061,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Has leído la nota para ayunos de 24 horas o más."
-  },
-  "68b34b49f835b040": {
-    "en": "Reading what you have...",
-    "path": "common:pantry.reading",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "Leyendo lo que tienes..."
   },
   "68c47c3020ce65e3": {
     "en": "People",
@@ -8728,6 +8742,13 @@
     "at": "2026-09-14",
     "es": "proteínas"
   },
+  "8105e35b14903f9d": {
+    "en": "Correct anything that is wrong, then save it.",
+    "path": "common:pantry.review.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Corrige lo que esté mal y luego guárdalo."
+  },
   "81195293a17aa78f": {
     "en": "Pantry",
     "path": "common:pantry.title",
@@ -9813,13 +9834,6 @@
     "at": "2026-09-14",
     "es": "Fibra"
   },
-  "8edd6a4d31c65f6d": {
-    "en": "Keep this list",
-    "path": "common:pantry.review.confirm",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "Conservar esta lista"
-  },
   "8ee237a60bc031c2": {
     "en": "Go to account",
     "path": "common:research.needsSessionCta",
@@ -10498,6 +10512,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Entonces no queda nada que recuperar, y sintiéndolo mucho, esa es la respuesta sincera. Puedes empezar un diario nuevo desde aquí, y si más adelante aparece una copia de seguridad, podrás restaurarla encima."
+  },
+  "99f58c571d8e721c": {
+    "en": "Reading your items...",
+    "path": "common:pantry.reading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "es": "Leyendo tus elementos..."
   },
   "99f5d3ad8d73e8bd": {
     "en": "Protein",
@@ -11639,13 +11660,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Bajo en carbohidratos"
-  },
-  "aa4f1114754ca0e0": {
-    "en": "What you could cook next from your pantry, sized to what is left in your day.",
-    "path": "common:recipes.lead",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "Lo que podrías cocinar con lo que tienes en la despensa, adaptado a lo que te queda de día."
   },
   "aa9767e8f4fd42af": {
     "en": "Cheap input, but it misread two of our three test plates",
@@ -14433,13 +14447,6 @@
     "at": "2026-09-17",
     "es": "¿Qué tienes?"
   },
-  "d635033a897b32ee": {
-    "en": "Add a line",
-    "path": "common:pantry.review.addLine",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "Añadir una línea"
-  },
   "d6444d15c9b8157c": {
     "en": "One weigh-in so far, a trend needs a couple more.",
     "path": "common:trends.weight.singleEntry",
@@ -15104,13 +15111,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Todo opcional. Nos permite ajustar las cantidades de referencia de vitaminas y minerales a tu caso y sugerirte una cifra de calorías. Se quedan en este dispositivo como el resto de tu diario, y ningún dato de aquí viaja jamás con una búsqueda de alimentos."
-  },
-  "e07bedf363d886de": {
-    "en": "No food was found in that. Try a closer picture, or write the list.",
-    "path": "common:pantry.errors.nothingFound",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-17",
-    "es": "No se ha encontrado comida ahí. Prueba con una foto más de cerca o escribe la lista."
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",
