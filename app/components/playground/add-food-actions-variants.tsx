@@ -8,7 +8,7 @@
  * a defect the old row already fixed once and is not worth re-introducing.
  *
  * Concept A, the composer strip, WAS REVIEWED AND SHIPPED: it lives at
- * `#app/components/add/add-composer` and `/dashboard` renders it. The
+ * `#app/components/intake/intake-composer` and `/dashboard` renders it. The
  * playground imports it from there rather than keeping a second copy.
  *
  * The variant keeps the shipped behaviour: the camera gesture is a button so
@@ -20,8 +20,8 @@ import { useTranslation } from 'react-i18next';
 import { Camera, Keyboard, Mic } from 'lucide-react';
 
 import { Link } from '#app/components/link';
-import { useCameraCapture } from '#app/components/add/use-camera-capture';
-import { buildAddHref } from '#app/lib/add-food-hrefs';
+import { useCameraCapture } from '#app/components/intake/use-camera-capture';
+import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { cn } from '#app/lib/utils';
 
 type VariantProps = {
@@ -62,7 +62,7 @@ export function AddFoodActionsSegmented({ describeTo, scanTo = '/scan', classNam
           </span>
           {t('launcher.type')}
         </Link>
-        <Link to={buildAddHref(describeTo, { speak: true })} className={SEGMENT_CLASS}>
+        <Link to={buildIntakeHref(describeTo, { speak: true })} className={SEGMENT_CLASS}>
           <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Mic className="size-4" aria-hidden="true" />
           </span>

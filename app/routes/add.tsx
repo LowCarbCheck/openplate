@@ -80,7 +80,7 @@ import { QueryPartChips, SEARCH_CHIP_CLASS } from '#app/components/add/query-par
 import { queryPartsToOffer } from '#app/lib/query-parts';
 import { useAiIntake } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
-import { offerTypedText } from '#app/lib/scan-handoff';
+import { offerTypedText } from '#app/lib/intake-handoff';
 import type { TypedIntakeSource } from '#app/lib/intake-source';
 import { ManageCustomFoodsSheet } from '#app/components/add/manage-custom-foods';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';

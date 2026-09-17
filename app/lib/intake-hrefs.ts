@@ -1,5 +1,5 @@
 /**
- * Every add-food destination link, built in one place.
+ * Every intake destination link, built in one place.
  *
  * Three near-identical helpers used to do this: `speakHref` in
  * `add-food-actions.tsx`, `diaryHrefForDate` in `diary-href.ts`, and
@@ -11,11 +11,13 @@
  *
  * THE OPTIONS BAG IS THE POINT. A positional date argument would make the next
  * parameter, a meal slot, a re-touch of every call site. As an options field it
- * is one line here and nothing anywhere else.
+ * is one line here and nothing anywhere else. `to` arrived exactly that way
+ * when the pantry became a second intake consumer (M233/01).
  */
+import { DEFAULT_INTAKE_CONSUMER, type IntakeConsumer } from '#app/lib/intake-consumers';
 
 /** What a destination can carry beyond its path. Every field is optional; an empty bag returns the path unchanged. */
-export type AddHrefOptions = {
+export type IntakeHrefOptions = {
   /** The calendar day the person is looking at, `YYYY-MM-DD`. `null` means today, which carries no query. */
   date?: string | null;
   /** Today in the same time zone, `YYYY-MM-DD`. When `date` equals it, the day is dropped, so the URL stays bare. */
@@ -24,6 +26,13 @@ export type AddHrefOptions = {
   speak?: boolean;
   /** The meal slot, written as `meal=`. Nothing passes one yet, and it costs one line to keep ready. */
   slot?: string;
+  /**
+   * Who the composer hands its words to, written as `to=`. The diary's `/scan`
+   * is the default everywhere, so it is written only when it is NOT `/scan`
+   * and the bare `/describe` URL the diary has always used stays bare. The
+   * type is the allowlist (`intake-consumers.ts`), never a free path.
+   */
+  to?: IntakeConsumer;
 };
 
 /**
@@ -34,11 +43,11 @@ export type AddHrefOptions = {
  * still one `speak=1`.
  *
  * @param path - the destination, with or without a query string.
- * @param options - the day, the speak flag and the meal slot to carry.
+ * @param options - the day, the speak flag, the meal slot and the consumer to carry.
  * @returns the path with a query only when there is something to put in it.
  */
-export function buildAddHref(path: string, options: AddHrefOptions = {}): string {
-  const { date = null, today = null, speak = false, slot } = options;
+export function buildIntakeHref(path: string, options: IntakeHrefOptions = {}): string {
+  const { date = null, today = null, speak = false, slot, to = DEFAULT_INTAKE_CONSUMER } = options;
   const [base = path, existingQuery = ''] = path.split('?');
   const params = new URLSearchParams(existingQuery);
 
@@ -47,6 +56,9 @@ export function buildAddHref(path: string, options: AddHrefOptions = {}): string
   if (date !== null && date !== today) params.set('date', date);
   if (speak) params.set('speak', '1');
   if (slot !== undefined) params.set('meal', slot);
+  // The default consumer is silent, for the same reason today is: it is what
+  // the URL already meant before the parameter existed.
+  if (to !== DEFAULT_INTAKE_CONSUMER) params.set('to', to);
 
   const query = params.toString();
   return query === '' ? base : `${base}?${query}`;

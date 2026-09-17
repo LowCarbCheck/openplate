@@ -1,9 +1,27 @@
 /**
- * The add-entry composer strip: **one control, three ways in.**
+ * The intake composer strip: **one control, three ways in.**
+ *
+ * ── What it is, and what it is NOT ───────────────────────────────────────
+ *
+ * This strip takes an INTAKE: a person says what they have, by writing it, by
+ * dictating it, or by photographing it. What is then done with that intake is
+ * not this component's business. It knows hrefs and never a purpose.
+ *
+ * Two consumers render it today, and they differ only in the links they pass:
+ *
+ * - the diary, where `describeTo` is `/describe` and a photo goes to `/scan`,
+ *   so words and pictures become food logged on the day on screen;
+ * - the pantry (M233/02), where `describeTo` is `/describe?to=/pantry` and a
+ *   photo goes to `/pantry`, so the same words and pictures become the list of
+ *   what is in the fridge.
+ *
+ * That is why it lives under `components/intake/` and is not called an
+ * add-food composer: a third consumer is a third pair of hrefs at a call site,
+ * not a branch in here. The allowlist behind `?to=` is `app/lib/intake-consumers.ts`.
  *
  * ── What it replaces, and why ────────────────────────────────────────────
  *
- * `AddFoodActions` is three separate buttons with gaps between them, which the
+ * `AddFoodActions` was three separate buttons with gaps between them, which the
  * eye reads as three competing offers. This strip collapses them into ONE
  * field-shaped object: the wide half is a writing surface that says what to do
  * and opens the composer, and the microphone and the camera are trim inside
@@ -75,12 +93,12 @@ import { useTranslation } from 'react-i18next';
 import { Camera, Keyboard, Mic } from 'lucide-react';
 
 import { Link } from '#app/components/link';
-import { useCameraCapture, type CameraCapture } from '#app/components/add/use-camera-capture';
-import { buildAddHref } from '#app/lib/add-food-hrefs';
+import { useCameraCapture, type CameraCapture } from '#app/components/intake/use-camera-capture';
+import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { cn } from '#app/lib/utils';
 
 /** Where this strip is drawn, which decides the camera key's weight and nothing else. */
-export type AddComposerVariant = 'standalone' | 'embedded';
+export type IntakeComposerVariant = 'standalone' | 'embedded';
 
 /**
  * The camera key's weight, per context. See the module header for why the
@@ -89,9 +107,9 @@ export type AddComposerVariant = 'standalone' | 'embedded';
 const CAMERA_KEY_CLASS = {
   standalone: 'bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90',
   embedded: 'border border-primary/40 text-primary hover:bg-primary/10 active:bg-primary/15',
-} satisfies Record<AddComposerVariant, string>;
+} satisfies Record<IntakeComposerVariant, string>;
 
-interface AddComposerBaseProps {
+interface IntakeComposerBaseProps {
   /** The composer, carrying the viewed day. Typing goes here; dictating goes here with the field focused. */
   describeTo: string;
   className?: string;
@@ -106,7 +124,7 @@ interface AddComposerBaseProps {
    * `/dashboard` and `/diary` want; `'embedded'` outlines it, for the
    * launcher's sheet, where the raised circle beside it is already filled.
    */
-  variant?: AddComposerVariant;
+  variant?: IntakeComposerVariant;
 }
 
 /**
@@ -117,7 +135,7 @@ interface AddComposerBaseProps {
  * and lose `scanTo` in silence, so the choice is a discriminated union
  * instead, and passing both is a compile error at the call site.
  */
-export type AddComposerProps = AddComposerBaseProps &
+export type IntakeComposerProps = IntakeComposerBaseProps &
   (
     | {
         /**
@@ -134,7 +152,7 @@ export type AddComposerProps = AddComposerBaseProps &
       }
   );
 
-export function AddComposer(props: AddComposerProps): ReactElement {
+export function IntakeComposer(props: IntakeComposerProps): ReactElement {
   const { describeTo, className, label, variant } = props;
   // The shared half of the props, named once so both branches carry the same
   // set and adding a base prop cannot reach one branch and miss the other.
@@ -149,7 +167,7 @@ export function AddComposer(props: AddComposerProps): ReactElement {
 function ComposerWithOwnCamera({
   scanTo = '/scan',
   ...rest
-}: AddComposerBaseProps & { scanTo?: string }): ReactElement {
+}: IntakeComposerBaseProps & { scanTo?: string }): ReactElement {
   const camera = useCameraCapture({ scanTo });
   const { inputRef, inputProps } = camera;
 
@@ -171,7 +189,7 @@ function ComposerStrip({
   variant = 'standalone',
   camera,
   children,
-}: AddComposerBaseProps & {
+}: IntakeComposerBaseProps & {
   camera: CameraCapture;
   /** The capture input, rendered only by the caller that owns the camera. */
   children?: ReactNode;
@@ -191,7 +209,7 @@ function ComposerStrip({
         </Link>
         <span className="h-6 w-px shrink-0 bg-border" aria-hidden="true" />
         <Link
-          to={buildAddHref(describeTo, { speak: true })}
+          to={buildIntakeHref(describeTo, { speak: true })}
           aria-label={t('launcher.speak')}
           className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary transition-colors hover:bg-primary/10 active:bg-primary/15 motion-safe:active:scale-95"
         >

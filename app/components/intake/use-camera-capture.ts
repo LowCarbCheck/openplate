@@ -12,7 +12,7 @@
  * the camera silently never opens. So `capture` is not `async` and awaits
  * nothing: the connection state is read ONCE on mount and kept in state, and
  * the photo is handed to the scan screen afterwards through a one-shot module
- * slot (`scan-handoff.ts`) rather than fetched by the route.
+ * slot (`intake-handoff.ts`) rather than fetched by the route.
  *
  * `scanTo` is the scan screen this hook navigates to, and it carries the day
  * the user is looking at. A photo taken on a back-dated diary page must log to
@@ -24,7 +24,7 @@
  * unmount the element whose `click()` is still on the gesture stack.
  */
 import { useEffect, useRef, type ChangeEvent, type ComponentProps, type RefObject } from 'react';
-import { offerPickedFile } from '#app/lib/scan-handoff';
+import { offerPickedFile } from '#app/lib/intake-handoff';
 import { useAiConnection } from '#app/components/add/use-ai-connection';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 

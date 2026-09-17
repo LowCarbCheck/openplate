@@ -119,10 +119,10 @@ describe('the Wie gestern door on the today card (M217/02)', () => {
     const hero = dashboardSource.indexOf('function TodayHeroCard({');
     assert.notEqual(hero, -1, 'TodayHeroCard is gone');
     // The today card pairs the ghost card with the composer strip:
-    // RepeatYesterdayGhost over AddComposer, both the milestone's chosen
+    // RepeatYesterdayGhost over IntakeComposer, both the milestone's chosen
     // names.
     const doorAt = dashboardSource.indexOf('<RepeatYesterdayGhost offer={repeatYesterday} />', hero);
-    const addActionsAt = dashboardSource.indexOf('<AddComposer describeTo="/describe" />', hero);
+    const addActionsAt = dashboardSource.indexOf('<IntakeComposer describeTo="/describe" />', hero);
 
     assert.notEqual(doorAt, -1, 'the today card lost its Wie gestern door');
     assert.notEqual(addActionsAt, -1, 'the today card lost its add actions');

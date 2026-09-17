@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { ChevronUp } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
-import { useCameraCapture, type CameraCapture } from '#app/components/add/use-camera-capture';
-import { AddComposer } from '#app/components/add/add-composer';
-import { buildAddHref } from '#app/lib/add-food-hrefs';
+import { useCameraCapture, type CameraCapture } from '#app/components/intake/use-camera-capture';
+import { IntakeComposer } from '#app/components/intake/intake-composer';
+import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { hasMovedBeyondPressTolerance, LONG_PRESS_MS, type PointerPosition } from '#app/lib/long-press';
 import { parseDateParam } from '#app/lib/user-days';
 import type { NavigationItem } from './app-sidebar';
@@ -29,7 +29,7 @@ import type { NavigationItem } from './app-sidebar';
  * `/diary?date=<an earlier day>`. It used to send all three of its doors to
  * today: a photo, a typed meal or a dictated one, logged to the wrong day with
  * nothing on screen saying so. The day is read out of the current URL and
- * threaded through `buildAddHref`, so the launcher logs to the day the person
+ * threaded through `buildIntakeHref`, so the launcher logs to the day the person
  * is looking at.
  *
  * THE SHEET RENDERS THE COMPOSER STRIP (M232/03), not a row list of its own.
@@ -45,8 +45,8 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
   // `null` on today's view and on any screen that carries no day, which is
   // exactly what a bare destination means.
   const viewedDate = parseDateParam(new URLSearchParams(location.search).get('date'));
-  const describeTo = buildAddHref('/describe', { date: viewedDate });
-  const scanTo = buildAddHref('/scan', { date: viewedDate });
+  const describeTo = buildIntakeHref('/describe', { date: viewedDate });
+  const scanTo = buildIntakeHref('/scan', { date: viewedDate });
   const launcherCapture = useCameraCapture({ scanTo });
   const { capture, triggerRef, inputRef, inputProps } = launcherCapture;
   const pressStartRef = useRef<PointerPosition | null>(null);
@@ -213,7 +213,7 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
               props are pinned as literals by the unit tier, and letting the
               formatter split them would break those regexes for nothing. */}
           {/* prettier-ignore */}
-          <AddComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} variant="embedded" />
+          <IntakeComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} variant="embedded" />
         </div>
       </SheetContent>
     </Sheet>

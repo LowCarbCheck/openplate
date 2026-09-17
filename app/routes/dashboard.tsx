@@ -74,7 +74,7 @@ import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-day
 import { buildAdherenceGrid } from '#app/models/adherence-grid';
 import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
 import type { StreakSnapshot } from '#app/lib/streak-message';
-import { AddComposer } from '#app/components/add/add-composer';
+import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
 import { PulseTileSlot } from '#app/components/pulse-tile';
@@ -406,7 +406,7 @@ function TodayHeroCard({
         the camera and the microphone in its frame, for the same reason.
       */}
       <RepeatYesterdayGhost offer={repeatYesterday} />
-      <AddComposer describeTo="/describe" />
+      <IntakeComposer describeTo="/describe" />
       <Link to="/diary" className={HANDOFF_LINK_CLASS}>
         {t('dashboard.today.openDiary')}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />

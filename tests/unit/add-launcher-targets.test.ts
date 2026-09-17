@@ -16,7 +16,7 @@
  * THE INVARIANT THIS FILE EXISTS FOR. There is exactly ONE capture input on
  * the page, the bar's own, and it sits outside the sheet: closing a sheet must
  * not unmount the element whose `click()` is still on the gesture stack
- * (`app/components/add/use-camera-capture.ts`). A strip that opened its own
+ * (`app/components/intake/use-camera-capture.ts`). A strip that opened its own
  * camera inside the sheet would put a second one there, and the pair of counts
  * below is what says so.
  */
@@ -29,10 +29,10 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { AddComposer } from '../../app/components/add/add-composer';
+import { IntakeComposer } from '../../app/components/intake/intake-composer';
 import { BottomNav } from '../../app/components/bottom-nav';
-import type { CameraCapture } from '../../app/components/add/use-camera-capture';
-import { buildAddHref } from '../../app/lib/add-food-hrefs';
+import type { CameraCapture } from '../../app/components/intake/use-camera-capture';
+import { buildIntakeHref } from '../../app/lib/intake-hrefs';
 
 /**
  * A hermetic catalog, like `bottom-nav.test.ts` beside it: this file asserts
@@ -103,8 +103,8 @@ function inputCount(html: string): number {
 
 /** The strip exactly as the launcher's sheet renders it, for a given viewed day. */
 function sheetStrip(date: string | null): ReactElement {
-  return createElement(AddComposer, {
-    describeTo: buildAddHref('/describe', { date }),
+  return createElement(IntakeComposer, {
+    describeTo: buildIntakeHref('/describe', { date }),
     capture: BORROWED_CAPTURE,
     label: 'Type',
   });
@@ -112,7 +112,7 @@ function sheetStrip(date: string | null): ReactElement {
 
 describe('the launcher sheet renders the composer strip', () => {
   it('hands the strip its own camera rather than letting it open a second one', () => {
-    assert.match(LAUNCHER, /<AddComposer[^>]*capture=\{sheetCapture\}/);
+    assert.match(LAUNCHER, /<IntakeComposer[^>]*capture=\{sheetCapture\}/);
     assert.match(LAUNCHER, /const sheetCapture: CameraCapture = \{/);
   });
 
@@ -146,10 +146,10 @@ describe('where the sheet doors go', () => {
 
   it('builds the day it hands over through the shared builder', () => {
     // The other end of the chain, which no render can see: the launcher reads
-    // the day out of the URL and builds the destination with `buildAddHref`.
+    // the day out of the URL and builds the destination with `buildIntakeHref`.
     assert.match(LAUNCHER, /const viewedDate = parseDateParam\(new URLSearchParams\(location\.search\)\.get\('date'\)\);/);
-    assert.match(LAUNCHER, /const describeTo = buildAddHref\('\/describe', \{ date: viewedDate \}\);/);
-    assert.match(LAUNCHER, /<AddComposer describeTo=\{describeTo\}/);
+    assert.match(LAUNCHER, /const describeTo = buildIntakeHref\('\/describe', \{ date: viewedDate \}\);/);
+    assert.match(LAUNCHER, /<IntakeComposer describeTo=\{describeTo\}/);
   });
 });
 
@@ -167,7 +167,7 @@ describe('how many capture inputs the bar has', () => {
     // exists to refuse: the same strip with no `capture` prop renders the
     // input itself, which inside a sheet is an element that unmounts while the
     // camera it opened is still opening.
-    assert.equal(inputCount(render(createElement(AddComposer, { describeTo: '/describe' }))), 1);
+    assert.equal(inputCount(render(createElement(IntakeComposer, { describeTo: '/describe' }))), 1);
   });
 
   it('keeps that one input outside the sheet', () => {

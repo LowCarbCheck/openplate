@@ -19,7 +19,7 @@ import type { FormEvent, ReactElement, ReactNode } from 'react';
 
 import { AddFoodActionsSegmented } from '#app/components/playground/add-food-actions-variants';
 import { RepeatYesterdayEyebrow } from '#app/components/playground/repeat-yesterday-variants';
-import { AddComposer } from '#app/components/add/add-composer';
+import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { RepeatYesterdayDoor, RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
 import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -86,7 +86,7 @@ export default function DevPlayground(): ReactElement {
             <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
               <CardContent className="space-y-3 p-5 sm:p-6">
                 <RepeatYesterdayGhost offer={SAMPLE_OFFER} />
-                <AddComposer describeTo="/describe" />
+                <IntakeComposer describeTo="/describe" />
               </CardContent>
             </Card>
           </div>
@@ -95,7 +95,7 @@ export default function DevPlayground(): ReactElement {
         <div className="space-y-6">
           <h2 className="text-lg font-semibold">Add an entry</h2>
           <Sample label="A. Composer strip, write here, camera and mic in the frame">
-            <AddComposer describeTo="/describe" />
+            <IntakeComposer describeTo="/describe" />
           </Sample>
           <Sample label="B. Segmented control, one surface split by hairlines">
             <AddFoodActionsSegmented describeTo="/describe" />
@@ -115,7 +115,7 @@ export default function DevPlayground(): ReactElement {
           <Sample label="D. Eyebrow line above the add row">
             <div className="space-y-3">
               <RepeatYesterdayEyebrow offer={SAMPLE_OFFER} />
-              <AddComposer describeTo="/describe" />
+              <IntakeComposer describeTo="/describe" />
             </div>
           </Sample>
         </div>

@@ -43,7 +43,7 @@ const SUBMIT_TO_AI = between(ADD_ROUTE, 'const submitToAi = useCallback(', 'cons
 
 describe('/add hands words to /scan', () => {
   it('parks them in the one-shot slot rather than in the URL', () => {
-    assert.match(ADD_ROUTE, /import \{ offerTypedText \} from '#app\/lib\/scan-handoff'/);
+    assert.match(ADD_ROUTE, /import \{ offerTypedText \} from '#app\/lib\/intake-handoff'/);
     assert.match(SUBMIT_TO_AI, /offerTypedText\(trimmed, source\)/);
     assert.match(SUBMIT_TO_AI, /navigate\(scanHref\)/);
     // Never a query parameter: a search term is one thing in a history entry,

@@ -9,7 +9,7 @@
  * which is why it is pinned by reading the source.
  *
  * The gesture used to live in `add-launcher.tsx`. It now lives in the hook
- * `app/components/add/use-camera-capture.ts`, which the launcher and the
+ * `app/components/intake/use-camera-capture.ts`, which the launcher and the
  * in-page add-food actions share, so this file follows it there.
  *
  * Same idiom as `tests/unit/sync-sign-out-hint.test.ts`: the function under
@@ -20,10 +20,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildAddHref } from '../../app/lib/add-food-hrefs';
+import { buildIntakeHref } from '../../app/lib/intake-hrefs';
 import { parseDateParam } from '../../app/lib/user-days';
 
-const source = readFileSync(new URL('../../app/components/add/use-camera-capture.ts', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../app/components/intake/use-camera-capture.ts', import.meta.url), 'utf8');
 
 /**
  * One hook-local arrow handler's body.
@@ -113,9 +113,9 @@ describe('a back-dated day survives the photo path', () => {
   const diary = readFileSync(new URL('../../app/routes/diary.tsx', import.meta.url), 'utf8');
 
   it('/diary dates the scan target on any day but today', () => {
-    assert.match(diary, /const scanTo = buildAddHref\('\/scan', \{ date, today \}\);/);
-    assert.equal(buildAddHref('/scan', { date: '2026-09-07', today: '2026-09-14' }), '/scan?date=2026-09-07');
-    assert.equal(buildAddHref('/scan', { date: '2026-09-14', today: '2026-09-14' }), '/scan');
+    assert.match(diary, /const scanTo = buildIntakeHref\('\/scan', \{ date, today \}\);/);
+    assert.equal(buildIntakeHref('/scan', { date: '2026-09-07', today: '2026-09-14' }), '/scan?date=2026-09-07');
+    assert.equal(buildIntakeHref('/scan', { date: '2026-09-14', today: '2026-09-14' }), '/scan');
   });
 
   it('every add-entry surface on /diary is given it', () => {
@@ -123,7 +123,7 @@ describe('a back-dated day survives the photo path', () => {
     // after the playground review. The count and the `scanTo` check are the
     // point, not the component's name: a surface that forgets the target
     // writes a back-dated photo to today with nothing on screen saying so.
-    const renders = diary.match(/<AddComposer [^>]*\/>/g) ?? [];
+    const renders = diary.match(/<IntakeComposer [^>]*\/>/g) ?? [];
     assert.equal(renders.length, 4, 'three empty states plus the non-empty day');
     for (const render of renders) assert.match(render, /scanTo=\{scanTo\}/);
     assert.doesNotMatch(diary, /<AddFoodActions [^>]*\/>/, 'a three-button row is back on the diary');
@@ -143,7 +143,7 @@ describe('the surfaces that capture', () => {
     // The composer strip `/dashboard` and `/diary` render. It carries its own
     // camera key, so it is a capturing surface and the gesture rule applies to
     // it too.
-    '../../app/components/add/add-composer.tsx',
+    '../../app/components/intake/intake-composer.tsx',
   ];
 
   for (const surface of surfaces) {
@@ -188,7 +188,7 @@ describe("the sheet key opens the bar's own camera, inside the tap", () => {
     // close are the sheet's own.
     assert.match(launcher, /const sheetCapture: CameraCapture = \{\n\s*\.\.\.launcherCapture,/);
     assert.match(launcher, /capture: capturePhotoFromSheet,/);
-    assert.match(launcher, /<AddComposer[^>]*capture=\{sheetCapture\}/);
+    assert.match(launcher, /<IntakeComposer[^>]*capture=\{sheetCapture\}/);
   });
 
   it('awaits nothing between the sheet tap and the capture, and closes only after it', () => {
@@ -241,8 +241,8 @@ describe('the launcher carries the day the person is looking at', () => {
     // TWO, not three: the sheet renders the composer strip now (M232/03), and
     // the strip derives the spoken door from the typed one. Where those two
     // land is `add-launcher-targets.test.ts`, which renders them.
-    assert.match(launcher, /const describeTo = buildAddHref\('\/describe', \{ date: viewedDate \}\);/);
-    assert.match(launcher, /const scanTo = buildAddHref\('\/scan', \{ date: viewedDate \}\);/);
+    assert.match(launcher, /const describeTo = buildIntakeHref\('\/describe', \{ date: viewedDate \}\);/);
+    assert.match(launcher, /const scanTo = buildIntakeHref\('\/scan', \{ date: viewedDate \}\);/);
     assert.match(launcher, /useCameraCapture\(\{ scanTo \}\)/);
   });
 
@@ -251,20 +251,20 @@ describe('the launcher carries the day the person is looking at', () => {
     // that computed the hrefs and then rendered the old literals anyway.
     assert.doesNotMatch(launcher, /to="\/describe/, 'a launcher row points at an undated /describe again');
     assert.doesNotMatch(launcher, /to="\/scan/, 'a launcher row points at an undated /scan again');
-    assert.match(launcher, /<AddComposer describeTo=\{describeTo\}/);
+    assert.match(launcher, /<IntakeComposer describeTo=\{describeTo\}/);
   });
 
   it('turns a dated diary URL into dated doors, and a bare one into bare doors', () => {
     // The other half of the chain, run for real: the same two calls the file
     // above makes, over the search string `/diary?date=` actually produces.
     const dayOnScreen = parseDateParam(new URLSearchParams('?date=2026-09-07').get('date'));
-    assert.equal(buildAddHref('/describe', { date: dayOnScreen }), '/describe?date=2026-09-07');
-    assert.equal(buildAddHref('/describe', { date: dayOnScreen, speak: true }), '/describe?date=2026-09-07&speak=1');
-    assert.equal(buildAddHref('/scan', { date: dayOnScreen }), '/scan?date=2026-09-07');
+    assert.equal(buildIntakeHref('/describe', { date: dayOnScreen }), '/describe?date=2026-09-07');
+    assert.equal(buildIntakeHref('/describe', { date: dayOnScreen, speak: true }), '/describe?date=2026-09-07&speak=1');
+    assert.equal(buildIntakeHref('/scan', { date: dayOnScreen }), '/scan?date=2026-09-07');
 
     const today = parseDateParam(new URLSearchParams('').get('date'));
-    assert.equal(buildAddHref('/describe', { date: today }), '/describe');
-    assert.equal(buildAddHref('/describe', { date: today, speak: true }), '/describe?speak=1');
-    assert.equal(buildAddHref('/scan', { date: today }), '/scan');
+    assert.equal(buildIntakeHref('/describe', { date: today }), '/describe');
+    assert.equal(buildIntakeHref('/describe', { date: today, speak: true }), '/describe?speak=1');
+    assert.equal(buildIntakeHref('/scan', { date: today }), '/scan');
   });
 });

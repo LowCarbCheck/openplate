@@ -17,7 +17,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { offerPickedFile, offerTypedText, takeIntakeHandoff } from '../../app/lib/scan-handoff';
+import { offerPickedFile, offerTypedText, takeIntakeHandoff } from '../../app/lib/intake-handoff';
 import { INTAKE_SOURCES } from '../../app/lib/intake-source';
 
 function photo(name: string): File {

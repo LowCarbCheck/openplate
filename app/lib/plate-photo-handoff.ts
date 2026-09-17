@@ -20,7 +20,7 @@
  * belongs to the confirm asking for it. A stale offer from an earlier draft is
  * refused rather than saved under a batch it does not show.
  *
- * EXACTLY ONCE is the contract, as in `scan-handoff.ts`: `takePlatePhoto`
+ * EXACTLY ONCE is the contract, as in `intake-handoff.ts`: `takePlatePhoto`
  * clears the slot as it reads. A confirm that fails validation never reaches
  * the write and so never takes; the next offer replaces what it left behind.
  *

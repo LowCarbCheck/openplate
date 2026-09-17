@@ -62,8 +62,9 @@ import { Label } from '#app/components/ui/label';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
-import { buildAddHref } from '#app/lib/add-food-hrefs';
-import { offerTypedText } from '#app/lib/scan-handoff';
+import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { offerTypedText } from '#app/lib/intake-handoff';
+import { parseIntakeConsumer } from '#app/lib/intake-consumers';
 import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
 import { selectRepeatYesterday } from '#app/lib/copy-day';
 import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
@@ -85,7 +86,12 @@ export const handle = {
 };
 
 /**
- * Parks the words and leaves for `/scan`.
+ * Parks the words and leaves for whoever asked for them.
+ *
+ * The destination is a parameter, not a constant: the diary sends these words
+ * to `/scan` and the pantry sends them to `/pantry` (M233/01). Which one it is
+ * was decided by the caller, against the allowlist in `intake-consumers.ts`,
+ * so nothing here has to be told apart from an href.
  *
  * The navigation is injected rather than taken from `useNavigate`, so the
  * whole hand-off is callable from a test: the assertion there reads the REAL
@@ -99,18 +105,18 @@ export const handle = {
 export function handOffDescription({
   text,
   source,
-  scanHref,
+  intakeHref,
   go,
 }: {
   text: string;
   source: TypedIntakeSource;
-  scanHref: string;
+  intakeHref: string;
   go: (href: string) => void;
 }): void {
   const trimmed = text.trim();
   if (trimmed === '') return;
   offerTypedText(trimmed, source);
-  go(scanHref);
+  go(intakeHref);
 }
 
 /**
@@ -306,8 +312,13 @@ export default function DescribeRoute() {
   // normalizes a today-valued date against the device's own timezone, so
   // nothing here has to read the local store to do it a second time.
   const logDate = parseDateParam(searchParams.get('date'));
+  // Who the words go to. `?to=` is a NAME resolved against an allowlist, never
+  // a path this screen navigates to as given, so the parameter cannot become an
+  // open redirect; anything unknown resolves to `/scan`, which is where this
+  // screen went before the pantry existed (`intake-consumers.ts`).
+  const intakeConsumer = parseIntakeConsumer(searchParams.get('to'));
   // Where the words go, carrying the day the person is looking at.
-  const scanHref = buildAddHref('/scan', { date: logDate });
+  const intakeHref = buildIntakeHref(intakeConsumer, { date: logDate });
   const searchHref = logDate === null ? '/add' : `/add?date=${logDate}`;
 
   const { connection: aiConnection, door } = useAiIntake();
@@ -337,8 +348,8 @@ export default function DescribeRoute() {
 
   const handleSend = useCallback((): void => {
     if (!hasAiProvider) return;
-    handOffDescription({ text, source: 'text', scanHref, go: (href) => void navigate(href) });
-  }, [hasAiProvider, navigate, scanHref, text]);
+    handOffDescription({ text, source: 'text', intakeHref, go: (href) => void navigate(href) });
+  }, [hasAiProvider, intakeHref, navigate, text]);
 
   return (
     <DescribeComposer

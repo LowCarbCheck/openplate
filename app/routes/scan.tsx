@@ -92,7 +92,7 @@ import {
   type AnalyzePhase,
   type PickSource,
 } from '#app/lib/scan-analyze';
-import { takeIntakeHandoff } from '#app/lib/scan-handoff';
+import { takeIntakeHandoff } from '#app/lib/intake-handoff';
 import { MEAL_LABEL_KEYS, mealTypeFormField } from '#app/lib/meal-choice';
 import { mealTypeForCapture } from '#app/lib/scan-capture-time';
 import { handleLogUsual, readUsualAtSlot, LOG_USUAL_INTENT } from '#app/lib/usual-at-slot';
@@ -1415,7 +1415,7 @@ function ScanFlow({
   const processSharedRef = useRef<(file: File) => void>(() => {});
   // Guards the once-only shared-photo pickup against a StrictMode double-mount.
   const sharedPhotoHandledRef = useRef(false);
-  // Same pair for the tab-bar launcher's hand-off (see `scan-handoff.ts`).
+  // Same pair for the tab-bar launcher's hand-off (see `intake-handoff.ts`).
   const processHandoffRef = useRef<(file: File) => void>(() => {});
   /** Same pair again for a sentence handed over by `/add` (typed or spoken). */
   const processTextHandoffRef = useRef<(text: string, source: TypedIntakeSource) => void>(() => {});
@@ -1593,7 +1593,7 @@ function ScanFlow({
   });
 
   // The tab bar's launcher opened the camera itself and parked the photo for
-  // us (`scan-handoff.ts`). Feed it into the SAME pipeline a capture taken on
+  // us (`intake-handoff.ts`). Feed it into the SAME pipeline a capture taken on
   // this screen goes through, 'camera' dispatches at once, exactly as it does
   // when the shutter is pressed here, so the grace-window semantics are the
   // capture's, not the hand-off's. The slot empties as it is read, so a

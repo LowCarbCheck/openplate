@@ -52,8 +52,9 @@ import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
 import { DescribeComposer, handOffDescription } from '../../app/routes/describe';
-import { buildAddHref } from '../../app/lib/add-food-hrefs';
-import { takeIntakeHandoff } from '../../app/lib/scan-handoff';
+import { buildIntakeHref } from '../../app/lib/intake-hrefs';
+import { takeIntakeHandoff } from '../../app/lib/intake-handoff';
+import { parseIntakeConsumer } from '../../app/lib/intake-consumers';
 import type { AiConnection, AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import type { RepeatYesterdayOffer } from '../../app/lib/copy-day';
 
@@ -344,14 +345,14 @@ function clearSlot(): void {
   takeIntakeHandoff();
 }
 
-describe('the hand-off to /scan', () => {
+describe('the hand-off to the intake consumer', () => {
   it('parks the trimmed words as a typed intake and leaves for /scan', () => {
     clearSlot();
     const visited: string[] = [];
     handOffDescription({
       text: '  2 fried eggs, a slice of toast  ',
       source: 'text',
-      scanHref: '/scan',
+      intakeHref: '/scan',
       go: (href) => visited.push(href),
     });
 
@@ -367,15 +368,60 @@ describe('the hand-off to /scan', () => {
     // The route builds the scan target through the shared helper now, so the
     // day it hands on is the day the URL it renders under carries.
     const source = readFileSync(new URL('../../app/routes/describe.tsx', import.meta.url), 'utf8');
-    assert.match(source, /const scanHref = buildAddHref\('\/scan', \{ date: logDate \}\);/);
-    assert.equal(buildAddHref('/scan', { date: null }), '/scan');
-    assert.equal(buildAddHref('/scan', { date: '2026-09-07' }), '/scan?date=2026-09-07');
+    assert.match(source, /const intakeHref = buildIntakeHref\(intakeConsumer, \{ date: logDate \}\);/);
+    assert.equal(buildIntakeHref('/scan', { date: null }), '/scan');
+    assert.equal(buildIntakeHref('/scan', { date: '2026-09-07' }), '/scan?date=2026-09-07');
+  });
+
+  it('hands the words to the pantry when ?to= names it, day and all', () => {
+    // M233/01. The diary is no longer the only consumer, so the destination
+    // this screen leaves for is read off the URL rather than written into it.
+    clearSlot();
+    const source = readFileSync(new URL('../../app/routes/describe.tsx', import.meta.url), 'utf8');
+    assert.match(source, /parseIntakeConsumer\(searchParams\.get\('to'\)\)/);
+
+    const visited: string[] = [];
+    const asked = parseIntakeConsumer(new URLSearchParams('?to=/pantry').get('to'));
+    handOffDescription({
+      text: 'half a cabbage, four eggs',
+      source: 'text',
+      intakeHref: buildIntakeHref(asked, { date: '2026-09-17' }),
+      go: (href) => visited.push(href),
+    });
+
+    assert.deepStrictEqual(visited, ['/pantry?date=2026-09-17'], 'the pantry never got the words it asked for');
+    assert.deepStrictEqual(takeIntakeHandoff(), {
+      kind: 'text',
+      text: 'half a cabbage, four eggs',
+      source: 'text',
+    });
+  });
+
+  it('sends an unknown ?to= to /scan, so the parameter cannot become a redirect', () => {
+    // The control for the case above: with no allowlist both tests would pass
+    // while `?to=//example.com` navigated a person off the app mid-sentence.
+    clearSlot();
+    const visited: string[] = [];
+    for (const hostile of ['/evil', '//example.com', 'https://example.com', '/scan/../evil']) {
+      handOffDescription({
+        text: 'two eggs',
+        source: 'text',
+        intakeHref: buildIntakeHref(parseIntakeConsumer(new URLSearchParams(`?to=${hostile}`).get('to')), {
+          date: null,
+        }),
+        go: (href) => visited.push(href),
+      });
+      clearSlot();
+    }
+
+    assert.deepStrictEqual(visited, ['/scan', '/scan', '/scan', '/scan']);
+    assert.equal(parseIntakeConsumer(null), '/scan', 'a missing parameter stopped meaning the diary');
   });
 
   it('spends nothing on an empty box', () => {
     clearSlot();
     const visited: string[] = [];
-    handOffDescription({ text: '   ', source: 'text', scanHref: '/scan', go: (href) => visited.push(href) });
+    handOffDescription({ text: '   ', source: 'text', intakeHref: '/scan', go: (href) => visited.push(href) });
 
     assert.equal(takeIntakeHandoff(), null, 'an empty box was parked for /scan to pay for');
     assert.deepStrictEqual(visited, [], 'an empty box navigated to the scan screen anyway');
