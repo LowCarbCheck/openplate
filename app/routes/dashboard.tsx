@@ -119,6 +119,18 @@ const HANDOFF_LINK_CLASS =
   'inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline';
 
 /**
+ * The pantry door under the composer (M233/02).
+ *
+ * A quiet bordered row, NOT a second `surface-brand` card and not a filled
+ * button: this page already has exactly one hero (DESIGN.md §2), and the
+ * composer directly above it is the loud thing in this block. The door is a
+ * headline plus one line, which is enough to say what it is for without
+ * competing with the control it sits under.
+ */
+const PANTRY_DOOR_CLASS =
+  'flex w-full flex-col gap-0.5 rounded-xl border border-border/70 bg-card/60 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5';
+
+/**
  * Card padding for the two glance tiles.
  *
  * They sit two-up from the narrowest phone up (see the page component), so on a
@@ -407,6 +419,19 @@ function TodayHeroCard({
       */}
       <RepeatYesterdayGhost offer={repeatYesterday} />
       <IntakeComposer describeTo="/describe" />
+      {/*
+        THE SECOND THING THE COMPOSER ABOVE IS FOR (M233/02), and it is a
+        separate door rather than a fourth key inside the strip. The strip
+        takes an intake; where that intake GOES is the call site's decision,
+        and a person standing in front of an open fridge is answering a
+        different question from one who has just eaten. Two sentences under
+        the composer say which is which; a toggle inside it would make every
+        photograph a guess about which list it lands in.
+      */}
+      <Link to="/pantry" className={PANTRY_DOOR_CLASS}>
+        <span className="text-sm font-medium">{t('pantry.door.title')}</span>
+        <span className="text-xs text-muted-foreground">{t('pantry.door.line')}</span>
+      </Link>
       <Link to="/diary" className={HANDOFF_LINK_CLASS}>
         {t('dashboard.today.openDiary')}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />

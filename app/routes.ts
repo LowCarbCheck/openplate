@@ -175,6 +175,12 @@ export default [
     // Saved meals (M123/07 item 1): a named, reusable bundle of foods, saved
     // from the diary and re-logged from here.
     route('/meals', 'routes/meals.tsx'),
+    // The pantry (M233/02): what is in the fridge, captured by photographing a
+    // shelf or by writing a list, and kept on the device. Client-only like
+    // every tracker surface, and for the same two reasons `/scan` is: the
+    // provider call is the browser's own (BYOK) and the list lives in the
+    // on-device primary store, so there is nothing for a server loader to do.
+    route('/pantry', 'routes/pantry.tsx'),
     // The nutrient screen (M135/06). Client-only like every tracker surface:
     // the log and the body metrics are on-device, and the published reference
     // intakes come from the `/api/nutrients` resource route below.

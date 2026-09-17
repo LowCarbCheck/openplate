@@ -307,8 +307,13 @@ function applyStrictModeRules(node: JsonSchemaNode): void {
  * output: drops the draft `$schema` keyword (providers infer the dialect and
  * some strict validators reject unknown top-level keywords) and applies the
  * strict-mode rules above in this one place.
+ *
+ * EXPORTED, because the strict-mode rules are a property of the PROVIDER and
+ * not of the task: `./pantry-schema` derives its own wire schema through this
+ * same function rather than carrying a second copy of rules that would then
+ * have two places to drift.
  */
-function toStrictJsonSchema(schema: z.ZodType): JsonSchemaNode {
+export function toStrictJsonSchema(schema: z.ZodType): JsonSchemaNode {
   // SAFETY: `z.toJSONSchema` emits a plain JSON-Schema object tree and
   // `structuredClone` deep-copies it, so `cloned` is a fresh, own-property-only
   // schema node; `JsonSchemaNode` models exactly the keywords the plate schema

@@ -1003,6 +1003,21 @@ export function mergeSnapshots({
       // otherwise, always, including when it is empty on purpose.
       fasts: fastsDecision.list,
       savedMeals: savedMealsDecision.list,
+      // THE PANTRY RIDES THROUGH FROM THE LOCAL SIDE TOO (M233/02), and with
+      // no `decidePassThrough` around it, which is the one difference from the
+      // two above.
+      //
+      // That guard exists to stop an EVICTED store publishing an emptiness it
+      // cannot account for, and it accounts for it by reading the delete
+      // journal. The pantry writes no journal rows (see the
+      // `NOTE (M233/02, the pantry)` block in `local-store/schema.ts`), so
+      // there is nothing for the guard to read and it would refuse the local
+      // list on every ordinary cycle, handing every second device the shelf
+      // photographed in the first one's kitchen. A plain local pass-through is
+      // the honest answer for a working list: this device's pantry is what is
+      // in THIS device's fridge, and the cost of the rare eviction is that
+      // somebody photographs the shelf again.
+      pantryItems: local.snapshot.pantryItems,
       // NOT passed through from `local` like the two above it: the routine is
       // genuinely merged, so a second device adopts it instead of staying
       // blank. See the comment on `SYNC_ENTITY_TYPES.fastingSettings` for why

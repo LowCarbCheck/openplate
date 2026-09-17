@@ -503,6 +503,13 @@
     "at": "2026-09-14",
     "fr": "Copié"
   },
+  "085c85217f6f446b": {
+    "en": "ml",
+    "path": "common:pantry.units.ml",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "ml"
+  },
   "087fb8c61d6364cb": {
     "en": "{{date}}:{{atLeast}} {{value}} g net carbs{{estimate}}{{overGoal}}",
     "path": "common:trends.chart.bar.netCarbs",
@@ -614,6 +621,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Préparation…"
+  },
+  "0a47c196557219fb": {
+    "en": "Save the list",
+    "path": "common:pantry.review.saveList",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Enregistrer la liste"
   },
   "0a4e4d0a8fc26399": {
     "en": "Analyzed by your own AI provider, then kept only on this device.",
@@ -964,6 +978,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Photos analysées aujourd'hui"
+  },
+  "0e194180e39a653c": {
+    "en": "Item",
+    "path": "common:pantry.review.nameLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Article"
   },
   "0e1ae084b19abe19": {
     "en": "Add manually",
@@ -1497,6 +1518,13 @@
     "at": "2026-09-14",
     "fr": "Opérationnel en une minute environ"
   },
+  "1536a79cf7097873": {
+    "en": "Saving...",
+    "path": "common:pantry.review.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Enregistrement..."
+  },
   "154d4b086d3fe83c": {
     "en": "Their account number",
     "path": "common:sharing.grant.accountLabel",
@@ -1728,6 +1756,13 @@
     "at": "2026-09-14",
     "fr": "Choisis-en un ci-dessous, ou ouvre Avancé pour un point de terminaison auto-hébergé."
   },
+  "18c1b2de0342cf64": {
+    "en": "Remove {{name}}",
+    "path": "common:pantry.review.removeAria",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Supprimer {{name}}"
+  },
   "18d92bdd82135b3f": {
     "en": "Quick add",
     "path": "common:diary.chips.quickAdd",
@@ -1952,6 +1987,13 @@
     "at": "2026-09-14",
     "fr": "Ces conditions sont régies par le droit allemand, pays où l'opérateur est établi, sans égard aux règles de conflit de lois. Les droits obligatoires en matière de protection des consommateurs dont vous bénéficiez en vertu des lois de votre pays de résidence ne sont pas affectés."
   },
+  "1bdafe25a177beac": {
+    "en": "packs",
+    "path": "common:pantry.units.pack",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "paquets"
+  },
   "1be1d41607e103f5": {
     "en": "See where the day stands",
     "path": "common:landing.how.see.title",
@@ -2092,6 +2134,13 @@
     "at": "2026-09-14",
     "fr": "Le journal sur un téléphone : l'anneau de la journée, puis les repas enregistrés en dessous."
   },
+  "1d5cfebacc81a4d2": {
+    "en": "Correct anything that is wrong, then keep it.",
+    "path": "common:pantry.review.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Corrige les erreurs éventuelles, puis conserve-la."
+  },
   "1d73252258ccaa6f": {
     "en": "Your diary did not arrive",
     "path": "common:signIn.pullFailedTitle",
@@ -2154,6 +2203,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ouvrir le suivi"
+  },
+  "1e5ab77e3f214be6": {
+    "en": "Nothing here yet. Photograph your fridge, or write what you have.",
+    "path": "common:pantry.empty",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Rien ici pour le moment. Prends ton frigo en photo, ou écris ce que tu as."
   },
   "1e5db6075be8fee5": {
     "en": "Switching reloads the page so everything changes at once.",
@@ -3891,6 +3947,13 @@
     "at": "2026-09-14",
     "fr": "Définir un poids cible"
   },
+  "3b2c96a70fc6aa8e": {
+    "en": "pieces",
+    "path": "common:pantry.units.piece",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "pièces"
+  },
   "3b434e22c4a0ca95": {
     "en": "It may have been used already, or it may have run out. Ask for a new one.",
     "path": "common:reset.invalid.body",
@@ -4891,6 +4954,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Sans pub, sans suivi"
+  },
+  "4bd89a5f89f7d1d8": {
+    "en": "Pantry",
+    "path": "common:nav.pantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Garde-manger"
   },
   "4bd93da0e48ada54": {
     "en": "This page needs a sign-in.",
@@ -6152,6 +6222,13 @@
     "at": "2026-09-14",
     "fr": "Rien n'a encore été envoyé. Tu choisis les jours à transmettre et le moment de l'envoi sur la page de tes études."
   },
+  "5d2e3c74654608b2": {
+    "en": "Suggest a meal",
+    "path": "common:pantry.recipes.link",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Suggérer un repas"
+  },
   "5d4f0ad8c5da53f6": {
     "en": "Password",
     "path": "common:account.password.title",
@@ -6908,6 +6985,13 @@
     "at": "2026-09-14",
     "fr": "Tu as lu la note pour les jeûnes de 24 heures ou plus."
   },
+  "68b34b49f835b040": {
+    "en": "Reading what you have...",
+    "path": "common:pantry.reading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Lecture de ce que tu as..."
+  },
   "68c47c3020ce65e3": {
     "en": "People",
     "path": "common:admin.tabs.people",
@@ -7138,6 +7222,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "9. Auto-hébergement"
+  },
+  "6c2686eeae924e95": {
+    "en": "Photograph a shelf and keep the list on this device.",
+    "path": "common:pantry.door.line",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Prends une étagère en photo et garde la liste sur cet appareil."
   },
   "6c2b651434ee7db9": {
     "en": "Point the camera at your plate, or type what you ate.",
@@ -7965,6 +8056,13 @@
     "at": "2026-09-14",
     "fr": "{{count}} bananes"
   },
+  "77c8124a06926ff0": {
+    "en": "Check the list",
+    "path": "common:pantry.review.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Vérifie la liste"
+  },
   "77e3892f9514711c": {
     "en": "What you ate",
     "path": "common:diary.drilldown.whatYouAte",
@@ -8244,6 +8342,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Lecture de ton journal…"
+  },
+  "7c1b9307090a80e7": {
+    "en": "Discard",
+    "path": "common:pantry.review.discard",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Ignorer"
   },
   "7c1cab6c762431ab": {
     "en": "probe, disrupt, or overload the service, or attempt to circumvent its rate-limiting or security controls;",
@@ -8566,6 +8671,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "protéines"
+  },
+  "81195293a17aa78f": {
+    "en": "Pantry",
+    "path": "common:pantry.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Garde-manger"
   },
   "81562984f1e4a836": {
     "en": "Understood",
@@ -9638,6 +9750,13 @@
     "at": "2026-09-14",
     "fr": "Fibres"
   },
+  "8edd6a4d31c65f6d": {
+    "en": "Keep this list",
+    "path": "common:pantry.review.confirm",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Garder cette liste"
+  },
   "8ee237a60bc031c2": {
     "en": "Go to account",
     "path": "common:research.needsSessionCta",
@@ -9987,6 +10106,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ajuster pour 100 g"
+  },
+  "94a0e424e7ef4694": {
+    "en": "No amount",
+    "path": "common:pantry.review.unitNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Sans quantité"
   },
   "94c2ccd179585656": {
     "en": "Save details",
@@ -10589,6 +10715,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "openplate est open-source et peut être auto-hébergé. Ces conditions décrivent l'instance hébergée spécifique que nous exploitons. Sur un déploiement auto-hébergé, l'opérateur de cette instance, et non le projet openplate, est responsable de ses propres conditions, de ses propres utilisateurs et de son propre fonctionnement, et les présentes conditions ne s'y appliquent pas."
+  },
+  "9d764d8295216dba": {
+    "en": "Unit",
+    "path": "common:pantry.review.unitLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Unité"
   },
   "9d898b0aab51d764": {
     "en": "All ({{total}})",
@@ -12522,6 +12655,13 @@
     "at": "2026-09-14",
     "fr": "Administrateurs"
   },
+  "bc34f761b374ef41": {
+    "en": "We could not read that. Try again in a moment.",
+    "path": "common:pantry.errors.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Impossible de lire cela. Réessaie dans un instant."
+  },
   "bc411beab7d1bce4": {
     "en": "Connecting to OpenRouter",
     "path": "common:oauth.callback.title",
@@ -12927,6 +13067,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Mot de passe du compte de l'étude"
+  },
+  "c26cc7c8bc9879c2": {
+    "en": "What you have at home. Photograph a shelf, or write the list.",
+    "path": "common:pantry.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Ce que tu as chez toi. Prends une étagère en photo, ou écris la liste."
   },
   "c29c18ded41c6c91": {
     "en": "Provider",
@@ -14034,6 +14181,13 @@
     "at": "2026-09-14",
     "fr": "Pour changer de fournisseur, déconnecte-toi d'abord."
   },
+  "d452f458b2bb0a2a": {
+    "en": "What is in the fridge?",
+    "path": "common:pantry.door.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Qu'y a-t-il dans le frigo ?"
+  },
   "d4545b00ee93e96c": {
     "en": "Account",
     "path": "common:sync.profileCard.manage",
@@ -14173,6 +14327,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Bien, assez long pour être véritablement difficile à deviner."
+  },
+  "d62212955e694dd9": {
+    "en": "What do you have?",
+    "path": "common:pantry.composerLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Qu'est-ce que tu as ?"
+  },
+  "d635033a897b32ee": {
+    "en": "Add a line",
+    "path": "common:pantry.review.addLine",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Ajouter une ligne"
   },
   "d6444d15c9b8157c": {
     "en": "One weigh-in so far, a trend needs a couple more.",
@@ -14348,6 +14516,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Rien d'autre ne change : ton journal reste sur cet appareil, et tu peux te déconnecter à tout moment dans les paramètres d'IA."
+  },
+  "d95540023a296bc0": {
+    "en": "That did not work",
+    "path": "common:pantry.errors.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "L'opération a échoué"
   },
   "d96b5223547df27c": {
     "en": "({{delta}} vs last week)",
@@ -14831,6 +15006,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Tous facultatifs. Ces détails permettent d'adapter les apports de référence en vitamines et minéraux à ton profil et de suggérer un objectif de calories. Ils restent sur cet appareil comme le reste de ton journal, et aucune de ces données n'est transmise lors d'une recherche d'aliment."
+  },
+  "e07bedf363d886de": {
+    "en": "No food was found in that. Try a closer picture, or write the list.",
+    "path": "common:pantry.errors.nothingFound",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Aucun aliment n'a été détecté. Prends une photo de plus près, ou écris la liste."
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",
@@ -15630,6 +15812,13 @@
     "at": "2026-09-14",
     "fr": "Thème"
   },
+  "ecb23df628ad3690": {
+    "en": "Pantry · openplate",
+    "path": "common:meta.pantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Garde-manger · openplate"
+  },
   "ecd249f74ad3ef82": {
     "en": "Invite someone",
     "path": "common:admin.invite.cta",
@@ -16337,6 +16526,13 @@
     "at": "2026-09-14",
     "fr": "Remplacer ta clé de données ?"
   },
+  "f7eb18d65fec3c27": {
+    "en": "Amount",
+    "path": "common:pantry.review.amountLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "Quantité"
+  },
   "f7f5bdf1d2f003b0": {
     "en": "The report could not be queued. Try again.",
     "path": "common:entry.report.failed",
@@ -16490,6 +16686,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Plus grand"
+  },
+  "faa078b9d88c66b0": {
+    "en": "g",
+    "path": "common:pantry.units.g",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-17",
+    "fr": "g"
   },
   "fab9ccd6138c0e10": {
     "en": "Remove {{name}} from favorites",

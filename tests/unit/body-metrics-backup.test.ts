@@ -57,11 +57,14 @@ describe('schema version', () => {
   // and the eating style on the profile (M210/01) at v20, and the fasting
   // rework at v21: four new named presets on `FastProtocolId`, `mood` and
   // `note` on a fast, and the whole new `fastingSettings` record.
+  // And the PANTRY at v22 (M233/02), a whole new device-local entity with a
+  // required array on the snapshot, whose forward migration is a `.default([])`
+  // exactly as `fasts` and `savedMeals` before it.
   // What it guards is that a bump is never silent ,
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 21, bumped past the v8 body-metrics bump by everything through the fasting rework', () => {
-    assert.equal(SCHEMA_VERSION, 21);
+  it('is 22, bumped past the v8 body-metrics bump by everything through the pantry', () => {
+    assert.equal(SCHEMA_VERSION, 22);
   });
 });
 

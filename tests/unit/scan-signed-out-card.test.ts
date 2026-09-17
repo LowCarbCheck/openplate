@@ -32,8 +32,18 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-const SCAN_ROUTE_PATH = fileURLToPath(new URL('../../app/routes/scan.tsx', import.meta.url));
-const SCAN_SOURCE = readFileSync(SCAN_ROUTE_PATH, 'utf8');
+/**
+ * THE CONNECT CARD'S OWN SOURCE, not `scan.tsx`'s any more.
+ *
+ * The card was lifted into `components/intake/` by M233/02, because `/pantry`
+ * reaches the same dead end and a second set of sentences about one missing
+ * connection would drift. What this file asserts did not change with it: the
+ * dead signed-out variant must stay gone, and the reachable one must stay.
+ */
+const CONNECT_CARD_PATH = fileURLToPath(
+  new URL('../../app/components/intake/intake-connect-card.tsx', import.meta.url),
+);
+const SCAN_SOURCE = readFileSync(CONNECT_CARD_PATH, 'utf8');
 
 /** The one namespace this file reads, parsed at the file boundary rather than asserted. */
 const catalogSchema = z.object({
@@ -52,11 +62,11 @@ const CATALOGS = ['en', 'de'].map((locale) => ({
   ).scan.setup,
 }));
 
-describe('scan.tsx carries no managed-signed-out card', () => {
-  it('has no managed-signed-out marker left in the route source', () => {
+describe('the connect card carries no managed-signed-out variant', () => {
+  it('has no managed-signed-out marker left in the card source', () => {
     assert.ok(
       !SCAN_SOURCE.includes('managed-signed-out'),
-      'the managed-signed-out variant, or a branch selecting it, is still in scan.tsx',
+      'the managed-signed-out variant, or a branch selecting it, is still in the connect card',
     );
   });
 
@@ -64,8 +74,11 @@ describe('scan.tsx carries no managed-signed-out card', () => {
     // THE CONTROL. Without it, the assertion above passes against a file that
     // was emptied, truncated, or never read at all, and a grep with no positive
     // match proves nothing about the file it ran against.
-    assert.ok(SCAN_SOURCE.includes('managed-missing'), 'scan.tsx lost the managed-missing door too');
-    assert.ok(SCAN_SOURCE.includes('_personal'), 'scan.tsx lost its reference to the layout that makes the card dead');
+    assert.ok(SCAN_SOURCE.includes('managed-missing'), 'the connect card lost the managed-missing door too');
+    assert.ok(
+      SCAN_SOURCE.includes('_personal'),
+      'the connect card lost its reference to the layout that makes the signed-out card dead',
+    );
   });
 });
 

@@ -373,7 +373,37 @@
  * an EVENT with a hard cross-device invariant ("at most one open"), while a
  * routine is a PREFERENCE, exactly like the profile row beside it, and a
  * person who sets their window on a phone means it on their tablet too.
+ *
+ * NOTE (M233/02, the pantry): `SCHEMA_VERSION` v21 -> v22 adds ONE WHOLE NEW
+ * ENTITY, `LocalPantryItem`, plus {@link PANTRY_ITEMS_TABLE} and one REQUIRED
+ * key, `pantryItems`, on {@link LocalStoreSnapshot}. It is under the
+ * `fasts`/`savedMeals` rules, NOT the optional-field ones: a v21 envelope has
+ * no `pantryItems` key at all, and `backup.ts`'s
+ * `pantryItems: z.array(pantryItemSchema).default([])` IS the complete forward
+ * migration, "this device had no pantry, because a pantry did not exist".
+ * There is no `migrateSnapshotToV22` step and there must not be one, for the
+ * identical reason there is no `migrateSnapshotToV11` one.
+ *
+ * IT IS PASSED THROUGH BY `mergeSnapshots`, THE `fasts` STANCE. The local
+ * side rides through untouched, so the pantry is never stamped, never diffed,
+ * never tombstoned and never adopted from another device. It is therefore
+ * ABSENT from {@link SYNC_ENTITY_TYPE_BY_TABLE}, which is the map of the
+ * MERGED tables.
+ *
+ * AND IT IS ABSENT FROM {@link DELETE_JOURNAL_TAG_BY_TABLE} TOO, which is
+ * where it parts company with `fasts` and `savedMeals`, so read this before
+ * copying either. The journal exists to tell a list somebody EMPTIED from a
+ * list a browser EVICTED, and it earns that cost where the thing lost is a
+ * record of something that happened: a fast somebody kept, a meal they named
+ * and bundled. A pantry is a WORKING LIST of what is in the fridge this week.
+ * It is rewritten wholesale every time somebody photographs a shelf
+ * (`replaceLocalPantry`), it is stale within days by its own nature, and the
+ * worst case of losing the distinction is that a peer's older list comes back
+ * and the person photographs the shelf again. Journalling every removed row of
+ * a list that turns over completely would write more tombstone bookkeeping
+ * than the feature has content.
  */
+import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
 import type { EatingStyleId } from '#app/lib/eating-style';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
@@ -386,7 +416,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 21;
+export const SCHEMA_VERSION = 22;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -424,6 +454,8 @@ export const FASTING_SETTINGS_TABLE = 'fastingSettings';
 export const FASTING_SETTINGS_ROW_ID = 'me';
 /** Table: saved meals (M123/07 item 1), keyed by a client-generated id. */
 export const SAVED_MEALS_TABLE = 'savedMeals';
+/** Table: what is in the fridge (M233/02), keyed by a client-generated id. */
+export const PANTRY_ITEMS_TABLE = 'pantryItems';
 /** Share identity table (M160/04), a SINGLETON, keyed by {@link SHARE_IDENTITY_ROW_ID}, exactly like the profile row. */
 export const SHARE_IDENTITY_TABLE = 'shareIdentity';
 /** The one row id the share identity ever occupies, this device's account has exactly one share key pair. */
@@ -1195,6 +1227,69 @@ export interface LocalSavedMeal {
 }
 
 /**
+ * The unit one pantry row is measured in, or `null` for a row with no amount.
+ *
+ * Four members and no fifth. A weight, a volume, a countable thing and a
+ * sealed package cover what a person can state about a shelf; anything else
+ * ("a handful", "half a jar") belongs in the NAME, where it reads correctly
+ * and claims nothing a renderer then has to interpret.
+ *
+ * DERIVED FROM THE WIRE SCHEMA rather than declared twice: a unit the model is
+ * allowed to answer with and a unit the store can hold are the same set, and
+ * two spellings of it would let a reading parse and then fail to save.
+ */
+export type PantryUnit = PantryUnitValue;
+
+/**
+ * The shelf a pantry row belongs on. Also derived from the wire schema, for
+ * the reason {@link PantryUnit} is.
+ *
+ * It groups the list and gives spec 04's recipe proposal something to reason
+ * about without a second lookup. `other` is a correct answer, never a failure
+ * to classify, and nothing in the app treats it as one.
+ */
+export type PantryCategory = PantryCategoryValue;
+
+/**
+ * One ingredient a person has at home (M233/02), as this device holds it.
+ *
+ * NO MACROS, ANYWHERE, and that is a scope decision rather than an unfinished
+ * one (see the milestone's non-goals): the pantry stores names and amounts,
+ * and macros exist per recipe SERVING, which is spec 04's business. A
+ * per-ingredient macro block here would be a second, unmaintained food
+ * database beside `LocalPersonalFood`.
+ *
+ * `amount` and `unit` are NULLABLE rather than optional, and they are null
+ * TOGETHER. Null is a meaning the screen states ("no amount yet"), not a field
+ * a writer may leave off, which is the `lastSubmission` convention on
+ * `LocalStudyEnrolment` rather than the `portion` one. A unit with no amount
+ * would render a bare "ml" against a name.
+ */
+export interface LocalPantryItem {
+  /** Client-generated stable id (the TinyBase rowId). */
+  id: string;
+  /** The person's own words for the item, in their own language. Never translated on the way in or out. */
+  name: string;
+  /** How much, when it is known. Null means "not stated", and never 0. */
+  amount: number | null;
+  /** What {@link LocalPantryItem.amount} is measured in. Null whenever the amount is. */
+  unit: PantryUnit | null;
+  category: PantryCategory;
+  /** How this row arrived: a photograph, a sentence, or typed straight into the list. */
+  source: 'photo' | 'text' | 'manual';
+  /** Epoch-ms the row was first written on this device. */
+  createdAt: number;
+  /**
+   * Epoch-ms of the last change to this row.
+   *
+   * It moves when a later capture names the same ingredient again
+   * (`mergePantry`), which is what makes "I photographed the fridge again"
+   * visible as a refresh rather than as a duplicate.
+   */
+  updatedAt: number;
+}
+
+/**
  * This account's own share key pair (`openplate-core` ADR-0002), the identity
  * a clinician is addressed BY, and a patient wraps their DEK TO.
  *
@@ -1374,6 +1469,19 @@ export interface LocalStoreSnapshot {
    * `NOTE (M123/07, saved meals)` block at the top of this file.
    */
   savedMeals: LocalSavedMeal[];
+  /**
+   * Added v22 (the pantry, M233/02), what is in the fridge on this device.
+   *
+   * REQUIRED, under the `fasts`/`savedMeals` rule: a v21 envelope has no key
+   * at all, and `backup.ts`'s `.default([])` is the whole forward migration.
+   *
+   * PASSED THROUGH by `mergeSnapshots` from the LOCAL side, the `fasts`
+   * stance, so a second device keeps its own shelf rather than adopting one
+   * photographed in another kitchen. Unlike `fasts` it journals no deletes;
+   * see the `NOTE (M233/02, the pantry)` block at the top of this file for
+   * why a working list earns a different answer from a record of events.
+   */
+  pantryItems: LocalPantryItem[];
   /**
    * Added v13 (clinician sharing, M160/04), this account's own share key
    * pair, or `null` on a device that has never generated one (the normal

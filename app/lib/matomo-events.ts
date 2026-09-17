@@ -328,6 +328,28 @@ export function trackFoodLogged(path: LogInputPath): void {
  *
  * @param kind - whether the tapped offer was a saved bundle or a single food.
  */
+/**
+ * HOW a pantry was captured (M233/02), as a fixed path name.
+ *
+ * The three ways in, and nothing else. It never says WHAT is in the pantry,
+ * how many rows it holds or whether anything was merged: what is in somebody's
+ * fridge is content in exactly the sense this module's header forbids, and
+ * there is no value slot on `trackEvent` to put a count in even if there were
+ * an argument for one.
+ *
+ * A separate event from `Diary / logged` rather than a new `LogInputPath`,
+ * because nothing was logged: a pantry capture writes no food log and changes
+ * no day. Folding it into the diary counter would inflate the one number that
+ * answers "does this app get used for what it is for".
+ *
+ * @param path - photograph, the person's own words, or typed straight into the list.
+ */
+export type PantryCapturePath = 'photo' | 'text' | 'manual';
+
+export function trackPantryCaptured(path: PantryCapturePath): void {
+  trackEvent('product', 'Pantry', 'captured', path);
+}
+
 export function trackUsualAtSlotLogged(kind: UsualAtSlotKind): void {
   trackFoodLogged(kind === 'saved-meal' ? 'usual-saved-meal' : 'usual-food');
 }

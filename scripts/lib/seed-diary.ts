@@ -679,6 +679,7 @@ export function buildSeedDiary(options: SeedDiaryOptions): BackupEnvelope {
       },
       fasts: [],
       savedMeals: [],
+      pantryItems: [],
       fastingSettings: null,
       shareIdentity: null,
       sharePeers: [],

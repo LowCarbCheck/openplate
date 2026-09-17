@@ -64,6 +64,7 @@ import {
   RESEARCH_IDENTITY_ROW_ID,
   RESEARCH_IDENTITY_TABLE,
   SAVED_MEALS_TABLE,
+  PANTRY_ITEMS_TABLE,
   SCHEMA_VERSION_VALUE,
   SHARE_IDENTITY_ROW_ID,
   SHARE_IDENTITY_TABLE,
@@ -84,6 +85,7 @@ import type {
   LocalProfileGoals,
   LocalResearchIdentity,
   LocalSavedMeal,
+  LocalPantryItem,
   LocalShareIdentity,
   LocalSharePeer,
   LocalStudyEnrolment,
@@ -99,6 +101,7 @@ type PrimaryEntity =
   | LocalFast
   | LocalFastingSettings
   | LocalSavedMeal
+  | LocalPantryItem
   | LocalShareIdentity
   | LocalSharePeer
   | LocalResearchIdentity
@@ -884,6 +887,69 @@ export async function getLocalSavedMeal(id: string, { store }: StoreOption = {})
  */
 export async function deleteLocalSavedMeal(id: string, { store }: StoreOption = {}): Promise<void> {
   deleteEntity(await resolveStore(store), SAVED_MEALS_TABLE, id);
+}
+
+// ---------------------------------------------------------------------------
+// The pantry: what is in the fridge (M233/02)
+// ---------------------------------------------------------------------------
+
+/** Upserts one pantry item (keyed by `id`). */
+export async function putLocalPantryItem(
+  item: LocalPantryItem,
+  { store }: StoreOption = {},
+): Promise<LocalPantryItem> {
+  writeEntity(await resolveStore(store), PANTRY_ITEMS_TABLE, item.id, item);
+  return item;
+}
+
+/** Every pantry item, oldest first. */
+export async function listLocalPantryItems({ store }: StoreOption = {}): Promise<LocalPantryItem[]> {
+  return readEntities<LocalPantryItem>(await resolveStore(store), PANTRY_ITEMS_TABLE).toSorted(byCreatedThenId);
+}
+
+/**
+ * Removes one pantry item by id.
+ *
+ * NO JOURNAL ROW, unlike {@link deleteLocalSavedMeal} and {@link deleteLocalFast}
+ * directly above it, and the difference is deliberate: `PANTRY_ITEMS_TABLE` is
+ * absent from `DELETE_JOURNAL_TAG_BY_TABLE`, so `deleteEntity` simply removes
+ * the row. See the `NOTE (M233/02, the pantry)` block in `schema.ts` for why a
+ * working list that turns over every week earns a different answer here from a
+ * record of something that happened.
+ */
+export async function deleteLocalPantryItem(id: string, { store }: StoreOption = {}): Promise<void> {
+  deleteEntity(await resolveStore(store), PANTRY_ITEMS_TABLE, id);
+}
+
+/**
+ * Makes the stored pantry exactly `items`, in one transaction.
+ *
+ * THE WHOLE-LIST WRITE IS THE PANTRY'S NATURAL VERB. A capture answers "what
+ * is on this shelf now", and the review form a person confirms is the whole
+ * answer, so a sequence of puts and deletes would be this one fact taken apart
+ * and reassembled, with a window in the middle where the disk holds neither
+ * list. `store.transaction` closes that window: TinyBase commits every row
+ * together and the autosave listener sees one change.
+ *
+ * Rows absent from `items` are removed WITHOUT a journal entry, for the reason
+ * {@link deleteLocalPantryItem} gives.
+ *
+ * @param items - the complete pantry after the change, in the order to store it.
+ * @returns the same list, so a caller can render what it just wrote.
+ */
+export async function replaceLocalPantry(
+  items: readonly LocalPantryItem[],
+  { store }: StoreOption = {},
+): Promise<LocalPantryItem[]> {
+  const resolved = await resolveStore(store);
+  const kept = new Set(items.map((item) => item.id));
+  resolved.transaction(() => {
+    for (const id of resolved.getRowIds(PANTRY_ITEMS_TABLE)) {
+      if (!kept.has(id)) resolved.delRow(PANTRY_ITEMS_TABLE, id);
+    }
+    for (const item of items) writeEntity(resolved, PANTRY_ITEMS_TABLE, item.id, item);
+  });
+  return [...items];
 }
 
 // ---------------------------------------------------------------------------

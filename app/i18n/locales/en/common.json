@@ -1352,7 +1352,8 @@
     "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance is invitation only, and your diary is encrypted on this device before a copy reaches the server.",
     "plan": "Your plan · openplate",
     "withdrawal": "Right of withdrawal · openplate",
-    "notifications": "Notifications · openplate"
+    "notifications": "Notifications · openplate",
+    "pantry": "Pantry · openplate"
   },
   "nav": {
     "add": "Add",
@@ -1365,7 +1366,8 @@
     "nutrients": "Nutrients",
     "scan": "Scan",
     "settings": "Settings",
-    "trends": "Progress"
+    "trends": "Progress",
+    "pantry": "Pantry"
   },
   "nutrients": {
     "amount": {
@@ -3177,6 +3179,45 @@
     "toast": {
       "logged_one": "Logged {{name}}.",
       "logged_other": "Logged {{name}}, {{count}} foods."
+    }
+  },
+  "pantry": {
+    "title": "Pantry",
+    "lead": "What you have at home. Photograph a shelf, or write the list.",
+    "empty": "Nothing here yet. Photograph your fridge, or write what you have.",
+    "composerLabel": "What do you have?",
+    "reading": "Reading what you have...",
+    "door": {
+      "title": "What is in the fridge?",
+      "line": "Photograph a shelf and keep the list on this device."
+    },
+    "units": {
+      "g": "g",
+      "ml": "ml",
+      "piece": "pieces",
+      "pack": "packs"
+    },
+    "review": {
+      "title": "Check the list",
+      "lead": "Correct anything that is wrong, then keep it.",
+      "nameLabel": "Item",
+      "amountLabel": "Amount",
+      "unitLabel": "Unit",
+      "unitNone": "No amount",
+      "removeAria": "Remove {{name}}",
+      "addLine": "Add a line",
+      "confirm": "Keep this list",
+      "discard": "Discard",
+      "saveList": "Save the list",
+      "saving": "Saving..."
+    },
+    "recipes": {
+      "link": "Suggest a meal"
+    },
+    "errors": {
+      "title": "That did not work",
+      "failed": "We could not read that. Try again in a moment.",
+      "nothingFound": "No food was found in that. Try a closer picture, or write the list."
     }
   }
 }

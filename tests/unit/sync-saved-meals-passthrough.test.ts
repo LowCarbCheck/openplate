@@ -63,6 +63,7 @@ function snapshot(savedMeals: LocalSavedMeal[]): SyncedSnapshot {
     profile: null,
     fasts: [],
     savedMeals,
+    pantryItems: [],
     fastingSettings: null,
     privateStore: null,
   };

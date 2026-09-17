@@ -12,6 +12,10 @@ export * from './failure-cause';
 // The scan tasks (`PLATE_SCAN_TASK`, `LABEL_SCAN_TASK`, `VisionMode`) — how a
 // caller says which job it wants without the service guessing from the image.
 export * from './task';
+// The PANTRY wire schema and its result type (M233/02). Exported beside the
+// tasks for the same reason they are: a consumer names a task and then names
+// the shape it answers with, and both come from this one entry point.
+export * from './pantry-schema';
 
 export interface CreateVisionProviderOptions {
   provider: AiProviderType;

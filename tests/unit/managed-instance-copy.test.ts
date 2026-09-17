@@ -52,6 +52,22 @@ function readRoute(name: string): string {
 }
 
 /**
+ * The connect card's own source.
+ *
+ * It USED to live inside `scan.tsx`. M233/02 lifted it into
+ * `components/intake/` because `/pantry` reaches the same dead end, so the
+ * source this file greps moved with it. The assertion is unchanged: the
+ * sentence that names an administrator must still be gated on the door that
+ * has one.
+ */
+function readConnectCard(): string {
+  return readFileSync(
+    fileURLToPath(new URL('../../app/components/intake/intake-connect-card.tsx', import.meta.url)),
+    'utf8',
+  );
+}
+
+/**
  * `<question> ? …` followed by the managed key, i.e. the twin is on the branch
  * that policy question turns on.
  *
@@ -221,9 +237,9 @@ describe('no surface names an administrator where memberInvites is on', () => {
     assert.match(renderNoAiNotice(door), /administrator/i);
   });
 
-  it('gates the account page and the scan card on the same rule, from their own source', () => {
+  it('gates the account page and the connect card on the same rule, from their own source', () => {
     const account = readRoute('settings.account.tsx');
-    const scan = readRoute('scan.tsx');
+    const scan = readConnectCard();
     // The sentence is rendered only for the door that has somebody to name.
     assert.match(account, /door\.kind === 'ask-admin' && <p/);
     assert.match(scan, /allowanceDoor\.kind === 'ask-admin' && <p>\{t\('scan\.setup\.managedMissing\.askAdmin'\)\}/);

@@ -1352,7 +1352,8 @@
     "landingDescriptionManaged": "Fotografa il tuo piatto o cerca quello che hai mangiato. openplate ti mostra i carboidrati in pochi secondi e ne tiene traccia rispetto all'obiettivo giornaliero che hai impostato. Questa istanza è accessibile solo su invito e il tuo diario viene cifrato su questo dispositivo prima che una copia raggiunga il server.",
     "plan": "Il tuo piano · openplate",
     "withdrawal": "Diritto di recesso · openplate",
-    "notifications": "Notifiche · openplate"
+    "notifications": "Notifiche · openplate",
+    "pantry": "Dispensa · openplate"
   },
   "nav": {
     "add": "Aggiungi",
@@ -1365,7 +1366,8 @@
     "nutrients": "Nutrienti",
     "scan": "Scansiona",
     "settings": "Impostazioni",
-    "trends": "Progressi"
+    "trends": "Progressi",
+    "pantry": "Dispensa"
   },
   "nutrients": {
     "amount": {
@@ -3177,6 +3179,45 @@
     "toast": {
       "logged_one": "Registrato {{name}}.",
       "logged_other": "Registrato {{name}}, {{count}} alimenti."
+    }
+  },
+  "pantry": {
+    "title": "Dispensa",
+    "lead": "Quello che hai a casa. Fotografa uno scaffale o scrivi la lista.",
+    "empty": "Non c'è ancora nulla qui. Fotografa il frigo o scrivi quello che hai.",
+    "composerLabel": "Cosa hai?",
+    "reading": "Lettura di quello che hai in corso...",
+    "door": {
+      "title": "Cosa c'è in frigo?",
+      "line": "Fotografa uno scaffale e conserva la lista su questo dispositivo."
+    },
+    "units": {
+      "g": "g",
+      "ml": "ml",
+      "piece": "pezzi",
+      "pack": "confezioni"
+    },
+    "review": {
+      "title": "Controlla la lista",
+      "lead": "Correggi ciò che non torna, poi salvalo.",
+      "nameLabel": "Elemento",
+      "amountLabel": "Quantità",
+      "unitLabel": "Unità",
+      "unitNone": "Nessuna quantità",
+      "removeAria": "Rimuovi {{name}}",
+      "addLine": "Aggiungi una riga",
+      "confirm": "Mantieni questa lista",
+      "discard": "Scarta",
+      "saveList": "Salva la lista",
+      "saving": "Salvataggio in corso..."
+    },
+    "recipes": {
+      "link": "Suggerisci un pasto"
+    },
+    "errors": {
+      "title": "Non ha funzionato",
+      "failed": "Impossibile leggere il contenuto. Riprova tra poco.",
+      "nothingFound": "Nessun alimento trovato. Prova con una foto più da vicino o scrivi la lista."
     }
   }
 }

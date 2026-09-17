@@ -18,6 +18,7 @@ import { z } from 'zod';
 import type { Store } from 'tinybase';
 import { displayPortionSchema } from '#app/lib/portions';
 import { CARB_BASES } from '#app/lib/net-carbs';
+import { PANTRY_CATEGORIES, PANTRY_UNITS } from '#app/services/vision/pantry-schema';
 import { EATING_STYLE_IDS } from '#app/lib/eating-style';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
 import { LAST_EXPORT_VALUE } from './store';
@@ -33,6 +34,7 @@ import {
   listLocalFoodLogs,
   listLocalFoods,
   listLocalSavedMeals,
+  listLocalPantryItems,
   listLocalSharePeers,
   listLocalStudyEnrolments,
   listLocalWeightEntries,
@@ -44,6 +46,7 @@ import {
   putLocalProfileGoals,
   putLocalResearchIdentity,
   putLocalSavedMeal,
+  putLocalPantryItem,
   putLocalShareIdentity,
   putLocalSharePeer,
   putLocalStudyEnrolment,
@@ -339,6 +342,30 @@ const savedMealSchema = z.object({
 });
 
 /**
+ * Added v22 (the pantry, M233/02).
+ *
+ * The unit and the category are `z.enum` over the SAME closed lists the model
+ * is asked for (`#app/services/vision/pantry-schema`), so an item that could
+ * not have been produced by a reading cannot be imported as one either. They
+ * are strict rather than `.catch()`-softened, because unlike `carbBasis` there
+ * is no "not decided" fallback that keeps the row meaningful: a row whose unit
+ * this build does not recognise would render an amount against nothing.
+ *
+ * `amount` and `unit` are nullable, never optional, because they are null
+ * TOGETHER and null is the meaning "not stated" (see `LocalPantryItem`).
+ */
+const pantryItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  amount: z.number().nullable(),
+  unit: z.enum(PANTRY_UNITS).nullable(),
+  category: z.enum(PANTRY_CATEGORIES),
+  source: z.enum(['photo', 'text', 'manual']),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+/**
  * Added v13 (clinician sharing, M160/04). Base64 rather than bytes because a
  * snapshot is JSON; the lengths are NOT asserted here on purpose, a wrong
  * length fails loudly at `crypto.subtle.importKey`, and a zod refinement that
@@ -446,6 +473,20 @@ export const shareableSnapshotFields = {
   // like the profile's goals, not key material, see `snapshot-partition.ts`
   // which is where that decision is recorded and enforced.
   fastingSettings: fastingSettingsSchema.nullable().default(null),
+  // Added v22 (the pantry, M233/02). Same rule as `fasts` and `savedMeals`
+  // above (a whole new entity, not an optional field on an existing one): a
+  // v21 envelope has no `pantryItems` key, and `.default([])` IS the complete
+  // v21 -> v22 forward migration, "this device had no pantry, because a pantry
+  // did not exist". No `migrateSnapshotToV22` step, for the identical reason
+  // there is no `migrateSnapshotToV11` one. See the
+  // `NOTE (M233/02, the pantry)` block in `schema.ts`.
+  //
+  // It sits in the SHAREABLE region because what is in somebody's fridge is
+  // diary-adjacent content, not key material and not a trust pin, which are
+  // the only two things the owner-private compartment is for. That it rides in
+  // the region does not mean it MERGES: `snapshot-sync.ts` passes the local
+  // side through untouched, the `fasts` stance.
+  pantryItems: z.array(pantryItemSchema).default([]),
 } as const;
 
 /**
@@ -709,6 +750,7 @@ async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
     // wire too.
     fastingSettings: await peekLocalFastingSettings({ store }),
     savedMeals: await listLocalSavedMeals({ store }),
+    pantryItems: await listLocalPantryItems({ store }),
     shareIdentity: await getLocalShareIdentity({ store }),
     sharePeers: await listLocalSharePeers({ store }),
     researchIdentity: await getLocalResearchIdentity({ store }),
@@ -766,6 +808,12 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   // is invented, nothing is silently dropped.
   for (const fast of snapshot.fasts) await putLocalFast(fast, { store });
   for (const meal of snapshot.savedMeals) await putLocalSavedMeal(meal, { store });
+  // The UPSERT, not `replaceLocalPantry`: a restore is non-destructive here
+  // exactly as it is for every loop around it, so importing a file onto a
+  // device that already has a shelf adds to it rather than replacing it with
+  // whatever the file remembered. `replaceLocalPantry` is the SCREEN's verb,
+  // for a person confirming what is on the shelf now.
+  for (const item of snapshot.pantryItems) await putLocalPantryItem(item, { store });
   // The WHOLE-RECORD write, deliberately: `putLocalFastingSettings` would
   // merge and re-stamp `updatedAt`, which would make every restore look like
   // a fresh local edit of the routine.

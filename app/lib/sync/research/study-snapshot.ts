@@ -45,6 +45,8 @@ export const EMPTY_STUDY_SHAREABLE_REGION: ShareableSnapshot = {
   profile: null,
   fasts: [],
   savedMeals: [],
+  // A study account has no kitchen either (M233/02).
+  pantryItems: [],
   fastingSettings: null,
 };
 

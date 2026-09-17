@@ -424,8 +424,8 @@ export async function openSharedDiary({
  * business travelling any further than the parse that produced it.
  */
 function toShareableSnapshot(parsed: ShareableSnapshot): ShareableSnapshot {
-  const { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals } = parsed;
-  return { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals };
+  const { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems } = parsed;
+  return { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems };
 }
 
 function findPinnedPeer({

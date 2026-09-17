@@ -31,7 +31,7 @@ import {
 } from '../../app/components/app-sidebar';
 
 describe('personalNavigationItems', () => {
-  it('lists the nine drawer/sidebar destinations, in order, with the same catalog keys/hrefs BottomNav also uses for its three tabs', () => {
+  it('lists the ten drawer/sidebar destinations, in order, with the same catalog keys/hrefs BottomNav also uses for its three tabs', () => {
     // M129/05: both navs now carry catalog KEYS. Pinning the key (not the
     // rendered English) is what keeps the two navs from drifting — a wording
     // change now lands in one catalog entry and moves both.
@@ -44,6 +44,9 @@ describe('personalNavigationItems', () => {
         { labelKey: 'nav.diary', to: '/diary' },
         { labelKey: 'nav.add', to: '/add' },
         { labelKey: 'nav.scan', to: '/scan' },
+        // The pantry (M233/02) sits directly after Scan: it is the second
+        // thing the camera is for, the same composer pointed at a shelf.
+        { labelKey: 'nav.pantry', to: '/pantry' },
         // The fasting timer (M132) sits with the doing-surfaces, before the
         // reviewing ones — and deliberately never reaches the tab bar.
         { labelKey: 'nav.fasting', to: '/fasting' },
@@ -70,10 +73,10 @@ describe('personalNavigationItems', () => {
 });
 
 describe('navigation surfaces', () => {
-  it('gives the drawer and the sidebar the same eight primary rows plus a Settings footer', () => {
+  it('gives the drawer and the sidebar the same nine primary rows plus a Settings footer', () => {
     assert.deepEqual(
       primaryNavigationItems.map((item) => item.to),
-      ['/dashboard', '/diary', '/add', '/scan', '/fasting', '/trends', '/nutrients', '/settings/nutrition'],
+      ['/dashboard', '/diary', '/add', '/scan', '/pantry', '/fasting', '/trends', '/nutrients', '/settings/nutrition'],
     );
     assert.deepEqual(
       footerNavigationItems.map((item) => item.to),

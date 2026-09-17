@@ -280,6 +280,7 @@ export function buildLandingSeed(language: LanguageCode): BackupEnvelope {
       },
       fasts: [],
       savedMeals: [],
+      pantryItems: [],
       fastingSettings: null,
       shareIdentity: null,
       sharePeers: [],

@@ -3,6 +3,7 @@ import {
   Camera,
   LayoutGrid,
   Plus,
+  Refrigerator,
   Settings,
   ShieldCheck,
   Sprout,
@@ -100,6 +101,12 @@ export const personalNavigationItems: NavigationItem[] = [
   // Placed after Scan and before Trends so the catalog reads as the
   // doing-surfaces (Overview, Diary, Add, Scan, Fasting) then the reviewing and
   // target-setting ones (Trends, Goals).
+  // The pantry (M233/02), placed directly after Scan because it is the second
+  // thing the camera is for: the same composer, pointed at a shelf instead of
+  // a plate. No `tab` field, for the reason Fasting below it has none, the tab
+  // bar carries the daily LOGGING loop and its raised centre button needs
+  // exactly three slots.
+  { labelKey: 'nav.pantry', to: '/pantry', icon: Refrigerator, group: 'primary' },
   { labelKey: 'nav.fasting', to: '/fasting', icon: Timer, group: 'primary' },
   { labelKey: 'nav.trends', to: '/trends', icon: TrendingUp, group: 'primary' },
   // The nutrient screen (M135/06). No `tab` field, same reason as Overview,

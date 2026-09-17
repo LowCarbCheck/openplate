@@ -56,6 +56,9 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   { pattern: '/trends', parent: null },
   { pattern: '/nutrients', parent: null },
   { pattern: '/fasting', parent: null },
+  // The pantry (M233/02). A ROOT, because the sidebar carries it: it is one
+  // tap from anywhere, exactly like Fasting above it.
+  { pattern: '/pantry', parent: null },
   { pattern: '/settings', parent: null },
   // `/settings/nutrition` is BOTH a root and a child, and the two answers are
   // not in conflict: the catalog carries it as the "Goals" row, so it is one

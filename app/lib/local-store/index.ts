@@ -107,6 +107,11 @@ export {
   listLocalSavedMeals,
   getLocalSavedMeal,
   deleteLocalSavedMeal,
+  // The pantry (M233/02): what is in the fridge, device-local like `fasts`.
+  putLocalPantryItem,
+  listLocalPantryItems,
+  deleteLocalPantryItem,
+  replaceLocalPantry,
   // Clinician sharing (M160/04), this account's own share key pair, and the
   // peer public keys it has pinned through the typed fingerprint ceremony.
   // The identity's PRIVATE half is the only secret the primary store holds;
@@ -247,6 +252,9 @@ export type {
   ReproductiveStatus,
   LocalSavedMeal,
   LocalSavedMealItem,
+  LocalPantryItem,
+  PantryUnit,
+  PantryCategory,
   LocalShareIdentity,
   LocalSharePeer,
   LocalResearchIdentity,

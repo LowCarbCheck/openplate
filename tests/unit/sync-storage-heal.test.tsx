@@ -129,6 +129,7 @@ function snapshot(overrides: Partial<SyncedSnapshot> = {}): SyncedSnapshot {
     profile: null,
     fasts: [],
     savedMeals: [],
+    pantryItems: [],
     fastingSettings: null,
     privateStore: null,
     ...overrides,

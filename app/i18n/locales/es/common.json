@@ -1352,7 +1352,8 @@
     "landingDescriptionManaged": "Haz una foto del plato o busca lo que has comido. openplate te muestra los carbohidratos en segundos y los compara con el objetivo diario que fijes. Esta instancia funciona solo por invitación, y tu diario se cifra en este dispositivo antes de que una copia llegue al servidor.",
     "plan": "Tu plan · openplate",
     "withdrawal": "Derecho de desistimiento · openplate",
-    "notifications": "Notificaciones · openplate"
+    "notifications": "Notificaciones · openplate",
+    "pantry": "Despensa · openplate"
   },
   "nav": {
     "add": "Añadir",
@@ -1365,7 +1366,8 @@
     "nutrients": "Nutrientes",
     "scan": "Escanear",
     "settings": "Ajustes",
-    "trends": "Progreso"
+    "trends": "Progreso",
+    "pantry": "Despensa"
   },
   "nutrients": {
     "amount": {
@@ -3177,6 +3179,45 @@
     "toast": {
       "logged_one": "Se registró {{name}}.",
       "logged_other": "Se registró {{name}}, {{count}} alimentos."
+    }
+  },
+  "pantry": {
+    "title": "Despensa",
+    "lead": "Lo que tienes en casa. Haz una foto a un estante o escribe la lista.",
+    "empty": "Todavía no hay nada aquí. Haz una foto a tu nevera o escribe lo que tienes.",
+    "composerLabel": "¿Qué tienes?",
+    "reading": "Leyendo lo que tienes...",
+    "door": {
+      "title": "¿Qué hay en la nevera?",
+      "line": "Haz una foto a un estante y guarda la lista en este dispositivo."
+    },
+    "units": {
+      "g": "g",
+      "ml": "ml",
+      "piece": "piezas",
+      "pack": "paquetes"
+    },
+    "review": {
+      "title": "Revisa la lista",
+      "lead": "Corrige lo que esté mal y luego consérvalo.",
+      "nameLabel": "Elemento",
+      "amountLabel": "Cantidad",
+      "unitLabel": "Unidad",
+      "unitNone": "Sin cantidad",
+      "removeAria": "Eliminar {{name}}",
+      "addLine": "Añadir una línea",
+      "confirm": "Conservar esta lista",
+      "discard": "Descartar",
+      "saveList": "Guardar la lista",
+      "saving": "Guardando..."
+    },
+    "recipes": {
+      "link": "Sugerir una comida"
+    },
+    "errors": {
+      "title": "Eso no ha funcionado",
+      "failed": "No hemos podido leer eso. Inténtalo de nuevo en un momento.",
+      "nothingFound": "No se ha encontrado comida ahí. Prueba con una foto más de cerca o escribe la lista."
     }
   }
 }

@@ -1352,7 +1352,8 @@
     "landingDescriptionManaged": "Tabağının fotoğrafını çek veya ne yediğini ara. openplate karbonhidrat miktarını saniyeler içinde gösterir ve belirlediğin günlük hedefe göre takip eder. Bu sunucu örneği yalnızca davetiyelidir ve bir kopyası sunucuya ulaşmadan önce günlüğün bu cihazda şifrelenir.",
     "plan": "Planın · openplate",
     "withdrawal": "Cayma hakkı · openplate",
-    "notifications": "Bildirimler · openplate"
+    "notifications": "Bildirimler · openplate",
+    "pantry": "Kiler · openplate"
   },
   "nav": {
     "add": "Ekle",
@@ -1365,7 +1366,8 @@
     "nutrients": "Besin ögeleri",
     "scan": "Tara",
     "settings": "Ayarlar",
-    "trends": "İlerleme"
+    "trends": "İlerleme",
+    "pantry": "Kiler"
   },
   "nutrients": {
     "amount": {
@@ -3177,6 +3179,45 @@
     "toast": {
       "logged_one": "{{name}} günlüğe kaydedildi.",
       "logged_other": "{{name}} günlüğe kaydedildi, {{count}} yiyecek."
+    }
+  },
+  "pantry": {
+    "title": "Kiler",
+    "lead": "Evde neyin var. Bir rafın fotoğrafını çek veya listeyi yaz.",
+    "empty": "Burada henüz bir şey yok. Buzdolabının fotoğrafını çek veya elindekileri yaz.",
+    "composerLabel": "Neyin var?",
+    "reading": "Elindekiler okunuyor...",
+    "door": {
+      "title": "Buzdolabında ne var?",
+      "line": "Bir rafın fotoğrafını çek ve listeyi bu cihazda tut."
+    },
+    "units": {
+      "g": "g",
+      "ml": "ml",
+      "piece": "adet",
+      "pack": "paket"
+    },
+    "review": {
+      "title": "Listeyi kontrol et",
+      "lead": "Yanlış olan her şeyi düzelt, ardından sakla.",
+      "nameLabel": "Öğe",
+      "amountLabel": "Miktar",
+      "unitLabel": "Birim",
+      "unitNone": "Miktar yok",
+      "removeAria": "{{name}} öğesini kaldır",
+      "addLine": "Satır ekle",
+      "confirm": "Bu listeyi sakla",
+      "discard": "Sil",
+      "saveList": "Listeyi kaydet",
+      "saving": "Kaydediliyor..."
+    },
+    "recipes": {
+      "link": "Bir yemek öner"
+    },
+    "errors": {
+      "title": "Bu işe yaramadı",
+      "failed": "Bu okunamadı. Birazdan tekrar dene.",
+      "nothingFound": "Bunda yiyecek bulunamadı. Daha yakından çekmeyi dene veya listeyi yaz."
     }
   }
 }

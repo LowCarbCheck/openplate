@@ -1352,7 +1352,8 @@
     "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
     "plan": "Dein Tarif · openplate",
     "withdrawal": "Widerrufsbelehrung · openplate",
-    "notifications": "Benachrichtigungen · openplate"
+    "notifications": "Benachrichtigungen · openplate",
+    "pantry": "Vorratskammer · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -1365,7 +1366,8 @@
     "nutrients": "Nährstoffe",
     "scan": "Scannen",
     "settings": "Einstellungen",
-    "trends": "Fortschritt"
+    "trends": "Fortschritt",
+    "pantry": "Vorratskammer"
   },
   "nutrients": {
     "amount": {
@@ -3177,6 +3179,45 @@
     "toast": {
       "logged_one": "{{name}} eingetragen.",
       "logged_other": "{{name}} eingetragen, {{count}} Lebensmittel."
+    }
+  },
+  "pantry": {
+    "title": "Vorratskammer",
+    "lead": "Was du zu Hause hast. Fotografiere ein Regal oder schreibe die Liste.",
+    "empty": "Hier ist noch nichts. Fotografiere deinen Kühlschrank oder schreibe auf, was du hast.",
+    "composerLabel": "Was hast du da?",
+    "reading": "Bestand wird gelesen...",
+    "door": {
+      "title": "Was ist im Kühlschrank?",
+      "line": "Fotografiere ein Regal und behalte die Liste auf diesem Gerät."
+    },
+    "units": {
+      "g": "g",
+      "ml": "ml",
+      "piece": "Stück",
+      "pack": "Packungen"
+    },
+    "review": {
+      "title": "Liste prüfen",
+      "lead": "Korrigiere Fehler, dann speichere den Eintrag.",
+      "nameLabel": "Eintrag",
+      "amountLabel": "Menge",
+      "unitLabel": "Einheit",
+      "unitNone": "Keine Menge",
+      "removeAria": "{{name}} entfernen",
+      "addLine": "Zeile hinzufügen",
+      "confirm": "Diese Liste behalten",
+      "discard": "Verwerfen",
+      "saveList": "Liste speichern",
+      "saving": "Wird gespeichert..."
+    },
+    "recipes": {
+      "link": "Mahlzeit vorschlagen"
+    },
+    "errors": {
+      "title": "Das hat nicht geklappt",
+      "failed": "Das konnte nicht gelesen werden. Versuche es gleich noch einmal.",
+      "nothingFound": "Darin wurden keine Lebensmittel gefunden. Versuche es mit einer Nahaufnahme oder schreibe die Liste."
     }
   }
 }
