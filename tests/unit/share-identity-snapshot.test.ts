@@ -53,6 +53,8 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
     fasts: [],
     savedMeals: [],
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     shareIdentity: null,
     sharePeers: [],
@@ -63,8 +65,8 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
 }
 
 describe('the local schema version', () => {
-  it('is 22, the pantry (a new device-local entity, passed through by the merge)', () => {
-    assert.equal(SCHEMA_VERSION, 22);
+  it('is 23, the activity marks and the awards (two whole new entities in one bump)', () => {
+    assert.equal(SCHEMA_VERSION, 23);
   });
 });
 

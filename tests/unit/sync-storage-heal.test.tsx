@@ -130,6 +130,8 @@ function snapshot(overrides: Partial<SyncedSnapshot> = {}): SyncedSnapshot {
     fasts: [],
     savedMeals: [],
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     privateStore: null,
     ...overrides,

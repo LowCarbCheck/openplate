@@ -64,6 +64,8 @@ function snapshot(savedMeals: LocalSavedMeal[]): SyncedSnapshot {
     fasts: [],
     savedMeals,
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     privateStore: null,
   };

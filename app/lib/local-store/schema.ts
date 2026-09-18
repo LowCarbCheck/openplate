@@ -402,6 +402,38 @@
  * and the person photographs the shelf again. Journalling every removed row of
  * a list that turns over completely would write more tombstone bookkeeping
  * than the feature has content.
+ *
+ * NOTE (M235/02, the activity streak and the explorer badges): `SCHEMA_VERSION`
+ * v22 -> v23 adds TWO WHOLE NEW ENTITIES at once, {@link LocalActivityMark} and
+ * {@link LocalAward}, plus {@link ACTIVITY_MARKS_TABLE},
+ * {@link AWARDS_TABLE} and two REQUIRED keys, `activityMarks` and `awards`, on
+ * {@link LocalStoreSnapshot}. Both halves are under the `fasts` v6 -> v7 rules,
+ * NOT the optional-field ones: a v22 envelope has neither key, and `backup.ts`'s
+ * `activityMarks: z.array(activityMarkSchema).default([])` and
+ * `awards: z.array(awardSchema).default([])` ARE the complete forward
+ * migration, "this device had no marks and no awards, because neither
+ * existed". There is no `migrateSnapshotToV23` step and there must not be one,
+ * for the identical reason there is no `migrateSnapshotToV22` one.
+ *
+ * THE AAD BINDS THIS NUMBER. The sync blob is sealed with the schema version in
+ * its additional authenticated data, so after the FIRST push from a v23 build
+ * an older build cannot decrypt the blob at all. That is not a regression to
+ * fix, it is what the bump records: the direction is forward only, exactly as
+ * the `FastProtocolId` widening in v20 -> v21 was.
+ *
+ * NEITHER TABLE HAS A DELETE VERB, so neither is in
+ * {@link DELETE_JOURNAL_TAG_BY_TABLE} and neither can ever be tombstoned. This
+ * is a stronger statement than the pantry's absence from that map one level up:
+ * the pantry HAS `deleteLocalPantryItem` and simply does not journal it, while
+ * nothing anywhere in the app removes a mark or an award. A mark records that a
+ * day carried a signal and an award records something a person did, and neither
+ * fact un-happens. An evicted device therefore repopulates from its peers with
+ * nothing to prove, because it never claims a removal.
+ *
+ * `signal` on a mark and `key` on an award are both plain `string`, never a
+ * union and never an enum, for the `FastProtocolId` widening reason: a row
+ * written by a NEWER build must be HELD by an older one, not rejected. An
+ * unknown award key is kept, not rendered.
  */
 import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
 import type { EatingStyleId } from '#app/lib/eating-style';
@@ -416,7 +448,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 22;
+export const SCHEMA_VERSION = 23;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -456,6 +488,10 @@ export const FASTING_SETTINGS_ROW_ID = 'me';
 export const SAVED_MEALS_TABLE = 'savedMeals';
 /** Table: what is in the fridge (M233/02), keyed by a client-generated id. */
 export const PANTRY_ITEMS_TABLE = 'pantryItems';
+/** Table: one immutable row per (day, signal) the person performed (M235/02), keyed by `markId(dayKey, signal)`. */
+export const ACTIVITY_MARKS_TABLE = 'activityMarks';
+/** Table: one immutable row per earned award (M235/02), keyed by the catalog key itself. */
+export const AWARDS_TABLE = 'awards';
 /** Share identity table (M160/04), a SINGLETON, keyed by {@link SHARE_IDENTITY_ROW_ID}, exactly like the profile row. */
 export const SHARE_IDENTITY_TABLE = 'shareIdentity';
 /** The one row id the share identity ever occupies, this device's account has exactly one share key pair. */
@@ -1290,6 +1326,76 @@ export interface LocalPantryItem {
 }
 
 /**
+ * One immutable mark: a day carried a signal (M235/02).
+ *
+ * THE ROW IS THE FACT. Sync merges whole records, last write wins, per entity
+ * id (`sync/engine/merge/merge-entities.ts`), so a single row holding "the set
+ * of things done on 2026-09-18" would lose one device's half whenever a phone
+ * and a tablet were both used offline on the same day. The id is
+ * `${dayKey}#${signal}`, so two devices write two DIFFERENT ids, both survive,
+ * and the merge engine is not touched.
+ *
+ * NO TIMESTAMP, deliberately. Two devices seeing the same signal on the same
+ * day would write different times, last-write-wins would flip between them, and
+ * nothing reads the value. The day IS the fact.
+ *
+ * `app/lib/gamification/marks.ts` re-exports this type and mints its ids; the
+ * pure core owns the rules and this file owns the shape.
+ */
+export interface LocalActivityMark {
+  /**
+   * The row key, always `markId(dayKey, signal)`.
+   *
+   * DUPLICATED INSIDE THE CELL on purpose. `backup.ts` exports the cell and not
+   * the row key, so a mark whose id lived only in the key would come back from
+   * a round trip without one.
+   */
+  id: string;
+  /** The local calendar day, `YYYY-MM-DD`. */
+  dayKey: string;
+  /**
+   * The signal id as written, WIDENED to `string` rather than the catalog's
+   * union, for the reason {@link FastProtocolId}'s widening records: a mark
+   * written by a newer build must be held by an older one, not rejected.
+   */
+  signal: string;
+}
+
+/**
+ * One earned award (M235/02), keyed by the catalog key, which is also the row
+ * id.
+ *
+ * WRITE-ONCE, and never revoked. An award records something a person actually
+ * did, so a later edit to an old log, a raised carb ceiling or a restore from
+ * an older backup must not be able to take it back. There is no verb that
+ * removes one.
+ *
+ * No `catalogVersion` field: it would have no reader, and "never revoked"
+ * already tells a newer build not to re-evaluate what an older one decided.
+ */
+export interface LocalAward {
+  /**
+   * The catalog key, a free `string` and never an enum, for the same widening
+   * reason as {@link LocalActivityMark.signal}: a key minted by a newer build
+   * survives a round trip on an older one instead of being stripped. An older
+   * build holds it and renders nothing for it.
+   */
+  key: string;
+  /** When it was earned, epoch milliseconds, from the caller's clock. */
+  earnedAt: number;
+  /** The local day it was earned on, `YYYY-MM-DD`. */
+  earnedOnDay: string;
+  /**
+   * When the person was shown the note, or null while it is still unseen.
+   *
+   * THE ONE MUTABLE FIELD on either entity, written by `markAwardSeen` and by
+   * nothing else. Losing it to a merge costs one repeated note, which is why it
+   * is allowed to be mutable at all.
+   */
+  seenAt: number | null;
+}
+
+/**
  * This account's own share key pair (`openplate-core` ADR-0002), the identity
  * a clinician is addressed BY, and a patient wraps their DEK TO.
  *
@@ -1482,6 +1588,22 @@ export interface LocalStoreSnapshot {
    * why a working list earns a different answer from a record of events.
    */
   pantryItems: LocalPantryItem[];
+  /**
+   * Added v23 (M235/02), one row per (day, signal) this person performed.
+   *
+   * REQUIRED, under the `fasts`/`savedMeals`/`pantryItems` rule: a v22 envelope
+   * has no key at all, and `backup.ts`'s `.default([])` is the whole forward
+   * migration. No delete verb anywhere, so no row here is ever tombstoned.
+   */
+  activityMarks: LocalActivityMark[];
+  /**
+   * Added v23 (M235/02), the awards this person has earned.
+   *
+   * REQUIRED, under the same rule as `activityMarks` directly above it, and
+   * with the same absence of a delete verb. A key this build does not know is
+   * carried through untouched rather than stripped.
+   */
+  awards: LocalAward[];
   /**
    * Added v13 (clinician sharing, M160/04), this account's own share key
    * pair, or `null` on a device that has never generated one (the normal

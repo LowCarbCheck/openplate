@@ -133,6 +133,8 @@ function snapshotOf(
     fasts: passThrough.fasts,
     savedMeals: passThrough.savedMeals,
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     privateStore: null,
   };

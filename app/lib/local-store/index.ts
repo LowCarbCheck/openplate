@@ -112,6 +112,16 @@ export {
   listLocalPantryItems,
   deleteLocalPantryItem,
   replaceLocalPantry,
+  // The activity marks and the awards (M235/02). Both tables are WRITE-ONCE by
+  // key and neither has a delete verb, so there is no `deleteLocal*` line here
+  // to match the ones above: a day that carried a signal carried it, and an
+  // award is never revoked. `markAwardSeen` is the one mutating verb.
+  putLocalActivityMark,
+  listLocalActivityMarks,
+  hasLocalActivityMark,
+  putLocalAward,
+  listLocalAwards,
+  markAwardSeen,
   // Clinician sharing (M160/04), this account's own share key pair, and the
   // peer public keys it has pinned through the typed fingerprint ceremony.
   // The identity's PRIVATE half is the only secret the primary store holds;
@@ -237,7 +247,7 @@ export type { BackupEnvelope, RawBackupEnvelope } from './backup';
 export { hasEverHadData, getFirstDataAt, marksDeviceHasData } from './had-data';
 
 // Versioned schema: the constant + the entity/snapshot types.
-export { SCHEMA_VERSION, ANONYMOUS_USER_ID } from './schema';
+export { SCHEMA_VERSION, ANONYMOUS_USER_ID, ACTIVITY_MARKS_TABLE, AWARDS_TABLE } from './schema';
 export type {
   LocalPersonalFood,
   LocalFoodLog,
@@ -255,6 +265,8 @@ export type {
   LocalPantryItem,
   PantryUnit,
   PantryCategory,
+  LocalActivityMark,
+  LocalAward,
   LocalShareIdentity,
   LocalSharePeer,
   LocalResearchIdentity,

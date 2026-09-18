@@ -106,6 +106,18 @@ export const SNAPSHOT_KEY_REGIONS = {
   // from the local side by `mergeSnapshots`, the `fasts` stance, so a second
   // device keeps its own shelf.
   pantryItems: 'shared',
+  // The activity marks and the awards (M235/02). `shared`, and the reasoning is
+  // the pantry's one row up: there is no key material in either and no trust
+  // pin, which are the only two things `owner-private` is for, and a clinician
+  // holding a grant already reads the diary DAYS these marks summarise. A mark
+  // says "this day was used", which is strictly less than the meals she can
+  // already see on it.
+  //
+  // `shared` decides DISCLOSURE, never merge. Both tables are whole-record
+  // last-write-wins per row id, which is safe here because every row is written
+  // once and never updated, so two devices never contend for one.
+  activityMarks: 'shared',
+  awards: 'shared',
   shareIdentity: 'owner-private',
   sharePeers: 'owner-private',
   researchIdentity: 'owner-private',
@@ -295,12 +307,13 @@ export function partitionSnapshot(snapshot: LocalStoreSnapshot): SnapshotPartiti
   for (const key of Object.keys(snapshot)) classifySnapshotKey(key);
 
   const { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems } = snapshot;
+  const { activityMarks, awards } = snapshot;
   const { shareIdentity, sharePeers, researchIdentity, studyEnrolments } = snapshot;
   // Written out name by name, and the two literals are the type-level half of
   // the same guard: move a key between regions in the map above, or add one,
   // and these stop compiling until a human has put it on a side.
   return {
-    shareable: { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems },
+    shareable: { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems, activityMarks, awards },
     ownerPrivate: { shareIdentity, sharePeers, researchIdentity, studyEnrolments },
   };
 }
@@ -322,7 +335,20 @@ export function partitionSnapshot(snapshot: LocalStoreSnapshot): SnapshotPartiti
  */
 export function recomposeSnapshot({ shareable, ownerPrivate }: SnapshotPartition): LocalStoreSnapshot {
   const { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems } = shareable;
-  return { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems, ...ownerPrivate };
+  const { activityMarks, awards } = shareable;
+  return {
+    foods,
+    foodLogs,
+    weightEntries,
+    profile,
+    fasts,
+    fastingSettings,
+    savedMeals,
+    pantryItems,
+    activityMarks,
+    awards,
+    ...ownerPrivate,
+  };
 }
 
 // A compartment plaintext is validated by `compartment-kind.ts`'s

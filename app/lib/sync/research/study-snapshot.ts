@@ -47,6 +47,10 @@ export const EMPTY_STUDY_SHAREABLE_REGION: ShareableSnapshot = {
   savedMeals: [],
   // A study account has no kitchen either (M233/02).
   pantryItems: [],
+  // And it never used the app, so it carries no marks and earned no awards
+  // (M235/02). A study account is a mailbox, not a person.
+  activityMarks: [],
+  awards: [],
   fastingSettings: null,
 };
 

@@ -503,12 +503,13 @@ describe('the caution note', () => {
 });
 
 describe('the stored field', () => {
-  it('is at schema v22, the pantry, two bumps past the v20 this field landed in', () => {
+  it('is at schema v23, the marks and the awards, three bumps past the v20 this field landed in', () => {
     // The pin MOVES on every bump and is not loosened to `SCHEMA_VERSION`: the
     // version an envelope stamps is the version an older build refuses, so a
     // change here has to be a change someone chose. The eating style landed at
-    // v20; the fasting rework took it to v21 and the pantry to v22.
-    assert.equal(SCHEMA_VERSION, 22);
+    // v20; the fasting rework took it to v21, the pantry to v22, and the
+    // activity marks plus the awards to v23.
+    assert.equal(SCHEMA_VERSION, 23);
   });
 
   it('round-trips a picked style through a backup envelope', () => {

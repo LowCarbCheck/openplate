@@ -1018,6 +1018,17 @@ export function mergeSnapshots({
       // in THIS device's fridge, and the cost of the rare eviction is that
       // somebody photographs the shelf again.
       pantryItems: local.snapshot.pantryItems,
+      // MARKS AND AWARDS, LOCAL PASS-THROUGH, AND THIS IS A PLACEHOLDER
+      // (M235/02). The two keys arrived with the store tables, so this literal
+      // must name them or it does not compile. M235/03 owns the real stance and
+      // will replace these two lines: both tables are written ONCE per row id
+      // and never updated, which is exactly the shape a UNION across the two
+      // sides is safe for, and a union is what a person using a phone and a
+      // tablet on the same day needs. A pass-through is the conservative
+      // holding answer in the meantime, it can lose a peer's row but never
+      // this device's.
+      activityMarks: local.snapshot.activityMarks,
+      awards: local.snapshot.awards,
       // NOT passed through from `local` like the two above it: the routine is
       // genuinely merged, so a second device adopts it instead of staying
       // blank. See the comment on `SYNC_ENTITY_TYPES.fastingSettings` for why

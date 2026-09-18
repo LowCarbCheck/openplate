@@ -70,6 +70,8 @@ function snapshot(pantryItems: LocalPantryItem[], foods: LocalPersonalFood[] = [
     fasts: [],
     savedMeals: [],
     pantryItems,
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     privateStore: null,
   };

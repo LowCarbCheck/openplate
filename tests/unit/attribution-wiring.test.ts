@@ -510,6 +510,8 @@ describe('the credit survives every other way an entry is created', () => {
         fasts: [],
         savedMeals: [],
         pantryItems: [],
+        activityMarks: [],
+        awards: [],
         fastingSettings: null,
         shareIdentity: null,
         sharePeers: [],

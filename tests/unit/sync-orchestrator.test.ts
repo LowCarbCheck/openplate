@@ -69,6 +69,8 @@ function snapshot(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
     fasts: [],
     savedMeals: [],
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     // The owner-private compartment (M160/07). `null` is a device that has
     // never generated a share key, the ordinary case, and the one that must
@@ -782,6 +784,8 @@ async function seedTheAccount(service: ReturnType<typeof fakeService>): Promise<
         fasts: [fast('on-the-account')],
         savedMeals: [savedMeal('on-the-account')],
         pantryItems: [],
+        activityMarks: [],
+        awards: [],
       },
       syncMeta: { perEntity: { 'foodLog:a': { lamport: 1, deviceId: 'device-other' } }, tombstones: [] },
     },
@@ -966,6 +970,8 @@ test('a push whose only removals are recorded saved meals still acknowledges the
     fasts: [fast('on-the-account')],
     savedMeals: [],
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
   };
   deleted.add('savedMeal:on-the-account');
   await runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1', storage, deleted }));
@@ -1005,6 +1011,8 @@ async function seedTwoSavedMeals(service: ReturnType<typeof fakeService>): Promi
         fasts: [],
         savedMeals: [savedMeal('first'), savedMeal('second')],
         pantryItems: [],
+        activityMarks: [],
+        awards: [],
       },
       syncMeta: { perEntity: { 'foodLog:a': { lamport: 1, deviceId: 'device-other' } }, tombstones: [] },
     },

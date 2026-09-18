@@ -35,6 +35,8 @@ import {
   listLocalFoods,
   listLocalSavedMeals,
   listLocalPantryItems,
+  listLocalActivityMarks,
+  listLocalAwards,
   listLocalSharePeers,
   listLocalStudyEnrolments,
   listLocalWeightEntries,
@@ -47,6 +49,8 @@ import {
   putLocalResearchIdentity,
   putLocalSavedMeal,
   putLocalPantryItem,
+  putLocalActivityMark,
+  putLocalAward,
   putLocalShareIdentity,
   putLocalSharePeer,
   putLocalStudyEnrolment,
@@ -366,6 +370,37 @@ const pantryItemSchema = z.object({
 });
 
 /**
+ * Added v23 (M235/02), one mark per (day, signal).
+ *
+ * `signal` IS `z.string()` AND MUST STAY ONE. An enum here would make an older
+ * build REFUSE a whole backup file that happened to contain a signal a newer
+ * build records, which is the failure the v20 -> v21 `FastProtocolId` note in
+ * `schema.ts` describes from the other side. The widening is the whole point:
+ * a mark is held, not adjudicated.
+ */
+const activityMarkSchema = z.object({
+  id: z.string(),
+  dayKey: z.string(),
+  signal: z.string(),
+});
+
+/**
+ * Added v23 (M235/02), one row per earned award.
+ *
+ * `key` IS `z.string()` for `activityMarkSchema.signal`'s reason, and the cost
+ * of getting it wrong is larger here: the catalog grows every round, so an
+ * enum would turn "this person earned a badge my build has not heard of" into
+ * "this entire backup is invalid". An unknown key is kept and rendered by
+ * nothing.
+ */
+const awardSchema = z.object({
+  key: z.string(),
+  earnedAt: z.number(),
+  earnedOnDay: z.string(),
+  seenAt: z.number().nullable(),
+});
+
+/**
  * Added v13 (clinician sharing, M160/04). Base64 rather than bytes because a
  * snapshot is JSON; the lengths are NOT asserted here on purpose, a wrong
  * length fails loudly at `crypto.subtle.importKey`, and a zod refinement that
@@ -487,6 +522,21 @@ export const shareableSnapshotFields = {
   // the region does not mean it MERGES: `snapshot-sync.ts` passes the local
   // side through untouched, the `fasts` stance.
   pantryItems: z.array(pantryItemSchema).default([]),
+  // Added v23 (M235/02). Same rule as `fasts`, `savedMeals` and `pantryItems`
+  // above (whole new entities, not optional fields on existing ones): a v22
+  // envelope has NEITHER key, and these two `.default([])`s ARE the complete
+  // v22 -> v23 forward migration, "this device had no marks and no awards,
+  // because neither existed". No `migrateSnapshotToV23` step, for the identical
+  // reason there is no `migrateSnapshotToV22` one. See the
+  // `NOTE (M235/02, ...)` block in `schema.ts`.
+  //
+  // They sit in the SHAREABLE region because a mark says a day was used and an
+  // award says something was achieved, neither of which is key material or a
+  // trust pin, the only two things the owner-private compartment is for. See
+  // `snapshot-partition.ts`, which is where that decision is recorded and
+  // enforced.
+  activityMarks: z.array(activityMarkSchema).default([]),
+  awards: z.array(awardSchema).default([]),
 } as const;
 
 /**
@@ -751,6 +801,8 @@ async function readSnapshot(store?: Store): Promise<LocalStoreSnapshot> {
     fastingSettings: await peekLocalFastingSettings({ store }),
     savedMeals: await listLocalSavedMeals({ store }),
     pantryItems: await listLocalPantryItems({ store }),
+    activityMarks: await listLocalActivityMarks({ store }),
+    awards: await listLocalAwards({ store }),
     shareIdentity: await getLocalShareIdentity({ store }),
     sharePeers: await listLocalSharePeers({ store }),
     researchIdentity: await getLocalResearchIdentity({ store }),
@@ -783,6 +835,13 @@ export async function hasAnyLocalData({ store }: { store?: Store } = {}): Promis
     // recognise as data of theirs to lose, and counting it would fire the
     // nudge at somebody who has picked a window and logged nothing.
     //
+    // `activityMarks` and `awards` are deliberately NOT counted either
+    // (M235/02), and that answer is the same one `had-data.ts` gives: a mark
+    // says the app was OPENED and used, not that anything was tracked. A
+    // device whose only content is "you opened this seven days running" has
+    // nothing a person would recognise as theirs to lose, and nudging them to
+    // export it would teach them the nudge means nothing.
+    //
     // `shareIdentity` and `sharePeers` are deliberately NOT counted. This
     // signal drives the backup nudge, and a key pair on its own is not
     // "trackable data" a person would recognise as theirs to lose, nagging a
@@ -814,6 +873,12 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   // whatever the file remembered. `replaceLocalPantry` is the SCREEN's verb,
   // for a person confirming what is on the shelf now.
   for (const item of snapshot.pantryItems) await putLocalPantryItem(item, { store });
+  // WRITE-ONCE, so a restore onto a device that already earned an award keeps
+  // the stamp it has rather than the file's. That is the right way round: the
+  // store's copy may already carry a `seenAt` the file predates, and taking the
+  // file's null would show the person a note they dismissed months ago.
+  for (const mark of snapshot.activityMarks) await putLocalActivityMark({ mark, store });
+  for (const award of snapshot.awards) await putLocalAward({ award, store });
   // The WHOLE-RECORD write, deliberately: `putLocalFastingSettings` would
   // merge and re-stamp `updatedAt`, which would make every restore look like
   // a fresh local edit of the routine.

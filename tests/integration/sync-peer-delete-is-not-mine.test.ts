@@ -127,6 +127,8 @@ function snapshotOf(logs: LocalFoodLog[]): SyncedSnapshot {
     fasts: [],
     savedMeals: [],
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     privateStore: null,
   };

@@ -425,7 +425,19 @@ export async function openSharedDiary({
  */
 function toShareableSnapshot(parsed: ShareableSnapshot): ShareableSnapshot {
   const { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems } = parsed;
-  return { foods, foodLogs, weightEntries, profile, fasts, fastingSettings, savedMeals, pantryItems };
+  const { activityMarks, awards } = parsed;
+  return {
+    foods,
+    foodLogs,
+    weightEntries,
+    profile,
+    fasts,
+    fastingSettings,
+    savedMeals,
+    pantryItems,
+    activityMarks,
+    awards,
+  };
 }
 
 function findPinnedPeer({

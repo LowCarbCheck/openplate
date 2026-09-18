@@ -18,20 +18,16 @@ import type { ActivitySignal } from './catalog';
 /**
  * One immutable mark: a day carried a signal.
  *
- * Declared here rather than imported because the store table it belongs to
- * arrives in M235/02; that spec re-exports or aligns with this shape. `signal`
- * is `string`, not `ActivitySignal`, for the widening reason the store applies
- * to `FastProtocolId`: a mark written by a NEWER build must be held, not
- * rejected, by an older one.
+ * THE SHAPE LIVES IN THE STORE (`#app/lib/local-store/schema`, M235/02) and is
+ * re-exported here so this module stays the one place a reader looks for
+ * everything about a mark. M235/01 declared it locally because the table did
+ * not exist yet; there is exactly ONE definition now, and it is the store's.
+ *
+ * Importing it costs this module nothing it is banned from having: `schema.ts`
+ * is pure types and id constants, with no runtime dependency on TinyBase and no
+ * clock.
  */
-export interface LocalActivityMark {
-  /** The row key, always `markId(dayKey, signal)`. Duplicated inside the cell so a backup round trip keeps it. */
-  id: string;
-  /** The local calendar day, `YYYY-MM-DD`. */
-  dayKey: string;
-  /** The signal id as written. Widened to `string`; see above. */
-  signal: string;
-}
+export type { LocalActivityMark } from '#app/lib/local-store/schema';
 
 /** The one separator between the two halves of a mark id. Neither half may contain it. */
 const MARK_ID_SEPARATOR = '#';

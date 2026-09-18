@@ -65,6 +65,8 @@ import {
   RESEARCH_IDENTITY_TABLE,
   SAVED_MEALS_TABLE,
   PANTRY_ITEMS_TABLE,
+  ACTIVITY_MARKS_TABLE,
+  AWARDS_TABLE,
   SCHEMA_VERSION_VALUE,
   SHARE_IDENTITY_ROW_ID,
   SHARE_IDENTITY_TABLE,
@@ -78,6 +80,8 @@ import { DELETE_JOURNAL_TAG_BY_TABLE, entityKey, SCHEMA_VERSION } from './schema
 import type {
   FastMood,
   FastProtocolId,
+  LocalActivityMark,
+  LocalAward,
   LocalFast,
   LocalFastingSettings,
   LocalFoodLog,
@@ -102,6 +106,8 @@ type PrimaryEntity =
   | LocalFastingSettings
   | LocalSavedMeal
   | LocalPantryItem
+  | LocalActivityMark
+  | LocalAward
   | LocalShareIdentity
   | LocalSharePeer
   | LocalResearchIdentity
@@ -950,6 +956,106 @@ export async function replaceLocalPantry(
     for (const item of items) writeEntity(resolved, PANTRY_ITEMS_TABLE, item.id, item);
   });
   return [...items];
+}
+
+// ---------------------------------------------------------------------------
+// Activity marks and awards (M235/02)
+// ---------------------------------------------------------------------------
+
+/**
+ * Records that `mark.dayKey` carried `mark.signal`, ONCE.
+ *
+ * WRITE-ONCE BY ID, AND THE READ BEFORE THE WRITE IS THE POINT. A person who
+ * opens the app ten times a day fires the same signal ten times, and
+ * `writeEntity` would rewrite identical bytes on each one. An unchanged row
+ * mints no new Lamport stamp in `stampSnapshot`, so the cheap keyed read here
+ * is what keeps ordinary use from pushing churn a peer has to merge.
+ *
+ * NO DELETE VERB EXISTS, here or anywhere: a day that carried a signal carried
+ * it, so `ACTIVITY_MARKS_TABLE` is absent from `DELETE_JOURNAL_TAG_BY_TABLE`
+ * and no mark can ever be tombstoned.
+ *
+ * @param mark - the mark to record. Its `id` must be `markId(dayKey, signal)`.
+ * @returns the mark as it now stands, whether this call wrote it or a previous one did.
+ */
+export async function putLocalActivityMark({
+  store,
+  mark,
+}: StoreOption & { mark: LocalActivityMark }): Promise<LocalActivityMark> {
+  const resolved = await resolveStore(store);
+  const existing = readEntity<LocalActivityMark>(resolved, ACTIVITY_MARKS_TABLE, mark.id);
+  if (existing !== null) return existing;
+  writeEntity(resolved, ACTIVITY_MARKS_TABLE, mark.id, mark);
+  return mark;
+}
+
+/** Every mark this device holds, by id, oldest day first. There is no `createdAt` to sort on; the id carries the day. */
+export async function listLocalActivityMarks({ store }: StoreOption = {}): Promise<LocalActivityMark[]> {
+  return readEntities<LocalActivityMark>(await resolveStore(store), ACTIVITY_MARKS_TABLE).toSorted((a, b) =>
+    a.id.localeCompare(b.id),
+  );
+}
+
+/**
+ * Whether this device already holds the mark with this id.
+ *
+ * The cheap question a caller asks before building a mark at all, so a hot path
+ * that fires on every render costs one `hasRow` rather than one JSON parse.
+ */
+export async function hasLocalActivityMark({ store, id }: StoreOption & { id: string }): Promise<boolean> {
+  return (await resolveStore(store)).hasRow(ACTIVITY_MARKS_TABLE, id);
+}
+
+/**
+ * Records an earned award, ONCE.
+ *
+ * WRITE-ONCE BY KEY, for {@link putLocalActivityMark}'s reason and one more:
+ * a second write would reset `seenAt` to null and show the person a note they
+ * have already dismissed. An award is never revoked, so there is no delete
+ * verb and no journal tag either.
+ *
+ * @param award - the award to record. Its `key` is also its row id.
+ * @returns the award as it now stands, which is the STORED one when the key was already held.
+ */
+export async function putLocalAward({ store, award }: StoreOption & { award: LocalAward }): Promise<LocalAward> {
+  const resolved = await resolveStore(store);
+  const existing = readEntity<LocalAward>(resolved, AWARDS_TABLE, award.key);
+  if (existing !== null) return existing;
+  writeEntity(resolved, AWARDS_TABLE, award.key, award);
+  return award;
+}
+
+/** Every award this device holds, oldest earned first, key as the tiebreak. */
+export async function listLocalAwards({ store }: StoreOption = {}): Promise<LocalAward[]> {
+  return readEntities<LocalAward>(await resolveStore(store), AWARDS_TABLE).toSorted(
+    (a, b) => a.earnedAt - b.earnedAt || a.key.localeCompare(b.key),
+  );
+}
+
+/**
+ * Stamps when the person was shown the note for an award. THE ONE MUTATING
+ * VERB on either of these two tables, and the only one there will be.
+ *
+ * A key this device does not hold is ignored rather than created: an award is
+ * earned by `evaluateAwards` and written by {@link putLocalAward}, and seeing a
+ * note for something never earned is not a state this app can reach.
+ *
+ * @param key - the catalog key, which is the row id.
+ * @param seenAt - epoch milliseconds the note was shown.
+ * @returns the stored award after the stamp, or null when the key is not held.
+ */
+export async function markAwardSeen({
+  store,
+  key,
+  seenAt,
+}: StoreOption & { key: string; seenAt: number }): Promise<LocalAward | null> {
+  const resolved = await resolveStore(store);
+  const existing = readEntity<LocalAward>(resolved, AWARDS_TABLE, key);
+  if (existing === null) return null;
+  if (existing.seenAt !== null) return existing;
+  const seen: LocalAward = { ...existing, seenAt };
+  writeEntity(resolved, AWARDS_TABLE, key, seen);
+  return seen;
 }
 
 // ---------------------------------------------------------------------------

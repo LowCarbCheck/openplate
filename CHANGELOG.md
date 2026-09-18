@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **Your device now keeps a record of the days you used the app.** The on-device store gained two tables, one row per day and activity you performed, and one row per badge you earn. Nothing is removed from either, so a day you used the app stays counted and a badge you earned is never taken back. Both travel inside the encrypted sync blob and inside your backup file, and a backup written by an older version still imports. A badge earned by a newer version of the app is kept by an older one rather than dropped. The backup file format moves to version 23, so a file exported here cannot be read by a version older than this one.
+
 ## [0.33.0] - 2026-09-18
 
 ### Changed

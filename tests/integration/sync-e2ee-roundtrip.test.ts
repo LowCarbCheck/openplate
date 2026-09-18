@@ -201,6 +201,8 @@ function snapshotOf(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
     fasts: [],
     savedMeals: [],
     pantryItems: [],
+    activityMarks: [],
+    awards: [],
     fastingSettings: null,
     // The owner-private compartment (M160/07); `null` is a device with no
     // share key, which is what every fixture here is.

@@ -14,25 +14,18 @@
 import { AWARDS } from './catalog';
 import type { AwardDefinition } from './catalog';
 import type { LocalActivityMark } from './marks';
+import type { LocalAward } from '#app/lib/local-store/schema';
 
 /**
  * One earned award row.
  *
- * Declared here rather than imported because the store table it belongs to
- * arrives in M235/02; that spec re-exports or aligns with this shape. `key` is
- * a free `string`, never an enum, so a key minted by a newer build survives a
- * backup round trip on an older one instead of being stripped.
+ * THE SHAPE LIVES IN THE STORE (`#app/lib/local-store/schema`, M235/02), for
+ * the reason `marks.ts` gives beside {@link LocalActivityMark}: one definition,
+ * and it is the store's. `key` is a free `string` there, never an enum, so a
+ * key minted by a newer build survives a backup round trip on an older one
+ * instead of being stripped.
  */
-export interface LocalAward {
-  /** The catalog key, which is also the row key. Written once, never changed. */
-  key: string;
-  /** When it was earned, epoch milliseconds, from the caller's clock. */
-  earnedAt: number;
-  /** The local day it was earned on, `YYYY-MM-DD`. */
-  earnedOnDay: string;
-  /** When the person was shown the note, or null while it is still unseen. The one mutable field. */
-  seenAt: number | null;
-}
+export type { LocalAward };
 
 /** Everything the evaluation needs to know. Nothing here is read from a singleton. */
 export interface EvaluateAwardsInput {

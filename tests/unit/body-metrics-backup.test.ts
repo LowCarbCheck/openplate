@@ -60,11 +60,13 @@ describe('schema version', () => {
   // And the PANTRY at v22 (M233/02), a whole new device-local entity with a
   // required array on the snapshot, whose forward migration is a `.default([])`
   // exactly as `fasts` and `savedMeals` before it.
+  // And the ACTIVITY MARKS plus the AWARDS at v23 (M235/02), two whole new
+  // entities in one bump, under that same `.default([])` rule.
   // What it guards is that a bump is never silent ,
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 22, bumped past the v8 body-metrics bump by everything through the pantry', () => {
-    assert.equal(SCHEMA_VERSION, 22);
+  it('is 23, bumped past the v8 body-metrics bump by everything through the awards', () => {
+    assert.equal(SCHEMA_VERSION, 23);
   });
 });
 
