@@ -53,6 +53,7 @@ import {
   resolveLocalTimezone,
   upsertLocalWeightEntryForDay,
 } from '#app/lib/local-store';
+import { noteActivity } from '#app/lib/gamification/record';
 import { BIOLOGICAL_SEX_VALUES, bodyMetricsFormKey, hasAnyBodyMetric } from '#app/models/body-metrics';
 import type { BodyMetrics } from '#app/models/body-metrics';
 import { makeBodyMetricsSchema } from '#app/lib/body-metrics-schema';
@@ -174,6 +175,7 @@ async function _logWeight(formData: FormData) {
   const measuredAt = todayInTimezone(resolveLocalTimezone(profile));
   await upsertLocalWeightEntryForDay({ dayKey: measuredAt, weightKg: submission.value.weightKg });
   trackWeightLogged();
+  await noteActivity({ signal: 'weight.log', now: Date.now() });
   return redirectWithLocalToast('/settings/profile', {
     type: 'success',
     description: actionT('goals.toast.weightLogged'),

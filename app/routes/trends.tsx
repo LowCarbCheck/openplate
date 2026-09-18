@@ -13,6 +13,7 @@ import {
   resolveLocalTimezone,
   upsertLocalWeightEntryForDay,
 } from '#app/lib/local-store';
+import { noteActivity } from '#app/lib/gamification/record';
 import { enumerateDates, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { startOfWeek } from '#app/lib/trend-week';
 import { ALL_MEALS, buildTrendChart } from '#app/lib/trend-chart';
@@ -278,6 +279,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   const dayKey = todayInTimezone(resolveLocalTimezone(profile));
   await upsertLocalWeightEntryForDay({ dayKey, weightKg: submission.value.weightKg });
   trackWeightLogged();
+  await noteActivity({ signal: 'weight.log', now: Date.now() });
   return redirectWithLocalToast('/trends', {
     type: 'success',
     description: actionT('goals.toast.weightLogged'),

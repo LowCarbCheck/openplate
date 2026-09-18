@@ -48,6 +48,7 @@ import { usePlatePhoto } from '#app/hooks/use-plate-photo';
 import { ReportEstimate } from '#app/components/report-estimate';
 import { cn } from '#app/lib/utils';
 import { trackEntryDeleted, trackEntryEdited, trackFoodLogged } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
@@ -526,6 +527,7 @@ async function handleLogAgain(id: string) {
     logBatchId: null,
   });
   trackFoodLogged('entry-log-again');
+  await noteActivity({ signal: 'log.food', now });
   return {
     id: randomUuid(),
     title: undefined,

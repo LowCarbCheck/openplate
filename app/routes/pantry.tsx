@@ -62,6 +62,7 @@ import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { takeIntakeHandoff, type ScanHandoff } from '#app/lib/intake-handoff';
 import { nextPantry, type PantryDraftRow } from '#app/lib/pantry-merge';
 import { trackPantryCaptured, type PantryCapturePath } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import { fileToBase64 } from '#app/lib/file-to-base64';
 import {
   getLocalAiSettings,
@@ -530,6 +531,9 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
         setStored(written);
         setRows(written.map(draftFromStored));
         trackPantryCaptured(path);
+        // The pantry's own signal, on the ONE write this screen performs and
+        // after it succeeded: the catch below is the failed save (M235/04).
+        await noteActivity({ signal: 'pantry.edit', now: Date.now() });
         setPhase({ kind: 'list' });
       } catch {
         // THE ROWS STAY EXACTLY WHERE THEY ARE. A store write that failed threw

@@ -291,6 +291,18 @@ export { enqueueLogIntent, pendingEntriesForDate, listOutboxRecords, flushOutbox
 export { clientTodayKey } from './time';
 export { resolveLocalTimezone } from './timezone';
 
+/**
+ * The store handle every verb above accepts as its optional `store`.
+ *
+ * Re-exported so a caller OUTSIDE this directory can type one without
+ * importing TinyBase itself. Nothing beyond this module should have to name
+ * the storage library to pass a store through, and `app/lib/gamification/` in
+ * particular is held to a rule (M235/01) that no file under it names TinyBase
+ * at all. Aliased rather than passed through under its own name, because
+ * `Store` alone says nothing about which of this app's several stores it is.
+ */
+export type { Store as LocalStoreHandle } from 'tinybase';
+
 // Migration-gate device stamp (M117/03). Its original caller, `_personal.tsx`'s
 // account-scoped server → device migration gate, is gone with the account
 // system (M128 spec 03), so nothing in the app reads it today. Kept as the

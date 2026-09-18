@@ -30,6 +30,7 @@ import { randomUuid } from '#app/lib/uuid';
 import { todayInTimezone } from '#app/lib/user-days';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { trackUsualAtSlotLogged } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import {
   buildLogsFromSavedMealItems,
   computeSlotSuggestions,
@@ -125,6 +126,9 @@ export async function handleLogUsual(formData: FormData): Promise<Response> {
   // Once per TAP, outside the loop: a bundle of four is one log action, exactly
   // as its single confirmation is (the `handleLogMeal`/`handleConfirm` rule).
   trackUsualAtSlotLogged(suggestion.kind);
+  // The same signal `/meals` writes: a tap on "your usual" repeats a meal,
+  // whether the offer came from a saved meal or from a habit (M235/04).
+  await noteActivity({ signal: 'meal.repeat', now: nowMs });
 
   return redirectWithLocalToast('/diary', {
     type: 'success',

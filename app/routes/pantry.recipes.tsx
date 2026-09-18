@@ -50,6 +50,7 @@ import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { MEAL_TYPES } from '#app/lib/meal-choice';
 import { mealTypeForTime } from '#app/lib/meal-time';
 import { trackFoodLogged } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import { buildRecipeLogEntry } from '#app/lib/recipe-log';
 import { keepServableRecipes, roundServingGramsForDisplay, servingsEatenOptions } from '#app/lib/recipe-serving';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
@@ -540,6 +541,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
         await putLocalFood(food);
         await putLocalFoodLog(log);
         trackFoodLogged('recipe');
+        await noteActivity({ signal: 'log.food', now: Date.now() });
         void navigate('/diary');
       } catch {
         // THE CARDS STAY ON SCREEN. Nothing about the proposal changed, and it

@@ -84,6 +84,7 @@ import {
 import type { LocalDailyTotals, LocalFoodLog, LocalFrequentChip, LocalRecentFood } from '#app/lib/local-store';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { trackEntryRestored, trackFoodLogged, trackMealSaved } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { BackupNudgeBanner } from '#app/components/backup-nudge-banner';
@@ -585,6 +586,7 @@ async function handleLogRecent(
     }),
   );
   trackFoodLogged('diary-chip');
+  await noteActivity({ signal: 'log.food', now: now.getTime() });
   const totals = await readDayCarbTotals(value.date);
   return {
     intent: 'log-recent',
@@ -737,6 +739,9 @@ async function handleCopyYesterday(
   // Once per copy batch, outside the loop. The empty-source path returns above
   // without writing anything, so it never reaches this line.
   trackFoodLogged('diary-copy-day');
+  // `meal.repeat`, not `log.food`: copying a day IS the repeat seam (M235/04),
+  // and the signal is about which function was used, not how many rows it wrote.
+  await noteActivity({ signal: 'meal.repeat', now });
   const totals = await readDayCarbTotals(targetDate);
   return {
     intent: 'copy-yesterday',

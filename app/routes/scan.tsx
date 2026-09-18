@@ -122,6 +122,7 @@ import {
   trackScanSucceeded,
 } from '#app/lib/matomo-events';
 import type { LogInputPath } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -1215,6 +1216,9 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
   // was travels on the form, because a photo, a typed sentence and a spoken
   // one all reach this same confirm and would otherwise be indistinguishable.
   trackFoodLogged(SCAN_LOG_PATH_BY_SOURCE[readIntakeSource(formData)]);
+  // The scan's own signal, on the CONFIRM and not on the analysis: an
+  // AI-identified plate becomes a log here, and nowhere earlier (M235/04).
+  await noteActivity({ signal: 'log.scan', now });
 
   const redirectTo = activeDate ? `/diary?date=${activeDate}` : '/diary';
   const totals = await readDayCarbTotals(dayKey);

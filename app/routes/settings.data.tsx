@@ -21,6 +21,7 @@ import { Download, Upload } from 'lucide-react';
 
 import { buildLogsCsv, type ExportLogInput } from '#app/lib/export-format';
 import { trackBackupExported, trackBackupImported, trackCsvExported } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import {
   exportBackup,
   getLocalProfileGoals,
@@ -133,6 +134,10 @@ async function downloadEverythingJson(): Promise<void> {
   // The local-first safety net. If this stays rare, the backup nudge is not
   // working — which is the whole reason this event is worth having.
   trackBackupExported();
+  // Recorded, but it never makes a day ACTIVE: `backup.export` is the one
+  // signal `SIGNAL_COUNTS_TOWARD_ACTIVE` answers false for, because the app
+  // asks for a backup itself and must not hand out a streak day for obeying.
+  await noteActivity({ signal: 'backup.export', now: Date.now() });
 }
 
 /**

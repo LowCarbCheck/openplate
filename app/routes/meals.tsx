@@ -36,6 +36,7 @@ import {
 } from '#app/lib/local-store';
 import type { LocalSavedMeal } from '#app/lib/local-store';
 import { trackFoodLogged } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent } from '#app/components/ui/card';
@@ -124,6 +125,9 @@ async function handleLogMeal(formData: FormData): Promise<Response> {
   for (const log of logs) await putLocalFoodLog(log);
   // Once per meal, outside the per-item loop: the batch is one log action.
   trackFoodLogged('saved-meal');
+  // Applying a saved meal is the repeat seam, so it carries `meal.repeat` and
+  // not `log.food`: the badge is for having used the function (M235/04).
+  await noteActivity({ signal: 'meal.repeat', now });
 
   return redirectWithLocalToast('/diary', {
     type: 'success',

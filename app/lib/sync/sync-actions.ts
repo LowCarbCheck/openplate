@@ -44,6 +44,7 @@ import { bytesToBase64 } from './engine/crypto/base64';
 import type { KdfDescriptorWire, KeyRecordSubmissionWire } from './engine/client/auth-wire';
 import type { InstanceDescriptor, OperatorNotice } from './engine/protocol';
 import type { SyncSetupOutcome } from './setup-flow';
+import { reconcileAwardsQuietly } from '#app/lib/gamification/record';
 import {
   applyMergedSnapshot,
   parseRemoteSnapshot,
@@ -553,6 +554,12 @@ export async function syncNow(): Promise<void> {
       // healthy for a week with its share identity stranded.
       error: unopenedCompartmentFailure(vault.privateStore),
     });
+    // AFTER the cycle, and only ever awards. A pull can be what completes a
+    // streak: the marks that finish a run may have been made on a phone, and
+    // the tablet that receives them has to be able to notice. It writes no
+    // mark, because nobody used this device to make those marks, and it
+    // swallows its own failures, because a badge is not a sync outcome.
+    await reconcileAwardsQuietly({ now: Date.now() });
   } catch (error) {
     const failure = describeSyncFailure(error);
     updateSyncSession({ phase: 'idle', error: failure });

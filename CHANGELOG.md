@@ -17,6 +17,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **Two devices used on the same day now keep the record from both.** If you use openplate on a phone and on a tablet, each device's record of what you did travels with the encrypted sync and both are kept, rather than one replacing the other. A device that loses its stored data can no longer erase that record on your other devices either, because nothing about these two tables can be deleted. A badge note you dismissed on one device is not shown again on the other.
 
+- **The app now records which of its functions you used, and when.** Logging food, confirming a scan, running a fast, weighing in, repeating a meal, editing the pantry and exporting a backup each leave a mark on the day you did them. Only an act you performed is recorded: receiving a sync from another device records nothing, so a day you never opened the app is never counted as one you did. Nothing is shown for this yet.
+
 ## [0.33.0] - 2026-09-18
 
 ### Changed

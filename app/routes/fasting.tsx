@@ -54,6 +54,7 @@ import {
   setLocalFastStart,
 } from '#app/lib/local-store';
 import type { FastProtocolId, LocalFast, LocalFastingSettings, ReproductiveStatus } from '#app/lib/local-store';
+import { noteActivity } from '#app/lib/gamification/record';
 import {
   customHoursToMs,
   defaultPlannedStartLocal,
@@ -369,6 +370,9 @@ async function _startFast(formData: FormData) {
   // The same flag the toast reads, not the submitted `startMode`: a BACKDATED
   // `later` start is already running, so it is a 'now' fast, not a scheduled one.
   trackFastStarted(isScheduled ? 'scheduled' : 'now');
+  // After the write and after the conflict guard above, so a refused double
+  // submit records nothing (M235/04).
+  await noteActivity({ signal: 'fast.run', now: nowMs });
   return redirectWithLocalToast('/fasting', {
     type: 'success',
     description: actionT(isScheduled ? 'fasting.toast.scheduled' : 'fasting.toast.started'),
@@ -441,6 +445,9 @@ async function _endFast(formData: FormData) {
   }
   syncFastWakeAt();
   trackFastEnded();
+  // Ending counts too: a fast started yesterday and closed this morning is
+  // this morning's app use, not yesterday's.
+  await noteActivity({ signal: 'fast.run', now: endedAt });
   return redirectWithLocalToast('/fasting', {
     type: 'success',
     description: actionT('fasting.toast.ended', {

@@ -72,6 +72,7 @@ import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
 import { trackCustomFoodDeleted, trackCustomFoodEdited, trackFoodLogged } from '#app/lib/matomo-events';
+import { noteActivity } from '#app/lib/gamification/record';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
@@ -820,6 +821,9 @@ async function handleLog({
     }),
   );
   trackFoodLogged('add-search');
+  // The activity mark, on the day the PERSON is having rather than the day the
+  // entry landed on: a backdated log is still app use today (M235/04).
+  await noteActivity({ signal: 'log.food', now: Date.now() });
   return addedToastRedirect({ name: data.name, mealType: data.mealType ?? null, dayKey, activeDate, returnTo });
 }
 
@@ -951,6 +955,7 @@ async function handleManual({
     // blank.
   });
   trackFoodLogged('add-manual');
+  await noteActivity({ signal: 'log.food', now: Date.now() });
   return addedToastRedirect({ name: data.name, mealType: data.mealType ?? null, dayKey, activeDate, returnTo });
 }
 
