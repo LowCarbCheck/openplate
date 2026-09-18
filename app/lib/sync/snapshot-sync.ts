@@ -36,6 +36,8 @@ import { mergeEntityMaps } from './engine/merge/merge-entities';
 import type { MergeCandidate, Tombstone } from './engine/merge/types';
 import type { SyncMetaPayload } from './engine/envelope/types';
 import type {
+  LocalActivityMark,
+  LocalAward,
   LocalFastingSettings,
   LocalFoodLog,
   LocalPersonalFood,
@@ -43,6 +45,8 @@ import type {
   LocalWeightEntry,
 } from '#app/lib/local-store';
 import {
+  ACTIVITY_MARKS_TABLE,
+  AWARDS_TABLE,
   entityKey as buildEntityKey,
   DELETE_JOURNAL_TAG_BY_TABLE,
   FASTING_SETTINGS_TABLE,
@@ -86,6 +90,53 @@ export const SYNC_ENTITY_TYPES = {
    * a routine is re-set in two taps.
    */
   fastingSettings: SYNC_ENTITY_TYPE_BY_TABLE[FASTING_SETTINGS_TABLE],
+  /**
+   * AN ACTIVITY MARK (M235/03), one immutable row per (day, signal).
+   *
+   * MERGED, and the row id is what makes the merge enough. A mark's id is
+   * `${dayKey}#${signal}`, so a phone that logs food and a tablet that runs a
+   * fast on the same day write two DIFFERENT entity ids, and
+   * `mergeEntityMaps` passes an entity present on only one side through
+   * untouched. Both marks survive, and the merge engine is not touched. A
+   * single row per day holding a SET of signals would have needed a union
+   * merge, which is the design this milestone rejected.
+   *
+   * A PASS-THROUGH WOULD HAVE BEEN THE WRONG STANCE, unlike `fasts`,
+   * `savedMeals` and `pantryItems`: letting the local list stand whole drops
+   * every mark the other device wrote, which is precisely the streak a person
+   * would then be told they do not have.
+   *
+   * NOTHING HERE IS EVER TOMBSTONED. The table has no delete verb, so it is
+   * absent from `DELETE_JOURNAL_TAG_BY_TABLE` and `isTombstoneTrusted`
+   * withholds every tombstone this device's baseline might imply for a mark.
+   * An evicted store therefore cannot delete another device's record of what
+   * that person did.
+   *
+   * The row is written ONCE and never updated (`putLocalActivityMark` reads
+   * before it writes), so its content hash never changes, `stampSnapshot`
+   * carries the previous stamp forward, and opening the app ten times a day
+   * pushes nothing.
+   */
+  activityMark: SYNC_ENTITY_TYPE_BY_TABLE[ACTIVITY_MARKS_TABLE],
+  /**
+   * AN EARNED AWARD (M235/03), one immutable row per catalog key.
+   *
+   * MERGED for the mark's reason and with the same mechanism: the row id IS
+   * the catalog key, so two devices that earn the same award while offline
+   * write the SAME id and converge on one row rather than two. Which device's
+   * `earnedAt` survives is decided by `(lamport, deviceId)` and is accepted:
+   * nothing branches on that number beyond display, and both devices are
+   * describing the same achievement.
+   *
+   * `seenAt` IS THE ONE FIELD LAST-WRITER-WINS CAN COST SOMEBODY, and the cost
+   * is one repeated note, never data. `applyMergedSnapshot` re-stamps a
+   * `seenAt` the merge carried, so the field only ever moves from null to a
+   * number and the two devices stop disagreeing about it.
+   *
+   * NEVER REVOKED, so like a mark it has no delete verb, no journal tag and no
+   * tombstone anybody can trust.
+   */
+  award: SYNC_ENTITY_TYPE_BY_TABLE[AWARDS_TABLE],
   /**
    * THE OWNER-PRIVATE COMPARTMENT (M160/07, `openplate-core` ADR-0002's
    * partition amendment), one entity holding the sealed ciphertext and its
@@ -239,7 +290,14 @@ export function contentHash<T>(value: T): string {
 
 /** The local-store records sync carries, everything `flattenSnapshot` can produce. */
 export type SyncEntityValue =
-  LocalPersonalFood | LocalFoodLog | LocalWeightEntry | LocalProfileGoals | LocalFastingSettings | SealedPrivateStore;
+  | LocalPersonalFood
+  | LocalFoodLog
+  | LocalWeightEntry
+  | LocalProfileGoals
+  | LocalFastingSettings
+  | LocalActivityMark
+  | LocalAward
+  | SealedPrivateStore;
 
 interface FlatEntity {
   key: string;
@@ -254,6 +312,15 @@ function flattenSnapshot(snapshot: SyncedSnapshot): FlatEntity[] {
     ...snapshot.foods.map((food) => toFlat(SYNC_ENTITY_TYPES.food, food.id, food)),
     ...snapshot.foodLogs.map((log) => toFlat(SYNC_ENTITY_TYPES.log, log.id, log)),
     ...snapshot.weightEntries.map((entry) => toFlat(SYNC_ENTITY_TYPES.weight, entry.id, entry)),
+    // THE ROW IS THE FACT (M235/03). A mark is addressed by its own
+    // `${dayKey}#${signal}` id and an award by its catalog key, which is why
+    // both can be stamped and merged one row at a time without the engine
+    // learning anything about either of them.
+    ...snapshot.activityMarks.map((mark) => toFlat(SYNC_ENTITY_TYPES.activityMark, mark.id, mark)),
+    // AN AWARD HAS NO `id` FIELD, its `key` IS its row id, in the store and
+    // here. Spelling it `award.key` rather than adding a duplicate `id` to the
+    // entity keeps one name for one thing.
+    ...snapshot.awards.map((award) => toFlat(SYNC_ENTITY_TYPES.award, award.key, award)),
   ];
   if (snapshot.profile !== null) {
     flattened.push(toFlat(SYNC_ENTITY_TYPES.profile, PROFILE_ENTITY_ID, snapshot.profile));
@@ -881,6 +948,8 @@ export function mergeSnapshots({
   const foods: LocalPersonalFood[] = [];
   const foodLogs: LocalFoodLog[] = [];
   const weightEntries: LocalWeightEntry[] = [];
+  const activityMarks: LocalActivityMark[] = [];
+  const awards: LocalAward[] = [];
   let profile: LocalProfileGoals | null = null;
   let fastingSettings: LocalFastingSettings | null = null;
   let privateStore: SealedPrivateStore | null = null;
@@ -919,6 +988,16 @@ export function mergeSnapshots({
     if (entity.entityType === SYNC_ENTITY_TYPES.weight) {
       // SAFETY: the `weightEntry` tag is only ever attached to a `LocalWeightEntry`.
       weightEntries.push(entity.value as LocalWeightEntry);
+      continue;
+    }
+    if (entity.entityType === SYNC_ENTITY_TYPES.activityMark) {
+      // SAFETY: the `activityMark` tag is only ever attached to a `LocalActivityMark`.
+      activityMarks.push(entity.value as LocalActivityMark);
+      continue;
+    }
+    if (entity.entityType === SYNC_ENTITY_TYPES.award) {
+      // SAFETY: the `award` tag is only ever attached to a `LocalAward`.
+      awards.push(entity.value as LocalAward);
       continue;
     }
     if (entity.entityType === SYNC_ENTITY_TYPES.profile) {
@@ -1018,17 +1097,26 @@ export function mergeSnapshots({
       // in THIS device's fridge, and the cost of the rare eviction is that
       // somebody photographs the shelf again.
       pantryItems: local.snapshot.pantryItems,
-      // MARKS AND AWARDS, LOCAL PASS-THROUGH, AND THIS IS A PLACEHOLDER
-      // (M235/02). The two keys arrived with the store tables, so this literal
-      // must name them or it does not compile. M235/03 owns the real stance and
-      // will replace these two lines: both tables are written ONCE per row id
-      // and never updated, which is exactly the shape a UNION across the two
-      // sides is safe for, and a union is what a person using a phone and a
-      // tablet on the same day needs. A pass-through is the conservative
-      // holding answer in the meantime, it can lose a peer's row but never
-      // this device's.
-      activityMarks: local.snapshot.activityMarks,
-      awards: local.snapshot.awards,
+      // MARKS AND AWARDS ARE MERGED (M235/03), which replaces the pass-through
+      // placeholder M235/02 left here.
+      //
+      // Both lists are built by the loop above out of `mergeEntityMaps`, so a
+      // row either side holds is in the result: a phone that logged food and a
+      // tablet that ran a fast on the same day write two different mark ids and
+      // the person keeps both signals. A pass-through would have published this
+      // device's list whole and dropped the peer's rows on every pull, which is
+      // the defect this milestone exists to avoid, and it is silent: the
+      // streak simply reads lower.
+      //
+      // There is no `decidePassThrough` around them, and none is needed. That
+      // guard exists so a device cannot publish an EMPTINESS it cannot account
+      // for, and an emptiness here is not publishable at all: neither table has
+      // a delete verb, so a row missing from this device's snapshot produces no
+      // trusted tombstone and the remote row simply survives the merge. An
+      // evicted store therefore repopulates from the account instead of
+      // erasing it.
+      activityMarks,
+      awards,
       // NOT passed through from `local` like the two above it: the routine is
       // genuinely merged, so a second device adopts it instead of staying
       // blank. See the comment on `SYNC_ENTITY_TYPES.fastingSettings` for why
@@ -1119,6 +1207,13 @@ function canonicalize(payload: StampedSnapshot) {
       // `fasts` is deliberately omitted, for the same reason `mergeSnapshots`
       // passes it straight through: it is not synced, so a fast starting or
       // ending must not be what makes this device burn a blob version.
+      //
+      // `activityMarks` and `awards` are omitted too, and for a third reason
+      // again (M235/03): they ARE merged, so a new mark must make this device
+      // push, and it does, through `meta.perEntity` below. Every merged row
+      // owns a key there, so two payloads holding different marks can never
+      // compare equal, and listing the rows here as well would only add a
+      // second ordering this file would have to keep stable.
     },
     meta: {
       perEntity: payload.meta.perEntity,

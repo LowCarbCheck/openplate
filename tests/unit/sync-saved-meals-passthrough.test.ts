@@ -148,6 +148,11 @@ describe('mergeSnapshots and savedMeals', () => {
       // The two sit on opposite sides of the same line on purpose: a routine
       // is a preference another device needs, a saved meal is not merged yet.
       'fastingSettings',
+      // The marks and the awards joined the merged side in M235/03, and saved
+      // meals still have not: both of those tables are written once per row id
+      // and never updated, which is what makes a merge enough for them.
+      'activityMark',
+      'award',
       'privateStore',
     ]);
   });

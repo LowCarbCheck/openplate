@@ -59,8 +59,10 @@ import {
   listDeletedEntityKeys,
   listLocalSharePeers,
   listLocalStudyEnrolments,
+  markAwardSeen,
   migrateEnvelopeForward,
   SCHEMA_VERSION,
+  type LocalAward,
   type LocalStoreSnapshot,
 } from '#app/lib/local-store';
 import type { LocalStoreIntegrity } from './snapshot-sync';
@@ -294,6 +296,14 @@ export async function applyMergedSnapshot({
   // A `null` means no device has ever set a routine, and this path deliberately
   // does not delete on it: the local row, if there is one, is what the merge
   // was built from.
+  //
+  // AND NO SURVIVING SET FOR `activityMarks` OR `awards` (M235/03), which are
+  // merged and still have nothing to remove. Neither table has a delete verb,
+  // so no tombstone for either can ever be trusted, so the merge can never
+  // hand back a list with a row REMOVED from it: the worst a pull can do is add
+  // the peer's rows. Computing a delete set here would invent a removal nobody
+  // performed, on the one pair of tables whose whole promise is that a record
+  // of what somebody did is never taken back.
 
   // NOT THROUGH `deleteLocalFood` AND FRIENDS, on purpose. Those verbs write
   // the DELETE JOURNAL, and the journal means one thing: a delete THIS DEVICE
@@ -313,6 +323,36 @@ export async function applyMergedSnapshot({
     deletedEntityKeys: new Set(await listDeletedEntityKeys()),
   });
   await importBackup({ schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data: writable });
+  await adoptSeenAwardStamps(merged.awards);
+}
+
+/**
+ * Stamps every award the merge says was SEEN and this device still thinks is
+ * unseen (M235/03).
+ *
+ * The one field an upsert cannot carry here, and the reason is upstream:
+ * `putLocalAward` is WRITE-ONCE by key, so `importBackup` above keeps this
+ * device's row whenever it already holds the award, `seenAt` and all. That is
+ * right for a restore, where the file may be months older than the store, and
+ * it leaves one thing undone for a merge.
+ *
+ * Without this line the two devices never agree about `seenAt` and never stop
+ * arguing: the one holding the stamp commits a baseline saying null, reads its
+ * own store, sees a change, and pushes the stamp back; the other does the same
+ * in reverse, and every cycle from then on writes a blob version over one
+ * dismissed note.
+ *
+ * `markAwardSeen` makes the field MONOTONE, which is what ends it: it fills a
+ * null and never overwrites a stamp, so an award goes unseen to seen exactly
+ * once, per device, whichever side's number wins the merge. A key this device
+ * does not hold is ignored, which is the ordinary case for an award that
+ * arrived in the same pull and was just written unseen.
+ */
+async function adoptSeenAwardStamps(awards: readonly LocalAward[]): Promise<void> {
+  for (const award of awards) {
+    if (award.seenAt === null) continue;
+    await markAwardSeen({ key: award.key, seenAt: award.seenAt });
+  }
 }
 
 /**

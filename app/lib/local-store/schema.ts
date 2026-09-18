@@ -587,6 +587,23 @@ export function entityKey(entityType: string, entityId: string): string {
 }
 
 /**
+ * The merged tables that ALSO have a delete verb.
+ *
+ * The overlap between the two exported maps, written once so a tag has one
+ * spelling: a second spelling would record a delete under a key nothing ever
+ * looks up, which fails silently and always in the direction of losing the
+ * delete. Not exported, because no caller has a question this answers; both
+ * maps below are the readable shapes.
+ */
+const DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE = {
+  [PERSONAL_FOODS_TABLE]: 'personalFood',
+  [FOOD_LOGS_TABLE]: 'foodLog',
+  [WEIGHT_ENTRIES_TABLE]: 'weightEntry',
+  [PROFILE_GOALS_TABLE]: 'profile',
+  [FASTING_SETTINGS_TABLE]: 'fastingSettings',
+} as const;
+
+/**
  * The entity-type tag each MERGED store table carries in a tombstone and in an
  * entity key.
  *
@@ -602,13 +619,28 @@ export function entityKey(entityType: string, entityId: string): string {
  * adds, which is a separate map for exactly that reason. The owner-private
  * compartment is absent because it is not a table at all; its evidence is
  * `SnapshotIntegrity.isCompartmentKnown`.
+ *
+ * It is ASSEMBLED FROM TWO HALVES since M235/03, and the halves are not
+ * cosmetic: {@link DELETE_JOURNAL_TAG_BY_TABLE} below used to spread this map
+ * whole, so a merged table added here would silently become a journalled one
+ * too. Marks and awards must be in this map and must NOT be in that one, so
+ * the overlap is named once and each map spreads what it actually means.
  */
 export const SYNC_ENTITY_TYPE_BY_TABLE = {
-  [PERSONAL_FOODS_TABLE]: 'personalFood',
-  [FOOD_LOGS_TABLE]: 'foodLog',
-  [WEIGHT_ENTRIES_TABLE]: 'weightEntry',
-  [PROFILE_GOALS_TABLE]: 'profile',
-  [FASTING_SETTINGS_TABLE]: 'fastingSettings',
+  ...DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE,
+  // THE TWO WRITE-ONCE TABLES (M235/03), merged exactly like the five above
+  // and, unlike every one of them, never deleted.
+  //
+  // Merged rather than passed through, and this is the milestone's central
+  // claim: a mark's row id is `${dayKey}#${signal}` and an award's row id is
+  // its catalog key, so a phone and a tablet used on the same day write
+  // DIFFERENT ids, `mergeEntityMaps` passes each one through from the side
+  // that holds it, and the person keeps both signals. The pass-through stance
+  // `fasts` and `savedMeals` take would let the local list stand whole and
+  // drop the other device's marks, which is the exact defect this milestone
+  // exists to avoid.
+  [ACTIVITY_MARKS_TABLE]: 'activityMark',
+  [AWARDS_TABLE]: 'award',
 } as const;
 
 /** A merged table's entity-type tag, `undefined` for every table that is not merged. */
@@ -639,7 +671,19 @@ export type SyncEntityTypeTag = (typeof SYNC_ENTITY_TYPE_BY_TABLE)[keyof typeof 
  * there is no verb that removes it, so its absence is always an eviction.
  */
 export const DELETE_JOURNAL_TAG_BY_TABLE = {
-  ...SYNC_ENTITY_TYPE_BY_TABLE,
+  // THE DELETABLE HALF OF THE MERGED MAP, not the merged map itself, and the
+  // difference is deliberate (M235/03).
+  //
+  // `activityMarks` and `awards` are merged entities and are NOT here, because
+  // neither table has a delete verb: a day that carried a signal carried it,
+  // and an award is never revoked. A tag here would be a key nothing can ever
+  // write, and it would be worse than useless. `isTombstoneTrusted` asks the
+  // journal first, so a device whose IndexedDB was evicted holds a baseline
+  // naming marks it can no longer see, mints no trusted tombstone for any of
+  // them, and cannot delete another device's record of what that person did.
+  // Its absence IS that guarantee, so this is a decision rather than a table
+  // somebody forgot.
+  ...DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE,
   [FASTS_TABLE]: 'fast',
   [SAVED_MEALS_TABLE]: 'savedMeal',
   // THE OWNER-PRIVATE ROWS (M226), and they are here for the pass-through

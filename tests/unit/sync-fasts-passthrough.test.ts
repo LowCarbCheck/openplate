@@ -158,6 +158,12 @@ describe('mergeSnapshots and fasts', () => {
       // The contrast, pinned in the one place a future edit would have to pass
       // through: the routine is merged, the fasts beside it are not.
       'fastingSettings',
+      // AND SO ARE THE TWO WRITE-ONCE TABLES (M235/03), a second pair on the
+      // merged side of the same line: a mark and an award are addressed by a
+      // row id nobody else writes, so a phone and a tablet used on one day keep
+      // the signals of both.
+      'activityMark',
+      'award',
       'privateStore',
     ]);
   });
