@@ -1358,7 +1358,8 @@
     "withdrawal": "Droit de rétractation · openplate",
     "notifications": "Notifications · openplate",
     "pantry": "Garde-manger · openplate",
-    "recipes": "Recettes · openplate"
+    "recipes": "Recettes · openplate",
+    "awards": "Ton historique · openplate"
   },
   "nav": {
     "add": "Ajouter",
@@ -2771,10 +2772,9 @@
       "headline": "Les tendances nécessitent quelques jours de plus pour être représentatives, tu en as {{logged}}."
     },
     "streak": {
-      "active_one": "{{count}} jour consécutif, continue comme ça.",
-      "active_other": "{{count}} jours consécutifs, continue comme ça.",
-      "empty": "Enregistre un aliment aujourd'hui pour démarrer une série.",
-      "overGoal": "Tu as enregistré des entrées aujourd'hui. Ton objectif de glucides a été dépassé, la série n'augmente donc pas, car elle compte les jours situés en dessous.",
+      "active_one": "{{count}} jour d'affilée.",
+      "active_other": "{{count}} jours d'affilée.",
+      "empty": "Utilise l'application aujourd'hui pour démarrer une série.",
       "title": "Ta série"
     },
     "title": "Progrès",
@@ -3274,6 +3274,105 @@
       "title": "L'opération a échoué",
       "failed": "Impossible de composer un repas. Réessaie dans un instant.",
       "logFailed": "Impossible d'enregistrer cela dans ton journal. Réessaie dans un instant."
+    }
+  },
+  "awards": {
+    "title": "Ton historique",
+    "description": "Ce que tu as fait avec l'application jusqu'ici. Rien de tout cela n'est un score.",
+    "earnedOn": "Obtenu le {{date}}",
+    "notYet": "Pas encore",
+    "empty": "Utilise l'application pendant une journée pour débloquer la première récompense.",
+    "section": {
+      "explorer": "Ce que tu as essayé",
+      "streak": "Jours d'affilée",
+      "onplan": "Jours sous ton objectif de glucides"
+    },
+    "hide": "Masquer les séries et les récompenses",
+    "hideDescription": "L'application conserve l'historique dans tous les cas, elle cesse simplement de l'afficher.",
+    "note": "{{title}}, tu l'as décroché.",
+    "explorer": {
+      "log": {
+        "food": {
+          "title": "Premier aliment",
+          "note": "Tu as consigné ton premier aliment."
+        },
+        "scan": {
+          "title": "Première assiette",
+          "note": "Tu as fait identifier une assiette à partir d'une photo."
+        }
+      },
+      "fast": {
+        "run": {
+          "title": "Premier jeûne",
+          "note": "Tu as suivi un jeûne avec le minuteur."
+        }
+      },
+      "weight": {
+        "log": {
+          "title": "Première pesée",
+          "note": "Tu as enregistré un poids."
+        }
+      },
+      "meal": {
+        "repeat": {
+          "title": "Deuxième service",
+          "note": "Tu as consigné un repas une nouvelle fois sans devoir le retaper."
+        }
+      },
+      "pantry": {
+        "edit": {
+          "title": "Garde-manger rempli",
+          "note": "Tu as ajouté un élément au garde-manger."
+        }
+      },
+      "backup": {
+        "export": {
+          "title": "Sauvegarde effectuée",
+          "note": "Tu as enregistré une copie de ton journal sur ton appareil."
+        }
+      }
+    },
+    "streak": {
+      "active": {
+        "3": {
+          "title": "Trois jours",
+          "note": "Trois jours de suite sur l'application."
+        },
+        "7": {
+          "title": "Une semaine",
+          "note": "Sept jours de suite."
+        },
+        "14": {
+          "title": "Deux semaines",
+          "note": "Quatorze jours de suite."
+        },
+        "30": {
+          "title": "Un mois",
+          "note": "Trente jours de suite."
+        },
+        "100": {
+          "title": "Cent jours",
+          "note": "Cent jours de suite."
+        }
+      }
+    },
+    "onplan": {
+      "7": {
+        "title": "Une semaine en dessous",
+        "note": "Sept jours consécutifs en respectant ou en restant sous ton quota de glucides."
+      },
+      "14": {
+        "title": "Deux semaines en dessous",
+        "note": "Quatorze jours consécutifs en respectant ou en restant sous ton quota de glucides."
+      },
+      "30": {
+        "title": "Un mois en dessous",
+        "note": "Trente jours consécutifs en respectant ou en restant sous ton quota de glucides."
+      },
+      "100": {
+        "title": "Cent jours en dessous",
+        "note": "Cent jours consécutifs en respectant ou en restant sous ton quota de glucides."
+      }
     }
   }
 }

@@ -1358,7 +1358,8 @@
     "withdrawal": "Widerrufsbelehrung · openplate",
     "notifications": "Benachrichtigungen · openplate",
     "pantry": "Vorratskammer · openplate",
-    "recipes": "Rezepte · openplate"
+    "recipes": "Rezepte · openplate",
+    "awards": "Deine Übersicht · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -2771,10 +2772,9 @@
       "headline": "Trends brauchen noch ein paar Tage, um aussagekräftig zu sein: Du hast {{logged}}."
     },
     "streak": {
-      "active_one": "{{count}} Tag in Folge, mach weiter so.",
-      "active_other": "{{count}} Tage in Folge, mach weiter so.",
-      "empty": "Trag heute etwas ein, dann startet deine Serie.",
-      "overGoal": "Du hast heute etwas eingetragen. Da dein Kohlenhydratziel überschritten wurde, zählt es nicht zur Serie: Eine Serie zählt Tage darunter.",
+      "active_one": "{{count}} Tag in Folge.",
+      "active_other": "{{count}} Tage in Folge.",
+      "empty": "Nutze die App heute, um eine Serie zu starten.",
       "title": "Deine Serie"
     },
     "title": "Fortschritt",
@@ -3274,6 +3274,105 @@
       "title": "Das hat nicht geklappt",
       "failed": "Es konnte keine Mahlzeit zusammengestellt werden. Versuche es gleich noch einmal.",
       "logFailed": "Wir konnten das nicht eintragen. Versuche es gleich noch einmal."
+    }
+  },
+  "awards": {
+    "title": "Deine Übersicht",
+    "description": "Was du bisher mit der App gemacht hast. Nichts hier ist ein Punktestand.",
+    "earnedOn": "Erreicht am {{date}}",
+    "notYet": "Noch nicht",
+    "empty": "Nutze die App einen Tag lang, dann erscheint das erste davon.",
+    "section": {
+      "explorer": "Dinge, die du ausprobiert hast",
+      "streak": "Tage in Folge",
+      "onplan": "Tage unter deinem Kohlenhydratziel"
+    },
+    "hide": "Serien und Auszeichnungen ausblenden",
+    "hideDescription": "Die App führt die Übersicht trotzdem weiter, sie zeigt sie nur nicht mehr an.",
+    "note": "{{title}}, das gehört jetzt dir.",
+    "explorer": {
+      "log": {
+        "food": {
+          "title": "Erstes Lebensmittel",
+          "note": "Du hast dein erstes Lebensmittel eingetragen."
+        },
+        "scan": {
+          "title": "Erster Teller",
+          "note": "Du hast einen Teller anhand eines Fotos erkennen lassen."
+        }
+      },
+      "fast": {
+        "run": {
+          "title": "Erstes Fasten",
+          "note": "Du hast ein Fasten mit dem Timer durchgeführt."
+        }
+      },
+      "weight": {
+        "log": {
+          "title": "Erstes Wiegen",
+          "note": "Du hast ein Gewicht erfasst."
+        }
+      },
+      "meal": {
+        "repeat": {
+          "title": "Zweite Portion",
+          "note": "Du hast eine Mahlzeit erneut eingetragen, ohne sie einzutippen."
+        }
+      },
+      "pantry": {
+        "edit": {
+          "title": "Gefüllte Vorratskammer",
+          "note": "Du hast etwas in die Vorratskammer gelegt."
+        }
+      },
+      "backup": {
+        "export": {
+          "title": "Gesichert",
+          "note": "Du hast eine Kopie deines Tagebuchs auf deinem Gerät gespeichert."
+        }
+      }
+    },
+    "streak": {
+      "active": {
+        "3": {
+          "title": "Drei Tage",
+          "note": "Drei Tage in Folge mit der App."
+        },
+        "7": {
+          "title": "Eine Woche",
+          "note": "Sieben Tage in Folge."
+        },
+        "14": {
+          "title": "Zwei Wochen",
+          "note": "Vierzehn Tage in Folge."
+        },
+        "30": {
+          "title": "Ein Monat",
+          "note": "Dreißig Tage in Folge."
+        },
+        "100": {
+          "title": "Hundert Tage",
+          "note": "Hundert Tage in Folge."
+        }
+      }
+    },
+    "onplan": {
+      "7": {
+        "title": "Eine Woche darunter",
+        "note": "Sieben Tage in Folge bei oder unter deinem Kohlenhydratziel."
+      },
+      "14": {
+        "title": "Zwei Wochen darunter",
+        "note": "Vierzehn Tage in Folge bei oder unter deinem Kohlenhydratziel."
+      },
+      "30": {
+        "title": "Ein Monat darunter",
+        "note": "Dreißig Tage in Folge bei oder unter deinem Kohlenhydratziel."
+      },
+      "100": {
+        "title": "Hundert Tage darunter",
+        "note": "Hundert Tage in Folge bei oder unter deinem Kohlenhydratziel."
+      }
     }
   }
 }

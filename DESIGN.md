@@ -247,8 +247,16 @@ Use for action errors that must persist on screen (form-level failures).
     `FOOD_ADDED_TOAST_ID`, so a four-item plate or four chip taps collapse into one updating toast.
 - **Celebrations are rationed to genuine firsts**: first food ever logged, first AI-identified
   plate, a full seven-day window. One `animate-celebrate` border pulse on the hero card plus a
-  one-line note, banked in `localStorage` so it can never fire twice. No confetti library, no
-  badges, no streak scores. Anything that could fire weekly is not a celebration.
+  one-line note, banked in `localStorage` so it can never fire twice. No confetti library.
+  Anything that could fire weekly is not a celebration.
+- **Awards are a record, not a score (M235)**: this section previously banned badges and streaks.
+  The app now tracks what a person completes. Follow these constraints across all surfaces under
+  `app/components/gamification/`: show no points, no levels, no leaderboards, and no peer
+  comparisons. Use no loss language. Never announce a broken streak, but show the lower count on
+  the next screen load. Never revoke an award after an edit or a goal change. Use amber, never
+  red. Show only one number per screen. The activity streak is that number on both the dashboard
+  and Progress. Let users turn off the display in preferences, and maintain the underlying
+  record.
 
 ---
 

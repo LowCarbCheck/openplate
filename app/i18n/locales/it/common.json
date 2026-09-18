@@ -1358,7 +1358,8 @@
     "withdrawal": "Diritto di recesso · openplate",
     "notifications": "Notifiche · openplate",
     "pantry": "Dispensa · openplate",
-    "recipes": "Ricette · openplate"
+    "recipes": "Ricette · openplate",
+    "awards": "I tuoi progressi · openplate"
   },
   "nav": {
     "add": "Aggiungi",
@@ -2771,10 +2772,9 @@
       "headline": "I trend hanno bisogno di qualche giorno in più per avere significato, tu ne hai {{logged}}."
     },
     "streak": {
-      "active_one": "{{count}} giorno consecutivo, continua così.",
-      "active_other": "{{count}} giorni consecutivi, continua così.",
-      "empty": "Registra un alimento oggi per iniziare una serie.",
-      "overGoal": "Hai registrato dei pasti oggi. Hai superato il limite di carboidrati, quindi la giornata non si aggiunge alla serie, che conta solo i giorni rimasti sotto la soglia.",
+      "active_one": "{{count}} giorno consecutivo.",
+      "active_other": "{{count}} giorni consecutivi.",
+      "empty": "Usa l'app oggi per iniziare una serie.",
       "title": "La tua serie"
     },
     "title": "Progressi",
@@ -3274,6 +3274,105 @@
       "title": "Operazione non riuscita",
       "failed": "Non è stato possibile creare un pasto. Riprova tra poco.",
       "logFailed": "Impossibile registrarlo. Riprova tra poco."
+    }
+  },
+  "awards": {
+    "title": "I tuoi progressi",
+    "description": "Ciò che hai fatto finora con l'app. Nessun dato qui è un punteggio.",
+    "earnedOn": "Ottenuto il {{date}}",
+    "notYet": "Non ancora",
+    "empty": "Usa l'app per un giorno e sbloccherai il primo traguardo.",
+    "section": {
+      "explorer": "Cose che hai provato",
+      "streak": "Giorni consecutivi",
+      "onplan": "Giorni sotto il tuo obiettivo di carboidrati"
+    },
+    "hide": "Nascondi serie e riconoscimenti",
+    "hideDescription": "L'app tiene comunque traccia dei dati, smette solo di mostrarli.",
+    "note": "{{title}}, adesso questo è tuo.",
+    "explorer": {
+      "log": {
+        "food": {
+          "title": "Primo alimento",
+          "note": "Hai registrato il tuo primo alimento."
+        },
+        "scan": {
+          "title": "Primo piatto",
+          "note": "Hai fatto identificare un piatto da una foto."
+        }
+      },
+      "fast": {
+        "run": {
+          "title": "Primo digiuno",
+          "note": "Hai completato un digiuno usando il timer."
+        }
+      },
+      "weight": {
+        "log": {
+          "title": "Prima pesata",
+          "note": "Hai registrato un peso."
+        }
+      },
+      "meal": {
+        "repeat": {
+          "title": "Seconda porzione",
+          "note": "Hai registrato di nuovo un pasto senza doverlo digitare."
+        }
+      },
+      "pantry": {
+        "edit": {
+          "title": "Dispensa rifornita",
+          "note": "Hai aggiunto qualcosa alla dispensa."
+        }
+      },
+      "backup": {
+        "export": {
+          "title": "Copia di sicurezza creata",
+          "note": "Hai salvato una copia del tuo diario sul tuo dispositivo."
+        }
+      }
+    },
+    "streak": {
+      "active": {
+        "3": {
+          "title": "Tre giorni",
+          "note": "Tre giorni consecutivi con l'app."
+        },
+        "7": {
+          "title": "Una settimana",
+          "note": "Sette giorni consecutivi."
+        },
+        "14": {
+          "title": "Due settimane",
+          "note": "Quattordici giorni consecutivi."
+        },
+        "30": {
+          "title": "Un mese",
+          "note": "Trenta giorni consecutivi."
+        },
+        "100": {
+          "title": "Cento giorni",
+          "note": "Cento giorni consecutivi."
+        }
+      }
+    },
+    "onplan": {
+      "7": {
+        "title": "Una settimana sotto la soglia",
+        "note": "Sette giorni consecutivi pari o sotto il tuo obiettivo di carboidrati."
+      },
+      "14": {
+        "title": "Due settimane sotto la soglia",
+        "note": "Quattordici giorni consecutivi pari o sotto il tuo obiettivo di carboidrati."
+      },
+      "30": {
+        "title": "Un mese sotto la soglia",
+        "note": "Trenta giorni consecutivi pari o sotto il tuo obiettivo di carboidrati."
+      },
+      "100": {
+        "title": "Cento giorni sotto la soglia",
+        "note": "Cento giorni consecutivi pari o sotto il tuo obiettivo di carboidrati."
+      }
     }
   }
 }

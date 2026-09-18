@@ -244,6 +244,13 @@
     "at": "2026-09-14",
     "es": "Este openplate no tiene sincronización"
   },
+  "04037d5b005f77ff": {
+    "en": "Days under your carb goal",
+    "path": "common:awards.section.onplan",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Días por debajo de tu objetivo de carbohidratos"
+  },
   "041a91516709ee68": {
     "en": "Choose a new password. Your diary stays as it is.",
     "path": "common:reset.body",
@@ -355,6 +362,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "huevos"
+  },
+  "05d559ba57632d30": {
+    "en": "{{title}}, that one is yours now.",
+    "path": "common:awards.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "{{title}}, ya lo has conseguido."
   },
   "05e48bfdcc349351": {
     "en": "Name is required",
@@ -1350,6 +1364,13 @@
     "at": "2026-09-14",
     "es": "Su cuenta permite invitar a otras personas a esta instancia. Al enviar una invitación, recibimos y almacenamos la dirección de correo electrónico introducida, la fecha del envío y si la invitación ya ha sido utilizada. Usamos esa dirección únicamente para enviar la invitación y evitar invitaciones duplicadas hacia la misma dirección. Eliminamos la dirección una vez que la invitación se canjea, se revoca o caduca. No la utilizamos para ningún otro propósito ni la compartimos con terceros."
   },
+  "1337d3fda070589c": {
+    "en": "You recorded a weight.",
+    "path": "common:awards.explorer.weight.log.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Registraste un peso."
+  },
   "136302de06490cba": {
     "en": "Copied {{n}} foods",
     "path": "common:diary.toast.copiedMany",
@@ -1630,6 +1651,13 @@
     "at": "2026-09-14",
     "es": "Secciones de la consola"
   },
+  "165fabf0fd5e244f": {
+    "en": "First fast",
+    "path": "common:awards.explorer.fast.run.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Primer ayuno"
+  },
   "16b369ae0a9fbd69": {
     "en": "This instance",
     "path": "common:settingsAi.provider.managed",
@@ -1804,6 +1832,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Añadir rápido"
+  },
+  "18dc7eff03e3da87": {
+    "en": "{{count}} day in a row.",
+    "path": "common:trends.streak.active_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "{{count}} día seguido."
+  },
+  "18e6932d3c52cade": {
+    "en": "You logged your first food.",
+    "path": "common:awards.explorer.log.food.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Registraste tu primer alimento."
   },
   "191aa03f895b42ef": {
     "en": "Nothing has been contributed to this study yet.",
@@ -2729,6 +2771,13 @@
     "at": "2026-09-14",
     "es": "Enlace de restablecimiento enviado a {{email}}."
   },
+  "24c2be6c9724739a": {
+    "en": "First weigh-in",
+    "path": "common:awards.explorer.weight.log.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Primer pesaje"
+  },
   "24d7964d32a098cf": {
     "en": "Enter sends. Shift and Enter start a new line.",
     "path": "common:describe.sendHint",
@@ -2869,6 +2918,13 @@
     "at": "2026-09-14",
     "es": "Introduce una estatura en centímetros, como 175"
   },
+  "273498113cb8fa18": {
+    "en": "A month under",
+    "path": "common:awards.onplan.30.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Un mes por debajo"
+  },
   "275341e249af68b3": {
     "en": "{{hours}}h",
     "path": "common:fasting.duration.hoursOnly",
@@ -2882,6 +2938,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "No es seguro usar este enlace"
+  },
+  "27cb734eb8808881": {
+    "en": "Things you have tried",
+    "path": "common:awards.section.explorer",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Cosas que has probado"
   },
   "27db505d3ed905ff": {
     "en": "Source",
@@ -3240,6 +3303,13 @@
     "at": "2026-09-14",
     "es": "Segundo trimestre"
   },
+  "2d5b0a162bb1c4d4": {
+    "en": "A hundred days running at or under your carb goal.",
+    "path": "common:awards.onplan.100.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Cien días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
+  },
   "2d5c6f3630f7f30b": {
     "en": "Set a password and your diary is ready.",
     "path": "common:join.description",
@@ -3330,6 +3400,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Al adquirir un plan, usted solicita expresamente que comencemos el servicio antes de que expire el plazo de desistimiento, y reconoce que pierde su derecho de desistimiento una vez que hayamos ejecutado el contrato por completo. Registramos ambas declaraciones con su pedido."
+  },
+  "2f383103dd95cce3": {
+    "en": "You had a plate identified from a photo.",
+    "path": "common:awards.explorer.log.scan.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Identificaste un plato a partir de una foto del plato."
   },
   "2f65d51d20e00353": {
     "en": "Identify foods from a plate photo",
@@ -3785,6 +3862,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Alimentos que has añadido tú. Edita los valores o elimina uno aquí."
+  },
+  "37484a7c5ef012fa": {
+    "en": "You put something in the pantry.",
+    "path": "common:awards.explorer.pantry.edit.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Guardaste algo en la despensa."
   },
   "376af1d8cf7f3612": {
     "en": "Photo estimates are included. Take a photo of a plate and the carbs are worked out for you.",
@@ -4724,6 +4808,13 @@
     "at": "2026-09-14",
     "es": "Carbohidratos"
   },
+  "45c0593f412bc81c": {
+    "en": "Stocked pantry",
+    "path": "common:awards.explorer.pantry.edit.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Despensa llena"
+  },
   "45eb493d8c805080": {
     "en": "This instance’s AI reads the photo and proposes the foods. You check the numbers, save, and the day’s total moves.",
     "path": "common:landing.setup.steps.scan.bodyManaged",
@@ -4758,6 +4849,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Sin comida"
+  },
+  "469790c86f73d3fc": {
+    "en": "A week under",
+    "path": "common:awards.onplan.7.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Una semana por debajo"
   },
   "46bb116792146833": {
     "en": "Start a plan",
@@ -5157,6 +5255,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Faltan detalles"
+  },
+  "4d2dabf27ed262cb": {
+    "en": "Days in a row",
+    "path": "common:awards.section.streak",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Días seguidos"
   },
   "4d489ede2c96a32d": {
     "en": "Search for a food…",
@@ -6691,6 +6796,13 @@
     "at": "2026-09-14",
     "es": "Su clave cambió"
   },
+  "6101f13d702f006b": {
+    "en": "Use the app today to start a streak.",
+    "path": "common:trends.streak.empty",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Usa la aplicación hoy para empezar una racha."
+  },
   "610387bd705124ab": {
     "en": "Research contributions · openplate",
     "path": "common:meta.research",
@@ -6914,6 +7026,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Detalles eliminados."
+  },
+  "63cb229b369c8dca": {
+    "en": "Your record · openplate",
+    "path": "common:meta.awards",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Tu historial · openplate"
   },
   "63ea81bd9b13c364": {
     "en": "24 h",
@@ -8021,6 +8140,13 @@
     "at": "2026-09-14",
     "es": "No existe ninguna cuenta con ese número en este servidor. No se ha compartido nada."
   },
+  "7576e558ddbf3846": {
+    "en": "Use the app for a day and the first of these arrives.",
+    "path": "common:awards.empty",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Usa la aplicación durante un día y llegará el primero."
+  },
   "7593d93dacb70e00": {
     "en": "This removes the saved meal. Anything you've already logged from it stays in your diary.",
     "path": "common:meals.removeDescription",
@@ -8048,6 +8174,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Polialcoholes (poliolefinas)"
+  },
+  "75cf80526208901b": {
+    "en": "First plate",
+    "path": "common:awards.explorer.log.scan.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Primer plato"
   },
   "75d66d3c0bdeea9c": {
     "en": "Join a study",
@@ -8391,6 +8524,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Dirección de correo electrónico"
+  },
+  "7a35258704ea080a": {
+    "en": "A week",
+    "path": "common:awards.streak.active.7.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Una semana"
   },
   "7a3fcb9d95a26dc0": {
     "en": "Sign in",
@@ -9176,6 +9316,13 @@
     "at": "2026-09-14",
     "es": "Escribirlo es la comprobación. Si alguien cambió su clave en el camino hacia ti, lo que oigas no coincidirá y no se compartirá nada."
   },
+  "854d056cf22c1b2b": {
+    "en": "{{count}} days in a row.",
+    "path": "common:trends.streak.active_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "{{count}} días seguidos."
+  },
   "8558c132e907dd41": {
     "en": "Started {{time}}",
     "path": "common:fasting.active.startedAt",
@@ -9322,6 +9469,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "openplate no tiene micrófono propio. Toca la tecla del micrófono en tu teclado, que convierte tu voz en texto mediante Google o Apple. Solo el texto llega a openplate y a tu proveedor de IA."
+  },
+  "871c2bb8f3c1caa7": {
+    "en": "Hundred days under",
+    "path": "common:awards.onplan.100.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Cien días por debajo"
   },
   "872d205e9f04e7ca": {
     "en": "You logged something.",
@@ -9540,6 +9694,20 @@
     "at": "2026-09-14",
     "es": "Cancelar este plan"
   },
+  "8a814cb23a61ffe8": {
+    "en": "A hundred days",
+    "path": "common:awards.streak.active.100.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Cien días"
+  },
+  "8a96f44a5cc7f880": {
+    "en": "Seven days in a row.",
+    "path": "common:awards.streak.active.7.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Siete días seguidos."
+  },
   "8aa7fcd694760f35": {
     "en": "{{value}} g of headroom left",
     "path": "common:diary.gap.headroom",
@@ -9560,6 +9728,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Esperando a que termine la comprobación de bots…"
+  },
+  "8aca197ba88a7b26": {
+    "en": "Your record",
+    "path": "common:awards.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Tu historial"
   },
   "8ad06d71c325a7f0": {
     "en": "Your last payment did not go through.",
@@ -9616,6 +9791,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Volver a la lista"
+  },
+  "8bb83afc68a4057f": {
+    "en": "You ran a fast with the timer.",
+    "path": "common:awards.explorer.fast.run.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Completaste un ayuno con el temporizador."
   },
   "8bd094de1cc0bad2": {
     "en": "Use this openplate's AI",
@@ -10183,6 +10365,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "transcurrido"
+  },
+  "923424fd55755d13": {
+    "en": "What you have done with the app so far. Nothing here is a score.",
+    "path": "common:awards.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Lo que has hecho con la aplicación hasta ahora. Nada de esto es una puntuación."
   },
   "92359a3ca1b712c9": {
     "en": "Daily catch-up",
@@ -11486,6 +11675,13 @@
     "at": "2026-09-14",
     "es": "{{duration}} más allá de tu objetivo de {{target}}"
   },
+  "a669b7bc7d060474": {
+    "en": "First food",
+    "path": "common:awards.explorer.log.food.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Primer alimento"
+  },
   "a6747da83e607801": {
     "en": "8. No warranty and limitation of liability",
     "path": "legal:terms.s8Heading",
@@ -11941,6 +12137,13 @@
     "at": "2026-09-14",
     "es": "No se pudo guardar el nombre."
   },
+  "acf31f30c054da76": {
+    "en": "A fortnight",
+    "path": "common:awards.streak.active.14.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Dos semanas"
+  },
   "ad0afb7942a23374": {
     "en": "Use at least {{min}} characters.",
     "path": "common:sync.setup.passphraseTooShort",
@@ -12080,6 +12283,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Para el objetivo"
+  },
+  "af9830755a9123a9": {
+    "en": "A hundred days in a row.",
+    "path": "common:awards.streak.active.100.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Cien días seguidos."
   },
   "af998ec0ca389440": {
     "en": "Weight {{first}} → {{last}} kg ({{delta}})",
@@ -12529,6 +12739,13 @@
     "at": "2026-09-14",
     "es": "Sin comida asignada"
   },
+  "b5a488a65324cd51": {
+    "en": "Second helping",
+    "path": "common:awards.explorer.meal.repeat.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Segunda ración"
+  },
   "b5e9945cb60501bf": {
     "en": "Preparing your photo…",
     "path": "common:scan.capture.preparing",
@@ -12605,6 +12822,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Permite que un dietista o médico lea tu diario. Permanece cifrado durante todo el trayecto: ellos reciben una copia de tu clave sellada con la suya, y el servidor sigue sin poder leer nada."
+  },
+  "b78e849c3e6b314a": {
+    "en": "Not yet",
+    "path": "common:awards.notYet",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Todavía no"
   },
   "b7ac4a633f5b07fd": {
     "en": "The key other people seal their diary to. It is made on this device and travels with your account.",
@@ -13369,6 +13593,13 @@
     "at": "2026-09-14",
     "es": "{{date}}, por encima de tu objetivo de carbohidratos"
   },
+  "c3bec8d99ff2b2ee": {
+    "en": "You saved a copy of your diary to your device.",
+    "path": "common:awards.explorer.backup.export.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Guardaste una copia de tu diario en tu dispositivo."
+  },
   "c3c37361bdd5009f": {
     "en": "{{firstComponent}} and {{secondComponent}} add up to {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g, double-check before logging.",
     "path": "common:scan.review.sanity.componentSumOverTotal",
@@ -13445,6 +13676,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Pruébalo ahora, es completamente gratis"
+  },
+  "c4a484ff7d8c95e4": {
+    "en": "A month",
+    "path": "common:awards.streak.active.30.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Un mes"
   },
   "c4b8ead2e95a58a4": {
     "en": "of {{goal}}",
@@ -13620,6 +13858,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "semillas de chía"
+  },
+  "c861589db1df7aaf": {
+    "en": "Seven days running at or under your carb goal.",
+    "path": "common:awards.onplan.7.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Siete días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
   },
   "c87101e04fedfb99": {
     "en": "Photo",
@@ -13978,6 +14223,13 @@
     "at": "2026-09-14",
     "es": "Coincidencia posible"
   },
+  "ce9d97113f69dc56": {
+    "en": "Backed up",
+    "path": "common:awards.explorer.backup.export.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Copia de seguridad"
+  },
   "cef3f11885a30090": {
     "en": "Information required under Section 5 of the German Digital Services Act (DDG).",
     "path": "legal:imprint.intro",
@@ -14082,6 +14334,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "No se pudo dejar de compartir. No se modificó nada."
+  },
+  "d003d832c95bd644": {
+    "en": "The app keeps the record either way, it just stops showing it.",
+    "path": "common:awards.hideDescription",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "La aplicación guarda el historial de todos modos, solo deja de mostrarlo."
   },
   "d024b417afdfca54": {
     "en": "Sign-up is not answering right now. Please try again later.",
@@ -15392,6 +15651,13 @@
     "at": "2026-09-14",
     "es": "No se ha podido borrar el diario porque openplate está abierto en otra pestaña. Ciérrala e inténtalo de nuevo."
   },
+  "e2966ff7459ddbd6": {
+    "en": "You logged a meal again without typing it out.",
+    "path": "common:awards.explorer.meal.repeat.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Registraste una comida otra vez sin escribirla."
+  },
   "e2d475e3e243372d": {
     "en": "{{label}}: {{consumed}} of {{target}} g. {{status}}.",
     "path": "common:diary.budget.srRowGrams",
@@ -15601,6 +15867,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "brócoli"
+  },
+  "e60350720d14899d": {
+    "en": "A fortnight under",
+    "path": "common:awards.onplan.14.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Dos semanas por debajo"
   },
   "e6063e6aa6dc9196": {
     "en": "Servings eaten",
@@ -15846,6 +16119,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Borrar también el diario de este dispositivo"
+  },
+  "e934881365aebd0e": {
+    "en": "Earned {{date}}",
+    "path": "common:awards.earnedOn",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Conseguido el {{date}}"
   },
   "e95c379d55b71392": {
     "en": "Preferences",
@@ -16239,6 +16519,13 @@
     "at": "2026-09-14",
     "es": "Saca una foto de tu plato"
   },
+  "ef0fe68b83736fe8": {
+    "en": "Hide streaks and awards",
+    "path": "common:awards.hide",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Ocultar rachas y logros"
+  },
   "ef14fdcf6a8902c1": {
     "en": "three",
     "path": "common:catchUp.countThree",
@@ -16364,6 +16651,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "es": "Guardando..."
+  },
+  "f0f0572c15e9221d": {
+    "en": "Fourteen days running at or under your carb goal.",
+    "path": "common:awards.onplan.14.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Catorce días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
   },
   "f103758930ca7e14": {
     "en": "{{count}} foods",
@@ -16694,6 +16988,13 @@
     "at": "2026-09-14",
     "es": "Almuerzo"
   },
+  "f561ab16a4917451": {
+    "en": "Thirty days in a row.",
+    "path": "common:awards.streak.active.30.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Treinta días seguidos."
+  },
   "f571520eeca59514": {
     "en": "Invitation ready for {{email}}",
     "path": "common:admin.invite.linkTitle",
@@ -16819,6 +17120,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "¿Reemplazar tu clave de datos?"
+  },
+  "f7ce5471b80c9c44": {
+    "en": "Three days",
+    "path": "common:awards.streak.active.3.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Tres días"
   },
   "f7eb18d65fec3c27": {
     "en": "Amount",
@@ -16959,6 +17267,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "por encima del objetivo"
+  },
+  "f9f02347804cb996": {
+    "en": "Fourteen days in a row.",
+    "path": "common:awards.streak.active.14.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Catorce días seguidos."
+  },
+  "fa4c4f156c857e69": {
+    "en": "Three days in a row with the app.",
+    "path": "common:awards.streak.active.3.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Tres días seguidos usando la aplicación."
   },
   "fa6189b8101ff84a": {
     "en": "Setting up your account",
@@ -17190,6 +17512,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Las fotos se transforman en macros con tu propia clave"
+  },
+  "fd14924653bf90f7": {
+    "en": "Thirty days running at or under your carb goal.",
+    "path": "common:awards.onplan.30.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "es": "Treinta días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
   },
   "fd20b15b107bdc8f": {
     "en": "Anthropic",

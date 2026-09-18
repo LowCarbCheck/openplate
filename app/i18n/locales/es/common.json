@@ -1358,7 +1358,8 @@
     "withdrawal": "Derecho de desistimiento · openplate",
     "notifications": "Notificaciones · openplate",
     "pantry": "Despensa · openplate",
-    "recipes": "Recetas · openplate"
+    "recipes": "Recetas · openplate",
+    "awards": "Tu historial · openplate"
   },
   "nav": {
     "add": "Añadir",
@@ -2771,10 +2772,9 @@
       "headline": "Las tendencias necesitan unos días más para ser representativas, llevas {{logged}}."
     },
     "streak": {
-      "active_one": "{{count}} día seguido, sigue así.",
-      "active_other": "{{count}} días seguidos, sigue así.",
-      "empty": "Registra un alimento hoy para iniciar una racha.",
-      "overGoal": "Registraste hoy. Superó tu objetivo de carbohidratos, así que no suma a la racha, una racha cuenta los días por debajo de este.",
+      "active_one": "{{count}} día seguido.",
+      "active_other": "{{count}} días seguidos.",
+      "empty": "Usa la aplicación hoy para empezar una racha.",
       "title": "Tu racha"
     },
     "title": "Progreso",
@@ -3274,6 +3274,105 @@
       "title": "No ha funcionado",
       "failed": "No pudimos crear una comida. Inténtalo de nuevo en un momento.",
       "logFailed": "No pudimos registrar eso. Inténtalo de nuevo en un momento."
+    }
+  },
+  "awards": {
+    "title": "Tu historial",
+    "description": "Lo que has hecho con la aplicación hasta ahora. Nada de esto es una puntuación.",
+    "earnedOn": "Conseguido el {{date}}",
+    "notYet": "Todavía no",
+    "empty": "Usa la aplicación durante un día y llegará el primero.",
+    "section": {
+      "explorer": "Cosas que has probado",
+      "streak": "Días seguidos",
+      "onplan": "Días por debajo de tu objetivo de carbohidratos"
+    },
+    "hide": "Ocultar rachas y logros",
+    "hideDescription": "La aplicación guarda el historial de todos modos, solo deja de mostrarlo.",
+    "note": "{{title}}, ya lo has conseguido.",
+    "explorer": {
+      "log": {
+        "food": {
+          "title": "Primer alimento",
+          "note": "Registraste tu primer alimento."
+        },
+        "scan": {
+          "title": "Primer plato",
+          "note": "Identificaste un plato a partir de una foto del plato."
+        }
+      },
+      "fast": {
+        "run": {
+          "title": "Primer ayuno",
+          "note": "Completaste un ayuno con el temporizador."
+        }
+      },
+      "weight": {
+        "log": {
+          "title": "Primer pesaje",
+          "note": "Registraste un peso."
+        }
+      },
+      "meal": {
+        "repeat": {
+          "title": "Segunda ración",
+          "note": "Registraste una comida otra vez sin escribirla."
+        }
+      },
+      "pantry": {
+        "edit": {
+          "title": "Despensa llena",
+          "note": "Guardaste algo en la despensa."
+        }
+      },
+      "backup": {
+        "export": {
+          "title": "Copia de seguridad",
+          "note": "Guardaste una copia de tu diario en tu dispositivo."
+        }
+      }
+    },
+    "streak": {
+      "active": {
+        "3": {
+          "title": "Tres días",
+          "note": "Tres días seguidos usando la aplicación."
+        },
+        "7": {
+          "title": "Una semana",
+          "note": "Siete días seguidos."
+        },
+        "14": {
+          "title": "Dos semanas",
+          "note": "Catorce días seguidos."
+        },
+        "30": {
+          "title": "Un mes",
+          "note": "Treinta días seguidos."
+        },
+        "100": {
+          "title": "Cien días",
+          "note": "Cien días seguidos."
+        }
+      }
+    },
+    "onplan": {
+      "7": {
+        "title": "Una semana por debajo",
+        "note": "Siete días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
+      },
+      "14": {
+        "title": "Dos semanas por debajo",
+        "note": "Catorce días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
+      },
+      "30": {
+        "title": "Un mes por debajo",
+        "note": "Treinta días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
+      },
+      "100": {
+        "title": "Cien días por debajo",
+        "note": "Cien días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
+      }
     }
   }
 }

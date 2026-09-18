@@ -3,7 +3,7 @@
  *
  * The rule this module exists to enforce: a celebration fires ONCE, ever, per
  * device, for a milestone that actually is one. Not on every log, not on every
- * good day, not as a badge the user can go collect. Three qualify:
+ * good day. Four qualify:
  *
  * - `first-log` — the first food ever logged on this device.
  * - `first-scan` — the first plate identified by the user's own AI provider.
@@ -14,10 +14,38 @@
  * their storage as an argument so the "never twice" guarantee is testable
  * without a browser.
  *
- * Deliberately NOT part of the TinyBase primary store (same reasoning as the
- * diary's favorites key): losing this costs a user one extra pulse, not health
- * data, and it must not travel in a backup export — importing a backup on a
- * new device should not suppress that device's own first-log moment.
+ * Deliberately NOT part of the local-store primary store (same reasoning as
+ * the diary's favorites key): losing this costs a user one extra pulse, not
+ * health data, and it must not travel in a backup export, so importing a
+ * backup on a new device does not suppress that device's own first-log
+ * moment. A celebration is banked in `localStorage` alone, per device, never
+ * synced, never exported, and gone the moment someone clears site data.
+ *
+ * ── THIS IS NOT AN AWARD, AND THE OVERLAP IS DELIBERATE ─────────────────
+ *
+ * `app/lib/gamification/catalog.ts` (M235) ships a second, unrelated system:
+ * durable awards, held in the primary store, so they travel through a backup
+ * export and through sync the same as a food log does. A reader who notices
+ * that a celebration and an award can fire for what looks like the same act
+ * should not conclude that one of the two is a leftover the other made
+ * redundant. They answer different questions on purpose, and three of the
+ * four celebrations above have an award-catalog counterpart that overlaps
+ * them without replacing them:
+ *
+ * - `first-log` overlaps `explorer.log.food`.
+ * - `first-scan` overlaps `explorer.log.scan`.
+ * - `streak-7` overlaps `streak.active.7`.
+ *
+ * A celebration answers "has THIS device ever seen this happen", once, and
+ * then falls silent forever, even across a reinstall, because the answer is
+ * banked locally and nothing carries it away. An award answers "does the
+ * PERSON'S record show this", and it is meant to be looked up again later on
+ * `/awards`, on this device or a synced one, which is exactly why it has to
+ * live in the store that survives a device change and celebrations do not.
+ * Merging the two into one system would either put a genuine-first pulse
+ * inside a backup export it must never appear in, or take away the awards
+ * screen's ability to answer honestly on a second device. Neither system is
+ * dead code because of the other; keep both.
  */
 
 /** The milestones, in the order they're offered when more than one is newly true. */
