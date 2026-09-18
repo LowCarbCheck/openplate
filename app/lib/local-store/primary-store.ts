@@ -507,6 +507,10 @@ const EMPTY_PROFILE_GOALS: LocalProfileGoals = {
   // goal numbers while this is null, so a device that has never onboarded is
   // graded by what it actually knows.
   eatingStyle: null,
+  // Added within v23 (M235/06). `null` is "never asked, never answered", which
+  // the surfaces read as "show them", so a device that has never seen the
+  // switch behaves exactly as it did before the switch existed.
+  gamificationHidden: null,
 };
 
 /**

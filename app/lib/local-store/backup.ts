@@ -266,6 +266,13 @@ const profileGoalsSchema = z.object({
   // fields above: an unknown style id is not a value the readers can ignore,
   // it is one the lens cannot resolve, so it must not import.
   eatingStyle: z.enum(EATING_STYLE_IDS).nullable().optional(),
+  // Added within v23 (M235/06), one more OPTIONAL field on the same entity,
+  // under the same rules as every one above it. The line is needed because zod
+  // strips unrecognized keys: without it, a person who switched the streak and
+  // the awards off would have them back on after any export and re-import, and
+  // the switch would also fail to reach their other device, since the merged
+  // snapshot goes through this same schema.
+  gamificationHidden: z.boolean().nullable().optional(),
 });
 
 const fastSchema = z.object({

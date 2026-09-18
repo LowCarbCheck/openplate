@@ -1096,6 +1096,28 @@ export interface LocalProfileGoals {
    * The stored pick is what makes the second one survive.
    */
   eatingStyle?: EatingStyleId | null;
+  /**
+   * Whether this person has switched the streak and the awards off (added
+   * within v23, M235/06), or absent/`null` for everybody who has never touched
+   * the switch, which reads as "show them".
+   *
+   * IT LIVES ON THE PROFILE, not in `localStorage` beside the celebrations,
+   * because it is a decision about the app rather than about a device: a person
+   * who turns this off on a phone has said they do not want it, and their
+   * tablet has to hear that. The profile row is the merged, synced singleton, so
+   * one switch reaches both.
+   *
+   * NOTHING STOPS BEING RECORDED WHILE IT IS TRUE. The marks and the awards
+   * keep being written, so switching back on shows a true record rather than a
+   * hole (M235/06's invariant). This field is read by the SURFACES and by
+   * nothing in `app/lib/gamification/record.ts`.
+   *
+   * No version bump of its own: it is one OPTIONAL field on an existing entity
+   * under the v2 to v6 rules above, and v23 is M235's own version, which ships
+   * as one release (see the milestone's release note), so no build ever saw a
+   * v23 without it.
+   */
+  gamificationHidden?: boolean | null;
 }
 
 /**

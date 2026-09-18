@@ -168,6 +168,12 @@ export default [
     // there is nothing here for a loader to do.
     route('/describe', 'routes/describe.tsx'),
     route('/trends', 'routes/trends.tsx'),
+    // The record (M235/06): the explorer badges, the activity streak awards and
+    // the on-plan family. Reached from the streak card on `/trends` and from
+    // nowhere else, deliberately: it is a page a person visits when they are
+    // curious, not a tab competing with the logging loop. Client-only like
+    // every tracker surface, the awards are on-device.
+    route('/awards', 'routes/awards.tsx'),
     // "Your foods" (M123/07 item 5): lists/edits/deletes personal custom
     // foods, hosting the same list `/add`'s "Your foods" sheet already used
     // (see `foods.tsx`'s header for why it isn't a re-implementation).

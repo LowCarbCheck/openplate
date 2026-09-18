@@ -174,7 +174,11 @@ export {
   computeDailyTotals,
   computeDailyTotalsInRange,
   computeSlotTotalsInRange,
-  computeStreak,
+  // `computeStreak` is deliberately NOT re-exported here (M235/06). It counts
+  // days that were logged AND at or under the carb ceiling, it no longer feeds
+  // any headline, and its one consumer is the `onplan.*` award evaluation,
+  // which imports it from `./aggregates` directly. Re-exporting it from the
+  // barrel is what let two screens grow two different streak numbers.
   computeNetCarbTrendSeries,
   computeLocalHabitStrip,
   getLocalDailyTotals,

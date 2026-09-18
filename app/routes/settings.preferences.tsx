@@ -12,6 +12,7 @@ import type { MetaFunction } from 'react-router';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { AwardsVisibilityToggle } from '#app/components/gamification/awards-visibility-toggle';
 import { ThemeSelector } from '#app/components/theme-selector';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SettingsGroup, SettingsSection } from '#app/components/settings/settings-section';
@@ -93,6 +94,16 @@ export default function SettingsPreferences() {
         </SettingsGroup>
         <p className="px-4 text-xs text-muted-foreground">{t('preferences.language.reloadNote')}</p>
       </div>
+
+      {/*
+        The streak and the awards switch (M235/06). The odd one out on this
+        page: the theme and the language are DEVICE preferences, and this one
+        rides the synced profile row, because "I do not want a streak" is a
+        thing a person means about the app rather than about the phone in their
+        hand. It lives here and not on `/awards` because the switch hides the
+        only door to that screen.
+      */}
+      <AwardsVisibilityToggle />
     </div>
   );
 }

@@ -21,6 +21,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **Your past counts: the app rebuilds the record from the diary you already have.** On the first start after this version, openplate reads back through your food logs, your weigh-ins and your fasts, and marks every day they show you used the app. Somebody who has tracked for two years reads two years, not one day. Badges earned in the past are dated to the day you earned them and arrive already seen, so nothing is announced for something you did last winter. Repeating a meal, editing the pantry and exporting a backup leave no trace in a diary, so those three are earned the next time you do them. A backup file written by an older version is read the same way when you import it.
 
+- **The streak on the home screen and on Progress is now the number of days you used the app.** One number, in both places, and it counts a day you used openplate at all. A day over your carb goal no longer sets it to zero. Staying at or under your carb goal is a badge of its own instead, at a week, a fortnight, a month and a hundred days. A streak that ends is never announced, it simply reads lower the next time you look.
+
+- **A new screen lists what you have done with the app.** The streak card on Progress opens Your record: the functions you have tried, the days in a row you have used the app, and the days in a row you stayed under your carb goal. Nothing on it is a score, a level or a comparison with anybody else. When you earn one, a single line names it, once. Preferences carries a switch to hide the streak and the whole screen; the app keeps the record either way, so turning it back on shows what really happened while it was off.
+
 ## [0.33.0] - 2026-09-18
 
 ### Changed

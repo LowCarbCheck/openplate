@@ -1,42 +1,47 @@
 /**
- * Pure copy selection for the streak card (`app/components/streak-card.tsx`,
- * rendered on Trends since the profile page it used to live on was retired).
- * Split out from its consumer so it's safely unit-testable — the copy choice is
- * the part with the interesting edge case, and it needs no local store, no
- * router and no i18next instance to exercise.
+ * Pure copy selection for the streak, which is the ACTIVITY streak on both
+ * screens that show it (M235/06): the card on `/trends` and the header line of
+ * the grid card on `/dashboard`.
  *
- * `computeStreak` (`#app/lib/local-store/aggregates`) only counts a day toward the
- * streak when it's both logged AND at/under the user's net-carb goal (an over-goal
- * day breaks the streak by design). That means `streak` can legitimately be `0` even
- * though food WAS logged today — an over-goal day, or the day after one. The old
- * copy always said "Log a food today to start a streak" whenever `streak` was `0`,
- * which is actively false on a day someone DID log food. `todayHasLogs` (read off
- * the same `dailyTotals` the streak was computed from — its last entry is always
- * today, see `computeDailyTotalsInRange`) disambiguates the two cases.
+ * ── WHAT CHANGED, AND WHY THE OLD BRANCH IS GONE ─────────────────────────
+ *
+ * This module used to describe `computeStreak`, the adherence walk, which
+ * counts a day only when the diary was logged AND net carbs stayed at or under
+ * the ceiling. That needed a third sentence, `overGoal`, for the honest but
+ * unhappy case of a person who logged every day and read zero. M235 replaced
+ * the headline with the activity streak, which counts a day a person USED the
+ * app, so that case cannot arise and the sentence that explained it is gone
+ * with it. `computeStreak` still exists and still has its tests; it feeds the
+ * separate `onplan.*` award family now.
+ *
+ * No loss language, in either branch. A streak that ended is never announced
+ * here; the number simply reads lower the next time it is read.
+ *
+ * Kept as its own module because the copy choice is the testable part, and it
+ * needs no local store, no router and no i18next instance to exercise.
  */
-
-/** What `describeStreak` needs to know: the computed streak length, and whether today itself has any logs. */
-export interface StreakSnapshot {
-  streak: number;
-  todayHasLogs: boolean;
-}
 
 /**
  * A translation lookup, threaded in as a parameter (M129/05).
  *
  * This module must stay pure and importable from `node:test`, so it never
- * imports the i18next singleton — the caller (a React component) passes its
+ * imports the i18next singleton, the caller (a React component) passes its
  * own `t` down.
  */
 export type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
 
 /**
- * The streak card's description text for a given `{ streak, todayHasLogs }` snapshot.
- * Singular/plural selection is delegated to i18next's `count` handling rather than
- * branched here, so a language with different plural rules than English gets them.
+ * The streak line for a given activity streak.
+ *
+ * Singular/plural selection is delegated to i18next's `count` handling rather
+ * than branched here, so a language with different plural rules than English
+ * gets them.
+ *
+ * @param streak - consecutive days this person used the app, ending today or yesterday.
+ * @param t - the caller's translator.
+ * @returns the sentence under the streak's title.
  */
-export function describeStreak({ streak, todayHasLogs }: StreakSnapshot, t: Translate): string {
+export function describeStreak(streak: number, t: Translate): string {
   if (streak > 0) return t('trends.streak.active', { count: streak });
-  if (todayHasLogs) return t('trends.streak.overGoal');
   return t('trends.streak.empty');
 }

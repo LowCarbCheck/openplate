@@ -8,6 +8,7 @@ import {
   computeSlotTotalsInRange,
   getLocalBodyMetrics,
   getLocalProfileGoals,
+  listLocalActivityMarks,
   listLocalFoodLogs,
   listLocalWeightEntries,
   resolveLocalTimezone,
@@ -31,8 +32,9 @@ import { buildAdherenceGrid } from '#app/models/adherence-grid';
 import type { AdherenceGoals } from '#app/models/adherence-grid';
 import { resolveAdherenceGoals } from '#app/lib/adherence-goals';
 import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-days';
+import { isGamificationHidden } from '#app/lib/gamification/surfaces';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { StreakCard } from '#app/components/streak-card';
+import { ActivityStreakCard } from '#app/components/gamification/activity-streak-card';
 import { AdherenceGridCard } from '#app/components/trends/adherence-grid-card';
 import { TrendChart } from '#app/components/trends/trend-chart';
 import { TrendControls } from '#app/components/trends/trend-controls';
@@ -255,6 +257,11 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     gridDays,
     adherenceGoals,
     weightWindow,
+    // The marks and the switch, read here rather than from inside the card:
+    // this loader already reads the device, and a card that read the store from
+    // an effect of its own could not be rendered in a test (M235/06).
+    marks: await listLocalActivityMarks(),
+    gamificationHidden: isGamificationHidden(profile),
     targetWeightKg: profile?.targetWeightKg ?? null,
     todayWeightKg: weightRows.find((row) => row.dayKey === today)?.weightKg ?? null,
   };
@@ -336,6 +343,8 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     weightWindow,
     targetWeightKg,
     todayWeightKg,
+    marks,
+    gamificationHidden,
   } = loaderData;
   const [metric, setMetric] = useState<TrendMetric>('net-carbs');
   // Device-local display preference, shared with `/settings/profile` (which owns
@@ -376,11 +385,13 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* Moved here from the retired `/profile` page: the streak is about how
-          the person is doing, which is what this screen is for. It renders on
-          an ordinary card surface — "This week" below is already this
-          screen's one `.surface-brand` hero (DESIGN.md §2). */}
-      <StreakCard />
+      {/* The ACTIVITY streak (M235/06), the same number `/dashboard` shows,
+          derived from the same marks by the same function. The card is also the
+          only door to `/awards`, and both go together when the person has
+          switched these surfaces off. It renders on an ordinary card surface —
+          "This week" below is already this screen's one `.surface-brand` hero
+          (DESIGN.md §2). */}
+      <ActivityStreakCard marks={marks} today={today} hidden={gamificationHidden} />
 
       {/* The 13-week record, between the glanceable streak and this week's
           recap: the page descends from glance to detail, and the heaviest,

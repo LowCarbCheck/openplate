@@ -82,6 +82,13 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   { pattern: '/pantry/recipes', parent: '/pantry' },
 
   // ---------------------------------------------------------------------------
+  // Under the progress screen. The record (M235/06) is reached from the streak
+  // card on `/trends` and from nowhere else, so Back from it belongs there,
+  // which is also what its own `handle.backTo` says.
+  // ---------------------------------------------------------------------------
+  { pattern: '/awards', parent: '/trends' },
+
+  // ---------------------------------------------------------------------------
   // Under the diary.
   // ---------------------------------------------------------------------------
   // One logged entry. `diary.entry.$id.tsx`'s own `handle.backTo` is `/diary`,

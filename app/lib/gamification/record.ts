@@ -25,8 +25,11 @@
  * device's, so two devices belonging to one person agree on where a day ends.
  */
 import { shiftDate, todayInTimezone } from '#app/lib/user-days';
+// Straight from `aggregates`, not from the `local-store` barrel: M235/06 took
+// `computeStreak` off the barrel so this evaluation is its only consumer and no
+// screen can grow a second streak number out of it.
+import { computeStreak } from '#app/lib/local-store/aggregates';
 import {
-  computeStreak,
   getLocalDailyTotalsInRange,
   getLocalProfileGoals,
   listLocalActivityMarks,

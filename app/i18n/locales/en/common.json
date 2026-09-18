@@ -1358,7 +1358,8 @@
     "withdrawal": "Right of withdrawal · openplate",
     "notifications": "Notifications · openplate",
     "pantry": "Pantry · openplate",
-    "recipes": "Recipes · openplate"
+    "recipes": "Recipes · openplate",
+    "awards": "Your record · openplate"
   },
   "nav": {
     "add": "Add",
@@ -2771,10 +2772,9 @@
       "headline": "Trends need a few more days to mean anything, you’ve got {{logged}}."
     },
     "streak": {
-      "active_one": "{{count}} day in a row, keep it going.",
-      "active_other": "{{count}} days in a row, keep it going.",
-      "empty": "Log a food today to start a streak.",
-      "overGoal": "You logged today. It came in over your carb goal, so it doesn't add to a streak, a streak counts days under it.",
+      "active_one": "{{count}} day in a row.",
+      "active_other": "{{count}} days in a row.",
+      "empty": "Use the app today to start a streak.",
       "title": "Your streak"
     },
     "title": "Progress",
@@ -3274,6 +3274,105 @@
       "title": "That did not work",
       "failed": "We could not build a meal. Try again in a moment.",
       "logFailed": "We could not log that. Try again in a moment."
+    }
+  },
+  "awards": {
+    "title": "Your record",
+    "description": "What you have done with the app so far. Nothing here is a score.",
+    "earnedOn": "Earned {{date}}",
+    "notYet": "Not yet",
+    "empty": "Use the app for a day and the first of these arrives.",
+    "section": {
+      "explorer": "Things you have tried",
+      "streak": "Days in a row",
+      "onplan": "Days under your carb goal"
+    },
+    "hide": "Hide streaks and awards",
+    "hideDescription": "The app keeps the record either way, it just stops showing it.",
+    "note": "{{title}}, that one is yours now.",
+    "explorer": {
+      "log": {
+        "food": {
+          "title": "First food",
+          "note": "You logged your first food."
+        },
+        "scan": {
+          "title": "First plate",
+          "note": "You had a plate identified from a photo."
+        }
+      },
+      "fast": {
+        "run": {
+          "title": "First fast",
+          "note": "You ran a fast with the timer."
+        }
+      },
+      "weight": {
+        "log": {
+          "title": "First weigh-in",
+          "note": "You recorded a weight."
+        }
+      },
+      "meal": {
+        "repeat": {
+          "title": "Second helping",
+          "note": "You logged a meal again without typing it out."
+        }
+      },
+      "pantry": {
+        "edit": {
+          "title": "Stocked pantry",
+          "note": "You put something in the pantry."
+        }
+      },
+      "backup": {
+        "export": {
+          "title": "Backed up",
+          "note": "You saved a copy of your diary to your device."
+        }
+      }
+    },
+    "streak": {
+      "active": {
+        "3": {
+          "title": "Three days",
+          "note": "Three days in a row with the app."
+        },
+        "7": {
+          "title": "A week",
+          "note": "Seven days in a row."
+        },
+        "14": {
+          "title": "A fortnight",
+          "note": "Fourteen days in a row."
+        },
+        "30": {
+          "title": "A month",
+          "note": "Thirty days in a row."
+        },
+        "100": {
+          "title": "A hundred days",
+          "note": "A hundred days in a row."
+        }
+      }
+    },
+    "onplan": {
+      "7": {
+        "title": "A week under",
+        "note": "Seven days running at or under your carb goal."
+      },
+      "14": {
+        "title": "A fortnight under",
+        "note": "Fourteen days running at or under your carb goal."
+      },
+      "30": {
+        "title": "A month under",
+        "note": "Thirty days running at or under your carb goal."
+      },
+      "100": {
+        "title": "Hundred days under",
+        "note": "A hundred days running at or under your carb goal."
+      }
     }
   }
 }

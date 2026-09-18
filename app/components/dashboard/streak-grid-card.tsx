@@ -21,6 +21,11 @@
  *    where the interactive grid lives.
  * 2. The header is the streak sentence rather than the grid's own title. The
  *    streak is the glanceable fact; the grid underneath is the evidence for it.
+ *    Since M235/06 that streak is the ACTIVITY streak, the same number and the
+ *    same walk `/trends` shows, and it is `null` for somebody who has switched
+ *    the streak and the awards off, then the card falls back to the grid's own
+ *    title and is simply the 13-week record, which is not a gamification
+ *    surface and does not go away with them.
  *
  * Plain `bg-card`: this page spends its one `.surface-brand` hero on the today
  * card (DESIGN.md §2).
@@ -34,7 +39,6 @@ import { AdherenceGrid } from '#app/components/trends/adherence-grid';
 import { AdherenceLegend } from '#app/components/trends/adherence-legend';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { describeStreak } from '#app/lib/streak-message';
-import type { StreakSnapshot } from '#app/lib/streak-message';
 import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
 
 /**
@@ -42,7 +46,7 @@ import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/m
  *
  * @param grid - the resolved grid model, built by the route's client loader.
  * @param goals - the daily goals the grid graded each day against.
- * @param streak - the current streak and whether today itself carries any logs.
+ * @param streak - the current activity streak, or null when these surfaces are hidden.
  */
 export function StreakGridCard({
   grid,
@@ -51,9 +55,10 @@ export function StreakGridCard({
 }: {
   grid: AdherenceGridModel;
   goals: AdherenceGoals;
-  streak: StreakSnapshot;
+  streak: number | null;
 }): ReactElement {
   const { t } = useTranslation();
+  const isActivityMode = grid.mode === 'activity';
 
   return (
     <Link
@@ -62,10 +67,22 @@ export function StreakGridCard({
     >
       <Card className="transition-colors hover:border-primary/40">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Flame className="h-5 w-5 text-primary" aria-hidden="true" /> {t('trends.streak.title')}
-          </CardTitle>
-          <CardDescription>{describeStreak(streak, t)}</CardDescription>
+          {streak === null ?
+            <>
+              <CardTitle className="text-base">
+                {t(isActivityMode ? 'trends.grid.titleActivity' : 'trends.grid.title')}
+              </CardTitle>
+              <CardDescription>
+                {t(isActivityMode ? 'trends.grid.descriptionActivity' : 'trends.grid.description')}
+              </CardDescription>
+            </>
+          : <>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Flame className="h-5 w-5 text-primary" aria-hidden="true" /> {t('trends.streak.title')}
+              </CardTitle>
+              <CardDescription>{describeStreak(streak, t)}</CardDescription>
+            </>
+          }
         </CardHeader>
         <CardContent className="space-y-3">
           <AdherenceGrid grid={grid} goals={goals} interactive={false} />

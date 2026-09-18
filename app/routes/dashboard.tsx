@@ -38,9 +38,9 @@ import { Link } from '#app/components/link';
 import {
   computeDailyTotals,
   computeDailyTotalsInRange,
-  computeStreak,
   getLocalBodyMetrics,
   getLocalProfileGoals,
+  listLocalActivityMarks,
   listLocalFoodLogs,
   listLocalWeightEntries,
   resolveLocalTimezone,
@@ -73,12 +73,13 @@ import type { WeightGlance } from '#app/models/dashboard';
 import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-days';
 import { buildAdherenceGrid } from '#app/models/adherence-grid';
 import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
-import type { StreakSnapshot } from '#app/lib/streak-message';
+import { deriveActivityStreak, isGamificationHidden } from '#app/lib/gamification/surfaces';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
 import { PulseTileSlot } from '#app/components/pulse-tile';
 import { StreakGridCard } from '#app/components/dashboard/streak-grid-card';
+import { AwardNote } from '#app/components/gamification/award-note';
 import { ReproductiveStatusPromptBanner } from '#app/components/reproductive-status-prompt-banner';
 import { DayRidge } from '#app/components/day-ridge';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -106,13 +107,6 @@ export const handle = {
 
 /** The strip's width, and the window the week tile and the weight delta share. */
 const WEEK_DAYS = 7;
-
-/**
- * How far back the streak is looked for. Copied from `streak-card.tsx`, which
- * is where the figure is explained: generous enough that a real streak is never
- * undercounted, short enough not to scan a whole history.
- */
-const STREAK_LOOKBACK_DAYS = 60;
 
 /** The one link style this page uses to hand the user on to the screen that owns the detail. */
 const HANDOFF_LINK_CLASS =
@@ -194,8 +188,19 @@ export interface DashboardData {
   grid: AdherenceGridModel;
   /** The goals the grid graded each day against, carried so the card's readouts can name them. */
   adherenceGoals: AdherenceGoals;
-  /** The current streak, and whether today itself carries any logs, for the grid card's header line. */
-  streak: StreakSnapshot;
+  /**
+   * The ACTIVITY streak for the grid card's header line, or null when the
+   * person has switched the streak and the awards off, in which case the card
+   * keeps the grid and drops the streak line (M235/06).
+   */
+  streak: number | null;
+  /**
+   * Whether the streak, the awards screen and the award note are switched off
+   * (M235/06). Carried separately from `streak` because the NOTE reads the
+   * store for itself (an award can become true between two renders, after a
+   * sync pull), so it needs the switch rather than the number.
+   */
+  gamificationHidden: boolean;
   weight: WeightGlance;
   /** The stored reproductive status, or null. Read only: this page never writes it back. */
   reproductiveStatus: ReproductiveStatus | null;
@@ -273,16 +278,11 @@ export async function clientLoader(): Promise<DashboardData> {
   // squares agree with the budget rows above them. `/trends` and the diary's
   // calendar call the same builder, so one day carries one verdict everywhere.
 
-  // The streak, off the `allLogs` this loader already read, so the card costs
-  // no second store pass (`StreakCard` on `/trends` reads the store itself from
-  // an effect, which this page cannot do inside a loader-fed card).
-  // `computeStreak` counts only days that are logged AND at or under the carb
-  // ceiling, so a `0` on a day that WAS logged is correct and `todayHasLogs`
-  // is what tells the two cases apart.
-  const streakTotals = computeDailyTotalsInRange(allLogs, {
-    fromDate: shiftDate(today, -STREAK_LOOKBACK_DAYS),
-    toDate: today,
-  });
+  // The ACTIVITY streak (M235/06), off the marks rather than off the diary:
+  // the number here and the number on `/trends` are now one walk over one set
+  // of facts, so the two screens cannot disagree. A day over the carb goal
+  // changes nothing about it; that idea is an award family of its own.
+  const gamificationHidden = isGamificationHidden(profile);
 
   return {
     today,
@@ -315,10 +315,8 @@ export async function clientLoader(): Promise<DashboardData> {
     }),
     grid: buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals }),
     adherenceGoals,
-    streak: {
-      streak: computeStreak(streakTotals, { netCarbsCeiling: goals.netCarbsCeiling }),
-      todayHasLogs: totalsForToday.hasLogs,
-    },
+    streak: gamificationHidden ? null : deriveActivityStreak({ marks: await listLocalActivityMarks(), today }),
+    gamificationHidden,
     weight: computeWeightGlance({ entries: weightEntries, today, windowDays: WEEK_DAYS }),
   };
 }
@@ -590,6 +588,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     grid,
     adherenceGoals,
     streak,
+    gamificationHidden,
     weight,
     reproductiveStatus,
     pregnancyDueDate,
@@ -625,6 +624,15 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         the showing up has been going on. The whole card is one door to
         `/trends`, where the same grid is interactive.
       */}
+      {/*
+        A newly earned award, named once and never again (M235/06). It reads
+        the store for itself because an award can arrive between two renders of
+        this page, and it renders nothing at all when these surfaces are off.
+        Here rather than in the diary because this is the screen a person opens,
+        and a note that fired in the middle of logging food would interrupt the
+        one thing the app exists to make quick.
+      */}
+      <AwardNote hidden={gamificationHidden} />
       <StreakGridCard grid={grid} goals={adherenceGoals} streak={streak} />
       {/*
         Conditional and ABOVE the glance row (M132), see this file's header for
