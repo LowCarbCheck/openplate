@@ -319,3 +319,77 @@ export async function pantryRowsOnDisk(page: Page): Promise<number> {
       }),
   );
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// One award, on disk
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * What this device's DISK says about one award: never earned, earned and not
+ * yet announced, or earned and acknowledged.
+ *
+ * A WAIT, NEVER AN ASSERTION, for {@link pantryRowsOnDisk}'s reason and one
+ * more. `seenAt` is stamped in an effect AFTER the paint that shows the note
+ * (`app/components/gamification/award-note.tsx`), and TinyBase saves
+ * asynchronously after the transaction that stamp opens, so a full document
+ * load fired the instant the note appears can beat the save and lose the
+ * stamp for real. Polling this before such a load is how a walk waits for the
+ * write it is about to check. What the app then shows is asserted on the
+ * loaded PAGE, through the app's own read, so this probe never stands in for
+ * the thing under test.
+ *
+ * THREE STATES, AND THAT IS WHAT MAKES IT A CONTROL. A reader that only ever
+ * answered "seen" or "not seen" would pass unchanged against a device holding
+ * no award at all; `absent` is a separate answer, so a poll on this one can
+ * fail, and a walk can assert the absence before the first log as easily as
+ * the stamp after it.
+ *
+ * @param page - a page on the app's origin.
+ * @param key - the catalog key, which is also the award's row id.
+ * @returns `absent` when nothing is stored for the key, `unseen` while its note has not been stamped, `seen` once it has.
+ */
+export async function awardStateOnDisk(page: Page, key: string): Promise<'absent' | 'unseen' | 'seen'> {
+  return page.evaluate(
+    (awardKey) =>
+      new Promise<'absent' | 'unseen' | 'seen'>((resolve, reject) => {
+        // The database, the object store and the table id `persist.ts` and
+        // `schema.ts` name: `openplate-primary`, TinyBase's own tables store
+        // `t` with one record per table, and `AWARDS_TABLE` is `awards`.
+        const request = indexedDB.open('openplate-primary');
+        request.addEventListener('error', () => reject(new Error('the primary database could not be opened')));
+        request.addEventListener('success', () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains('t')) {
+            db.close();
+            resolve('absent');
+            return;
+          }
+          const read = db.transaction('t', 'readonly').objectStore('t').get('awards');
+          read.addEventListener('success', () => {
+            db.close();
+            // SAFETY: TinyBase's IndexedDB persister stores one record per
+            // table as `{ k, v }`, with `v` an object keyed by row id, and
+            // every primary-store row carries its entity in the one
+            // `PRIMARY_ENTITY_CELL` cell, named `entity`. An absent record,
+            // or an absent row in it, is an award this device never earned.
+            const record = read.result as { v?: Record<string, { entity?: string }> } | undefined;
+            const entity = record?.v?.[awardKey]?.entity;
+            if (entity === undefined) {
+              resolve('absent');
+              return;
+            }
+            // SAFETY: that cell is written only by the primary store's
+            // `writeEntity`, as `JSON.stringify` of the `LocalAward` this key
+            // holds, and a `LocalAward` carries `seenAt: number | null`.
+            const award = JSON.parse(entity) as { seenAt?: number | null };
+            resolve(Number.isFinite(award.seenAt) ? 'seen' : 'unseen');
+          });
+          read.addEventListener('error', () => {
+            db.close();
+            reject(new Error('the awards table could not be read'));
+          });
+        });
+      }),
+    key,
+  );
+}

@@ -29,6 +29,10 @@
  * the same way `log-a-food.spec.ts` puts one in, and everything after that is
  * read off the app's own screens.
  *
+ * The disk IS read from here, through `awardStateOnDisk`, for one reason: to
+ * wait for a save to land before a document load throws the memory copy away.
+ * It is never written, so a seeded row still cannot stand in for the recorder.
+ *
  * ── NO SENTENCE IS TRANSCRIBED ───────────────────────────────────────────
  *
  * The copy here is wordsmith-owned and gets rephrased. Every string comes out
@@ -37,8 +41,16 @@
  */
 import { expect, test } from '@playwright/test';
 
-import { completeOnboarding, expectPhoneLayout, logFoodManually } from './helpers';
+import { awardStateOnDisk, completeOnboarding, expectPhoneLayout, logFoodManually } from './helpers';
 import { EN, fill } from './copy';
+
+/**
+ * The catalog key for the first-food explorer award, which is also its row id
+ * on disk. Transcribed rather than imported: it is a PERMANENT key
+ * (`app/lib/gamification/catalog.ts` says so), so a spec that spelled it out
+ * goes red on a key that silently moved, which is the point of pinning it.
+ */
+const EXPLORER_FOOD_AWARD = 'explorer.log.food';
 
 /** A name no food database would return, so the diary entry can only be this one. */
 const FOOD_NAME = 'Smoke tier award oats';
@@ -85,11 +97,22 @@ test('a first logged food earns the explorer award, notes it once, and puts the 
   await expect(explorerEarned, 'the first-food award must not read as earned yet').toHaveCount(0);
   await expectPhoneLayout(page);
 
+  // The disk agrees with both screens: nothing is stored for this key at all.
+  expect(await awardStateOnDisk(page, EXPLORER_FOOD_AWARD), 'no award is on disk before the first log').toBe('absent');
+
   ////////////////////////////////////////////////////////////////////////////
   // THE ACT: one food, through the manual form, like a person.
   ////////////////////////////////////////////////////////////////////////////
 
   await logFoodManually(page, { name: FOOD_NAME, grams: FOOD_GRAMS });
+
+  // The earned row has to be on disk before a document load, or the award
+  // itself is lost and the note below would be absent for the wrong reason.
+  await expect
+    .poll(() => awardStateOnDisk(page, EXPLORER_FOOD_AWARD), {
+      message: 'the earned award must reach disk unseen before the dashboard is loaded',
+    })
+    .toBe('unseen');
 
   ////////////////////////////////////////////////////////////////////////////
   // THE NOTE, ONCE.
@@ -98,6 +121,15 @@ test('a first logged food earns the explorer award, notes it once, and puts the 
   await page.goto('/dashboard');
   await expect(streakOfOne).toBeVisible();
   await expect(awardNote, 'the newly earned award is named exactly once').toHaveCount(1);
+
+  // The note is stamped in an effect AFTER the paint, and the stamp reaches
+  // disk asynchronously. A full document load fired sooner can lose it, and
+  // the note comes back. `awardStateOnDisk` is the wait for that save.
+  await expect
+    .poll(() => awardStateOnDisk(page, EXPLORER_FOOD_AWARD), {
+      message: 'the note must be stamped on disk before the next document load',
+    })
+    .toBe('seen');
 
   ////////////////////////////////////////////////////////////////////////////
   // THE NUMBER AND THE RECORD, reached the way the app offers them: the
