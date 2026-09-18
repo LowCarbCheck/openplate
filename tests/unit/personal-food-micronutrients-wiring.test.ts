@@ -171,6 +171,9 @@ function renderConfirmStep(formData: FormData): string {
     identification: AI_IDENTIFICATION,
     modelId: 'test-model',
     matches: [[spinachMatch()]],
+    // Nothing known about the food database: this case is not about it, and
+    // `undefined` is the honest value for a render that ran no lookup.
+    foodDb: undefined,
     lastResult: submission.reply({ formErrors: ['Select at least one food to log.'] }),
     logDate: null,
     logDateLabel: null,

@@ -35,6 +35,8 @@ import {
 } from '#app/services/food-resolution/apply-match';
 import type { AppliedMatchSnapshot } from '#app/services/food-resolution/apply-match';
 import { fetchFoodMatches } from '#app/lib/food-matches-client';
+import { FOOD_DB_STATUS_UNKNOWN } from '#app/services/food-db/wire';
+import type { FoodDbStatus } from '#app/services/food-db/wire';
 import { randomUuid } from '#app/lib/uuid';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
@@ -430,6 +432,15 @@ type IdentifyResult =
       provider: AiProviderType;
       modelId: string;
       matches: FoodMatch[][];
+      /**
+       * What the server last saw from the curated food database (M238 spec 02).
+       *
+       * It travels beside `matches` because it is the ONLY thing that can tell
+       * an empty match list apart from a refused one. Without it a refused
+       * lookup looks exactly like "we checked, and there is nothing", which is
+       * the silence this milestone exists to end.
+       */
+      foodDb: FoodDbStatus;
     }
   | {
       intent: 'identify';
@@ -636,7 +647,7 @@ async function completePlateIntake({
   await recordAttempt({ usage, outcome: 'identified' });
   // Enrich with curated LowCarbCheck matches (names only, fail-open, never
   // blocks the draft). `matches` is parallel to `identification.foods` by index.
-  const { matches } = await fetchFoodMatches(identification.foods.map((food) => food.name));
+  const { matches, foodDb } = await fetchFoodMatches(identification.foods.map((food) => food.name));
   return {
     intent: 'identify',
     intakeSource,
@@ -644,6 +655,7 @@ async function completePlateIntake({
     provider: providerType,
     modelId,
     matches,
+    foodDb,
   };
 }
 
@@ -1657,6 +1669,7 @@ function ScanFlow({
         provider={identifyResult?.provider}
         modelId={identifyResult?.modelId}
         matches={identifyResult?.matches}
+        foodDb={identifyResult?.foodDb ?? FOOD_DB_STATUS_UNKNOWN}
         lastResult={confirmResult}
         logDate={logDate}
         logDateLabel={logDateLabel}
@@ -2523,6 +2536,7 @@ export function ConfirmDraftForm({
   provider,
   modelId,
   matches,
+  foodDb,
   lastResult,
   logDate,
   logDateLabel,
@@ -2537,6 +2551,18 @@ export function ConfirmDraftForm({
   provider?: AiProviderType;
   modelId?: string;
   matches?: FoodMatch[][];
+  /**
+   * What the server last saw from the curated food database (M238 spec 02).
+   *
+   * A REQUIRED KEY whose value may be `undefined`, rather than an optional
+   * one. The difference is the whole point: `matches?:` next to it is a field
+   * a caller can forget, and a forgotten correctness value is the defect class
+   * `tests/unit/authoritative-net-carbs-wiring.test.ts` documents. A required
+   * key makes the compiler name every render site, and `undefined` stays a
+   * legal VALUE for the confirm-revalidation path, which never ran a lookup
+   * and so has nothing to report.
+   */
+  foodDb: FoodDbStatus | undefined;
   lastResult?: SubmissionResult<string[]>;
   logDate: string | null;
   logDateLabel: string | null;
@@ -2785,6 +2811,23 @@ export function ConfirmDraftForm({
         </h2>
         <p className="text-sm text-muted-foreground">{t('scan.review.subheading')}</p>
       </div>
+      {/* THE FOOD DATABASE SAID NO (M238 spec 02). One quiet line, directly
+          under the subheading, and nothing else: no modal, no retry button and
+          nothing blocked. The draft below is complete and loggable, exactly as
+          it is when the lookup merely found nothing.
+
+          What it buys is the difference between those two states. A refused
+          lookup and an honest empty result produce the same screen, so without
+          this line the numbers quietly stop being curated figures and start
+          being the model's own estimate, with nothing saying so. That is the
+          dangerous direction for a carb tracker.
+
+          An `<output>` rather than an alert, for the reason `AppLoading` and
+          `BackupNudgeBanner` use one: it is an implicit live region that
+          REPORTS a condition instead of interrupting. */}
+      {foodDb !== undefined && !foodDb.ok && (
+        <output className="block text-xs text-muted-foreground">{t('scan.review.foodDbUnavailable')}</output>
+      )}
       {/* WHAT THE ESTIMATE WAS READ FROM, for a typed or spoken meal. Quiet,
           above the food list, and labelled with the same words the waiting
           screen used, so the person checks the list against their own sentence

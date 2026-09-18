@@ -27,6 +27,7 @@ const appUrl = CONFIG.app.url;
 | `TRUST_PROXY`               | `1` in prod, off in dev     | Express `trust proxy`. Required behind a proxy: React Router's CSRF check compares the browser `Origin` against the host it thinks it is serving. Use the hop count (1 = one proxy, 2 = Cloudflare → Traefik). |
 | `VITE_ALLOWED_HOSTS`        | unset                       | Dev only. Comma-separated extra hostnames Vite should accept (for example your tailnet MagicDNS name).                                                                                          |
 | `FOOD_DB_API_URL`           | `https://lowcarbcheck.org`  | Curated nutrition data and food images for identified foods. Only food **names** are sent (never photos, never anything about you), and the lookup fails open. Set to an empty string to disable it entirely. |
+| `FOOD_DB_API_KEY`           | unset                       | Optional key for the food database above. Unset is the free anonymous tier, which is rate limited and is enough to try openplate out. A free key with a generous monthly allowance takes an email address and one click at [lowcarbcheck.org/developers](https://lowcarbcheck.org/developers). Read server side only and never sent to a browser, so it is safe in your environment file. |
 | `NUTRIENT_REFERENCE_BASIS`  | `dge`                       | Which published document the **Nutrients** screen quotes: `dge` (German DGE Referenzwerte), `efsa` (EU) or `us` (NASEM/IOM). One basis per instance, for every language, because a reference body follows where a person lives and not which language they read. The screen names the document it used under every amount. An unknown value stops the boot on purpose. |
 | `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-core](https://github.com/LowCarbCheck/openplate-core) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
 | `INSTANCE_MODE`             | `open`                      | `open` or `managed`. Setting `managed` declares a **managed instance**, see [Managed instances](#managed-instances) below. Requires `SYNC_SERVER_URL`. Any other value stops the boot on purpose. |
@@ -45,6 +46,31 @@ browser, stored on the device and sent browser → provider directly; the server
 `MISTRAL_API_KEY` / `OPENROUTER_API_KEY` in `.env.example` exist only so a developer can
 point verification scripts at a live provider. Setting them on a deployed instance does
 nothing.
+
+## The food database key
+
+`FOOD_DB_API_URL` and `FOOD_DB_API_KEY` are two different decisions and it helps to keep
+them apart.
+
+The URL decides **whether** this instance looks foods up at all. Set it to an empty string
+and no food name ever leaves your machine.
+
+The key decides **how much** you may look up. There are three tiers:
+
+| tier | what you do | what you get |
+| --- | --- | --- |
+| anonymous | nothing | a small daily allowance, shared per network address |
+| free | give an email address at [lowcarbcheck.org/developers](https://lowcarbcheck.org/developers) | a generous monthly allowance |
+| partner | ask | no monthly cap |
+
+An instance with no key keeps working. It is the anonymous tier, and for one person trying
+openplate out it is usually enough. A household, or anything that scans several plates a
+day, wants the free key.
+
+The lookup is fail-open either way: if the food database is unreachable, refused or out of
+allowance, a scan still completes and still shows numbers. Those numbers are then the AI's
+own estimate rather than a database figure, and the app says so on screen rather than
+letting the difference pass unnoticed.
 
 ## The release check
 

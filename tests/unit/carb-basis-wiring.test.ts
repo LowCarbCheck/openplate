@@ -493,6 +493,9 @@ function renderReviewCard({ carbBasis, applyMatch }: { carbBasis: CarbBasis | un
     identification: sanityIdentification(carbBasis),
     modelId: 'test-model',
     matches: [[match]],
+    // Nothing known about the food database: this case is not about it, and
+    // `undefined` is the honest value for a render that ran no lookup.
+    foodDb: undefined,
     lastResult: submission.reply({ formErrors: ['Select at least one food to log.'] }),
     logDate: null,
     logDateLabel: null,

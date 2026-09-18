@@ -79,6 +79,19 @@ export interface FakeFoodDb {
 }
 
 /**
+ * The path a spec POSTs to to make the catalogue search refuse (M238 spec 02).
+ *
+ * AN HTTP SEAM, because `globalSetup` runs in the RUNNER process and specs run
+ * in WORKERS: a spec cannot call a method on the fake this module holds. Named
+ * `__e2e__` so nobody reads it as part of the LowCarbCheck protocol, exactly
+ * as `fake-sync-service.ts` names its own.
+ *
+ * The body is `{"status": 401}` to start refusing and `{"status": null}` to
+ * stop.
+ */
+export const FOOD_DB_REFUSAL_PATH = '/__e2e__/search-refusal';
+
+/**
  * Starts the fake on a named port.
  *
  * A NAMED PORT for the reason `fake-sync-service` takes one: the app server is
@@ -88,8 +101,37 @@ export interface FakeFoodDb {
  * @param options.port - the port to listen on.
  */
 export async function startFakeFoodDb({ port }: { port: number }): Promise<FakeFoodDb> {
+  /**
+   * The status `/api/v1/foods/search` answers with, or `null` for the ordinary
+   * 200. Set over {@link FOOD_DB_REFUSAL_PATH}, and reset by the spec that set
+   * it, because this fake outlives every spec in the run.
+   */
+  let refusalStatus: number | null = null;
+
   const server: Server = createServer((request, response) => {
     const path = new URL(request.url ?? '/', 'http://127.0.0.1').pathname;
+    if (path === FOOD_DB_REFUSAL_PATH) {
+      let body = '';
+      request.on('data', (chunk: Buffer) => (body += chunk.toString()));
+      request.on('end', () => {
+        // SAFETY: the body a spec in this repository just sent, one line of
+        // JSON with one field. A malformed one is a broken spec, and the
+        // `Number.isInteger` guard below is what decides either way.
+        const asked = (JSON.parse(body || '{}') as { status?: number | null }).status ?? null;
+        refusalStatus = Number.isInteger(asked) ? asked : null;
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ refusalStatus }));
+      });
+      return;
+    }
+    if (path === '/api/v1/foods/search' && refusalStatus !== null) {
+      // The refusal envelope M202 froze. The app reads the STATUS CODE to
+      // decide and the body only to phrase a log line, so both are here.
+      request.resume();
+      response.writeHead(refusalStatus, { 'content-type': 'application/json' });
+      response.end(JSON.stringify({ error: { code: 'invalid_key', message: 'no such key', docs: 'https://x.test' } }));
+      return;
+    }
     if (path === '/api/v1/nutrients') {
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(NUTRIENTS_BODY);

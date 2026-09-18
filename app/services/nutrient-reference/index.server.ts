@@ -10,11 +10,13 @@
  * every row simply reports "no published reference" instead of a target. A
  * reference intake is an enrichment of the log, never a dependency of it.
  *
- * Privacy: these are anonymous GETs of public reference data. NOTHING about
- * the person is sent — not the log, not the body metrics, and least of all the
+ * Privacy: these are GETs of public reference data. NOTHING about the person is
+ * sent, not the log, not the body metrics, and least of all the
  * pregnancy/lactation status the resolution uses locally. The only thing that
  * ever leaves the device's own server is a nutrient slug drawn from a fixed
- * 17-entry allowlist (`KNOWN_NUTRIENT_SLUGS`).
+ * 17-entry allowlist (`KNOWN_NUTRIENT_SLUGS`). Since M238 an INSTANCE-level
+ * bearer may ride along (`FOOD_DB_API_KEY`), which identifies the instance to
+ * LowCarbCheck and nobody on it; unset, the default, is the anonymous tier.
  *
  * Caching: reference intakes are near-static published figures (no standards
  * body revises a reference value between two page loads) so they are cached
@@ -30,6 +32,8 @@ import { z } from 'zod';
 
 import { CONFIG } from '#app/config';
 import { createComponentLogger } from '#app/lib/logger';
+import { foodDbKeyDisplayPrefix, foodDbRequestHeaders } from '#app/services/food-db/request';
+import { noteFoodDbAccepted, noteFoodDbRefusal } from '#app/services/food-db/status';
 import {
   KNOWN_NUTRIENT_SLUGS,
   emptyNutrientReferenceDocument,
@@ -54,10 +58,20 @@ const FOODS_LOCALE = 'en';
 export interface NutrientApiOptions {
   enabled: boolean;
   apiUrl: string;
+  /**
+   * The bearer this instance authenticates with, or `null` for the anonymous
+   * tier (M238 spec 01).
+   *
+   * REQUIRED, not `?:`, for the reason `ResolveOptions.apiKey` states: the
+   * catalogue search builds its own options object from the same config, and a
+   * key wired into one of the two and forgotten in the other leaves half this
+   * app anonymous with every gate green.
+   */
+  apiKey: string | null;
 }
 
 function configuredOptions(): NutrientApiOptions {
-  return { enabled: CONFIG.foodDb.enabled, apiUrl: CONFIG.foodDb.apiUrl };
+  return { enabled: CONFIG.foodDb.enabled, apiUrl: CONFIG.foodDb.apiUrl, apiKey: CONFIG.foodDb.apiKey };
 }
 
 interface CacheEntry<T> {
@@ -96,11 +110,11 @@ function readCache<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null 
  */
 type UnvalidatedNutrientJson = z.infer<ReturnType<typeof z.json>>;
 
-async function fetchJson(url: string): Promise<UnvalidatedNutrientJson | null> {
+async function fetchJson({ url, apiKey }: { url: string; apiKey: string | null }): Promise<UnvalidatedNutrientJson | null> {
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { accept: 'application/json' },
+      headers: foodDbRequestHeaders({ apiKey }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch {
@@ -109,9 +123,27 @@ async function fetchJson(url: string): Promise<UnvalidatedNutrientJson | null> {
   }
 
   if (!response.ok) {
-    logger.debug('LowCarbCheck nutrient request returned a non-OK status', { status: response.status });
+    // A 401 or a 429 is not weather: somebody has to act, so it is recorded
+    // and logged LOUDLY (M238 spec 02). Everything else keeps failing open at
+    // debug, unchanged, and either way this answers `null` exactly as before.
+    const refusal = await noteFoodDbRefusal(response);
+    if (refusal === null) {
+      logger.debug('LowCarbCheck nutrient request returned a non-OK status', { status: response.status });
+    } else {
+      logger.warn('LowCarbCheck refused this instance, published reference intakes are unavailable', {
+        status: response.status,
+        reason: refusal,
+        operation: 'nutrients',
+        // THE PREFIX, NEVER THE KEY. See `foodDbKeyDisplayPrefix`.
+        keyPrefix: foodDbKeyDisplayPrefix(apiKey),
+      });
+    }
     return null;
   }
+
+  // The upstream answered. Whatever the body turns out to be, it is not
+  // refusing us, which is the one thing that clears the status.
+  noteFoodDbAccepted();
 
   try {
     return await response.json();
@@ -141,7 +173,7 @@ export async function fetchNutrientReferences(
   const cached = readCache(referenceCache, options.apiUrl);
   if (cached) return cached;
 
-  const json = await fetchJson(new URL('/api/v1/nutrients', options.apiUrl).toString());
+  const json = await fetchJson({ url: new URL('/api/v1/nutrients', options.apiUrl).toString(), apiKey: options.apiKey });
   if (json === null) return emptyNutrientReferenceDocument();
 
   try {
@@ -181,7 +213,7 @@ export async function fetchNutrientSourceFoods(
   url.searchParams.set('locale', FOODS_LOCALE);
   url.searchParams.set('limit', String(FOODS_LIMIT));
 
-  const json = await fetchJson(url.toString());
+  const json = await fetchJson({ url: url.toString(), apiKey: options.apiKey });
   if (json === null) return [];
 
   try {

@@ -16141,6 +16141,13 @@
     "at": "2026-09-17",
     "fr": "{{minutes}} min"
   },
+  "e9912f4c5d264c3a": {
+    "en": "The food database is unavailable, so AI estimated these figures and they may be less accurate.",
+    "path": "common:scan.review.foodDbUnavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "fr": "La base de données alimentaire est indisponible, l'IA a donc estimé ces chiffres et ils peuvent être moins précis."
+  },
   "e996760989fdf478": {
     "en": "End this fast",
     "path": "common:fasting.end.title",
@@ -16819,6 +16826,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Un autre de tes appareils vient de modifier ce partage. Réessaie."
+  },
+  "f31bafbd7f99a1ce": {
+    "en": "The food database is unavailable, so these numbers are estimates rather than curated values.",
+    "path": "common:scan.review.foodDbUnavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-18",
+    "fr": "La base de données alimentaires n'est pas disponible, ces chiffres sont donc des estimations plutôt que des valeurs vérifiées."
   },
   "f35d658c07654d3f": {
     "en": "Life phase · openplate",

@@ -59,7 +59,12 @@ function buildRawResult(overrides: RawResultOverrides = {}) {
   };
 }
 
-const ENABLED = { enabled: true, apiUrl: 'https://lcc.test' } as const;
+/**
+ * The ordinary options object every case below starts from: integration on,
+ * a stub base URL, and NO key, which is the anonymous tier and the default.
+ * The keyed path has its own cases at the bottom of this file.
+ */
+const ENABLED = { enabled: true, apiUrl: 'https://lcc.test', apiKey: null } as const;
 
 describe('parseFoodSearchResponse', () => {
   it('maps a valid response into owned FoodMatch objects', () => {
@@ -343,7 +348,7 @@ describe('resolveIdentifiedFoods', () => {
       return new Response(JSON.stringify({ results: [buildRawResult()] }), { status: 200 });
     });
     try {
-      const matches = await resolveIdentifiedFoods([{ name: 'a' }, { name: 'b' }], { enabled: false, apiUrl: '' });
+      const matches = await resolveIdentifiedFoods([{ name: 'a' }, { name: 'b' }], { enabled: false, apiUrl: '', apiKey: null });
       assert.deepStrictEqual(matches, [[], []]);
       assert.strictEqual(called, false);
     } finally {
@@ -425,7 +430,7 @@ describe('resolveIdentifiedFoods', () => {
       });
       try {
         await resolveIdentifiedFoods([{ name: 'chicken breast' }], ENABLED);
-        await resolveIdentifiedFoods([{ name: 'chicken breast' }], { enabled: true, apiUrl: 'https://other-lcc.test' });
+        await resolveIdentifiedFoods([{ name: 'chicken breast' }], { enabled: true, apiUrl: 'https://other-lcc.test', apiKey: null });
         assert.strictEqual(fetchCallCount, 2, 'a different apiUrl must not hit the first apiUrl\'s cache entry');
       } finally {
         restoreFetch();
@@ -634,7 +639,7 @@ describe('resolveIdentifiedFoods', () => {
     });
 
     it('is true when the integration is disabled — resolution never reaches the upstream lookup either', () => {
-      assert.strictEqual(allNamesCached(['chicken breast'], { enabled: false, apiUrl: '' }), true);
+      assert.strictEqual(allNamesCached(['chicken breast'], { enabled: false, apiUrl: '', apiKey: null }), true);
     });
 
     it('is false for a name that has never been resolved (a genuine cache miss)', () => {

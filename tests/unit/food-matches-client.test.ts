@@ -105,7 +105,10 @@ describe('fetchFoodMatches', () => {
     });
     try {
       const result = await fetchFoodMatches([]);
-      assert.deepEqual(result, { matches: [], throttled: false, retryAfterMs: null });
+      // `foodDb` reports "nothing known" (M238 spec 02), which is what a
+      // branch that never asked the server has learned. It is `ok: true`, so
+      // the scan review draws no line.
+      assert.deepEqual(result, { matches: [], throttled: false, retryAfterMs: null, foodDb: { ok: true, reason: null } });
       assert.equal(called, false);
     } finally {
       restoreFetch();

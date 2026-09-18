@@ -32,6 +32,8 @@ import { CONFIG } from '#app/config';
 import { DEFAULT_LANGUAGE, type LanguageCode } from '#app/i18n/language-prefs';
 import { createComponentLogger } from '#app/lib/logger';
 import { cloneMicronutrients } from '#app/lib/micronutrients';
+import { foodDbKeyDisplayPrefix, foodDbRequestHeaders } from '#app/services/food-db/request';
+import { noteFoodDbAccepted, noteFoodDbRefusal } from '#app/services/food-db/status';
 import type { FoodMatch } from './types';
 import { filterViableMatches, parseFoodSearchResponse, type UnvalidatedSearchJson } from './schema';
 
@@ -225,6 +227,18 @@ export interface ResolveOptions {
   enabled: boolean;
   apiUrl: string;
   /**
+   * The bearer this instance authenticates with, or `null` for the anonymous
+   * tier (M238 spec 01).
+   *
+   * REQUIRED, not `?:`, and that is the whole point of the field. The other
+   * LowCarbCheck caller (`#app/services/nutrient-reference`) builds its own
+   * options object from the same config, so a key wired into one service and
+   * forgotten in the other would leave half this app anonymous with every gate
+   * green. A required key means the compiler names every construction site,
+   * here and in the tests.
+   */
+  apiKey: string | null;
+  /**
    * The language to search the LCC catalogue in — it is sent as the request's
    * `locale` and decides which rows come back at all, not merely how they are
    * labelled: `"Hähnchenbrust"` returns nothing under `en` and the right food
@@ -240,7 +254,7 @@ export interface ResolveOptions {
 }
 
 function configuredOptions(): ResolveOptions {
-  return { enabled: CONFIG.foodDb.enabled, apiUrl: CONFIG.foodDb.apiUrl };
+  return { enabled: CONFIG.foodDb.enabled, apiUrl: CONFIG.foodDb.apiUrl, apiKey: CONFIG.foodDb.apiKey };
 }
 
 /**
@@ -260,6 +274,22 @@ function buildSearchUrl(apiUrl: string): string {
 }
 
 /**
+ * Everything one upstream lookup needs.
+ *
+ * `apiKey` rides along with the rest because the `Authorization` header is
+ * built at the fetch. It is deliberately NOT part of the cache key: what a
+ * chicken breast contains does not depend on who asked, so `searchCacheKey`
+ * takes the narrower `{ apiUrl, name, language }` and a keyed instance reuses
+ * an anonymous instance's entry quite correctly.
+ */
+interface SearchRequest {
+  name: string;
+  apiUrl: string;
+  language: LanguageCode;
+  apiKey: string | null;
+}
+
+/**
  * Single-name lookup, cache-and-dedupe-checked (see the module doc comment).
  * A live cache hit or an already-in-flight identical lookup short-circuits
  * before any network call. Always resolves — every failure mode (including a
@@ -267,7 +297,7 @@ function buildSearchUrl(apiUrl: string): string {
  * throw. Every return path hands back a `cloneMatches` copy, never the
  * array/objects the cache or another caller holds (M123/06).
  */
-async function searchFoodByName(options: { name: string; apiUrl: string; language: LanguageCode }): Promise<FoodMatch[]> {
+async function searchFoodByName(options: SearchRequest): Promise<FoodMatch[]> {
   const key = searchCacheKey(options);
 
   const cached = searchCache.get(key);
@@ -326,14 +356,19 @@ interface SearchOutcome {
  * API for other callers; this service always uses the POST form. Failure logs
  * never carry the search term (only an HTTP status), for the same reason.
  */
-async function performSearch(options: { name: string; apiUrl: string; language: LanguageCode }): Promise<SearchOutcome> {
-  const { name, apiUrl, language } = options;
+async function performSearch(options: SearchRequest): Promise<SearchOutcome> {
+  const { name, apiUrl, language, apiKey } = options;
+
+  // The shared headers, plus the one this call site owns because it is the only
+  // one with a body.
+  const headers = foodDbRequestHeaders({ apiKey });
+  headers.set('content-type', 'application/json');
 
   let response: Response;
   try {
     response = await fetch(buildSearchUrl(apiUrl), {
       method: 'POST',
-      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      headers,
       body: JSON.stringify({ q: name, locale: language, limit: SEARCH_LIMIT }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -343,9 +378,29 @@ async function performSearch(options: { name: string; apiUrl: string; language: 
   }
 
   if (!response.ok) {
-    logger.debug('LowCarbCheck search returned a non-OK status', { status: response.status });
+    // A 401 or a 429 is not weather: somebody has to act, so it is recorded
+    // and logged LOUDLY (M238 spec 02). Everything else keeps failing open at
+    // debug, unchanged. Either way this returns the same empty, UNCACHEABLE
+    // outcome it always did: a cached refusal would outlive the fix for it.
+    const refusal = await noteFoodDbRefusal(response);
+    if (refusal === null) {
+      logger.debug('LowCarbCheck search returned a non-OK status', { status: response.status });
+    } else {
+      logger.warn('LowCarbCheck refused this instance, curated food matches are unavailable', {
+        status: response.status,
+        reason: refusal,
+        operation: 'search',
+        // THE PREFIX, NEVER THE KEY. Sixteen characters: enough for an
+        // operator holding several keys to tell which one was refused.
+        keyPrefix: foodDbKeyDisplayPrefix(apiKey),
+      });
+    }
     return { matches: [], cacheable: false };
   }
+
+  // The upstream answered. Whatever it says about this food, it is not
+  // refusing us, which is the one thing that clears the status.
+  noteFoodDbAccepted();
 
   let json: UnvalidatedSearchJson;
   try {
@@ -406,6 +461,6 @@ export async function resolveIdentifiedFoods(
 
   const language = searchLanguage(options);
   return mapWithConcurrency(foods, RESOLVE_CONCURRENCY, (food) =>
-    searchFoodByName({ name: food.name, apiUrl: options.apiUrl, language }),
+    searchFoodByName({ name: food.name, apiUrl: options.apiUrl, apiKey: options.apiKey, language }),
   );
 }

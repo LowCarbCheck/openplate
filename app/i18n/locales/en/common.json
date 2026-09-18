@@ -2048,7 +2048,8 @@
       "seeOtherMatches": "Not right? See other matches",
       "subheading": "Tap a portion to adjust, or fine-tune anything below.",
       "unnamedFood": "Unnamed food",
-      "fromLabel": "From the label"
+      "fromLabel": "From the label",
+      "foodDbUnavailable": "The food database is unavailable, so AI estimated these figures and they may be less accurate."
     },
     "setup": {
       "connectOpenRouter": "Connect with OpenRouter",

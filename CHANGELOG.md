@@ -23,6 +23,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **Your backup file moves to version 23.** Your record travels inside your backup and inside the encrypted sync. Backups written by an older version still import, and a badge from a newer version is kept rather than dropped. A backup written by this version cannot be read by an older version of openplate.
 
+- **The instance can hold a food database key, and says so when the database refuses.** A new `FOOD_DB_API_KEY` setting lets whoever runs the instance authenticate the food lookups openplate already makes. Leaving it unset keeps the free anonymous tier, which is what every instance used until now. If the food database refuses the instance, because the key is wrong or the allowance is spent, the scan review shows one quiet line saying the numbers are estimates, and the server log carries a warning instead of nothing. A scan still completes, still shows numbers and can still be logged.
+
 ## [0.33.0] - 2026-09-18
 
 ### Changed

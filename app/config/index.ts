@@ -83,9 +83,40 @@ export interface FoodDbConfig {
   enabled: boolean;
   /** Base URL of the public LowCarbCheck food API (no trailing slash). Empty string when disabled. */
   apiUrl: string;
+  /**
+   * The instance's LowCarbCheck API key, sent as `Authorization: Bearer <key>`,
+   * or `null` for the anonymous tier (the default, and byte-identical to the
+   * behaviour before this field existed: no header is sent at all).
+   *
+   * SERVER ONLY, and it has to be. LowCarbCheck's API is CORS-open, so a key
+   * that reached a browser would be a public key. It is deliberately absent
+   * from `PublicConfig`'s allowlist (`app/config/public-config.ts`) and from
+   * every loader payload, and it is never logged: the display prefix
+   * (`foodDbKeyDisplayPrefix`) is what a log line may carry.
+   */
+  apiKey: string | null;
 }
 
 const DEFAULT_FOOD_DB_API_URL = 'https://lowcarbcheck.org';
+
+/** The two environment variables the food-database integration is built from. */
+interface FoodDbEnv {
+  /** `FOOD_DB_API_URL`, raw. Its three states are the whole point, see below. */
+  apiUrl: string | undefined;
+  /** `FOOD_DB_API_KEY`, raw. Unset, empty and whitespace-only all mean the anonymous tier. */
+  apiKey: string | undefined;
+}
+
+/**
+ * Normalizes `FOOD_DB_API_KEY`. Blank and whitespace-only are `null` rather
+ * than an empty string, so a half-filled `.env` line cannot produce an
+ * `Authorization: Bearer ` header that the upstream reads as a bad key.
+ */
+function parseFoodDbApiKey(raw: string | undefined): string | null {
+  if (raw === undefined) return null;
+  const trimmed = raw.trim();
+  return trimmed === '' ? null : trimmed;
+}
 
 /**
  * Parses `FOOD_DB_API_URL` into the food-database integration config. This
@@ -96,12 +127,20 @@ const DEFAULT_FOOD_DB_API_URL = 'https://lowcarbcheck.org';
  * - explicit empty string -> integration OFF (a self-hoster's opt-out switch,
  *   so no food names ever leave their box)
  * - any URL -> that URL (integration ON), trailing slash trimmed
+ *
+ * `FOOD_DB_API_KEY` rides along (M238 spec 01). It is an OPTIONS OBJECT rather
+ * than two positional strings because both parameters are `string | undefined`
+ * and a swapped pair would compile, send the key as the base URL, and fail in
+ * a way no type checks.
  */
-function parseFoodDbConfig(raw: string | undefined): FoodDbConfig {
-  if (raw === undefined) return { enabled: true, apiUrl: DEFAULT_FOOD_DB_API_URL };
-  const trimmed = raw.trim();
-  if (trimmed === '') return { enabled: false, apiUrl: '' };
-  return { enabled: true, apiUrl: trimmed.replace(/\/+$/, '') };
+function parseFoodDbConfig(env: FoodDbEnv): FoodDbConfig {
+  const apiKey = parseFoodDbApiKey(env.apiKey);
+  if (env.apiUrl === undefined) return { enabled: true, apiUrl: DEFAULT_FOOD_DB_API_URL, apiKey };
+  const trimmed = env.apiUrl.trim();
+  // Integration OFF: no request ever goes out, so the key is dropped here
+  // rather than carried around in a config nothing reads.
+  if (trimmed === '') return { enabled: false, apiUrl: '', apiKey: null };
+  return { enabled: true, apiUrl: trimmed.replace(/\/+$/, ''), apiKey };
 }
 
 /**
@@ -297,8 +336,11 @@ export const CONFIG = {
    * Only food NAMES are ever sent — never photos, never user data. The whole
    * integration is fail-open and can be turned off by setting
    * `FOOD_DB_API_URL` to an empty string.
+   *
+   * `FOOD_DB_API_KEY` is optional and server-only: unset is the anonymous
+   * tier, which is what every instance ran on before M238.
    */
-  foodDb: parseFoodDbConfig(process.env.FOOD_DB_API_URL),
+  foodDb: parseFoodDbConfig({ apiUrl: process.env.FOOD_DB_API_URL, apiKey: process.env.FOOD_DB_API_KEY }),
 
   /**
    * Micronutrient reference basis (M234 spec 05)

@@ -22,6 +22,8 @@
  */
 import { z } from 'zod';
 import type { FoodMatch } from '#app/services/food-resolution';
+import { FOOD_DB_STATUS_UNKNOWN, foodDbStatusWireSchema, parseFoodDbStatus } from '#app/services/food-db/wire';
+import type { FoodDbStatus } from '#app/services/food-db/wire';
 
 /**
  * The client's return shape. `throttled` always resolves to a concrete
@@ -40,9 +42,30 @@ export interface FoodMatchesResult {
   throttled: boolean;
   /** Milliseconds until the caller's rate-limit window resets. Present only when `throttled` is true. */
   retryAfterMs: number | null;
+  /**
+   * What the SERVER last saw from the upstream food database (M238 spec 02).
+   *
+   * Always a concrete object, never absent, for the reason `throttled` is
+   * always a concrete boolean: a caller must not have to tell "the field was
+   * missing" from "it said ok". Every fail-open branch below reports
+   * `FOOD_DB_STATUS_UNKNOWN`, which is `ok: true` and therefore renders
+   * nothing, a failure to reach OUR OWN server says nothing about the food
+   * database, and inventing a warning from it would put an "unavailable" line
+   * under a page that is merely offline.
+   */
+  foodDb: FoodDbStatus;
 }
 
 const NOT_THROTTLED = { throttled: false, retryAfterMs: null } as const;
+
+/**
+ * Every field a branch that never heard from the server has to fill.
+ *
+ * One constant rather than three spreads, so a new field on
+ * `FoodMatchesResult` is added here once and the compiler finds the branches
+ * that still need it.
+ */
+const NOTHING_HEARD = { ...NOT_THROTTLED, foodDb: FOOD_DB_STATUS_UNKNOWN } as const;
 
 /**
  * The route's JSON body, read without trusting it — the server contract can
@@ -53,6 +76,9 @@ const foodMatchesBodySchema = z.object({
   matches: z.array(z.array(z.custom<FoodMatch>())).optional(),
   throttled: z.boolean().optional(),
   retryAfterMs: z.number().optional(),
+  // Optional, because an OLDER server does not send it at all. See
+  // `foodDbStatusWireSchema` for why `reason` is read as a plain string.
+  foodDb: foodDbStatusWireSchema.optional(),
 });
 
 /**
@@ -63,7 +89,7 @@ const foodMatchesBodySchema = z.object({
  *   network/parse failure — see the module doc comment.
  */
 export async function fetchFoodMatches(names: string[]): Promise<FoodMatchesResult> {
-  if (names.length === 0) return { matches: [], ...NOT_THROTTLED };
+  if (names.length === 0) return { matches: [], ...NOTHING_HEARD };
 
   try {
     const response = await fetch('/api/food-matches', {
@@ -71,15 +97,20 @@ export async function fetchFoodMatches(names: string[]): Promise<FoodMatchesResu
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ names }),
     });
-    if (!response.ok) return { matches: names.map(() => []), ...NOT_THROTTLED };
+    if (!response.ok) return { matches: names.map(() => []), ...NOTHING_HEARD };
 
     const parsed = foodMatchesBodySchema.safeParse(await response.json());
     const payload = parsed.success ? parsed.data : {};
     const matches = payload.matches ?? names.map(() => []);
-    if (payload.throttled !== true) return { matches, ...NOT_THROTTLED };
+    // The server answered, so whatever it says about the food database is the
+    // best this client will ever know. Read on BOTH remaining branches: a
+    // throttled caller never reached the upstream, but the last refusal the
+    // server saw is still true and still worth reporting.
+    const foodDb = parseFoodDbStatus(payload.foodDb);
+    if (payload.throttled !== true) return { matches, ...NOT_THROTTLED, foodDb };
 
-    return { matches, throttled: true, retryAfterMs: payload.retryAfterMs ?? null };
+    return { matches, throttled: true, retryAfterMs: payload.retryAfterMs ?? null, foodDb };
   } catch {
-    return { matches: names.map(() => []), ...NOT_THROTTLED };
+    return { matches: names.map(() => []), ...NOTHING_HEARD };
   }
 }

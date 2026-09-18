@@ -48,6 +48,9 @@ function renderLabelReview(): string {
   const element = createElement(ConfirmDraftForm, {
     intakeSource: 'photo',
     identification: LABEL_IDENTIFICATION,
+    // Nothing known about the food database: this case is not about it, and
+    // `undefined` is the honest value for a render that ran no lookup.
+    foodDb: undefined,
     modelId: 'test-model',
     lastResult: undefined,
     logDate: null,

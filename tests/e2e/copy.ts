@@ -61,6 +61,7 @@ const catalogSchema = z.object({
     review: z.object({
       heading: z.string(),
       fromLabel: z.string(),
+      foodDbUnavailable: z.string(),
       netCarbsForPortion: z.string(),
       confirmAndLog: z.string(),
       sanity: z.object({

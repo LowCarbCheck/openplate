@@ -59,6 +59,9 @@ const IDENTIFICATION = {
 function renderReview({ typedText }: { typedText: string | null }): string {
   const element = createElement(ConfirmDraftForm, {
     identification: IDENTIFICATION,
+    // Nothing known about the food database: this case is not about it, and
+    // `undefined` is the honest value for a render that ran no lookup.
+    foodDb: undefined,
     modelId: 'test-model',
     logDate: null,
     logDateLabel: null,

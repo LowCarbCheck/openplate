@@ -5,6 +5,8 @@ import { resolveRequestLanguage } from '#app/i18n/language-prefs';
 import { foodMatchesRateLimitKey } from '#app/lib/food-matches-rate-limit.server';
 import { allNamesCached, foodResolutionOptions, resolveIdentifiedFoods } from '#app/services/food-resolution';
 import type { FoodMatch } from '#app/services/food-resolution';
+import { foodDbStatus } from '#app/services/food-db/status';
+import type { FoodDbStatus } from '#app/services/food-db/wire';
 import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.server';
 
 /**
@@ -101,6 +103,21 @@ const candidateNameSchema = z.string().refine((name) => name.trim() !== '');
 /** The route's plain success shape — `matches` is parallel to the request's `names` by index. */
 export interface FoodMatchesResponseBody {
   matches: FoodMatch[][];
+  /**
+   * Whether the upstream food database is currently refusing this instance
+   * (M238 spec 02), so the screen can say "these numbers are the AI's own
+   * estimate" instead of letting an empty match list read as "we checked, and
+   * there is nothing".
+   *
+   * OPTIONAL on the wire, on purpose. An older client parsing this response
+   * has never seen the field and must not start failing on it; absent means
+   * "nothing known", which renders exactly what it rendered before. This is
+   * the one place in this milestone where `?:` is the right answer, because
+   * the two sides of a wire deploy separately.
+   *
+   * It carries no secret: a boolean and one word from a closed list.
+   */
+  foodDb?: FoodDbStatus;
 }
 
 /**
@@ -137,7 +154,7 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
   } catch {
     // Never reaches resolution either way — nothing upstream to protect, so
     // this never counts against the rate-limit budget (M123/07).
-    const empty: FoodMatchesResponseBody = { matches: [] };
+    const empty: FoodMatchesResponseBody = { matches: [], foodDb: foodDbStatus() };
     return Response.json(empty);
   }
 
@@ -163,6 +180,7 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
         matches: [],
         throttled: true,
         retryAfterMs: error.retryAfterMs,
+        foodDb: foodDbStatus(),
       };
       return Response.json(throttled);
     }
@@ -172,6 +190,9 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
     names.map((name) => ({ name })),
     options,
   );
-  const success: FoodMatchesResponseBody = { matches };
+  // READ AFTER the resolution, never before: this request's own 401 is the
+  // one most worth reporting, and reading first would publish the state as it
+  // was a moment ago.
+  const success: FoodMatchesResponseBody = { matches, foodDb: foodDbStatus() };
   return Response.json(success);
 }

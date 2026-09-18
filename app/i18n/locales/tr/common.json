@@ -2048,7 +2048,8 @@
       "seeOtherMatches": "Doğru değil mi? Diğer eşleşmelere bak",
       "subheading": "Ayarlamak için bir porsiyona dokun veya aşağıdaki her şeyi ince ayarla.",
       "unnamedFood": "İsimsiz yiyecek",
-      "fromLabel": "Etiketten"
+      "fromLabel": "Etiketten",
+      "foodDbUnavailable": "Besin veritabanına ulaşılamadığı için bu değerleri yapay zekâ tahmin etti, bu nedenle doğrulukları daha düşük olabilir."
     },
     "setup": {
       "connectOpenRouter": "OpenRouter ile bağlan",

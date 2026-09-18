@@ -2048,7 +2048,8 @@
       "seeOtherMatches": "¿No es correcto? Ver otras coincidencias",
       "subheading": "Toca una porción para ajustarla o afina cualquier dato abajo.",
       "unnamedFood": "Alimento sin nombre",
-      "fromLabel": "De la etiqueta"
+      "fromLabel": "De la etiqueta",
+      "foodDbUnavailable": "La base de datos de alimentos no está disponible, por lo que la IA estimó estas cifras y podrían ser menos precisas."
     },
     "setup": {
       "connectOpenRouter": "Conectar con OpenRouter",

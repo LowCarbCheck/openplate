@@ -198,6 +198,9 @@ function renderPlateConfirm(defaultMealType: MealType | null): string {
       // about what the plate path writes, not about which way in produced it.
       intakeSource: 'photo',
       identification: AI_IDENTIFICATION,
+      // Nothing known about the food database: this case is not about it, and
+      // `undefined` is the honest value for a render that ran no lookup.
+      foodDb: undefined,
       modelId: 'test-model',
       lastResult: undefined,
       logDate: null,

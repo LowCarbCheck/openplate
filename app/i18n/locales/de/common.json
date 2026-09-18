@@ -2048,7 +2048,8 @@
       "seeOtherMatches": "Passt nicht? Andere Treffer ansehen",
       "subheading": "Tippe auf eine Portion, um sie anzupassen, oder nimm unten Feineinstellungen vor.",
       "unnamedFood": "Lebensmittel ohne Namen",
-      "fromLabel": "Vom Etikett"
+      "fromLabel": "Vom Etikett",
+      "foodDbUnavailable": "Die Lebensmitteldatenbank ist nicht erreichbar, daher hat die KI diese Werte geschätzt, und sie sind möglicherweise weniger genau."
     },
     "setup": {
       "connectOpenRouter": "Mit OpenRouter verbinden",
