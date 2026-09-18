@@ -295,6 +295,48 @@ function byCreatedThenId<T extends { createdAt: number; id: string }>(a: T, b: T
 }
 
 // ---------------------------------------------------------------------------
+// The store-level schema version
+// ---------------------------------------------------------------------------
+
+/** The stamped schema version as it comes back off the store, a TinyBase value, not yet a number. */
+const schemaVersionSchema = z.number().int();
+
+/**
+ * The schema version this store was last WRITTEN under, or null when nothing
+ * has ever been written here.
+ *
+ * {@link writeEntity} stamps it on every entity write, so a device that ran an
+ * older build carries that build's number until this one writes something. It
+ * is the only marker a one-time forward migration over the ROWS can ask, which
+ * is what `app/lib/gamification/backfill.ts` asks it for (M235/05).
+ *
+ * Null is not zero: a store nobody has ever written to has no shape to migrate
+ * and no history to derive anything from.
+ *
+ * @param options.store - the store to read, the primary store by default.
+ * @returns the stamped version, or null when the value has never been written.
+ */
+export async function readLocalSchemaVersion({ store }: StoreOption = {}): Promise<number | null> {
+  const parsed = schemaVersionSchema.safeParse((await resolveStore(store)).getValue(SCHEMA_VERSION_VALUE));
+  return parsed.success ? parsed.data : null;
+}
+
+/**
+ * Stamps this store as being at the current schema version, writing no row.
+ *
+ * The one caller is a forward migration that finished with nothing to write
+ * (M235/05): a device whose diary yields no marks at all would otherwise ask
+ * the same question on every boot for ever, because the stamp only moves when
+ * a row moves. It claims exactly what it says, the SHAPE is current, and the
+ * shape is current the moment the migration has run.
+ *
+ * @param options.store - the store to write, the primary store by default.
+ */
+export async function stampLocalSchemaVersion({ store }: StoreOption = {}): Promise<void> {
+  (await resolveStore(store)).setValue(SCHEMA_VERSION_VALUE, SCHEMA_VERSION);
+}
+
+// ---------------------------------------------------------------------------
 // Personal foods
 // ---------------------------------------------------------------------------
 

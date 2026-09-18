@@ -157,6 +157,10 @@ import {
   PRIMARY_DB_NAME,
 } from './store';
 import { RETIRED_GATEWAY_CONNECTION_TABLE } from './schema';
+// The one import in this file that points OUTWARD, and it is deliberate: the
+// M235/05 backfill has to run inside the primary store's own load promise, and
+// nothing else in the app can offer that guarantee. See `afterPrimaryLoad`.
+import { backfillGamificationOnLoad } from '#app/lib/gamification/backfill';
 
 const log = createComponentLogger('local-store/persist');
 
@@ -1164,8 +1168,13 @@ export async function primeFreshDatabaseIfNeeded(dbName: string, persister: Save
  * store-change listener, so anything written before it is installed lands in
  * memory and never reaches IndexedDB. A migration that had to run again on
  * every boot would look identical to one that worked.
+ *
+ * It MAY be asynchronous, and the store's promise waits for it. That is the
+ * whole guarantee the M235/05 backfill needs: every reader in the app resolves
+ * this singleton first, so a migration that runs here has finished before the
+ * first screen can ask the store a question, and no loader can race it.
  */
-type AfterLoad = (store: Store) => void;
+type AfterLoad = (store: Store) => void | Promise<void>;
 
 async function initPersistedStore(store: Store, dbName: string, afterLoad?: AfterLoad): Promise<Store> {
   assertBrowserWithIndexedDb(dbName);
@@ -1194,7 +1203,7 @@ async function initPersistedStore(store: Store, dbName: string, afterLoad?: Afte
   // discarded every non-winning tab's writes — see this file's module doc).
   startLockedAutoSave(store, dbName, persister);
 
-  afterLoad?.(store);
+  await afterLoad?.(store);
 
   return store;
 }
@@ -1252,6 +1261,35 @@ function dropRetiredGatewayAiSettings(store: Store): void {
   store.delRow(AI_SETTINGS_TABLE, AI_SETTINGS_ROW_ID);
 }
 
+/**
+ * Everything the PRIMARY store does once its load has finished: drop the v18
+ * leftovers, then derive the gamification history a pre-v23 device never
+ * recorded (M235/05).
+ *
+ * THE BACKFILL RUNS HERE AND NOWHERE ELSE, for two reasons a route-level call
+ * site could not give it. Every reader in the app awaits this singleton, so
+ * running inside its promise means no loader, and no parallel child route, can
+ * read a streak of 1 while the migration is still working. And it runs before
+ * the first sync pull, which matters more than it looks: a pull writes rows,
+ * every row write stamps the current schema version, and the stamp is the only
+ * marker the migration has to tell a device that has already been derived from
+ * one that has not.
+ *
+ * IT SWALLOWS, like every other gamification call site. A badge must never
+ * cost somebody their diary, and a throw here would reject the store promise
+ * and take the whole app down with it.
+ */
+async function afterPrimaryLoad(store: Store): Promise<void> {
+  dropRetiredGatewayConnection(store);
+  try {
+    await backfillGamificationOnLoad(store);
+  } catch (cause: unknown) {
+    log.error('local-store: the gamification backfill failed (the app continues without it)', {
+      error: errorMessage(cause),
+    });
+  }
+}
+
 let primaryPromise: Promise<Store> | null = null;
 let outboxPromise: Promise<Store> | null = null;
 let photosPromise: Promise<Store> | null = null;
@@ -1282,7 +1320,7 @@ let loadedAiStore: Store | null = null;
  */
 export function getPrimaryStore(): Promise<Store> {
   if (!primaryPromise) {
-    primaryPromise = initPersistedStore(createPrimaryStore(), PRIMARY_DB_NAME, dropRetiredGatewayConnection).catch(
+    primaryPromise = initPersistedStore(createPrimaryStore(), PRIMARY_DB_NAME, afterPrimaryLoad).catch(
       (cause: unknown) => {
         primaryPromise = null;
         throw cause;

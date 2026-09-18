@@ -116,6 +116,10 @@ export {
   // key and neither has a delete verb, so there is no `deleteLocal*` line here
   // to match the ones above: a day that carried a signal carried it, and an
   // award is never revoked. `markAwardSeen` is the one mutating verb.
+  // The store-level schema version (M235/05). The marker a one-time forward
+  // migration over the rows reads to know whether it has already run.
+  readLocalSchemaVersion,
+  stampLocalSchemaVersion,
   putLocalActivityMark,
   listLocalActivityMarks,
   hasLocalActivityMark,

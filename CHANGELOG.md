@@ -19,6 +19,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The app now records which of its functions you used, and when.** Logging food, confirming a scan, running a fast, weighing in, repeating a meal, editing the pantry and exporting a backup each leave a mark on the day you did them. Only an act you performed is recorded: receiving a sync from another device records nothing, so a day you never opened the app is never counted as one you did. Nothing is shown for this yet.
 
+- **Your past counts: the app rebuilds the record from the diary you already have.** On the first start after this version, openplate reads back through your food logs, your weigh-ins and your fasts, and marks every day they show you used the app. Somebody who has tracked for two years reads two years, not one day. Badges earned in the past are dated to the day you earned them and arrive already seen, so nothing is announced for something you did last winter. Repeating a meal, editing the pantry and exporting a backup leave no trace in a diary, so those three are earned the next time you do them. A backup file written by an older version is read the same way when you import it.
+
 ## [0.33.0] - 2026-09-18
 
 ### Changed

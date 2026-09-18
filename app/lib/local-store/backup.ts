@@ -21,6 +21,7 @@ import { CARB_BASES } from '#app/lib/net-carbs';
 import { PANTRY_CATEGORIES, PANTRY_UNITS } from '#app/services/vision/pantry-schema';
 import { EATING_STYLE_IDS } from '#app/lib/eating-style';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
+import { backfillSnapshotHistory, GAMIFICATION_BACKFILL_SCHEMA_VERSION } from '#app/lib/gamification/backfill';
 import { LAST_EXPORT_VALUE } from './store';
 import { SCHEMA_VERSION } from './schema';
 import type { LocalStoreSnapshot } from './schema';
@@ -765,6 +766,21 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
     throw new Error(
       `Backup migration failed: ${result.error.issues[0]?.message ?? 'payload does not match the current schema'}.`,
     );
+  }
+  // The v22 -> v23 step (M235/05), and the ONE upgrade step in this function
+  // that runs AFTER the validation rather than before it. Every step above
+  // repairs a payload the current schema would otherwise refuse; this one
+  // DERIVES two tables from rows the schema has already accepted, so running
+  // it on the validated value is what lets it read a typed diary instead of an
+  // `unknown`. `.default([])` (spec 02) is still what makes an old file import
+  // at all; this is what makes it arrive with the history it implies, rather
+  // than as a device that started today.
+  if (envelope.schemaVersion < GAMIFICATION_BACKFILL_SCHEMA_VERSION) {
+    return {
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: envelope.exportedAt,
+      data: backfillSnapshotHistory(result.data),
+    };
   }
   return { schemaVersion: SCHEMA_VERSION, exportedAt: envelope.exportedAt, data: result.data };
 }

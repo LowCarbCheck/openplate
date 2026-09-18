@@ -8,9 +8,9 @@
  * WHERE IT MAY BE CALLED FROM, and why the rule is this sharp. A sync pull
  * ends in `applyMergedSnapshot`, which calls `importBackup`, which is why
  * `importSnapshot` passes `origin: 'restore'` on every food log it writes. A
- * recorder wired into `primary-store.ts` would therefore mark today active on
- * a device nobody touched, once per pull, and the streak would stop meaning
- * what it says. So this module is called from route `clientAction` code and
+ * recorder wired into the store's own write verb would therefore mark today
+ * active on a device nobody touched, once per pull, and the streak would stop
+ * meaning what it says. So this module is called from route `clientAction` code and
  * from confirmed user acts, and from nothing in `app/lib/local-store/` or
  * `app/lib/sync/`. A verification command greps both directories for the name.
  *

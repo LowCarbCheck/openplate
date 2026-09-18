@@ -140,3 +140,66 @@ describe('a current-version envelope', () => {
     assert.throws(() => migrateEnvelopeForward(parseBackupEnvelope(envelopeJson(23, badMark))), /migration failed/i);
   });
 });
+
+/**
+ * The other half of the v22 -> v23 step (M235/05). The defaults above make an
+ * old file IMPORT; these make it arrive with the history it implies, so a
+ * person restoring two years of diary onto a new phone reads two years rather
+ * than a device that started today.
+ */
+/** One ordinary log, as a v22 device wrote it into a file. */
+function wireFoodLog(id: string, dayKey: string) {
+  return {
+    id,
+    name: 'Acerola',
+    quantityGrams: 100,
+    macros: { carbs: 5, fiber: 0, sugars: null, polyols: null, protein: 0.2, fat: 0.15, kcal: 16 },
+    mealType: 'snack',
+    source: 'manual',
+    aiEstimated: false,
+    curatedSource: null,
+    foodId: null,
+    dayKey,
+    loggedAt: 1_789_000_000_000,
+    createdAt: 1_789_000_000_000,
+    logBatchId: null,
+  } satisfies WireObject;
+}
+
+describe('a v22 envelope with a diary in it', () => {
+  it('v22 envelope backfills the marks and the awards its own diary implies', () => {
+    const days = ['2026-09-14', '2026-09-15', '2026-09-16'];
+    const payload = { ...v22Payload(), foodLogs: days.map((day, index) => wireFoodLog(`log-${index}`, day)) };
+
+    const migrated = migrateEnvelopeForward(parseBackupEnvelope(envelopeJson(22, payload)));
+
+    assert.deepEqual(
+      migrated.data.activityMarks.map((mark) => mark.dayKey),
+      days,
+      'a file with three logged days arrived with no history',
+    );
+    // Three consecutive days is the first streak badge, dated to the day it was
+    // earned, and ALREADY SEEN: importing a backup must never announce a badge.
+    assert.deepEqual(
+      migrated.data.awards.map((award) => award.key),
+      ['explorer.log.food', 'streak.active.3'],
+    );
+    for (const award of migrated.data.awards) {
+      assert.equal(award.seenAt, award.earnedAt, `${award.key} would fire a note on the importing device`);
+    }
+    assert.deepEqual(
+      migrated.data.awards.map((award) => award.earnedOnDay),
+      ['2026-09-14', '2026-09-16'],
+    );
+  });
+
+  it('is still left empty when the file has no diary at all, which is the control', () => {
+    // The control for the test above: the backfill must derive, not invent. A
+    // v22 file with nothing in it has no history, and a migration that handed
+    // one a streak badge would be writing fiction.
+    const migrated = migrateEnvelopeForward(parseBackupEnvelope(envelopeJson(22, v22Payload())));
+
+    assert.deepEqual(migrated.data.activityMarks, []);
+    assert.deepEqual(migrated.data.awards, []);
+  });
+});
