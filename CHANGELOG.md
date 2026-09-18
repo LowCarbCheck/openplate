@@ -11,13 +11,17 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-09-18
+
 ### Changed
 
-- **Micronutrient reference values now come from the German DGE.** The Nutrients screen previously displayed EU EFSA targets published by LowCarbCheck. It now displays DGE figures. Several targets change: vitamin D moves from 15 to 20 micrograms a day, potassium from 3500 to 4000 milligrams, and iron for women after menopause from 16 to 14 milligrams. Your age band and sex still decide which figure you see. Beta-carotene has no DGE figure, so the screen shows none rather than borrowing one. An administrator can switch the instance back to EFSA or to US NASEM figures. The footnote under each nutrient names the source document for that figure.
+- **Micronutrient reference values now come from the German DGE.** The Nutrients screen previously displayed EU EFSA targets published by LowCarbCheck. It now displays DGE figures. Several targets change: vitamin D moves from 15 to 20 micrograms a day, potassium from 3500 to 4000 milligrams, and iron for women after menopause from 16 to 14 milligrams. Your age band and sex still decide which figure you see. Beta-carotene has no DGE figure, so the screen shows none rather than borrowing one. An administrator can switch the instance back to EFSA or to US NASEM figures. The footnote under each nutrient names the source document for that figure. ([cd96c4e](https://github.com/LowCarbCheck/openplate/commit/cd96c4e))
 
 ### Added
 
-- **An administrator chooses whose reference values the instance shows.** A new Settings tab in the administration console picks between the German DGE, the EU's EFSA and the US NASEM figures, and every device on the instance follows it on the Nutrients screen, in every language. The footnote under each nutrient still names the document the number came from, so the change is visible where the number is. A device that already has the app open keeps showing the old values until the page is reloaded, and the form says so. An instance running no openplate-core, or one older than this setting, is unaffected and keeps whatever its own server was configured with.
+- **The imprint and the withdrawal instruction carry a telephone number.** German law has required a telephone number inside the Widerrufsbelehrung since 2022, and the field was empty. It now renders on both pages, in every language. ([5bac555](https://github.com/LowCarbCheck/openplate/commit/5bac555))
+
+- **An administrator chooses whose reference values the instance shows.** A new Settings tab in the administration console picks between the German DGE, the EU's EFSA and the US NASEM figures, and every device on the instance follows it on the Nutrients screen, in every language. The footnote under each nutrient still names the document the number came from, so the change is visible where the number is. A device that already has the app open keeps showing the old values until the page is reloaded, and the form says so. An instance running no openplate-core, or one older than this setting, is unaffected and keeps whatever its own server was configured with. ([d8d53a7](https://github.com/LowCarbCheck/openplate/commit/d8d53a7))
 
 ## [0.32.0] - 2026-09-17
 
