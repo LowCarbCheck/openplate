@@ -255,14 +255,20 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     // is the common case on every boot, and skipping the push is what keeps
     // "open the app" from consuming a blob version.
     //
-    // AND NOTHING PUBLISHED FROM THE TWO PASS-THROUGH LISTS, which the equality
-    // itself cannot see: `canonicalize` weighs neither `fasts` nor `savedMeals`,
-    // so a cycle whose only change is a recorded clear looks equal to a blob
-    // that still holds those rows, and adopting it would commit a baseline
-    // without the cleared ids and prune the journal rows that prove the
-    // removal. The next real push would then shrink the blob with nothing left
-    // to acknowledge it with, which the service refuses. A published removal is
-    // always a push, so the shrink is declared while the evidence still exists.
+    // AND NOTHING PUBLISHED FROM THE TWO PASS-THROUGH LISTS, which the
+    // equality only half sees: `canonicalize` weighs `savedMeals` and never
+    // `fasts`, so a cycle whose only change is a cleared fast looks equal to a
+    // blob that still holds those rows, and adopting it would commit a
+    // baseline without the cleared ids and prune the journal rows that prove
+    // the removal. The next real push would then shrink the blob with nothing
+    // left to acknowledge it with, which the service refuses.
+    //
+    // It still covers saved meals, for the narrower case the equality cannot
+    // reach even now: a blob a PEER already cleared compares equal to this
+    // device's shorter list, while this device's journal rows are the only
+    // remaining proof that the removal was performed rather than lost. A
+    // published removal is always a push, so the shrink is declared while the
+    // evidence still exists.
     if (remote !== null && payloadsEqual(merged, remote.payload) && merged.passThrough.published.length === 0) {
       await deps.applySnapshot({ merged: merged.snapshot, local });
       const settled = commitState({ deps, merged, blobVersion: baseVersion, at: now() });

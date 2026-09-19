@@ -1191,6 +1191,24 @@ function canonicalize(payload: StampedSnapshot) {
       foods: byId(payload.snapshot.foods),
       foodLogs: byId(payload.snapshot.foodLogs),
       weightEntries: byId(payload.snapshot.weightEntries),
+      // SAVED MEALS ARE INCLUDED, and they are the one pass-through collection
+      // that is. They travel: `mergeSnapshots` runs this device's list through
+      // `decidePassThrough` and publishes it, so the account holds them and a
+      // second device gets them back after an erase.
+      //
+      // Nothing else here can notice them. They are not merged, so they own no
+      // `meta.perEntity` key, and with the list absent from this function two
+      // payloads that differed only in a saved meal canonicalized identically:
+      // creating one, renaming one or deleting one left the cycle calling
+      // itself clean and the device sent nothing, until some unrelated change
+      // to a food log pushed the blob and carried the meal along with it. On a
+      // device that was erased or lost first, that meal was simply gone.
+      //
+      // Sorted through `byId` for the reason `foods` and `foodLogs` above are
+      // sorted: the order a list comes back from the store in is not a change,
+      // and two devices have to serialize the same set identically or every
+      // cycle reads as a difference and pushes forever.
+      savedMeals: byId(payload.snapshot.savedMeals),
       profile: payload.snapshot.profile,
       // The routine IS included, for the same reason `profile` beside it is
       // and `fasts` below is not: it is merged, so a device that changes it
@@ -1204,9 +1222,19 @@ function canonicalize(payload: StampedSnapshot) {
       // verbatim while its plaintext is unchanged, a fresh IV on every cycle
       // would make every boot write a new blob version.
       privateStore: payload.snapshot.privateStore,
-      // `fasts` is deliberately omitted, for the same reason `mergeSnapshots`
-      // passes it straight through: it is not synced, so a fast starting or
-      // ending must not be what makes this device burn a blob version.
+      // `fasts` is deliberately omitted, and that is the whole difference
+      // between them and the `savedMeals` above: a fast is not synced at all,
+      // so a fast starting or ending must not be what makes this device burn a
+      // blob version. `mergeSnapshots` passes the list through for the sake of
+      // the local device, never to tell the account anything, so there is
+      // nothing here for a push to carry.
+      //
+      // `pantryItems` is omitted for a reason of its own (M233/02): the pantry
+      // is a WORKING LIST of what is in this device's own fridge. It passes
+      // through from the local side with no `decidePassThrough` around it,
+      // because it writes no delete-journal rows and the guard would refuse it
+      // on every ordinary cycle. Photographing a shelf is not news for the
+      // account, and it must not write a blob version either.
       //
       // `activityMarks` and `awards` are omitted too, and for a third reason
       // again (M235/03): they ARE merged, so a new mark must make this device
