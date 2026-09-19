@@ -28,6 +28,8 @@ Two consequences of that removal are themselves decisions, and are the ones wort
 
 > **Update (2026-08-19):** that last table is gone too, and with it Drizzle, the connection pool, the data-migration runner, the CLI and the `DB_*` environment. The app is a single stateless container with no database at all — an empty environment is now a complete boot. Reintroducing persistence would need its own ADR. See ADR-0002 (superseded).
 
+> **Update (2026-09-19, M238):** "zero secrets" now means zero **required** secrets. The server can read one optional secret, `FOOD_DB_API_KEY`, a key for the LowCarbCheck food database that the server-side food lookups (`/api/food-matches`, `/api/nutrients`) send as a bearer token. It identifies the instance to LowCarbCheck, not a person, and it is not personal data. An empty environment is still a complete boot: without the key the lookups run on LowCarbCheck's anonymous tier. The key never reaches a browser and is logged only by its display prefix. Everything else in this decision stands.
+
 Device-local state that was keyed by account id is re-keyed onto a single sentinel owner (`ANONYMOUS_USER_ID`). In practice that was only the plate-photo cache, whose row keys are `${userId}::${logBatchId}`; `app/lib/local-store/photo-rekey.ts` moves those rows at boot, idempotently. The primary tracker store never had per-user namespacing, so it needed no migration.
 
 ## Alternatives Considered
