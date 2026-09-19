@@ -15,6 +15,12 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **Signing out no longer says everything reached the server when it has not.** The sign-out dialog counted a queue that nothing has written to since the diary moved onto the device. So it always said "Everything on this device has reached the server." above the box that erases the diary. It now counts the changes the sync has not sent yet and any estimate reports still waiting. It says so when it could not check. It also names what the check does not cover: fasts, saved meals, the pantry, and your sharing and research keys. Rows left in that retired queue are deleted, because nothing could ever send them.
 
+- **The app no longer says the server cannot read your diary.** The sync server keeps each account's recovery key, sealed, so that a password reset gives the diary back, and so the operator of an instance can technically open it. The data settings, the offline page, the recovery screen, the landing page, and the sharing screen still said the server could not read the copy it holds. So did the estimate report consent and the terms of service. They now say what is true. The terms described a forgotten passphrase as a permanent loss, and now describe the reset by email. The privacy policy already named the recovery key; its backup paragraph now also lists the recovery keys and estimate reports. The legal pages carry today's date. The consent step before you send a report about a wrong estimate was one of those strings, so its wording version moves with it, and a stored report still names the words the person read.
+
+### Docs
+
+- **The architecture docs describe what each server holds today.** They cover the one optional secret the app server can hold, and the food names it forwards to LowCarbCheck. They also cover the recovery key the sync server keeps, and the optional features of openplate-core. openplate-gateway is listed as archived.
+
 ## [0.34.1] - 2026-09-19
 
 ### Changed

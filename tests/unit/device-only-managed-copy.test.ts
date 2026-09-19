@@ -164,18 +164,25 @@ const TWINS = [
 ];
 
 /**
- * Does this string tell the reader that a server holds a copy it cannot read?
+ * Does this string tell the reader that the server holds an encrypted copy,
+ * without also claiming the server cannot read it?
  *
- * Three facts have to be present, because two of them alone are each a
- * different sentence: "the server" without "encrypted" is the frightening
- * half, and "encrypted" without "cannot read" is a technical detail rather
- * than a promise. Written to match either locale so one predicate governs both.
+ * Two facts have to be present, because either alone is a different sentence:
+ * "the server" without "encrypted" is the frightening half, and "encrypted"
+ * without "the server" says nothing about where the copy lives. A third
+ * check then rules out the false claim this predicate exists to guard
+ * against: since the recovery code escrow (M192), openplate-core keeps every
+ * account's recovery key sealed under its own secret, so the operator of a
+ * managed instance CAN, after a password reset, open that copy. "Cannot
+ * read" was therefore false, the copy was corrected to say so, and this
+ * predicate now fails if that false claim comes back. Written to match
+ * either locale so one predicate governs both.
  */
-function announcesTheLockedCopy(text: string): boolean {
+function announcesTheEncryptedCopy(text: string): boolean {
   return (
     /\bserver\b/i.test(text) &&
     /(encrypted|verschlüsselte)/i.test(text) &&
-    /(cannot read|nicht lesen)/i.test(text)
+    !/(cannot read|can't read|cannot open|nicht lesen|nur du|only you)/i.test(text)
   );
 }
 
@@ -183,8 +190,12 @@ function announcesTheLockedCopy(text: string): boolean {
  * The sentences that DENY a server copy. Each is a true thing an open instance
  * says, and a false thing on a managed one.
  *
- * "the key never leaves this device" is deliberately absent: it is about the
- * KEY, it is true in both modes, and it is the reason the copy is harmless.
+ * "the key never leaves this device" is deliberately absent: it used to be
+ * true in both modes, which was the reason nothing here needed to catch it.
+ * Since the recovery code escrow (M192), the operator's server holds a sealed
+ * recovery key too, so that claim is false on a managed instance for the same
+ * reason "cannot read" is, and the managed copy dropped the clause outright
+ * rather than leaving a denial behind for this list to catch.
  */
 const DEVICE_ONLY_DENIALS = [/keeps no copy/i, /no copy of/i, /keine Kopie/i, /nur auf diesem Gerät/i];
 
@@ -195,8 +206,8 @@ function deniesTheServerCopy(text: string): boolean {
 describe('each twin states the fact it was added to state', () => {
   for (const { path, en, de } of TWINS) {
     for (const [locale, pair] of Object.entries({ en, de })) {
-      it(`${path} announces the locked copy in ${locale}`, () => {
-        assert.ok(announcesTheLockedCopy(pair.managed), `${locale} ${path}: ${pair.managed}`);
+      it(`${path} announces the encrypted copy in ${locale}`, () => {
+        assert.ok(announcesTheEncryptedCopy(pair.managed), `${locale} ${path}: ${pair.managed}`);
       });
 
       // THE CONTROL. The predicate above is only worth running if it can fail,
@@ -204,7 +215,7 @@ describe('each twin states the fact it was added to state', () => {
       // "tidy-up" that pointed the managed key back at the open sentence would
       // pass every render assertion in this file and fail here.
       it(`the string ${path} replaces does not announce it, in ${locale}`, () => {
-        assert.ok(!announcesTheLockedCopy(pair.open), `the control string already says it: ${pair.open}`);
+        assert.ok(!announcesTheEncryptedCopy(pair.open), `the control string already says it: ${pair.open}`);
       });
 
       it(`${path} denies no server copy in ${locale}`, () => {

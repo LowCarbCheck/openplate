@@ -766,7 +766,7 @@
         "whatIsSentFiguresOnly": "Bu kayıtta fotoğraf yok, bu yüzden hiçbir fotoğraf gönderilmez. Bu kayıttaki değerleri gönderirsin, günlüğünden başka hiçbir şey gitmez. Bu sunucunun bir yöneticisi bunları okuyabilir.",
         "retentionWithPhoto": "Fotoğraf ve değerler {{days}} gün boyunca saklanır, ardından silinir.",
         "retentionFiguresOnly": "Değerler {{days}} gün boyunca saklanır, ardından silinir.",
-        "unencrypted": "Eşitlediğin diğer her şey buradan ayrılmadan önce bu cihazda şifrelenir. Yalnızca bu bildirim şifrelenmez. Gönderdiğin şeyler arasında sunucunun okuyabildiği tek şey budur.",
+        "unencrypted": "Eşitlediğin diğer her şey cihazından çıkmadan önce bu cihazda şifrelenir. Yalnızca bu rapor şifrelenmez, bu yüzden sunucuya okunabilir biçimde ulaşır.",
         "agree": "Kabul ediyorum, gönder",
         "decline": "Hayır, gönderme"
       }
@@ -1092,9 +1092,9 @@
       },
       "local": {
         "body": "Kaydettiğin her yiyecek doğrudan bu tarayıcının kendi depolama alanına yazılır. Sunucu hiçbir kopyayı tutmaz: veritabanı bulunmaz, bu nedenle sunucuda sızdırılabilecek hiçbir bilgin yoktur. İstediğin zaman tümünü tek bir dosya olarak dışa aktar.",
-        "bodyManaged": "Kaydettiğin her yiyecek doğrudan bu tarayıcının kendi depolama alanına yazılır. Sunucu bir veritabanında şifreli bir kopya tutar ama anahtar asla günlük ile birlikte iletilmediğinden bunu okuyamaz. İstediğin zaman tümünü tek bir dosya olarak dışa aktar.",
+        "bodyManaged": "Kaydettiğin her yiyecek bu tarayıcının kendi depolama alanına yazılır. Cihazından çıkmadan önce şifrelenen bir kopyası da sunucuda tutulur. Yönetici, bu kopyayı açabilen bir kurtarma anahtarına sahiptir. İstediğin zaman tüm verileri bir dosya olarak dışa aktar.",
         "title": "Günlük bu cihazda tutulur",
-        "titleManaged": "Günlük bu cihazda tutulur ve sunucudaki kopya kilitlidir"
+        "titleManaged": "Günlük bu cihazda tutulur, sunucu ise şifreli bir kopyasını saklar"
       },
       "noTracking": {
         "body": "openplate içinde analiz aracı, reklam ve takip pikseli yoktur. Uygulamada yaptığın hiçbir şey sayılmaz ve buna dair hiçbir bilgi bir yere gönderilmez.",
@@ -1137,7 +1137,7 @@
       "shotAlt": "Dizüstü bilgisayarda openplate günlüğü: gün için bir ilerleme halkası, altında listelenen kahvaltı, öğle ve akşam yemekleri ile her öğünün yanında karbonhidrat, protein, yağ ve kalori değerleri.",
       "shotCaption": "Örnek bir gün, kendi verilerin değil.",
       "tagline": "openplate, cihazında çalışan ve önceliği karbonhidrat olan bir besin günlüğüdür: tabağının fotoğrafını çek veya ne yediğini ara, günün durumunu gör.",
-      "taglineManaged": "openplate, işleticinin sunucusunda uçtan uca şifreli bir kopyasını tutan ve önceliği karbonhidrat olan bir besin günlüğüdür: tabağının fotoğrafını çek veya ne yediğini ara, günün durumunu gör.",
+      "taglineManaged": "openplate, yönetici sunucusunda şifreli bir kopya tutan ve karbonhidrat odaklı çalışan bir yemek günlüğüdür: tabak fotoğrafı çek veya ne yediğini ara, günün nasıl geçtiğini gör.",
       "ticks": "Hesap gerektirmez · Uygulama gibi kurulur · Çevrimdışı çalışır · Fotoğraf taramaları kendi yapay zeka anahtarını kullanır",
       "ticksManaged": "Yalnızca davetle · Uygulama gibi kurulur · Çevrimdışı çalışır · Fotoğraf tahminleri dahildir"
     },
@@ -1213,7 +1213,7 @@
       "title": "Yaklaşık bir dakikada çalışır"
     },
     "sync": {
-      "body": "Öğle yemeğini telefonuna kaydet, sonra dizüstü bilgisayarından haftaya bak. Eşitleme isteğe bağlıdır ve uçtan uca şifrelidir: şifreli metin bir openplate-core sunucusunda durur (bizimkinde ya da kendi çalıştırdığın bir sunucuda) ve anahtar sunucunun hiç görmediği bir paroladan üretildiği için o sunucuda bunun anahtarı yoktur.",
+      "body": "Öğle yemeğini telefonuna kaydet, sonra dizüstü bilgisayarından haftalık görünüme bak. Eşitleme isteğe bağlıdır. İster bizimkini kullan ister kendi sunucunu barındır, cihazın günlüğünü bir openplate-core sunucusuna göndermeden önce şifreler. Parolan cihazında kalır. Sunucu ayrıca mühürlü bir kurtarma anahtarı tutar. Bu anahtar parola sıfırlamayı sağlar, yani sunucu yöneticisi teknik olarak günlüğünü açabilir.",
       "link": "Hesap oluştur",
       "photos": "Tabak fotoğrafları oldukları yerde kalır. Hiçbir zaman eşitleme verisinin parçası olmazlar.",
       "shotAlt": "Bir telefonda, oturumu kapatılmış ve giriş bağlantısı içeren hesap ekranı.",
@@ -1464,7 +1464,7 @@
   "offline": {
     "heading": "Şu anda bağlantı yok",
     "body": "Günlüğün ve şimdiye kadar kaydettiğin her şey bu cihazda durur, bağlantı olmadan da çalışmaya devam eder. Yalnızca bu sayfa henüz yüklenemiyor: sayfa ya bu cihaz için yeni ya da internete erişmesi gerekiyor (fotoğraf taramak gibi). Tekrar çevrim içi olduğunda yeniden dene.",
-    "bodyManaged": "Günlüğün ve şimdiye kadar kaydettiğin her şey bu cihazda durur, bağlantı olmadan da çalışmaya devam eder. Sunucu, anahtar bu cihazdan hiç ayrılmadığı için okuyamadığı şifrelenmiş bir kopyayı tutar. Yalnızca bu sayfa henüz yüklenemiyor: sayfa ya bu cihaz için yeni ya da internete erişmesi gerekiyor (fotoğraf taramak gibi). Tekrar çevrim içi olduğunda yeniden dene.",
+    "bodyManaged": "Günlüğün ve şimdiye kadar kaydettiğin her şey bu cihazda durur, bağlantı yokken de çalışmaya devam eder. Sunucu da şifreli bir kopya tutar. Yalnızca bu sayfa henüz yüklenemiyor: sayfa ya bu cihazda yenidir ya da internete erişmesi gerekiyordur (fotoğraf taramak gibi). Çevrimiçi olduğunda tekrar dene.",
     "cta": "Günlüğüne git"
   },
   "onboarding": {
@@ -1663,7 +1663,7 @@
   "recover": {
     "firstDataAt": "Bu cihaz verileri ilk kez {{date}} tarihinde depoladı.",
     "lead": "Bu cihaz daha önce openplate verilerini depoladı, ancak bu tarayıcıdaki kopya şu anda boş. openplate her şeyi cihazında tutar ve bir sunucuya hiçbir şey göndermez, bu nedenle alabileceğimiz başka bir kopya yok.",
-    "leadManaged": "Bu cihaz daha önce openplate verilerini depoladı, ancak bu tarayıcıdaki kopya şu anda boş. Günlüğün ayrıca bu örneğin sunucusunda, yalnızca senin açabileceğin şekilde şifrelenmiş olarak tutulur. Yeniden giriş yap, bu cihaz onu geri getirir.",
+    "leadManaged": "Bu cihaz daha önce openplate verilerini depoladı, ancak bu tarayıcıdaki kopya şu anda boş. Günlüğün, bu kurulumun sunucusunda da tutulur ve yüklenmeden önce cihazında şifrelenmiştir. Tekrar giriş yaptığında bu cihaz verileri geri getirir.",
     "noBackupBody": "O zaman geri getirilecek hiçbir şey kalmadı, üzgünüz, dürüst cevap bu. Buradan yeni bir günlük başlatabilirsin, daha sonra bir yedek çıkarsa üzerine yine de geri yükleyebilirsin.",
     "noBackupHeading": "Yedeğin yoksa",
     "restoreBody": "Bir openplate yedeği (.json dosyası) indirdiysen buradan aç. İçindeki her şey bu cihaza geri gelir.",
@@ -2042,7 +2042,7 @@
   "settings": {
     "data": {
       "description": "Günlüğün bu cihazda tutulur: istediğin zaman tam bir kopyasını indir, platforma bağımlılık yok, talep edip bekleme yok.",
-      "descriptionManaged": "Günlüğün bu cihazda tutulur, sunucu ise okuyamadığı şifreli bir kopyayı saklar: anahtar bu cihazdan asla çıkmaz. İstediğin zaman tam bir kopyasını indir, platforma bağımlılık yok, talep edip bekleme yok.",
+      "descriptionManaged": "Günlüğün bu cihazda durur, sunucu ise yüklemeden önce şifrelenmiş bir kopyasını tutar. Yönetici, bu kopyanın şifresini çözebilen bir kurtarma anahtarı saklar, parola sıfırlama işlemi günlüğünü bu şekilde geri getirir. İstediğin zaman tam bir kopyayı indir, platforma bağımlılık yok, talep edip bekleme yok.",
       "downloadCsv": "Günlüğü indir (CSV)",
       "downloadJson": "Her şeyi indir (JSON)",
       "exportTitle": "Verilerin",
@@ -2380,7 +2380,7 @@
       "label": "Bir nabız paylaş"
     },
     "title": "Paylaşım",
-    "intro": "Bir diyetisyenin veya doktorun günlüğünü okumasına izin ver. Baştan sona şifreli kalır: anahtarının onlarınkine mühürlenmiş bir kopyasını alırlar ve sunucu hiçbir şeyi okuyamaz.",
+    "intro": "Bir diyetisyenin veya doktorun günlüğünü okumasına izin ver. Veriler aktarılırken şifreli kalır: anahtarının onların anahtarıyla mühürlenmiş bir kopyasını alırlar ve bu paylaşım sunucuya okuyabileceği yeni hiçbir şey vermez.",
     "unavailable": "Bu eşitleme sunucusu paylaşım sunmuyor. Burada hiçbir şey açılmadı ve hiçbir şey gönderilmedi.",
     "needsSession": "Paylaşım için hesap şifren gerekir. Önce bu cihazda oturum aç.",
     "needsSessionCta": "Hesaba git",
@@ -2562,7 +2562,7 @@
       "manage": "Hesap",
       "setUp": "Hesap oluştur"
     },
-    "promise": "Sunucu yalnızca okuyamadığı şifrelenmiş verileri saklar.",
+    "promise": "Sunucu, günlüğünü cihazından nasıl teslim aldıysa tam olarak o şekilde, şifreli olarak saklar.",
     "setup": {
       "complete": "Hesabın bu cihazda kuruldu.",
       "confirmLabel": "Parolayı onayla",

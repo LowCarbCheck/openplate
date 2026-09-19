@@ -24,7 +24,7 @@ import { z } from 'zod';
  * Dated rather than numbered so a reviewer holding a two-year-old report can
  * find the copy in the repository's history without a lookup table.
  */
-export const FEEDBACK_CONSENT_WORDING_VERSION = '2026-09-07';
+export const FEEDBACK_CONSENT_WORDING_VERSION = '2026-09-19';
 
 /**
  * WHAT USED TO BE HERE: `FEEDBACK_RETENTION_DAYS = 30`.

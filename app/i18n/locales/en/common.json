@@ -766,7 +766,7 @@
         "whatIsSentFiguresOnly": "This entry has no photo, so no photo is sent. You send the figures on this entry, and nothing else from your diary. An administrator of this server can read them.",
         "retentionWithPhoto": "The photo and the figures are kept for {{days}} days and are then deleted.",
         "retentionFiguresOnly": "The figures are kept for {{days}} days and are then deleted.",
-        "unencrypted": "Everything else you sync is encrypted on this device before it leaves. This one report is not. It is the only thing you send that the server can read.",
+        "unencrypted": "Everything else you sync is encrypted on this device before it leaves. This one report is not, so the server receives it in readable form.",
         "agree": "I agree, send it",
         "decline": "No, do not send"
       }
@@ -1092,9 +1092,9 @@
       },
       "local": {
         "body": "Every food you log is written to this browser’s own storage. The server keeps no copy: it has no database at all, so there is nothing of yours on it to leak. Export the lot as a file whenever you like.",
-        "bodyManaged": "Every food you log is written to this browser’s own storage. The server keeps an encrypted copy in a database and cannot read it, because the key never travels with the diary. Export the lot as a file whenever you like.",
+        "bodyManaged": "Every food you log is written to this browser’s own storage. The server also keeps a copy, encrypted before it leaves your device. The operator holds a recovery key that can open that copy. Export the lot as a file whenever you like.",
         "title": "The diary lives on this device",
-        "titleManaged": "The diary lives on this device, and the server's copy is locked"
+        "titleManaged": "The diary lives on this device, and the server keeps an encrypted copy"
       },
       "noTracking": {
         "body": "There is no analytics, no advertising and no tracking pixel in openplate. Nothing you do in the app is counted, and nothing about it is sent anywhere.",
@@ -1137,7 +1137,7 @@
       "shotAlt": "The openplate diary on a laptop: a progress ring for the day, with breakfast, lunch and dinner listed beneath it and each meal's carbs, protein, fat and calories alongside.",
       "shotCaption": "A sample day, not your data.",
       "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands.",
-      "taglineManaged": "openplate is a carb-first food diary that keeps an end-to-end-encrypted copy on the operator's server: photograph your plate or search for what you ate, and see where the day stands.",
+      "taglineManaged": "openplate is a carb-first food diary that keeps an encrypted copy on the operator's server: photograph your plate or search for what you ate, and see where the day stands.",
       "ticks": "No account · Installs like an app · Works offline · Photo scans use your own AI key",
       "ticksManaged": "Invitation only · Installs like an app · Works offline · Photo estimates included"
     },
@@ -1213,7 +1213,7 @@
       "title": "Working in about a minute"
     },
     "sync": {
-      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is opt-in and end-to-end encrypted: the ciphertext sits on an openplate-core server (ours, or one you run yourself) and that server has no key to it, because the key is made from a password it never sees.",
+      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is optional. Your device encrypts your diary before sending it to an openplate-core server, whether you use ours or host your own. Your password stays on your device. The server also holds a sealed recovery key. This allows password resets, and it means the server operator can technically open your diary.",
       "link": "Create an account",
       "photos": "Plate photos stay where they are. They are never part of a sync blob.",
       "shotAlt": "The account screen on a phone, signed out, with a link to sign in.",
@@ -1464,7 +1464,7 @@
   "offline": {
     "heading": "No connection right now",
     "body": "Your diary, and everything you've already logged, lives on this device and still works with no connection. This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like scanning a photo). Try again once you're back online.",
-    "bodyManaged": "Your diary, and everything you've already logged, lives on this device and still works with no connection. The server holds an encrypted copy it cannot read, because the key never leaves this device. This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like scanning a photo). Try again once you're back online.",
+    "bodyManaged": "Your diary, and everything you've already logged, lives on this device and still works with no connection. The server holds an encrypted copy too. This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like scanning a photo). Try again once you're back online.",
     "cta": "Go to your diary"
   },
   "onboarding": {
@@ -1663,7 +1663,7 @@
   "recover": {
     "firstDataAt": "This device first stored data on {{date}}.",
     "lead": "This device has stored openplate data before, but the copy in this browser is empty right now. openplate keeps everything on your device and sends nothing to a server, so there is no other copy for us to fetch.",
-    "leadManaged": "This device has stored openplate data before, but the copy in this browser is empty right now. Your diary is also held on the server for this instance, encrypted so that only you can open it. Sign in again and this device brings it back.",
+    "leadManaged": "This device has stored openplate data before, but the copy in this browser is empty right now. Your diary is also held on the server for this instance, encrypted on your device before it was uploaded. Sign in again and this device brings it back.",
     "noBackupBody": "Then there is nothing left to bring back, and we're sorry, that is the honest answer. You can start a fresh diary from here, and if a backup does turn up later you can still restore it on top.",
     "noBackupHeading": "If you have no backup",
     "restoreBody": "If you have downloaded an openplate backup (a .json file), open it here. Everything in it comes back onto this device.",
@@ -2042,7 +2042,7 @@
   "settings": {
     "data": {
       "description": "Your diary lives on this device: download a full copy anytime, no lock-in, no request-and-wait.",
-      "descriptionManaged": "Your diary lives on this device, and the server holds an encrypted copy it cannot read: the key never leaves this device. Download a full copy anytime, no lock-in, no request-and-wait.",
+      "descriptionManaged": "Your diary lives on this device, and the server holds a copy encrypted before upload. The operator keeps a recovery key that can decrypt that copy, which is how a password reset gets your diary back. Download a full copy anytime, no lock-in, no request-and-wait.",
       "downloadCsv": "Download diary (CSV)",
       "downloadJson": "Download everything (JSON)",
       "exportTitle": "Your data",
@@ -2380,7 +2380,7 @@
       "label": "Share a pulse"
     },
     "title": "Sharing",
-    "intro": "Let a dietician or doctor read your diary. It stays encrypted the whole way: they get a copy of your key sealed to theirs, and the server still cannot read a thing.",
+    "intro": "Let a dietician or doctor read your diary. It stays encrypted on the way: they get a copy of your key sealed to theirs, and sharing gives the server nothing new to read.",
     "unavailable": "This sync server does not offer sharing. Nothing here is switched on, and nothing was sent.",
     "needsSession": "Sharing needs your account password. Sign in on this device first.",
     "needsSessionCta": "Go to account",
@@ -2562,7 +2562,7 @@
       "manage": "Account",
       "setUp": "Create account"
     },
-    "promise": "The server only stores encrypted data it cannot read.",
+    "promise": "The server stores your diary encrypted, exactly as received from your device.",
     "setup": {
       "complete": "Your account is set up on this device.",
       "confirmLabel": "Confirm password",

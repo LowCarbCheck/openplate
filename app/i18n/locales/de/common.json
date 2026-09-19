@@ -766,7 +766,7 @@
         "whatIsSentFiguresOnly": "Dieser Eintrag enthält kein Foto, daher wird kein Foto gesendet. Du sendest die Werte dieses Eintrags und nichts anderes aus deinem Tagebuch. Eine Person mit Administratorrechten für diesen Server kann sie lesen.",
         "retentionWithPhoto": "Das Foto und die Werte werden für {{days}} Tage aufbewahrt und danach gelöscht.",
         "retentionFiguresOnly": "Die Werte werden für {{days}} Tage aufbewahrt und danach gelöscht.",
-        "unencrypted": "Alles andere, was du synchronisierst, wird auf diesem Gerät verschlüsselt, bevor es das Gerät verlässt. Diese eine Meldung ist es nicht. Sie ist das Einzige, was du sendest, das der Server lesen kann.",
+        "unencrypted": "Alles andere, was du synchronisierst, wird auf diesem Gerät verschlüsselt, bevor es das Gerät verlässt. Dieser einzelne Bericht wird nicht verschlüsselt, sodass der Server ihn in lesbarer Form erhält.",
         "agree": "Einverstanden, senden",
         "decline": "Nein, nicht senden"
       }
@@ -1092,9 +1092,9 @@
       },
       "local": {
         "body": "Jedes eingetragene Lebensmittel wird im lokalen Speicher dieses Browsers abgelegt. Der Server speichert keine Kopie: Er hat überhaupt keine Datenbank, also kann dort auch nichts von dir nach außen dringen. Exportiere jederzeit alles als Datei.",
-        "bodyManaged": "Jedes Lebensmittel, das du einträgst, landet direkt im Speicher dieses Browsers. Der Server speichert eine verschlüsselte Kopie in einer Datenbank und kann sie nicht lesen, weil der Schlüssel nie übertragen wird. Du kannst jederzeit alles als Datei exportieren.",
+        "bodyManaged": "Jedes erfasste Lebensmittel wird im Speicher dieses Browsers abgelegt. Der Server speichert ebenfalls eine Kopie, verschlüsselt, bevor sie dein Gerät verlässt. Der Betreiber besitzt einen Wiederherstellungsschlüssel, der diese Kopie öffnen kann. Exportiere alles jederzeit als Datei.",
         "title": "Das Tagebuch bleibt auf diesem Gerät",
-        "titleManaged": "Das Tagebuch liegt auf diesem Gerät, und die Serverkopie ist verschlüsselt"
+        "titleManaged": "Das Tagebuch liegt auf diesem Gerät, und der Server speichert eine verschlüsselte Kopie"
       },
       "noTracking": {
         "body": "In openplate steckt keine Analyse, keine Werbung und kein Zählpixel. Was du in der App tust, wird nicht gezählt, und es wird nichts darüber verschickt.",
@@ -1137,7 +1137,7 @@
       "shotAlt": "Das openplate-Tagebuch auf einem Laptop: ein Tagesring, darunter Frühstück, Mittag- und Abendessen, und neben jeder Mahlzeit ihre Kohlenhydrate, ihr Eiweiß, ihr Fett und ihre Kalorien.",
       "shotCaption": "Ein Beispieltag, nicht deine Daten.",
       "tagline": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das auf deinem Gerät bleibt: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht.",
-      "taglineManaged": "openplate ist ein Ernährungstagebuch mit Fokus auf Kohlenhydrate, das eine Ende-zu-Ende-verschlüsselte Kopie auf dem Server des Betreibers speichert: Fotografier deinen Teller oder such nach dem, was du gegessen hast, und sieh, wo der Tag steht.",
+      "taglineManaged": "openplate ist ein auf Kohlenhydrate ausgerichtetes Ernährungstagebuch, das eine verschlüsselte Kopie auf dem Server des Betreibers speichert: Fotografiere deinen Teller oder suche nach deinen Mahlzeiten, um deinen Tag im Blick zu behalten.",
       "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline · Foto-Scans laufen über deinen eigenen KI-Schlüssel",
       "ticksManaged": "Nur auf Einladung · Lässt sich wie eine App installieren · Funktioniert offline · Foto-Schätzungen inklusive"
     },
@@ -1213,7 +1213,7 @@
       "title": "In etwa einer Minute einsatzbereit"
     },
     "sync": {
-      "body": "Trage dein Mittagessen auf dem Smartphone ein und schau dir die Woche auf dem Laptop an. Die Synchronisation ist optional und Ende-zu-Ende-verschlüsselt: Die verschlüsselten Daten liegen auf einem openplate-core-Server (unserem oder deinem eigenen). Der Server hat keinen Schlüssel dazu, denn der Schlüssel entsteht aus einem Passwort, das er nie zu Gesicht bekommt.",
+      "body": "Erfasse dein Mittagessen auf dem Smartphone und prüfe die Woche dann auf dem Laptop. Die Synchronisierung ist optional. Dein Gerät verschlüsselt dein Tagebuch, bevor es an einen openplate-core-Server gesendet wird, ganz gleich, ob du unseren nutzt oder selbst hostest. Dein Passwort bleibt auf deinem Gerät. Der Server speichert zudem einen versiegelten Wiederherstellungsschlüssel. Dies ermöglicht das Zurücksetzen des Passworts und bedeutet technisch, dass der Serverbetreiber dein Tagebuch öffnen kann.",
       "link": "Konto erstellen",
       "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",
       "shotAlt": "Die Kontoansicht auf einem Smartphone, abgemeldet, mit einem Link zum Anmelden.",
@@ -1464,7 +1464,7 @@
   "offline": {
     "heading": "Gerade keine Verbindung",
     "body": "Dein Tagebuch und alles, was du bereits erfasst hast, liegt auf diesem Gerät und funktioniert auch ohne Verbindung. Nur diese eine Seite kann noch nicht geladen werden: Entweder ist sie neu auf diesem Gerät oder sie benötigt Internetzugriff (wie beim Scannen eines Fotos). Versuche es erneut, sobald du wieder online bist.",
-    "bodyManaged": "Dein Tagebuch und alle bisherigen Einträge liegen auf diesem Gerät und funktionieren auch ohne Verbindung. Der Server speichert eine verschlüsselte Kopie, die er nicht lesen kann, weil der Schlüssel dieses Gerät nie verlässt. Nur diese eine Seite lässt sich noch nicht laden: Entweder ist sie neu auf diesem Gerät, oder sie benötigt eine Internetverbindung (wie das Scannen eines Fotos). Versuch es wieder, sobald du online bist.",
+    "bodyManaged": "Dein Tagebuch und alles, was du bereits erfasst hast, verbleibt auf diesem Gerät und funktioniert auch ohne Verbindung. Der Server speichert ebenfalls eine verschlüsselte Kopie. Nur diese Seite lässt sich noch nicht laden: Entweder ist sie neu auf diesem Gerät oder sie benötigt Zugriff auf das Internet (wie beim Scannen eines Fotos). Versuche es erneut, sobald du wieder online bist.",
     "cta": "Zu deinem Tagebuch"
   },
   "onboarding": {
@@ -1663,7 +1663,7 @@
   "recover": {
     "firstDataAt": "Dieses Gerät hat am {{date}} zum ersten Mal Daten gespeichert.",
     "lead": "Auf diesem Gerät wurden bereits openplate-Daten gespeichert, aber die Kopie in diesem Browser ist gerade leer. openplate speichert alles auf deinem Gerät und sendet nichts an einen Server, daher gibt es keine andere Kopie, die wir abrufen könnten.",
-    "leadManaged": "Auf diesem Gerät wurden schon einmal openplate-Daten gespeichert, aber die Kopie in diesem Browser ist im Moment leer. Dein Tagebuch liegt auch auf dem Server dieser Instanz, so verschlüsselt, dass nur du es öffnen kannst. Melde dich wieder an, und dieses Gerät holt es zurück.",
+    "leadManaged": "Dieses Gerät hat bereits openplate-Daten gespeichert, aber die Kopie in diesem Browser ist derzeit leer. Dein Tagebuch liegt auch auf dem Server dieser Instanz, verschlüsselt auf deinem Gerät vor dem Hochladen. Melde dich erneut an, damit dieses Gerät die Daten wieder abruft.",
     "noBackupBody": "Dann lässt sich leider nichts wiederherstellen, und so ehrlich müssen wir sein. Du kannst hier ein neues Tagebuch beginnen, und falls später doch noch ein Backup auftaucht, kannst du es nachträglich einspielen.",
     "noBackupHeading": "Wenn du keine Sicherung hast",
     "restoreBody": "Wenn du eine openplate-Sicherung heruntergeladen hast (eine .json-Datei), öffne sie hier. Alles darin kommt zurück auf dieses Gerät.",
@@ -2042,7 +2042,7 @@
   "settings": {
     "data": {
       "description": "Dein Tagebuch wird auf diesem Gerät gespeichert: Lade dir jederzeit eine vollständige Kopie herunter, ohne Bindung, ohne Wartezeit.",
-      "descriptionManaged": "Dein Tagebuch liegt auf diesem Gerät, und der Server speichert eine verschlüsselte Kopie, die er nicht lesen kann: Der Schlüssel verlässt dieses Gerät nie. Lade jederzeit eine vollständige Kopie herunter, ohne Lock-in, ohne Anfragen und Warten.",
+      "descriptionManaged": "Dein Tagebuch liegt auf diesem Gerät, und der Server speichert eine vor dem Hochladen verschlüsselte Kopie. Der Betreiber besitzt einen Wiederherstellungsschlüssel, der diese Kopie entschlüsseln kann, wodurch ein Passwort-Reset dein Tagebuch wiederherstellt. Lade jederzeit eine vollständige Kopie herunter, ohne Lock-in und ohne Wartezeiten.",
       "downloadCsv": "Tagebuch laden (CSV)",
       "downloadJson": "Alles laden (JSON)",
       "exportTitle": "Deine Daten",
@@ -2380,7 +2380,7 @@
       "label": "Ein Lebenszeichen teilen"
     },
     "title": "Teilen",
-    "intro": "Lass deine Ernährungsberatung oder deinen Arzt dein Tagebuch einsehen. Es bleibt durchgehend verschlüsselt: Sie erhalten eine mit ihrem Key versiegelte Kopie deines Keys, und der Server kann weiterhin nichts mitlesen.",
+    "intro": "Gib Ernährungsberatern oder Ärzten Lesezugriff auf dein Tagebuch. Bei der Übertragung bleibt es verschlüsselt: Sie erhalten eine Kopie deines Schlüssels, versiegelt mit ihrem eigenen, und durch das Teilen erfährt der Server nichts Neues.",
     "unavailable": "Dieser Sync-Server bietet kein Teilen an. Hier ist nichts eingeschaltet, und es wurde nichts gesendet.",
     "needsSession": "Fürs Teilen brauchst du dein Passwort. Melde dich zuerst auf diesem Gerät an.",
     "needsSessionCta": "Zum Konto",
@@ -2562,7 +2562,7 @@
       "manage": "Konto",
       "setUp": "Konto erstellen"
     },
-    "promise": "Der Server speichert nur verschlüsselte Daten, die er nicht lesen kann.",
+    "promise": "Der Server speichert dein Tagebuch verschlüsselt, exakt so, wie er es von deinem Gerät empfangen hat.",
     "setup": {
       "complete": "Dein Konto ist auf diesem Gerät eingerichtet.",
       "confirmLabel": "Passwort bestätigen",

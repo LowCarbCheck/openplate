@@ -115,7 +115,7 @@ describe('the consent wording version is pinned to the wording', () => {
 
     assert.equal(
       digest,
-      'dbc5529a3e3e4666',
+      'a827a4293f4aa69e',
       `The consent copy changed. Bump FEEDBACK_CONSENT_WORDING_VERSION (currently ${FEEDBACK_CONSENT_WORDING_VERSION}) and put the new digest here.`,
     );
   });

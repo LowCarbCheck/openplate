@@ -766,7 +766,7 @@
         "whatIsSentFiguresOnly": "Cette entrée n'a pas de photo, donc aucune photo n'est envoyée. Tu envoies les chiffres de cette entrée, et rien d'autre de ton journal. La personne qui administre ce serveur peut les lire.",
         "retentionWithPhoto": "La photo et les chiffres sont conservés pendant {{days}} jours, puis supprimés.",
         "retentionFiguresOnly": "Les chiffres sont conservés pendant {{days}} jours, puis supprimés.",
-        "unencrypted": "Tout le reste de ce que tu synchronises est chiffré sur cet appareil avant son départ. Ce signalement ne l'est pas. C'est la seule chose que tu envoies que le serveur peut lire.",
+        "unencrypted": "Tout le reste de ce que tu synchronises est chiffré sur cet appareil avant son départ. Ce rapport-ci ne l'est pas, le serveur le reçoit donc sous forme lisible.",
         "agree": "D'accord, envoyer",
         "decline": "Non, ne pas envoyer"
       }
@@ -1092,9 +1092,9 @@
       },
       "local": {
         "body": "Chaque aliment enregistré est stocké directement dans la mémoire de ce navigateur. Le serveur n'en garde aucune copie : il n'a aucune base de données, donc aucune de tes données ne peut y fuiter. Exporte l'ensemble sous forme de fichier quand tu le souhaites.",
-        "bodyManaged": "Chaque aliment que tu enregistres est écrit dans le stockage propre de ce navigateur. Le serveur conserve une copie chiffrée dans une base de données et ne peut pas la lire, car la clé ne voyage jamais avec le journal. Exporte l'ensemble sous la forme d'un fichier quand tu veux.",
+        "bodyManaged": "Chaque aliment que tu enregistres est écrit dans le stockage local de ce navigateur. Le serveur en garde aussi une copie, chiffrée avant de quitter ton appareil. L'opérateur détient une clé de récupération capable d'ouvrir cette copie. Exporte le tout sous forme de fichier quand tu veux.",
         "title": "Le journal réside sur cet appareil",
-        "titleManaged": "Le journal réside sur cet appareil, et la copie du serveur est verrouillée"
+        "titleManaged": "Le journal reste sur cet appareil, et le serveur en conserve une copie chiffrée"
       },
       "noTracking": {
         "body": "Il n'y a aucun outil de mesure d'audience, aucune publicité et aucun pixel de suivi dans openplate. Rien de ce que tu fais dans l'application n'est comptabilisé, et aucune information n'est envoyée nulle part.",
@@ -1137,7 +1137,7 @@
       "shotAlt": "Le journal openplate sur un ordinateur portable : un anneau de progression pour la journée, avec le petit-déjeuner, le déjeuner et le dîner listés en dessous, et les glucides, protéines, lipides et calories de chaque repas à côté.",
       "shotCaption": "Un exemple de journée, pas tes données.",
       "tagline": "openplate est un journal alimentaire axé d'abord sur les glucides qui réside sur ton appareil : prends une photo d'assiette ou recherche ce que tu as mangé, et observe où en est ta journée.",
-      "taglineManaged": "openplate est un journal alimentaire axé sur les glucides qui conserve une copie chiffrée de bout en bout sur le serveur de l'opérateur : prends une photo d'assiette ou recherche ce que tu as mangé, et regarde où en est ta journée.",
+      "taglineManaged": "openplate est un journal alimentaire axé sur les glucides qui conserve une copie chiffrée sur le serveur de l'opérateur : prends une photo d'assiette ou recherche ce que tu as mangé, puis regarde le bilan du jour.",
       "ticks": "Sans compte · S'installe comme une application · Fonctionne hors ligne · L'analyse des photos utilise ta propre clé d'IA",
       "ticksManaged": "Sur invitation uniquement · S'installe comme une application · Fonctionne hors ligne · Estimations par photo incluses"
     },
@@ -1213,7 +1213,7 @@
       "title": "Opérationnel en une minute environ"
     },
     "sync": {
-      "body": "Saisis ton déjeuner sur ton téléphone, puis consulte la semaine sur ton ordinateur. La synchronisation est facultative et chiffrée de bout en bout : le texte chiffré réside sur un serveur openplate-core (le nôtre, ou un que tu héberges toi-même), et ce serveur n'a aucune clé de déchiffrement, car la clé est générée à partir d'un mot de passe qu'il ne voit jamais.",
+      "body": "Enregistre ton déjeuner sur ton téléphone, puis consulte la semaine sur ton ordinateur portable. La synchronisation reste facultative. Ton appareil chiffre ton journal avant de l'envoyer à un serveur openplate-core, que tu utilises le nôtre ou héberges le tien. Ton mot de passe ne quitte pas ton appareil. Le serveur conserve aussi une clé de récupération scellée. Cela permet de réinitialiser le mot de passe, et cela signifie que l'opérateur du serveur peut techniquement ouvrir ton journal.",
       "link": "Créer un compte",
       "photos": "Les photos d'assiette ne bougent pas d'ici. Elles ne font jamais partie d'un blob de synchronisation.",
       "shotAlt": "L'écran de compte sur un téléphone, déconnecté, avec un lien pour se connecter.",
@@ -1464,7 +1464,7 @@
   "offline": {
     "heading": "Aucune connexion pour le moment",
     "body": "Ton journal, et tout ce que tu y as déjà consigné, reste sur cet appareil et fonctionne toujours hors ligne. Seule cette page ne peut pas encore être chargée : soit elle est nouvelle sur cet appareil, soit elle doit accéder à Internet (comme pour analyser une photo). Réessaie une fois connecté.",
-    "bodyManaged": "Ton journal, et tout ce que tu y as déjà consigné, reste sur cet appareil et fonctionne toujours hors ligne. Le serveur conserve une copie chiffrée qu'il ne peut pas lire, car la clé ne quitte jamais cet appareil. Seule cette page ne peut pas encore être chargée : soit elle est nouvelle sur cet appareil, soit elle doit accéder à Internet (comme pour analyser une photo). Réessaie une fois connecté.",
+    "bodyManaged": "Ton journal, ainsi que tout ce que tu as déjà consigné, réside sur cet appareil et fonctionne toujours hors ligne. Le serveur en détient aussi une copie chiffrée. Cette page-ci ne peut simplement pas encore se charger : soit elle est nouvelle sur cet appareil, soit elle doit accéder à Internet (comme pour analyser une photo). Réessaie une fois que tu as retrouvé la connexion.",
     "cta": "Accéder à ton journal"
   },
   "onboarding": {
@@ -1663,7 +1663,7 @@
   "recover": {
     "firstDataAt": "Cet appareil a stocké des données pour la première fois le {{date}}.",
     "lead": "Cet appareil a déjà stocké des données openplate, mais la copie présente dans ce navigateur est vide actuellement. openplate garde tout sur ton appareil et n'envoie rien à un serveur, il n'existe donc aucune autre copie à récupérer.",
-    "leadManaged": "Cet appareil a déjà stocké des données openplate, mais la copie présente dans ce navigateur est vide actuellement. Ton journal est aussi conservé sur le serveur de cette instance, chiffré de sorte que toi seul puisses l'ouvrir. Reconnecte-toi et cet appareil le récupère.",
+    "leadManaged": "Cet appareil a déjà stocké des données openplate, mais la copie de ce navigateur est vide pour l'instant. Ton journal est également conservé sur le serveur de cette instance, chiffré sur ton appareil avant son téléversement. Reconnecte-toi pour que cet appareil le récupère.",
     "noBackupBody": "Alors il ne reste rien à récupérer, et nous en sommes désolés, c'est la stricte vérité. Tu peux démarrer un nouveau journal à partir d'ici, et si une sauvegarde réapparaît plus tard, tu pourras toujours la restaurer par-dessus.",
     "noBackupHeading": "Si tu n'as pas de sauvegarde",
     "restoreBody": "Si tu as téléchargé une sauvegarde openplate (un fichier .json), ouvre-la ici. Tout son contenu est réimporté sur cet appareil.",
@@ -2042,7 +2042,7 @@
   "settings": {
     "data": {
       "description": "Ton journal reste sur cet appareil : télécharge une copie complète à tout moment, sans verrouillage, sans attente d'export.",
-      "descriptionManaged": "Ton journal reste sur cet appareil, et le serveur conserve une copie chiffrée qu'il ne peut pas lire : la clé ne quitte jamais cet appareil. Télécharge une copie complète à tout moment, sans verrouillage, sans attente d'export.",
+      "descriptionManaged": "Ton journal réside sur cet appareil, et le serveur conserve une copie chiffrée avant le téléversement. L'opérateur détient une clé de récupération qui peut déchiffrer cette copie, ce qui permet de récupérer ton journal après réinitialisation du mot de passe. Télécharge une copie complète à tout moment, sans verrouillage ni demande en attente.",
       "downloadCsv": "Télécharger le journal (CSV)",
       "downloadJson": "Tout télécharger (JSON)",
       "exportTitle": "Tes données",
@@ -2380,7 +2380,7 @@
       "label": "Partager un aperçu"
     },
     "title": "Partage",
-    "intro": "Permets à un diététicien ou à un médecin de lire ton journal. Il reste chiffré de bout en bout : ils reçoivent une copie de ta clé scellée avec la leur, et le serveur ne peut toujours rien lire.",
+    "intro": "Permets à un diététicien ou à un médecin de lire ton journal. Il reste chiffré pendant le transit : la personne reçoit une copie de ta clé scellée avec la sienne, et ce partage ne donne rien de nouveau à lire au serveur.",
     "unavailable": "Ce serveur de synchronisation ne propose pas le partage. Rien n'est activé ici, et rien n'a été envoyé.",
     "needsSession": "Le partage nécessite le mot de passe de ton compte. Connecte-toi d'abord sur cet appareil.",
     "needsSessionCta": "Aller au compte",
@@ -2562,7 +2562,7 @@
       "manage": "Compte",
       "setUp": "Créer un compte"
     },
-    "promise": "Le serveur stocke uniquement des données chiffrées qu'il ne peut pas lire.",
+    "promise": "Le serveur stocke ton journal sous forme de texte chiffré, exactement comme ton appareil l'a envoyé.",
     "setup": {
       "complete": "Ton compte est configuré sur cet appareil.",
       "confirmLabel": "Confirme le mot de passe",

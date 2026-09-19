@@ -810,11 +810,11 @@ describe('the hero paragraph says where the diary lives, and it is right twice',
  * The half of the managed card title the open title does not already contain.
  *
  * "The diary lives on this device" is a strict PREFIX of "The diary lives on
- * this device, and the server's copy is locked", so `!renders(open title)` on
- * the managed page can never fail: the managed page renders the open title as
- * part of its own. The TAIL after the shared opening is what actually tells
- * the two cards apart, and it is sliced out of the catalog rather than typed
- * here, so a rewrite of either string moves this with it.
+ * this device, and the server keeps an encrypted copy", so `!renders(open
+ * title)` on the managed page can never fail: the managed page renders the
+ * open title as part of its own. The TAIL after the shared opening is what
+ * actually tells the two cards apart, and it is sliced out of the catalog
+ * rather than typed here, so a rewrite of either string moves this with it.
  */
 function localTitleTail(): string {
   const open = enCommon.landing.features.local.title;
@@ -834,7 +834,7 @@ describe('the storage card describes the storage this instance actually has', ()
   // three cards down the same grid discloses that copy and the operator's
   // recovery key, so before this branch a managed visitor read two opposite
   // facts about one server without scrolling.
-  it('names the locked copy on a managed instance', () => {
+  it('names the encrypted copy on a managed instance', () => {
     assert.ok(rendersCopy(MANAGED, enCommon.landing.features.local.titleManaged), MANAGED.slice(0, 400));
     assert.ok(rendersCopy(MANAGED, enCommon.landing.features.local.bodyManaged), MANAGED.slice(0, 400));
     assert.ok(!rendersCopy(MANAGED, enCommon.landing.features.local.body), 'the no-database body survived');
@@ -856,14 +856,21 @@ describe('the storage card describes the storage this instance actually has', ()
     assert.match(enCommon.landing.features.local.body, /no database at all/);
     assert.ok(!/no database at all/.test(enCommon.landing.features.local.bodyManaged));
     // And the managed body has to state the fact it exists to state, which is
-    // three things at once: there IS a copy, it is encrypted, and the server
-    // cannot open it. Asserted as meaning rather than as the sentence, because
-    // the sentence has already been rewritten once: it arrived as two clauses
-    // saying the same thing twice and was merged into one.
+    // three things at once: there IS a copy, it is encrypted, and the
+    // operator holds a recovery key that can open it. Asserted as meaning
+    // rather than as the sentence, because the sentence has already been
+    // rewritten once: it arrived as two clauses saying the same thing twice
+    // and was merged into one, and then rewritten again when "cannot open
+    // it" turned out to be false (the recovery code escrow, M192, gives the
+    // operator a key that can).
     const managed = enCommon.landing.features.local.bodyManaged;
     assert.match(managed, /\bserver\b/i);
     assert.match(managed, /encrypted/i);
-    assert.match(managed, /cannot read it/i);
+    assert.match(managed, /recovery key/i);
+    assert.ok(
+      !/cannot read|cannot open/i.test(managed),
+      'the managed body denies the recovery key it exists to announce',
+    );
     assert.ok(!/keeps no copy/i.test(managed), 'the managed body denies the copy it exists to announce');
   });
 });

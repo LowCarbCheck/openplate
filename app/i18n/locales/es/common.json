@@ -766,7 +766,7 @@
         "whatIsSentFiguresOnly": "Esta entrada no tiene foto, por lo que no se envía ninguna imagen. Envías las cifras de esta entrada y nada más de tu diario. Un administrador de este servidor puede leerlas.",
         "retentionWithPhoto": "La foto y las cifras se conservan durante {{days}} días y luego se eliminan.",
         "retentionFiguresOnly": "Las cifras se conservan durante {{days}} días y luego se eliminan.",
-        "unencrypted": "Todo lo demás que sincronizas se cifra en este dispositivo antes de salir. Este informe en particular no. Es lo único que envías que el servidor puede leer.",
+        "unencrypted": "Todo lo demás que sincronizas se cifra en este dispositivo antes de salir. Este informe en concreto no se cifra, por lo que el servidor lo recibe en texto legible.",
         "agree": "Acepto, enviarlo",
         "decline": "No, no enviar"
       }
@@ -1092,9 +1092,9 @@
       },
       "local": {
         "body": "Cada alimento que registras se guarda en el almacenamiento de este navegador. El servidor no conserva ninguna copia: no tiene base de datos alguna, por lo que no hay nada tuyo que pueda filtrarse. Exporta todo en un archivo cuando quieras.",
-        "bodyManaged": "Cada alimento que registras se guarda en el almacenamiento de este navegador. El servidor guarda una copia cifrada en una base de datos y no puede leerla, ya que la clave nunca viaja con el diario. Exporta todo en un archivo cuando quieras.",
+        "bodyManaged": "Cada alimento que registras se guarda en el almacenamiento de este navegador. El servidor también guarda una copia, cifrada antes de salir de tu dispositivo. Quien opera el servidor tiene una clave de recuperación que puede abrir esa copia. Exporta todo en un archivo cuando quieras.",
         "title": "El diario reside en este dispositivo",
-        "titleManaged": "El diario reside en este dispositivo, y la copia del servidor está bloqueada"
+        "titleManaged": "El diario reside en este dispositivo, y el servidor guarda una copia cifrada"
       },
       "noTracking": {
         "body": "No hay analítica, ni publicidad ni píxeles de seguimiento en openplate. Nada de lo que haces en la aplicación se contabiliza, y nada relacionado con ello se envía a ningún sitio.",
@@ -1137,7 +1137,7 @@
       "shotAlt": "El diario de openplate en un portátil: un anillo de progreso para el día, con el desayuno, el almuerzo y la cena listados debajo, y los carbohidratos, proteínas, grasas y calorías de cada comida al lado.",
       "shotCaption": "Un día de ejemplo, no son tus datos.",
       "tagline": "openplate es un diario de comida centrado en los carbohidratos que reside en tu dispositivo: saca una foto de tu plato o busca lo que has comido, y consulta el balance del día.",
-      "taglineManaged": "openplate es un diario de comida centrado en los carbohidratos que guarda una copia cifrada de extremo a extremo en el servidor del operador: saca una foto de tu plato o busca lo que has comido, y consulta el balance del día.",
+      "taglineManaged": "openplate es un diario de comidas centrado en los carbohidratos que guarda una copia cifrada en el servidor del operador: saca una foto del plato o busca lo que has comido para ver cómo va el día.",
       "ticks": "Sin cuenta · Se instala como una app · Funciona sin conexión · El escaneo de fotos usa tu propia clave de IA",
       "ticksManaged": "Solo con invitación · Se instala como una app · Funciona sin conexión · Estimaciones por foto incluidas"
     },
@@ -1213,7 +1213,7 @@
       "title": "Listo en cerca de un minuto"
     },
     "sync": {
-      "body": "Apunta el almuerzo en el teléfono y mira la semana en el portátil. La sincronización es opcional y tiene cifrado de extremo a extremo: el texto cifrado reside en un servidor de openplate-core (el nuestro o uno que gestiones tú) y ese servidor no tiene la clave, porque esta se genera a partir de una contraseña que nunca llega a ver.",
+      "body": "Registra el almuerzo en el teléfono y consulta la semana en el portátil. La sincronización es opcional. Tu dispositivo cifra el diario antes de enviarlo a un servidor openplate-core, ya sea el nuestro o uno que alojes tú. Tu contraseña no sale de tu dispositivo. El servidor también guarda una clave de recuperación sellada. Esto permite restablecer contraseñas y significa que, a nivel técnico, quien opera el servidor puede abrir tu diario.",
       "link": "Crear una cuenta",
       "photos": "Las fotos del plato se quedan donde están. Nunca forman parte del bloque de sincronización.",
       "shotAlt": "La pantalla de cuenta en un teléfono, con la sesión cerrada y un enlace para iniciar sesión.",
@@ -1464,7 +1464,7 @@
   "offline": {
     "heading": "Sin conexión ahora mismo",
     "body": "Tu diario, y todo lo que ya registraste, reside en este dispositivo y sigue funcionando sin conexión. Solo esta página no se puede cargar todavía: o es nueva en este dispositivo, o necesita acceder a internet (como al escanear una foto). Inténtalo de nuevo cuando vuelvas a tener conexión.",
-    "bodyManaged": "Tu diario, y todo lo que ya registraste, reside en este dispositivo y sigue funcionando sin conexión. El servidor conserva una copia cifrada que no puede leer, ya que la clave nunca sale de este dispositivo. Solo esta página no se puede cargar todavía: o es nueva en este dispositivo, o necesita acceder a internet (como al escanear una foto). Inténtalo de nuevo cuando vuelvas a tener conexión.",
+    "bodyManaged": "Tu diario, y todo lo que ya has registrado, se almacena en este dispositivo y sigue funcionando sin conexión. El servidor también conserva una copia cifrada. Esta página en concreto no se puede cargar todavía: o bien es nueva en este dispositivo, o necesita conexión a internet (como al procesar una foto). Vuelve a intentarlo cuando tengas conexión.",
     "cta": "Ir a tu diario"
   },
   "onboarding": {
@@ -1663,7 +1663,7 @@
   "recover": {
     "firstDataAt": "Este dispositivo guardó datos por primera vez el {{date}}.",
     "lead": "Este dispositivo ya ha guardado datos de openplate anteriormente, pero la copia de este navegador está vacía ahora mismo. openplate guarda todo en tu dispositivo y no envía nada a ningún servidor, por lo que no tenemos ninguna otra copia que recuperar.",
-    "leadManaged": "Este dispositivo ya ha guardado datos de openplate anteriormente, pero la copia de este navegador está vacía ahora mismo. Tu diario también se guarda en el servidor de esta instancia, cifrado para que solo tú puedas abrirlo. Inicia sesión de nuevo y este dispositivo lo recuperará.",
+    "leadManaged": "Este dispositivo ya ha almacenado datos de openplate, pero la copia de este navegador está vacía en este momento. Tu diario también se guarda en el servidor de esta instancia, cifrado en tu dispositivo antes de subirlo. Inicia sesión de nuevo y este dispositivo lo recuperará.",
     "noBackupBody": "Entonces no queda nada que recuperar, y sintiéndolo mucho, esa es la respuesta sincera. Puedes empezar un diario nuevo desde aquí, y si más adelante aparece una copia de seguridad, podrás restaurarla encima.",
     "noBackupHeading": "Si no tienes copia de seguridad",
     "restoreBody": "Si has descargado una copia de seguridad de openplate (un archivo .json), ábrela aquí. Todo su contenido volverá a este dispositivo.",
@@ -2042,7 +2042,7 @@
   "settings": {
     "data": {
       "description": "Tu diario reside en este dispositivo: descarga una copia completa cuando quieras, sin ataduras, sin pedirla ni esperar.",
-      "descriptionManaged": "Tu diario reside en este dispositivo, y el servidor almacena una copia cifrada que no puede leer: la clave nunca sale de este dispositivo. Descarga una copia completa en cualquier momento, sin permanencia ni esperas tras solicitarla.",
+      "descriptionManaged": "Tu diario se encuentra en este dispositivo, y el servidor guarda una copia cifrada antes de subirla. Quien opera el servidor conserva una clave de recuperación con la que puede descifrar esa copia, que es la forma de recuperar tu diario si restableces la contraseña. Descarga una copia completa en cualquier momento, sin bloqueos ni esperas.",
       "downloadCsv": "Descargar diario (CSV)",
       "downloadJson": "Descargar todo (JSON)",
       "exportTitle": "Tus datos",
@@ -2380,7 +2380,7 @@
       "label": "Compartir un pulso"
     },
     "title": "Compartir",
-    "intro": "Permite que un dietista o médico lea tu diario. Permanece cifrado durante todo el trayecto: ellos reciben una copia de tu clave sellada con la suya, y el servidor sigue sin poder leer nada.",
+    "intro": "Permite que un dietista o médico lea tu diario. La información viaja siempre cifrada: recibe una copia de tu clave sellada con la suya, y compartir no da al servidor acceso a nada nuevo.",
     "unavailable": "Este servidor de sincronización no ofrece la función de compartir. Aquí no hay nada activado y no se envió nada.",
     "needsSession": "Para compartir necesitas la contraseña de tu cuenta. Inicia sesión en este dispositivo primero.",
     "needsSessionCta": "Ir a la cuenta",
@@ -2562,7 +2562,7 @@
       "manage": "Cuenta",
       "setUp": "Crear cuenta"
     },
-    "promise": "El servidor solo almacena datos cifrados que no puede leer.",
+    "promise": "El servidor guarda tu diario cifrado, exactamente como lo recibe desde tu dispositivo.",
     "setup": {
       "complete": "Tu cuenta está configurada en este dispositivo.",
       "confirmLabel": "Confirmar contraseña",

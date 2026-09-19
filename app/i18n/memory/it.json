@@ -1840,6 +1840,13 @@
     "at": "2026-09-18",
     "it": "Hai registrato il tuo primo alimento."
   },
+  "190211f91253a407": {
+    "en": "The hosted instance runs on Hetzner infrastructure in the EU. As described above, the server database holds sync account records, encrypted sync blobs, recovery keys, and any estimate reports you choose to send. This database is included in our routine encrypted backups, stored in Amazon S3 in the EU (eu-central-1 region) for disaster recovery. Encrypted sync blobs remain encrypted in these backups. A backup gives us no more visibility into your data than the live database does. Backups are retained on a rolling schedule and rotate out over time.",
+    "path": "legal:privacy.s8Body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "L'istanza ospitata è eseguita su infrastruttura Hetzner nell'UE. Come descritto sopra, il database del server conserva i record degli account di sincronizzazione, i blob di sincronizzazione cifrati, le chiavi di recupero e gli eventuali report di stima che sceglie di inviare. Questo database è incluso nei nostri backup cifrati ordinari, archiviati su Amazon S3 nell'UE (regione eu-central-1) per il ripristino di emergenza. I blob di sincronizzazione cifrati rimangono cifrati in questi backup. Un backup non ci offre alcuna visibilità sui Suoi dati superiore a quella del database di produzione. I backup vengono conservati secondo una pianificazione a rotazione e vengono sovrascritti nel tempo."
+  },
   "191aa03f895b42ef": {
     "en": "Nothing has been contributed to this study yet.",
     "path": "common:research.console.cohort.empty",
@@ -3275,6 +3282,13 @@
     "at": "2026-09-14",
     "it": "Imposta una password e il tuo diario è pronto."
   },
+  "2d8bc6c654cca658": {
+    "en": "The server stores your diary encrypted, exactly as received from your device.",
+    "path": "common:sync.promise",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Il server conserva il tuo diario cifrato, esattamente come ricevuto dal tuo dispositivo."
+  },
   "2d9e7000e25ed570": {
     "en": "Adding {{count}} foods · ~{{netCarbs}} g net carbs",
     "path": "common:scan.review.addingSummary_other",
@@ -3484,6 +3498,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Questa istanza non misura alcun dato. Su di essa non e in esecuzione alcun programma analitico, non vengono raccolti dati di utilizzo e nessuna terza parte riceve informazioni su di Lei. Non vi e nulla a cui opporsi e nessun meccanismo di rifiuto da attivare."
+  },
+  "3130833cbab4bf42": {
+    "en": "openplate is a food-tracking tool. It is built local-first. Your foods, food logs, weight entries, and goals are written in your browser on your own device. On this instance, your account also keeps an encrypted copy of that data on our server. This ensures the same diary reaches your other devices and survives a reinstall. We hold that copy as ciphertext. We also hold a recovery key that lets a password reset restore your diary, as explained in the Privacy Policy. AI plate identification is included with your account rather than purchased from a third-party provider.",
+    "path": "legal:terms.s2BodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "openplate è uno strumento per il tracciamento del cibo. È sviluppato con un'architettura local-first. I Suoi alimenti, i registri alimentari, i dati sul peso e gli obiettivi vengono scritti nel Suo browser sul Suo dispositivo. Su questa istanza, il Suo account conserva anche una copia cifrata di tali dati sul nostro server. Ciò garantisce che lo stesso diario raggiunga gli altri Suoi dispositivi e sopravviva a una reinstallazione. Conserviamo tale copia come testo cifrato. Conserviamo inoltre una chiave di recupero che consente a una reimpostazione della password di ripristinare il Suo diario, come spiegato nell'Informativa sulla privacy. L'identificazione del piatto tramite IA è inclusa nel Suo account anziché essere acquistata da un fornitore terzo."
   },
   "317021ec4d860c9c": {
     "en": "Macros unknown, logged as name only.",
@@ -3715,6 +3736,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Le ultime 13 settimane. Più il quadrato è scuro, più obiettivi hai raggiunto quel giorno."
+  },
+  "3598065d9cc00030": {
+    "en": "This device has stored openplate data before, but the copy in this browser is empty right now. Your diary is also held on the server for this instance, encrypted on your device before it was uploaded. Sign in again and this device brings it back.",
+    "path": "common:recover.leadManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Questo dispositivo ha già memorizzato dati di openplate in passato, ma la copia in questo browser al momento è vuota. Il tuo diario è conservato anche sul server di questa istanza, cifrato sul tuo dispositivo prima di essere caricato. Accedi di nuovo e questo dispositivo lo recupererà."
   },
   "35b913cf464e81c5": {
     "en": "Weight",
@@ -4423,6 +4451,13 @@
     "at": "2026-09-14",
     "it": "Condivisi con te · openplate"
   },
+  "410757a9555cbbfe": {
+    "en": "Every food you log is written to this browser’s own storage. The server also keeps a copy, encrypted before it leaves your device. The operator holds a recovery key that can open that copy. Export the lot as a file whenever you like.",
+    "path": "common:landing.features.local.bodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Ogni alimento che registri viene salvato nello storage locale di questo browser. Anche il server ne conserva una copia, cifrata prima di lasciare il tuo dispositivo. Il gestore dispone di una chiave di recupero in grado di aprire quella copia. Esporta tutto in un file quando vuoi."
+  },
   "412615f147f27e5a": {
     "en": "Daily net carbs",
     "path": "common:trends.chart.titleNetCarbs",
@@ -4646,6 +4681,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Obiettivo calorico giornaliero"
+  },
+  "44841e7dbdaf706c": {
+    "en": "Log lunch on your phone, then look at the week on your laptop. Sync is optional. Your device encrypts your diary before sending it to an openplate-core server, whether you use ours or host your own. Your password stays on your device. The server also holds a sealed recovery key. This allows password resets, and it means the server operator can technically open your diary.",
+    "path": "common:landing.sync.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Registra il pranzo sul telefono, poi controlla la settimana sul portatile. La sincronizzazione è facoltativa. Il tuo dispositivo cifra il tuo diario prima di inviarlo a un server openplate-core, sia che tu usi il nostro o ne gestisca uno tuo. La tua password resta sul tuo dispositivo. Il server conserva anche una chiave di recupero sigillata. Questo consente il ripristino della password, e significa che il gestore del server può tecnicamente aprire il tuo diario."
   },
   "448a990a6fcc25dd": {
     "en": "Invite somebody",
@@ -6060,6 +6102,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Polioli"
+  },
+  "57e1586dd85e902f": {
+    "en": "Your diary, and everything you've already logged, lives on this device and still works with no connection. The server holds an encrypted copy too. This one page just isn't loadable yet: either it's new to this device, or it needs to reach the internet (like scanning a photo). Try again once you're back online.",
+    "path": "common:offline.bodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Il tuo diario, e tutto ciò che hai già registrato, risiede su questo dispositivo e funziona anche senza connessione. Anche il server conserva una copia cifrata. Questa singola pagina non è ancora caricabile: o è nuova per questo dispositivo, oppure deve accedere a Internet (come per la scansione di una foto). Riprova quando sarai di nuovo online."
   },
   "58051f0d2128a8e5": {
     "en": "Search foods",
@@ -8056,6 +8105,13 @@
     "at": "2026-09-14",
     "it": "Fibre"
   },
+  "7539c296de44ac85": {
+    "en": "7. Encrypted sync",
+    "path": "legal:terms.s7Heading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "7. Sincronizzazione cifrata"
+  },
   "75548634f3279207": {
     "en": "Sugars",
     "path": "common:scan.review.sanity.macro.sugars",
@@ -8538,6 +8594,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Veloce e preciso sui dettagli del cibo"
+  },
+  "7b3dc37b10fcd8a3": {
+    "en": "Everything else you sync is encrypted on this device before it leaves. This one report is not, so the server receives it in readable form.",
+    "path": "common:entry.report.consent.unencrypted",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Tutto il resto di ciò che sincronizzi viene cifrato su questo dispositivo prima di essere inviato. Questo singolo report non lo è, quindi il server lo riceve in forma leggibile."
   },
   "7b444700d7de72cb": {
     "en": "Data & backup · openplate",
@@ -10324,6 +10387,20 @@
     "at": "2026-09-14",
     "it": "Come vengono conteggiati i carboidrati di questo alimento"
   },
+  "927846e96923eadf": {
+    "en": "Let a dietician or doctor read your diary. It stays encrypted on the way: they get a copy of your key sealed to theirs, and sharing gives the server nothing new to read.",
+    "path": "common:sharing.intro",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Consenti a un dietista o a un medico di leggere il tuo diario. Resta cifrato durante il trasferimento: ricevono una copia della tua chiave sigillata con la loro, e la condivisione non fornisce al server nulla di nuovo da leggere."
+  },
+  "92812df5567ebd6c": {
+    "en": "A forgotten passphrase.",
+    "path": "legal:terms.s7Item4Label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Passphrase dimenticata."
+  },
   "92a8cc0b06749d7a": {
     "en": "Nutrition (optional)",
     "path": "common:add.manual.nutritionToggle",
@@ -11240,6 +11317,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Ritiro completato. Allo studio viene indicato di eliminare ciò che conserva."
+  },
+  "a0c49bbfb213c45b": {
+    "en": "Your diary lives on this device, and the server holds a copy encrypted before upload. The operator keeps a recovery key that can decrypt that copy, which is how a password reset gets your diary back. Download a full copy anytime, no lock-in, no request-and-wait.",
+    "path": "common:settings.data.descriptionManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Il tuo diario risiede su questo dispositivo, e il server conserva una copia cifrata prima del caricamento. Il gestore possiede una chiave di recupero in grado di decifrare quella copia, ed è così che un ripristino della password ti permette di recuperare il diario. Scarica una copia completa quando vuoi, senza vincoli, senza dover fare richieste e attendere."
   },
   "a0c992bb87a0b14c": {
     "en": "Rising ketones",
@@ -13215,6 +13299,13 @@
     "at": "2026-09-14",
     "it": "Proteine registrate"
   },
+  "bfafbe34e79d05da": {
+    "en": "Encryption.",
+    "path": "legal:terms.s7Item1Label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Cifratura."
+  },
   "bfbfa74ca9cf5f01": {
     "en": "Increase grams",
     "path": "common:entry.edit.increaseGrams",
@@ -13487,6 +13578,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Hai salvato una copia del tuo diario sul tuo dispositivo."
+  },
+  "c3c0ed328d82f4fe": {
+    "en": "Your data is encrypted on your device before upload, using keys derived on your device from a passphrase only you hold. Our server stores this encrypted data. It also stores an account recovery key. This key allows us to restore your data after a forgotten passphrase, and it technically allows us to read your data, as described in Section 6 of the Privacy Policy.",
+    "path": "legal:terms.s7Item1Body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "I Suoi dati vengono cifrati sul Suo dispositivo prima del caricamento, utilizzando chiavi derivate sul Suo dispositivo da una passphrase in Suo esclusivo possesso. Il nostro server memorizza questi dati cifrati. Memorizza inoltre una chiave di recupero dell'account. Questa chiave ci consente di ripristinare i Suoi dati in caso di passphrase dimenticata e, dal punto di vista tecnico, ci consente di leggere i Suoi dati, come descritto nella Sezione 6 dell'Informativa sulla privacy."
   },
   "c3c37361bdd5009f": {
     "en": "{{firstComponent}} and {{secondComponent}} add up to {{componentValue}} g per 100 g, more than the {{total}} total of {{totalValue}} g, double-check before logging.",
@@ -14271,6 +14369,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Impossibile copiare"
+  },
+  "d0f9519525774df7": {
+    "en": "openplate is a carb-first food diary that keeps an encrypted copy on the operator's server: photograph your plate or search for what you ate, and see where the day stands.",
+    "path": "common:landing.hero.taglineManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "openplate è un diario alimentare incentrato sui carboidrati che conserva una copia cifrata sul server del gestore: fai una foto del piatto o cerca ciò che hai mangiato, e controlla la situazione della giornata."
   },
   "d100e2dfb2d2fada": {
     "en": "Yesterday: {{meals}}, {{netCarbs}} g net carbs, {{protein}} g protein of your {{floor}} g floor.",
@@ -15364,6 +15469,13 @@
     "at": "2026-09-14",
     "it": "Questo server di sincronizzazione non offre la condivisione. Qui non è attivo nulla e non è stato inviato nulla."
   },
+  "e03b008a368ad66d": {
+    "en": "If you forget your passphrase, you can reset it by email. We send a reset link to the email address on your account. Opening this link provides your recovery key to your device, which then sets a new passphrase. The reset link can only reach you through that address. Maintaining access to that email address is your responsibility, and we are not liable for any data loss that results from losing access.",
+    "path": "legal:terms.s7Item4Body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Se dimentica la Sua passphrase, può reimpostarla via email. Inviamo un link di reimpostazione all'indirizzo email associato al Suo account. L'apertura di questo link fornisce la Sua chiave di recupero al Suo dispositivo, che imposta quindi una nuova passphrase. Il link di reimpostazione può raggiungerLa solo tramite tale indirizzo. Mantenere l'accesso a tale indirizzo email è Sua responsabilità e non siamo responsabili per alcuna perdita di dati derivante dalla perdita dell'accesso."
+  },
   "e05f5546d7d5fa1e": {
     "en": "Delete this account?",
     "path": "common:account.delete.confirmTitle",
@@ -15461,6 +15573,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "I Suoi dati vengono cifrati sul Suo dispositivo prima del caricamento. Il nostro server memorizza solo testo cifrato opaco che non può leggere, e le chiavi di cifratura vengono derivate sul Suo dispositivo a partire da una passphrase di cui solo Lei è in possesso."
+  },
+  "e16e9dc593f46c36": {
+    "en": "The diary lives on this device, and the server keeps an encrypted copy",
+    "path": "common:landing.features.local.titleManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Il diario risiede su questo dispositivo, e il server conserva una copia cifrata"
   },
   "e174a9d60e55cf7d": {
     "en": "Your account is suspended",
@@ -15874,6 +15993,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Giorni di calendario completi nell'intervallo che invii, una riga per giorno, senza mai un orario, un nome di alimento o una foto."
+  },
+  "e7aac5b5d6e69713": {
+    "en": "If you switch sync off or delete your sync account, your locally stored tracker data on your own devices is unaffected. Deleting the account removes your server-stored encrypted blobs immediately, with no grace period, and they cannot be restored. (Routine encrypted backups may retain the ciphertext a little longer before they rotate out, as described in the Privacy Policy. It stays encrypted there.)",
+    "path": "legal:terms.s7Item3Body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Se disattiva la sincronizzazione o elimina il Suo account di sincronizzazione, i dati di tracciamento memorizzati localmente sui Suoi dispositivi non subiscono conseguenze. L'eliminazione dell'account rimuove immediatamente i Suoi blob cifrati memorizzati sul server, senza alcun periodo di tolleranza, e non possono essere ripristinati. (I backup cifrati ordinari possono conservare il testo cifrato un po' più a lungo prima della rotazione, come descritto nell'Informativa sulla privacy. Lì rimane cifrato)."
   },
   "e7d7acdc022aa65b": {
     "en": "Create an account",
