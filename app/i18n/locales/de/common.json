@@ -395,6 +395,9 @@
     "title": "Behandler verbinden"
   },
   "dashboard": {
+    "insightsHint": {
+      "title": "Sieh dir an, wie deine Woche verlief, Mahlzeit für Mahlzeit und Ziel für Ziel."
+    },
     "loading": "Dein Tag wird geladen…",
     "ridge": {
       "caption": {
@@ -2858,6 +2861,13 @@
         "title": "Fastenintervalle",
         "description": "Fastenintervalle, die in den letzten 13 Wochen endeten, jeweils gemessen am eigenen Ziel.",
         "reached": "{{reached}} von {{finished}} haben ihr Ziel erreicht"
+      }
+    },
+    "overview": {
+      "openInsights": "{{name}} öffnen",
+      "summary": {
+        "title": "Letzte {{days}} Tage",
+        "change": "{{change}} im Vergleich zu den {{days}} Tagen davor"
       }
     }
   },

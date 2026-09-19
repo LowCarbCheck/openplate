@@ -395,6 +395,9 @@
     "title": "Connect a clinician"
   },
   "dashboard": {
+    "insightsHint": {
+      "title": "See how your week went, meal by meal and goal by goal."
+    },
     "loading": "Loading your day…",
     "ridge": {
       "caption": {
@@ -2858,6 +2861,13 @@
         "title": "Fasts",
         "description": "Fasts that ended in the last 13 weeks, each measured against its own target.",
         "reached": "{{reached}} of {{finished}} reached their target"
+      }
+    },
+    "overview": {
+      "openInsights": "Open {{name}}",
+      "summary": {
+        "title": "Last {{days}} days",
+        "change": "{{change}} compared with the {{days}} days before"
       }
     }
   },

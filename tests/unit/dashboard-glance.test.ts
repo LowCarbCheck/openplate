@@ -88,13 +88,13 @@ function weightGlanceCardSource(): string {
 }
 
 /**
- * Asserts that a glance tile's whole card is one clickable door to `/trends`:
+ * Asserts that a glance tile's whole card is one clickable door to `href`:
  * exactly one `<Link>` in the tile, sitting before the `<Card>` it wraps
- * (never inside it), and pointed at `/trends`. A nested link — the header
+ * (never inside it), and pointed at `href`. A nested link, the header
  * arrow or the trailing text keeping a `<Link>` of its own alongside a new
- * wrapping one — would show up here as a second `<Link>` opening tag.
+ * wrapping one, would show up here as a second `<Link>` opening tag.
  */
-function assertWholeCardIsOneLinkToTrends(card: string, label: string): void {
+function assertWholeCardIsOneLinkTo({ card, href, label }: { card: string; href: string; label: string }): void {
   const linkOpenings = card.match(/<Link\b/g) ?? [];
   assert.equal(linkOpenings.length, 1, `${label} must render exactly one <Link>, never a link nested inside a link`);
 
@@ -104,7 +104,7 @@ function assertWholeCardIsOneLinkToTrends(card: string, label: string): void {
   assert.ok(linkAt < cardAt, `${label}'s <Link> must wrap its <Card>, not sit inside it`);
 
   const linkOpenTag = card.slice(linkAt, card.indexOf('>', linkAt) + 1);
-  assert.match(linkOpenTag, /to="\/trends"/, `${label}'s wrapping link must go to /trends`);
+  assert.ok(linkOpenTag.includes(`to="${href}"`), `${label}'s wrapping link must go to ${href}`);
 }
 
 const TODAY = '2026-08-06';
@@ -245,15 +245,15 @@ describe('the week glance tile draws the budget ridge', () => {
     const card = weekGlanceCardSource();
     const header = card.slice(card.indexOf('<CardHeader'), card.indexOf('<CardContent'));
 
-    // The arrow is decorative now: no `to`, no `aria-label` — the card's own
+    // The arrow is decorative now: no `to`, no `aria-label`, the card's own
     // title and content give the wrapping link its accessible name.
-    assert.doesNotMatch(header, /to="\/trends"/, 'the header no longer carries its own link to /trends');
+    assert.ok(!header.includes('to="/trends?tab=overview"'), 'the header no longer carries its own link to /trends');
     assert.doesNotMatch(header, /aria-label/, 'the arrow carries no aria-label; the tile title names the link');
     assert.match(header, /<span className="shrink-0 text-primary">/, 'the arrow sits in a plain span, not a link');
 
-    // Control: the tile still has exactly ONE link to /trends in total — the
-    // wrapping one — so the header link was replaced, not merely duplicated.
-    assert.equal(card.match(/to="\/trends"/g)?.length, 1);
+    // Control: the tile still has exactly ONE link to /trends in total, the
+    // wrapping one, so the header link was replaced, not merely duplicated.
+    assert.equal(card.split('to="/trends?tab=overview"').length - 1, 1);
   });
 
   it('still names the tile and keeps its empty copy', () => {
@@ -278,12 +278,12 @@ describe('the week glance tile draws the budget ridge', () => {
  * the card, which is exactly the bug this change fixes.
  */
 describe('the whole tile is the door to /trends', () => {
-  it('wraps the week tile in exactly one link to /trends, with none nested inside it', () => {
-    assertWholeCardIsOneLinkToTrends(weekGlanceCardSource(), 'WeekGlanceCard');
+  it('wraps the week tile in exactly one link to /trends?tab=overview, with none nested inside it', () => {
+    assertWholeCardIsOneLinkTo({ card: weekGlanceCardSource(), href: '/trends?tab=overview', label: 'WeekGlanceCard' });
   });
 
   it('wraps the weight tile in exactly one link to /trends, with none nested inside it', () => {
-    assertWholeCardIsOneLinkToTrends(weightGlanceCardSource(), 'WeightGlanceCard');
+    assertWholeCardIsOneLinkTo({ card: weightGlanceCardSource(), href: '/trends', label: 'WeightGlanceCard' });
   });
 
   it('keeps the weight tile\'s trailing text as the visible call to action, but not its own link', () => {
@@ -348,8 +348,8 @@ describe('the 13-week grid on Overview', () => {
     assert.ok(!dashboardSource.includes('startOfWeek'), 'the week arithmetic is not re-derived here');
   });
 
-  it('wraps the grid card in exactly one link to /trends, with none nested inside it', () => {
-    assertWholeCardIsOneLinkToTrends(streakGridCardSource, 'StreakGridCard');
+  it('wraps the grid card in exactly one link to /trends?tab=goals, with none nested inside it', () => {
+    assertWholeCardIsOneLinkTo({ card: streakGridCardSource, href: '/trends?tab=goals', label: 'StreakGridCard' });
   });
 
   it('carries no button of its own, and draws the grid read-only', () => {

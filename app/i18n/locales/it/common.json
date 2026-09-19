@@ -395,6 +395,9 @@
     "title": "Collega un medico"
   },
   "dashboard": {
+    "insightsHint": {
+      "title": "Controlla com'è andata la settimana, pasto per pasto e obiettivo per obiettivo."
+    },
     "loading": "Caricamento della giornata in corso…",
     "ridge": {
       "caption": {
@@ -2858,6 +2861,13 @@
         "title": "Digiuni",
         "description": "Digiuni terminati nelle ultime 13 settimane, ciascuno misurato rispetto al proprio obiettivo.",
         "reached": "{{reached}} su {{finished}} hanno raggiunto il loro obiettivo"
+      }
+    },
+    "overview": {
+      "openInsights": "Apri {{name}}",
+      "summary": {
+        "title": "Ultimi {{days}} giorni",
+        "change": "{{change}} rispetto ai {{days}} giorni precedenti"
       }
     }
   },

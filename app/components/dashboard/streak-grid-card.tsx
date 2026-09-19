@@ -62,7 +62,7 @@ export function StreakGridCard({
 
   return (
     <Link
-      to="/trends"
+      to="/trends?tab=goals"
       className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="transition-colors hover:border-primary/40">

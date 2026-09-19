@@ -18149,5 +18149,229 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "de": "{{count}} Tag in Folge, bis gestern."
+  },
+  "10c5ca28d4ffff7c": {
+    "en": "This invite link doesn't look right",
+    "path": "common:connectGateway.invalidLink.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dieser Einladungslink sieht nicht richtig aus"
+  },
+  "1379585e7ce7943a": {
+    "en": "Join {{name}}",
+    "path": "common:connectGateway.confirm.join",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "{{name}} beitreten"
+  },
+  "163c704943cfe326": {
+    "en": "Try again",
+    "path": "common:connectGateway.retry",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Erneut versuchen"
+  },
+  "1ac00c651d4b784a": {
+    "en": "Ask whoever invited you for a new link.",
+    "path": "common:connectGateway.inviteInvalid.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Bitte lass dir einen neuen Link schicken."
+  },
+  "1af8fc83e279dd50": {
+    "en": "Checking that gateway…",
+    "path": "common:connectGateway.checking",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Gateway wird geprüft…"
+  },
+  "1c6fa2eb776cf1a8": {
+    "en": "Join a gateway · openplate",
+    "path": "common:meta.connectGateway",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Gateway beitreten · openplate"
+  },
+  "1d26a6750890f33b": {
+    "en": "Connected to {{name}}.",
+    "path": "common:connectGateway.joined",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Mit {{name}} verbunden."
+  },
+  "26d93db9047b3f39": {
+    "en": "This invite is not valid or has expired",
+    "path": "common:connectGateway.inviteInvalid.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Diese Einladung ist ungültig oder abgelaufen"
+  },
+  "2d67e440fde35300": {
+    "en": "See how your week went, meal by meal and goal by goal.",
+    "path": "common:dashboard.insightsHint.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Sieh dir an, wie deine Woche verlief, Mahlzeit für Mahlzeit und Ziel für Ziel."
+  },
+  "413107ac2d582895": {
+    "en": "This app isn't allowed to talk to that gateway",
+    "path": "common:connectGateway.blocked.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Diese App darf nicht mit diesem Gateway sprechen"
+  },
+  "437baec739b54a0d": {
+    "en": "The operator of this openplate has to allow it",
+    "path": "common:connectGateway.blocked.operatorTitle",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Wer dieses openplate betreibt, muss es erlauben"
+  },
+  "4901d9206cfb9d5f": {
+    "en": "Your food photos will be sent through {{origin}} for analysis.",
+    "path": "common:connectGateway.confirm.routing",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Deine Essensfotos werden zur Analyse über {{origin}} geschickt."
+  },
+  "4c7b99428402919b": {
+    "en": "Open Insights",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Einblicke öffnen"
+  },
+  "50c8085fee55a3a9": {
+    "en": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
+    "path": "common:connectGateway.invalidLink.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Ein Teil des Links fehlt oder wurde vom E-Mail-Programm abgeschnitten. Bitte lass ihn dir noch einmal schicken."
+  },
+  "6a97f494c01c3491": {
+    "en": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
+    "path": "common:connectGateway.unreachable.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Das Gateway hat nicht geantwortet. Prüf die Adresse, oder frag die Person, die dich eingeladen hat, ob es läuft."
+  },
+  "86789f062591fa73": {
+    "en": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
+    "path": "common:connectGateway.audit.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dieses Gateway gibt an, dass dessen Administrator deine Einsendungen einschließlich Fotos einsehen kann. Das meldet das Gateway selbst. openplate kann dies nicht überprüfen."
+  },
+  "8b083c94aec5ee72": {
+    "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
+    "path": "common:connectGateway.confirm.replaces",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dies ersetzt deine aktuelle KI-Verbindung ({{current}}). Es wird nirgendwo etwas widerrufen. Du kannst sie später wieder einrichten."
+  },
+  "8fe99fc59fd396d9": {
+    "en": "Can't reach {{origin}}",
+    "path": "common:connectGateway.unreachable.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "{{origin}} ist nicht erreichbar"
+  },
+  "9474018c172c4f69": {
+    "en": "Continue to the app",
+    "path": "common:connectGateway.inviteInvalid.continue",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Weiter zur App"
+  },
+  "95c8d22adfa282a8": {
+    "en": "Join this gateway",
+    "path": "common:connectGateway.confirm.button",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Diesem Gateway beitreten"
+  },
+  "a3c8397a0c19c2a3": {
+    "en": "This gateway says it can review what you send",
+    "path": "common:connectGateway.audit.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dieses Gateway sagt, es kann mitlesen"
+  },
+  "a693abb2296c48b8": {
+    "en": "Something went wrong while saving on this device. Nothing is lost. Try again.",
+    "path": "common:connectGateway.saveRetry",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Beim Speichern auf diesem Gerät ist etwas schiefgelaufen. Es ist nichts verloren. Versuch es noch einmal."
+  },
+  "aa9b5120040bfc07": {
+    "en": "Couldn't save the connection on this device. Try again.",
+    "path": "common:connectGateway.saveFailed",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Die Verbindung ließ sich auf diesem Gerät nicht speichern. Versuch es nochmal."
+  },
+  "b8baadb6a26f6d6f": {
+    "en": "Back to AI settings",
+    "path": "common:connectGateway.backToAiSettings",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Zurück zu den KI-Einstellungen"
+  },
+  "bd0c4e71bfe0ba99": {
+    "en": "Join a gateway",
+    "path": "common:connectGateway.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Einem Gateway beitreten"
+  },
+  "c2608b96820070d5": {
+    "en": "Someone invited this device to use the AI on a gateway they run.",
+    "path": "common:connectGateway.description",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Jemand hat dieses Gerät eingeladen, die KI auf einem Gateway zu nutzen, das er betreibt."
+  },
+  "c5093c99e83eca1a": {
+    "en": "{{change}} compared with the {{days}} days before",
+    "path": "common:trends.overview.summary.change",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "{{change}} im Vergleich zu den {{days}} Tagen davor"
+  },
+  "c888d2d65fc562b7": {
+    "en": "Open {{name}}",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "{{name}} öffnen"
+  },
+  "ce5d630bdde3764b": {
+    "en": "Joining…",
+    "path": "common:connectGateway.confirm.joining",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Verbinde…"
+  },
+  "d91c2d1970bb7d38": {
+    "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
+    "path": "common:connectGateway.confirm.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Sonst ändert sich nichts: Dein Tagebuch bleibt auf diesem Gerät, und du kannst die Verbindung jederzeit in den KI-Einstellungen trennen."
+  },
+  "e2597421e7c996c6": {
+    "en": "Last {{days}} days",
+    "path": "common:trends.overview.summary.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Letzte {{days}} Tage"
+  },
+  "ef51205a81e40d29": {
+    "en": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
+    "path": "common:connectGateway.blocked.operatorBody",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Wer dieses openplate betreibt, muss {{origin}} in die Einstellung CSP_CONNECT_EXTRA eintragen und neu starten. Bis dahin blockiert der Browser jede Anfrage an dieses Gateway. (Wenn du es selbst betreibst: eine Zeile in deiner .env.)"
   }
 }

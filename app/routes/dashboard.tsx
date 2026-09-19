@@ -74,6 +74,7 @@ import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-day
 import { buildAdherenceGrid } from '#app/models/adherence-grid';
 import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
 import { deriveActivityStreak, isGamificationHidden } from '#app/lib/gamification/surfaces';
+import { dismissInsightsHint, isInsightsHintDismissed } from '#app/lib/insights-hint';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
@@ -87,6 +88,8 @@ import { SectionEyebrow } from '#app/components/typography';
 import { DayBudgetRows } from '#app/components/day-budget-rows';
 import { buildDayBudgetRows } from '#app/lib/day-budget-rows';
 import { DayVerdictChip } from '#app/components/day-summary-details';
+import { MIN_TREND_DAYS } from '#app/components/trends/sparse-trend-notice';
+import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -213,6 +216,33 @@ export interface DashboardData {
    * with what counts. Null means the card renders exactly what it did before.
    */
   repeatYesterday: RepeatYesterdayOffer | null;
+  /**
+   * Whether the one-time door to Insights should render (M239/06): the person
+   * has logged at least `MIN_TREND_DAYS` of the last 7 days (the same window
+   * `ridge` already summarizes) AND has not waved it away on this device
+   * before. Decided here, not in the component, so a dismissal recorded on a
+   * PRIOR load already keeps the card gone across a reload without a second
+   * localStorage read at render time.
+   */
+  showInsightsHint: boolean;
+}
+
+/**
+ * Whether this device has already waved away the Insights hint.
+ *
+ * Empty (never dismissed) outside a browser, the same guard `diary.tsx`'s own
+ * `readDismissedHints` uses for its per-slot hint, and for the same reason:
+ * this runs in the client loader, which never sees a server.
+ */
+function isInsightsHintDismissedOnDevice(): boolean {
+  if (globalThis.localStorage === undefined) return false;
+  return isInsightsHintDismissed(globalThis.localStorage);
+}
+
+/** Records the Insights hint as dismissed on this device. A no-op outside a browser. */
+function dismissInsightsHintOnDevice(): void {
+  if (globalThis.localStorage === undefined) return;
+  dismissInsightsHint(globalThis.localStorage);
 }
 
 export async function clientLoader(): Promise<DashboardData> {
@@ -284,6 +314,19 @@ export async function clientLoader(): Promise<DashboardData> {
   // changes nothing about it; that idea is an award family of its own.
   const gamificationHidden = isGamificationHidden(profile);
 
+  // Built here, after `kcalTarget` above, so a kcal-lens ridge grades the day
+  // against the target the rows DISPLAY, reproductive addition included.
+  // Named rather than built inline in the `return`, because its
+  // `loggedDayCount` is also the Insights hint's gate below, the same 7-day
+  // population the week tile itself already summarizes, not a second count.
+  const ridge = buildDayRidge({
+    dailyTotals: totalsWindow,
+    today,
+    dayCount: WEEK_DAYS,
+    lens: goals.lens,
+    goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget, proteinFloor: goals.proteinFloor },
+  });
+
   return {
     today,
     // The three fields the status prompt reads (M206/04). They ride the loader
@@ -304,15 +347,11 @@ export async function clientLoader(): Promise<DashboardData> {
       proteinReferenceG,
       proteinReferenceMissingDate: selectMissingReferenceDate(stage),
     },
-    // Built here, after `kcalTarget` above, so a kcal-lens ridge grades the day
-    // against the target the rows DISPLAY, reproductive addition included.
-    ridge: buildDayRidge({
-      dailyTotals: totalsWindow,
-      today,
-      dayCount: WEEK_DAYS,
-      lens: goals.lens,
-      goals: { netCarbsCeiling: goals.netCarbsCeiling, kcalTarget, proteinFloor: goals.proteinFloor },
-    }),
+    ridge,
+    // M239/06: offered once the week tile above already has something to
+    // show (at least `MIN_TREND_DAYS` of the last 7 days logged), and never
+    // again once this device has waved it away.
+    showInsightsHint: ridge.loggedDayCount >= MIN_TREND_DAYS && !isInsightsHintDismissedOnDevice(),
     grid: buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals }),
     adherenceGoals,
     streak: gamificationHidden ? null : deriveActivityStreak({ marks: await listLocalActivityMarks(), today }),
@@ -462,6 +501,46 @@ function TodayHeroCard({
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// The one-time door to Insights
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The one-time door to Insights (M239/06): a small card offering the tour of
+ * `/trends`'s Overview tab, dismissed for good on tap. `showInsightsHint`
+ * already carries the "not dismissed yet" check from the loader; the session
+ * state that hides it in the page component below only hides it for the REST
+ * OF THIS SESSION the instant it's tapped, so a localStorage round trip is
+ * never on the critical path of the click, the same split `diary.tsx`'s
+ * "Save this as a meal?" hint uses.
+ *
+ * Its own bordered `Card`, not a second `.surface-brand` hero: the page's one
+ * hero is `TodayHeroCard` (DESIGN.md §2), and this is a low-priority aside a
+ * person can ignore forever.
+ */
+function InsightsHintCard({ onDismiss }: { onDismiss: () => void }): ReactElement {
+  const { t } = useTranslation();
+
+  return (
+    <Card data-slot="insights-hint" className="border-dashed">
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="min-w-0 flex-1 text-sm text-muted-foreground">{t('dashboard.insightsHint.title')}</p>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button asChild size="sm">
+            {/* `Insights` itself stays untranslated everywhere (the tab strip's
+                own title does the same, M239/02), so the button reads the same
+                feature name as the screen it opens in every language. */}
+            <Link to="/trends?tab=overview">{t('trends.overview.openInsights', { name: t('trends.title') })}</Link>
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onDismiss}>
+            {t('diary.saveMeal.hint.dismiss')}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // The two glance tiles
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -490,7 +569,8 @@ function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
 
   return (
     <Link
-      to="/trends"
+      to="/trends?tab=overview"
+      data-slot="week-glance-card"
       className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="transition-colors hover:border-primary/40">
@@ -589,12 +669,16 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     adherenceGoals,
     streak,
     gamificationHidden,
+    showInsightsHint,
     weight,
     reproductiveStatus,
     pregnancyDueDate,
     lactationStartDate,
     repeatYesterday,
   } = loaderData;
+  // Session-local, so a tap hides the card immediately; the loader's own
+  // `showInsightsHint` already carries the persisted dismissal across a reload.
+  const [isInsightsHintDismissedThisSession, setIsInsightsHintDismissedThisSession] = useState(false);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -655,6 +739,21 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         <WeekGlanceCard ridge={ridge} />
         <WeightGlanceCard weight={weight} />
       </div>
+      {/*
+        The one-time door to Insights (M239/06), UNDER the glance row: by this
+        point the two tiles above already point at `/trends`, so this is a
+        low-priority "there's more" aside rather than a first-run instruction.
+        Gone for the rest of this session the instant it's tapped, and gone for
+        good once the loader sees the dismissal on a later load.
+      */}
+      {showInsightsHint && !isInsightsHintDismissedThisSession && (
+        <InsightsHintCard
+          onDismiss={() => {
+            dismissInsightsHintOnDevice();
+            setIsInsightsHintDismissedThisSession(true);
+          }}
+        />
+      )}
       {/*
         What the whole instance did today, UNDER the glance row and absent
         entirely below three contributors (M222 spec 04). The loader above

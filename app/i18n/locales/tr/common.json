@@ -395,6 +395,9 @@
     "title": "Bir hekim bağla"
   },
   "dashboard": {
+    "insightsHint": {
+      "title": "Haftanın nasıl geçtiğini öğün öğün ve hedef hedef gör."
+    },
     "loading": "Günün yükleniyor…",
     "ridge": {
       "caption": {
@@ -2858,6 +2861,13 @@
         "title": "Oruçlar",
         "description": "Son 13 haftada sona eren ve her biri kendi hedefine göre ölçülen oruçlar.",
         "reached": "Tamamlanan {{finished}} oruçtan {{reached}} tanesi hedefine ulaştı"
+      }
+    },
+    "overview": {
+      "openInsights": "{{name}} uygulamasını aç",
+      "summary": {
+        "title": "Son {{days}} gün",
+        "change": "Önceki {{days}} güne kıyasla {{change}}"
       }
     }
   },

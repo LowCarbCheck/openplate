@@ -513,6 +513,17 @@ export function WhatYouAte({
         <p className="text-xs text-muted-foreground">{t('diary.drilldown.netCarbsDefinition')}</p>
         {caveat && <p className="text-xs text-muted-foreground">{caveat}</p>}
       </div>
+      {/*
+        The door into the Nutrition tab (M239/06): this block already states
+        today's macros, and the tab draws the honest chart of them over time.
+      */}
+      <Link
+        to="/trends?tab=nutrition"
+        data-slot="day-summary-insights-link"
+        className="inline-block text-xs text-primary underline-offset-4 hover:underline"
+      >
+        {t('trends.overview.openInsights', { name: t('trends.title') })}
+      </Link>
     </div>
   );
 }

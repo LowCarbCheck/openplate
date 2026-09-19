@@ -27,6 +27,7 @@ import { DEFAULT_INSIGHTS_TAB, INSIGHTS_TABS } from '#app/lib/insights-tabs';
 import type { InsightsTab } from '#app/lib/insights-tabs';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
 import { computeWeeklyRecap } from '#app/lib/trend-recap';
+import { computeRangeSummary } from '#app/lib/range-summary';
 import { computeWeeklyWeightChange } from '#app/lib/trend-weight';
 import { computeEatingWindow } from '#app/lib/trend-eating-window';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
@@ -41,17 +42,15 @@ import { selectFastTargetShare } from '#app/models/fasting-stats';
 import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-days';
 import { isGamificationHidden } from '#app/lib/gamification/surfaces';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { ActivityStreakCard } from '#app/components/gamification/activity-streak-card';
 import { GoalTabContent } from '#app/components/trends/goal-tab-content';
 import { InsightsTabStrip } from '#app/components/trends/insights-tab-strip';
 import { chartTitleKey, TrendChart } from '#app/components/trends/trend-chart';
 import { MacroEnergySplitCard } from '#app/components/trends/macro-energy-split-card';
 import { MealsTabContent } from '#app/components/trends/meals-tab-content';
+import { OverviewTabContent } from '#app/components/trends/overview-tab-content';
 import { TrendControls } from '#app/components/trends/trend-controls';
 import { TrendLegend } from '#app/components/trends/trend-legend';
 import { MIN_TREND_DAYS, SparseTrendNotice } from '#app/components/trends/sparse-trend-notice';
-import { WeeklyRecapCard } from '#app/components/trends/weekly-recap-card';
-import { WeightProgressCard } from '#app/components/trends/weight-progress-card';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import i18n from '#app/i18n/i18n';
@@ -215,6 +214,10 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // The six days before the first bar, so the first bars' 7-day average
   // windows are whole rather than cut off at the chart's left edge.
   const leadWindow = { fromDate: shiftDate(chartWindow.fromDate, -(ROLLING_AVERAGE_DAYS - 1)), toDate: shiftDate(chartWindow.fromDate, -1) };
+  // The same-length range immediately before the chart window, for the
+  // Overview tab's summary strip (M239/06): "compared with the N days
+  // before" needs those days' own logs, not a second guess at what they were.
+  const previousRangeWindow = { fromDate: shiftDate(chartWindow.fromDate, -range), toDate: shiftDate(chartWindow.fromDate, -1) };
   const currentWeekStart = startOfWeek(today);
   const currentWeekEnd = shiftDate(currentWeekStart, DAYS_IN_WEEK - 1);
   const previousWeekStart = shiftDate(currentWeekStart, -DAYS_IN_WEEK);
@@ -223,10 +226,15 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   // ONE BOUNDED READ covers every window this screen draws: the chart's range,
   // the 13 grid weeks (which also contain the two recap weeks and this week's
-  // eating window) and the rest of the current week, which the grid and the
-  // recap both run to. Nothing older is parsed, however long the diary is.
+  // eating window), the range summary's "previous range" (which can reach
+  // further back than the grid at the 90-day setting) and the rest of the
+  // current week, which the grid and the recap both run to. Nothing older is
+  // parsed, however long the diary is.
   const windowLogs = await listLocalFoodLogsInRange({
-    fromDate: _earlierDay({ left: leadWindow.fromDate, right: gridWeeksStart }),
+    fromDate: _earlierDay({
+      left: _earlierDay({ left: leadWindow.fromDate, right: gridWeeksStart }),
+      right: previousRangeWindow.fromDate,
+    }),
     toDate: currentWeekEnd,
   });
 
@@ -242,6 +250,15 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     slot === ALL_MEALS ?
       computeDailyTotalsInRange(windowLogs, leadWindow)
     : computeSlotTotalsInRange(windowLogs, leadWindow, slot);
+
+  // Overview's range summary (M239/06): the chosen window against the
+  // same-length window right before it, UNFILTERED by `slot`, like
+  // `weekEntries` below, this answers "how did the whole day go", not one
+  // meal's slice of it.
+  const rangeSummary = computeRangeSummary({
+    current: computeDailyTotalsInRange(windowLogs, chartWindow),
+    previous: computeDailyTotalsInRange(windowLogs, previousRangeWindow),
+  });
 
   // Two Monday→Sunday weeks (this week + last) computed as one contiguous
   // range, then split by date for the recap comparison.
@@ -315,6 +332,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     tab,
     metric,
     recap,
+    rangeSummary,
     weight,
     eatingWindow,
     hasAnyData,
@@ -525,6 +543,7 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     tab,
     metric,
     recap,
+    rangeSummary,
     weight,
     eatingWindow,
     hasAnyData,
@@ -561,35 +580,29 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
           the meal filter. */}
       <InsightsTabStrip active={tab} range={range} slot={slot} metric={metric} />
 
+      {/* The Overview tab (M239/06): the range summary strip, the three doors
+          into the other tabs, then the streak, weekly recap and weight cards
+          the tab already carried. Its own component file so this dispatcher
+          stays a dispatcher, the same split `GoalTabContent` and
+          `MealsTabContent` use for their tabs. */}
       {tab === 'overview' && (
-        <>
-          {/* The ACTIVITY streak (M235/06), the same number `/dashboard` shows,
-              derived from the same marks by the same function. The card is also
-              the only door to `/awards`, and both go together when the person
-              has switched these surfaces off. It renders on an ordinary card
-              surface — "This week" below is already this screen's one
-              `.surface-brand` hero (DESIGN.md §2). */}
-          <ActivityStreakCard marks={marks} today={today} hidden={gamificationHidden} />
-
-          <WeeklyRecapCard
-            current={recap.current}
-            previous={recap.previous}
-            weight={weight}
-            eatingWindow={eatingWindow}
-            goals={{ netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor }}
-          />
-
-          {/* The body story is its own chapter: the chart moved here from
-              `/settings/profile`, which keeps the entry form and the weigh-in
-              list. */}
-          <WeightProgressCard
-            points={weightWindow}
-            targetWeightKg={targetWeightKg}
-            today={today}
-            todayWeightKg={todayWeightKg}
-            weightUnit={weightUnit}
-          />
-        </>
+        <OverviewTabContent
+          summary={rangeSummary}
+          range={range}
+          slot={slot}
+          metric={metric}
+          marks={marks}
+          today={today}
+          gamificationHidden={gamificationHidden}
+          recap={recap}
+          weight={weight}
+          eatingWindow={eatingWindow}
+          goals={{ netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor }}
+          weightWindow={weightWindow}
+          targetWeightKg={targetWeightKg}
+          todayWeightKg={todayWeightKg}
+          weightUnit={weightUnit}
+        />
       )}
 
       {/* The Goals tab (M239/05): per-goal records, fasting, and the 13-week

@@ -18149,5 +18149,229 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "tr": "Düne kadar art arda {{count}} gün."
+  },
+  "10c5ca28d4ffff7c": {
+    "en": "This invite link doesn't look right",
+    "path": "common:connectGateway.invalidLink.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu davet bağlantısı doğru görünmüyor"
+  },
+  "1379585e7ce7943a": {
+    "en": "Join {{name}}",
+    "path": "common:connectGateway.confirm.join",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "{{name}} ağ geçidine katıl"
+  },
+  "163c704943cfe326": {
+    "en": "Try again",
+    "path": "common:connectGateway.retry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Tekrar dene"
+  },
+  "1ac00c651d4b784a": {
+    "en": "Ask whoever invited you for a new link.",
+    "path": "common:connectGateway.inviteInvalid.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Seni davet eden kişiden yeni bir bağlantı iste."
+  },
+  "1af8fc83e279dd50": {
+    "en": "Checking that gateway…",
+    "path": "common:connectGateway.checking",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Ağ geçidi kontrol ediliyor…"
+  },
+  "1c6fa2eb776cf1a8": {
+    "en": "Join a gateway · openplate",
+    "path": "common:meta.connectGateway",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Ağ geçidine katıl · openplate"
+  },
+  "1d26a6750890f33b": {
+    "en": "Connected to {{name}}.",
+    "path": "common:connectGateway.joined",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "{{name}} bağlantısı kuruldu."
+  },
+  "26d93db9047b3f39": {
+    "en": "This invite is not valid or has expired",
+    "path": "common:connectGateway.inviteInvalid.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu davet geçerli değil veya süresi dolmuş"
+  },
+  "2d67e440fde35300": {
+    "en": "See how your week went, meal by meal and goal by goal.",
+    "path": "common:dashboard.insightsHint.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Haftanın nasıl geçtiğini öğün öğün ve hedef hedef gör."
+  },
+  "413107ac2d582895": {
+    "en": "This app isn't allowed to talk to that gateway",
+    "path": "common:connectGateway.blocked.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu uygulamanın söz konusu ağ geçidiyle iletişim kurmasına izin verilmiyor"
+  },
+  "437baec739b54a0d": {
+    "en": "The operator of this openplate has to allow it",
+    "path": "common:connectGateway.blocked.operatorTitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu openplate uygulamasının işletmecisi buna izin vermeli"
+  },
+  "4901d9206cfb9d5f": {
+    "en": "Your food photos will be sent through {{origin}} for analysis.",
+    "path": "common:connectGateway.confirm.routing",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Yemek fotoğrafların analiz için {{origin}} üzerinden gönderilecek."
+  },
+  "4c7b99428402919b": {
+    "en": "Open Insights",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "İçgörüleri Aç"
+  },
+  "50c8085fee55a3a9": {
+    "en": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
+    "path": "common:connectGateway.invalidLink.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bağlantının bir kısmı eksik veya e-posta uygulaması tarafından kesilmiş. Seni davet eden kişiden bağlantıyı tekrar göndermesini iste."
+  },
+  "6a97f494c01c3491": {
+    "en": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
+    "path": "common:connectGateway.unreachable.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Ağ geçidi yanıt vermedi. Adresi kontrol et veya seni davet eden kişiye ağ geçidinin çalışıp çalışmadığını sor."
+  },
+  "86789f062591fa73": {
+    "en": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
+    "path": "common:connectGateway.audit.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu ağ geçidi, yöneticisinin fotoğraflar da dahil olmak üzere gönderilerini inceleyebileceğini bildiriyor. Ağ geçidinin kendisinin bildirdiği budur. openplate bunu doğrulayamaz."
+  },
+  "8b083c94aec5ee72": {
+    "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
+    "path": "common:connectGateway.confirm.replaces",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu işlem geçerli yapay zeka bağlantının ({{current}}) yerini alır. Hiçbir yerde hiçbir erişim iptal edilmez. Daha sonra yeniden ayarlayabilirsin."
+  },
+  "8fe99fc59fd396d9": {
+    "en": "Can't reach {{origin}}",
+    "path": "common:connectGateway.unreachable.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "{{origin}} adresine ulaşılamıyor"
+  },
+  "9474018c172c4f69": {
+    "en": "Continue to the app",
+    "path": "common:connectGateway.inviteInvalid.continue",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Uygulamaya devam et"
+  },
+  "95c8d22adfa282a8": {
+    "en": "Join this gateway",
+    "path": "common:connectGateway.confirm.button",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu ağ geçidine katıl"
+  },
+  "a3c8397a0c19c2a3": {
+    "en": "This gateway says it can review what you send",
+    "path": "common:connectGateway.audit.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu ağ geçidi, gönderdiklerini inceleyebileceğini belirtiyor"
+  },
+  "a693abb2296c48b8": {
+    "en": "Something went wrong while saving on this device. Nothing is lost. Try again.",
+    "path": "common:connectGateway.saveRetry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu cihaza kaydederken bir sorun oluştu. Hiçbir veri kaybolmadı. Tekrar dene."
+  },
+  "aa9b5120040bfc07": {
+    "en": "Couldn't save the connection on this device. Try again.",
+    "path": "common:connectGateway.saveFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bağlantı bu cihaza kaydedilemedi. Tekrar dene."
+  },
+  "b8baadb6a26f6d6f": {
+    "en": "Back to AI settings",
+    "path": "common:connectGateway.backToAiSettings",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Yapay zeka ayarlarına dön"
+  },
+  "bd0c4e71bfe0ba99": {
+    "en": "Join a gateway",
+    "path": "common:connectGateway.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bir ağ geçidine katıl"
+  },
+  "c2608b96820070d5": {
+    "en": "Someone invited this device to use the AI on a gateway they run.",
+    "path": "common:connectGateway.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Biri bu cihazı, kendi çalıştırdığı bir ağ geçidindeki yapay zekayı kullanmaya davet etti."
+  },
+  "c5093c99e83eca1a": {
+    "en": "{{change}} compared with the {{days}} days before",
+    "path": "common:trends.overview.summary.change",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Önceki {{days}} güne kıyasla {{change}}"
+  },
+  "c888d2d65fc562b7": {
+    "en": "Open {{name}}",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "{{name}} uygulamasını aç"
+  },
+  "ce5d630bdde3764b": {
+    "en": "Joining…",
+    "path": "common:connectGateway.confirm.joining",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Katılınıyor…"
+  },
+  "d91c2d1970bb7d38": {
+    "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
+    "path": "common:connectGateway.confirm.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Başka hiçbir şey değişmez: günlüğün bu cihazda kalır ve dilediğin zaman yapay zeka ayarlarından bağlantıyı kesebilirsin."
+  },
+  "e2597421e7c996c6": {
+    "en": "Last {{days}} days",
+    "path": "common:trends.overview.summary.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Son {{days}} gün"
+  },
+  "ef51205a81e40d29": {
+    "en": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
+    "path": "common:connectGateway.blocked.operatorBody",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "tr": "Bu openplate uygulamasını çalıştıran kişi {{origin}} değerini CSP_CONNECT_EXTRA ayarına eklemeli ve uygulamayı yeniden başlatmalıdır. O zamana kadar tarayıcı, bu ağ geçidine yapılan her isteği engeller. (Kendin çalıştırıyorsan, .env dosyan içinde tek bir satırdır.)"
   }
 }

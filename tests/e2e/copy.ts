@@ -113,6 +113,10 @@ const catalogSchema = z.object({
       averages: z.object({ loggedDays: z.string() }),
     }),
     goals: z.object({ invite: z.string(), hitRate: z.string(), honesty: z.string() }),
+    overview: z.object({ openInsights: z.string() }),
+  }),
+  dashboard: z.object({
+    insightsHint: z.object({ title: z.string() }),
   }),
   goals: z.object({ save: z.string() }),
   awards: z.object({

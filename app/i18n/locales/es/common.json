@@ -395,6 +395,9 @@
     "title": "Conectar a un profesional clínico"
   },
   "dashboard": {
+    "insightsHint": {
+      "title": "Revisa cómo te fue en la semana, comida a comida y objetivo a objetivo."
+    },
     "loading": "Cargando tu día…",
     "ridge": {
       "caption": {
@@ -2858,6 +2861,13 @@
         "title": "Ayunos",
         "description": "Ayunos terminados en las últimas 13 semanas, cada uno medido respecto a su propio objetivo.",
         "reached": "{{reached}} de {{finished}} alcanzaron su objetivo"
+      }
+    },
+    "overview": {
+      "openInsights": "Abre {{name}}",
+      "summary": {
+        "title": "Últimos {{days}} días",
+        "change": "{{change}} respecto a los {{days}} días anteriores"
       }
     }
   },

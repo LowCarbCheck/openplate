@@ -395,6 +395,9 @@
     "title": "Connecter un médecin"
   },
   "dashboard": {
+    "insightsHint": {
+      "title": "Consulte le bilan de ta semaine, repas par repas et objectif par objectif."
+    },
     "loading": "Chargement de ta journée…",
     "ridge": {
       "caption": {
@@ -2858,6 +2861,13 @@
         "title": "Jeûnes",
         "description": "Jeûnes terminés au cours des 13 dernières semaines, chacun mesuré par rapport à son propre objectif.",
         "reached": "{{reached}} sur {{finished}} ont atteint leur objectif"
+      }
+    },
+    "overview": {
+      "openInsights": "Ouvrir {{name}}",
+      "summary": {
+        "title": "{{days}} derniers jours",
+        "change": "{{change}} par rapport aux {{days}} jours précédents"
       }
     }
   },
