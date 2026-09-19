@@ -98,6 +98,7 @@ const catalogSchema = z.object({
   }),
   trends: z.object({
     slot: z.object({ all: z.string() }),
+    range: z.object({ threeMonths: z.string() }),
     streak: z.object({ active_one: z.string(), empty: z.string() }),
   }),
   awards: z.object({

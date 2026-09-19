@@ -2705,7 +2705,8 @@
     "range": {
       "month": "Month",
       "twoWeeks": "2 weeks",
-      "week": "Week"
+      "week": "Week",
+      "threeMonths": "3 months"
     },
     "recap": {
       "averageDay": "An average day",

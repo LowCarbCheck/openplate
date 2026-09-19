@@ -2705,7 +2705,8 @@
     "range": {
       "month": "Mois",
       "twoWeeks": "2 semaines",
-      "week": "Semaine"
+      "week": "Semaine",
+      "threeMonths": "3 months"
     },
     "recap": {
       "averageDay": "Une journée moyenne",

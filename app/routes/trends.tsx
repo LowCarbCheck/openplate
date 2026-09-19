@@ -6,10 +6,11 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import {
   computeDailyTotalsInRange,
   computeSlotTotalsInRange,
+  getEarliestLocalFoodLogDayKey,
   getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalActivityMarks,
-  listLocalFoodLogs,
+  listLocalFoodLogsInRange,
   listLocalWeightEntries,
   resolveLocalTimezone,
   upsertLocalWeightEntryForDay,
@@ -18,6 +19,7 @@ import { noteActivity } from '#app/lib/gamification/record';
 import { enumerateDates, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { startOfWeek } from '#app/lib/trend-week';
 import { ALL_MEALS, buildTrendChart } from '#app/lib/trend-chart';
+import { bucketByWeek } from '#app/lib/trend-buckets';
 import type { TrendMetric, TrendSlot } from '#app/lib/trend-chart';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
 import { computeWeeklyRecap } from '#app/lib/trend-recap';
@@ -62,12 +64,17 @@ export const handle = {
 };
 
 /** The selectable chart windows, in days. */
-const ALLOWED_RANGES = [7, 14, 30] as const;
+const ALLOWED_RANGES = [7, 14, 30, 90] as const;
 type TrendRange = (typeof ALLOWED_RANGES)[number];
 /** Default window when an explicit (but invalid) range is requested. */
 const DEFAULT_RANGE: TrendRange = 14;
 /** The narrowest selectable window — the smart default for a brand-new account (see `pickDefaultRange`). */
 const NEW_ACCOUNT_RANGE: TrendRange = 7;
+/**
+ * From this range up the chart draws one bar per week, not per day: 90 daily
+ * bars do not fit a phone, and 30 are already a comb of slivers.
+ */
+const WEEKLY_BARS_FROM_RANGE: TrendRange = 30;
 /** A Monday→Sunday week is seven days wide. */
 const DAYS_IN_WEEK = 7;
 // `GRID_WEEKS` is imported: Overview draws the same grid, so the week count
@@ -126,10 +133,9 @@ export function pickDefaultRange({
   return earliestLoggedDate >= newAccountFloor ? NEW_ACCOUNT_RANGE : DEFAULT_RANGE;
 }
 
-/** The oldest `dayKey` across a set of local food logs, or null when there are none. */
-function _earliestDayKey(logs: readonly { dayKey: string }[]): string | null {
-  if (logs.length === 0) return null;
-  return logs.reduce((earliest, log) => (log.dayKey < earliest ? log.dayKey : earliest), logs[0].dayKey);
+/** The earlier of two `YYYY-MM-DD` days; the format sorts as text. */
+function _earlierDay({ left, right }: { left: string; right: string }): string {
+  return left < right ? left : right;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,33 +163,44 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     kcalTarget: profile?.goalKcalTarget ?? null,
   };
 
-  const allLogs = await listLocalFoodLogs();
-
   const searchParams = new URL(request.url).searchParams;
   const rawRange = searchParams.get('range');
+  // The earliest day is read off the store's day index, not by loading the
+  // diary: it is the one question here that reaches back past every window.
   const range =
     rawRange === null ?
-      pickDefaultRange({ earliestLoggedDate: _earliestDayKey(allLogs), today })
+      pickDefaultRange({ earliestLoggedDate: await getEarliestLocalFoodLogDayKey(), today })
     : _parseRange(rawRange);
   const slot = _parseSlot(searchParams.get('slot'));
+
+  const chartWindow = { fromDate: shiftDate(today, -(range - 1)), toDate: today };
+  const currentWeekStart = startOfWeek(today);
+  const currentWeekEnd = shiftDate(currentWeekStart, DAYS_IN_WEEK - 1);
+  const previousWeekStart = shiftDate(currentWeekStart, -DAYS_IN_WEEK);
+  const previousWeekEnd = shiftDate(currentWeekStart, -1);
+  const gridWeeksStart = shiftDate(currentWeekStart, -(GRID_WEEKS - 1) * DAYS_IN_WEEK);
+
+  // ONE BOUNDED READ covers every window this screen draws: the chart's range,
+  // the 13 grid weeks (which also contain the two recap weeks and this week's
+  // eating window) and the rest of the current week, which the grid and the
+  // recap both run to. Nothing older is parsed, however long the diary is.
+  const windowLogs = await listLocalFoodLogsInRange({
+    fromDate: _earlierDay({ left: chartWindow.fromDate, right: gridWeeksStart }),
+    toDate: currentWeekEnd,
+  });
 
   // The chart window: `range` days ending on the user's local today. With a
   // slot chosen, each day counts only the entries that went into that slot
   // (M227/02); a day whose entries all sit in OTHER slots comes back as a gap
   // day, which the chart draws as "nothing logged" rather than as a zero.
-  const chartWindow = { fromDate: shiftDate(today, -(range - 1)), toDate: today };
   const entries =
     slot === ALL_MEALS ?
-      computeDailyTotalsInRange(allLogs, chartWindow)
-    : computeSlotTotalsInRange(allLogs, chartWindow, slot);
+      computeDailyTotalsInRange(windowLogs, chartWindow)
+    : computeSlotTotalsInRange(windowLogs, chartWindow, slot);
 
   // Two Monday→Sunday weeks (this week + last) computed as one contiguous
   // range, then split by date for the recap comparison.
-  const currentWeekStart = startOfWeek(today);
-  const currentWeekEnd = shiftDate(currentWeekStart, DAYS_IN_WEEK - 1);
-  const previousWeekStart = shiftDate(currentWeekStart, -DAYS_IN_WEEK);
-  const previousWeekEnd = shiftDate(currentWeekStart, -1);
-  const weekEntries = computeDailyTotalsInRange(allLogs, { fromDate: previousWeekStart, toDate: currentWeekEnd });
+  const weekEntries = computeDailyTotalsInRange(windowLogs, { fromDate: previousWeekStart, toDate: currentWeekEnd });
   const currentWeekDays = weekEntries.filter((day) => day.date >= currentWeekStart && day.date <= currentWeekEnd);
   const previousWeekDays = weekEntries.filter((day) => day.date >= previousWeekStart && day.date <= previousWeekEnd);
   const recap = {
@@ -210,7 +227,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   // Eating window: this week's per-day log timestamps → median first→last span.
   const currentWeekDates = enumerateDates(currentWeekStart, currentWeekEnd);
-  const perDayLogs = currentWeekDates.map((date) => allLogs.filter((log) => log.dayKey === date));
+  const perDayLogs = currentWeekDates.map((date) => windowLogs.filter((log) => log.dayKey === date));
   const eatingWindow = computeEatingWindow({
     days: perDayLogs.map((logs) => ({ loggedAtMs: logs.map((log) => log.loggedAt) })),
   });
@@ -219,7 +236,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // contains today, so the grid never shows a ragged part-week at either end.
   // Selected through the shared seam Overview uses, so the two grids cannot
   // disagree about their window.
-  const gridDays = selectAdherenceGridDays({ allLogs, today, weeks: GRID_WEEKS });
+  const gridDays = selectAdherenceGridDays({ allLogs: windowLogs, today, weeks: GRID_WEEKS });
   // The goals those columns are graded against, from the one builder Overview
   // and the diary's calendar also call: `kcalTarget` carries the reproductive
   // energy addition, so a pregnant person's day cannot read as met here and
@@ -370,7 +387,11 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
   // `slot` goes to the model rather than being applied to the goal here: every
   // stored goal is a whole-day figure, and `buildTrendChart` is the one place
   // that decides a part-day bar has nothing to be measured against.
-  const chart = buildTrendChart({ days: entries, metric, goalValue, slot });
+  // At the wide ranges each bar is a week, averaged over its logged days
+  // (`bucketByWeek`). The slot filter has already been applied to `entries`,
+  // so a week of snacks is the mean of the snack days, not of whole days.
+  const chartDays = range >= WEEKLY_BARS_FROM_RANGE ? bucketByWeek(entries) : entries;
+  const chart = buildTrendChart({ days: chartDays, metric, goalValue, slot });
   // Two whole-sentence keys rather than "Daily {{metric}}" + a metric noun:
   // German inflects the adjective with the noun's gender, so the two halves
   // can't be translated independently.

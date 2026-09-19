@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **Progress can now show the last 90 days.** A new 3 months choice sits beside Week, 2 weeks and Month. At Month and 3 months the chart draws one bar per week, the average of the days you logged that week, so the bars still fit a phone. A week you logged nothing stays empty rather than showing zero. Progress now reads only the days it shows, so a long diary no longer slows the screen down.
+
 ### Fixed
 
 - **Signing out no longer says everything reached the server when it has not.** The sign-out dialog counted a queue that nothing has written to since the diary moved onto the device. So it always said "Everything on this device has reached the server." above the box that erases the diary. It now counts the changes the sync has not sent yet and any estimate reports still waiting. It says so when it could not check. It also names what the check does not cover: fasts, saved meals, the pantry, and your sharing and research keys. Rows left in that retired queue are deleted, because nothing could ever send them.

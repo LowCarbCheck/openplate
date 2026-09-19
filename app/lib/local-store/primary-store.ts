@@ -43,7 +43,8 @@
  * helpers WRITE a record with cleared fields, so neither can ever be
  * tombstoned, which is exactly right.
  */
-import type { Store } from 'tinybase';
+import { createIndexes } from 'tinybase';
+import type { GetCell, Indexes, Store } from 'tinybase';
 import { z } from 'zod';
 import { reportMealFromLog } from '#app/lib/pulse';
 import { randomUuid } from '#app/lib/uuid';
@@ -402,6 +403,99 @@ export async function putLocalFoodLog(
 /** Every food log, oldest first. */
 export async function listLocalFoodLogs({ store }: StoreOption = {}): Promise<LocalFoodLog[]> {
   return readEntities<LocalFoodLog>(await resolveStore(store), FOOD_LOGS_TABLE).toSorted(byCreatedThenId);
+}
+
+/**
+ * The index that files every food log under its `dayKey`, so a read can ask for
+ * a run of days without parsing the rest of the diary.
+ *
+ * NO SCHEMA CHANGE. The row still holds one JSON cell; the index is derived in
+ * memory from that cell, which is why adding it needed no `SCHEMA_VERSION`
+ * bump and no migration. TinyBase builds it once per store (one parse per row)
+ * and then keeps it current from its own change listeners, so every later
+ * bounded read parses only the rows it returns.
+ */
+const FOOD_LOGS_BY_DAY_INDEX = 'foodLogsByDay';
+
+/** One day index per store, built on first use. A store that is dropped takes its index with it. */
+const foodLogDayIndexes = new WeakMap<Store, Indexes>();
+
+/** The `dayKey` a food log row carries, read out of its JSON cell. */
+const dayKeyCellSchema = z.object({ dayKey: z.string() });
+
+/**
+ * The slice a food log row belongs to: its `dayKey`, or no slice at all when
+ * the cell is corrupt. A corrupt row is skipped here exactly as `readEntity`
+ * skips it, so the bounded read and the whole read agree about what exists.
+ */
+function foodLogDaySlice(getCell: GetCell): string[] {
+  const raw = entityCellSchema.safeParse(getCell(PRIMARY_ENTITY_CELL));
+  if (!raw.success) return [];
+  try {
+    const parsed = dayKeyCellSchema.safeParse(JSON.parse(raw.data));
+    return parsed.success ? [parsed.data.dayKey] : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Orders `YYYY-MM-DD` slice ids oldest first; the format sorts as text. */
+function byDayKey(left: string, right: string): number {
+  return left.localeCompare(right);
+}
+
+/** The store's food-log day index, created the first time a bounded read asks for it. */
+function foodLogDayIndex(store: Store): Indexes {
+  const existing = foodLogDayIndexes.get(store);
+  if (existing !== undefined) return existing;
+  const indexes = createIndexes(store).setIndexDefinition(
+    FOOD_LOGS_BY_DAY_INDEX,
+    FOOD_LOGS_TABLE,
+    foodLogDaySlice,
+    undefined,
+    byDayKey,
+  );
+  foodLogDayIndexes.set(store, indexes);
+  return indexes;
+}
+
+/** An inclusive run of local calendar days, `YYYY-MM-DD` at both ends. */
+export interface DayKeyRange {
+  fromDate: string;
+  toDate: string;
+}
+
+/**
+ * The food logs whose `dayKey` falls inside `range`, both ends included,
+ * oldest first in the same order `listLocalFoodLogs` returns.
+ *
+ * Only the rows inside the range are parsed. A screen that shows 90 days of a
+ * five-year diary reads 90 days, not five years.
+ *
+ * @param range - the inclusive `fromDate`..`toDate` window.
+ * @returns the logs on those days, oldest first.
+ */
+export async function listLocalFoodLogsInRange(
+  { fromDate, toDate }: DayKeyRange,
+  { store }: StoreOption = {},
+): Promise<LocalFoodLog[]> {
+  const resolved = await resolveStore(store);
+  const index = foodLogDayIndex(resolved);
+  return index
+    .getSliceIds(FOOD_LOGS_BY_DAY_INDEX)
+    .filter((dayKey) => dayKey >= fromDate && dayKey <= toDate)
+    .flatMap((dayKey) => index.getSliceRowIds(FOOD_LOGS_BY_DAY_INDEX, dayKey))
+    .map((id) => readEntity<LocalFoodLog>(resolved, FOOD_LOGS_TABLE, id))
+    .filter((log): log is LocalFoodLog => log !== null)
+    .toSorted(byCreatedThenId);
+}
+
+/**
+ * The oldest `dayKey` any food log carries, or null when there are none. Read
+ * off the day index, so no log is parsed to answer it.
+ */
+export async function getEarliestLocalFoodLogDayKey({ store }: StoreOption = {}): Promise<string | null> {
+  return foodLogDayIndex(await resolveStore(store)).getSliceIds(FOOD_LOGS_BY_DAY_INDEX)[0] ?? null;
 }
 
 /** One food log by id, or null (the diary entry-detail route's single-row read). */

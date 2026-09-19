@@ -1,6 +1,6 @@
 /**
  * The trends chart controls: a metric toggle (net carbs ⇄ calories), a range
- * toggle (7 / 14 / 30 days) and a meal-slot filter (every meal, or one of the
+ * toggle (7 / 14 / 30 / 90 days) and a meal-slot filter (every meal, or one of the
  * four slots). The metric is client state, because both series come from the
  * same loader data and switching needs no refetch; the range and the slot are
  * URL search params, because each one re-runs the loader over different logs
@@ -15,10 +15,11 @@ import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
 import { Button } from '#app/components/ui/button';
 
 /** The selectable day ranges and their plain-language label keys, mirroring the loader's accepted values. */
-const RANGE_OPTIONS: readonly { value: 7 | 14 | 30; labelKey: string }[] = [
+const RANGE_OPTIONS: readonly { value: 7 | 14 | 30 | 90; labelKey: string }[] = [
   { value: 7, labelKey: 'trends.range.week' },
   { value: 14, labelKey: 'trends.range.twoWeeks' },
   { value: 30, labelKey: 'trends.range.month' },
+  { value: 90, labelKey: 'trends.range.threeMonths' },
 ];
 
 /** The two metric toggle options and their label keys. */

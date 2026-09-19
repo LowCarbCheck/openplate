@@ -54,6 +54,8 @@ export {
   putLocalFoodLog,
   listLocalFoodLogs,
   listLocalFoodLogsForDay,
+  listLocalFoodLogsInRange,
+  getEarliestLocalFoodLogDayKey,
   getLocalFoodLog,
   deleteLocalFoodLog,
   putLocalWeightEntry,
@@ -147,6 +149,7 @@ export {
   getLocalStudyEnrolment,
   deleteLocalStudyEnrolment,
 } from './primary-store';
+export type { DayKeyRange } from './primary-store';
 
 // Pure saved-meal builders (no store), the "save as meal"/"re-log a saved
 // meal" arithmetic, kept testable without a store or a DOM.
