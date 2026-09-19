@@ -4,8 +4,8 @@
  *
  * Extracted from `/sign-in` (M187 spec 03) because a second screen now needs
  * the same answer. `/join` finishes a managed ceremony by redeeming the
- * gateway half and then has to land the person somewhere — the diary if this
- * account already holds one, the questionnaire if it does not — which is the
+ * invite and then has to land the person somewhere (the diary if this
+ * account already holds one, the questionnaire if it does not), which is the
  * identical question `/sign-in` asks after its first pull. Two readers would
  * be two chances to read a different set of facts.
  *

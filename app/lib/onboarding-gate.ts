@@ -331,9 +331,9 @@ export function isOnboardingGateExempt(pathname: string): boolean {
  * local-only diary needs nobody's permission, which is the whole point of a
  * local-first tracker.
  *
- * On a MANAGED instance the anonymous path leads nowhere — there is no AI
- * without the gateway invite and no diary that outlives the device without the
- * account the same link creates — so it is CLOSED rather than merely hidden.
+ * On a MANAGED instance the anonymous path leads nowhere: there is no AI and
+ * no diary that outlives the device without the account the invite creates,
+ * so it is CLOSED rather than merely hidden.
  * Hiding "Start" on the welcome screen would leave the wizard one typed URL
  * away, and somebody who found it would spend ten minutes answering questions
  * into a diary they cannot keep.

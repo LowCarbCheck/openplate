@@ -394,46 +394,6 @@
     },
     "title": "Connect a clinician"
   },
-  "connectGateway": {
-    "audit": {
-      "body": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
-      "title": "This gateway says it can review what you send"
-    },
-    "backToAiSettings": "Back to AI settings",
-    "blocked": {
-      "operatorBody": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
-      "operatorTitle": "The operator of this openplate has to allow it",
-      "title": "This app isn't allowed to talk to that gateway"
-    },
-    "checking": "Checking that gateway…",
-    "confirm": {
-      "body": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
-      "button": "Join this gateway",
-      "join": "Join {{name}}",
-      "joining": "Joining…",
-      "replaces": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
-      "routing": "Your food photos will be sent through {{origin}} for analysis."
-    },
-    "description": "Someone invited this device to use the AI on a gateway they run.",
-    "invalidLink": {
-      "body": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
-      "title": "This invite link doesn't look right"
-    },
-    "inviteInvalid": {
-      "body": "Ask whoever invited you for a new link.",
-      "continue": "Continue to the app",
-      "title": "This invite is not valid or has expired"
-    },
-    "joined": "Connected to {{name}}.",
-    "saveFailed": "Couldn't save the connection on this device. Try again.",
-    "title": "Join a gateway",
-    "unreachable": {
-      "body": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
-      "title": "Can't reach {{origin}}"
-    },
-    "saveRetry": "Something went wrong while saving on this device. Nothing is lost. Try again.",
-    "retry": "Try again"
-  },
   "dashboard": {
     "loading": "Loading your day…",
     "ridge": {
@@ -1310,7 +1270,6 @@
     "add": "Add food · openplate",
     "ai": "AI settings · openplate",
     "connectClinician": "Connect a clinician · openplate",
-    "connectGateway": "Join a gateway · openplate",
     "catchUp": "Your daily catch-up · openplate",
     "dashboard": "Overview · openplate",
     "data": "Data & backup · openplate",

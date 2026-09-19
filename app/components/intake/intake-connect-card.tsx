@@ -189,8 +189,9 @@ export function resolveConnectCardVariant({
  * dropping it (see `useKeylessSharedPhotoPreview`).
  *
  * On a MANAGED instance this card is a dead end by design, and says so: AI
- * comes from the gateway the operator runs and is attached by an invite link,
- * so there is no button here that can fix a missing connection. Exported for
+ * comes from the account's own allowance, granted the moment the invite
+ * creates it, so there is no button here that can fix a missing connection.
+ * Exported for
  * `scan-connect-card.test.ts`, which renders both shapes.
  */
 export function ConnectCard({ logDate }: { logDate: string | null }) {
@@ -285,10 +286,7 @@ export function ConnectCardView({
             them. The recipient line is dropped in that case, because no photo
             goes anywhere yet. There is no fourth, signed-out shape any more
             (M204 spec 07): the device lock sends that visit to `/welcome`
-            before this card renders.
-            The audit line, when a gateway declared one, is rendered by
-            `AuditReviewNotice` on the connected screen, it describes a
-            connection that does not exist yet on this card. */}
+            before this card renders. */}
         {variant.kind === 'self-hosted' && (
           <p className="text-sm text-muted-foreground">{t('scan.setup.crisp.selfHosted')}</p>
         )}

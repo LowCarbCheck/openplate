@@ -12,24 +12,27 @@
  * guessing on the person's behalf: start a new diary, or sign in to the account
  * that already holds one.
  *
- * ON A MANAGED INSTANCE THE TWO DOORS ARE DIFFERENT ONES (M187 spec 03). An
- * instance that declares a gateway hands out accounts and an AI connection
- * together, by invite, so there is no anonymous diary to start: the doors are
- * "sign in" and "I have an invite link", and the second one opens a box for a
- * link that arrived as text rather than as a navigation. Pasting it goes to
- * `/join` with the same fragment the link carries, so there is exactly one
- * implementation of the join ceremony and this screen holds none of it.
- * `/onboarding` is closed on such an instance too — see `isAnonymousStartAllowed` —
- * because hiding the button while leaving the address open is not closing it.
+ * ON A MANAGED INSTANCE THE TWO DOORS ARE DIFFERENT ONES (M187 spec 03). A
+ * managed instance hands out one account by invite, carrying the diary and
+ * the AI allowance together, so there is no anonymous diary to start: the
+ * doors are "sign in" and "I have an invite link", and the second one opens
+ * a box for a link that arrived as text rather than as a navigation. Pasting
+ * it goes to `/join` with the same fragment the link carries, so there is
+ * exactly one implementation of the join ceremony and this screen holds none
+ * of it. `/onboarding` is closed on such an instance too (see
+ * `isAnonymousStartAllowed`), because hiding the button while leaving the
+ * address open is not closing it.
  *
- * WHICH DOOR LEADS depends on what the device carries, and that decision is
- * pure (`app/lib/welcome-hint.ts`) — a remembered sign-in name, or a gateway
- * membership, tips the emphasis towards signing in. It only ever reorders the
- * buttons: neither trace proves an account exists, so neither skips this screen.
+ * WHICH DOOR LEADS depends on what the device carries and what kind of
+ * instance this is, and that decision is pure (`app/lib/welcome-hint.ts`):
+ * a remembered sign-in name tips the emphasis towards signing in, and a
+ * managed instance leads with it outright, since it has no other door to
+ * offer. Neither fact skips this screen: it only ever reorders the buttons.
  *
  * CLIENT-ONLY and TOP-LEVEL, deliberately. It exports no `loader`, `action` or
- * `clientLoader`: both hints live in the browser (localStorage and IndexedDB),
- * and neither is any of the server's business. It is registered outside
+ * `clientLoader`: the device hint lives in the browser (localStorage), and
+ * neither it nor the instance's mode is any of the server's business here.
+ * It is registered outside
  * `_personal` because that layout's gate is exactly what redirects here —
  * nesting it there would loop, the same reason `/recover` sits outside.
  *
@@ -143,8 +146,8 @@ function WelcomeChoices({
           <Link to={SIGN_IN_PATH}>{signInLabel}</Link>
         </Button>
         {/* Beside the prefilled name, because that is the thing it disowns.
-            A gateway-only hint carries no name, so there is nothing here to
-            disown. */}
+            A device that has never signed in carries no name, so there is
+            nothing here to disown. */}
         {hint.accountName !== null && (
           <button
             type="button"
@@ -213,10 +216,10 @@ function SecondaryAction({
  * fragment an opened link carries, and handed to `/join` — which then reads it
  * exactly as it reads a link somebody tapped.
  *
- * A DOCUMENT navigation rather than a router `navigate`, for the reason
- * `/connect-gateway` gives: a client-side navigation can be dropped, and this
- * one carries the only copy of a single-use capability. `assign` rather than
- * `replace` so Back still returns here from a link that turns out to be wrong.
+ * A DOCUMENT navigation rather than a router `navigate`: a client-side
+ * navigation can be dropped, and this one carries the only copy of a
+ * single-use capability. `assign` rather than `replace` so Back still returns
+ * here from a link that turns out to be wrong.
  */
 function PasteInviteLink({ onCancel }: { onCancel: () => void }) {
   const { t } = useTranslation();

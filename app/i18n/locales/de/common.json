@@ -394,46 +394,6 @@
     },
     "title": "Behandler verbinden"
   },
-  "connectGateway": {
-    "audit": {
-      "body": "Dieses Gateway gibt an, dass dessen Administrator deine Einsendungen einschließlich Fotos einsehen kann. Das meldet das Gateway selbst. openplate kann dies nicht überprüfen.",
-      "title": "Dieses Gateway sagt, es kann mitlesen"
-    },
-    "backToAiSettings": "Zurück zu den KI-Einstellungen",
-    "blocked": {
-      "operatorBody": "Wer dieses openplate betreibt, muss {{origin}} in die Einstellung CSP_CONNECT_EXTRA eintragen und neu starten. Bis dahin blockiert der Browser jede Anfrage an dieses Gateway. (Wenn du es selbst betreibst: eine Zeile in deiner .env.)",
-      "operatorTitle": "Wer dieses openplate betreibt, muss es erlauben",
-      "title": "Diese App darf nicht mit diesem Gateway sprechen"
-    },
-    "checking": "Gateway wird geprüft…",
-    "confirm": {
-      "body": "Sonst ändert sich nichts: Dein Tagebuch bleibt auf diesem Gerät, und du kannst die Verbindung jederzeit in den KI-Einstellungen trennen.",
-      "button": "Diesem Gateway beitreten",
-      "join": "{{name}} beitreten",
-      "joining": "Verbinde…",
-      "replaces": "Dies ersetzt deine aktuelle KI-Verbindung ({{current}}). Es wird nirgendwo etwas widerrufen. Du kannst sie später wieder einrichten.",
-      "routing": "Deine Essensfotos werden zur Analyse über {{origin}} geschickt."
-    },
-    "description": "Jemand hat dieses Gerät eingeladen, die KI auf einem Gateway zu nutzen, das er betreibt.",
-    "invalidLink": {
-      "body": "Ein Teil des Links fehlt oder wurde vom E-Mail-Programm abgeschnitten. Bitte lass ihn dir noch einmal schicken.",
-      "title": "Dieser Einladungslink sieht nicht richtig aus"
-    },
-    "inviteInvalid": {
-      "body": "Bitte lass dir einen neuen Link schicken.",
-      "continue": "Weiter zur App",
-      "title": "Diese Einladung ist ungültig oder abgelaufen"
-    },
-    "joined": "Mit {{name}} verbunden.",
-    "saveFailed": "Die Verbindung ließ sich auf diesem Gerät nicht speichern. Versuch es nochmal.",
-    "title": "Einem Gateway beitreten",
-    "unreachable": {
-      "body": "Das Gateway hat nicht geantwortet. Prüf die Adresse, oder frag die Person, die dich eingeladen hat, ob es läuft.",
-      "title": "{{origin}} ist nicht erreichbar"
-    },
-    "saveRetry": "Beim Speichern auf diesem Gerät ist etwas schiefgelaufen. Es ist nichts verloren. Versuch es noch einmal.",
-    "retry": "Erneut versuchen"
-  },
   "dashboard": {
     "loading": "Dein Tag wird geladen…",
     "ridge": {
@@ -1310,7 +1270,6 @@
     "add": "Essen eintragen · openplate",
     "ai": "KI-Einstellungen · openplate",
     "connectClinician": "Behandler verbinden · openplate",
-    "connectGateway": "Gateway beitreten · openplate",
     "catchUp": "Dein Tagesrückblick · openplate",
     "dashboard": "Übersicht · openplate",
     "data": "Daten & Sicherung · openplate",

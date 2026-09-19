@@ -394,46 +394,6 @@
     },
     "title": "Bir hekim bağla"
   },
-  "connectGateway": {
-    "audit": {
-      "body": "Bu ağ geçidi, yöneticisinin fotoğraflar da dahil olmak üzere gönderilerini inceleyebileceğini bildiriyor. Ağ geçidinin kendisinin bildirdiği budur. openplate bunu doğrulayamaz.",
-      "title": "Bu ağ geçidi, gönderdiklerini inceleyebileceğini belirtiyor"
-    },
-    "backToAiSettings": "Yapay zeka ayarlarına dön",
-    "blocked": {
-      "operatorBody": "Bu openplate uygulamasını çalıştıran kişi {{origin}} değerini CSP_CONNECT_EXTRA ayarına eklemeli ve uygulamayı yeniden başlatmalıdır. O zamana kadar tarayıcı, bu ağ geçidine yapılan her isteği engeller. (Kendin çalıştırıyorsan, .env dosyan içinde tek bir satırdır.)",
-      "operatorTitle": "Bu openplate uygulamasının işletmecisi buna izin vermeli",
-      "title": "Bu uygulamanın söz konusu ağ geçidiyle iletişim kurmasına izin verilmiyor"
-    },
-    "checking": "Ağ geçidi kontrol ediliyor…",
-    "confirm": {
-      "body": "Başka hiçbir şey değişmez: günlüğün bu cihazda kalır ve dilediğin zaman yapay zeka ayarlarından bağlantıyı kesebilirsin.",
-      "button": "Bu ağ geçidine katıl",
-      "join": "{{name}} ağ geçidine katıl",
-      "joining": "Katılınıyor…",
-      "replaces": "Bu işlem geçerli yapay zeka bağlantının ({{current}}) yerini alır. Hiçbir yerde hiçbir erişim iptal edilmez. Daha sonra yeniden ayarlayabilirsin.",
-      "routing": "Yemek fotoğrafların analiz için {{origin}} üzerinden gönderilecek."
-    },
-    "description": "Biri bu cihazı, kendi çalıştırdığı bir ağ geçidindeki yapay zekayı kullanmaya davet etti.",
-    "invalidLink": {
-      "body": "Bağlantının bir kısmı eksik veya e-posta uygulaması tarafından kesilmiş. Seni davet eden kişiden bağlantıyı tekrar göndermesini iste.",
-      "title": "Bu davet bağlantısı doğru görünmüyor"
-    },
-    "inviteInvalid": {
-      "body": "Seni davet eden kişiden yeni bir bağlantı iste.",
-      "continue": "Uygulamaya devam et",
-      "title": "Bu davet geçerli değil veya süresi dolmuş"
-    },
-    "joined": "{{name}} bağlantısı kuruldu.",
-    "saveFailed": "Bağlantı bu cihaza kaydedilemedi. Tekrar dene.",
-    "title": "Bir ağ geçidine katıl",
-    "unreachable": {
-      "body": "Ağ geçidi yanıt vermedi. Adresi kontrol et veya seni davet eden kişiye ağ geçidinin çalışıp çalışmadığını sor.",
-      "title": "{{origin}} adresine ulaşılamıyor"
-    },
-    "saveRetry": "Bu cihaza kaydederken bir sorun oluştu. Hiçbir veri kaybolmadı. Tekrar dene.",
-    "retry": "Tekrar dene"
-  },
   "dashboard": {
     "loading": "Günün yükleniyor…",
     "ridge": {
@@ -1310,7 +1270,6 @@
     "add": "Yiyecek ekle · openplate",
     "ai": "Yapay zeka ayarları · openplate",
     "connectClinician": "Klinisyen bağla · openplate",
-    "connectGateway": "Ağ geçidine katıl · openplate",
     "catchUp": "Günlük durumun · openplate",
     "dashboard": "Genel bakış · openplate",
     "data": "Veri ve yedekleme · openplate",

@@ -34,7 +34,7 @@ export default [
   route('/join', 'routes/join.tsx'),
 
   // Clinician onboarding: where a clinician's connect link lands (M160/08).
-  // CLIENT-ONLY and top-level for the same two reasons as `/connect-gateway`,
+  // CLIENT-ONLY and top-level for the same two reasons as `/join` above,
   // plus a third that is specific to it, the payload rides in the URL
   // FRAGMENT, which no browser sends to any server, so there is nothing a
   // loader here could read. `openplate-core` ADR-0002 prohibition 1: the
@@ -61,9 +61,9 @@ export default [
   // "I already have an account". TOP-LEVEL and client-only, and it has to be ,
   // `_personal.tsx`'s onboarding gate is what redirects here, so a route nested
   // inside that layout would be redirected away from itself in a loop. Exactly
-  // the position `/recover` is in below, for exactly the same reason. Both
-  // hints it reads (the remembered sign-in name and the gateway membership)
-  // live in the browser, so there is nothing here for a loader to do either.
+  // the position `/recover` is in below, for exactly the same reason. The
+  // device hint it reads (the remembered sign-in name) lives in the browser,
+  // so there is nothing here for a loader to do either.
   route('/welcome', 'routes/welcome.tsx'),
 
   // The door back in for somebody who already has an account (M183 spec 03):

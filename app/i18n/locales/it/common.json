@@ -394,46 +394,6 @@
     },
     "title": "Collega un medico"
   },
-  "connectGateway": {
-    "audit": {
-      "body": "Questo gateway dichiara che il suo amministratore può esaminare i contenuti che invii, incluse le foto. È quanto segnala il gateway stesso. openplate non può verificarlo.",
-      "title": "Questo gateway dichiara di poter esaminare ciò che invii"
-    },
-    "backToAiSettings": "Torna alle impostazioni dell'IA",
-    "blocked": {
-      "operatorBody": "Chi gestisce questa istanza di openplate deve aggiungere {{origin}} all'impostazione CSP_CONNECT_EXTRA e riavviarla. Fino ad allora il browser blocca ogni richiesta verso quel gateway. (Se la gestisci tu, si tratta di una riga nel tuo file .env).",
-      "operatorTitle": "Chi gestisce questa istanza di openplate deve autorizzarlo",
-      "title": "Questa app non ha i permessi per comunicare con quel gateway"
-    },
-    "checking": "Verifica del gateway in corso…",
-    "confirm": {
-      "body": "Non cambia nient'altro: il tuo diario resta su questo dispositivo e puoi disconnetterti in qualsiasi momento nelle impostazioni dell'IA.",
-      "button": "Collegati a questo gateway",
-      "join": "Collegati a {{name}}",
-      "joining": "Connessione in corso…",
-      "replaces": "Questo sostituisce la tua attuale connessione IA ({{current}}). Non viene revocato nulla. Puoi riconfigurarla in seguito.",
-      "routing": "Le foto dei tuoi piatti verranno inviate tramite {{origin}} per l'analisi."
-    },
-    "description": "Qualcuno ha invitato questo dispositivo a usare l'IA su un gateway che gestisce.",
-    "invalidLink": {
-      "body": "Manca una parte del link oppure l'applicazione di posta lo ha tagliato. Chiedi a chi ti ha invitato di inviarlo di nuovo.",
-      "title": "Questo link di invito non sembra corretto"
-    },
-    "inviteInvalid": {
-      "body": "Chiedi un nuovo link a chi ti ha invitato.",
-      "continue": "Continua nell'app",
-      "title": "Questo invito non è valido o è scaduto"
-    },
-    "joined": "Connessione a {{name}} stabilita.",
-    "saveFailed": "Impossibile salvare la connessione su questo dispositivo. Riprova.",
-    "title": "Unisciti a un gateway",
-    "unreachable": {
-      "body": "Il gateway non ha risposto. Controlla l'indirizzo, oppure chiedi alla persona che ti ha invitato se è in esecuzione.",
-      "title": "Impossibile raggiungere {{origin}}"
-    },
-    "saveRetry": "Si è verificato un errore durante il salvataggio su questo dispositivo. Non è andato perso nulla. Riprova.",
-    "retry": "Riprova"
-  },
   "dashboard": {
     "loading": "Caricamento della giornata in corso…",
     "ridge": {
@@ -1310,7 +1270,6 @@
     "add": "Aggiungi cibo · openplate",
     "ai": "Impostazioni IA · openplate",
     "connectClinician": "Collega un medico · openplate",
-    "connectGateway": "Unisciti a un gateway · openplate",
     "catchUp": "Il tuo riepilogo giornaliero · openplate",
     "dashboard": "Panoramica · openplate",
     "data": "Dati e backup · openplate",

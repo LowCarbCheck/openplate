@@ -394,46 +394,6 @@
     },
     "title": "Connecter un médecin"
   },
-  "connectGateway": {
-    "audit": {
-      "body": "Cette passerelle déclare que son administrateur peut examiner tes envois, y compris les photos. C'est ce que la passerelle indique elle-même. openplate ne peut pas le vérifier.",
-      "title": "Cette passerelle indique pouvoir examiner ce que tu envoies"
-    },
-    "backToAiSettings": "Retour aux paramètres d'IA",
-    "blocked": {
-      "operatorBody": "La personne qui gère cet openplate doit ajouter {{origin}} au paramètre CSP_CONNECT_EXTRA et le redémarrer. D'ici là, le navigateur bloque chaque requête vers cette passerelle. (Si tu l'héberges toi-même, c'est une ligne dans ton .env.)",
-      "operatorTitle": "La personne qui gère cet openplate doit l'autoriser",
-      "title": "Cette application n'est pas autorisée à communiquer avec cette passerelle"
-    },
-    "checking": "Vérification de cette passerelle…",
-    "confirm": {
-      "body": "Rien d'autre ne change : ton journal reste sur cet appareil, et tu peux te déconnecter à tout moment dans les paramètres d'IA.",
-      "button": "Rejoindre cette passerelle",
-      "join": "Rejoindre {{name}}",
-      "joining": "Connexion en cours…",
-      "replaces": "Cela remplace ta connexion IA actuelle ({{current}}). Rien n'est révoqué nulle part. Tu pourras la reconfigurer plus tard.",
-      "routing": "Tes photos de repas seront envoyées via {{origin}} pour analyse."
-    },
-    "description": "Quelqu'un a invité cet appareil à utiliser l'IA sur une passerelle qu'il administre.",
-    "invalidLink": {
-      "body": "Une partie du lien manque ou a été coupée par l'application d'e-mail. Demande à la personne qui t'a invité de le renvoyer.",
-      "title": "Ce lien d'invitation ne semble pas correct"
-    },
-    "inviteInvalid": {
-      "body": "Demande un nouveau lien à la personne qui t'a invité.",
-      "continue": "Continuer vers l'application",
-      "title": "Cette invitation n'est pas valide ou a expiré"
-    },
-    "joined": "Connecté à {{name}}.",
-    "saveFailed": "Impossible d'enregistrer la connexion sur cet appareil. Réessaie.",
-    "title": "Rejoindre une passerelle",
-    "unreachable": {
-      "body": "La passerelle n'a pas répondu. Vérifie l'adresse, ou demande à la personne qui t'a invité si elle fonctionne.",
-      "title": "Impossible de joindre {{origin}}"
-    },
-    "saveRetry": "Une erreur est survenue lors de l'enregistrement sur cet appareil. Rien n'est perdu. Réessaie.",
-    "retry": "Réessayer"
-  },
   "dashboard": {
     "loading": "Chargement de ta journée…",
     "ridge": {
@@ -1310,7 +1270,6 @@
     "add": "Ajouter un aliment · openplate",
     "ai": "Paramètres de l'IA · openplate",
     "connectClinician": "Associer un médecin · openplate",
-    "connectGateway": "Rejoindre une passerelle · openplate",
     "catchUp": "Ton point quotidien · openplate",
     "dashboard": "Vue d'ensemble · openplate",
     "data": "Données et sauvegarde · openplate",

@@ -23,9 +23,11 @@ import { VisionProviderError } from './types';
 /**
  * - `auth` — the key itself was rejected (401/403). Resending the same
  *   request can never succeed.
- * - `reconsent-required` — a gateway (see `app/lib/gateway-invite.ts`) refused
- *   the call because its privacy mode changed since this device joined: HTTP
- *   403 with `{"error":"reconsent_required"}`. It is a 403, but emphatically
+ * - `reconsent-required`: the openplate-gateway service (merged into
+ *   openplate-core and archived in M192, see docs/README.md) refused the
+ *   call because its privacy mode had changed since this device joined: HTTP
+ *   403 with
+ *   `{"error":"reconsent_required"}`. It is a 403, but emphatically
  *   NOT `auth`: the member token is fine and there is nothing to fix in AI
  *   settings — the person has to be re-invited, having been told what the new
  *   terms are. Lumping it into `auth` would send them hunting for a key that

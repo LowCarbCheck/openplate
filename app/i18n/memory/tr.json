@@ -1182,13 +1182,6 @@
     "at": "2026-09-14",
     "tr": "Klinisyen bağla · openplate"
   },
-  "10c5ca28d4ffff7c": {
-    "en": "This invite link doesn't look right",
-    "path": "common:connectGateway.invalidLink.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu davet bağlantısı doğru görünmüyor"
-  },
   "10e0f14ec88f002c": {
     "en": "6. Your account, suspension, and termination",
     "path": "legal:terms.s6Heading",
@@ -1384,13 +1377,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu bağlantı başka bir openplate örneğine ait. Bağlantıyı orada aç."
-  },
-  "1379585e7ce7943a": {
-    "en": "Join {{name}}",
-    "path": "common:connectGateway.confirm.join",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "{{name}} ağ geçidine katıl"
   },
   "137fb2de233fa068": {
     "en": "Viewing {{day}}. Open the calendar to jump to a different day.",
@@ -1629,13 +1615,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Folat"
-  },
-  "163c704943cfe326": {
-    "en": "Try again",
-    "path": "common:connectGateway.retry",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Tekrar dene"
   },
   "164b1d57416b51a2": {
     "en": "No macros logged yet",
@@ -1966,20 +1945,6 @@
     "at": "2026-09-14",
     "tr": "Sürüm {{label}}"
   },
-  "1ac00c651d4b784a": {
-    "en": "Ask whoever invited you for a new link.",
-    "path": "common:connectGateway.inviteInvalid.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Seni davet eden kişiden yeni bir bağlantı iste."
-  },
-  "1af8fc83e279dd50": {
-    "en": "Checking that gateway…",
-    "path": "common:connectGateway.checking",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Ağ geçidi kontrol ediliyor…"
-  },
   "1afc07e83ddf0617": {
     "en": "Failed to identify foods from your description.",
     "path": "common:scan.errors.identifyFailedText",
@@ -2106,13 +2071,6 @@
     "at": "2026-09-14",
     "tr": "12. İletişim"
   },
-  "1c6fa2eb776cf1a8": {
-    "en": "Join a gateway · openplate",
-    "path": "common:meta.connectGateway",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Ağ geçidine katıl · openplate"
-  },
   "1cc9d137eb1c2d3a": {
     "en": "Advanced: use a different provider",
     "path": "common:settingsAi.advanced.toggle",
@@ -2189,13 +2147,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Erişim iste"
-  },
-  "1d26a6750890f33b": {
-    "en": "Connected to {{name}}.",
-    "path": "common:connectGateway.joined",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "{{name}} bağlantısı kuruldu."
   },
   "1d33a9657ea2cf09": {
     "en": "{{day}}, {{value}} of {{goal}} g protein, goal reached",
@@ -2889,13 +2840,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İçinde bulunduğun haftayı yaz, yukarıdaki tahmini doğum tarihini biz dolduralım. Yalnızca tarih kaydedilir."
-  },
-  "26d93db9047b3f39": {
-    "en": "This invite is not valid or has expired",
-    "path": "common:connectGateway.inviteInvalid.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu davet geçerli değil veya süresi dolmuş"
   },
   "26ec0122a418a9df": {
     "en": "per 100g: {{summary}}",
@@ -4472,13 +4416,6 @@
     "at": "2026-09-14",
     "tr": "Günlük net karbonhidrat"
   },
-  "413107ac2d582895": {
-    "en": "This app isn't allowed to talk to that gateway",
-    "path": "common:connectGateway.blocked.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu uygulamanın söz konusu ağ geçidiyle iletişim kurmasına izin verilmiyor"
-  },
   "41480e14a8d5feda": {
     "en": "Leave blank to decide later. You can set it in Settings anytime.",
     "path": "common:onboarding.kcal.hint",
@@ -4618,13 +4555,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yapay zeka ile tabak tanımlama, kendi yapay zeka sağlayıcınızı kullanır. Tabak fotoğrafı ve sağlayıcı anahtarınız doğrudan tarayıcınızdan o sağlayıcıya gönderilir ve sunucularımızdan asla geçmez. Tarayıcınız ayrıca daha sonra tekrar görebilmeniz için fotoğrafın cihaz üzerinde geçici bir kopyasını tutar (bkz. Bölüm 2). Bu kopya cihazınızı yalnızca bir durumda terk eder: o girdideki yanlış bir tahmini bildirmeyi seçerseniz. Fotoğraf ve o girdinin rakamları daha sonra bize gönderilir, bir yönetici bunları inceleyebilir ve biz bunları {{reportWindow}} sileriz."
-  },
-  "437baec739b54a0d": {
-    "en": "The operator of this openplate has to allow it",
-    "path": "common:connectGateway.blocked.operatorTitle",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu openplate uygulamasının işletmecisi buna izin vermeli"
   },
   "437ec88d557c231c": {
     "en": "Saving…",
@@ -4961,13 +4891,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate bir besin takip aracıdır. Yerel öncelikli olarak geliştirilmiştir. Besinleriniz, besin günlükleriniz, kilo kayıtlarınız ve hedefleriniz kendi cihazınızdaki tarayıcınızda yazılır. Bu örnekte hesabınız, aynı zamanda bu verilerin uçtan uca şifrelenmiş bir kopyasını sunucumuzda tutar. Bu sayede aynı günlük diğer cihazlarınıza ulaşır ve yeniden kurulumdan sonra da varlığını korur. Bu kopyayı şifreli metin olarak tutarız. Ayrıca Gizlilik Politikasında açıklandığı gibi, bir parola sıfırlama işleminin günlük verilerinizi geri yüklemesini sağlayan bir kurtarma anahtarı tutarız. Yapay zeka tabak tanımlaması, üçüncü taraf bir sağlayıcıdan satın alınmak yerine hesabınıza dahil edilmiştir."
-  },
-  "4901d9206cfb9d5f": {
-    "en": "Your food photos will be sent through {{origin}} for analysis.",
-    "path": "common:connectGateway.confirm.routing",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Yemek fotoğrafların analiz için {{origin}} üzerinden gönderilecek."
   },
   "490bc77d686d2f54": {
     "en": "A sample day, not your data.",
@@ -5535,13 +5458,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu örnek e-posta göndermez, bu yüzden bağlantıyı kendin ilet. Bağlantıya sahip olan herkes hesabı açabilir, bu nedenle bir parolayı nasıl iletiyorsan öyle gönder."
-  },
-  "50c8085fee55a3a9": {
-    "en": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
-    "path": "common:connectGateway.invalidLink.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bağlantının bir kısmı eksik veya e-posta uygulaması tarafından kesilmiş. Seni davet eden kişiden bağlantıyı tekrar göndermesini iste."
   },
   "50ca9d9ad000c8c0": {
     "en": "<strong>Nothing on this page is required.</strong> Your diary, goals, and trends all work without it. If signing up for a paid AI service and pasting in a key isn't for you, close this page and keep logging by hand, you lose nothing else.",
@@ -7411,13 +7327,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bir yapay zeka sağlayıcısı seç"
-  },
-  "6a97f494c01c3491": {
-    "en": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
-    "path": "common:connectGateway.unreachable.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Ağ geçidi yanıt vermedi. Adresi kontrol et veya seni davet eden kişiye ağ geçidinin çalışıp çalışmadığını sor."
   },
   "6aa1338a0066e0fe": {
     "en": "Signing in…",
@@ -9407,13 +9316,6 @@
     "at": "2026-09-14",
     "tr": "Listeye dön"
   },
-  "86789f062591fa73": {
-    "en": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
-    "path": "common:connectGateway.audit.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu ağ geçidi, yöneticisinin fotoğraflar da dahil olmak üzere gönderilerini inceleyebileceğini bildiriyor. Ağ geçidinin kendisinin bildirdiği budur. openplate bunu doğrulayamaz."
-  },
   "8695670acf7d46b3": {
     "en": "No problem, nothing was connected. Try again whenever you're ready.",
     "path": "common:oauth.callback.error.denied.body",
@@ -9742,13 +9644,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Son ödemen gerçekleşmedi."
-  },
-  "8b083c94aec5ee72": {
-    "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
-    "path": "common:connectGateway.confirm.replaces",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu işlem geçerli yapay zeka bağlantının ({{current}}) yerini alır. Hiçbir yerde hiçbir erişim iptal edilmez. Daha sonra yeniden ayarlayabilirsin."
   },
   "8b14749883ffc1d9": {
     "en": "Study account number {{studyAccountId}}",
@@ -10184,13 +10079,6 @@
     "at": "2026-09-14",
     "tr": "Paylaşım"
   },
-  "8fe99fc59fd396d9": {
-    "en": "Can't reach {{origin}}",
-    "path": "common:connectGateway.unreachable.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "{{origin}} adresine ulaşılamıyor"
-  },
   "8ff95470c3552ccd": {
     "en": "Stripe issues an invoice for each payment. Under section 147 of the Fiscal Code and section 14b of the Value Added Tax Act, German tax law requires us to retain this invoice for ten years.",
     "path": "legal:privacy.s7aPaymentBody3",
@@ -10471,13 +10359,6 @@
     "at": "2026-09-14",
     "tr": "Daha fazla bilgi al"
   },
-  "9474018c172c4f69": {
-    "en": "Continue to the app",
-    "path": "common:connectGateway.inviteInvalid.continue",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Uygulamaya devam et"
-  },
   "94834798f20702a1": {
     "en": "This only removes the key from <strong>this device</strong>. It does <strong>not</strong> revoke it at {{provider}}.",
     "path": "common:settingsAi.disconnect.notRevoked",
@@ -10533,13 +10414,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "tutturuldu"
-  },
-  "95c8d22adfa282a8": {
-    "en": "Join this gateway",
-    "path": "common:connectGateway.confirm.button",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu ağ geçidine katıl"
   },
   "95f4df8593cb0b69": {
     "en": "per 100 g: {{summary}}",
@@ -11507,13 +11381,6 @@
     "at": "2026-09-14",
     "tr": "Gram değeri 0'dan büyük olmalıdır"
   },
-  "a3c8397a0c19c2a3": {
-    "en": "This gateway says it can review what you send",
-    "path": "common:connectGateway.audit.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu ağ geçidi, gönderdiklerini inceleyebileceğini belirtiyor"
-  },
   "a3f6027836544875": {
     "en": "The account could not be deleted.",
     "path": "common:account.delete.failed",
@@ -11695,13 +11562,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İsteğe bağlı. Bağlantı içinde iletilir, bu yüzden bunu bir kanıt olarak değil, kendin hakkında söylediğin bir şey olarak değerlendir."
-  },
-  "a693abb2296c48b8": {
-    "en": "Something went wrong while saving on this device. Nothing is lost. Try again.",
-    "path": "common:connectGateway.saveRetry",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu cihaza kaydederken bir sorun oluştu. Hiçbir veri kaybolmadı. Tekrar dene."
   },
   "a6a81f89df2d73fc": {
     "en": "Both options leave the diary on this device untouched.",
@@ -11989,13 +11849,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Girdisi ucuz ama üç test tabağımızdan ikisini yanlış okudu"
-  },
-  "aa9b5120040bfc07": {
-    "en": "Couldn't save the connection on this device. Try again.",
-    "path": "common:connectGateway.saveFailed",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bağlantı bu cihaza kaydedilemedi. Tekrar dene."
   },
   "aaa541f258ff40d0": {
     "en": "Add {{name}} to favorites",
@@ -12935,13 +12788,6 @@
     "at": "2026-09-14",
     "tr": "Bu ay: {{scans}} · maliyet bilinmiyor"
   },
-  "b8baadb6a26f6d6f": {
-    "en": "Back to AI settings",
-    "path": "common:connectGateway.backToAiSettings",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Yapay zeka ayarlarına dön"
-  },
   "b8e7a7c7e7f8d440": {
     "en": "The password could not be set. Try the link again in a moment.",
     "path": "common:reset.failed",
@@ -13165,13 +13011,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Her şeyi indir (JSON)"
-  },
-  "bd0c4e71bfe0ba99": {
-    "en": "Join a gateway",
-    "path": "common:connectGateway.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bir ağ geçidine katıl"
   },
   "bd314707be0b1417": {
     "en": "The account could not be deleted.",
@@ -13522,13 +13361,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bekleyen davet yok."
-  },
-  "c2608b96820070d5": {
-    "en": "Someone invited this device to use the AI on a gateway they run.",
-    "path": "common:connectGateway.description",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Biri bu cihazı, kendi çalıştırdığı bir ağ geçidindeki yapay zekayı kullanmaya davet etti."
   },
   "c26558cfbbfc7257": {
     "en": "Study account's password",
@@ -14180,13 +14012,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Söyle"
-  },
-  "ce5d630bdde3764b": {
-    "en": "Joining…",
-    "path": "common:connectGateway.confirm.joining",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Katılınıyor…"
   },
   "ce8925c81a6680f3": {
     "en": "Enter your API key",
@@ -15013,13 +14838,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Reklam veya üçüncü taraf analitiği kullanmıyoruz. Bu örnek, ziyaretleri, özellik kullanımını ve araştırma etkinliklerini kendi sunucumuzdaki kendi Matomo kurulumumuzu kullanarak ölçer. Hiçbir veri bir analitik sağlayıcısına gitmez. Çerez ayarlamaz. Ne yediğinizi, kilonuzu veya ne kaydettiğinizi asla almaz, çünkü ona hiçbir zaman günlük içeriği gönderilmez. Kaydedilen öğelerin tam listesi ve nasıl itiraz edileceğine ilişkin talimatlar için Bölüm 9a'ya bakın. Bir örneği kendiniz barındırıyorsanız, siz açana kadar analitik kapalı kalır."
-  },
-  "d91c2d1970bb7d38": {
-    "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
-    "path": "common:connectGateway.confirm.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Başka hiçbir şey değişmez: günlüğün bu cihazda kalır ve dilediğin zaman yapay zeka ayarlarından bağlantıyı kesebilirsin."
   },
   "d95540023a296bc0": {
     "en": "That did not work",
@@ -16567,13 +16385,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Paylaşımı durdur"
-  },
-  "ef51205a81e40d29": {
-    "en": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
-    "path": "common:connectGateway.blocked.operatorBody",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bu openplate uygulamasını çalıştıran kişi {{origin}} değerini CSP_CONNECT_EXTRA ayarına eklemeli ve uygulamayı yeniden başlatmalıdır. O zamana kadar tarayıcı, bu ağ geçidine yapılan her isteği engeller. (Kendin çalıştırıyorsan, .env dosyan içinde tek bir satırdır.)"
   },
   "ef56dad27533b3b5": {
     "en": "This removes the entry from your weight history. You can log it again anytime.",

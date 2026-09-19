@@ -138,11 +138,12 @@ export function buildContentSecurityPolicy({
     // entry a configured preset fails its first scan and nothing on the server
     // notices. Nothing is appended when no preset is configured. Origin only.
     ...(presetOrigin === null ? [] : [presetOrigin]),
-    // The instance's own AI gateway (M187 spec 03), from GATEWAY_URL. The
-    // browser redeems the invite there and then sends every plate photo there,
-    // so this is the same failure mode once more: without the entry a managed
-    // instance's very first join dies on a CSP violation. Nothing is appended
-    // when no gateway is configured. Origin only.
+    // Extra operator-supplied origins, from CSP_CONNECT_EXTRA: a remote
+    // openai-compatible endpoint the built-in localhost/127.0.0.1 carve-out
+    // above doesn't reach. Same failure mode as the two entries above:
+    // without it a self-hoster's remote AI endpoint fails every scan on a
+    // CSP violation, with no server-side symptom to debug from. Nothing is
+    // appended when unset, which is the common case.
     ...connectExtra,
     // Cloudflare Turnstile, ONLY when the newsletter is configured
     // (NEWSLETTER_SUBSCRIBE_URL). The widget's own callbacks fetch from this

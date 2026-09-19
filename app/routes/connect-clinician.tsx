@@ -3,7 +3,7 @@
  * connect link lands on the patient's device (M160/08).
  *
  * CLIENT-ONLY, and it exports no `loader`, `action`, `clientLoader` or
- * `clientAction` — deliberately, like `connect-gateway.tsx` beside it. The
+ * `clientAction`, deliberately, like `join.tsx` beside it. The
  * payload lives in the URL FRAGMENT, which no browser sends to any server, so
  * a loader could not read it even if one existed. That is the point:
  * `openplate-core` ADR-0002 prohibition 1 says the server never stores, serves
@@ -28,8 +28,8 @@
  *
  * ── The fragment is left in the address bar ───────────────────────────────
  *
- * Unlike the gateway invite next door, which strips its one-shot token on
- * sight. There is no credential here to strip, and keeping the fragment means
+ * Unlike `/join` next door, which strips its one-shot token on sight. There
+ * is no credential here to strip, and keeping the fragment means
  * a reload or a back-button still works. The ONE case that is stripped is the
  * refusal above: those parameters have already been sent to a server once, and
  * a reload would send them again.

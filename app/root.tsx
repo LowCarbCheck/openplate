@@ -78,12 +78,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   const publicConfig: PublicConfig = {
     syncServerUrl: CONFIG.sync.syncServerUrl,
     instancePreset: CONFIG.inference.instancePreset,
-    // The gateway address, and the one fact derived from it (M187 spec 03).
-    // `managed` decides the SHAPE of the app rather than the presence of a
-    // card: on a managed instance the welcome screen offers one door, the
-    // anonymous onboarding path is closed, and the join ceremony runs without
-    // a skip. `false` on every instance that set no GATEWAY_URL, which is
-    // today's app in full.
+    // `INSTANCE_MODE`, and the one fact derived from it (M192, replacing
+    // GATEWAY_URL: see `CONFIG.instance`). `managed` decides the SHAPE of
+    // the app rather than the presence of a card: on a managed instance the
+    // welcome screen offers one door, the anonymous onboarding path is
+    // closed, and the join ceremony runs without a skip. `false` on every
+    // instance that left INSTANCE_MODE unset, which is today's app in full.
     managed: CONFIG.instance.managed,
     // `null` unless an operator set MATOMO_URL + MATOMO_SITE_ID. Carries no
     // secret: a Matomo URL and site id are both public by construction (they

@@ -394,46 +394,6 @@
     },
     "title": "Conectar a un profesional clínico"
   },
-  "connectGateway": {
-    "audit": {
-      "body": "Esta pasarela declara que su administrador puede revisar lo que envíes, incluidas las fotos. Es lo que la propia pasarela indica. openplate no puede comprobar si es así.",
-      "title": "Esta pasarela indica que puede revisar lo que envíes"
-    },
-    "backToAiSettings": "Volver a los ajustes de IA",
-    "blocked": {
-      "operatorBody": "Quien administre este openplate debe añadir {{origin}} a la opción CSP_CONNECT_EXTRA y reiniciarlo. Mientras no lo haga, el navegador bloqueará cualquier petición a esa pasarela. (Si lo administras tú, basta con añadir una línea en tu .env).",
-      "operatorTitle": "El operador de este openplate tiene que autorizarlo",
-      "title": "Esta aplicación no tiene permiso para comunicarse con esa pasarela"
-    },
-    "checking": "Comprobando esa pasarela…",
-    "confirm": {
-      "body": "Nada más cambia: tu diario permanece en este dispositivo y puedes desconectarte en cualquier momento desde los ajustes de IA.",
-      "button": "Unirse a esta pasarela",
-      "join": "Unirse a {{name}}",
-      "joining": "Conectando…",
-      "replaces": "Esto sustituye tu conexión actual con la IA ({{current}}). No se revoca nada en ningún sitio. Puedes volver a configurarla más adelante.",
-      "routing": "Las fotos de tu comida se enviarán a través de {{origin}} para su análisis."
-    },
-    "description": "Alguien ha invitado a este dispositivo a usar la IA en una pasarela que administra.",
-    "invalidLink": {
-      "body": "Falta parte del enlace o la aplicación de correo la cortó. Pide a quien te invitó que vuelva a enviarlo.",
-      "title": "Este enlace de invitación no parece correcto"
-    },
-    "inviteInvalid": {
-      "body": "Pide un enlace nuevo a quien te invitó.",
-      "continue": "Continuar a la aplicación",
-      "title": "Esta invitación no es válida o ha caducado"
-    },
-    "joined": "Conectado a {{name}}.",
-    "saveFailed": "No se pudo guardar la conexión en este dispositivo. Inténtalo de nuevo.",
-    "title": "Unirse a una pasarela",
-    "unreachable": {
-      "body": "La pasarela no respondió. Comprueba la dirección o pregunta a la persona que te invitó si está en ejecución.",
-      "title": "No se puede acceder a {{origin}}"
-    },
-    "saveRetry": "Se produjo un error al guardar en este dispositivo. No se ha perdido nada. Inténtalo de nuevo.",
-    "retry": "Intentar de nuevo"
-  },
   "dashboard": {
     "loading": "Cargando tu día…",
     "ridge": {
@@ -1310,7 +1270,6 @@
     "add": "Añadir comida · openplate",
     "ai": "Ajustes de IA · openplate",
     "connectClinician": "Conectar a un profesional médico · openplate",
-    "connectGateway": "Unirte a una pasarela · openplate",
     "catchUp": "Tu resumen diario · openplate",
     "dashboard": "Resumen · openplate",
     "data": "Datos y copia de seguridad · openplate",
