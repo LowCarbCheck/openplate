@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { Route } from './+types/trends';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,9 @@ import { enumerateDates, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { startOfWeek } from '#app/lib/trend-week';
 import { ALL_MEALS, buildTrendChart } from '#app/lib/trend-chart';
 import { bucketByWeek } from '#app/lib/trend-buckets';
-import type { TrendMetric, TrendSlot } from '#app/lib/trend-chart';
+import type { TrendDay, TrendMetric, TrendSlot } from '#app/lib/trend-chart';
+import { DEFAULT_INSIGHTS_TAB, INSIGHTS_TABS } from '#app/lib/insights-tabs';
+import type { InsightsTab } from '#app/lib/insights-tabs';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
 import { computeWeeklyRecap } from '#app/lib/trend-recap';
 import { computeWeeklyWeightChange } from '#app/lib/trend-weight';
@@ -38,6 +40,7 @@ import { isGamificationHidden } from '#app/lib/gamification/surfaces';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { ActivityStreakCard } from '#app/components/gamification/activity-streak-card';
 import { AdherenceGridCard } from '#app/components/trends/adherence-grid-card';
+import { InsightsTabStrip } from '#app/components/trends/insights-tab-strip';
 import { TrendChart } from '#app/components/trends/trend-chart';
 import { TrendControls } from '#app/components/trends/trend-controls';
 import { TrendLegend } from '#app/components/trends/trend-legend';
@@ -59,7 +62,7 @@ export const meta: Route.MetaFunction = ({ matches }) => [{ title: metaTitle(met
 export const handle = {
   // `title` stays as the untranslated fallback for any consumer that reads the
   // handle outside a React tree (where `t` isn't available).
-  title: 'Progress',
+  title: 'Insights',
   titleKey: 'trends.title',
 };
 
@@ -102,6 +105,19 @@ const actionT = (key: string, params?: Readonly<Record<string, string | number |
  */
 function _parseSlot(raw: string | null): TrendSlot {
   return MEAL_TYPES.find((meal) => meal === raw) ?? ALL_MEALS;
+}
+
+/**
+ * Parses the `tab` search param into an insights tab, falling back to
+ * overview on anything the tab strip could not have produced. A bad value
+ * reads as the glance-first section rather than as an error, the same rule
+ * `_parseSlot` above applies to a bad meal slot.
+ *
+ * @param raw - the raw search-param value, or null when it is absent.
+ * @returns the tab to show.
+ */
+export function _parseTab(raw: string | null): InsightsTab {
+  return INSIGHTS_TABS.find((tab) => tab === raw) ?? DEFAULT_INSIGHTS_TAB;
 }
 
 /** Parses an explicit `range` search param, falling back to the default on anything invalid. */
@@ -172,6 +188,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
       pickDefaultRange({ earliestLoggedDate: await getEarliestLocalFoodLogDayKey(), today })
     : _parseRange(rawRange);
   const slot = _parseSlot(searchParams.get('slot'));
+  const tab = _parseTab(searchParams.get('tab'));
 
   const chartWindow = { fromDate: shiftDate(today, -(range - 1)), toDate: today };
   const currentWeekStart = startOfWeek(today);
@@ -266,6 +283,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     goals,
     range,
     slot,
+    tab,
     recap,
     weight,
     eatingWindow,
@@ -344,44 +362,44 @@ function EmptyTrends() {
   );
 }
 
-export default function Trends({ loaderData }: Route.ComponentProps) {
-  const {
-    entries,
-    goals,
-    range,
-    slot,
-    recap,
-    weight,
-    eatingWindow,
-    hasAnyData,
-    today,
-    gridDays,
-    adherenceGoals,
-    weightWindow,
-    targetWeightKg,
-    todayWeightKg,
-    marks,
-    gamificationHidden,
-  } = loaderData;
-  const [metric, setMetric] = useState<TrendMetric>('net-carbs');
-  // Device-local display preference, shared with `/settings/profile` (which owns
-  // the toggle). Read once per mount, so returning here after switching it
-  // there picks the new unit up.
-  const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
+/**
+ * The net-carbs/calories chart: the metric/range/slot controls, the bar chart
+ * or the sparse notice, and the slot-only note under the title. Shown on both
+ * the Nutrition and the Meals tab for now, since M239/04 gives Meals its own
+ * content, and until then `?tab=meals&slot=breakfast` already narrows this
+ * exact chart to one meal, which is what the Meals tab claims to offer today.
+ *
+ * A component rather than inline JSX so its several derived values (the
+ * title, the sparse threshold, the bucketed days) are computed only when a
+ * tab that needs them is actually rendered, since React never calls a
+ * component function whose element the parent didn't include.
+ *
+ * @param entries - the loader's per-day totals for the active range and slot.
+ * @param range - the active day range; drives daily-vs-weekly bucketing and the range control's active state.
+ * @param slot - the active meal slot, or `ALL_MEALS`.
+ * @param tab - which tab this card is rendered under, so its controls keep switching tab in the URL.
+ * @param metric - the active metric (client state).
+ * @param onMetricChange - selects a metric.
+ * @param goals - the day-level goals the chart's goal line reads.
+ */
+function ChartCard({
+  entries,
+  range,
+  slot,
+  tab,
+  metric,
+  onMetricChange,
+  goals,
+}: {
+  entries: TrendDay[];
+  range: TrendRange;
+  slot: TrendSlot;
+  tab: InsightsTab;
+  metric: TrendMetric;
+  onMetricChange: (metric: TrendMetric) => void;
+  goals: { netCarbsCeiling: number | null; kcalTarget: number | null };
+}) {
   const { t } = useTranslation();
-
-  const adherenceGrid = useMemo(
-    () => buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals }),
-    [today, gridDays, adherenceGoals],
-  );
-
-  if (!hasAnyData) {
-    return (
-      <div className="mx-auto max-w-2xl">
-        <EmptyTrends />
-      </div>
-    );
-  }
 
   const goalValue = metric === 'net-carbs' ? goals.netCarbsCeiling : goals.kcalTarget;
   // `slot` goes to the model rather than being applied to the goal here: every
@@ -405,68 +423,140 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
   const hasEnoughDays = loggedDaysInRange >= MIN_TREND_DAYS;
 
   return (
+    <Card>
+      <CardHeader className="space-y-3">
+        <div className="space-y-1">
+          {/* No `capitalize` here: the title is now a whole catalog string
+              with its own correct casing, and the CSS class title-cases EVERY
+              word — it rendered "Daily Net Carbs" in English and "Netto-KH
+              Pro Tag" in German, which is simply wrong in both. */}
+          <CardTitle className="text-lg">{chartTitle}</CardTitle>
+          <CardDescription>{hasEnoughDays ? t('trends.chart.tapHint') : t('trends.chart.sparseHint')}</CardDescription>
+          {/* The title still says "Daily net carbs", which is only half true
+              once a slot is chosen, so the slot is named right under it. */}
+          {slot !== ALL_MEALS && (
+            <p className="text-xs font-medium text-muted-foreground">
+              {t('trends.chart.slotOnly', { meal: t(MEAL_LABEL_KEYS[slot]) })}
+            </p>
+          )}
+        </div>
+        <TrendControls metric={metric} onMetricChange={onMetricChange} range={range} slot={slot} tab={tab} />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {hasEnoughDays ?
+          <>
+            <TrendChart model={chart} metric={metric} goalValue={goalValue} />
+            <TrendLegend metric={metric} hasGoal={chart.goalFraction !== null} />
+          </>
+        : <SparseTrendNotice loggedDays={loggedDaysInRange} />}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function Trends({ loaderData }: Route.ComponentProps) {
+  const {
+    entries,
+    goals,
+    range,
+    slot,
+    tab,
+    recap,
+    weight,
+    eatingWindow,
+    hasAnyData,
+    today,
+    gridDays,
+    adherenceGoals,
+    weightWindow,
+    targetWeightKg,
+    todayWeightKg,
+    marks,
+    gamificationHidden,
+  } = loaderData;
+  const [metric, setMetric] = useState<TrendMetric>('net-carbs');
+  // Device-local display preference, shared with `/settings/profile` (which owns
+  // the toggle). Read once per mount, so returning here after switching it
+  // there picks the new unit up.
+  const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
+  const { t } = useTranslation();
+
+  if (!hasAnyData) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <EmptyTrends />
+      </div>
+    );
+  }
+
+  return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* The ACTIVITY streak (M235/06), the same number `/dashboard` shows,
-          derived from the same marks by the same function. The card is also the
-          only door to `/awards`, and both go together when the person has
-          switched these surfaces off. It renders on an ordinary card surface —
-          "This week" below is already this screen's one `.surface-brand` hero
-          (DESIGN.md §2). */}
-      <ActivityStreakCard marks={marks} today={today} hidden={gamificationHidden} />
+      {/* M239/02: four review sections in the URL. Every tab keeps `range`
+          and `slot`, so switching sections never resets the chart window or
+          the meal filter. */}
+      <InsightsTabStrip active={tab} range={range} slot={slot} />
 
-      {/* The 13-week record, between the glanceable streak and this week's
-          recap: the page descends from glance to detail, and the heaviest,
-          most control-laden surface (the daily bar chart) closes it. */}
-      <AdherenceGridCard grid={adherenceGrid} goals={adherenceGoals} />
+      {tab === 'overview' && (
+        <>
+          {/* The ACTIVITY streak (M235/06), the same number `/dashboard` shows,
+              derived from the same marks by the same function. The card is also
+              the only door to `/awards`, and both go together when the person
+              has switched these surfaces off. It renders on an ordinary card
+              surface — "This week" below is already this screen's one
+              `.surface-brand` hero (DESIGN.md §2). */}
+          <ActivityStreakCard marks={marks} today={today} hidden={gamificationHidden} />
 
-      <WeeklyRecapCard
-        current={recap.current}
-        previous={recap.previous}
-        weight={weight}
-        eatingWindow={eatingWindow}
-        goals={{ netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor }}
-      />
+          <WeeklyRecapCard
+            current={recap.current}
+            previous={recap.previous}
+            weight={weight}
+            eatingWindow={eatingWindow}
+            goals={{ netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor }}
+          />
 
-      {/* The body story is its own chapter: the chart moved here from
-          `/settings/profile`, which keeps the entry form and the weigh-in list. */}
-      <WeightProgressCard
-        points={weightWindow}
-        targetWeightKg={targetWeightKg}
-        today={today}
-        todayWeightKg={todayWeightKg}
-        weightUnit={weightUnit}
-      />
+          {/* The body story is its own chapter: the chart moved here from
+              `/settings/profile`, which keeps the entry form and the weigh-in
+              list. */}
+          <WeightProgressCard
+            points={weightWindow}
+            targetWeightKg={targetWeightKg}
+            today={today}
+            todayWeightKg={todayWeightKg}
+            weightUnit={weightUnit}
+          />
+        </>
+      )}
 
-      <Card>
-        <CardHeader className="space-y-3">
-          <div className="space-y-1">
-            {/* No `capitalize` here: the title is now a whole catalog string
-                with its own correct casing, and the CSS class title-cases EVERY
-                word — it rendered "Daily Net Carbs" in English and "Netto-KH
-                Pro Tag" in German, which is simply wrong in both. */}
-            <CardTitle className="text-lg">{chartTitle}</CardTitle>
-            <CardDescription>
-              {hasEnoughDays ? t('trends.chart.tapHint') : t('trends.chart.sparseHint')}
-            </CardDescription>
-            {/* The title still says "Daily net carbs", which is only half true
-                once a slot is chosen, so the slot is named right under it. */}
-            {slot !== ALL_MEALS && (
-              <p className="text-xs font-medium text-muted-foreground">
-                {t('trends.chart.slotOnly', { meal: t(MEAL_LABEL_KEYS[slot]) })}
-              </p>
-            )}
-          </div>
-          <TrendControls metric={metric} onMetricChange={setMetric} range={range} slot={slot} />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {hasEnoughDays ?
-            <>
-              <TrendChart model={chart} metric={metric} goalValue={goalValue} />
-              <TrendLegend metric={metric} hasGoal={chart.goalFraction !== null} />
-            </>
-          : <SparseTrendNotice loggedDays={loggedDaysInRange} />}
-        </CardContent>
-      </Card>
+      {/* The 13-week goal record. `buildAdherenceGrid` is called here, inline
+          in the JSX it feeds, rather than through a `useMemo` computed on
+          every render: this way the grid is built only on the render where
+          the Goals tab is actually shown, not on every metric toggle from the
+          Nutrition tab. */}
+      {tab === 'goals' && (
+        <AdherenceGridCard
+          grid={buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals })}
+          goals={adherenceGoals}
+        />
+      )}
+
+      {(tab === 'nutrition' || tab === 'meals') && (
+        <>
+          <ChartCard
+            entries={entries}
+            range={range}
+            slot={slot}
+            tab={tab}
+            metric={metric}
+            onMetricChange={setMetric}
+            goals={goals}
+          />
+          {tab === 'nutrition' && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/nutrients">{t('nav.nutrients')}</Link>
+            </Button>
+          )}
+        </>
+      )}
     </div>
   );
 }

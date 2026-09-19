@@ -85,7 +85,9 @@ test('the snack filter charts the snack alone, day by day', async ({ page }) => 
   await logFoodManually(page, { name: SNACK_NAME, grams: PORTION_GRAMS, carbs: '30', mealType: 'snack' });
   await logFoodManually(page, { name: DINNER_NAME, grams: PORTION_GRAMS, carbs: '10', mealType: 'dinner' });
 
-  await page.goto('/trends');
+  // M239/02: the chart moved to the Nutrition tab, so the slot controls this
+  // spec is about are no longer on the plain `/trends` URL.
+  await page.goto('/trends?tab=nutrition');
   const controls = page.locator('[data-slot="trend-slot-controls"]');
   await expect(controls).toBeVisible();
 

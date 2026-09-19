@@ -1306,7 +1306,7 @@
     "study": "Console dello studio · openplate",
     "sync": "Account · openplate",
     "terms": "Termini di servizio · openplate",
-    "trends": "Progressi · openplate",
+    "trends": "Insights · openplate",
     "welcome": "Benvenuto · openplate",
     "forgot": "Password dimenticata",
     "reset": "Imposta una nuova password",
@@ -1331,7 +1331,7 @@
     "nutrients": "Nutrienti",
     "scan": "Scansiona",
     "settings": "Impostazioni",
-    "trends": "Progressi",
+    "trends": "Insights",
     "pantry": "Dispensa"
   },
   "nutrients": {
@@ -2742,7 +2742,7 @@
       "empty": "Usa l'app oggi per iniziare una serie.",
       "title": "La tua serie"
     },
-    "title": "Progressi",
+    "title": "Insights",
     "weight": {
       "caption": "La linea mostra la tua tendenza smussata; i punti indicano il valore effettivo della bilancia.",
       "chartEmpty": "Registra la tua prima pesata per vedere la tendenza.",
@@ -2772,6 +2772,12 @@
       "title": "Peso",
       "unitKilograms": "chilogrammi",
       "unitPounds": "libbre"
+    },
+    "tabs": {
+      "goals": "Goals",
+      "meals": "Meals",
+      "nutrition": "Nutrition",
+      "overview": "Overview"
     }
   },
   "ui": {

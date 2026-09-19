@@ -172,7 +172,9 @@ test('a long diary at 90 days draws one bar per week, and 14 days stays daily', 
 
   await writeDiaryToDisk(page, diary);
 
-  await page.goto(`/trends?range=${DAILY_RANGE}`);
+  // M239/02: the chart moved to the Nutrition tab, so the plain `/trends`
+  // URL no longer draws it.
+  await page.goto(`/trends?tab=nutrition&range=${DAILY_RANGE}`);
 
   ////////////////////////////////////////////////////////////////////////////
   // The control: 14 days are 14 daily bars

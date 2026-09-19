@@ -1306,7 +1306,7 @@
     "study": "Çalışma konsolu · openplate",
     "sync": "Hesap · openplate",
     "terms": "Hizmet şartları · openplate",
-    "trends": "İlerleme · openplate",
+    "trends": "Insights · openplate",
     "welcome": "Hoş geldin · openplate",
     "forgot": "Şifreni mi unuttun",
     "reset": "Yeni bir şifre belirle",
@@ -1331,7 +1331,7 @@
     "nutrients": "Besin ögeleri",
     "scan": "Tara",
     "settings": "Ayarlar",
-    "trends": "İlerleme",
+    "trends": "Insights",
     "pantry": "Kiler"
   },
   "nutrients": {
@@ -2742,7 +2742,7 @@
       "empty": "Seri başlatmak için uygulamayı bugün kullan.",
       "title": "Serin"
     },
-    "title": "İlerleme",
+    "title": "Insights",
     "weight": {
       "caption": "Çizgi düzeltilmiş eğilimindir, noktalar ise tartının gerçekte gösterdiği değerlerdir.",
       "chartEmpty": "Eğilimini görmek için ilk tartımını kaydet.",
@@ -2772,6 +2772,12 @@
       "title": "Kilo",
       "unitKilograms": "kilogram",
       "unitPounds": "libre"
+    },
+    "tabs": {
+      "goals": "Goals",
+      "meals": "Meals",
+      "nutrition": "Nutrition",
+      "overview": "Overview"
     }
   },
   "ui": {

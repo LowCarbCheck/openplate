@@ -17,6 +17,12 @@ import { resolve } from 'node:path';
 import { z } from 'zod';
 
 const catalogSchema = z.object({
+  chrome: z.object({
+    logoMenuLabel: z.string(),
+  }),
+  nav: z.object({
+    trends: z.string(),
+  }),
   welcome: z.object({
     start: z.string(),
     startFresh: z.string(),
@@ -100,6 +106,8 @@ const catalogSchema = z.object({
     slot: z.object({ all: z.string() }),
     range: z.object({ threeMonths: z.string() }),
     streak: z.object({ active_one: z.string(), empty: z.string() }),
+    tabs: z.object({ overview: z.string(), nutrition: z.string(), meals: z.string(), goals: z.string() }),
+    grid: z.object({ titleActivity: z.string() }),
   }),
   awards: z.object({
     title: z.string(),

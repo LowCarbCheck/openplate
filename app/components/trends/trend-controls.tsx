@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { ALL_MEALS } from '#app/lib/trend-chart';
 import type { TrendMetric, TrendSlot } from '#app/lib/trend-chart';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
+import type { InsightsTab } from '#app/lib/insights-tabs';
 import { Button } from '#app/components/ui/button';
 
 /** The selectable day ranges and their plain-language label keys, mirroring the loader's accepted values. */
@@ -40,17 +41,21 @@ const SLOT_OPTIONS: readonly { value: TrendSlot; labelKey: string }[] = [
 ];
 
 /**
- * The href for one control, carrying the OTHER control's current value with it.
- * Switching the range must not silently drop the chosen slot, and vice versa.
- * `ALL_MEALS` is written as the absence of the param rather than as `slot=all`,
- * so the plain `/trends` URL stays the whole-day view.
+ * The href for one control, carrying the OTHER controls' current values with
+ * it. Switching the range must not silently drop the chosen slot or the
+ * active tab, and vice versa. `ALL_MEALS` is written as the absence of the
+ * param rather than as `slot=all`, so the plain `/trends` URL stays the
+ * whole-day view; `tab` is always spelled out, since these controls only ever
+ * render on the Nutrition or Meals tab and dropping it would silently bounce
+ * the reader back to Overview.
  *
  * @param selection.range - the range the link should land on.
  * @param selection.slot - the slot the link should land on.
+ * @param selection.tab - the tab the link should stay on.
  * @returns a same-route query string.
  */
-function controlHref({ range, slot }: { range: number; slot: TrendSlot }): string {
-  const params = new URLSearchParams({ range: `${range}` });
+function controlHref({ range, slot, tab }: { range: number; slot: TrendSlot; tab: InsightsTab }): string {
+  const params = new URLSearchParams({ range: `${range}`, tab });
   if (slot !== ALL_MEALS) params.set('slot', slot);
   return `?${params.toString()}`;
 }
@@ -60,17 +65,20 @@ function controlHref({ range, slot }: { range: number; slot: TrendSlot }): strin
  * @param onMetricChange - selects a metric (client state, no navigation).
  * @param range - the active day range (drives active styling on the range links).
  * @param slot - the active meal slot, or `ALL_MEALS`.
+ * @param tab - the tab these controls are rendered under (Nutrition or Meals), carried into every link.
  */
 export function TrendControls({
   metric,
   onMetricChange,
   range,
   slot,
+  tab,
 }: {
   metric: TrendMetric;
   onMetricChange: (metric: TrendMetric) => void;
   range: number;
   slot: TrendSlot;
+  tab: InsightsTab;
 }) {
   const { t } = useTranslation();
 
@@ -97,7 +105,7 @@ export function TrendControls({
           {RANGE_OPTIONS.map((option) => (
             <Button key={option.value} asChild size="sm" variant={range === option.value ? 'default' : 'outline'}>
               <Link
-                to={controlHref({ range: option.value, slot })}
+                to={controlHref({ range: option.value, slot, tab })}
                 preventScrollReset
                 aria-current={range === option.value ? 'true' : undefined}
               >
@@ -115,7 +123,7 @@ export function TrendControls({
         {SLOT_OPTIONS.map((option) => (
           <Button key={option.value} asChild size="sm" variant={slot === option.value ? 'default' : 'outline'}>
             <Link
-              to={controlHref({ range, slot: option.value })}
+              to={controlHref({ range, slot: option.value, tab })}
               preventScrollReset
               aria-current={slot === option.value ? 'true' : undefined}
             >

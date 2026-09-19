@@ -13,7 +13,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Added
 
-- **Progress can now show the last 90 days.** A new 3 months choice sits beside Week, 2 weeks and Month. At Month and 3 months the chart draws one bar per week, the average of the days you logged that week, so the bars still fit a phone. A week you logged nothing stays empty rather than showing zero. Progress now reads only the days it shows, so a long diary no longer slows the screen down.
+- **Insights can now show the last 90 days.** A new 3 months choice sits beside Week, 2 weeks and Month. At Month and 3 months the chart draws one bar per week, the average of the days you logged that week, so the bars still fit a phone. A week you logged nothing stays empty rather than showing zero. Insights now reads only the days it shows, so a long diary no longer slows the screen down.
+- **Progress is renamed to Insights, and now opens on four tabs.** The menu item and the page title say Insights; the page still lives at the same address. Overview shows your streak, this week's recap and your weight. Nutrition shows the carbs and calories chart, with a link to Nutrients. Meals filters that same chart to one meal. Goals shows your 13-week goal grid. Switching tabs keeps the time span and the meal filter you had chosen.
 
 ### Fixed
 

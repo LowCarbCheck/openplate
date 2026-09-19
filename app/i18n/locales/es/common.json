@@ -1306,7 +1306,7 @@
     "study": "Consola del estudio · openplate",
     "sync": "Cuenta · openplate",
     "terms": "Condiciones del servicio · openplate",
-    "trends": "Progreso · openplate",
+    "trends": "Insights · openplate",
     "welcome": "Bienvenida · openplate",
     "forgot": "Contraseña olvidada",
     "reset": "Establece una contraseña nueva",
@@ -1331,7 +1331,7 @@
     "nutrients": "Nutrientes",
     "scan": "Escanear",
     "settings": "Ajustes",
-    "trends": "Progreso",
+    "trends": "Insights",
     "pantry": "Despensa"
   },
   "nutrients": {
@@ -2742,7 +2742,7 @@
       "empty": "Usa la aplicación hoy para empezar una racha.",
       "title": "Tu racha"
     },
-    "title": "Progreso",
+    "title": "Insights",
     "weight": {
       "caption": "La línea es tu tendencia suavizada; los puntos son lo que marcó la báscula.",
       "chartEmpty": "Registra tu primer pesaje para ver tu tendencia.",
@@ -2772,6 +2772,12 @@
       "title": "Peso",
       "unitKilograms": "kilogramos",
       "unitPounds": "libras"
+    },
+    "tabs": {
+      "goals": "Goals",
+      "meals": "Meals",
+      "nutrition": "Nutrition",
+      "overview": "Overview"
     }
   },
   "ui": {

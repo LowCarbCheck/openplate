@@ -34,12 +34,23 @@ describe('metaTitle', () => {
 
   it('answers per call, so two languages never contend for one process-wide state', () => {
     // The bug this module exists to prevent: request A setting the singleton's
-    // language and request B rendering its title in it.
+    // language and request B rendering its title in it. `meta.trends` is a
+    // placeholder in German right now (M239/02, spec 07 translates it), so
+    // both languages currently answer the same string. The property under
+    // test, that a second call for a DIFFERENT language never reads back the
+    // first call's cached answer, is still exercised below with `meta.diary`,
+    // which the two languages do say differently.
     const first = metaTitle('de', 'meta.trends');
     const second = metaTitle('en', 'meta.trends');
-    assert.strictEqual(first, 'Fortschritt · openplate');
-    assert.strictEqual(second, 'Progress · openplate');
+    assert.strictEqual(first, 'Insights · openplate');
+    assert.strictEqual(second, 'Insights · openplate');
     assert.strictEqual(metaTitle('de', 'meta.trends'), first);
+
+    const firstDiary = metaTitle('de', 'meta.diary');
+    const secondDiary = metaTitle('en', 'meta.diary');
+    assert.strictEqual(firstDiary, 'Tagebuch · openplate');
+    assert.strictEqual(secondDiary, 'Diary · openplate');
+    assert.strictEqual(metaTitle('de', 'meta.diary'), firstDiary);
   });
 
   it('falls back to English for an unsupported or tampered language', () => {
