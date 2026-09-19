@@ -152,7 +152,38 @@ export async function startFakeFoodDb({ port }: { port: number }): Promise<FakeF
     response.end(JSON.stringify({ error: 'not found' }));
   });
 
-  await new Promise<void>((settle) => server.listen(port, '127.0.0.1', settle));
+  await new Promise<void>((settle, fail) => {
+    // The port here is a FIXED one from `tests/e2e/env.ts`, so a second
+    // checkout of this repository running the browser tier holds it. A bare
+    // `listen` with only a success callback never learns that: Node skips the
+    // callback and emits `error` with EADDRINUSE, and a promise that waits only
+    // for `listening` then neither settles nor fails, so the tier prints
+    // nothing and sits at nought percent CPU until somebody kills it. That
+    // reads as flakiness. A rejection that names the port reads as a fact.
+    //
+    // Both handlers go on with `once`, and whichever fires first removes the
+    // other. `once` on its own would still leave the loser attached: a fake
+    // that DID start and then failed at runtime would hand that late `error` to
+    // a promise which has already settled, where it does nothing, and every
+    // start would leak the listener that never fired.
+    function onListening(): void {
+      server.removeListener('error', onFailure);
+      settle();
+    }
+    function onFailure(error: Error): void {
+      server.removeListener('listening', onListening);
+      fail(
+        new Error(
+          `the fake food database could not take 127.0.0.1:${port}, because another process on this host already holds that port (${error.message}). ` +
+            'Only one working tree on this host can run the browser tier at a time, so wait for the other run to finish, or name the owner with `ss -ltnp`.',
+          { cause: error },
+        ),
+      );
+    }
+    server.once('listening', onListening);
+    server.once('error', onFailure);
+    server.listen(port, '127.0.0.1');
+  });
 
   return {
     url: `http://127.0.0.1:${port}`,

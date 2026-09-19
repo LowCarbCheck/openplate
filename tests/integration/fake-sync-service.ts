@@ -1419,7 +1419,41 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
   });
 
   const server: Server = createServer(app);
-  await new Promise<void>((resolve) => server.listen(options.port ?? 0, '127.0.0.1', resolve));
+  const port = options.port ?? 0;
+  await new Promise<void>((resolve, reject) => {
+    // A bare `listen` with nothing but a success callback is how this tier
+    // learned to hang. When the port is already taken Node never calls that
+    // callback: it emits `error` with EADDRINUSE instead, and a promise that
+    // waits only for `listening` then neither resolves nor rejects, so the
+    // caller waits for ever. A run that prints nothing for sixteen minutes
+    // reads as flakiness; a rejection reads as a fact. So this promise settles
+    // either way, and the rejection says what an operator has to do next.
+    //
+    // Both handlers go on with `once`, and whichever fires first removes the
+    // other. `once` on its own would still leave the loser attached: a service
+    // that DID start and then failed at runtime would hand that late `error` to
+    // a promise which has already resolved, where it settles nothing and is
+    // silently dropped, and every start would leak the listener that never
+    // fired.
+    function onListening(): void {
+      server.removeListener('error', onFailure);
+      resolve();
+    }
+    function onFailure(error: Error): void {
+      server.removeListener('listening', onListening);
+      reject(
+        new Error(
+          `the fake sync service could not take 127.0.0.1:${port}, because another process on this host already holds that port (${error.message}). ` +
+            'A NAMED port comes from the browser tier (`tests/e2e/env.ts`), while the integration tier asks for a free one and cannot collide. ' +
+            'Only one working tree on this host can run the browser tier at a time, so wait for the other run to finish, or name the owner with `ss -ltnp`.',
+          { cause: error },
+        ),
+      );
+    }
+    server.once('listening', onListening);
+    server.once('error', onFailure);
+    server.listen(port, '127.0.0.1');
+  });
   // SAFETY: `listen(<port>, '127.0.0.1')` binds a TCP socket, and `Server#address()`
   // returns `AddressInfo` for every TCP bind — the `string` form is reachable
   // only from a pipe/UDS bind, which this server never performs.
