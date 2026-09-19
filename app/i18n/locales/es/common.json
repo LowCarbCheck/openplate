@@ -2808,6 +2808,31 @@
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",
       "partial": "{{date}}: faltan algunos macronutrientes, por lo que no hay desglose"
+    },
+    "meals": {
+      "averages": {
+        "title": "Media por comida",
+        "loggedDays": "Registrado en {{days}} de {{total}} días"
+      },
+      "noMealSet": "Sin comida asignada",
+      "share": {
+        "title": "Comidas a lo largo del día",
+        "descriptionCalories": "Las calorías de cada día, divididas por comida.",
+        "descriptionNetCarbs": "Los carbohidratos netos de cada día, divididos por comida.",
+        "row": "{{date}}: {{ratio}}",
+        "segment": "{{meal}} {{percent}}%"
+      },
+      "snack": {
+        "title": "Porcentaje de tentempiés",
+        "description": "La proporción semanal de tus calorías que procede de tentempiés.",
+        "sparse": "Sigue registrando. Esto necesita dos semanas de datos para ser significativo.",
+        "row": "{{date}}: {{percent}}% de tentempiés"
+      },
+      "usual": {
+        "empty": "Todavía no has registrado nada en esta comida durante este periodo.",
+        "timesLogged_one": "Registrado {{count}} vez",
+        "timesLogged_other": "Registrado {{count}} veces"
+      }
     }
   },
   "ui": {

@@ -44,6 +44,7 @@ import { AdherenceGridCard } from '#app/components/trends/adherence-grid-card';
 import { InsightsTabStrip } from '#app/components/trends/insights-tab-strip';
 import { chartTitleKey, TrendChart } from '#app/components/trends/trend-chart';
 import { MacroEnergySplitCard } from '#app/components/trends/macro-energy-split-card';
+import { MealsTabContent } from '#app/components/trends/meals-tab-content';
 import { TrendControls } from '#app/components/trends/trend-controls';
 import { TrendLegend } from '#app/components/trends/trend-legend';
 import { MIN_TREND_DAYS, SparseTrendNotice } from '#app/components/trends/sparse-trend-notice';
@@ -78,8 +79,12 @@ const NEW_ACCOUNT_RANGE: TrendRange = 7;
 /**
  * From this range up the chart draws one bar per week, not per day: 90 daily
  * bars do not fit a phone, and 30 are already a comb of slivers.
+ *
+ * Exported so the Meals tab's own cards (`MealsTabContent`, M239/04) bucket
+ * their share bars by the same rule `ChartCard` below uses for the bar chart,
+ * rather than a second copy of the threshold drifting out of step with it.
  */
-const WEEKLY_BARS_FROM_RANGE: TrendRange = 30;
+export const WEEKLY_BARS_FROM_RANGE: TrendRange = 30;
 /** A Monday→Sunday week is seven days wide. */
 const DAYS_IN_WEEK = 7;
 // `GRID_WEEKS` is imported: Overview draws the same grid, so the week count
@@ -315,6 +320,11 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     gridDays,
     adherenceGoals,
     weightWindow,
+    // Every log covering at least the chart window, already read for the
+    // bounded window above. The Meals tab's own cards (M239/04) need every
+    // slot's logs, not just the chosen one `entries` was filtered to, to
+    // build the per-slot averages and shares.
+    windowLogs,
     // The marks and the switch, read here rather than from inside the card:
     // this loader already reads the device, and a card that read the store from
     // an effect of its own could not be rendered in a test (M235/06).
@@ -512,6 +522,7 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     todayWeightKg,
     marks,
     gamificationHidden,
+    windowLogs,
   } = loaderData;
   // Device-local display preference, shared with `/settings/profile` (which owns
   // the toggle). Read once per mount, so returning here after switching it
@@ -577,26 +588,32 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
         />
       )}
 
-      {(tab === 'nutrition' || tab === 'meals') && (
+      {/* The chart itself is shared with Nutrition, but only while a Meals
+          reader has picked one slot to look at in detail (M239/04): with no
+          slot chosen, the tab's own averages/shares cards below replace it
+          rather than repeating a whole-day chart the Meals tab isn't about. */}
+      {(tab === 'nutrition' || (tab === 'meals' && slot !== ALL_MEALS)) && (
+        <ChartCard entries={entries} leadEntries={leadEntries} range={range} slot={slot} tab={tab} metric={metric} goals={goals} />
+      )}
+
+      {tab === 'nutrition' && (
         <>
-          <ChartCard
-            entries={entries}
-            leadEntries={leadEntries}
-            range={range}
-            slot={slot}
-            tab={tab}
-            metric={metric}
-            goals={goals}
-          />
-          {tab === 'nutrition' && (
-            <>
-              <MacroEnergySplitCard days={entries} isWeekly={range >= WEEKLY_BARS_FROM_RANGE} />
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/nutrients">{t('nav.nutrients')}</Link>
-              </Button>
-            </>
-          )}
+          <MacroEnergySplitCard days={entries} isWeekly={range >= WEEKLY_BARS_FROM_RANGE} />
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/nutrients">{t('nav.nutrients')}</Link>
+          </Button>
         </>
+      )}
+
+      {tab === 'meals' && (
+        <MealsTabContent
+          logs={windowLogs}
+          range={{ fromDate: shiftDate(today, -(range - 1)), toDate: today }}
+          rangeDays={range}
+          isWeekly={range >= WEEKLY_BARS_FROM_RANGE}
+          slot={slot}
+          metric={metric}
+        />
       )}
     </div>
   );

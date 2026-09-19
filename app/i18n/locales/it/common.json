@@ -2808,6 +2808,31 @@
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",
       "partial": "{{date}}: mancano alcuni macronutrienti, quindi non c'è una ripartizione"
+    },
+    "meals": {
+      "averages": {
+        "title": "Media per pasto",
+        "loggedDays": "Registrato in {{days}} giorni su {{total}}"
+      },
+      "noMealSet": "Nessun pasto impostato",
+      "share": {
+        "title": "Pasti nell'arco della giornata",
+        "descriptionCalories": "Le calorie di ogni giorno, suddivise per pasto.",
+        "descriptionNetCarbs": "I carboidrati netti di ogni giorno, suddivisi per pasto.",
+        "row": "{{date}}: {{ratio}}",
+        "segment": "{{meal}} {{percent}}%"
+      },
+      "snack": {
+        "title": "Percentuale di snack",
+        "description": "La quota settimanale delle tue calorie provenienti dagli snack.",
+        "sparse": "Continua a registrare. Servono due settimane di dati per avere senso.",
+        "row": "{{date}}: {{percent}}% da snack"
+      },
+      "usual": {
+        "empty": "Ancora niente di registrato per questo pasto in questo intervallo.",
+        "timesLogged_one": "Registrato {{count}} volta",
+        "timesLogged_other": "Registrato {{count}} volte"
+      }
     }
   },
   "ui": {

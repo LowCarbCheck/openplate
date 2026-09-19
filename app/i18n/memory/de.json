@@ -20,6 +20,13 @@
     "at": "2026-09-14",
     "de": "{{date}}: nichts eingetragen"
   },
+  "00ad36a47e8e6fd6": {
+    "en": "Each day’s calories, split by meal.",
+    "path": "common:trends.meals.share.descriptionCalories",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Tägliche Kalorien, aufgeteilt nach Mahlzeit."
+  },
   "00e3cc2145cb2155": {
     "en": "Week of {{date}}",
     "path": "common:trends.chart.bar.week",
@@ -3170,6 +3177,13 @@
     "at": "2026-09-14",
     "de": "Grober Treffer"
   },
+  "2b36e4a979d25b5a": {
+    "en": "Nothing logged at this meal yet in this range.",
+    "path": "common:trends.meals.usual.empty",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "In diesem Zeitraum wurde für diese Mahlzeit noch nichts erfasst."
+  },
   "2b48b7556ec2ba03": {
     "en": "Save goals",
     "path": "common:goals.save",
@@ -3470,6 +3484,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Ausschließlich Fastenziel"
+  },
+  "300210ba7b456aaa": {
+    "en": "Each day’s net carbs, split by meal.",
+    "path": "common:trends.meals.share.descriptionNetCarbs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Tägliche Netto-Kohlenhydrate, aufgeteilt nach Mahlzeit."
   },
   "301b934a1d4531d2": {
     "en": "No food found in that picture. Take a closer shot, or write the list.",
@@ -4367,6 +4388,13 @@
     "at": "2026-09-17",
     "de": "Diese Liste speichern"
   },
+  "3f24666e4afc8246": {
+    "en": "{{date}}: {{percent}}% from snacks",
+    "path": "common:trends.meals.snack.row",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "{{date}}: {{percent}}% aus Snacks"
+  },
   "3f670054e9cae4d1": {
     "en": "Food",
     "path": "common:add.custom.fallbackName",
@@ -4793,6 +4821,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Die Linie ist dein geglätteter Verlauf, die Punkte sind das, was die Waage tatsächlich angezeigt hat."
+  },
+  "450aeef69e4c05f1": {
+    "en": "Average by meal",
+    "path": "common:trends.meals.averages.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Durchschnitt nach Mahlzeit"
   },
   "453ee374531ae42f": {
     "en": "Choose from library",
@@ -5549,6 +5584,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "de": "Zutaten"
+  },
+  "50530b1bef7154f9": {
+    "en": "Keep logging. This needs two weeks of data to mean anything.",
+    "path": "common:trends.meals.snack.sparse",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Erfasse weiter. Das benötigt zwei Wochen an Daten, um aussagekräftig zu sein."
   },
   "5066efdf1aed23dc": {
     "en": "openplate {{version}} is available",
@@ -9106,6 +9148,13 @@
     "at": "2026-09-17",
     "de": "Vorratskammer"
   },
+  "815364ceca0637e5": {
+    "en": "Logged {{count}} times",
+    "path": "common:trends.meals.usual.timesLogged_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "{{count}} Mal erfasst"
+  },
   "81562984f1e4a836": {
     "en": "Understood",
     "path": "common:fasting.care.understood",
@@ -9203,6 +9252,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Rückgängig"
+  },
+  "826eb7de58571903": {
+    "en": "Meals across the day",
+    "path": "common:trends.meals.share.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Mahlzeiten über den Tag"
   },
   "8273018a33a072cb": {
     "en": "Type your password to confirm. This cannot be undone.",
@@ -10310,6 +10366,13 @@
     "at": "2026-09-14",
     "de": "Studien, zu denen du beiträgst"
   },
+  "9032331b40a24b9c": {
+    "en": "Snack share",
+    "path": "common:trends.meals.snack.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Snack-Anteil"
+  },
   "9051408ba52c5feb": {
     "en": "Couldn't finish connecting",
     "path": "common:oauth.callback.error.exchangeFailed.title",
@@ -10722,6 +10785,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Stillend, {{count}} Monate"
+  },
+  "972d90f8f0a73047": {
+    "en": "No meal set",
+    "path": "common:trends.meals.noMealSet",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Keine Mahlzeit festgelegt"
   },
   "97309a2b0ab066c1": {
     "en": "Fasting",
@@ -15112,6 +15182,13 @@
     "at": "2026-09-14",
     "de": "Deinen Tarif ansehen"
   },
+  "d7feb78a153ffb0b": {
+    "en": "Logged {{count}} time",
+    "path": "common:trends.meals.usual.timesLogged_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "{{count}} Mal erfasst"
+  },
   "d89906a1e313e8d3": {
     "en": "Show",
     "path": "common:admin.filter.groupLabel",
@@ -17394,6 +17471,13 @@
     "at": "2026-09-14",
     "de": "Passe zuerst die Portion an. Die Makronährstoffe folgen."
   },
+  "f8f0c4bc7319a796": {
+    "en": "The weekly share of your calories that came from snacks.",
+    "path": "common:trends.meals.snack.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Der wöchentliche Anteil deiner Kalorien, der aus Snacks stammte."
+  },
   "f90502bbdbe96e11": {
     "en": "Today, still going.",
     "path": "common:trends.grid.cell.today",
@@ -17526,6 +17610,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Größer"
+  },
+  "fa8874b64f7b729a": {
+    "en": "Logged on {{days}} of {{total}} days",
+    "path": "common:trends.meals.averages.loggedDays",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "An {{days}} von {{total}} Tagen erfasst"
   },
   "faa078b9d88c66b0": {
     "en": "g",

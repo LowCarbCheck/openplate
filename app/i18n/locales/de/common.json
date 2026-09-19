@@ -2808,6 +2808,31 @@
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",
       "partial": "{{date}}: Einige Makronährstoffe fehlen, daher gibt es keine Aufteilung"
+    },
+    "meals": {
+      "averages": {
+        "title": "Durchschnitt nach Mahlzeit",
+        "loggedDays": "An {{days}} von {{total}} Tagen erfasst"
+      },
+      "noMealSet": "Keine Mahlzeit festgelegt",
+      "share": {
+        "title": "Mahlzeiten über den Tag",
+        "descriptionCalories": "Tägliche Kalorien, aufgeteilt nach Mahlzeit.",
+        "descriptionNetCarbs": "Tägliche Netto-Kohlenhydrate, aufgeteilt nach Mahlzeit.",
+        "row": "{{date}}: {{ratio}}",
+        "segment": "{{meal}} {{percent}}%"
+      },
+      "snack": {
+        "title": "Snack-Anteil",
+        "description": "Der wöchentliche Anteil deiner Kalorien, der aus Snacks stammte.",
+        "sparse": "Erfasse weiter. Das benötigt zwei Wochen an Daten, um aussagekräftig zu sein.",
+        "row": "{{date}}: {{percent}}% aus Snacks"
+      },
+      "usual": {
+        "empty": "In diesem Zeitraum wurde für diese Mahlzeit noch nichts erfasst.",
+        "timesLogged_one": "{{count}} Mal erfasst",
+        "timesLogged_other": "{{count}} Mal erfasst"
+      }
     }
   },
   "ui": {

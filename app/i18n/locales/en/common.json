@@ -2808,6 +2808,31 @@
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",
       "partial": "{{date}}: some macros are missing, so there is no split"
+    },
+    "meals": {
+      "averages": {
+        "title": "Average by meal",
+        "loggedDays": "Logged on {{days}} of {{total}} days"
+      },
+      "noMealSet": "No meal set",
+      "share": {
+        "title": "Meals across the day",
+        "descriptionCalories": "Each day’s calories, split by meal.",
+        "descriptionNetCarbs": "Each day’s net carbs, split by meal.",
+        "row": "{{date}}: {{ratio}}",
+        "segment": "{{meal}} {{percent}}%"
+      },
+      "snack": {
+        "title": "Snack share",
+        "description": "The weekly share of your calories that came from snacks.",
+        "sparse": "Keep logging. This needs two weeks of data to mean anything.",
+        "row": "{{date}}: {{percent}}% from snacks"
+      },
+      "usual": {
+        "empty": "Nothing logged at this meal yet in this range.",
+        "timesLogged_one": "Logged {{count}} time",
+        "timesLogged_other": "Logged {{count}} times"
+      }
     }
   },
   "ui": {

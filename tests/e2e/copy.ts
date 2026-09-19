@@ -109,6 +109,9 @@ const catalogSchema = z.object({
     streak: z.object({ active_one: z.string(), empty: z.string() }),
     tabs: z.object({ overview: z.string(), nutrition: z.string(), meals: z.string(), goals: z.string() }),
     grid: z.object({ titleActivity: z.string() }),
+    meals: z.object({
+      averages: z.object({ loggedDays: z.string() }),
+    }),
   }),
   goals: z.object({ save: z.string() }),
   awards: z.object({

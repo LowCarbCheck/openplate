@@ -2808,6 +2808,31 @@
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",
       "partial": "{{date}}: bazı makrolar eksik, bu yüzden dağılım yok"
+    },
+    "meals": {
+      "averages": {
+        "title": "Öğün ortalaması",
+        "loggedDays": "{{total}} günün {{days}} gününde kaydedildi"
+      },
+      "noMealSet": "Öğün belirlenmedi",
+      "share": {
+        "title": "Gün içindeki öğünler",
+        "descriptionCalories": "Her günün kalorisi, öğünlere göre bölünmüş.",
+        "descriptionNetCarbs": "Her günün net karbonhidratı, öğünlere göre bölünmüş.",
+        "row": "{{date}}: {{ratio}}",
+        "segment": "{{meal}} {{percent}}%"
+      },
+      "snack": {
+        "title": "Atıştırmalık payı",
+        "description": "Haftalık kalorinin atıştırmalıklardan gelen payı.",
+        "sparse": "Kaydetmeye devam et. Bunun bir anlam ifade etmesi için iki haftalık veri gerekir.",
+        "row": "{{date}}: %{{percent}} atıştırmalıklardan"
+      },
+      "usual": {
+        "empty": "Bu aralıkta bu öğünde henüz bir şey kaydedilmedi.",
+        "timesLogged_one": "{{count}} kez kaydedildi",
+        "timesLogged_other": "{{count}} kez kaydedildi"
+      }
     }
   },
   "ui": {

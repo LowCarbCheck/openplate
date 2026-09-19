@@ -2808,6 +2808,31 @@
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",
       "partial": "{{date}} : certains macronutriments manquent, la répartition n'est donc pas disponible"
+    },
+    "meals": {
+      "averages": {
+        "title": "Moyenne par repas",
+        "loggedDays": "Consigné {{days}} jours sur {{total}}"
+      },
+      "noMealSet": "Aucun repas défini",
+      "share": {
+        "title": "Repas de la journée",
+        "descriptionCalories": "Les calories de chaque jour, réparties par repas.",
+        "descriptionNetCarbs": "Les glucides nets de chaque jour, répartis par repas.",
+        "row": "{{date}}: {{ratio}}",
+        "segment": "{{meal}} {{percent}}%"
+      },
+      "snack": {
+        "title": "Part des collations",
+        "description": "La part hebdomadaire de tes calories provenant des collations.",
+        "sparse": "Continue à consigner. Deux semaines de données sont nécessaires pour afficher un résultat utile.",
+        "row": "{{date}} : {{percent}} % issus des collations"
+      },
+      "usual": {
+        "empty": "Rien n'a encore été consigné pour ce repas sur cette période.",
+        "timesLogged_one": "Consigné {{count}} fois",
+        "timesLogged_other": "Consigné {{count}} fois"
+      }
     }
   },
   "ui": {
