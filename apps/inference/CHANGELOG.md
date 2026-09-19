@@ -5,7 +5,7 @@ All notable changes to `openplate-inference` are recorded here. The format follo
 [semantic versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, a breaking
 change moves the minor.
 
-## [Unreleased]
+## [0.1.4] - 2026-09-20
 
 ### Added
 
