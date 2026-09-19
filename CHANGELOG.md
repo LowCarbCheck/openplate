@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The server now runs as one process in the container.** The image previously started the server through `pnpm exec tsx`. That kept pnpm and the tsx command line running as idle parent processes, using about 70 MB per instance. It now starts `node --import tsx ./server.ts` directly. You do not need to change anything. The entry point is still `scripts/start.sh`, and stopping the container still lets open connections finish.
+
 ## [0.34.0] - 2026-09-19
 
 ### Added

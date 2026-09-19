@@ -10,4 +10,9 @@ set -e
 # image also behaves outside compose (which sets it explicitly).
 export NODE_ENV="${NODE_ENV:-production}"
 echo "[start] Starting server..."
-exec pnpm exec tsx ./server.ts
+#
+# Node directly, not `pnpm exec tsx`. pnpm and the tsx CLI each stayed resident
+# as an idle parent of the real process, about 70 MB per instance. `node
+# --import tsx` loads the same TypeScript in one process, and server.ts handles
+# SIGTERM itself, so a stop still drains connections.
+exec node --import tsx ./server.ts
