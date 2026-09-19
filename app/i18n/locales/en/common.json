@@ -2698,7 +2698,6 @@
       "legendRamp": "Goals met",
       "legendUnrated": "Not enough detail",
       "noGoalsCta": "Set your goals",
-      "noGoalsHint": "Set a daily goal and these squares start showing how close you came each day.",
       "summary": "You hit every goal on {{days}} of the {{logged}} days you logged.",
       "summaryActivity": "You logged on {{days}} of the last {{total}} days.",
       "title": "Goal days",
@@ -2832,6 +2831,33 @@
         "empty": "Nothing logged at this meal yet in this range.",
         "timesLogged_one": "Logged {{count}} time",
         "timesLogged_other": "Logged {{count}} times"
+      }
+    },
+    "goals": {
+      "invite": "Set a daily goal and this tab shows how often you reach it.",
+      "honesty": "Measured against your current goals.",
+      "goalMax": "Your goal: up to {{goal}}",
+      "goalMin": "Your goal: at least {{goal}}",
+      "hitRate": "Met on {{met}} of {{rated}} days",
+      "noRatedDays": "No finished day to check against this goal yet.",
+      "unknownDays_one": "{{count}} day without enough detail is left out.",
+      "unknownDays_other": "{{count}} days without enough detail are left out.",
+      "distance": {
+        "under": "On average {{amount}} under your goal.",
+        "over": "On average {{amount}} over your goal.",
+        "at": "On average right at your goal."
+      },
+      "run": {
+        "current_one": "{{count}} day in a row, up to yesterday.",
+        "current_other": "{{count}} days in a row, up to yesterday.",
+        "best_one": "Longest run: {{count}} day.",
+        "best_other": "Longest run: {{count}} days.",
+        "none": "No run of met days yet."
+      },
+      "fasting": {
+        "title": "Fasts",
+        "description": "Fasts that ended in the last 13 weeks, each measured against its own target.",
+        "reached": "{{reached}} of {{finished}} reached their target"
       }
     }
   },

@@ -1,6 +1,10 @@
 /**
- * The card around the adherence grid: title, description, legend, and the
- * nudge shown when no daily goal is configured yet.
+ * The card around the adherence grid: title, description and legend.
+ *
+ * No nudge of its own when no daily goal is set: the card lives on the Goals
+ * tab, which opens with its own invitation to `/settings/nutrition` in that
+ * case (M239/05), and a second button to the same page one card lower would
+ * be the same question asked twice.
  *
  * On a plain `bg-card`, NOT `.surface-brand`: this screen already spends its
  * one hero on `WeeklyRecapCard` (DESIGN.md §2), and the ramp below was
@@ -8,10 +12,8 @@
  * invalidate that check as well as being a second hero.
  */
 import { useTranslation } from 'react-i18next';
-import { Link } from '#app/components/link';
 import { AdherenceGrid } from '#app/components/trends/adherence-grid';
 import { AdherenceLegend } from '#app/components/trends/adherence-legend';
-import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
 
@@ -19,7 +21,7 @@ import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/m
  * The grid card.
  *
  * @param grid - the resolved grid model.
- * @param goals - the user's configured daily goals (drives the mode-specific copy and the readouts).
+ * @param goals - the user's configured daily goals (drives the readouts).
  */
 export function AdherenceGridCard({ grid, goals }: { grid: AdherenceGridModel; goals: AdherenceGoals }) {
   const { t } = useTranslation();
@@ -38,14 +40,6 @@ export function AdherenceGridCard({ grid, goals }: { grid: AdherenceGridModel; g
       <CardContent className="space-y-3">
         <AdherenceGrid grid={grid} goals={goals} />
         <AdherenceLegend mode={grid.mode} hasUnratedDays={grid.hasUnratedDays} />
-        {isActivityMode && (
-          <div className="space-y-2 pt-1">
-            <p className="text-xs text-muted-foreground">{t('trends.grid.noGoalsHint')}</p>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/settings/nutrition">{t('trends.grid.noGoalsCta')}</Link>
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

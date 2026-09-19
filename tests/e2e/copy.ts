@@ -112,10 +112,12 @@ const catalogSchema = z.object({
     meals: z.object({
       averages: z.object({ loggedDays: z.string() }),
     }),
+    goals: z.object({ invite: z.string(), hitRate: z.string(), honesty: z.string() }),
   }),
   goals: z.object({ save: z.string() }),
   awards: z.object({
     title: z.string(),
+    hide: z.string(),
     note: z.string(),
     explorer: z.object({
       log: z.object({ food: z.object({ title: z.string(), note: z.string() }) }),

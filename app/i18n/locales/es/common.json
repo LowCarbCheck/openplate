@@ -2698,7 +2698,6 @@
       "legendRamp": "Objetivos cumplidos",
       "legendUnrated": "Faltan detalles",
       "noGoalsCta": "Define tus objetivos",
-      "noGoalsHint": "Define un objetivo diario y estos cuadrados empezarán a mostrar qué tan cerca te quedaste cada día.",
       "summary": "Cumpliste todos los objetivos en {{days}} de los {{logged}} días registrados.",
       "summaryActivity": "Registraste en {{days}} de los últimos {{total}} días.",
       "title": "Días con objetivos cumplidos",
@@ -2832,6 +2831,33 @@
         "empty": "Todavía no has registrado nada en esta comida durante este periodo.",
         "timesLogged_one": "Registrado {{count}} vez",
         "timesLogged_other": "Registrado {{count}} veces"
+      }
+    },
+    "goals": {
+      "invite": "Define un objetivo diario y esta pestaña mostrará con qué frecuencia lo alcanzas.",
+      "honesty": "Medido respecto a tus objetivos actuales.",
+      "goalMax": "Tu objetivo: hasta {{goal}}",
+      "goalMin": "Tu objetivo: al menos {{goal}}",
+      "hitRate": "Cumplido en {{met}} de {{rated}} días",
+      "noRatedDays": "Aún no hay ningún día completado para comparar con este objetivo.",
+      "unknownDays_one": "Se excluye {{count}} día por no tener suficiente detalle.",
+      "unknownDays_other": "Se excluyen {{count}} días por no tener suficiente detalle.",
+      "distance": {
+        "under": "De media, {{amount}} por debajo de tu objetivo.",
+        "over": "De media, {{amount}} por encima de tu objetivo.",
+        "at": "De media, justo en tu objetivo."
+      },
+      "run": {
+        "current_one": "{{count}} día seguido, hasta ayer.",
+        "current_other": "{{count}} días seguidos, hasta ayer.",
+        "best_one": "Racha más larga: {{count}} día.",
+        "best_other": "Racha más larga: {{count}} días.",
+        "none": "Aún no hay rachas de días cumplidos."
+      },
+      "fasting": {
+        "title": "Ayunos",
+        "description": "Ayunos terminados en las últimas 13 semanas, cada uno medido respecto a su propio objetivo.",
+        "reached": "{{reached}} de {{finished}} alcanzaron su objetivo"
       }
     }
   },

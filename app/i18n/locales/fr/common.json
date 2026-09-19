@@ -2698,7 +2698,6 @@
       "legendRamp": "Objectifs atteints",
       "legendUnrated": "Pas assez de détails",
       "noGoalsCta": "Définis tes objectifs",
-      "noGoalsHint": "Définis un objectif quotidien et ces carrés indiqueront à quel point tu t'en approches chaque jour.",
       "summary": "Tu as atteint tous tes objectifs {{days}} jours sur les {{logged}} où tu as saisi des données.",
       "summaryActivity": "Tu as saisi des données {{days}} jours sur les {{total}} derniers.",
       "title": "Jours avec objectifs atteints",
@@ -2832,6 +2831,33 @@
         "empty": "Rien n'a encore été consigné pour ce repas sur cette période.",
         "timesLogged_one": "Consigné {{count}} fois",
         "timesLogged_other": "Consigné {{count}} fois"
+      }
+    },
+    "goals": {
+      "invite": "Définis un objectif quotidien et cet onglet affiche la fréquence à laquelle tu l'atteins.",
+      "honesty": "Mesuré par rapport à tes objectifs actuels.",
+      "goalMax": "Ton objectif : jusqu'à {{goal}}",
+      "goalMin": "Ton objectif : au moins {{goal}}",
+      "hitRate": "Atteint {{met}} jour sur {{rated}}",
+      "noRatedDays": "Aucun jour terminé à comparer à cet objectif pour l'instant.",
+      "unknownDays_one": "{{count}} jour insuffisamment détaillé n'est pas pris en compte.",
+      "unknownDays_other": "{{count}} jours insuffisamment détaillés ne sont pas pris en compte.",
+      "distance": {
+        "under": "En moyenne {{amount}} sous ton objectif.",
+        "over": "En moyenne {{amount}} au-dessus de ton objectif.",
+        "at": "En moyenne pile à ton objectif."
+      },
+      "run": {
+        "current_one": "{{count}} jour d'affilée, jusqu'à hier.",
+        "current_other": "{{count}} jours d'affilée, jusqu'à hier.",
+        "best_one": "Série la plus longue : {{count}} jour.",
+        "best_other": "Série la plus longue : {{count}} jours.",
+        "none": "Aucune série de jours réussis pour l'instant."
+      },
+      "fasting": {
+        "title": "Jeûnes",
+        "description": "Jeûnes terminés au cours des 13 dernières semaines, chacun mesuré par rapport à son propre objectif.",
+        "reached": "{{reached}} sur {{finished}} ont atteint leur objectif"
       }
     }
   },

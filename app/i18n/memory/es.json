@@ -559,6 +559,13 @@
     "at": "2026-09-17",
     "es": "ml"
   },
+  "087db090995ba706": {
+    "en": "Longest run: {{count}} days.",
+    "path": "common:trends.goals.run.best_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Racha más larga: {{count}} días."
+  },
   "087fb8c61d6364cb": {
     "en": "{{date}}:{{atLeast}} {{value}} g net carbs{{estimate}}{{overGoal}}",
     "path": "common:trends.chart.bar.netCarbs",
@@ -2610,6 +2617,13 @@
     "at": "2026-09-14",
     "es": "de un límite de {{amount}} {{unit}}"
   },
+  "221f4831fe6f1d3a": {
+    "en": "{{count}} days without enough detail are left out.",
+    "path": "common:trends.goals.unknownDays_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Se excluyen {{count}} días por no tener suficiente detalle."
+  },
   "221fc0e80afe2881": {
     "en": "The provider is temporarily busy or down. Wait a minute and try again.",
     "path": "common:settingsAi.troubleshooting.providerDown",
@@ -2938,6 +2952,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{hours}} h"
+  },
+  "277d7428e579f7df": {
+    "en": "Set a daily goal and this tab shows how often you reach it.",
+    "path": "common:trends.goals.invite",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Define un objetivo diario y esta pestaña mostrará con qué frecuencia lo alcanzas."
   },
   "279256d8541bf6a4": {
     "en": "This link is not safe to use",
@@ -3435,6 +3456,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Al adquirir un plan, usted solicita expresamente que comencemos el servicio antes de que expire el plazo de desistimiento, y reconoce que pierde su derecho de desistimiento una vez que hayamos ejecutado el contrato por completo. Registramos ambas declaraciones con su pedido."
+  },
+  "2ebaea299c0a971d": {
+    "en": "Longest run: {{count}} day.",
+    "path": "common:trends.goals.run.best_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Racha más larga: {{count}} día."
   },
   "2f383103dd95cce3": {
     "en": "You had a plate identified from a photo.",
@@ -6432,6 +6460,13 @@
     "at": "2026-09-14",
     "es": "Alto en proteínas"
   },
+  "5ab9e906c97cfe0c": {
+    "en": "On average right at your goal.",
+    "path": "common:trends.goals.distance.at",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "De media, justo en tu objetivo."
+  },
   "5afe0a1d82a23c7b": {
     "en": "How did it go?",
     "path": "common:fasting.end.moodLabel",
@@ -6655,6 +6690,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{date}}, cumpliste tu objetivo de carbohidratos"
+  },
+  "5e65cf80f7cfab32": {
+    "en": "Your goal: up to {{goal}}",
+    "path": "common:trends.goals.goalMax",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Tu objetivo: hasta {{goal}}"
   },
   "5e6a718421458423": {
     "en": "Cheapest option here, new, not yet compared on real plates",
@@ -7706,6 +7748,13 @@
     "at": "2026-09-14",
     "es": "Embarazo"
   },
+  "6dc677e09a452a7f": {
+    "en": "Fasts that ended in the last 13 weeks, each measured against its own target.",
+    "path": "common:trends.goals.fasting.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Ayunos terminados en las últimas 13 semanas, cada uno medido respecto a su propio objetivo."
+  },
   "6e0691e15ac2589c": {
     "en": "Please choose a photo to upload.",
     "path": "common:scan.errors.photo.empty",
@@ -8048,6 +8097,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Tu plan · openplate"
+  },
+  "727dc72cabb8adbf": {
+    "en": "{{count}} day without enough detail is left out.",
+    "path": "common:trends.goals.unknownDays_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Se excluye {{count}} día por no tener suficiente detalle."
   },
   "72898abcffa62e15": {
     "en": "No meal",
@@ -8637,6 +8693,13 @@
     "at": "2026-09-14",
     "es": "Dirección de correo electrónico"
   },
+  "7a2e123f9592e48f": {
+    "en": "{{count}} days in a row, up to yesterday.",
+    "path": "common:trends.goals.run.current_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "{{count}} días seguidos, hasta ayer."
+  },
   "7a35258704ea080a": {
     "en": "A week",
     "path": "common:awards.streak.active.7.title",
@@ -9014,6 +9077,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Sobre ti"
+  },
+  "7f0e0c72a1401d59": {
+    "en": "On average {{amount}} under your goal.",
+    "path": "common:trends.goals.distance.under",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "De media, {{amount}} por debajo de tu objetivo."
   },
   "7f1d2eaab831f167": {
     "en": "Sign me up",
@@ -11528,6 +11598,13 @@
     "at": "2026-09-17",
     "es": "Elige qué valores de referencia de micronutrientes muestra esta instancia. La elección se aplica a todo el mundo aquí, en todos los idiomas."
   },
+  "a15118e8d98d29fa": {
+    "en": "Fasts",
+    "path": "common:trends.goals.fasting.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Ayunos"
+  },
   "a168fe81a91f0c7d": {
     "en": "Goals met",
     "path": "common:trends.grid.legendRamp",
@@ -11716,6 +11793,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Compartir con alguien"
+  },
+  "a4336e7ab295a05c": {
+    "en": "No run of met days yet.",
+    "path": "common:trends.goals.run.none",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Aún no hay rachas de días cumplidos."
   },
   "a445c5d672ec4900": {
     "en": "Verified, but nothing was shared yet",
@@ -11947,6 +12031,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cada alimento que registras se guarda en el almacenamiento de este navegador. El servidor guarda una copia cifrada en una base de datos y no puede leerla, ya que la clave nunca viaja con el diario. Exporta todo en un archivo cuando quieras."
+  },
+  "a7ab94e22d74a662": {
+    "en": "Measured against your current goals.",
+    "path": "common:trends.goals.honesty",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Medido respecto a tus objetivos actuales."
   },
   "a7c8bc9c323a8247": {
     "en": "Protein helps you feel full and hold onto muscle, which matters more the fewer carbs or calories you eat. This is an amount to aim for, in grams. Going under it isn't a failure.",
@@ -12367,6 +12458,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Apunta el almuerzo en el teléfono y mira la semana en el portátil. La sincronización es opcional y tiene cifrado de extremo a extremo: el texto cifrado reside en un servidor de openplate-core (el nuestro o uno que gestiones tú) y ese servidor no tiene la clave, porque esta se genera a partir de una contraseña que nunca llega a ver."
+  },
+  "ad916435eca1e3fb": {
+    "en": "Your goal: at least {{goal}}",
+    "path": "common:trends.goals.goalMin",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Tu objetivo: al menos {{goal}}"
   },
   "adad69fdde9e540c": {
     "en": "Fat",
@@ -13621,6 +13719,13 @@
     "at": "2026-09-14",
     "es": "Tu objetivo: "
   },
+  "c16db4eb6410fc22": {
+    "en": "{{reached}} of {{finished}} reached their target",
+    "path": "common:trends.goals.fasting.reached",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "{{reached}} de {{finished}} alcanzaron su objetivo"
+  },
   "c16e67e5583f3293": {
     "en": "Sync error",
     "path": "common:sync.status.shortError",
@@ -14762,6 +14867,13 @@
     "at": "2026-09-14",
     "es": "Cuenta"
   },
+  "d270789eccfa10e5": {
+    "en": "Met on {{met}} of {{rated}} days",
+    "path": "common:trends.goals.hitRate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Cumplido en {{met}} de {{rated}} días"
+  },
   "d28b73f8417dbb74": {
     "en": "Research",
     "path": "common:settings.rows.research.title",
@@ -15300,6 +15412,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{value}} calorías"
+  },
+  "da28cba73de66ddf": {
+    "en": "On average {{amount}} over your goal.",
+    "path": "common:trends.goals.distance.over",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "De media, {{amount}} por encima de tu objetivo."
   },
   "da5097cc15aeef17": {
     "en": "Light",
@@ -17632,6 +17751,13 @@
     "at": "2026-09-14",
     "es": "Eliminar {{name}} de favoritos"
   },
+  "faf4ad3fd0621955": {
+    "en": "No finished day to check against this goal yet.",
+    "path": "common:trends.goals.noRatedDays",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "Aún no hay ningún día completado para comparar con este objetivo."
+  },
   "fb0459da544a99a7": {
     "en": "per 100g: {{summary}}",
     "path": "common:scan.review.match.per100g",
@@ -18016,5 +18142,12 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Un límite de carbohidratos y un objetivo de calorías"
+  },
+  "ffe806bf7742e7d4": {
+    "en": "{{count}} day in a row, up to yesterday.",
+    "path": "common:trends.goals.run.current_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "es": "{{count}} día seguido, hasta ayer."
   }
 }

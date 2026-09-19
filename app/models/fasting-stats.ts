@@ -178,3 +178,48 @@ export function selectFastingStats({ fasts, nowMs, timezone }: FastingStatsInput
     hoursLast7Days: resolveWeekHours(spans, todayKey, timezone),
   };
 }
+
+/** How many finished fasts in a window reached their own target. */
+export interface FastTargetShare {
+  /** Fasts that ended in the window after at least an hour, however they ended. */
+  finishedCount: number;
+  /** Of those, the ones whose elapsed time reached their own `targetDurationMs`. */
+  reachedCount: number;
+}
+
+/**
+ * The share of finished fasts that reached their own target, for the Goals
+ * tab (M239/05). Each fast is measured against the target IT was started
+ * with, never against today's protocol, the same reason `targetDurationMs` is
+ * authoritative on the row.
+ *
+ * "Finished" is `completedCount`'s rule: ended, and at least an hour long. A
+ * running fast has not finished and a false start was never a fast, so
+ * neither enters the count. A fast belongs to the window by the local day it
+ * ENDED on, because that is the day its outcome became known.
+ *
+ * @param input.fasts - every stored fast.
+ * @param input.fromDate - the first local day of the window, `YYYY-MM-DD`.
+ * @param input.nowMs - the clock reading to resolve against; never read internally.
+ * @param input.timezone - IANA zone the person's calendar days are measured in.
+ * @returns the finished and the reached counts, both 0 when nothing finished.
+ */
+export function selectFastTargetShare({
+  fasts,
+  fromDate,
+  nowMs,
+  timezone,
+}: FastingStatsInput & { fromDate: string }): FastTargetShare {
+  let finishedCount = 0;
+  let reachedCount = 0;
+  for (const fast of fasts) {
+    const timeline = resolveFastTimeline(fast, nowMs);
+    if (timeline.endAt === null) continue;
+    if (timeline.status !== 'completed' && timeline.status !== 'ended-early') continue;
+    if (timeline.elapsedMs < FAST_MIN_COUNTED_MS) continue;
+    if (todayInTimezone(timezone, new Date(timeline.endAt)) < fromDate) continue;
+    finishedCount += 1;
+    if (timeline.hasReachedTarget) reachedCount += 1;
+  }
+  return { finishedCount, reachedCount };
+}

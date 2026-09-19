@@ -2698,7 +2698,6 @@
       "legendRamp": "Erreichte Ziele",
       "legendUnrated": "Zu wenig Angaben",
       "noGoalsCta": "Ziele festlegen",
-      "noGoalsHint": "Setz ein Tagesziel, dann zeigen diese Kästchen, wie nah du an jedem Tag dran warst.",
       "summary": "An {{days}} von {{logged}} eingetragenen Tagen hast du alle Ziele erreicht.",
       "summaryActivity": "Du hast an {{days}} von {{total}} Tagen etwas eingetragen.",
       "title": "Zieltage",
@@ -2832,6 +2831,33 @@
         "empty": "In diesem Zeitraum wurde für diese Mahlzeit noch nichts erfasst.",
         "timesLogged_one": "{{count}} Mal erfasst",
         "timesLogged_other": "{{count}} Mal erfasst"
+      }
+    },
+    "goals": {
+      "invite": "Lege ein Tagesziel fest, und dieser Reiter zeigt dir, wie oft du es erreichst.",
+      "honesty": "Gemessen an deinen aktuellen Zielen.",
+      "goalMax": "Dein Ziel: bis zu {{goal}}",
+      "goalMin": "Dein Ziel: mindestens {{goal}}",
+      "hitRate": "An {{met}} von {{rated}} Tagen erreicht",
+      "noRatedDays": "Noch kein abgeschlossener Tag vorhanden, um ihn mit diesem Ziel abzugleichen.",
+      "unknownDays_one": "{{count}} Tag ohne ausreichende Details bleibt unberücksichtigt.",
+      "unknownDays_other": "{{count}} Tage ohne ausreichende Details bleiben unberücksichtigt.",
+      "distance": {
+        "under": "Im Durchschnitt {{amount}} unter deinem Ziel.",
+        "over": "Im Durchschnitt {{amount}} über deinem Ziel.",
+        "at": "Im Durchschnitt genau auf deinem Ziel."
+      },
+      "run": {
+        "current_one": "{{count}} Tag in Folge, bis gestern.",
+        "current_other": "{{count}} Tage in Folge, bis gestern.",
+        "best_one": "Längste Serie: {{count}} Tag.",
+        "best_other": "Längste Serie: {{count}} Tage.",
+        "none": "Bisher keine Serie erreichter Tage."
+      },
+      "fasting": {
+        "title": "Fastenintervalle",
+        "description": "Fastenintervalle, die in den letzten 13 Wochen endeten, jeweils gemessen am eigenen Ziel.",
+        "reached": "{{reached}} von {{finished}} haben ihr Ziel erreicht"
       }
     }
   },

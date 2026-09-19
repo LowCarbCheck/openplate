@@ -10,6 +10,7 @@ import {
   getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalActivityMarks,
+  listLocalFasts,
   listLocalFoodLogsInRange,
   listLocalWeightEntries,
   resolveLocalTimezone,
@@ -36,11 +37,12 @@ import type { WeightUnit } from '#app/lib/weight-units';
 import { buildAdherenceGrid } from '#app/models/adherence-grid';
 import type { AdherenceGoals } from '#app/models/adherence-grid';
 import { resolveAdherenceGoals } from '#app/lib/adherence-goals';
+import { selectFastTargetShare } from '#app/models/fasting-stats';
 import { GRID_WEEKS, selectAdherenceGridDays } from '#app/lib/adherence-grid-days';
 import { isGamificationHidden } from '#app/lib/gamification/surfaces';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { ActivityStreakCard } from '#app/components/gamification/activity-streak-card';
-import { AdherenceGridCard } from '#app/components/trends/adherence-grid-card';
+import { GoalTabContent } from '#app/components/trends/goal-tab-content';
 import { InsightsTabStrip } from '#app/components/trends/insights-tab-strip';
 import { chartTitleKey, TrendChart } from '#app/components/trends/trend-chart';
 import { MacroEnergySplitCard } from '#app/components/trends/macro-energy-split-card';
@@ -330,6 +332,18 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     // an effect of its own could not be rendered in a test (M235/06).
     marks: await listLocalActivityMarks(),
     gamificationHidden: isGamificationHidden(profile),
+    // The Goals tab reads the same switch through the same predicate, from
+    // the row itself (M239/05), so its run lines and the streak card above
+    // cannot disagree about whether the person asked for them.
+    gamificationVisibility: { gamificationHidden: profile?.gamificationHidden ?? null },
+    // Fasts that ended inside the grid's 13 weeks, each against its own
+    // target: the Goals tab's fasting card.
+    fastTargets: selectFastTargetShare({
+      fasts: await listLocalFasts(),
+      fromDate: gridWeeksStart,
+      nowMs: Date.now(),
+      timezone,
+    }),
     targetWeightKg: profile?.targetWeightKg ?? null,
     todayWeightKg: weightRows.find((row) => row.dayKey === today)?.weightKg ?? null,
   };
@@ -522,6 +536,8 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     todayWeightKg,
     marks,
     gamificationHidden,
+    gamificationVisibility,
+    fastTargets,
     windowLogs,
   } = loaderData;
   // Device-local display preference, shared with `/settings/profile` (which owns
@@ -576,15 +592,17 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
         </>
       )}
 
-      {/* The 13-week goal record. `buildAdherenceGrid` is called here, inline
-          in the JSX it feeds, rather than through a `useMemo` computed on
-          every render: this way the grid is built only on the render where
-          the Goals tab is actually shown, not on every metric toggle from the
-          Nutrition tab. */}
+      {/* The Goals tab (M239/05): per-goal records, fasting, and the 13-week
+          grid. `buildAdherenceGrid` is called here, inline in the JSX it
+          feeds, rather than through a `useMemo` computed on every render:
+          this way the grid is built only on the render where the Goals tab is
+          actually shown, not on every metric toggle from the Nutrition tab. */}
       {tab === 'goals' && (
-        <AdherenceGridCard
+        <GoalTabContent
           grid={buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals })}
           goals={adherenceGoals}
+          visibility={gamificationVisibility}
+          fastTargets={fastTargets}
         />
       )}
 

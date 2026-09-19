@@ -2698,7 +2698,6 @@
       "legendRamp": "Hedefler tutturuldu",
       "legendUnrated": "Yeterli ayrıntı yok",
       "noGoalsCta": "Hedeflerini belirle",
-      "noGoalsHint": "Günlük bir hedef belirle, bu kareler her gün hedefine ne kadar yaklaştığını göstermeye başlasın.",
       "summary": "Kayıt girdiğin {{logged}} günün {{days}} gününde her hedefini tutturdun.",
       "summaryActivity": "Son {{total}} günün {{days}} gününde kayıt girdin.",
       "title": "Hedef günleri",
@@ -2832,6 +2831,33 @@
         "empty": "Bu aralıkta bu öğünde henüz bir şey kaydedilmedi.",
         "timesLogged_one": "{{count}} kez kaydedildi",
         "timesLogged_other": "{{count}} kez kaydedildi"
+      }
+    },
+    "goals": {
+      "invite": "Günlük bir hedef belirle, bu sekme hedefe ne sıklıkla ulaştığını göstersin.",
+      "honesty": "Mevcut hedeflerine göre ölçülür.",
+      "goalMax": "Hedefin: en fazla {{goal}}",
+      "goalMin": "Hedefin: en az {{goal}}",
+      "hitRate": "Hedefe ulaşılan gün sayısı: {{rated}} günde {{met}}",
+      "noRatedDays": "Bu hedefle karşılaştırılacak tamamlanmış bir gün henüz yok.",
+      "unknownDays_one": "Yeterli ayrıntı içermeyen {{count}} gün hariç tutuldu.",
+      "unknownDays_other": "Yeterli ayrıntı içermeyen {{count}} gün hariç tutuldu.",
+      "distance": {
+        "under": "Ortalama olarak hedefin {{amount}} altında.",
+        "over": "Ortalama olarak hedefin {{amount}} üstünde.",
+        "at": "Ortalama olarak tam hedefinde."
+      },
+      "run": {
+        "current_one": "Düne kadar art arda {{count}} gün.",
+        "current_other": "Düne kadar art arda {{count}} gün.",
+        "best_one": "En uzun seri: {{count}} gün.",
+        "best_other": "En uzun seri: {{count}} gün.",
+        "none": "Henüz hedefe ulaşılan bir seri yok."
+      },
+      "fasting": {
+        "title": "Oruçlar",
+        "description": "Son 13 haftada sona eren ve her biri kendi hedefine göre ölçülen oruçlar.",
+        "reached": "Tamamlanan {{finished}} oruçtan {{reached}} tanesi hedefine ulaştı"
       }
     }
   },

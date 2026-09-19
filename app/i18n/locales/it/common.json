@@ -2698,7 +2698,6 @@
       "legendRamp": "Obiettivi raggiunti",
       "legendUnrated": "Dettagli insufficienti",
       "noGoalsCta": "Imposta i tuoi obiettivi",
-      "noGoalsHint": "Imposta un obiettivo giornaliero e questi quadrati mostreranno quanto ti sei avvicinato ogni giorno.",
       "summary": "Hai raggiunto ogni obiettivo in {{days}} dei {{logged}} giorni registrati.",
       "summaryActivity": "Hai registrato voci in {{days}} degli ultimi {{total}} giorni.",
       "title": "Giorni con obiettivi raggiunti",
@@ -2832,6 +2831,33 @@
         "empty": "Ancora niente di registrato per questo pasto in questo intervallo.",
         "timesLogged_one": "Registrato {{count}} volta",
         "timesLogged_other": "Registrato {{count}} volte"
+      }
+    },
+    "goals": {
+      "invite": "Imposta un obiettivo giornaliero e questa scheda mostrerà quanto spesso lo raggiungi.",
+      "honesty": "Misurato rispetto ai tuoi obiettivi attuali.",
+      "goalMax": "Il tuo obiettivo: fino a {{goal}}",
+      "goalMin": "Il tuo obiettivo: almeno {{goal}}",
+      "hitRate": "Raggiunto in {{met}} su {{rated}} giorni",
+      "noRatedDays": "Nessun giorno completato da confrontare ancora con questo obiettivo.",
+      "unknownDays_one": "{{count}} giorno senza dettagli sufficienti viene escluso.",
+      "unknownDays_other": "{{count}} giorni senza dettagli sufficienti vengono esclusi.",
+      "distance": {
+        "under": "In media {{amount}} sotto il tuo obiettivo.",
+        "over": "In media {{amount}} sopra il tuo obiettivo.",
+        "at": "In media esattamente al livello del tuo obiettivo."
+      },
+      "run": {
+        "current_one": "{{count}} giorno consecutivo, fino a ieri.",
+        "current_other": "{{count}} giorni consecutivi, fino a ieri.",
+        "best_one": "Serie più lunga: {{count}} giorno.",
+        "best_other": "Serie più lunga: {{count}} giorni.",
+        "none": "Nessuna serie di giorni con obiettivo raggiunto, per ora."
+      },
+      "fasting": {
+        "title": "Digiuni",
+        "description": "Digiuni terminati nelle ultime 13 settimane, ciascuno misurato rispetto al proprio obiettivo.",
+        "reached": "{{reached}} su {{finished}} hanno raggiunto il loro obiettivo"
       }
     }
   },
