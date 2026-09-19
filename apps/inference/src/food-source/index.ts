@@ -57,8 +57,9 @@ export function createFoodSourceFromConfig(options: CreateFoodSourceOptions): Fo
     logger.info('Nutrition resolution using the lowcarbcheck API (remote, opt-in)', {
       stage: SEARCH_FOODS,
       apiUrl: config.lccApiUrl,
+      keyed: config.lccApiKey !== null,
     });
-    return createLccFoodSource({ apiUrl: config.lccApiUrl });
+    return createLccFoodSource({ apiUrl: config.lccApiUrl, apiKey: config.lccApiKey });
   }
 
   const datasetPath = resolve(config.fdcDatasetPath);

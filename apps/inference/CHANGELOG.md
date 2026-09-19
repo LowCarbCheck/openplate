@@ -5,6 +5,26 @@ All notable changes to `openplate-inference` are recorded here. The format follo
 [semantic versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, a breaking
 change moves the minor.
 
+## [Unreleased]
+
+### Added
+
+- **`LCC_API_KEY`, an optional key for the `lcc` food source.** Without it,
+  lookups run on LowCarbCheck's anonymous tier. This tier allows 1,000 credits
+  per UTC day across all requests from the host IP address, or about 41
+  worst-case scans. A free key from lowcarbcheck.org/developers raises that to
+  100,000 credits a month. The service sends the key as a bearer token to
+  `LCC_API_URL` and nowhere else. It logs only whether a key is set. When unset,
+  it sends no `Authorization` header.
+
+### Changed
+
+- **The guides name every outbound call.** The README and the privacy guide
+  now list food-name lookups for `FOOD_SOURCE=off` and `FOOD_SOURCE=lcc`. They
+  also list remote `EMBEDDING_RUNTIME_URL` embedding calls alongside weight
+  downloads. The configuration guide now gives the anonymous tier cost per
+  scan.
+
 ## [0.1.3] - 2026-09-07
 
 - Correct the API and configuration guides. Both guides stated that every food

@@ -135,6 +135,17 @@ export interface ServiceConfig {
   /** LCC base URL. Only contacted when `foodSource === 'lcc'`. */
   lccApiUrl: string;
   /**
+   * Bearer sent TO `lccApiUrl`, and nowhere else. `null` (the default) sends
+   * no `Authorization` header at all, which is the anonymous tier: 1,000
+   * credits per UTC day, shared by every request from this host's IP. Only
+   * read when `foodSource === 'lcc'`.
+   *
+   * A free key from https://lowcarbcheck.org/developers raises that to
+   * 100,000 credits a month and 120 requests a minute, sent as
+   * `Authorization: Bearer <key>`.
+   */
+  lccApiKey: string | null;
+  /**
    * OpenAI-compatible embeddings endpoint for the semantic half of hybrid
    * retrieval. `null` (the default) means lexical-only retrieval, which is a
    * degraded ranking and never a failure — see `food-source/embedding.ts`.
@@ -190,6 +201,7 @@ const EnvSchema = z.object({
   FOOD_SOURCE: z.enum(FOOD_SOURCE_NAMES).default(DEFAULT_FOOD_SOURCE),
   FDC_DATASET_PATH: z.string().min(1).default(DEFAULT_FDC_DATASET_PATH),
   LCC_API_URL: z.string().min(1).default(DEFAULT_LCC_API_URL),
+  LCC_API_KEY: z.string().min(1).optional(),
   EMBEDDING_RUNTIME_URL: z
     .string()
     .refine((value) => /^https?:\/\//.test(value), {
@@ -255,6 +267,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     // NOT `normalizeRuntimeUrl`: that strips a trailing `/v1`, which is correct
     // for a model runtime and wrong for a site whose API paths we build ourselves.
     lccApiUrl: stripTrailingSlashes(raw.LCC_API_URL),
+    lccApiKey: raw.LCC_API_KEY ?? null,
     embeddingRuntimeUrl: raw.EMBEDDING_RUNTIME_URL
       ? normalizeRuntimeUrl(raw.EMBEDDING_RUNTIME_URL)
       : null,

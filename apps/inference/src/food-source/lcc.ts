@@ -41,6 +41,13 @@
  *  - `netCarbsPer100g`, micronutrients, `portionSize` and `imageUrl` are dropped.
  *    The wire contract this service speaks has nowhere to put them, and inventing
  *    a place would be a cross-repo schema change (spec 06's business, not ours).
+ *
+ * THE API KEY IS OPTIONAL. The anonymous tier is 1,000 credits per UTC day,
+ * shared by every request from this host's IP: a search costs 1 credit, a scan
+ * up to 24, so a shared IP runs out fast. A free key from
+ * https://lowcarbcheck.org/developers raises that to 100,000 credits a month
+ * and 120 requests a minute. When set it is sent as `Authorization: Bearer
+ * <key>` to `apiUrl` and nowhere else, and it is never logged.
  */
 import { z } from 'zod';
 import { JsonValueSchema, type JsonValue } from '../json.js';
@@ -99,6 +106,11 @@ export interface LccFoodSourceOptions {
   apiUrl: string;
   /** Default query locale when a caller does not pass one. */
   locale?: string;
+  /**
+   * Bearer for `apiUrl`. Absent or `null` sends no `Authorization` header at
+   * all, which is the anonymous tier. Never logged, see the module header.
+   */
+  apiKey?: string | null;
 }
 
 const DESCRIPTION: FoodSourceDescription = {
@@ -147,10 +159,13 @@ function toCandidate(query: string, food: LccFood): FoodCandidate {
 export function createLccFoodSource(options: LccFoodSourceOptions): FoodSource {
   const apiUrl = options.apiUrl.replace(/\/+$/, '');
   const defaultLocale = options.locale ?? DEFAULT_LOCALE;
+  const authHeader: Record<string, string> = options.apiKey
+    ? { Authorization: `Bearer ${options.apiKey}` }
+    : {};
 
   async function getJson(url: URL, signal: AbortSignal | undefined): Promise<JsonValue | null> {
     const response = await fetch(url.toString(), {
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', ...authHeader },
       signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (response.status === 404) return null;
