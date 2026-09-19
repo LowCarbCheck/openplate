@@ -16,9 +16,12 @@
  * - CONTROL for the change line: nothing was logged in the 7 days before this
  *   stretch, so `computeRangeSummary` reports a null change and the strip
  *   draws no change line for net carbs at all.
- * - The hint's dismissal survives a reload, not just a re-render: a component
- *   that only hid it in local state would satisfy every check short of
- *   loading the page again.
+ * - The hint's dismissal survives a reload, not just a re-render, BECAUSE the
+ *   device stored it: a component that only hid it in local state would
+ *   satisfy every check short of loading the page again. The reload's absence
+ *   check is anchored on a rendered sibling first and paired with a read of
+ *   the stored flag, see the comment at that assertion for what an unanchored
+ *   one silently failed to notice.
  * - The diary's day summary carries its own door, to `?tab=nutrition`.
  *
  * THE DIARY IS WRITTEN STRAIGHT INTO INDEXEDDB, in the shape the primary
@@ -26,6 +29,8 @@
  * `insights-goals.spec.ts` already use.
  */
 import { expect, test, type Page } from '@playwright/test';
+
+import { INSIGHTS_HINT_STORAGE_KEY } from '#app/lib/insights-hint';
 
 import { EN, fill } from './copy';
 import { completeOnboarding, expectPhoneLayout } from './helpers';
@@ -156,10 +161,28 @@ test('the dashboard and diary open Insights, and the one-time hint stays dismiss
   await expect(page.locator('[data-slot="insights-hint"]')).toHaveCount(0);
 
   await page.reload();
-  await expect(page.locator('[data-slot="insights-hint"]'), 'a dismissed hint must not come back on reload').toHaveCount(0);
-  // The door it pointed at is still there, so the dismissal hid the nudge,
-  // not the feature.
+  // WAIT FOR THE PAGE TO HAVE LOADED BEFORE CLAIMING THE HINT IS GONE, and
+  // wait on a sibling of the hint rather than on the hint itself.
+  //
+  // `clientLoader.hydrate` means a reload paints `HydrateFallback` first, and
+  // `toHaveCount(0)` resolves on its FIRST matching poll rather than after any
+  // quiet period. Asserted straight after `reload()` it therefore passed at
+  // ~15 ms against a document whose body was still empty, which made it an
+  // assertion that could not go red: forcing `isInsightsHintDismissed` to
+  // always return false left it green. The week card is rendered by the same
+  // component, in the same commit as the hint, so once it is on screen the
+  // hint has had its chance to come back. It also says the dismissal hid the
+  // nudge and not the feature: the door the hint pointed at is still there.
   await expect(page.locator('[data-slot="week-glance-card"]')).toBeVisible();
+  await expect(page.locator('[data-slot="insights-hint"]'), 'a dismissed hint must not come back on reload').toHaveCount(0);
+  // AND IT IS GONE BECAUSE THE DEVICE REMEMBERS, not because the week stopped
+  // qualifying: the flag the loader reads is on disk, under the key
+  // `app/lib/insights-hint.ts` owns.
+  const storedDismissal = await page.evaluate(
+    (key) => window.localStorage.getItem(key),
+    INSIGHTS_HINT_STORAGE_KEY,
+  );
+  expect(storedDismissal, 'the reload reads the dismissal off this device').not.toBeNull();
 
   await expectPhoneLayout(page);
 

@@ -152,10 +152,21 @@ test('the net-carbs goal reads 1 of 2, and hiding gamification removes the runs'
   ////////////////////////////////////////////////////////////////////////////
 
   await page.goto('/trends?tab=goals');
+  const netCarbsCard = page.locator('[data-slot="goal-stat-card"][data-goal="netCarbs"]');
+  // WAIT FOR THE PAGE TO HAVE LOADED BEFORE CLAIMING THE INVITE IS GONE, and
+  // wait on a sibling of the invite rather than on the invite itself.
+  //
+  // `clientLoader.hydrate` means a goto paints `HydrateFallback` first, and
+  // `toHaveCount(0)` resolves on its FIRST matching poll rather than after any
+  // quiet period. Asserted straight after `goto()` it therefore passed against
+  // a document whose body was still empty, which made it an assertion that
+  // could not go red: a build that never left the invite state would satisfy
+  // it too. The net-carbs card is drawn by the same tab component, in the same
+  // commit as the invite it replaces, so once the card is on screen the invite
+  // has had its chance to still be there.
+  await expect(netCarbsCard).toBeVisible();
   // The invitation gives way once a goal is set.
   await expect(page.locator('[data-slot="goals-invite"]')).toHaveCount(0);
-  const netCarbsCard = page.locator('[data-slot="goal-stat-card"][data-goal="netCarbs"]');
-  await expect(netCarbsCard).toBeVisible();
   await expect(netCarbsCard.locator('[data-slot="goal-hit-rate"]')).toHaveText(
     fill(EN.trends.goals.hitRate, { met: '1', rated: '2' }),
   );
