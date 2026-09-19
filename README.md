@@ -110,7 +110,7 @@ database, through its own server: names only, never a photo or a diary entry. Se
 
 | Guide | What it covers |
 | --- | --- |
-| [**Architecture**](./docs/architecture.md) | The four programs, what each one stores, and how they compose |
+| [**Architecture**](./docs/architecture.md) | The three programs and the food database, what each one holds, and how they compose |
 | [**Self-hosting**](./docs/self-hosting.md) | Compose walkthroughs, first run, HTTPS, backups, upgrading |
 | [**Configuration**](./docs/configuration.md) | Every environment variable, the Content-Security-Policy, custom and instance-provided AI endpoints |
 | [**Sync**](./docs/sync.md) | Enabling sync across devices, the encryption, and the operator's escrowed recovery key |
