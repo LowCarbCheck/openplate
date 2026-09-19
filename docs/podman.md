@@ -22,7 +22,8 @@ implementation with no warning.
   `depends_on: condition: service_healthy` is weaker, and it names networks
   differently by default.
 
-Every compose file in openplate, openplate-core and openplate-inference uses
+Every compose file that starts Postgres (`compose.sync.yml`, `compose.full.yml`, and
+openplate-core's quickstart `compose.yml`) uses
 `depends_on: condition: service_healthy` to gate a service on Postgres's
 healthcheck. Run `podman compose`, not `podman-compose`, unless you have
 confirmed your `podman-compose` install handles that condition.

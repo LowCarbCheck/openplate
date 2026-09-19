@@ -108,9 +108,14 @@ See [sync.md](sync.md) for what sync is and how the client reaches it.
    Mistral, your own OpenAI-compatible endpoint, or Anthropic). See
    [configuration.md](configuration.md) for the OpenRouter one-click flow and for offering an
    instance-provided endpoint instead.
-3. Take a backup early: **Profile → Your data → Download everything (JSON)**. Your diary
+3. Take a backup early: **Settings → Data & backup → Download everything (JSON)**. Your diary
    lives in this browser's storage, so a backup is the only copy that survives clearing site
    data or moving to a new device.
+4. If more than one person scans on this instance, get a free food-database key at
+   [lowcarbcheck.org/developers](https://lowcarbcheck.org/developers), add it to the app's
+   `environment:` block as `FOOD_DB_API_KEY`, and run `docker compose up -d` again. Without a
+   key everyone on the instance shares one small anonymous allowance. See
+   [configuration.md](configuration.md#the-food-database-key).
 
 ## HTTPS
 

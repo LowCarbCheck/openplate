@@ -50,9 +50,9 @@ from holding ciphertext it cannot read.
 ## Encryption, and what the operator holds
 
 Your password never leaves your browser. It is stretched with Argon2id and split by HKDF into
-two independent branches: one wraps the data key and stays on the device, the other is sent to
-the service as the login credential. The two are cryptographic siblings, not parent and child,
-so holding one reveals nothing about the other. Your diary is encrypted on the device before
+independent branches. Two branches stay on the device to unwrap the data key and your
+private settings. A third branch goes to the service as the login credential. They are
+cryptographic siblings, not parent and child, so holding one reveals nothing about the others. Your diary is encrypted on the device before
 it is uploaded and stays encrypted in transit; the service stores opaque ciphertext, and what
 it sees beside that is an email address plus the size and timing of your uploads.
 
@@ -75,6 +75,21 @@ the code once and ask a person to keep it forever. Nobody does.
 Plate photos are never part of a sync payload. They stay on the device that took them, they
 are excluded from JSON exports, and on a managed instance the copy that reaches the AI proxy
 is read once and not stored.
+
+## Sharing a diary with a clinician
+
+On an instance whose sync service sets `SYNC_SHARING=true`, a person can let a clinician, such
+as a dietitian, read their diary. The clinician sends the person a connect link. The person opens
+it and types the twelve characters the clinician reads aloud, so a wrong key is caught before
+anything is shared. The person then grants the share under **Settings → Sharing**: the app wraps the data key once more,
+under the clinician's public key, and uploads that wrapped copy. The clinician's browser
+unwraps it and shows the diary at `/shared`. The server stores the wrapped copy and never the
+key to it. A share can be revoked at any time. A private compartment of the diary holds the
+person's own sharing and research keys, and a clinician can never open it.
+
+The same screen holds the switch for the pulse, an optional instance-wide count of meals and
+scans; [architecture.md](architecture.md#what-else-openplate-core-can-carry) says what it
+sends.
 
 ## What used to be here: the gateway
 

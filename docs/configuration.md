@@ -40,6 +40,8 @@ const appUrl = CONFIG.app.url;
 | `MATOMO_SITE_ID`            | unset (analytics off)       | The Matomo site id this instance reports as. Set both this and `MATOMO_URL`, or neither. Setting one alone stops the boot on purpose. |
 | `MATOMO_EVENT_LEVEL`        | `product`                   | How much the instance reports: `pageviews`, `product` or `research`. Applies only when analytics are on. See [What a level decides](#what-a-level-decides). |
 | `UPDATE_CHECK`              | on                          | Set to `off` to stop the server asking GitHub whether a newer openplate exists. See [The release check](#the-release-check) below. |
+| `NEWSLETTER_SUBSCRIBE_URL`  | unset (off)                 | Where the landing page's newsletter form is forwarded. Set this and `NEWSLETTER_TURNSTILE_SITE_KEY`, or neither. See [Newsletter sign-up](#newsletter-sign-up). |
+| `NEWSLETTER_TURNSTILE_SITE_KEY` | unset (off)             | The public Cloudflare Turnstile site key that guards that form. |
 
 Provider API keys are never read from the environment. A user's key is entered in the
 browser, stored on the device and sent browser → provider directly; the server has no copy.
@@ -63,6 +65,12 @@ The key decides **how much** you may look up. There are three tiers:
 | free | give an email address at [lowcarbcheck.org/developers](https://lowcarbcheck.org/developers) | a generous monthly allowance |
 | partner | ask | no monthly cap |
 
+LowCarbCheck counts in credits, and one food search costs one. At the time of writing the
+anonymous tier is 1,000 credits a day and the free key 100,000 a month;
+[lowcarbcheck.org/developers](https://lowcarbcheck.org/developers) has the current numbers.
+LowCarbCheck sees the address of your app server, not the addresses of its users. On the
+anonymous tier, everyone on your instance shares one daily allowance.
+
 An instance with no key keeps working. It is the anonymous tier, and for one person trying
 openplate out it is usually enough. A household, or anything that scans several plates a
 day, wants the free key.
@@ -71,6 +79,15 @@ The lookup is fail-open either way: if the food database is unreachable, refused
 allowance, a scan still completes and still shows numbers. Those numbers are then the AI's
 own estimate rather than a database figure, and the app says so on screen rather than
 letting the difference pass unnoticed.
+
+## Newsletter sign-up
+
+openplate ships with no mailing list. Set both `NEWSLETTER_SUBSCRIBE_URL` and
+`NEWSLETTER_TURNSTILE_SITE_KEY` and the landing page adds a sign-up form. The browser posts it
+to the openplate server, which forwards `{email, locale, consent, source, turnstileToken}` to
+your URL, at most five requests a minute from one address. The browser never learns that URL,
+so it can sit on a private network. Set one without the other and the boot stops. Leave both
+unset, the default, and there is no form, no extra script and no change to the CSP.
 
 ## The release check
 
@@ -111,7 +128,8 @@ ships a strict Content-Security-Policy. Its `connect-src` allows:
 - `'self'`
 - the built-in providers' own origins (OpenRouter, Mistral, Anthropic), derived automatically
   from the provider registry: see [ADR-0007](../.adr/0007-byok-provider-registry.md)
-- `localhost`, `127.0.0.1` and `[::1]` on any port
+- `localhost` and `127.0.0.1` on any port. `[::1]` is not on the list, because a CSP source
+  cannot name an IPv6 address; point a client at `localhost` instead.
 - your `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL`, if set
 - anything in `CSP_CONNECT_EXTRA`
 
@@ -217,8 +235,9 @@ See [ADR-0010](../.adr/0010-hosted-analytics.md) for the decision and its reason
 
 An instance that sets `INSTANCE_MODE=managed` is a **managed instance**: an administrator
 invites people by email, and each account carries a daily AI allowance, so signing in gives a
-person both the diary and the AI in one step. This is what openplate.de is, and it is off by
-default: a self-hoster who sets nothing gets the open app.
+person both the diary and the AI in one step. The hosted instances at beta.openplate.de and
+app.openplate.de use this mode. It is off by default: a self-hoster who sets nothing gets the
+open app.
 
 `INSTANCE_MODE=managed` requires `SYNC_SERVER_URL`. The account is what carries the diary and
 the allowance together; declaring `managed` without a sync server stops the boot rather than
@@ -242,7 +261,7 @@ What changes when it is set:
   transaction, and the account carries both the diary and the allowance from that point on.
   The "Skip, I already have an account" action is gone, because on such an instance the person
   offered it has neither.
-- **Settings → Sync**, signed out, offers signing in and says that accounts here come from an invite
+- **Settings → Account**, signed out, offers signing in and says that accounts here come from an invite
   link. There is no "create an account" button.
 
 Everything above is unchanged on an open instance (`INSTANCE_MODE` unset or `open`), and a test
@@ -346,8 +365,8 @@ AI proxy is reached through `SYNC_SERVER_URL`, not a separate settings entry.
 ## Connecting with OpenRouter
 
 **Settings → AI → Connect with OpenRouter** is a one-click, browser-only OAuth flow (PKCE):
-no key to copy-paste. It opens OpenRouter's consent screen in a new tab; approve it, and the
-issued key lands directly in this browser's local storage. The openplate server is never in
+no key to copy-paste. It takes this tab to OpenRouter's consent screen and back; approve it,
+and the issued key lands directly in this browser's local storage. The openplate server is never in
 that loop: it never sees, stores, or proxies the key.
 
 - **Set a spending cap while you are there.** OpenRouter's consent screen offers a

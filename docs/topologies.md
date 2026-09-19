@@ -15,6 +15,11 @@ Every compose file is annotated line by line;
 [`docker/topologies/README.md`](../docker/topologies/README.md) is the same map from the
 compose side.
 
+At every rung, the app server also looks food names up at the LowCarbCheck food database for
+the people using it. It sends names, never a photo or a diary entry. From rung 1 up that is
+your server doing it: if more than one person scans, give it a free key. See
+[architecture.md](architecture.md#the-food-database-is-a-lookup-by-name-through-the-app-server).
+
 Every command below also runs under [Podman](https://podman.io): use
 `podman compose`, not `podman-compose`, which is a different, less complete
 tool. See [podman.md](podman.md).
@@ -26,7 +31,8 @@ tool. See [podman.md](podman.md).
 Open an existing instance, such as <https://openplate.lowcarbcheck.org>, and paste your own
 provider key into **Settings → AI**. There is no sign-up. Your diary lives in that browser's
 storage and never reaches the instance's server, so "using someone else's instance" gives
-that operator far less than the phrase suggests: see [architecture.md](architecture.md).
+that operator far less than the phrase suggests: see [architecture.md](architecture.md). The
+names of the foods you scan or search do pass through it, on their way to the food database.
 
 Nothing on this rung is yours to run. The browser holds the diary, the browser calls the
 provider with the key you pasted into it, and the operator's server only sends the page.
