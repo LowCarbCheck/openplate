@@ -1892,7 +1892,6 @@
         "credit": "Sağlayıcı hesabındaki kredi tükendi. Sağlayıcına kredi ekle ve tekrar dene.",
         "modelNotFound": "Sağlayıcı bu modeli tanımıyor. Yapay zeka ayarlarından farklı bir model seç ve tekrar dene.",
         "rateLimit": "Sağlayıcı şu anda istekleri hız sınırına takıyor. Biraz bekle ve tekrar dene.",
-        "reconsentRequired": "Bu ağ geçidinin gizlilik ayarları değiştiği için bu cihazı kabul etmeyi bıraktı. Seni davet eden kişiden yeni bir davet bağlantısı iste.",
         "photoTooLarge": "Fotoğraf bu sunucu için çok büyük. Daha küçük bir fotoğraf dene.",
         "aiNotAllowed": "Hesabın için yapay zeka tahminleri açık değil. Yöneticine danış.",
         "accountSuspended": "Hesabın askıya alındı. Yöneticine danış.",
@@ -1910,7 +1909,6 @@
         "modelNotFound": "Bu model kullanılamıyor",
         "noLuck": "Fotoğraf işlenemedi",
         "rateLimit": "Şu anda çok fazla istek var",
-        "reconsentRequired": "Bu ağ geçidi için yeni bir davet gerekiyor",
         "transient": "Sağlayıcı yanıt verirken sorun yaşadı",
         "photoTooLarge": "Bu fotoğraf çok büyük",
         "aiNotAllowed": "Yapay zeka tahminleri kapalı",
@@ -2056,6 +2054,7 @@
       "importSuccess": "Yedek içe aktarıldı. Günlüğün artık içe aktarılan verileri içeriyor.",
       "importing": "İçe aktarılıyor…",
       "photosNote": "Tabak fotoğrafları bu indirmeye dahil edilmez: yalnızca bu cihazda tutulurlar (aşağıdaki \"Bu cihazdaki fotoğraflar\" bölümüne bak), hiçbir zaman bir yedeğe veya dışa aktarıma eklenmezler. İndirdiğin dosya yalnızca kaydettiğin sayıları içerir.",
+      "keysNote": "JSON indirmen, birisi günlüğünü seninle paylaştığında kullanılan özel anahtarı ve araştırma takma adının tohumunu içerir. Bu dosyayı tıpkı günlüğün gibi güvende tut.",
       "preparing": "Hazırlanıyor…",
       "title": "Veriler ve yedekleme"
     },

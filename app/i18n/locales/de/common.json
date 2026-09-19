@@ -1892,7 +1892,6 @@
         "credit": "Dein Guthaben beim Anbieter ist aufgebraucht. Lade Guthaben bei deinem Anbieter auf und versuche es erneut.",
         "modelNotFound": "Der Anbieter erkennt dieses Modell nicht. Wähle ein anderes Modell in den KI-Einstellungen und versuche es erneut.",
         "rateLimit": "Der Anbieter begrenzt gerade die Anzahl der Anfragen. Warte einen Moment und versuche es erneut.",
-        "reconsentRequired": "Die Datenschutzeinstellungen dieses Gateways haben sich geändert, weshalb dieses Gerät nicht mehr akzeptiert wird. Bitte die Person, die dich eingeladen hat, um einen neuen Einladungslink.",
         "photoTooLarge": "Das Foto ist zu groß für diesen Server. Versuch es mit einem kleineren.",
         "aiNotAllowed": "KI-Schätzungen sind für dein Konto nicht aktiviert. Wende dich an deinen Administrator.",
         "accountSuspended": "Dein Konto ist gesperrt. Wende dich an deinen Administrator.",
@@ -1910,7 +1909,6 @@
         "modelNotFound": "Dieses Modell ist nicht verfügbar",
         "noLuck": "Mit diesem Foto hat es nicht geklappt",
         "rateLimit": "Gerade zu viele Anfragen",
-        "reconsentRequired": "Dieses Gateway braucht eine neue Einladung",
         "transient": "Der Anbieter hatte Probleme mit der Antwort",
         "photoTooLarge": "Das Foto ist zu groß",
         "aiNotAllowed": "KI-Schätzungen sind deaktiviert",
@@ -2056,6 +2054,7 @@
       "importSuccess": "Backup importiert. Dein Tagebuch enthält jetzt die importierten Daten.",
       "importing": "Wird importiert…",
       "photosNote": "Fotos von deinen Mahlzeiten sind in diesem Download nicht enthalten: Sie werden nur auf diesem Gerät gespeichert (siehe „Fotos auf diesem Gerät“ unten) und nie in ein Backup oder einen Export gepackt. Dein Download enthält nur die erfassten Werte.",
+      "keysNote": "Dein JSON-Download enthält den privaten Schlüssel, der verwendet wird, wenn jemand sein Tagebuch mit dir teilt, sowie den Seed für dein Forschungspseudonym. Verwahre diese Datei sicher, genau wie dein Tagebuch.",
       "preparing": "Wird vorbereitet…",
       "title": "Daten & Sicherung"
     },

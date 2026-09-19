@@ -256,6 +256,7 @@ export default function SettingsData() {
         >
           <DownloadButtons />
           <p className="text-xs text-muted-foreground">{t('settings.data.photosNote')}</p>
+          <p className="text-xs text-muted-foreground">{t('settings.data.keysNote')}</p>
           <ImportBackupSection />
         </SettingsSection>
       </div>

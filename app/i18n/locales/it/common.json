@@ -1892,7 +1892,6 @@
         "credit": "Il credito del tuo account presso il provider è esaurito. Ricarica il credito con il tuo provider e riprova.",
         "modelNotFound": "Il provider non riconosce questo modello. Scegli un modello diverso nelle impostazioni dell'IA e riprova.",
         "rateLimit": "Al momento il provider sta limitando la frequenza delle richieste. Attendi un momento e riprova.",
-        "reconsentRequired": "Le impostazioni di privacy di questo gateway sono cambiate, quindi il gateway non accetta più questo dispositivo. Chiedi un nuovo link di invito a chi ti ha invitato.",
         "photoTooLarge": "La foto è troppo grande per questo server. Provane una più piccola.",
         "aiNotAllowed": "Le stime tramite IA non sono attive per il tuo account. Rivolgiti al tuo amministratore.",
         "accountSuspended": "Il tuo account è sospeso. Rivolgiti al tuo amministratore.",
@@ -1910,7 +1909,6 @@
         "modelNotFound": "Quel modello non è disponibile",
         "noLuck": "Impossibile elaborare questa foto",
         "rateLimit": "Troppe richieste in questo momento",
-        "reconsentRequired": "Quel gateway richiede un nuovo invito",
         "transient": "Il provider ha riscontrato problemi nel rispondere",
         "photoTooLarge": "Questa foto è troppo grande",
         "aiNotAllowed": "Le stime tramite IA sono disattivate",
@@ -2056,6 +2054,7 @@
       "importSuccess": "Backup importato. Il tuo diario include ora i dati importati.",
       "importing": "Importazione in corso…",
       "photosNote": "Le foto del piatto non sono incluse in questo download: restano solo su questo dispositivo (vedi \"Foto su questo dispositivo\" sotto), mai incluse in un backup o in un'esportazione. Il download contiene solo i numeri che hai registrato.",
+      "keysNote": "Il file JSON che scarichi contiene la chiave privata usata quando qualcuno condivide il suo diario con te e il seed per il tuo pseudonimo di ricerca. Custodisci questo file al sicuro, proprio come il tuo diario.",
       "preparing": "Preparazione in corso…",
       "title": "Dati e backup"
     },

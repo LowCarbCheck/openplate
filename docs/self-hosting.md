@@ -169,10 +169,16 @@ Tailscale issues and renews the certificate; the app becomes reachable at
 **There is nothing on the app server to back up.** It holds no database and writes no state:
 a destroyed app container loses nothing.
 
-**The per-device JSON export is the backup that matters**: **Profile → Your data → Download
-everything**. That file is the copy that outlives a cleared browser or a dead phone. The app
-shows a reminder banner when a device holds data you have never exported, or have not exported
-in a while.
+**The per-device JSON export is the backup that matters**: **Settings → Data & backup →
+Download everything (JSON)**. That file is the copy that outlives a cleared browser or a dead
+phone. The app shows a reminder banner when a device holds data you have never exported, or
+have not exported in a while.
+
+**Keep the export as private as the diary.** It holds every entry in the clear, and it also
+holds the private key of this device's sharing identity and the root the research pseudonym is
+derived from. Whoever holds the file can open a diary that was shared with this person, and can
+link their study contributions back to them. Two things stay out of it: the AI provider key,
+and the plate photographs, which never leave the device.
 
 If you also run the sync service, its Postgres is worth a scheduled dump, together with the
 `SERVER_SECRET`, which is useless without the database and vice versa:

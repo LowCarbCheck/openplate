@@ -277,7 +277,6 @@ test("OpenRouter's own rate-limit copy still wins on an open instance", () => {
 test('every cause has a headline, in both locales', () => {
   const causes = [
     'auth',
-    'reconsent-required',
     'credit',
     'rate-limit',
     'model-not-found',

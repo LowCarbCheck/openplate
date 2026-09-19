@@ -19,8 +19,15 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **The Meals tab now shows your averages and your usual foods.** With no meal chosen, it shows your average log for each meal and how many days that covers. It shows how your calories or net carbs split across breakfast, lunch, dinner and snacks each day, adds a line for anything logged with no meal chosen at all, and tracks how much of your week's calories came from snacks over time. Choosing one meal keeps the existing chart and adds that meal's average and your five most-logged foods there. Nothing here shows a goal or says a meal was missed.
 - **The Goals tab now shows how often you met each goal.** Each goal you set gets a card over the last 13 weeks. It shows on how many finished days you met it, how far under or over it you were on average, and, unless streaks and awards are hidden, your current and longest run of met days. A day without enough detail to check a goal is left out and counted apart, never counted as missed. A card for fasting shows how many finished fasts reached their own target. Everything is measured against your current goals. With no goal set, the tab invites you to set one instead.
 - **Overview now opens with a summary of your chosen time span.** It shows how many days you logged, your average calories, net carbs and protein, and how each compares with the same span before it. Three cards follow, jumping straight to Nutrition, Meals and Goals. Your last 7 days on the home screen, your goal grid there, and today's summary in the diary now link straight into the matching tab. A one-time card on the home screen points at Insights once you have logged a few days, and stays gone once you dismiss it.
+- **The data screen says what is inside the JSON download.** The download holds the private key used when someone shares their diary with you, and the seed for your research pseudonym. A note beside the download buttons now states this. It is present in all six languages.
+
+### Changed
+
+- **The app no longer mentions openplate-gateway.** That service merged into openplate-core and was archived, so no server can send the refusal the app still had an error screen for. The error text, translations in five languages, the analytics reason, and a retired table in the local database are gone. The refusals a managed instance sends are unchanged.
 
 ### Fixed
+
+- **A saved meal now reaches the server by itself.** The check that decides whether this device has anything to send previously ignored saved meals. Creating, renaming, or deleting one registered nothing the device could see. The meal uploaded later, carried along by an unrelated change to a food log. A device erased before that happened lost the meal. A saved meal now counts as a change on its own. Fasts and the pantry still do not, and both omissions are deliberate. A fast is never synced, and the pantry is a working list of what is in one device's kitchen.
 
 - **Signing out no longer says everything reached the server when it has not.** The sign-out dialog counted a queue that nothing has written to since the diary moved onto the device. So it always said "Everything on this device has reached the server." above the box that erases the diary. It now counts the changes the sync has not sent yet and any estimate reports still waiting. It says so when it could not check. It also names what the check does not cover: fasts, saved meals, the pantry, and your sharing and research keys. Rows left in that retired queue are deleted, because nothing could ever send them.
 
@@ -29,6 +36,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Docs
 
 - **The architecture docs describe what each server holds today.** They cover the one optional secret the app server can hold, and the food names it forwards to LowCarbCheck. They also cover the recovery key the sync server keeps, and the optional features of openplate-core. openplate-gateway is listed as archived.
+
+- **The self-hosting and sync documents name the key material in a backup.** They previously described the download only as your diary. It also holds your sharing private key and your research pseudonym seed, so a copy of that file requires the same protection as the diary itself. The menu path in both documents is corrected.
 
 ## [0.34.1] - 2026-09-19
 

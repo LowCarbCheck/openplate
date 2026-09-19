@@ -1892,7 +1892,6 @@
         "credit": "La cuenta con tu proveedor se quedó sin saldo. Añade saldo en tu proveedor y vuelve a intentarlo.",
         "modelNotFound": "El proveedor no reconoce ese modelo. Elige otro modelo en los ajustes de IA e inténtalo de nuevo.",
         "rateLimit": "El proveedor está limitando la tasa de peticiones ahora mismo. Espera un momento y vuelve a intentarlo.",
-        "reconsentRequired": "La configuración de privacidad de esta pasarela cambió y ha dejado de aceptar este dispositivo. Pide un enlace de invitación nuevo a quien te invitó.",
         "photoTooLarge": "La foto es demasiado grande para este servidor. Prueba con una más pequeña.",
         "aiNotAllowed": "Las estimaciones por IA no están activadas en tu cuenta. Consulta con tu administrador.",
         "accountSuspended": "Tu cuenta está suspendida. Consulta con tu administrador.",
@@ -1910,7 +1909,6 @@
         "modelNotFound": "Ese modelo no está disponible",
         "noLuck": "No hubo suerte con esa foto",
         "rateLimit": "Demasiadas peticiones ahora mismo",
-        "reconsentRequired": "Esa pasarela necesita una invitación nueva",
         "transient": "El proveedor tuvo problemas para responder",
         "photoTooLarge": "Esa foto es demasiado grande",
         "aiNotAllowed": "Las estimaciones por IA están desactivadas",
@@ -2056,6 +2054,7 @@
       "importSuccess": "Copia de seguridad importada. Tu diario ahora incluye los datos importados.",
       "importing": "Importando…",
       "photosNote": "Las fotos del plato no se incluyen en esta descarga: se conservan solo en este dispositivo (mira \"Fotos en este dispositivo\" más abajo), nunca se empaquetan en una copia de seguridad ni en una exportación. Tu descarga contiene solo los números que registraste.",
+      "keysNote": "La descarga en formato JSON contiene la clave privada que se usa cuando alguien comparte su diario contigo, y la semilla de tu seudónimo de investigación. Guarda este archivo en un lugar seguro, al igual que tu diario.",
       "preparing": "Preparando…",
       "title": "Datos y copia de seguridad"
     },

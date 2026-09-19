@@ -147,6 +147,15 @@ describe('the data and backup settings page', () => {
       assert.ok(html.includes(enCommon.settings.data.downloadJson), html.slice(0, 400));
     }
   });
+
+  it('also carries the keys note beside the download buttons, in both modes', () => {
+    // The JSON export carries the share private key and the research
+    // pseudonym seed on EVERY instance, open or managed, so unlike the
+    // description above the buttons, nothing here should branch on mode.
+    for (const html of [MANAGED, OPEN]) {
+      assert.ok(rendersCopy(html, enCommon.settings.data.keysNote), html.slice(0, 400));
+    }
+  });
 });
 
 /** The two twins added here, per locale, paired with the string each one replaces. */

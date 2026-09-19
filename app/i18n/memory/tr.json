@@ -1483,6 +1483,13 @@
     "at": "2026-09-14",
     "tr": "Planın sona erdi."
   },
+  "13c3188208a65d13": {
+    "en": "Your JSON download contains the private key used when someone shares their diary with you, and the seed for your research pseudonym. Keep this file safe, just like your diary.",
+    "path": "common:settings.data.keysNote",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "JSON indirmen, birisi günlüğünü seninle paylaştığında kullanılan özel anahtarı ve araştırma takma adının tohumunu içerir. Bu dosyayı tıpkı günlüğün gibi güvende tut."
+  },
   "13d65e3748a7e2e8": {
     "en": "German Nutrition Society (DGE)",
     "path": "common:admin.settings.basis.dge",

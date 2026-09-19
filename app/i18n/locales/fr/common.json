@@ -1892,7 +1892,6 @@
         "credit": "Le compte chez ton fournisseur n'a plus de crédit. Ajoutes-en chez ton fournisseur et réessaie.",
         "modelNotFound": "Le fournisseur ne reconnaît pas ce modèle. Choisis un autre modèle dans les réglages de l'IA et réessaie.",
         "rateLimit": "Le fournisseur limite le débit des requêtes en ce moment. Attends un instant et réessaie.",
-        "reconsentRequired": "Les paramètres de confidentialité de cette passerelle ont changé, elle n'accepte donc plus cet appareil. Demande un nouveau lien d'invitation à la personne qui t'a invité.",
         "photoTooLarge": "La photo est trop volumineuse pour ce serveur. Essaie avec une photo plus petite.",
         "aiNotAllowed": "Les estimations par l'IA ne sont pas activées pour ton compte. Demande à ton administrateur.",
         "accountSuspended": "Ton compte est suspendu. Demande à ton administrateur.",
@@ -1910,7 +1909,6 @@
         "modelNotFound": "Ce modèle n'est pas disponible",
         "noLuck": "Impossible d'exploiter cette photo",
         "rateLimit": "Trop de requêtes en ce moment",
-        "reconsentRequired": "Cette passerelle demande une nouvelle invitation",
         "transient": "Le fournisseur a eu du mal à répondre",
         "photoTooLarge": "Cette photo est trop grande",
         "aiNotAllowed": "Les estimations par l'IA sont désactivées",
@@ -2056,6 +2054,7 @@
       "importSuccess": "Sauvegarde importée. Ton journal inclut désormais les données importées.",
       "importing": "Importation…",
       "photosNote": "Les photos d'assiette ne sont pas incluses dans ce téléchargement : elles sont conservées uniquement sur cet appareil (voir « Photos sur cet appareil » ci-dessous), sans jamais être intégrées dans une sauvegarde ou un export. Ton téléchargement ne contient que les chiffres saisis.",
+      "keysNote": "Ton téléchargement JSON contient la clé privée utilisée quand quelqu'un partage son journal avec toi, ainsi que la graine de ton pseudonyme de recherche. Garde ce fichier en lieu sûr, tout comme ton journal.",
       "preparing": "Préparation…",
       "title": "Données et sauvegarde"
     },

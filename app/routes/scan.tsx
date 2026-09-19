@@ -1727,7 +1727,6 @@ function ScanFlow({
  */
 const FAILURE_TITLE_KEY_BY_CAUSE = {
   auth: 'scan.errors.titles.auth',
-  'reconsent-required': 'scan.errors.titles.reconsentRequired',
   credit: 'scan.errors.titles.credit',
   'rate-limit': 'scan.errors.titles.rateLimit',
   'model-not-found': 'scan.errors.titles.modelNotFound',
@@ -1772,8 +1771,6 @@ const OPENROUTER_RATE_LIMIT_KEY = 'scan.errors.openrouterRateLimit';
  */
 const FAILURE_BODY_KEY_BY_CAUSE = {
   auth: 'scan.errors.provider.auth',
-  // A single fixed sentence in `failure-cause.ts`, so it restates cleanly here.
-  'reconsent-required': 'scan.errors.provider.reconsentRequired',
   credit: 'scan.errors.provider.credit',
   'rate-limit': 'scan.errors.provider.rateLimit',
   'model-not-found': 'scan.errors.provider.modelNotFound',

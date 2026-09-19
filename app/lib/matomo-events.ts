@@ -212,7 +212,6 @@ export type ScanFailureReason =
   // exactly, so the failure path needs no mapping. A mapping between two
   // vocabularies is precisely where a real failure quietly becomes 'unknown'.
   | 'auth'
-  | 'reconsent-required'
   | 'credit'
   | 'rate-limit'
   | 'model-not-found'

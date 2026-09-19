@@ -4,7 +4,7 @@
  * were a 30-day *cache* of server-owned diary data; this module defines the
  * durable, authoritative home for a user's tracker data: personal foods, food
  * logs, weight entries, and profile/goals. Every entity is stored as one JSON
- * cell per row (the established pattern in `mirror.ts`/`outbox.ts`), so a row is
+ * cell per row (the established pattern in `primary-store.ts`), so a row is
  * read/written whole and complex fields (macros) survive a round-trip untouched.
  *
  * `SCHEMA_VERSION` is stamped into every backup envelope (`backup.ts`) so an

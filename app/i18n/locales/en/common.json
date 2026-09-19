@@ -1892,7 +1892,6 @@
         "credit": "Your provider account is out of credit. Add credit with your provider and try again.",
         "modelNotFound": "The provider doesn't recognize that model. Pick a different model in AI settings and try again.",
         "rateLimit": "The provider is rate-limiting requests right now. Wait a moment and try again.",
-        "reconsentRequired": "This gateway's privacy settings changed, so it stopped accepting this device. Ask whoever invited you for a new invite link.",
         "photoTooLarge": "The photo is too large for this server. Try a smaller one.",
         "aiNotAllowed": "AI estimates are not switched on for your account. Ask your administrator.",
         "accountSuspended": "Your account is suspended. Ask your administrator.",
@@ -1910,7 +1909,6 @@
         "modelNotFound": "That model isn't available",
         "noLuck": "No luck with that photo",
         "rateLimit": "Too many requests right now",
-        "reconsentRequired": "That gateway needs a new invite",
         "transient": "The provider had trouble responding",
         "photoTooLarge": "That photo is too big",
         "aiNotAllowed": "AI estimates are off",
@@ -2056,6 +2054,7 @@
       "importSuccess": "Backup imported. Your diary now includes the imported data.",
       "importing": "Importing…",
       "photosNote": "Plate photos aren't included in this download: they're kept only on this device (see \"Photos on this device\" below), never bundled into a backup or export. Your download holds only the numbers you logged.",
+      "keysNote": "Your JSON download contains the private key used when someone shares their diary with you, and the seed for your research pseudonym. Keep this file safe, just like your diary.",
       "preparing": "Preparing…",
       "title": "Data & backup"
     },

@@ -85,7 +85,9 @@ anything is shared. The person then grants the share under **Settings → Sharin
 under the clinician's public key, and uploads that wrapped copy. The clinician's browser
 unwraps it and shows the diary at `/shared`. The server stores the wrapped copy and never the
 key to it. A share can be revoked at any time. A private compartment of the diary holds the
-person's own sharing and research keys, and a clinician can never open it.
+person's own sharing and research keys, and a clinician can never open it. Those keys are in
+the JSON export too, unencrypted, so that a restored device can still open what was shared with
+it; [self-hosting.md](self-hosting.md#backups) says what that means for the file.
 
 The same screen holds the switch for the pulse, an optional instance-wide count of meals and
 scans; [architecture.md](architecture.md#what-else-openplate-core-can-carry) says what it

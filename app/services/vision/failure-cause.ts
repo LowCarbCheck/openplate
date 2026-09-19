@@ -23,15 +23,6 @@ import { VisionProviderError } from './types';
 /**
  * - `auth` — the key itself was rejected (401/403). Resending the same
  *   request can never succeed.
- * - `reconsent-required`: the openplate-gateway service (merged into
- *   openplate-core and archived in M192, see docs/README.md) refused the
- *   call because its privacy mode had changed since this device joined: HTTP
- *   403 with
- *   `{"error":"reconsent_required"}`. It is a 403, but emphatically
- *   NOT `auth`: the member token is fine and there is nothing to fix in AI
- *   settings — the person has to be re-invited, having been told what the new
- *   terms are. Lumping it into `auth` would send them hunting for a key that
- *   was never wrong.
  * - `credit` — the provider account is out of balance/quota (402, or a 429
  *   whose body carries a known quota/billing error code). Can never succeed
  *   until the user adds credit with their provider.
@@ -55,7 +46,6 @@ import { VisionProviderError } from './types';
  */
 export type VisionFailureCause =
   | 'auth'
-  | 'reconsent-required'
   | 'credit'
   | 'rate-limit'
   | 'model-not-found'
@@ -141,11 +131,11 @@ export class VisionProviderFailure extends VisionProviderError {
  */
 const KnownErrorBodySchema = z.object({
   // Two wire shapes carry the same domain value — the OpenAI-style
-  // `{error: {code}}` object every provider sends, and a gateway's flat
-  // `{"error":"reconsent_required"}` string. Both are normalized HERE, at the
-  // I/O boundary, into one `{ code }` domain value, so nothing downstream has
-  // to ask which representation arrived. The free-text `message` member is
-  // still never read (see above).
+  // `{error: {code}}` object every provider sends, and a managed instance's
+  // flat `{"error":"ai-not-allowed"}` string. Both are normalized HERE, at
+  // the I/O boundary, into one `{ code }` domain value, so nothing
+  // downstream has to ask which representation arrived. The free-text
+  // `message` member is still never read (see above).
   error: z
     .union([
       z.string().transform((code) => ({ code })),
@@ -192,9 +182,6 @@ async function is429CreditExhaustion(response: Response): Promise<boolean> {
   return code !== undefined && CREDIT_ERROR_CODES.has(code);
 }
 
-/** The gateway's `{"error":"reconsent_required"}` marker on a 403 — see `VisionFailureCause`. */
-const RECONSENT_REQUIRED_CODE = 'reconsent_required';
-
 /**
  * The two markers a managed instance puts on a `403`, transcribed from M192's
  * contract table.
@@ -224,8 +211,6 @@ async function readForbiddenCode(response: Response): Promise<string | undefined
   return (await readErrorBody(response))?.error?.code;
 }
 
-const RECONSENT_MESSAGE =
-  "This gateway's privacy settings changed, so it stopped accepting this device — ask whoever invited you for a new invite link.";
 const AUTH_MESSAGE = 'Your API key was rejected by the provider — check it in AI settings and try again.';
 const CREDIT_MESSAGE = 'Your provider account is out of credit — add credit with your provider and try again.';
 const RATE_LIMIT_MESSAGE = 'The provider is rate-limiting requests right now — wait a moment and try again.';
@@ -282,14 +267,13 @@ function buildInvalidRequestMessage(status: number): string {
  */
 export async function classifyVisionHttpFailure(response: Response): Promise<HttpFailureClassification> {
   // ONE 403 BRANCH, one body read. Three different refusals wear this status
-  // and only the code tells them apart: a gateway withdrawing consent, an
-  // account with no allowance, and a suspended account. None of the three is
-  // fixed by touching an API key, which is what the `auth` message asks for,
-  // and on a managed instance there is no key and no settings page to ask
-  // about (M192/06).
+  // and only the code tells them apart: an account with no allowance, a
+  // suspended account, and an allowance whose end date passed. None of the
+  // three is fixed by touching an API key, which is what the `auth` message
+  // asks for, and on a managed instance there is no key and no settings page
+  // to ask about (M192/06).
   if (response.status === 403) {
     const code = await readForbiddenCode(response);
-    if (code === RECONSENT_REQUIRED_CODE) return { cause: 'reconsent-required', message: RECONSENT_MESSAGE };
     if (code === ACCOUNT_SUSPENDED_CODE) return { cause: 'account-suspended', message: ACCOUNT_SUSPENDED_MESSAGE };
     if (code === AI_NOT_ALLOWED_CODE) return { cause: 'ai-not-allowed', message: AI_NOT_ALLOWED_MESSAGE };
     if (code === ALLOWANCE_EXPIRED_CODE) return { cause: 'allowance-expired', message: ALLOWANCE_EXPIRED_MESSAGE };
