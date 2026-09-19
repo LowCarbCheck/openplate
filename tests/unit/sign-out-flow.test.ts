@@ -7,14 +7,13 @@
  * lands before the erase, the erase is opt-in and never silently defaulted,
  * and a failed erase is reported instead of resolved.
  *
- * Also covered: the outbox notice, because "0 entries will be lost" is a
- * warning that reads as a threat and is in fact the all-clear.
+ * What the dialog SAYS about an erase before anybody agrees to one is
+ * `erase-notice.test.ts`'s.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { runSignOut, type SignOutSteps } from '../../app/lib/sync/sign-out-flow';
-import { resolveEraseOutboxNotice } from '../../app/lib/sync/erase-notice';
 
 interface Recorder {
   steps: SignOutSteps;
@@ -86,20 +85,5 @@ describe('runSignOut', () => {
 
     assert.ok(recorder.calls.includes('lock'), 'the device is closed even though the erase failed');
     assert.ok(!recorder.calls.includes('leave'), 'the person stays on the dialog that can tell them why');
-  });
-});
-
-describe('resolveEraseOutboxNotice', () => {
-  it('names the unsynced count when entries are waiting', () => {
-    assert.deepEqual(resolveEraseOutboxNotice(3), { kind: 'waiting', count: 3 });
-    assert.deepEqual(resolveEraseOutboxNotice(1), { kind: 'waiting', count: 1 });
-  });
-
-  it('says it in words rather than showing a zero when the outbox is empty', () => {
-    assert.deepEqual(resolveEraseOutboxNotice(0), { kind: 'empty' });
-  });
-
-  it('says it is still counting rather than claiming an empty outbox it has not read', () => {
-    assert.deepEqual(resolveEraseOutboxNotice(null), { kind: 'counting' });
   });
 });

@@ -2487,11 +2487,15 @@
     "erase": {
       "label": "Tagebuch ebenfalls von diesem Gerät löschen"
     },
-    "outbox": {
-      "counting": "Prüfen, was noch nicht gesendet wurde.",
-      "empty": "Alles auf diesem Gerät hat den Server erreicht.",
-      "waiting_one": "Ein Eintrag hat den Server noch nicht erreicht. Durch das Löschen geht er verloren.",
-      "waiting_other": "{{count}} Einträge haben den Server noch nicht erreicht. Durch das Löschen gehen sie verloren."
+    "unsent": {
+      "checking": "Es wird geprüft, was den Server noch nicht erreicht hat.",
+      "unchecked": "Dieses Gerät konnte nicht prüfen, was den Server erreicht hat. Wenn du löschst, verlierst du möglicherweise Änderungen, die nur hier existieren.",
+      "allSent": "Deine Mahlzeiteneinträge, eigenen Lebensmittel, Wiegungen und Ziele haben den Server alle erreicht.",
+      "notCovered": "Fastenzeiten, gespeicherte Mahlzeiten, der Vorratsschrank sowie deine Freigabe- und Forschungsschlüssel sind nicht Teil dieser Prüfung. Wenn du löschst, verlierst du sie möglicherweise.",
+      "changes_one": "Eine Änderung auf diesem Gerät hat den Server noch nicht erreicht. Wenn du löschst, verlierst du sie.",
+      "changes_other": "{{count}} Änderungen auf diesem Gerät haben den Server noch nicht erreicht. Wenn du löschst, verlierst du sie.",
+      "reports_one": "Ein Bericht über eine falsche Schätzung wurde noch nicht gesendet. Wenn du löschst, verlierst du ihn.",
+      "reports_other": "{{count}} Berichte über falsche Schätzungen wurden noch nicht gesendet. Wenn du löschst, verlierst du sie."
     },
     "eraseFailed": "Das Tagebuch konnte nicht gelöscht werden, weil openplate in einem anderen Tab geöffnet ist. Schließe ihn und versuche es erneut."
   },

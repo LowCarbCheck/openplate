@@ -41,6 +41,13 @@
     "at": "2026-09-14",
     "it": "tra pochi minuti"
   },
+  "0133016e92468f01": {
+    "en": "Checking what has not reached the server yet.",
+    "path": "common:signOut.unsent.checking",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Verifica degli elementi che non hanno ancora raggiunto il server."
+  },
   "014cb74645be04e2": {
     "en": "We'll show your progress toward this as approximate, since calorie counts from food are often estimates rather than exact numbers.",
     "path": "common:goals.kcal.approximateNote",
@@ -1650,6 +1657,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Nessuna foto"
+  },
+  "16ce4231b1cdc564": {
+    "en": "One report about a wrong estimate has not been sent yet. If you erase, you will lose it.",
+    "path": "common:signOut.unsent.reports_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Una segnalazione su una stima errata non è ancora stata inviata. Se cancelli, la perderai."
   },
   "16cef1eb3f9b41df": {
     "en": "Save",
@@ -6096,6 +6110,13 @@
     "at": "2026-09-14",
     "it": "Annulla"
   },
+  "588a39328793856b": {
+    "en": "This device could not check what has reached the server. If you erase, you may lose changes that exist only here.",
+    "path": "common:signOut.unsent.unchecked",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Questo dispositivo non ha potuto verificare cosa ha raggiunto il server. Se cancelli, potresti perdere le modifiche presenti solo qui."
+  },
   "58d31f8e39e72923": {
     "en": "Model is required",
     "path": "common:settingsAi.errors.modelRequired",
@@ -8616,6 +8637,13 @@
     "at": "2026-09-14",
     "it": "Il provider non ha potuto elaborare la richiesta"
   },
+  "7ca24dd507401ef1": {
+    "en": "{{count}} changes on this device have not reached the server yet. If you erase, you will lose them.",
+    "path": "common:signOut.unsent.changes_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "{{count}} modifiche su questo dispositivo non hanno ancora raggiunto il server. Se cancelli, le perderai."
+  },
   "7cbcc70dd14221d7": {
     "en": "Save",
     "path": "common:add.custom.save",
@@ -8664,6 +8692,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "La richiesta si è chiusa oppure il browser non l'ha mai mostrata. Tocca di nuovo l'interruttore."
+  },
+  "7d6af303c1e65a07": {
+    "en": "One change on this device has not reached the server yet. If you erase, you will lose it.",
+    "path": "common:signOut.unsent.changes_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Una modifica su questo dispositivo non ha ancora raggiunto il server. Se cancelli, la perderai."
   },
   "7d84e9cfe64190fc": {
     "en": "Fast removed.",
@@ -9693,6 +9728,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Hai completato un digiuno usando il timer."
+  },
+  "8bccfd968180b6bb": {
+    "en": "Your food logs, your own foods, weigh-ins and goals have all reached the server.",
+    "path": "common:signOut.unsent.allSent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "I tuoi registri alimentari, i tuoi alimenti, le pesate e gli obiettivi hanno tutti raggiunto il server."
   },
   "8bd094de1cc0bad2": {
     "en": "Use this openplate's AI",
@@ -12018,6 +12060,13 @@
     "at": "2026-09-14",
     "it": "openplate non contiene pubblicità. Questa istanza conta le visite e l'uso delle funzionalità con un'istanza autonoma di Matomo senza cookie, senza mai registrare cosa mangi, quanto pesi o cosa inserisci; il tuo diario resta su questo dispositivo. Esegui openplate in autonomia e non verrà conteggiato assolutamente nulla."
   },
+  "ad707200a0a95358": {
+    "en": "Fasts, saved meals, the pantry, and your sharing and research keys are not part of this check. If you erase, you may lose them.",
+    "path": "common:signOut.unsent.notCovered",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "I digiuni, i pasti salvati, la dispensa e le tue chiavi di condivisione e di ricerca non fanno parte di questo controllo. Se cancelli, potresti perderli."
+  },
   "ad7c85a2fedd1518": {
     "en": "Change password",
     "path": "common:sync.changePassphrase.title",
@@ -12675,6 +12724,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Consenti a un dietista o a un medico di leggere il tuo diario. Resta cifrato per tutto il percorso: ricevono una copia della tua chiave sigillata con la loro, e il server continua a non poter leggere nulla."
+  },
+  "b77c67744a5df277": {
+    "en": "{{count}} reports about wrong estimates have not been sent yet. If you erase, you will lose them.",
+    "path": "common:signOut.unsent.reports_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "{{count}} segnalazioni su stime errate non sono ancora state inviate. Se cancelli, le perderai."
   },
   "b78e849c3e6b314a": {
     "en": "Not yet",

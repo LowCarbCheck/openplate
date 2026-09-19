@@ -16,14 +16,18 @@ import assert from 'node:assert/strict';
 
 import { createOutboxStore, FEEDBACK_OUTBOX_TABLE } from '../../app/lib/local-store/store';
 import {
+  BASE_BACKOFF_MS,
+  computeBackoffMs,
+  countQueuedFeedbackReports,
   drainFeedbackOutbox,
   enqueueFeedbackReport,
+  MAX_BACKOFF_MS,
+  MAX_SEND_ATTEMPTS,
   readFeedbackRecords,
   writeFeedbackRecord,
 } from '../../app/lib/local-store/feedback-outbox';
 import { recordFeedbackConsent, FEEDBACK_CONSENT_WORDING_VERSION } from '../../app/lib/feedback/feedback-consent';
 import { buildFeedbackMeasurements, type FeedbackWireBody } from '../../app/lib/feedback/feedback-report';
-import { MAX_FLUSH_ATTEMPTS } from '../../app/lib/local-store/outbox-machine';
 
 const NOW = Date.parse('2026-09-07T12:00:00Z');
 
@@ -258,7 +262,7 @@ describe('the drain', () => {
     await queueReport({ store, photo: null });
 
     let clock = NOW;
-    for (let attempt = 0; attempt < MAX_FLUSH_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; attempt < MAX_SEND_ATTEMPTS; attempt += 1) {
       await drainFeedbackOutbox({ store, post: recordingPoster(503).post, now: () => clock });
       clock += 60 * 60 * 1000;
     }
@@ -276,5 +280,44 @@ describe('the drain', () => {
 
     assert.deepEqual(result, { sent: 0, blocked: 0, remaining: 0 });
     assert.equal(store.getRowCount(FEEDBACK_OUTBOX_TABLE), 1, 'the report waits for a session, it is not lost');
+  });
+});
+
+describe('computeBackoffMs', () => {
+  it('waits the base delay after the first failure', () => {
+    assert.equal(computeBackoffMs(1), BASE_BACKOFF_MS);
+  });
+
+  it('doubles the wait with each later failure', () => {
+    assert.equal(computeBackoffMs(2), BASE_BACKOFF_MS * 2);
+    assert.equal(computeBackoffMs(3), BASE_BACKOFF_MS * 4);
+  });
+
+  it('never waits longer than the cap', () => {
+    assert.equal(computeBackoffMs(50), MAX_BACKOFF_MS);
+  });
+});
+
+describe('countQueuedFeedbackReports', () => {
+  it('counts nothing on an empty queue', async () => {
+    assert.equal(await countQueuedFeedbackReports({ store: createOutboxStore() }), 0);
+  });
+
+  it('counts a blocked report too, because an erase loses it all the same', async () => {
+    const store = createOutboxStore();
+    const queued = await queueReport({ store, photo: null });
+    writeFeedbackRecord(store, { ...queued, status: 'blocked', lastError: 'rejected' });
+    await queueReport({ store, photo: null, nowMs: NOW + 1 });
+
+    assert.equal(await countQueuedFeedbackReports({ store }), 2);
+  });
+
+  it('does not count a row that does not parse, which nothing could ever send', async () => {
+    const store = createOutboxStore();
+    await queueReport({ store, photo: null });
+    store.setRow(FEEDBACK_OUTBOX_TABLE, 'hand-edited', { record: '{"not":"a report"}' });
+
+    assert.equal(store.getRowCount(FEEDBACK_OUTBOX_TABLE), 2, 'fixture: both rows are in the table');
+    assert.equal(await countQueuedFeedbackReports({ store }), 1);
   });
 });

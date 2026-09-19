@@ -50,7 +50,12 @@ export {
  * `index.ts`'s header.)
  */
 export const PRIMARY_DB_NAME = 'openplate-primary';
-/** IndexedDB database name for the write outbox store. */
+/**
+ * IndexedDB database name for the outbox store, which today holds one live
+ * queue: reports of a bad estimate (`FEEDBACK_OUTBOX_TABLE`). The name is
+ * older than that queue and is kept, because renaming a database strands
+ * whatever an existing browser holds under the old one.
+ */
 export const OUTBOX_DB_NAME = 'openplate-outbox';
 /**
  * IndexedDB database name for the on-device plate-photo cache. A dedicated DB
@@ -69,21 +74,30 @@ export const PHOTOS_DB_NAME = 'openplate-photos';
  */
 export const AI_DB_NAME = 'openplate-ai';
 
-/** Outbox table: one row per queued write, keyed by the record's `clientId`. */
-export const OUTBOX_TABLE = 'outbox';
-/** Cell holding the JSON-serialized `OutboxRecord`. */
-export const OUTBOX_RECORD_CELL = 'record';
+/**
+ * The table the retired LOG OUTBOX wrote into, kept ONLY so the outbox store
+ * can delete it on load (`persist.ts`). Nothing writes it and nothing reads a
+ * row out of it.
+ *
+ * It queued offline diary writes for a server `/add` action while the diary
+ * lived on a server. M117/03 moved every diary write onto the device's primary
+ * store, and the flush that emptied this table lost its last caller the same
+ * day, so a row still here was written by a build older than that and has
+ * waited ever since. See `dropRetiredLogOutbox` for why it is deleted rather
+ * than kept or replayed.
+ */
+export const RETIRED_LOG_OUTBOX_TABLE = 'outbox';
 
 /**
  * Feedback-outbox table: one row per queued report of a bad estimate, keyed by
  * the report's own idempotency key.
  *
- * A SECOND TABLE IN THE OUTBOX DATABASE, not a second database and not a
- * second kind of row in `OUTBOX_TABLE`. It shares the outbox's durability and
- * its "survive a reload, drain on reconnect" lifetime, which is the whole
- * reason a report is queued rather than posted; it does not share the log
- * outbox's STRICT ORDERING, because reports are independent of one another and
- * a report parked behind an earlier one would be a report nobody sent.
+ * A TABLE IN THE OUTBOX DATABASE, not a database of its own. It needs that
+ * database's durability and its "survive a reload, drain on reconnect"
+ * lifetime, which is the whole reason a report is queued rather than posted.
+ * It never had the retired log outbox's STRICT ORDERING, because reports are
+ * independent of one another and a report parked behind an earlier one would
+ * be a report nobody sent.
  */
 export const FEEDBACK_OUTBOX_TABLE = 'feedbackOutbox';
 /** Cell holding the JSON-serialized `FeedbackReportRecord`. */

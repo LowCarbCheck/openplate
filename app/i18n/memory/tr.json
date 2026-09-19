@@ -41,6 +41,13 @@
     "at": "2026-09-14",
     "tr": "birkaç dakika içinde"
   },
+  "0133016e92468f01": {
+    "en": "Checking what has not reached the server yet.",
+    "path": "common:signOut.unsent.checking",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Sunucuya henüz nelerin ulaşmadığı denetleniyor."
+  },
   "014cb74645be04e2": {
     "en": "We'll show your progress toward this as approximate, since calorie counts from food are often estimates rather than exact numbers.",
     "path": "common:goals.kcal.approximateNote",
@@ -1650,6 +1657,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Fotoğraf yok"
+  },
+  "16ce4231b1cdc564": {
+    "en": "One report about a wrong estimate has not been sent yet. If you erase, you will lose it.",
+    "path": "common:signOut.unsent.reports_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Hatalı bir tahminle ilgili bir rapor henüz gönderilmedi. Silersen, bunu kaybedersin."
   },
   "16cef1eb3f9b41df": {
     "en": "Save",
@@ -6096,6 +6110,13 @@
     "at": "2026-09-14",
     "tr": "İptal"
   },
+  "588a39328793856b": {
+    "en": "This device could not check what has reached the server. If you erase, you may lose changes that exist only here.",
+    "path": "common:signOut.unsent.unchecked",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Bu cihaz sunucuya nelerin ulaştığını denetleyemedi. Silersen, yalnızca burada bulunan değişiklikleri kaybedebilirsin."
+  },
   "58d31f8e39e72923": {
     "en": "Model is required",
     "path": "common:settingsAi.errors.modelRequired",
@@ -8616,6 +8637,13 @@
     "at": "2026-09-14",
     "tr": "Sağlayıcı bu isteği işleyemedi"
   },
+  "7ca24dd507401ef1": {
+    "en": "{{count}} changes on this device have not reached the server yet. If you erase, you will lose them.",
+    "path": "common:signOut.unsent.changes_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Bu cihazdaki {{count}} değişiklik sunucuya henüz ulaşmadı. Silersen, bunları kaybedersin."
+  },
   "7cbcc70dd14221d7": {
     "en": "Save",
     "path": "common:add.custom.save",
@@ -8664,6 +8692,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İstek kapandı veya tarayıcın hiç sormadı. Düğmeye tekrar dokun."
+  },
+  "7d6af303c1e65a07": {
+    "en": "One change on this device has not reached the server yet. If you erase, you will lose it.",
+    "path": "common:signOut.unsent.changes_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Bu cihazdaki bir değişiklik sunucuya henüz ulaşmadı. Silersen, bunu kaybedersin."
   },
   "7d84e9cfe64190fc": {
     "en": "Fast removed.",
@@ -9693,6 +9728,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "tr": "Zamanlayıcıyla bir oruç tuttun."
+  },
+  "8bccfd968180b6bb": {
+    "en": "Your food logs, your own foods, weigh-ins and goals have all reached the server.",
+    "path": "common:signOut.unsent.allSent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Yiyecek kayıtların, kendi yiyeceklerin, tartı ölçümlerin ve hedeflerin sunucuya ulaştı."
   },
   "8bd094de1cc0bad2": {
     "en": "Use this openplate's AI",
@@ -12018,6 +12060,13 @@
     "at": "2026-09-14",
     "tr": "openplate reklam içermez. Bu kurulum, ziyaretleri ve özellik kullanımını çerezsiz kendi Matomo kurulumuyla sayar; ne yediğini, kilonu veya ne kaydettiğini asla saymaz; günlüğün bu cihazda kalır. openplate kurulumunu kendin çalıştırırsan hiçbir şey sayılmaz."
   },
+  "ad707200a0a95358": {
+    "en": "Fasts, saved meals, the pantry, and your sharing and research keys are not part of this check. If you erase, you may lose them.",
+    "path": "common:signOut.unsent.notCovered",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Oruçlar, kayıtlı öğünler, kiler, paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen, bunları kaybedebilirsin."
+  },
   "ad7c85a2fedd1518": {
     "en": "Change password",
     "path": "common:sync.changePassphrase.title",
@@ -12675,6 +12724,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bir diyetisyenin veya doktorun günlüğünü okumasına izin ver. Baştan sona şifreli kalır: anahtarının onlarınkine mühürlenmiş bir kopyasını alırlar ve sunucu hiçbir şeyi okuyamaz."
+  },
+  "b77c67744a5df277": {
+    "en": "{{count}} reports about wrong estimates have not been sent yet. If you erase, you will lose them.",
+    "path": "common:signOut.unsent.reports_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "tr": "Hatalı tahminlerle ilgili {{count}} rapor henüz gönderilmedi. Silersen, bunları kaybedersin."
   },
   "b78e849c3e6b314a": {
     "en": "Not yet",

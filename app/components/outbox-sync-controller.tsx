@@ -4,12 +4,18 @@ import { rekeyPhotoCacheToAnonymousOwner } from '#app/lib/local-store/photo-reke
 import { ANONYMOUS_USER_ID } from '#app/lib/local-store/store';
 
 /**
- * App-boot device-local housekeeping, run once per mount (M117/03: no longer
- * drives an outbox flush — health writes commit directly to the on-device
- * primary store now, so there is nothing queued to sync to a server "/add"
- * action anymore; the outbox/oplog machinery itself (`outbox.ts`,
- * `outbox-machine.ts`) is preserved untouched for the encrypted-sync path,
- * just no longer wired to run here). Renders nothing.
+ * App-boot device-local housekeeping, run once per mount. Renders nothing.
+ *
+ * THE NAME IS OLDER THAN THE JOB. Until M117/03 this flushed the log outbox,
+ * the queue of offline diary writes bound for a server "/add" action. Health
+ * writes commit straight to the on-device primary store since then, so there
+ * was nothing left to flush, and the queue's own modules (`outbox.ts`,
+ * `outbox-machine.ts`) were deleted once nothing read them: they were never
+ * the encrypted-sync path, which keeps no queue at all (`sync/orchestrator.ts`).
+ * The one queue left in the outbox database, reports of a bad estimate, is
+ * drained by `SyncController`. A table the old queue left behind on an old
+ * browser is deleted when the outbox store loads (`persist.ts`,
+ * `dropRetiredLogOutbox`).
  *
  * The diary MIRROR cache's boot-time prune that used to run here alongside
  * the photo GC was retired in M117/03 deploy-2's post-deploy review: the

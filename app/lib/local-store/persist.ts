@@ -155,6 +155,7 @@ import {
   OUTBOX_DB_NAME,
   PHOTOS_DB_NAME,
   PRIMARY_DB_NAME,
+  RETIRED_LOG_OUTBOX_TABLE,
 } from './store';
 import { RETIRED_GATEWAY_CONNECTION_TABLE } from './schema';
 // The one import in this file that points OUTWARD, and it is deliberate: the
@@ -1227,6 +1228,43 @@ function dropRetiredGatewayConnection(store: Store): void {
 }
 
 /**
+ * Deletes the retired LOG OUTBOX table from the outbox store, and leaves the
+ * feedback queue beside it alone.
+ *
+ * ── Why delete, and not keep or replay ───────────────────────────────────
+ *
+ * A row in this table is an offline diary write queued by a build from before
+ * M117/03, waiting for a flush to POST it to the server's `/add` action. That
+ * flush lost its last caller in M117/03, and the action went with the server
+ * diary: `/add` answers only a `clientAction` now, so a replay has nowhere to
+ * land. Nothing in the app shows these rows, no backup carries them, and sync
+ * never read them.
+ *
+ * KEEPING THEM protects nothing and costs something. It leaves food names and
+ * amounts on the device that no screen can show and no person can remove short
+ * of an erase, and the one reader they ever had was the sign-out dialog, which
+ * counted them as "waiting" when nothing could send them.
+ *
+ * REPLAYING THEM INTO THE DIARY is the tempting third answer, and it is the
+ * wrong one. Every such row is at least as old as M117/03, and no screen has
+ * shown it since then. A replay would put entries onto days long past, months
+ * after the person stopped expecting them, with nothing to say where they came
+ * from, and it would do so through a translation from a server form that no
+ * code has maintained since.
+ *
+ * `delTable` on a store without the table is a no-op, which is every device
+ * that never ran a pre-M117/03 build.
+ */
+function dropRetiredLogOutbox(store: Store): void {
+  if (!store.hasTable(RETIRED_LOG_OUTBOX_TABLE)) return;
+  // The count only: the rows are somebody's food log.
+  log.info('local-store: dropping the retired log outbox (unsendable since M117/03)', {
+    rows: store.getRowCount(RETIRED_LOG_OUTBOX_TABLE),
+  });
+  store.delTable(RETIRED_LOG_OUTBOX_TABLE);
+}
+
+/**
  * Deletes an AI settings row provisioned by a gateway invite (M192, schema
  * v18).
  *
@@ -1331,18 +1369,21 @@ export function getPrimaryStore(): Promise<Store> {
 }
 
 /**
- * The lazily-created, IndexedDB-backed outbox store. Throws if resolved
- * outside a browser with IndexedDB support (see `assertBrowserWithIndexedDb`)
- * OR if a suspected failed/partial load was detected (see
- * `loadAndVerifyOrThrow`) — in either case the failed promise is NOT cached,
- * so the next call retries from scratch.
+ * The lazily-created, IndexedDB-backed outbox store, the home of the queued
+ * estimate reports (`feedback-outbox.ts`). Its load deletes the retired log
+ * outbox table (`dropRetiredLogOutbox`). Throws if resolved outside a browser
+ * with IndexedDB support (see `assertBrowserWithIndexedDb`) OR if a suspected
+ * failed/partial load was detected (see `loadAndVerifyOrThrow`). In either
+ * case the failed promise is NOT cached, so the next call retries from scratch.
  */
 export function getOutboxStore(): Promise<Store> {
   if (!outboxPromise) {
-    outboxPromise = initPersistedStore(createOutboxStore(), OUTBOX_DB_NAME).catch((cause: unknown) => {
-      outboxPromise = null;
-      throw cause;
-    });
+    outboxPromise = initPersistedStore(createOutboxStore(), OUTBOX_DB_NAME, dropRetiredLogOutbox).catch(
+      (cause: unknown) => {
+        outboxPromise = null;
+        throw cause;
+      },
+    );
   }
   return outboxPromise;
 }

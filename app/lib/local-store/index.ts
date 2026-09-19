@@ -13,8 +13,7 @@
  *
  * CONFLICT STANCE: LAST-WRITE-WINS. This is single-user personal data. Multi-
  * device real-time convergence (TinyBase `MergeableStore` + an E2EE
- * synchronizer) is the recorded FUTURE path (spec 06), the outbox/oplog
- * machinery below is preserved for it, not for server POSTs of health data.
+ * synchronizer) is the recorded FUTURE path (spec 06).
  *
  * DEVICE-OWNERSHIP DECISION (M128 spec 03, the accountless cutover): the
  * primary store is DEVICE-scoped, not account-scoped, every table here is one
@@ -34,8 +33,7 @@
  *
  * IndexedDB-backed stores (see `store.ts` / `persist.ts`):
  * - primary (`openplate-primary`): the durable, authoritative tracker data.
- * - outbox  (`openplate-outbox`): queued log intents with client-generated
- *   idempotency ids (reused for the spec-06 encrypted-sync path).
+ * - outbox  (`openplate-outbox`): queued reports of a bad estimate (`feedback-outbox.ts`).
  * - photos  (`openplate-photos`): device-only plate photos, never exported/synced.
  *
  * IMPORTING is always SSR-safe: store access is lazy, so importing this module
@@ -294,8 +292,6 @@ export {
 } from './ai-usage-log';
 export type { LocalAiUsageEvent } from './ai-usage-log';
 
-// Outbox/oplog machinery (preserved for the spec-06 encrypted-sync path).
-export { enqueueLogIntent, pendingEntriesForDate, listOutboxRecords, flushOutbox, flushOutboxOnce } from './outbox';
 export { clientTodayKey } from './time';
 export { resolveLocalTimezone } from './timezone';
 
@@ -324,14 +320,3 @@ export {
   clearMigrationGateStamp,
 } from './migration-gate';
 export { shouldFallbackOffline } from './offline-fallback';
-export { buildOfflineLogInput } from './add-offline-input';
-export type {
-  OutboxRecord,
-  OutboxIntent,
-  OutboxStatus,
-  PendingLogEntry,
-  PendingLogDisplay,
-  EnqueueLogInput,
-  FlushResult,
-  FlushSurface,
-} from './types';

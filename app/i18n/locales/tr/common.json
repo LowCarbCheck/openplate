@@ -2487,11 +2487,15 @@
     "erase": {
       "label": "Günlüğü bu cihazdan da sil"
     },
-    "outbox": {
-      "counting": "Hâlâ gönderilmeyi bekleyenler denetleniyor.",
-      "empty": "Bu cihazdaki her şey sunucuya ulaştı.",
-      "waiting_one": "Bir girdi henüz sunucuya ulaşmadı. Silersen kaybolur.",
-      "waiting_other": "{{count}} girdi henüz sunucuya ulaşmadı. Silersen kaybolurlar."
+    "unsent": {
+      "checking": "Sunucuya henüz nelerin ulaşmadığı denetleniyor.",
+      "unchecked": "Bu cihaz sunucuya nelerin ulaştığını denetleyemedi. Silersen, yalnızca burada bulunan değişiklikleri kaybedebilirsin.",
+      "allSent": "Yiyecek kayıtların, kendi yiyeceklerin, tartı ölçümlerin ve hedeflerin sunucuya ulaştı.",
+      "notCovered": "Oruçlar, kayıtlı öğünler, kiler, paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen, bunları kaybedebilirsin.",
+      "changes_one": "Bu cihazdaki bir değişiklik sunucuya henüz ulaşmadı. Silersen, bunu kaybedersin.",
+      "changes_other": "Bu cihazdaki {{count}} değişiklik sunucuya henüz ulaşmadı. Silersen, bunları kaybedersin.",
+      "reports_one": "Hatalı bir tahminle ilgili bir rapor henüz gönderilmedi. Silersen, bunu kaybedersin.",
+      "reports_other": "Hatalı tahminlerle ilgili {{count}} rapor henüz gönderilmedi. Silersen, bunları kaybedersin."
     },
     "eraseFailed": "openplate başka bir sekmede açık olduğu için günlük silinemedi. O sekmeyi kapatıp yeniden dene."
   },

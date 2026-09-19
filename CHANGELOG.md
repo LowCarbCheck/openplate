@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **Signing out no longer says everything reached the server when it has not.** The sign-out dialog counted a queue that nothing has written to since the diary moved onto the device. So it always said "Everything on this device has reached the server." above the box that erases the diary. It now counts the changes the sync has not sent yet and any estimate reports still waiting. It says so when it could not check. It also names what the check does not cover: fasts, saved meals, the pantry, and your sharing and research keys. Rows left in that retired queue are deleted, because nothing could ever send them.
+
 ## [0.34.1] - 2026-09-19
 
 ### Changed

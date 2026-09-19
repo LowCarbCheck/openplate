@@ -2487,11 +2487,15 @@
     "erase": {
       "label": "Borrar también el diario de este dispositivo"
     },
-    "outbox": {
-      "counting": "Comprobando qué queda pendiente de enviar.",
-      "empty": "Todo lo que hay en este dispositivo ha llegado al servidor.",
-      "waiting_one": "Una entrada todavía no ha llegado al servidor. Si borras, se perderá.",
-      "waiting_other": "{{count}} entradas todavía no han llegado al servidor. Si borras, se perderán."
+    "unsent": {
+      "checking": "Comprobando qué no ha llegado todavía al servidor.",
+      "unchecked": "Este dispositivo no ha podido comprobar qué ha llegado al servidor. Si borras, podrías perder cambios que solo existen aquí.",
+      "allSent": "Tus registros de comida, tus alimentos propios, pesajes y objetivos han llegado ya al servidor.",
+      "notCovered": "Los ayunos, las comidas guardadas, la despensa y tus claves para compartir e investigación quedan fuera de esta comprobación. Si borras, podrías perderlos.",
+      "changes_one": "Un cambio en este dispositivo no ha llegado todavía al servidor. Si borras, lo perderás.",
+      "changes_other": "{{count}} cambios en este dispositivo no han llegado todavía al servidor. Si borras, los perderás.",
+      "reports_one": "Un informe sobre una estimación errónea no se ha enviado todavía. Si borras, lo perderás.",
+      "reports_other": "{{count}} informes sobre estimaciones erróneas no se han enviado todavía. Si borras, los perderás."
     },
     "eraseFailed": "No se ha podido borrar el diario porque openplate está abierto en otra pestaña. Ciérrala e inténtalo de nuevo."
   },

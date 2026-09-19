@@ -2487,11 +2487,15 @@
     "erase": {
       "label": "Cancella anche il diario da questo dispositivo"
     },
-    "outbox": {
-      "counting": "Verifica degli elementi ancora in attesa di invio.",
-      "empty": "Tutti i dati su questo dispositivo hanno raggiunto il server.",
-      "waiting_one": "Una voce non ha ancora raggiunto il server. Se cancelli, andrà persa.",
-      "waiting_other": "{{count}} voci non hanno ancora raggiunto il server. Se cancelli, andranno perse."
+    "unsent": {
+      "checking": "Verifica degli elementi che non hanno ancora raggiunto il server.",
+      "unchecked": "Questo dispositivo non ha potuto verificare cosa ha raggiunto il server. Se cancelli, potresti perdere le modifiche presenti solo qui.",
+      "allSent": "I tuoi registri alimentari, i tuoi alimenti, le pesate e gli obiettivi hanno tutti raggiunto il server.",
+      "notCovered": "I digiuni, i pasti salvati, la dispensa e le tue chiavi di condivisione e di ricerca non fanno parte di questo controllo. Se cancelli, potresti perderli.",
+      "changes_one": "Una modifica su questo dispositivo non ha ancora raggiunto il server. Se cancelli, la perderai.",
+      "changes_other": "{{count}} modifiche su questo dispositivo non hanno ancora raggiunto il server. Se cancelli, le perderai.",
+      "reports_one": "Una segnalazione su una stima errata non è ancora stata inviata. Se cancelli, la perderai.",
+      "reports_other": "{{count}} segnalazioni su stime errate non sono ancora state inviate. Se cancelli, le perderai."
     },
     "eraseFailed": "Impossibile cancellare il diario perché openplate è aperto in un'altra scheda. Chiudila e riprova."
   },

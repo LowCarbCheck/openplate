@@ -2487,11 +2487,15 @@
     "erase": {
       "label": "Effacer aussi le journal de cet appareil"
     },
-    "outbox": {
-      "counting": "Vérification des données en attente d'envoi.",
-      "empty": "Tout le contenu de cet appareil a atteint le serveur.",
-      "waiting_one": "Une entrée n'a pas encore atteint le serveur. L'effacer la supprimera définitivement.",
-      "waiting_other": "{{count}} entrées n'ont pas encore atteint le serveur. Les effacer les supprimera définitivement."
+    "unsent": {
+      "checking": "Vérification des éléments qui n'ont pas encore atteint le serveur.",
+      "unchecked": "Cet appareil n'a pas pu vérifier ce qui a atteint le serveur. Si tu effaces, tu risques de perdre les modifications qui n'existent qu'ici.",
+      "allSent": "Tes entrées du journal, tes propres aliments, tes pesées et tes objectifs ont tous atteint le serveur.",
+      "notCovered": "Les jeûnes, les repas enregistrés, le garde-manger ainsi que tes clés de partage et de recherche ne font pas partie de cette vérification. Si tu effaces, tu risques de les perdre.",
+      "changes_one": "Une modification sur cet appareil n'a pas encore atteint le serveur. Si tu effaces, tu la perdras.",
+      "changes_other": "{{count}} modifications sur cet appareil n'ont pas encore atteint le serveur. Si tu effaces, tu les perdras.",
+      "reports_one": "Un signalement d'estimation erronée n'a pas encore été envoyé. Si tu effaces, tu le perdras.",
+      "reports_other": "{{count}} signalements d'estimations erronées n'ont pas encore été envoyés. Si tu effaces, tu les perdras."
     },
     "eraseFailed": "Impossible d'effacer le journal, car openplate est ouvert dans un autre onglet. Ferme-le et réessaie."
   },

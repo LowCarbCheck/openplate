@@ -14,10 +14,10 @@
  * storing a second report, so a retry from this queue is a no-op there. That
  * is what makes retrying safe enough to do automatically.
  *
- * NO STRICT ORDERING. The log outbox (`outbox.ts`) stops its whole loop at the
- * first failure because a later write must never sync ahead of an earlier one.
- * Reports have no such relationship: one that cannot be sent must not park
- * every other one behind it.
+ * NO STRICT ORDERING. The retired log outbox stopped its whole loop at the
+ * first failure, because a later write must never sync ahead of an earlier
+ * one. Reports have no such relationship: one that cannot be sent must not
+ * park every other one behind it.
  *
  * The pure decisions live in `#app/lib/feedback/feedback-report`; the photo
  * cache is reached through exactly one function
@@ -28,7 +28,6 @@ import type { Store } from 'tinybase';
 import { z } from 'zod';
 import { getOutboxStore } from './persist';
 import { FEEDBACK_OUTBOX_RECORD_CELL, FEEDBACK_OUTBOX_TABLE } from './store';
-import { computeBackoffMs, MAX_FLUSH_ATTEMPTS } from './outbox-machine';
 import { feedbackConsentRecordSchema, type FeedbackConsentRecord } from '#app/lib/feedback/feedback-consent';
 import {
   buildFeedbackWireBody,
@@ -47,6 +46,24 @@ import { randomUuid } from '#app/lib/uuid';
 
 /** Posts one report and reports the HTTP status back. The impure boundary the drain wraps. */
 export type FeedbackPoster = (body: FeedbackWireBody) => Promise<{ status: number }>;
+
+/** After this many failed attempts a report is parked as `blocked` (never dropped). */
+export const MAX_SEND_ATTEMPTS = 8;
+/** First retry delay; each later attempt doubles it, up to the cap. */
+export const BASE_BACKOFF_MS = 5_000;
+/** Ceiling on the backoff, so a long-parked report is still retried every few minutes. */
+export const MAX_BACKOFF_MS = 5 * 60_000;
+
+/**
+ * Exponential backoff (ms) before the next attempt, capped. `attempts` is 1-based.
+ *
+ * Moved here from the log outbox's state machine when that queue was deleted:
+ * this queue was the last one to use it.
+ */
+export function computeBackoffMs(attempts: number): number {
+  const raw = BASE_BACKOFF_MS * 2 ** Math.max(0, attempts - 1);
+  return Math.min(raw, MAX_BACKOFF_MS);
+}
 
 /** The queued-record cell as it comes back off the store: a TinyBase cell, not yet JSON text. */
 const recordCellSchema = z.string();
@@ -112,6 +129,19 @@ export function readFeedbackRecords(store: Store): FeedbackReportRecord[] {
     .map((rowId) => readFeedbackRecord(store, rowId))
     .filter((record): record is FeedbackReportRecord => record !== null)
     .toSorted((a, b) => a.createdAt - b.createdAt);
+}
+
+/**
+ * How many reports are still queued on this device, whatever their status.
+ *
+ * A `blocked` report counts too. It will never be sent, and it is still a
+ * report this device holds and the service does not, which is the question the
+ * sign-out dialog asks before an erase deletes this database
+ * (`sync/erase-notice.ts`). A row that does not parse is not counted, because
+ * the drain drops it on read and nothing could ever send it.
+ */
+export async function countQueuedFeedbackReports({ store }: { store?: Store } = {}): Promise<number> {
+  return readFeedbackRecords(store ?? (await getOutboxStore())).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -248,7 +278,7 @@ export async function drainFeedbackOutbox(
     }
 
     const attempts = record.attempts + 1;
-    if (attempts >= MAX_FLUSH_ATTEMPTS) {
+    if (attempts >= MAX_SEND_ATTEMPTS) {
       writeFeedbackRecord(store, { ...record, status: 'blocked', attempts, lastError: 'max-retries' });
       blocked += 1;
       continue;
@@ -267,8 +297,7 @@ export async function drainFeedbackOutbox(
 
 /**
  * Single-flight wrapper over the default-store drain, so the reconnect
- * triggers firing in quick succession share one run instead of racing. The
- * same arrangement `flushOutboxOnce` uses, for the same reason.
+ * triggers firing in quick succession share one run instead of racing.
  */
 let inFlight: Promise<DrainFeedbackOutboxResult> | null = null;
 export function drainFeedbackOutboxOnce(): Promise<DrainFeedbackOutboxResult> {
