@@ -1231,6 +1231,13 @@
     "at": "2026-09-14",
     "de": "Behandler verbinden · openplate"
   },
+  "10c5ca28d4ffff7c": {
+    "en": "This invite link doesn't look right",
+    "path": "common:connectGateway.invalidLink.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dieser Einladungslink sieht nicht richtig aus"
+  },
   "10e0f14ec88f002c": {
     "en": "6. Your account, suspension, and termination",
     "path": "legal:terms.s6Heading",
@@ -1426,6 +1433,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dieser Link gehört zu einem anderen openplate. Öffne ihn stattdessen dort."
+  },
+  "1379585e7ce7943a": {
+    "en": "Join {{name}}",
+    "path": "common:connectGateway.confirm.join",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "{{name}} beitreten"
   },
   "137fb2de233fa068": {
     "en": "Viewing {{day}}. Open the calendar to jump to a different day.",
@@ -1671,6 +1685,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Folat"
+  },
+  "163c704943cfe326": {
+    "en": "Try again",
+    "path": "common:connectGateway.retry",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Erneut versuchen"
   },
   "164b1d57416b51a2": {
     "en": "No macros logged yet",
@@ -2015,6 +2036,20 @@
     "at": "2026-09-14",
     "de": "Build {{label}}"
   },
+  "1ac00c651d4b784a": {
+    "en": "Ask whoever invited you for a new link.",
+    "path": "common:connectGateway.inviteInvalid.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Bitte lass dir einen neuen Link schicken."
+  },
+  "1af8fc83e279dd50": {
+    "en": "Checking that gateway…",
+    "path": "common:connectGateway.checking",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Gateway wird geprüft…"
+  },
   "1afc07e83ddf0617": {
     "en": "Failed to identify foods from your description.",
     "path": "common:scan.errors.identifyFailedText",
@@ -2141,6 +2176,13 @@
     "at": "2026-09-14",
     "de": "12. Kontakt"
   },
+  "1c6fa2eb776cf1a8": {
+    "en": "Join a gateway · openplate",
+    "path": "common:meta.connectGateway",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Gateway beitreten · openplate"
+  },
   "1cc9d137eb1c2d3a": {
     "en": "Advanced: use a different provider",
     "path": "common:settingsAi.advanced.toggle",
@@ -2217,6 +2259,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Zugang anfragen"
+  },
+  "1d26a6750890f33b": {
+    "en": "Connected to {{name}}.",
+    "path": "common:connectGateway.joined",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Mit {{name}} verbunden."
   },
   "1d33a9657ea2cf09": {
     "en": "{{day}}, {{value}} of {{goal}} g protein, goal reached",
@@ -2925,6 +2974,13 @@
     "at": "2026-09-14",
     "de": "Gib die Woche ein, in der du bist, und wir tragen den Termin oben ein. Gespeichert wird nur das Datum."
   },
+  "26d93db9047b3f39": {
+    "en": "This invite is not valid or has expired",
+    "path": "common:connectGateway.inviteInvalid.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Diese Einladung ist ungültig oder abgelaufen"
+  },
   "26ec0122a418a9df": {
     "en": "per 100g: {{summary}}",
     "path": "common:add.results.per100g",
@@ -3372,6 +3428,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Passwort festlegen, dann ist dein Tagebuch bereit."
+  },
+  "2d67e440fde35300": {
+    "en": "See how your week went, meal by meal and goal by goal.",
+    "path": "common:dashboard.insightsHint.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Sieh dir an, wie deine Woche verlief, Mahlzeit für Mahlzeit und Ziel für Ziel."
   },
   "2d8bc6c654cca658": {
     "en": "The server stores your diary encrypted, exactly as received from your device.",
@@ -4577,6 +4640,13 @@
     "at": "2026-09-14",
     "de": "Netto-KH pro Tag"
   },
+  "413107ac2d582895": {
+    "en": "This app isn't allowed to talk to that gateway",
+    "path": "common:connectGateway.blocked.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Diese App darf nicht mit diesem Gateway sprechen"
+  },
   "41480e14a8d5feda": {
     "en": "Leave blank to decide later. You can set it in Settings anytime.",
     "path": "common:onboarding.kcal.hint",
@@ -4716,6 +4786,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Die KI-Teller-Erkennung nutzt Ihren eigenen KI-Anbieter. Ihr Teller-Foto und Ihr Anbieter-Schlüssel werden direkt von Ihrem Browser an diesen Anbieter übermittelt, und sie passieren niemals unsere Server. Ihr Browser speichert außerdem eine temporäre Kopie des Fotos auf Ihrem Gerät (siehe Abschnitt 2), damit Sie es später wieder ansehen können. Diese Kopie verlässt Ihr Gerät nur in einem einzigen Fall: wenn Sie sich dafür entscheiden, eine falsche Schätzung zu diesem Eintrag zu melden. Das Foto und die Zahlen dieses Eintrags werden dann an uns gesendet, eine Person mit Administratorrechten kann sie einsehen, und wir löschen sie {{reportWindow}}."
+  },
+  "437baec739b54a0d": {
+    "en": "The operator of this openplate has to allow it",
+    "path": "common:connectGateway.blocked.operatorTitle",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Wer dieses openplate betreibt, muss es erlauben"
   },
   "437ec88d557c231c": {
     "en": "Saving…",
@@ -5067,6 +5144,13 @@
     "at": "2026-09-14",
     "de": "openplate ist ein Tool zum Erfassen von Mahlzeiten. Es basiert auf dem Local-First-Prinzip. Ihre Lebensmittel, Mahlzeiteneinträge, Gewichtsdaten und Ziele werden direkt im Browser auf Ihrem eigenen Gerät gespeichert. Auf dieser Instanz sichert Ihr Konto zudem eine Ende-zu-Ende-verschlüsselte Kopie dieser Daten auf unserem Server. So steht Ihnen dasselbe Tagebuch auch auf anderen Geräten zur Verfügung und bleibt nach einer Neuinstallation erhalten. Diese Kopie liegt bei uns ausschließlich in verschlüsselter Form vor. Zudem speichern wir einen Wiederherstellungsschlüssel, mit dem Ihr Tagebuch nach dem Zurücksetzen des Passworts wiederhergestellt werden kann, wie in der Datenschutzerklärung erläutert. Die KI-basierte Tellererkennung ist in Ihrem Konto enthalten und muss nicht separat bei Drittanbietern erworben werden."
   },
+  "4901d9206cfb9d5f": {
+    "en": "Your food photos will be sent through {{origin}} for analysis.",
+    "path": "common:connectGateway.confirm.routing",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Deine Essensfotos werden zur Analyse über {{origin}} geschickt."
+  },
   "490bc77d686d2f54": {
     "en": "A sample day, not your data.",
     "path": "common:landing.hero.shotCaption",
@@ -5297,6 +5381,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Abbrechen"
+  },
+  "4c7b99428402919b": {
+    "en": "Open Insights",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Einblicke öffnen"
   },
   "4c7dc500bbdb7122": {
     "en": "From your foods",
@@ -5647,6 +5738,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Diese Instanz versendet keine E-Mails, leite den Link daher selbst weiter. Jeder mit dem Link kann das Konto eröffnen; sende ihn also so, wie du ein Passwort senden würdest."
+  },
+  "50c8085fee55a3a9": {
+    "en": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
+    "path": "common:connectGateway.invalidLink.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Ein Teil des Links fehlt oder wurde vom E-Mail-Programm abgeschnitten. Bitte lass ihn dir noch einmal schicken."
   },
   "50ca9d9ad000c8c0": {
     "en": "<strong>Nothing on this page is required.</strong> Your diary, goals, and trends all work without it. If signing up for a paid AI service and pasting in a key isn't for you, close this page and keep logging by hand, you lose nothing else.",
@@ -7565,6 +7663,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "KI-Anbieter wählen"
+  },
+  "6a97f494c01c3491": {
+    "en": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
+    "path": "common:connectGateway.unreachable.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Das Gateway hat nicht geantwortet. Prüf die Adresse, oder frag die Person, die dich eingeladen hat, ob es läuft."
   },
   "6aa1338a0066e0fe": {
     "en": "Signing in…",
@@ -9638,6 +9743,13 @@
     "at": "2026-09-14",
     "de": "Zurück zur Liste"
   },
+  "86789f062591fa73": {
+    "en": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
+    "path": "common:connectGateway.audit.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dieses Gateway gibt an, dass dessen Administrator deine Einsendungen einschließlich Fotos einsehen kann. Das meldet das Gateway selbst. openplate kann dies nicht überprüfen."
+  },
   "8695670acf7d46b3": {
     "en": "No problem, nothing was connected. Try again whenever you're ready.",
     "path": "common:oauth.callback.error.denied.body",
@@ -9966,6 +10078,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Deine letzte Zahlung hat nicht geklappt."
+  },
+  "8b083c94aec5ee72": {
+    "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
+    "path": "common:connectGateway.confirm.replaces",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dies ersetzt deine aktuelle KI-Verbindung ({{current}}). Es wird nirgendwo etwas widerrufen. Du kannst sie später wieder einrichten."
   },
   "8b14749883ffc1d9": {
     "en": "Study account number {{studyAccountId}}",
@@ -10422,6 +10541,13 @@
     "at": "2026-09-14",
     "de": "Teilen"
   },
+  "8fe99fc59fd396d9": {
+    "en": "Can't reach {{origin}}",
+    "path": "common:connectGateway.unreachable.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "{{origin}} ist nicht erreichbar"
+  },
   "8ff95470c3552ccd": {
     "en": "Stripe issues an invoice for each payment. Under section 147 of the Fiscal Code and section 14b of the Value Added Tax Act, German tax law requires us to retain this invoice for ten years.",
     "path": "legal:privacy.s7aPaymentBody3",
@@ -10723,6 +10849,13 @@
     "at": "2026-09-14",
     "de": "Mehr erfahren"
   },
+  "9474018c172c4f69": {
+    "en": "Continue to the app",
+    "path": "common:connectGateway.inviteInvalid.continue",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Weiter zur App"
+  },
   "94834798f20702a1": {
     "en": "This only removes the key from <strong>this device</strong>. It does <strong>not</strong> revoke it at {{provider}}.",
     "path": "common:settingsAi.disconnect.notRevoked",
@@ -10778,6 +10911,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "erreicht"
+  },
+  "95c8d22adfa282a8": {
+    "en": "Join this gateway",
+    "path": "common:connectGateway.confirm.button",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Diesem Gateway beitreten"
   },
   "95f4df8593cb0b69": {
     "en": "per 100 g: {{summary}}",
@@ -11773,6 +11913,13 @@
     "at": "2026-09-14",
     "de": "Gramm muss größer als 0 sein"
   },
+  "a3c8397a0c19c2a3": {
+    "en": "This gateway says it can review what you send",
+    "path": "common:connectGateway.audit.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Dieses Gateway sagt, es kann mitlesen"
+  },
   "a3f6027836544875": {
     "en": "The account could not be deleted.",
     "path": "common:account.delete.failed",
@@ -11968,6 +12115,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Optional. Wird im Link übertragen, betrachte es also als Selbstangabe und nicht als Identitätsnachweis."
+  },
+  "a693abb2296c48b8": {
+    "en": "Something went wrong while saving on this device. Nothing is lost. Try again.",
+    "path": "common:connectGateway.saveRetry",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Beim Speichern auf diesem Gerät ist etwas schiefgelaufen. Es ist nichts verloren. Versuch es noch einmal."
   },
   "a6a81f89df2d73fc": {
     "en": "Both options leave the diary on this device untouched.",
@@ -12269,6 +12423,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Günstig im Input, hat aber zwei unserer drei Testteller falsch gelesen"
+  },
+  "aa9b5120040bfc07": {
+    "en": "Couldn't save the connection on this device. Try again.",
+    "path": "common:connectGateway.saveFailed",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Die Verbindung ließ sich auf diesem Gerät nicht speichern. Versuch es nochmal."
   },
   "aaa541f258ff40d0": {
     "en": "Add {{name}} to favorites",
@@ -13243,6 +13404,13 @@
     "at": "2026-09-14",
     "de": "Diesen Monat: {{scans}} · Kosten unbekannt"
   },
+  "b8baadb6a26f6d6f": {
+    "en": "Back to AI settings",
+    "path": "common:connectGateway.backToAiSettings",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Zurück zu den KI-Einstellungen"
+  },
   "b8e7a7c7e7f8d440": {
     "en": "The password could not be set. Try the link again in a moment.",
     "path": "common:reset.failed",
@@ -13473,6 +13641,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Alles laden (JSON)"
+  },
+  "bd0c4e71bfe0ba99": {
+    "en": "Join a gateway",
+    "path": "common:connectGateway.title",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Einem Gateway beitreten"
   },
   "bd314707be0b1417": {
     "en": "The account could not be deleted.",
@@ -13838,6 +14013,13 @@
     "at": "2026-09-14",
     "de": "Keine offenen Einladungen."
   },
+  "c2608b96820070d5": {
+    "en": "Someone invited this device to use the AI on a gateway they run.",
+    "path": "common:connectGateway.description",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Jemand hat dieses Gerät eingeladen, die KI auf einem Gateway zu nutzen, das er betreibt."
+  },
   "c26558cfbbfc7257": {
     "en": "Study account's password",
     "path": "common:research.console.signIn.passphraseLabel",
@@ -14034,6 +14216,13 @@
     "at": "2026-09-14",
     "de": "Füge deinen Einladungslink ein"
   },
+  "c5093c99e83eca1a": {
+    "en": "{{change}} compared with the {{days}} days before",
+    "path": "common:trends.overview.summary.change",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "{{change}} im Vergleich zu den {{days}} Tagen davor"
+  },
   "c55a1648d5d222e3": {
     "en": "You do not run this instance",
     "path": "common:admin.notAdmin.title",
@@ -14194,6 +14383,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Foto"
+  },
+  "c888d2d65fc562b7": {
+    "en": "Open {{name}}",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "{{name}} öffnen"
   },
   "c88c38257229aadb": {
     "en": "Someone sent you a link so you can share your diary with them.",
@@ -14509,6 +14705,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Einsprechen"
+  },
+  "ce5d630bdde3764b": {
+    "en": "Joining…",
+    "path": "common:connectGateway.confirm.joining",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Verbinde…"
   },
   "ce8925c81a6680f3": {
     "en": "Enter your API key",
@@ -15364,6 +15567,13 @@
     "at": "2026-09-14",
     "de": "Wir setzen weder Werbung noch Analysedienste Dritter ein. Diese Instanz misst Besuche, Funktionsnutzung und Forschungsereignisse mithilfe unserer eigenen Matomo-Installation auf unserem eigenen Server. Es gelangen keine Daten an einen Analyseanbieter. Es setzt keine Cookies. Es erfährt niemals, was Sie essen, wiegen oder eintragen, da keinerlei Tagebuchinhalte dorthin gesendet werden. Siehe Abschnitt 9a für die vollständige Liste der erfassten Angaben und Hinweise dazu, wie Sie widersprechen können. Wenn Sie eine Instanz selbst hosten, bleibt die Analyse deaktiviert, bis Sie sie einschalten."
   },
+  "d91c2d1970bb7d38": {
+    "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
+    "path": "common:connectGateway.confirm.body",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Sonst ändert sich nichts: Dein Tagebuch bleibt auf diesem Gerät, und du kannst die Verbindung jederzeit in den KI-Einstellungen trennen."
+  },
   "d95540023a296bc0": {
     "en": "That did not work",
     "path": "common:pantry.errors.title",
@@ -15993,6 +16203,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Nutzungsbedingungen"
+  },
+  "e2597421e7c996c6": {
+    "en": "Last {{days}} days",
+    "path": "common:trends.overview.summary.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "de": "Letzte {{days}} Tage"
   },
   "e2654bbfb1a0056b": {
     "en": "Your recovery code keeps working, it is not tied to the password you are replacing.",
@@ -16966,6 +17183,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Teilen beenden"
+  },
+  "ef51205a81e40d29": {
+    "en": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
+    "path": "common:connectGateway.blocked.operatorBody",
+    "model": "hand-written",
+    "at": "2026-09-14",
+    "de": "Wer dieses openplate betreibt, muss {{origin}} in die Einstellung CSP_CONNECT_EXTRA eintragen und neu starten. Bis dahin blockiert der Browser jede Anfrage an dieses Gateway. (Wenn du es selbst betreibst: eine Zeile in deiner .env.)"
   },
   "ef56dad27533b3b5": {
     "en": "This removes the entry from your weight history. You can log it again anytime.",
@@ -18156,229 +18380,5 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "de": "{{count}} Tag in Folge, bis gestern."
-  },
-  "10c5ca28d4ffff7c": {
-    "en": "This invite link doesn't look right",
-    "path": "common:connectGateway.invalidLink.title",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Dieser Einladungslink sieht nicht richtig aus"
-  },
-  "1379585e7ce7943a": {
-    "en": "Join {{name}}",
-    "path": "common:connectGateway.confirm.join",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "{{name}} beitreten"
-  },
-  "163c704943cfe326": {
-    "en": "Try again",
-    "path": "common:connectGateway.retry",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Erneut versuchen"
-  },
-  "1ac00c651d4b784a": {
-    "en": "Ask whoever invited you for a new link.",
-    "path": "common:connectGateway.inviteInvalid.body",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Bitte lass dir einen neuen Link schicken."
-  },
-  "1af8fc83e279dd50": {
-    "en": "Checking that gateway…",
-    "path": "common:connectGateway.checking",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Gateway wird geprüft…"
-  },
-  "1c6fa2eb776cf1a8": {
-    "en": "Join a gateway · openplate",
-    "path": "common:meta.connectGateway",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Gateway beitreten · openplate"
-  },
-  "1d26a6750890f33b": {
-    "en": "Connected to {{name}}.",
-    "path": "common:connectGateway.joined",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Mit {{name}} verbunden."
-  },
-  "26d93db9047b3f39": {
-    "en": "This invite is not valid or has expired",
-    "path": "common:connectGateway.inviteInvalid.title",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Diese Einladung ist ungültig oder abgelaufen"
-  },
-  "2d67e440fde35300": {
-    "en": "See how your week went, meal by meal and goal by goal.",
-    "path": "common:dashboard.insightsHint.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "de": "Sieh dir an, wie deine Woche verlief, Mahlzeit für Mahlzeit und Ziel für Ziel."
-  },
-  "413107ac2d582895": {
-    "en": "This app isn't allowed to talk to that gateway",
-    "path": "common:connectGateway.blocked.title",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Diese App darf nicht mit diesem Gateway sprechen"
-  },
-  "437baec739b54a0d": {
-    "en": "The operator of this openplate has to allow it",
-    "path": "common:connectGateway.blocked.operatorTitle",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Wer dieses openplate betreibt, muss es erlauben"
-  },
-  "4901d9206cfb9d5f": {
-    "en": "Your food photos will be sent through {{origin}} for analysis.",
-    "path": "common:connectGateway.confirm.routing",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Deine Essensfotos werden zur Analyse über {{origin}} geschickt."
-  },
-  "4c7b99428402919b": {
-    "en": "Open Insights",
-    "path": "common:trends.overview.openInsights",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "de": "Einblicke öffnen"
-  },
-  "50c8085fee55a3a9": {
-    "en": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
-    "path": "common:connectGateway.invalidLink.body",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Ein Teil des Links fehlt oder wurde vom E-Mail-Programm abgeschnitten. Bitte lass ihn dir noch einmal schicken."
-  },
-  "6a97f494c01c3491": {
-    "en": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
-    "path": "common:connectGateway.unreachable.body",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Das Gateway hat nicht geantwortet. Prüf die Adresse, oder frag die Person, die dich eingeladen hat, ob es läuft."
-  },
-  "86789f062591fa73": {
-    "en": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
-    "path": "common:connectGateway.audit.body",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Dieses Gateway gibt an, dass dessen Administrator deine Einsendungen einschließlich Fotos einsehen kann. Das meldet das Gateway selbst. openplate kann dies nicht überprüfen."
-  },
-  "8b083c94aec5ee72": {
-    "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
-    "path": "common:connectGateway.confirm.replaces",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Dies ersetzt deine aktuelle KI-Verbindung ({{current}}). Es wird nirgendwo etwas widerrufen. Du kannst sie später wieder einrichten."
-  },
-  "8fe99fc59fd396d9": {
-    "en": "Can't reach {{origin}}",
-    "path": "common:connectGateway.unreachable.title",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "{{origin}} ist nicht erreichbar"
-  },
-  "9474018c172c4f69": {
-    "en": "Continue to the app",
-    "path": "common:connectGateway.inviteInvalid.continue",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Weiter zur App"
-  },
-  "95c8d22adfa282a8": {
-    "en": "Join this gateway",
-    "path": "common:connectGateway.confirm.button",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Diesem Gateway beitreten"
-  },
-  "a3c8397a0c19c2a3": {
-    "en": "This gateway says it can review what you send",
-    "path": "common:connectGateway.audit.title",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Dieses Gateway sagt, es kann mitlesen"
-  },
-  "a693abb2296c48b8": {
-    "en": "Something went wrong while saving on this device. Nothing is lost. Try again.",
-    "path": "common:connectGateway.saveRetry",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Beim Speichern auf diesem Gerät ist etwas schiefgelaufen. Es ist nichts verloren. Versuch es noch einmal."
-  },
-  "aa9b5120040bfc07": {
-    "en": "Couldn't save the connection on this device. Try again.",
-    "path": "common:connectGateway.saveFailed",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Die Verbindung ließ sich auf diesem Gerät nicht speichern. Versuch es nochmal."
-  },
-  "b8baadb6a26f6d6f": {
-    "en": "Back to AI settings",
-    "path": "common:connectGateway.backToAiSettings",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Zurück zu den KI-Einstellungen"
-  },
-  "bd0c4e71bfe0ba99": {
-    "en": "Join a gateway",
-    "path": "common:connectGateway.title",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Einem Gateway beitreten"
-  },
-  "c2608b96820070d5": {
-    "en": "Someone invited this device to use the AI on a gateway they run.",
-    "path": "common:connectGateway.description",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Jemand hat dieses Gerät eingeladen, die KI auf einem Gateway zu nutzen, das er betreibt."
-  },
-  "c5093c99e83eca1a": {
-    "en": "{{change}} compared with the {{days}} days before",
-    "path": "common:trends.overview.summary.change",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "de": "{{change}} im Vergleich zu den {{days}} Tagen davor"
-  },
-  "c888d2d65fc562b7": {
-    "en": "Open {{name}}",
-    "path": "common:trends.overview.openInsights",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "de": "{{name}} öffnen"
-  },
-  "ce5d630bdde3764b": {
-    "en": "Joining…",
-    "path": "common:connectGateway.confirm.joining",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Verbinde…"
-  },
-  "d91c2d1970bb7d38": {
-    "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
-    "path": "common:connectGateway.confirm.body",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Sonst ändert sich nichts: Dein Tagebuch bleibt auf diesem Gerät, und du kannst die Verbindung jederzeit in den KI-Einstellungen trennen."
-  },
-  "e2597421e7c996c6": {
-    "en": "Last {{days}} days",
-    "path": "common:trends.overview.summary.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "de": "Letzte {{days}} Tage"
-  },
-  "ef51205a81e40d29": {
-    "en": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
-    "path": "common:connectGateway.blocked.operatorBody",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Wer dieses openplate betreibt, muss {{origin}} in die Einstellung CSP_CONNECT_EXTRA eintragen und neu starten. Bis dahin blockiert der Browser jede Anfrage an dieses Gateway. (Wenn du es selbst betreibst: eine Zeile in deiner .env.)"
   }
 }

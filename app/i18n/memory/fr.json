@@ -1231,6 +1231,13 @@
     "at": "2026-09-14",
     "fr": "Associer un médecin · openplate"
   },
+  "10c5ca28d4ffff7c": {
+    "en": "This invite link doesn't look right",
+    "path": "common:connectGateway.invalidLink.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Ce lien d'invitation ne semble pas correct"
+  },
   "10e0f14ec88f002c": {
     "en": "6. Your account, suspension, and termination",
     "path": "legal:terms.s6Heading",
@@ -1426,6 +1433,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ce lien appartient à un autre openplate. Ouvre-le plutôt là-bas."
+  },
+  "1379585e7ce7943a": {
+    "en": "Join {{name}}",
+    "path": "common:connectGateway.confirm.join",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Rejoindre {{name}}"
   },
   "137fb2de233fa068": {
     "en": "Viewing {{day}}. Open the calendar to jump to a different day.",
@@ -1671,6 +1685,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Folate"
+  },
+  "163c704943cfe326": {
+    "en": "Try again",
+    "path": "common:connectGateway.retry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Réessayer"
   },
   "164b1d57416b51a2": {
     "en": "No macros logged yet",
@@ -2015,6 +2036,20 @@
     "at": "2026-09-14",
     "fr": "Version {{label}}"
   },
+  "1ac00c651d4b784a": {
+    "en": "Ask whoever invited you for a new link.",
+    "path": "common:connectGateway.inviteInvalid.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Demande un nouveau lien à la personne qui t'a invité."
+  },
+  "1af8fc83e279dd50": {
+    "en": "Checking that gateway…",
+    "path": "common:connectGateway.checking",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Vérification de cette passerelle…"
+  },
   "1afc07e83ddf0617": {
     "en": "Failed to identify foods from your description.",
     "path": "common:scan.errors.identifyFailedText",
@@ -2141,6 +2176,13 @@
     "at": "2026-09-14",
     "fr": "12. Contact"
   },
+  "1c6fa2eb776cf1a8": {
+    "en": "Join a gateway · openplate",
+    "path": "common:meta.connectGateway",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Rejoindre une passerelle · openplate"
+  },
   "1cc9d137eb1c2d3a": {
     "en": "Advanced: use a different provider",
     "path": "common:settingsAi.advanced.toggle",
@@ -2217,6 +2259,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Demander un accès"
+  },
+  "1d26a6750890f33b": {
+    "en": "Connected to {{name}}.",
+    "path": "common:connectGateway.joined",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Connecté à {{name}}."
   },
   "1d33a9657ea2cf09": {
     "en": "{{day}}, {{value}} of {{goal}} g protein, goal reached",
@@ -2925,6 +2974,13 @@
     "at": "2026-09-14",
     "fr": "Indique ta semaine actuelle et nous renseignerons la date d'accouchement prévue ci-dessus. Seule la date est enregistrée."
   },
+  "26d93db9047b3f39": {
+    "en": "This invite is not valid or has expired",
+    "path": "common:connectGateway.inviteInvalid.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Cette invitation n'est pas valide ou a expiré"
+  },
   "26ec0122a418a9df": {
     "en": "per 100g: {{summary}}",
     "path": "common:add.results.per100g",
@@ -3372,6 +3428,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Définis un mot de passe et ton journal est prêt."
+  },
+  "2d67e440fde35300": {
+    "en": "See how your week went, meal by meal and goal by goal.",
+    "path": "common:dashboard.insightsHint.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "fr": "Consulte le bilan de ta semaine, repas par repas et objectif par objectif."
   },
   "2d8bc6c654cca658": {
     "en": "The server stores your diary encrypted, exactly as received from your device.",
@@ -4577,6 +4640,13 @@
     "at": "2026-09-14",
     "fr": "Glucides nets quotidiens"
   },
+  "413107ac2d582895": {
+    "en": "This app isn't allowed to talk to that gateway",
+    "path": "common:connectGateway.blocked.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Cette application n'est pas autorisée à communiquer avec cette passerelle"
+  },
   "41480e14a8d5feda": {
     "en": "Leave blank to decide later. You can set it in Settings anytime.",
     "path": "common:onboarding.kcal.hint",
@@ -4716,6 +4786,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "L'identification de plat par IA utilise votre propre fournisseur d'IA. Votre photo d'assiette et votre clé de fournisseur sont envoyées directement depuis votre navigateur à ce fournisseur, et elles ne transitent jamais par nos serveurs. Votre navigateur conserve également une copie temporaire de la photo sur l'appareil (voir Section 2) afin de pouvoir la réafficher plus tard. Cette copie ne quitte votre appareil que dans un seul cas : si vous choisissez de signaler une estimation erronée sur cette entrée. La photo et les données chiffrées de cette entrée nous sont alors envoyées, un administrateur peut les examiner, et nous les supprimons {{reportWindow}}."
+  },
+  "437baec739b54a0d": {
+    "en": "The operator of this openplate has to allow it",
+    "path": "common:connectGateway.blocked.operatorTitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "La personne qui gère cet openplate doit l'autoriser"
   },
   "437ec88d557c231c": {
     "en": "Saving…",
@@ -5067,6 +5144,13 @@
     "at": "2026-09-14",
     "fr": "openplate est un outil de suivi alimentaire. Il est conçu selon le principe du local-first. Vos aliments, entrées de journal, saisies de poids et objectifs sont enregistrés dans votre navigateur sur votre propre appareil. Sur cette instance, votre compte conserve également une copie chiffrée de bout en bout de ces données sur notre serveur. Cela garantit que le même journal parvient à vos autres appareils et survit à une réinstallation. Nous conservons cette copie sous forme de texte chiffré. Nous conservons également une clé de récupération permettant à une réinitialisation de mot de passe de restaurer votre journal, comme expliqué dans la Politique de confidentialité. L'identification d'assiette par l'IA est incluse avec votre compte plutôt qu'achetée auprès d'un fournisseur tiers."
   },
+  "4901d9206cfb9d5f": {
+    "en": "Your food photos will be sent through {{origin}} for analysis.",
+    "path": "common:connectGateway.confirm.routing",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Tes photos de repas seront envoyées via {{origin}} pour analyse."
+  },
   "490bc77d686d2f54": {
     "en": "A sample day, not your data.",
     "path": "common:landing.hero.shotCaption",
@@ -5297,6 +5381,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Annuler"
+  },
+  "4c7b99428402919b": {
+    "en": "Open Insights",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "fr": "Ouvrir Aperçus"
   },
   "4c7dc500bbdb7122": {
     "en": "From your foods",
@@ -5647,6 +5738,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Cette instance n'envoie pas de courriel, transmets donc le lien toi-même. Quiconque le possède peut ouvrir le compte, envoie-le donc comme tu enverrais un mot de passe."
+  },
+  "50c8085fee55a3a9": {
+    "en": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
+    "path": "common:connectGateway.invalidLink.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Une partie du lien manque ou a été coupée par l'application d'e-mail. Demande à la personne qui t'a invité de le renvoyer."
   },
   "50ca9d9ad000c8c0": {
     "en": "<strong>Nothing on this page is required.</strong> Your diary, goals, and trends all work without it. If signing up for a paid AI service and pasting in a key isn't for you, close this page and keep logging by hand, you lose nothing else.",
@@ -7565,6 +7663,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Choisir un fournisseur d'IA"
+  },
+  "6a97f494c01c3491": {
+    "en": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
+    "path": "common:connectGateway.unreachable.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "La passerelle n'a pas répondu. Vérifie l'adresse, ou demande à la personne qui t'a invité si elle fonctionne."
   },
   "6aa1338a0066e0fe": {
     "en": "Signing in…",
@@ -9638,6 +9743,13 @@
     "at": "2026-09-14",
     "fr": "Retour à la liste"
   },
+  "86789f062591fa73": {
+    "en": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
+    "path": "common:connectGateway.audit.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Cette passerelle déclare que son administrateur peut examiner tes envois, y compris les photos. C'est ce que la passerelle indique elle-même. openplate ne peut pas le vérifier."
+  },
   "8695670acf7d46b3": {
     "en": "No problem, nothing was connected. Try again whenever you're ready.",
     "path": "common:oauth.callback.error.denied.body",
@@ -9966,6 +10078,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ton dernier paiement n'a pas abouti."
+  },
+  "8b083c94aec5ee72": {
+    "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
+    "path": "common:connectGateway.confirm.replaces",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Cela remplace ta connexion IA actuelle ({{current}}). Rien n'est révoqué nulle part. Tu pourras la reconfigurer plus tard."
   },
   "8b14749883ffc1d9": {
     "en": "Study account number {{studyAccountId}}",
@@ -10422,6 +10541,13 @@
     "at": "2026-09-14",
     "fr": "Partage"
   },
+  "8fe99fc59fd396d9": {
+    "en": "Can't reach {{origin}}",
+    "path": "common:connectGateway.unreachable.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Impossible de joindre {{origin}}"
+  },
   "8ff95470c3552ccd": {
     "en": "Stripe issues an invoice for each payment. Under section 147 of the Fiscal Code and section 14b of the Value Added Tax Act, German tax law requires us to retain this invoice for ten years.",
     "path": "legal:privacy.s7aPaymentBody3",
@@ -10723,6 +10849,13 @@
     "at": "2026-09-14",
     "fr": "Lire la suite"
   },
+  "9474018c172c4f69": {
+    "en": "Continue to the app",
+    "path": "common:connectGateway.inviteInvalid.continue",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Continuer vers l'application"
+  },
   "94834798f20702a1": {
     "en": "This only removes the key from <strong>this device</strong>. It does <strong>not</strong> revoke it at {{provider}}.",
     "path": "common:settingsAi.disconnect.notRevoked",
@@ -10778,6 +10911,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "atteint"
+  },
+  "95c8d22adfa282a8": {
+    "en": "Join this gateway",
+    "path": "common:connectGateway.confirm.button",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Rejoindre cette passerelle"
   },
   "95f4df8593cb0b69": {
     "en": "per 100 g: {{summary}}",
@@ -11773,6 +11913,13 @@
     "at": "2026-09-14",
     "fr": "Le nombre de grammes doit être supérieur à 0"
   },
+  "a3c8397a0c19c2a3": {
+    "en": "This gateway says it can review what you send",
+    "path": "common:connectGateway.audit.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Cette passerelle indique pouvoir examiner ce que tu envoies"
+  },
   "a3f6027836544875": {
     "en": "The account could not be deleted.",
     "path": "common:account.delete.failed",
@@ -11968,6 +12115,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Facultatif. Cette information circule dans le lien, considère-la donc comme une simple déclaration sur toi-même, pas comme une preuve."
+  },
+  "a693abb2296c48b8": {
+    "en": "Something went wrong while saving on this device. Nothing is lost. Try again.",
+    "path": "common:connectGateway.saveRetry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Une erreur est survenue lors de l'enregistrement sur cet appareil. Rien n'est perdu. Réessaie."
   },
   "a6a81f89df2d73fc": {
     "en": "Both options leave the diary on this device untouched.",
@@ -12269,6 +12423,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Entrée peu coûteuse, mais il a mal interprété deux de nos trois assiettes de test"
+  },
+  "aa9b5120040bfc07": {
+    "en": "Couldn't save the connection on this device. Try again.",
+    "path": "common:connectGateway.saveFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Impossible d'enregistrer la connexion sur cet appareil. Réessaie."
   },
   "aaa541f258ff40d0": {
     "en": "Add {{name}} to favorites",
@@ -13243,6 +13404,13 @@
     "at": "2026-09-14",
     "fr": "Ce mois-ci : {{scans}} · coût inconnu"
   },
+  "b8baadb6a26f6d6f": {
+    "en": "Back to AI settings",
+    "path": "common:connectGateway.backToAiSettings",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Retour aux paramètres d'IA"
+  },
   "b8e7a7c7e7f8d440": {
     "en": "The password could not be set. Try the link again in a moment.",
     "path": "common:reset.failed",
@@ -13473,6 +13641,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Tout télécharger (JSON)"
+  },
+  "bd0c4e71bfe0ba99": {
+    "en": "Join a gateway",
+    "path": "common:connectGateway.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Rejoindre une passerelle"
   },
   "bd314707be0b1417": {
     "en": "The account could not be deleted.",
@@ -13838,6 +14013,13 @@
     "at": "2026-09-14",
     "fr": "Aucune invitation en attente."
   },
+  "c2608b96820070d5": {
+    "en": "Someone invited this device to use the AI on a gateway they run.",
+    "path": "common:connectGateway.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Quelqu'un a invité cet appareil à utiliser l'IA sur une passerelle qu'il administre."
+  },
   "c26558cfbbfc7257": {
     "en": "Study account's password",
     "path": "common:research.console.signIn.passphraseLabel",
@@ -14034,6 +14216,13 @@
     "at": "2026-09-14",
     "fr": "Colle ton lien d'invitation"
   },
+  "c5093c99e83eca1a": {
+    "en": "{{change}} compared with the {{days}} days before",
+    "path": "common:trends.overview.summary.change",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "fr": "{{change}} par rapport aux {{days}} jours précédents"
+  },
   "c55a1648d5d222e3": {
     "en": "You do not run this instance",
     "path": "common:admin.notAdmin.title",
@@ -14194,6 +14383,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Photo"
+  },
+  "c888d2d65fc562b7": {
+    "en": "Open {{name}}",
+    "path": "common:trends.overview.openInsights",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "fr": "Ouvrir {{name}}"
   },
   "c88c38257229aadb": {
     "en": "Someone sent you a link so you can share your diary with them.",
@@ -14509,6 +14705,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Dicte-le"
+  },
+  "ce5d630bdde3764b": {
+    "en": "Joining…",
+    "path": "common:connectGateway.confirm.joining",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Connexion en cours…"
   },
   "ce8925c81a6680f3": {
     "en": "Enter your API key",
@@ -15364,6 +15567,13 @@
     "at": "2026-09-14",
     "fr": "Nous n'utilisons pas de publicité ni d'outils de mesure d'audience tiers. Cette instance mesure les visites, l'utilisation des fonctionnalités et les événements de recherche à l'aide de notre propre installation de Matomo sur notre propre serveur. Aucune donnée n'est transmise à un fournisseur d'analyse. Elle n'installe aucun cookie. Elle ne reçoit jamais ce que vous mangez, pesez ou enregistrez, car aucun contenu de votre journal ne lui est jamais envoyé. Voir Section 9a pour la liste complète des éléments enregistrés et les instructions pour vous y opposer. Si vous hébergez une instance vous-même, les outils de mesure d'audience restent désactivés jusqu'à ce que vous les activiez."
   },
+  "d91c2d1970bb7d38": {
+    "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
+    "path": "common:connectGateway.confirm.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "Rien d'autre ne change : ton journal reste sur cet appareil, et tu peux te déconnecter à tout moment dans les paramètres d'IA."
+  },
   "d95540023a296bc0": {
     "en": "That did not work",
     "path": "common:pantry.errors.title",
@@ -15993,6 +16203,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Conditions d'utilisation"
+  },
+  "e2597421e7c996c6": {
+    "en": "Last {{days}} days",
+    "path": "common:trends.overview.summary.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "fr": "{{days}} derniers jours"
   },
   "e2654bbfb1a0056b": {
     "en": "Your recovery code keeps working, it is not tied to the password you are replacing.",
@@ -16966,6 +17183,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Arrêter le partage"
+  },
+  "ef51205a81e40d29": {
+    "en": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
+    "path": "common:connectGateway.blocked.operatorBody",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "La personne qui gère cet openplate doit ajouter {{origin}} au paramètre CSP_CONNECT_EXTRA et le redémarrer. D'ici là, le navigateur bloque chaque requête vers cette passerelle. (Si tu l'héberges toi-même, c'est une ligne dans ton .env.)"
   },
   "ef56dad27533b3b5": {
     "en": "This removes the entry from your weight history. You can log it again anytime.",
@@ -18156,229 +18380,5 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "fr": "{{count}} jour d'affilée, jusqu'à hier."
-  },
-  "10c5ca28d4ffff7c": {
-    "en": "This invite link doesn't look right",
-    "path": "common:connectGateway.invalidLink.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Ce lien d'invitation ne semble pas correct"
-  },
-  "1379585e7ce7943a": {
-    "en": "Join {{name}}",
-    "path": "common:connectGateway.confirm.join",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Rejoindre {{name}}"
-  },
-  "163c704943cfe326": {
-    "en": "Try again",
-    "path": "common:connectGateway.retry",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Réessayer"
-  },
-  "1ac00c651d4b784a": {
-    "en": "Ask whoever invited you for a new link.",
-    "path": "common:connectGateway.inviteInvalid.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Demande un nouveau lien à la personne qui t'a invité."
-  },
-  "1af8fc83e279dd50": {
-    "en": "Checking that gateway…",
-    "path": "common:connectGateway.checking",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Vérification de cette passerelle…"
-  },
-  "1c6fa2eb776cf1a8": {
-    "en": "Join a gateway · openplate",
-    "path": "common:meta.connectGateway",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Rejoindre une passerelle · openplate"
-  },
-  "1d26a6750890f33b": {
-    "en": "Connected to {{name}}.",
-    "path": "common:connectGateway.joined",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Connecté à {{name}}."
-  },
-  "26d93db9047b3f39": {
-    "en": "This invite is not valid or has expired",
-    "path": "common:connectGateway.inviteInvalid.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Cette invitation n'est pas valide ou a expiré"
-  },
-  "2d67e440fde35300": {
-    "en": "See how your week went, meal by meal and goal by goal.",
-    "path": "common:dashboard.insightsHint.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "fr": "Consulte le bilan de ta semaine, repas par repas et objectif par objectif."
-  },
-  "413107ac2d582895": {
-    "en": "This app isn't allowed to talk to that gateway",
-    "path": "common:connectGateway.blocked.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Cette application n'est pas autorisée à communiquer avec cette passerelle"
-  },
-  "437baec739b54a0d": {
-    "en": "The operator of this openplate has to allow it",
-    "path": "common:connectGateway.blocked.operatorTitle",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "La personne qui gère cet openplate doit l'autoriser"
-  },
-  "4901d9206cfb9d5f": {
-    "en": "Your food photos will be sent through {{origin}} for analysis.",
-    "path": "common:connectGateway.confirm.routing",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Tes photos de repas seront envoyées via {{origin}} pour analyse."
-  },
-  "4c7b99428402919b": {
-    "en": "Open Insights",
-    "path": "common:trends.overview.openInsights",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "fr": "Ouvrir Aperçus"
-  },
-  "50c8085fee55a3a9": {
-    "en": "Part of the link is missing or was cut off by the email app. Ask whoever invited you to send it again.",
-    "path": "common:connectGateway.invalidLink.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Une partie du lien manque ou a été coupée par l'application d'e-mail. Demande à la personne qui t'a invité de le renvoyer."
-  },
-  "6a97f494c01c3491": {
-    "en": "The gateway didn't answer. Check the address, or ask the person who invited you whether it is running.",
-    "path": "common:connectGateway.unreachable.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "La passerelle n'a pas répondu. Vérifie l'adresse, ou demande à la personne qui t'a invité si elle fonctionne."
-  },
-  "86789f062591fa73": {
-    "en": "This gateway declares that its administrator can review your submissions, including photos. That is what the gateway itself reports. openplate cannot verify it.",
-    "path": "common:connectGateway.audit.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Cette passerelle déclare que son administrateur peut examiner tes envois, y compris les photos. C'est ce que la passerelle indique elle-même. openplate ne peut pas le vérifier."
-  },
-  "8b083c94aec5ee72": {
-    "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
-    "path": "common:connectGateway.confirm.replaces",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Cela remplace ta connexion IA actuelle ({{current}}). Rien n'est révoqué nulle part. Tu pourras la reconfigurer plus tard."
-  },
-  "8fe99fc59fd396d9": {
-    "en": "Can't reach {{origin}}",
-    "path": "common:connectGateway.unreachable.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Impossible de joindre {{origin}}"
-  },
-  "9474018c172c4f69": {
-    "en": "Continue to the app",
-    "path": "common:connectGateway.inviteInvalid.continue",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Continuer vers l'application"
-  },
-  "95c8d22adfa282a8": {
-    "en": "Join this gateway",
-    "path": "common:connectGateway.confirm.button",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Rejoindre cette passerelle"
-  },
-  "a3c8397a0c19c2a3": {
-    "en": "This gateway says it can review what you send",
-    "path": "common:connectGateway.audit.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Cette passerelle indique pouvoir examiner ce que tu envoies"
-  },
-  "a693abb2296c48b8": {
-    "en": "Something went wrong while saving on this device. Nothing is lost. Try again.",
-    "path": "common:connectGateway.saveRetry",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Une erreur est survenue lors de l'enregistrement sur cet appareil. Rien n'est perdu. Réessaie."
-  },
-  "aa9b5120040bfc07": {
-    "en": "Couldn't save the connection on this device. Try again.",
-    "path": "common:connectGateway.saveFailed",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Impossible d'enregistrer la connexion sur cet appareil. Réessaie."
-  },
-  "b8baadb6a26f6d6f": {
-    "en": "Back to AI settings",
-    "path": "common:connectGateway.backToAiSettings",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Retour aux paramètres d'IA"
-  },
-  "bd0c4e71bfe0ba99": {
-    "en": "Join a gateway",
-    "path": "common:connectGateway.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Rejoindre une passerelle"
-  },
-  "c2608b96820070d5": {
-    "en": "Someone invited this device to use the AI on a gateway they run.",
-    "path": "common:connectGateway.description",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Quelqu'un a invité cet appareil à utiliser l'IA sur une passerelle qu'il administre."
-  },
-  "c5093c99e83eca1a": {
-    "en": "{{change}} compared with the {{days}} days before",
-    "path": "common:trends.overview.summary.change",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "fr": "{{change}} par rapport aux {{days}} jours précédents"
-  },
-  "c888d2d65fc562b7": {
-    "en": "Open {{name}}",
-    "path": "common:trends.overview.openInsights",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "fr": "Ouvrir {{name}}"
-  },
-  "ce5d630bdde3764b": {
-    "en": "Joining…",
-    "path": "common:connectGateway.confirm.joining",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Connexion en cours…"
-  },
-  "d91c2d1970bb7d38": {
-    "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
-    "path": "common:connectGateway.confirm.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Rien d'autre ne change : ton journal reste sur cet appareil, et tu peux te déconnecter à tout moment dans les paramètres d'IA."
-  },
-  "e2597421e7c996c6": {
-    "en": "Last {{days}} days",
-    "path": "common:trends.overview.summary.title",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-19",
-    "fr": "{{days}} derniers jours"
-  },
-  "ef51205a81e40d29": {
-    "en": "Whoever runs this openplate must add {{origin}} to the CSP_CONNECT_EXTRA setting and restart it. Until then the browser blocks every request to that gateway. (If you run it yourself, it is one line in your .env.)",
-    "path": "common:connectGateway.blocked.operatorBody",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "La personne qui gère cet openplate doit ajouter {{origin}} au paramètre CSP_CONNECT_EXTRA et le redémarrer. D'ici là, le navigateur bloque chaque requête vers cette passerelle. (Si tu l'héberges toi-même, c'est une ligne dans ton .env.)"
   }
 }
