@@ -1128,7 +1128,7 @@
     "goals": {
       "body": "Choisis un plafond quotidien de glucides nets, un plancher de protéines, une cible calorique, ou rien du tout. openplate n'invente jamais une cible que tu n'as pas fixée.",
       "points": {
-        "grid": "La vue de progression conserve un historique de 13 semaines des jours où tu as atteint tes objectifs, jours creux compris.",
+        "grid": "Analyses conserve un historique sur 13 semaines des jours où tu as atteint tes objectifs, jours manquants compris.",
         "ring": "Un anneau sur ton journal indique ce qu'il reste pour aujourd'hui.",
         "tone": "Dépasser un objectif s'affiche sous la forme d'un nombre orange. Ce n'est jamais un blâme contre toi.",
         "weight": "Pèse-toi quand tu le souhaites ; le graphique atténue le bruit d'un jour sur l'autre."
@@ -1309,7 +1309,7 @@
     "study": "Console d'étude · openplate",
     "sync": "Compte · openplate",
     "terms": "Conditions d'utilisation · openplate",
-    "trends": "Insights · openplate",
+    "trends": "Analyses · openplate",
     "welcome": "Bienvenue · openplate",
     "forgot": "Mot de passe oublié",
     "reset": "Définir un nouveau mot de passe",
@@ -1334,7 +1334,7 @@
     "nutrients": "Nutriments",
     "scan": "Scanner",
     "settings": "Paramètres",
-    "trends": "Insights",
+    "trends": "Analyses",
     "pantry": "Garde-manger"
   },
   "nutrients": {
@@ -2766,7 +2766,7 @@
       "empty": "Utilise l'application aujourd'hui pour démarrer une série.",
       "title": "Ta série"
     },
-    "title": "Insights",
+    "title": "Analyses",
     "weight": {
       "caption": "La ligne représente ta tendance lissée, les points correspondent aux mesures réelles de la balance.",
       "chartEmpty": "Enregistre ta première pesée pour afficher ta tendance.",
@@ -2798,10 +2798,10 @@
       "unitPounds": "livres"
     },
     "tabs": {
-      "goals": "Goals",
-      "meals": "Meals",
+      "goals": "Objectifs",
+      "meals": "Repas",
       "nutrition": "Nutrition",
-      "overview": "Overview"
+      "overview": "Aperçu"
     },
     "split": {
       "title": "D'où viennent tes calories",

@@ -5427,9 +5427,9 @@
   "4e08ae5d8b0295a1": {
     "en": "Meals",
     "path": "common:trends.tabs.meals",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Meals"
+    "de": "Mahlzeiten"
   },
   "4e0c78b7e9714157": {
     "en": "Photo estimates",
@@ -7968,9 +7968,9 @@
   "70d8a93507099c49": {
     "en": "Goals",
     "path": "common:trends.tabs.goals",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Goals"
+    "de": "Ziele"
   },
   "70f42163f760a100": {
     "en": "Delete",
@@ -10908,9 +10908,9 @@
   "97b83e3d2490b3ea": {
     "en": "Insights",
     "path": "common:trends.title",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Insights"
+    "de": "Einblicke"
   },
   "97d179afb7d7a781": {
     "en": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working.",
@@ -12406,9 +12406,9 @@
   "acf0e57180951315": {
     "en": "Insights keeps a 13-week record of the days you hit your goals, gaps included.",
     "path": "common:landing.goals.points.grid",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Der Verlauf speichert eine 13-Wochen-Übersicht der Tage, an denen du deine Ziele erreicht hast, inklusive Lücken."
+    "de": "Einblicke hält über 13 Wochen fest, an welchen Tagen du deine Ziele erreichst, Lücken inklusive."
   },
   "acf31f30c054da76": {
     "en": "A fortnight",
@@ -13988,9 +13988,9 @@
   "c4a3eb5be3c09120": {
     "en": "Insights",
     "path": "common:nav.trends",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Insights"
+    "de": "Einblicke"
   },
   "c4a484ff7d8c95e4": {
     "en": "A month",
@@ -15934,9 +15934,9 @@
   "e1475547977d3450": {
     "en": "Insights · openplate",
     "path": "common:meta.trends",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Insights · openplate"
+    "de": "Einblicke · openplate"
   },
   "e15fe20acba6dd82": {
     "en": "You are not contributing to a study. Joining one needs a fingerprint printed in its consent materials.",
@@ -17677,9 +17677,9 @@
   "f9c08654bb684bae": {
     "en": "Nutrition",
     "path": "common:trends.tabs.nutrition",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Nutrition"
+    "de": "Ernährung"
   },
   "f9c58ac7d64537fc": {
     "en": "Suspended",
@@ -17866,9 +17866,9 @@
   "fc05d5135cbfe113": {
     "en": "Overview",
     "path": "common:trends.tabs.overview",
-    "model": "hand-written",
+    "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
-    "de": "Overview"
+    "de": "Übersicht"
   },
   "fc0db4bc7a243548": {
     "en": "Edit",

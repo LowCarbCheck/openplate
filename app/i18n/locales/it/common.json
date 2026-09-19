@@ -1128,7 +1128,7 @@
     "goals": {
       "body": "Scegli un tetto giornaliero di carboidrati netti, un minimo di proteine, un obiettivo calorico, oppure non impostare nulla. openplate non inventa mai un obiettivo che non hai stabilito.",
       "points": {
-        "grid": "La sezione dei progressi conserva uno storico di 13 settimane dei giorni in cui hai raggiunto i tuoi obiettivi, intervalli compresi.",
+        "grid": "Analisi conserva uno storico di 13 settimane dei giorni in cui hai raggiunto i tuoi obiettivi, pause incluse.",
         "ring": "Un anello sul tuo diario mostra cosa rimane della giornata.",
         "tone": "Superare un obiettivo produce solo un numero color ambra. Non è mai una nota di demerito.",
         "weight": "Registra il tuo peso quando vuoi; il grafico attenua le oscillazioni quotidiane."
@@ -1309,7 +1309,7 @@
     "study": "Console dello studio · openplate",
     "sync": "Account · openplate",
     "terms": "Termini di servizio · openplate",
-    "trends": "Insights · openplate",
+    "trends": "Analisi · openplate",
     "welcome": "Benvenuto · openplate",
     "forgot": "Password dimenticata",
     "reset": "Imposta una nuova password",
@@ -1334,7 +1334,7 @@
     "nutrients": "Nutrienti",
     "scan": "Scansiona",
     "settings": "Impostazioni",
-    "trends": "Insights",
+    "trends": "Analisi",
     "pantry": "Dispensa"
   },
   "nutrients": {
@@ -2766,7 +2766,7 @@
       "empty": "Usa l'app oggi per iniziare una serie.",
       "title": "La tua serie"
     },
-    "title": "Insights",
+    "title": "Analisi",
     "weight": {
       "caption": "La linea mostra la tua tendenza smussata; i punti indicano il valore effettivo della bilancia.",
       "chartEmpty": "Registra la tua prima pesata per vedere la tendenza.",
@@ -2798,10 +2798,10 @@
       "unitPounds": "libbre"
     },
     "tabs": {
-      "goals": "Goals",
-      "meals": "Meals",
-      "nutrition": "Nutrition",
-      "overview": "Overview"
+      "goals": "Obiettivi",
+      "meals": "Pasti",
+      "nutrition": "Nutrizione",
+      "overview": "Panoramica"
     },
     "split": {
       "title": "Da dove provengono le tue calorie",

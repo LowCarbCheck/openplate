@@ -1128,7 +1128,7 @@
     "goals": {
       "body": "Günlük net karbonhidrat tavanı, protein tabanı, kalori hedefi belirle veya hiçbirini seçme. openplate senin ayarlamadığın hiçbir hedefi kendiliğinden üretmez.",
       "points": {
-        "grid": "İlerleme bölümü, aradaki boşluklar dahil, hedeflerine ulaştığın günlerin 13 haftalık kaydını tutar.",
+        "grid": "İçgörüler, hedeflerine ulaştığın günlerin 13 haftalık kaydını tutar, boşluklar da dahil.",
         "ring": "Günlüğündeki bir halka, bugünden geriye ne kaldığını gösterir.",
         "tone": "Hedefi aşmak kehribar renginde bir sayıyla gösterilir. Asla aleyhine bir ceza puanı değildir.",
         "weight": "İstediğin zaman tartıl; grafik, günden güne oluşan dalgalanmaları düzeltir."
@@ -1309,7 +1309,7 @@
     "study": "Çalışma konsolu · openplate",
     "sync": "Hesap · openplate",
     "terms": "Hizmet şartları · openplate",
-    "trends": "Insights · openplate",
+    "trends": "İçgörüler · openplate",
     "welcome": "Hoş geldin · openplate",
     "forgot": "Şifreni mi unuttun",
     "reset": "Yeni bir şifre belirle",
@@ -1334,7 +1334,7 @@
     "nutrients": "Besin ögeleri",
     "scan": "Tara",
     "settings": "Ayarlar",
-    "trends": "Insights",
+    "trends": "İçgörüler",
     "pantry": "Kiler"
   },
   "nutrients": {
@@ -2766,7 +2766,7 @@
       "empty": "Seri başlatmak için uygulamayı bugün kullan.",
       "title": "Serin"
     },
-    "title": "Insights",
+    "title": "İçgörüler",
     "weight": {
       "caption": "Çizgi düzeltilmiş eğilimindir, noktalar ise tartının gerçekte gösterdiği değerlerdir.",
       "chartEmpty": "Eğilimini görmek için ilk tartımını kaydet.",
@@ -2798,10 +2798,10 @@
       "unitPounds": "libre"
     },
     "tabs": {
-      "goals": "Goals",
-      "meals": "Meals",
-      "nutrition": "Nutrition",
-      "overview": "Overview"
+      "goals": "Hedefler",
+      "meals": "Öğünler",
+      "nutrition": "Beslenme",
+      "overview": "Genel bakış"
     },
     "split": {
       "title": "Kalorilerinin kaynağı",

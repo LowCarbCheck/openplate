@@ -1128,7 +1128,7 @@
     "goals": {
       "body": "Elige un límite máximo de carbohidratos netos diarios, un mínimo de proteínas, un objetivo de calorías, o ninguno en absoluto. openplate nunca inventa un objetivo que no hayas establecido.",
       "points": {
-        "grid": "Progreso mantiene un registro de 13 semanas de los días en que alcanzaste tus objetivos, incluidos los intervalos sin datos.",
+        "grid": "Análisis guarda un registro de 13 semanas de los días en que cumples tus objetivos, huecos incluidos.",
         "ring": "Un anillo en tu diario muestra lo que queda de hoy.",
         "tone": "Superar un objetivo se muestra como un número en ámbar. Nunca es una penalización.",
         "weight": "Pésate cuando quieras; el gráfico suaviza las oscilaciones diarias."
@@ -1309,7 +1309,7 @@
     "study": "Consola del estudio · openplate",
     "sync": "Cuenta · openplate",
     "terms": "Condiciones del servicio · openplate",
-    "trends": "Insights · openplate",
+    "trends": "Análisis · openplate",
     "welcome": "Bienvenida · openplate",
     "forgot": "Contraseña olvidada",
     "reset": "Establece una contraseña nueva",
@@ -1334,7 +1334,7 @@
     "nutrients": "Nutrientes",
     "scan": "Escanear",
     "settings": "Ajustes",
-    "trends": "Insights",
+    "trends": "Análisis",
     "pantry": "Despensa"
   },
   "nutrients": {
@@ -2766,7 +2766,7 @@
       "empty": "Usa la aplicación hoy para empezar una racha.",
       "title": "Tu racha"
     },
-    "title": "Insights",
+    "title": "Análisis",
     "weight": {
       "caption": "La línea es tu tendencia suavizada; los puntos son lo que marcó la báscula.",
       "chartEmpty": "Registra tu primer pesaje para ver tu tendencia.",
@@ -2798,10 +2798,10 @@
       "unitPounds": "libras"
     },
     "tabs": {
-      "goals": "Goals",
-      "meals": "Meals",
-      "nutrition": "Nutrition",
-      "overview": "Overview"
+      "goals": "Objetivos",
+      "meals": "Comidas",
+      "nutrition": "Nutrición",
+      "overview": "Resumen"
     },
     "split": {
       "title": "De dónde proceden tus calorías",

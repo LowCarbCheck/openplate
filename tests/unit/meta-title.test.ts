@@ -11,6 +11,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { metaLanguage, metaTitle } from '../../app/i18n/meta-title';
+import enCommon from '../../app/i18n/locales/en/common.json';
+import deCommon from '../../app/i18n/locales/de/common.json';
 
 /** Everything the root loader's `language` field has been observed to hold, tampering included. */
 type RootLanguageValue = string | number | null | undefined;
@@ -34,16 +36,17 @@ describe('metaTitle', () => {
 
   it('answers per call, so two languages never contend for one process-wide state', () => {
     // The bug this module exists to prevent: request A setting the singleton's
-    // language and request B rendering its title in it. `meta.trends` is a
-    // placeholder in German right now (M239/02, spec 07 translates it), so
-    // both languages currently answer the same string. The property under
-    // test, that a second call for a DIFFERENT language never reads back the
-    // first call's cached answer, is still exercised below with `meta.diary`,
-    // which the two languages do say differently.
+    // language and request B rendering its title in it. Read each language's
+    // answer off its own catalog rather than pinning the translated phrase
+    // here, so a future re-wording of either string can't paper over a
+    // caching bug (or break this test for no reason). `meta.trends` was a
+    // German placeholder through M239/02; spec 07 translated it, and the two
+    // languages now say different things, same as `meta.diary` below.
     const first = metaTitle('de', 'meta.trends');
     const second = metaTitle('en', 'meta.trends');
-    assert.strictEqual(first, 'Insights · openplate');
-    assert.strictEqual(second, 'Insights · openplate');
+    assert.strictEqual(first, deCommon.meta.trends);
+    assert.strictEqual(second, enCommon.meta.trends);
+    assert.notStrictEqual(first, second);
     assert.strictEqual(metaTitle('de', 'meta.trends'), first);
 
     const firstDiary = metaTitle('de', 'meta.diary');

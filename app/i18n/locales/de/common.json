@@ -1128,7 +1128,7 @@
     "goals": {
       "body": "Wähle ein tägliches Netto-Kohlenhydrate-Limit, ein Protein-Minimum, ein Kalorienziel oder gar keins. openplate erfindet niemals ein Ziel, das du nicht selbst festgelegt hast.",
       "points": {
-        "grid": "Der Verlauf speichert eine 13-Wochen-Übersicht der Tage, an denen du deine Ziele erreicht hast, inklusive Lücken.",
+        "grid": "Einblicke hält über 13 Wochen fest, an welchen Tagen du deine Ziele erreichst, Lücken inklusive.",
         "ring": "Ein Ring im Tagebuch zeigt, was von heute übrig ist.",
         "tone": "Über dem Ziel ist eine Zahl in Bernstein. Nie ein Vorwurf.",
         "weight": "Wieg dich, wann du magst; das Diagramm glättet die täglichen Schwankungen."
@@ -1309,7 +1309,7 @@
     "study": "Studien-Konsole · openplate",
     "sync": "Konto · openplate",
     "terms": "Nutzungsbedingungen · openplate",
-    "trends": "Insights · openplate",
+    "trends": "Einblicke · openplate",
     "welcome": "Willkommen · openplate",
     "forgot": "Passwort vergessen",
     "reset": "Neues Passwort festlegen",
@@ -1334,7 +1334,7 @@
     "nutrients": "Nährstoffe",
     "scan": "Scannen",
     "settings": "Einstellungen",
-    "trends": "Insights",
+    "trends": "Einblicke",
     "pantry": "Vorratskammer"
   },
   "nutrients": {
@@ -2766,7 +2766,7 @@
       "empty": "Nutze die App heute, um eine Serie zu starten.",
       "title": "Deine Serie"
     },
-    "title": "Insights",
+    "title": "Einblicke",
     "weight": {
       "caption": "Die Linie ist dein geglätteter Verlauf, die Punkte sind das, was die Waage tatsächlich angezeigt hat.",
       "chartEmpty": "Trag dein erstes Gewicht ein, dann siehst du hier deinen Verlauf.",
@@ -2798,10 +2798,10 @@
       "unitPounds": "Pfund"
     },
     "tabs": {
-      "goals": "Goals",
-      "meals": "Meals",
-      "nutrition": "Nutrition",
-      "overview": "Overview"
+      "goals": "Ziele",
+      "meals": "Mahlzeiten",
+      "nutrition": "Ernährung",
+      "overview": "Übersicht"
     },
     "split": {
       "title": "Woher deine Kalorien stammen",
