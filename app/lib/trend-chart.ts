@@ -14,17 +14,85 @@
  * - A net-carbs day that exceeds the ceiling is flagged `isOverGoal` using the
  *   SAME comparison (`computeCarbGoalProgress`) the diary's day summary uses,
  *   so a day can never read "over" on /diary and "fine" on /trends.
+ * - M239/03: ONE honesty rule for every metric (`resolveBarFill`). A floor
+ *   ("at least") beats a derived value, which beats a solid one. Every gram
+ *   metric (net carbs, protein, fat, fiber) reads its floor off the day's
+ *   `hasUnknowns`; calories read theirs off the kcal `basis`, whose
+ *   Atwater-derived state is the only `derived` source. AI estimates do NOT
+ *   lighten a gram bar: net carbs never did, and the refactor must not change
+ *   what net carbs draw, so an estimate stays the `hasEstimate` hedge
+ *   ("partly estimated") for every metric alike.
+ * - M239/03: each goal has a direction (`goalDirection`). Net carbs and calories
+ *   are ceilings, protein is a floor, fat and fiber have no goal at all.
  *
  * The component maps the returned 0..1 fractions onto SVG units and picks
  * colors; it never re-derives which bar is solid vs. hollow vs. empty vs. over.
  */
 import type { DailyTotals, KcalBasis } from '#app/models/daily-totals';
 import type { DaySummary } from '#app/models/food-log-summary';
-import { computeCarbGoalProgress } from '#app/lib/goal-progress';
+import { computeCarbGoalProgress, computeProteinGoalProgress } from '#app/lib/goal-progress';
 import type { MealType } from '#types/enums';
 
-/** The two plottable series: the signature net-carbs metric and calories. */
-export type TrendMetric = 'net-carbs' | 'calories';
+/** The plottable series: the signature net-carbs metric, calories, and three more macros (M239/03). */
+export type TrendMetric = 'net-carbs' | 'calories' | 'protein' | 'fat' | 'fiber';
+
+/** Every metric, in the order the metric control lists them. */
+export const TREND_METRICS = ['net-carbs', 'calories', 'protein', 'fat', 'fiber'] as const satisfies readonly TrendMetric[];
+
+/** The metric the chart opens on when the URL names none. */
+export const DEFAULT_TREND_METRIC: TrendMetric = 'net-carbs';
+
+/**
+ * Which side of a goal is the win: `max` is a ceiling (stay under it), `min`
+ * is a floor (reach it). A named direction rather than a sign, so a comparison
+ * can never be flipped by a stray minus.
+ */
+export type GoalDirection = 'max' | 'min';
+
+/**
+ * The goal direction per metric, or `null` for a metric with no goal line.
+ * Net carbs and calories are ceilings; protein is a floor (M200: a protein
+ * floor off height). Fat and fiber have no stored goal.
+ */
+const METRIC_GOAL_DIRECTION = {
+  'net-carbs': 'max',
+  calories: 'max',
+  protein: 'min',
+  fat: null,
+  fiber: null,
+} as const satisfies Record<TrendMetric, GoalDirection | null>;
+
+/**
+ * The goal direction of one metric.
+ *
+ * @param metric - the plotted series.
+ * @returns `max` for a ceiling, `min` for a floor, `null` for no goal.
+ */
+export function goalDirectionFor(metric: TrendMetric): GoalDirection | null {
+  return METRIC_GOAL_DIRECTION[metric];
+}
+
+/** The day-level goals the chart can draw a line for. */
+export interface TrendGoals {
+  netCarbsCeiling: number | null;
+  kcalTarget: number | null;
+  proteinFloor: number | null;
+}
+
+/**
+ * The goal figure a metric is measured against, or `null` when the metric has
+ * no goal or the person set none.
+ *
+ * @param input.metric - the plotted series.
+ * @param input.goals - the person's day-level goals.
+ * @returns the goal value for that metric.
+ */
+export function goalValueFor({ metric, goals }: { metric: TrendMetric; goals: TrendGoals }): number | null {
+  if (metric === 'net-carbs') return goals.netCarbsCeiling;
+  if (metric === 'calories') return goals.kcalTarget;
+  if (metric === 'protein') return goals.proteinFloor;
+  return null;
+}
 
 /** The chart's "every meal" setting, i.e. no slot filter at all. */
 export const ALL_MEALS = 'all';
@@ -38,7 +106,7 @@ export type TrendSlot = MealType | typeof ALL_MEALS;
 
 /**
  * How a single bar should be drawn:
- * - `solid`: a trustworthy value (reported kcal, or fully-known net carbs).
+ * - `solid`: a trustworthy value (reported kcal, or fully-known grams).
  * - `derived`: a value softened by Atwater-derivation (calories only) — lighter.
  * - `incomplete`: a floor — a value built on missing data, or a logged day with
  *   nothing computable at all — drawn as a hollow outline.
@@ -65,9 +133,25 @@ export interface BarGeometry {
    * True when this day's net carbs exceed the user's ceiling — the same
    * `computeCarbGoalProgress` comparison the diary uses, so this can never
    * disagree with the diary's amber "Over by X g" state for the same day.
-   * Always `false` for the calories metric (which has no over/under coloring).
+   * Always `false` for every other metric (calories have no over/under coloring).
    */
   isOverGoal: boolean;
+  /**
+   * True when this day's protein is below the user's floor, decided by the
+   * same `computeProteinGoalProgress` comparison the diary uses. Never set on a
+   * floor ("at least") bar: a minimum below the goal does not prove the day
+   * missed it. Worded neutrally and never painted in a warning hue.
+   */
+  isUnderGoal: boolean;
+  /**
+   * Net carbs only: the day's TOTAL carbs as a fraction 0..1 of the plot, drawn
+   * as an outline behind the bar so fiber and sugar alcohols show as the gap.
+   * The axis is still set by net carbs alone, so a tall total is capped at the
+   * top of the plot rather than rescaling every bar. `null` for other metrics.
+   */
+  outlineFraction: number | null;
+  /** Net carbs only: the day's total carbs in grams, which the outline is drawn at. `null` for other metrics. */
+  totalCarbs: number | null;
   /** Bar height as a fraction 0..1 of the plot area; 0 for empty / null-value bars. */
   heightFraction: number;
 }
@@ -110,21 +194,29 @@ export function buildTrendChart({
   // Hiding only the line would leave `isOverGoal` painting a snack amber against
   // a ceiling the chart no longer draws, and would leave the axis top propped up
   // by a figure no bar is being measured against.
-  const effectiveGoal = slot === ALL_MEALS ? goalValue : null;
+  // A metric with no goal direction (fat, fiber) has no goal line either, even
+  // if a caller hands a figure in.
+  const effectiveGoal = slot === ALL_MEALS && goalDirectionFor(metric) !== null ? goalValue : null;
   const valued = days.map((day) => ({ day, ..._barValue(day, metric, effectiveGoal) }));
   const domainMax = _computeDomainMax(
     valued.map((entry) => entry.value),
     effectiveGoal,
   );
-  const bars = valued.map(({ day, value, fill, isOverGoal }) => ({
-    date: day.date,
-    value,
-    hasLogs: day.hasLogs,
-    hasEstimate: day.estimateShare > 0,
-    fill,
-    isOverGoal,
-    heightFraction: value !== null && value > 0 ? Math.min(value / domainMax, 1) : 0,
-  }));
+  const bars = valued.map(({ day, value, fill, isOverGoal, isUnderGoal }) => {
+    const totalCarbs = metric === 'net-carbs' && _isSummarized(day) ? day.summary.carbs : null;
+    return {
+      date: day.date,
+      value,
+      hasLogs: day.hasLogs,
+      hasEstimate: day.estimateShare > 0,
+      fill,
+      isOverGoal,
+      isUnderGoal,
+      heightFraction: _fractionOf({ value, domainMax }),
+      outlineFraction: totalCarbs === null ? null : _fractionOf({ value: totalCarbs, domainMax }),
+      totalCarbs,
+    };
+  });
   const goalFraction = effectiveGoal !== null && effectiveGoal > 0 ? Math.min(effectiveGoal / domainMax, 1) : null;
   return { bars, domainMax, goalFraction };
 }
@@ -135,40 +227,117 @@ interface BarPlot {
   value: number | null;
   fill: BarFill;
   isOverGoal: boolean;
+  isUnderGoal: boolean;
 }
 
-/** A metric that can never be "over goal" plots without the flag. */
-type UnboundedBarPlot = Omit<BarPlot, 'isOverGoal'>;
+/** A bar's value and caveats before any goal is applied. */
+interface BarReading {
+  value: number | null;
+  fill: BarFill;
+}
 
-/** Resolves one day's plotted value, fill state, and over-goal flag for the chosen metric. */
-function _barValue(day: TrendDay, metric: TrendMetric, goalValue: number | null): BarPlot {
-  if (metric === 'calories') return { ..._caloriesBar(day), isOverGoal: false };
-  return _netCarbsBar(day, goalValue);
+/** The two caveats a bar can carry, whatever its metric. */
+interface BarCaveats {
+  /** The value is a minimum: part of the day could not be counted. */
+  isFloor: boolean;
+  /** The value was worked out from other figures rather than reported. */
+  isDerived: boolean;
 }
 
 /**
- * Net-carbs bar: empty when unlogged; hollow when the day mixes in unknown
- * macros. `isOverGoal` reuses `computeCarbGoalProgress` — the identical
- * comparison the diary's day summary runs — so this can never disagree with
- * the diary's amber "Over by X g" state for the same day.
+ * THE honesty rule, shared by every metric: a floor is drawn as `incomplete`
+ * ("at least"), else a derived value as `derived`, else `solid`. The metrics
+ * differ only in where they read the two caveats from.
+ *
+ * @param caveats - whether the value is a floor and whether it was derived.
+ * @returns the fill for a logged day's bar.
  */
-function _netCarbsBar(day: TrendDay, ceiling: number | null): BarPlot {
-  if (!_isSummarized(day)) return { value: null, fill: 'empty', isOverGoal: false };
-  const isOverGoal = ceiling !== null && computeCarbGoalProgress({ netCarbs: day.summary.netCarbs, ceiling }).isOver;
-  return { value: day.summary.netCarbs, fill: day.summary.hasUnknowns ? 'incomplete' : 'solid', isOverGoal };
+export function resolveBarFill({ isFloor, isDerived }: BarCaveats): Exclude<BarFill, 'empty'> {
+  if (isFloor) return 'incomplete';
+  if (isDerived) return 'derived';
+  return 'solid';
+}
+
+/** The plain value of one gram metric off a day's summary. */
+const GRAM_VALUE = {
+  'net-carbs': (summary: DaySummary) => summary.netCarbs,
+  protein: (summary: DaySummary) => summary.protein,
+  fat: (summary: DaySummary) => summary.fat,
+  fiber: (summary: DaySummary) => summary.fiber,
+} satisfies Record<Exclude<TrendMetric, 'calories'>, (summary: DaySummary) => number>;
+
+/**
+ * The value a day plots for one metric, or `null` when there is nothing to
+ * plot (an unlogged day, or calories that could not be worked out). The same
+ * number the bar is drawn from, so a line derived from it (the rolling average)
+ * can never disagree with the bars under it.
+ *
+ * @param input.day - the day (or week) row.
+ * @param input.metric - the plotted series.
+ * @returns the plotted value.
+ */
+export function selectMetricValue({ day, metric }: { day: TrendDay; metric: TrendMetric }): number | null {
+  return _readBar(day, metric).value;
+}
+
+/** Resolves one day's plotted value, fill state, and goal flags for the chosen metric. */
+function _barValue(day: TrendDay, metric: TrendMetric, goalValue: number | null): BarPlot {
+  const reading = _readBar(day, metric);
+  return {
+    ...reading,
+    isOverGoal: metric === 'net-carbs' && _isOverCeiling({ reading, ceiling: goalValue }),
+    isUnderGoal: metric === 'protein' && _isUnderFloor({ reading, floor: goalValue }),
+  };
+}
+
+/** A day's value and fill for one metric, before any goal. */
+function _readBar(day: TrendDay, metric: TrendMetric): BarReading {
+  if (metric === 'calories') return _caloriesBar(day);
+  if (!_isSummarized(day)) return { value: null, fill: 'empty' };
+  return {
+    value: GRAM_VALUE[metric](day.summary),
+    fill: resolveBarFill({ isFloor: day.summary.hasUnknowns, isDerived: false }),
+  };
+}
+
+/**
+ * Whether a net-carbs bar is over the ceiling. Reuses `computeCarbGoalProgress`,
+ * the identical comparison the diary's day summary runs, so this can never
+ * disagree with the diary's amber "Over by X g" state for the same day. A floor
+ * bar over the ceiling IS over: the real value is at least that high.
+ */
+function _isOverCeiling({ reading, ceiling }: { reading: BarReading; ceiling: number | null }): boolean {
+  if (ceiling === null || reading.value === null) return false;
+  return computeCarbGoalProgress({ netCarbs: reading.value, ceiling }).isOver;
+}
+
+/**
+ * Whether a protein bar is under the floor, by the diary's own
+ * `computeProteinGoalProgress`. A floor ("at least") bar is never flagged: the
+ * real value may well have reached the goal.
+ */
+function _isUnderFloor({ reading, floor }: { reading: BarReading; floor: number | null }): boolean {
+  if (floor === null || reading.value === null || reading.fill === 'incomplete') return false;
+  return !computeProteinGoalProgress({ protein: reading.value, floor }).isMet;
 }
 
 /** Calories bar: empty when unlogged; otherwise the fill mirrors the kcal `basis`. */
-function _caloriesBar(day: TrendDay): UnboundedBarPlot {
+function _caloriesBar(day: TrendDay): BarReading {
   if (!day.hasLogs) return { value: null, fill: 'empty' };
-  return { value: day.kcal.total, fill: _kcalFill(day.kcal.basis) };
+  return { value: day.kcal.total, fill: resolveBarFill(_kcalCaveats(day.kcal.basis)) };
 }
 
-/** Maps a day's kcal `basis` onto a fill state (`none` is a hollow, caption-only slot). */
-function _kcalFill(basis: KcalBasis): BarFill {
-  if (basis === 'reported') return 'solid';
-  if (basis === 'partly-derived') return 'derived';
-  return 'incomplete';
+/** Reads the two caveats off a day's kcal `basis` (`none` is a floor with no value). */
+function _kcalCaveats(basis: KcalBasis): BarCaveats {
+  return {
+    isFloor: basis === 'incomplete' || basis === 'none',
+    isDerived: basis === 'partly-derived',
+  };
+}
+
+/** A value as a fraction 0..1 of the plot height; 0 for a missing or non-positive value. */
+function _fractionOf({ value, domainMax }: { value: number | null; domainMax: number }): number {
+  return value !== null && value > 0 ? Math.min(value / domainMax, 1) : 0;
 }
 
 /** Narrows to a day whose macro summary is present (i.e. it has logs). */

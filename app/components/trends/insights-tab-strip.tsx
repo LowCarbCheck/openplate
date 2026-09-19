@@ -1,6 +1,6 @@
 /**
  * The tab strip atop `/trends` (M239/02): four review sections that live in
- * the URL. Every tab is a real `Link` carrying `range` and `slot` forward,
+ * the URL. Every tab is a real `Link` carrying `range`, `slot` and `metric` forward,
  * the same "don't drop the other control" rule `TrendControls`'s own
  * `controlHref` follows, so switching sections never resets the chart window
  * or the meal filter, and a shared URL lands on the same view.
@@ -11,8 +11,8 @@
  */
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { ALL_MEALS } from '#app/lib/trend-chart';
-import type { TrendSlot } from '#app/lib/trend-chart';
+import { ALL_MEALS, DEFAULT_TREND_METRIC } from '#app/lib/trend-chart';
+import type { TrendMetric, TrendSlot } from '#app/lib/trend-chart';
 import { INSIGHTS_TABS, type InsightsTab } from '#app/lib/insights-tabs';
 import { cn } from '#app/lib/utils';
 
@@ -25,18 +25,30 @@ const TAB_LABEL_KEYS = {
 } satisfies Record<InsightsTab, string>;
 
 /**
- * The href for one tab, carrying the current range and slot with it. `slot`
- * is written as the absence of the param at `ALL_MEALS`, mirroring
- * `controlHref`, so the plain "every meal" view stays the plain URL.
+ * The href for one tab, carrying the current range, slot and metric with it.
+ * `slot` and `metric` are written as the absence of their param at their
+ * defaults, mirroring `controlHref`, so the plain view stays the plain URL.
  *
  * @param tab - the tab this link lands on.
  * @param range - the active day range.
  * @param slot - the active meal slot, or `ALL_MEALS`.
+ * @param metric - the active chart metric.
  * @returns a same-route query string.
  */
-function tabHref({ tab, range, slot }: { tab: InsightsTab; range: number; slot: TrendSlot }): string {
+function tabHref({
+  tab,
+  range,
+  slot,
+  metric,
+}: {
+  tab: InsightsTab;
+  range: number;
+  slot: TrendSlot;
+  metric: TrendMetric;
+}): string {
   const params = new URLSearchParams({ tab, range: `${range}` });
   if (slot !== ALL_MEALS) params.set('slot', slot);
+  if (metric !== DEFAULT_TREND_METRIC) params.set('metric', metric);
   return `?${params.toString()}`;
 }
 
@@ -44,8 +56,19 @@ function tabHref({ tab, range, slot }: { tab: InsightsTab; range: number; slot: 
  * @param active - the tab currently shown.
  * @param range - the active day range, carried into every tab link.
  * @param slot - the active meal slot, carried into every tab link.
+ * @param metric - the active chart metric, carried into every tab link.
  */
-export function InsightsTabStrip({ active, range, slot }: { active: InsightsTab; range: number; slot: TrendSlot }) {
+export function InsightsTabStrip({
+  active,
+  range,
+  slot,
+  metric,
+}: {
+  active: InsightsTab;
+  range: number;
+  slot: TrendSlot;
+  metric: TrendMetric;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -60,7 +83,7 @@ export function InsightsTabStrip({ active, range, slot }: { active: InsightsTab;
         return (
           <Link
             key={tab}
-            to={tabHref({ tab, range, slot })}
+            to={tabHref({ tab, range, slot, metric })}
             preventScrollReset
             role="tab"
             aria-selected={isActive}

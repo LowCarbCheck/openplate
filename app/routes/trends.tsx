@@ -18,9 +18,10 @@ import {
 import { noteActivity } from '#app/lib/gamification/record';
 import { enumerateDates, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { startOfWeek } from '#app/lib/trend-week';
-import { ALL_MEALS, buildTrendChart } from '#app/lib/trend-chart';
+import { ALL_MEALS, buildTrendChart, DEFAULT_TREND_METRIC, goalValueFor, TREND_METRICS } from '#app/lib/trend-chart';
 import { bucketByWeek } from '#app/lib/trend-buckets';
-import type { TrendDay, TrendMetric, TrendSlot } from '#app/lib/trend-chart';
+import { ROLLING_AVERAGE_DAYS, selectAverageFractions } from '#app/lib/rolling-average';
+import type { TrendDay, TrendGoals, TrendMetric, TrendSlot } from '#app/lib/trend-chart';
 import { DEFAULT_INSIGHTS_TAB, INSIGHTS_TABS } from '#app/lib/insights-tabs';
 import type { InsightsTab } from '#app/lib/insights-tabs';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
@@ -41,7 +42,8 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { ActivityStreakCard } from '#app/components/gamification/activity-streak-card';
 import { AdherenceGridCard } from '#app/components/trends/adherence-grid-card';
 import { InsightsTabStrip } from '#app/components/trends/insights-tab-strip';
-import { TrendChart } from '#app/components/trends/trend-chart';
+import { chartTitleKey, TrendChart } from '#app/components/trends/trend-chart';
+import { MacroEnergySplitCard } from '#app/components/trends/macro-energy-split-card';
 import { TrendControls } from '#app/components/trends/trend-controls';
 import { TrendLegend } from '#app/components/trends/trend-legend';
 import { MIN_TREND_DAYS, SparseTrendNotice } from '#app/components/trends/sparse-trend-notice';
@@ -120,6 +122,17 @@ export function _parseTab(raw: string | null): InsightsTab {
   return INSIGHTS_TABS.find((tab) => tab === raw) ?? DEFAULT_INSIGHTS_TAB;
 }
 
+/**
+ * Parses the `metric` search param, falling back to net carbs on anything the
+ * metric control could not have produced, the same rule as `_parseSlot`.
+ *
+ * @param raw - the raw search-param value, or null when it is absent.
+ * @returns the metric to chart.
+ */
+export function _parseMetric(raw: string | null): TrendMetric {
+  return TREND_METRICS.find((metric) => metric === raw) ?? DEFAULT_TREND_METRIC;
+}
+
 /** Parses an explicit `range` search param, falling back to the default on anything invalid. */
 function _parseRange(raw: string): TrendRange {
   const value = Number(raw);
@@ -189,8 +202,12 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     : _parseRange(rawRange);
   const slot = _parseSlot(searchParams.get('slot'));
   const tab = _parseTab(searchParams.get('tab'));
+  const metric = _parseMetric(searchParams.get('metric'));
 
   const chartWindow = { fromDate: shiftDate(today, -(range - 1)), toDate: today };
+  // The six days before the first bar, so the first bars' 7-day average
+  // windows are whole rather than cut off at the chart's left edge.
+  const leadWindow = { fromDate: shiftDate(chartWindow.fromDate, -(ROLLING_AVERAGE_DAYS - 1)), toDate: shiftDate(chartWindow.fromDate, -1) };
   const currentWeekStart = startOfWeek(today);
   const currentWeekEnd = shiftDate(currentWeekStart, DAYS_IN_WEEK - 1);
   const previousWeekStart = shiftDate(currentWeekStart, -DAYS_IN_WEEK);
@@ -202,7 +219,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // eating window) and the rest of the current week, which the grid and the
   // recap both run to. Nothing older is parsed, however long the diary is.
   const windowLogs = await listLocalFoodLogsInRange({
-    fromDate: _earlierDay({ left: chartWindow.fromDate, right: gridWeeksStart }),
+    fromDate: _earlierDay({ left: leadWindow.fromDate, right: gridWeeksStart }),
     toDate: currentWeekEnd,
   });
 
@@ -214,6 +231,10 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     slot === ALL_MEALS ?
       computeDailyTotalsInRange(windowLogs, chartWindow)
     : computeSlotTotalsInRange(windowLogs, chartWindow, slot);
+  const leadEntries =
+    slot === ALL_MEALS ?
+      computeDailyTotalsInRange(windowLogs, leadWindow)
+    : computeSlotTotalsInRange(windowLogs, leadWindow, slot);
 
   // Two Monday→Sunday weeks (this week + last) computed as one contiguous
   // range, then split by date for the recap comparison.
@@ -280,10 +301,12 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   return {
     entries,
+    leadEntries,
     goals,
     range,
     slot,
     tab,
+    metric,
     recap,
     weight,
     eatingWindow,
@@ -363,8 +386,9 @@ function EmptyTrends() {
 }
 
 /**
- * The net-carbs/calories chart: the metric/range/slot controls, the bar chart
- * or the sparse notice, and the slot-only note under the title. Shown on both
+ * The trend chart: the metric/range/slot controls, the bar chart (with its
+ * 7-day average line over daily bars) or the sparse notice, and the slot-only
+ * note under the title. Shown on both
  * the Nutrition and the Meals tab for now, since M239/04 gives Meals its own
  * content, and until then `?tab=meals&slot=breakfast` already narrows this
  * exact chart to one meal, which is what the Meals tab claims to offer today.
@@ -378,42 +402,44 @@ function EmptyTrends() {
  * @param range - the active day range; drives daily-vs-weekly bucketing and the range control's active state.
  * @param slot - the active meal slot, or `ALL_MEALS`.
  * @param tab - which tab this card is rendered under, so its controls keep switching tab in the URL.
- * @param metric - the active metric (client state).
- * @param onMetricChange - selects a metric.
+ * @param metric - the active metric (a URL param since M239/03).
  * @param goals - the day-level goals the chart's goal line reads.
+ * @param leadEntries - the days just before the range, which only the 7-day average line reads.
  */
 function ChartCard({
   entries,
+  leadEntries,
   range,
   slot,
   tab,
   metric,
-  onMetricChange,
   goals,
 }: {
   entries: TrendDay[];
+  leadEntries: TrendDay[];
   range: TrendRange;
   slot: TrendSlot;
   tab: InsightsTab;
   metric: TrendMetric;
-  onMetricChange: (metric: TrendMetric) => void;
-  goals: { netCarbsCeiling: number | null; kcalTarget: number | null };
+  goals: TrendGoals;
 }) {
   const { t } = useTranslation();
 
-  const goalValue = metric === 'net-carbs' ? goals.netCarbsCeiling : goals.kcalTarget;
+  const goalValue = goalValueFor({ metric, goals });
   // `slot` goes to the model rather than being applied to the goal here: every
   // stored goal is a whole-day figure, and `buildTrendChart` is the one place
   // that decides a part-day bar has nothing to be measured against.
   // At the wide ranges each bar is a week, averaged over its logged days
   // (`bucketByWeek`). The slot filter has already been applied to `entries`,
   // so a week of snacks is the mean of the snack days, not of whole days.
-  const chartDays = range >= WEEKLY_BARS_FROM_RANGE ? bucketByWeek(entries) : entries;
+  const isWeekly = range >= WEEKLY_BARS_FROM_RANGE;
+  const chartDays = isWeekly ? bucketByWeek(entries) : entries;
   const chart = buildTrendChart({ days: chartDays, metric, goalValue, slot });
-  // Two whole-sentence keys rather than "Daily {{metric}}" + a metric noun:
-  // German inflects the adjective with the noun's gender, so the two halves
-  // can't be translated independently.
-  const chartTitle = metric === 'calories' ? t('trends.chart.titleCalories') : t('trends.chart.titleNetCarbs');
+  // The 7-day line goes over daily bars only: over weekly bars each bar is
+  // already a mean, and a mean of means would say less than the bars do.
+  const averageFractions =
+    isWeekly ? null : selectAverageFractions({ leadDays: leadEntries, days: chartDays, metric, domainMax: chart.domainMax });
+  const chartTitle = t(chartTitleKey({ metric, isWeekly }));
   // Below the threshold the chart is replaced, not drawn sparse — see
   // `SparseTrendNotice`. Counted over the SELECTED window AND the selected slot,
   // because those are the days this chart would actually draw: widening the
@@ -440,13 +466,24 @@ function ChartCard({
             </p>
           )}
         </div>
-        <TrendControls metric={metric} onMetricChange={onMetricChange} range={range} slot={slot} tab={tab} />
+        <TrendControls metric={metric} range={range} slot={slot} tab={tab} />
       </CardHeader>
       <CardContent className="space-y-4">
         {hasEnoughDays ?
           <>
-            <TrendChart model={chart} metric={metric} goalValue={goalValue} />
-            <TrendLegend metric={metric} hasGoal={chart.goalFraction !== null} />
+            <TrendChart
+              model={chart}
+              metric={metric}
+              goalValue={goalValue}
+              isWeekly={isWeekly}
+              averageFractions={averageFractions}
+            />
+            <TrendLegend
+              metric={metric}
+              hasGoal={chart.goalFraction !== null}
+              hasAverageLine={averageFractions !== null && averageFractions.some((fraction) => fraction !== null)}
+              hasCarbsOutline={chart.bars.some((bar) => bar.outlineFraction !== null && bar.outlineFraction > bar.heightFraction)}
+            />
           </>
         : <SparseTrendNotice loggedDays={loggedDaysInRange} />}
       </CardContent>
@@ -457,10 +494,12 @@ function ChartCard({
 export default function Trends({ loaderData }: Route.ComponentProps) {
   const {
     entries,
+    leadEntries,
     goals,
     range,
     slot,
     tab,
+    metric,
     recap,
     weight,
     eatingWindow,
@@ -474,7 +513,6 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     marks,
     gamificationHidden,
   } = loaderData;
-  const [metric, setMetric] = useState<TrendMetric>('net-carbs');
   // Device-local display preference, shared with `/settings/profile` (which owns
   // the toggle). Read once per mount, so returning here after switching it
   // there picks the new unit up.
@@ -494,7 +532,7 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
       {/* M239/02: four review sections in the URL. Every tab keeps `range`
           and `slot`, so switching sections never resets the chart window or
           the meal filter. */}
-      <InsightsTabStrip active={tab} range={range} slot={slot} />
+      <InsightsTabStrip active={tab} range={range} slot={slot} metric={metric} />
 
       {tab === 'overview' && (
         <>
@@ -543,17 +581,20 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
         <>
           <ChartCard
             entries={entries}
+            leadEntries={leadEntries}
             range={range}
             slot={slot}
             tab={tab}
             metric={metric}
-            onMetricChange={setMetric}
             goals={goals}
           />
           {tab === 'nutrition' && (
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/nutrients">{t('nav.nutrients')}</Link>
-            </Button>
+            <>
+              <MacroEnergySplitCard days={entries} isWeekly={range >= WEEKLY_BARS_FROM_RANGE} />
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/nutrients">{t('nav.nutrients')}</Link>
+              </Button>
+            </>
           )}
         </>
       )}

@@ -25,6 +25,13 @@
  * fill keeps the height readable as mass, and the crisp cap says "the real value
  * is at least up to here". It also stops competing with the `derived` state
  * (calories only, a plain 55%-opacity fill), which the outline version did.
+ *
+ * **M239/03.** Protein, fat and fiber are drawn in their own macro hue (the
+ * `--macro-*` tokens the diary's ratio bar uses), never a warning hue. A protein
+ * day under the floor is flagged in words and by its place below the goal line
+ * only: missing a floor is not a warning. Net carbs gain a thin outline behind
+ * the bar at the day's TOTAL carbs, so fiber and sugar alcohols show as the
+ * gap, and the daily ranges gain a 7-day average line.
  */
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
@@ -57,9 +64,45 @@ const FLOOR_FILL_OPACITY = 0.28;
 /** Body opacity of an Atwater-derived calories bar — softened, but still a real value. */
 const DERIVED_FILL_OPACITY = 0.55;
 
-/** The status hue for a bar: amber once it's over the ceiling, brand teal otherwise. */
-function statusColorClass(bar: BarGeometry): string {
-  return bar.isOverGoal ? 'text-accent-amber' : 'text-primary';
+/** Stroke thickness of the total-carbs outline, in CSS pixels (the stroke does not scale). */
+const OUTLINE_STROKE_PX = 1;
+/** Stroke thickness of the rolling-average line, in CSS pixels. */
+const AVERAGE_STROKE_PX = 2;
+
+/**
+ * Each metric's own hue. Net carbs and calories keep the brand teal they have
+ * always had; the three new macros take the diary's macro tokens, so protein
+ * reads as the same colour here as in the ratio bar above the diary.
+ */
+const METRIC_COLOR_CLASS = {
+  'net-carbs': 'text-primary',
+  calories: 'text-primary',
+  protein: 'text-macro-protein',
+  fat: 'text-macro-fat',
+  fiber: 'text-macro-fiber',
+} satisfies Record<TrendMetric, string>;
+
+/** The bar hue class for a metric, shared with the legend's swatches. */
+export function metricColorClass(metric: TrendMetric): string {
+  return METRIC_COLOR_CLASS[metric];
+}
+
+/**
+ * The status hue for a bar: amber once it's over the ceiling, the metric's own
+ * hue otherwise. A protein day under its floor keeps the protein hue on purpose.
+ */
+function statusColorClass({ bar, metric }: { bar: BarGeometry; metric: TrendMetric }): string {
+  return bar.isOverGoal ? 'text-accent-amber' : metricColorClass(metric);
+}
+
+/** Where a bar stands against its goal, as written on the element for the browser tier. */
+type BarGoalMark = 'over' | 'under' | 'none';
+
+/** The goal mark for one bar. */
+function goalMarkOf(bar: BarGeometry): BarGoalMark {
+  if (bar.isOverGoal) return 'over';
+  if (bar.isUnderGoal) return 'under';
+  return 'none';
 }
 
 /**
@@ -76,15 +119,51 @@ interface BarMarkers {
   'data-slot': 'trend-bar';
   'data-date': string;
   'data-fill': BarFill;
+  'data-goal': BarGoalMark;
 }
 
 /** The DOM markers for one bar (see `BarMarkers`). */
 function barMarkers(bar: BarGeometry): BarMarkers {
-  return { 'data-slot': 'trend-bar', 'data-date': bar.date, 'data-fill': bar.fill };
+  return { 'data-slot': 'trend-bar', 'data-date': bar.date, 'data-fill': bar.fill, 'data-goal': goalMarkOf(bar) };
+}
+
+/** True when a bar carries a total-carbs outline that stands above it. */
+function hasVisibleOutline(bar: BarGeometry): boolean {
+  return bar.outlineFraction !== null && bar.outlineFraction > bar.heightFraction;
+}
+
+/**
+ * The total-carbs outline behind a net-carbs bar: a hollow box from the
+ * baseline up to the day's total carbs, drawn only where it stands above the
+ * bar (the gap IS the fiber and sugar alcohols). When the total is taller than
+ * the axis the box is left open at the top, so it reads as running off the
+ * chart rather than as ending at the axis top.
+ */
+function CarbsOutline({ bar, x, barWidth }: { bar: BarGeometry; x: number; barWidth: number }) {
+  if (bar.outlineFraction === null || !hasVisibleOutline(bar)) return null;
+  const top = PLOT_HEIGHT * (1 - bar.outlineFraction);
+  const isCapped = bar.outlineFraction >= 1;
+  const right = x + barWidth;
+  const path =
+    isCapped ?
+      `M ${x} ${PLOT_HEIGHT} V ${top} M ${right} ${top} V ${PLOT_HEIGHT}`
+    : `M ${x} ${PLOT_HEIGHT} V ${top} H ${right} V ${PLOT_HEIGHT}`;
+  return (
+    <path
+      data-slot="trend-carbs-outline"
+      data-date={bar.date}
+      d={path}
+      className="text-muted-foreground"
+      stroke="currentColor"
+      strokeWidth={OUTLINE_STROKE_PX}
+      fill="none"
+      vectorEffect="non-scaling-stroke"
+    />
+  );
 }
 
 /** The visible fill classes/attrs per bar state, keyed off `BarGeometry.fill`. */
-function BarColumn({ bar, index }: { bar: BarGeometry; index: number }) {
+function BarColumn({ bar, index, metric }: { bar: BarGeometry; index: number; metric: TrendMetric }) {
   const barWidth = SLOT_WIDTH * BAR_WIDTH_RATIO;
   const x = index * SLOT_WIDTH + (SLOT_WIDTH - barWidth) / 2;
   const centerX = x + barWidth / 2;
@@ -128,58 +207,177 @@ function BarColumn({ bar, index }: { bar: BarGeometry; index: number }) {
 
   const height = Math.max(bar.heightFraction * PLOT_HEIGHT, MIN_BAR_UNITS);
   const y = PLOT_HEIGHT - height;
-  const colorClass = statusColorClass(bar);
+  const colorClass = statusColorClass({ bar, metric });
 
   // A floor: pale body + solid cap rule ("at least this much").
   if (bar.fill === 'incomplete') {
     const capHeight = Math.min(CAP_UNITS, height);
     return (
-      <g {...barMarkers(bar)} className={colorClass}>
-        <rect x={x} y={y} width={barWidth} height={height} rx={0.8} fill="currentColor" fillOpacity={FLOOR_FILL_OPACITY} />
-        <rect x={x} y={y} width={barWidth} height={capHeight} rx={0.8} fill="currentColor" />
-      </g>
+      <>
+        <CarbsOutline bar={bar} x={x} barWidth={barWidth} />
+        <g {...barMarkers(bar)} className={colorClass}>
+          <rect x={x} y={y} width={barWidth} height={height} rx={0.8} fill="currentColor" fillOpacity={FLOOR_FILL_OPACITY} />
+          <rect x={x} y={y} width={barWidth} height={capHeight} rx={0.8} fill="currentColor" />
+        </g>
+      </>
     );
   }
 
   return (
-    <rect
-      {...barMarkers(bar)}
-      x={x}
-      y={y}
-      width={barWidth}
-      height={height}
-      rx={0.8}
-      className={colorClass}
-      fill="currentColor"
-      fillOpacity={bar.fill === 'derived' ? DERIVED_FILL_OPACITY : 1}
+    <>
+      <CarbsOutline bar={bar} x={x} barWidth={barWidth} />
+      <rect
+        {...barMarkers(bar)}
+        x={x}
+        y={y}
+        width={barWidth}
+        height={height}
+        rx={0.8}
+        className={colorClass}
+        fill="currentColor"
+        fillOpacity={bar.fill === 'derived' ? DERIVED_FILL_OPACITY : 1}
+      />
+    </>
+  );
+}
+
+/**
+ * The SVG path of the rolling-average line, one point per bar centre. A `null`
+ * breaks the line rather than dropping it to zero: a window with nothing
+ * logged has no average to draw.
+ *
+ * @param fractions - one height fraction 0..1 per bar, or null for a gap.
+ * @returns the `d` attribute, empty when there is no point at all.
+ */
+export function averageLinePath(fractions: readonly (number | null)[]): string {
+  const commands: string[] = [];
+  let isPenDown = false;
+  for (const [index, fraction] of fractions.entries()) {
+    if (fraction === null) {
+      isPenDown = false;
+      continue;
+    }
+    const x = index * SLOT_WIDTH + SLOT_WIDTH / 2;
+    const y = PLOT_HEIGHT * (1 - Math.min(Math.max(fraction, 0), 1));
+    commands.push(`${isPenDown ? 'L' : 'M'} ${x} ${y}`);
+    isPenDown = true;
+  }
+  return commands.join(' ');
+}
+
+/** The rolling-average line over the daily bars. */
+function AverageLine({ fractions }: { fractions: readonly (number | null)[] }) {
+  const path = averageLinePath(fractions);
+  if (path === '') return null;
+  return (
+    <path
+      data-slot="trend-average-line"
+      d={path}
+      className="text-foreground"
+      stroke="currentColor"
+      strokeWidth={AVERAGE_STROKE_PX}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+      fill="none"
+      vectorEffect="non-scaling-stroke"
     />
   );
 }
 
 /**
+ * The chart title per metric, in two wordings: "Daily protein" over daily bars,
+ * and a weekly one at 30 and 90 days, where each bar is a week's daily average
+ * and a title saying "Daily" would be wrong. Whole-sentence keys rather than
+ * "Daily {{metric}}": German inflects the adjective with the noun's gender.
+ */
+const CHART_TITLE_KEY = {
+  daily: {
+    'net-carbs': 'trends.chart.titleNetCarbs',
+    calories: 'trends.chart.titleCalories',
+    protein: 'trends.chart.titleProtein',
+    fat: 'trends.chart.titleFat',
+    fiber: 'trends.chart.titleFiber',
+  },
+  weekly: {
+    'net-carbs': 'trends.chart.titleWeekly.netCarbs',
+    calories: 'trends.chart.titleWeekly.calories',
+    protein: 'trends.chart.titleWeekly.protein',
+    fat: 'trends.chart.titleWeekly.fat',
+    fiber: 'trends.chart.titleWeekly.fiber',
+  },
+} satisfies Record<'daily' | 'weekly', Record<TrendMetric, string>>;
+
+/**
+ * The catalog key of the chart title for a metric.
+ *
+ * @param input.metric - the plotted series.
+ * @param input.isWeekly - true when each bar is a week (30 and 90 days).
+ * @returns the title key.
+ */
+export function chartTitleKey({ metric, isWeekly }: { metric: TrendMetric; isWeekly: boolean }): string {
+  return CHART_TITLE_KEY[isWeekly ? 'weekly' : 'daily'][metric];
+}
+
+/** The per-metric sentence key a valued bar is read out with. */
+const BAR_SENTENCE_KEY = {
+  'net-carbs': 'trends.chart.bar.netCarbs',
+  calories: 'trends.chart.bar.calories',
+  protein: 'trends.chart.bar.protein',
+  fat: 'trends.chart.bar.fat',
+  fiber: 'trends.chart.bar.fiber',
+} satisfies Record<TrendMetric, string>;
+
+/**
+ * How a bar names its date. A daily bar is its day; a weekly bar is the week
+ * starting on its Monday, and a valued weekly bar says its figure is a daily
+ * average, so a screen reader never hears one week's mean as one day's total.
+ */
+function barDateLabel({ bar, isWeekly, t }: { bar: BarGeometry; isWeekly: boolean; t: Translate }): string {
+  if (!isWeekly) return bar.date;
+  const hasValue = bar.fill !== 'empty' && bar.value !== null;
+  return t(hasValue ? 'trends.chart.bar.weekAverage' : 'trends.chart.bar.week', { date: bar.date });
+}
+
+/**
  * A human sentence for a bar's tappable link (its accessible name).
  *
- * The three qualifiers ("at least" / "partly estimated" / "over your goal") are
- * separate keys interpolated into the sentence rather than eight enumerated
- * sentence variants — a translator can move each `{{placeholder}}` to wherever
- * the qualifier belongs in the target language's clause order.
+ * The qualifiers ("at least" / "partly estimated" / "over your goal" / "below
+ * your goal") are separate keys interpolated into the sentence rather than
+ * enumerated sentence variants, so a translator can move each `{{placeholder}}`
+ * to wherever the qualifier belongs in the target language's clause order. The
+ * total-carbs figure behind a net-carbs bar is appended as its own clause.
  */
-function describeBar(bar: BarGeometry, metric: TrendMetric, t: Translate, language: string): string {
-  if (bar.fill === 'empty') return t('trends.chart.bar.empty', { date: bar.date });
-  if (bar.value === null) return t('trends.chart.bar.incomputable', { date: bar.date });
-  const estimate = bar.hasEstimate ? t('trends.chart.bar.estimate') : '';
-  const atLeast = bar.fill === 'incomplete' ? t('trends.chart.bar.atLeast') : '';
-  const overGoal = bar.isOverGoal ? t('trends.chart.bar.overGoal') : '';
-  if (metric === 'calories') {
-    return t('trends.chart.bar.calories', { date: bar.date, atLeast, value: Math.round(bar.value), estimate });
-  }
-  return t('trends.chart.bar.netCarbs', {
-    date: bar.date,
-    atLeast,
-    value: formatMacroNumberIn(language, bar.value),
-    estimate,
-    overGoal,
+export function describeBar({
+  bar,
+  metric,
+  isWeekly,
+  t,
+  language,
+}: {
+  bar: BarGeometry;
+  metric: TrendMetric;
+  isWeekly: boolean;
+  t: Translate;
+  language: string;
+}): string {
+  const date = barDateLabel({ bar, isWeekly, t });
+  if (bar.fill === 'empty') return t('trends.chart.bar.empty', { date });
+  if (bar.value === null) return t('trends.chart.bar.incomputable', { date });
+  const sentence = t(BAR_SENTENCE_KEY[metric], {
+    date,
+    atLeast: bar.fill === 'incomplete' ? t('trends.chart.bar.atLeast') : '',
+    value: metric === 'calories' ? Math.round(bar.value) : formatMacroNumberIn(language, bar.value),
+    estimate: bar.hasEstimate ? t('trends.chart.bar.estimate') : '',
+    overGoal: bar.isOverGoal ? t('trends.chart.bar.overGoal') : '',
+    underGoal: bar.isUnderGoal ? t('trends.chart.bar.underGoal') : '',
   });
+  return `${sentence}${totalCarbsClause({ bar, t, language })}`;
+}
+
+/** ", 30 g total carbs" behind a net-carbs bar whose outline is drawn, else nothing. */
+function totalCarbsClause({ bar, t, language }: { bar: BarGeometry; t: Translate; language: string }): string {
+  if (bar.totalCarbs === null || !hasVisibleOutline(bar)) return '';
+  return t('trends.chart.bar.totalCarbs', { value: formatMacroNumberIn(language, bar.totalCarbs) });
 }
 
 /** The dashed horizontal goal line at `goalFraction` of the plot height. */
@@ -243,11 +441,17 @@ export function TrendChart({
   model,
   metric,
   goalValue,
+  isWeekly = false,
+  averageFractions = null,
 }: {
   model: TrendChartModel;
   metric: TrendMetric;
   /** The user's goal for this metric, used verbatim by the inline goal tag; null hides the tag. */
   goalValue: number | null;
+  /** True when each bar is a week's daily average (30 and 90 days), which the bars' names must say. */
+  isWeekly?: boolean;
+  /** The rolling-average line, one height fraction per bar; null draws no line (weekly bars never get one). */
+  averageFractions?: readonly (number | null)[] | null;
 }) {
   const { bars, goalFraction } = model;
   const { t, i18n } = useTranslation();
@@ -273,8 +477,9 @@ export function TrendChart({
           />
           {goalFraction !== null && <GoalLine goalFraction={goalFraction} />}
           {bars.map((bar, index) => (
-            <BarColumn key={bar.date} bar={bar} index={index} />
+            <BarColumn key={bar.date} bar={bar} index={index} metric={metric} />
           ))}
+          {averageFractions !== null && <AverageLine fractions={averageFractions} />}
         </svg>
         {goalFraction !== null && goalValue !== null && (
           <GoalTag goalFraction={goalFraction} label={goalTagLabel(goalValue, metric, i18n.language)} />
@@ -284,7 +489,7 @@ export function TrendChart({
             <Link
               key={bar.date}
               to={`/diary?date=${bar.date}`}
-              aria-label={describeBar(bar, metric, t, i18n.language)}
+              aria-label={describeBar({ bar, metric, isWeekly, t, language: i18n.language })}
               className="min-h-11 flex-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           ))}

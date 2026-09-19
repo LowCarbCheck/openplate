@@ -20,6 +20,13 @@
     "at": "2026-09-14",
     "it": "{{date}}: nessun dato registrato"
   },
+  "00e3cc2145cb2155": {
+    "en": "Week of {{date}}",
+    "path": "common:trends.chart.bar.week",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Settimana del {{date}}"
+  },
   "00fee2290157e565": {
     "en": "Last {{days}} days",
     "path": "common:admin.columns.recentDays",
@@ -419,6 +426,13 @@
     "at": "2026-09-14",
     "it": "Apri prima la tua sessione di sincronizzazione. Quando ti unisci a uno studio viene scritta una chiave che esiste solo dopo aver effettuato l'accesso."
   },
+  "071d0fd7991dfdde": {
+    "en": "Worked out from protein, carbs and fat, so it can differ a little from your calorie total.",
+    "path": "common:trends.split.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Calcolato da proteine, carboidrati e grassi, quindi può differire leggermente dal tuo totale di calorie."
+  },
   "074835f411083e74": {
     "en": "Key generations held: {{generations}}. Every one of them is tried when a contribution is opened, so nothing sealed to an older key is lost.",
     "path": "common:research.console.identity.generations",
@@ -523,6 +537,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Copiato"
+  },
+  "0843bb8c4a6a226f": {
+    "en": "Outline: total carbs, the gap is fiber and sugar alcohols",
+    "path": "common:trends.legend.totalCarbs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Profilo: carboidrati totali, la differenza corrisponde a fibre e polioli"
   },
   "085c85217f6f446b": {
     "en": "ml",
@@ -1027,6 +1048,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "it": "Non è stato possibile creare un pasto. Riprova tra poco."
+  },
+  "0e3ae3f7e23bafb2": {
+    "en": "Calories per week, daily average",
+    "path": "common:trends.chart.titleWeekly.calories",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Calorie a settimana, media giornaliera"
   },
   "0e4c38e23743dabd": {
     "en": "{{value}} g",
@@ -2827,6 +2855,13 @@
     "at": "2026-09-14",
     "it": "Ospitalo in autonomia in un unico container"
   },
+  "258d0a5a6d864869": {
+    "en": "Where your calories come from",
+    "path": "common:trends.split.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Da dove provengono le tue calorie"
+  },
   "25a1007bd147e5a8": {
     "en": "System",
     "path": "common:preferences.theme.system",
@@ -3001,6 +3036,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Pasti salvati"
+  },
+  "292d196f1332f383": {
+    "en": "Protein",
+    "path": "common:trends.metric.protein",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Proteine"
   },
   "2932fa72ce76268b": {
     "en": "Photo estimates today: {{used}} of {{limit}}",
@@ -3190,6 +3232,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Questo link non è più valido"
+  },
+  "2be620d897320d69": {
+    "en": "Fat per week, daily average",
+    "path": "common:trends.chart.titleWeekly.fat",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Grassi a settimana, media giornaliera"
   },
   "2c03e844166a62d7": {
     "en": "e.g. 70",
@@ -5312,6 +5361,13 @@
     "at": "2026-09-14",
     "it": "Segnalazione {{id}}"
   },
+  "4e08ae5d8b0295a1": {
+    "en": "Meals",
+    "path": "common:trends.tabs.meals",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "Meals"
+  },
   "4e0c78b7e9714157": {
     "en": "Photo estimates",
     "path": "common:account.allowance.title",
@@ -5661,6 +5717,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Registra il tuo primo alimento"
+  },
+  "52c04878bb9a2309": {
+    "en": "{{date}}:{{atLeast}} {{value}} g fat{{estimate}}",
+    "path": "common:trends.chart.bar.fat",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "{{date}}:{{atLeast}} {{value}} g di grassi{{estimate}}"
   },
   "52c3fdad1738b7d9": {
     "en": "Favorites",
@@ -6992,6 +7055,13 @@
     "at": "2026-09-14",
     "it": "I tuoi alimenti"
   },
+  "63a808022bcbf060": {
+    "en": "Fiber per week, daily average",
+    "path": "common:trends.chart.titleWeekly.fiber",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Fibre a settimana, media giornaliera"
+  },
   "63b4e7828c9197cb": {
     "en": "Logged {{name}}.",
     "path": "common:usual.toast.logged_one",
@@ -7348,6 +7418,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Data"
+  },
+  "69d82775cefa79ac": {
+    "en": ", {{value}} g total carbs",
+    "path": "common:trends.chart.bar.totalCarbs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": ", {{value}} g di carboidrati totali"
   },
   "69db140424c38a91": {
     "en": "The day your account was created.",
@@ -7796,6 +7873,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Questa voce non aveva un nome."
+  },
+  "70d8a93507099c49": {
+    "en": "Goals",
+    "path": "common:trends.tabs.goals",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "Goals"
   },
   "70f42163f760a100": {
     "en": "Delete",
@@ -8952,6 +9036,13 @@
     "at": "2026-09-14",
     "it": "{{value}} g di carboidrati"
   },
+  "801efd2c5edcfb55": {
+    "en": "Fiber",
+    "path": "common:trends.metric.fiber",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Fibre"
+  },
   "80477d288d9c7d36": {
     "en": "Toggle Sidebar",
     "path": "common:ui.sidebar.toggle",
@@ -10009,6 +10100,20 @@
     "at": "2026-09-14",
     "it": "Entrambe modificano i valori di riferimento di diversi nutrienti. Scegli \"Nessuna delle due\" se vuoi azzerarli."
   },
+  "8d729c96ebcc528e": {
+    "en": "Average",
+    "path": "common:trends.split.average",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Media"
+  },
+  "8d90cd30fe667005": {
+    "en": "Net carbs per week, daily average",
+    "path": "common:trends.chart.titleWeekly.netCarbs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Carboidrati netti a settimana, media giornaliera"
+  },
   "8d978c92e4f93985": {
     "en": "Role",
     "path": "common:admin.columns.role",
@@ -10659,6 +10764,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Su iPhone, aggiungi prima openplate alla schermata iniziale."
+  },
+  "97b83e3d2490b3ea": {
+    "en": "Insights",
+    "path": "common:trends.title",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "Insights"
   },
   "97d179afb7d7a781": {
     "en": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working.",
@@ -11668,6 +11780,13 @@
     "at": "2026-09-14",
     "it": "{{duration}} oltre l'obiettivo di {{target}}"
   },
+  "a6319441594f663a": {
+    "en": ", below your goal",
+    "path": "common:trends.chart.bar.underGoal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": ", sotto il tuo obiettivo"
+  },
   "a669b7bc7d060474": {
     "en": "First food",
     "path": "common:awards.explorer.log.food.title",
@@ -11828,6 +11947,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Di solito il tuo digiuno inizia alle {{time}}."
+  },
+  "a8b5e2d88fd5c016": {
+    "en": "{{date}}: some macros are missing, so there is no split",
+    "path": "common:trends.split.partial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "{{date}}: mancano alcuni macronutrienti, quindi non c'è una ripartizione"
   },
   "a8b66390559d7507": {
     "en": "Licence",
@@ -12116,6 +12242,13 @@
     "at": "2026-09-14",
     "it": "Impossibile salvare il nome."
   },
+  "acf0e57180951315": {
+    "en": "Insights keeps a 13-week record of the days you hit your goals, gaps included.",
+    "path": "common:landing.goals.points.grid",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "La sezione dei progressi conserva uno storico di 13 settimane dei giorni in cui hai raggiunto i tuoi obiettivi, intervalli compresi."
+  },
   "acf31f30c054da76": {
     "en": "A fortnight",
     "path": "common:awards.streak.active.14.title",
@@ -12234,6 +12367,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Il tuo alimento"
+  },
+  "aeff9c8d533491f9": {
+    "en": "7-day average",
+    "path": "common:trends.legend.average",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Media a 7 giorni"
   },
   "af55bf05b1803621": {
     "en": "Signing you up…",
@@ -12934,6 +13074,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Impossibile impostare la password. Riprova con il link tra qualche istante."
+  },
+  "b8e92e21d0c10363": {
+    "en": "Daily fiber",
+    "path": "common:trends.chart.titleFiber",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Fibre giornaliere"
   },
   "b8ece044f416c4de": {
     "en": "The add-food screen on a phone, listing recent foods with their net carbs.",
@@ -13663,6 +13810,13 @@
     "at": "2026-09-14",
     "it": "Provalo ora, è completamente gratuito"
   },
+  "c4a3eb5be3c09120": {
+    "en": "Insights",
+    "path": "common:nav.trends",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "Insights"
+  },
   "c4a484ff7d8c95e4": {
     "en": "A month",
     "path": "common:awards.streak.active.30.title",
@@ -13928,6 +14082,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "È richiesta una chiave API."
+  },
+  "c9aa70137006e006": {
+    "en": "Fat",
+    "path": "common:trends.metric.fat",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Grassi"
   },
   "c9b80900b1e9fae7": {
     "en": "Grilled chicken",
@@ -14236,6 +14397,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Chiaro, scuro, oppure l'impostazione attuale del tuo dispositivo."
+  },
+  "cf5e6429c1b010ef": {
+    "en": "3 months",
+    "path": "common:trends.range.threeMonths",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "3 months"
   },
   "cf6ac929f2bdd2a2": {
     "en": "Tap the <share>Share</share> button in Safari, then choose <addToHome>Add to Home Screen</addToHome>.",
@@ -15546,6 +15714,13 @@
     "at": "2026-09-14",
     "it": "I grammi devono essere maggiori di 0"
   },
+  "e0f5ecd5888865bf": {
+    "en": "Daily fat",
+    "path": "common:trends.chart.titleFat",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Grassi giornalieri"
+  },
   "e103a986896e92e3": {
     "en": "Do this with them, in the room, or on a call. You need their account number, their key, and the fingerprint they read out.",
     "path": "common:sharing.grant.description",
@@ -15559,6 +15734,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Oggi si riparte da zero."
+  },
+  "e1475547977d3450": {
+    "en": "Insights · openplate",
+    "path": "common:meta.trends",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "Insights · openplate"
   },
   "e15fe20acba6dd82": {
     "en": "You are not contributing to a study. Joining one needs a fingerprint printed in its consent materials.",
@@ -15917,6 +16099,13 @@
     "at": "2026-09-14",
     "it": "Hai esaurito le stime tramite IA disponibili per oggi. Riprova domani."
   },
+  "e69854b966504236": {
+    "en": "Protein per week, daily average",
+    "path": "common:trends.chart.titleWeekly.protein",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Proteine a settimana, media giornaliera"
+  },
   "e6a61880bd588cd6": {
     "en": "the model ID your endpoint serves",
     "path": "common:settingsAi.model.customPlaceholderGeneric",
@@ -16063,6 +16252,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "la tua altezza e il tuo sesso"
+  },
+  "e899b57dbce3e293": {
+    "en": "{{date}}:{{atLeast}} {{value}} g fiber{{estimate}}",
+    "path": "common:trends.chart.bar.fiber",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "{{date}}:{{atLeast}} {{value}} g di fibre{{estimate}}"
   },
   "e89d7a31959cf7a8": {
     "en": "You're offline. Recent days are readable; new logs sync when you reconnect.",
@@ -16610,12 +16806,26 @@
     "at": "2026-09-14",
     "it": "Unità"
   },
+  "efca7219ee333e3d": {
+    "en": "{{date}}:{{atLeast}} {{value}} g protein{{estimate}}{{underGoal}}",
+    "path": "common:trends.chart.bar.protein",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "{{date}}:{{atLeast}} {{value}} g di proteine{{estimate}}{{underGoal}}"
+  },
   "efcbba708b453133": {
     "en": "Import a backup",
     "path": "common:settings.data.importHeading",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Importa un backup"
+  },
+  "efd19e206cc3b978": {
+    "en": "Daily protein",
+    "path": "common:trends.chart.titleProtein",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Proteine giornaliere"
   },
   "efd38a217b9792b6": {
     "en": "{{count}} days in a row, keep it going.",
@@ -17261,6 +17471,13 @@
     "at": "2026-09-14",
     "it": "Quando scansiona un piatto, il Suo dispositivo memorizza la foto in una cache sul dispositivo separata dai dati del Suo tracker. Ciò Le consente di visualizzare la foto su quella voce di registrazione dell'alimento. La cache è attiva per impostazione predefinita e si svuota automaticamente dopo {{days}} giorni. Può disattivare o svuotare questa cache in qualsiasi momento nella pagina del Suo Profilo. La foto non fa parte della sincronizzazione e non fa parte dei backup. Ogni scansione invia una copia della foto attraverso il nostro server al nostro fornitore AI, come descritto nella Sezione 4. La copia presente sul dispositivo ci perviene in un'altra sola situazione: se segnala una stima errata su quella voce. Deve prima confermarlo in una richiesta che spiega cosa viene inviato. La foto e i valori per tale voce raggiungono quindi il nostro server non cifrati. Un amministratore può visualizzarli, e noi li cancelliamo {{reportWindow}}."
   },
+  "f9c08654bb684bae": {
+    "en": "Nutrition",
+    "path": "common:trends.tabs.nutrition",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "Nutrition"
+  },
   "f9c58ac7d64537fc": {
     "en": "Suspended",
     "path": "common:admin.filter.suspended",
@@ -17429,6 +17646,13 @@
     "at": "2026-09-14",
     "it": "Fai una foto del piatto e i carboidrati vengono calcolati al posto tuo."
   },
+  "fc05d5135cbfe113": {
+    "en": "Overview",
+    "path": "common:trends.tabs.overview",
+    "model": "hand-written",
+    "at": "2026-09-19",
+    "it": "Overview"
+  },
   "fc0db4bc7a243548": {
     "en": "Edit",
     "path": "common:entry.action.edit",
@@ -17596,6 +17820,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "sconosciuto"
+  },
+  "fe444b3c9f738f5b": {
+    "en": "Week of {{date}}, daily average",
+    "path": "common:trends.chart.bar.weekAverage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-19",
+    "it": "Settimana del {{date}}, media giornaliera"
   },
   "fe45332734f14dc4": {
     "en": "AI plate identification is included with your account on this instance. You do not need to provide an API key. When you scan a plate, your browser sends the photo to our server. Our server forwards it to the AI provider we use, under our key. The photo is read once to identify the food. We do not store or log the photo, but it does pass through our server. The AI provider is a third party, and its photo handling is governed by our contract with it, not your own account. We pay for this service. Your account has a daily limit on scans.",

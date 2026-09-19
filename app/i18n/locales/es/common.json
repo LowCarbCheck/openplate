@@ -2629,14 +2629,31 @@
         "estimate": ", parcialmente estimado",
         "incomputable": "{{date}}: registrado, pero no se pudieron calcular las calorías",
         "netCarbs": "{{date}}:{{atLeast}} {{value}} g de carbohidratos netos{{estimate}}{{overGoal}}",
-        "overGoal": ", por encima de tu objetivo"
+        "overGoal": ", por encima de tu objetivo",
+        "protein": "{{date}}:{{atLeast}} {{value}} g de proteína{{estimate}}{{underGoal}}",
+        "fat": "{{date}}:{{atLeast}} {{value}} g de grasa{{estimate}}",
+        "fiber": "{{date}}:{{atLeast}} {{value}} g de fibra{{estimate}}",
+        "underGoal": ", por debajo de tu objetivo",
+        "totalCarbs": ", {{value}} g de carbohidratos totales",
+        "week": "Semana del {{date}}",
+        "weekAverage": "Semana del {{date}}, media diaria"
       },
       "goalTagPrefix": "Tu objetivo: ",
       "slotOnly": "Mostrando solo {{meal}}.",
       "sparseHint": "Unos días más y esto se convertirá en un gráfico.",
       "tapHint": "Toca un día para ver lo que registraste.",
       "titleCalories": "Calorías diarias",
-      "titleNetCarbs": "Carbohidratos netos diarios"
+      "titleNetCarbs": "Carbohidratos netos diarios",
+      "titleProtein": "Proteína diaria",
+      "titleFat": "Grasa diaria",
+      "titleFiber": "Fibra diaria",
+      "titleWeekly": {
+        "netCarbs": "Carbohidratos netos por semana, media diaria",
+        "calories": "Calorías por semana, media diaria",
+        "protein": "Proteína por semana, media diaria",
+        "fat": "Grasa por semana, media diaria",
+        "fiber": "Fibra por semana, media diaria"
+      }
     },
     "controls": {
       "metricGroup": "Métrica",
@@ -2695,12 +2712,17 @@
       "goal": "Tu objetivo",
       "incomplete": "Puede estar incompleto, la barra representa un mínimo",
       "noEntry": "Sin entradas",
-      "overGoal": "Por encima de tu objetivo"
+      "overGoal": "Por encima de tu objetivo",
+      "average": "Media de 7 días",
+      "totalCarbs": "Contorno: carbohidratos totales, el hueco corresponde a fibra y polialcoholes"
     },
     "loading": "Cargando tu progreso…",
     "metric": {
       "calories": "Calorías",
-      "netCarbs": "Carbohidratos netos"
+      "netCarbs": "Carbohidratos netos",
+      "protein": "Proteína",
+      "fat": "Grasa",
+      "fiber": "Fibra"
     },
     "range": {
       "month": "Mes",
@@ -2778,6 +2800,14 @@
       "meals": "Meals",
       "nutrition": "Nutrition",
       "overview": "Overview"
+    },
+    "split": {
+      "title": "De dónde proceden tus calorías",
+      "note": "Calculado a partir de proteínas, carbohidratos y grasas, por lo que puede diferir un poco de tu total de calorías.",
+      "average": "Media",
+      "share": "{{macro}} {{percent}}%",
+      "row": "{{date}}: {{ratio}}",
+      "partial": "{{date}}: faltan algunos macronutrientes, por lo que no hay desglose"
     }
   },
   "ui": {

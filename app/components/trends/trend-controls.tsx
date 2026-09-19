@@ -1,15 +1,14 @@
 /**
- * The trends chart controls: a metric toggle (net carbs ⇄ calories), a range
- * toggle (7 / 14 / 30 / 90 days) and a meal-slot filter (every meal, or one of the
- * four slots). The metric is client state, because both series come from the
- * same loader data and switching needs no refetch; the range and the slot are
- * URL search params, because each one re-runs the loader over different logs
- * and because a reload should land on the same view. The client metric state
- * survives those same-route navigations.
+ * The trends chart controls: a metric toggle (net carbs, calories, protein,
+ * fat, fiber), a range toggle (7 / 14 / 30 / 90 days) and a meal-slot filter
+ * (every meal, or one of the four slots). All three are URL search params
+ * (the metric since M239/03, when it left client state): a reload, a shared
+ * link or a browser check lands on the same view, and every link carries the
+ * other controls' values so one choice never silently resets another.
  */
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { ALL_MEALS } from '#app/lib/trend-chart';
+import { ALL_MEALS, DEFAULT_TREND_METRIC } from '#app/lib/trend-chart';
 import type { TrendMetric, TrendSlot } from '#app/lib/trend-chart';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
 import type { InsightsTab } from '#app/lib/insights-tabs';
@@ -23,10 +22,13 @@ const RANGE_OPTIONS: readonly { value: 7 | 14 | 30 | 90; labelKey: string }[] = 
   { value: 90, labelKey: 'trends.range.threeMonths' },
 ];
 
-/** The two metric toggle options and their label keys. */
+/** The metric toggle options and their label keys, in the order the control lists them. */
 const METRIC_OPTIONS: readonly { value: TrendMetric; labelKey: string }[] = [
   { value: 'net-carbs', labelKey: 'trends.metric.netCarbs' },
   { value: 'calories', labelKey: 'trends.metric.calories' },
+  { value: 'protein', labelKey: 'trends.metric.protein' },
+  { value: 'fat', labelKey: 'trends.metric.fat' },
+  { value: 'fiber', labelKey: 'trends.metric.fiber' },
 ];
 
 /**
@@ -40,81 +42,75 @@ const SLOT_OPTIONS: readonly { value: TrendSlot; labelKey: string }[] = [
   ...MEAL_TYPES.map((meal) => ({ value: meal, labelKey: MEAL_LABEL_KEYS[meal] })),
 ];
 
+/** Every URL dimension of the chart, the full state a control link must carry. */
+export interface TrendSelection {
+  range: number;
+  slot: TrendSlot;
+  tab: InsightsTab;
+  metric: TrendMetric;
+}
+
 /**
  * The href for one control, carrying the OTHER controls' current values with
- * it. Switching the range must not silently drop the chosen slot or the
- * active tab, and vice versa. `ALL_MEALS` is written as the absence of the
- * param rather than as `slot=all`, so the plain `/trends` URL stays the
- * whole-day view; `tab` is always spelled out, since these controls only ever
- * render on the Nutrition or Meals tab and dropping it would silently bounce
- * the reader back to Overview.
+ * it. Switching the range must not silently drop the chosen slot, metric or
+ * active tab, and vice versa. `ALL_MEALS` and the default metric are written
+ * as the absence of their param, so the plain URL stays the plain view; `tab`
+ * is always spelled out, since these controls only ever render on the
+ * Nutrition or Meals tab and dropping it would silently bounce the reader back
+ * to Overview.
  *
- * @param selection.range - the range the link should land on.
- * @param selection.slot - the slot the link should land on.
- * @param selection.tab - the tab the link should stay on.
+ * @param selection - the full state the link should land on.
  * @returns a same-route query string.
  */
-function controlHref({ range, slot, tab }: { range: number; slot: TrendSlot; tab: InsightsTab }): string {
+export function controlHref({ range, slot, tab, metric }: TrendSelection): string {
   const params = new URLSearchParams({ range: `${range}`, tab });
   if (slot !== ALL_MEALS) params.set('slot', slot);
+  if (metric !== DEFAULT_TREND_METRIC) params.set('metric', metric);
   return `?${params.toString()}`;
 }
 
 /**
- * @param metric - the active metric.
- * @param onMetricChange - selects a metric (client state, no navigation).
- * @param range - the active day range (drives active styling on the range links).
- * @param slot - the active meal slot, or `ALL_MEALS`.
- * @param tab - the tab these controls are rendered under (Nutrition or Meals), carried into every link.
+ * @param selection.metric - the active metric.
+ * @param selection.range - the active day range (drives active styling on the range links).
+ * @param selection.slot - the active meal slot, or `ALL_MEALS`.
+ * @param selection.tab - the tab these controls are rendered under (Nutrition or Meals), carried into every link.
  */
-export function TrendControls({
-  metric,
-  onMetricChange,
-  range,
-  slot,
-  tab,
-}: {
-  metric: TrendMetric;
-  onMetricChange: (metric: TrendMetric) => void;
-  range: number;
-  slot: TrendSlot;
-  tab: InsightsTab;
-}) {
+export function TrendControls({ metric, range, slot, tab }: TrendSelection) {
   const { t } = useTranslation();
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <fieldset className="flex min-w-0 gap-1">
-          <legend className="sr-only">{t('trends.controls.metricGroup')}</legend>
-          {METRIC_OPTIONS.map((option) => (
-            <Button
-              key={option.value}
-              type="button"
-              size="sm"
-              variant={metric === option.value ? 'default' : 'outline'}
-              aria-pressed={metric === option.value}
-              onClick={() => onMetricChange(option.value)}
+      {/* Its own wrapping row: five metrics do not fit a phone beside the
+          range group, and a control that scrolls sideways is the one thing
+          this layout budget forbids. */}
+      <fieldset data-slot="trend-metric-controls" className="flex min-w-0 flex-wrap gap-1">
+        <legend className="sr-only">{t('trends.controls.metricGroup')}</legend>
+        {METRIC_OPTIONS.map((option) => (
+          <Button key={option.value} asChild size="sm" variant={metric === option.value ? 'default' : 'outline'}>
+            <Link
+              to={controlHref({ range, slot, tab, metric: option.value })}
+              preventScrollReset
+              aria-current={metric === option.value ? 'true' : undefined}
             >
               {t(option.labelKey)}
-            </Button>
-          ))}
-        </fieldset>
-        <fieldset className="flex min-w-0 gap-1">
-          <legend className="sr-only">{t('trends.controls.rangeGroup')}</legend>
-          {RANGE_OPTIONS.map((option) => (
-            <Button key={option.value} asChild size="sm" variant={range === option.value ? 'default' : 'outline'}>
-              <Link
-                to={controlHref({ range: option.value, slot, tab })}
-                preventScrollReset
-                aria-current={range === option.value ? 'true' : undefined}
-              >
-                {t(option.labelKey)}
-              </Link>
-            </Button>
-          ))}
-        </fieldset>
-      </div>
+            </Link>
+          </Button>
+        ))}
+      </fieldset>
+      <fieldset className="flex min-w-0 flex-wrap gap-1">
+        <legend className="sr-only">{t('trends.controls.rangeGroup')}</legend>
+        {RANGE_OPTIONS.map((option) => (
+          <Button key={option.value} asChild size="sm" variant={range === option.value ? 'default' : 'outline'}>
+            <Link
+              to={controlHref({ range: option.value, slot, tab, metric })}
+              preventScrollReset
+              aria-current={range === option.value ? 'true' : undefined}
+            >
+              {t(option.labelKey)}
+            </Link>
+          </Button>
+        ))}
+      </fieldset>
       {/* Its own row, and wrapping: five options do not fit a phone's width
           beside the two groups above, and a control that scrolls sideways is
           the one thing this layout budget forbids. */}
@@ -123,7 +119,7 @@ export function TrendControls({
         {SLOT_OPTIONS.map((option) => (
           <Button key={option.value} asChild size="sm" variant={slot === option.value ? 'default' : 'outline'}>
             <Link
-              to={controlHref({ range, slot: option.value, tab })}
+              to={controlHref({ range, slot: option.value, tab, metric })}
               preventScrollReset
               aria-current={slot === option.value ? 'true' : undefined}
             >

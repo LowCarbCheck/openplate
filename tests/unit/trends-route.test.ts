@@ -13,7 +13,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { pickDefaultRange, _parseTab } from '../../app/routes/trends';
+import { pickDefaultRange, _parseMetric, _parseTab } from '../../app/routes/trends';
 
 describe('pickDefaultRange', () => {
   it('defaults to the full 14-day window when there are no logs yet', () => {
@@ -51,5 +51,18 @@ describe('_parseTab', () => {
 
   it('falls back to overview when the param is absent', () => {
     assert.strictEqual(_parseTab(null), 'overview');
+  });
+});
+
+describe('_parseMetric (M239/03)', () => {
+  it('reads each of the five metrics', () => {
+    for (const metric of ['net-carbs', 'calories', 'protein', 'fat', 'fiber'] as const) {
+      assert.strictEqual(_parseMetric(metric), metric);
+    }
+  });
+
+  it('falls back to net carbs for an invalid or absent value', () => {
+    assert.strictEqual(_parseMetric('sugar'), 'net-carbs');
+    assert.strictEqual(_parseMetric(null), 'net-carbs');
   });
 });

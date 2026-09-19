@@ -2629,14 +2629,31 @@
         "estimate": ", partly estimated",
         "incomputable": "{{date}}: logged, but calories couldn't be worked out",
         "netCarbs": "{{date}}:{{atLeast}} {{value}} g net carbs{{estimate}}{{overGoal}}",
-        "overGoal": ", over your goal"
+        "overGoal": ", over your goal",
+        "protein": "{{date}}:{{atLeast}} {{value}} g protein{{estimate}}{{underGoal}}",
+        "fat": "{{date}}:{{atLeast}} {{value}} g fat{{estimate}}",
+        "fiber": "{{date}}:{{atLeast}} {{value}} g fiber{{estimate}}",
+        "underGoal": ", below your goal",
+        "totalCarbs": ", {{value}} g total carbs",
+        "week": "Week of {{date}}",
+        "weekAverage": "Week of {{date}}, daily average"
       },
       "goalTagPrefix": "Your goal: ",
       "slotOnly": "Showing {{meal}} only.",
       "sparseHint": "A few more days and this becomes a chart.",
       "tapHint": "Tap a day to see what you logged.",
       "titleCalories": "Daily calories",
-      "titleNetCarbs": "Daily net carbs"
+      "titleNetCarbs": "Daily net carbs",
+      "titleProtein": "Daily protein",
+      "titleFat": "Daily fat",
+      "titleFiber": "Daily fiber",
+      "titleWeekly": {
+        "netCarbs": "Net carbs per week, daily average",
+        "calories": "Calories per week, daily average",
+        "protein": "Protein per week, daily average",
+        "fat": "Fat per week, daily average",
+        "fiber": "Fiber per week, daily average"
+      }
     },
     "controls": {
       "metricGroup": "Metric",
@@ -2695,12 +2712,17 @@
       "goal": "Your goal",
       "incomplete": "Might be incomplete, the bar is a minimum",
       "noEntry": "No entry",
-      "overGoal": "Over your goal"
+      "overGoal": "Over your goal",
+      "average": "7-day average",
+      "totalCarbs": "Outline: total carbs, the gap is fiber and sugar alcohols"
     },
     "loading": "Loading your progress…",
     "metric": {
       "calories": "Calories",
-      "netCarbs": "Net carbs"
+      "netCarbs": "Net carbs",
+      "protein": "Protein",
+      "fat": "Fat",
+      "fiber": "Fiber"
     },
     "range": {
       "month": "Month",
@@ -2778,6 +2800,14 @@
       "meals": "Meals",
       "nutrition": "Nutrition",
       "overview": "Overview"
+    },
+    "split": {
+      "title": "Where your calories come from",
+      "note": "Worked out from protein, carbs and fat, so it can differ a little from your calorie total.",
+      "average": "Average",
+      "share": "{{macro}} {{percent}}%",
+      "row": "{{date}}: {{ratio}}",
+      "partial": "{{date}}: some macros are missing, so there is no split"
     }
   },
   "ui": {

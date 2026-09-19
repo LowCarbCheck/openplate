@@ -104,11 +104,13 @@ const catalogSchema = z.object({
   }),
   trends: z.object({
     slot: z.object({ all: z.string() }),
-    range: z.object({ threeMonths: z.string() }),
+    range: z.object({ threeMonths: z.string(), month: z.string() }),
+    metric: z.object({ protein: z.string(), fat: z.string() }),
     streak: z.object({ active_one: z.string(), empty: z.string() }),
     tabs: z.object({ overview: z.string(), nutrition: z.string(), meals: z.string(), goals: z.string() }),
     grid: z.object({ titleActivity: z.string() }),
   }),
+  goals: z.object({ save: z.string() }),
   awards: z.object({
     title: z.string(),
     note: z.string(),

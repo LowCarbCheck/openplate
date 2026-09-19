@@ -2629,14 +2629,31 @@
         "estimate": ", teilweise geschätzt",
         "incomputable": "{{date}}: eingetragen, aber die Kalorien ließen sich nicht ermitteln",
         "netCarbs": "{{date}}:{{atLeast}} {{value}} g Netto-KH{{estimate}}{{overGoal}}",
-        "overGoal": ", über deinem Ziel"
+        "overGoal": ", über deinem Ziel",
+        "protein": "{{date}}:{{atLeast}} {{value}} g Protein{{estimate}}{{underGoal}}",
+        "fat": "{{date}}:{{atLeast}} {{value}} g Fett{{estimate}}",
+        "fiber": "{{date}}:{{atLeast}} {{value}} g Ballaststoffe{{estimate}}",
+        "underGoal": ", unter deinem Ziel",
+        "totalCarbs": ", {{value}} g Kohlenhydrate gesamt",
+        "week": "Woche vom {{date}}",
+        "weekAverage": "Woche vom {{date}}, Tagesdurchschnitt"
       },
       "goalTagPrefix": "Dein Ziel: ",
       "slotOnly": "Nur {{meal}} wird angezeigt.",
       "sparseHint": "Noch ein paar Tage, dann wird daraus ein Diagramm.",
       "tapHint": "Tipp auf einen Tag, um zu sehen, was du eingetragen hast.",
       "titleCalories": "Kalorien pro Tag",
-      "titleNetCarbs": "Netto-KH pro Tag"
+      "titleNetCarbs": "Netto-KH pro Tag",
+      "titleProtein": "Tägliches Protein",
+      "titleFat": "Tägliches Fett",
+      "titleFiber": "Tägliche Ballaststoffe",
+      "titleWeekly": {
+        "netCarbs": "Netto-Kohlenhydrate pro Woche, Tagesdurchschnitt",
+        "calories": "Kalorien pro Woche, Tagesdurchschnitt",
+        "protein": "Protein pro Woche, Tagesdurchschnitt",
+        "fat": "Fett pro Woche, Tagesdurchschnitt",
+        "fiber": "Ballaststoffe pro Woche, Tagesdurchschnitt"
+      }
     },
     "controls": {
       "metricGroup": "Kennzahl",
@@ -2695,12 +2712,17 @@
       "goal": "Dein Ziel",
       "incomplete": "Möglicherweise unvollständig, der Balken stellt das Minimum dar",
       "noEntry": "Kein Eintrag",
-      "overGoal": "Über dem Ziel"
+      "overGoal": "Über dem Ziel",
+      "average": "7-Tage-Durchschnitt",
+      "totalCarbs": "Umriss: Gesamtkohlenhydrate, die Lücke sind Ballaststoffe und Zuckeralkohole"
     },
     "loading": "Fortschritt wird geladen…",
     "metric": {
       "calories": "Kalorien",
-      "netCarbs": "Netto-KH"
+      "netCarbs": "Netto-KH",
+      "protein": "Protein",
+      "fat": "Fett",
+      "fiber": "Ballaststoffe"
     },
     "range": {
       "month": "Monat",
@@ -2778,6 +2800,14 @@
       "meals": "Meals",
       "nutrition": "Nutrition",
       "overview": "Overview"
+    },
+    "split": {
+      "title": "Woher deine Kalorien stammen",
+      "note": "Aus Protein, Kohlenhydraten und Fett berechnet, kann daher leicht von deiner Gesamtkalorienzahl abweichen.",
+      "average": "Durchschnitt",
+      "share": "{{macro}} {{percent}}%",
+      "row": "{{date}}: {{ratio}}",
+      "partial": "{{date}}: Einige Makronährstoffe fehlen, daher gibt es keine Aufteilung"
     }
   },
   "ui": {

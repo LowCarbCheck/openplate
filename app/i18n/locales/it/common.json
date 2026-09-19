@@ -2629,14 +2629,31 @@
         "estimate": ", in parte stimato",
         "incomputable": "{{date}}: registrato, ma non è stato possibile calcolare le calorie",
         "netCarbs": "{{date}}:{{atLeast}} {{value}} g di carboidrati netti{{estimate}}{{overGoal}}",
-        "overGoal": ", oltre il tuo obiettivo"
+        "overGoal": ", oltre il tuo obiettivo",
+        "protein": "{{date}}:{{atLeast}} {{value}} g di proteine{{estimate}}{{underGoal}}",
+        "fat": "{{date}}:{{atLeast}} {{value}} g di grassi{{estimate}}",
+        "fiber": "{{date}}:{{atLeast}} {{value}} g di fibre{{estimate}}",
+        "underGoal": ", sotto il tuo obiettivo",
+        "totalCarbs": ", {{value}} g di carboidrati totali",
+        "week": "Settimana del {{date}}",
+        "weekAverage": "Settimana del {{date}}, media giornaliera"
       },
       "goalTagPrefix": "Il tuo obiettivo: ",
       "slotOnly": "Mostra solo {{meal}}.",
       "sparseHint": "Ancora qualche giorno e questo diventerà un grafico.",
       "tapHint": "Tocca un giorno per vedere cosa hai registrato.",
       "titleCalories": "Calorie giornaliere",
-      "titleNetCarbs": "Carboidrati netti giornalieri"
+      "titleNetCarbs": "Carboidrati netti giornalieri",
+      "titleProtein": "Proteine giornaliere",
+      "titleFat": "Grassi giornalieri",
+      "titleFiber": "Fibre giornaliere",
+      "titleWeekly": {
+        "netCarbs": "Carboidrati netti a settimana, media giornaliera",
+        "calories": "Calorie a settimana, media giornaliera",
+        "protein": "Proteine a settimana, media giornaliera",
+        "fat": "Grassi a settimana, media giornaliera",
+        "fiber": "Fibre a settimana, media giornaliera"
+      }
     },
     "controls": {
       "metricGroup": "Metrica",
@@ -2695,12 +2712,17 @@
       "goal": "Il tuo obiettivo",
       "incomplete": "Potrebbe essere incompleto, la barra rappresenta un minimo",
       "noEntry": "Nessuna voce",
-      "overGoal": "Sopra il tuo obiettivo"
+      "overGoal": "Sopra il tuo obiettivo",
+      "average": "Media a 7 giorni",
+      "totalCarbs": "Profilo: carboidrati totali, la differenza corrisponde a fibre e polioli"
     },
     "loading": "Caricamento dei tuoi progressi…",
     "metric": {
       "calories": "Calorie",
-      "netCarbs": "Carboidrati netti"
+      "netCarbs": "Carboidrati netti",
+      "protein": "Proteine",
+      "fat": "Grassi",
+      "fiber": "Fibre"
     },
     "range": {
       "month": "Mese",
@@ -2778,6 +2800,14 @@
       "meals": "Meals",
       "nutrition": "Nutrition",
       "overview": "Overview"
+    },
+    "split": {
+      "title": "Da dove provengono le tue calorie",
+      "note": "Calcolato da proteine, carboidrati e grassi, quindi può differire leggermente dal tuo totale di calorie.",
+      "average": "Media",
+      "share": "{{macro}} {{percent}}%",
+      "row": "{{date}}: {{ratio}}",
+      "partial": "{{date}}: mancano alcuni macronutrienti, quindi non c'è una ripartizione"
     }
   },
   "ui": {

@@ -13,9 +13,10 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
+import { useTranslation } from 'react-i18next';
 
 import { withI18n } from './trends-i18n-harness';
-import { TrendChart } from '../../app/components/trends/trend-chart';
+import { averageLinePath, chartTitleKey, TrendChart } from '../../app/components/trends/trend-chart';
 import type { BarGeometry, TrendChartModel, TrendMetric } from '../../app/lib/trend-chart';
 
 function bar(overrides: Partial<BarGeometry> = {}): BarGeometry {
@@ -26,7 +27,10 @@ function bar(overrides: Partial<BarGeometry> = {}): BarGeometry {
     hasEstimate: false,
     fill: 'solid',
     isOverGoal: false,
+    isUnderGoal: false,
     heightFraction: 1,
+    outlineFraction: null,
+    totalCarbs: null,
     ...overrides,
   };
 }
@@ -135,5 +139,152 @@ describe('TrendChart — the goal line is labelled inline', () => {
     const html = renderChart({ bars: [bar()], domainMax: 100, goalFraction: null }, { goalValue: null });
 
     assert.ok(!html.includes('Your goal'));
+  });
+});
+
+/**
+ * M239/03: the new metrics, the week wording, the carbs outline and the
+ * average line. Every claim is checked beside the case that must NOT show it.
+ */
+describe('TrendChart, a protein day under the floor is flagged without a warning hue (M239/03)', () => {
+  it('keeps an under-floor protein bar in the protein hue, and says so in words', () => {
+    const html = renderChart(
+      { bars: [bar({ value: 60, heightFraction: 0.5, isUnderGoal: true })], domainMax: 120, goalFraction: 0.8 },
+      { metric: 'protein', goalValue: 100 },
+    );
+
+    assert.ok(html.includes('text-macro-protein'));
+    assert.ok(!html.includes('text-accent-amber'), 'missing a floor is not a warning');
+    assert.ok(html.includes('data-goal="under"'));
+    assert.match(html, /aria-label="2026-07-13: 60 g protein, below your goal"/);
+  });
+
+  it('leaves a protein day that reached the floor unflagged', () => {
+    const html = renderChart(
+      { bars: [bar({ value: 110, heightFraction: 0.9 })], domainMax: 120, goalFraction: 0.8 },
+      { metric: 'protein', goalValue: 100 },
+    );
+
+    assert.ok(html.includes('data-goal="none"'));
+    assert.ok(!html.includes('below your goal'));
+  });
+
+  it('reads fat and fiber bars in grams with their own names and hues', () => {
+    const fat = renderChart({ bars: [bar({ value: 42 })], domainMax: 50, goalFraction: null }, { metric: 'fat' });
+    const fiber = renderChart({ bars: [bar({ value: 12 })], domainMax: 20, goalFraction: null }, { metric: 'fiber' });
+
+    assert.match(fat, /aria-label="2026-07-13: 42 g fat"/);
+    assert.ok(fat.includes('text-macro-fat'));
+    assert.match(fiber, /aria-label="2026-07-13: 12 g fiber"/);
+    assert.ok(fiber.includes('text-macro-fiber'));
+  });
+});
+
+describe('TrendChart, a weekly bar says it is a week average (M239/03)', () => {
+  /** Renders one 40 g bar dated on a Monday, daily or weekly. */
+  function renderWeekly(isWeekly: boolean, overrides: Partial<BarGeometry> = {}): string {
+    return renderToStaticMarkup(
+      withI18n(
+        createElement(
+          MemoryRouter,
+          { initialEntries: ['/trends'] },
+          createElement(TrendChart, {
+            model: { bars: [bar({ value: 40, ...overrides })], domainMax: 50, goalFraction: null },
+            metric: 'net-carbs',
+            goalValue: null,
+            isWeekly,
+          }),
+        ),
+      ),
+    );
+  }
+
+  it('names a valued weekly bar as the week and its daily average', () => {
+    assert.match(renderWeekly(true), /aria-label="Week of 2026-07-13, daily average: 40 g net carbs"/);
+  });
+
+  it('names the same bar as one day when the bars are daily', () => {
+    assert.match(renderWeekly(false), /aria-label="2026-07-13: 40 g net carbs"/);
+  });
+
+  it('names an unlogged week as a week, without calling nothing an average', () => {
+    const html = renderWeekly(true, { fill: 'empty', value: null, hasLogs: false });
+
+    assert.match(html, /aria-label="Week of 2026-07-13: nothing logged"/);
+  });
+});
+
+describe('TrendChart, the total-carbs outline (M239/03)', () => {
+  it('draws the outline above a net-carbs bar and names total carbs', () => {
+    const html = renderChart({
+      bars: [bar({ value: 20, heightFraction: 0.4, outlineFraction: 0.6, totalCarbs: 30 })],
+      domainMax: 50,
+      goalFraction: null,
+    });
+
+    assert.ok(html.includes('data-slot="trend-carbs-outline"'));
+    assert.match(html, /aria-label="2026-07-13: 20 g net carbs, 30 g total carbs"/);
+  });
+
+  it('draws no outline when total carbs equal net carbs, since there is no gap to show', () => {
+    const html = renderChart({
+      bars: [bar({ value: 20, heightFraction: 0.4, outlineFraction: 0.4, totalCarbs: 20 })],
+      domainMax: 50,
+      goalFraction: null,
+    });
+
+    assert.ok(!html.includes('trend-carbs-outline'));
+    assert.ok(!html.includes('total carbs'));
+  });
+});
+
+describe('TrendChart, the 7-day average line (M239/03)', () => {
+  it('draws the line when fractions are given, and breaks it at a gap', () => {
+    const html = renderToStaticMarkup(
+      withI18n(
+        createElement(
+          MemoryRouter,
+          { initialEntries: ['/trends'] },
+          createElement(TrendChart, {
+            model: { bars: [bar(), bar({ date: '2026-07-14' })], domainMax: 100, goalFraction: null },
+            metric: 'net-carbs',
+            goalValue: null,
+            averageFractions: [0.5, 0.25],
+          }),
+        ),
+      ),
+    );
+
+    assert.ok(html.includes('data-slot="trend-average-line"'));
+    assert.strictEqual(averageLinePath([0.5, null, 0.25, 0.75]), 'M 6 50 M 30 75 L 42 25');
+  });
+
+  it('draws no line without fractions', () => {
+    const html = renderChart({ bars: [bar()], domainMax: 100, goalFraction: null });
+
+    assert.ok(!html.includes('trend-average-line'));
+  });
+});
+
+/** One catalog key rendered through the harness, so the English is the shipped string. */
+function TitleProbe({ titleKey }: { titleKey: string }) {
+  const { t } = useTranslation();
+  return t(titleKey);
+}
+
+/** The English string at a catalog key; a missing key would render the key itself. */
+function englishAt(key: string): string {
+  return renderToStaticMarkup(withI18n(createElement(TitleProbe, { titleKey: key })));
+}
+
+describe('chartTitleKey, no "Daily" over weekly bars (M239/03)', () => {
+  it('says Daily over daily bars and per week over weekly ones, for every metric', () => {
+    for (const metric of ['net-carbs', 'calories', 'protein', 'fat', 'fiber'] as const) {
+      const daily = englishAt(chartTitleKey({ metric, isWeekly: false }));
+      const weekly = englishAt(chartTitleKey({ metric, isWeekly: true }));
+      assert.match(daily, /^Daily /, metric);
+      assert.ok(!weekly.startsWith('Daily'), `${metric}: ${weekly}`);
+      assert.match(weekly, /per week/, metric);
+    }
   });
 });

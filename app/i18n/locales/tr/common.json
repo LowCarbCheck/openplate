@@ -2629,14 +2629,31 @@
         "estimate": ", kısmen tahmini",
         "incomputable": "{{date}}: kaydedildi, ancak kalori hesaplanamadı",
         "netCarbs": "{{date}}:{{atLeast}} {{value}} g net karbonhidrat{{estimate}}{{overGoal}}",
-        "overGoal": ", hedefini aşıyor"
+        "overGoal": ", hedefini aşıyor",
+        "protein": "{{date}}:{{atLeast}} {{value}} g protein{{estimate}}{{underGoal}}",
+        "fat": "{{date}}:{{atLeast}} {{value}} g yağ{{estimate}}",
+        "fiber": "{{date}}:{{atLeast}} {{value}} g lif{{estimate}}",
+        "underGoal": ", hedefin altında",
+        "totalCarbs": ", {{value}} g toplam karbonhidrat",
+        "week": "{{date}} haftası",
+        "weekAverage": "{{date}} haftası, günlük ortalama"
       },
       "goalTagPrefix": "Hedefin: ",
       "slotOnly": "Yalnızca {{meal}} gösteriliyor.",
       "sparseHint": "Birkaç gün daha geçtiğinde bu bir grafiğe dönüşecek.",
       "tapHint": "Neler kaydettiğini görmek için bir güne dokun.",
       "titleCalories": "Günlük kalori",
-      "titleNetCarbs": "Günlük net karbonhidrat"
+      "titleNetCarbs": "Günlük net karbonhidrat",
+      "titleProtein": "Günlük protein",
+      "titleFat": "Günlük yağ",
+      "titleFiber": "Günlük lif",
+      "titleWeekly": {
+        "netCarbs": "Haftalık net karbonhidrat, günlük ortalama",
+        "calories": "Haftalık kalori, günlük ortalama",
+        "protein": "Haftalık protein, günlük ortalama",
+        "fat": "Haftalık yağ, günlük ortalama",
+        "fiber": "Haftalık lif, günlük ortalama"
+      }
     },
     "controls": {
       "metricGroup": "Metrik",
@@ -2695,12 +2712,17 @@
       "goal": "Hedefin",
       "incomplete": "Eksik olabilir, çubuk bir alt sınırdır",
       "noEntry": "Girdi yok",
-      "overGoal": "Hedefinin üzerinde"
+      "overGoal": "Hedefinin üzerinde",
+      "average": "7 günlük ortalama",
+      "totalCarbs": "Dış hat: toplam karbonhidrat, aradaki fark lif ve şeker alkolleridir"
     },
     "loading": "İlerlemen yükleniyor…",
     "metric": {
       "calories": "Kalori",
-      "netCarbs": "Net karbonhidrat"
+      "netCarbs": "Net karbonhidrat",
+      "protein": "Protein",
+      "fat": "Yağ",
+      "fiber": "Lif"
     },
     "range": {
       "month": "Ay",
@@ -2778,6 +2800,14 @@
       "meals": "Meals",
       "nutrition": "Nutrition",
       "overview": "Overview"
+    },
+    "split": {
+      "title": "Kalorilerinin kaynağı",
+      "note": "Protein, karbonhidrat ve yağdan hesaplanır, bu yüzden toplam kalori miktarından biraz farklı olabilir.",
+      "average": "Ortalama",
+      "share": "{{macro}} {{percent}}%",
+      "row": "{{date}}: {{ratio}}",
+      "partial": "{{date}}: bazı makrolar eksik, bu yüzden dağılım yok"
     }
   },
   "ui": {

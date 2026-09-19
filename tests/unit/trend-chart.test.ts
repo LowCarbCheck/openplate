@@ -7,6 +7,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildTrendChart } from '../../app/lib/trend-chart';
+import { goalDirectionFor, goalValueFor, resolveBarFill, selectMetricValue } from '../../app/lib/trend-chart';
+import { bucketByWeek } from '../../app/lib/trend-buckets';
 import type { TrendDay } from '../../app/lib/trend-chart';
 import { summarizeDay } from '../../app/models/food-log-summary';
 import type { DaySummary, FoodLogMacroSnapshot } from '../../app/models/food-log-summary';
@@ -323,5 +325,197 @@ describe('buildTrendChart, a meal slot has no goal (M227/02)', () => {
 
     assert.strictEqual(bars[0].value, 12);
     assert.strictEqual(bars[0].fill, 'solid');
+  });
+});
+
+/**
+ * M239/03: protein, fat and fiber, and the ONE honesty rule they share with net
+ * carbs. Each claim sits beside a control on the same fixture, so a version
+ * that got the rule wrong in one direction fails here.
+ */
+describe('buildTrendChart, every gram metric follows the one honesty rule (M239/03)', () => {
+  const gramMetrics = ['net-carbs', 'protein', 'fat', 'fiber'] as const;
+
+  it('plots each macro off its own field of the day summary', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 25, protein: 40, fat: 20, fiber: 5 }) });
+    const valueOf = (metric: (typeof gramMetrics)[number]) =>
+      buildTrendChart({ days: [day], metric, goalValue: null }).bars[0].value;
+
+    assert.deepStrictEqual(gramMetrics.map(valueOf), [25, 40, 20, 5]);
+  });
+
+  it('draws a day with unknown macros as a floor for every gram metric, and a known day as solid', () => {
+    const partial = loggedDay('2026-07-13', { summary: makeSummary({ hasUnknowns: true }) });
+    const known = loggedDay('2026-07-14', { summary: makeSummary({ hasUnknowns: false }) });
+
+    for (const metric of gramMetrics) {
+      const { bars } = buildTrendChart({ days: [partial, known], metric, goalValue: null });
+      assert.strictEqual(bars[0].fill, 'incomplete', `${metric}: the partial day is a floor`);
+      assert.strictEqual(bars[1].fill, 'solid', `${metric}: the known day is solid`);
+    }
+  });
+
+  it('keeps an AI-estimated gram day solid, as net carbs always drew it, and hedges it instead', () => {
+    const estimated = loggedDay('2026-07-13', { summary: makeSummary({ hasEstimates: true }), estimateShare: 1 });
+
+    for (const metric of gramMetrics) {
+      const [bar] = buildTrendChart({ days: [estimated], metric, goalValue: null }).bars;
+      assert.strictEqual(bar.fill, 'solid', `${metric}: an estimate does not lighten the bar`);
+      assert.strictEqual(bar.hasEstimate, true, `${metric}: the estimate is carried as the hedge`);
+    }
+  });
+
+  it('draws an unlogged day as an empty slot for every gram metric', () => {
+    for (const metric of gramMetrics) {
+      const [bar] = buildTrendChart({ days: [emptyDay('2026-07-13')], metric, goalValue: null }).bars;
+      assert.strictEqual(bar.fill, 'empty', metric);
+      assert.strictEqual(bar.value, null, metric);
+    }
+  });
+});
+
+describe('resolveBarFill, the shared rule itself (M239/03)', () => {
+  it('lets a floor win over a derived value, and a derived value over solid', () => {
+    assert.strictEqual(resolveBarFill({ isFloor: true, isDerived: true }), 'incomplete');
+    assert.strictEqual(resolveBarFill({ isFloor: false, isDerived: true }), 'derived');
+    assert.strictEqual(resolveBarFill({ isFloor: false, isDerived: false }), 'solid');
+  });
+});
+
+describe('buildTrendChart, goalDirection per metric (M239/03)', () => {
+  const FLOOR = 100;
+
+  it('names net carbs and calories as ceilings, protein as a floor, fat and fiber as goalless', () => {
+    assert.strictEqual(goalDirectionFor('net-carbs'), 'max');
+    assert.strictEqual(goalDirectionFor('calories'), 'max');
+    assert.strictEqual(goalDirectionFor('protein'), 'min');
+    assert.strictEqual(goalDirectionFor('fat'), null);
+    assert.strictEqual(goalDirectionFor('fiber'), null);
+  });
+
+  it('flags a protein day below the floor, and not a day above it', () => {
+    const below = loggedDay('2026-07-13', { summary: makeSummary({ protein: 60 }) });
+    const above = loggedDay('2026-07-14', { summary: makeSummary({ protein: 130 }) });
+    const { bars } = buildTrendChart({ days: [below, above], metric: 'protein', goalValue: FLOOR });
+
+    assert.strictEqual(bars[0].isUnderGoal, true);
+    assert.strictEqual(bars[1].isUnderGoal, false);
+    // A floor is never "over": protein above the goal is the win.
+    assert.strictEqual(bars[1].isOverGoal, false);
+  });
+
+  it('flags net carbs the other way round on the same two numbers', () => {
+    const low = loggedDay('2026-07-13', { summary: makeSummary({ netCarbs: 60 }) });
+    const high = loggedDay('2026-07-14', { summary: makeSummary({ netCarbs: 130 }) });
+    const { bars } = buildTrendChart({ days: [low, high], metric: 'net-carbs', goalValue: FLOOR });
+
+    assert.strictEqual(bars[0].isOverGoal, false);
+    assert.strictEqual(bars[1].isOverGoal, true);
+    assert.strictEqual(bars[0].isUnderGoal, false);
+  });
+
+  it('reads protein at the floor as met, by the diary rounding', () => {
+    const atFloor = loggedDay('2026-07-13', { summary: makeSummary({ protein: 99.6 }) });
+
+    assert.strictEqual(buildTrendChart({ days: [atFloor], metric: 'protein', goalValue: FLOOR }).bars[0].isUnderGoal, false);
+  });
+
+  it('never flags a protein floor bar as under, since the real value may have reached the goal', () => {
+    const partialLow = loggedDay('2026-07-13', { summary: makeSummary({ protein: 60, hasUnknowns: true }) });
+    const knownLow = loggedDay('2026-07-14', { summary: makeSummary({ protein: 60 }) });
+    const { bars } = buildTrendChart({ days: [partialLow, knownLow], metric: 'protein', goalValue: FLOOR });
+
+    assert.strictEqual(bars[0].isUnderGoal, false);
+    assert.strictEqual(bars[1].isUnderGoal, true);
+  });
+
+  it('draws the protein goal line, and none for fat or fiber even when a figure is handed in', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ protein: 60, fat: 60, fiber: 60 }) });
+
+    assert.notStrictEqual(buildTrendChart({ days: [day], metric: 'protein', goalValue: FLOOR }).goalFraction, null);
+    assert.strictEqual(buildTrendChart({ days: [day], metric: 'fat', goalValue: FLOOR }).goalFraction, null);
+    assert.strictEqual(buildTrendChart({ days: [day], metric: 'fiber', goalValue: FLOOR }).goalFraction, null);
+  });
+
+  it('drops the protein goal and its flag once a slot is chosen', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ protein: 20 }) });
+    const wholeDay = buildTrendChart({ days: [day], metric: 'protein', goalValue: FLOOR });
+    const slotOnly = buildTrendChart({ days: [day], metric: 'protein', goalValue: FLOOR, slot: 'lunch' });
+
+    assert.strictEqual(wholeDay.bars[0].isUnderGoal, true);
+    assert.strictEqual(slotOnly.bars[0].isUnderGoal, false);
+    assert.strictEqual(slotOnly.goalFraction, null);
+  });
+
+  it('picks each metric its own goal figure', () => {
+    const goals = { netCarbsCeiling: 20, kcalTarget: 1800, proteinFloor: 100 };
+
+    assert.strictEqual(goalValueFor({ metric: 'net-carbs', goals }), 20);
+    assert.strictEqual(goalValueFor({ metric: 'calories', goals }), 1800);
+    assert.strictEqual(goalValueFor({ metric: 'protein', goals }), 100);
+    assert.strictEqual(goalValueFor({ metric: 'fat', goals }), null);
+    assert.strictEqual(goalValueFor({ metric: 'fiber', goals }), null);
+  });
+});
+
+describe('buildTrendChart, the total-carbs outline behind net carbs (M239/03)', () => {
+  it('draws total carbs above the net-carbs bar, so the fiber is the gap', () => {
+    // A taller day sets the axis at 60, so neither figure below is capped.
+    const tall = loggedDay('2026-07-12', { summary: makeSummary({ carbs: 60, fiber: 0, netCarbs: 60 }) });
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ carbs: 30, fiber: 10, netCarbs: 20 }) });
+    const [, bar] = buildTrendChart({ days: [tall, day], metric: 'net-carbs', goalValue: null }).bars;
+
+    assert.strictEqual(bar.heightFraction, 20 / 60);
+    assert.strictEqual(bar.outlineFraction, 30 / 60);
+  });
+
+  it('keeps the axis on net carbs and caps a tall total at the top of the plot', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ carbs: 90, netCarbs: 20 }) });
+    const { domainMax, bars } = buildTrendChart({ days: [day], metric: 'net-carbs', goalValue: null });
+
+    assert.strictEqual(domainMax, 20);
+    assert.strictEqual(bars[0].outlineFraction, 1);
+  });
+
+  it('draws no outline for any other metric, or for an unlogged day', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ carbs: 30, netCarbs: 20 }) });
+
+    assert.strictEqual(buildTrendChart({ days: [day], metric: 'protein', goalValue: null }).bars[0].outlineFraction, null);
+    assert.strictEqual(
+      buildTrendChart({ days: [emptyDay('2026-07-13')], metric: 'net-carbs', goalValue: null }).bars[0].outlineFraction,
+      null,
+    );
+  });
+});
+
+describe('buildTrendChart, weekly bars keep the rule for the new metrics (M239/03)', () => {
+  it('marks a week with one partial day as a protein floor, and a clean week as solid', () => {
+    const cleanWeek = ['2026-07-06', '2026-07-07'].map((date) => loggedDay(date));
+    const partialWeek = [
+      loggedDay('2026-07-13'),
+      loggedDay('2026-07-14', { summary: makeSummary({ protein: 10, hasUnknowns: true }) }),
+    ];
+    const weeks = bucketByWeek([...cleanWeek, ...partialWeek]);
+    const { bars } = buildTrendChart({ days: weeks, metric: 'protein', goalValue: null });
+
+    assert.deepStrictEqual(
+      bars.map((bar) => [bar.date, bar.fill]),
+      [
+        ['2026-07-06', 'solid'],
+        ['2026-07-13', 'incomplete'],
+      ],
+    );
+    // The week is the mean over its logged days: (40 + 10) / 2.
+    assert.strictEqual(bars[1].value, 25);
+  });
+});
+
+describe('selectMetricValue, the figure the bars and the average line share (M239/03)', () => {
+  it('returns the bar value, and null for a day with nothing to plot', () => {
+    const day = loggedDay('2026-07-13', { summary: makeSummary({ fiber: 7 }) });
+
+    assert.strictEqual(selectMetricValue({ day, metric: 'fiber' }), 7);
+    assert.strictEqual(selectMetricValue({ day: emptyDay('2026-07-14'), metric: 'fiber' }), null);
+    assert.strictEqual(selectMetricValue({ day: loggedDay('2026-07-15', { kcalTotal: null, basis: 'none' }), metric: 'calories' }), null);
   });
 });

@@ -57,3 +57,28 @@ describe('TrendLegend', () => {
     assert.ok(html.includes('Might be incomplete'));
   });
 });
+
+/** Renders the net-carbs legend with the two M239/03 switches. */
+function renderWith(props: { hasAverageLine: boolean; hasCarbsOutline: boolean }): string {
+  return renderToStaticMarkup(withI18n(createElement(TrendLegend, { metric: 'net-carbs', hasGoal: false, ...props })));
+}
+
+describe('TrendLegend, the M239/03 entries', () => {
+  it('names the 7-day average line only when it is drawn', () => {
+    assert.ok(renderWith({ hasAverageLine: true, hasCarbsOutline: false }).includes('7-day average'));
+    assert.ok(!renderWith({ hasAverageLine: false, hasCarbsOutline: false }).includes('7-day average'));
+  });
+
+  it('explains the total-carbs outline only when one is drawn', () => {
+    assert.ok(renderWith({ hasAverageLine: false, hasCarbsOutline: true }).includes('total carbs'));
+    assert.ok(!renderWith({ hasAverageLine: false, hasCarbsOutline: false }).includes('total carbs'));
+  });
+
+  it('draws the floor swatch in the metric hue, protein in the protein token', () => {
+    const protein = renderToStaticMarkup(withI18n(createElement(TrendLegend, { metric: 'protein', hasGoal: true })));
+
+    assert.ok(protein.includes('border-macro-protein'));
+    assert.ok(!protein.includes('border-primary'));
+    assert.ok(!protein.includes('Over your goal'), 'a floor has nothing to be over');
+  });
+});

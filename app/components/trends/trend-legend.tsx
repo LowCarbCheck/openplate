@@ -16,6 +16,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TrendMetric } from '#app/lib/trend-chart';
+import { cn } from '#app/lib/utils';
 
 /** One legend entry: a small swatch and its label. */
 function LegendItem({ swatch, label }: { swatch: ReactNode; label: string }) {
@@ -28,12 +29,37 @@ function LegendItem({ swatch, label }: { swatch: ReactNode; label: string }) {
 }
 
 /**
+ * The floor swatch per metric, in that metric's bar hue (see `metricColorClass`
+ * in `trend-chart.tsx`). Written out whole, since Tailwind only generates a
+ * class it can read in the source.
+ */
+const FLOOR_SWATCH_CLASS = {
+  'net-carbs': 'border-primary bg-primary/25',
+  calories: 'border-primary bg-primary/25',
+  protein: 'border-macro-protein bg-macro-protein/25',
+  fat: 'border-macro-fat bg-macro-fat/25',
+  fiber: 'border-macro-fiber bg-macro-fiber/25',
+} satisfies Record<TrendMetric, string>;
+
+/**
  * The legend for the given metric.
  *
  * @param metric - the active series (only net-carbs gets the "over your goal" swatch — mirrors the diary, which only ambers the carb ceiling).
  * @param hasGoal - whether a dashed goal line is drawn for this metric.
+ * @param hasAverageLine - whether the 7-day average line is drawn (daily bars only).
+ * @param hasCarbsOutline - whether net-carbs bars carry the total-carbs outline.
  */
-export function TrendLegend({ metric, hasGoal }: { metric: TrendMetric; hasGoal: boolean }) {
+export function TrendLegend({
+  metric,
+  hasGoal,
+  hasAverageLine = false,
+  hasCarbsOutline = false,
+}: {
+  metric: TrendMetric;
+  hasGoal: boolean;
+  hasAverageLine?: boolean;
+  hasCarbsOutline?: boolean;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -50,8 +76,20 @@ export function TrendLegend({ metric, hasGoal }: { metric: TrendMetric; hasGoal:
           label={t('trends.legend.overGoal')}
         />
       )}
+      {hasAverageLine && (
+        <LegendItem
+          swatch={<span data-slot="trend-legend-average" className="w-3 rounded-full border-t-2 border-foreground" />}
+          label={t('trends.legend.average')}
+        />
+      )}
+      {hasCarbsOutline && (
+        <LegendItem
+          swatch={<span className="h-2.5 w-2.5 border border-b-0 border-muted-foreground" />}
+          label={t('trends.legend.totalCarbs')}
+        />
+      )}
       <LegendItem
-        swatch={<span className="h-2.5 w-2.5 rounded-sm border-t-2 border-primary bg-primary/25" />}
+        swatch={<span className={cn('h-2.5 w-2.5 rounded-sm border-t-2', FLOOR_SWATCH_CLASS[metric])} />}
         label={t('trends.legend.incomplete')}
       />
       <LegendItem swatch={<span className="h-3 w-px bg-muted-foreground/40" />} label={t('trends.legend.noEntry')} />

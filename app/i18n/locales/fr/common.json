@@ -2629,14 +2629,31 @@
         "estimate": ", en partie estimé",
         "incomputable": "{{date}} : consigné, mais impossible de calculer les calories",
         "netCarbs": "{{date}} :{{atLeast}} {{value}} g de glucides nets{{estimate}}{{overGoal}}",
-        "overGoal": ", au-dessus de ton objectif"
+        "overGoal": ", au-dessus de ton objectif",
+        "protein": "{{date}} :{{atLeast}} {{value}} g de protéines{{estimate}}{{underGoal}}",
+        "fat": "{{date}} :{{atLeast}} {{value}} g de lipides{{estimate}}",
+        "fiber": "{{date}} :{{atLeast}} {{value}} g de fibres{{estimate}}",
+        "underGoal": ", sous ton objectif",
+        "totalCarbs": ", {{value}} g de glucides totaux",
+        "week": "Semaine du {{date}}",
+        "weekAverage": "Semaine du {{date}}, moyenne quotidienne"
       },
       "goalTagPrefix": "Ton objectif : ",
       "slotOnly": "Affichage de {{meal}} uniquement.",
       "sparseHint": "Encore quelques jours et cela deviendra un graphique.",
       "tapHint": "Touche un jour pour voir ce que tu as consigné.",
       "titleCalories": "Calories quotidiennes",
-      "titleNetCarbs": "Glucides nets quotidiens"
+      "titleNetCarbs": "Glucides nets quotidiens",
+      "titleProtein": "Protéines par jour",
+      "titleFat": "Lipides par jour",
+      "titleFiber": "Fibres par jour",
+      "titleWeekly": {
+        "netCarbs": "Glucides nets par semaine, moyenne quotidienne",
+        "calories": "Calories par semaine, moyenne quotidienne",
+        "protein": "Protéines par semaine, moyenne quotidienne",
+        "fat": "Lipides par semaine, moyenne quotidienne",
+        "fiber": "Fibres par semaine, moyenne quotidienne"
+      }
     },
     "controls": {
       "metricGroup": "Indicateur",
@@ -2695,12 +2712,17 @@
       "goal": "Ton objectif",
       "incomplete": "Peut-être incomplet, la barre représente un minimum",
       "noEntry": "Aucune entrée",
-      "overGoal": "Au-dessus de ton objectif"
+      "overGoal": "Au-dessus de ton objectif",
+      "average": "Moyenne sur 7 jours",
+      "totalCarbs": "Contour : glucides totaux, l'écart correspond aux fibres et aux polyols"
     },
     "loading": "Chargement de ta progression…",
     "metric": {
       "calories": "Calories",
-      "netCarbs": "Glucides nets"
+      "netCarbs": "Glucides nets",
+      "protein": "Protéines",
+      "fat": "Lipides",
+      "fiber": "Fibres"
     },
     "range": {
       "month": "Mois",
@@ -2778,6 +2800,14 @@
       "meals": "Meals",
       "nutrition": "Nutrition",
       "overview": "Overview"
+    },
+    "split": {
+      "title": "D'où viennent tes calories",
+      "note": "Calculé à partir des protéines, des glucides et des lipides, cela peut donc différer un peu de ton total de calories.",
+      "average": "Moyenne",
+      "share": "{{macro}} {{percent}}%",
+      "row": "{{date}}: {{ratio}}",
+      "partial": "{{date}} : certains macronutriments manquent, la répartition n'est donc pas disponible"
     }
   },
   "ui": {
