@@ -32,8 +32,12 @@ connects to it as a normal "OpenAI-compatible" provider. One container, one port
   [Food data](docs/configuration.md#food-data-foodsource).
 - **Not an account system.** There are no users, no sessions, no cookies. Auth is
   one bearer key. Restart it and you have lost nothing.
-- **Not a cloud service.** The only outbound network request the container ever
-  makes is downloading model weights, once. See [Privacy](docs/privacy.md).
+- **Not a cloud service, with the defaults.** With `FOOD_SOURCE=fdc` and no
+  `EMBEDDING_RUNTIME_URL` set, the only outbound network request the container
+  ever makes is downloading model weights, once. `FOOD_SOURCE=off` or
+  `FOOD_SOURCE=lcc` adds a food-name lookup per scan. A remote
+  `EMBEDDING_RUNTIME_URL` adds embedding calls. The photo itself never leaves the
+  container, in any mode. See [Privacy](docs/privacy.md).
 - **Not a medical device, and not dietary advice.** Portion estimation from a
   single 2D photo is hard; treat the grams as a starting point you correct, which
   is how openplate's UI presents them.

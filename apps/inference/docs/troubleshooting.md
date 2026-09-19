@@ -73,6 +73,7 @@ so.
 | Scans return 429 with `Retry-After` | Working as intended: the queue is full or you exceeded `RATE_LIMIT_RPM`. |
 | Scans return 502 | The service is up and the model runtime is not. Look at stage 2. In external mode, check `MODEL_RUNTIME_API_KEY` (see [Readiness](runtimes.md#readiness-and-what-it-does-not-tell-you)). |
 | Scans succeed but every `macrosPer100g` is null | Macro resolution is off. Either `FOOD_SOURCE=none`, or the food database could not be read: the boot log says which. See [Food data](configuration.md#food-data-foodsource). Identification still works. |
+| `FOOD_SOURCE=lcc`, and macros turn null partway through the day | The anonymous tier is exhausted (1,000 credits per UTC day per IP), or LowCarbCheck is unreachable. The log carries a warn line with `stage`, `source`, `failed`, and `attempted` fields. Switch to `fdc`, or wait for the next UTC day. |
 | openplate shows no "this instance provides its own AI" card | `DEFAULT_INFERENCE_BASE_URL` is unset or unreachable *from the browser*. See Path A in the [README quickstart](../README.md#4-point-openplate-at-it). |
 
 ## Offline / pre-seeded install

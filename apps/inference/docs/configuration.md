@@ -41,7 +41,7 @@ The model identifies foods and estimates grams. **Macros are resolved from a foo
 |---|---|---|---|
 | **`fdc`** *(default)* | Looks names up in a bundled extract of **USDA FoodData Central**, **8,041 generic foods**, shipped inside the image at `data/fdc-foods.json`. | **none** | Offline, no key, no account, no outbound request. Public domain. It is the default because it is the only option that needs nothing from anybody. |
 | `off` | Queries **Open Food Facts** live at your runtime. | outbound, per scan | Strong on branded and packaged products, weaker on generic cooked food. Read the licence note below before enabling. Nothing OFF-derived ships in this image. |
-| `lcc` | Queries the public **lowcarbcheck** API. | outbound, per scan | The broadest data of the three (curated + BLS + USDA), and remote-only permanently, because BLS 4.0 forbids redistribution. Attribution is passed through to the response so it reaches the UI. |
+| `lcc` | Queries the public **lowcarbcheck** API. | outbound, per scan | The broadest data of the three (curated + BLS + USDA), and remote-only permanently, because BLS 4.0 forbids redistribution. Attribution is passed through to the response so it reaches the UI. This connector sends no API key, so every request runs on LowCarbCheck's free anonymous tier; see below. |
 | `none` | No resolution. Every item comes back with null macros. | none | For clients that do their own nutrition lookup. |
 
 ```bash
@@ -50,6 +50,8 @@ The model identifies foods and estimates grams. **Macros are resolved from a foo
 -e LCC_API_URL=https://lowcarbcheck.org    # only read when FOOD_SOURCE=lcc
 -e EMBEDDING_RUNTIME_URL=http://…          # optional; enables hybrid re-ranking
 ```
+
+`FOOD_SOURCE=lcc` sends no API key, so every request runs on LowCarbCheck's anonymous tier: 1,000 credits per UTC day, shared by all requests from your IP address. A search costs 1 credit. A scan issues up to 3 search queries per identified item, set by the refinement cap in `search-foods.ts`, across up to 8 items. This makes the worst case 24 credits per scan. The pipeline never calls the per-food endpoint, so that covers the entire cost. That worst case permits about 41 scans a day, and most days permit more, because a search stops as soon as one query clears the accept threshold. When the tier runs out, every remaining item resolves to null macros until the next UTC day, and the scan still returns 200. `fdc` needs no network and no allowance.
 
 **Resolved macros are labelled.** Foods matched against the database include a `provenance` of `"corpus"`, plus an `attribution` string when required by the source. Unmatched foods omit both fields, and `macrosPer100g` is null. openplate exposes these values, so users can separate confirmed database entries from items with no macro data.
 

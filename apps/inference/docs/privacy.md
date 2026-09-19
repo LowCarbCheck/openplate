@@ -8,7 +8,10 @@
 - **Never logged.** Not the image, not the base64, not a hash of it. The logs carry request metadata (status, timing, a key *fingerprint*, never a key), and the log formatter scrubs values that could carry payload or credentials. This
   includes the error paths: error responses and error logs are scrubbed, and that
   behaviour is covered by the unit test suite.
-- **Never sent anywhere.** The service makes exactly two kinds of outbound request: one-time weight downloads at first boot, and (only if you enable a networked `FOOD_SOURCE`) a *text* food-name lookup. No image ever leaves the
+- **Never sent anywhere.** The service makes exactly three kinds of outbound
+  request: one-time weight downloads at first boot, (only if you enable a
+  networked `FOOD_SOURCE`) a *text* food-name lookup, and (only if you set
+  `EMBEDDING_RUNTIME_URL`) a *text* embedding call. No image ever leaves the
   container, under any configuration.
 - **No accounts, no cookies, no history.** The service stores nothing between
   requests. There is nothing to export, breach, or subpoena.

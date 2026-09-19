@@ -24,7 +24,7 @@ unfenced JSON:
 }
 ```
 
-This service sets `provenance` to `"corpus"` on a food record when the food database supplies its macros. It adds an `attribution` string when the source requires one, see [Food data](configuration.md#food-data-foodsource). When nothing resolves the item, both fields are omitted and `macrosPer100g` is null. This service never emits `"model"`, as the shared contract reserves that value for a cloud provider.
+This service sets `provenance` to `"corpus"` on a food record when the food database supplies its macros. It adds an `attribution` string when the source requires one, see [Food data](configuration.md#food-data-foodsource). When nothing resolves the item, both fields are omitted and `macrosPer100g` is null. This service never emits `"model"`, as the shared contract reserves that value for a cloud provider. A source failure, such as a timeout, a refusal, or a network error, looks the same as no match: `macrosPer100g` is null, the response is still `200`, and nothing in the response marks which occurred.
 
 The service accepts one image and answers one question. Your prompt is read for
 the image and otherwise discarded.
