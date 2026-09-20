@@ -38,7 +38,8 @@ const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivE
     // it would jitter in width as they update.
     <div
       ref={ref}
-      className={cn('font-display text-lg font-semibold leading-none tracking-tight', className)}
+      data-slot="card-title"
+      className={cn('font-display text-lg font-semibold leading-tight tracking-tight text-balance', className)}
       {...props}
     />
   ),
