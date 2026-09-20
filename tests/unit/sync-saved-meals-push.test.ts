@@ -25,16 +25,17 @@
  * `tests/integration/sync-saved-meal-pushes-once.test.ts` makes the same claim
  * against the real cycle and a real blob store.
  *
- * ── The collection that must stay out, and the one that stopped ─────────
+ * ── The two collections that changed sides ──────────────────────────────
  *
- * The pantry is a local working list this device's own fridge fills
- * (M233/02), so it may never make a device push, and the last test here is
- * what keeps that design intact while the collection beside it changed sides.
+ * `fasts` and `pantryItems` were both on the "must never push" side of this
+ * line, and neither is any more. M240/01 (ADR-0014) made a fast a merged
+ * entity and M240/02 (ADR-0015) did the same for the pantry, so starting a
+ * fast and photographing a shelf each push on their own. The two tests at the
+ * end of this file said the opposite and are now inverted; the collections
+ * they are about have their own files, `sync-fasts-merged.test.ts` and
+ * `sync-pantry-merged.test.ts`.
  *
- * `fasts` used to be on that side of the line and is not any more: M240/01
- * (ADR-0014) made a fast a merged entity, so starting, ending or deleting one
- * MUST push, and `sync-fasts-merged.test.ts` pins it. The test that once said
- * the opposite is the second one below, inverted.
+ * `savedMeals` is the only pass-through collection left in the app.
  */
 import { HEALTHY_STORAGE, NOTHING_TO_ACCOUNT_FOR } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
@@ -98,12 +99,12 @@ function pantryItem(id: string, overrides: Partial<LocalPantryItem> = {}): Local
 /**
  * A payload holding only the three collections this file is about.
  *
- * Nothing is stamped, because nothing here needs to be: saved meals and pantry
- * items own no `meta.perEntity` key, so an empty meta is exactly what a device
- * holding them and nothing else produces. A FAST does own one since M240/01,
- * and the one test below that holds a fast leaves it unstamped on purpose: it
- * asserts that the SNAPSHOT half of the comparison sees it, with no stamp to
- * carry the difference.
+ * Nothing is stamped, because nothing here needs to be: a saved meal owns no
+ * `meta.perEntity` key, so an empty meta is exactly what a device holding them
+ * and nothing else produces. A FAST owns one since M240/01 and a PANTRY ROW
+ * since M240/02, and the two tests below that hold one leave it unstamped on
+ * purpose: they assert that the SNAPSHOT half of the comparison sees it, with
+ * no stamp to carry the difference.
  */
 function payload({
   savedMeals = [],
@@ -186,7 +187,7 @@ describe('payloadsEqual and a saved meal that did not change', () => {
   });
 });
 
-describe('payloadsEqual, the collection that must not push and the one that must', () => {
+describe('payloadsEqual and the two collections that changed sides', () => {
   it('a FAST that started IS a difference now, so it reaches the account on its own', () => {
     // THE INVERSION (M240/01, ADR-0014). This test asserted the opposite for
     // the whole of M132's life, on the ground that a fast told the account
@@ -198,14 +199,15 @@ describe('payloadsEqual, the collection that must not push and the one that must
     assert.equal(payloadsEqual(device, account), false, 'starting a fast must make this device push');
   });
 
-  it('a PANTRY ROW is not a difference either, the pantry is this device’s own shelf', () => {
-    // M233/02: the pantry passes through from the local side with no
-    // `decidePassThrough` around it, because it writes no delete-journal rows.
-    // Photographing a fridge is not news for the account.
+  it('a PANTRY ROW IS a difference now, so a photographed shelf reaches the account', () => {
+    // THE SECOND INVERSION (M240/02, ADR-0015). M233/02 held that
+    // photographing a fridge is not news for the account, so a pantry row must
+    // never burn a blob version. The owner reversed it: a shopping list that is
+    // only on the phone you left at home is not a shopping list.
     const account = payload({ savedMeals: [savedMeal('chili')] });
     const device = payload({ savedMeals: [savedMeal('chili')], pantryItems: [pantryItem('courgette')] });
 
-    assert.equal(payloadsEqual(device, account), true, 'a pantry row must never be the reason a device pushes');
+    assert.equal(payloadsEqual(device, account), false, 'photographing a shelf must make this device push');
   });
 
   it('and the merge still refuses to adopt a peer’s saved meal, the pass-through has not moved', () => {

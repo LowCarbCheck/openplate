@@ -21,12 +21,13 @@
  * (M225), which removes the row and writes the entity's key into the DELETE
  * JOURNAL in the same transaction. Sync may only mint a tombstone for a key
  * that journal names, so a delete that reached `delRow` directly is a delete
- * no other device will ever hear about. The four merged collections
- * (personal foods, food logs, weight entries and, since M240/01, fasts)
- * journal so a peer can tombstone the row; the PASS-THROUGH one (saved meals)
- * journals for a sharper reason, no tombstone describes its removals, so the
- * journal is the only evidence `mergeSnapshots` has that this device's list is
- * short on purpose. `deleteLocalShareIdentity`, `deleteLocalSharePeer` and
+ * no other device will ever hear about. The five merged collections
+ * (personal foods, food logs, weight entries, fasts since M240/01 and the
+ * pantry since M240/02) journal so a peer can tombstone the row; the
+ * PASS-THROUGH one (saved meals) journals for a sharper reason, no tombstone
+ * describes its removals, so the journal is the only evidence `mergeSnapshots`
+ * has that this device's list is short on purpose. `replaceLocalPantry` is the
+ * one WHOLE-LIST reconcile among them, and it journals every row it drops. `deleteLocalShareIdentity`, `deleteLocalSharePeer` and
  * `deleteLocalStudyEnrolment` GO THROUGH IT TOO (M226). They called `delRow`
  * directly until an emptied store proved what that costs: the three rows are
  * the owner-private compartment, which is sealed and pushed WHOLE, so a
@@ -211,6 +212,8 @@ export interface EntityRemovalWithoutJournal {
    * there is no other way a row leaves this list.
    */
   fastIds: readonly string[];
+  /** Pantry-item ids the merge resolved as buried elsewhere (M240/02, ADR-0015). Same one source as `fastIds`. */
+  pantryItemIds: readonly string[];
 }
 
 /**
@@ -244,6 +247,7 @@ export async function removeEntitiesWithoutJournal(
     for (const id of removal.foodLogIds) resolved.delRow(FOOD_LOGS_TABLE, id);
     for (const id of removal.weightEntryIds) resolved.delRow(WEIGHT_ENTRIES_TABLE, id);
     for (const id of removal.fastIds) resolved.delRow(FASTS_TABLE, id);
+    for (const id of removal.pantryItemIds) resolved.delRow(PANTRY_ITEMS_TABLE, id);
   });
 }
 
@@ -1064,14 +1068,24 @@ export async function listLocalPantryItems({ store }: StoreOption = {}): Promise
 }
 
 /**
- * Removes one pantry item by id.
+ * Removes one pantry item by id, AND writes the removal into the delete
+ * journal.
  *
- * NO JOURNAL ROW, unlike {@link deleteLocalSavedMeal} and {@link deleteLocalFast}
- * directly above it, and the difference is deliberate: `PANTRY_ITEMS_TABLE` is
- * absent from `DELETE_JOURNAL_TAG_BY_TABLE`, so `deleteEntity` simply removes
- * the row. See the `NOTE (M233/02, the pantry)` block in `schema.ts` for why a
- * working list that turns over every week earns a different answer here from a
- * record of something that happened.
+ * THE JOURNAL ROW ARRIVED WITH M240/02 (ADR-0015), and this verb did not
+ * change: `PANTRY_ITEMS_TABLE` entered `DELETE_JOURNAL_TAG_BY_TABLE`, and
+ * `deleteEntity` reads that map, so the write appeared by itself. It is spelled
+ * out here anyway because the previous comment said the opposite, at length.
+ *
+ * A pantry row is a merged entity now, so the journal row does the ordinary
+ * merged job: `stampSnapshot` mints a tombstone from it, which is what carries
+ * the removal to the person's other device. A bare `delRow` here would make a
+ * real removal indistinguishable from an evicted database, no tombstone would
+ * ever be minted, and the account's copy would come back on the next pull.
+ *
+ * NO CALLER IN `app/` TODAY, and it stays exported. `/pantry` performs every
+ * removal through {@link replaceLocalPantry}, which is the screen's own verb;
+ * this one is the per-row door the barrel already offered, and the day a caller
+ * appears is the day the journal row has to be there already.
  */
 export async function deleteLocalPantryItem(id: string, { store }: StoreOption = {}): Promise<void> {
   deleteEntity(await resolveStore(store), PANTRY_ITEMS_TABLE, id);
@@ -1087,8 +1101,18 @@ export async function deleteLocalPantryItem(id: string, { store }: StoreOption =
  * list. `store.transaction` closes that window: TinyBase commits every row
  * together and the autosave listener sees one change.
  *
- * Rows absent from `items` are removed WITHOUT a journal entry, for the reason
- * {@link deleteLocalPantryItem} gives.
+ * ROWS ABSENT FROM `items` ARE JOURNALLED SINCE M240/02 (ADR-0015), in the
+ * same transaction as the removal, and this is the path that matters: `/pantry`
+ * performs EVERY removal a person makes through this one verb, so a
+ * reconcile that skipped the journal would be a pantry a merged device could
+ * never shrink. An evicted store would look identical to a person who emptied
+ * their shelf, and ADR-0013 would correctly refuse both.
+ *
+ * It goes through `deleteEntity`, one id at a time, rather than a bare
+ * `delRow` loop, for the reason `deleteEntity` exists: the journal tag is
+ * looked up in one place. `deleteEntity` opens its own transaction per row,
+ * and TinyBase nests those inside the one opened here, so the whole reconcile
+ * is still one commit and one autosave.
  *
  * @param items - the complete pantry after the change, in the order to store it.
  * @returns the same list, so a caller can render what it just wrote.
@@ -1101,7 +1125,7 @@ export async function replaceLocalPantry(
   const kept = new Set(items.map((item) => item.id));
   resolved.transaction(() => {
     for (const id of resolved.getRowIds(PANTRY_ITEMS_TABLE)) {
-      if (!kept.has(id)) resolved.delRow(PANTRY_ITEMS_TABLE, id);
+      if (!kept.has(id)) deleteEntity(resolved, PANTRY_ITEMS_TABLE, id);
     }
     for (const item of items) writeEntity(resolved, PANTRY_ITEMS_TABLE, item.id, item);
   });

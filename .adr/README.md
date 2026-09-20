@@ -40,4 +40,5 @@ ADRs are immutable once Accepted. To change a decision, write a new ADR that sup
 | [0012](0012-the-server-asks-github-about-releases.md) | The server asks GitHub about releases, and it asks by default     | Accepted   |
 | [0013](0013-a-recreated-store-cannot-vouch-for-an-absence.md) | A recreated store cannot vouch for an absence; a delete needs a journal row | Accepted |
 | [0014](0014-fasts-are-a-merged-entity.md)             | Fasts are a merged entity, and the merge adjudicates nothing              | Accepted   |
+| [0015](0015-the-pantry-is-a-merged-entity.md)         | The pantry is a merged entity, reversing M233/02                         | Accepted   |
 | [0017](0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted |

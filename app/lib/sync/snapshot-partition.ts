@@ -105,10 +105,9 @@ export const SNAPSHOT_KEY_REGIONS = {
   // for, and a clinician holding a grant reading "eggs, butter, spinach" is
   // reading the same class of fact as the diary she was granted.
   //
-  // `shared` decides DISCLOSURE, never merge. The pantry is passed through
-  // from the local side by `mergeSnapshots`, so a second device keeps its own
-  // shelf. It took that stance from `fasts`, which have been merged since
-  // M240/01 (ADR-0014), so the pantry now holds it alone.
+  // `shared` decides DISCLOSURE, never merge, and the merge answer changed
+  // twice without this line moving: the pantry was passed through from the
+  // local side until M240/02 (ADR-0015) and is merged now.
   pantryItems: 'shared',
   // The activity marks and the awards (M235/02). `shared`, and the reasoning is
   // the pantry's one row up: there is no key material in either and no trust

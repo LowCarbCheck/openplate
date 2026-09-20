@@ -384,25 +384,27 @@
  * There is no `migrateSnapshotToV22` step and there must not be one, for the
  * identical reason there is no `migrateSnapshotToV11` one.
  *
- * IT IS PASSED THROUGH BY `mergeSnapshots`. The local side rides through
- * untouched, so the pantry is never stamped, never diffed, never tombstoned
- * and never adopted from another device. It is therefore ABSENT from
- * {@link SYNC_ENTITY_TYPE_BY_TABLE}, which is the map of the MERGED tables.
- * This was "the `fasts` stance" when it was written; `fasts` has been merged
- * since M240/01 (ADR-0014), so the pantry now holds the position alone.
+ * IT WAS PASSED THROUGH BY `mergeSnapshots` UNTIL M240/02 (ADR-0015), AND IS
+ * MERGED NOW. The paragraphs this block used to carry argued the opposite, and
+ * they are worth knowing because the reversal is a judgement call rather than
+ * a bug fix.
  *
- * AND IT IS ABSENT FROM {@link DELETE_JOURNAL_TAG_BY_TABLE} TOO, which is
- * where it parts company with `savedMeals` and with `fasts`, so read this
- * before copying either. The journal exists to tell a list somebody EMPTIED from a
- * list a browser EVICTED, and it earns that cost where the thing lost is a
- * record of something that happened: a fast somebody kept, a meal they named
- * and bundled. A pantry is a WORKING LIST of what is in the fridge this week.
- * It is rewritten wholesale every time somebody photographs a shelf
+ * THE ARGUMENT THAT LOST: the journal exists to tell a list somebody EMPTIED
+ * from a list a browser EVICTED, and it earns that cost where the thing lost
+ * is a record of something that happened, a fast somebody kept, a meal they
+ * named and bundled. A pantry is a WORKING LIST of what is in the fridge this
+ * week. It is rewritten wholesale every time somebody photographs a shelf
  * (`replaceLocalPantry`), it is stale within days by its own nature, and the
  * worst case of losing the distinction is that a peer's older list comes back
- * and the person photographs the shelf again. Journalling every removed row of
- * a list that turns over completely would write more tombstone bookkeeping
- * than the feature has content.
+ * and the person photographs the shelf again.
+ *
+ * THE ARGUMENT THAT WON: a shopping list that is only on the phone you left at
+ * home is not a shopping list. A person stands in a supermarket with a tablet's
+ * pantry on a phone's screen, or photographs the fridge on one device and cooks
+ * from the other, and a device-local answer fails both. The bookkeeping cost is
+ * accepted: `pantryItems` is in {@link SYNC_ENTITY_TYPE_BY_TABLE} and in
+ * {@link DELETE_JOURNAL_TAG_BY_TABLE}, and EVERY path that removes a pantry row
+ * journals it, including `replaceLocalPantry`'s whole-list reconcile.
  *
  * NOTE (M235/02, the activity streak and the explorer badges): `SCHEMA_VERSION`
  * v22 -> v23 adds TWO WHOLE NEW ENTITIES at once, {@link LocalActivityMark} and
@@ -424,8 +426,8 @@
  *
  * NEITHER TABLE HAS A DELETE VERB, so neither is in
  * {@link DELETE_JOURNAL_TAG_BY_TABLE} and neither can ever be tombstoned. This
- * is a stronger statement than the pantry's absence from that map one level up:
- * the pantry HAS `deleteLocalPantryItem` and simply does not journal it, while
+ * is a stronger statement than anything the pantry one level up can make: the
+ * pantry HAS `deleteLocalPantryItem` and journals it since M240/02, while
  * nothing anywhere in the app removes a mark or an award. A mark records that a
  * day carried a signal and an award records something a person did, and neither
  * fact un-happens. An evicted device therefore repopulates from its peers with
@@ -614,6 +616,19 @@ const DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE = {
   // tombstone is minted from that journal row, which is how a deletion reaches
   // the person's other device.
   [FASTS_TABLE]: 'fast',
+  // THE PANTRY, MERGED SINCE M240/02 (ADR-0015), and this line reverses the
+  // stance M233/02 wrote a whole NOTE block for. That note argued a working
+  // list of what is in one fridge is stale within days, so it should stay on
+  // the device that photographed the shelf. The owner overruled it: the pantry
+  // follows the person, because a shopping list that is only on the phone you
+  // left at home is not a shopping list.
+  //
+  // DELETABLE, so it belongs in the half both exported maps spread, and this
+  // is the cost the reversal accepts. A pantry row can be removed, so every
+  // removal has to be journalled or an evicted device publishes an emptiness
+  // it cannot account for (ADR-0013). `replaceLocalPantry` reconciles a whole
+  // list at once and journals every row it drops.
+  [PANTRY_ITEMS_TABLE]: 'pantryItem',
 } as const;
 
 /**
@@ -630,9 +645,10 @@ const DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE = {
  * merged, so it is never stamped and never tombstoned. It DOES journal its
  * deletes, under the tag {@link DELETE_JOURNAL_TAG_BY_TABLE} adds, which is a
  * separate map for exactly that reason. `fasts` used to sit beside it and is
- * IN this map since M240/01 (ADR-0014). The owner-private compartment is
- * absent because it is not a table at all; its evidence is
- * `SnapshotIntegrity.isCompartmentKnown`.
+ * IN this map since M240/01 (ADR-0014); `pantryItems` joined them in M240/02
+ * (ADR-0015), and `savedMeals` is now the only pass-through collection left.
+ * The owner-private compartment is absent because it is not a table at all;
+ * its evidence is `SnapshotIntegrity.isCompartmentKnown`.
  *
  * It is ASSEMBLED FROM TWO HALVES since M235/03, and the halves are not
  * cosmetic: {@link DELETE_JOURNAL_TAG_BY_TABLE} below used to spread this map
@@ -680,7 +696,9 @@ export type SyncEntityTypeTag = (typeof SYNC_ENTITY_TYPE_BY_TABLE)[keyof typeof 
  *
  * `fasts` is here too, and since M240/01 it arrives through the SPREAD above
  * rather than on a line of its own: a fast is merged now, so its journal row
- * does the ordinary merged job of authorising a tombstone.
+ * does the ordinary merged job of authorising a tombstone. `pantryItems` is
+ * here on the same terms since M240/02, and it is the one table that had NO
+ * journal at all before it was merged, so every removal path had to grow one.
  *
  * The three OWNER-PRIVATE tables are here for the same reason, read against
  * the compartment instead of against a list: a seal may write a plaintext
@@ -1677,14 +1695,18 @@ export interface LocalStoreSnapshot {
    * REQUIRED, under the `fasts`/`savedMeals` rule: a v21 envelope has no key
    * at all, and `backup.ts`'s `.default([])` is the whole forward migration.
    *
-   * PASSED THROUGH by `mergeSnapshots` from the LOCAL side, so a second device
-   * keeps its own shelf rather than adopting one photographed in another
-   * kitchen. It journals no deletes either; see the `NOTE (M233/02, the
-   * pantry)` block at the top of this file for why a working list earns a
-   * different answer from a record of events. It took this stance FROM `fasts`
-   * when it was written, and `fasts` has been merged since M240/01, so the
-   * pantry is now the only id-bearing diary collection that still passes
-   * through with no guard at all.
+   * MERGED across devices since M240/02 (ADR-0015), one entity per row,
+   * whole-record last-writer-wins by `(lamport, deviceId)` like a food log, and
+   * removals journalled and tombstoned. It was passed through from the LOCAL
+   * side until then, so a second device kept its own shelf rather than adopting
+   * one photographed in another kitchen; see the `NOTE (M233/02, the pantry)`
+   * block at the top of this file for both halves of that argument and which
+   * one the owner took.
+   *
+   * IT CARRIES NO IMAGE BYTES, and nothing else a device must keep to itself.
+   * The fridge photograph is read in the browser, sent straight to the person's
+   * own AI provider, and never stored; what lands here is the ingredient list
+   * the person confirmed, which is the same class of fact as a meal they typed.
    */
   pantryItems: LocalPantryItem[];
   /**

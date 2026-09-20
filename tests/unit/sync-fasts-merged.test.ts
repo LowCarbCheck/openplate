@@ -199,6 +199,9 @@ describe('mergeSnapshots and fasts', () => {
       // from this list for the whole of M132's life, which is what kept it on
       // one device.
       'fast',
+      // AND THE PANTRY (M240/02, ADR-0015), the last pass-through with no
+      // guard at all, merged one milestone later for the same reason.
+      'pantryItem',
       'fastingSettings',
       'activityMark',
       'award',

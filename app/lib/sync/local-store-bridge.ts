@@ -42,6 +42,7 @@ import {
   entityKey,
   FASTS_TABLE,
   FOOD_LOGS_TABLE,
+  PANTRY_ITEMS_TABLE,
   PERSONAL_FOODS_TABLE,
   SAVED_MEALS_TABLE,
   SHARE_IDENTITY_ROW_ID,
@@ -289,6 +290,11 @@ export async function applyMergedSnapshot({
   // buried by a tombstone a peer published. The row has to leave this device,
   // or the next cycle re-publishes it and the person's Remove never lands.
   const survivingFasts = new Set(merged.fasts.map((entry) => entry.id));
+  // AND A `survivingPantry` SET SINCE M240/02 (ADR-0015), for the identical
+  // reason one line up. The pantry is merged now, so a row missing from
+  // `merged.pantryItems` was removed on another device and has to leave this
+  // one, or the next cycle re-publishes it and the person's edit never lands.
+  const survivingPantry = new Set(merged.pantryItems.map((entry) => entry.id));
   //
   // No surviving-set for `fastingSettings`, and it IS merged too
   // (`snapshot-sync.ts`). It is a SINGLETON with no id
@@ -318,6 +324,7 @@ export async function applyMergedSnapshot({
     foodLogIds: local.foodLogs.filter((log) => !survivingLogs.has(log.id)).map((log) => log.id),
     weightEntryIds: local.weightEntries.filter((entry) => !survivingWeights.has(entry.id)).map((entry) => entry.id),
     fastIds: local.fasts.filter((entry) => !survivingFasts.has(entry.id)).map((entry) => entry.id),
+    pantryItemIds: local.pantryItems.filter((entry) => !survivingPantry.has(entry.id)).map((entry) => entry.id),
   });
 
   const writable = withoutJournalledRows({
@@ -361,7 +368,7 @@ async function adoptSeenAwardStamps(awards: readonly LocalAward[]): Promise<void
  * The merged snapshot with every row this device has journalled as deleted
  * dropped from it.
  *
- * EVERY COLLECTION WITH A DELETE VERB, which is all five id-bearing ones plus
+ * EVERY COLLECTION WITH A DELETE VERB, which is all six id-bearing ones plus
  * the three that ride inside the owner-private compartment. A saved meal
  * carries no tombstone, so a mid-flight clear of one is undone by the same
  * upsert, and `mergeSnapshots` hands the pass-through list back whole, which
@@ -400,6 +407,7 @@ function withoutJournalledRows({
     foodLogs: merged.foodLogs.filter((entry) => !isJournalled(FOOD_LOGS_TABLE, entry.id)),
     weightEntries: merged.weightEntries.filter((entry) => !isJournalled(WEIGHT_ENTRIES_TABLE, entry.id)),
     fasts: merged.fasts.filter((entry) => !isJournalled(FASTS_TABLE, entry.id)),
+    pantryItems: merged.pantryItems.filter((entry) => !isJournalled(PANTRY_ITEMS_TABLE, entry.id)),
     savedMeals: merged.savedMeals.filter((entry) => !isJournalled(SAVED_MEALS_TABLE, entry.id)),
     // A SINGLETON, so `null` is the whole removal: `importBackup` writes the
     // share identity only when the snapshot carries one.

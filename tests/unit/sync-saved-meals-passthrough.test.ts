@@ -145,11 +145,14 @@ describe('mergeSnapshots and savedMeals', () => {
       'foodLog',
       'weightEntry',
       'profile',
-      // A FAST joined the merged side in M240/01 (ADR-0014), and saved meals
-      // still have not, so this file is now the last one pinning the
-      // pass-through stance. A fast is a record of something that happened and
-      // has to travel; a saved meal is a merge nobody has built yet.
+      // A FAST joined the merged side in M240/01 (ADR-0014) and the pantry in
+      // M240/02, and saved meals still have not, so this file is now the last
+      // one pinning the pass-through stance. A saved meal is a merge nobody
+      // has built yet, not a decision that it should not travel.
       'fast',
+      // AND THE PANTRY joined in M240/02 (ADR-0015), which leaves this file
+      // pinning the LAST pass-through collection in the app.
+      'pantryItem',
       // The fasting ROUTINE is in the catalog, and saved meals still are not.
       'fastingSettings',
       // The marks and the awards joined the merged side in M235/03, and saved

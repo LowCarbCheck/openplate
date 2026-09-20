@@ -41,6 +41,7 @@ import type {
   LocalFast,
   LocalFastingSettings,
   LocalFoodLog,
+  LocalPantryItem,
   LocalPersonalFood,
   LocalProfileGoals,
   LocalWeightEntry,
@@ -53,6 +54,7 @@ import {
   FASTING_SETTINGS_TABLE,
   FASTS_TABLE,
   FOOD_LOGS_TABLE,
+  PANTRY_ITEMS_TABLE,
   PERSONAL_FOODS_TABLE,
   PROFILE_GOALS_TABLE,
   SAVED_MEALS_TABLE,
@@ -99,6 +101,35 @@ export const SYNC_ENTITY_TYPES = {
    * from the account instead of emptying it.
    */
   fast: SYNC_ENTITY_TYPE_BY_TABLE[FASTS_TABLE],
+  /**
+   * ONE PANTRY ROW (M240/02, ADR-0015), an ingredient on a shelf, merged like a
+   * food log.
+   *
+   * IT WAS THE LAST PASS-THROUGH WITH NO GUARD AT ALL, on the M233/02 argument
+   * that a working list of what is in one fridge is stale within days and
+   * belongs to the device that photographed the shelf. The owner reversed it:
+   * a shopping list that is only on the phone you left at home is not a
+   * shopping list, and somebody who photographs a fridge on a tablet cooks
+   * from a phone.
+   *
+   * WHOLE-RECORD LAST-WRITER-WINS per row, ordered by `(lamport, deviceId)`.
+   * `mergePantry` already merges two CAPTURES by name on one device; this
+   * merges two DEVICES by row id, and the two do not meet: a row that reached
+   * this device by sync is an ordinary stored row by the time a capture is
+   * reconciled against it.
+   *
+   * DELETES TRAVEL, which is the whole cost of the reversal. The pantry had no
+   * delete journal at all before this, and `replaceLocalPantry` dropped rows
+   * with a bare `delRow`. Both removal paths journal now, or an evicted device
+   * would be indistinguishable from a person who emptied their shelf and
+   * ADR-0013 would refuse the shrink for ever.
+   *
+   * NO IMAGE BYTES RIDE WITH IT. `LocalPantryItem` is a name, an amount, a
+   * unit, a category, how the row arrived and two timestamps. The fridge
+   * photograph is read in the browser, sent to the person's own AI provider
+   * and never stored, so there is nothing here the partition has to hold back.
+   */
+  pantryItem: SYNC_ENTITY_TYPE_BY_TABLE[PANTRY_ITEMS_TABLE],
   /**
    * THE FASTING ROUTINE (the fasting rework), the singleton settings record.
    *
@@ -331,6 +362,7 @@ export type SyncEntityValue =
   | LocalWeightEntry
   | LocalProfileGoals
   | LocalFast
+  | LocalPantryItem
   | LocalFastingSettings
   | LocalActivityMark
   | LocalAward
@@ -355,6 +387,11 @@ function flattenSnapshot(snapshot: SyncedSnapshot): FlatEntity[] {
     // adjudicates two open fasts, and `snapshot-sync.ts` deliberately has no
     // opinion about what a fast MEANS.
     ...snapshot.fasts.map((entry) => toFlat(SYNC_ENTITY_TYPES.fast, entry.id, entry)),
+    // A PANTRY ROW IS ONE ENTITY (M240/02), addressed by its own id, so two
+    // devices that each photograph a shelf keep both readings and the person
+    // reconciles them on screen exactly as they already reconcile two captures
+    // on one device.
+    ...snapshot.pantryItems.map((entry) => toFlat(SYNC_ENTITY_TYPES.pantryItem, entry.id, entry)),
     // THE ROW IS THE FACT (M235/03). A mark is addressed by its own
     // `${dayKey}#${signal}` id and an award by its catalog key, which is why
     // both can be stamped and merged one row at a time without the engine
@@ -998,6 +1035,7 @@ export function mergeSnapshots({
   const foodLogs: LocalFoodLog[] = [];
   const weightEntries: LocalWeightEntry[] = [];
   const mergedFasts: LocalFast[] = [];
+  const mergedPantry: LocalPantryItem[] = [];
   const activityMarks: LocalActivityMark[] = [];
   const awards: LocalAward[] = [];
   let profile: LocalProfileGoals | null = null;
@@ -1043,6 +1081,11 @@ export function mergeSnapshots({
     if (entity.entityType === SYNC_ENTITY_TYPES.fast) {
       // SAFETY: the `fast` tag is only ever attached to a `LocalFast`.
       mergedFasts.push(entity.value as LocalFast);
+      continue;
+    }
+    if (entity.entityType === SYNC_ENTITY_TYPES.pantryItem) {
+      // SAFETY: the `pantryItem` tag is only ever attached to a `LocalPantryItem`.
+      mergedPantry.push(entity.value as LocalPantryItem);
       continue;
     }
     if (entity.entityType === SYNC_ENTITY_TYPES.activityMark) {
@@ -1125,21 +1168,18 @@ export function mergeSnapshots({
       // Remove is a journalled delete like any other.
       fasts: mergedFasts,
       savedMeals: savedMealsDecision.list,
-      // THE PANTRY RIDES THROUGH FROM THE LOCAL SIDE TOO (M233/02), and with
-      // no `decidePassThrough` around it, which is the one difference from the
-      // saved meals above.
+      // MERGED, one entity per row (M240/02, ADR-0015), and this line used to
+      // be a plain `local.snapshot.pantryItems` pass-through with no guard at
+      // all. The argument for that was that a shelf belongs to the fridge
+      // beside it; the owner reversed it, because the person, not the fridge,
+      // is who the list is for.
       //
-      // That guard exists to stop an EVICTED store publishing an emptiness it
-      // cannot account for, and it accounts for it by reading the delete
-      // journal. The pantry writes no journal rows (see the
-      // `NOTE (M233/02, the pantry)` block in `local-store/schema.ts`), so
-      // there is nothing for the guard to read and it would refuse the local
-      // list on every ordinary cycle, handing every second device the shelf
-      // photographed in the first one's kitchen. A plain local pass-through is
-      // the honest answer for a working list: this device's pantry is what is
-      // in THIS device's fridge, and the cost of the rare eviction is that
-      // somebody photographs the shelf again.
-      pantryItems: local.snapshot.pantryItems,
+      // TWO SHELVES DO NOT FIGHT. Two devices that each photographed a fridge
+      // wrote two different sets of row ids, so `mergeEntityMaps` keeps both
+      // and the person sees one combined list they can edit down, which is the
+      // same thing they already do when they photograph the same fridge twice
+      // on one device.
+      pantryItems: mergedPantry,
       // MARKS AND AWARDS ARE MERGED (M235/03), which replaces the pass-through
       // placeholder M235/02 left here.
       //
@@ -1276,6 +1316,12 @@ function canonicalize(payload: StampedSnapshot) {
       // Sorted through `byId`, so two devices serialize the same set
       // identically and an ordinary cycle does not read as a difference.
       fasts: byId(payload.snapshot.fasts),
+      // THE PANTRY IS INCLUDED FOR THE FASTS' REASON (M240/02). A shelf
+      // photographed on a tablet has to reach the phone somebody shops with,
+      // so the cycle that captured it is a push. `meta.perEntity` below would
+      // already catch it; the list is compared as well, sorted through `byId`,
+      // exactly as `fasts` and `savedMeals` above it are.
+      pantryItems: byId(payload.snapshot.pantryItems),
       profile: payload.snapshot.profile,
       // The routine IS included, for the same reason `profile` beside it is:
       // it is merged, so a device that changes it has something another device
@@ -1289,12 +1335,9 @@ function canonicalize(payload: StampedSnapshot) {
       // verbatim while its plaintext is unchanged, a fresh IV on every cycle
       // would make every boot write a new blob version.
       privateStore: payload.snapshot.privateStore,
-      // `pantryItems` is omitted (M233/02): the pantry
-      // is a WORKING LIST of what is in this device's own fridge. It passes
-      // through from the local side with no `decidePassThrough` around it,
-      // because it writes no delete-journal rows and the guard would refuse it
-      // on every ordinary cycle. Photographing a shelf is not news for the
-      // account, and it must not write a blob version either.
+      // `pantryItems` IS INCLUDED SINCE M240/02 (ADR-0015), directly below,
+      // and was omitted here for the whole of M233/02's life on the ground
+      // that photographing a shelf is not news for the account.
       //
       // `activityMarks` and `awards` are omitted too, and for a third reason
       // again (M235/03): they ARE merged, so a new mark must make this device

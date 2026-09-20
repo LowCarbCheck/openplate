@@ -315,6 +315,8 @@ describe('stampSnapshot, marks and awards', () => {
     assert.ok(synced.includes('award'), 'an award stopped being a stamped entity');
     // The control: the same probe does not find a collection that is genuinely
     // passed through, so it is reading the catalog rather than saying yes.
-    assert.ok(!synced.includes('pantryItem'), 'the probe cannot see the catalog at all');
+    // `pantryItem` was that control until M240/02 (ADR-0015) merged the pantry
+    // too, which leaves `savedMeal` as the last one in the app.
+    assert.ok(!synced.includes('savedMeal'), 'the probe cannot see the catalog at all');
   });
 });
