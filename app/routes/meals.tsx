@@ -176,23 +176,36 @@ function SavedMealRow({ meal }: { meal: LocalSavedMeal }) {
 
   return (
     <Card>
-      <CardContent className="flex items-center justify-between gap-3 p-4">
+      <CardContent data-slot="saved-meal-row" className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0 flex-1 space-y-1">
-          <p className="truncate text-sm font-medium">{meal.name}</p>
+          {/* TWO LINES, not one with a tail cut off: a saved meal is named by
+              the person who saved it, and "Porridge with blueberries and al…"
+              is not the name they typed. */}
+          <p data-slot="saved-meal-name" className="line-clamp-2 text-sm font-medium">
+            {meal.name}
+          </p>
           <p className="text-xs text-muted-foreground">{t('meals.itemCount', { count: meal.items.length })}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        {/* A thumb's width apart, and a thumb each; `md` puts the compact
+            pair back for a pointer. */}
+        <div className="flex shrink-0 items-center gap-2 md:gap-1">
           <logFetcher.Form method="post">
             <input type="hidden" name="_intent" value="log-meal" />
             <input type="hidden" name="mealId" value={meal.id} />
-            <Button type="submit" variant="outline" size="sm" disabled={isLogging}>
+            <Button type="submit" variant="outline" size="sm" className="h-11 md:h-8" disabled={isLogging}>
               <Utensils className="h-4 w-4" />
               {isLogging ? t('meals.logging') : t('meals.logNow')}
             </Button>
           </logFetcher.Form>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button type="button" variant="ghost" size="icon-sm" aria-label={t('meals.removeAria', { name: meal.name })}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="size-11 md:size-8"
+                aria-label={t('meals.removeAria', { name: meal.name })}
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
