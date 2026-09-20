@@ -394,7 +394,9 @@ function FavoriteToggle({ name }: { name: string }) {
         setIsFavorite(next.has(normalizeFoodNameKey(name)));
       }}
       className={cn(
-        'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors',
+        // `size-11` is the app's 44 px tap floor on a phone; the pointer-sized
+        // 40 px circle comes back at `md`, where this is a mouse target.
+        'inline-flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors md:size-10',
         isFavorite ?
           'border-primary bg-primary/10 text-primary'
         : 'border-border text-muted-foreground hover:text-foreground',
@@ -1110,11 +1112,16 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
   );
 }
 
+/**
+ * One fact of the receipt. `py-2` rather than `py-1`: the audit measured these
+ * rows at 29 px, the tightest stack in the app, and a label that wraps had no
+ * air around it at all. The value never wraps mid-figure.
+ */
 function FactRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-2 border-b py-1 last:border-b-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium tabular-nums">{value}</dd>
+    <div className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
+      <dt className="min-w-0 break-words text-muted-foreground">{label}</dt>
+      <dd className="shrink-0 font-medium whitespace-nowrap tabular-nums">{value}</dd>
     </div>
   );
 }

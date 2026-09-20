@@ -165,16 +165,22 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
           <span>{t(tab.labelKey)}</span>
         </button>
 
-        {/* The discoverable way to everything else. Visible, 32px of hit area,
-            and labelled — the long press above is a shortcut for people who
-            already expect one, never the only door. */}
+        {/* The discoverable way to everything else. Visible, labelled, and the
+            app's 44px tap floor wide and tall — the long press above is a
+            shortcut for people who already expect one, never the only door.
+
+            IT GREW LEFT AND DOWN, from 32px, and the anchor moved with it so
+            the chevron itself stays where it was. The bar has three slots, so
+            at 360px this box takes the outer 8px of the raised circle beside
+            it and nothing else: the circle's own camera icon is 24px wide on a
+            120px slot and is never covered. */}
         <SheetTrigger asChild>
           <button
             type="button"
             aria-label={t('launcher.moreOptions')}
             aria-haspopup="dialog"
             aria-expanded={isSheetOpen}
-            className="absolute right-0 bottom-6 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+            className="absolute right-0 bottom-5 flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
           >
             <ChevronUp className="h-4 w-4" aria-hidden="true" />
           </button>

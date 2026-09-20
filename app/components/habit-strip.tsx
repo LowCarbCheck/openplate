@@ -71,21 +71,32 @@ export function HabitStrip({
    *   space is handed to the links rather than left as dead gutter.
    * - The "Logged N of the last 7 days" line moves under the dots instead of
    *   sitting beside them, which is the only place it fits in this column.
+   *
+   * A PHONE now gets the second of those two anyway, dense or not. Each dot is
+   * a link to a day, and the mobile audit measured them at 18 by 18 px with no
+   * gap between them: seven links that small, touching, are one mis-tap. The
+   * row therefore spreads its dots across the full width below `md` and gives
+   * each link the app's 44 px floor, which needs the whole row, so the summary
+   * line moves under them. At `md` and up the strip is the old one, pointer
+   * sized, and `dense` keeps the spread layout at every width.
    */
   dense?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   return (
     <div className="space-y-1.5">
-      <div className={dense ? 'flex flex-col gap-1.5' : 'flex items-center gap-3'}>
-        <div className={cn('flex items-center', dense && 'w-full')}>
+      <div className={cn('flex flex-col gap-1.5', !dense && 'md:flex-row md:items-center md:gap-3')}>
+        <div className={cn('flex w-full items-center', !dense && 'md:w-auto')}>
           {days.map((day) => (
             <Link
               key={day.date}
               to={`/diary?date=${day.date}`}
               title={day.date}
               aria-label={habitDayLabel(day, t)}
-              className={cn('flex items-center justify-center p-1', dense && 'grow px-0.5')}
+              className={cn(
+                'flex min-h-11 grow items-center justify-center px-0.5 py-1',
+                !dense && 'md:min-h-0 md:grow-0 md:p-1',
+              )}
             >
               <span
                 className={cn(
