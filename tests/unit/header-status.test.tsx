@@ -67,20 +67,24 @@ describe('HeaderStatus', () => {
     });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-3 break-words">Notifications are blocked'),
+      markup.includes('line-clamp-3 text-balance break-words">Notifications are blocked'),
       'an error with no description lost its line-clamp-3 wrap treatment',
     );
     // CONTROL: an error with no description must not still carry the two-line
     // clamp from the previous round, or the fix regressed to the case this
     // follow-up exists to close.
     assert.equal(
-      countOf(markup, 'line-clamp-2 break-words">Notifications are blocked'),
+      countOf(markup, 'line-clamp-2 text-balance break-words">Notifications are blocked'),
       0,
       'the error text span is still clamped to two lines instead of three',
     );
     // CONTROL: the markup before M225 wrapped this same text in a `truncate`
     // span, which is exactly what made a persisting error unreadable on a
     // narrow phone. That class must not still be on the text span.
+    //
+    // `text-balance` joined the class list in the mobile pass (2026-09-20), so
+    // the literals above name it: it is what stops a wrapped sentence leaving
+    // one word alone on the last line. Nothing else about this row moved.
     assert.equal(
       countOf(markup, 'truncate">Notifications are blocked'),
       0,
@@ -96,14 +100,14 @@ describe('HeaderStatus', () => {
     });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-2 break-words">Notifications are blocked'),
+      markup.includes('line-clamp-2 text-balance break-words">Notifications are blocked'),
       'an error carrying a description did not drop to line-clamp-2',
     );
     // CONTROL: without a description the same text gets a third line (the
     // test above), so this asserting line-clamp-2 is a real branch, not the
     // only value this component ever renders.
     assert.equal(
-      countOf(markup, 'line-clamp-3 break-words">Notifications are blocked'),
+      countOf(markup, 'line-clamp-3 text-balance break-words">Notifications are blocked'),
       0,
       'an error with a description still clamped to three lines',
     );
@@ -113,13 +117,13 @@ describe('HeaderStatus', () => {
     publishStatus({ text: 'Entry saved', tone: 'success' });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-2 break-words">Entry saved'),
+      markup.includes('line-clamp-2 text-balance break-words">Entry saved'),
       'a success status lost its line-clamp-2 wrap treatment',
     );
     // CONTROL: a success status must not drop to the error tone's smaller,
     // three-line treatment.
     assert.equal(
-      countOf(markup, 'line-clamp-3 break-words">Entry saved'),
+      countOf(markup, 'line-clamp-3 text-balance break-words">Entry saved'),
       0,
       'a success status is clamped to three lines, the error-only treatment',
     );
@@ -130,13 +134,13 @@ describe('HeaderStatus', () => {
     publishStatus({ text: 'Removed Greek yogurt', tone: 'success', action: { label: 'Undo', onClick: () => {} } });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-3 break-words">Removed Greek yogurt'),
+      markup.includes('line-clamp-3 text-balance break-words">Removed Greek yogurt'),
       'a status with an action did not get the third line the button costs it',
     );
     assert.ok(markup.includes('text-xs font-semibold leading-4'), 'a status with an action stayed at text-sm');
     // CONTROL: the same text with no action keeps the full-size two-line row,
     // which the case above this one asserts directly.
-    assert.equal(countOf(markup, 'line-clamp-2 break-words">Removed Greek yogurt'), 0);
+    assert.equal(countOf(markup, 'line-clamp-2 text-balance break-words">Removed Greek yogurt'), 0);
   });
 
   it('renders the description as a second line', () => {

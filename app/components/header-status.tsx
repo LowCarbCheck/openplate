@@ -103,10 +103,16 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
             plus `break-words` replaces `truncate` here (M225): an error stays
             on screen until dismissed, so cutting it to one line with an
             ellipsis made it unreadable. The description below keeps
-            `truncate`, it is supplementary, never the whole message. */}
+            `truncate`, it is supplementary, never the whole message.
+
+            `text-balance` is the mobile audit's fix for the orphan: at 390 px
+            "That's seven days logged in a row." broke after "in a" and left
+            "row." alone on the second line, and German did the same with
+            "Folge.". Balancing evens the two lines out instead. It changes no
+            copy and adds no line: a sentence that already fits stays on one. */}
         <span className={cn('flex min-w-0 items-start gap-1.5', textRowClass)}>
           <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span className={cn(textClampClass, 'break-words')}>{status.text}</span>
+          <span className={cn(textClampClass, 'text-balance break-words')}>{status.text}</span>
         </span>
         {status.description !== null && (
           <span className="truncate text-xs leading-4 text-muted-foreground">{status.description}</span>
