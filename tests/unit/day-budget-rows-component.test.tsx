@@ -5,9 +5,10 @@
  * target showed a meter and a progress caption, a row without one showed a
  * single grey line, so the four rows had different heights and their big
  * numbers floated at different horizontal positions. A row is now a two column
- * grid: label and value on the first grid row, meter and sub-line on the
- * second, so every row is the same height and every number and caption share
- * one right edge.
+ * grid: label and value on the first grid row, the meter across both columns
+ * on the second, and the reference tag and sub-line on the third, so every row
+ * is the same height, every meter is the same length and every number and
+ * caption share one right edge.
  *
  * A row with no target still draws NO meter, on purpose: an empty track reads
  * as a goal sitting at zero percent, which is a different and wrong statement.
@@ -183,10 +184,12 @@ describe('a budget row is one grid, whether or not it has a target', () => {
  * The label cell (M216/02).
  *
  * A German label beside the reference tag used to lose its tail to an ellipsis
- * at a narrow width, and to collapse to nothing at a large root font. The fix
- * is a wrapping label cell and a label span that may shrink, so the assertions
- * below are about the label cell's classes, which is what this repo can prove:
- * there is no DOM library here, so no `scrollWidth` to read.
+ * at a narrow width, and to collapse to nothing at a large root font. The tag
+ * has since moved out of the label cell to a grid cell of its own (the mobile
+ * audit, 2026-09-20: the row was 22 px taller on the days the tag drew), so
+ * the assertions below are about the label cell's classes and the tag's
+ * placement, which is what this repo can prove: there is no DOM library here,
+ * so no `scrollWidth` to read.
  */
 
 const GERMAN_FIBER_LABEL = 'Ballaststoffe';
@@ -258,12 +261,36 @@ function labelSpanClass({ markup, label }: { markup: string; label: string }): s
 function assertLabelWraps({ markup, label }: { markup: string; label: string }): void {
   const cell = classTokens(labelCellClass(markup));
   const span = classTokens(labelSpanClass({ markup, label }));
-  assert.ok(cell.includes('flex-wrap'), `the label cell must wrap so the reference tag drops under "${label}"`);
+  assert.ok(
+    cell.includes('min-w-0'),
+    `the label cell must be free to shrink, or "${label}" pushes the value column off the row`,
+  );
   assert.ok(!span.includes('truncate'), `"${label}" must never be clipped with an ellipsis`);
   assert.ok(span.includes('min-w-0'), `the "${label}" span must be free to shrink below its content width`);
+  assert.ok(span.includes('break-words'), `"${label}" must wrap inside its own span rather than overflow it`);
 }
 
-/** The label cell exactly as it shipped before this fix: `truncate`, no `min-w-0`, no wrap. */
+/** The class list of the element carrying the reference tag, wherever it sits in the row. */
+function referenceTagClass(markup: string): string {
+  const match = /<(?:span|a) class="([^"]*tracking-\[0\.08em\][^"]*)"/.exec(markup);
+  const classList = match?.[1];
+  if (classList === undefined) throw new Error('expected a reference tag carrying a class list');
+  return classList;
+}
+
+/**
+ * The tag is a grid cell of the ROW, never a child of the label cell.
+ *
+ * That is what stops a row growing a second line on the days a tag is drawn
+ * and losing it again on the days it is not: the mobile audit measured the
+ * same card at 68 px and at 90 px on two days for exactly this reason.
+ */
+function assertTagIsItsOwnGridCell(markup: string): void {
+  const tag = classTokens(referenceTagClass(markup));
+  assert.ok(tag.includes('col-start-1'), 'the reference tag must be placed in the row grid, not inside the label cell');
+}
+
+/** The label cell exactly as it shipped before this fix: `truncate`, no `min-w-0` on the span, tag inline. */
 const PRE_FIX_ROW_MARKUP =
   '<li class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 py-2.5 first:pt-0 last:pb-0">' +
   '<span class="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">' +
@@ -277,11 +304,11 @@ const NEAR_MISS_ROW_MARKUP =
   '<li class="grid">' +
   '<span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium text-foreground">' +
   '<span class="h-2 w-2 shrink-0 rounded-full bg-macro-fiber" aria-hidden="true"></span>' +
-  `<span class="min-w-0 text-truncate-none">${GERMAN_FIBER_LABEL}</span>` +
+  `<span class="min-w-0 break-words text-truncate-none">${GERMAN_FIBER_LABEL}</span>` +
   '</span></li>';
 
 describe('a long German label wraps in its cell instead of truncating', () => {
-  it('drops the reference tag under the label and never clips the word', () => {
+  it('keeps the whole word and gives the reference tag its own grid cell', () => {
     const html = render(buildGermanReferenceRows());
     const rows = rowMarkup(html);
     assert.equal(rows.length, 2, 'the fixture is the two reference rows');
@@ -293,13 +320,20 @@ describe('a long German label wraps in its cell instead of truncating', () => {
 
     assertLabelWraps({ markup: fiberRow, label: GERMAN_FIBER_LABEL });
     assertLabelWraps({ markup: proteinRow, label: GERMAN_PROTEIN_LABEL });
+    assertTagIsItsOwnGridCell(fiberRow);
+    assertTagIsItsOwnGridCell(proteinRow);
   });
 
-  it('CONTROL: the pre-fix label cell fails that same check', () => {
+  it('CONTROL: the pre-fix label cell fails both of those checks', () => {
     assert.throws(
       () => assertLabelWraps({ markup: PRE_FIX_ROW_MARKUP, label: GERMAN_FIBER_LABEL }),
-      /the label cell must wrap/,
-      'CONTROL: a truncating label cell with no flex-wrap must fail this check',
+      /must never be clipped/,
+      'CONTROL: a truncating label span must fail this check',
+    );
+    assert.throws(
+      () => assertTagIsItsOwnGridCell(PRE_FIX_ROW_MARKUP),
+      /must be placed in the row grid/,
+      'CONTROL: a tag nested in the label cell must fail this check',
     );
   });
 

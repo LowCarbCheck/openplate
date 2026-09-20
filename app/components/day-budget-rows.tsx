@@ -53,8 +53,18 @@ const ROW_TRACK_CLASS = {
   fiber: 'bg-macro-fiber/20',
 } satisfies Record<DayBudgetRowKey, string>;
 
-/** The shared look of the small uppercase tag beside a row's label. */
-const REFERENCE_TAG_CLASS = 'shrink-0 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground';
+/**
+ * The shared look of the small uppercase tag under a row's label.
+ *
+ * `text-xs` is the app's smallest readable step. It was `text-[10px]`, which
+ * the mobile audit measured at 10 CSS px and called unreadable; the tag also
+ * used to sit INSIDE the label cell, where a German or Turkish label pushed it
+ * on to a second line and made the row 22 px taller on some days than on
+ * others. It has its own cell on the sub-line row now, so a row is the same
+ * height whether it carries a tag or not.
+ */
+const REFERENCE_TAG_CLASS =
+  'col-start-1 min-w-0 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground';
 
 /**
  * The tag beside a reference row's label.
@@ -98,11 +108,17 @@ function headlineFor(row: DayBudgetRow, animated: AnimatedHeadlines | null): str
 }
 
 /**
- * One row, as a two column grid with two grid rows. Top row: the label side
- * (swatch, label, optional reference tag) on the left, the headline value
- * right-aligned on the right. Second row: the meter track under the label, and
- * the sub-line under the value, so the number and its caption share one right
- * edge in every row and all rows are the same height.
+ * One row, as a two column grid with three grid rows. Top row: the label side
+ * (swatch, label) on the left, the headline value right-aligned on the right.
+ * Middle row: the meter track, spanning BOTH columns. Bottom row: the optional
+ * reference tag on the left, the sub-line under the value on the right, so the
+ * number and its caption share one right edge in every row.
+ *
+ * THE TRACK SPANS BOTH COLUMNS because the right column is `auto`: it sizes to
+ * the headline, so "1,240" and "34 g" gave their rows tracks of different
+ * lengths (the mobile audit measured 143, 164, 154, 143 and 154 px in one
+ * five-row card). A full-width track is the same length in every row whatever
+ * the number beside it says.
  *
  * A row with no target draws NO track, only the empty first cell: an empty
  * meter would read as a goal sitting at zero percent, which is a different and
@@ -124,27 +140,17 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 py-2.5 first:pt-0 last:pb-0">
       {/*
         A German label beside the reference tag overflowed at a large font: it
-        lost its tail to an ellipsis, or collapsed to nothing. Wrapping the
-        label cell keeps the whole word, and keeps M209's value column aligned.
+        lost its tail to an ellipsis, or collapsed to nothing. The tag has moved
+        to the sub-line row, so the cell holds the swatch and the word alone and
+        the word itself wraps rather than being clipped.
       */}
-      <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
         <span className={cn('h-2 w-2 shrink-0 rounded-full', fillClass)} aria-hidden="true" />
-        <span className="min-w-0">{row.label}</span>
-        {row.targetSource === 'default' && <ReferenceTag row={row} />}
-        {/*
-          A DERIVED target is neither a goal the person typed in nor a
-          population reference, so it wears its own footnote saying where the
-          figure came from. Same size and same weight as the reference tag, and
-          never a link: the numbers it is built from are already three separate
-          fields on the targets page, so there is no one place to send anyone.
-        */}
-        {row.targetSource === 'derived' && (
-          <span className={REFERENCE_TAG_CLASS}>{t('diary.drilldown.derivedTag')}</span>
-        )}
+        <span className="min-w-0 break-words">{row.label}</span>
       </span>
       <span
         className={cn(
-          'flex shrink-0 items-center gap-1.5 justify-self-end text-right text-xl font-semibold leading-tight tracking-tight tabular-nums sm:text-2xl',
+          'flex shrink-0 items-center gap-1.5 justify-self-end text-right text-base font-semibold leading-tight tracking-tight tabular-nums min-[400px]:text-xl sm:text-2xl',
           // Over-goal is amber and only amber: the day describes the food,
           // never the person (DESIGN.md §2b).
           isOver ? 'text-accent-amber'
@@ -159,13 +165,25 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
       {row.fraction !== null && (
         <div
           data-slot="budget-track"
-          className={cn('col-start-1 h-2 self-center overflow-hidden rounded-full', ROW_TRACK_CLASS[row.key])}
+          className={cn('col-span-2 col-start-1 h-2 self-center overflow-hidden rounded-full', ROW_TRACK_CLASS[row.key])}
         >
           <div
             className={cn('h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500', fillClass)}
             style={{ width: `${row.fraction * 100}%` }}
           />
         </div>
+      )}
+
+      {row.targetSource === 'default' && <ReferenceTag row={row} />}
+      {/*
+        A DERIVED target is neither a goal the person typed in nor a population
+        reference, so it wears its own footnote saying where the figure came
+        from. Same size and same weight as the reference tag, and never a link:
+        the numbers it is built from are already three separate fields on the
+        targets page, so there is no one place to send anyone.
+      */}
+      {row.targetSource === 'derived' && (
+        <span className={REFERENCE_TAG_CLASS}>{t('diary.drilldown.derivedTag')}</span>
       )}
 
       <span
