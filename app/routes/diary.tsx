@@ -109,7 +109,7 @@ import type { CalendarDayLevel } from '#app/lib/calendar-day-levels';
 import { CALENDAR_DAY_MODIFIER_CLASSNAMES, calendarDayModifierFor } from '#app/lib/adherence-cell-fill';
 import type { CalendarDayModifier } from '#app/lib/adherence-cell-fill';
 import { labelDayButton as defaultLabelDayButton } from 'react-day-picker';
-import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Copy } from 'lucide-react';
 import { publishStatus } from '#app/lib/status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -221,6 +221,20 @@ const RECENT_CHIP_SCAN_LIMIT = 50;
 const GAP_THRESHOLD_DAYS = 3;
 /** How often the diary polls for another tab's writes while the tab is visible (item 9). */
 const LIVE_REVALIDATE_POLL_MS = 2_000;
+
+/**
+ * The day arrows either side of the date. 44 px is the app's tap floor on a
+ * phone, where they were 36; `md:` puts the pointer-sized button back, so a
+ * desktop date bar does not grow.
+ */
+const DATE_NAV_ARROW_CLASS = 'size-11 shrink-0 md:size-9';
+
+/**
+ * How much screen the calendar popover must leave at each edge. It is the page
+ * gutter, so the panel lines up with everything else on the screen instead of
+ * sitting flush against the left edge, which is where Radix put it at 360 px.
+ */
+const POPOVER_COLLISION_PADDING_PX = 16;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Server loader — none needed (M117/04: accounts optional, health data is
@@ -1318,8 +1332,33 @@ function entryNetCarbs(log: LocalFoodLog): number {
  * one-decimal, "~"-hedged figure the meal and day totals use.
  */
 export function formatEntryNetCarbs(log: LocalFoodLog, t: Translate, language: string): string {
-  if (log.macros.carbs === null) return t('diary.entry.netCarbsUnknown');
+  if (hasUnknownNetCarbs(log)) return t('diary.entry.netCarbsUnknown');
   return t('diary.netCarbsValue', { value: formatNetCarbGrams(entryNetCarbs(log), log.aiEstimated, language) });
+}
+
+/** Whether this entry has no net-carb figure at all, the one rule the row and the meal pill above it both read. */
+function hasUnknownNetCarbs(log: LocalFoodLog): boolean {
+  return log.macros.carbs === null;
+}
+
+/**
+ * A meal group's net-carb pill.
+ *
+ * A group whose entries ALL read "net carbs unknown" has no subtotal to state:
+ * `summarizeDay` counts an unknown as nothing, so the pill said "0 g net
+ * carbs" over rows that each said "unknown" one line below it (the mobile
+ * audit found this on two meals of the demo diary). It says the same thing its
+ * rows say instead, in the same words, so the two can never disagree.
+ *
+ * A group with SOME known entries keeps its partial figure. That is the rule
+ * the day headline already follows, where `getSummaryCaveat` adds a caveat
+ * line rather than withholding the number.
+ */
+export function formatGroupNetCarbs(group: MealGroup, t: Translate, language: string): string {
+  if (group.logs.length > 0 && group.logs.every(hasUnknownNetCarbs)) return t('diary.entry.netCarbsUnknown');
+  return t('diary.netCarbsValue', {
+    value: formatNetCarbGrams(group.subtotal.netCarbs, group.subtotal.hasEstimates, language),
+  });
 }
 
 /**
@@ -1568,26 +1607,39 @@ function DateNav({
   );
 
   return (
-    <div className="flex items-center justify-between gap-2">
-      <Button variant="ghost" size="icon" asChild aria-label={t('diary.nav.previousDay')}>
+    <div data-slot="date-nav" className="flex items-center justify-between gap-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        asChild
+        aria-label={t('diary.nav.previousDay')}
+        className={DATE_NAV_ARROW_CLASS}
+      >
         <Link to={`/diary?date=${shiftDate(date, -1)}`}>
           <ChevronLeft className="h-4 w-4" />
         </Link>
       </Button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
               aria-label={t('diary.nav.openCalendar', { day: formatDayLabel(date, i18n.language) })}
-              className={cn('gap-1.5 text-lg font-semibold tabular-nums', !isToday && 'text-accent-amber')}
+              className={cn(
+                'gap-1.5 px-2 text-lg font-semibold tabular-nums min-[400px]:px-4',
+                !isToday && 'text-accent-amber',
+              )}
             >
               {formatDayLabel(date, i18n.language)}
               <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center">
+          {/* `collisionPadding` keeps the panel a gutter's width off both
+              screen edges. Without it Radix flushed it against the left edge
+              at 360px, where the popover is wider than the room its trigger
+              leaves (the mobile audit measured left 0, width 278). */}
+          <PopoverContent className="w-auto p-0" align="center" collisionPadding={POPOVER_COLLISION_PADDING_PX}>
             <CalendarPicker
               mode="single"
               selected={dayKeyToLocalDate(date)}
@@ -1611,15 +1663,40 @@ function DateNav({
             </div>
           </PopoverContent>
         </Popover>
+        {/*
+          THE SHORTCUT IS AN ICON ON A PHONE. Spelled out, this button and the
+          date beside it needed 383 px of a 328 px row at 360, and the "next
+          day" arrow was pushed off the right edge of the screen (worse in
+          German, where the label is "Zu heute springen"). The word comes back
+          at 400 px, and the icon-only state still says the same sentence to a
+          screen reader and in its tooltip, so nothing is lost but the width.
+        */}
         {!isToday && (
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/diary">{t('diary.nav.jumpToToday')}</Link>
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            aria-label={t('diary.nav.jumpToToday')}
+            title={t('diary.nav.jumpToToday')}
+            className="h-11 w-11 shrink-0 p-0 min-[400px]:h-8 min-[400px]:w-auto min-[400px]:px-3"
+          >
+            <Link to="/diary">
+              <ChevronsRight className="h-4 w-4 min-[400px]:hidden" aria-hidden="true" />
+              <span className="hidden min-[400px]:inline">{t('diary.nav.jumpToToday')}</span>
+            </Link>
           </Button>
         )}
       </div>
 
       {canGoNext ?
-        <Button variant="ghost" size="icon" asChild aria-label={t('diary.nav.nextDay')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          asChild
+          data-slot="next-day"
+          aria-label={t('diary.nav.nextDay')}
+          className={DATE_NAV_ARROW_CLASS}
+        >
           <Link to={`/diary?date=${shiftDate(date, 1)}`}>
             <ChevronRight className="h-4 w-4" />
           </Link>
@@ -1628,8 +1705,10 @@ function DateNav({
           variant="ghost"
           size="icon"
           disabled
+          data-slot="next-day"
           aria-label={t('diary.nav.nextDay')}
           title={t('diary.nav.alreadyToday')}
+          className={DATE_NAV_ARROW_CLASS}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -1892,13 +1971,37 @@ function LogEntryCard({ log, justAdded, time }: { log: LocalFoodLog; justAdded: 
               )}
               <ProvenanceBadge log={log} />
             </div>
-            <div className="mt-1 text-sm text-muted-foreground tabular-nums">
-              {time} · {formatEntryPortion(log, i18n.language)} · {formatEntryNetCarbs(log, t, i18n.language)} ·{' '}
-              {t('diary.entry.protein')} {formatMacroOrUnknown(log.macros.protein, 'g', t, i18n.language)} ·{' '}
-              {t('diary.entry.fat')} {formatMacroOrUnknown(log.macros.fat, 'g', t, i18n.language)} ·{' '}
+            {/*
+              ONE SPAN PER FACT, each `whitespace-nowrap`. The row used to be a
+              single run of text, so a narrow screen broke it wherever a space
+              happened to fall and left "protein" ending one line with "17.5 g"
+              starting the next. The separators are their own spans so a break
+              can still happen BETWEEN two facts, which is the only place a
+              break reads correctly.
+            */}
+            <div
+              data-slot="entry-facts"
+              className="mt-1 flex flex-wrap gap-x-1 text-sm text-muted-foreground tabular-nums"
+            >
+              <span className="whitespace-nowrap">{time}</span>
+              <span aria-hidden="true">·</span>
+              <span className="whitespace-nowrap">{formatEntryPortion(log, i18n.language)}</span>
+              <span aria-hidden="true">·</span>
+              <span className="whitespace-nowrap">{formatEntryNetCarbs(log, t, i18n.language)}</span>
+              <span aria-hidden="true">·</span>
+              <span className="whitespace-nowrap">
+                {t('diary.entry.protein')} {formatMacroOrUnknown(log.macros.protein, 'g', t, i18n.language)}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="whitespace-nowrap">
+                {t('diary.entry.fat')} {formatMacroOrUnknown(log.macros.fat, 'g', t, i18n.language)}
+              </span>
+              <span aria-hidden="true">·</span>
               {/* "calories" already says what the number is — appending the
                   jargon unit "kcal" on top said it twice (defect). */}
-              {t('diary.entry.calories')} {formatMacroOrUnknown(log.macros.kcal, '', t, i18n.language)}
+              <span className="whitespace-nowrap">
+                {t('diary.entry.calories')} {formatMacroOrUnknown(log.macros.kcal, '', t, i18n.language)}
+              </span>
             </div>
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -1940,13 +2043,20 @@ function MealGroupSection({
         opposite edges. The subtotal sits in a quiet brand-tinted pill for the
         same reason — it's a figure about the group, not body copy.
       */}
-      <div className="flex items-center gap-2.5">
+      {/*
+        THE ROW WRAPS. The naming form `SaveMealButton` opens used to be a
+        fourth item on this one line, which squeezed the subtotal pill to 48 px
+        and three lines. It takes a line of its own now (`basis-full` there),
+        and the pill states its figure on one line whatever else is beside it.
+      */}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <SectionEyebrow as="h3">{mealGroupLabel(group.mealType, t)}</SectionEyebrow>
         <span className="h-px flex-1 bg-primary/20" aria-hidden="true" />
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary tabular-nums">
-          {t('diary.netCarbsValue', {
-            value: formatNetCarbGrams(group.subtotal.netCarbs, group.subtotal.hasEstimates, i18n.language),
-          })}
+        <span
+          data-slot="meal-subtotal"
+          className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-primary tabular-nums"
+        >
+          {formatGroupNetCarbs(group, t, i18n.language)}
         </span>
         <SaveMealButton group={group} isNaming={isNaming} onNamingChange={setIsNaming} />
       </div>
@@ -2069,11 +2179,20 @@ function SaveMealButton({
 
   if (!isNaming) {
     return (
+      // 28 px of ink, 44 px of hit area. The `after:` box is the app's tap
+      // floor without a 44 px circle landing in the middle of a meal header,
+      // which would make every meal header 16 px taller.
+      //
+      // IT GROWS LEFT, NEVER RIGHT. This button sits on the content's right
+      // edge, so a box that reached past it poked into the page gutter and
+      // `meal-group` measured 336 px of content in a 328 px column. Leftward
+      // it reaches over the last few pixels of the subtotal pill, which is
+      // text and not a control, so nothing is taken from anything.
       <button
         type="button"
         onClick={() => onNamingChange(true)}
         aria-label={t('diary.saveMeal.trigger')}
-        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+        className="relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors after:absolute after:-inset-y-2 after:-left-4 after:right-0 after:content-[''] hover:bg-primary/10 hover:text-primary"
       >
         <BookMarked className="h-3.5 w-3.5" />
       </button>
@@ -2083,7 +2202,7 @@ function SaveMealButton({
   return (
     <fetcher.Form
       method="post"
-      className="flex shrink-0 items-center gap-1.5"
+      className="flex basis-full items-center gap-1.5"
       onSubmit={(event) => {
         if (name.trim().length === 0) event.preventDefault();
       }}
@@ -2099,12 +2218,23 @@ function SaveMealButton({
         onChange={(event) => setName(event.target.value)}
         placeholder={t('diary.saveMeal.namePlaceholder')}
         aria-label={t('diary.saveMeal.namePlaceholder')}
-        className="h-7 w-32 rounded-full border border-border bg-card px-2.5 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className="h-11 min-w-0 flex-1 rounded-full border border-border bg-card px-2.5 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:h-7 md:w-32 md:flex-none"
       />
-      <Button type="submit" size="sm" className="h-7 px-2 text-xs" disabled={isSaving || name.trim().length === 0}>
+      <Button
+        type="submit"
+        size="sm"
+        className="h-11 px-3 text-xs md:h-7 md:px-2"
+        disabled={isSaving || name.trim().length === 0}
+      >
         {isSaving ? t('diary.saveMeal.saving') : t('diary.saveMeal.save')}
       </Button>
-      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onNamingChange(false)}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-11 px-3 text-xs md:h-7 md:px-2"
+        onClick={() => onNamingChange(false)}
+      >
         {t('diary.copy.cancel')}
       </Button>
     </fetcher.Form>
@@ -2157,7 +2287,11 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
   }, [logFetcher.data, undoFetcher, t, i18n.language]);
 
   return (
-    <logFetcher.Form method="post">
+    // `min-w-0` is what makes the button's `max-w-full` below mean anything:
+    // this form is the flex item, and without it the item sizes to its
+    // content, so a 60 character food name drew a 601 px chip in a 358 px
+    // column and the whole page scrolled sideways.
+    <logFetcher.Form method="post" className="min-w-0 max-w-full">
       <input type="hidden" name="_intent" value="log-recent" />
       <input type="hidden" name="name" value={chip.name} />
       <input type="hidden" name="quantityGrams" value={String(chip.lastQuantityGrams)} />
@@ -2188,13 +2322,14 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
       <button
         type="submit"
         disabled={isLogging}
+        data-slot="quick-add-chip"
         /* In flight the chip breathes rather than only dimming. A tap on a
            quick-add chip writes to IndexedDB and usually settles before the
            progress bar's 150ms delay elapses, so this chip is the only place
            that slow taps show up at all — and `pulse-soft` costs no layout, so
            a row of chips can't reflow as one of them goes pending. */
         className={cn(
-          'inline-flex min-h-10 max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60',
+          'inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60',
           isLogging && 'pulse-soft',
         )}
       >
@@ -2249,7 +2384,9 @@ function CopyFromYesterdayChip({
   useCopyYesterdayToast({ data: copyFetcher.data });
 
   return (
-    <copyFetcher.Form method="post">
+    // Same reason as `QuickAddChipButton`'s form: the flex item has to be
+    // allowed to shrink or the label inside it cannot.
+    <copyFetcher.Form method="post" className="min-w-0 max-w-full">
       <input type="hidden" name="_intent" value="copy-yesterday" />
       <input type="hidden" name="date" value={date} />
       {mealType !== undefined && <input type="hidden" name="mealType" value={mealType ?? NO_MEAL_VALUE} />}
@@ -2259,12 +2396,12 @@ function CopyFromYesterdayChip({
         /* Same treatment as the quick-add chip above — the label already swaps
            to "Copying…", the pulse is what keeps it from looking stuck. */
         className={cn(
-          'inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-60',
+          'inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-60',
           isCopying && 'pulse-soft',
         )}
       >
-        <Copy className="h-3.5 w-3.5" />
-        {isCopying ? t('diary.copy.copying') : label}
+        <Copy className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">{isCopying ? t('diary.copy.copying') : label}</span>
       </button>
     </copyFetcher.Form>
   );
@@ -2316,7 +2453,7 @@ function CopyFromYesterday({
           <button
             type="button"
             onClick={() => setIsPicking(true)}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+            className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
           >
             {t('diary.copy.chooseEntries')}
           </button>
@@ -2392,9 +2529,12 @@ function CopyEntryPicker({
               <div key={group.mealType ?? NO_MEAL_VALUE} className="space-y-1.5">
                 <p className="text-xs font-medium text-muted-foreground">{mealGroupLabel(group.mealType, t)}</p>
                 {group.logs.map((log) => (
+                  // The whole label is the target, which is why the row and
+                  // not the 16 px box carries the 44 px floor: the audit
+                  // measured these rows at 28 px tall.
                   <label
                     key={log.id}
-                    className="-m-1 flex cursor-pointer items-center justify-between gap-3 rounded-md p-1 transition-colors hover:bg-muted/50"
+                    className="-mx-1 flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 transition-colors hover:bg-muted/50"
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <input
@@ -2403,7 +2543,7 @@ function CopyEntryPicker({
                         onChange={() => toggle(log.id)}
                         className="h-4 w-4 shrink-0 accent-primary"
                       />
-                      <span className="truncate text-sm">{log.name}</span>
+                      <span className="min-w-0 break-words text-sm">{log.name}</span>
                     </span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {formatEntryTime(log.loggedAt, timezone, i18n.language)}
