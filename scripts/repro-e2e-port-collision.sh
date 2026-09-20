@@ -55,9 +55,11 @@ cleanup() {
     fi
   done
   if [ -n "$SCRATCH_ROOT" ]; then
+    # `worktree remove` drops this one's admin entry by itself. A plain
+    # `worktree prune` is deliberately NOT run: it is repository-wide and would
+    # reach into the bookkeeping of every other session's worktree.
     git -C "$HERE" worktree remove --force "$SCRATCH_ROOT/tree" >/dev/null 2>&1 || true
     git -C "$HERE" branch -D "$SCRATCH_BRANCH" >/dev/null 2>&1 || true
-    git -C "$HERE" worktree prune >/dev/null 2>&1 || true
     rm -rf "$SCRATCH_ROOT"
     echo "▪ repro: scratch worktree and branch $SCRATCH_BRANCH removed"
   fi

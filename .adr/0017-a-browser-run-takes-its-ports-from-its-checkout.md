@@ -122,6 +122,15 @@ Nobody can predict a checkout's ports by reading the source any more. That is
 the cost of the decision, and it is paid back by every run printing its own
 three numbers and by the failure message naming the port it wanted.
 
+One piece of host state is still shared and stays that way: the tier's
+fontconfig cache, `~/.cache/openplate-e2e-fontconfig`, whose name is written
+into `tests/e2e/fonts.conf` as XML and cannot read a TypeScript constant. Two
+concurrent runs therefore reset and fill one cache. That is safe in a way a TCP
+port is not, because a cache rebuilds itself when it is missing, and the two
+concurrent runs this decision was verified against passed 39 checks each with
+it shared. Making it per checkout would mean generating `fonts.conf`, which
+buys nothing until a run is seen to fail on it.
+
 CI is unaffected in substance: a fresh GitHub runner has one checkout, so it
 derives one triple from the runner's workspace path and every port in the range
 is free there.
