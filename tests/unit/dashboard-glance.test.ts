@@ -317,7 +317,9 @@ describe('the 13-week grid on Overview', () => {
     const banner = positionOf(body, '<ReproductiveStatusPromptBanner', 'the reproductive status banner');
     const grid = positionOf(body, '<StreakGridCard', 'the streak grid card');
     const fast = positionOf(body, '<FastStrip', 'the fast strip');
-    const glanceRow = positionOf(body, '<div className="grid grid-cols-2', 'the two-up glance row');
+    // One column on a phone, two from `sm`: the row is still the same row and
+    // still the last of the four, which is all this position check is about.
+    const glanceRow = positionOf(body, '<div className="grid grid-cols-1 gap-4 sm:grid-cols-2', 'the glance row');
 
     assert.ok(hero < grid, 'the hero still leads the page');
     assert.ok(banner < grid, 'the status banner stays with the hero, above the grid');

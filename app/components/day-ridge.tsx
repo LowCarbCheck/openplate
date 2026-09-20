@@ -4,13 +4,18 @@
  * Presentational only: the whole model arrives pre-computed from
  * `#app/models/day-ridge`, which owns every verdict.
  *
- * HEIGHT ARITHMETIC. The tile has to fit the Overview's no-scroll budget, which
- * `dashboard.tsx`'s module header spends down to the pixel, so this component
- * is drawn to a fixed 164 px card, border to border:
+ * HEIGHT ARITHMETIC. The tile is drawn to a fixed 172 px card, border to
+ * border:
  *
  *   1 top border + 16 header padding + 32 title (two lines at 16 px)
- *   + 8 header padding + 12 goal caption + 62 drawing area + 4 gap
- *   + 12 weekday row + 16 content padding + 1 bottom border = 164.
+ *   + 8 header padding + 16 goal caption + 62 drawing area + 4 gap
+ *   + 16 weekday row + 16 content padding + 1 bottom border = 172.
+ *
+ * The caption and the weekday row were 12 px boxes of 10 px type. Nothing in
+ * this app sets text below 12 px any more, and the two rows carry the 4 px
+ * each that costs. The seven-column weekday row is why `dashboard.tsx` stopped
+ * drawing this tile at half a phone's width; that file's own comment has the
+ * arithmetic.
  *
  * Inside the 62 px drawing area the 100 percent rule sits 48 px above the
  * baseline, which leaves 14 px of headroom. An over bar is therefore CLIPPED at
@@ -168,8 +173,8 @@ export function DayRidge({
       </p>
       <p
         aria-hidden="true"
-        className="text-right text-[10px] leading-3 text-muted-foreground tabular-nums"
-        style={{ height: 12 }}
+        className="text-right text-xs leading-4 text-muted-foreground tabular-nums"
+        style={{ height: 16 }}
       >
         {captionFor(ridge, t)}
       </p>
@@ -215,8 +220,9 @@ export function DayRidge({
       </div>
       <div
         aria-hidden="true"
-        className="mt-1 flex gap-[3px] text-[10px] leading-3 text-muted-foreground"
-        style={{ height: 12 }}
+        data-slot="day-ridge-weekdays"
+        className="mt-1 flex gap-[3px] text-xs leading-4 text-muted-foreground"
+        style={{ height: 16 }}
       >
         {ridge.days.map((day) => (
           <span key={day.date} className={cn('flex-1 text-center', day.isToday && 'font-bold text-foreground')}>

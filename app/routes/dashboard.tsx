@@ -28,6 +28,10 @@
  * that it is worth a scroll on the screen people open first. The two grids are
  * fed from ONE selection (`#app/lib/adherence-grid-days`) so they can never
  * disagree about a day.
+ *
+ * The glance row is one column on a phone and two from `sm`, which costs the
+ * page another tile's height below 640 px. See that row's own comment for what
+ * half a 360 px screen did to the week tile's weekday labels.
  */
 import type { ReactElement } from 'react';
 import type { Route } from './+types/dashboard';
@@ -113,7 +117,7 @@ const WEEK_DAYS = 7;
 
 /** The one link style this page uses to hand the user on to the screen that owns the detail. */
 const HANDOFF_LINK_CLASS =
-  'inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline';
+  'inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline md:min-h-0';
 
 /**
  * The pantry door under the composer (M233/02).
@@ -522,16 +526,21 @@ function InsightsHintCard({ onDismiss }: { onDismiss: () => void }): ReactElemen
 
   return (
     <Card data-slot="insights-hint" className="border-dashed">
-      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <p className="min-w-0 flex-1 text-sm text-muted-foreground">{t('dashboard.insightsHint.title')}</p>
+      {/* A COLUMN ON A PHONE. The sentence and the two keys used to share one
+          wrapping row, and `flex-1` on a `flex-basis: 0` item never wraps: the
+          sentence was squeezed into 76 px of a 326 px card and ran to five
+          lines beside them. Stacked, it gets the whole card and the keys get
+          their own line under it. */}
+      <CardContent className="flex flex-col items-start gap-3 p-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
+        <p className="min-w-0 text-sm text-muted-foreground md:flex-1">{t('dashboard.insightsHint.title')}</p>
         <div className="flex shrink-0 items-center gap-2">
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="h-11 md:h-8">
             {/* `Insights` itself stays untranslated everywhere (the tab strip's
                 own title does the same, M239/02), so the button reads the same
                 feature name as the screen it opens in every language. */}
             <Link to="/trends?tab=overview">{t('trends.overview.openInsights', { name: t('trends.title') })}</Link>
           </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={onDismiss}>
+          <Button type="button" size="sm" variant="ghost" className="h-11 md:h-8" onClick={onDismiss}>
             {t('diary.saveMeal.hint.dismiss')}
           </Button>
         </div>
@@ -573,7 +582,7 @@ function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
       data-slot="week-glance-card"
       className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Card className="transition-colors hover:border-primary/40">
+      <Card className="h-full transition-colors hover:border-primary/40">
         <CardHeader className={cn(GLANCE_HEADER_CLASS, 'flex-row items-start justify-between gap-2 space-y-0')}>
           <CardTitle className="text-base">{t('dashboard.week.title')}</CardTitle>
           <span className="shrink-0 text-primary">
@@ -617,7 +626,7 @@ function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
       to="/trends"
       className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Card className="transition-colors hover:border-primary/40">
+      <Card className="h-full transition-colors hover:border-primary/40">
         <CardHeader className={GLANCE_HEADER_CLASS}>
           <CardTitle className="text-base">{t('trends.weight.title')}</CardTitle>
         </CardHeader>
@@ -728,14 +737,22 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
       */}
       <FastStrip />
       {/*
-        Two-up at EVERY width, not just from `sm`. Stacked, the two tiles put
-        the page at 812 px on a 375x667 phone against ~491 px of content area,
-        and the weight tile ended up behind the fixed bottom bar. Side by side
-        they cost one row instead of two, which is the design spec's own
-        prescribed mitigation for the small-phone case (§1.2 caveat), the hero
-        stays exactly as it is.
+        STACKED ON A PHONE, two-up from `sm`, which reverses the "two-up at
+        every width" call this comment used to make. That call was paid for by
+        a no-scroll page on a 375x667 phone, and there is no such page any
+        more: the hero, the grid, this row and the doors under it measure well
+        past a screen at 360 px however these two tiles sit. What two-up does
+        still cost is real: half a 360 px screen leaves the week tile 122 px to
+        draw a seven-column weekday row in, which needs 141 px at the 10 px
+        type it used and more at the 12 px floor this app now holds itself to,
+        so the row spilled past the card edge in English and in Turkish. Full
+        width, it fits at every width down to 320 with room to spare.
+
+        `h-full` on each tile's own card is what keeps the `sm` row even: the
+        grid stretches the LINK around each card, never the card inside it, so
+        the weight tile drew 118 px of card inside a 180 px cell.
       */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <WeekGlanceCard ridge={ridge} />
         <WeightGlanceCard weight={weight} />
       </div>
