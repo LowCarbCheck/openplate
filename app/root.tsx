@@ -147,12 +147,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }}
         />
       </head>
-      {/* Sans (Inter) is the prose/UI voice — this is a consumer health app, not a
-          code editor. Victor Mono stays imported and available via `font-mono` for
-          the few contexts that are genuinely monospace-shaped (e.g. a sync pairing
-          code); numeric columns (macros, dates) get alignment from the `tabular-nums`
-          utility, which Inter supports, not from switching the whole face to mono. */}
-      <body className="font-sans">
+      {/* The body asks for the `body` font role (`--font-body` in app.css), which is
+          Victor Mono with Inter behind it, the way lowcarbcheck.org sets its body.
+          Long-form reading asks for the `prose` role instead: `.prose` and the four
+          legal pages, because a monospace paragraph in a phone column runs to about
+          35 characters per line and the German terms page grows by a quarter. Live
+          figures keep `tabular-nums` even though the body face is already tabular,
+          so that a rollback to Inter stays safe. */}
+      <body className="font-body">
         <I18nProvider language={language}>{children}</I18nProvider>
         <Scripts />
       </body>

@@ -94,7 +94,7 @@ export function WithdrawalContent() {
   const { t, i18n } = useTranslation('legal');
   const contact = operatorContactLine();
   return (
-    <article className="prose prose-zinc dark:prose-invert max-w-none">
+    <article className="font-prose prose prose-zinc dark:prose-invert max-w-none">
       <H1 variant="default" className="mb-8">
         {t('withdrawal.title')}
       </H1>

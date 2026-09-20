@@ -9,17 +9,18 @@
 @variant dark (&:where(.dark, .dark *));
 
 /*
- * Fraunces — self-hosted display serif (M129/01). Used sparingly: the
- * wordmark and page titles, never body copy (Inter stays the prose/UI voice —
- * see root.tsx's own note by the `font-sans` body class). Deliberately NOT
- * applied to the diary hero stat number or any other live-updating figure:
- * this subset has no `tnum` (tabular figures) GSUB feature (verified via
- * fontTools against the woff2 in `public/fonts/`), so digits would jitter in
- * width as they change — those stay in the existing sans with `tabular-nums`,
- * which Inter supports. The variable woff2 lives in `public/fonts/` (latin
- * subset, wght 300..700, opsz 9..144) — no external font host, no new npm
- * dependency, unlike Inter/Victor Mono above which load via
- * `@fontsource-variable/*` packages.
+ * Fraunces, the self-hosted display serif (M129/01). Since M243 it is the
+ * BRAND face: it draws the word "openplate" and nothing else, through the
+ * `Wordmark` component (`font-display`, which resolves to the `--font-brand`
+ * role below). It is never body copy, a card title or a live figure. The
+ * body voice is Victor Mono and the long-form voice is Inter, see the font
+ * roles in the `@theme` block below. Deliberately NOT applied to the diary
+ * hero stat number or any other live-updating figure: this subset has no
+ * `tnum` (tabular figures) GSUB feature (verified via fontTools against the
+ * woff2 in `public/fonts/`), so digits would jitter in width as they change.
+ * The variable woff2 lives in `public/fonts/` (latin subset, wght 300..700,
+ * opsz 9..144), no external font host and no new npm dependency, unlike
+ * Inter and Victor Mono, which load via `@fontsource-variable/*` packages.
  */
 @font-face {
   font-family: 'Fraunces';
@@ -40,9 +41,22 @@
 
   --font-sans: 'Inter Variable', sans-serif;
   --font-mono: 'Victor Mono Variable', monospace;
-  /* Display serif for the wordmark/page titles/hero stat numbers — see the
-     `@font-face` block above. Exposed as the `font-display` Tailwind utility. */
-  --font-display: 'Fraunces', serif;
+
+  /* The three font ROLES. A screen asks for a role, never for a face, so a taste
+     reversal is one line here and not a sweep of the tree.
+
+     body:  the app's voice, on <body>. Victor Mono first. A glyph it lacks is
+            offered to Inter next, whose subsets carry a few more, and only then
+            to the device's own monospace face. To put the WHOLE app back in
+            Inter, change this one line to 'Inter Variable', sans-serif.
+     prose: long-form reading, on the legal pages and on `.prose`. Inter.
+     brand: the wordmark, and only the wordmark. Fraunces, see the `@font-face`
+            block above. Exposed as the `font-display` Tailwind utility, which
+            the `Wordmark` component owns. */
+  --font-body: 'Victor Mono Variable', 'Inter Variable', ui-monospace, monospace;
+  --font-prose: 'Inter Variable', sans-serif;
+  --font-brand: 'Fraunces', serif;
+  --font-display: var(--font-brand);
 
   --color-accent-amber: hsl(var(--accent-amber));
   --color-accent-amber-surface: hsl(var(--accent-amber-surface));
@@ -413,10 +427,15 @@
     @apply border-border outline-ring/50;
   }
   body {
-    /* Inter (font-sans, see root.tsx) reads crisper anti-aliased than the mono
-       stack did — this is a no-op for Victor Mono contexts, so it's safe to apply
-       globally. */
+    /* Anti-aliased text reads crisper on both faces, Victor Mono on the body
+       (see root.tsx) and Inter where a page opts back into the sans, so it is
+       safe to apply globally. */
     @apply bg-background text-foreground antialiased;
+    /* Victor Mono draws -> and <= and similar pairs as joined ligatures, and
+       people type exactly those in food names. A ligature would redraw what
+       they typed, so the body turns them off. The property is inherited, so
+       one declaration here covers the whole app. */
+    font-variant-ligatures: none;
   }
 }
 
@@ -453,6 +472,33 @@
      flat black/flat white with a card dropped on it. */
   .brand-glow {
     background-image: radial-gradient(60% 55% at 50% 38%, hsl(var(--primary) / 0.2) 0%, transparent 72%);
+  }
+
+  /* Long-form reading stays in Inter. The body face is Victor Mono, and a
+     monospace paragraph at 16px in a 358px column measures about 35 characters
+     per line, which is below the readable floor; the German terms page also
+     grows by 27 percent. lowcarbcheck.org does the same thing from the other
+     side: seven of its densest route containers opt back into the sans face.
+     `.prose` is the typography plugin's class, which sets no family of its
+     own, so this is the only place the choice is made. It asks for the prose
+     role, so the legal pages and any other reading surface move together. */
+  .prose {
+    font-family: var(--font-prose);
+  }
+
+  /* Graph paper, after the hero grid on lowcarbcheck.org, expressed in the
+     tokens this app already has. `--border` is themed (a pale teal-grey in
+     light, a deep one in dark), so the rule reads in both themes with no
+     second declaration and no new token or literal colour. 28px cells: the
+     original SVG stretches to about 128px at desktop width, which is too
+     coarse for a 390px column. Nothing wears this class yet, the shell and
+     the landing hero pick it up in their own steps. */
+  .surface-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.7) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.7) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
   }
 }
 

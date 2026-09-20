@@ -110,7 +110,7 @@ export function TermsContent({
 }: TermsContentProps) {
   const { t, i18n } = useTranslation('legal');
   return (
-    <article className="prose prose-zinc dark:prose-invert max-w-none">
+    <article className="font-prose prose prose-zinc dark:prose-invert max-w-none">
       <H1 variant="default" className="mb-8">
         {t('terms.title')}
       </H1>

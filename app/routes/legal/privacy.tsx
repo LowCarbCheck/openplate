@@ -200,7 +200,7 @@ export function PrivacyContent({
       t('privacy.reportWindowUnknown')
     : t('privacy.reportWindowDays', { reportDays: reportRetentionDays });
   return (
-    <article className="prose prose-zinc dark:prose-invert max-w-none">
+    <article className="font-prose prose prose-zinc dark:prose-invert max-w-none">
       <H1 variant="default" className="mb-8">
         {t('privacy.title')}
       </H1>
