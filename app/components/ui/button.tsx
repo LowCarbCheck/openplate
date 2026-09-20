@@ -18,13 +18,18 @@ const buttonVariants = cva(
         ghost: 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
       },
+      // PHONE FIRST, DESKTOP UNCHANGED. Every size draws a 44 px target below
+      // `md`, which is the floor a thumb needs, and falls back to the desktop
+      // scale above it. The whole scale moved rather than the default alone:
+      // `sm` and `icon-sm` are what dense rows reach for, and a 32 px button
+      // beside a destructive one is where a mis-tap costs data.
       size: {
-        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
-        lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
-        icon: 'size-9',
-        'icon-sm': 'size-8',
-        'icon-lg': 'size-10',
+        default: 'h-11 px-4 py-2 has-[>svg]:px-3 md:h-9',
+        sm: 'h-11 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 md:h-8',
+        lg: 'h-12 rounded-md px-6 has-[>svg]:px-4 md:h-10',
+        icon: 'size-11 md:size-9',
+        'icon-sm': 'size-11 md:size-8',
+        'icon-lg': 'size-12 md:size-10',
       },
     },
     defaultVariants: {
@@ -46,7 +51,17 @@ function Button({
   }) {
   const Comp = asChild ? Slot : 'button';
 
-  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+  // `data-size` mirrors `ui/select`'s trigger: a size is the one thing about a
+  // button a layout check needs to name, and reading it off the class list
+  // would be reading the answer out of the question.
+  return (
+    <Comp
+      data-slot="button"
+      data-size={size ?? 'default'}
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  );
 }
 
 export { Button, buttonVariants };

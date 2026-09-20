@@ -21,6 +21,19 @@ function CalendarChevron({ orientation, className, size }: ChevronProps) {
 const CALENDAR_COMPONENTS = { Chevron: CalendarChevron };
 
 /**
+ * How wide one column is on a phone.
+ *
+ * SEVEN COLUMNS CANNOT ALL BE 44 PX WIDE on a 320 px screen: 7 x 44 is 308
+ * before any gutter, and the popover this sits in is sized by its content, so
+ * a fixed 44 would push the picker past the narrowest phone the app promises
+ * to fit. The height is the part of a tap target that is always affordable, so
+ * that is pinned at 44 and the width takes whatever the row has, capped at 44
+ * so a wide phone does not draw a stretched month. Above `md` the desktop
+ * `w-9` takes over and this never applies.
+ */
+const CELL_WIDTH = 'w-[calc((100vw-3.5rem)/7)] max-w-11';
+
+/**
  * shadcn-style wrapper around react-day-picker v10. v10 reworked the theming
  * API from v8's flat classname list to the `UI`/`DayFlag`/`SelectionState`
  * enum keys (see `react-day-picker`'s `UI.d.ts`) and replaced the old
@@ -34,29 +47,29 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn('p-3', className)}
+      className={cn('p-1 md:p-3', className)}
       classNames={{
         months: 'flex flex-col sm:flex-row gap-2',
         month: 'flex flex-col gap-4',
-        month_caption: 'flex justify-center pt-1 relative items-center w-full',
+        month_caption: 'flex justify-center pt-1 relative items-center w-full min-h-11 md:min-h-0',
         caption_label: 'text-sm font-medium',
         nav: 'flex items-center justify-between absolute inset-x-0 top-0',
         button_previous: cn(
           buttonVariants({ variant: 'outline' }),
-          'size-7 bg-transparent p-0 opacity-50 hover:opacity-100',
+          'size-11 bg-transparent p-0 opacity-50 hover:opacity-100 md:h-7 md:w-7',
         ),
         button_next: cn(
           buttonVariants({ variant: 'outline' }),
-          'size-7 bg-transparent p-0 opacity-50 hover:opacity-100',
+          'size-11 bg-transparent p-0 opacity-50 hover:opacity-100 md:h-7 md:w-7',
         ),
         month_grid: 'w-full border-collapse',
-        weekdays: 'flex',
-        weekday: 'text-muted-foreground w-9 rounded-md text-[0.8rem] font-normal',
-        week: 'flex w-full mt-2',
+        weekdays: 'flex gap-0.5 md:gap-0',
+        weekday: `text-muted-foreground ${CELL_WIDTH} rounded-md text-[0.8rem] font-normal md:w-9`,
+        week: 'flex w-full mt-1.5 gap-0.5 md:mt-2 md:gap-0',
         day: 'relative p-0 text-center text-sm focus-within:relative focus-within:z-20',
         day_button: cn(
           buttonVariants({ variant: 'ghost' }),
-          'size-9 p-0 font-normal aria-selected:opacity-100',
+          `h-11 ${CELL_WIDTH} p-0 font-normal aria-selected:opacity-100 md:h-9 md:w-9`,
         ),
         range_start: 'day-range-start',
         range_end: 'day-range-end',
