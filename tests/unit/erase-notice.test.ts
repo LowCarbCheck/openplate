@@ -389,8 +389,19 @@ describe('countUnsentChanges', () => {
   });
 });
 
-/** A baseline that recorded exactly these saved-meal ids, and nothing else. */
-function baselineRecording(savedMeals: string[]): SyncBaseline {
+/**
+ * A baseline that agreed with exactly these saved meals: their ids AND the
+ * hash of their content, which is what `baselineFromPayload` commits.
+ */
+function baselineAgreeing(savedMeals: LocalSavedMeal[]): SyncBaseline {
+  return baselineFromPayload({
+    snapshot: { ...partitionSnapshot(deviceSnapshot({ savedMeals })).shareable, privateStore: null },
+    meta: { perEntity: {}, tombstones: [] },
+  });
+}
+
+/** A baseline that recorded these ids and NO content hash, which is every pre-M240 state. */
+function baselineRecordingIdsOnly(savedMeals: string[]): SyncBaseline {
   return { perEntity: {}, tombstones: [], passThrough: { savedMeals } };
 }
 
@@ -399,11 +410,9 @@ describe('holdsUnsentSavedMeals', () => {
     // THE WHOLE POINT OF THE CHANGE (M240/03). The sentence this feeds used to
     // fire on the mere PRESENCE of a saved meal, so a person whose meals were
     // all on the account was warned about them on every sign-out, for ever.
+    const meals = [savedMeal('m'), savedMeal('n')];
     assert.equal(
-      holdsUnsentSavedMeals({
-        snapshot: deviceSnapshot({ savedMeals: [savedMeal('m'), savedMeal('n')] }),
-        baseline: baselineRecording(['m', 'n']),
-      }),
+      holdsUnsentSavedMeals({ snapshot: deviceSnapshot({ savedMeals: meals }), baseline: baselineAgreeing(meals) }),
       false,
     );
   });
@@ -412,7 +421,7 @@ describe('holdsUnsentSavedMeals', () => {
     assert.equal(
       holdsUnsentSavedMeals({
         snapshot: deviceSnapshot({ savedMeals: [savedMeal('m'), savedMeal('n')] }),
-        baseline: baselineRecording(['m']),
+        baseline: baselineAgreeing([savedMeal('m')]),
       }),
       true,
     );
@@ -422,9 +431,56 @@ describe('holdsUnsentSavedMeals', () => {
     assert.equal(
       holdsUnsentSavedMeals({
         snapshot: deviceSnapshot({ savedMeals: [savedMeal('m')] }),
-        baseline: baselineRecording(['m', 'n']),
+        baseline: baselineAgreeing([savedMeal('m'), savedMeal('n')]),
       }),
       true,
+    );
+  });
+
+  it('is true for a meal edited without changing its id, which an id set cannot see', () => {
+    // M240 counsel item 4, and the reason ADR-0016's first answer was
+    // reversed. A rename moves no id, so the check said "all sent" over a box
+    // that erases the diary. `canonicalize` would push it on the next cycle,
+    // and signing out on a train is exactly when there is no next cycle.
+    const stored = savedMeal('m');
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ savedMeals: [{ ...stored, name: 'Sunday brunch' }] }),
+        baseline: baselineAgreeing([stored]),
+      }),
+      true,
+    );
+  });
+
+  it('THE CONTROL: the same meals in a different ORDER are not an edit', () => {
+    // Without this, the case above passes against a hash taken over the list
+    // as the store happened to return it, which would warn on every sign-out
+    // and teach people to click through the warning.
+    const meals = [savedMeal('m'), savedMeal('n')];
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ savedMeals: meals.toReversed() }),
+        baseline: baselineAgreeing(meals),
+      }),
+      false,
+    );
+  });
+
+  it('WARNS when the baseline recorded ids but no content hash, which is every state written before M240', () => {
+    // The migration, and the direction it has to fail in: a device that cannot
+    // vouch for its meals warns about them rather than reassuring somebody
+    // over an erase.
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ savedMeals: [savedMeal('m')] }),
+        baseline: baselineRecordingIdsOnly(['m']),
+      }),
+      true,
+    );
+    // And a device with no meals has nothing to warn about either way.
+    assert.equal(
+      holdsUnsentSavedMeals({ snapshot: deviceSnapshot({}), baseline: baselineRecordingIdsOnly([]) }),
+      false,
     );
   });
 
@@ -453,7 +509,7 @@ describe('holdsUnsentSavedMeals', () => {
     assert.equal(
       holdsUnsentSavedMeals({
         snapshot: deviceSnapshot({ fasts: [fast('f')], pantryItems: [pantryItem('p')] }),
-        baseline: baselineRecording([]),
+        baseline: baselineAgreeing([]),
       }),
       false,
     );

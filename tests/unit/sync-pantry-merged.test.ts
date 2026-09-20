@@ -379,7 +379,7 @@ describe('baselineFromPayload and pantryItems', () => {
 
     assert.deepEqual(Object.keys(baseline.perEntity), [pantryKey('eggs')]);
     assert.equal(baseline.perEntity[pantryKey('eggs')]?.lamport, 4);
-    assert.deepEqual(baseline.passThrough, { savedMeals: [] }, 'the pantry never had a pass-through id list to lose');
+    assert.deepEqual(baseline.passThrough?.savedMeals, [], 'the pantry never had a pass-through id list to lose');
   });
 });
 

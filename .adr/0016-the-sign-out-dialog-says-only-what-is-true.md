@@ -72,8 +72,10 @@ stay silent about ones that had not.
   Rejected. It fixes the false half and leaves the always-on half: a person
   with an ordinary sharing key pair and no unsent meals is still warned about
   meals.
-- **Hash each saved meal and compare content.** Rejected above: a second
-  definition of "changed", for a case the push already covers in one cycle.
+- **Compare ids only, and let the next cycle carry a rename.** Rejected on
+  review, and the reasoning is above: there is no next cycle for somebody
+  signing out on a train, and this confirm is destructive. It was this ADR's
+  own first answer.
 - **Seal the owner-private region inside the dialog to compare it.** Rejected.
   It needs the session's data key in React, which is the boundary
   `sync-session.ts` exists to hold.
@@ -87,9 +89,10 @@ stay silent about ones that had not.
   saved meals, which on an ordinary device is the normal case.
 - The dialog can now show three lines instead of two, when meals are unsent AND
   the person holds key material. That is more text, and each line is true.
-- A saved meal RENAMED and not yet synced draws no warning. The next cycle
-  sends it; an erase in the window between the rename and the cycle loses the
-  new name and keeps the meal.
+- A saved meal RENAMED and not yet synced DOES draw a warning, and a device
+  whose baseline predates the hash draws one for any saved meal at all, once,
+  until its next cycle commits a baseline that carries the hash. Over-warning
+  once is the accepted cost of never under-warning.
 - `holdsUnsentSavedMeals` is the second reader of
   `SyncBaseline.passThrough.savedMeals` after `decidePassThrough`. The day saved
   meals become a merged entity, both go, and this dialog loses its last

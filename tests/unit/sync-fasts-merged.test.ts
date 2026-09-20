@@ -383,7 +383,8 @@ describe('baselineFromPayload and fasts', () => {
 
     assert.deepEqual(Object.keys(baseline.perEntity), [fastKey('mine')]);
     assert.equal(baseline.perEntity[fastKey('mine')]?.lamport, 4);
-    assert.deepEqual(baseline.passThrough, { savedMeals: [] }, 'the fasts id list went with the pass-through stance');
+    assert.deepEqual(baseline.passThrough?.savedMeals, [], 'the fasts id list went with the pass-through stance');
+    assert.notEqual(baseline.passThrough?.savedMealsHash, undefined, 'and the meals hash the dialog reads is there');
   });
 });
 

@@ -46,15 +46,21 @@
  *
  * What remains:
  *
- *  - SAVED MEALS, the last pass-through collection. They are compared, but by
- *    ID ONLY, against `SyncBaseline.passThrough.savedMeals`
- *    ({@link UnsentOnDevice.hasUnsentSavedMeals}): a meal the device holds and
- *    the baseline does not name has not reached the account, and a name the
+ *  - SAVED MEALS, the last pass-through collection, compared by ID SET AND BY
+ *    CONTENT HASH against `SyncBaseline.passThrough`
+ *    ({@link UnsentOnDevice.hasUnsentSavedMeals}). A meal the device holds and
+ *    the baseline does not name has not reached the account; a name the
  *    baseline holds and the device does not is a removal the account has not
- *    heard. An EDIT is deliberately not compared, and it does not need to be:
- *    `canonicalize` weighs the whole saved-meals list, so a rename pushes on
- *    the next cycle by itself, and a content hash here would cost a second
- *    definition of "changed" that could drift from the engine's own.
+ *    heard; and a meal RENAMED in place moves neither, which is why the hash
+ *    is there.
+ *
+ *    THE HASH WAS ADDED AFTER REVIEW (M240 counsel item 4). ADR-0016 first
+ *    argued that a rename needs no warning because `canonicalize` weighs the
+ *    whole list and the next cycle pushes it. That argument fails in exactly
+ *    the case this dialog exists for. Signing out is something people do on a
+ *    train, on a borrowed laptop, on a phone about to be wiped, and the next
+ *    cycle is the cycle that never runs. A destructive confirm may over-warn;
+ *    it may not under-warn.
  *  - THE OWNER-PRIVATE COMPARTMENT (share keys, pinned peers, the research
  *    identity), which stays PRESENCE-ONLY
  *    ({@link UnsentOnDevice.hasOwnerPrivateRows}). It is compared as SEALED
@@ -74,11 +80,11 @@
  * line, and a count is only interpolated into a line that exists because the
  * count is not zero.
  */
-import type { LocalStoreSnapshot } from '#app/lib/local-store';
+import type { LocalSavedMeal, LocalStoreSnapshot } from '#app/lib/local-store';
 import { countQueuedFeedbackReports } from '#app/lib/local-store/feedback-outbox';
 import { readLocalSnapshot, type LocalSnapshotRead } from './local-store-bridge';
 import { ownerPrivateRegionKeys, partitionSnapshot } from './snapshot-partition';
-import { entityKey, stampSnapshot, type SyncBaseline } from './snapshot-sync';
+import { contentHash, entityKey, stampSnapshot, type SyncBaseline } from './snapshot-sync';
 import { withSyncOrchestratorLock } from './sync-lock';
 import { createSyncStateStore, deviceStorage, type KeyValueStorage } from './sync-state';
 
@@ -251,11 +257,31 @@ export function holdsUnsentSavedMeals({
   baseline: SyncBaseline;
 }): boolean {
   const { shareable } = partitionSnapshot(snapshot);
-  const agreed = baseline.passThrough?.savedMeals;
+  const agreed = baseline.passThrough;
+  // AN ABSENT RECORD IS NOT AN EMPTY ONE. A baseline from before the ids were
+  // kept, or from a device that has never finished a cycle, recorded nothing,
+  // so it can vouch for nothing.
   if (agreed === undefined) return shareable.savedMeals.length > 0;
   const onDevice = new Set(shareable.savedMeals.map((meal) => meal.id));
-  if (onDevice.size !== agreed.length) return true;
-  return agreed.some((id) => !onDevice.has(id));
+  if (onDevice.size !== agreed.savedMeals.length) return true;
+  if (agreed.savedMeals.some((id) => !onDevice.has(id))) return true;
+  // AND THE CONTENT, for the rename an id set cannot see. A baseline written
+  // before the hash existed has none, and a device holding meals it cannot
+  // vouch for is warned rather than reassured, which is the direction a
+  // destructive confirm has to fail in.
+  if (agreed.savedMealsHash === undefined) return shareable.savedMeals.length > 0;
+  return contentHash(byIdForHash(shareable.savedMeals)) !== agreed.savedMealsHash;
+}
+
+/**
+ * The saved meals in the one order both sides hash them in.
+ *
+ * `baselineFromPayload` sorts the same way before hashing, and it has to: the
+ * order a store returns a list in is not a change, and two devices that
+ * serialized the same set differently would warn on every sign-out for ever.
+ */
+function byIdForHash(meals: readonly LocalSavedMeal[]): LocalSavedMeal[] {
+  return meals.toSorted((x, y) => (x.id < y.id ? -1 : 1));
 }
 
 /**

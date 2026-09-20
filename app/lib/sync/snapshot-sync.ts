@@ -275,6 +275,28 @@ export interface SyncBaseline {
    */
   passThrough?: {
     savedMeals: string[];
+    /**
+     * One hash of the saved meals' CONTENT, as the payload this device last
+     * agreed with held them (M240 counsel item 4).
+     *
+     * The ids above answer "which meals did the account hold", which is what
+     * `decidePassThrough` needs and all it needs: it decides whether a SHORTER
+     * list may be published, and an edit does not shorten anything. This
+     * answers a different question, for the sign-out dialog: has this device
+     * got a saved meal the account has not been told about? An id set cannot
+     * see a RENAME, and a destructive confirm that under-warns is the one
+     * place in the app where being wrong is unrecoverable.
+     *
+     * OPTIONAL, and that is the migration. Every baseline written before this
+     * field is missing it, and a required field would fail the whole parse and
+     * discard the baseline, tombstones and all, which is the fail-soft cost
+     * `sync-state.ts` documents at length. Absent reads as "this device
+     * recorded no content", which the dialog treats as "cannot vouch" and
+     * warns about. No `STATE_FORMAT_VERSION` bump for the same reason the
+     * `passThrough` record itself did not need one: the old shape still parses
+     * and nothing is incompatible.
+     */
+    savedMealsHash?: string;
   };
 }
 
@@ -1319,6 +1341,11 @@ export function baselineFromPayload(payload: StampedSnapshot): SyncBaseline {
     // answered properly.
     passThrough: {
       savedMeals: payload.snapshot.savedMeals.map((entry) => entry.id),
+      // AND ONE HASH OF THE CONTENT (M240 counsel item 4), sorted through
+      // `byId` first for the reason `canonicalize` sorts it: the order the
+      // store returns a list in is not a change, and two devices have to hash
+      // the same set identically or the dialog warns on every sign-out.
+      savedMealsHash: contentHash(byId(payload.snapshot.savedMeals)),
     },
   };
 }

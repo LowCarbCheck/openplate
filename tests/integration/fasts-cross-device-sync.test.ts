@@ -760,5 +760,5 @@ test('the baseline a fast leaves behind is a stamped entity, not a pass-through 
 
   const baseline = phone.state.load().baseline;
   assert.ok(baseline.perEntity[entityKey(SYNC_ENTITY_TYPES.fast, 'one')] !== undefined);
-  assert.deepEqual(baseline.passThrough, { savedMeals: [] }, 'the fasts id list went with the pass-through stance');
+  assert.deepEqual(baseline.passThrough?.savedMeals, [], 'the fasts id list went with the pass-through stance');
 });

@@ -334,7 +334,7 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
   // than as a stamped entity. Without this the saved-meals claim at the end
   // passes against a baseline that never knew about it, which is the state
   // where the remote list wins for the wrong reason.
-  assert.deepEqual(vault.state.load().baseline.passThrough, { savedMeals: ['meal-boot-1'] });
+  assert.deepEqual(vault.state.load().baseline.passThrough?.savedMeals, ['meal-boot-1']);
   // THE FASTS ARE IN `perEntity` INSTEAD (M240/01), stamped like the food logs
   // above, which is what gives the cycle below two fast tombstones it COULD
   // mint and must not.

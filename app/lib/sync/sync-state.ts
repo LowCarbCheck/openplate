@@ -155,7 +155,15 @@ const persistedSyncStateSchema = z.object({
     // its id, its stamp and its content hash, which is strictly more than the
     // bare list ever said. No `STATE_FORMAT_VERSION` bump for that either, for
     // the reason directly above.
-    passThrough: z.object({ savedMeals: z.array(z.string()) }).optional(),
+    //
+    // `savedMealsHash` is OPTIONAL INSIDE the optional record (M240 counsel
+    // item 4), which is the same migration one level in: a baseline written
+    // before the hash existed parses whole and simply has none, and the
+    // sign-out dialog reads a missing hash as "cannot vouch" and warns. A
+    // required field here would discard the baseline instead.
+    passThrough: z
+      .object({ savedMeals: z.array(z.string()), savedMealsHash: z.string().optional() })
+      .optional(),
   }),
 });
 
