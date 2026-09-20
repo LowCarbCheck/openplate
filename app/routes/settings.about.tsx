@@ -46,6 +46,7 @@ import { Button } from '#app/components/ui/button';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { BUILD, formatBuildLabel } from '#app/lib/build-info';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { cn } from '#app/lib/utils';
 import { useUpdateStatus, type UpdateStatusView } from '#app/hooks/use-update-status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import type { UpdateStatus } from '#app/lib/update-status';
@@ -63,13 +64,32 @@ export const handle = {
   backTo: '/settings',
 };
 
-/** One fact about this build: an icon, a label, and the value or link that answers it. */
+/**
+ * The classes a value that is a LINK wears, so the row height is what a finger
+ * gets.
+ *
+ * The anchors here were 17px tall inside 48px rows (SET-09). `min-h-11 py-3`
+ * makes the target 44, and `-my-3` spends that height on the padding the row
+ * already had, so the row keeps the height it draws today and the two anchors
+ * on this page still sit a full row pitch apart.
+ */
+const ABOUT_LINK_CLASS = '-my-3 inline-flex min-h-11 items-center py-3 text-primary underline-offset-4 hover:underline';
+
+/**
+ * One fact about this build: an icon, a label, and the value or link that
+ * answers it.
+ *
+ * THE ROW WRAPS. In Turkish at 320 the label and the value were both squeezed
+ * onto one line and the two texts touched (SET-17): `flex-auto` lets the label
+ * ask for its own width, so a pair that cannot share a line puts the value on
+ * the next one, right-aligned under it, instead of overlapping.
+ */
 function AboutRow({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-12 items-center gap-3 border-b py-3 last:border-b-0 last:pb-0">
+    <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 border-b py-3 last:border-b-0 last:pb-0">
       <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-      <span className="min-w-0 flex-1 text-sm text-muted-foreground">{label}</span>
-      <span className="shrink-0 text-sm font-medium">{children}</span>
+      <span className="min-w-0 flex-auto text-sm text-muted-foreground">{label}</span>
+      <span className="ml-auto text-right text-sm font-medium">{children}</span>
     </div>
   );
 }
@@ -178,12 +198,7 @@ export function UpdatesCardView({
         <AboutRow icon={RefreshCw} label={t('about.updates.latest')}>
           {!enabled && <span className="text-muted-foreground">{t('about.updates.disabled')}</span>}
           {enabled && server?.releaseUrl !== undefined && server.releaseUrl !== null && (
-            <a
-              href={server.releaseUrl}
-              target="_blank"
-              rel="noopener"
-              className="tabular-nums text-primary underline-offset-4 hover:underline"
-            >
+            <a href={server.releaseUrl} target="_blank" rel="noopener" className={cn('tabular-nums', ABOUT_LINK_CLASS)}>
               v{server.latest}
             </a>
           )}
@@ -252,17 +267,12 @@ export default function SettingsAbout() {
           section's default row gap must not reopen a second one. */}
       <SettingsSection label={t('about.title')} description={t('about.description')} contentClassName="space-y-0">
         <AboutRow icon={Scale} label={t('about.licence')}>
-          <a
-            href={REPO_LICENSE_URL}
-            target="_blank"
-            rel="noopener"
-            className="text-primary underline-offset-4 hover:underline"
-          >
+          <a href={REPO_LICENSE_URL} target="_blank" rel="noopener" className={ABOUT_LINK_CLASS}>
             {t('about.licenceValue')}
           </a>
         </AboutRow>
         <AboutRow icon={Github} label={t('about.source')}>
-          <a href={REPO_URL} target="_blank" rel="noopener" className="text-primary underline-offset-4 hover:underline">
+          <a href={REPO_URL} target="_blank" rel="noopener" className={ABOUT_LINK_CLASS}>
             {t('about.sourceValue', { appName: APP_NAME })}
           </a>
         </AboutRow>
