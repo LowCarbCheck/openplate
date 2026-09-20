@@ -158,6 +158,19 @@ export interface InstancePolicy {
    * rewrite of `_personal.tsx`.
    */
   readonly strangerSeesThePublicShell: boolean;
+  /**
+   * When this server runs an older release than the newest one, is updating it
+   * somebody else's job rather than the reader's?
+   *
+   * `false` on an open instance, where the person reading the About screen is
+   * the one who installed the image and the useful sentence is the one that
+   * says how: pull the new image, restart the server. `true` on a managed
+   * one, where an organization runs the server for its people and the reader
+   * cannot change anything about it. Telling them to pull an image would send
+   * a person to do a thing they have no way to do, so that screen says there
+   * is nothing for them to do (`settings.about.tsx`).
+   */
+  readonly updatesAreSomeoneElsesJob: boolean;
 }
 
 /**
@@ -176,6 +189,7 @@ const OPEN_INSTANCE_POLICY = {
   aiComesFromTheInstance: false,
   serverHoldsTheDiary: false,
   strangerSeesThePublicShell: false,
+  updatesAreSomeoneElsesJob: false,
 } satisfies InstancePolicy;
 
 /** An instance an organization runs for its people: `INSTANCE_MODE=managed`. */
@@ -188,6 +202,7 @@ const MANAGED_INSTANCE_POLICY = {
   aiComesFromTheInstance: true,
   serverHoldsTheDiary: true,
   strangerSeesThePublicShell: true,
+  updatesAreSomeoneElsesJob: true,
 } satisfies InstancePolicy;
 
 /**

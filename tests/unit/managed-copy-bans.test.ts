@@ -134,6 +134,9 @@ const MANAGED_BRANCH_KEYS = [
   'account.allowance.askAdmin',
   'offline.bodyManaged',
   'settings.data.descriptionManaged',
+  // The About screen's sentence for a reader who does not run the server,
+  // shown when the server is behind the newest release.
+  'about.updates.behindWhoManaged',
   'aiIntake.noAllowance',
   // The two M212 spec 04 twins of that notice: an allowance that ended, and
   // an instance where there is nobody to ask.

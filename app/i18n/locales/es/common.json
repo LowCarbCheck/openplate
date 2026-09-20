@@ -7,6 +7,10 @@
     "sourceValue": "{{appName}} en GitHub",
     "title": "Acerca de openplate",
     "updates": {
+      "behindTitle": "Existe una versión más reciente",
+      "behindVersions": "Este servidor ejecuta la versión v{{running}}. La versión más reciente es la v{{latest}}.",
+      "behindWho": "Para actualizar, descarga la nueva imagen y reinicia el servidor. No hay ningún botón de actualización en la app.",
+      "behindWhoManaged": "Solo la persona que administra este servidor puede actualizarlo, así que no tienes que hacer nada.",
       "built": "Compilación",
       "checkNow": "Comprobar ahora",
       "checking": "Comprobando",
@@ -20,9 +24,9 @@
       "reload": "Recarga para actualizar",
       "reloadHint": "Este servidor ofrece una versión de la aplicación más reciente que la que ejecuta esta página.",
       "running": "En ejecución",
-      "selfHostHint": "Actualizar el servidor requiere una imagen nueva, no se hace con un botón aquí.",
       "throttled": "Comprobado hace un momento. La próxima comprobación se permite a las {{when}}.",
-      "title": "Actualizaciones"
+      "title": "Actualizaciones",
+      "upToDate": "Al día"
     }
   },
   "add": {

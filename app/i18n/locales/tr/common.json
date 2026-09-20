@@ -7,6 +7,10 @@
     "sourceValue": "GitHub üzerinde {{appName}}",
     "title": "openplate hakkında",
     "updates": {
+      "behindTitle": "Daha yeni bir sürüm var",
+      "behindVersions": "Bu sunucu v{{running}} sürümünü çalıştırıyor. En yeni sürüm v{{latest}}.",
+      "behindWho": "Güncellemek için yeni imajı çek ve sunucuyu yeniden başlat. Uygulamada bir güncelleme düğmesi yoktur.",
+      "behindWhoManaged": "Bu sunucuyu yalnızca çalıştıran kişi güncelleyebilir, dolayısıyla senin yapabileceğin bir şey yok.",
       "built": "Derleme tarihi",
       "checkNow": "Şimdi denetle",
       "checking": "Denetleniyor",
@@ -20,9 +24,9 @@
       "reload": "Güncellemek için yeniden yükle",
       "reloadHint": "Bu sunucu, bu sayfanın çalıştırdığından daha yeni bir uygulama sürümü sunuyor.",
       "running": "Çalışıyor",
-      "selfHostHint": "Sunucunun kendisini güncellemek buradaki bir düğmeyle değil, yeni bir imajla yapılır.",
       "throttled": "Az önce denetlendi. Bir sonraki denetlemeye {{when}} zamanında izin verilir.",
-      "title": "Güncellemeler"
+      "title": "Güncellemeler",
+      "upToDate": "Güncel"
     }
   },
   "add": {

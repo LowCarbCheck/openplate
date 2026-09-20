@@ -7,6 +7,10 @@
     "sourceValue": "{{appName}} auf GitHub",
     "title": "Über openplate",
     "updates": {
+      "behindTitle": "Es gibt ein neueres Release",
+      "behindVersions": "Dieser Server läuft auf v{{running}}. Das neueste Release ist v{{latest}}.",
+      "behindWho": "Um zu aktualisieren, ziehe das neue Image und starte den Server neu. Es gibt keine Aktualisierungs-Schaltfläche in der App.",
+      "behindWhoManaged": "Nur die Person, die diesen Server betreibt, kann ihn aktualisieren, daher gibt es für dich nichts zu tun.",
       "built": "Erstellt",
       "checkNow": "Jetzt prüfen",
       "checking": "Wird geprüft",
@@ -20,9 +24,9 @@
       "reload": "Neu laden zum Aktualisieren",
       "reloadHint": "Dieser Server liefert eine neuere Version der App aus, als auf dieser Seite läuft.",
       "running": "Installiert",
-      "selfHostHint": "Den Server selbst aktualisierst du über ein neues Image, nicht über einen Button hier.",
       "throttled": "Gerade eben geprüft. Die nächste Prüfung ist um {{when}} möglich.",
-      "title": "Updates"
+      "title": "Updates",
+      "upToDate": "Aktuell"
     }
   },
   "add": {

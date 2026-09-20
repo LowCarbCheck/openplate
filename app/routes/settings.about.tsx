@@ -22,6 +22,18 @@
  * so a newer release on GitHub is reported here as a fact with a link, and the
  * only button that changes anything is the one that reloads this page onto a
  * newer bundle the server is already serving. See ADR-0012.
+ *
+ * ── WHAT THE SCREEN DOES SAY, AND TO WHOM ───────────────────────────────────
+ *
+ * A newer release is still information, but a small link and one muted line
+ * left a person on a hosted instance unsure whether they were meant to act. So
+ * the top of the Updates card now states the fact in words, "a newer release
+ * exists", with both versions, and then one sentence that depends on who is
+ * reading. Where the reader runs the server it says how (a new image, no
+ * button). Where an organization runs it for them it says there is nothing for
+ * them to do. That fork is `updatesAreSomeoneElsesJob`, an instance policy
+ * question, not the bare mode. The status is a plain block in existing tokens:
+ * a newer release is not an error, so it wears no warning colour.
  */
 import type { ReactNode } from 'react';
 import type { MetaFunction } from 'react-router';
@@ -33,8 +45,10 @@ import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { BUILD, formatBuildLabel } from '#app/lib/build-info';
-import { useUpdateStatus } from '#app/hooks/use-update-status';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useUpdateStatus, type UpdateStatusView } from '#app/hooks/use-update-status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import type { UpdateStatus } from '#app/lib/update-status';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -75,6 +89,53 @@ function useInstant(): (iso: string | null) => string | null {
 }
 
 /**
+ * The one-glance answer at the top of the Updates card: this server is behind,
+ * this server is current, or there is nothing to say yet.
+ *
+ * Silent (null) when checks are off, when the server has not answered, and when
+ * it answered without a release. Those states keep the rows and hints the card
+ * has always had; a status line that said "up to date" about a check that never
+ * ran would be a claim with nothing behind it.
+ *
+ * Behind is a calm block, not an alarm: `bg-muted/50` and the ordinary text
+ * tokens, no warning colour and no icon. A newer release is a fact about the
+ * server, and on a hosted instance it is not the reader's problem at all.
+ */
+function ReleaseStatus({
+  server,
+  updatesAreSomeoneElsesJob,
+}: {
+  server: UpdateStatus | null;
+  updatesAreSomeoneElsesJob: boolean;
+}) {
+  const { t } = useTranslation();
+  if (server === null || !server.enabled || server.latest === null) return null;
+
+  if (!server.updateAvailable) {
+    return (
+      <p data-release-status="current" className="text-sm text-muted-foreground">
+        {t('about.updates.upToDate')}
+      </p>
+    );
+  }
+
+  return (
+    <div data-release-status="behind" className="space-y-1 rounded-xl bg-muted/50 px-3 py-3">
+      <p className="text-sm font-medium">{t('about.updates.behindTitle')}</p>
+      <p className="text-sm text-muted-foreground break-words">
+        {t('about.updates.behindVersions', { running: server.currentVersion, latest: server.latest })}
+      </p>
+      <p className="text-sm text-muted-foreground break-words">
+        {updatesAreSomeoneElsesJob ? t('about.updates.behindWhoManaged') : t('about.updates.behindWho')}
+      </p>
+    </div>
+  );
+}
+
+/** What `UpdatesCardView` reads from the update hook, so a test can hand it any state. */
+export type UpdatesCardState = Pick<UpdateStatusView, 'status' | 'ribbon' | 'checkNow' | 'updateNow'>;
+
+/**
  * What this instance runs, what the project published, and the one button that
  * changes anything.
  *
@@ -82,11 +143,22 @@ function useInstant(): (iso: string | null) => string | null {
  * check was just refused for being too soon. A card that renders empty while the
  * first poll is in flight would read as broken, so the running build is printed
  * from the bundle's own constants and is there before any request finishes.
+ *
+ * PROPS, NOT HOOKS. The update state and the instance policy arrive as
+ * arguments so `tests/unit/about-behind-notice.test.tsx` can render every state
+ * with `renderToStaticMarkup`, where no effect runs and no data router exists.
+ * `UpdatesCard` below is the two hook reads and nothing else.
  */
-function UpdatesCard() {
+export function UpdatesCardView({
+  state,
+  updatesAreSomeoneElsesJob,
+}: {
+  state: UpdatesCardState;
+  updatesAreSomeoneElsesJob: boolean;
+}) {
   const { t } = useTranslation();
   const instant = useInstant();
-  const { status, ribbon, checkNow, updateNow } = useUpdateStatus();
+  const { status, ribbon, checkNow, updateNow } = state;
   const server = status.status;
   const enabled = server === null || server.enabled;
   const checked = instant(server?.checkedAt ?? null);
@@ -94,6 +166,8 @@ function UpdatesCard() {
 
   return (
     <SettingsSection label={t('about.updates.title')} description={t('about.updates.description')}>
+      <ReleaseStatus server={server} updatesAreSomeoneElsesJob={updatesAreSomeoneElsesJob} />
+
       <div>
         <AboutRow icon={Tag} label={t('about.updates.running')}>
           <span className="tabular-nums">{formatBuildLabel(BUILD)}</span>
@@ -127,9 +201,6 @@ function UpdatesCard() {
       </div>
 
       {!enabled && <p className="text-sm text-muted-foreground">{t('about.updates.disabledHint')}</p>}
-      {enabled && server?.updateAvailable === true && (
-        <p className="text-sm text-muted-foreground">{t('about.updates.selfHostHint')}</p>
-      )}
       {enabled && server?.throttled === true && nextAllowed !== null && (
         <p className="text-sm text-muted-foreground">{t('about.updates.throttled', { when: nextAllowed })}</p>
       )}
@@ -159,6 +230,12 @@ function UpdatesCard() {
       </div>
     </SettingsSection>
   );
+}
+
+function UpdatesCard() {
+  const state = useUpdateStatus();
+  const { updatesAreSomeoneElsesJob } = useInstancePolicy();
+  return <UpdatesCardView state={state} updatesAreSomeoneElsesJob={updatesAreSomeoneElsesJob} />;
 }
 
 export default function SettingsAbout() {

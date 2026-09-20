@@ -6698,6 +6698,13 @@
     "at": "2026-09-14",
     "fr": "Œufs"
   },
+  "5cdcf9d850d58aed": {
+    "en": "This server runs v{{running}}. The newest release is v{{latest}}.",
+    "path": "common:about.updates.behindVersions",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "fr": "Ce serveur utilise la version v{{running}}. La version la plus récente est la v{{latest}}."
+  },
   "5ce36a1b9c0a5cf7": {
     "en": "Calories measure the energy in food. Think of it like a fuel gauge. There's no single right number; it depends on you. Not sure where to start? Many people begin somewhere between 1,600 and 2,200 a day, but a doctor or dietitian can give you a number that actually fits you.",
     "path": "common:goals.kcal.hint",
@@ -7538,6 +7545,13 @@
     "at": "2026-09-14",
     "fr": "Tu as lu la note pour les jeûnes de 24 heures ou plus."
   },
+  "689c17a73602d175": {
+    "en": "To update, pull the new image and restart the server. There is no update button in the app.",
+    "path": "common:about.updates.behindWho",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "fr": "Pour mettre à jour, télécharge la nouvelle image et redémarre le serveur. Il n'y a pas de bouton de mise à jour dans l'application."
+  },
   "68c47c3020ce65e3": {
     "en": "People",
     "path": "common:admin.tabs.people",
@@ -8090,6 +8104,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Confirme le mot de passe"
+  },
+  "707c57eb8b969125": {
+    "en": "Only the person who runs this server can update it, so there is nothing for you to do.",
+    "path": "common:about.updates.behindWhoManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "fr": "Seule la personne qui administre ce serveur peut le mettre à jour, tu n'as donc rien à faire."
   },
   "7082a41b44a2056a": {
     "en": "This entry had no name.",
@@ -10729,6 +10750,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Rien n'a encore été envoyé à cette étude."
+  },
+  "91ea06b2912b2dcc": {
+    "en": "A newer release exists",
+    "path": "common:about.updates.behindTitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "fr": "Une version plus récente existe"
   },
   "91fbea2536148908": {
     "en": "Add",
@@ -16175,6 +16203,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ignorer"
+  },
+  "e0a3492138f89c62": {
+    "en": "Up to date",
+    "path": "common:about.updates.upToDate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "fr": "À jour"
   },
   "e0bc32b53b42176c": {
     "en": "The link says this is {{name}}.",

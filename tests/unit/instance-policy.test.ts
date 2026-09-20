@@ -56,7 +56,7 @@ interface FrozenAnswer {
 /**
  * The policy openplate shipped on 2026-09-07.
  *
- * Seven of the eight answer `false` on an open instance and `true` on a managed
+ * Eight of the nine answer `false` on an open instance and `true` on a managed
  * one. `homeCookieProvesSession` is the exception, and it is worth noticing
  * rather than smoothing over: managed does not simply switch things ON, it
  * withdraws a piece of trust the open app is right to extend.
@@ -139,6 +139,16 @@ const FROZEN: FrozenAnswer[] = [
       'settings pages are reachable without an account on a managed instance, and they wore the sidebar, ' +
       'the device chip and the back arrow, which read as a signed-in app to somebody who had never signed ' +
       'in. `_personal.tsx` asks this question together with the gate\u2019s `exempt` kind (M204 spec 09).',
+  },
+  {
+    question: 'updatesAreSomeoneElsesJob',
+    open: false,
+    managed: true,
+    governs:
+      'Whether the About screen, when this server runs an older release than the newest, tells the reader ' +
+      'there is nothing for them to do. On an open instance the reader installed the image and is told how to ' +
+      'update it; on a managed one an organization runs the server, and a sentence about pulling an image ' +
+      'would send a person to do something they cannot. `settings.about.tsx` asks it.',
   },
 ];
 
