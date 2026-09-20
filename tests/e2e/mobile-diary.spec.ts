@@ -46,6 +46,14 @@ const NARROW_PHONE_HEIGHT = 844;
 /** A CSS pixel of rounding either side of an exact fit still counts as "fits". */
 const OVERFLOW_TOLERANCE_PX = 1;
 
+/**
+ * The narrowest screen the audit walked. The calendar is measured HERE and not
+ * at 360: at 360 the panel is 266 px under a trigger near the middle of the
+ * row and never comes near an edge, so a check there says nothing about the
+ * collision rule that puts it where it is.
+ */
+const NARROWEST_PHONE_WIDTH = 320;
+
 /** The gutter the calendar popover must keep at each screen edge, the page's own. */
 const POPOVER_GUTTER_PX = 16;
 
@@ -467,6 +475,9 @@ test('every control the diary offers a finger is at least 44 px', async ({ page 
   ////////////////////////////////////////////////////////////////////////////
   const trigger = page.locator('[data-slot="save-meal-trigger"]').first();
   await expect(trigger).toBeVisible();
+  // `elementFromPoint` reads VIEWPORT coordinates and answers null outside
+  // them, so the button has to be on screen before its box means anything.
+  await trigger.scrollIntoViewIfNeeded();
   const ink = await trigger.boundingBox();
   expect(ink, 'the save-as-meal button must have a box').not.toBeNull();
   const probes = [
@@ -474,10 +485,13 @@ test('every control the diary offers a finger is at least 44 px', async ({ page 
     { x: (ink?.x ?? 0) + (ink?.width ?? 0) - 1, y: (ink?.y ?? 0) + (ink?.height ?? 0) + 7 },
   ];
   for (const probe of probes) {
-    const reached = await page.evaluate(
-      (point) => document.elementFromPoint(point.x, point.y)?.closest('[data-slot="save-meal-trigger"]') !== null,
-      probe,
-    );
+    const reached = await page.evaluate((point) => {
+      // Spelled out rather than `?.closest(...) !== null`: an optional chain
+      // over a null `elementFromPoint` yields `undefined`, which is also not
+      // null, so that one-liner passed even with no hit area at all.
+      const hit = document.elementFromPoint(point.x, point.y);
+      return hit !== null && hit.closest('[data-slot="save-meal-trigger"]') !== null;
+    }, probe);
     expect(reached, `a tap at ${Math.round(probe.x)},${Math.round(probe.y)} must reach the save-as-meal button`).toBe(
       true,
     );
@@ -501,13 +515,19 @@ test('every control the diary offers a finger is at least 44 px', async ({ page 
 });
 
 test('the calendar and the copy picker stay inside the page gutter', async ({ page }) => {
-  await seedNarrowDiary(page);
-  await page.goto('/diary');
-  await waitForTheDay(page);
+  const today = await seedNarrowDiary(page);
 
   ////////////////////////////////////////////////////////////////////////////
   // The date picker used to open flush against the left edge of the screen.
+  //
+  // ON A PAST DAY AND AT 320 PX, where the date bar also carries the "jump to
+  // today" shortcut and the panel is wider than the room its trigger leaves.
+  // Opened from today's centred trigger, or at 360, it never reaches an edge
+  // at all and the check would pass however the popover was configured.
   ////////////////////////////////////////////////////////////////////////////
+  await page.setViewportSize({ width: NARROWEST_PHONE_WIDTH, height: NARROW_PHONE_HEIGHT });
+  await page.goto(`/diary?date=${shiftDay(today, -1)}`);
+  await waitForTheDay(page);
   await page.locator('[data-slot="popover-trigger"]').first().click();
   const popover = page.locator('[data-slot="popover-content"]');
   await expect(popover).toBeVisible();
@@ -518,13 +538,17 @@ test('the calendar and the copy picker stay inside the page gutter', async ({ pa
   expect(
     (panel?.x ?? 0) + (panel?.width ?? 0),
     'the calendar must keep a gutter on the right',
-  ).toBeLessThanOrEqual(NARROW_PHONE_WIDTH - POPOVER_GUTTER_PX + OVERFLOW_TOLERANCE_PX);
+  ).toBeLessThanOrEqual(NARROWEST_PHONE_WIDTH - POPOVER_GUTTER_PX + OVERFLOW_TOLERANCE_PX);
   await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: NARROW_PHONE_WIDTH, height: NARROW_PHONE_HEIGHT });
 
   ////////////////////////////////////////////////////////////////////////////
   // The copy picker's rows were 28 px tall, each one a checkbox a finger has
-  // to hit.
+  // to hit. Back on today, which is the day whose "yesterday" the fixture
+  // gave something worth copying.
   ////////////////////////////////////////////////////////////////////////////
+  await page.goto('/diary');
+  await waitForTheDay(page);
   await page.locator('[data-slot="copy-choose-entries"]').click();
   await expect
     .poll(() => tapReading(page, '[data-slot="copy-entry-row"]'), {
