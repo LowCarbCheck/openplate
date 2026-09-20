@@ -92,7 +92,12 @@ describe('TrendChart — the incomplete (floor) treatment reads as a minimum', (
     const html = renderChart({ bars: [bar({ fill: 'incomplete' })], domainMax: 100, goalFraction: null });
 
     assert.ok(!html.includes('stroke-dasharray'), 'the hard-to-parse dashed outline is gone');
-    assert.ok(html.includes('fill-opacity="0.28"'), 'the pale body carries the height');
+    // A CLASS RATHER THAN THE `fill-opacity` ATTRIBUTE since the mobile pass:
+    // at 0.28 on the dark card the teal measured 1.92:1 against its own
+    // background, under the 3:1 a graphic has to reach, and only a class can
+    // carry a second value for the dark theme.
+    assert.ok(html.includes('opacity-[0.28]'), 'the pale body carries the height');
+    assert.ok(html.includes('dark:opacity-[0.45]'), 'and reads against the dark card');
     // Two rects: the pale body and the full-opacity cap on top of it.
     assert.equal([...html.matchAll(/<rect/g)].length, 2);
   });
