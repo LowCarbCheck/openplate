@@ -141,27 +141,30 @@ interface MissedPoint {
  */
 async function missedEdges(control: Locator, size: number): Promise<MissedPoint[]> {
   await control.scrollIntoViewIfNeeded();
-  return control.evaluate((element, { probe, inset }) => {
-    const box = element.getBoundingClientRect();
-    const centreX = box.left + box.width / 2;
-    const centreY = box.top + box.height / 2;
-    const half = probe / 2 - inset;
-    const points = [
-      { where: 'left edge', x: centreX - half, y: centreY },
-      { where: 'right edge', x: centreX + half, y: centreY },
-      { where: 'top edge', x: centreX, y: centreY - half },
-      { where: 'bottom edge', x: centreX, y: centreY + half },
-      { where: 'centre', x: centreX, y: centreY },
-    ];
-    return points
-      .map((point) => {
-        const hit = document.elementFromPoint(point.x, point.y);
-        if (hit === null) return { where: point.where, hit: 'nothing, the point is off screen' };
-        if (hit === element || element.contains(hit)) return null;
-        return { where: point.where, hit: `${hit.tagName.toLowerCase()}.${hit.className.toString().slice(0, 30)}` };
-      })
-      .filter((miss) => miss !== null);
-  }, { probe: size, inset: EDGE_ROUNDING_PX });
+  return control.evaluate(
+    (element, { probe, inset }) => {
+      const box = element.getBoundingClientRect();
+      const centreX = box.left + box.width / 2;
+      const centreY = box.top + box.height / 2;
+      const half = probe / 2 - inset;
+      const points = [
+        { where: 'left edge', x: centreX - half, y: centreY },
+        { where: 'right edge', x: centreX + half, y: centreY },
+        { where: 'top edge', x: centreX, y: centreY - half },
+        { where: 'bottom edge', x: centreX, y: centreY + half },
+        { where: 'centre', x: centreX, y: centreY },
+      ];
+      return points
+        .map((point) => {
+          const hit = document.elementFromPoint(point.x, point.y);
+          if (hit === null) return { where: point.where, hit: 'nothing, the point is off screen' };
+          if (hit === element || element.contains(hit)) return null;
+          return { where: point.where, hit: `${hit.tagName.toLowerCase()}.${hit.className.toString().slice(0, 30)}` };
+        })
+        .filter((miss) => miss !== null);
+    },
+    { probe: size, inset: EDGE_ROUNDING_PX },
+  );
 }
 
 /** The distance in CSS pixels between the app header's bottom and this element's top. */
@@ -174,7 +177,9 @@ async function gapUnderTheHeader(page: Page, element: Locator): Promise<number> 
 
 /** Every element this locator matches, as its drawn height in CSS pixels. */
 async function heightsOf(locator: Locator): Promise<number[]> {
-  return locator.evaluateAll((elements) => elements.map((element) => Math.round(element.getBoundingClientRect().height)));
+  return locator.evaluateAll((elements) =>
+    elements.map((element) => Math.round(element.getBoundingClientRect().height)),
+  );
 }
 
 /** The surface one row draws: its radius and its padding, in CSS pixels. */
@@ -190,7 +195,10 @@ async function clippedTexts(locator: Locator): Promise<string[]> {
   return locator.evaluateAll((elements) =>
     elements
       .filter((element) => element.scrollWidth > element.clientWidth + 1)
-      .map((element) => `${(element.textContent ?? '').trim().slice(0, 30)}: ${element.scrollWidth}/${element.clientWidth}`),
+      .map(
+        (element) =>
+          `${(element.textContent ?? '').trim().slice(0, 30)}: ${element.scrollWidth}/${element.clientWidth}`,
+      ),
   );
 }
 
@@ -364,9 +372,10 @@ test('every public footer link is a 44px target at 360px, in en, de and tr', asy
 
     const heights = await heightsOf(links);
     for (const height of heights) {
-      expect(height, `${locale}: a footer link is ${height}px tall, heights: ${heights.join(', ')}`).toBeGreaterThanOrEqual(
-        TOUCH_TARGET_PX,
-      );
+      expect(
+        height,
+        `${locale}: a footer link is ${height}px tall, heights: ${heights.join(', ')}`,
+      ).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
     }
   }
 });
@@ -417,7 +426,9 @@ test('the confirm panel wears the card radius and its buttons take a thumb', asy
 
   const row = page.locator('[data-slot="custom-food-row"]').first();
   await expect(row, 'the saved food must be listed').toBeVisible();
-  await row.getByRole('button', { name: catalogFor('en').add.custom.removeAria.replace('{{name}}', SEEDED_FOOD.name) }).click();
+  await row
+    .getByRole('button', { name: catalogFor('en').add.custom.removeAria.replace('{{name}}', SEEDED_FOOD.name) })
+    .click();
 
   const panel = page.locator('[data-slot="alert-dialog-content"]');
   await expect(panel, 'the confirm panel must open').toBeVisible();
@@ -431,9 +442,9 @@ test('the confirm panel wears the card radius and its buttons take a thumb', asy
   });
   expect(surface.radius, 'the confirm panel must share the card radius').toBe(CARD_RADIUS_PX);
 
-  const buttonHeights = await panel.locator('[data-slot="alert-dialog-footer"] button').evaluateAll((elements) =>
-    elements.map((element) => Number.parseFloat(getComputedStyle(element).height)),
-  );
+  const buttonHeights = await panel
+    .locator('[data-slot="alert-dialog-footer"] button')
+    .evaluateAll((elements) => elements.map((element) => Number.parseFloat(getComputedStyle(element).height)));
   expect(buttonHeights.length, 'the panel must offer both answers').toBe(2);
   for (const height of buttonHeights) {
     expect(height, `a confirm button is ${height}px tall`).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
@@ -463,13 +474,13 @@ test('the add results and your foods draw the same row, and it fits 360px in en,
       radius: LIST_ROW_RADIUS_PX,
       padding: LIST_ROW_PADDING_PX,
     });
-    expect(await clippedTexts(page.locator('[data-slot="search-result-row"]')), `${locale}: an /add row overflows`).toEqual(
-      [],
-    );
     expect(
-      await page.evaluate(() => document.documentElement.scrollWidth),
-      `${locale}: /add must fit the phone`,
-    ).toBe(NARROW_PHONE_WIDTH);
+      await clippedTexts(page.locator('[data-slot="search-result-row"]')),
+      `${locale}: an /add row overflows`,
+    ).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${locale}: /add must fit the phone`).toBe(
+      NARROW_PHONE_WIDTH,
+    );
 
     await page.goto('/foods');
     const foodRow = page.locator('[data-slot="custom-food-row"]').first();
@@ -477,9 +488,10 @@ test('the add results and your foods draw the same row, and it fits 360px in en,
     expect(await rowSurface(foodRow), `${locale}: a /foods row must draw the same surface as an /add row`).toEqual(
       searchSurface,
     );
-    expect(await clippedTexts(page.locator('[data-slot="custom-food-row"]')), `${locale}: a /foods row overflows`).toEqual(
-      [],
-    );
+    expect(
+      await clippedTexts(page.locator('[data-slot="custom-food-row"]')),
+      `${locale}: a /foods row overflows`,
+    ).toEqual([]);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
       `${locale}: /foods must fit the phone`,
