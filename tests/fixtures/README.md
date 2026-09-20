@@ -30,3 +30,25 @@ Keep the formatting as it is: `JSON.stringify(body, null, 2)` plus a trailing
 newline. A reformat changes the hash without changing the contract, which is
 noise both repos have to absorb for nothing. `.prettierignore` keeps
 `pnpm format` off it for the same reason.
+
+## `sync-payload-v0.35.1.json` was WRITTEN BY THE 0.35.1 ENGINE
+
+Not a hand-built object shaped to look like one. M240 merged fasts and the
+pantry and argued, on a reading of the code, that a 0.35.1 device could not
+lose anybody a row. That argument rested on hand-built payloads, which is the
+one thing a compatibility claim must not rest on.
+
+This file was produced by checking out tag `v0.35.1` into its own worktree with
+its own `node_modules`, and running THAT release's `stampSnapshot` and
+`mergeSnapshots` over a small fixed diary: two food logs with one of them
+deleted and journalled, two fasts (one open, one finished), two pantry rows and
+one saved meal. Every instant and id in it is a literal, so the output is
+deterministic and the file can be regenerated and diffed.
+
+What it proves, and what `tests/integration/old-release-payload.test.ts`
+asserts, is the shape rather than the wish: the snapshot carries fasts, pantry
+rows and saved meals, `meta.perEntity` carries NO stamp for any of them, and
+`meta.tombstones` carries the food log the old device really did delete.
+
+Regenerate it only from a real `v0.35.1` checkout. A payload this repository's
+current engine wrote would assert nothing at all.

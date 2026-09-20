@@ -1,0 +1,102 @@
+{
+  "snapshot": {
+    "foods": [],
+    "foodLogs": [
+      {
+        "id": "log-kept",
+        "name": "Lentil soup",
+        "quantityGrams": 250,
+        "macros": {
+          "carbs": 12,
+          "fiber": 4,
+          "sugars": 3,
+          "polyols": 0,
+          "protein": 20,
+          "fat": 9,
+          "kcal": 230
+        },
+        "mealType": "lunch",
+        "source": "manual",
+        "aiEstimated": false,
+        "curatedSource": null,
+        "foodId": null,
+        "dayKey": "2026-09-19",
+        "loggedAt": 1789804800000,
+        "createdAt": 1789804800000,
+        "logBatchId": null
+      }
+    ],
+    "weightEntries": [],
+    "profile": null,
+    "fasts": [
+      {
+        "id": "fast-old-open",
+        "protocolId": "16:8",
+        "targetDurationMs": 57600000,
+        "plannedStartAt": null,
+        "startedAt": 1789804800000,
+        "endedAt": null,
+        "createdAt": 1789804800000
+      },
+      {
+        "id": "fast-old-done",
+        "protocolId": "16:8",
+        "targetDurationMs": 57600000,
+        "plannedStartAt": null,
+        "startedAt": 1789718400000,
+        "endedAt": 1789776000000,
+        "createdAt": 1789718400000
+      }
+    ],
+    "savedMeals": [
+      {
+        "id": "meal-old",
+        "name": "Sunday brunch",
+        "items": [],
+        "createdAt": 1789804800000
+      }
+    ],
+    "pantryItems": [
+      {
+        "id": "pantry-old-eggs",
+        "name": "Eggs",
+        "amount": 6,
+        "unit": "piece",
+        "category": "other",
+        "source": "photo",
+        "createdAt": 1789804800000,
+        "updatedAt": 1789804800000
+      },
+      {
+        "id": "pantry-old-butter",
+        "name": "Butter",
+        "amount": null,
+        "unit": null,
+        "category": "other",
+        "source": "photo",
+        "createdAt": 1789804800000,
+        "updatedAt": 1789804800000
+      }
+    ],
+    "activityMarks": [],
+    "awards": [],
+    "fastingSettings": null,
+    "privateStore": null
+  },
+  "meta": {
+    "perEntity": {
+      "foodLog:log-kept": {
+        "lamport": 1,
+        "deviceId": "device-0-35-1"
+      }
+    },
+    "tombstones": [
+      {
+        "entityId": "log-removed",
+        "entityType": "foodLog",
+        "lamport": 2,
+        "deviceId": "device-0-35-1"
+      }
+    ]
+  }
+}

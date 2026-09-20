@@ -132,6 +132,41 @@ ever carried a real stamp and still beats nothing at all, so a person can
 upgrade one device and keep the other's history. Both directions are pinned in
 `tests/integration/fasts-cross-device-sync.test.ts`.
 
+### Measured, not reasoned: what 0.35.1 actually does (M240 counsel item 7)
+
+Everything above was written from a reading of the old code. It was then RUN.
+A worktree at tag `v0.35.1` with its own `node_modules` was used twice.
+
+**Direction one, an old payload into this engine.** The 0.35.1 engine's own
+`stampSnapshot` and `mergeSnapshots` published a payload for a small fixed
+diary; it is frozen at `tests/fixtures/sync-payload-v0.35.1.json` and driven
+through the real store by `tests/integration/old-release-payload.test.ts`. The
+file confirms the shape the argument assumed: fasts, pantry rows and saved
+meals present in the snapshot, `meta.perEntity` holding ONE key
+(`foodLog:log-kept`) and no stamp for any of them, and a real tombstone for the
+food log the old device deleted. This build adopts all of it, buries the
+tombstoned row and keeps its own rows beside it.
+
+**Direction two, a payload this engine wrote into the 0.35.1 merge.** Run once,
+in the old worktree, over a payload carrying a stamped fast, a stamped pantry
+row, a saved meal, a food log and a tombstone. Measured result:
+
+- **It does not crash.** The merge completes normally.
+- **It keeps what it understands.** `foodLog:log-keep` survives with its stamp,
+  and the `foodLog:log-deleted` tombstone is carried through, so a delete this
+  build published is not undone by an old device passing it on.
+- **It drops the rest from the blob it republishes.** Its output holds no
+  fasts, no pantry rows and no saved meals, because it takes those lists from
+  its own local side, and it strips every `fast:*` and `pantryItem:*` key from
+  `meta.perEntity`.
+
+So an old device in the mix BLANKS those collections on the account until an
+upgraded device's next cycle puts them back, which it does, because the
+upgraded device still holds the rows and the old device published no tombstone
+for any of them. The window is one cycle wide and nothing is lost on a device.
+It is still a real cost, and it is why the release notes tell people to update
+every device rather than leaving it to be discovered.
+
 **First sync after upgrade.** Existing local fasts have no stamps, and they are
 stamped the way every merged row is stamped on a first sync: `stampSnapshot`
 finds no `perEntity` entry for `fast:x`, computes a content hash, and writes
