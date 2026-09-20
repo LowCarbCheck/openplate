@@ -153,6 +153,7 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
   return (
     <button
       type="button"
+      data-slot="search-result-row"
       onClick={onSelect}
       className={cn(
         LIST_ROW_CLASS,
