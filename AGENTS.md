@@ -188,6 +188,7 @@ Write it for the person running the instance, not for the person reading the dif
 3. **Rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`**, using the release date. The group headings and their bullets come along as they are. **Append each bullet's short commit hash** as `([abc1234](https://github.com/LowCarbCheck/openplate/commit/abc1234))`. Merge or reorder lines as needed, and delete entries for work reverted before release.
 4. **Re-create an empty `## [Unreleased]` heading above it.**
 5. **Push, and push a matching annotated tag with it**: `git tag -a vX.Y.Z -m "openplate X.Y.Z" && git push --follow-tags`. `.github/workflows/release-image.yml` triggers on `v*` and nothing else builds the image or publishes the release page, so a cut version with no tag is not a release at all.
+6. **A release is not a deploy.** The tag builds an image and a release page and nothing more. Production runs the version Bay pins in `bay-sprqvntrs/group_vars/all/services.yml`, and a person bumps that pin and runs the deploy. After cutting a tag, say in the report that production still runs the old version, and do not deploy unless the operator asks.
 
 **No em dashes and no en dashes** in the changelog, in a lead, or in a commit message. Use a comma.
 
