@@ -291,6 +291,19 @@ for (const locale of ['en', 'de'] as const) {
     await expect(toggle).toBeVisible();
     await expect(toggle, 'the walk measures the UNCHECKED track').toHaveAttribute('data-state', 'unchecked');
 
+    // THE PROBE IS TAKEN IN FREE SPACE, and this line is why. At first paint
+    // this row parks at the bottom edge of an 800 px viewport: measured
+    // 2026-09-20, the switch centre sat at y 726 in en and de and the probe
+    // point 18 px below it at y 744, one pixel inside the app's own fixed
+    // bottom navigation (`fixed inset-x-0 bottom-0 z-40`, top y 743). Turkish
+    // passed only because its page is 20 px shorter (scrollHeight 893 against
+    // 913) and the same point landed at 724. Scrolling to the end put the
+    // switch centre at 613 in every language and the probe hit it, so the
+    // 44 px hit area is intact; what the unscrolled read measured was where
+    // the page happens to park, which is not this test's subject. Any copy or
+    // spacing change above the row moves it again.
+    await toggle.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+
     // THE VISUAL SIZE IS NOT THE TARGET. The control stays small on purpose;
     // what has to be 44 px is what a thumb can hit, so this is read as a hit
     // test at a point the old 18 px control did not answer at, not as a box.
