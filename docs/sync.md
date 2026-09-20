@@ -8,6 +8,30 @@ database and secrets.
 
 Sync is entirely optional. Unset, openplate loses no feature.
 
+## What travels between your devices
+
+Everything the sync engine calls an entity is merged per row, so a change made on one
+device reaches the others and a deletion made on one device removes the row on the
+others. As of this version that is your personal foods, your food log, your weight
+entries, your profile and goals, your fasts, your pantry, your fasting routine, and the
+activity marks and awards behind the streak. Your saved meals travel too, as a whole
+list rather than row by row, which is the last part of the diary still waiting for a
+per-row merge.
+
+Your sharing and research keys travel as well, in a sealed part of the blob that only
+your own devices can open. A clinician you grant a diary to cannot read it.
+
+Three things never travel, whatever you switch on:
+
+- **Plate photos.** They live in a separate database on the device that took them, they
+  are excluded from the sync payload and from every backup file, and they clear
+  themselves out on a schedule you set.
+- **Your AI provider key.** It lives in its own database on the device you entered it
+  on, and it goes to nobody but the provider you chose.
+- **The record of what you deleted.** Your device writes down the removals it performed
+  so it can prove they were deliberate, and that list stays on the device. The removals
+  themselves travel; the list does not.
+
 ## What it needs
 
 - A running **openplate-core** instance: either the hosted one, your own, or any third-party

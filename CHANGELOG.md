@@ -11,6 +11,16 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Your fasts now follow you to your other devices.** A fast used to live on the one device it was started on, so erasing that device, losing it, or opening openplate on a tablet left the fasting history behind. Starting a fast, ending it, writing a mood or a note, and removing a fast all reach your account now and land on your other devices. If two devices both started a fast while they were offline, you will see two open fasts on both of them: the newest is the one that counts as running, and the other sits in your history marked still open, with a Remove button. Nothing is ever closed at a time you did not choose.
+- **Your pantry now follows you too.** What is in the fridge used to stay on the device that photographed the shelf, so the list you wrote on a tablet was not there when you stood in the shop with your phone. A photographed shelf, a corrected line and a removed row all reach your other devices now. Two devices that each photographed a fridge show one combined list you can edit down, the same way a second photograph on one device already works. The photograph itself is still never stored and never sent anywhere but your own AI provider.
+- **The sign-out dialog counts your fasts and your pantry, and warns only about what it cannot check.** It used to end with one sentence naming fasts, saved meals, the pantry and your keys together, on every sign-out, whether or not anything was actually waiting. Fasts and pantry rows are counted with the rest of your diary now. Saved meals get a sentence only when this device is holding meals your account has not been told about. Your sharing and research keys get a sentence of their own, because they are sealed and this check cannot open them.
+
+### Docs
+
+- **The sync guide says what travels between your devices and what never does.** A new section lists what a sync carries, names your saved meals as the one part that still travels as a whole list, and states the three things that stay put: plate photos, your AI provider key, and the record of what you deleted.
+
 ## [0.35.1] - 2026-09-20
 
 ### Docs
