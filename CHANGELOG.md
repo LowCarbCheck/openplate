@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.35.1] - 2026-09-20
+
 ### Docs
 
-- **The topologies and sync documents no longer say the server cannot read entries.** The topologies guide said the sync service cannot read a single entry, and the sync guide described the diary as ciphertext the service cannot read. The service keeps each account's recovery code, sealed under a secret of its own, so the operator of an instance can in principle open a diary. Both documents now say so. A new test fails if either claim comes back.
+- **The topologies and sync documents no longer say the server cannot read entries.** The topologies guide said the sync service cannot read a single entry, and the sync guide described the diary as ciphertext the service cannot read. The service keeps each account's recovery code, sealed under a secret of its own, so the operator of an instance can in principle open a diary. Both documents now say so. A new test fails if either claim comes back. ([72cc810](https://github.com/LowCarbCheck/openplate/commit/72cc810))
 
 ## [0.35.0] - 2026-09-20
 
