@@ -52,6 +52,13 @@ pnpm test:integration # node --test against tests/integration/** (real HTTP, fak
 pnpm test:e2e         # Playwright smoke tier. HOST SHELL ONLY (no Chromium in the toolbox), needs `pnpm build` first
 ```
 
+The browser tier takes three consecutive ports derived from this checkout's
+path ([ADR-0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md)),
+so two worktrees on one host can run it at the same time. Every run prints the
+three it took. `OPENPLATE_E2E_PORT_BASE` overrides them for the rare pair of
+checkouts whose paths land on the same triple, and
+`scripts/repro-e2e-port-collision.sh` proves two concurrent runs both pass.
+
 ## Key Documentation
 
 | Topic                    | Location                                                                                                                     |
@@ -92,6 +99,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0011](.adr/0011-analytics-levels.md)                      | Analytics levels, and the research tier ADR-0010 refused         | Accepted   |
 | [0012](.adr/0012-the-server-asks-github-about-releases.md) | The server asks GitHub about releases, and it asks by default     | Accepted   |
 | [0013](.adr/0013-a-recreated-store-cannot-vouch-for-an-absence.md) | A recreated store cannot vouch for an absence; a delete needs a journal row | Accepted   |
+| [0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 

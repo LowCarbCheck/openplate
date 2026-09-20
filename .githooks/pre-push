@@ -110,6 +110,12 @@ run pnpm build
 # toolbox, so this stage is the one that must execute on the host. `pnpm` and
 # `node` are on the host PATH; if the browser is not there, say which shell to
 # push from rather than waving the stage through.
+#
+# TWO PEOPLE CAN PUSH AT ONCE. This stage used to bind three literal ports that
+# every checkout on a host shared, so a second push collided here, on the last
+# and most expensive stage, and hung. The three ports are now derived from the
+# checkout's own path (`tests/e2e/env.ts`, ADR-0017) and printed by every run;
+# `scripts/repro-e2e-port-collision.sh` proves two trees pass concurrently.
 echo "▶ pre-push: browser smoke tier (host only, the toolbox has no Chromium)"
 # A REAL LAUNCH, not a path check: the toolbox has the browser bytes on a
 # shared cache and still cannot start them, which is the case this has to

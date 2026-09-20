@@ -1,7 +1,12 @@
 /**
  * What has to exist before a single page is opened.
  *
- * THREE JOBS, in this order:
+ * FOUR JOBS, in this order:
+ *
+ *  0. SAY WHICH PORTS THIS RUN TOOK. They are derived from this checkout's
+ *     path (`env.ts`, ADR-0017), so they differ per worktree and nobody can
+ *     read them off the source. A run that later refuses a port, or an
+ *     operator looking at `ss -ltnp`, needs the three numbers in the log.
  *
  *  1. RESET THIS TIER'S FONTCONFIG CACHE. A run the harness kills for low
  *     memory can leave a truncated cache file that crashes every later run
@@ -25,7 +30,14 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { startFakeSyncService } from '../integration/fake-sync-service';
-import { E2E_ACCOUNT_EMAIL, E2E_FOOD_DB_PORT, E2E_INVITE_TOKEN_VAR, E2E_SYNC_PORT } from './env';
+import {
+  E2E_ACCOUNT_EMAIL,
+  E2E_APP_PORT,
+  E2E_FOOD_DB_PORT,
+  E2E_INVITE_TOKEN_VAR,
+  E2E_PORT_BASE_VAR,
+  E2E_SYNC_PORT,
+} from './env';
 import { holdFakeFoodDb, holdFakeService } from './fake-service-handle';
 import { startFakeFoodDb } from './fake-food-db';
 import { resetFontconfigCache } from './font-cache';
@@ -60,6 +72,11 @@ async function redeemInvite(inviteToken: string): Promise<void> {
 }
 
 export default async function globalSetup(): Promise<void> {
+  console.log(
+    `browser tier ports: food database ${E2E_FOOD_DB_PORT}, sync ${E2E_SYNC_PORT}, app ${E2E_APP_PORT} ` +
+      `(derived from this checkout's path; ${E2E_PORT_BASE_VAR} overrides them)`,
+  );
+
   await resetFontconfigCache();
 
   const service = await startFakeSyncService({ port: E2E_SYNC_PORT });

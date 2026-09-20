@@ -120,10 +120,11 @@ jobs:
       # `build/server/index.js`, so the build step above is what this needs.
       # `--with-deps` installs the shared libraries and the fonts Chromium needs;
       # `tests/e2e/fonts.conf` names `/usr/share/fonts`, which is where they land.
-      # The tier starts its own production server on 127.0.0.1:5299 and the fake
-      # sync service on 127.0.0.1:5298 (`tests/e2e/env.ts`); both are free on a
-      # fresh runner. Its fontconfig cache goes under `$XDG_CACHE_HOME` or
-      # `~/.cache`, which the runner user owns.
+      # The tier starts its own production server, fake sync service and fake
+      # food database on three consecutive ports it derives from the checkout's
+      # path (`tests/e2e/env.ts`, ADR-0017) and prints; all three are free on a
+      # fresh runner, which has one checkout. Its fontconfig cache goes under
+      # `$XDG_CACHE_HOME` or `~/.cache`, which the runner user owns.
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       # The hook's own probe, kept: a real launch, not a path check, so a

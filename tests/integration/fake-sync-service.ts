@@ -1444,8 +1444,8 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
       reject(
         new Error(
           `the fake sync service could not take 127.0.0.1:${port}, because another process on this host already holds that port (${error.message}). ` +
-            'A NAMED port comes from the browser tier (`tests/e2e/env.ts`), while the integration tier asks for a free one and cannot collide. ' +
-            'Only one working tree on this host can run the browser tier at a time, so wait for the other run to finish, or name the owner with `ss -ltnp`.',
+            'A NAMED port comes from the browser tier (`tests/e2e/env.ts`), which derives one triple per checkout, while the integration tier asks for a free one and cannot collide. ' +
+            'Name the process that holds it with `ss -ltnp`; if it is another checkout of this repository whose path hashed to the same triple, set `OPENPLATE_E2E_PORT_BASE` in one of the two trees.',
           { cause: error },
         ),
       );

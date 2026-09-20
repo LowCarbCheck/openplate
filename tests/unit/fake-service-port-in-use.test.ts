@@ -19,11 +19,12 @@
  *
  * ── THE PORT IS NEVER WRITTEN DOWN ───────────────────────────────────────
  *
- * This file must never bind 5297, 5298 or 5299. `tests/e2e/env.ts` reserves
- * those for the browser tier, and a second checkout of this repository may be
- * running that tier right now, which is the very collision under test. So
- * every port here is asked for at run time: listen on 0, let the kernel pick a
- * free one, and read back what it picked.
+ * This file must never bind the three ports `tests/e2e/env.ts` derives for
+ * this checkout. That tier may be running right now, here or in another
+ * worktree, which is the very collision under test. So every port here is
+ * asked for at run time: listen on 0, let the kernel pick a free one, and read
+ * back what it picked. That also keeps this file honest when the derivation
+ * changes, because it names no number at all.
  *
  * ── EVERY CASE HAS ITS CONTROL ───────────────────────────────────────────
  *
@@ -105,7 +106,8 @@ describe('a fake service whose port another process holds', () => {
           assert.match(cause.message, new RegExp(`127\\.0\\.0\\.1:${held.port}\\b`), 'it must name the port');
           assert.match(cause.message, /fake sync service/, 'it must name the service');
           assert.match(cause.message, /already holds that port/, 'it must say another process holds it');
-          assert.match(cause.message, /one working tree on this host/, 'it must say only one tree can run the tier');
+          assert.match(cause.message, /ss -ltnp/, 'it must say how to name the process that holds it');
+          assert.match(cause.message, /OPENPLATE_E2E_PORT_BASE/, 'it must name the escape hatch');
           return true;
         },
       );
@@ -124,7 +126,8 @@ describe('a fake service whose port another process holds', () => {
           assert.match(cause.message, new RegExp(`127\\.0\\.0\\.1:${held.port}\\b`), 'it must name the port');
           assert.match(cause.message, /fake food database/, 'it must name the service');
           assert.match(cause.message, /already holds that port/, 'it must say another process holds it');
-          assert.match(cause.message, /one working tree on this host/, 'it must say only one tree can run the tier');
+          assert.match(cause.message, /ss -ltnp/, 'it must say how to name the process that holds it');
+          assert.match(cause.message, /OPENPLATE_E2E_PORT_BASE/, 'it must name the escape hatch');
           return true;
         },
       );

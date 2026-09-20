@@ -29,6 +29,16 @@
  * those two numbers back, so a regression that overflows the document shows up
  * as a failed spec rather than as a screenshot somebody has to look at.
  *
+ * ── Two working trees can run this at the same time ──────────────────────
+ *
+ * The three ports below are not literals shared by every checkout any more.
+ * `tests/e2e/env.ts` derives them from the real path of the checkout this file
+ * belongs to, so a second worktree on the same host gets a different triple and
+ * the two runs do not meet. `OPENPLATE_E2E_PORT_BASE` overrides the derivation
+ * for the rare pair of paths that hash to the same slot. ADR-0017 records why a
+ * hash beats a free-port scan here: this module is evaluated in the runner AND
+ * in every worker, and a scan would answer differently in each one.
+ *
  * ── The font configuration is stated, not inherited ──────────────────────
  *
  * Every budget above is a measurement in CSS pixels, and a measurement of

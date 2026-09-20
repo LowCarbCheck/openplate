@@ -153,10 +153,10 @@ export async function startFakeFoodDb({ port }: { port: number }): Promise<FakeF
   });
 
   await new Promise<void>((settle, fail) => {
-    // The port here is a FIXED one from `tests/e2e/env.ts`, so a second
-    // checkout of this repository running the browser tier holds it. A bare
-    // `listen` with only a success callback never learns that: Node skips the
-    // callback and emits `error` with EADDRINUSE, and a promise that waits only
+    // The port here is a NAMED one from `tests/e2e/env.ts`, derived from this
+    // checkout's path, so something else on the host can already hold it. A
+    // bare `listen` with only a success callback never learns that: Node skips
+    // the callback and emits `error` with EADDRINUSE, and a promise that waits only
     // for `listening` then neither settles nor fails, so the tier prints
     // nothing and sits at nought percent CPU until somebody kills it. That
     // reads as flakiness. A rejection that names the port reads as a fact.
@@ -175,7 +175,7 @@ export async function startFakeFoodDb({ port }: { port: number }): Promise<FakeF
       fail(
         new Error(
           `the fake food database could not take 127.0.0.1:${port}, because another process on this host already holds that port (${error.message}). ` +
-            'Only one working tree on this host can run the browser tier at a time, so wait for the other run to finish, or name the owner with `ss -ltnp`.',
+            'Name the process that holds it with `ss -ltnp`; if it is another checkout of this repository whose path hashed to the same triple, set `OPENPLATE_E2E_PORT_BASE` in one of the two trees.',
           { cause: error },
         ),
       );
