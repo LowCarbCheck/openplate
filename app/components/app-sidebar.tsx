@@ -30,6 +30,7 @@ import {
 } from '#app/components/ui/sidebar';
 import { useLocation } from 'react-router';
 import { Link } from '#app/components/link';
+import { Wordmark } from '#app/components/wordmark';
 import { useSyncSession } from '#app/components/sync-status';
 import { AppBuildStamp } from '#app/components/build-stamp';
 import { useTranslation } from 'react-i18next';
@@ -200,7 +201,7 @@ function Logo() {
       )}
     >
       <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 shrink-0 rounded-lg" />
-      {!isCollapsed && <span className="font-display text-lg font-semibold text-sidebar-foreground">openplate</span>}
+      {!isCollapsed && <Wordmark className="text-lg font-semibold text-sidebar-foreground" />}
     </Link>
   );
 }

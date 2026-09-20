@@ -55,6 +55,7 @@ import { hasDeviceSyncSession } from '#app/lib/sync/session-cache';
 import { openGraphLocale } from '#app/i18n/date-locale';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
+import { Wordmark } from '#app/components/wordmark';
 
 // Title AND description via the pure `meta-title` seam, with the language read
 // off the ROOT loader through `matches` — never the i18next singleton (see
@@ -1053,7 +1054,7 @@ function HowStep({
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
-        <h3 className="font-display text-lg font-semibold tracking-tight text-balance">{title}</h3>
+        <h3 className="text-lg font-semibold tracking-tight text-balance">{title}</h3>
         <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
       </div>
     </div>
@@ -1090,7 +1091,7 @@ function FeatureCard({ icon: Icon, title, body }: { icon: LucideIcon; title: str
           undifferentiated blocks of text. They stay well under the chapter
           card titles (`text-2xl`/28px) and further under the section `<h2>`s,
           which is the ranking the page is supposed to have. */}
-      <h3 className="mt-3 font-display text-lg font-semibold tracking-tight text-balance">{title}</h3>
+      <h3 className="mt-3 text-lg font-semibold tracking-tight text-balance">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>
   );
@@ -1126,7 +1127,7 @@ function SetupStep({ step, title, body }: { step: number; title: string; body: s
         <span className="relative text-sm font-semibold tabular-nums text-primary">{step}</span>
       </span>
       <div className="space-y-1.5">
-        <h3 className="font-display text-lg font-semibold tracking-tight text-balance">{title}</h3>
+        <h3 className="text-lg font-semibold tracking-tight text-balance">{title}</h3>
         <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
       </div>
     </li>
@@ -1212,7 +1213,7 @@ function LadderCard({
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h2 className="font-display text-2xl font-bold tracking-tight text-balance sm:text-[28px]">{title}</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-balance sm:text-[28px]">{title}</h2>
           {children}
         </div>
         {media}
@@ -1344,7 +1345,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             is for the screenshot and the grids, never for a 1024px-long
             sentence. */}
         <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
-          <h1 className="font-display text-5xl font-bold tracking-tight sm:text-6xl">openplate</h1>
+          <Wordmark as="h1" className="text-5xl font-bold tracking-tight sm:text-6xl" />
           {/* A short brand rule under the wordmark — the smallest possible
               piece of furniture that turns "a heading with paragraphs under
               it" into a composed masthead. */}
@@ -1428,7 +1429,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           URL, so the whole page carries it. */}
       <section id="how" className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.how.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+        <h2 className="mt-2 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {t('landing.how.title')}
         </h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.how.subtitle')}</p>
@@ -1520,7 +1521,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           them. */}
       <section className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.setup.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+        <h2 className="mt-2 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {t('landing.setup.title')}
         </h2>
         {/* "only the middle one asks anything of you" was true of the ladder
@@ -1618,7 +1619,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           repository; nothing here is a roadmap item. */}
       <section className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.features.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+        <h2 className="mt-2 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {t('landing.features.title')}
         </h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.features.subtitle')}</p>
@@ -1834,7 +1835,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             above it and had no eyebrow at all, which made the page's closing
             argument look like a footnote to the newsletter card. */}
         <SectionEyebrow>{t('landing.close.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+        <h2 className="mt-2 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {t('landing.close.title')}
         </h2>
         {/* `mx-auto max-w-[65ch]`: a centred line running the full width of a

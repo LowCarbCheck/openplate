@@ -21,25 +21,22 @@ CardHeader.displayName = 'CardHeader';
 
 const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    // DESIGN.md §4: card title is `text-lg font-semibold` — this was previously
-    // unsized (inherited body text size), which is why card headlines (a day's net
-    // carbs, a food name, a section title) read flat against their own body copy.
-    // Callers with a different weight (auth screens' `text-xl`, onboarding's
-    // `text-2xl`) still override via `className`.
-    //
-    // M129 soul pass: card titles now carry the display serif (`font-display`,
-    // Fraunces — see app.css). This is the single highest-leverage place to
-    // spread the brand voice past the hero, because every screen in the app has
-    // card titles and almost none of them had any brand character at all. It is
-    // safe HERE and nowhere near a live figure: a card TITLE is always a label
-    // ("This week", "Your goals", a food name), while every number that changes
-    // as you use the app lives in card CONTENT and stays in Inter with
-    // `tabular-nums` — the Fraunces subset has no tabular figures, so digits in
-    // it would jitter in width as they update.
+    // DESIGN.md §4: a card title is a semibold label in the BODY face, at
+    // `text-base` (16px). It used to be the display serif at `text-lg`
+    // (M129, a serif card title over a tracked teal eyebrow on every card),
+    // and that pairing is the generated-template signature M243 removed. The
+    // brand face now draws the word "openplate" and nothing else, through
+    // the `Wordmark` component, so a title here must never ask for it. The
+    // body face is Victor Mono, which reads optically larger than Inter at
+    // the same size, which is why the step down from `text-lg`. Callers with
+    // a different size (auth screens' `text-xl`, onboarding's `text-2xl`)
+    // still override via `className`. This is also a label, never a live
+    // figure: every number that changes as you use the app lives in card
+    // CONTENT with `tabular-nums`.
     <div
       ref={ref}
       data-slot="card-title"
-      className={cn('font-display text-lg font-semibold leading-tight tracking-tight text-balance', className)}
+      className={cn('text-base font-semibold leading-tight tracking-tight text-balance', className)}
       {...props}
     />
   ),

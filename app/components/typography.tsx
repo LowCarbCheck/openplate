@@ -98,23 +98,34 @@ export function H3({ children, className, variant = 'default', ...props }: H3Pro
 }
 
 // --- SectionEyebrow ---
+/** The section label's whole recipe. Exported so the one inline copy (`fast-strip.tsx`) cannot drift. */
+export const SECTION_EYEBROW_CLASS = 'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+
 /**
- * The app's small brand-teal section label (M129 soul pass) — uppercase,
- * letter-spaced, `text-primary`. One recipe, used everywhere a group of
- * content needs naming without a full heading: the diary's meal groups and
- * chip rows, the drill-down's internal blocks, the trends sections, the
- * settings card headers.
+ * The app's small section label: uppercase, lightly tracked, muted grey. One
+ * recipe, used everywhere a group of content needs naming without a full
+ * heading: the diary's meal groups and chip rows, the drill-down's internal
+ * blocks, the trends sections, the settings card headers.
+ *
+ * It is GREY on purpose (M243). The first version was brand teal with wide
+ * tracking, which sat over a serif card title on every card and is the most
+ * reproduced generated-template signature there is. lowcarbcheck.org sets the
+ * same idiom grey with `tracking-wide`, and teal is now spent on the active
+ * nav item, the one primary action and links, nowhere else. A label that names
+ * a group must not compete with the group.
  *
  * Why a component and not a class string copied around: this is the single
- * most-repeated piece of the branded language, and the whole point of the soul
- * pass is that the same idea looks the same everywhere. It renders a `<p>` by
- * default (most uses label a group, they don't head a document section); pass
- * `as="h2"`/`"h3"` where the label really is the section's heading, so the
- * brand treatment never costs the page its outline.
+ * most-repeated piece of the language, and the point is that the same idea
+ * looks the same everywhere. The recipe is exported as `SECTION_EYEBROW_CLASS`
+ * for the one place that cannot use the component (see `fast-strip.tsx`), so a
+ * token change lands in both. It renders a `<p>` by default (most uses label a
+ * group, they don't head a document section); pass `as="h2"`/`"h3"` where the
+ * label really is the section's heading, so the treatment never costs the page
+ * its outline.
  *
- * `trailingRule` draws a hairline from the end of the label to the right edge
- * — the diary's meal headers use it to tie the label to the subtotal sitting
- * at the far end of the row.
+ * `trailingRule` draws a hairline from the end of the label to the right edge,
+ * in the border colour. The diary's meal headers use it to tie the label to the
+ * subtotal sitting at the far end of the row.
  */
 type SectionEyebrowProps = PropsWithChildren<
   HTMLAttributes<HTMLElement> & {
@@ -131,10 +142,7 @@ export function SectionEyebrow({
   ...props
 }: SectionEyebrowProps) {
   const label = (
-    <Tag
-      className={cn('text-xs font-semibold uppercase tracking-[0.11em] text-primary', !trailingRule && className)}
-      {...props}
-    >
+    <Tag className={cn(SECTION_EYEBROW_CLASS, !trailingRule && className)} {...props}>
       {children}
     </Tag>
   );
@@ -142,7 +150,7 @@ export function SectionEyebrow({
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
       {label}
-      <span className="h-px flex-1 bg-primary/20" aria-hidden="true" />
+      <span className="h-px flex-1 bg-border" aria-hidden="true" />
     </div>
   );
 }

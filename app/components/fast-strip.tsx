@@ -20,6 +20,8 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Timer } from 'lucide-react';
 import { Link } from '#app/components/link';
+import { SECTION_EYEBROW_CLASS } from '#app/components/typography';
+import { cn } from '#app/lib/utils';
 import { useCurrentFast } from '#app/hooks/use-current-fast';
 import { formatFastDuration, formatFastOvertime, resolveFastTimeline } from '#app/models/fasting';
 import type { LocalFast } from '#app/lib/local-store';
@@ -64,12 +66,14 @@ export function FastStripRow({ fast, nowMs }: FastStripRowProps): ReactElement {
       <Timer className="size-4 shrink-0 text-primary" aria-hidden="true" />
       <span className="min-w-0 flex-1">
         {/*
-          The `SectionEyebrow` recipe inlined rather than the component, because
-          that primitive renders a block-level `<p>` and this needs a `<span>`
-          inside an anchor. Keep the class string byte-identical to the
-          component's so a token change lands in both.
+          The `SectionEyebrow` recipe, by its exported class string rather than
+          the component, because that primitive renders a block-level `<p>` and
+          this needs a `<span>` inside an anchor. Sharing the constant keeps a
+          token change landing in both, which a hand-copied string did not: this
+          span was still teal, at 11px with wide tracking, after the component
+          went grey.
         */}
-        <span className="block text-[11px] font-semibold uppercase tracking-[0.11em] text-primary">{eyebrow}</span>
+        <span className={cn('block', SECTION_EYEBROW_CLASS)}>{eyebrow}</span>
         <span className="block truncate text-sm font-medium tabular-nums">{line}</span>
       </span>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

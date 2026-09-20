@@ -216,7 +216,12 @@ describe('the app header hosts it', () => {
     assert.ok(opened > 0 && closed > opened, 'the app header stopped mounting HeaderStatus');
     const wrapped = WRAPPER.slice(opened, closed);
     assert.match(wrapped, /<h1/, 'the page title is outside the status slot');
-    assert.match(wrapped, /\{APP_NAME\}/, 'the wordmark is outside the status slot');
+    assert.match(wrapped, /<Wordmark\b/, 'the wordmark is outside the status slot');
+    // CONTROL: the read is really about the `Wordmark` element. Take it out of the slot's
+    // source and the same pattern must stop matching, so it cannot pass on a comment or on
+    // some other mention of the word.
+    const withoutTheKicker = wrapped.replace(/<Wordmark[\s\S]*?\/>/, '');
+    assert.doesNotMatch(withoutTheKicker, /<Wordmark\b/, 'the slot must hold exactly one wordmark');
   });
 
   it('leaves the device menu outside it, so nothing on the bar moves', () => {

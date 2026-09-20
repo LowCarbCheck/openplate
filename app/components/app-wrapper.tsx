@@ -26,6 +26,7 @@ import { APP_NAME } from '#app/lib/brand';
 import { cn } from '#app/lib/utils';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import { Button } from './ui/button';
+import { Wordmark } from './wordmark';
 import * as React from 'react';
 
 /**
@@ -156,10 +157,10 @@ function NavDrawer() {
       </SheetTrigger>
       <SheetContent side="left" className="w-72 gap-0 p-0 md:hidden">
         <SheetHeader className="border-b">
-          <SheetTitle className="flex items-center gap-2 font-display text-lg">
+          <SheetTitle className="flex items-center gap-2 text-lg">
             <img src="/icons/icon-192.png?v=2" alt="" className="h-7 w-7 rounded-lg" />
             {/* The product name is a proper noun, never translated. */}
-            {APP_NAME}
+            <Wordmark />
           </SheetTitle>
           <SheetDescription className="sr-only">{t('chrome.navDrawerDescription')}</SheetDescription>
         </SheetHeader>
@@ -338,28 +339,32 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                     exact lockup a few pixels away, and a second "openplate" there
                     is a duplicate, not emphasis.
 
-                    Deliberately NOT the `SectionEyebrow` recipe (DESIGN.md §2:
-                    11px, uppercase-ish, `tracking-[0.11em]`), that treatment
-                    already means "label for the content block below" everywhere
-                    else in the app, so wearing it made the brand read as a
-                    category kicker for the page title rather than as the product
-                    name. A wordmark is set like a wordmark: normal tracking,
-                    lowercase, brand-teal.
+                    Deliberately NOT the `SectionEyebrow` recipe (small uppercase
+                    grey caps): that treatment already means "label for the
+                    content block below" everywhere else in the app, so wearing
+                    it made the brand read as a category kicker for the page
+                    title rather than as the product name. A wordmark is set like
+                    a wordmark: normal tracking, lowercase, brand-teal.
 
-                    "openplate" is a literal, lowercase brand string, deliberately
-                    outside i18n, same convention as `APP_NAME` elsewhere here.
+                    `Wordmark` renders the literal, lowercase brand string
+                    (`APP_NAME`, deliberately outside i18n) in the brand face.
                     Decorative: the `h1` below names the page for assistive tech. */}
-                <span
-                  aria-hidden="true"
-                  className="font-display text-xs font-semibold leading-none text-primary md:hidden"
-                >
-                  {APP_NAME}
-                </span>
+                <Wordmark aria-hidden="true" className="text-xs font-semibold leading-none text-primary md:hidden" />
                 {/* `truncate` because the longest titles ("Sync across devices",
                     "Connecting to OpenRouter", and their longer German
                     translations) would otherwise wrap the header to three lines
-                    on a narrow phone. */}
-                <h1 className="truncate font-display text-lg font-semibold leading-tight tracking-tight md:text-xl">
+                    on a narrow phone.
+
+                    15px ON A PHONE, AND MEASURED. This was `text-lg` (18px) back
+                    when the face was Inter. Victor Mono is a flat 0.6em per
+                    character, wider than Inter for any mixed-case title, and the
+                    title slot is only about 172px. 15px is the largest size at
+                    which no route title in German or Turkish is clipped harder
+                    than Inter at 18px clipped it, at 390px and at 360px (the
+                    numbers are in `lcc-lineage-labels.spec.ts`, which holds the
+                    line). 16px and 17px pass at 390px and fail for German at
+                    360px. */}
+                <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight md:text-xl">
                   {title || APP_NAME}
                 </h1>
               </div>

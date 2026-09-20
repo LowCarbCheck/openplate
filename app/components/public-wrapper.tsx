@@ -5,6 +5,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { BUILD, formatBuildLabel } from '#app/lib/build-info';
 import { BuildStamp } from '#app/components/build-stamp';
+import { Wordmark } from '#app/components/wordmark';
 import { cn } from '#app/lib/utils';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { InviteOnlyDialog } from '#app/components/invite-only-dialog';
@@ -92,7 +93,7 @@ export default function PublicWrapper({
               {showLogo && (
                 <a href="/" className="flex items-center gap-3 font-medium transition-opacity hover:opacity-80">
                   <img src="/icons/icon-192.png?v=2" alt="" className="h-6 w-6 rounded-full" />
-                  <span className="font-display text-lg font-semibold text-foreground">{APP_NAME}</span>
+                  <Wordmark className="text-lg font-semibold text-foreground" />
                 </a>
               )}
             </HeaderStatus>

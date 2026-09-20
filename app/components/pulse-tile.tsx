@@ -49,7 +49,7 @@ export function PulseTile({ today }: { today: PulseToday | null }) {
 function Figure({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <dd className="font-display text-xl font-semibold leading-none tracking-tight">{value}</dd>
+      <dd className="text-xl font-semibold leading-none tracking-tight tabular-nums">{value}</dd>
       <dt className="mt-1 truncate text-xs text-muted-foreground">{label}</dt>
     </div>
   );

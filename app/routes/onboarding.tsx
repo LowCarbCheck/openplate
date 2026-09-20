@@ -89,6 +89,7 @@ import { InstallAffordanceAction } from '#app/components/install-card';
 import { useInstallAffordance } from '#app/hooks/use-install-affordance';
 import type { InstallAffordanceControls } from '#app/hooks/use-install-affordance';
 import { APP_NAME } from '#app/lib/brand';
+import { Wordmark } from '#app/components/wordmark';
 import { Download, Key, ShieldCheck } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import {
@@ -530,7 +531,7 @@ function OnboardingHeader({ step }: { step: OnboardingStep }) {
           first screen a new user ever sees. */}
       <span className="flex items-center gap-2.5 font-semibold">
         <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 rounded-full" />
-        <span className="font-display text-xl">openplate</span>
+        <Wordmark className="text-xl" />
       </span>
       <p className="sr-only">{t('onboarding.stepOf', { current, total: ONBOARDING_STEPS.length })}</p>
       <div className="flex items-center gap-2">

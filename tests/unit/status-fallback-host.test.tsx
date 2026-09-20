@@ -108,7 +108,14 @@ describe('the public header hosts it', () => {
     const closed = wrapper.indexOf('</HeaderStatus>');
     assert.ok(opened > 0 && closed > opened, 'the public header stopped mounting HeaderStatus');
     const wrapped = wrapper.slice(opened, closed);
-    assert.match(wrapped, /\{APP_NAME\}/, 'the wordmark is outside the status slot');
+    assert.match(wrapped, /<Wordmark\b/, 'the wordmark is outside the status slot');
+    // CONTROL: the read is really about the `Wordmark` element. Take it out of the slot's
+    // source and the same pattern must stop matching.
+    assert.doesNotMatch(
+      wrapped.replace(/<Wordmark[\s\S]*?\/>/, ''),
+      /<Wordmark\b/,
+      'the slot must hold exactly one wordmark',
+    );
     // The sign-in control is the thing that must not move: it sits after the
     // slot, not inside it.
     assert.ok(wrapper.indexOf("t('chrome.signIn')") > closed, 'the sign-in door is inside the status slot');

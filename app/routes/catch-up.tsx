@@ -145,7 +145,7 @@ export default function CatchUpRoute({ loaderData }: Route.ComponentProps): Reac
     <div className="mx-auto max-w-2xl space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-xl">{catchUp.title}</CardTitle>
+          <CardTitle className="text-xl">{catchUp.title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <ul className="space-y-2">
