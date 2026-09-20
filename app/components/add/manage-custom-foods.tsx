@@ -32,6 +32,7 @@ import type { LocalPersonalFood } from '#app/lib/local-store';
 import type { MacroEntryBasis } from '#app/lib/portions';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
+import { LIST_ROW_CLASS, LIST_STACK_CLASS } from '#app/components/list-row';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { cn } from '#app/lib/utils';
 import { Button } from '#app/components/ui/button';
@@ -166,7 +167,7 @@ function EditFoodForm({
   }, [fetcher.data, food.name, onSaved, t]);
 
   return (
-    <fetcher.Form method="post" className="space-y-3 rounded-lg border bg-card p-3">
+    <fetcher.Form method="post" className={cn(LIST_ROW_CLASS, 'space-y-3')}>
       <input type="hidden" name="_intent" value="editFood" />
       <input type="hidden" name="foodId" value={food.id} />
       <input type="hidden" name="macroBasis" value={basis} />
@@ -282,7 +283,7 @@ function CustomFoodRow({
   const summary = formatPer100gLine(food.macrosPer100g, t, i18n.language);
 
   return (
-    <div data-slot="custom-food-row" className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3">
+    <div data-slot="custom-food-row" className={cn(LIST_ROW_CLASS, 'flex items-start justify-between gap-3')}>
       <div className="min-w-0 flex-1 space-y-1">
         <p className="truncate text-sm font-medium">{food.name}</p>
         {summary && <p className="text-xs text-muted-foreground">{t('add.custom.per100g', { summary })}</p>}
@@ -349,7 +350,7 @@ export function CustomFoodsList({ foods }: { foods: LocalPersonalFood[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-3">
+    <div className={LIST_STACK_CLASS}>
       {foods.length === 0 && <p className="text-sm text-muted-foreground">{t('add.custom.empty')}</p>}
       {foods.map((food) => (
         <CustomFoodRow

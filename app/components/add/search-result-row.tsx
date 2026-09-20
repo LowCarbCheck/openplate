@@ -8,6 +8,7 @@ import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { matchTierChipClass, type MatchTier } from '#app/lib/match-quality';
 import { cn } from '#app/lib/utils';
 import { Badge } from '#app/components/ui/badge';
+import { LIST_ROW_CLASS } from '#app/components/list-row';
 import { ChevronRight } from 'lucide-react';
 
 /**
@@ -153,7 +154,10 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
     <button
       type="button"
       onClick={onSelect}
-      className="flex min-h-11 w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-all duration-200 hover:border-teal-300 hover:shadow-md dark:hover:border-teal-600"
+      className={cn(
+        LIST_ROW_CLASS,
+        'flex min-h-11 w-full items-center gap-3 text-left transition-all duration-200 hover:border-teal-300 hover:shadow-md dark:hover:border-teal-600',
+      )}
     >
       {candidate.imageUrl && (
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-900">
