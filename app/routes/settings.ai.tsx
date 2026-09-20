@@ -416,7 +416,9 @@ function ModelRadioCard({
         type="radio"
         name="catalogModelChoice"
         value={model.id}
-        className="mt-1"
+        // `accent-primary` paints the native control in the brand colour; without
+        // it the one selected option on this page is browser blue.
+        className="mt-1 size-4 accent-primary"
         checked={isSelected}
         onChange={onSelect}
       />
@@ -509,7 +511,7 @@ function CatalogModelSection({
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline"
+            className="-my-2 flex min-h-11 items-center gap-1 py-2 text-sm text-muted-foreground underline-offset-4 hover:underline"
           >
             <ChevronDown className="h-3.5 w-3.5" /> {t('settingsAi.model.customToggle')}
           </button>
@@ -1080,7 +1082,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                     aria-pressed={isActive}
                     onClick={() => selectProvider(definition.id)}
                     className={cn(
-                      'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50',
+                      'flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-center text-sm transition-colors hover:bg-accent/50',
                       isActive && 'border-primary bg-accent/40 font-medium',
                     )}
                   >
@@ -1163,7 +1165,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
-                    className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline"
+                    className="-my-2 flex min-h-11 items-center gap-1 py-2 text-sm text-muted-foreground underline-offset-4 hover:underline"
                   >
                     <ChevronDown className="h-3.5 w-3.5" />
                     {supportsOauthPkce(selectedProvider) ?
@@ -1188,7 +1190,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                     <CollapsibleTrigger asChild>
                       <button
                         type="button"
-                        className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline"
+                        className="-my-2 flex min-h-11 items-center gap-1 py-2 text-sm text-muted-foreground underline-offset-4 hover:underline"
                       >
                         <ChevronDown className="h-3.5 w-3.5" /> {t('settingsAi.advanced.toggle')}
                       </button>
@@ -1211,10 +1213,11 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
 
                       <div className="grid gap-2">
                         {ADVANCED_PROVIDER_DEFINITIONS.map((definition) => (
-                          <label key={definition.id} className="flex items-center gap-2 text-sm">
+                          <label key={definition.id} className="flex min-h-11 items-center gap-2 text-sm">
                             <input
                               type="radio"
                               name="advancedProviderChoice"
+                              className="size-4 accent-primary"
                               checked={selectedProvider === definition.id}
                               onChange={() => selectProvider(definition.id)}
                             />
@@ -1255,6 +1258,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                     <Label htmlFor={fields.apiKey.id}>{t(API_KEY_LABEL_KEYS[selectedProvider])}</Label>
                     <Input
                       {...getInputProps(fields.apiKey, { type: 'password' })}
+                      className="h-11 sm:h-9"
                       autoComplete="off"
                       // Empty string ⇒ no placeholder at all, for a provider
                       // whose keys carry no telltale prefix (see the table).
@@ -1273,7 +1277,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
 
           <FieldError id={form.errorId} errors={form.errors} />
 
-          <SubmitButton pending={isSubmitting} pendingLabel={savingLabel}>
+          <SubmitButton pending={isSubmitting} pendingLabel={savingLabel} className="h-11 sm:h-9">
             {idleLabel}
           </SubmitButton>
         </Form>

@@ -268,7 +268,7 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
           aria-pressed={unit === option}
           onClick={() => onChange(option)}
           className={cn(
-            'min-h-8 min-w-11 rounded-full px-3 py-1 transition-colors',
+            'min-h-11 min-w-11 rounded-full px-4 py-1 transition-colors',
             unit === option ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -378,6 +378,11 @@ function WeightCard({
       </div>
       <fetcher.Form method="post" {...getFormProps(form)} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="_intent" value={INTENT.LOG_WEIGHT} />
+        {/* THE HIDDEN FIELD LIVES OUT HERE. Inside the `space-y-2` block it was
+            the last child, so the visible input stopped being one and kept an
+            8px bottom margin; `items-end` then aligned the button to the
+            bottom of that margin and it sat 8px below its own field. */}
+        <input type="hidden" name={fields.weightKg.name} value={weightKgForSubmit} />
         <div className="min-w-40 flex-1 space-y-2">
           <Label htmlFor={fields.weightKg.id}>{t('goals.weight.todayLabel', { unit: weightUnit })}</Label>
           <Input
@@ -390,7 +395,6 @@ function WeightCard({
             aria-invalid={fields.weightKg.errors?.length ? true : undefined}
             className="h-11 sm:h-9"
           />
-          <input type="hidden" name={fields.weightKg.name} value={weightKgForSubmit} />
           <FieldError id={fields.weightKg.errorId} errors={fields.weightKg.errors} />
         </div>
         <SubmitButton pending={isLogging} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">

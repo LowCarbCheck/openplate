@@ -65,6 +65,7 @@ export function WeightEntryList({ entries, deleteIntent, weightUnit }: WeightEnt
                   type="button"
                   variant="ghost"
                   size="icon-sm"
+                  className="size-11 shrink-0"
                   aria-label={t('trends.weight.deleteLabel', { date: entry.measuredAt })}
                 >
                   <Trash2 className="text-muted-foreground" />
