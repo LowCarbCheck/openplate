@@ -15,7 +15,13 @@ type H1Variant =
   | 'pageHeaderWithMargin';
 
 const h1VariantClasses = {
-  default: 'text-4xl font-extrabold lg:text-5xl',
+  // PHONE STEP AND A BREAK RULE (SET-01). This variant heads the legal pages,
+  // and German compounds it: "Nutzungsbedingungen" measured 397 px inside a
+  // 328 px column at 36 px and the last letters were cut off by the viewport,
+  // invisible to a document-level overflow check because the container clips.
+  // `break-words` is the guarantee, `hyphens-auto` the nicety, and it is safe
+  // to ask for because `root.tsx` renders `<html lang>` per language.
+  default: 'text-3xl font-extrabold break-words hyphens-auto sm:text-4xl lg:text-5xl',
   // Foreground comes from the semantic token (`text-foreground`), not a fixed
   // zinc shade, so this tracks the active theme like every other surface.
   pageHeader: 'text-2xl font-semibold text-foreground',
@@ -44,7 +50,7 @@ export function H1({ children, className, variant = 'default', ...props }: H1Pro
 type H2Variant = 'default' | 'sectionHeader' | 'subSectionHeader' | 'subSectionHeaderWithMargin' | 'keywordsHeader';
 
 const h2VariantClasses = {
-  default: 'border-b pb-2 text-3xl font-semibold first:mt-0',
+  default: 'border-b pb-2 text-2xl font-semibold break-words hyphens-auto first:mt-0 sm:text-3xl',
   sectionHeader: 'text-xl font-semibold text-foreground',
   subSectionHeader: 'text-lg font-semibold',
   subSectionHeaderWithMargin: 'text-lg font-semibold mb-2',
@@ -126,7 +132,7 @@ export function SectionEyebrow({
 }: SectionEyebrowProps) {
   const label = (
     <Tag
-      className={cn('text-[11px] font-semibold uppercase tracking-[0.11em] text-primary', !trailingRule && className)}
+      className={cn('text-xs font-semibold uppercase tracking-[0.11em] text-primary', !trailingRule && className)}
       {...props}
     >
       {children}
@@ -149,7 +155,10 @@ type PVariant = 'default' | 'lead' | 'subtle' | 'small' | 'muted' | 'meta';
 
 const pVariantClasses = {
   default: 'leading-7',
-  lead: 'text-xl text-muted-foreground',
+  // 18 px on a phone, 20 above it: at 20 px the German /terms lead ran to 24
+  // lines and took 84 percent of a 360 px screen, so the actual terms began
+  // below the fold.
+  lead: 'text-lg text-muted-foreground sm:text-xl',
   subtle: 'text-sm text-muted-foreground',
   small: 'text-sm font-medium leading-none',
   muted: 'text-sm text-muted-foreground',
