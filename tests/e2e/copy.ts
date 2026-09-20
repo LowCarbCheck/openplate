@@ -45,6 +45,8 @@ const catalogSchema = z.object({
       submit: z.string(),
       nutritionToggle: z.string(),
     }),
+    errors: z.object({ nameRequired: z.string() }),
+    custom: z.object({ editAria: z.string(), removeAria: z.string() }),
     search: z.object({ addManually: z.string() }),
     portion: z.object({ submit: z.string() }),
     meal: z.object({
@@ -99,6 +101,8 @@ const catalogSchema = z.object({
     copy: z.object({ door: z.string(), title: z.string() }),
     saveMeal: z.object({
       trigger: z.string(),
+      namePlaceholder: z.string(),
+      save: z.string(),
       hint: z.object({ title: z.string(), dismiss: z.string() }),
     }),
   }),
@@ -117,7 +121,11 @@ const catalogSchema = z.object({
   }),
   dashboard: z.object({
     insightsHint: z.object({ title: z.string() }),
+    week: z.object({ title: z.string() }),
   }),
+  meals: z.object({ logNow: z.string(), removeAria: z.string() }),
+  catchUp: z.object({ yesterdayHeading: z.string() }),
+  describe: z.object({ title: z.string() }),
   goals: z.object({ save: z.string() }),
   awards: z.object({
     title: z.string(),
