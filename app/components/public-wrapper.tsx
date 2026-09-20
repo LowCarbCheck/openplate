@@ -12,6 +12,18 @@ import { Button } from './ui/button';
 import { HeaderStatus } from './header-status';
 
 /**
+ * One footer destination's classes.
+ *
+ * The six links were 20px tall on a 28px pitch, a row of words where a mis-tap
+ * opens the wrong document (SET-13). `min-h-11` turns each one into a 44px
+ * target without changing a word, a colour or the layout around them; the grid
+ * blockifies the `inline-flex`, so each link fills its own column and a finger
+ * landing anywhere on that column hits the link it can read. `md:min-h-0`
+ * leaves the pointer row the 20px band it has always been.
+ */
+const FOOTER_LINK_CLASS = 'inline-flex min-h-11 items-center transition-colors hover:text-foreground md:min-h-0';
+
+/**
  * The chrome every public page wears: header, content, footer.
  *
  * ── One container, three places ──────────────────────────────────────────
@@ -112,15 +124,17 @@ export default function PublicWrapper({
                 open instance keeps the one it always had. The footer's Source
                 link is untouched and is now the only one on the page. */}
             {headerOffersSignIn && <InviteOnlyDialog />}
-            {/* `h-10` overrides the `sm` size's 32px box: this is the header's
-                only real control on a phone and it has to be tappable.
+            {/* `md:h-10` keeps the pointer-sized box this corner has always
+                drawn. The phone height comes from the `sm` size itself now
+                (44px below `md`), which is what the hand-written `h-10` here
+                used to be for and was quietly capping at 40.
 
                 The destination changes WITH the label, the same trade the
                 landing page's mid-page call to action already made: on a
                 managed instance `/dashboard` bounces to `/welcome`, so a button
                 named for a destination is a redirect wearing that name. Naming
                 the real door is what makes the label true. */}
-            <Button asChild variant="outline" size="sm" className="h-10 px-4">
+            <Button asChild variant="outline" size="sm" className="px-4 md:h-10">
               <Link to={headerOffersSignIn ? '/sign-in' : '/dashboard'}>
                 {headerOffersSignIn ? t('chrome.signIn') : t('chrome.openTracker')}
               </Link>
@@ -194,7 +208,7 @@ export default function PublicWrapper({
               target="_blank"
               rel="noopener"
               title={t('chrome.source')}
-              className="transition-colors hover:text-foreground"
+              className={FOOTER_LINK_CLASS}
             >
               {t('chrome.sourceShort')}
             </a>
@@ -203,26 +217,26 @@ export default function PublicWrapper({
               target="_blank"
               rel="noopener"
               title={t('chrome.licence')}
-              className="transition-colors hover:text-foreground"
+              className={FOOTER_LINK_CLASS}
             >
               {t('chrome.licenceShort')}
             </a>
             {/* The theme and language controls left the header (M129/05) and
                 now live in Preferences — this is how a visitor who never
                 signs in still reaches them. */}
-            <Link to="/settings/preferences" className="transition-colors hover:text-foreground">
+            <Link to="/settings/preferences" className={FOOTER_LINK_CLASS}>
               {t('chrome.preferences')}
             </Link>
-            <Link to="/privacy" className="transition-colors hover:text-foreground">
+            <Link to="/privacy" className={FOOTER_LINK_CLASS}>
               {t('chrome.privacy')}
             </Link>
-            <Link to="/terms" className="transition-colors hover:text-foreground">
+            <Link to="/terms" className={FOOTER_LINK_CLASS}>
               {t('chrome.terms')}
             </Link>
             {/* Section 5 DDG requires the imprint to be reachable from every
                 page ("leicht erkennbar, unmittelbar erreichbar"), so it belongs
                 in the footer rather than only at a known URL. */}
-            <Link to="/imprint" className="transition-colors hover:text-foreground">
+            <Link to="/imprint" className={FOOTER_LINK_CLASS}>
               {t('chrome.imprint')}
             </Link>
           </nav>
