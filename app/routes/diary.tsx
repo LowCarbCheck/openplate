@@ -1627,7 +1627,7 @@ function DateNav({
               variant="ghost"
               aria-label={t('diary.nav.openCalendar', { day: formatDayLabel(date, i18n.language) })}
               className={cn(
-                'gap-1.5 px-2 text-lg font-semibold tabular-nums min-[400px]:px-4',
+                'h-11 gap-1.5 px-2 text-lg font-semibold tabular-nums min-[400px]:px-4 md:h-9',
                 !isToday && 'text-accent-amber',
               )}
             >
@@ -2191,6 +2191,7 @@ function SaveMealButton({
       <button
         type="button"
         onClick={() => onNamingChange(true)}
+        data-slot="save-meal-trigger"
         aria-label={t('diary.saveMeal.trigger')}
         className="relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors after:absolute after:-inset-y-2 after:-left-4 after:right-0 after:content-[''] hover:bg-primary/10 hover:text-primary"
       >
@@ -2202,6 +2203,7 @@ function SaveMealButton({
   return (
     <fetcher.Form
       method="post"
+      data-slot="save-meal-form"
       className="flex basis-full items-center gap-1.5"
       onSubmit={(event) => {
         if (name.trim().length === 0) event.preventDefault();
@@ -2453,6 +2455,7 @@ function CopyFromYesterday({
           <button
             type="button"
             onClick={() => setIsPicking(true)}
+            data-slot="copy-choose-entries"
             className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
           >
             {t('diary.copy.chooseEntries')}
@@ -2534,6 +2537,7 @@ function CopyEntryPicker({
                   // measured these rows at 28 px tall.
                   <label
                     key={log.id}
+                    data-slot="copy-entry-row"
                     className="-mx-1 flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 transition-colors hover:bg-muted/50"
                   >
                     <span className="flex min-w-0 items-center gap-2">

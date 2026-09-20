@@ -46,6 +46,9 @@ const NARROW_PHONE_HEIGHT = 844;
 /** A CSS pixel of rounding either side of an exact fit still counts as "fits". */
 const OVERFLOW_TOLERANCE_PX = 1;
 
+/** The gutter the calendar popover must keep at each screen edge, the page's own. */
+const POPOVER_GUTTER_PX = 16;
+
 /** The three languages the audit walked: English, the longest common bundle, and the one with the longest macro words. */
 const LOCALES: readonly LanguageCode[] = ['en', 'de', 'tr'];
 
@@ -382,4 +385,163 @@ test('the header status draws one line for a message that fits', async ({ page }
       return box === null ? null : Math.round(box.height);
     })
     .toBe(HEADER_HEIGHT);
+});
+
+/**
+ * Waits for the diary itself, never for the shell around it.
+ *
+ * `goto` resolves on `load`, which on this app is the hydrate fallback: the
+ * day is drawn by a client loader reading IndexedDB. A measurement taken
+ * before this returns reads a blank page and passes against nothing.
+ *
+ * @param page - the page that has just been sent to `/diary`.
+ */
+async function waitForTheDay(page: Page): Promise<void> {
+  await expect(page.locator('[data-slot="meal-group"]').first()).toBeVisible();
+}
+
+/** The app's tap floor: nothing a finger aims at may be smaller than this on a phone. */
+const TAP_FLOOR_PX = 44;
+
+/** Every box a selector draws, rounded, so a failure names the sizes rather than just "false". */
+async function boxesOf(page: Page, selector: string): Promise<{ width: number; height: number }[]> {
+  return page.locator(selector).evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: Math.round(rect.width), height: Math.round(rect.height) };
+    }),
+  );
+}
+
+/** Whichever of those boxes is under the floor, so the message says which control is too small. */
+function underFloor(boxes: { width: number; height: number }[]): { width: number; height: number }[] {
+  return boxes.filter((box) => box.width < TAP_FLOOR_PX || box.height < TAP_FLOOR_PX);
+}
+
+/**
+ * One selector's reading. `hasAny` is in the same object as `tooSmall` on
+ * purpose: both have to be right at the SAME instant, or a check that
+ * happened to look at an unrendered page would report "nothing too small".
+ */
+interface TapReading {
+  hasAny: boolean;
+  tooSmall: { width: number; height: number }[];
+}
+
+/**
+ * A POLLED reading, because a first visit registers the service worker and
+ * reloads once: a single `evaluateAll` can land on the instant the old
+ * document is gone and read zero of everything.
+ *
+ * @param page - the page to measure.
+ * @param selector - the controls to read.
+ * @returns the count and the offenders.
+ */
+async function tapReading(page: Page, selector: string): Promise<TapReading> {
+  const boxes = await boxesOf(page, selector);
+  return { hasAny: boxes.length > 0, tooSmall: underFloor(boxes) };
+}
+
+test('every control the diary offers a finger is at least 44 px', async ({ page }) => {
+  await seedNarrowDiary(page);
+  await page.goto('/diary');
+  await waitForTheDay(page);
+
+  for (const [name, selector] of [
+    ['a day in the week strip', '[data-slot="habit-day"]'],
+    ['a quick-add chip', '[data-slot="quick-add-chip"]'],
+    ['the day arrows', '[data-slot="date-nav"] button, [data-slot="date-nav"] a'],
+    ['the "more ways to add" chevron', 'nav [aria-haspopup="dialog"]'],
+  ] as const) {
+    await expect
+      .poll(() => tapReading(page, selector), {
+        message: `${name}: at least one must be on screen, and every one at least ${TAP_FLOOR_PX} px`,
+      })
+      .toEqual({ hasAny: true, tooSmall: [] });
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // "Save as meal" keeps 28 px of ink and buys its 44 px from an `after:`
+  // box, so the only honest reading is what the browser hit-tests, not what
+  // the button measures. Both far corners of the intended box must reach it.
+  ////////////////////////////////////////////////////////////////////////////
+  const trigger = page.locator('[data-slot="save-meal-trigger"]').first();
+  await expect(trigger).toBeVisible();
+  const ink = await trigger.boundingBox();
+  expect(ink, 'the save-as-meal button must have a box').not.toBeNull();
+  const probes = [
+    { x: (ink?.x ?? 0) + (ink?.width ?? 0) - TAP_FLOOR_PX + 1, y: (ink?.y ?? 0) - 7 },
+    { x: (ink?.x ?? 0) + (ink?.width ?? 0) - 1, y: (ink?.y ?? 0) + (ink?.height ?? 0) + 7 },
+  ];
+  for (const probe of probes) {
+    const reached = await page.evaluate(
+      (point) => document.elementFromPoint(point.x, point.y)?.closest('[data-slot="save-meal-trigger"]') !== null,
+      probe,
+    );
+    expect(reached, `a tap at ${Math.round(probe.x)},${Math.round(probe.y)} must reach the save-as-meal button`).toBe(
+      true,
+    );
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Its naming form takes a row of its own, under the subtotal pill it used
+  // to squeeze to 48 px and three lines.
+  ////////////////////////////////////////////////////////////////////////////
+  await trigger.click();
+  const form = page.locator('[data-slot="save-meal-form"]');
+  await expect(form).toBeVisible();
+  const pill = await page.locator('[data-slot="meal-subtotal"]').first().boundingBox();
+  const formBox = await form.boundingBox();
+  expect(formBox?.y ?? 0, 'the naming form must sit below the subtotal pill, not beside it').toBeGreaterThanOrEqual(
+    (pill?.y ?? 0) + (pill?.height ?? 0),
+  );
+  expect(pill?.height ?? 0, 'the subtotal pill must stay on one line while the form is open').toBeLessThan(
+    TAP_FLOOR_PX,
+  );
+});
+
+test('the calendar and the copy picker stay inside the page gutter', async ({ page }) => {
+  await seedNarrowDiary(page);
+  await page.goto('/diary');
+  await waitForTheDay(page);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // The date picker used to open flush against the left edge of the screen.
+  ////////////////////////////////////////////////////////////////////////////
+  await page.locator('[data-slot="popover-trigger"]').first().click();
+  const popover = page.locator('[data-slot="popover-content"]');
+  await expect(popover).toBeVisible();
+  const panel = await popover.boundingBox();
+  expect(panel?.x ?? -1, 'the calendar must keep a gutter on the left').toBeGreaterThanOrEqual(
+    POPOVER_GUTTER_PX - OVERFLOW_TOLERANCE_PX,
+  );
+  expect(
+    (panel?.x ?? 0) + (panel?.width ?? 0),
+    'the calendar must keep a gutter on the right',
+  ).toBeLessThanOrEqual(NARROW_PHONE_WIDTH - POPOVER_GUTTER_PX + OVERFLOW_TOLERANCE_PX);
+  await page.keyboard.press('Escape');
+
+  ////////////////////////////////////////////////////////////////////////////
+  // The copy picker's rows were 28 px tall, each one a checkbox a finger has
+  // to hit.
+  ////////////////////////////////////////////////////////////////////////////
+  await page.locator('[data-slot="copy-choose-entries"]').click();
+  await expect
+    .poll(() => tapReading(page, '[data-slot="copy-entry-row"]'), {
+      message: `the picker must list yesterday's entries, each at least ${TAP_FLOOR_PX} px tall`,
+    })
+    .toEqual({ hasAny: true, tooSmall: [] });
+});
+
+test('the entry receipt gives its star the tap floor', async ({ page }) => {
+  await seedNarrowDiary(page);
+  await page.goto('/diary');
+  await page.locator('a[href^="/diary/entry/"]').first().click();
+  await page.waitForURL('**/diary/entry/**');
+
+  const star = page.locator('[data-slot="favorite-toggle"]');
+  await expect(star).toBeVisible();
+  const box = await star.boundingBox();
+  expect(box, 'the favourite star must have a box').not.toBeNull();
+  expect(underFloor([{ width: Math.round(box?.width ?? 0), height: Math.round(box?.height ?? 0) }])).toEqual([]);
 });

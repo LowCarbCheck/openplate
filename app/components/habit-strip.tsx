@@ -91,6 +91,7 @@ export function HabitStrip({
             <Link
               key={day.date}
               to={`/diary?date=${day.date}`}
+              data-slot="habit-day"
               title={day.date}
               aria-label={habitDayLabel(day, t)}
               className={cn(

@@ -387,6 +387,7 @@ function FavoriteToggle({ name }: { name: string }) {
     <button
       type="button"
       aria-pressed={isFavorite}
+      data-slot="favorite-toggle"
       aria-label={isFavorite ? t('entry.favorite.remove', { name }) : t('entry.favorite.add', { name })}
       onClick={() => {
         const next = toggleFavoriteName(readFavoriteNames(), name);
