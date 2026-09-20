@@ -52,12 +52,15 @@ export const SECTION_EYEBROW_RULE_TOKEN = 'bg-border';
 export const CARD_TITLE_TOKENS = ['text-base', 'font-semibold', 'leading-tight', 'tracking-tight', 'text-balance'] as const;
 
 /**
- * The header page title on a phone, and the floor no fix may go under. 15 px is the largest size
- * at which no German or Turkish route title clips harder in Victor Mono than it did in Inter at
- * 18 px, at 390 px and at 360 px. The floor stops a clip from being "fixed" by shrinking the
- * title until it is unreadable.
+ * The header page title on a phone, and the floor no fix may go under. 14 px is the largest whole
+ * pixel size at which no route title in any of the six languages is clipped harder in Victor Mono than it was in
+ * Inter at 18 px, at 390 px and at 360 px. It was 15 px until the clip sweep
+ * (`lcc-lineage-clip-sweep.spec.ts`, M243 spec 08) found Italian and French titles clipped harder
+ * at 360 px, which German and Turkish, the two languages spec 02 measured, do not show. The floor
+ * stops a clip from being "fixed" by shrinking the title until it is unreadable, and the title now
+ * sits ON it, so the next clip cannot be fixed by size.
  */
-export const HEADER_TITLE_PX = 15;
+export const HEADER_TITLE_PX = 14;
 export const HEADER_TITLE_FLOOR_PX = 14;
 
 /** The Inter size the header title was set at before the face changed, which is the baseline a clip is judged against. */

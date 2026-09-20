@@ -534,7 +534,11 @@ function InsightsHintCard({ onDismiss }: { onDismiss: () => void }): ReactElemen
           their own line under it. */}
       <CardContent className="flex flex-col items-start gap-3 p-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
         <p className="min-w-0 text-sm text-muted-foreground md:flex-1">{t('dashboard.insightsHint.title')}</p>
-        <div className="flex shrink-0 items-center gap-2">
+        {/* WRAPS, NEVER OVERFLOWS. This row used to be `shrink-0`, so its width was the
+            sum of its two `whitespace-nowrap` keys. In Victor Mono the Turkish pair is 344 px
+            inside a 328 px card and pushed the document to 377 px at a 360 px phone. A
+            wrapping row can drop the second key under the first instead. */}
+        <div className="flex flex-wrap items-center gap-2">
           <Button asChild size="sm" className="h-11 md:h-8">
             {/* `Insights` itself stays untranslated everywhere (the tab strip's
                 own title does the same, M239/02), so the button reads the same

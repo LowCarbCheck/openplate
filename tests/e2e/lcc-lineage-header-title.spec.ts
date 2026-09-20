@@ -34,6 +34,14 @@
  * 17 px measure the same, so do 13 px and 14 px), so the table steps in pairs. A phone that
  * positions glyphs at fractions of a pixel measures a little narrower than this, never wider.
  *
+ * ── SPEC 08 MOVED THE SIZE TO 14 PX ──
+ * The table above is spec 02's record and is left as it was measured, for German and Turkish. The
+ * clip sweep (`lcc-lineage-clip-sweep.spec.ts`, M243 spec 08) reads all six languages, and at 15 px
+ * it found Italian and French titles clipped harder than Inter at 360 px: "Il tuo riepilogo
+ * giornaliero" clipped 12 px where Inter clipped 0, and "Contributions à la recherche" 12 px where
+ * Inter clipped 4. 14 px is a row of the table that already passed for German and Turkish, and it is
+ * the floor in `tests/design-contract.ts`, so `HEADER_TITLE_PX` now reads 14.
+ *
  * ── EVERY CHECK IS SHOWN ABLE TO FAIL ──
  * The comparison is also run at the old 18 px size, in the new face, and MUST find a title that
  * clips harder than Inter did. A comparison that answered "fine" at every size would pass the

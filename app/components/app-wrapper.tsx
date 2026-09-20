@@ -355,16 +355,19 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                     translations) would otherwise wrap the header to three lines
                     on a narrow phone.
 
-                    15px ON A PHONE, AND MEASURED. This was `text-lg` (18px) back
+                    14px ON A PHONE, AND MEASURED. This was `text-lg` (18px) back
                     when the face was Inter. Victor Mono is a flat 0.6em per
                     character, wider than Inter for any mixed-case title, and the
-                    title slot is only about 172px. 15px is the largest size at
-                    which no route title in German or Turkish is clipped harder
-                    than Inter at 18px clipped it, at 390px and at 360px (the
-                    numbers are in `lcc-lineage-labels.spec.ts`, which holds the
-                    line). 16px and 17px pass at 390px and fail for German at
-                    360px. */}
-                <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight md:text-xl">
+                    title slot is only about 172px. 14px is the largest whole pixel
+                    size at which no route title in any of the six languages is clipped
+                    harder than Inter at 18px clipped it, at 390px and at 360px
+                    (`lcc-lineage-clip-sweep.spec.ts` holds the line, and
+                    `lcc-lineage-header-title.spec.ts` holds German and Turkish).
+                    It was 15px until the sweep found Italian and French titles
+                    ("Il tuo riepilogo giornaliero", "Contributions à la
+                    recherche") clipped harder at 360px. 14px is also the floor
+                    in `tests/design-contract.ts`: below it a title is not read. */}
+                <h1 className="truncate text-sm font-semibold leading-tight tracking-tight md:text-xl">
                   {title || APP_NAME}
                 </h1>
               </div>
