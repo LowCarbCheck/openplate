@@ -248,7 +248,7 @@ describe('the behind block is calm and readable', () => {
   });
 
   it('sits in a container that spaces its children 12 px or more apart', () => {
-    const container = /<div class="[^"]*\bspace-y-(\d+)\b[^"]*">\s*<div data-release-status="behind"/.exec(markup);
+    const container = /<div [^>]*class="[^"]*\bspace-y-(\d+)\b[^"]*"[^>]*>\s*<div data-release-status="behind"/.exec(markup);
     assert.notEqual(container, null, 'the block must be a direct child of the section content');
     // Tailwind spacing is a quarter rem step: 3 is 12 px.
     assert.ok(Number(container?.[1]) >= 3, `space-y-${container?.[1]} is under 12 px`);
