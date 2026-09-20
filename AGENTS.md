@@ -101,6 +101,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0013](.adr/0013-a-recreated-store-cannot-vouch-for-an-absence.md) | A recreated store cannot vouch for an absence; a delete needs a journal row | Accepted   |
 | [0014](.adr/0014-fasts-are-a-merged-entity.md) | Fasts are a merged entity, and the merge adjudicates nothing | Accepted   |
 | [0015](.adr/0015-the-pantry-is-a-merged-entity.md) | The pantry is a merged entity, reversing M233/02 | Accepted   |
+| [0016](.adr/0016-the-sign-out-dialog-says-only-what-is-true.md) | The sign-out dialog says only what it can prove | Accepted   |
 | [0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.

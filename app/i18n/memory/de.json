@@ -9176,6 +9176,13 @@
     "at": "2026-09-14",
     "de": "Eiweiß"
   },
+  "7ec82d7251c64924": {
+    "en": "Some saved meals have not reached the server yet. If you erase, you may lose them.",
+    "path": "common:signOut.unsent.savedMealsUnsent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "de": "Einige gespeicherte Mahlzeiten haben den Server noch nicht erreicht. Wenn du löschst, verlierst du sie möglicherweise."
+  },
   "7ed2390493cd31f5": {
     "en": ", over your goal",
     "path": "common:trends.chart.bar.overGoal",
@@ -12640,6 +12647,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Fett"
+  },
+  "add22588c1552e79": {
+    "en": "Your sharing and research keys are not part of this check. If you erase, you may lose them.",
+    "path": "common:signOut.unsent.keysNotCovered",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "de": "Deine Freigabe- und Forschungsschlüssel sind nicht Teil dieser Prüfung. Wenn du löschst, verlierst du sie möglicherweise."
   },
   "add6140f54ce7114": {
     "en": "Paste your invite code, or open the invite link you were sent.",

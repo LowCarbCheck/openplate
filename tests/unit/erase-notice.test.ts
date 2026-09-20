@@ -28,7 +28,8 @@ import assert from 'node:assert/strict';
 import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import {
   countUnsentChanges,
-  holdsUncheckedRows,
+  holdsOwnerPrivateRows,
+  holdsUnsentSavedMeals,
   resolveEraseNotice,
   type UnsentOnDevice,
 } from '../../app/lib/sync/erase-notice';
@@ -167,7 +168,12 @@ function agreedBaseline(snapshot: LocalStoreSnapshot, compartment: SealedPrivate
   return baselineFromPayload({ snapshot: synced, meta: stamped.meta });
 }
 
-const NOTHING_UNSENT: UnsentOnDevice = { changes: 0, reports: 0, hasUncheckedRows: false };
+const NOTHING_UNSENT: UnsentOnDevice = {
+  changes: 0,
+  reports: 0,
+  hasUnsentSavedMeals: false,
+  hasOwnerPrivateRows: false,
+};
 
 describe('resolveEraseNotice', () => {
   it('gives the all-clear when nothing was counted, and only then', () => {
@@ -197,7 +203,7 @@ describe('resolveEraseNotice', () => {
 
   it('names both counts, changes first, when both are waiting', () => {
     const lines = resolveEraseNotice({
-      read: { status: 'done', unsent: { changes: 2, reports: 4, hasUncheckedRows: false } },
+      read: { status: 'done', unsent: { ...NOTHING_UNSENT, changes: 2, reports: 4 } },
       isSyncing: false,
       hasSession: true,
     });
@@ -207,19 +213,57 @@ describe('resolveEraseNotice', () => {
     ]);
   });
 
-  it('says what the check does not cover, under the all-clear and under a count alike', () => {
-    const unchecked = { ...NOTHING_UNSENT, hasUncheckedRows: true };
+  it('names UNSENT SAVED MEALS on their own line, under the all-clear and under a count alike', () => {
+    const unsentMeals = { ...NOTHING_UNSENT, hasUnsentSavedMeals: true };
     assert.deepEqual(
-      resolveEraseNotice({ read: { status: 'done', unsent: unchecked }, isSyncing: false, hasSession: true }),
-      [{ kind: 'all-sent' }, { kind: 'not-covered' }],
+      resolveEraseNotice({ read: { status: 'done', unsent: unsentMeals }, isSyncing: false, hasSession: true }),
+      [{ kind: 'all-sent' }, { kind: 'saved-meals-unsent' }],
     );
     assert.deepEqual(
       resolveEraseNotice({
-        read: { status: 'done', unsent: { ...unchecked, changes: 1 } },
+        read: { status: 'done', unsent: { ...unsentMeals, changes: 1 } },
         isSyncing: false,
         hasSession: true,
       }),
-      [{ kind: 'unsent-changes', count: 1 }, { kind: 'not-covered' }],
+      [{ kind: 'unsent-changes', count: 1 }, { kind: 'saved-meals-unsent' }],
+    );
+  });
+
+  it('names the SEALED KEYS on a line of their own, which is a different claim', () => {
+    // THE SPLIT (M240/03). One blanket sentence used to cover saved meals and
+    // the keys together, so a person with an ordinary sharing key pair and no
+    // unsent meals was told their meals might be lost. Two lines, two claims,
+    // each shown only when it is true.
+    assert.deepEqual(
+      resolveEraseNotice({
+        read: { status: 'done', unsent: { ...NOTHING_UNSENT, hasOwnerPrivateRows: true } },
+        isSyncing: false,
+        hasSession: true,
+      }),
+      [{ kind: 'all-sent' }, { kind: 'keys-not-covered' }],
+    );
+  });
+
+  it('names both, meals first, when both are true', () => {
+    assert.deepEqual(
+      resolveEraseNotice({
+        read: {
+          status: 'done',
+          unsent: { ...NOTHING_UNSENT, hasUnsentSavedMeals: true, hasOwnerPrivateRows: true },
+        },
+        isSyncing: false,
+        hasSession: true,
+      }),
+      [{ kind: 'all-sent' }, { kind: 'saved-meals-unsent' }, { kind: 'keys-not-covered' }],
+    );
+  });
+
+  it('THE CONTROL: neither line is drawn when there is nothing to say', () => {
+    // Without this, every case above passes against a resolver that pushes both
+    // lines unconditionally, which is the defect the split exists to fix.
+    assert.deepEqual(
+      resolveEraseNotice({ read: { status: 'done', unsent: NOTHING_UNSENT }, isSyncing: false, hasSession: true }),
+      [{ kind: 'all-sent' }],
     );
   });
 
@@ -313,6 +357,26 @@ describe('countUnsentChanges', () => {
     assert.equal(countUnsentChanges({ read: readOf(synced), baseline: withTombstone }), 1);
   });
 
+  it('COUNTS A FAST AND A PANTRY ROW, which it could not see before they were merged', () => {
+    // M240/01 and M240/02 made both merged entities, so `stampSnapshot` inside
+    // this count stamps them like a food log. Before that neither could be
+    // compared at all, and the dialog said so in a blanket sentence instead.
+    const diaryOnly = deviceSnapshot({ foodLogs: [foodLog('a')] });
+    const withBoth = deviceSnapshot({
+      foodLogs: [foodLog('a')],
+      fasts: [fast('f')],
+      pantryItems: [pantryItem('p')],
+    });
+
+    assert.equal(
+      countUnsentChanges({ read: readOf(withBoth), baseline: agreedBaseline(diaryOnly) }),
+      2,
+      'a fast and a pantry row the account has not seen are two unsent changes',
+    );
+    // THE CONTROL: the same two rows, already on the account, count nothing.
+    assert.equal(countUnsentChanges({ read: readOf(withBoth), baseline: agreedBaseline(withBoth) }), 0);
+  });
+
   it('does not read the compartment it cannot open as a delete', () => {
     const compartment: SealedPrivateStore = { ciphertext: 'c', cdkWrapPassphrase: 'p', cdkWrapRecovery: 'r' };
     const withCompartment = agreedBaseline(synced, compartment);
@@ -325,15 +389,97 @@ describe('countUnsentChanges', () => {
   });
 });
 
-describe('holdsUncheckedRows', () => {
-  it('is false for a diary the check can compare in full', () => {
-    assert.equal(holdsUncheckedRows(deviceSnapshot({ foodLogs: [foodLog('a')] })), false);
+/** A baseline that recorded exactly these saved-meal ids, and nothing else. */
+function baselineRecording(savedMeals: string[]): SyncBaseline {
+  return { perEntity: {}, tombstones: [], passThrough: { savedMeals } };
+}
+
+describe('holdsUnsentSavedMeals', () => {
+  it('is false when the id set already matches the baseline', () => {
+    // THE WHOLE POINT OF THE CHANGE (M240/03). The sentence this feeds used to
+    // fire on the mere PRESENCE of a saved meal, so a person whose meals were
+    // all on the account was warned about them on every sign-out, for ever.
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ savedMeals: [savedMeal('m'), savedMeal('n')] }),
+        baseline: baselineRecording(['m', 'n']),
+      }),
+      false,
+    );
   });
 
-  it('is true for each kind of row the check cannot compare', () => {
-    assert.equal(holdsUncheckedRows(deviceSnapshot({ fasts: [fast('f')] })), true, 'a fast');
-    assert.equal(holdsUncheckedRows(deviceSnapshot({ savedMeals: [savedMeal('m')] })), true, 'a saved meal');
-    assert.equal(holdsUncheckedRows(deviceSnapshot({ pantryItems: [pantryItem('p')] })), true, 'a pantry item');
-    assert.equal(holdsUncheckedRows(deviceSnapshot({ sharePeers: [sharePeer('12')] })), true, 'a pinned peer');
+  it('is true for a meal added since the baseline', () => {
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ savedMeals: [savedMeal('m'), savedMeal('n')] }),
+        baseline: baselineRecording(['m']),
+      }),
+      true,
+    );
+  });
+
+  it('is true for a meal REMOVED since the baseline, which the account has not heard either', () => {
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ savedMeals: [savedMeal('m')] }),
+        baseline: baselineRecording(['m', 'n']),
+      }),
+      true,
+    );
+  });
+
+  it('treats a baseline that recorded NOTHING as vouching for nothing', () => {
+    // A baseline from before the ids were kept, or from a device that has never
+    // finished a cycle. An absent record is not an empty one, which is the same
+    // rule `decidePassThrough` follows.
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ savedMeals: [savedMeal('m')] }),
+        baseline: emptySyncState().baseline,
+      }),
+      true,
+    );
+    // And a device with no meals has nothing to lose either way.
+    assert.equal(
+      holdsUnsentSavedMeals({ snapshot: deviceSnapshot({}), baseline: emptySyncState().baseline }),
+      false,
+    );
+  });
+
+  it('ignores a fast and a pantry row, which the COUNT now covers', () => {
+    // THE INVERSION (M240/01, M240/02). Both were "cannot compare" rows until
+    // they became merged entities; `countUnsentChanges` stamps them now, so
+    // naming them here would warn twice about one change.
+    assert.equal(
+      holdsUnsentSavedMeals({
+        snapshot: deviceSnapshot({ fasts: [fast('f')], pantryItems: [pantryItem('p')] }),
+        baseline: baselineRecording([]),
+      }),
+      false,
+    );
+  });
+});
+
+describe('holdsOwnerPrivateRows', () => {
+  it('is true for a pinned peer, and false for a diary with none', () => {
+    assert.equal(holdsOwnerPrivateRows(deviceSnapshot({ sharePeers: [sharePeer('12')] })), true, 'a pinned peer');
+    assert.equal(holdsOwnerPrivateRows(deviceSnapshot({ foodLogs: [foodLog('a')] })), false, 'an ordinary diary');
+  });
+
+  it('ignores every shared row, however many there are', () => {
+    // The control that keeps the line above a claim about the COMPARTMENT: a
+    // device full of diary, fasts, meals and pantry rows and no key material
+    // must draw no key line at all.
+    assert.equal(
+      holdsOwnerPrivateRows(
+        deviceSnapshot({
+          foodLogs: [foodLog('a')],
+          fasts: [fast('f')],
+          savedMeals: [savedMeal('m')],
+          pantryItems: [pantryItem('p')],
+        }),
+      ),
+      false,
+    );
   });
 });

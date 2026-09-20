@@ -2493,11 +2493,12 @@
       "checking": "Es wird geprüft, was den Server noch nicht erreicht hat.",
       "unchecked": "Dieses Gerät konnte nicht prüfen, was den Server erreicht hat. Wenn du löschst, verlierst du möglicherweise Änderungen, die nur hier existieren.",
       "allSent": "Deine Mahlzeiteneinträge, eigenen Lebensmittel, Wiegungen und Ziele haben den Server alle erreicht.",
-      "notCovered": "Fastenzeiten, gespeicherte Mahlzeiten, der Vorratsschrank sowie deine Freigabe- und Forschungsschlüssel sind nicht Teil dieser Prüfung. Wenn du löschst, verlierst du sie möglicherweise.",
       "changes_one": "Eine Änderung auf diesem Gerät hat den Server noch nicht erreicht. Wenn du löschst, verlierst du sie.",
       "changes_other": "{{count}} Änderungen auf diesem Gerät haben den Server noch nicht erreicht. Wenn du löschst, verlierst du sie.",
       "reports_one": "Ein Bericht über eine falsche Schätzung wurde noch nicht gesendet. Wenn du löschst, verlierst du ihn.",
-      "reports_other": "{{count}} Berichte über falsche Schätzungen wurden noch nicht gesendet. Wenn du löschst, verlierst du sie."
+      "reports_other": "{{count}} Berichte über falsche Schätzungen wurden noch nicht gesendet. Wenn du löschst, verlierst du sie.",
+      "savedMealsUnsent": "Einige gespeicherte Mahlzeiten haben den Server noch nicht erreicht. Wenn du löschst, verlierst du sie möglicherweise.",
+      "keysNotCovered": "Deine Freigabe- und Forschungsschlüssel sind nicht Teil dieser Prüfung. Wenn du löschst, verlierst du sie möglicherweise."
     },
     "eraseFailed": "Das Tagebuch konnte nicht gelöscht werden, weil openplate in einem anderen Tab geöffnet ist. Schließe ihn und versuche es erneut."
   },

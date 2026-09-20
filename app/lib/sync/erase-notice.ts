@@ -34,21 +34,33 @@
  *
  * ── What it cannot see, said out loud ────────────────────────────────────
  *
- * Three kinds of rows sit outside that diff, and the dialog says so instead of
- * letting the all-clear cover them ({@link UnsentOnDevice.hasUncheckedRows}):
+ * The list of exclusions was three long and is TWO long now (M240/03).
  *
- *  - FASTS and SAVED MEALS ride in the blob and are not merged. `payloadsEqual`
- *    leaves them out on purpose, so a change to one of them alone never makes
- *    the device push, and the baseline keeps only their ids, written even by a
- *    cycle that pushed nothing. Nothing on this device can say whether the
- *    account holds their current state.
- *  - THE PANTRY passes through from the local side and is not in the baseline
- *    at all. An erase loses it for good, because the next sign-in keeps the
- *    empty local list.
+ * FASTS AND THE PANTRY LEFT IT. Both were pass-through collections when this
+ * file was written: `payloadsEqual` ignored them, so a change to one of them
+ * alone never made the device push, and nothing on the device could say
+ * whether the account held their current state. Both are MERGED entities since
+ * M240/01 and M240/02, so `stampSnapshot` above already counts a new fast, an
+ * ended one, a photographed shelf and a removed row exactly like a food log,
+ * and there is nothing left to exclude.
+ *
+ * What remains:
+ *
+ *  - SAVED MEALS, the last pass-through collection. They are compared, but by
+ *    ID ONLY, against `SyncBaseline.passThrough.savedMeals`
+ *    ({@link UnsentOnDevice.hasUnsentSavedMeals}): a meal the device holds and
+ *    the baseline does not name has not reached the account, and a name the
+ *    baseline holds and the device does not is a removal the account has not
+ *    heard. An EDIT is deliberately not compared, and it does not need to be:
+ *    `canonicalize` weighs the whole saved-meals list, so a rename pushes on
+ *    the next cycle by itself, and a content hash here would cost a second
+ *    definition of "changed" that could drift from the engine's own.
  *  - THE OWNER-PRIVATE COMPARTMENT (share keys, pinned peers, the research
- *    identity) is compared as SEALED bytes, and sealing needs the session's
- *    key, which a dialog has no business holding (`sync-session.ts`: the vault
- *    is off limits to React).
+ *    identity), which stays PRESENCE-ONLY
+ *    ({@link UnsentOnDevice.hasOwnerPrivateRows}). It is compared as SEALED
+ *    bytes and sealing needs the session's key, which a dialog has no business
+ *    holding (`sync-session.ts`: the vault is off limits to React). So the only
+ *    honest sentence is "these are not part of this check".
  *
  * Queued ESTIMATE REPORTS are counted beside the diary, because an erase
  * deletes the database they wait in (`device-erase.ts`).
@@ -76,8 +88,24 @@ export interface UnsentOnDevice {
   changes: number;
   /** Reports about an entry, still queued on this device. */
   reports: number;
-  /** Does the device hold fasts, saved meals, pantry items or compartment rows, none of which this check can compare? */
-  hasUncheckedRows: boolean;
+  /**
+   * Does the device hold saved meals the account has not been told about?
+   *
+   * TRUE when the current id set differs from the one the baseline recorded,
+   * in either direction, and on a device whose baseline recorded nothing at
+   * all while it holds a saved meal. FALSE, and this is the point, when the
+   * two id sets match: a device whose meals are all on the account must be
+   * told so rather than warned about them for ever.
+   */
+  hasUnsentSavedMeals: boolean;
+  /**
+   * Does the device hold owner-private rows, the share identity, a pinned peer
+   * or a study enrolment?
+   *
+   * PRESENCE, never a comparison. The region is sealed and this check has no
+   * key, so "does it exist" is the only question it can answer honestly.
+   */
+  hasOwnerPrivateRows: boolean;
 }
 
 /** The dialog's read of {@link UnsentOnDevice}, as a state. */
@@ -100,8 +128,10 @@ export type EraseNoticeLine =
   | { kind: 'unsent-changes'; count: number }
   /** This many reports have not been sent, and an erase loses them. */
   | { kind: 'unsent-reports'; count: number }
-  /** The device holds rows the check cannot compare, so an erase may lose them. */
-  | { kind: 'not-covered' };
+  /** The device holds saved meals the account has not been told about, so an erase may lose them. */
+  | { kind: 'saved-meals-unsent' }
+  /** The sealed key material is outside this check entirely, so an erase may lose it. */
+  | { kind: 'keys-not-covered' };
 
 /**
  * The lines the dialog shows, in order.
@@ -126,14 +156,21 @@ export function resolveEraseNotice({
   if (isSyncing || read.status === 'pending') return [{ kind: 'checking' }];
   if (read.status === 'failed') return [{ kind: 'unchecked' }];
 
-  const { changes, reports, hasUncheckedRows } = read.unsent;
+  const { changes, reports, hasUnsentSavedMeals, hasOwnerPrivateRows } = read.unsent;
   const lines: EraseNoticeLine[] = [];
   if (changes > 0) lines.push({ kind: 'unsent-changes', count: changes });
   if (reports > 0) lines.push({ kind: 'unsent-reports', count: reports });
   // THE ALL-CLEAR ONLY WHERE NOTHING WAS COUNTED, and it still speaks only for
-  // what the check can see. The line after it says what that excludes.
+  // what the check can see. The lines after it say what that excludes.
   if (lines.length === 0) lines.push({ kind: 'all-sent' });
-  if (hasUncheckedRows) lines.push({ kind: 'not-covered' });
+  // TWO LINES, NOT ONE (M240/03). The single sentence these replace named
+  // fasts, saved meals, the pantry and the keys together, and three quarters
+  // of it became false when M240/01 and M240/02 merged the first three. Worse,
+  // it fired on ANY of them, so a person whose saved meals were all on the
+  // account was told they might lose them, on every sign-out, for ever. Each
+  // line now speaks for one thing and only when that thing is true.
+  if (hasUnsentSavedMeals) lines.push({ kind: 'saved-meals-unsent' });
+  if (hasOwnerPrivateRows) lines.push({ kind: 'keys-not-covered' });
   return lines;
 }
 
@@ -186,13 +223,52 @@ export function countUnsentChanges({ read, baseline }: { read: LocalSnapshotRead
 }
 
 /**
- * Does the device hold rows {@link countUnsentChanges} cannot compare with the
- * account's copy? See the module header for the three kinds.
+ * Does this device hold saved meals the account has not been told about?
+ *
+ * BY ID, IN BOTH DIRECTIONS, against the ids the baseline recorded when this
+ * device last agreed with the account (`SyncBaseline.passThrough.savedMeals`).
+ * An id the device holds and the baseline does not is a meal that has not been
+ * sent; an id the baseline holds and the device does not is a removal the
+ * account has not heard. Either way an erase now loses something.
+ *
+ * AN ABSENT RECORD IS NOT AN EMPTY ONE, which is the same rule
+ * `decidePassThrough` follows one file over. A baseline written before the ids
+ * were kept, or by a device that has never finished a cycle, recorded nothing,
+ * so it can vouch for nothing: a device holding meals is warned, and a device
+ * holding none has nothing to lose either way.
+ *
+ * NO CONTENT HASH, deliberately. A RENAME is invisible here, and that is
+ * correct rather than a gap: `canonicalize` weighs the whole saved-meals list,
+ * so a rename makes the very next cycle push by itself. Hashing here would be
+ * a second definition of "changed" living beside the engine's own, free to
+ * drift from it, to warn about a meal the next cycle was about to send anyway.
  */
-export function holdsUncheckedRows(snapshot: LocalStoreSnapshot): boolean {
-  const { shareable, ownerPrivate } = partitionSnapshot(snapshot);
-  if (shareable.fasts.length > 0 || shareable.savedMeals.length > 0 || shareable.pantryItems.length > 0) return true;
-  return ownerPrivateRegionKeys(ownerPrivate).length > 0;
+export function holdsUnsentSavedMeals({
+  snapshot,
+  baseline,
+}: {
+  snapshot: LocalStoreSnapshot;
+  baseline: SyncBaseline;
+}): boolean {
+  const { shareable } = partitionSnapshot(snapshot);
+  const agreed = baseline.passThrough?.savedMeals;
+  if (agreed === undefined) return shareable.savedMeals.length > 0;
+  const onDevice = new Set(shareable.savedMeals.map((meal) => meal.id));
+  if (onDevice.size !== agreed.length) return true;
+  return agreed.some((id) => !onDevice.has(id));
+}
+
+/**
+ * Does this device hold owner-private rows at all?
+ *
+ * PRESENCE-ONLY, and it cannot be anything else: the region travels as SEALED
+ * bytes, comparing it needs the session's data key, and the dialog has no
+ * business holding one (`sync-session.ts`). So the honest sentence is that
+ * these rows are outside the check, and this answers only whether there are
+ * any to say it about.
+ */
+export function holdsOwnerPrivateRows(snapshot: LocalStoreSnapshot): boolean {
+  return ownerPrivateRegionKeys(partitionSnapshot(snapshot).ownerPrivate).length > 0;
 }
 
 /**
@@ -225,6 +301,11 @@ export async function readUnsentOnDevice({
   return {
     changes: countUnsentChanges({ read, baseline }),
     reports: await countQueuedFeedbackReports(),
-    hasUncheckedRows: holdsUncheckedRows(read.snapshot),
+    // THE SAME BASELINE the count above weighs, and from the same locked read.
+    // A second load could describe a cycle that committed in between, which
+    // would warn about meals that had just been sent, or fail to warn about
+    // ones that had not.
+    hasUnsentSavedMeals: holdsUnsentSavedMeals({ snapshot: read.snapshot, baseline }),
+    hasOwnerPrivateRows: holdsOwnerPrivateRows(read.snapshot),
   };
 }

@@ -9176,6 +9176,13 @@
     "at": "2026-09-14",
     "es": "proteínas"
   },
+  "7ec82d7251c64924": {
+    "en": "Some saved meals have not reached the server yet. If you erase, you may lose them.",
+    "path": "common:signOut.unsent.savedMealsUnsent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "Algunas comidas guardadas todavía no han llegado al servidor. Si borras, podrías perderlas."
+  },
   "7ed2390493cd31f5": {
     "en": ", over your goal",
     "path": "common:trends.chart.bar.overGoal",
@@ -12640,6 +12647,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Grasa"
+  },
+  "add22588c1552e79": {
+    "en": "Your sharing and research keys are not part of this check. If you erase, you may lose them.",
+    "path": "common:signOut.unsent.keysNotCovered",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "Tus claves de uso compartido y de investigación no forman parte de esta comprobación. Si borras, podrías perderlas."
   },
   "add6140f54ce7114": {
     "en": "Paste your invite code, or open the invite link you were sent.",

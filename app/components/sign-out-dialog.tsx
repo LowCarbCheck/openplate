@@ -74,7 +74,16 @@ function EraseNoticeText({ line }: { line: EraseNoticeLine }) {
   if (line.kind === 'checking') return <span data-erase-line={line.kind}>{t('signOut.unsent.checking')}</span>;
   if (line.kind === 'unchecked') return <span data-erase-line={line.kind}>{t('signOut.unsent.unchecked')}</span>;
   if (line.kind === 'all-sent') return <span data-erase-line={line.kind}>{t('signOut.unsent.allSent')}</span>;
-  if (line.kind === 'not-covered') return <span data-erase-line={line.kind}>{t('signOut.unsent.notCovered')}</span>;
+  // TWO LINES SINCE M240/03, where one blanket sentence used to stand. Each
+  // says one true thing, and `resolveEraseNotice` pushes each only when it is
+  // true, so a person is never warned about saved meals the account already
+  // holds.
+  if (line.kind === 'saved-meals-unsent') {
+    return <span data-erase-line={line.kind}>{t('signOut.unsent.savedMealsUnsent')}</span>;
+  }
+  if (line.kind === 'keys-not-covered') {
+    return <span data-erase-line={line.kind}>{t('signOut.unsent.keysNotCovered')}</span>;
+  }
   if (line.kind === 'unsent-changes') {
     return (
       <span data-erase-line={line.kind} data-count={line.count}>
