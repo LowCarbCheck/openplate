@@ -27,7 +27,11 @@ export interface FastingStatsRowProps {
 /** One figure and its label, the small stat recipe the rest of the app uses. */
 function StatFigure({ figure, label }: { figure: string; label: string }): ReactElement {
   return (
-    <div className="space-y-0.5">
+    // `justify-end` on a stretched grid cell: a label that wraps to two lines
+    // in German used to push its own figure down while its neighbour's stayed
+    // up, so the four values never shared a line. Pinning the value to the
+    // bottom of the cell lines them all up whatever the label does.
+    <div className="flex h-full flex-col justify-end gap-0.5">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-xl font-semibold tabular-nums">{figure}</dd>
     </div>

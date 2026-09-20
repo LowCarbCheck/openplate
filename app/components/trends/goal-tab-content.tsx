@@ -77,11 +77,8 @@ export function GoalTabContent({
 
   return (
     <>
-      <p data-slot="goals-headline" className="text-base font-medium text-foreground tabular-nums">
-        {grid.loggedDayCount === 0 ?
-          t('trends.grid.empty')
-        : t('trends.grid.summary', { days: grid.perfectDayCount, logged: grid.loggedDayCount })}
-      </p>
+      {/* No headline sentence here: `AdherenceGridCard` below already prints
+          the same one under its grid, and it was being read twice. */}
       <div className="space-y-3">
         {stats.map((stat) => (
           <GoalStatCard key={stat.key} stat={stat} showRuns={showRuns} />

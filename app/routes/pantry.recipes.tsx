@@ -394,7 +394,9 @@ export function RecipeCard({
         </div>
 
         <details className="text-sm">
-          <summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t('recipes.steps')}</summary>
+          <summary className="flex min-h-11 cursor-pointer items-center text-xs font-medium text-muted-foreground">
+            {t('recipes.steps')}
+          </summary>
           <ol className="mt-2 list-decimal space-y-1 pl-5">
             {recipe.steps.map((step) => (
               <li key={step}>{step}</li>
@@ -435,7 +437,12 @@ export function RecipeCard({
           </div>
         </div>
 
-        <Button type="button" className="w-full" onClick={() => onLog(servingsEaten)} disabled={isLogging}>
+        <Button
+          type="button"
+          className="h-11 w-full sm:h-9"
+          onClick={() => onLog(servingsEaten)}
+          disabled={isLogging}
+        >
           {/* A RECIPE THAT MAKES ONE SERVING HIDES "of 1" (see `logLabel`):
               there is nothing to choose between, and naming the total would
               read as a second figure the person has to reconcile. */}

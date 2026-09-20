@@ -66,14 +66,17 @@ export function AwardTile({
   const isEarned = earnedOnDay !== null;
 
   return (
-    <div className="flex items-start justify-between gap-3 py-3">
+    // The badge drops UNDER the title below 400px. Beside it, a 147px German
+    // date badge left the title and its note about 120px to wrap into while
+    // the space under the badge stayed empty.
+    <div className="flex flex-col gap-1.5 py-3 min-[400px]:flex-row min-[400px]:items-start min-[400px]:justify-between min-[400px]:gap-3">
       <div className="min-w-0 space-y-0.5">
         <p className={cn('text-sm font-medium', isEarned ? 'text-foreground' : 'text-muted-foreground')}>
           {t(award.titleKey)}
         </p>
         {isEarned && <p className="text-xs text-muted-foreground">{t(award.noteKey)}</p>}
       </div>
-      <Badge variant={isEarned ? 'default' : 'outline'}>
+      <Badge variant={isEarned ? 'default' : 'outline'} className="w-fit">
         {isEarned ? t('awards.earnedOn', { date: earnedDateLabel(earnedOnDay, i18n.language) }) : t('awards.notYet')}
       </Badge>
     </div>

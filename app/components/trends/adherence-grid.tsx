@@ -319,14 +319,14 @@ export function AdherenceGrid({
             onPointerLeave={() => setActiveDate(null)}
             className={cn(
               'grid list-none grid-flow-col gap-[2px]',
-              'grid-cols-[1.5rem_repeat(13,minmax(0,1fr))] grid-rows-[repeat(7,auto)]',
+              'grid-cols-[2rem_repeat(13,minmax(0,1fr))] grid-rows-[repeat(7,auto)]',
             )}
           >
             {weekdayNames.map((name, row) => (
               <li
                 key={name}
                 aria-hidden="true"
-                className="flex items-center justify-end pr-1 text-[10px] leading-none text-muted-foreground"
+                className="flex items-center justify-end pr-1 text-xs leading-none text-muted-foreground"
               >
                 {LABELLED_WEEKDAY_ROWS.has(row) ? name : ''}
               </li>
@@ -384,12 +384,12 @@ function keyStep(key: string): number | undefined {
  */
 function MonthLabelRow({ labels, weekCount }: { labels: Map<number, string>; weekCount: number }): ReactNode {
   return (
-    <div className="grid grid-cols-[1.5rem_repeat(13,minmax(0,1fr))] gap-[2px]" aria-hidden="true">
+    <div className="grid grid-cols-[2rem_repeat(13,minmax(0,1fr))] gap-[2px]" aria-hidden="true">
       <span />
       {Array.from({ length: weekCount }, (_unused, weekIndex) => (
         <span
           key={weekIndex}
-          className="relative overflow-visible text-[10px] leading-none whitespace-nowrap text-muted-foreground"
+          className="relative overflow-visible text-xs leading-none whitespace-nowrap text-muted-foreground"
         >
           {labels.get(weekIndex) ?? ''}
         </span>

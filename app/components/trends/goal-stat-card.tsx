@@ -59,7 +59,7 @@ function RunLine({ stat }: { stat: GoalStat }): ReactElement {
   const { t } = useTranslation();
   const hasAnyRun = stat.bestRun > 0;
   return (
-    <p data-slot="goal-run" className="text-xs text-muted-foreground tabular-nums">
+    <p data-slot="goal-run" className="text-xs text-pretty text-muted-foreground tabular-nums">
       {stat.currentRun > 0 && <span>{t('trends.goals.run.current', { count: stat.currentRun })} </span>}
       {hasAnyRun ? t('trends.goals.run.best', { count: stat.bestRun }) : t('trends.goals.run.none')}
     </p>

@@ -120,7 +120,13 @@ export function SlotShareCard({
             const dateLabel = isWeekly ? t('trends.chart.bar.week', { date: labelOf(row.date) }) : labelOf(row.date);
             return (
               <li key={row.date} data-slot="slot-share-row" data-date={row.date} className="flex items-center gap-3">
-                <span aria-hidden="true" className="w-24 shrink-0 truncate text-xs tabular-nums text-muted-foreground">
+                {/* `w-32` and no `truncate`: "Woche vom 14. Sept." needs 121px,
+                    and every German row used to read "Woche vom 22..." with the
+                    one thing that tells the rows apart cut off. */}
+                <span
+                  aria-hidden="true"
+                  className="w-32 shrink-0 break-words text-xs tabular-nums text-muted-foreground"
+                >
                   {dateLabel}
                 </span>
                 <span className="sr-only">{describeRow({ row, dateLabel, t })}</span>

@@ -624,7 +624,7 @@ function AdjustStartInline({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="font-medium text-primary underline-offset-4 hover:underline"
+          className="-my-3 inline-flex min-h-11 items-center py-3 font-medium text-primary underline-offset-4 hover:underline"
         >
           {linkLabel}
         </button>
@@ -976,7 +976,7 @@ function PlanFastCard({
                   aria-pressed={startMode === mode}
                   onClick={() => setStartMode(mode)}
                   className={cn(
-                    'min-h-8 min-w-11 rounded-full px-3 py-1 transition-colors',
+                    'min-h-11 min-w-11 rounded-full px-4 py-1 transition-colors',
                     startMode === mode ?
                       'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
@@ -1318,17 +1318,19 @@ function FastHistoryRow({ fast, nowMs, timezone }: { fast: LocalFast; nowMs: num
 
   return (
     <div className="border-b border-border/60 py-2.5 last:border-0">
-      <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 flex-1 truncate text-sm">
-          {isStillOpen ? t('fasting.history.stillOpenHint', { when }) : when}
-        </span>
-        {/* One small word, never a colour and never an icon. How a fast felt is
+      {/* The start date owns a full line of its own. It is what tells one fast
+          from another, and every language longer than English used to lose it
+          to a truncated column that collapsed to nothing. */}
+      <p data-slot="fast-history-date" className="text-sm break-words">
+        {isStillOpen ? t('fasting.history.stillOpenHint', { when }) : when}
+      </p>
+      <div className="mt-1 flex items-center gap-3">
+        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          {/* One small word, never a colour and never an icon. How a fast felt is
           the person's own reading, and grading it with a face would hand it
           back to them as a score (DESIGN.md section 10.1). */}
-        {mood !== null && (
-          <span className="shrink-0 text-xs text-muted-foreground">{t(`fasting.end.mood.${mood}`)}</span>
-        )}
-        {/*
+          {mood !== null && <span className="text-xs text-muted-foreground">{t(`fasting.end.mood.${mood}`)}</span>}
+          {/*
         A completed fast reads in the brand colour; an early end reads the SAME
         sentence in plain foreground, not amber, not destructive. Ending early
         is a choice, not an overrun, and the two numbers speak for themselves.
@@ -1336,19 +1338,25 @@ function FastHistoryRow({ fast, nowMs, timezone }: { fast: LocalFast; nowMs: num
         the achieved figure alone, because splitting a translated sentence to
         style one interpolation is how a locale ends up with a stray space.
       */}
-        <span className="shrink-0 text-sm tabular-nums">
-          {timeline.status === 'cancelled' ?
-            <span className="text-muted-foreground">{target}</span>
-          : isStillOpen ?
-            <span className="text-muted-foreground">{t('fasting.history.stillOpen')}</span>
-          : <span className={timeline.status === 'completed' ? 'font-medium text-primary' : 'text-foreground'}>
-              {t('fasting.history.achieved', { achieved, target })}
-            </span>
-          }
+          <span className="min-w-0 text-sm tabular-nums">
+            {timeline.status === 'cancelled' ?
+              <span className="text-muted-foreground">{target}</span>
+            : isStillOpen ?
+              <span className="text-muted-foreground">{t('fasting.history.stillOpen')}</span>
+            : <span className={timeline.status === 'completed' ? 'font-medium text-primary' : 'text-foreground'}>
+                {t('fasting.history.achieved', { achieved, target })}
+              </span>
+            }
+          </span>
         </span>
         <ConfirmAction
           trigger={
-            <Button variant="ghost" size="icon-sm" aria-label={t('fasting.history.deleteLabel', { when })}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="size-11 shrink-0"
+              aria-label={t('fasting.history.deleteLabel', { when })}
+            >
               <Trash2 className="size-4" aria-hidden="true" />
             </Button>
           }

@@ -94,7 +94,9 @@ export function StageList({ elapsedMs }: StageListProps): ReactElement {
 
   return (
     <details className="rounded-2xl border border-border/60 bg-card px-4 py-3">
-      <summary className="cursor-pointer list-none text-sm font-medium">{t('fasting.stages.listTitle')}</summary>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium">
+        {t('fasting.stages.listTitle')}
+      </summary>
       <p className="mt-2 text-xs text-muted-foreground">{t(HEDGE_KEY)}</p>
       <ul className="mt-3 space-y-3">
         {FASTING_STAGES.map((stage) => (

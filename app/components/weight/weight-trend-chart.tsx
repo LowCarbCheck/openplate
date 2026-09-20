@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { cn } from '#app/lib/utils';
 import { fromKg, toKg, type WeightUnit } from '#app/lib/weight-units';
 import {
   computeValueRange,
@@ -40,27 +41,21 @@ interface WeightTrendChartProps {
 
 const VIEW_WIDTH = 640;
 const VIEW_HEIGHT = 200;
-/** Wide enough for the y-tick labels that replaced the old min/max corner text. */
-const PLOT_LEFT = 40;
+/** The y-tick labels live in an HTML gutter beside the plot, so this is only a dot's own margin. */
+const PLOT_LEFT = 8;
 const PLOT_RIGHT = VIEW_WIDTH - 8;
 const PLOT_TOP = 14;
 const PLOT_BOTTOM = VIEW_HEIGHT - 14;
 /**
- * Raw-weigh-in dot radius, 6px rather than the usual ≥8px marker minimum. A
- * DELIBERATE, documented deviation: with up to 91 daily weigh-ins across a
- * 640-unit viewBox the points sit ~7 units apart, and 8px dots would fuse into
- * a band. The ≥8px rule is honoured on the EMPHASIS marker below, which is the
- * one a reader actually targets.
+ * Above this many weigh-ins the raw dots are drawn at 4px instead of 6px. A
+ * DELIBERATE, documented deviation from the usual >=8px marker minimum: 91
+ * daily weigh-ins across a phone-wide plot sit about 2.5px apart, and dots any
+ * bigger fuse into a band. The >=8px rule is honoured on the EMPHASIS marker,
+ * which is the one a reader actually targets.
  */
-const DOT_RADIUS = 3;
-/** The crosshair-snapped marker on the trend line: 9px, with a 2px surface ring. */
-const ACTIVE_MARKER_RADIUS = 4.5;
+const CROWDED_DOT_COUNT = 40;
 /** How many horizontal gridlines the axis aims for. */
 const TICK_COUNT = 4;
-/** Gap between a tick label and the plot's left edge. */
-const TICK_LABEL_GAP = 6;
-/** Nudge that centres a tick label on its gridline (the text baseline sits below the anchor). */
-const TICK_LABEL_BASELINE = 3;
 
 /**
  * Hand-rolled inline-SVG weight-trend chart (DESIGN.md §7 — no chart library):
@@ -108,6 +103,7 @@ export function WeightTrendChart({
   // "kg" as a word is not the same as saying "kilograms"), so it needs its own
   // key rather than the symbol used in the visible labels.
   const spelledUnit = weightUnit === 'kg' ? t('trends.weight.unitKilograms') : t('trends.weight.unitPounds');
+  const dotSize = geometry.dots.length > CROWDED_DOT_COUNT ? 'size-1' : 'size-1.5';
   const active = activeIndex === null ? null : (geometry.dots[activeIndex] ?? null);
   const activeTrend = activeIndex === null ? null : (geometry.trendDots[activeIndex] ?? null);
 
@@ -132,11 +128,43 @@ export function WeightTrendChart({
   };
 
   return (
-    <figure className="relative m-0 rounded-lg">
-      <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} className="h-auto w-full" aria-hidden="true">
+    <figure className="m-0 flex gap-1.5">
+      {/*
+        THE Y AXIS IS HTML, NOT SVG `<text>`. The plot's viewBox is stretched to
+        the card's width, so a 10-unit SVG label rendered at 4.3px on a 360px
+        phone. Out here it is a plain 12px span, positioned by percentage
+        against the same coordinate space the gridlines use.
+      */}
+      <div aria-hidden="true" className="relative w-10 shrink-0">
         {geometry.ticks.map((tick, index) => (
-          <g key={tick.value}>
+          <span
+            key={tick.value}
+            className="absolute right-0 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums text-muted-foreground"
+            style={{ top: `${(tick.y / VIEW_HEIGHT) * 100}%` }}
+          >
+            {formatMacroNumberIn(i18n.language, tick.value)}
+            {index === geometry.ticks.length - 1 ? ` ${weightUnit}` : ''}
+          </span>
+        ))}
+      </div>
+
+      <div className="relative h-40 min-w-0 flex-1 rounded-lg sm:h-48">
+        {/*
+          `preserveAspectRatio="none"` so the plot fills a height this card
+          chooses instead of one its width dictates: at 3.2:1 the chart was 87px
+          tall on a phone. Only lines are drawn in here, and a line under a
+          non-uniform scale is still that line; the round marks are HTML below,
+          which is what would have been squashed into ellipses.
+        */}
+        <svg
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+          preserveAspectRatio="none"
+          className="h-full w-full"
+          aria-hidden="true"
+        >
+          {geometry.ticks.map((tick) => (
             <line
+              key={tick.value}
               x1={PLOT_LEFT}
               x2={PLOT_RIGHT}
               y1={tick.y}
@@ -145,103 +173,95 @@ export function WeightTrendChart({
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
             />
-            <text
-              x={PLOT_LEFT - TICK_LABEL_GAP}
-              y={tick.y + TICK_LABEL_BASELINE}
-              textAnchor="end"
-              className="fill-muted-foreground text-[10px] tabular-nums"
-            >
-              {formatMacroNumberIn(i18n.language, tick.value)}
-              {index === geometry.ticks.length - 1 ? ` ${weightUnit}` : ''}
-            </text>
-          </g>
-        ))}
+          ))}
 
-        {geometry.targetY !== null && (
-          <g className="stroke-muted-foreground">
+          {geometry.targetY !== null && (
             <line
               x1={PLOT_LEFT}
               x2={PLOT_RIGHT}
               y1={geometry.targetY}
               y2={geometry.targetY}
+              className="stroke-muted-foreground"
               strokeWidth={1}
               strokeDasharray="4 4"
               vectorEffect="non-scaling-stroke"
             />
-            <text
-              x={PLOT_RIGHT}
-              y={geometry.targetY - 4}
-              textAnchor="end"
-              className="fill-muted-foreground stroke-none text-[10px]"
-            >
-              {t('trends.weight.target', {
-                value: formatMacroNumberIn(i18n.language, fromKg(targetWeightKg ?? 0, weightUnit)),
-                unit: weightUnit,
-              })}
-            </text>
-          </g>
-        )}
+          )}
 
-        {active !== null && (
-          <line
-            x1={active.x}
-            x2={active.x}
-            y1={PLOT_TOP}
-            y2={PLOT_BOTTOM}
-            className="stroke-border"
-            strokeWidth={1}
+          {active !== null && (
+            <line
+              x1={active.x}
+              x2={active.x}
+              y1={PLOT_TOP}
+              y2={PLOT_BOTTOM}
+              className="stroke-border"
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+
+          <polyline
+            points={geometry.trendPath}
+            fill="none"
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
+            className="stroke-primary"
           />
-        )}
+        </svg>
 
-        <polyline
-          points={geometry.trendPath}
-          fill="none"
-          strokeWidth={2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          vectorEffect="non-scaling-stroke"
-          className="stroke-primary"
-        />
+        {geometry.targetY !== null && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-0 -translate-y-full rounded bg-card px-1 text-xs tabular-nums text-muted-foreground"
+            style={{ top: `${(geometry.targetY / VIEW_HEIGHT) * 100}%` }}
+          >
+            {t('trends.weight.target', {
+              value: formatMacroNumberIn(i18n.language, fromKg(targetWeightKg ?? 0, weightUnit)),
+              unit: weightUnit,
+            })}
+          </span>
+        )}
 
         {geometry.dots.map((dot) => (
-          <circle
+          <span
             key={dot.date}
-            cx={dot.x}
-            cy={dot.y}
-            r={DOT_RADIUS}
-            strokeWidth={2}
-            vectorEffect="non-scaling-stroke"
-            className="fill-muted-foreground/60 stroke-card"
+            aria-hidden="true"
+            className={cn(
+              'pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/70 ring-2 ring-card',
+              dotSize,
+            )}
+            style={{ left: `${(dot.x / VIEW_WIDTH) * 100}%`, top: `${(dot.y / VIEW_HEIGHT) * 100}%` }}
           />
         ))}
 
         {activeTrend !== null && (
-          <circle
-            cx={activeTrend.x}
-            cy={activeTrend.y}
-            r={ACTIVE_MARKER_RADIUS}
-            strokeWidth={2}
-            vectorEffect="non-scaling-stroke"
-            className="fill-primary stroke-card"
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary ring-2 ring-card"
+            style={{
+              left: `${(activeTrend.x / VIEW_WIDTH) * 100}%`,
+              top: `${(activeTrend.y / VIEW_HEIGHT) * 100}%`,
+            }}
           />
         )}
-      </svg>
 
-      {/* Transparent hit layer: snapping is by x only, so a reader never has to
-          land on a 6px dot to read a day. It is a real button so that the
-          chart's keyboard model (arrows / Home / End) hangs off a focusable,
-          interactive element — the SVG above is decorative, and this control
-          carries the chart's accessible name. */}
-      <button
-        type="button"
-        aria-label={t('trends.weight.chartLabel', { unit: spelledUnit })}
-        className="absolute inset-0 cursor-default rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onKeyDown={handleKeyDown}
-        onBlur={() => onActiveIndexChange(null)}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={() => onActiveIndexChange(null)}
-      />
+        {/* Transparent hit layer: snapping is by x only, so a reader never has to
+            land on a 6px dot to read a day. It is a real button so that the
+            chart's keyboard model (arrows / Home / End) hangs off a focusable,
+            interactive element , the plot above is decorative, and this control
+            carries the chart's accessible name. */}
+        <button
+          type="button"
+          aria-label={t('trends.weight.chartLabel', { unit: spelledUnit })}
+          className="absolute inset-0 cursor-default rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onKeyDown={handleKeyDown}
+          onBlur={() => onActiveIndexChange(null)}
+          onPointerMove={handlePointerMove}
+          onPointerLeave={() => onActiveIndexChange(null)}
+        />
+      </div>
     </figure>
   );
 }

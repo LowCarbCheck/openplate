@@ -43,7 +43,7 @@ export function AdherenceLegend({ mode, hasUnratedDays }: { mode: AdherenceMode;
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
       {mode === 'adherence' ?
         <span className="inline-flex items-center gap-1.5" aria-label={t('trends.grid.legendRamp')}>
           {t('trends.grid.legendLess')}

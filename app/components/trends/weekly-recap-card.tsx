@@ -195,8 +195,11 @@ export function WeeklyRecapCard({
               first: formatMacroNumberIn(i18n.language, weight.firstKg),
               last: formatMacroNumberIn(i18n.language, weight.lastKg),
               delta: formatKgDelta(weight.deltaKg, t, i18n.language),
-            })}{' '}
-            <span className="text-xs">{t('trends.recap.weightNoisy')}</span>
+            })}
+            {/* Its own line. Inline, the 12px caveat changed size mid-sentence,
+                and the space this component inserted before it landed in front
+                of the comma the catalog value used to start with. */}
+            <span className="block text-xs">{t('trends.recap.weightNoisy')}</span>
           </p>
         )}
 

@@ -88,7 +88,12 @@ export function InsightsTabStrip({
             role="tab"
             aria-selected={isActive}
             className={cn(
-              'min-w-0 truncate rounded-md px-2 py-1.5 text-center text-sm font-medium transition-colors',
+              'flex min-h-11 min-w-0 items-center justify-center rounded-md px-1 py-1.5 text-center',
+              // NOT `truncate`: three of the four German labels and two of the
+              // Turkish ones need more than a quarter of a 360px phone, and a
+              // navigation label that ends in an ellipsis is a navigation
+              // label nobody can read. They wrap, or they hyphenate.
+              'hyphens-auto break-words text-xs font-medium leading-tight transition-colors',
               isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >

@@ -256,9 +256,15 @@ function RangeControls({ range }: { range: NutrientRange }): ReactElement {
   } satisfies Record<NutrientRange, string>;
 
   return (
-    <fieldset className="flex flex-wrap gap-1" aria-label={t('nutrients.range.group')}>
+    <fieldset className="grid grid-cols-3 gap-2" aria-label={t('nutrients.range.group')}>
       {ALLOWED_RANGES.map((option) => (
-        <Button key={option} asChild size="sm" variant={range === option ? 'default' : 'outline'}>
+        <Button
+          key={option}
+          asChild
+          size="sm"
+          className="min-h-11 whitespace-normal px-1 text-xs leading-tight"
+          variant={range === option ? 'default' : 'outline'}
+        >
           <Link to={`?range=${option}`} preventScrollReset aria-current={range === option ? 'true' : undefined}>
             {t(labelKeys[option])}
           </Link>
@@ -359,7 +365,20 @@ function LimitReading({ isAbove }: { isAbove: boolean }): ReactElement {
   );
 }
 
-function NutrientListRow({ row }: { row: NutrientRow }): ReactElement {
+/**
+ * @param row - the nutrient to draw.
+ * @param showCoverageDetail - whether a row with no figure explains itself. On
+ *   a log that carries no micronutrient figures at all, every one of the
+ *   sixteen rows printed the SAME two-line explanation, so the card ran to
+ *   1419px of one sentence repeated. The hero above already says why once.
+ */
+function NutrientListRow({
+  row,
+  showCoverageDetail,
+}: {
+  row: NutrientRow;
+  showCoverageDetail: boolean;
+}): ReactElement {
   const { t, i18n: i18next } = useTranslation();
   const language = i18next.language;
   const name = t(`nutrients.name.${row.key}`);
@@ -416,11 +435,13 @@ function NutrientListRow({ row }: { row: NutrientRow }): ReactElement {
       {hasLimitReading && <LimitReading isAbove={isAboveReferenceLimit(row)} />}
 
       {figure === null ?
-        <p className="text-xs text-muted-foreground">
-          {t('nutrients.coverage.notEnoughDataDetail', {
-            share: formatSharePercent(row.intake.coveredFraction, { language }),
-          })}
-        </p>
+        showCoverageDetail && (
+          <p className="text-xs text-muted-foreground">
+            {t('nutrients.coverage.notEnoughDataDetail', {
+              share: formatSharePercent(row.intake.coveredFraction, { language }),
+            })}
+          </p>
+        )
       : <ReferenceFootnote reference={row.reference} />}
 
       {/* Beta-carotene under vitamin A: context, never a second target. See
@@ -546,7 +567,10 @@ export default function Nutrients({ loaderData }: Route.ComponentProps) {
           {!hasReferenceMetrics && (
             <p className="text-xs text-muted-foreground">
               {t('nutrients.hero.addDetails')}{' '}
-              <Link to="/settings/profile" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link
+                to="/settings/profile"
+                className="-my-3 inline-flex min-h-11 items-center py-3 font-medium text-primary underline-offset-4 hover:underline"
+              >
                 {t('nutrients.reference.noBodyMetricsAction')}
               </Link>
             </p>
@@ -565,7 +589,7 @@ export default function Nutrients({ loaderData }: Route.ComponentProps) {
             <p className="text-sm text-muted-foreground">{t('nutrients.list.empty')}</p>
           : <div>
               {rows.map((row) => (
-                <NutrientListRow key={row.key} row={row} />
+                <NutrientListRow key={row.key} row={row} showCoverageDetail={withData > 0} />
               ))}
             </div>
           }

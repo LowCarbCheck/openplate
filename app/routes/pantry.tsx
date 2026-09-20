@@ -248,68 +248,79 @@ function PantryRows({
     onChange(rows.map((row) => (row.key === key ? { ...row, ...change } : row)));
 
   return (
-    <div className="space-y-2">
+    // A FIXED TWO ROW SHAPE, not a wrapping flex row. Wrapping put the unit
+    // select and the delete button side by side in the middle of the card, so
+    // the button that throws a line away moved with the width of the unit
+    // word beside it.
+    <div className="space-y-3">
       {rows.map((row) => (
         <Card key={row.key}>
-          <CardContent className="flex flex-wrap items-end gap-2 p-3">
-            <div className="min-w-40 flex-1 space-y-1">
-              <Label htmlFor={`pantry-name-${row.key}`} className="text-xs text-muted-foreground">
-                {t('pantry.review.nameLabel')}
-              </Label>
-              <Input
-                id={`pantry-name-${row.key}`}
-                value={row.name}
-                onChange={(event) => patch(row.key, { name: event.target.value })}
-              />
+          <CardContent className="space-y-2 p-3">
+            <div className="grid grid-cols-[1fr_5rem] gap-2">
+              <div className="min-w-0 space-y-1">
+                <Label htmlFor={`pantry-name-${row.key}`} className="text-xs text-muted-foreground">
+                  {t('pantry.review.nameLabel')}
+                </Label>
+                <Input
+                  id={`pantry-name-${row.key}`}
+                  className="h-11 sm:h-9"
+                  value={row.name}
+                  onChange={(event) => patch(row.key, { name: event.target.value })}
+                />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <Label htmlFor={`pantry-amount-${row.key}`} className="text-xs text-muted-foreground">
+                  {t('pantry.review.amountLabel')}
+                </Label>
+                <Input
+                  id={`pantry-amount-${row.key}`}
+                  className="h-11 sm:h-9"
+                  inputMode="decimal"
+                  value={row.amount}
+                  onChange={(event) => patch(row.key, { amount: event.target.value })}
+                />
+              </div>
             </div>
-            <div className="w-20 space-y-1">
-              <Label htmlFor={`pantry-amount-${row.key}`} className="text-xs text-muted-foreground">
-                {t('pantry.review.amountLabel')}
-              </Label>
-              <Input
-                id={`pantry-amount-${row.key}`}
-                inputMode="decimal"
-                value={row.amount}
-                onChange={(event) => patch(row.key, { amount: event.target.value })}
-              />
-            </div>
-            <div className="w-28 space-y-1">
-              <Label htmlFor={`pantry-unit-${row.key}`} className="text-xs text-muted-foreground">
-                {t('pantry.review.unitLabel')}
-              </Label>
-              <Select
-                value={row.unit ?? NO_UNIT_VALUE}
-                onValueChange={(value) => patch(row.key, { unit: readUnitValue(value) })}
+            <div className="flex items-end gap-2">
+              <div className="min-w-0 flex-1 space-y-1">
+                <Label htmlFor={`pantry-unit-${row.key}`} className="text-xs text-muted-foreground">
+                  {t('pantry.review.unitLabel')}
+                </Label>
+                <Select
+                  value={row.unit ?? NO_UNIT_VALUE}
+                  onValueChange={(value) => patch(row.key, { unit: readUnitValue(value) })}
+                >
+                  <SelectTrigger id={`pantry-unit-${row.key}`} className="h-11 w-full sm:h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_UNIT_VALUE}>{t('pantry.review.unitNone')}</SelectItem>
+                    {PANTRY_UNITS.map((unit) => (
+                      <SelectItem key={unit} value={unit}>
+                        {t(`pantry.units.${unit}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="ml-auto size-11 shrink-0"
+                aria-label={t('pantry.review.removeAria', { name: row.name })}
+                onClick={() => onChange(rows.filter((other) => other.key !== row.key))}
               >
-                <SelectTrigger id={`pantry-unit-${row.key}`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_UNIT_VALUE}>{t('pantry.review.unitNone')}</SelectItem>
-                  {PANTRY_UNITS.map((unit) => (
-                    <SelectItem key={unit} value={unit}>
-                      {t(`pantry.units.${unit}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={t('pantry.review.removeAria', { name: row.name })}
-              onClick={() => onChange(rows.filter((other) => other.key !== row.key))}
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-            </Button>
           </CardContent>
         </Card>
       ))}
       <Button
         type="button"
         variant="outline"
-        className="w-full"
+        className="h-11 w-full sm:h-9"
         onClick={() => {
           nextKey.current += 1;
           onChange([...rows, blankRow(`new-${nextKey.current}`)]);
@@ -366,7 +377,7 @@ export function PantryList({
       {hasStoredItems && (
         <>
           <PantryRows rows={rows} onChange={onChange} />
-          <Button type="button" className="w-full" onClick={onSave} disabled={isSaving}>
+          <Button type="button" className="h-11 w-full sm:h-9" onClick={onSave} disabled={isSaving}>
             {isSaving ? t('pantry.review.saving') : t('pantry.review.saveList')}
           </Button>
         </>
@@ -379,13 +390,13 @@ export function PantryList({
       {hasStoredItems ?
         <Link
           to={PANTRY_RECIPES_HREF}
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+          className="-my-3 inline-flex min-h-11 items-center gap-1 py-3 text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
           {t('pantry.recipes.link')}
         </Link>
       : <span
           aria-disabled="true"
-          className="inline-flex cursor-not-allowed items-center gap-1 text-sm font-medium text-muted-foreground"
+          className="-my-3 inline-flex min-h-11 cursor-not-allowed items-center gap-1 py-3 text-sm font-medium text-muted-foreground"
         >
           {t('pantry.recipes.link')}
         </span>
@@ -437,10 +448,10 @@ export function PantryReview({
       {notes !== null && <p className="text-xs text-muted-foreground">{notes}</p>}
       <PantryRows rows={rows} onChange={onChange} />
       <div className="flex gap-2">
-        <Button type="button" className="flex-1" onClick={onConfirm} disabled={isSaving}>
+        <Button type="button" className="h-11 flex-1 sm:h-9" onClick={onConfirm} disabled={isSaving}>
           {isSaving ? t('pantry.review.saving') : t('pantry.review.confirm')}
         </Button>
-        <Button type="button" variant="outline" className="flex-1" onClick={onDiscard} disabled={isSaving}>
+        <Button type="button" variant="outline" className="h-11 flex-1 sm:h-9" onClick={onDiscard} disabled={isSaving}>
           {t('pantry.review.discard')}
         </Button>
       </div>

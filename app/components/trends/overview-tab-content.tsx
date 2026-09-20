@@ -62,8 +62,10 @@ function InsightsDoorCard({
       className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="transition-colors hover:border-primary/40">
-        <CardContent className="flex items-center justify-between gap-1 p-3">
-          <CardTitle className="min-w-0 truncate text-sm font-medium">{t(DOOR_LABEL_KEY[tab])}</CardTitle>
+        <CardContent className="flex min-h-11 items-center justify-between gap-1 p-3">
+          <CardTitle className="min-w-0 hyphens-auto break-words text-sm font-medium leading-tight">
+            {t(DOOR_LABEL_KEY[tab])}
+          </CardTitle>
           <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         </CardContent>
       </Card>

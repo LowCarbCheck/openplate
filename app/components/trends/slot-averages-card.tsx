@@ -38,8 +38,12 @@ function SlotAverageRow({ slot, averages, language }: { slot: MealType; averages
       <p className="text-xs text-muted-foreground">
         {t('trends.meals.averages.loggedDays', { days: averages.loggedDays, total: averages.totalDays })}
       </p>
+      {/* One column below 400px: two columns left 13px between a label and its
+          own value, so "Calories 333.4 kcal" read as one phrase, and a Turkish
+          label that wrapped in three of the four blocks made the rows of the
+          same card different heights. */}
       {averages.loggedDays > 0 && (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm tabular-nums">
+        <dl className="grid grid-cols-1 gap-y-1.5 text-sm tabular-nums min-[400px]:grid-cols-2 min-[400px]:gap-x-4">
           {METRIC_ROWS.map((row) => (
             <div key={row.key} className="flex items-baseline justify-between gap-2">
               <dt className="text-xs text-muted-foreground">{t(row.labelKey)}</dt>

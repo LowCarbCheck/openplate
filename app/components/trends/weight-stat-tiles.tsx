@@ -22,12 +22,20 @@ import { formatDayLabel } from '#app/lib/format-day-label';
 import { fromKg, roundWeightForDisplay, type WeightUnit } from '#app/lib/weight-units';
 import type { WeightProgress } from '#app/lib/weight-progress';
 
-/** One tile: a value slot above a small label. */
+/**
+ * One tile. Below 400px it is a row, label left and figure right, and above it
+ * the three tiles go back to a column each with the label on top.
+ *
+ * WHY A ROW ON A PHONE. Three tiles across a 360px screen leave 73px of
+ * content each, and "88,6 kg" does not fit that at any readable size: the unit
+ * dropped onto a line of its own in English, German and Turkish alike. A full
+ * width row fits every value in every language with no nowrap to overflow.
+ */
 function StatTile({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <div className="rounded-xl border bg-card p-3">
-      <div className="min-h-7">{children}</div>
-      <p className="mt-1 text-[11px] text-muted-foreground">{label}</p>
+    <div className="flex min-h-11 items-center justify-between gap-3 rounded-xl border bg-card p-3 min-[400px]:block">
+      <p className="text-xs text-muted-foreground min-[400px]:mb-1">{label}</p>
+      <div className="min-w-0 text-right min-[400px]:min-h-7 min-[400px]:text-left">{children}</div>
     </div>
   );
 }
@@ -55,7 +63,7 @@ export function WeightStatTiles({
   const display = (kg: number): string => formatMacroNumberIn(language, roundWeightForDisplay(fromKg(kg, unit)));
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
       <StatTile label={t('trends.weight.stat.latest')}>
         {progress.latestKg === null ?
           <p className="text-sm text-muted-foreground">{t('trends.weight.empty')}</p>
@@ -64,7 +72,7 @@ export function WeightStatTiles({
               {display(progress.latestKg)} <span className="text-sm font-normal text-muted-foreground">{unit}</span>
             </p>
             {progress.latestDate !== null && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t('trends.weight.stat.latestOn', { date: formatDayLabel(progress.latestDate, language) })}
               </p>
             )}

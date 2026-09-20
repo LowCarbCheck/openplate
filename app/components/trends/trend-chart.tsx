@@ -37,6 +37,7 @@ import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import type { BarFill, BarGeometry, TrendChartModel, TrendMetric } from '#app/lib/trend-chart';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { cn } from '#app/lib/utils';
 
 /**
  * The narrow slice of i18next's `t` these module-scope helpers need. They are
@@ -45,6 +46,8 @@ import { formatMacroNumberIn } from '#app/lib/format-macro-number';
  */
 type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
 
+/** Above this many bars the day axis prints every second label, so two-digit days never crowd. */
+const DENSE_AXIS_BARS = 10;
 /** SVG plot height in user units (bars grow up from `PLOT_HEIGHT`). */
 const PLOT_HEIGHT = 100;
 /** Horizontal units allotted to each day's column. */
@@ -400,19 +403,23 @@ function GoalLine({ goalFraction }: { goalFraction: number }) {
 }
 
 /**
- * The goal line's inline value tag, sitting in the plot's right gutter at the
- * line's own height. The legend swatch below says *which* line is the goal; this
+ * The goal line's inline value tag, sitting over the plot's right end just
+ * above its own line. The legend swatch below says *which* line is the goal; this
  * says what it's worth, where the eye already is — without it, reading "am I
  * near my ceiling?" meant hopping to the legend, then to the goals page, then
  * back. Drawn as HTML rather than SVG `<text>` because the plot uses
  * `preserveAspectRatio="none"`, which would stretch glyphs with the chart width.
+ *
+ * It sits INSIDE the plot rather than in a gutter beside it: a 44px reserved
+ * column for a 30px tag cost the bars a fifth of the width they had, which on
+ * a 320px phone left the day labels two pixels apart.
  */
 function GoalTag({ goalFraction, label }: { goalFraction: number; label: string }) {
   const { t } = useTranslation();
 
   return (
     <span
-      className="pointer-events-none absolute left-full ml-1.5 -translate-y-1/2 whitespace-nowrap rounded bg-muted px-1 py-px text-[10px] font-medium tabular-nums text-muted-foreground"
+      className="pointer-events-none absolute right-0 -translate-y-full whitespace-nowrap rounded bg-muted px-1 py-px text-xs font-medium tabular-nums text-muted-foreground"
       style={{ top: `${(1 - goalFraction) * 100}%` }}
     >
       <span className="sr-only">{t('trends.chart.goalTagPrefix')}</span>
@@ -434,8 +441,12 @@ function goalTagLabel(goalValue: number, metric: TrendMetric, language: string):
 
 /**
  * The bar chart: an SVG plot plus an overlaid tappable-link grid and a plain
- * day-of-month axis. The right gutter (`pr-11`) is reserved for the goal tag, and
- * the axis row shares it so the labels stay under their own bars.
+ * day-of-month axis. No reserved gutter: the goal tag draws over the top of
+ * the plot instead, so every pixel of the card's width belongs to the bars.
+ *
+ * Each bar is a link to that day's diary. It is as wide as its own column and
+ * cannot be widened without overlapping its neighbour, so the 44px touch rule
+ * is met on the height (`min-h-11`) alone; this is a plot, not a button row.
  */
 export function TrendChart({
   model,
@@ -457,7 +468,7 @@ export function TrendChart({
   const { t, i18n } = useTranslation();
   const width = bars.length * SLOT_WIDTH;
   return (
-    <div className="pr-11">
+    <div>
       <div className="relative h-44">
         <svg
           viewBox={`0 0 ${width} ${PLOT_HEIGHT}`}
@@ -496,9 +507,18 @@ export function TrendChart({
         </div>
       </div>
       <div className="mt-1 flex">
-        {bars.map((bar) => (
-          <div key={bar.date} className="flex flex-1 flex-col items-center gap-0.5">
-            <span className="text-[10px] tabular-nums text-muted-foreground">{bar.date.slice(8, 10)}</span>
+        {bars.map((bar, index) => (
+          <div key={bar.date} className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
+            {/* Counted back from the newest bar, so the day on the right is
+                always named however many bars the window holds. */}
+            <span
+              className={cn(
+                'text-xs tabular-nums text-muted-foreground',
+                bars.length > DENSE_AXIS_BARS && (bars.length - 1 - index) % 2 !== 0 && 'hidden sm:inline',
+              )}
+            >
+              {bar.date.slice(8, 10)}
+            </span>
           </div>
         ))}
       </div>

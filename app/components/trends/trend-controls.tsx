@@ -42,6 +42,14 @@ const SLOT_OPTIONS: readonly { value: TrendSlot; labelKey: string }[] = [
   ...MEAL_TYPES.map((meal) => ({ value: meal, labelKey: MEAL_LABEL_KEYS[meal] })),
 ];
 
+/**
+ * One chip. A fixed grid cell rather than a wrapping flex item, so the three
+ * groups take five rows in every language instead of six in English and seven
+ * in German, and no group ends in a single orphan chip. 44px tall, and the
+ * label wraps inside its cell rather than widening it.
+ */
+const CHIP_CLASS = 'min-h-11 whitespace-normal px-1 text-xs leading-tight';
+
 /** Every URL dimension of the chart, the full state a control link must carry. */
 export interface TrendSelection {
   range: number;
@@ -80,13 +88,19 @@ export function TrendControls({ metric, range, slot, tab }: TrendSelection) {
 
   return (
     <div className="space-y-3">
-      {/* Its own wrapping row: five metrics do not fit a phone beside the
-          range group, and a control that scrolls sideways is the one thing
+      {/* Its own row of three columns: five metrics do not fit a phone beside
+          the range group, and a control that scrolls sideways is the one thing
           this layout budget forbids. */}
-      <fieldset data-slot="trend-metric-controls" className="flex min-w-0 flex-wrap gap-1">
+      <fieldset data-slot="trend-metric-controls" className="grid grid-cols-3 gap-2">
         <legend className="sr-only">{t('trends.controls.metricGroup')}</legend>
         {METRIC_OPTIONS.map((option) => (
-          <Button key={option.value} asChild size="sm" variant={metric === option.value ? 'default' : 'outline'}>
+          <Button
+            key={option.value}
+            asChild
+            size="sm"
+            className={CHIP_CLASS}
+            variant={metric === option.value ? 'default' : 'outline'}
+          >
             <Link
               to={controlHref({ range, slot, tab, metric: option.value })}
               preventScrollReset
@@ -97,10 +111,16 @@ export function TrendControls({ metric, range, slot, tab }: TrendSelection) {
           </Button>
         ))}
       </fieldset>
-      <fieldset className="flex min-w-0 flex-wrap gap-1">
+      <fieldset className="grid grid-cols-4 gap-2">
         <legend className="sr-only">{t('trends.controls.rangeGroup')}</legend>
         {RANGE_OPTIONS.map((option) => (
-          <Button key={option.value} asChild size="sm" variant={range === option.value ? 'default' : 'outline'}>
+          <Button
+            key={option.value}
+            asChild
+            size="sm"
+            className={CHIP_CLASS}
+            variant={range === option.value ? 'default' : 'outline'}
+          >
             <Link
               to={controlHref({ range: option.value, slot, tab, metric })}
               preventScrollReset
@@ -111,13 +131,19 @@ export function TrendControls({ metric, range, slot, tab }: TrendSelection) {
           </Button>
         ))}
       </fieldset>
-      {/* Its own row, and wrapping: five options do not fit a phone's width
+      {/* Its own row of three columns: five options do not fit a phone's width
           beside the two groups above, and a control that scrolls sideways is
           the one thing this layout budget forbids. */}
-      <fieldset data-slot="trend-slot-controls" className="flex min-w-0 flex-wrap gap-1">
+      <fieldset data-slot="trend-slot-controls" className="grid grid-cols-3 gap-2">
         <legend className="sr-only">{t('trends.controls.slotGroup')}</legend>
         {SLOT_OPTIONS.map((option) => (
-          <Button key={option.value} asChild size="sm" variant={slot === option.value ? 'default' : 'outline'}>
+          <Button
+            key={option.value}
+            asChild
+            size="sm"
+            className={CHIP_CLASS}
+            variant={slot === option.value ? 'default' : 'outline'}
+          >
             <Link
               to={controlHref({ range, slot: option.value, tab, metric })}
               preventScrollReset
