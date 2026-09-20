@@ -4647,6 +4647,13 @@
     "at": "2026-09-14",
     "tr": "Bu uygulamanın söz konusu ağ geçidiyle iletişim kurmasına izin verilmiyor"
   },
+  "4139457bc6533a8f": {
+    "en": "We do not store your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks, awards, or plate photos in readable form on any server. Those live on your device, and if you switch sync on they are encrypted on your device before they are uploaded (Section 6). There is one exception, and you create it yourself: an entry you choose to report as a wrong estimate is sent to us in readable form, together with its plate photo if one still exists on your device, so that an administrator can look at it. We delete a report {{reportWindow}}.",
+    "path": "legal:privacy.s3Outro",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Gıdalarınızı, gıda kayıtlarınızı, kilonuzu, hedeflerinizi, oruçlarınızı, oruç rutininizi, kayıtlı öğünlerinizi, kilerinizi, serilerinizi, ödüllerinizi veya tabak fotoğraflarınızı herhangi bir sunucuda okunabilir biçimde saklamayız. Bunlar cihazınızda durur ve eşitlemeyi açarsanız yüklenmeden önce cihazınızda şifrelenir (Bölüm 6). Tek bir istisna vardır ve bunu siz kendiniz oluşturursunuz: yanlış bir tahmin olarak bildirmeyi seçtiğiniz bir giriş, bir yöneticinin inceleyebilmesi için, cihazınızda hala varsa tabak fotoğrafı ile birlikte bize okunabilir biçimde gönderilir. Bir bildirimi {{reportWindow}} sileriz."
+  },
   "41480e14a8d5feda": {
     "en": "Leave blank to decide later. You can set it in Settings anytime.",
     "path": "common:onboarding.kcal.hint",
@@ -6390,6 +6397,13 @@
     "at": "2026-09-17",
     "tr": "Bu sunucu bir referans değerleri ayarı yayımlamıyor, bu yüzden burada değiştirilecek bir şey yok."
   },
+  "5872a580c896970f": {
+    "en": "openplate is built local-first. Your foods, logs, weight entries, goals, fasts, fasting routine, saved meals, pantry, streaks and awards are stored on your device in IndexedDB. Your account also keeps an encrypted copy on our server so other devices can sync. We store that copy as ciphertext. We do not read it during ordinary operations. Section 6 explains what our recovery key allows. If you clear your browser data, the local copy is deleted. Signing in again restores your data from the encrypted server copy.",
+    "path": "legal:privacy.s2Body1Managed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "openplate yerel öncelikli olarak inşa edilmiştir. Gıdalarınız, kayıtlarınız, kilo girişleriniz, hedefleriniz, oruçlarınız, oruç rutininiz, kayıtlı öğünleriniz, kileriniz, serileriniz ve ödülleriniz cihazınızda IndexedDB içinde saklanır. Diğer cihazların eşitlenebilmesi için hesabınız sunucumuzda şifrelenmiş bir kopya da tutar. Bu kopyayı şifreli metin olarak saklarız. Olağan işlemler sırasında bunu okumayız. Bölüm 6 kurtarma anahtarımızın neye izin verdiğini açıklar. Tarayıcı verilerinizi temizlerseniz yerel kopya silinir. Yeniden oturum açmak verilerinizi sunucudaki şifrelenmiş kopyadan geri yükler."
+  },
   "587a31397c63c476": {
     "en": "Cancel",
     "path": "common:sharing.cancel",
@@ -7853,6 +7867,13 @@
     "at": "2026-09-14",
     "tr": "Kaydediliyor…"
   },
+  "6d9c8d2b435fa21f": {
+    "en": "We do not store your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks, awards, or plate photos in readable form on any server. That data stays on your device. The copies stored for your account are encrypted on your device before upload (Section 6). There are two exceptions. First, we hold an account recovery key (Section 6) that lets us restore, and technically read, a diary. Second, if you report a wrong estimate, you send that entry to us in readable form, along with any plate photo stored on your device, so an administrator can review it. We delete that report {{reportWindow}}.",
+    "path": "legal:privacy.s3OutroManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Gıdalarınızı, gıda kayıtlarınızı, kilonuzu, hedeflerinizi, oruçlarınızı, oruç rutininizi, kayıtlı öğünlerinizi, kilerinizi, serilerinizi, ödüllerinizi veya tabak fotoğraflarınızı herhangi bir sunucuda okunabilir biçimde saklamayız. Bu veriler cihazınızda kalır. Hesabınız için saklanan kopyalar yükleme öncesinde cihazınızda şifrelenir (Bölüm 6). İki istisna vardır. İlk olarak, bir günlüğü geri yüklememize ve teknik olarak okumamıza olanak tanıyan bir hesap kurtarma anahtarı tutarız (Bölüm 6). İkinci olarak, yanlış bir tahmin bildirirseniz, bir yöneticinin inceleyebilmesi için bu girişi cihazınızda saklanan herhangi bir tabak fotoğrafı ile birlikte bize okunabilir biçimde gönderirsiniz. Bu bildirimi {{reportWindow}} sileriz."
+  },
   "6dc04b2559dc2c4b": {
     "en": "Pregnancy",
     "path": "common:nutrients.reference.segmentPregnancy",
@@ -9308,6 +9329,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Protein"
+  },
+  "80c30e563d4b2fbf": {
+    "en": "openplate is local-first. We run this instance for you. Your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks and awards are written in your browser on your device. Your account keeps an encrypted copy of them on our server. You do not bring an AI provider key. A plate photo passes through our server, under our key, to our chosen AI provider. We also hold an account recovery key. This key allows us to restore, and in principle read, your diary. This policy covers only our instance. If you run a self-hosted copy, the operator of that instance is the data controller, and this policy does not apply.",
+    "path": "legal:privacy.leadManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "openplate yerel önceliklidir. Bu örneği sizin için işletiriz. Gıdalarınız, gıda kayıtlarınız, kilonuz, hedefleriniz, oruçlarınız, oruç rutininiz, kayıtlı öğünleriniz, kileriniz, serileriniz ve ödülleriniz cihazınızdaki tarayıcınızda yazılır. Hesabınız bunların şifrelenmiş bir kopyasını sunucumuzda tutar. Bir yapay zeka sağlayıcı anahtarı getirmezsiniz. Bir tabak fotoğrafı, bizim anahtarımız altında, sunucumuz üzerinden seçtiğimiz yapay zeka sağlayıcısına geçer. Ayrıca bir hesap kurtarma anahtarı tutarız. Bu anahtar günlüğünüzü geri yüklememize ve prensipte okumamıza olanak tanır. Bu politika yalnızca bizim örneğimizi kapsar. Kendi barındırdığınız bir kopya çalıştırıyorsanız, o örneğin işleticisi veri sorumlusudur ve bu politika geçerli olmaz."
   },
   "80c604c26675209b": {
     "en": "Photograph your plate or choose an image",
@@ -11409,6 +11437,13 @@
     "at": "2026-09-14",
     "tr": "Bu günlükte henüz girdi yok."
   },
+  "9c21d7f2a4456afb": {
+    "en": "openplate is local-first. Everything you track (your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks and awards, and AI provider key) lives in your browser on your own device, not on our servers. This policy describes the hosted openplate instance we operate. If you run your own self-hosted copy, you (or whoever operates that instance) are the data controller for it, and this policy does not govern your deployment.",
+    "path": "legal:privacy.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "openplate yerel önceliklidir. Takip ettiğiniz her şey (gıdalarınız, gıda kayıtlarınız, kilonuz, hedefleriniz, oruçlarınız, oruç rutininiz, kayıtlı öğünleriniz, kileriniz, serileriniz ve ödülleriniz ile yapay zeka sağlayıcı anahtarınız) bizim sunucularımızda değil, kendi cihazınızdaki tarayıcınızda durur. Bu politika, işlettiğimiz barındırılan openplate örneğini açıklar. Kendi barındırdığınız bir kopyayı çalıştırıyorsanız, siz (veya o örneği her kim işletiyorsa) onun için veri sorumlususunuzdur ve bu politika dağıtımınızı kapsamaz."
+  },
   "9c26b827083947d6": {
     "en": "g over today",
     "path": "common:diary.hero.overToday",
@@ -12017,6 +12052,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Başla"
+  },
+  "a4f44a9758dd7205": {
+    "en": "openplate is a food-tracking tool. It is built local-first: your foods, food logs, weight entries, goals, fasts, fasting routine, saved meals, pantry, streaks and awards, and your AI provider key live in your browser on your own device, not on our servers. The hosted app server keeps no account record at all. A separate, optional sync service can store end-to-end-encrypted copies of your data that only you can decrypt, if you choose to switch it on. The core feature is bring-your-own-key AI plate identification: you connect your own AI provider and it estimates the macros and nutrition of a plate from a photo.",
+    "path": "legal:terms.s2Body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "openplate bir gıda takip aracıdır. Yerel öncelikli olarak inşa edilmiştir: gıdalarınız, gıda kayıtlarınız, kilo girişleriniz, hedefleriniz, oruçlarınız, oruç rutininiz, kayıtlı öğünleriniz, kileriniz, serileriniz ve ödülleriniz ile yapay zeka sağlayıcı anahtarınız bizim sunucularımızda değil, kendi cihazınızdaki tarayıcınızda durur. Barındırılan uygulama sunucusu hiçbir hesap kaydı tutmaz. Ayrı ve isteğe bağlı bir eşitleme servisi, açmayı seçerseniz, verilerinizin yalnızca sizin şifresini çözebileceğiniz uçtan uca şifrelenmiş kopyalarını saklayabilir. Temel özellik kendi anahtarını getir mantığındaki yapay zeka ile tabak tanımlamadır: kendi yapay zeka sağlayıcınızı bağlarsınız ve bu sağlayıcı bir fotoğraftan tabağın makrolarını ve besin değerlerini tahmin eder."
   },
   "a5044ba63bd563a9": {
     "en": "Everybody",
@@ -13887,6 +13929,13 @@
     "at": "2026-09-14",
     "tr": "Bu açıklamada hiçbir yiyecek belirlenemedi. Her yiyeceğin adını ve miktarını belirtmeyi dene."
   },
+  "c0ac10dbdb22d71e": {
+    "en": "openplate is built local-first. Your personal foods, food logs, weight entries, profile/goals, fasts, fasting routine, saved meals, pantry, streaks and awards are stored on-device in your browser’s IndexedDB. This data is not sent to us and we cannot see it. Because it lives in your browser profile, clearing your browser data (or the site’s storage) removes it, so keep that in mind before you clear it, and note that this data is tied to the specific browser and device you use.",
+    "path": "legal:privacy.s2Body1",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "openplate yerel öncelikli olarak inşa edilmiştir. Kişisel gıdalarınız, gıda kayıtlarınız, kilo girişleriniz, profiliniz/hedefleriniz, oruçlarınız, oruç rutininiz, kayıtlı öğünleriniz, kileriniz, serileriniz ve ödülleriniz cihaz üzerinde tarayıcınızın IndexedDB alanında saklanır. Bu veriler bize gönderilmez ve biz bunları göremeyiz. Tarayıcı profilinizde bulunduğu için, tarayıcı verilerinizi (veya sitenin depolama alanını) temizlemek bunları siler, bu nedenle temizlemeden önce bunu aklınızda bulundurunuz ve bu verilerin kullandığınız belirli tarayıcıya ve cihaza bağlı olduğunu unutmayınız."
+  },
   "c0c34be339304142": {
     "en": "Version retention.",
     "path": "legal:terms.s7Item2Label",
@@ -14054,6 +14103,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Sağlayıcı"
+  },
+  "c2b5bb35eb1c43ff": {
+    "en": "openplate is a food-tracking tool. It is built local-first. Your foods, food logs, weight entries, goals, fasts, fasting routine, saved meals, pantry, streaks and awards are written in your browser on your own device. On this instance, your account also keeps an encrypted copy of that data on our server. This ensures the same diary reaches your other devices and survives a reinstall. We hold that copy as ciphertext. We also hold a recovery key that lets a password reset restore your diary, as explained in the Privacy Policy. AI plate identification is included with your account rather than purchased from a third-party provider.",
+    "path": "legal:terms.s2BodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "openplate bir gıda takip aracıdır. Yerel öncelikli olarak inşa edilmiştir. Gıdalarınız, gıda kayıtlarınız, kilo girişleriniz, hedefleriniz, oruçlarınız, oruç rutininiz, kayıtlı öğünleriniz, kileriniz, serileriniz ve ödülleriniz kendi cihazınızdaki tarayıcınızda yazılır. Bu örnek üzerinde, hesabınız bu verilerin şifrelenmiş bir kopyasını sunucumuzda da tutar. Bu işlem, aynı günlüğün diğer cihazlarınıza ulaşmasını ve yeniden yükleme durumunda kaybolmamasını sağlar. Bu kopyayı şifreli metin olarak tutarız. Ayrıca, Gizlilik Politikası içinde açıklandığı üzere, bir parola sıfırlama işleminin günlüğünüzü geri yüklemesini sağlayan bir kurtarma anahtarı da tutarız. Yapay zeka ile tabak tanımlama, üçüncü taraf bir sağlayıcıdan satın alınmak yerine hesabınıza dahil edilmiştir."
   },
   "c2bba708b30c16f5": {
     "en": "Sign in",

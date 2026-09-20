@@ -17,6 +17,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **Your pantry now follows you too.** What is in the fridge used to stay on the device that photographed the shelf, so the list you wrote on a tablet was not there when you stood in the shop with your phone. A photographed shelf, a corrected line and a removed row all reach your other devices now. Two devices that each photographed a fridge show one combined list you can edit down, the same way a second photograph on one device already works. The photograph itself is still never stored and never sent anywhere but your own AI provider.
 - **The sign-out dialog counts your fasts and your pantry, and warns only about what it cannot check.** It used to end with one sentence naming fasts, saved meals, the pantry and your keys together, on every sign-out, whether or not anything was actually waiting. Fasts and pantry rows are counted with the rest of your diary now. Saved meals get a sentence only when this device is holding meals your account has not been told about. Your sharing and research keys get a sentence of their own, because they are sealed and this check cannot open them.
 
+### Fixed
+
+- **The privacy policy and terms now list everything that syncs.** Both documents listed your foods, food logs, weight entries and goals, and stopped there. Your fasts, your fasting routine, your saved meals, your pantry and your streaks and awards are in the same encrypted copy and were never named. All four lists now say so, in the same sentences, with nothing else changed. The pages carry today's date.
+
 ### Docs
 
 - **The sync guide says what travels between your devices and what never does.** A new section lists what a sync carries, names your saved meals as the one part that still travels as a whole list, and states the three things that stay put: plate photos, your AI provider key, and the record of what you deleted.

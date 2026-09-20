@@ -11,7 +11,7 @@
  * you make a MATERIAL change to any of the three pages; both documents say the
  * reader can rely on this date, so a stale one is a small lie.
  */
-export const LEGAL_LAST_UPDATED = '2026-09-19';
+export const LEGAL_LAST_UPDATED = '2026-09-20';
 
 /** @param language - the active i18n language code; anything unknown falls back to `en`. */
 export function formatLegalDate(isoDate: string, language: string): string {

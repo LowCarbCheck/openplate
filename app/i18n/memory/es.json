@@ -4647,6 +4647,13 @@
     "at": "2026-09-14",
     "es": "Esta aplicación no tiene permiso para comunicarse con esa pasarela"
   },
+  "4139457bc6533a8f": {
+    "en": "We do not store your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks, awards, or plate photos in readable form on any server. Those live on your device, and if you switch sync on they are encrypted on your device before they are uploaded (Section 6). There is one exception, and you create it yourself: an entry you choose to report as a wrong estimate is sent to us in readable form, together with its plate photo if one still exists on your device, so that an administrator can look at it. We delete a report {{reportWindow}}.",
+    "path": "legal:privacy.s3Outro",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "No almacenamos sus alimentos, registros de alimentos, peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas, premios ni fotos del plato en formato legible en ningún servidor. Estos residen en su dispositivo, y si activa la sincronización se cifran en su dispositivo antes de subirse (Sección 6). Existe una excepción, creada por usted mismo: una entrada que decida notificar como estimación errónea se nos envía en formato legible, junto con su foto del plato si aún existe en su dispositivo, para que un administrador pueda examinarla. Eliminamos un informe {{reportWindow}}."
+  },
   "41480e14a8d5feda": {
     "en": "Leave blank to decide later. You can set it in Settings anytime.",
     "path": "common:onboarding.kcal.hint",
@@ -6390,6 +6397,13 @@
     "at": "2026-09-17",
     "es": "Este servidor no publica ningún ajuste de valores de referencia, por lo que aquí no hay nada que cambiar."
   },
+  "5872a580c896970f": {
+    "en": "openplate is built local-first. Your foods, logs, weight entries, goals, fasts, fasting routine, saved meals, pantry, streaks and awards are stored on your device in IndexedDB. Your account also keeps an encrypted copy on our server so other devices can sync. We store that copy as ciphertext. We do not read it during ordinary operations. Section 6 explains what our recovery key allows. If you clear your browser data, the local copy is deleted. Signing in again restores your data from the encrypted server copy.",
+    "path": "legal:privacy.s2Body1Managed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "openplate se ha diseñado local-first. Sus alimentos, registros, entradas de peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios se almacenan en su dispositivo en IndexedDB. Su cuenta también conserva una copia cifrada en nuestro servidor para que otros dispositivos puedan sincronizarse. Almacenamos esa copia como texto cifrado. No la leemos durante las operaciones ordinarias. La Sección 6 explica lo que permite nuestra clave de recuperación. Si borra los datos del navegador, se elimina la copia local. Iniciar sesión de nuevo restaura sus datos a partir de la copia cifrada del servidor."
+  },
   "587a31397c63c476": {
     "en": "Cancel",
     "path": "common:sharing.cancel",
@@ -7853,6 +7867,13 @@
     "at": "2026-09-14",
     "es": "Guardando…"
   },
+  "6d9c8d2b435fa21f": {
+    "en": "We do not store your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks, awards, or plate photos in readable form on any server. That data stays on your device. The copies stored for your account are encrypted on your device before upload (Section 6). There are two exceptions. First, we hold an account recovery key (Section 6) that lets us restore, and technically read, a diary. Second, if you report a wrong estimate, you send that entry to us in readable form, along with any plate photo stored on your device, so an administrator can review it. We delete that report {{reportWindow}}.",
+    "path": "legal:privacy.s3OutroManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "No almacenamos sus alimentos, registros de alimentos, peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas, premios ni fotos del plato en formato legible en ningún servidor. Esos datos permanecen en su dispositivo. Las copias almacenadas para su cuenta se cifran en su dispositivo antes de la subida (Sección 6). Hay dos excepciones. En primer lugar, conservamos una clave de recuperación de cuenta (Sección 6) que nos permite restaurar, y técnicamente leer, un diario. En segundo lugar, si notifica una estimación errónea, nos envía esa entrada en formato legible, junto con cualquier foto del plato almacenada en su dispositivo, para que un administrador pueda revisarla. Eliminamos ese informe {{reportWindow}}."
+  },
   "6dc04b2559dc2c4b": {
     "en": "Pregnancy",
     "path": "common:nutrients.reference.segmentPregnancy",
@@ -9308,6 +9329,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Proteína"
+  },
+  "80c30e563d4b2fbf": {
+    "en": "openplate is local-first. We run this instance for you. Your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks and awards are written in your browser on your device. Your account keeps an encrypted copy of them on our server. You do not bring an AI provider key. A plate photo passes through our server, under our key, to our chosen AI provider. We also hold an account recovery key. This key allows us to restore, and in principle read, your diary. This policy covers only our instance. If you run a self-hosted copy, the operator of that instance is the data controller, and this policy does not apply.",
+    "path": "legal:privacy.leadManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "openplate es local-first. Operamos esta instancia para usted. Sus alimentos, registros de alimentos, peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios se escriben en el navegador de su dispositivo. Su cuenta conserva una copia cifrada de ellos en nuestro servidor. Usted no aporta una clave de proveedor de IA. Una foto del plato pasa por nuestro servidor, bajo nuestra clave, hacia nuestro proveedor de IA seleccionado. También conservamos una clave de recuperación de cuenta. Esta clave nos permite restaurar, y en principio leer, su diario. Esta política cubre únicamente nuestra instancia. Si ejecuta una copia autohospedada, el operador de esa instancia es el responsable del tratamiento de los datos, y esta política no aplica."
   },
   "80c604c26675209b": {
     "en": "Photograph your plate or choose an image",
@@ -11409,6 +11437,13 @@
     "at": "2026-09-14",
     "es": "Todavía no hay entradas en este diario."
   },
+  "9c21d7f2a4456afb": {
+    "en": "openplate is local-first. Everything you track (your foods, food logs, weight, goals, fasts, fasting routine, saved meals, pantry, streaks and awards, and AI provider key) lives in your browser on your own device, not on our servers. This policy describes the hosted openplate instance we operate. If you run your own self-hosted copy, you (or whoever operates that instance) are the data controller for it, and this policy does not govern your deployment.",
+    "path": "legal:privacy.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "openplate es local-first. Todo lo que registra (sus alimentos, registros de alimentos, peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios, y la clave del proveedor de IA) reside en el navegador de su propio dispositivo, no en nuestros servidores. Esta política describe la instancia alojada de openplate que operamos. Si usted ejecuta su propia copia autohospedada, usted (o quien opere esa instancia) es el responsable del tratamiento de los datos de dicha copia, y esta política no regula su despliegue."
+  },
   "9c26b827083947d6": {
     "en": "g over today",
     "path": "common:diary.hero.overToday",
@@ -12017,6 +12052,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Empezar"
+  },
+  "a4f44a9758dd7205": {
+    "en": "openplate is a food-tracking tool. It is built local-first: your foods, food logs, weight entries, goals, fasts, fasting routine, saved meals, pantry, streaks and awards, and your AI provider key live in your browser on your own device, not on our servers. The hosted app server keeps no account record at all. A separate, optional sync service can store end-to-end-encrypted copies of your data that only you can decrypt, if you choose to switch it on. The core feature is bring-your-own-key AI plate identification: you connect your own AI provider and it estimates the macros and nutrition of a plate from a photo.",
+    "path": "legal:terms.s2Body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "openplate es una herramienta de seguimiento de alimentos. Se ha diseñado local-first: sus alimentos, registros de alimentos, entradas de peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios, así como su clave del proveedor de IA, residen en el navegador de su propio dispositivo, no en nuestros servidores. El servidor de la aplicación alojada no guarda ningún registro de cuentas. Un servicio de sincronización independiente y opcional puede almacenar copias de sus datos con cifrado de extremo a extremo que solo usted puede descifrar, si decide activarlo. La función principal es la identificación de platos mediante IA con su propia clave: usted conecta su propio proveedor de IA y este estima los macronutrientes y la información nutricional de un plato a partir de una foto."
   },
   "a5044ba63bd563a9": {
     "en": "Everybody",
@@ -13887,6 +13929,13 @@
     "at": "2026-09-14",
     "es": "No se ha podido identificar ningún alimento en esa descripción. Prueba a nombrar cada alimento y su cantidad."
   },
+  "c0ac10dbdb22d71e": {
+    "en": "openplate is built local-first. Your personal foods, food logs, weight entries, profile/goals, fasts, fasting routine, saved meals, pantry, streaks and awards are stored on-device in your browser’s IndexedDB. This data is not sent to us and we cannot see it. Because it lives in your browser profile, clearing your browser data (or the site’s storage) removes it, so keep that in mind before you clear it, and note that this data is tied to the specific browser and device you use.",
+    "path": "legal:privacy.s2Body1",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "openplate se ha diseñado local-first. Sus alimentos personales, registros de alimentos, entradas de peso, perfil/objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios se almacenan en el dispositivo en el IndexedDB de su navegador. Estos datos no se nos envían y no podemos verlos. Dado que residen en el perfil de su navegador, borrar los datos del navegador (o el almacenamiento del sitio) los elimina, por lo que debe tenerlo en cuenta antes de borrarlos, y observe que estos datos están vinculados al navegador y al dispositivo específicos que usted utiliza."
+  },
   "c0c34be339304142": {
     "en": "Version retention.",
     "path": "legal:terms.s7Item2Label",
@@ -14054,6 +14103,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Proveedor"
+  },
+  "c2b5bb35eb1c43ff": {
+    "en": "openplate is a food-tracking tool. It is built local-first. Your foods, food logs, weight entries, goals, fasts, fasting routine, saved meals, pantry, streaks and awards are written in your browser on your own device. On this instance, your account also keeps an encrypted copy of that data on our server. This ensures the same diary reaches your other devices and survives a reinstall. We hold that copy as ciphertext. We also hold a recovery key that lets a password reset restore your diary, as explained in the Privacy Policy. AI plate identification is included with your account rather than purchased from a third-party provider.",
+    "path": "legal:terms.s2BodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "es": "openplate es una herramienta de seguimiento de alimentos. Se ha diseñado local-first. Sus alimentos, registros de alimentos, entradas de peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios se escriben en el navegador de su propio dispositivo. En esta instancia, su cuenta también conserva una copia cifrada de esos datos en nuestro servidor. Esto garantiza que el mismo diario llegue a sus otros dispositivos y sobreviva a una reinstalación. Mantenemos esa copia como texto cifrado. También conservamos una clave de recuperación que permite que un restablecimiento de contraseña restaure su diario, como se explica en la Política de privacidad. La identificación de platos mediante IA se incluye con su cuenta en lugar de adquirirse a un proveedor externo."
   },
   "c2bba708b30c16f5": {
     "en": "Sign in",
