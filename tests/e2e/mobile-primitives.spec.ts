@@ -442,10 +442,11 @@ test(`the legal lead paragraph is at most ${LEAD_MAX_PX} px on a phone`, async (
 test('a two-line card title does not run its lines together', async ({ page }) => {
   await page.setViewportSize(NARROW_PHONE);
   await useLanguage(page, 'de');
-  // `/recover` is the screen the audit measured: a German title that wraps.
+  // `/recover` is the screen the audit measured: a German title that wraps. Its CardTitle
+  // carries its own `recover-title` slot, which replaces the generic `card-title` one.
   await page.goto('/recover');
 
-  const title = page.locator('[data-slot="card-title"]').first();
+  const title = page.locator('[data-slot="recover-title"]');
   await expect(title).toBeVisible();
 
   const measured = await title.evaluate((element) => {
