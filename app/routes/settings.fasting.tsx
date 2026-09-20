@@ -444,7 +444,7 @@ export function FastingRoutineCard({ settings }: { settings: LocalFastingSetting
         </div>
 
         {choice === 'custom' && (
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={fields.routineCustomHours.id}>{t('fasting.plan.customLabel')}</Label>
             <Input
               {...getInputProps(fields.routineCustomHours, { type: 'text' })}
@@ -459,7 +459,7 @@ export function FastingRoutineCard({ settings }: { settings: LocalFastingSetting
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor={fields.routineStartMinute.id}>{t('settings.fasting.startTime.label')}</Label>
           <Input {...getInputProps(fields.routineStartMinute, { type: 'time' })} className="h-11 w-40 sm:h-9" />
           <p className="text-xs text-muted-foreground">{t('settings.fasting.startTime.help')}</p>

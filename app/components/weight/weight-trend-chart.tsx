@@ -139,6 +139,7 @@ export function WeightTrendChart({
         {geometry.ticks.map((tick, index) => (
           <span
             key={tick.value}
+            data-slot="weight-axis-label"
             className="absolute right-0 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums text-muted-foreground"
             style={{ top: `${(tick.y / VIEW_HEIGHT) * 100}%` }}
           >

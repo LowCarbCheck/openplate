@@ -80,8 +80,9 @@ export function AwardsVisibilityToggle(): ReactElement {
   // `SettingsSection`: the switch's own `Label` names the setting, and a
   // heading would be the same words twice (DESIGN.md §10.7).
   return (
-    <div className={cn(SETTINGS_INSET_CLASS, 'space-y-3 px-4 py-4')}>
-      <div className="flex items-center justify-between gap-4">
+    <div data-slot="settings-inset" className={cn(SETTINGS_INSET_CLASS, 'space-y-3 px-4 py-4')}>
+      {/* The ROW is the target, not the 32px track. */}
+      <div className="flex min-h-11 items-center justify-between gap-4">
         <Label htmlFor="awards-hidden" className="flex items-center gap-2 text-sm font-medium">
           <Trophy className="h-5 w-5 text-primary" aria-hidden="true" />
           {t('awards.hide')}

@@ -1317,7 +1317,7 @@ function FastHistoryRow({ fast, nowMs, timezone }: { fast: LocalFast; nowMs: num
   const note = fast.note ?? null;
 
   return (
-    <div className="border-b border-border/60 py-2.5 last:border-0">
+    <div data-slot="fast-history-row" className="border-b border-border/60 py-2.5 last:border-0">
       {/* The start date owns a full line of its own. It is what tells one fast
           from another, and every language longer than English used to lose it
           to a truncated column that collapsed to nothing. */}

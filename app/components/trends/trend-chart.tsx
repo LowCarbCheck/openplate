@@ -62,8 +62,14 @@ const EMPTY_HAIRLINE_UNITS = 5;
 const INCOMPLETE_NUB_UNITS = 3;
 /** Thickness of the solid cap rule that tops a floor ("might be incomplete") bar. */
 const CAP_UNITS = 2;
-/** Body opacity of a floor bar — pale enough to read as "not the whole story". */
-const FLOOR_FILL_OPACITY = 0.28;
+/**
+ * Body opacity of a floor bar, pale enough to read as "not the whole story".
+ *
+ * Two values: at 0.28 on the dark card the teal measured 1.92:1 against its
+ * own background, under the 3:1 a graphic has to reach. Light keeps the
+ * figure it was drawn for.
+ */
+const FLOOR_FILL_CLASS = 'opacity-[0.28] dark:opacity-[0.45]';
 /** Body opacity of an Atwater-derived calories bar — softened, but still a real value. */
 const DERIVED_FILL_OPACITY = 0.55;
 
@@ -219,7 +225,15 @@ function BarColumn({ bar, index, metric }: { bar: BarGeometry; index: number; me
       <>
         <CarbsOutline bar={bar} x={x} barWidth={barWidth} />
         <g {...barMarkers(bar)} className={colorClass}>
-          <rect x={x} y={y} width={barWidth} height={height} rx={0.8} fill="currentColor" fillOpacity={FLOOR_FILL_OPACITY} />
+          <rect
+            x={x}
+            y={y}
+            width={barWidth}
+            height={height}
+            rx={0.8}
+            fill="currentColor"
+            className={FLOOR_FILL_CLASS}
+          />
           <rect x={x} y={y} width={barWidth} height={capHeight} rx={0.8} fill="currentColor" />
         </g>
       </>
@@ -512,6 +526,7 @@ export function TrendChart({
             {/* Counted back from the newest bar, so the day on the right is
                 always named however many bars the window holds. */}
             <span
+              data-slot="chart-day-label"
               className={cn(
                 'text-xs tabular-nums text-muted-foreground',
                 bars.length > DENSE_AXIS_BARS && (bars.length - 1 - index) % 2 !== 0 && 'hidden sm:inline',

@@ -81,7 +81,9 @@ export function SettingsGroup({ label, children }: { label: string; children: Re
       <SectionEyebrow as="h2" className="px-4">
         {label}
       </SectionEyebrow>
-      <div className={cn(SETTINGS_INSET_CLASS, 'divide-y divide-border overflow-hidden')}>{children}</div>
+      <div data-slot="settings-inset" className={cn(SETTINGS_INSET_CLASS, 'divide-y divide-border overflow-hidden')}>
+        {children}
+      </div>
     </section>
   );
 }
@@ -116,7 +118,9 @@ export function SettingsSection({
         {label}
       </SectionEyebrow>
       {description !== undefined && <p className="px-4 text-sm text-muted-foreground">{description}</p>}
-      <div className={cn(SETTINGS_INSET_CLASS, 'space-y-4 px-4 py-4', contentClassName)}>{children}</div>
+      <div data-slot="settings-inset" className={cn(SETTINGS_INSET_CLASS, 'space-y-4 px-4 py-4', contentClassName)}>
+        {children}
+      </div>
     </section>
   );
 }

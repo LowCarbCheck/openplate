@@ -95,8 +95,11 @@ export function PhotoCacheCard() {
       label={t('settings.photos.title')}
       description={t('settings.photos.description', { days: PHOTO_RETENTION_DAYS })}
     >
-      <div className="flex items-center justify-between gap-4">
-        <Label htmlFor="save-plate-photos" className="text-sm font-normal">
+      {/* The ROW is the target, not the 32px track: a switch with a label
+          beside it is a 44px row anybody can hit, and the label is what
+          carries the words. */}
+      <div className="flex min-h-11 items-center justify-between gap-4">
+        <Label htmlFor="save-plate-photos" className="block text-sm font-normal">
           {t('settings.photos.switchLabel')}
         </Label>
         <Switch id="save-plate-photos" checked={enabled} onCheckedChange={handleToggle} />
@@ -106,7 +109,7 @@ export function PhotoCacheCard() {
         <p className="text-sm text-muted-foreground">{usageLine}</p>
         <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={usage.count === 0}>
+            <Button variant="outline" size="sm" className="h-11 sm:h-9" disabled={usage.count === 0}>
               <Trash2 className="h-4 w-4" /> {t('settings.photos.clearAll')}
             </Button>
           </AlertDialogTrigger>

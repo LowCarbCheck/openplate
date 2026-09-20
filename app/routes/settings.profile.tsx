@@ -383,7 +383,7 @@ function WeightCard({
             8px bottom margin; `items-end` then aligned the button to the
             bottom of that margin and it sat 8px below its own field. */}
         <input type="hidden" name={fields.weightKg.name} value={weightKgForSubmit} />
-        <div className="min-w-40 flex-1 space-y-2">
+        <div className="grid min-w-40 flex-1 gap-2">
           <Label htmlFor={fields.weightKg.id}>{t('goals.weight.todayLabel', { unit: weightUnit })}</Label>
           <Input
             id={fields.weightKg.id}
@@ -486,7 +486,7 @@ function BodyMetricsCard({ metrics }: { metrics: BodyMetrics }) {
       <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
         <input type="hidden" name="_intent" value={INTENT.SAVE_BODY_METRICS} />
 
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor={fields.heightCm.id}>{t('bodyMetrics.height.label')}</Label>
           <p className="text-xs text-muted-foreground">{t('bodyMetrics.height.hint')}</p>
           {/*
@@ -508,7 +508,7 @@ function BodyMetricsCard({ metrics }: { metrics: BodyMetrics }) {
           <FieldError id={fields.heightCm.errorId} errors={fields.heightCm.errors} />
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor={fields.birthYear.id}>{t('bodyMetrics.birthYear.label')}</Label>
           <p className="text-xs text-muted-foreground">{t('bodyMetrics.birthYear.hint')}</p>
           <Input

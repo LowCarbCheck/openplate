@@ -522,7 +522,7 @@ function GoalsCard({
   return (
     <SettingsSection label={t('goals.card.title')} description={t('goals.card.description')}>
       <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor={fields.goalNetCarbsCeilingG.id}>{t('goals.carbs.label')}</Label>
           <p className="text-xs text-muted-foreground">{t('goals.carbs.hint')}</p>
           <div className="flex flex-wrap gap-2">
@@ -567,7 +567,7 @@ function GoalsCard({
           <FieldError id={fields.goalNetCarbsCeilingG.errorId} errors={fields.goalNetCarbsCeilingG.errors} />
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor={fields.goalProteinFloorG.id}>{t('goals.protein.label')}</Label>
           <p className="text-xs text-muted-foreground">{t('goals.protein.hint')}</p>
           {/* A suggestion the person taps, never an auto-fill, and never an
@@ -604,7 +604,7 @@ function GoalsCard({
           <FieldError id={fields.goalProteinFloorG.errorId} errors={fields.goalProteinFloorG.errors} />
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor={fields.goalKcalTarget.id}>{t('goals.kcal.label')}</Label>
           <p className="text-xs text-muted-foreground">{t('goals.kcal.hint')}</p>
           {/* Suggestion, never auto-fill, the same contract the protein chip
@@ -641,7 +641,7 @@ function GoalsCard({
           <FieldError id={fields.goalKcalTarget.errorId} errors={fields.goalKcalTarget.errors} />
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor={fields.targetWeightKg.id}>{t('goals.targetWeight.label', { unit: weightUnit })}</Label>
           <p className="text-xs text-muted-foreground">{t('goals.targetWeight.hint')}</p>
           <Input
