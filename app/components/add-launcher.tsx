@@ -166,7 +166,7 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
         </button>
 
         {/* The discoverable way to everything else. Visible, labelled, and the
-            app's 44px tap floor wide and tall — the long press above is a
+            app's 44px tap floor wide and tall. The long press above is a
             shortcut for people who already expect one, never the only door.
 
             IT GREW LEFT AND DOWN, from 32px, and the anchor moved with it so
