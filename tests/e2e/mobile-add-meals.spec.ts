@@ -307,10 +307,17 @@ test('the Add entry button is reachable and clear of the bottom bar on a short s
   // reaches the submit whole, with the bar off it. A page that reserved
   // nothing under the fixed bar goes red here.
   ////////////////////////////////////////////////////////////////////////////
+  //
+  // THE FIELD IS LEFT FIRST. On a screen this short the bottom bar steps aside
+  // while a text field has focus (`app-wrapper.tsx`, SET-04), so a reading
+  // taken mid-typing would measure the clearance against a bar that is not
+  // drawn. Reaching for Add is the moment after typing, which is this state.
+  await manual.locator('input[name="name"]').blur();
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const barTop = await fixedBarTop(page);
   const scrolled = await submit.boundingBox();
   expect(scrolled, 'the submit must have a box to measure').not.toBeNull();
+  expect(barTop, 'the fixed bottom bar must be drawn to measure against').toBeGreaterThan(0);
   expect(barTop, 'the fixed bottom bar must be on the screen to measure against').toBeLessThan(SHORT_SCREEN.height);
   expect(
     Math.round(scrolled?.y ?? -1),
