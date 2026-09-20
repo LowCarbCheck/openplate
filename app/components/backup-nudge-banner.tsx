@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Download, X } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { shouldShowBackupNudge } from '#app/lib/backup-nudge';
+import { hasServerCopyOfTheDiary, shouldShowBackupNudge } from '#app/lib/backup-nudge';
+import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useSyncSession } from '#app/components/sync-status';
 import { cn } from '#app/lib/utils';
 
 /**
@@ -20,6 +22,12 @@ import { cn } from '#app/lib/utils';
  * decision — measuring a never-exported device's `daysSinceFirstData` against
  * the same threshold, and gating on `hasData` so a brand-new empty device
  * stays quiet.
+ *
+ * WHAT THE PROPS CANNOT SAY. Every prop is a fact about this device, and the
+ * copy is a claim about the world: "one device, no cloud". This component
+ * supplies the missing half from the instance policy and the sync session, and
+ * `hasServerCopyOfTheDiary` decides it, so a managed instance and a signed-in
+ * device are both silent instead of being told the opposite of the truth.
  */
 export function BackupNudgeBanner({
   daysSinceExport,
@@ -35,8 +43,19 @@ export function BackupNudgeBanner({
 }) {
   const [isDismissed, setIsDismissed] = useState(false);
   const { t } = useTranslation();
+  // WHETHER THE SENTENCE IS EVEN TRUE, asked before the day counts. The policy
+  // answers the managed instance, where the account keeps a copy whatever this
+  // device has done; the session answers the open instance whose owner signed
+  // this device in.
+  const { serverHoldsTheDiary } = useInstancePolicy();
+  const session = useSyncSession();
   if (isDismissed) return null;
-  if (!shouldShowBackupNudge({ daysSinceExport, daysSinceFirstData, hasData })) return null;
+  const hasServerCopy = hasServerCopyOfTheDiary({
+    serverHoldsTheDiary,
+    isSessionResuming: session.isResuming,
+    isSignedIn: session.account !== null,
+  });
+  if (!shouldShowBackupNudge({ daysSinceExport, daysSinceFirstData, hasData, hasServerCopy })) return null;
   // The copy moved out of `formatBackupNudgeMessage` and into the catalog
   // (M129/05): the singular/plural split it hand-rolled is `count`'s job in
   // i18next, and German needs its own plural rules for the same sentence.
@@ -49,6 +68,7 @@ export function BackupNudgeBanner({
 
   return (
     <output
+      data-slot="backup-nudge"
       className={cn(
         'flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber',
         className,

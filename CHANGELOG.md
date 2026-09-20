@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The backup reminder is quiet when a server holds your diary.** The amber reminder on your diary says your diary lives on this device only, and it said so whether or not a copy existed anywhere else. It appeared on a hosted instance, where your account always keeps an encrypted copy, and it appeared on a self-hosted one after you signed this device in to sync. Only an export ever cleared it, so signing in never did. It now stays quiet whenever a server holds a copy, including the moment after a reload while the app is still reopening your session, so it is never shown and then taken away. On a device with no account and no sync, nothing changed.
+
 ## [0.36.0] - 2026-09-20
 
 ### Added

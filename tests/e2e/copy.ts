@@ -163,6 +163,7 @@ const catalogSchema = z.object({
     passphraseLabel: z.string(),
     signIn: z.object({ submit: z.string() }),
   }),
+  signOut: z.object({ confirm: z.string() }),
 });
 
 /** Every string this tier reads, in one language, validated against that language's shipped bundle. */

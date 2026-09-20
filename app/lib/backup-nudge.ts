@@ -51,6 +51,44 @@ export interface BackupNudgeInput {
    * exported — see `hasAnyLocalData` in `local-store/backup.ts`.
    */
   hasData: boolean;
+  /**
+   * Whether a server already holds a copy of this diary.
+   *
+   * The banner's sentence is "your diary only lives here: one device, no
+   * cloud", and that is a claim about the world rather than about this
+   * device's export history. It is false on a managed instance, where the
+   * account keeps an end-to-end-encrypted copy as a matter of course
+   * (`InstancePolicy.serverHoldsTheDiary`), and it is false on an open
+   * instance whose owner has signed this device in to sync. Neither of those
+   * ever touches an export, and only an export clears the nudge, so both were
+   * told the opposite of the truth on every load. See
+   * {@link hasServerCopyOfTheDiary} for how the banner answers it.
+   */
+  hasServerCopy: boolean;
+}
+
+/**
+ * Whether a server holds a copy of this diary, as the banner has to ask it.
+ *
+ * @param input.serverHoldsTheDiary - `InstancePolicy.serverHoldsTheDiary`: true on a managed instance, whatever this device has done.
+ * @param input.isSessionResuming - `SyncSessionSnapshot.isResuming`: true while this device may still be reopening a session it already had.
+ * @param input.isSignedIn - whether the session snapshot carries an account.
+ * @returns whether the banner's "one device, no cloud" sentence would be false.
+ */
+export function hasServerCopyOfTheDiary({
+  serverHoldsTheDiary,
+  isSessionResuming,
+  isSignedIn,
+}: {
+  serverHoldsTheDiary: boolean;
+  isSessionResuming: boolean;
+  isSignedIn: boolean;
+}): boolean {
+  // An unsettled resume counts as a copy, because it is about to become one on
+  // every device that had a session: drawing the banner now and withdrawing it
+  // a moment later flashes the false sentence at exactly the people it is
+  // false for, and a silence that ends a frame later costs nothing.
+  return serverHoldsTheDiary || isSessionResuming || isSignedIn;
 }
 
 /**
@@ -59,13 +97,15 @@ export interface BackupNudgeInput {
  * The rule, in order:
  *
  * 1. No data at all → never nudge. Nothing to lose yet.
- * 2. Has exported before → nudge once the export is `BACKUP_NUDGE_THRESHOLD_DAYS`
+ * 2. A server holds a copy → never nudge. The sentence would be false, and a
+ *    false reassurance about where a diary lives is worse than no nudge.
+ * 3. Has exported before → nudge once the export is `BACKUP_NUDGE_THRESHOLD_DAYS`
  *    old. Unchanged behaviour.
- * 3. Never exported, marker readable → nudge once the DATA is that old. Same
+ * 4. Never exported, marker readable → nudge once the DATA is that old. Same
  *    threshold, measured from when the data first appeared.
- * 4. Never exported, marker missing but data present → nudge.
+ * 5. Never exported, marker missing but data present → nudge.
  *
- * Case 4 is the pre-marker device: `firstDataAt` only started being written in
+ * Case 5 is the pre-marker device: `firstDataAt` only started being written in
  * M123, so devices in the field today hold data with no marker at all. Both
  * readings are defensible, and this one is chosen deliberately. A device with
  * data and no marker necessarily acquired that data BEFORE the marker shipped
@@ -79,8 +119,14 @@ export interface BackupNudgeInput {
  *
  * @returns whether the nudge threshold has been crossed.
  */
-export function shouldShowBackupNudge({ daysSinceExport, daysSinceFirstData, hasData }: BackupNudgeInput): boolean {
+export function shouldShowBackupNudge({
+  daysSinceExport,
+  daysSinceFirstData,
+  hasData,
+  hasServerCopy,
+}: BackupNudgeInput): boolean {
   if (!hasData) return false;
+  if (hasServerCopy) return false;
   if (daysSinceExport !== null) return daysSinceExport >= BACKUP_NUDGE_THRESHOLD_DAYS;
   if (daysSinceFirstData === null) return true;
   return daysSinceFirstData >= BACKUP_NUDGE_THRESHOLD_DAYS;
