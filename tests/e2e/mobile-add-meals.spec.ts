@@ -210,8 +210,16 @@ async function seedAWeekOfLogs(page: Page): Promise<void> {
 async function openManualForm(page: Page, locale: (typeof LANGUAGES)[number]) {
   const catalog = catalogFor(locale);
   await page.goto('/add');
-  await page.getByRole('button', { name: catalog.add.search.addManually }).click();
-  return page.locator('form').filter({ has: page.locator('input[name="_intent"][value="manual"]') });
+  const manual = page.locator('form').filter({ has: page.locator('input[name="_intent"][value="manual"]') });
+  // A first visit registers the service worker and reloads once, which can eat
+  // the click, so the click repeats only while the form is not on screen.
+  await expect(async () => {
+    if (!(await manual.isVisible())) {
+      await page.getByRole('button', { name: catalog.add.search.addManually }).click({ timeout: 2_000 });
+    }
+    await expect(manual).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+  return manual;
 }
 
 /**
