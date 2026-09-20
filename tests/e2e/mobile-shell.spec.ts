@@ -30,7 +30,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { catalogFor } from './copy';
-import { E2E_FOOD_NAME } from './fake-food-db';
 import { completeOnboarding, logFoodManually, useLanguage } from './helpers';
 
 /** The narrow end of the phone budget this app is written against. */
@@ -452,8 +451,11 @@ test('the add results and your foods draw the same row, and it fits 360px in en,
   for (const locale of LOCALES) {
     await useLanguage(page, locale);
 
-    await page.goto('/add');
-    await page.locator('#food-search').fill(E2E_FOOD_NAME);
+    // THE QUERY IN THE URL, and a food this device saved. `/add`'s loader reads
+    // `?q=`, so the row is drawn without the debounce the search box adds, and
+    // a saved food is matched on this device, so the row that gets measured
+    // does not depend on the food database answering.
+    await page.goto(`/add?q=${encodeURIComponent(SEEDED_FOOD.name)}`);
     const searchRow = page.locator('[data-slot="search-result-row"]').first();
     await expect(searchRow, `${locale}: the search must return a row to measure`).toBeVisible();
     const searchSurface = await rowSurface(searchRow);
