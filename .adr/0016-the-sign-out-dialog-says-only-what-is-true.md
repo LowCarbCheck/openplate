@@ -43,7 +43,10 @@ person has to decide something irreversible.
   the ids the baseline recorded when this device last agreed with the account
   (`SyncBaseline.passThrough.savedMeals`), in BOTH directions. An id the device
   holds and the baseline does not has not been sent; an id the baseline holds
-  and the device does not is a removal the account has not heard. A baseline
+  and the device does not is a removal the account has not heard. A saved
+  meal whose id is unchanged but whose content differs (a rename, a changed
+  ingredient) has not been sent either, so one hash of the whole list
+  (`SyncBaseline.passThrough.savedMealsHash`) is compared as well. A baseline
   that recorded nothing vouches for nothing, which is `decidePassThrough`'s own
   rule one file over. The line is `saved-meals-unsent`.
 - **`hasOwnerPrivateRows`** is PRESENCE, and cannot be anything else. The
@@ -53,12 +56,15 @@ person has to decide something irreversible.
   outside the check, and this answers whether there are any to say it about.
   The line is `keys-not-covered`.
 
-**No content hash for a saved meal, deliberately.** A RENAME is invisible to
-this check, and that is correct rather than a gap: `canonicalize` weighs the
-whole saved-meals list, so a rename makes the very next cycle push by itself
-(M234's `sync-saved-meal-pushes-once.test.ts` pins it). Hashing here would put
-a second definition of "changed" beside the engine's own, free to drift from
-it, in order to warn about a meal the next cycle was about to send anyway.
+**A content hash for a saved meal, after all.** An earlier draft ruled it out:
+`canonicalize` weighs the whole saved-meals list, so the next cycle pushes a
+rename by itself. That argument fails offline, which is when people sign out:
+the next cycle never runs, and an edited meal read as nothing unsent, on the
+one screen that guards an irreversible erase. The baseline now carries
+`savedMealsHash`, computed by `baselineFromPayload` with the engine's own
+`contentHash` over the same `byId` view `canonicalize` uses, so this check has
+no second definition of "changed" that could drift from the engine's. The field
+is optional, so a persisted state that predates it still parses.
 
 `holdsUnsentSavedMeals` takes the baseline as an argument, and
 `readUnsentOnDevice` hands it the SAME baseline the count weighs, from the same
