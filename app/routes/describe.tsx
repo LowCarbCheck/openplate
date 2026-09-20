@@ -237,7 +237,10 @@ export function DescribeComposer({
           where the thumb found it. */}
       <RepeatYesterdayDoor offer={isForPantry ? null : repeatYesterday} />
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold">{title}</h1>
+        {/* AN h2, because the app chrome above already draws this route's
+            `h1` from its handle. Two of them left the screen with no single
+            name for assistive tech. */}
+        <h2 className="text-xl font-semibold text-balance">{title}</h2>
         <p className="text-sm text-muted-foreground">{t('describe.lead')}</p>
       </div>
 
@@ -297,7 +300,7 @@ export function DescribeComposer({
             disabled={!canSend}
             aria-label={t('describe.send')}
             className={cn(
-              'mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden',
+              'mb-0.5 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden md:size-10',
               canSend ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
             )}
           >

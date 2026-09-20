@@ -210,7 +210,11 @@ describe('Send', () => {
   it('is an icon button inside the box, never a full-width bar under it', () => {
     const tag = sendButtonTag(renderComposer({ text: '2 fried eggs' }));
     assert.match(tag, /\brounded-full\b/, 'Send is no longer round');
-    assert.match(tag, /\bh-10 w-10\b/, 'Send is no longer the 40px icon button');
+    // 44 px on a phone, and the 40 px this used to pin from `md` up. The
+    // claim is the shape, a square icon key rather than a bar, not the one
+    // number it happened to be drawn at.
+    assert.match(tag, /\bsize-11\b/, 'Send is no longer a thumb-sized icon button');
+    assert.match(tag, /\bmd:size-10\b/, 'Send no longer goes back to 40px for a pointer');
     assert.doesNotMatch(tag, /\bw-full\b/, 'Send is a full-width bar again');
   });
 

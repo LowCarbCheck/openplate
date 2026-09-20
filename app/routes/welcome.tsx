@@ -291,7 +291,7 @@ export default function Welcome() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>{t('welcome.title')}</CardTitle>
+          <CardTitle className="text-balance">{t('welcome.title')}</CardTitle>
           {/* The open body offers starting a diary, which is not on offer
               here — so a managed instance says what its two doors are. */}
           <CardDescription>{requiresAccount ? t('welcome.managed.body') : t('welcome.body')}</CardDescription>

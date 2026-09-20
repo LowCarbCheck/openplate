@@ -597,7 +597,9 @@ function StepShell({ title, description, children }: { title: string; descriptio
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl tracking-tight">{title}</CardTitle>
+        <CardTitle data-slot="onboarding-step-title" className="text-2xl tracking-tight text-balance">
+          {title}
+        </CardTitle>
         <CardDescription className="text-base">{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">{children}</CardContent>
@@ -666,7 +668,7 @@ function StepActions({
           value={INTENT.SKIP}
           variant="link"
           disabled={isBusy}
-          className="text-muted-foreground"
+          className="h-11 text-muted-foreground md:h-9"
         >
           {skipLabel}
         </Button>
@@ -1356,7 +1358,7 @@ export function FirstFoodStep() {
             value="/diary"
             variant="link"
             disabled={isBusy}
-            className="text-muted-foreground"
+            className="h-11 text-muted-foreground md:h-9"
           >
             {laterLabel}
           </Button>
@@ -1393,7 +1395,7 @@ function WayToLogCard({
       pendingLabel={t('onboarding.firstFood.opening')}
       disabled={isBusy}
       variant="outline"
-      className="h-auto w-full justify-start gap-4 whitespace-normal px-4 py-3 text-left"
+      className="h-auto w-full justify-start gap-4 whitespace-normal rounded-lg p-4 text-left"
     >
       {/* The drawing is decoration around the label, so its absence while the
           chunk loads must not move the text: the fallback reserves the box. */}

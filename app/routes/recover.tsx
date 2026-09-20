@@ -166,7 +166,9 @@ export default function Recover() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <AlertTriangle className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
-          <CardTitle>{t('recover.title')}</CardTitle>
+          <CardTitle data-slot="recover-title" className="text-balance">
+            {t('recover.title')}
+          </CardTitle>
           <CardDescription>{t(serverHoldsTheDiary ? 'recover.leadManaged' : 'recover.lead')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -186,11 +188,11 @@ export default function Recover() {
             <p className="text-sm text-muted-foreground">{t('recover.firstDataAt', { date: firstDataLabel })}</p>
           )}
           <div className="space-y-2 border-t pt-4">
-            <h2 className="text-sm font-medium">{t('recover.restoreHeading')}</h2>
+            <h2 className="text-sm font-medium text-balance">{t('recover.restoreHeading')}</h2>
             <RestoreFromBackup />
           </div>
           <div className="space-y-2 border-t pt-4">
-            <h2 className="text-sm font-medium">{t('recover.noBackupHeading')}</h2>
+            <h2 className="text-sm font-medium text-balance">{t('recover.noBackupHeading')}</h2>
             <p className="text-sm text-muted-foreground">{t('recover.noBackupBody')}</p>
             <Button asChild variant="outline" className="h-11 w-full justify-center sm:w-auto">
               <Link to="/onboarding">{t('recover.startFresh')}</Link>

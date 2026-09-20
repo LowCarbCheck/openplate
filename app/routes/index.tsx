@@ -664,7 +664,8 @@ const STEP_SHOT_ASPECT = 'aspect-[39/56]';
  * teal keeps meaning "the way in".
  */
 const SECONDARY_ACTION =
-  'text-base text-foreground/80 underline decoration-primary/30 underline-offset-4 transition-colors hover:text-foreground hover:decoration-primary';
+  'inline-flex min-h-11 items-center text-base text-foreground/80 underline decoration-primary/30 ' +
+  'underline-offset-4 transition-colors hover:text-foreground hover:decoration-primary md:min-h-0';
 
 /**
  * The page's recurring SECOND action: "read the source".
@@ -1052,7 +1053,7 @@ function HowStep({
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
-        <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
+        <h3 className="font-display text-lg font-semibold tracking-tight text-balance">{title}</h3>
         <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
       </div>
     </div>
@@ -1089,7 +1090,7 @@ function FeatureCard({ icon: Icon, title, body }: { icon: LucideIcon; title: str
           undifferentiated blocks of text. They stay well under the chapter
           card titles (`text-2xl`/28px) and further under the section `<h2>`s,
           which is the ranking the page is supposed to have. */}
-      <h3 className="mt-3 font-display text-lg font-semibold tracking-tight">{title}</h3>
+      <h3 className="mt-3 font-display text-lg font-semibold tracking-tight text-balance">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>
   );
@@ -1125,7 +1126,7 @@ function SetupStep({ step, title, body }: { step: number; title: string; body: s
         <span className="relative text-sm font-semibold tabular-nums text-primary">{step}</span>
       </span>
       <div className="space-y-1.5">
-        <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
+        <h3 className="font-display text-lg font-semibold tracking-tight text-balance">{title}</h3>
         <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
       </div>
     </li>
@@ -1211,7 +1212,7 @@ function LadderCard({
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h2 className="font-display text-2xl font-bold tracking-tight sm:text-[28px]">{title}</h2>
+          <h2 className="font-display text-2xl font-bold tracking-tight text-balance sm:text-[28px]">{title}</h2>
           {children}
         </div>
         {media}
@@ -1427,7 +1428,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           URL, so the whole page carries it. */}
       <section id="how" className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.how.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.how.title')}</h2>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+          {t('landing.how.title')}
+        </h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.how.subtitle')}</p>
         {/* `gap-14` below `sm`, `gap-6` from `sm`. The wide mobile gap is not
             breathing room, it is the grouping cue: each shot is `mt-4` under
@@ -1517,7 +1520,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           them. */}
       <section className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.setup.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.setup.title')}</h2>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+          {t('landing.setup.title')}
+        </h2>
         {/* "only the middle one asks anything of you" was true of the ladder
             below it until step two stopped asking for a key (M201/08). Same
             question as the step it describes, because it is a claim ABOUT that
@@ -1613,7 +1618,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           repository; nothing here is a roadmap item. */}
       <section className="scroll-mt-20 py-12 sm:py-16">
         <SectionEyebrow>{t('landing.features.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {t('landing.features.title')}
         </h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">{t('landing.features.subtitle')}</p>
@@ -1829,7 +1834,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             above it and had no eyebrow at all, which made the page's closing
             argument look like a footnote to the newsletter card. */}
         <SectionEyebrow>{t('landing.close.eyebrow')}</SectionEyebrow>
-        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.close.title')}</h2>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+          {t('landing.close.title')}
+        </h2>
         {/* `mx-auto max-w-[65ch]`: a centred line running the full width of a
             `max-w-5xl` container is the same over-long measure the cards had,
             and centring makes it worse — every line starts in a different

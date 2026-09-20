@@ -119,7 +119,7 @@ function YesterdayRows({ yesterday, goals }: { yesterday: CatchUpDay; goals: Cat
   });
 
   return (
-    <div>
+    <div data-slot="yesterday-rows" className="space-y-3">
       <SectionEyebrow>{t('catchUp.yesterdayHeading')}</SectionEyebrow>
       <DayBudgetRows
         rows={buildDayBudgetRows({
