@@ -20,6 +20,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Fixed
 
+- **The fast alert now follows the fast, on every device.** The one-off notification for a fast reaching its target was set by the screen you started the fast on. Now that fasts travel, a fast started on your phone left your tablet silent, and worse, a fast you ended on one device left the other one set to buzz for a fast that was already over. Every device now works out what is running after each sync and when the app starts, and switches the notification off when nothing is.
 - **The privacy policy and terms now list everything that syncs.** Both documents listed your foods, food logs, weight entries and goals, and stopped there. Your fasts, your fasting routine, your saved meals, your pantry and your streaks and awards are in the same encrypted copy and were never named. All four lists now say so, in the same sentences, with nothing else changed. The pages carry today's date.
 
 ### Docs

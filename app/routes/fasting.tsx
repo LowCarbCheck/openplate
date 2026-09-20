@@ -35,7 +35,8 @@ import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { formatClockTime } from '#app/lib/format-clock-time';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { trackFastEnded, trackFastStarted } from '#app/lib/matomo-events';
-import { fastWakeAtIso, setFastWakeAt } from '#app/lib/push';
+import { setFastWakeAt } from '#app/lib/push';
+import { fastWakeAtFor } from '#app/lib/fast-wake';
 import { todayInTimezone } from '#app/lib/user-days';
 import { cn } from '#app/lib/utils';
 import {
@@ -326,10 +327,15 @@ async function readReproductiveStatus(): Promise<ReproductiveStatus> {
  * Never awaited by a caller and never able to throw: the fast is the work, the
  * notification is not, and `setFastWakeAt` does nothing at all on a device with
  * no registration or with the fast target kind switched off.
+ *
+ * THIS SCREEN IS NO LONGER THE ONLY WRITER (M240 counsel item 1). A sync merge
+ * and the app's own launch re-arm it too, through `fast-wake.ts`, which is
+ * where the rule lives; this function goes through that module's
+ * {@link fastWakeAtFor} so all three callers ask the same question.
  */
 function syncFastWakeAt(): void {
   void (async () => {
-    await setFastWakeAt(fastWakeAtIso(selectCurrentFast(await listLocalFasts())));
+    await setFastWakeAt(fastWakeAtFor(await listLocalFasts()));
   })();
 }
 

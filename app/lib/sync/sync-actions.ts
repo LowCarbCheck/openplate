@@ -45,6 +45,7 @@ import type { KdfDescriptorWire, KeyRecordSubmissionWire } from './engine/client
 import type { InstanceDescriptor, OperatorNotice } from './engine/protocol';
 import type { SyncSetupOutcome } from './setup-flow';
 import { reconcileAwardsQuietly } from '#app/lib/gamification/record';
+import { reconcileFastWakeAtAfterMerge } from '#app/lib/fast-wake';
 import {
   applyMergedSnapshot,
   parseRemoteSnapshot,
@@ -644,6 +645,14 @@ async function applySyncedSnapshot({
   const ownerPrivate =
     (await openOwnerPrivateRegion({ session, sealed: merged.privateStore })) ?? (await readLocalOwnerPrivateRegion());
   await applyMergedSnapshot({ merged: recomposeSnapshot({ shareable: merged, ownerPrivate }), local });
+  // AFTER the write, and this is the only sync-side caller (M240 counsel item
+  // 1). The fasts this device now holds decide when, or whether, the server
+  // should wake it for a reached target, and until fasts synced the fasting
+  // screen was the only writer so re-arming from its own actions was complete.
+  // A fast ended on another device used to leave this one armed for a fast
+  // that is over. `reconcileFastWakeAtAfterMerge` sends nothing when the
+  // instant did not move, so an ordinary cycle is still silent.
+  await reconcileFastWakeAtAfterMerge({ before: local.fasts, after: merged.fasts });
 }
 
 /**

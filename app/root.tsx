@@ -19,6 +19,7 @@ import { useToast } from '#app/hooks/use-toast';
 import { useMatomoTracker } from '#app/hooks/use-matomo-tracker';
 import { registerServiceWorker } from '#app/lib/service-worker';
 import { startPwaInstallCapture } from '#app/lib/pwa-install-capture';
+import { reconcileFastWakeAtOnBoot } from '#app/lib/fast-wake';
 import { ErrorFallback } from '#app/components/route-error-boundary';
 import { StatusFallbackHost } from '#app/components/status-fallback-host';
 import { useTranslation } from 'react-i18next';
@@ -182,6 +183,14 @@ export default function App() {
   useEffect(() => {
     registerServiceWorker();
     startPwaInstallCapture();
+    // AND ASSERT THE FAST ALERT ONCE PER LAUNCH (M240 counsel item 1). The
+    // server holds a one-shot wake instant against this device's push
+    // subscription, and since fasts sync another device may have ended or
+    // removed the fast while this one was closed. Nothing else would ever
+    // clear it, so this device would buzz for a fast that is over. It is void
+    // rather than awaited because it can never throw and nothing here waits
+    // on a notification.
+    void reconcileFastWakeAtOnBoot();
   }, []);
 
   // Every in-app link (`#app/components/link`) defaults to react-router's
