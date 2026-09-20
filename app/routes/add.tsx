@@ -1649,7 +1649,7 @@ function CandidateSection({
   return (
     <div className="space-y-2">
       <SectionEyebrow>{title}</SectionEyebrow>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {items.map((candidate) => (
           <SearchResultRow
             key={`${candidate.source}:${candidate.name}`}
