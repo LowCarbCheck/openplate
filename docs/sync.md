@@ -45,7 +45,7 @@ life only when the sync service it talks to has `SYNC_RESEARCH=true`, which is *
 default**: an instance you stand up without touching that flag runs no study, holds no study
 graph, and offers nothing to enrol in. Read `openplate-core`'s `.env.example` before turning it
 on: it makes the server hold health-adjacent personal data, which is a different undertaking
-from holding ciphertext it cannot read.
+from holding an encrypted diary.
 
 ## Encryption, and what the operator holds
 

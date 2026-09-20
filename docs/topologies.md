@@ -132,10 +132,11 @@ echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 podman compose -f compose.sync.yml up -d
 ```
 
-The service cannot read a single entry, which also means it cannot recover one on its own: a
-forgotten password is reset by a mailed link, and the server holds an escrowed recovery code
-that unwraps the data key after the reset. [sync.md](sync.md) states that trade-off in full,
-and so does the app before you finish setting sync up.
+The service stores each entry as ciphertext and never receives your password. It does hold
+each account's recovery code, sealed under a secret of its own, so a forgotten password is
+reset by a mailed link and the diary comes back. That also means the operator of the service
+can, in principle, open a diary on it. [sync.md](sync.md) states that trade-off in full, and
+so does the app before you finish setting sync up.
 
 **The same server also carries a shared AI bill, if you turn it on.** Set
 `INSTANCE_MODE=managed` and the instance becomes one an administrator runs for a household or
