@@ -1,0 +1,39 @@
+{
+  "v0_35_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "Statistiche ora può mostrare gli ultimi 90 giorni.",
+      "02": "La sezione Progressi è stata rinominata in Statistiche e ora si apre su quattro schede.",
+      "03": "La scheda Nutrizione traccia anche proteine, grassi e fibre.",
+      "04": "La scheda Pasti ora mostra le tue medie e i tuoi cibi consueti.",
+      "05": "La scheda Obiettivi ora mostra con che frequenza hai raggiunto ciascun obiettivo.",
+      "06": "La panoramica ora si apre con un riepilogo dell'intervallo temporale che hai scelto.",
+      "07": "La schermata dei dati spiega cosa contiene il file JSON scaricato."
+    },
+    "changed": {
+      "01": "L'app non fa più riferimento a openplate-gateway."
+    },
+    "fixed": {
+      "01": "Un pasto salvato ora raggiunge il server in modo autonomo.",
+      "02": "La disconnessione non indica più che tutti i dati hanno raggiunto il server quando non è così.",
+      "03": "L'app non afferma più che il server non può leggere il tuo diario."
+    }
+  },
+  "v0_34_1": {
+    "date": "2026-09-19",
+    "changed": {
+      "01": "Il server ora viene eseguito come singolo processo nel container."
+    }
+  },
+  "v0_34_0": {
+    "date": "2026-09-19",
+    "added": {
+      "01": "La serie nella schermata iniziale e in Progressi ora indica il numero di giorni in cui hai usato l'app.",
+      "02": "Una nuova schermata elenca le operazioni che hai svolto con l'app.",
+      "03": "I dati passati contano: l'app ricostruisce lo storico a partire dal diario che hai già.",
+      "04": "Cosa conta come utilizzo dell'app, e a cosa resiste lo storico.",
+      "05": "Il tuo file di backup passa alla versione 23.",
+      "06": "L'istanza può contenere una chiave per il database degli alimenti e lo segnala se il database la rifiuta."
+    }
+  }
+}

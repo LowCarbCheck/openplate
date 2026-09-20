@@ -6,6 +6,13 @@
     "at": "2026-09-14",
     "it": "Salvato."
   },
+  "0052333823fcaabf": {
+    "en": "See what's new",
+    "path": "common:whatsNew.card.open",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Mostra le novità"
+  },
   "006c46ba72423927": {
     "en": "A short-lived cookie that carries a one-off confirmation message across a page reload.",
     "path": "legal:privacy.s9Item4",
@@ -586,6 +593,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Nutrienti"
+  },
+  "08c347bbeffebe97": {
+    "en": "The Goals tab now shows how often you met each goal.",
+    "path": "releases:v0_35_0.added.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La scheda Obiettivi ora mostra con che frequenza hai raggiunto ciascun obiettivo."
+  },
+  "08e50d0037fbb4ca": {
+    "en": "Added",
+    "path": "common:whatsNew.groups.added",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Aggiunte"
   },
   "09662ef923e7e14f": {
     "en": "Carbs",
@@ -3891,6 +3912,13 @@
     "at": "2026-09-14",
     "it": "Inizia tra {{duration}}"
   },
+  "34dae785474e7ae3": {
+    "en": "The server now runs as one process in the container.",
+    "path": "releases:v0_34_1.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Il server ora viene eseguito come singolo processo nel container."
+  },
   "34de0bc4edd42e08": {
     "en": "Starts in {{duration}}",
     "path": "common:fasting.strip.scheduledLine",
@@ -3911,6 +3939,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Accedi"
+  },
+  "34f9046dbb9f50c0": {
+    "en": "Overview now opens with a summary of your chosen time span.",
+    "path": "releases:v0_35_0.added.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La panoramica ora si apre con un riepilogo dell'intervallo temporale che hai scelto."
   },
   "353b271fbce9d3f0": {
     "en": "One-time setup",
@@ -4037,6 +4072,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Gli alimenti che hai aggiunto tu. Modifica i valori o rimuovine uno qui."
+  },
+  "3744972968f8e898": {
+    "en": "What's new in {{version}}",
+    "path": "common:whatsNew.card.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Novità nella versione {{version}}"
   },
   "37484a7c5ef012fa": {
     "en": "You put something in the pantry.",
@@ -4241,6 +4283,13 @@
     "at": "2026-09-14",
     "it": "Riprova"
   },
+  "3a25b5b9e547e209": {
+    "en": "The data screen says what is inside the JSON download.",
+    "path": "releases:v0_35_0.added.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La schermata dei dati spiega cosa contiene il file JSON scaricato."
+  },
   "3a262e2d552d89ac": {
     "en": "Saving",
     "path": "common:admin.settings.saving",
@@ -4394,6 +4443,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Il tuo riepilogo giornaliero · openplate"
+  },
+  "3d19483c4ed66401": {
+    "en": "What's new",
+    "path": "common:whatsNew.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Novità"
   },
   "3d2c80ccd23f42b2": {
     "en": "Recipes · openplate",
@@ -4646,6 +4702,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Condivisi con te · openplate"
+  },
+  "410423e28441e093": {
+    "en": "Release notes",
+    "path": "common:about.whatsNewValue",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Note di rilascio"
   },
   "410757a9555cbbfe": {
     "en": "Every food you log is written to this browser’s own storage. The server also keeps a copy, encrypted before it leaves your device. The operator holds a recovery key that can open that copy. Export the lot as a file whenever you like.",
@@ -5165,6 +5228,13 @@
     "at": "2026-09-14",
     "it": "Questo invito non è più valido"
   },
+  "48d720a948412346": {
+    "en": "All releases on GitHub",
+    "path": "common:whatsNew.allReleases",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Tutti i rilasci su GitHub"
+  },
   "48d86517cdaf8ffc": {
     "en": "openplate is a food-tracking tool. It is built local-first. Your foods, food logs, weight entries, and goals are written in your browser on your own device. On this instance, your account also keeps an end-to-end-encrypted copy of that data on our server. This ensures the same diary reaches your other devices and survives a reinstall. We hold that copy as ciphertext. We also hold a recovery key that lets a password reset restore your diary, as explained in the Privacy Policy. AI plate identification is included with your account rather than purchased from a third-party provider.",
     "path": "legal:terms.s2BodyManaged",
@@ -5528,6 +5598,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Copia in corso…"
+  },
+  "4dcf59b04e7aaa2e": {
+    "en": "New",
+    "path": "common:whatsNew.new",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Nuovo"
   },
   "4df198cf47c2acb8": {
     "en": "Save start time",
@@ -7538,6 +7615,13 @@
     "at": "2026-09-14",
     "it": "Più lungo"
   },
+  "678f94329d2e0bff": {
+    "en": "And {{count}} more changes.",
+    "path": "common:whatsNew.card.more_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "E altre {{count}} modifiche."
+  },
   "67d4d306c81fa727": {
     "en": "{{day}}, {{value}} of {{goal}} kcal, within budget",
     "path": "common:dashboard.ridge.day.kcal.met",
@@ -7733,6 +7817,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Accesso in corso…"
+  },
+  "6aa901f353369a78": {
+    "en": "A saved meal now reaches the server by itself.",
+    "path": "releases:v0_35_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Un pasto salvato ora raggiunge il server in modo autonomo."
   },
   "6ab79ed12195b34c": {
     "en": "Accounts are turned off on this server.",
@@ -8707,6 +8798,13 @@
     "at": "2026-09-14",
     "it": "Il digiuno è sconsigliato in gravidanza o durante l'allattamento, l'NHS lo indica chiaramente. Il tuo diario e i tuoi obiettivi restano invariati."
   },
+  "778259f638def9d9": {
+    "en": "Changed",
+    "path": "common:whatsNew.groups.changed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Modifiche"
+  },
   "7784ca7e22b66ad0": {
     "en": "{{count}} bananas",
     "path": "common:portions.unit.banana_other",
@@ -9519,6 +9617,13 @@
     "at": "2026-09-14",
     "it": "Scopri come funziona"
   },
+  "8245d540845c8170": {
+    "en": "The streak on the home screen and on Progress is now the number of days you used the app.",
+    "path": "releases:v0_34_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La serie nella schermata iniziale e in Progressi ora indica il numero di giorni in cui hai usato l'app."
+  },
   "8259708af2f06ffb": {
     "en": "Undo",
     "path": "common:entry.toast.undo",
@@ -9903,6 +10008,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "openplate non ha un proprio microfono. Tocca il tasto del microfono sulla tastiera, che converte il parlato in testo tramite Google o Apple. Solo il testo raggiunge openplate e il tuo fornitore di IA."
+  },
+  "8703cc43249d2ec8": {
+    "en": "Your backup file moves to version 23.",
+    "path": "releases:v0_34_0.added.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Il tuo file di backup passa alla versione 23."
   },
   "871c2bb8f3c1caa7": {
     "en": "Hundred days under",
@@ -11143,6 +11255,13 @@
     "at": "2026-09-14",
     "it": "Oppure la settimana in cui ti trovi oggi"
   },
+  "973d1c905727d061": {
+    "en": "And {{count}} more change.",
+    "path": "common:whatsNew.card.more_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "E {{count}} altra modifica."
+  },
   "977670c4d9e55764": {
     "en": "Chicken breast",
     "path": "common:add.search.starters.chickenBreast",
@@ -11156,6 +11275,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Uno studio ti riconoscerebbe ogni volta come una persona diversa, e i giorni precedenti resterebbero isolati. Configura un codice di recupero, poi apri di nuovo il link."
+  },
+  "977df6d3d0b9ddd6": {
+    "en": "The app no longer mentions openplate-gateway.",
+    "path": "releases:v0_35_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "L'app non fa più riferimento a openplate-gateway."
   },
   "9780b7a6b40e7e9c": {
     "en": "Your diary belongs to your account. After you sign out, this device does not show it again until you sign in.",
@@ -11205,6 +11331,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Seleziona la casella qui sopra per consentire l'invio."
+  },
+  "987cd62e24f8f47b": {
+    "en": "Progress is renamed to Insights, and now opens on four tabs.",
+    "path": "releases:v0_35_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La sezione Progressi è stata rinominata in Statistiche e ora si apre su quattro schede."
   },
   "988943f85b70bbe3": {
     "en": "Goals saved.",
@@ -11674,6 +11807,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "14 giorni"
+  },
+  "9e137169e1fb40a2": {
+    "en": "Fixed",
+    "path": "common:whatsNew.groups.fixed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Correzioni"
   },
   "9e17c665aea888c9": {
     "en": "Reference amounts are grouped into wide age ranges, so the year is all we need, never your full date of birth.",
@@ -12291,6 +12431,13 @@
     "at": "2026-09-14",
     "it": "Hai cambiato idea? Questo rimuove da questo dispositivo tutti i dettagli riportati sopra."
   },
+  "a74ab706fc0e700c": {
+    "en": "What's new",
+    "path": "common:about.whatsNew",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Novità"
+  },
   "a75c5936caf7e711": {
     "en": "Couldn’t reach the sync server. Your diary is safe on this device and will catch up later.",
     "path": "common:sync.status.error.offline",
@@ -12332,6 +12479,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "it": "Misurato rispetto ai tuoi obiettivi attuali."
+  },
+  "a7c861e762b0a969": {
+    "en": "The Meals tab now shows your averages and your usual foods.",
+    "path": "releases:v0_35_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La scheda Pasti ora mostra le tue medie e i tuoi cibi consueti."
   },
   "a7c8bc9c323a8247": {
     "en": "Protein helps you feel full and hold onto muscle, which matters more the fewer carbs or calories you eat. This is an amount to aim for, in grams. Going under it isn't a failure.",
@@ -12788,6 +12942,13 @@
     "at": "2026-09-14",
     "it": "Incolla il tuo codice di invito oppure apri il link di invito che hai ricevuto."
   },
+  "add9f54aa19d3763": {
+    "en": "A new screen lists what you have done with the app.",
+    "path": "releases:v0_34_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Una nuova schermata elenca le operazioni che hai svolto con l'app."
+  },
   "aea73a7009f31ca5": {
     "en": "Everything stored for {{email}} is removed and cannot be brought back. The diary on this device stays.",
     "path": "common:account.delete.confirmBody",
@@ -12850,6 +13011,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "it": "Media a 7 giorni"
+  },
+  "af32ca072c54780d": {
+    "en": "What counts as using the app, and what the record survives.",
+    "path": "releases:v0_34_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Cosa conta come utilizzo dell'app, e a cosa resiste lo storico."
   },
   "af55bf05b1803621": {
     "en": "Signing you up…",
@@ -13025,6 +13193,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "2 uova fritte, una fetta di pane tostato con burro, caffè nero"
+  },
+  "b16f2bfd42fde5d1": {
+    "en": "Signing out no longer says everything reached the server when it has not.",
+    "path": "releases:v0_35_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La disconnessione non indica più che tutti i dati hanno raggiunto il server quando non è così."
   },
   "b16f8bce974c065a": {
     "en": "Sign in to start",
@@ -13578,6 +13753,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Inserisci un numero intero di ore compreso tra {{min}} e {{max}}."
+  },
+  "b99b2c2ac5214429": {
+    "en": "What's new · openplate",
+    "path": "common:meta.whatsNew",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Novità · openplate"
   },
   "b9edafefd955d196": {
     "en": "{{hint}} · ~{{grams}} g",
@@ -14152,6 +14334,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Giorno precedente"
+  },
+  "c248515d3d7b20e6": {
+    "en": "The Nutrition tab charts protein, fat and fiber too.",
+    "path": "releases:v0_35_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La scheda Nutrizione traccia anche proteine, grassi e fibre."
   },
   "c2603c5704f21b71": {
     "en": "No invitation is waiting.",
@@ -14747,6 +14936,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "openplate, un diario alimentare che resta sul tuo dispositivo"
+  },
+  "cc7cb45c07245367": {
+    "en": "Dismiss",
+    "path": "common:whatsNew.card.dismiss",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Ignora"
   },
   "cc885c62c2932af2": {
     "en": "Say what you ate and check the entries before they are saved. Handy when your hands are busy.",
@@ -16106,6 +16302,13 @@
     "at": "2026-09-14",
     "it": "Codice sorgente"
   },
+  "deed50468b2de4b2": {
+    "en": "The instance can hold a food database key, and says so when the database refuses.",
+    "path": "releases:v0_34_0.added.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "L'istanza può contenere una chiave per il database degli alimenti e lo segnala se il database la rifiuta."
+  },
   "df0dcd57d2bba74a": {
     "en": "Your photo estimates have ended",
     "path": "common:scan.errors.titles.allowanceExpired",
@@ -17324,6 +17527,13 @@
     "at": "2026-09-14",
     "it": "Invii la foto del piatto e i valori di questa voce. Non viene inviato nient'altro dal tuo diario. Chi amministra questo server può aprire quella foto e leggere quei valori."
   },
+  "ef1a2fa7fde44876": {
+    "en": "Your past counts: the app rebuilds the record from the diary you already have.",
+    "path": "releases:v0_34_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "I dati passati contano: l'app ricostruisce lo storico a partire dal diario che hai già."
+  },
   "ef2d5a450f8cfe7a": {
     "en": "Setup means visiting the provider's own site first: create a free account there, and add a payment method (their checkout, not ours: openplate never sees your card). The simplest path is a key from <providerLink>{{provider}}</providerLink>: that's the tab we've put first below, and one key covers every model listed under it.",
     "path": "common:settingsAi.explainer.setup",
@@ -17806,6 +18016,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Trenta giorni consecutivi."
+  },
+  "f56a638c1b6a7ddd": {
+    "en": "Insights can now show the last 90 days.",
+    "path": "releases:v0_35_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Statistiche ora può mostrare gli ultimi 90 giorni."
   },
   "f571520eeca59514": {
     "en": "Invitation ready for {{email}}",
@@ -18527,6 +18744,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "La data in cui termina la tua quota."
+  },
+  "ff950db09ed233db": {
+    "en": "The app no longer says the server cannot read your diary.",
+    "path": "releases:v0_35_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "L'app non afferma più che il server non può leggere il tuo diario."
   },
   "ffb18ccecc476fa0": {
     "en": "tuna",

@@ -5,6 +5,8 @@
     "licenceValue": "MIT",
     "source": "Codice sorgente",
     "sourceValue": "{{appName}} su GitHub",
+    "whatsNew": "Novità",
+    "whatsNewValue": "Note di rilascio",
     "title": "Informazioni su openplate",
     "updates": {
       "behindTitle": "È disponibile una versione più recente",
@@ -1325,7 +1327,8 @@
     "notifications": "Notifiche · openplate",
     "pantry": "Dispensa · openplate",
     "recipes": "Ricette · openplate",
-    "awards": "I tuoi progressi · openplate"
+    "awards": "I tuoi progressi · openplate",
+    "whatsNew": "Novità · openplate"
   },
   "nav": {
     "add": "Aggiungi",
@@ -3440,5 +3443,22 @@
         "note": "Cento giorni consecutivi pari o sotto il tuo obiettivo di carboidrati."
       }
     }
+  },
+  "whatsNew": {
+    "title": "Novità",
+    "card": {
+      "title": "Novità nella versione {{version}}",
+      "more_one": "E {{count}} altra modifica.",
+      "more_other": "E altre {{count}} modifiche.",
+      "open": "Mostra le novità",
+      "dismiss": "Ignora"
+    },
+    "groups": {
+      "added": "Aggiunte",
+      "changed": "Modifiche",
+      "fixed": "Correzioni"
+    },
+    "new": "Nuovo",
+    "allReleases": "Tutti i rilasci su GitHub"
   }
 }

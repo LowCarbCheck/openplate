@@ -37,9 +37,10 @@
  */
 import type { ReactNode } from 'react';
 import type { MetaFunction } from 'react-router';
-import { CalendarClock, Github, History, RefreshCw, Scale, Tag, type LucideIcon } from 'lucide-react';
+import { CalendarClock, Github, History, RefreshCw, Scale, Sparkles, Tag, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
@@ -275,6 +276,13 @@ export default function SettingsAbout() {
           <a href={REPO_URL} target="_blank" rel="noopener" className={ABOUT_LINK_CLASS}>
             {t('about.sourceValue', { appName: APP_NAME })}
           </a>
+        </AboutRow>
+        {/* The one row here that stays in the app: the release notes ship in the
+            bundle (ADR-0018), so this is a page and not a link to GitHub. */}
+        <AboutRow icon={Sparkles} label={t('about.whatsNew')}>
+          <Link to="/settings/whats-new" className={ABOUT_LINK_CLASS}>
+            {t('about.whatsNewValue')}
+          </Link>
         </AboutRow>
       </SettingsSection>
       <UpdatesCard />

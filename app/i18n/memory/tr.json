@@ -6,6 +6,13 @@
     "at": "2026-09-14",
     "tr": "Kaydedildi."
   },
+  "0052333823fcaabf": {
+    "en": "See what's new",
+    "path": "common:whatsNew.card.open",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Yenilikleri gör"
+  },
   "006c46ba72423927": {
     "en": "A short-lived cookie that carries a one-off confirmation message across a page reload.",
     "path": "legal:privacy.s9Item4",
@@ -586,6 +593,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Besin ögeleri"
+  },
+  "08c347bbeffebe97": {
+    "en": "The Goals tab now shows how often you met each goal.",
+    "path": "releases:v0_35_0.added.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Hedefler sekmesi artık her hedefe ne sıklıkla ulaştığını gösteriyor."
+  },
+  "08e50d0037fbb4ca": {
+    "en": "Added",
+    "path": "common:whatsNew.groups.added",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Eklendi"
   },
   "09662ef923e7e14f": {
     "en": "Carbs",
@@ -3891,6 +3912,13 @@
     "at": "2026-09-14",
     "tr": "{{duration}} içinde başlar"
   },
+  "34dae785474e7ae3": {
+    "en": "The server now runs as one process in the container.",
+    "path": "releases:v0_34_1.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Sunucu artık konteyner içinde tek bir süreç olarak çalışıyor."
+  },
   "34de0bc4edd42e08": {
     "en": "Starts in {{duration}}",
     "path": "common:fasting.strip.scheduledLine",
@@ -3911,6 +3939,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Giriş yap"
+  },
+  "34f9046dbb9f50c0": {
+    "en": "Overview now opens with a summary of your chosen time span.",
+    "path": "releases:v0_35_0.added.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Genel bakış artık seçtiğin zaman aralığının bir özetiyle açılıyor."
   },
   "353b271fbce9d3f0": {
     "en": "One-time setup",
@@ -4037,6 +4072,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kendi eklediğin yiyecekler. Değerleri buradan düzenle veya birini kaldır."
+  },
+  "3744972968f8e898": {
+    "en": "What's new in {{version}}",
+    "path": "common:whatsNew.card.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "{{version}} sürümündeki yenilikler"
   },
   "37484a7c5ef012fa": {
     "en": "You put something in the pantry.",
@@ -4241,6 +4283,13 @@
     "at": "2026-09-14",
     "tr": "Tekrar dene"
   },
+  "3a25b5b9e547e209": {
+    "en": "The data screen says what is inside the JSON download.",
+    "path": "releases:v0_35_0.added.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Veri ekranı, JSON indirmesinin içinde nelerin yer aldığını belirtiyor."
+  },
   "3a262e2d552d89ac": {
     "en": "Saving",
     "path": "common:admin.settings.saving",
@@ -4394,6 +4443,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Günlük durumun · openplate"
+  },
+  "3d19483c4ed66401": {
+    "en": "What's new",
+    "path": "common:whatsNew.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Yenilikler"
   },
   "3d2c80ccd23f42b2": {
     "en": "Recipes · openplate",
@@ -4646,6 +4702,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Seninle paylaşılanlar · openplate"
+  },
+  "410423e28441e093": {
+    "en": "Release notes",
+    "path": "common:about.whatsNewValue",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Sürüm notları"
   },
   "410757a9555cbbfe": {
     "en": "Every food you log is written to this browser’s own storage. The server also keeps a copy, encrypted before it leaves your device. The operator holds a recovery key that can open that copy. Export the lot as a file whenever you like.",
@@ -5165,6 +5228,13 @@
     "at": "2026-09-14",
     "tr": "Bu davet artık geçerli değil"
   },
+  "48d720a948412346": {
+    "en": "All releases on GitHub",
+    "path": "common:whatsNew.allReleases",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "GitHub üzerindeki tüm sürümler"
+  },
   "48d86517cdaf8ffc": {
     "en": "openplate is a food-tracking tool. It is built local-first. Your foods, food logs, weight entries, and goals are written in your browser on your own device. On this instance, your account also keeps an end-to-end-encrypted copy of that data on our server. This ensures the same diary reaches your other devices and survives a reinstall. We hold that copy as ciphertext. We also hold a recovery key that lets a password reset restore your diary, as explained in the Privacy Policy. AI plate identification is included with your account rather than purchased from a third-party provider.",
     "path": "legal:terms.s2BodyManaged",
@@ -5528,6 +5598,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kopyalanıyor…"
+  },
+  "4dcf59b04e7aaa2e": {
+    "en": "New",
+    "path": "common:whatsNew.new",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Yeni"
   },
   "4df198cf47c2acb8": {
     "en": "Save start time",
@@ -7538,6 +7615,13 @@
     "at": "2026-09-14",
     "tr": "En uzun"
   },
+  "678f94329d2e0bff": {
+    "en": "And {{count}} more changes.",
+    "path": "common:whatsNew.card.more_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Ve {{count}} değişiklik daha."
+  },
   "67d4d306c81fa727": {
     "en": "{{day}}, {{value}} of {{goal}} kcal, within budget",
     "path": "common:dashboard.ridge.day.kcal.met",
@@ -7733,6 +7817,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Giriş yapılıyor…"
+  },
+  "6aa901f353369a78": {
+    "en": "A saved meal now reaches the server by itself.",
+    "path": "releases:v0_35_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Kaydedilen bir öğün artık sunucuya kendi kendine ulaşıyor."
   },
   "6ab79ed12195b34c": {
     "en": "Accounts are turned off on this server.",
@@ -8707,6 +8798,13 @@
     "at": "2026-09-14",
     "tr": "Hamileyken veya emzirirken oruç tutulması önerilmez, NHS bunu açıkça belirtir. Günlüğün ve hedeflerin olduğu gibi kalır."
   },
+  "778259f638def9d9": {
+    "en": "Changed",
+    "path": "common:whatsNew.groups.changed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Değiştirildi"
+  },
   "7784ca7e22b66ad0": {
     "en": "{{count}} bananas",
     "path": "common:portions.unit.banana_other",
@@ -9519,6 +9617,13 @@
     "at": "2026-09-14",
     "tr": "Nasıl çalıştığını gör"
   },
+  "8245d540845c8170": {
+    "en": "The streak on the home screen and on Progress is now the number of days you used the app.",
+    "path": "releases:v0_34_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Ana ekrandaki ve İlerleme bölümündeki seri, artık uygulamayı kullandığın gün sayısıdır."
+  },
   "8259708af2f06ffb": {
     "en": "Undo",
     "path": "common:entry.toast.undo",
@@ -9903,6 +10008,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate uygulamasının kendine ait bir mikrofonu yoktur. Klavyendeki mikrofon tuşuna dokun, bu tuş Google veya Apple aracılığıyla konuşmanı metne dönüştürür. openplate ve yapay zeka sağlayıcına yalnızca bu metin ulaşır."
+  },
+  "8703cc43249d2ec8": {
+    "en": "Your backup file moves to version 23.",
+    "path": "releases:v0_34_0.added.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Yedek dosyan sürüm 23'e geçer."
   },
   "871c2bb8f3c1caa7": {
     "en": "Hundred days under",
@@ -11143,6 +11255,13 @@
     "at": "2026-09-14",
     "tr": "Ya da bugün içinde bulunduğun hafta"
   },
+  "973d1c905727d061": {
+    "en": "And {{count}} more change.",
+    "path": "common:whatsNew.card.more_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Ve {{count}} değişiklik daha."
+  },
   "977670c4d9e55764": {
     "en": "Chicken breast",
     "path": "common:add.search.starters.chickenBreast",
@@ -11156,6 +11275,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bir çalışma seni her seferinde farklı bir kişi olarak görür ve önceki günlerin tek başına kalır. Bir kurtarma kodu ayarla, ardından bağlantıyı tekrar aç."
+  },
+  "977df6d3d0b9ddd6": {
+    "en": "The app no longer mentions openplate-gateway.",
+    "path": "releases:v0_35_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Uygulama artık openplate-gateway adını anmıyor."
   },
   "9780b7a6b40e7e9c": {
     "en": "Your diary belongs to your account. After you sign out, this device does not show it again until you sign in.",
@@ -11205,6 +11331,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yukarıdaki kutuyu işaretlediğinde gönderebiliriz."
+  },
+  "987cd62e24f8f47b": {
+    "en": "Progress is renamed to Insights, and now opens on four tabs.",
+    "path": "releases:v0_35_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "İlerleme bölümünün adı İçgörüler olarak değiştirildi ve artık dört sekmeyle açılıyor."
   },
   "988943f85b70bbe3": {
     "en": "Goals saved.",
@@ -11674,6 +11807,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "14 gün"
+  },
+  "9e137169e1fb40a2": {
+    "en": "Fixed",
+    "path": "common:whatsNew.groups.fixed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Düzeltildi"
   },
   "9e17c665aea888c9": {
     "en": "Reference amounts are grouped into wide age ranges, so the year is all we need, never your full date of birth.",
@@ -12291,6 +12431,13 @@
     "at": "2026-09-14",
     "tr": "Fikrini mi değiştirdin? Bu işlem yukarıdaki tüm ayrıntıları bu cihazdan kaldırır."
   },
+  "a74ab706fc0e700c": {
+    "en": "What's new",
+    "path": "common:about.whatsNew",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Yenilikler"
+  },
   "a75c5936caf7e711": {
     "en": "Couldn’t reach the sync server. Your diary is safe on this device and will catch up later.",
     "path": "common:sync.status.error.offline",
@@ -12332,6 +12479,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "tr": "Mevcut hedeflerine göre ölçülür."
+  },
+  "a7c861e762b0a969": {
+    "en": "The Meals tab now shows your averages and your usual foods.",
+    "path": "releases:v0_35_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Öğünler sekmesi artık ortalamalarını ve her zamanki yiyeceklerini gösteriyor."
   },
   "a7c8bc9c323a8247": {
     "en": "Protein helps you feel full and hold onto muscle, which matters more the fewer carbs or calories you eat. This is an amount to aim for, in grams. Going under it isn't a failure.",
@@ -12788,6 +12942,13 @@
     "at": "2026-09-14",
     "tr": "Davet kodunu yapıştır ya da sana gönderilen davet bağlantısını aç."
   },
+  "add9f54aa19d3763": {
+    "en": "A new screen lists what you have done with the app.",
+    "path": "releases:v0_34_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Yeni bir ekran, uygulamayla neler yaptığını listeliyor."
+  },
   "aea73a7009f31ca5": {
     "en": "Everything stored for {{email}} is removed and cannot be brought back. The diary on this device stays.",
     "path": "common:account.delete.confirmBody",
@@ -12850,6 +13011,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "tr": "7 günlük ortalama"
+  },
+  "af32ca072c54780d": {
+    "en": "What counts as using the app, and what the record survives.",
+    "path": "releases:v0_34_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Uygulamayı kullanmak sayılan durumlar ve kaydın neleri atlattığı."
   },
   "af55bf05b1803621": {
     "en": "Signing you up…",
@@ -13025,6 +13193,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "2 sahanda yumurta, bir dilim tereyağlı kızarmış ekmek, sade kahve"
+  },
+  "b16f2bfd42fde5d1": {
+    "en": "Signing out no longer says everything reached the server when it has not.",
+    "path": "releases:v0_35_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Oturumu kapatırken, verilerin tümü sunucuya ulaşmamışsa artık her şey ulaştı demiyor."
   },
   "b16f8bce974c065a": {
     "en": "Sign in to start",
@@ -13578,6 +13753,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{min}} ile {{max}} arasında tam sayı olarak bir saat gir."
+  },
+  "b99b2c2ac5214429": {
+    "en": "What's new · openplate",
+    "path": "common:meta.whatsNew",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Yenilikler · openplate"
   },
   "b9edafefd955d196": {
     "en": "{{hint}} · ~{{grams}} g",
@@ -14152,6 +14334,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Önceki gün"
+  },
+  "c248515d3d7b20e6": {
+    "en": "The Nutrition tab charts protein, fat and fiber too.",
+    "path": "releases:v0_35_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Beslenme sekmesi artık protein, yağ ve lifi de grafiklendiriyor."
   },
   "c2603c5704f21b71": {
     "en": "No invitation is waiting.",
@@ -14747,6 +14936,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate, cihazında kalan bir besin takip uygulaması"
+  },
+  "cc7cb45c07245367": {
+    "en": "Dismiss",
+    "path": "common:whatsNew.card.dismiss",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Kapat"
   },
   "cc885c62c2932af2": {
     "en": "Say what you ate and check the entries before they are saved. Handy when your hands are busy.",
@@ -16106,6 +16302,13 @@
     "at": "2026-09-14",
     "tr": "Kaynak kod"
   },
+  "deed50468b2de4b2": {
+    "en": "The instance can hold a food database key, and says so when the database refuses.",
+    "path": "releases:v0_34_0.added.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Örnek bir gıda veritabanı anahtarı tutabilir ve veritabanı reddettiğinde bunu bildirir."
+  },
   "df0dcd57d2bba74a": {
     "en": "Your photo estimates have ended",
     "path": "common:scan.errors.titles.allowanceExpired",
@@ -17324,6 +17527,13 @@
     "at": "2026-09-14",
     "tr": "Bu tabağın fotoğrafını ve bu kayıttaki değerleri gönderirsin. Günlüğünden başka hiçbir şey bununla birlikte gitmez. Bu sunucunun bir yöneticisi o fotoğrafı açabilir ve bu değerleri okuyabilir."
   },
+  "ef1a2fa7fde44876": {
+    "en": "Your past counts: the app rebuilds the record from the diary you already have.",
+    "path": "releases:v0_34_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Geçmişin de hesaba katılır: uygulama, kayıtları elinde zaten bulunan günlükten yeniden oluşturur."
+  },
   "ef2d5a450f8cfe7a": {
     "en": "Setup means visiting the provider's own site first: create a free account there, and add a payment method (their checkout, not ours: openplate never sees your card). The simplest path is a key from <providerLink>{{provider}}</providerLink>: that's the tab we've put first below, and one key covers every model listed under it.",
     "path": "common:settingsAi.explainer.setup",
@@ -17806,6 +18016,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "tr": "Üst üste otuz gün."
+  },
+  "f56a638c1b6a7ddd": {
+    "en": "Insights can now show the last 90 days.",
+    "path": "releases:v0_35_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "İçgörüler artık son 90 günü gösterebiliyor."
   },
   "f571520eeca59514": {
     "en": "Invitation ready for {{email}}",
@@ -18527,6 +18744,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kotanın bittiği tarih."
+  },
+  "ff950db09ed233db": {
+    "en": "The app no longer says the server cannot read your diary.",
+    "path": "releases:v0_35_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Uygulama artık sunucunun günlüğünü okuyamadığını söylemiyor."
   },
   "ffb18ccecc476fa0": {
     "en": "tuna",

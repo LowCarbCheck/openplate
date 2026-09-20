@@ -123,6 +123,11 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   { pattern: '/settings/sharing', parent: '/settings' },
   { pattern: '/settings/research', parent: '/settings' },
   { pattern: '/settings/about', parent: '/settings' },
+  // Under ABOUT, not under the hub: the release notes are reached from the
+  // About page's own row and from the card on the diary, and its
+  // `handle.backTo` says `/settings/about`, so the drawn arrow and the system
+  // Back gesture agree.
+  { pattern: '/settings/whats-new', parent: '/settings/about' },
   // "Your foods" and "Saved meals" are NOT under `/add`, even though `/add` is
   // where you use them: both declare `handle.backTo: '/settings'`, because
   // they are managed from the settings hub. Same rule as `/describe`, the

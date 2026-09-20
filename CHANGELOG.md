@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The app now shows you what changed after an update.** The first time you open openplate on a newer version, a card on your diary and your home screen lists the main changes and links to a new What's new page under About. That page keeps the notes of the last three releases, in your language. The card stays until you dismiss it or open the notes, on each device, and only for people who used openplate before the update: a device that is new to openplate is never told what changed. The notes travel inside the app, so nothing is fetched and the page works offline.
+
 ### Changed
 
 - **Your fasts now follow you to your other devices.** A fast used to live on the one device it was started on, so erasing that device, losing it, or opening openplate on a tablet left the fasting history behind. Starting a fast, ending it, writing a mood or a note, and removing a fast all reach your account now and land on your other devices. If two devices both started a fast while they were offline, you will see two open fasts on both of them: the newest is the one that counts as running, and the other sits in your history marked still open, with a Remove button. Nothing is ever closed at a time you did not choose. Update every device you use: one still on an older version does not pass on a deleted fast, so a fast you removed can come back.

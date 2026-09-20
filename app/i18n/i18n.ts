@@ -6,11 +6,13 @@
  * matters here, the PWA keeps working fully offline in every language
  * without a separate cache entry for the translations.
  *
- * TWO NAMESPACES. `common` is the UI, loaded on every page. `legal` is the
+ * THREE NAMESPACES. `common` is the UI, loaded on every page. `legal` is the
  * long prose of the three legal routes and is kept separate so ~600 lines of
  * policy text in two languages are not carried into the bundle every page
- * downloads. Both are still inline, for the offline reason above — the split
- * is about keeping `common` honest, not about lazy loading.
+ * downloads. `releases` is the in-app release notes, generated from
+ * CHANGELOG.md by `pnpm release-catalog` and never hand-written (ADR-0018).
+ * All three are still inline, for the offline reason above, and the split is
+ * about keeping `common` honest, not about lazy loading.
  *
  * Detection is pinned to the COOKIE ONLY, which is a deliberate deviation from
  * tgl's `['cookie', 'localStorage', 'navigator']`. The server renders from
@@ -37,6 +39,12 @@ import frLegal from './locales/fr/legal.json';
 import itLegal from './locales/it/legal.json';
 import esLegal from './locales/es/legal.json';
 import trLegal from './locales/tr/legal.json';
+import enReleases from './locales/en/releases.json';
+import deReleases from './locales/de/releases.json';
+import frReleases from './locales/fr/releases.json';
+import itReleases from './locales/it/releases.json';
+import esReleases from './locales/es/releases.json';
+import trReleases from './locales/tr/releases.json';
 
 /** A translation catalog: nested objects bottoming out in strings. */
 interface Catalog {
@@ -49,13 +57,13 @@ interface Catalog {
  * without a catalog here a typecheck failure rather than a silently English UI.
  */
 const RESOURCES = {
-  en: { common: enCommon, legal: enLegal },
-  de: { common: deCommon, legal: deLegal },
-  fr: { common: frCommon, legal: frLegal },
-  it: { common: itCommon, legal: itLegal },
-  es: { common: esCommon, legal: esLegal },
-  tr: { common: trCommon, legal: trLegal },
-} satisfies Record<LanguageCode, { common: Catalog; legal: Catalog }>;
+  en: { common: enCommon, legal: enLegal, releases: enReleases },
+  de: { common: deCommon, legal: deLegal, releases: deReleases },
+  fr: { common: frCommon, legal: frLegal, releases: frReleases },
+  it: { common: itCommon, legal: itLegal, releases: itReleases },
+  es: { common: esCommon, legal: esLegal, releases: esReleases },
+  tr: { common: trCommon, legal: trLegal, releases: trReleases },
+} satisfies Record<LanguageCode, { common: Catalog; legal: Catalog; releases: Catalog }>;
 
 void i18next
   .use(LanguageDetector)
@@ -65,7 +73,7 @@ void i18next
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: [...SUPPORTED_LANGUAGES],
     defaultNS: 'common',
-    ns: ['common', 'legal'],
+    ns: ['common', 'legal', 'releases'],
     detection: {
       order: ['cookie'],
       lookupCookie: LANGUAGE_COOKIE,

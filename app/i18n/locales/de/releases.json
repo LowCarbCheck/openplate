@@ -1,0 +1,39 @@
+{
+  "v0_35_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "Insights kann jetzt die letzten 90 Tage anzeigen.",
+      "02": "Fortschritt heißt jetzt Insights und öffnet sich auf vier Tabs.",
+      "03": "Der Tab Ernährung stellt auch Protein, Fett und Ballaststoffe im Diagramm dar.",
+      "04": "Der Tab Mahlzeiten zeigt jetzt deine Durchschnittswerte und deine üblichen Lebensmittel.",
+      "05": "Der Tab Ziele zeigt jetzt, wie oft du jedes Ziel erreicht hast.",
+      "06": "Die Übersicht öffnet sich jetzt mit einer Zusammenfassung deiner gewählten Zeitspanne.",
+      "07": "Der Daten-Bildschirm beschreibt, was im JSON-Download enthalten ist."
+    },
+    "changed": {
+      "01": "Die App erwähnt openplate-gateway nicht mehr."
+    },
+    "fixed": {
+      "01": "Eine gespeicherte Mahlzeit wird nun von selbst an den Server übertragen.",
+      "02": "Beim Abmelden wird nicht mehr behauptet, alles sei auf dem Server angekommen, wenn das nicht stimmt.",
+      "03": "Die App behauptet nicht mehr, der Server könne dein Tagebuch nicht lesen."
+    }
+  },
+  "v0_34_1": {
+    "date": "2026-09-19",
+    "changed": {
+      "01": "Der Server läuft nun als einzelner Prozess im Container."
+    }
+  },
+  "v0_34_0": {
+    "date": "2026-09-19",
+    "added": {
+      "01": "Die Serie auf dem Startbildschirm und unter Fortschritt entspricht jetzt der Anzahl an Tagen, an denen du die App verwendet hast.",
+      "02": "Ein neuer Bildschirm listet auf, was du mit der App gemacht hast.",
+      "03": "Deine Vergangenheit zählt: Die App baut den Verlauf aus dem Tagebuch wieder auf, das du bereits hast.",
+      "04": "Was als Nutzung der App zählt und was der Verlauf übersteht.",
+      "05": "Deine Sicherungsdatei wechselt auf Version 23.",
+      "06": "Die Instanz kann einen Datenbankschlüssel für Lebensmittel enthalten und meldet dies, wenn die Datenbank ablehnt."
+    }
+  }
+}

@@ -7,6 +7,7 @@ import { formatClockTime } from '#app/lib/format-clock-time';
 import { DEFAULT_LANGUAGE } from '#app/i18n/language-prefs';
 import { redirect, useFetcher, useRevalidator } from 'react-router';
 import { Link } from '#app/components/link';
+import { WhatsNewCard } from '#app/components/whats-new-card';
 import { z } from 'zod';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { countLoggedDays } from '#app/models/habit-strip';
@@ -2769,6 +2770,14 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6" {...swipeHandlers}>
+      {/*
+        What changed in this build, said once (ADR-0018). FIRST on the page, and on
+        the dashboard too, because `/diary` is the installed app's `start_url`
+        and is therefore the screen most people land on after an update. It
+        decides for itself and renders nothing at all on a device that has
+        already been told, which is every device on every day but one.
+      */}
+      <WhatsNewCard />
       <BackupNudgeBanner
         daysSinceExport={daysSinceExportBackup}
         daysSinceFirstData={daysSinceFirstDataLocal}

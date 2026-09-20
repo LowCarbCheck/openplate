@@ -22,6 +22,10 @@
  * version, a bullet with no bold lead, a bullet sitting above any group heading, or a group
  * heading that is not one of the four. A release page that silently lists nothing is worse than a
  * workflow step that stops and says which bullet is wrong.
+ *
+ * A SECOND READER. `scripts/sync-release-catalog.ts` builds the in-app release notes from the same
+ * leads, through `parseReleases` below. There is one parser for both, so the sentence an operator
+ * reads on the release page and the sentence a person reads in the app come from one place.
  */
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -141,6 +145,70 @@ function groupsOf({ lines, where }: { lines: string[]; where: string }): Group[]
 export function parseSection({ changelog, version }: { changelog: string; version: string }): Section {
   const { date, lines } = sectionLines({ changelog, version });
   return { version, date, groups: groupsOf({ lines, where: version }) };
+}
+
+/**
+ * The version the grouped, bold-lead format begins at. Below it a section is a flat list, kept
+ * verbatim as the record of what shipped, so `groupsOf` would refuse it. Rewriting old prose to
+ * satisfy a format introduced later would edit history for the sake of a reader.
+ */
+export const GROUPED_FORMAT_FROM = '0.20.0';
+
+/** A numbered release heading. `## [Unreleased]` never matches it: it does not open with a digit. */
+const NUMBERED_HEADING = /^## \[(\d[^\]]*)\](.*)$/;
+
+/** The `YYYY-MM-DD` tail of a release heading, which is what makes it a released version. */
+const DATED_TAIL = / - \d{4}-\d{2}-\d{2}\s*$/;
+
+/** `0.34.1` as `[0, 34, 1]`, with any prerelease suffix dropped. */
+function versionParts(version: string): number[] {
+  return (version.split('-')[0] ?? '').split('.').map((part) => Number(part));
+}
+
+/** Whether `version` is at or above `floor`, compared part by part. */
+export function isAtLeast({ version, floor }: { version: string; floor: string }): boolean {
+  const mine = versionParts(version);
+  const theirs = versionParts(floor);
+  for (let i = 0; i < theirs.length; i++) {
+    const here = mine[i] ?? 0;
+    const there = theirs[i] ?? 0;
+    if (here !== there) return here > there;
+  }
+  return true;
+}
+
+/**
+ * Every numbered release in the changelog, newest first, each read into its groups.
+ *
+ * The order is the file's own, which the changelog's opening paragraph fixes as newest first, and
+ * the walk STOPS at the first version below `from` for the same reason: everything under it is
+ * older still. `[Unreleased]` is never one of these, it carries no version and no date.
+ *
+ * A numbered heading that carries no date throws rather than being passed over, because a silently
+ * skipped release is a release the app would never mention.
+ */
+export function parseReleases({
+  changelog,
+  from = GROUPED_FORMAT_FROM,
+}: {
+  changelog: string;
+  from?: string;
+}): Section[] {
+  const releases: Section[] = [];
+  for (const line of toLines(changelog)) {
+    const match = NUMBERED_HEADING.exec(line);
+    if (!match) continue;
+    const version = match[1] ?? '';
+    if (!isAtLeast({ version, floor: from })) break;
+    if (!DATED_TAIL.test(match[2] ?? '')) {
+      throw new Error(
+        `CHANGELOG ${version}: the heading carries no ' - YYYY-MM-DD' date.\n  ${line}\n` +
+          `  Expected: ## [${version}] - YYYY-MM-DD`,
+      );
+    }
+    releases.push(parseSection({ changelog, version }));
+  }
+  return releases;
 }
 
 /**

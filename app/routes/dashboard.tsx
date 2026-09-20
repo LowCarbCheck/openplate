@@ -79,6 +79,7 @@ import { buildAdherenceGrid } from '#app/models/adherence-grid';
 import type { AdherenceGoals, AdherenceGrid as AdherenceGridModel } from '#app/models/adherence-grid';
 import { deriveActivityStreak, isGamificationHidden } from '#app/lib/gamification/surfaces';
 import { dismissInsightsHint, isInsightsHintDismissed } from '#app/lib/insights-hint';
+import { WhatsNewCard } from '#app/components/whats-new-card';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
@@ -691,6 +692,14 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      {/*
+        What changed in this build, said once (ADR-0018), ABOVE the hero and above
+        the Insights hint further down. Two one-time cards on one screen is one
+        too many, and this one is the older claim: the Insights hint is about a
+        feature that has been there for a while, this is about the update that
+        just landed. It renders nothing on a device that has been told.
+      */}
+      <WhatsNewCard />
       <TodayHeroCard
         summary={summary}
         goals={goals}

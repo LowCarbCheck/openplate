@@ -272,6 +272,10 @@ export default [
     // Provenance: version, licence and the source repository (M146 spec 01).
     // Ungated, it is true on every instance, including a self-hoster's.
     route('/settings/about', 'routes/settings.about.tsx'),
+    // The release notes this build ships with, reached from the About page.
+    // No loader and no network: the notes are an i18n namespace in the bundle
+    // (ADR-0018), so this page works offline like every other settings page.
+    route('/settings/whats-new', 'routes/settings.whats-new.tsx'),
     // The administration console (M192/06). 404s unless `SYNC_SERVER_URL` is
     // set, like every account screen: an instance with no server has nobody to
     // administer. The layout renders the not-an-administrator card for

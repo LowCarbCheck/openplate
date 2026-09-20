@@ -1,0 +1,39 @@
+{
+  "v0_35_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "İçgörüler artık son 90 günü gösterebiliyor.",
+      "02": "İlerleme bölümünün adı İçgörüler olarak değiştirildi ve artık dört sekmeyle açılıyor.",
+      "03": "Beslenme sekmesi artık protein, yağ ve lifi de grafiklendiriyor.",
+      "04": "Öğünler sekmesi artık ortalamalarını ve her zamanki yiyeceklerini gösteriyor.",
+      "05": "Hedefler sekmesi artık her hedefe ne sıklıkla ulaştığını gösteriyor.",
+      "06": "Genel bakış artık seçtiğin zaman aralığının bir özetiyle açılıyor.",
+      "07": "Veri ekranı, JSON indirmesinin içinde nelerin yer aldığını belirtiyor."
+    },
+    "changed": {
+      "01": "Uygulama artık openplate-gateway adını anmıyor."
+    },
+    "fixed": {
+      "01": "Kaydedilen bir öğün artık sunucuya kendi kendine ulaşıyor.",
+      "02": "Oturumu kapatırken, verilerin tümü sunucuya ulaşmamışsa artık her şey ulaştı demiyor.",
+      "03": "Uygulama artık sunucunun günlüğünü okuyamadığını söylemiyor."
+    }
+  },
+  "v0_34_1": {
+    "date": "2026-09-19",
+    "changed": {
+      "01": "Sunucu artık konteyner içinde tek bir süreç olarak çalışıyor."
+    }
+  },
+  "v0_34_0": {
+    "date": "2026-09-19",
+    "added": {
+      "01": "Ana ekrandaki ve İlerleme bölümündeki seri, artık uygulamayı kullandığın gün sayısıdır.",
+      "02": "Yeni bir ekran, uygulamayla neler yaptığını listeliyor.",
+      "03": "Geçmişin de hesaba katılır: uygulama, kayıtları elinde zaten bulunan günlükten yeniden oluşturur.",
+      "04": "Uygulamayı kullanmak sayılan durumlar ve kaydın neleri atlattığı.",
+      "05": "Yedek dosyan sürüm 23'e geçer.",
+      "06": "Örnek bir gıda veritabanı anahtarı tutabilir ve veritabanı reddettiğinde bunu bildirir."
+    }
+  }
+}

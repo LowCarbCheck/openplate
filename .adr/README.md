@@ -43,3 +43,4 @@ ADRs are immutable once Accepted. To change a decision, write a new ADR that sup
 | [0015](0015-the-pantry-is-a-merged-entity.md)         | The pantry is a merged entity, reversing M233/02                         | Accepted   |
 | [0016](0016-the-sign-out-dialog-says-only-what-is-true.md) | The sign-out dialog says only what it can prove                       | Accepted   |
 | [0017](0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted |
+| [0018](0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted |

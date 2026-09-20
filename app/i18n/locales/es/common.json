@@ -5,6 +5,8 @@
     "licenceValue": "MIT",
     "source": "Código fuente",
     "sourceValue": "{{appName}} en GitHub",
+    "whatsNew": "Novedades",
+    "whatsNewValue": "Notas de la versión",
     "title": "Acerca de openplate",
     "updates": {
       "behindTitle": "Existe una versión más reciente",
@@ -1325,7 +1327,8 @@
     "notifications": "Notificaciones · openplate",
     "pantry": "Despensa · openplate",
     "recipes": "Recetas · openplate",
-    "awards": "Tu historial · openplate"
+    "awards": "Tu historial · openplate",
+    "whatsNew": "Novedades · openplate"
   },
   "nav": {
     "add": "Añadir",
@@ -3440,5 +3443,22 @@
         "note": "Cien días seguidos alcanzando o sin superar tu objetivo de carbohidratos."
       }
     }
+  },
+  "whatsNew": {
+    "title": "Novedades",
+    "card": {
+      "title": "Novedades en {{version}}",
+      "more_one": "Y {{count}} cambio más.",
+      "more_other": "Y {{count}} cambios más.",
+      "open": "Ver las novedades",
+      "dismiss": "Descartar"
+    },
+    "groups": {
+      "added": "Añadido",
+      "changed": "Cambiado",
+      "fixed": "Corregido"
+    },
+    "new": "Nuevo",
+    "allReleases": "Todas las versiones en GitHub"
   }
 }

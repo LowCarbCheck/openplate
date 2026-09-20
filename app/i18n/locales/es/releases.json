@@ -1,0 +1,39 @@
+{
+  "v0_35_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "Estadísticas ahora puede mostrar los últimos 90 días.",
+      "02": "Progreso pasa a llamarse Estadísticas y ahora se abre en cuatro pestañas.",
+      "03": "La pestaña Nutrición también grafica proteínas, grasas y fibra.",
+      "04": "La pestaña Comidas ahora muestra tus promedios y tus alimentos habituales.",
+      "05": "La pestaña Objetivos ahora muestra con qué frecuencia cumpliste cada objetivo.",
+      "06": "Resumen ahora se abre con una vista general del periodo que elijas.",
+      "07": "La pantalla de datos indica qué contiene la descarga en JSON."
+    },
+    "changed": {
+      "01": "La app ya no menciona openplate-gateway."
+    },
+    "fixed": {
+      "01": "Una comida guardada ahora llega sola al servidor.",
+      "02": "Al cerrar sesión ya no se indica que todo llegó al servidor si no ha sido así.",
+      "03": "La app ya no indica que el servidor no puede leer tu diario."
+    }
+  },
+  "v0_34_1": {
+    "date": "2026-09-19",
+    "changed": {
+      "01": "El servidor ahora se ejecuta como un único proceso dentro del contenedor."
+    }
+  },
+  "v0_34_0": {
+    "date": "2026-09-19",
+    "added": {
+      "01": "La racha en la pantalla de inicio y en Progreso es ahora el número de días que usaste la app.",
+      "02": "Una nueva pantalla lista lo que has hecho con la app.",
+      "03": "Tu historial cuenta: la app reconstruye el registro a partir del diario que ya tienes.",
+      "04": "Qué cuenta como usar la app y qué conserva el registro.",
+      "05": "Tu archivo de copia de seguridad pasa a la versión 23.",
+      "06": "La instancia puede almacenar una clave de base de datos de alimentos, e indica si la base de datos la rechaza."
+    }
+  }
+}

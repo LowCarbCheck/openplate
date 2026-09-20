@@ -103,6 +103,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0015](.adr/0015-the-pantry-is-a-merged-entity.md) | The pantry is a merged entity, reversing M233/02 | Accepted   |
 | [0016](.adr/0016-the-sign-out-dialog-says-only-what-is-true.md) | The sign-out dialog says only what it can prove | Accepted   |
 | [0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted   |
+| [0018](.adr/0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 
@@ -181,14 +182,23 @@ Write it for the person running the instance, not for the person reading the dif
 
 **The lead is what the GitHub Release page prints.** `scripts/release-notes.ts` reads that version's section out of `CHANGELOG.md` and builds the page from the leads, grouped, with a link into the changelog for the detail and a compare link against the previous tag. `tests/unit/release-notes.test.ts` runs the same checks over the real `CHANGELOG.md`, and `.githooks/pre-push` runs that file before lint, so a bullet the page could not print stops the push instead of the release. The checks are scoped to 0.20.0 and newer; the flat list below that is the record of what shipped and is left alone.
 
+**The lead is also what the app shows.** `scripts/sync-release-catalog.ts` reads the same leads through the same parser into `app/i18n/locales/en/releases.json`, which is translated and shipped in the bundle, so a person who updated sees what changed without the app asking the network anything ([ADR-0018](.adr/0018-in-app-release-notes-come-from-the-changelog.md)). A lead therefore carries **no markup at all**: no backtick, no link, no angle bracket, no `{{name}}`. The generator refuses one in any release it carries, and names the version and the lead. Put the detail, and its backticks, in the rest of the bullet.
+
 **Cutting a release is one `chore(release): x.y.z, <one line saying what it is>` commit** that does this and nothing else:
 
 1. **Pick the axis** from the sum of the Unreleased entries. PATCH: nothing to learn. MINOR: something to learn, a new screen, a new setting, a changed default. MAJOR: the operator must change something, a renamed variable, a broken contract. When in doubt, pick patch.
 2. **Bump `version` in `package.json`** to that number.
 3. **Rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`**, using the release date. The group headings and their bullets come along as they are. **Append each bullet's short commit hash** as `([abc1234](https://github.com/LowCarbCheck/openplate/commit/abc1234))`. Merge or reorder lines as needed, and delete entries for work reverted before release.
 4. **Re-create an empty `## [Unreleased]` heading above it.**
-5. **Push, and push a matching annotated tag with it**: `git tag -a vX.Y.Z -m "openplate X.Y.Z" && git push --follow-tags`. `.github/workflows/release-image.yml` triggers on `v*` and nothing else builds the image or publishes the release page, so a cut version with no tag is not a release at all.
-6. **A release is not a deploy.** The tag builds an image and a release page and nothing more. Production runs the version Bay pins in `bay-sprqvntrs/group_vars/all/services.yml`, and a person bumps that pin and runs the deploy. After cutting a tag, say in the report that production still runs the old version, and do not deploy unless the operator asks.
+5. **Regenerate the in-app release notes, and buy their five translations.** `pnpm release-catalog` rewrites `app/i18n/locales/en/releases.json` from the section you just renamed: the newest three releases that changed the application, with the bold lead of each Added, Changed and Fixed bullet. Then buy the translations, one locale at a time, for `de`, `fr`, `it`, `es` and `tr`:
+
+   ```bash
+   toolbox run -c ts-dev env OPENROUTER_API_KEY=... CI=true pnpm translate:ui --locale de --local
+   ```
+
+   The key is `OPENROUTER_API_KEY` in the workspace root `.env`. Thread it through `env` as above and never print it. Each run rewrites every catalog for that locale, so **stage the six `app/i18n/locales/*/releases.json` files and the five `app/i18n/memory/*.json` files** in this same release commit. `tests/unit/release-catalog.test.ts` compares the committed English catalog against `CHANGELOG.md`, so a forgotten run fails the pre-push gate instead of shipping a card about a version that is no longer the newest. `pnpm release-catalog --check` asks the same question without writing anything. See [ADR-0018](.adr/0018-in-app-release-notes-come-from-the-changelog.md) for why this is a generated file and not a fetch.
+6. **Push, and push a matching annotated tag with it**: `git tag -a vX.Y.Z -m "openplate X.Y.Z" && git push --follow-tags`. `.github/workflows/release-image.yml` triggers on `v*` and nothing else builds the image or publishes the release page, so a cut version with no tag is not a release at all.
+7. **A release is not a deploy.** The tag builds an image and a release page and nothing more. Production runs the version Bay pins in `bay-sprqvntrs/group_vars/all/services.yml`, and a person bumps that pin and runs the deploy. After cutting a tag, say in the report that production still runs the old version, and do not deploy unless the operator asks.
 
 **No em dashes and no en dashes** in the changelog, in a lead, or in a commit message. Use a comma.
 

@@ -1,0 +1,39 @@
+{
+  "v0_35_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "Insights can now show the last 90 days.",
+      "02": "Progress is renamed to Insights, and now opens on four tabs.",
+      "03": "The Nutrition tab charts protein, fat and fiber too.",
+      "04": "The Meals tab now shows your averages and your usual foods.",
+      "05": "The Goals tab now shows how often you met each goal.",
+      "06": "Overview now opens with a summary of your chosen time span.",
+      "07": "The data screen says what is inside the JSON download."
+    },
+    "changed": {
+      "01": "The app no longer mentions openplate-gateway."
+    },
+    "fixed": {
+      "01": "A saved meal now reaches the server by itself.",
+      "02": "Signing out no longer says everything reached the server when it has not.",
+      "03": "The app no longer says the server cannot read your diary."
+    }
+  },
+  "v0_34_1": {
+    "date": "2026-09-19",
+    "changed": {
+      "01": "The server now runs as one process in the container."
+    }
+  },
+  "v0_34_0": {
+    "date": "2026-09-19",
+    "added": {
+      "01": "The streak on the home screen and on Progress is now the number of days you used the app.",
+      "02": "A new screen lists what you have done with the app.",
+      "03": "Your past counts: the app rebuilds the record from the diary you already have.",
+      "04": "What counts as using the app, and what the record survives.",
+      "05": "Your backup file moves to version 23.",
+      "06": "The instance can hold a food database key, and says so when the database refuses."
+    }
+  }
+}

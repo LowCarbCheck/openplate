@@ -5,6 +5,8 @@
     "licenceValue": "MIT",
     "source": "Code source",
     "sourceValue": "{{appName}} sur GitHub",
+    "whatsNew": "Nouveautés",
+    "whatsNewValue": "Notes de version",
     "title": "À propos d'openplate",
     "updates": {
       "behindTitle": "Une version plus récente existe",
@@ -1325,7 +1327,8 @@
     "notifications": "Notifications · openplate",
     "pantry": "Garde-manger · openplate",
     "recipes": "Recettes · openplate",
-    "awards": "Ton historique · openplate"
+    "awards": "Ton historique · openplate",
+    "whatsNew": "Nouveautés · openplate"
   },
   "nav": {
     "add": "Ajouter",
@@ -3440,5 +3443,22 @@
         "note": "Cent jours consécutifs en respectant ou en restant sous ton quota de glucides."
       }
     }
+  },
+  "whatsNew": {
+    "title": "Nouveautés",
+    "card": {
+      "title": "Nouveautés de la version {{version}}",
+      "more_one": "Et {{count}} autre modification.",
+      "more_other": "Et {{count}} autres modifications.",
+      "open": "Voir les nouveautés",
+      "dismiss": "Ignorer"
+    },
+    "groups": {
+      "added": "Ajouté",
+      "changed": "Modifié",
+      "fixed": "Corrigé"
+    },
+    "new": "Nouveau",
+    "allReleases": "Toutes les versions sur GitHub"
   }
 }

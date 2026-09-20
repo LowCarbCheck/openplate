@@ -5,6 +5,8 @@
     "licenceValue": "MIT",
     "source": "Source code",
     "sourceValue": "{{appName}} on GitHub",
+    "whatsNew": "What's new",
+    "whatsNewValue": "Release notes",
     "title": "About openplate",
     "updates": {
       "behindTitle": "A newer release exists",
@@ -1325,7 +1327,8 @@
     "notifications": "Notifications · openplate",
     "pantry": "Pantry · openplate",
     "recipes": "Recipes · openplate",
-    "awards": "Your record · openplate"
+    "awards": "Your record · openplate",
+    "whatsNew": "What's new · openplate"
   },
   "nav": {
     "add": "Add",
@@ -3440,5 +3443,22 @@
         "note": "A hundred days running at or under your carb goal."
       }
     }
+  },
+  "whatsNew": {
+    "title": "What's new",
+    "card": {
+      "title": "What's new in {{version}}",
+      "more_one": "And {{count}} more change.",
+      "more_other": "And {{count}} more changes.",
+      "open": "See what's new",
+      "dismiss": "Dismiss"
+    },
+    "groups": {
+      "added": "Added",
+      "changed": "Changed",
+      "fixed": "Fixed"
+    },
+    "new": "New",
+    "allReleases": "All releases on GitHub"
   }
 }

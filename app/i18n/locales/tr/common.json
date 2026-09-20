@@ -5,6 +5,8 @@
     "licenceValue": "MIT",
     "source": "Kaynak kodu",
     "sourceValue": "GitHub üzerinde {{appName}}",
+    "whatsNew": "Yenilikler",
+    "whatsNewValue": "Sürüm notları",
     "title": "openplate hakkında",
     "updates": {
       "behindTitle": "Daha yeni bir sürüm var",
@@ -1325,7 +1327,8 @@
     "notifications": "Bildirimler · openplate",
     "pantry": "Kiler · openplate",
     "recipes": "Tarifler · openplate",
-    "awards": "Kayıtların · openplate"
+    "awards": "Kayıtların · openplate",
+    "whatsNew": "Yenilikler · openplate"
   },
   "nav": {
     "add": "Ekle",
@@ -3440,5 +3443,22 @@
         "note": "Karbonhidrat hedefine eşit veya altında geçen kesintisiz yüz gün."
       }
     }
+  },
+  "whatsNew": {
+    "title": "Yenilikler",
+    "card": {
+      "title": "{{version}} sürümündeki yenilikler",
+      "more_one": "Ve {{count}} değişiklik daha.",
+      "more_other": "Ve {{count}} değişiklik daha.",
+      "open": "Yenilikleri gör",
+      "dismiss": "Kapat"
+    },
+    "groups": {
+      "added": "Eklendi",
+      "changed": "Değiştirildi",
+      "fixed": "Düzeltildi"
+    },
+    "new": "Yeni",
+    "allReleases": "GitHub üzerindeki tüm sürümler"
   }
 }
