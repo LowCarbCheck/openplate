@@ -933,6 +933,57 @@ interface PassThroughDecision<T> {
 }
 
 /**
+ * A DECLARED END IS NEVER LOST, whichever copy of a fast wins the merge
+ * (M240 counsel item 2).
+ *
+ * ── The sequence this closes ─────────────────────────────────────────────
+ *
+ * `setLocalFastStart` and `setLocalFastPlannedStart` refuse to touch a fast
+ * that has ended, but they read THIS device's copy, and a device that has not
+ * synced yet holds a copy that is still running. So: the person ends the fast
+ * on their phone; they adjust its start on a stale tablet; both edits stamp at
+ * the same lamport, because both were made against the same baseline; and
+ * `pickMergeWinner` breaks the tie on DEVICE ID. Half the time the tablet
+ * wins, and the fast is open again with the end the person declared gone.
+ *
+ * ── The rule ─────────────────────────────────────────────────────────────
+ *
+ * When the winning copy has no end and the losing copy has one, keep every
+ * field of the winner and carry the loser's `endedAt` onto it, with the
+ * reflection that was declared in the same act (`endLocalFast` writes
+ * `endedAt`, `mood` and `note` together).
+ *
+ * IT INVENTS NOTHING, which is the line ADR-0014 holds. The instant written is
+ * one the person declared on one of their own devices; the merge only refuses
+ * to drop it. Nothing is deleted either: the row survives with the winner's
+ * protocol, target and start.
+ *
+ * ── Why it converges ─────────────────────────────────────────────────────
+ *
+ * `pickMergeWinner` is symmetric, so both devices agree on which copy won and
+ * which lost from the same pair of payloads, whichever side each passes as
+ * `local`. This function then reads only those two rows. And it is idempotent:
+ * once the end is carried, the winner HAS an end, so a second pass changes
+ * nothing.
+ *
+ * @param winner - the copy the stamps chose.
+ * @param loser - the other side's copy of the same id, or `undefined` when only one side held it.
+ */
+function withDeclaredEnd(winner: LocalFast, loser: LocalFast | undefined): LocalFast {
+  if (loser === undefined) return winner;
+  if (winner.endedAt !== null) return winner;
+  if (loser.endedAt === null) return winner;
+  // THE REFLECTION GOES WITH THE END, and only where the loser has one. An
+  // absent key stays absent rather than becoming an explicit `null`, or the
+  // content hash would move for a row nothing happened to and the device would
+  // push a blob version over punctuation.
+  const carried: LocalFast = { ...winner, endedAt: loser.endedAt };
+  if (loser.mood !== undefined) carried.mood = loser.mood;
+  if (loser.note !== undefined) carried.note = loser.note;
+  return carried;
+}
+
+/**
  * WHICH SIDE'S LIST SURVIVES, for one collection that is not merged.
  *
  * THE INVARIANT, and it is the whole of this function: this device may push
@@ -1035,6 +1086,16 @@ export function mergeSnapshots({
   const foodLogs: LocalFoodLog[] = [];
   const weightEntries: LocalWeightEntry[] = [];
   const mergedFasts: LocalFast[] = [];
+  // BOTH SIDES' COPIES, BY ID, so the loop below can ask what the OTHER copy of
+  // a fast said. `mergeEntityMaps` hands back the winner and discards the
+  // loser, and a declared end living only on the loser is exactly what
+  // `withDeclaredEnd` exists to rescue.
+  const fastsById = new Map<string, LocalFast[]>();
+  for (const entry of [...local.snapshot.fasts, ...remote.snapshot.fasts]) {
+    const held = fastsById.get(entry.id);
+    if (held === undefined) fastsById.set(entry.id, [entry]);
+    else held.push(entry);
+  }
   const mergedPantry: LocalPantryItem[] = [];
   const activityMarks: LocalActivityMark[] = [];
   const awards: LocalAward[] = [];
@@ -1080,7 +1141,12 @@ export function mergeSnapshots({
     }
     if (entity.entityType === SYNC_ENTITY_TYPES.fast) {
       // SAFETY: the `fast` tag is only ever attached to a `LocalFast`.
-      mergedFasts.push(entity.value as LocalFast);
+      const winner = entity.value as LocalFast;
+      // AND THE OTHER SIDE'S COPY, if there was one. `withDeclaredEnd` is the
+      // only thing in this merge that reads the losing row, and it reads one
+      // field of it.
+      const loser = fastsById.get(winner.id)?.find((held) => held !== winner);
+      mergedFasts.push(withDeclaredEnd(winner, loser));
       continue;
     }
     if (entity.entityType === SYNC_ENTITY_TYPES.pantryItem) {

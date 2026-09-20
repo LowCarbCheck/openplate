@@ -56,6 +56,40 @@ omission.** `createLocalFast` refuses a second open fast on ONE device. Two
 devices offline can still each start one, and after this change both survive,
 on both devices. `mergeSnapshots` has no rule about it and must not grow one.
 
+### One repair the merge DOES make: a declared end is never lost
+
+Added after review (M240 counsel item 2). When the winning copy of a fast has
+no `endedAt` and the LOSING copy has one, the merge keeps every field of the
+winner and carries the loser's `endedAt` onto it, with the `mood` and `note`
+that `endLocalFast` declared in the same act.
+
+The sequence it closes is real. `setLocalFastStart` and
+`setLocalFastPlannedStart` refuse to touch a fast that has ended, but they read
+THIS device's copy, and a device that has not synced holds one that is still
+running. So a person ends the fast on their phone, adjusts its start on a stale
+tablet, both edits stamp at the same lamport because both were made against the
+same baseline, and `pickMergeWinner` breaks that tie on DEVICE ID. Half the
+accounts in the world have the tablet on the winning side, and the fast reopens
+with the declared end gone.
+
+It does not contradict the decision above. It invents nothing: the instant
+written is one the person declared on one of their own devices, and the merge
+only refuses to drop it. It deletes nothing: the row survives with the winner's
+protocol, target and start. And it converges, because `pickMergeWinner` is
+symmetric, so both devices agree which copy won and which lost, and the rule
+reads only those two rows. It is idempotent, so a second pass changes nothing.
+
+`selectRecentlyEndedFast` gained an id tiebreak in the same pass: two devices'
+fasts land in one list now and two rows CAN carry the same `endedAt`, so
+ordering on the end instant alone left the answer to the order the store
+returned the rows in.
+
+**Streaks and awards were checked and need no change.** A mark's id is
+`${dayKey}#${signal}`, so two open fasts started on the same day write the same
+id and `deriveMarksFromHistory` keeps one row. `fasting-stats.ts` counts two
+overlapping fasts twice in its weekly hours figure, which is its own documented
+decision from M132 and not something sync introduced.
+
 ### Why the merge answers nothing, and the screen answers everything
 
 The app has had an answer since M132, for the backup restore that produces the

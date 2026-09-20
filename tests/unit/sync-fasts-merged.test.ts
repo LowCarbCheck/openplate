@@ -545,6 +545,117 @@ describe('mergeSnapshots and two open fasts', () => {
 });
 
 // ---------------------------------------------------------------------------
+// A DECLARED END IS NEVER LOST
+// ---------------------------------------------------------------------------
+
+/**
+ * `setLocalFastStart` refuses to touch a fast that has ended, but it reads
+ * THIS device's copy, and a device that has not synced holds one that is still
+ * running. The person ends the fast on their phone and adjusts its start on a
+ * stale tablet; both stamps land at the same lamport because both were made
+ * against the same baseline; `pickMergeWinner` breaks that tie on DEVICE ID,
+ * so half the time the reopened copy wins and the end the person declared is
+ * gone (M240 counsel item 2).
+ */
+describe('mergeSnapshots and a fast one device already ended', () => {
+  const ENDED_AT = T + 17 * HOUR;
+  /** The phone ended it, with the reflection that was declared in the same act. */
+  const ended = fast('shared', { endedAt: ENDED_AT, mood: 'good', note: 'steady' });
+  /** The stale tablet only moved the start, so its copy is still running. */
+  const reopened = fast('shared', { startedAt: T - 2 * HOUR });
+
+  it('CARRIES THE END onto the winner when the reopened copy wins on device id', () => {
+    // BOTH AT LAMPORT 4, which is what a pair of edits made against one
+    // baseline produces, so the DEVICE ID decides. 'zzz-tablet' beats
+    // 'aaa-phone', so without the rule the merged fast is open and the end is
+    // lost.
+    const phone = stampedPayload([ended], { lamport: 4, deviceId: 'aaa-phone' });
+    const tablet = stampedPayload([reopened], { lamport: 4, deviceId: 'zzz-tablet' });
+
+    const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
+      integrity: HEALTHY_STORAGE,
+      local: phone,
+      remote: tablet,
+    });
+    const survivor = merged.snapshot.fasts[0];
+
+    assert.equal(survivor?.endedAt, ENDED_AT, 'an end the person declared must survive a stale edit');
+    assert.equal(survivor?.startedAt, T - 2 * HOUR, 'and the winner keeps the field it actually changed');
+    assert.equal(survivor?.mood, 'good', 'with the reflection declared in the same act as the end');
+    assert.equal(survivor?.note, 'steady');
+  });
+
+  it('CONVERGES: the other merge order gives a byte-identical payload', () => {
+    const phone = stampedPayload([ended], { lamport: 4, deviceId: 'aaa-phone' });
+    const tablet = stampedPayload([reopened], { lamport: 4, deviceId: 'zzz-tablet' });
+
+    const { aFirst, bFirst } = mergeBoth(phone, tablet);
+
+    assert.deepEqual(aFirst.snapshot, bFirst.snapshot);
+    assert.deepEqual(aFirst.meta, bFirst.meta);
+    assert.equal(aFirst.snapshot.fasts[0]?.endedAt, ENDED_AT);
+  });
+
+  it('IS IDEMPOTENT: merging the result again changes nothing', () => {
+    const phone = stampedPayload([ended], { lamport: 4, deviceId: 'aaa-phone' });
+    const tablet = stampedPayload([reopened], { lamport: 4, deviceId: 'zzz-tablet' });
+    const once = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: phone, remote: tablet });
+    const twice = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: once, remote: once });
+
+    assert.deepEqual(twice.snapshot.fasts, once.snapshot.fasts);
+    assert.equal(payloadsEqual(once, twice), true);
+  });
+
+  it('works the other way round too, when the ENDED copy is the one that wins', () => {
+    // Nothing to rescue here, and the result must be the same fast. This is
+    // what makes the rule a repair rather than a preference for one side.
+    const phone = stampedPayload([ended], { lamport: 4, deviceId: 'zzz-phone' });
+    const tablet = stampedPayload([reopened], { lamport: 4, deviceId: 'aaa-tablet' });
+
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: phone, remote: tablet });
+
+    assert.equal(merged.snapshot.fasts[0]?.endedAt, ENDED_AT);
+    assert.equal(merged.snapshot.fasts[0]?.startedAt, T, 'and the winner keeps ITS start, which is the phone one');
+  });
+
+  it('THE CONTROL: a fast neither side ended stays open', () => {
+    // Without this, "the end survives" would pass against a merge that stamped
+    // an end onto anything, which is the invention ADR-0014 forbids.
+    const phone = stampedPayload([fast('shared')], { lamport: 4, deviceId: 'aaa-phone' });
+    const tablet = stampedPayload([reopened], { lamport: 4, deviceId: 'zzz-tablet' });
+
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: phone, remote: tablet });
+
+    assert.equal(merged.snapshot.fasts[0]?.endedAt, null, 'a merge must never write an end nobody declared');
+  });
+
+  it('THE CONTROL: a HIGHER-stamped real reopen is not a stale edit, but its end still stands', () => {
+    // The rule is about the END, not about the stamps. A device that genuinely
+    // outranks the other still keeps the end, because an end is a declaration
+    // and a start adjustment is not a retraction of one.
+    const phone = stampedPayload([ended], { lamport: 4, deviceId: 'aaa-phone' });
+    const tablet = stampedPayload([reopened], { lamport: 9, deviceId: 'aaa-tablet' });
+
+    const merged = mergeSnapshots({ ...NOTHING_TO_ACCOUNT_FOR, integrity: HEALTHY_STORAGE, local: phone, remote: tablet });
+
+    assert.equal(merged.snapshot.fasts[0]?.endedAt, ENDED_AT);
+  });
+
+  it('THE CONTROL: a fast only one side holds is untouched', () => {
+    const merged = mergeSnapshots({
+      ...NOTHING_TO_ACCOUNT_FOR,
+      integrity: HEALTHY_STORAGE,
+      local: stampedPayload([fast('only-here')], { lamport: 1, deviceId: 'phone' }),
+      remote: stampedPayload([], { lamport: 1, deviceId: 'tablet' }),
+    });
+
+    assert.equal(merged.snapshot.fasts[0]?.endedAt, null);
+    assert.equal(merged.snapshot.fasts[0]?.mood, undefined, 'and no reflection key is invented for it');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // The contrast: the fasting ROUTINE, merged as one singleton record
 // ---------------------------------------------------------------------------
 

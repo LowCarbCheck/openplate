@@ -266,6 +266,44 @@ describe('the backfill', () => {
     ]);
   });
 
+  it('counts a day ONCE when a sync left two open fasts on it, not twice', () => {
+    // M240 counsel item 2 asked whether two open fasts double count. They
+    // cannot: a mark's id is `${dayKey}#${signal}`, so two fasts started on one
+    // day write the SAME id and the map keeps one row. This pins that, because
+    // the state is reachable now (ADR-0014 lets two devices each keep the fast
+    // they started offline) where before M240/01 only a backup restore
+    // produced it.
+    const sameDay = Date.UTC(2026, 8, 11, 8);
+    const marks = deriveMarksFromHistory({
+      foodLogs: [],
+      weightEntries: [],
+      fasts: [fast('from-the-phone', sameDay, null), fast('from-the-tablet', sameDay + 3_600_000, null)],
+      timeZone: 'UTC',
+    });
+
+    assert.deepEqual(
+      marks.map((mark) => mark.id),
+      ['2026-09-11#fast.run'],
+      'a streak must not be inflated by a leftover open fast the person has not removed yet',
+    );
+  });
+
+  it('THE CONTROL: two open fasts on DIFFERENT days credit both days', () => {
+    // Without this, the case above would pass against a rule that dropped
+    // every open fast, which would cost somebody a real day of their streak.
+    const marks = deriveMarksFromHistory({
+      foodLogs: [],
+      weightEntries: [],
+      fasts: [
+        fast('from-the-phone', Date.UTC(2026, 8, 11, 8), null),
+        fast('from-the-tablet', Date.UTC(2026, 8, 12, 8), null),
+      ],
+      timeZone: 'UTC',
+    });
+
+    assert.deepEqual(marks.map((mark) => mark.id), ['2026-09-11#fast.run', '2026-09-12#fast.run']);
+  });
+
   it('credits every local day a fast crossed, and nothing to a fast still running', () => {
     const crossed = deriveMarksFromHistory({
       foodLogs: [],

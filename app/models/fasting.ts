@@ -297,6 +297,13 @@ export function selectFastHistory(fasts: readonly LocalFast[]): LocalFast[] {
  * The fast whose end is recent enough to still deserve a summary line, or null.
  * Never returns a `cancelled` row, there is nothing to report about a plan
  * that never ran.
+ *
+ * TOTAL ORDER, with the id as the last tiebreak, for the reason
+ * {@link selectCurrentFast}'s comparator has one: since M240/01 two devices'
+ * fasts land in one list, and two rows CAN carry the same `endedAt`. Ordering
+ * on the end instant alone would then leave the answer to the order the store
+ * happened to return the rows in, so two devices could name different fasts as
+ * the one just finished.
  */
 export function selectRecentlyEndedFast(fasts: readonly LocalFast[], nowMs: number): LocalFast | null {
   return (
@@ -307,7 +314,7 @@ export function selectRecentlyEndedFast(fasts: readonly LocalFast[], nowMs: numb
         if (age < 0 || age > FAST_SUMMARY_WINDOW_MS) return false;
         return resolveFastTimeline(fast, nowMs).status !== 'cancelled';
       })
-      .toSorted((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0))[0] ?? null
+      .toSorted((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0) || b.id.localeCompare(a.id))[0] ?? null
   );
 }
 
