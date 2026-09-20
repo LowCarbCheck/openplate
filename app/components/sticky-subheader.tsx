@@ -23,8 +23,23 @@ export function StickySubheader({ children }: { children: React.ReactNode }) {
   // gives every page, so this bar runs edge to edge like the header instead of
   // stopping short of both screen edges. The matching `px` puts the padding back
   // on the content inside.
+  //
+  // `first:-mt-4` cancels that page padding at the TOP as well. Without it the
+  // page's own 16px of `bg-background` showed between the header's hairline and
+  // this bar's, a band of nothing that read as a rendering fault rather than as
+  // spacing (FRONT-15, measured at 360: header bottom 64, bar top 80). It is
+  // scoped to `:first-child` because a page may put a banner above this bar,
+  // and there the 24px the page asked for is the right gap; pulling the bar up
+  // would leave the banner 8px from the header instead.
+  //
+  // The margin goes HERE and not on a wrapper in the page: a `position: sticky`
+  // element only travels inside its own parent's box, so wrapping this bar to
+  // move it would pin it to the top of a 61px box and it would scroll away.
   return (
-    <div className="sticky top-16 z-30 -mx-4 border-b border-primary/20 bg-card px-4 py-2 md:-mx-6 md:px-6">
+    <div
+      className="sticky top-16 z-30 -mx-4 border-b border-primary/20 bg-card px-4 py-2 first:-mt-4 md:-mx-6 md:px-6 md:first:-mt-6"
+      data-slot="sticky-subheader"
+    >
       {children}
     </div>
   );

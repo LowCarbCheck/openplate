@@ -64,7 +64,22 @@ describe('StickySubheader pins under the app header', () => {
   });
 
   it('renders its child inside the bar', () => {
-    assert.match(markup, /<div class="[^"]*sticky[^"]*">\s*<p data-testid="child">the day navigator<\/p>\s*<\/div>/);
+    assert.match(markup, /<div class="[^"]*sticky[^"]*"[^>]*>\s*<p data-testid="child">the day navigator<\/p>\s*<\/div>/);
+  });
+
+  it('pulls the page padding off its top only when it is the first thing under the header', () => {
+    for (const cls of ['first:-mt-4', 'md:first:-mt-6']) {
+      assert.ok(
+        classes.includes(cls),
+        `Expected \`${cls}\` so no band of page shows between the header and this bar, and so a banner ` +
+          `above the bar keeps the gap the page asked for. Got: ${classes.join(' ')}`,
+      );
+    }
+    assert.ok(
+      !classes.includes('-mt-4') && !classes.includes('md:-mt-6'),
+      `The pull-up must stay scoped to \`first:\`. Unscoped, a banner above this bar would sit 8px from the ` +
+        `header instead of 24. Got: ${classes.join(' ')}`,
+    );
   });
 });
 
