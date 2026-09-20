@@ -16,10 +16,10 @@
  * `removeEntitiesWithoutJournal`, which is still a local-store function and
  * still takes the same lock, and is the only call site of it in the app.
  *
- * THE JOURNAL IS READ BY THE MERGE NOW, not only by the stamping. Fasts and
- * saved meals carry no tombstone, so the journal keys this file hands up are
- * the only evidence `mergeSnapshots` has that a short local list is short on
- * purpose; without them the account's list stands. That is why
+ * THE JOURNAL IS READ BY THE MERGE NOW, not only by the stamping. Saved meals
+ * carry no tombstone, so the journal keys this file hands up are the only
+ * evidence `mergeSnapshots` has that a short local list is short on purpose;
+ * without them the account's list stands. That is why
  * `deletedEntityKeys` below is read in the same act as the snapshot. It is read
  * a SECOND time, later, by `applyMergedSnapshot`, which is a different question
  * with a different answer on purpose: what has this device written down as
@@ -108,8 +108,8 @@ export interface LocalSnapshotRead {
    * NOT part of {@link LocalStoreIntegrity}, which is the disk-versus-memory
    * comparison and is also handed to `mergeSnapshots`. The journal answers a
    * different question, and BOTH now ask it: the stamping, to authorise a
-   * tombstone, and the merge, to let this device's fasts and saved meals stand
-   * against the account's.
+   * tombstone, and the merge, to let this device's saved meals stand against
+   * the account's.
    */
   deletedEntityKeys: ReadonlySet<string>;
 }
@@ -282,15 +282,16 @@ export async function applyMergedSnapshot({
   const survivingFoods = new Set(merged.foods.map((food) => food.id));
   const survivingLogs = new Set(merged.foodLogs.map((log) => log.id));
   const survivingWeights = new Set(merged.weightEntries.map((entry) => entry.id));
-  // No `survivingFasts` set, on purpose (M132): fasts are not merged across
-  // devices, `mergeSnapshots` hands `merged.fasts` straight back from the
-  // LOCAL snapshot, so there is no remote tombstone that could authorise
-  // deleting one. Computing a delete set here would be the bug: a peer running
-  // an older build sends no fasts at all, and this loop would wipe every fast
-  // on this device. The `importBackup` below re-upserts them unchanged.
+  // AND A `survivingFasts` SET SINCE M240/01 (ADR-0014), which this apply
+  // deliberately had none of for as long as fasts were passed through. A fast
+  // is merged now, so `merged.fasts` is an answer about the ACCOUNT rather
+  // than a copy of this device's own list, and a fast missing from it was
+  // buried by a tombstone a peer published. The row has to leave this device,
+  // or the next cycle re-publishes it and the person's Remove never lands.
+  const survivingFasts = new Set(merged.fasts.map((entry) => entry.id));
   //
-  // No surviving-set for `fastingSettings` either, but for the OPPOSITE
-  // reason, it IS merged (`snapshot-sync.ts`). It is a SINGLETON with no id
+  // No surviving-set for `fastingSettings`, and it IS merged too
+  // (`snapshot-sync.ts`). It is a SINGLETON with no id
   // so there is no set to diff: the merge hands back one record or `null`, and
   // `importBackup` writes it whole through `putLocalFastingSettingsRecord`.
   // A `null` means no device has ever set a routine, and this path deliberately
@@ -316,6 +317,7 @@ export async function applyMergedSnapshot({
     foodIds: local.foods.filter((food) => !survivingFoods.has(food.id)).map((food) => food.id),
     foodLogIds: local.foodLogs.filter((log) => !survivingLogs.has(log.id)).map((log) => log.id),
     weightEntryIds: local.weightEntries.filter((entry) => !survivingWeights.has(entry.id)).map((entry) => entry.id),
+    fastIds: local.fasts.filter((entry) => !survivingFasts.has(entry.id)).map((entry) => entry.id),
   });
 
   const writable = withoutJournalledRows({
@@ -360,11 +362,14 @@ async function adoptSeenAwardStamps(awards: readonly LocalAward[]): Promise<void
  * dropped from it.
  *
  * EVERY COLLECTION WITH A DELETE VERB, which is all five id-bearing ones plus
- * the three that ride inside the owner-private compartment. A fast and a saved
- * meal carry no tombstone, so a mid-flight clear of either is undone by the
- * same upsert in exactly the same way, and `mergeSnapshots` hands the
- * pass-through lists back whole, which makes the account's copy the thing that
- * lands.
+ * the three that ride inside the owner-private compartment. A saved meal
+ * carries no tombstone, so a mid-flight clear of one is undone by the same
+ * upsert, and `mergeSnapshots` hands the pass-through list back whole, which
+ * makes the account's copy the thing that lands. A fast is merged since
+ * M240/01 and is filtered here anyway, for the ordinary merged reason the
+ * three above it are: the merge never heard about a delete that landed while
+ * the cycle was in flight, so the row is still in `merged` and this upsert
+ * would write it straight back.
  *
  * THE COMPARTMENT IS THE SAME SHAPE ONE LEVEL IN. A seal that HELD
  * (`private-store.ts`) re-emits the account's bytes, so the region this apply

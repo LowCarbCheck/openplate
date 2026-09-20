@@ -888,6 +888,11 @@ async function importSnapshot(snapshot: LocalStoreSnapshot, store?: Store): Prom
   // already has one. `selectCurrentFast` picks the latest effective start and
   // the loser shows in history as "Still open" with a Remove action, nothing
   // is invented, nothing is silently dropped.
+  //
+  // A SYNC PULL REACHES THIS LOOP TOO, and since M240/01 (ADR-0014) it can
+  // carry a fast another device started, so the second open row is no longer
+  // a restore-only state. The answer is the same one, and it stays the
+  // person's: `mergeSnapshots` adjudicates nothing.
   for (const fast of snapshot.fasts) await putLocalFast(fast, { store });
   for (const meal of snapshot.savedMeals) await putLocalSavedMeal(meal, { store });
   // The UPSERT, not `replaceLocalPantry`: a restore is non-destructive here

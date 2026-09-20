@@ -24,10 +24,12 @@
  *     while it emptied itself, which is how this defect survived.
  *
  * AND A REFUSED PASS-THROUGH TABLE IS THE SAME EVENT. When this device cannot
- * account for the `fasts` or `savedMeals` ids its own baseline recorded, the
- * merge keeps the ACCOUNT'S list, and rows the device could not see come back
- * with no tombstone anywhere to mark it. That is a restore, so it is counted
- * and reported here exactly like a withheld delete.
+ * account for the `savedMeals` ids its own baseline recorded, the merge keeps
+ * the ACCOUNT'S list, and rows the device could not see come back with no
+ * tombstone anywhere to mark it. That is a restore, so it is counted and
+ * reported here exactly like a withheld delete. `fasts` was the second table
+ * this paragraph named until M240/01 (ADR-0014); a fast is merged now, so a
+ * restored one arrives through the withheld tombstones instead.
  *
  * Pure decision, impure effect, kept apart: {@link resolveStorageHealNotice}
  * decides and is testable without a browser, {@link healAfterWithheldDeletes}
@@ -78,8 +80,8 @@ export type StorageHealNotice =
  * THE COUNT IS THE WHOLE TEST, and there is deliberately no second early
  * return on an empty `withheld` list. A REFUSED pass-through table restores
  * rows without withholding a single tombstone (`countRestoredEntities`), and
- * the old guard said nothing at all to the person whose fasts had just been
- * handed back by their account.
+ * the old guard said nothing at all to the person whose saved meals had just
+ * been handed back by their account.
  */
 export function resolveStorageHealNotice({
   restoredCount,
@@ -96,10 +98,10 @@ export function resolveStorageHealNotice({
  * Logs the loss, asks for persistent storage again, and publishes the notice.
  *
  * IT FIRES ON A REFUSED PASS-THROUGH TABLE TOO, not only on a withheld
- * tombstone. `mergeSnapshots` keeps the ACCOUNT'S `fasts` or `savedMeals` when
- * this device cannot account for the ids its own baseline recorded, and that
- * is the same loss wearing different clothes: rows this device could not see,
- * put back by the account, with no tombstone anywhere to mark it.
+ * tombstone. `mergeSnapshots` keeps the ACCOUNT'S `savedMeals` when this
+ * device cannot account for the ids its own baseline recorded, and that is the
+ * same loss wearing different clothes: rows this device could not see, put
+ * back by the account, with no tombstone anywhere to mark it.
  *
  * NEVER THROWS. It runs at the end of a cycle that already succeeded, and a
  * failure to report must not be reported as a failure to sync.

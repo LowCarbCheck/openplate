@@ -25,12 +25,16 @@
  * `tests/integration/sync-saved-meal-pushes-once.test.ts` makes the same claim
  * against the real cycle and a real blob store.
  *
- * ── The two collections that must stay out ───────────────────────────────
+ * ── The collection that must stay out, and the one that stopped ─────────
  *
- * `fasts` are not synced at all (M132), and the pantry is a local working list
- * this device's own fridge fills (M233/02). Neither may make a device push,
- * and the last two tests here are what keeps those two designs intact while
- * the collection between them changed sides.
+ * The pantry is a local working list this device's own fridge fills
+ * (M233/02), so it may never make a device push, and the last test here is
+ * what keeps that design intact while the collection beside it changed sides.
+ *
+ * `fasts` used to be on that side of the line and is not any more: M240/01
+ * (ADR-0014) made a fast a merged entity, so starting, ending or deleting one
+ * MUST push, and `sync-fasts-merged.test.ts` pins it. The test that once said
+ * the opposite is the second one below, inverted.
  */
 import { HEALTHY_STORAGE, NOTHING_TO_ACCOUNT_FOR } from '../sync-integrity-fixtures';
 import { describe, it } from 'node:test';
@@ -94,9 +98,12 @@ function pantryItem(id: string, overrides: Partial<LocalPantryItem> = {}): Local
 /**
  * A payload holding only the three collections this file is about.
  *
- * Nothing is stamped, because nothing here needs to be: saved meals, fasts and
- * pantry items own no `meta.perEntity` key, so an empty meta is exactly what a
- * device holding them and nothing else produces.
+ * Nothing is stamped, because nothing here needs to be: saved meals and pantry
+ * items own no `meta.perEntity` key, so an empty meta is exactly what a device
+ * holding them and nothing else produces. A FAST does own one since M240/01,
+ * and the one test below that holds a fast leaves it unstamped on purpose: it
+ * asserts that the SNAPSHOT half of the comparison sees it, with no stamp to
+ * carry the difference.
  */
 function payload({
   savedMeals = [],
@@ -179,15 +186,16 @@ describe('payloadsEqual and a saved meal that did not change', () => {
   });
 });
 
-describe('payloadsEqual and the two collections that still must not push', () => {
-  it('a FAST that started is not a difference, fasts are not synced at all', () => {
-    // M132: fasts ride in the blob so a device keeps its own, and the
-    // cross-device "at most one open fast" question is still open. A fast
-    // starting or ending must not burn a blob version.
+describe('payloadsEqual, the collection that must not push and the one that must', () => {
+  it('a FAST that started IS a difference now, so it reaches the account on its own', () => {
+    // THE INVERSION (M240/01, ADR-0014). This test asserted the opposite for
+    // the whole of M132's life, on the ground that a fast told the account
+    // nothing. It tells the account everything now, and a fast that did not
+    // push is a fast that dies with the phone it was started on.
     const account = payload({ savedMeals: [savedMeal('chili')] });
     const device = payload({ savedMeals: [savedMeal('chili')], fasts: [fast('running-now')] });
 
-    assert.equal(payloadsEqual(device, account), true, 'a fast must never be the reason a device pushes');
+    assert.equal(payloadsEqual(device, account), false, 'starting a fast must make this device push');
   });
 
   it('a PANTRY ROW is not a difference either, the pantry is this device’s own shelf', () => {

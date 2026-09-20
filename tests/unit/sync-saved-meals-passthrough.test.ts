@@ -2,17 +2,19 @@
  * The saved-meals/sync boundary (M123/07 + M123/13 review finding 6):
  * `mergeSnapshots` must leave `savedMeals` EXACTLY as the local device holds
  * them, no matter what the remote payload says, the identical mechanism
- * `sync-fasts-passthrough.test.ts` already pins for `fasts`, one entity over.
+ * `sync-fasts-merged.test.ts` pins the opposite stance for `fasts`, one
+ * entity over: they were passed through beside saved meals until M240/01.
  *
  * Saved meals are deliberately absent from `SYNC_ENTITY_TYPES` and
  * `flattenSnapshot`, so they are never stamped, diffed, tombstoned or adopted
- * from another device. Unlike fasts there is no hard cross-device invariant
+ * from another device. Unlike the fasts that used to share this stance there
+ * is no hard cross-device invariant
  * blocking a real merge here, this is simply not built yet (see
  * `snapshot-sync.ts`'s comment above `mergeSnapshots`'s return).
  *
  * The failure mode this file exists to catch is silent: a bare
  * `savedMeals: []` in the merge result would EMPTY a device's saved meals on
- * the very first sync, with nothing else in the suite failing, `fasts` had
+ * the very first sync, with nothing else in the suite failing, the fasts had
  * exactly this test and saved meals did not, until this file.
  */
 import {
@@ -53,9 +55,8 @@ function savedMeal(id: string, overrides: Partial<LocalSavedMeal> = {}): LocalSa
 }
 
 function snapshot(savedMeals: LocalSavedMeal[]): SyncedSnapshot {
-  // `fasts` rides through the same pass-through path as `savedMeals` (see
-  // `snapshot-sync.ts`), an empty array here is enough, since this file's
-  // assertions are all about `savedMeals`, not fasts.
+  // `fasts` is a MERGED entity since M240/01, so an empty array here keeps it
+  // out of the way: every assertion in this file is about `savedMeals`.
   return {
     foods: [],
     foodLogs: [],
@@ -144,9 +145,12 @@ describe('mergeSnapshots and savedMeals', () => {
       'foodLog',
       'weightEntry',
       'profile',
+      // A FAST joined the merged side in M240/01 (ADR-0014), and saved meals
+      // still have not, so this file is now the last one pinning the
+      // pass-through stance. A fast is a record of something that happened and
+      // has to travel; a saved meal is a merge nobody has built yet.
+      'fast',
       // The fasting ROUTINE is in the catalog, and saved meals still are not.
-      // The two sit on opposite sides of the same line on purpose: a routine
-      // is a preference another device needs, a saved meal is not merged yet.
       'fastingSettings',
       // The marks and the awards joined the merged side in M235/03, and saved
       // meals still have not: both of those tables are written once per row id
@@ -171,12 +175,16 @@ const SAVED_MEALS_TABLE_NOT_LOADED: SnapshotIntegrity = {
   // `mergeSnapshots`, which never weighs the seal.
   isCompartmentHeld: false,
   isCompartmentUnpublished: false,
-  // Nothing here is about a delete: these fixtures test the two PASS-THROUGH
-  // collections, which carry no tombstones and therefore no journal rows.
+  // Nothing here is about a delete: these fixtures test the PASS-THROUGH
+  // collection, which carries no tombstones and therefore no journal rows.
   deletedEntityKeys: new Set(),
 };
 
-/** A device whose FASTS table did not load, while the saved meals loaded perfectly. */
+/**
+ * A device whose FASTS table did not load, while the saved meals loaded
+ * perfectly. Any other table would do; the point is that one broken table
+ * says nothing about the one beside it.
+ */
 const ONLY_THE_FASTS_TABLE_NOT_LOADED: SnapshotIntegrity = {
   hasPersistedDatabase: true,
   isTableLoaded: { [FASTS_TABLE]: false },
@@ -185,8 +193,8 @@ const ONLY_THE_FASTS_TABLE_NOT_LOADED: SnapshotIntegrity = {
   // `mergeSnapshots`, which never weighs the seal.
   isCompartmentHeld: false,
   isCompartmentUnpublished: false,
-  // Nothing here is about a delete: these fixtures test the two PASS-THROUGH
-  // collections, which carry no tombstones and therefore no journal rows.
+  // Nothing here is about a delete: these fixtures test the PASS-THROUGH
+  // collection, which carries no tombstones and therefore no journal rows.
   deletedEntityKeys: new Set(),
 };
 
@@ -234,7 +242,7 @@ describe('mergeSnapshots, savedMeals, and what the device can prove', () => {
     );
   });
 
-  it('is PER TABLE: a fasts table that did not load leaves the saved meals alone', () => {
+  it('is PER TABLE: another table that did not load leaves the saved meals alone', () => {
     // The sharp end of choosing the per-table signal over the whole-database
     // one. A merge that reached for `hasPersistedDatabase` alone, or that
     // treated any unloaded table as a broken store, would hand the account's
@@ -251,7 +259,7 @@ describe('mergeSnapshots, savedMeals, and what the device can prove', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The second half of the pass-through rule, one entity over from the fasts
+// The second half of the pass-through rule, the shape the fasts used to share
 // ---------------------------------------------------------------------------
 
 describe('mergeSnapshots, savedMeals, and accounting for the ids the baseline named', () => {

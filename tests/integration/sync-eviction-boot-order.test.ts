@@ -306,11 +306,19 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
   // whose store singleton has never been opened.
   await signUpFresh('boot-order');
   const vault = requireVault();
-  // THE ACCOUNT ALSO HOLDS TWO FASTS AND A SAVED MEAL, which are the two
-  // collections sync passes through whole rather than merging. No tombstone is
-  // involved anywhere in them, so the tombstone rule above cannot protect them:
-  // whichever side's list the merge picks is the entire list that reaches the
-  // account, and an evicted device used to be that side.
+  // THE ACCOUNT ALSO HOLDS TWO FASTS AND A SAVED MEAL, and the two are covered
+  // by different rules since M240/01 (ADR-0014).
+  //
+  // A SAVED MEAL is still passed through whole rather than merged. No
+  // tombstone is involved anywhere in it, so the tombstone rule above cannot
+  // protect it: whichever side's list the merge picks is the entire list that
+  // reaches the account, and an evicted device used to be that side.
+  //
+  // A FAST is merged now, so it IS covered by the tombstone rule, and this
+  // case is what proves the move cost nothing: the evicted device holds none
+  // of the account's fasts, mints no tombstone for any of them because its
+  // journal died with its diary, and the account's fasts survive the merge and
+  // come back through the apply.
   await seedAsIfThisDeviceHadSynced(
     vault,
     [foodLog('log-boot-1', 'Lentil soup'), foodLog('log-boot-2', 'Rye bread')],
@@ -322,14 +330,20 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
   // against an empty baseline, which is no claim at all.
   const named = Object.keys(vault.state.load().baseline.perEntity).filter((key) => key.startsWith('foodLog:'));
   assert.deepEqual(named.toSorted(), ['foodLog:log-boot-1', 'foodLog:log-boot-2']);
-  // And the same for the pass-through pair, which is recorded as plain ids
-  // rather than as stamped entities. Without this the fasts claim at the end
-  // passes against a baseline that never knew about them, which is the state
+  // And the same for the saved meal, which is recorded as a plain id rather
+  // than as a stamped entity. Without this the saved-meals claim at the end
+  // passes against a baseline that never knew about it, which is the state
   // where the remote list wins for the wrong reason.
-  assert.deepEqual(vault.state.load().baseline.passThrough, {
-    fasts: ['fast-boot-1', 'fast-boot-2'],
-    savedMeals: ['meal-boot-1'],
-  });
+  assert.deepEqual(vault.state.load().baseline.passThrough, { savedMeals: ['meal-boot-1'] });
+  // THE FASTS ARE IN `perEntity` INSTEAD (M240/01), stamped like the food logs
+  // above, which is what gives the cycle below two fast tombstones it COULD
+  // mint and must not.
+  assert.deepEqual(
+    Object.keys(vault.state.load().baseline.perEntity)
+      .filter((key) => key.startsWith('fast:'))
+      .toSorted(),
+    ['fast:fast-boot-1', 'fast:fast-boot-2'],
+  );
 
   // NON-VACUITY 2: this is genuinely the evicted state at the moment of the
   // boot. The probe has not been used before in this process, and it never
@@ -372,11 +386,14 @@ test('THE BOOT ORDER: an evicted device primes an empty database, then syncs, an
   const payload = await payloadOnTheService(vault);
   assert.deepEqual(payload.tombstones, [], 'an evicted device must publish no deletes');
   assert.deepEqual(payload.foodLogIds, ['log-boot-1', 'log-boot-2'], 'and the account keeps its diary');
-  // THE PASS-THROUGH HALF. These two have no tombstone to withhold, so the only
-  // thing standing between them and an empty list is the baseline's record of
-  // what the account held, weighed against a journal that names nothing.
-  assert.deepEqual(payload.fastIds, ['fast-boot-1', 'fast-boot-2'], 'and its fasts');
+  // THE PASS-THROUGH HALF. A saved meal has no tombstone to withhold, so the
+  // only thing standing between it and an empty list is the baseline's record
+  // of what the account held, weighed against a journal that names nothing.
   assert.deepEqual(payload.savedMealIds, ['meal-boot-1'], 'and its saved meals');
+  // THE MERGED HALF (M240/01). The fasts survive for the food logs' reason
+  // rather than the saved meal's: no trusted tombstone was minted, so the
+  // account's rows win the merge.
+  assert.deepEqual(payload.fastIds, ['fast-boot-1', 'fast-boot-2'], 'and its fasts');
 
   // AND THE DEVICE HEALS: the pull put the rows back through the ordinary apply
   // path, which is what makes withholding the tombstones survivable rather than
@@ -398,6 +415,12 @@ test('THE CONTROL: a RECORDED fast deletion on the same boot does reach the acco
   // Without this case the claim above passes against a merge that always keeps
   // the account's list, which would make every deleted fast and every deleted
   // saved meal come back on the next sync, on every device, forever.
+  //
+  // SINCE M240/01 (ADR-0014) the deletion travels as a TOMBSTONE rather than
+  // as a shorter list, because a fast is a merged entity. The journal row
+  // `deleteLocalFast` writes is still what authorises it; only the shape on
+  // the wire changed, and the shape is what carries the delete to the person's
+  // other device.
   await startFromAQuietDevice();
   await signUpFresh('boot-order-pass-through-control');
   const vault = requireVault();
@@ -417,16 +440,19 @@ test('THE CONTROL: a RECORDED fast deletion on the same boot does reach the acco
   );
 
   await deleteLocalFast('fast-pt-2');
-  // A second entry is what makes the cycle push at all: neither pass-through
-  // collection is weighed by `payloadsEqual`, so a fast leaving is never by
-  // itself a reason to write a new blob version.
-  await putLocalFoodLog(foodLog('log-pt-2', 'Rye bread'));
   markSyncPending();
   await syncNow();
 
   const payload = await payloadOnTheService(vault);
   assert.deepEqual(payload.fastIds, ['fast-pt-1'], 'a deletion the device wrote down must reach the account');
-  assert.deepEqual(payload.tombstones, [], 'and it travels as a shorter list, never as a tombstone');
+  assert.deepEqual(
+    payload.tombstones.map((entry) => `${entry.entityType}:${entry.entityId}`),
+    ['fast:fast-pt-2'],
+    'and since M240/01 it travels as a tombstone, which is what makes it reach another device',
+  );
+  // AND NOTHING ELSE WAS NEEDED TO PUSH IT. This cycle writes no food log: a
+  // fast leaving is now by itself a reason to write a blob version, which it
+  // was not while `canonicalize` ignored the list.
   closeSyncSession();
 });
 

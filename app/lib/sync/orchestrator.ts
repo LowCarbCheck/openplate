@@ -46,7 +46,6 @@ import { SCHEMA_VERSION } from '#app/lib/local-store';
 import {
   DELETE_JOURNAL_TAG_BY_TABLE,
   entityKey,
-  FASTS_TABLE,
   SAVED_MEALS_TABLE,
   SHARE_IDENTITY_TABLE,
   SHARE_PEERS_TABLE,
@@ -149,14 +148,16 @@ export interface SyncCycleResult {
    */
   withheldTombstones: Tombstone[];
   /**
-   * The store tables whose REMOTE `fasts` or `savedMeals` list stood, because
-   * this device could not account for the ids its own baseline recorded
+   * The store tables whose REMOTE `savedMeals` list stood, because this device
+   * could not account for the ids its own baseline recorded
    * (`PassThroughOutcome.refused`).
    *
    * The SECOND shape of the same loss `withheldTombstones` carries, and it is
-   * reported separately because these two collections are not merged and mint
-   * no tombstone at all. A cycle with an empty `withheldTombstones` and a table
-   * in here still handed somebody their rows back.
+   * reported separately because that collection is not merged and mints no
+   * tombstone at all. A cycle with an empty `withheldTombstones` and a table
+   * in here still handed somebody their rows back. `fasts` was the other table
+   * here until M240/01 (ADR-0014); a restored fast now arrives as a withheld
+   * tombstone like any other merged row.
    */
   refusedPassThroughTables: string[];
   /**
@@ -213,9 +214,9 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     if (remote !== null) await deps.assertPulledSnapshot({ pulled: remote.payload.snapshot });
     const baseVersion = remote?.blobVersion ?? 0;
     // THE SAME EVIDENCE OBJECT the stamping above weighed, not a second read:
-    // the merge decides whether this device's `fasts` and `savedMeals` can be
-    // believed, and that question is about the read that produced this
-    // snapshot, not about the storage a moment later.
+    // the merge decides whether this device's `savedMeals` can be believed,
+    // and that question is about the read that produced this snapshot, not
+    // about the storage a moment later.
     const merged: MergedSnapshot =
       remote === null ?
         // NO BLOB AT ALL, so there was no other list to weigh this device's
@@ -255,20 +256,20 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
     // is the common case on every boot, and skipping the push is what keeps
     // "open the app" from consuming a blob version.
     //
-    // AND NOTHING PUBLISHED FROM THE TWO PASS-THROUGH LISTS, which the
-    // equality only half sees: `canonicalize` weighs `savedMeals` and never
-    // `fasts`, so a cycle whose only change is a cleared fast looks equal to a
-    // blob that still holds those rows, and adopting it would commit a
-    // baseline without the cleared ids and prune the journal rows that prove
-    // the removal. The next real push would then shrink the blob with nothing
-    // left to acknowledge it with, which the service refuses.
-    //
-    // It still covers saved meals, for the narrower case the equality cannot
-    // reach even now: a blob a PEER already cleared compares equal to this
-    // device's shorter list, while this device's journal rows are the only
-    // remaining proof that the removal was performed rather than lost. A
+    // AND NOTHING PUBLISHED FROM THE PASS-THROUGH LIST, for the case the
+    // equality cannot reach: a blob a PEER already cleared compares equal to
+    // this device's shorter `savedMeals` list, while this device's journal
+    // rows are the only remaining proof that the removal was performed rather
+    // than lost. Adopting the blob would commit a baseline without the cleared
+    // ids and prune those rows, and the next real push would shrink the blob
+    // with nothing left to acknowledge it with, which the service refuses. A
     // published removal is always a push, so the shrink is declared while the
     // evidence still exists.
+    //
+    // A CLEARED FAST NEEDED THIS GUARD TOO UNTIL M240/01 (ADR-0014), because
+    // `canonicalize` did not weigh `fasts` at all. It weighs them now, and a
+    // deleted fast is a tombstone in `meta` besides, so the equality sees the
+    // change on its own.
     if (remote !== null && payloadsEqual(merged, remote.payload) && merged.passThrough.published.length === 0) {
       await deps.applySnapshot({ merged: merged.snapshot, local });
       const settled = commitState({ deps, merged, blobVersion: baseVersion, at: now() });
@@ -433,8 +434,10 @@ async function pushOrHeal({
  *  - A WITHHELD TOMBSTONE (`stamped.withheld`). The stamping refused to mint
  *    it, so nothing on the wire says the row is gone.
  *  - A REFUSED PASS-THROUGH TABLE (`merged.passThrough.refused`). The remote
- *    `fasts` or `savedMeals` list stood, and `withoutJournalledRows` keeps the
- *    row off this device, so the row is NOT back here either.
+ *    `savedMeals` list stood, and `withoutJournalledRows` keeps the row off
+ *    this device, so the row is NOT back here either. `fasts` was the second
+ *    table here until M240/01 (ADR-0014); a fast is merged now, so a fast
+ *    delete this cycle could not carry is a WITHHELD TOMBSTONE, one line up.
  *  - AN UNPUBLISHED COMPARTMENT (`integrity.isCompartmentUnpublished`). The
  *    seal did not write this device's region, so every owner-private removal
  *    in this read went unpublished. A HELD compartment is one way in, and it
@@ -486,10 +489,10 @@ async function forgetPublishedDeletes({
  * What this cycle may NOT forget: whole journal tags, and single keys.
  *
  * A tag is the honest unit for the two collection-shaped refusals. A refused
- * `fasts` table refused every fast in the read, and a held compartment held
- * every owner-private row in it; neither one can name the individual keys it
- * declined without asking the store a second time, and a second read would
- * describe a different device.
+ * `savedMeals` table refused every saved meal in the read, and a held
+ * compartment held every owner-private row in it; neither one can name the
+ * individual keys it declined without asking the store a second time, and a
+ * second read would describe a different device.
  *
  * THE UNPUBLISHED KEYS ARE NAMED BY TAG, and that is a deliberate choice
  * between the two the seal makes available. `isShrinkProven` knows which lost
@@ -537,13 +540,14 @@ function journalTag(key: string): string {
 /**
  * The journal tag one pass-through table's removals are written under.
  *
- * FAIL FAST on anything else, and written as two comparisons rather than a
+ * FAIL FAST on anything else, and written as a comparison rather than a
  * lookup: a table name that reached here and answered `undefined` would keep
  * no keys at all, which is the silent half of the defect this function exists
- * to close.
+ * to close. It answered for `fasts` as well until M240/01 (ADR-0014) moved
+ * them onto the merged side, where a declined delete is named by its own
+ * withheld tombstone instead of by its table.
  */
 function passThroughJournalTag(table: string): string {
-  if (table === FASTS_TABLE) return DELETE_JOURNAL_TAG_BY_TABLE[FASTS_TABLE];
   if (table === SAVED_MEALS_TABLE) return DELETE_JOURNAL_TAG_BY_TABLE[SAVED_MEALS_TABLE];
   // AFTER `commitState`, always: this runs from the prune, so a table with no
   // tag leaves every journal key in place and fails the cycle after a push that

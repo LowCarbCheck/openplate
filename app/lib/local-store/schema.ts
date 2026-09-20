@@ -366,13 +366,13 @@
  *     a routine could not be expressed"). No `migrateSnapshotToV21` step, for
  *     the identical reason there is no `migrateSnapshotToV13` one.
  *
- * UNLIKE `fasts` themselves, the settings record IS merged across devices
- * (`snapshot-sync.ts`), and it is classified `shared` in the snapshot
- * partition. Both are stated here because a reader who assumes the new record
- * inherits the fasting feature's sync stance would get it backwards: a fast is
- * an EVENT with a hard cross-device invariant ("at most one open"), while a
- * routine is a PREFERENCE, exactly like the profile row beside it, and a
- * person who sets their window on a phone means it on their tablet too.
+ * The settings record IS merged across devices (`snapshot-sync.ts`), and it is
+ * classified `shared` in the snapshot partition. When this note was written
+ * that was the CONTRAST with `fasts`, which were passed through; since M240/01
+ * (ADR-0014) a fast is merged too. What is left of the contrast is the
+ * GRANULARITY, one record for the routine against one entity per fast, and the
+ * "at most one open fast" invariant the note turned on is enforced on CREATE
+ * and answered on SCREEN, never by the merge.
  *
  * NOTE (M233/02, the pantry): `SCHEMA_VERSION` v21 -> v22 adds ONE WHOLE NEW
  * ENTITY, `LocalPantryItem`, plus {@link PANTRY_ITEMS_TABLE} and one REQUIRED
@@ -384,15 +384,16 @@
  * There is no `migrateSnapshotToV22` step and there must not be one, for the
  * identical reason there is no `migrateSnapshotToV11` one.
  *
- * IT IS PASSED THROUGH BY `mergeSnapshots`, THE `fasts` STANCE. The local
- * side rides through untouched, so the pantry is never stamped, never diffed,
- * never tombstoned and never adopted from another device. It is therefore
- * ABSENT from {@link SYNC_ENTITY_TYPE_BY_TABLE}, which is the map of the
- * MERGED tables.
+ * IT IS PASSED THROUGH BY `mergeSnapshots`. The local side rides through
+ * untouched, so the pantry is never stamped, never diffed, never tombstoned
+ * and never adopted from another device. It is therefore ABSENT from
+ * {@link SYNC_ENTITY_TYPE_BY_TABLE}, which is the map of the MERGED tables.
+ * This was "the `fasts` stance" when it was written; `fasts` has been merged
+ * since M240/01 (ADR-0014), so the pantry now holds the position alone.
  *
  * AND IT IS ABSENT FROM {@link DELETE_JOURNAL_TAG_BY_TABLE} TOO, which is
- * where it parts company with `fasts` and `savedMeals`, so read this before
- * copying either. The journal exists to tell a list somebody EMPTIED from a
+ * where it parts company with `savedMeals` and with `fasts`, so read this
+ * before copying either. The journal exists to tell a list somebody EMPTIED from a
  * list a browser EVICTED, and it earns that cost where the thing lost is a
  * record of something that happened: a fast somebody kept, a meal they named
  * and bundled. A pantry is a WORKING LIST of what is in the fridge this week.
@@ -601,6 +602,18 @@ const DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE = {
   [WEIGHT_ENTRIES_TABLE]: 'weightEntry',
   [PROFILE_GOALS_TABLE]: 'profile',
   [FASTING_SETTINGS_TABLE]: 'fastingSettings',
+  // A FAST, MERGED SINCE M240/01 (ADR-0014), and it used to be the headline
+  // example of the pass-through stance on the other side of this map. It moved
+  // because a fast that does not travel is a fast an erased or lost device
+  // takes with it, and because the routine beside it has been merged since the
+  // fasting rework, which left one feature answering the same question two
+  // ways.
+  //
+  // DELETABLE, so it belongs in the half both exported maps spread: a fast has
+  // a delete verb (`deleteLocalFast`), so a removal is journalled AND a
+  // tombstone is minted from that journal row, which is how a deletion reaches
+  // the person's other device.
+  [FASTS_TABLE]: 'fast',
 } as const;
 
 /**
@@ -613,11 +626,12 @@ const DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE = {
  * tag-to-table lookup from this map, so the two cannot drift into a journal
  * key nothing reads.
  *
- * `fasts` and `savedMeals` are absent because they are passed through whole
- * rather than merged, so they are never stamped and never tombstoned. They DO
- * journal their deletes, under the tags {@link DELETE_JOURNAL_TAG_BY_TABLE}
- * adds, which is a separate map for exactly that reason. The owner-private
- * compartment is absent because it is not a table at all; its evidence is
+ * `savedMeals` is absent because it is passed through whole rather than
+ * merged, so it is never stamped and never tombstoned. It DOES journal its
+ * deletes, under the tag {@link DELETE_JOURNAL_TAG_BY_TABLE} adds, which is a
+ * separate map for exactly that reason. `fasts` used to sit beside it and is
+ * IN this map since M240/01 (ADR-0014). The owner-private compartment is
+ * absent because it is not a table at all; its evidence is
  * `SnapshotIntegrity.isCompartmentKnown`.
  *
  * It is ASSEMBLED FROM TWO HALVES since M235/03, and the halves are not
@@ -657,12 +671,16 @@ export type SyncEntityTypeTag = (typeof SYNC_ENTITY_TYPE_BY_TABLE)[keyof typeof 
  * has none. This map answers a smaller question: what key does the journal
  * record when a person removes this row.
  *
- * `fasts` and `savedMeals` are here because they are PASSED THROUGH rather
- * than merged, so nothing on the wire carries their removals, and the whole
- * local list either stands or is replaced by the account's. `mergeSnapshots`
- * may only let this device's list stand when every id the baseline recorded is
- * either still in it or named here, which is how an evicted device is told
- * apart from a person who cleared their fasts.
+ * `savedMeals` is here because it is PASSED THROUGH rather than merged, so
+ * nothing on the wire carries its removals, and the whole local list either
+ * stands or is replaced by the account's. `mergeSnapshots` may only let this
+ * device's list stand when every id the baseline recorded is either still in
+ * it or named here, which is how an evicted device is told apart from a person
+ * who cleared their saved meals.
+ *
+ * `fasts` is here too, and since M240/01 it arrives through the SPREAD above
+ * rather than on a line of its own: a fast is merged now, so its journal row
+ * does the ordinary merged job of authorising a tombstone.
  *
  * The three OWNER-PRIVATE tables are here for the same reason, read against
  * the compartment instead of against a list: a seal may write a plaintext
@@ -684,7 +702,6 @@ export const DELETE_JOURNAL_TAG_BY_TABLE = {
   // Its absence IS that guarantee, so this is a decision rather than a table
   // somebody forgot.
   ...DELETABLE_MERGED_ENTITY_TYPE_BY_TABLE,
-  [FASTS_TABLE]: 'fast',
   [SAVED_MEALS_TABLE]: 'savedMeal',
   // THE OWNER-PRIVATE ROWS (M226), and they are here for the pass-through
   // reason one level down. Nothing on the wire describes their removals
@@ -1614,9 +1631,21 @@ export interface LocalStoreSnapshot {
    * `backup.ts`'s `.default([])` is what makes an older backup importable; see
    * the `NOTE (M132, fasting)` block at the top of this file.
    *
-   * NOT merged across devices by the E2EE sync engine: `snapshot-sync.ts`'s
-   * `mergeSnapshots` passes the LOCAL side through untouched (see its comment).
-   * Fasts round-trip through the JSON backup only.
+   * MERGED across devices by the E2EE sync engine since M240/01 (ADR-0014),
+   * one entity per fast, whole-record last-writer-wins by `(lamport,
+   * deviceId)` exactly like a food log. A delete is journalled and tombstoned,
+   * so ending a fast on a phone reaches the tablet and removing it there
+   * removes it here. Until M240/01 it was passed through from the local side
+   * and round-tripped through the JSON backup only, which meant an erased or
+   * lost device took its fasting history with it.
+   *
+   * "AT MOST ONE OPEN FAST" IS NOT A MERGE RULE, and M240/01 deliberately did
+   * not make it one. `createLocalFast` refuses a second open fast on ONE
+   * device; two devices offline can still each start one, and the merge then
+   * keeps both. `selectCurrentFast` shows the latest-started as current and
+   * the other renders as still open with a Remove action, which is the answer
+   * a backup restore has always got. The person decides, and their Remove is
+   * a journalled delete that travels.
    */
   fasts: LocalFast[];
   /**
@@ -1627,10 +1656,11 @@ export interface LocalStoreSnapshot {
    * the optional-field one: a v20 envelope has no key at all, and
    * `backup.ts`'s `.default(null)` is the whole forward migration.
    *
-   * MERGED across devices, unlike `fasts` directly above it. See the
-   * `NOTE (the fasting rework)` block at the top of this file: a fast is an
-   * event with a hard cross-device invariant, a routine is a preference like
-   * the profile row.
+   * MERGED across devices, and since M240/01 (ADR-0014) so are the `fasts`
+   * directly above it, which is what makes the whole fasting feature travel.
+   * See the `NOTE (the fasting rework)` block at the top of this file: the
+   * routine is a preference like the profile row, while a fast is an event
+   * with a cross-device invariant the merge itself now answers.
    */
   fastingSettings: LocalFastingSettings | null;
   /**
@@ -1647,11 +1677,14 @@ export interface LocalStoreSnapshot {
    * REQUIRED, under the `fasts`/`savedMeals` rule: a v21 envelope has no key
    * at all, and `backup.ts`'s `.default([])` is the whole forward migration.
    *
-   * PASSED THROUGH by `mergeSnapshots` from the LOCAL side, the `fasts`
-   * stance, so a second device keeps its own shelf rather than adopting one
-   * photographed in another kitchen. Unlike `fasts` it journals no deletes;
-   * see the `NOTE (M233/02, the pantry)` block at the top of this file for
-   * why a working list earns a different answer from a record of events.
+   * PASSED THROUGH by `mergeSnapshots` from the LOCAL side, so a second device
+   * keeps its own shelf rather than adopting one photographed in another
+   * kitchen. It journals no deletes either; see the `NOTE (M233/02, the
+   * pantry)` block at the top of this file for why a working list earns a
+   * different answer from a record of events. It took this stance FROM `fasts`
+   * when it was written, and `fasts` has been merged since M240/01, so the
+   * pantry is now the only id-bearing diary collection that still passes
+   * through with no guard at all.
    */
   pantryItems: LocalPantryItem[];
   /**

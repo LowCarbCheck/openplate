@@ -87,6 +87,9 @@ export const SNAPSHOT_KEY_REGIONS = {
   foodLogs: 'shared',
   weightEntries: 'shared',
   profile: 'shared',
+  // A fast (M132), MERGED across devices since M240/01 (ADR-0014). `shared`
+  // has never been about the merge: it decides whether a clinician holding a
+  // grant may read the row, and a fast is diary content exactly like a meal.
   fasts: 'shared',
   // The fasting ROUTINE (the fasting rework). `shared`, and the reasoning is
   // the profile row's, not the fasts' beside it: a routine is a preference in
@@ -103,8 +106,9 @@ export const SNAPSHOT_KEY_REGIONS = {
   // reading the same class of fact as the diary she was granted.
   //
   // `shared` decides DISCLOSURE, never merge. The pantry is passed through
-  // from the local side by `mergeSnapshots`, the `fasts` stance, so a second
-  // device keeps its own shelf.
+  // from the local side by `mergeSnapshots`, so a second device keeps its own
+  // shelf. It took that stance from `fasts`, which have been merged since
+  // M240/01 (ADR-0014), so the pantry now holds it alone.
   pantryItems: 'shared',
   // The activity marks and the awards (M235/02). `shared`, and the reasoning is
   // the pantry's one row up: there is no key material in either and no trust

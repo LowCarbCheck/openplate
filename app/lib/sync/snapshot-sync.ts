@@ -38,6 +38,7 @@ import type { SyncMetaPayload } from './engine/envelope/types';
 import type {
   LocalActivityMark,
   LocalAward,
+  LocalFast,
   LocalFastingSettings,
   LocalFoodLog,
   LocalPersonalFood,
@@ -67,15 +68,45 @@ export const SYNC_ENTITY_TYPES = {
   weight: SYNC_ENTITY_TYPE_BY_TABLE[WEIGHT_ENTRIES_TABLE],
   profile: SYNC_ENTITY_TYPE_BY_TABLE[PROFILE_GOALS_TABLE],
   /**
+   * ONE FAST (M240/01, ADR-0014), an event with its own id, merged like a food
+   * log.
+   *
+   * IT WAS A PASS-THROUGH UNTIL M240/01, the headline one, because "at most
+   * one open fast" across two devices is a question with two truthful answers
+   * and M132 declined to answer it out of a bare last-writer-wins merge. The
+   * cost of declining was that a fast lived on exactly one device: an erase, a
+   * lost phone or a new tablet and the fasting history was gone, while the
+   * routine beside it travelled fine.
+   *
+   * ADR-0014 MERGES THEM AND STILL DOES NOT ANSWER THE INVARIANT, which is the
+   * point. Two devices that each started a fast offline end up holding BOTH,
+   * on both devices. `selectCurrentFast` shows the latest-started one as
+   * current and `selectFastHistory` renders the other as still open with a
+   * Remove action, which is the answer the app has had since M132 for a backup
+   * restore. A merge-time resolution would silently drop a row the person can
+   * see, and it would drop the one the screen calls current.
+   *
+   * WHOLE-RECORD LAST-WRITER-WINS per fast, ordered by `(lamport, deviceId)`
+   * like every other merged entity. Ending a fast, writing a mood or a note is
+   * an edit to one row, so the device that wrote last wins that row, and two
+   * devices editing the SAME fast offline is the accepted §3.3 trade-off the
+   * profile row has always carried.
+   *
+   * DELETES TRAVEL, which a pass-through's never did. `deleteLocalFast`
+   * journals the removal, `stampSnapshot` mints a tombstone from that journal
+   * row, and the peer's `applyMergedSnapshot` removes the row. An evicted
+   * device mints nothing, under the ordinary ADR-0013 rule, so it repopulates
+   * from the account instead of emptying it.
+   */
+  fast: SYNC_ENTITY_TYPE_BY_TABLE[FASTS_TABLE],
+  /**
    * THE FASTING ROUTINE (the fasting rework), the singleton settings record.
    *
-   * It is MERGED, exactly like `profile` above it, and NOT passed through from
-   * the local side like `fasts` and `savedMeals` below. The difference is the
-   * one that matters: a fast is an EVENT, and "at most one open fast" across
-   * two devices is a question with two truthful answers, while a routine is a
-   * PREFERENCE, and a person who sets their window on a phone means it on
-   * their tablet too. A pass-through would leave the second device blank and
-   * look like it had worked.
+   * It is MERGED, exactly like `profile` above it and like `fast` beside it
+   * since M240/01. When this comment was written the routine was the merged
+   * half of a feature whose events were passed through, and that split is
+   * gone: what is left of it is the GRANULARITY, one record for the routine
+   * against one entity per fast.
    *
    * WHOLE-RECORD LAST-WRITER-WINS, ordered by `(lamport, deviceId)` like every
    * other merged entity, NOT by the record's own `updatedAt`. Wall-clock time
@@ -101,10 +132,11 @@ export const SYNC_ENTITY_TYPES = {
    * single row per day holding a SET of signals would have needed a union
    * merge, which is the design this milestone rejected.
    *
-   * A PASS-THROUGH WOULD HAVE BEEN THE WRONG STANCE, unlike `fasts`,
-   * `savedMeals` and `pantryItems`: letting the local list stand whole drops
-   * every mark the other device wrote, which is precisely the streak a person
-   * would then be told they do not have.
+   * A PASS-THROUGH WOULD HAVE BEEN THE WRONG STANCE, unlike `savedMeals` and
+   * `pantryItems`: letting the local list stand whole drops every mark the
+   * other device wrote, which is precisely the streak a person would then be
+   * told they do not have. `fasts` took the pass-through stance when this was
+   * written and has been merged since M240/01.
    *
    * NOTHING HERE IS EVER TOMBSTONED. The table has no delete verb, so it is
    * absent from `DELETE_JOURNAL_TAG_BY_TABLE` and `isTombstoneTrusted`
@@ -142,8 +174,8 @@ export const SYNC_ENTITY_TYPES = {
    * partition amendment), one entity holding the sealed ciphertext and its
    * two CDK wraps.
    *
-   * It is MERGED rather than passed through from the local side like `fasts`
-   * and `savedMeals`, and the difference is the whole point: a clinician's
+   * It is MERGED rather than passed through from the local side like
+   * `savedMeals`, and the difference is the whole point: a clinician's
    * second device pulls the blob and must ADOPT the key pair inside, or every
    * share her patients granted is unopenable there. A pass-through would keep
    * `null` and look like it worked.
@@ -185,28 +217,32 @@ export interface SyncBaseline {
   perEntity: Record<string, StampedEntity>;
   tombstones: Tombstone[];
   /**
-   * The ids the two PASS-THROUGH collections held in the payload this device
-   * last agreed with.
+   * The ids the PASS-THROUGH collection held in the payload this device last
+   * agreed with.
    *
    * Not in `perEntity`, deliberately and permanently. That record drives the
    * stamping, so an id in it would be diffed, stamped and tombstoned, which is
-   * the merge these two collections do not have. This is a plain list of ids
-   * and it answers one question: which fasts and saved meals did the account
-   * hold last time this device looked? `mergeSnapshots` lets the local list
-   * stand only when every one of those ids is still in it or is named in the
-   * delete journal, so an emptiness has to be accounted for before it is
-   * published.
+   * the merge this collection does not have. This is a plain list of ids and
+   * it answers one question: which saved meals did the account hold last time
+   * this device looked? `mergeSnapshots` lets the local list stand only when
+   * every one of those ids is still in it or is named in the delete journal,
+   * so an emptiness has to be accounted for before it is published.
    *
-   * OPTIONAL FOR ONE CYCLE, which is the migration. A baseline written before
-   * this field existed has no record of what the account held, so nothing can
-   * be accounted for, the table reads as untrusted, and the REMOTE list wins
-   * that cycle. `applyMergedSnapshot` computes no delete set for these two, so
-   * `importBackup` upserts the account's list beside the device's own rows and
-   * nothing local is lost. The baseline this cycle commits carries the ids, and
-   * every later cycle is the ordinary case.
+   * IT HELD A `fasts` LIST TOO UNTIL M240/01 (ADR-0014). A fast is a merged
+   * entity now, so its ids live in `perEntity` with every other merged row and
+   * its removals are tombstones rather than a shrunk list. A persisted state
+   * written before that still carries the key; `sync-state.ts` drops it on the
+   * way in, which is the whole migration.
+   *
+   * OPTIONAL FOR ONE CYCLE, which is the other migration. A baseline written
+   * before this field existed has no record of what the account held, so
+   * nothing can be accounted for, the table reads as untrusted, and the REMOTE
+   * list wins that cycle. `applyMergedSnapshot` computes no delete set for it,
+   * so `importBackup` upserts the account's list beside the device's own rows
+   * and nothing local is lost. The baseline this cycle commits carries the
+   * ids, and every later cycle is the ordinary case.
    */
   passThrough?: {
-    fasts: string[];
     savedMeals: string[];
   };
 }
@@ -294,6 +330,7 @@ export type SyncEntityValue =
   | LocalFoodLog
   | LocalWeightEntry
   | LocalProfileGoals
+  | LocalFast
   | LocalFastingSettings
   | LocalActivityMark
   | LocalAward
@@ -312,6 +349,12 @@ function flattenSnapshot(snapshot: SyncedSnapshot): FlatEntity[] {
     ...snapshot.foods.map((food) => toFlat(SYNC_ENTITY_TYPES.food, food.id, food)),
     ...snapshot.foodLogs.map((log) => toFlat(SYNC_ENTITY_TYPES.log, log.id, log)),
     ...snapshot.weightEntries.map((entry) => toFlat(SYNC_ENTITY_TYPES.weight, entry.id, entry)),
+    // A FAST IS ONE ENTITY (M240/01), addressed by its own client-generated
+    // id, so two devices that each start a fast write two different keys and
+    // both survive the merge. That is the whole mechanism; nothing anywhere
+    // adjudicates two open fasts, and `snapshot-sync.ts` deliberately has no
+    // opinion about what a fast MEANS.
+    ...snapshot.fasts.map((entry) => toFlat(SYNC_ENTITY_TYPES.fast, entry.id, entry)),
     // THE ROW IS THE FACT (M235/03). A mark is addressed by its own
     // `${dayKey}#${signal}` id and an award by its catalog key, which is why
     // both can be stamped and merged one row at a time without the engine
@@ -688,10 +731,12 @@ interface PassThroughRow {
  * One PASS-THROUGH collection, chosen by the table name
  * {@link PassThroughOutcome.refused} carries.
  *
- * FAIL FAST on anything else. `decidePassThrough` names these two tables and
- * no others, so a third name here is a new pass-through collection whose
- * author has not been asked how it is counted, and guessing would report a
- * restore of zero to somebody whose rows had just come back.
+ * FAIL FAST on anything else. `decidePassThrough` names ONE table now and no
+ * others, so a second name here is a new pass-through collection whose author
+ * has not been asked how it is counted, and guessing would report a restore of
+ * zero to somebody whose rows had just come back. It named two until M240/01
+ * (ADR-0014) moved `fasts` onto the merged side, where a restore is counted
+ * from the withheld tombstones instead.
  */
 function readPassThroughList({
   table,
@@ -700,7 +745,6 @@ function readPassThroughList({
   table: string;
   snapshot: SyncedSnapshot;
 }): readonly PassThroughRow[] {
-  if (table === FASTS_TABLE) return snapshot.fasts;
   if (table === SAVED_MEALS_TABLE) return snapshot.savedMeals;
   throw new Error(`No pass-through list is known for the table ${table}.`);
 }
@@ -720,9 +764,11 @@ function readPassThroughList({
  *     wrote it.
  *  2. A REFUSED PASS-THROUGH TABLE (`mergeSnapshots`), counted as the ids the
  *     agreed list holds and this device's list did not. Those rows arrive with
- *     no tombstone anywhere, because the two lists are not merged and carry
- *     none; counting only withheld tombstones reported a restore of zero to
- *     somebody whose forty saved meals had just come back.
+ *     no tombstone anywhere, because that list is not merged and carries none;
+ *     counting only withheld tombstones reported a restore of zero to somebody
+ *     whose forty saved meals had just come back. A restored FAST is counted
+ *     by source 1 since M240/01, because a fast is merged and a device that
+ *     could not vouch for one withholds its tombstone like any other row.
  *
  * AND THE COMPARTMENT IS NEVER COUNTED. A HELD compartment (M226) is pushed
  * back to the account byte-identical and nothing is written to this device at
@@ -758,9 +804,9 @@ export function countRestoredEntities({
  *
  * Zero on the MIGRATION cycle, which is the common case for this branch: a
  * baseline written before the pass-through ids were kept can account for
- * nothing, so both tables are refused on every healthy device exactly once,
- * and a healthy device's lists are the account's lists. Nothing is restored and
- * nothing is said.
+ * nothing, so the table is refused on every healthy device exactly once, and a
+ * healthy device's list is the account's list. Nothing is restored and nothing
+ * is said.
  */
 function countAdoptedRows({
   table,
@@ -831,8 +877,8 @@ export interface PassThroughOutcome {
    * be accounted for.
    *
    * Empty on every ordinary cycle. A table here means this device holds fewer
-   * fasts or saved meals than the account does and cannot say why, so the
-   * account's list was kept instead of its own.
+   * saved meals than the account does and cannot say why, so the account's
+   * list was kept instead of its own.
    */
   refused: string[];
 }
@@ -919,17 +965,18 @@ export function mergeSnapshots({
    * object `stampSnapshot` weighs, and REQUIRED here for the same reason
    * (M224, the pass-through half).
    *
-   * It decides one thing only: whether this device's `fasts` and `savedMeals`
-   * are trusted to be the whole list. Nothing else in this function reads it,
-   * and every stamped entity is merged exactly as before.
+   * It decides one thing only: whether this device's `savedMeals` are trusted
+   * to be the whole list. Nothing else in this function reads it, and every
+   * stamped entity is merged exactly as before. It decided the same for
+   * `fasts` until M240/01 (ADR-0014) made them a stamped entity.
    */
   integrity: LocalStoreIntegrity;
   /**
    * The PERSISTED baseline, for its `passThrough` ids and nothing else.
    *
-   * It is what the local list is held against: a fast the baseline names and
-   * the list does not is either a delete this device wrote down or a row it
-   * lost, and only those two ids together can tell which.
+   * It is what the local list is held against: a saved meal the baseline names
+   * and the list does not is either a delete this device wrote down or a row
+   * it lost, and only those two ids together can tell which.
    */
   baseline: SyncBaseline;
   /**
@@ -939,7 +986,9 @@ export function mergeSnapshots({
    * Passed separately rather than read off `integrity`, because `integrity`
    * here is the narrower {@link LocalStoreIntegrity}: the disk comparison is
    * all the merged entities need, and widening it would put the journal in
-   * front of readers that must not weigh it.
+   * front of readers that must not weigh it. The merged entities, `fasts`
+   * among them since M240/01, weigh the journal one step earlier instead, in
+   * `stampSnapshot`, which is where a tombstone is authorised.
    */
   deletedEntityKeys: ReadonlySet<string>;
 }): MergedSnapshot {
@@ -948,6 +997,7 @@ export function mergeSnapshots({
   const foods: LocalPersonalFood[] = [];
   const foodLogs: LocalFoodLog[] = [];
   const weightEntries: LocalWeightEntry[] = [];
+  const mergedFasts: LocalFast[] = [];
   const activityMarks: LocalActivityMark[] = [];
   const awards: LocalAward[] = [];
   let profile: LocalProfileGoals | null = null;
@@ -990,6 +1040,11 @@ export function mergeSnapshots({
       weightEntries.push(entity.value as LocalWeightEntry);
       continue;
     }
+    if (entity.entityType === SYNC_ENTITY_TYPES.fast) {
+      // SAFETY: the `fast` tag is only ever attached to a `LocalFast`.
+      mergedFasts.push(entity.value as LocalFast);
+      continue;
+    }
     if (entity.entityType === SYNC_ENTITY_TYPES.activityMark) {
       // SAFETY: the `activityMark` tag is only ever attached to a `LocalActivityMark`.
       activityMarks.push(entity.value as LocalActivityMark);
@@ -1016,26 +1071,20 @@ export function mergeSnapshots({
     }
   }
 
-  // WHICH SIDE'S LIST SURVIVES, for the two collections that are not merged.
+  // WHICH SIDE'S LIST SURVIVES, for the one collection that is not merged.
   //
-  // THE BOUNDARY HAS NOT MOVED: fasts are still not merged across devices, and
-  // the "at most one open fast" question M132 deferred is still open and still
-  // needs its own design pass. This decides something much smaller, and only
-  // in a state that should never happen: when the device cannot ACCOUNT FOR
-  // the ids its own baseline recorded, its shorter list is not a fact about the
-  // account, so it must not be the side that wins. Nothing here combines two
-  // lists, and on every ordinary cycle, including one where the person
-  // genuinely cleared every fast they had, the local list wins exactly as it
-  // always has, because every removal was written down as it happened.
-  const fastsDecision = decidePassThrough({
-    table: FASTS_TABLE,
-    tag: DELETE_JOURNAL_TAG_BY_TABLE[FASTS_TABLE],
-    local: local.snapshot.fasts,
-    remote: remote.snapshot.fasts,
-    baselineIds: baseline.passThrough?.fasts,
-    deletedEntityKeys,
-    integrity,
-  });
+  // It decides something small, and only in a state that should never happen:
+  // when the device cannot ACCOUNT FOR the ids its own baseline recorded, its
+  // shorter list is not a fact about the account, so it must not be the side
+  // that wins. Nothing here combines two lists, and on every ordinary cycle,
+  // including one where the person genuinely deleted every saved meal they
+  // had, the local list wins exactly as it always has, because every removal
+  // was written down as it happened.
+  //
+  // `fasts` WENT THROUGH HERE UNTIL M240/01. A fast is merged now, so the
+  // eviction case it guarded is carried by the ordinary ADR-0013 machinery
+  // instead: an evicted device mints no tombstone for a fast it cannot see,
+  // the account's row survives the merge, and the apply writes it back.
   const savedMealsDecision = decidePassThrough({
     table: SAVED_MEALS_TABLE,
     tag: DELETE_JOURNAL_TAG_BY_TABLE[SAVED_MEALS_TABLE],
@@ -1046,45 +1095,39 @@ export function mergeSnapshots({
     integrity,
   });
 
-  // FASTS RIDE THROUGH FROM THE LOCAL SIDE, UNTOUCHED (M132).
-  //
-  // They are deliberately absent from `SYNC_ENTITY_TYPES`, `flattenSnapshot`
-  // and `toCandidateMap`, so they are never stamped, never diffed against the
-  // remote payload, never tombstoned, and never adopted from another device.
-  // A fast round-trips through the LOCAL JSON backup only; the optional E2EE
-  // sync feature does not merge fasts across devices yet.
-  //
-  // That is a scope boundary, not an oversight: the "at most one open fast"
-  // invariant is a genuinely hard cross-device question (two phones both
-  // holding a running fast have two truthful answers, and picking one writes a
-  // duration nobody declared into somebody's history), and it needs its own
-  // design pass rather than falling out of a last-writer-wins merge. Passing
-  // `local` through keeps this device's own fasts intact through every sync
-  // cycle instead of silently emptying them, which a bare `fasts: []` here
-  // would do on the very first merge.
-  //
-  // SAVED MEALS RIDE THROUGH FROM THE LOCAL SIDE TOO, for the identical reason
-  // and the identical mechanism (M123/07): they are absent from
-  // `SYNC_ENTITY_TYPES`/`flattenSnapshot`/`toCandidateMap`, so `local` passes
-  // straight through rather than a bare `savedMeals: []` silently emptying a
-  // device's saved meals on its first merge. Unlike fasts there is no hard
+  // SAVED MEALS RIDE THROUGH FROM THE LOCAL SIDE (M123/07): they are absent
+  // from `SYNC_ENTITY_TYPES`/`flattenSnapshot`/`toCandidateMap`, so `local`
+  // passes straight through rather than a bare `savedMeals: []` silently
+  // emptying a device's saved meals on its first merge. There is no hard
   // cross-device invariant blocking a real merge here, this is simply not
-  // built yet, and is a smaller, lower-risk follow-up than fasts' was.
+  // built yet, and M240/01 having merged `fasts` makes it the smaller,
+  // lower-risk follow-up it always was.
   return {
     snapshot: {
       foods,
       foodLogs,
       weightEntries,
       profile,
-      // The REMOTE side only when this device cannot account for the ids its
-      // baseline recorded, which is an evicted store, a half-loaded table, or a
-      // baseline from before the ids were kept (`decidePassThrough`). Local
-      // otherwise, always, including when it is empty on purpose.
-      fasts: fastsDecision.list,
+      // MERGED, one entity per fast (M240/01), and NOTHING ELSE. The list is
+      // built by the loop above out of `mergeEntityMaps`, so a fast either
+      // device holds is in the result and a fast either device buried is out
+      // of it. There is no merge-time adjudication of any kind on top.
+      //
+      // TWO OPEN FASTS ARE A STATE THIS MERGE MAY PRODUCE, and it must.
+      // `createLocalFast` refuses a second open fast on ONE device, and two
+      // devices offline can still each start one. The screen already has an
+      // answer for that: `selectCurrentFast` shows the LATEST-started open
+      // fast as current and `selectFastHistory` renders the other as still
+      // open, with a Remove action. A merge that picked one and deleted the
+      // rest would silently drop a row the person can see and could remove
+      // themselves, and it would drop the one the screen calls current. The
+      // person decides; the merge carries whatever they decide, because a
+      // Remove is a journalled delete like any other.
+      fasts: mergedFasts,
       savedMeals: savedMealsDecision.list,
       // THE PANTRY RIDES THROUGH FROM THE LOCAL SIDE TOO (M233/02), and with
       // no `decidePassThrough` around it, which is the one difference from the
-      // two above.
+      // saved meals above.
       //
       // That guard exists to stop an EVICTED store publishing an emptiness it
       // cannot account for, and it accounts for it by reading the delete
@@ -1117,12 +1160,13 @@ export function mergeSnapshots({
       // erasing it.
       activityMarks,
       awards,
-      // NOT passed through from `local` like the two above it: the routine is
-      // genuinely merged, so a second device adopts it instead of staying
-      // blank. See the comment on `SYNC_ENTITY_TYPES.fastingSettings` for why
-      // a routine and a fast sit on opposite sides of this line.
+      // MERGED, like the fasts above it since M240/01: a second device adopts
+      // the routine instead of staying blank. See the comment on
+      // `SYNC_ENTITY_TYPES.fastingSettings` for what is left of the difference
+      // between a routine and a fast, which is the granularity and not the
+      // stance.
       fastingSettings,
-      // NOT passed through from `local` like the two above it (M160/04, moved
+      // NOT passed through from `local` (M160/04, moved
       // into the compartment by M160/07): the share key pair and the pinned
       // peers are genuinely merged, so a second device adopts them instead of
       // staying blank. What is merged here is the SEALED compartment, this
@@ -1132,8 +1176,8 @@ export function mergeSnapshots({
     },
     meta: { perEntity, tombstones },
     passThrough: {
-      published: [...fastsDecision.published, ...savedMealsDecision.published],
-      refused: [fastsDecision.refused, savedMealsDecision.refused].filter((table) => table !== null),
+      published: savedMealsDecision.published,
+      refused: [savedMealsDecision.refused].filter((table) => table !== null),
     },
   };
 }
@@ -1155,14 +1199,19 @@ export function baselineFromPayload(payload: StampedSnapshot): SyncBaseline {
   return {
     perEntity,
     tombstones: payload.meta.tombstones,
-    // THE TWO PASS-THROUGH COLLECTIONS, recorded as plain ids and deliberately
-    // NOT as `perEntity` rows. An entry in `perEntity` is stamped, diffed and
-    // tombstoned by the next `stampSnapshot`, which is the merge these two do
-    // not have; what the next cycle needs from them is only "what did the
-    // account hold when I last agreed with it", so that a shorter list can be
-    // checked against the delete journal before it is published.
+    // THE PASS-THROUGH COLLECTION, recorded as plain ids and deliberately NOT
+    // as `perEntity` rows. An entry in `perEntity` is stamped, diffed and
+    // tombstoned by the next `stampSnapshot`, which is the merge this one does
+    // not have; what the next cycle needs from it is only "what did the account
+    // hold when I last agreed with it", so that a shorter list can be checked
+    // against the delete journal before it is published.
+    //
+    // `fasts` WAS RECORDED HERE TOO UNTIL M240/01. A fast is merged now, so
+    // `flattenSnapshot` above already put every fast id into `perEntity` with
+    // its stamp and its content hash, and recording the ids a second time here
+    // would be a second, weaker answer to a question the baseline has already
+    // answered properly.
     passThrough: {
-      fasts: payload.snapshot.fasts.map((entry) => entry.id),
       savedMeals: payload.snapshot.savedMeals.map((entry) => entry.id),
     },
   };
@@ -1209,12 +1258,30 @@ function canonicalize(payload: StampedSnapshot) {
       // and two devices have to serialize the same set identically or every
       // cycle reads as a difference and pushes forever.
       savedMeals: byId(payload.snapshot.savedMeals),
+      // FASTS ARE INCLUDED SINCE M240/01 (ADR-0014), and they used to be the
+      // one collection this function deliberately omitted, on the ground that
+      // a fast told the account nothing so a fast must not burn a blob
+      // version. It tells the account everything now: starting one, ending
+      // one, writing a mood or a note has to reach the person's other device,
+      // and the cycle that carries it is a push.
+      //
+      // `meta.perEntity` below would already catch every one of those, because
+      // a merged fast owns a key there and an edit advances its lamport. The
+      // list is compared as well for the reason the `savedMeals` above it is:
+      // the one time this function was trusted to infer a change from a
+      // neighbouring field, a saved meal went unpushed until something else
+      // happened to write the blob, and on a phone that was erased first the
+      // meal was simply gone.
+      //
+      // Sorted through `byId`, so two devices serialize the same set
+      // identically and an ordinary cycle does not read as a difference.
+      fasts: byId(payload.snapshot.fasts),
       profile: payload.snapshot.profile,
-      // The routine IS included, for the same reason `profile` beside it is
-      // and `fasts` below is not: it is merged, so a device that changes it
-      // has something another device needs, and it must be allowed to push.
+      // The routine IS included, for the same reason `profile` beside it is:
+      // it is merged, so a device that changes it has something another device
+      // needs, and it must be allowed to push.
       fastingSettings: payload.snapshot.fastingSettings,
-      // The compartment IS included, unlike `fasts` below: generating a key
+      // The compartment IS included: generating a key
       // pair, pinning a peer, or rewrapping a slot after a passphrase change
       // is a real change another device needs, so it must be allowed to make
       // this device push. It is compared as sealed bytes, which is why
@@ -1222,14 +1289,7 @@ function canonicalize(payload: StampedSnapshot) {
       // verbatim while its plaintext is unchanged, a fresh IV on every cycle
       // would make every boot write a new blob version.
       privateStore: payload.snapshot.privateStore,
-      // `fasts` is deliberately omitted, and that is the whole difference
-      // between them and the `savedMeals` above: a fast is not synced at all,
-      // so a fast starting or ending must not be what makes this device burn a
-      // blob version. `mergeSnapshots` passes the list through for the sake of
-      // the local device, never to tell the account anything, so there is
-      // nothing here for a push to carry.
-      //
-      // `pantryItems` is omitted for a reason of its own (M233/02): the pantry
+      // `pantryItems` is omitted (M233/02): the pantry
       // is a WORKING LIST of what is in this device's own fridge. It passes
       // through from the local side with no `decidePassThrough` around it,
       // because it writes no delete-journal rows and the guard would refuse it

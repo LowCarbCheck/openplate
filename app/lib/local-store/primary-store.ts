@@ -21,12 +21,12 @@
  * (M225), which removes the row and writes the entity's key into the DELETE
  * JOURNAL in the same transaction. Sync may only mint a tombstone for a key
  * that journal names, so a delete that reached `delRow` directly is a delete
- * no other device will ever hear about. The three merged collections
- * (personal foods, food logs, weight entries) journal so a peer can tombstone
- * the row; the two PASS-THROUGH ones (fasts, saved meals) journal for a
- * sharper reason, no tombstone describes their removals, so the journal is
- * the only evidence `mergeSnapshots` has that this device's list is short on
- * purpose. `deleteLocalShareIdentity`, `deleteLocalSharePeer` and
+ * no other device will ever hear about. The four merged collections
+ * (personal foods, food logs, weight entries and, since M240/01, fasts)
+ * journal so a peer can tombstone the row; the PASS-THROUGH one (saved meals)
+ * journals for a sharper reason, no tombstone describes its removals, so the
+ * journal is the only evidence `mergeSnapshots` has that this device's list is
+ * short on purpose. `deleteLocalShareIdentity`, `deleteLocalSharePeer` and
  * `deleteLocalStudyEnrolment` GO THROUGH IT TOO (M226). They called `delRow`
  * directly until an emptied store proved what that costs: the three rows are
  * the owner-private compartment, which is sealed and pushed WHOLE, so a
@@ -203,6 +203,14 @@ export interface EntityRemovalWithoutJournal {
   foodLogIds: readonly string[];
   /** Weight-entry ids the merge resolved as buried elsewhere. */
   weightEntryIds: readonly string[];
+  /**
+   * Fast ids the merge resolved as buried elsewhere (M240/01, ADR-0014).
+   *
+   * ONE source, and it is not this device: a peer's tombstone for a fast the
+   * person removed over there. The merge adjudicates nothing about fasts, so
+   * there is no other way a row leaves this list.
+   */
+  fastIds: readonly string[];
 }
 
 /**
@@ -235,6 +243,7 @@ export async function removeEntitiesWithoutJournal(
     for (const id of removal.foodIds) resolved.delRow(PERSONAL_FOODS_TABLE, id);
     for (const id of removal.foodLogIds) resolved.delRow(FOOD_LOGS_TABLE, id);
     for (const id of removal.weightEntryIds) resolved.delRow(WEIGHT_ENTRIES_TABLE, id);
+    for (const id of removal.fastIds) resolved.delRow(FASTS_TABLE, id);
   });
 }
 
@@ -904,11 +913,12 @@ export async function setLocalFastPlannedStart(
 /**
  * Removes one fast by id, AND writes the removal into the delete journal.
  *
- * Through `deleteEntity` like every other delete verb, even though a fast is
- * never tombstoned. The journal row is what licenses this device's whole fast
- * list to stand against the account's in `mergeSnapshots`; a bare `delRow` here
- * would make a real deletion indistinguishable from an evicted database, and
- * the safe reading of that is the account's list, so the fast would come back.
+ * Through `deleteEntity` like every other delete verb. Since M240/01
+ * (ADR-0014) the journal row does the ordinary merged job: `stampSnapshot`
+ * mints a tombstone from it, which is what carries the deletion to the
+ * person's other devices. A bare `delRow` here would make a real deletion
+ * indistinguishable from an evicted database, no tombstone would ever be
+ * minted, and the account's copy would come back on the next pull, for ever.
  */
 export async function deleteLocalFast(id: string, { store }: StoreOption = {}): Promise<void> {
   deleteEntity(await resolveStore(store), FASTS_TABLE, id);

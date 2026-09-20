@@ -274,7 +274,9 @@ function byLatestStart(a: LocalFast, b: LocalFast): number {
  * The one-open-fast invariant is enforced on create (`createLocalFast`), but a
  * BACKUP RESTORE bypasses it by design, `importSnapshot` reproduces the file
  * rather than adjudicating it, so a restore onto a device that already has a
- * running fast can leave two open rows. Rather than inventing an end instant
+ * running fast can leave two open rows. A SYNC PULL is the second way in since
+ * M240/01 (ADR-0014): two devices that each started a fast while offline both
+ * keep it, and `mergeSnapshots` deliberately adjudicates nothing. Rather than inventing an end instant
  * for the loser (which would write a lie into the person's history), this picks
  * the one with the LATEST effective start and leaves the other in the list.
  * `selectFastHistory` then renders it as "Still open", with a Remove action ,

@@ -1300,8 +1300,11 @@ function FastHistoryRow({ fast, nowMs, timezone }: { fast: LocalFast; nowMs: num
   const when = formatFastMoment(timeline.startAt, { timezone, language: i18next.language });
   const achieved = formatFastDuration(timeline.elapsedMs, t);
   const target = fastTargetLabel(fast, t);
-  // Only ever reachable as a restore orphan: `selectCurrentFast` already took
-  // the one open fast, so a SECOND open row can only have arrived from a backup.
+  // A SECOND OPEN ROW, which `selectCurrentFast` did not take as current.
+  // Two ways in: a backup restore, and since M240/01 (ADR-0014) a SYNC, when
+  // two devices each started a fast while offline. Both land here the same
+  // way, and this row is the whole answer to them: the person sees it, and
+  // removes it if they want to. Nothing adjudicates it for them.
   const isStillOpen = timeline.status === 'active' || timeline.status === 'scheduled';
 
   const mood = fast.mood ?? null;

@@ -27,8 +27,8 @@ import type { Tombstone } from '../../app/lib/sync/engine/merge/types';
 import { SyncRestoredNotice } from '../../app/components/sync-status';
 import type { StorageHealNotice } from '../../app/lib/sync/storage-heal';
 import { countRestoredEntities, SYNC_ENTITY_TYPES } from '../../app/lib/sync/snapshot-sync';
-import { FASTS_TABLE, SAVED_MEALS_TABLE } from '../../app/lib/local-store/schema';
-import type { LocalFast, LocalFoodLog } from '../../app/lib/local-store/schema';
+import { SAVED_MEALS_TABLE } from '../../app/lib/local-store/schema';
+import type { LocalFast, LocalFoodLog, LocalSavedMeal } from '../../app/lib/local-store/schema';
 import type { SealedPrivateStore, SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
 import { getSyncSessionSnapshot, openSyncSession, updateSyncSession, type SyncVault } from '../../app/lib/sync/sync-session';
 import type { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
@@ -67,10 +67,10 @@ describe('resolveStorageHealNotice', () => {
   });
 
   // THE SECOND PRODUCER (M227). A refused pass-through table restores rows and
-  // withholds no tombstone at all, because `fasts` and `savedMeals` are not
-  // merged and mint none. The old `withheld.length === 0` early return here
-  // therefore said nothing to the person whose list had just been handed back.
-  // Put that early return back and this line goes red.
+  // withholds no tombstone at all, because `savedMeals` is not merged and
+  // mints none. The old `withheld.length === 0` early return here therefore
+  // said nothing to the person whose list had just been handed back. Put that
+  // early return back and this line goes red.
   it('still speaks when the restore came from a refused list rather than a withheld delete', () => {
     assert.deepEqual(resolveStorageHealNotice({ restoredCount: 3, accountId: 4 }), {
       kind: 'restored',
@@ -85,6 +85,12 @@ describe('resolveStorageHealNotice', () => {
 // vouch for
 // ---------------------------------------------------------------------------
 
+/**
+ * A FAST, kept here for the first source only.
+ *
+ * It is merged since M240/01 (ADR-0014), so a restored fast is counted from
+ * its WITHHELD TOMBSTONE like a food log, never from a refused table.
+ */
 function fast(id: string): LocalFast {
   return {
     id,
@@ -95,6 +101,11 @@ function fast(id: string): LocalFast {
     endedAt: null,
     createdAt: T,
   };
+}
+
+/** A saved meal, the one collection a refused table can still restore. */
+function savedMeal(id: string): LocalSavedMeal {
+  return { id, name: `Meal ${id}`, items: [], createdAt: T };
 }
 
 function foodLog(id: string): LocalFoodLog {
@@ -177,27 +188,41 @@ describe('countRestoredEntities', () => {
   it('counts the rows a refused pass-through list adopted from the account', () => {
     const count = countRestoredEntities({
       withheld: [],
-      merged: snapshot({ fasts: [fast('one'), fast('two'), fast('three')] }),
-      local: snapshot({ fasts: [] }),
-      refused: [FASTS_TABLE],
+      merged: snapshot({ savedMeals: [savedMeal('one'), savedMeal('two'), savedMeal('three')] }),
+      local: snapshot({ savedMeals: [] }),
+      refused: [SAVED_MEALS_TABLE],
     });
-    assert.equal(count, 3, 'three fasts came back and nobody was told');
+    assert.equal(count, 3, 'three saved meals came back and nobody was told');
+  });
+
+  // AND A RESTORED FAST COMES BACK THROUGH THE FIRST SOURCE (M240/01). It was
+  // a refused-table restore until this milestone; a fast is merged now, so the
+  // evidence is its own withheld tombstone, and the sentence the person reads
+  // is unchanged.
+  it('counts a restored FAST from its withheld tombstone, not from a refused table', () => {
+    const count = countRestoredEntities({
+      withheld: [{ entityId: 'one', entityType: SYNC_ENTITY_TYPES.fast, lamport: 4, deviceId: 'device-1' }],
+      merged: snapshot({ fasts: [fast('one')] }),
+      local: snapshot({ fasts: [] }),
+      refused: [],
+    });
+    assert.equal(count, 1, 'a fast the apply wrote back is a restore like any other row');
   });
 
   // THE MIGRATION CYCLE, which is the common case for the refused branch and
   // must stay silent. A baseline written before the pass-through ids were kept
-  // can account for nothing, so BOTH tables are refused exactly once on every
-  // device in the fleet. A healthy device's lists are already the account's, so
+  // can account for nothing, so the table is refused exactly once on every
+  // device in the fleet. A healthy device's list is already the account's, so
   // nothing is adopted, the count is zero, and no notice is drawn.
-  it('says nothing on the migration cycle, where every table is refused and the lists match', () => {
-    const lists = { fasts: [fast('one'), fast('two')] };
+  it('says nothing on the migration cycle, where the table is refused and the lists match', () => {
+    const lists = { savedMeals: [savedMeal('one'), savedMeal('two')] };
     const count = countRestoredEntities({
       withheld: [],
       merged: snapshot(lists),
       local: snapshot(lists),
-      refused: [FASTS_TABLE, SAVED_MEALS_TABLE],
+      refused: [SAVED_MEALS_TABLE],
     });
-    assert.equal(count, 0, 'a healthy device was told its own fasts had been restored');
+    assert.equal(count, 0, 'a healthy device was told its own saved meals had been restored');
     assert.deepEqual(resolveStorageHealNotice({ restoredCount: count, accountId: 1 }), { kind: 'none' });
   });
 });

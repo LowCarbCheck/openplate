@@ -33,11 +33,12 @@
  *
  * OVERLAPPING FASTS ARE COUNTED TWICE, ON PURPOSE
  *
- * A backup restore can leave two open rows (see `selectCurrentFast`). Rather
- * than adjudicating which of two overlapping fasts is real, this sums both. The
- * alternative is silently dropping a row the person can still see in their
- * history, and the restore case already surfaces in the UI as "Still open" with
- * a Remove action.
+ * A backup restore can leave two open rows (see `selectCurrentFast`), and
+ * since M240/01 (ADR-0014) so can a SYNC, when two devices each started a fast
+ * while offline. Rather than adjudicating which of two overlapping fasts is
+ * real, this sums both. The alternative is silently dropping a row the person
+ * can still see in their history, and both cases surface in the UI the same
+ * way, as "Still open" with a Remove action.
  */
 import { dayBoundsInTimezone, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import type { LocalFast } from '#app/lib/local-store/schema';

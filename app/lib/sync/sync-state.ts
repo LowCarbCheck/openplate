@@ -143,13 +143,19 @@ const persistedSyncStateSchema = z.object({
     // no such key, and a REQUIRED field here would fail the whole parse and
     // discard the baseline, which costs a full re-push and, worse, throws away
     // the tombstones that keep other devices' deletes buried. Absent means "this
-    // device recorded nothing about its fasts and saved meals", which
-    // `mergeSnapshots` reads as untrusted for exactly one cycle. No
-    // `STATE_FORMAT_VERSION` bump for the same reason: the old shape is still
-    // readable, so nothing is incompatible.
-    passThrough: z
-      .object({ fasts: z.array(z.string()), savedMeals: z.array(z.string()) })
-      .optional(),
+    // device recorded nothing about its saved meals", which `mergeSnapshots`
+    // reads as untrusted for exactly one cycle. No `STATE_FORMAT_VERSION` bump
+    // for the same reason: the old shape is still readable, so nothing is
+    // incompatible.
+    //
+    // IT CARRIED A `fasts` LIST TOO UNTIL M240/01 (ADR-0014), and this object
+    // no longer names it. Zod strips an unknown key, so a state written by
+    // 0.35.1 or older parses here unchanged and its stale fast ids are simply
+    // dropped: a fast is a merged entity now, so `baseline.perEntity` carries
+    // its id, its stamp and its content hash, which is strictly more than the
+    // bare list ever said. No `STATE_FORMAT_VERSION` bump for that either, for
+    // the reason directly above.
+    passThrough: z.object({ savedMeals: z.array(z.string()) }).optional(),
   }),
 });
 
