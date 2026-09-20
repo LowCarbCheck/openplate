@@ -195,6 +195,51 @@ describe('LogSchema quantityGrams — human messages, never a raw Zod error', ()
   });
 });
 
+describe('ManualSchema name, the reader own words and never a raw Zod error', () => {
+  it('rejects a MISSING field with the translated sentence, which is what Conform hands the schema', () => {
+    // Conform's own coercion drops a blank input before the schema sees it,
+    // so this, not `name: ''`, is the empty field a person leaves behind.
+    const form = manualFormData();
+    form.delete('name');
+    const result = parseWithZod(form, { schema: ManualSchema });
+    assert.equal(result.status, 'error');
+    assert.deepEqual(result.status === 'error' ? result.error?.name : undefined, ['add.errors.nameRequired']);
+  });
+
+  it('never leaks the Zod wording for that field', () => {
+    const form = manualFormData();
+    form.delete('name');
+    const result = parseWithZod(form, { schema: ManualSchema });
+    const messages = result.status === 'error' ? (result.error?.name ?? []) : [];
+    assert.equal(/Invalid input|expected string|received undefined/.test(messages.join(' ')), false);
+  });
+
+  it('rejects a field holding nothing but spaces, which does reach the length check', () => {
+    const result = parseWithZod(manualFormData({ name: '   ' }), { schema: ManualSchema });
+    assert.equal(result.status, 'error');
+    assert.deepEqual(result.status === 'error' ? result.error?.name : undefined, ['add.errors.nameRequired']);
+  });
+
+  it('accepts a typed name, and stores it without its surrounding spaces', () => {
+    const result = parseWithZod(manualFormData({ name: '  Protein bar  ' }), { schema: ManualSchema });
+    assert.equal(result.status, 'success');
+    assert.equal(result.status === 'success' ? result.value.name : null, 'Protein bar');
+  });
+
+  ////////////////////////////////////////////////////////////////////////////
+  // THE CONTROL: the portion step carries the same field on a hidden input,
+  // and it had the same defect. A fix applied to one schema only would pass
+  // every assertion above and still show Zod's wording on the other screen.
+  ////////////////////////////////////////////////////////////////////////////
+  it('says the same thing on the portion step, which carries the name hidden', () => {
+    const form = logFormData();
+    form.delete('name');
+    const result = parseWithZod(form, { schema: LogSchema });
+    assert.equal(result.status, 'error');
+    assert.deepEqual(result.status === 'error' ? result.error?.name : undefined, ['add.errors.nameRequired']);
+  });
+});
+
 describe('LogSchema portion — hidden-field round-trip', () => {
   it('carries a chosen display portion through as a structured value', () => {
     const portion = { unit: 'egg', quantity: 2, gramsPerUnit: 50 };

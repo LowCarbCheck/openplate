@@ -257,6 +257,22 @@ function createRequiredPositiveGramsSchema(t: Translate): z.ZodType<number> {
 const macroBasisField = z.enum(['per100g', 'perServing']).catch('per100g');
 
 /**
+ * Required, always-named food field with a human message at every failure
+ * step, for the reason `createRequiredPositiveGramsSchema` above records one
+ * field over. Conform's form coercion turns an EMPTY input into `undefined`
+ * before the schema sees it, so a bare `z.string().min(1, message)` never
+ * reaches its own `min` check: the type check fails first and Zod's raw
+ * "Invalid input" is what the person reads. Naming the message on the
+ * constructor covers that step; `.trim().min(1)` covers a field holding
+ * nothing but spaces, which does reach the check and used to save a food with
+ * a blank name.
+ */
+function createRequiredNameSchema(t: Translate): z.ZodType<string> {
+  const missing = t('add.errors.nameRequired');
+  return z.string({ error: missing }).trim().min(1, missing);
+}
+
+/**
  * Portion-step log: a chosen candidate, its per-100g macros carried through as
  * hidden fields.
  *
@@ -268,7 +284,7 @@ const macroBasisField = z.enum(['per100g', 'perServing']).catch('per100g');
  */
 export function createLogSchema(t: Translate) {
   return z.object({
-    name: z.string().min(1, t('add.errors.nameRequired')),
+    name: createRequiredNameSchema(t),
     quantityGrams: createRequiredPositiveGramsSchema(t),
     mealType: mealTypeFormField,
     date: logDateField,
@@ -347,7 +363,7 @@ export type LogInput = z.infer<ReturnType<typeof createLogSchema>>;
  */
 export function createManualSchema(t: Translate) {
   return z.object({
-    name: z.string().min(1, t('add.errors.nameRequired')),
+    name: createRequiredNameSchema(t),
     quantityGrams: createRequiredPositiveGramsSchema(t),
     mealType: mealTypeFormField,
     date: logDateField,
@@ -1067,6 +1083,20 @@ interface LogDateContext {
   switchToTodayHref: string;
 }
 
+/**
+ * The meal picker's wrapper, with a thumb-sized floor under its trigger.
+ *
+ * REACHING THE TRIGGER FROM OUT HERE, because the trigger's own recipe pins
+ * its height behind a `data-size` variant (`ui/select.tsx`), which Tailwind
+ * emits after a plain `h-*` and which therefore beats the `h-11` the shared
+ * picker already asks for: the control measured 36 px beside a 44 px grams
+ * field. A `min-height` sits in a different property from the `height` that
+ * fight is over, so it wins without joining it, and `md` lifts the floor
+ * again so a pointer keeps the compact control.
+ */
+const MEAL_SELECT_FIELD_CLASS =
+  'grid gap-2 [&_[data-slot=select-trigger]]:min-h-11 md:[&_[data-slot=select-trigger]]:min-h-0';
+
 /** Provenance header key for the portion step, per source. */
 const SOURCE_HEADER_KEYS = {
   recent: 'add.portion.source.recent',
@@ -1388,6 +1418,7 @@ export function PortionStep({
               label={t('add.portion.meal')}
               value={mealType}
               onChange={setMealType}
+              className={MEAL_SELECT_FIELD_CLASS}
             />
 
             {candidate.url && (
@@ -1395,13 +1426,13 @@ export function PortionStep({
                 href={candidate.url}
                 target="_blank"
                 rel="noreferrer"
-                className="block text-xs text-primary underline-offset-4 hover:underline"
+                className="flex min-h-11 items-center text-xs text-primary underline-offset-4 hover:underline md:min-h-0"
               >
                 {t('add.portion.viewDetails')}
               </a>
             )}
 
-            <SubmitButton pending={isSaving} pendingLabel={t('add.portion.submitPending')} className="w-full">
+            <SubmitButton pending={isSaving} pendingLabel={t('add.portion.submitPending')} className="h-11 w-full md:h-9">
               {t('add.portion.submit')}
             </SubmitButton>
           </Form>
@@ -1476,12 +1507,13 @@ function ManualAddForm({
               onChange={setMealType}
               errorId={fields.mealType.errorId}
               errors={fields.mealType.errors}
+              className={MEAL_SELECT_FIELD_CLASS}
             />
           </div>
 
           <Collapsible>
             <CollapsibleTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" className="gap-1 px-0">
+              <Button type="button" variant="ghost" size="sm" className="min-h-11 gap-1 px-0 md:min-h-8">
                 <ChevronDown className="h-4 w-4" /> {t('add.manual.nutritionToggle')}
               </Button>
             </CollapsibleTrigger>
@@ -1542,7 +1574,7 @@ function ManualAddForm({
 
           <FieldError id={form.errorId} errors={form.errors} />
 
-          <SubmitButton pending={isSubmitting} pendingLabel={t('add.manual.submitPending')}>
+          <SubmitButton pending={isSubmitting} pendingLabel={t('add.manual.submitPending')} className="h-11 md:h-9">
             {t('add.manual.submit')}
           </SubmitButton>
         </Form>

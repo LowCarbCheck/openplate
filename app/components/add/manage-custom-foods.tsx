@@ -232,10 +232,17 @@ function EditFoodForm({
         notSureLabel={t('add.custom.carbBasis.notSure')}
       />
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={isSaving}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-11 md:h-8"
+          onClick={onCancel}
+          disabled={isSaving}
+        >
           {t('add.custom.cancel')}
         </Button>
-        <SubmitButton pending={isSaving} pendingLabel={t('add.custom.savePending')} size="sm">
+        <SubmitButton pending={isSaving} pendingLabel={t('add.custom.savePending')} size="sm" className="h-11 md:h-8">
           {t('add.custom.save')}
         </SubmitButton>
       </div>
@@ -275,13 +282,23 @@ function CustomFoodRow({
   const summary = formatPer100gLine(food.macrosPer100g, t, i18n.language);
 
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3">
+    <div data-slot="custom-food-row" className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="truncate text-sm font-medium">{food.name}</p>
         {summary && <p className="text-xs text-muted-foreground">{t('add.custom.per100g', { summary })}</p>}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <Button type="button" variant="ghost" size="icon-sm" onClick={onEdit} aria-label={t('add.custom.editAria', { name: food.name })}>
+      {/* A thumb's width apart, and a thumb each: these two keys sat 4 px
+          apart at 32 px square, and the right-hand one deletes a food. `md`
+          puts the compact pair back for a pointer. */}
+      <div className="flex shrink-0 items-center gap-2 md:gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="size-11 md:size-8"
+          onClick={onEdit}
+          aria-label={t('add.custom.editAria', { name: food.name })}
+        >
           <Pencil className="h-4 w-4" />
         </Button>
         <AlertDialog>
@@ -290,6 +307,7 @@ function CustomFoodRow({
               type="button"
               variant="ghost"
               size="icon-sm"
+              className="size-11 md:size-8"
               aria-label={t('add.custom.removeAria', { name: food.name })}
             >
               <Trash2 className="h-4 w-4" />
@@ -359,7 +377,7 @@ export function ManageCustomFoodsSheet({ foods }: { foods: LocalPersonalFood[] }
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="px-0 text-muted-foreground">
+        <Button type="button" variant="ghost" size="sm" className="min-h-11 px-0 text-muted-foreground md:min-h-8">
           {foods.length > 0 ? t('add.custom.triggerWithCount', { total: foods.length }) : t('add.custom.trigger')}
         </Button>
       </SheetTrigger>

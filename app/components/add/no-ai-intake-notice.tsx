@@ -58,7 +58,19 @@ interface NoAiIntakeNoticeProps {
 }
 
 const NOTICE_CLASS = 'text-xs text-muted-foreground';
-const LINK_CLASS = 'text-primary underline-offset-4 hover:underline';
+/**
+ * The one link in each of these sentences, with a thumb-sized hit area it does
+ * not draw.
+ *
+ * AN `after:` OVERLAY RATHER THAN PADDING, because the link sits inside a
+ * running 12 px sentence and any box model change would push the words around
+ * it. The overlay is transparent, takes the link's own width, and reaches far
+ * enough above and below the line to clear 44 px. `md` drops it: a pointer
+ * hits the text itself.
+ */
+const LINK_CLASS =
+  'relative text-primary underline-offset-4 hover:underline ' +
+  'after:absolute after:inset-x-0 after:-inset-y-3.5 after:content-[""] md:after:content-none';
 
 export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }: NoAiIntakeNoticeProps) {
   const { t } = useTranslation();
