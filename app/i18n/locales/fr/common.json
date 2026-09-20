@@ -2502,7 +2502,7 @@
       "reports_one": "Un signalement d'estimation erronée n'a pas encore été envoyé. Si tu effaces, tu le perdras.",
       "reports_other": "{{count}} signalements d'estimations erronées n'ont pas encore été envoyés. Si tu effaces, tu les perdras.",
       "savedMealsUnsent": "Certains repas enregistrés ne sont pas encore arrivés sur le serveur. Si tu effaces, tu risques de les perdre.",
-      "keysNotCovered": "Tes clés de partage et de recherche ne font pas partie de cette vérification. Si tu effaces, tu risques de les perdre."
+      "keysNotCovered": "Tes clés de partage et de recherche ne font pas partie de cette vérification. Si tu effaces, tu risques de les perdre, donc exporte d'abord un fichier de sauvegarde : il les contient."
     },
     "eraseFailed": "Impossible d'effacer le journal, car openplate est ouvert dans un autre onglet. Ferme-le et réessaie."
   },

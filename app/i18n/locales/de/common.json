@@ -2502,7 +2502,7 @@
       "reports_one": "Ein Bericht über eine falsche Schätzung wurde noch nicht gesendet. Wenn du löschst, verlierst du ihn.",
       "reports_other": "{{count}} Berichte über falsche Schätzungen wurden noch nicht gesendet. Wenn du löschst, verlierst du sie.",
       "savedMealsUnsent": "Einige gespeicherte Mahlzeiten haben den Server noch nicht erreicht. Wenn du löschst, verlierst du sie möglicherweise.",
-      "keysNotCovered": "Deine Freigabe- und Forschungsschlüssel sind nicht Teil dieser Prüfung. Wenn du löschst, verlierst du sie möglicherweise."
+      "keysNotCovered": "Deine Freigabe- und Forschungsschlüssel sind nicht Teil dieser Prüfung. Wenn du Daten löschst, verlierst du sie eventuell, exportiere daher zuerst eine Sicherungsdatei, denn sie enthält diese Schlüssel."
     },
     "eraseFailed": "Das Tagebuch konnte nicht gelöscht werden, weil openplate in einem anderen Tab geöffnet ist. Schließe ihn und versuche es erneut."
   },

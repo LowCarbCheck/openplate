@@ -2502,7 +2502,7 @@
       "reports_one": "Una segnalazione su una stima errata non è ancora stata inviata. Se cancelli, la perderai.",
       "reports_other": "{{count}} segnalazioni su stime errate non sono ancora state inviate. Se cancelli, le perderai.",
       "savedMealsUnsent": "Alcuni pasti salvati non hanno ancora raggiunto il server. Se cancelli, potresti perderli.",
-      "keysNotCovered": "Le tue chiavi di condivisione e ricerca non fanno parte di questo controllo. Se cancelli, potresti perderle."
+      "keysNotCovered": "Le tue chiavi di condivisione e di ricerca non fanno parte di questo controllo. Se cancelli, potresti perderle, quindi esporta prima un file di backup: le include."
     },
     "eraseFailed": "Impossibile cancellare il diario perché openplate è aperto in un'altra scheda. Chiudila e riprova."
   },

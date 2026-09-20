@@ -2502,7 +2502,7 @@
       "reports_one": "Un informe sobre una estimación errónea no se ha enviado todavía. Si borras, lo perderás.",
       "reports_other": "{{count}} informes sobre estimaciones erróneas no se han enviado todavía. Si borras, los perderás.",
       "savedMealsUnsent": "Algunas comidas guardadas todavía no han llegado al servidor. Si borras, podrías perderlas.",
-      "keysNotCovered": "Tus claves de uso compartido y de investigación no forman parte de esta comprobación. Si borras, podrías perderlas."
+      "keysNotCovered": "Tus claves de uso compartido y de investigación no forman parte de esta comprobación. Si borras, podrías perderlas, así que exporta antes un archivo de copia de seguridad: las incluye."
     },
     "eraseFailed": "No se ha podido borrar el diario porque openplate está abierto en otra pestaña. Ciérrala e inténtalo de nuevo."
   },

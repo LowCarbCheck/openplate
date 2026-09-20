@@ -2502,7 +2502,7 @@
       "reports_one": "Hatalı bir tahminle ilgili bir rapor henüz gönderilmedi. Silersen, bunu kaybedersin.",
       "reports_other": "Hatalı tahminlerle ilgili {{count}} rapor henüz gönderilmedi. Silersen, bunları kaybedersin.",
       "savedMealsUnsent": "Kaydedilen bazı öğünler henüz sunucuya ulaşmadı. Silersen bunları kaybedebilirsin.",
-      "keysNotCovered": "Paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen bunları kaybedebilirsin."
+      "keysNotCovered": "Paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen bunları kaybedebilirsin, bu yüzden önce bir yedekleme dosyası dışa aktar: anahtarlar bu dosyaya dahil edilir."
     },
     "eraseFailed": "openplate başka bir sekmede açık olduğu için günlük silinemedi. O sekmeyi kapatıp yeniden dene."
   },

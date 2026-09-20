@@ -2502,7 +2502,7 @@
       "reports_one": "One report about a wrong estimate has not been sent yet. If you erase, you will lose it.",
       "reports_other": "{{count}} reports about wrong estimates have not been sent yet. If you erase, you will lose them.",
       "savedMealsUnsent": "Some saved meals have not reached the server yet. If you erase, you may lose them.",
-      "keysNotCovered": "Your sharing and research keys are not part of this check. If you erase, you may lose them."
+      "keysNotCovered": "Your sharing and research keys are not part of this check. If you erase, you may lose them, so export a backup file first: it includes them."
     },
     "eraseFailed": "The diary could not be erased, because openplate is open in another tab. Close it and try again."
   },
