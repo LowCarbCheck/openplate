@@ -1,13 +1,45 @@
 {
+  "v0_36_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "L'application t'indique désormais les changements après une mise à jour."
+    },
+    "changed": {
+      "01": "Tes jeûnes te suivent désormais sur tes autres appareils.",
+      "02": "Ton garde-manger te suit désormais aussi.",
+      "03": "La boîte de dialogue de déconnexion détecte désormais les repas enregistrés que tu as renommés.",
+      "04": "La boîte de dialogue de déconnexion compte tes jeûnes et ton garde-manger, et n'avertit que sur ce qu'elle ne peut pas vérifier.",
+      "05": "L'écran À propos indique désormais si le serveur a du retard, et qui peut le mettre à jour."
+    },
+    "fixed": {
+      "10": "La politique de confidentialité et les conditions listent désormais tout ce qui est synchronisé.",
+      "11": "Les boutons, les commutateurs et le sélecteur de date sont adaptés au pouce sur un téléphone.",
+      "12": "Le journal ne défile plus horizontalement, et la flèche du jour suivant reste à l'écran.",
+      "13": "L'historique de jeûne, les graphiques d'Analyses et leurs filtres s'adaptent à un téléphone.",
+      "14": "Les pages de paramètres ont des commandes adaptées au pouce et un espacement régulier.",
+      "15": "Les titres juridiques en allemand tiennent sur un téléphone.",
+      "16": "Le cadre propre de l'application est adapté au pouce, et la barre inférieure s'efface devant le clavier.",
+      "17": "La barre des jours du journal est collée à l'en-tête, et les listes s'accordent avec le reste de l'application.",
+      "01": "Une fin que tu as enregistrée n'est jamais annulée par un autre appareil.",
+      "02": "L'alerte de jeûne suit désormais le jeûne, sur chaque appareil.",
+      "03": "La politique de confidentialité et les conditions mentionnent désormais aussi tes clés de partage et de recherche.",
+      "04": "La boîte de dialogue de déconnexion explique quoi faire de tes clés, au lieu de seulement indiquer ce qu'elle ne peut pas vérifier.",
+      "05": "L'ajout manuel d'un aliment indique désormais ce qui manque dans ta langue.",
+      "06": "Les commandes du formulaire d'ajout et de Tes aliments sont adaptées au pouce.",
+      "07": "La carte de la semaine de Vue d'ensemble et ses deux tuiles s'adaptent à un téléphone.",
+      "08": "Un repas enregistré affiche le nom complet que tu lui as donné.",
+      "09": "L'écran de description ne se nomme qu'une fois, et les titres du premier lancement évitent les mots orphelins."
+    }
+  },
   "v0_35_0": {
     "date": "2026-09-20",
     "added": {
-      "01": "Aperçus peut désormais afficher les 90 derniers jours.",
-      "02": "Progrès devient Aperçus, et s'ouvre désormais sur quatre onglets.",
+      "01": "Analyses peut désormais afficher les 90 derniers jours.",
+      "02": "Progrès devient Analyses, et s'ouvre désormais sur quatre onglets.",
       "03": "L'onglet Nutrition trace aussi les protéines, les lipides et les fibres.",
       "04": "L'onglet Repas affiche désormais tes moyennes et tes aliments habituels.",
       "05": "L'onglet Objectifs indique désormais la fréquence à laquelle tu as atteint chaque objectif.",
-      "06": "Vue d'ensemble s'ouvre désormais sur un résumé de la période choisie.",
+      "06": "L'onglet Aperçu s'ouvre désormais sur un résumé de la période choisie.",
       "07": "L'écran des données indique ce que contient le téléchargement JSON."
     },
     "changed": {
@@ -23,17 +55,6 @@
     "date": "2026-09-19",
     "changed": {
       "01": "Le serveur s'exécute désormais sous la forme d'un seul processus dans le conteneur."
-    }
-  },
-  "v0_34_0": {
-    "date": "2026-09-19",
-    "added": {
-      "01": "La série sur l'écran d'accueil et dans Progrès correspond désormais au nombre de jours où tu as utilisé l'application.",
-      "02": "Un nouvel écran liste ce que tu as fait avec l'application.",
-      "03": "Ton historique compte : l'application reconstruit l'historique à partir du journal que tu possèdes déjà.",
-      "04": "Ce qui compte comme utilisation de l'application, et ce à quoi l'historique survit.",
-      "05": "Ton fichier de sauvegarde passe à la version 23.",
-      "06": "L'instance peut contenir une clé de base de données d'aliments, et l'indique lorsque la base de données refuse."
     }
   }
 }

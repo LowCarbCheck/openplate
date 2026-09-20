@@ -1,4 +1,36 @@
 {
+  "v0_36_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "The app now shows you what changed after an update."
+    },
+    "changed": {
+      "01": "Your fasts now follow you to your other devices.",
+      "02": "Your pantry now follows you too.",
+      "03": "The sign-out dialog now notices a saved meal you renamed.",
+      "04": "The sign-out dialog counts your fasts and your pantry, and warns only about what it cannot check.",
+      "05": "The About screen now says when the server is behind, and who can update it."
+    },
+    "fixed": {
+      "10": "The privacy policy and terms now list everything that syncs.",
+      "11": "Buttons, switches and the date picker are thumb sized on a phone.",
+      "12": "The diary no longer scrolls sideways, and the next day arrow stays on screen.",
+      "13": "The fasting history, the Insights charts and their filters fit a phone.",
+      "14": "Settings pages have thumb sized controls and even spacing.",
+      "15": "German legal headings fit a phone.",
+      "16": "The app's own frame is thumb sized, and the bottom bar steps aside for the keyboard.",
+      "17": "The diary's day bar sits against the header, and the lists match the rest of the app.",
+      "01": "An end you recorded is never undone by another device.",
+      "02": "The fast alert now follows the fast, on every device.",
+      "03": "The privacy policy and terms now name your sharing and research keys too.",
+      "04": "The sign-out dialog says what to do about your keys, not just what it cannot check.",
+      "05": "Adding a food by hand now says what is missing in your language.",
+      "06": "The controls on the add form and on Your foods are thumb sized.",
+      "07": "Overview's week card and its two tiles fit a phone.",
+      "08": "A saved meal shows the whole name you gave it.",
+      "09": "The describe screen names itself once, and the first-run headings keep their last word company."
+    }
+  },
   "v0_35_0": {
     "date": "2026-09-20",
     "added": {
@@ -23,17 +55,6 @@
     "date": "2026-09-19",
     "changed": {
       "01": "The server now runs as one process in the container."
-    }
-  },
-  "v0_34_0": {
-    "date": "2026-09-19",
-    "added": {
-      "01": "The streak on the home screen and on Progress is now the number of days you used the app.",
-      "02": "A new screen lists what you have done with the app.",
-      "03": "Your past counts: the app rebuilds the record from the diary you already have.",
-      "04": "What counts as using the app, and what the record survives.",
-      "05": "Your backup file moves to version 23.",
-      "06": "The instance can hold a food database key, and says so when the database refuses."
     }
   }
 }

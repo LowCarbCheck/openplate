@@ -405,6 +405,13 @@
     "at": "2026-09-14",
     "tr": "İsim zorunlu"
   },
+  "064381ce605e3746": {
+    "en": "Adding a food by hand now says what is missing in your language.",
+    "path": "releases:v0_36_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Elle bir yiyecek eklerken neyin eksik olduğu artık kendi dilinde belirtilir."
+  },
   "0652cf0558b31ce6": {
     "en": "Empty plate so far. Log a few meals and this fills in.",
     "path": "common:nutrients.list.empty",
@@ -705,6 +712,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Hazırlanıyor…"
+  },
+  "0a3fe4bf22df7c36": {
+    "en": "Your pantry now follows you too.",
+    "path": "releases:v0_36_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Kilerin de artık seninle birlikte gelir."
   },
   "0a47c196557219fb": {
     "en": "Save the list",
@@ -1118,6 +1132,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{count}} yemek kaşığı"
+  },
+  "0e7c52c155abe9c7": {
+    "en": "The describe screen names itself once, and the first-run headings keep their last word company.",
+    "path": "releases:v0_36_0.fixed.09",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Tarif etme ekranı adını bir kez belirtir, ilk çalıştırma başlıkları da son sözcüklerini yalnız bırakmaz."
   },
   "0e8fea51bf1615da": {
     "en": "openplate is a food-tracking tool. It is built local-first: your foods, food logs, weight entries, goals, and your AI provider key live in your browser on your own device, not on our servers. The hosted app server keeps no account record at all. A separate, optional sync service can store end-to-end-encrypted copies of your data that only you can decrypt, if you choose to switch it on. The core feature is bring-your-own-key AI plate identification: you connect your own AI provider and it estimates the macros and nutrition of a plate from a photo.",
@@ -1811,6 +1832,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Seçilenleri kopyala ({{count}})"
+  },
+  "177ca21038c90274": {
+    "en": "The sign-out dialog counts your fasts and your pantry, and warns only about what it cannot check.",
+    "path": "releases:v0_36_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Oturumu kapatma penceresi oruçlarını ve kilerini sayar, yalnızca denetleyemediği şeyler hakkında uyarır."
   },
   "1786748fbf4ca4e2": {
     "en": "4. AI plate identification (your own provider)",
@@ -2603,6 +2631,13 @@
     "at": "2026-09-14",
     "tr": "openplate hakkında"
   },
+  "210c31833757ece7": {
+    "en": "German legal headings fit a phone.",
+    "path": "releases:v0_36_0.fixed.15",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Almanca yasal başlıklar telefona sığar."
+  },
   "2127e9d9a8840dcf": {
     "en": "Cancel",
     "path": "common:add.custom.cancel",
@@ -2805,6 +2840,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Anahtar, <keyLink>{{provider}} anahtar ayarlarında</keyLink> görünmeye devam eder (\"openplate\" olarak etiketlenir veya sağlayıcının henüz trafik görmediği kurulumlarda \"An app\" olarak geçer) ve sen kendin iptal edene kadar orada çalışmayı sürdürür."
+  },
+  "235b955e97f79a8b": {
+    "en": "The fast alert now follows the fast, on every device.",
+    "path": "releases:v0_36_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Oruç uyarısı artık her cihazda orucu takip eder."
   },
   "2360272b1e6c2ba4": {
     "en": "under a cent a photo",
@@ -3359,6 +3401,13 @@
     "at": "2026-09-14",
     "tr": "Kaydediliyor…"
   },
+  "2bc3ebb8a90892b1": {
+    "en": "The diary's day bar sits against the header, and the lists match the rest of the app.",
+    "path": "releases:v0_36_0.fixed.17",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Günlüğün gün çubuğu üst bilgiye yaslanır, listeler de uygulamanın geri kalanıyla eşleşir."
+  },
   "2bccd0517e85d937": {
     "en": "Pick a window",
     "path": "common:fasting.plan.title",
@@ -3470,6 +3519,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bir parola belirle, günlüğün hazır olsun."
+  },
+  "2d671939f5cf4328": {
+    "en": "The app now shows you what changed after an update.",
+    "path": "releases:v0_36_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Uygulama artık bir güncellemeden sonra nelerin değiştiğini sana gösterir."
   },
   "2d67e440fde35300": {
     "en": "See how your week went, meal by meal and goal by goal.",
@@ -3779,6 +3835,13 @@
     "at": "2026-09-14",
     "tr": "Bunu bir kez yaparsın ve sonra bir daha yapmazsın. Üç adım vardır ve ortadaki adım senin için zaten tamamlanmıştır."
   },
+  "332d44d5c74b8c4f": {
+    "en": "Buttons, switches and the date picker are thumb sized on a phone.",
+    "path": "releases:v0_36_0.fixed.11",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Düğmeler, anahtarlar ve tarih seçici telefonda başparmak boyutundadır."
+  },
   "337217500f7c3c81": {
     "en": "Connect an AI provider yourself: OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key stays on this device and the photo goes straight from your browser to them. They bill you for it rather than us.",
     "path": "common:landing.features.byok.body",
@@ -4030,6 +4093,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{count}} fotoğraf · {{size}}"
+  },
+  "36a49caa8caf03a0": {
+    "en": "The app's own frame is thumb sized, and the bottom bar steps aside for the keyboard.",
+    "path": "releases:v0_36_0.fixed.16",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Uygulamanın kendi çerçevesi başparmak boyutundadır, alt çubuk da klavye için kenara çekilir."
   },
   "36bdeeeba088db12": {
     "en": "Person",
@@ -4387,6 +4457,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{foods}} bu açığı kapatabilir."
+  },
+  "3bcadb188c2f0009": {
+    "en": "The controls on the add form and on Your foods are thumb sized.",
+    "path": "releases:v0_36_0.fixed.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Ekleme formundaki ve Yiyeceklerin bölümündeki denetimler başparmak boyutundadır."
   },
   "3c1618b01154f361": {
     "en": "Remove {{name}}",
@@ -5781,6 +5858,13 @@
     "at": "2026-09-14",
     "tr": "Yiyecekleri senin için belirleyebilmesi amacıyla ayarlardan yapay zeka sağlayıcını bağla."
   },
+  "4ff93c69e36d62c4": {
+    "en": "An end you recorded is never undone by another device.",
+    "path": "releases:v0_36_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Kaydettiğin bir bitiş, başka bir cihaz tarafından asla geri alınmaz."
+  },
   "4ffe2b079c758529": {
     "en": "Meal",
     "path": "common:recipes.slotLabel",
@@ -6334,6 +6418,13 @@
     "at": "2026-09-14",
     "tr": "{{name}} kaldırılsın mı?"
   },
+  "56794380a0ad8294": {
+    "en": "The About screen now says when the server is behind, and who can update it.",
+    "path": "releases:v0_36_0.changed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Hakkında ekranı artık sunucunun ne zaman geride kaldığını ve onu kimin güncelleyebileceğini belirtir."
+  },
   "5682507e5a6a8590": {
     "en": "Go to scanning",
     "path": "common:oauth.callback.goToScanning",
@@ -6655,6 +6746,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu ağ geçidi için yeni bir davet gerekiyor"
+  },
+  "5a81c0e18bc7cbff": {
+    "en": "A saved meal shows the whole name you gave it.",
+    "path": "releases:v0_36_0.fixed.08",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Kayıtlı bir öğün, ona verdiğin adın tamamını gösterir."
   },
   "5a9f0cd33667d187": {
     "en": "The study is instructed to delete your contribution, and openplate’s study tools drop it on every pull.",
@@ -7691,6 +7789,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Paket olarak kaydettiğin öğünler. Tek bir dokunuşla kaydet veya buradan kaldır."
+  },
+  "691bb7a349b8b86a": {
+    "en": "The sign-out dialog now notices a saved meal you renamed.",
+    "path": "releases:v0_36_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Oturumu kapatma penceresi, adını değiştirdiğin kayıtlı bir öğünü artık fark eder."
   },
   "692073692a305419": {
     "en": "Address of consumer(s)",
@@ -10114,6 +10219,13 @@
     "at": "2026-09-14",
     "tr": "Aramaya dön"
   },
+  "8827a4e1658be282": {
+    "en": "The sign-out dialog says what to do about your keys, not just what it cannot check.",
+    "path": "releases:v0_36_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Oturumu kapatma penceresi yalnızca denetleyemediği şeyleri değil, anahtarların için ne yapman gerektiğini de söyler."
+  },
   "88328d7f3d63af62": {
     "en": "Entered {{name}} at {{time}}",
     "path": "common:fasting.stages.entered",
@@ -11136,6 +11248,13 @@
     "at": "2026-09-14",
     "tr": "Parolanızdan cihazınızda türetilen bir değerin tek yönlü özeti (asla parolanın kendisi değildir ve asla herhangi bir şeyin şifresini çözebilecek bir anahtar değildir). Hizmet, sizin siz olduğunuzu doğrulayabilir; parolanızı okuyamaz ve sizin adınıza kurtaramaz."
   },
+  "9577ed444748a2a3": {
+    "en": "The fasting history, the Insights charts and their filters fit a phone.",
+    "path": "releases:v0_36_0.fixed.13",
+    "model": "hand-written",
+    "at": "2026-09-20",
+    "tr": "Oruç geçmişi, İçgörüler grafikleri ve bunların filtreleri telefona sığar."
+  },
   "95978cc3316501c0": {
     "en": "met",
     "path": "common:trends.grid.verdict.met",
@@ -11219,6 +11338,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Tarama ve yapay zeka"
+  },
+  "968067b022adf823": {
+    "en": "The diary no longer scrolls sideways, and the next day arrow stays on screen.",
+    "path": "releases:v0_36_0.fixed.12",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Günlük artık yana kaymaz, sonraki gün oku da ekranda kalır."
   },
   "968319487d317260": {
     "en": "No pressure, leave these blank and add them whenever.",
@@ -13579,6 +13705,13 @@
     "at": "2026-09-14",
     "tr": "Hedefin"
   },
+  "b69389b85dd74276": {
+    "en": "Your fasts now follow you to your other devices.",
+    "path": "releases:v0_36_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Oruçların artık diğer cihazlarına da taşınır."
+  },
   "b6acae8fbb994f73": {
     "en": "Plate photos stay on the device that took them. They are never uploaded.",
     "path": "common:sync.photosStayHere",
@@ -14146,6 +14279,13 @@
     "at": "2026-09-14",
     "tr": "Hayır, gönderme"
   },
+  "bfd8f8abefd6f45c": {
+    "en": "Settings pages have thumb sized controls and even spacing.",
+    "path": "releases:v0_36_0.fixed.14",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Ayarlar sayfalarında başparmak boyutunda denetimler ve eşit boşluklar bulunur."
+  },
   "bff190296d628469": {
     "en": "Nobody here is in \"{{group}}\".",
     "path": "common:admin.filter.noneGroup",
@@ -14187,6 +14327,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Hedef kilo ({{unit}})"
+  },
+  "c05ef5cc59c8bca8": {
+    "en": "Overview's week card and its two tiles fit a phone.",
+    "path": "releases:v0_36_0.fixed.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Genel bakışın hafta kartı ve iki kutucuğu telefona sığar."
   },
   "c09a7b7ec917866b": {
     "en": "Couldn't identify any foods in that description. Try naming each food and how much of it.",
@@ -14635,6 +14782,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yapay zeka bu örnekle birlikte gelir, bu yüzden anahtar getirmez ve sağlayıcıya ödeme yapmazsın. Yöneticin senin için her gün kaç fotoğraf okunabileceğini belirler. Yiyecek aramak bu sayıdan asla düşmez, çünkü yalnızca fotoğrafın okunması gerekir."
+  },
+  "c660747cc1c4a5f7": {
+    "en": "The privacy policy and terms now name your sharing and research keys too.",
+    "path": "releases:v0_36_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Gizlilik politikası ve şartlar artık paylaşım ve araştırma anahtarlarını da belirtir."
   },
   "c6a05daff4e3e8ad": {
     "en": "Set a target, then watch the record build",
@@ -15986,6 +16140,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "tr": "Ortalama olarak hedefin {{amount}} üstünde."
+  },
+  "da2dd4ba9c607262": {
+    "en": "The privacy policy and terms now list everything that syncs.",
+    "path": "releases:v0_36_0.fixed.10",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "tr": "Gizlilik politikası ve şartlar artık eşitlenen her şeyi listeler."
   },
   "da5097cc15aeef17": {
     "en": "Light",

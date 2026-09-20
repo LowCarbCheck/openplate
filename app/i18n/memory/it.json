@@ -405,6 +405,13 @@
     "at": "2026-09-14",
     "it": "Il nome è obbligatorio"
   },
+  "064381ce605e3746": {
+    "en": "Adding a food by hand now says what is missing in your language.",
+    "path": "releases:v0_36_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Quando aggiungi un alimento a mano, ora vedi cosa manca nella tua lingua."
+  },
   "0652cf0558b31ce6": {
     "en": "Empty plate so far. Log a few meals and this fills in.",
     "path": "common:nutrients.list.empty",
@@ -705,6 +712,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Preparazione in corso…"
+  },
+  "0a3fe4bf22df7c36": {
+    "en": "Your pantry now follows you too.",
+    "path": "releases:v0_36_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Ora anche la tua dispensa ti segue."
   },
   "0a47c196557219fb": {
     "en": "Save the list",
@@ -1118,6 +1132,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{count}} cucchiai"
+  },
+  "0e7c52c155abe9c7": {
+    "en": "The describe screen names itself once, and the first-run headings keep their last word company.",
+    "path": "releases:v0_36_0.fixed.09",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La schermata di descrizione mostra il proprio titolo una sola volta, e i titoli del primo avvio non lasciano parole isolate a fine riga."
   },
   "0e8fea51bf1615da": {
     "en": "openplate is a food-tracking tool. It is built local-first: your foods, food logs, weight entries, goals, and your AI provider key live in your browser on your own device, not on our servers. The hosted app server keeps no account record at all. A separate, optional sync service can store end-to-end-encrypted copies of your data that only you can decrypt, if you choose to switch it on. The core feature is bring-your-own-key AI plate identification: you connect your own AI provider and it estimates the macros and nutrition of a plate from a photo.",
@@ -1811,6 +1832,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Copia selezionati ({{count}})"
+  },
+  "177ca21038c90274": {
+    "en": "The sign-out dialog counts your fasts and your pantry, and warns only about what it cannot check.",
+    "path": "releases:v0_36_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La finestra di disconnessione conta i tuoi digiuni e la tua dispensa, e avvisa solo su ciò che non può verificare."
   },
   "1786748fbf4ca4e2": {
     "en": "4. AI plate identification (your own provider)",
@@ -2603,6 +2631,13 @@
     "at": "2026-09-14",
     "it": "Informazioni su openplate"
   },
+  "210c31833757ece7": {
+    "en": "German legal headings fit a phone.",
+    "path": "releases:v0_36_0.fixed.15",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Le intestazioni legali in tedesco si adattano a uno smartphone."
+  },
   "2127e9d9a8840dcf": {
     "en": "Cancel",
     "path": "common:add.custom.cancel",
@@ -2805,6 +2840,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "La chiave compare ancora nelle tue <keyLink>impostazioni delle chiavi di {{provider}}</keyLink> (con l'etichetta \"openplate\", o \"An app\" sulle istanze da cui il provider non ha ancora registrato traffico) e continua a funzionare finché non la revochi tu."
+  },
+  "235b955e97f79a8b": {
+    "en": "The fast alert now follows the fast, on every device.",
+    "path": "releases:v0_36_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "L'avviso di digiuno ora segue il digiuno, su ogni dispositivo."
   },
   "2360272b1e6c2ba4": {
     "en": "under a cent a photo",
@@ -3359,6 +3401,13 @@
     "at": "2026-09-14",
     "it": "Salvataggio in corso…"
   },
+  "2bc3ebb8a90892b1": {
+    "en": "The diary's day bar sits against the header, and the lists match the rest of the app.",
+    "path": "releases:v0_36_0.fixed.17",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La barra del giorno del diario si trova contro l'intestazione, e gli elenchi corrispondono al resto dell'app."
+  },
   "2bccd0517e85d937": {
     "en": "Pick a window",
     "path": "common:fasting.plan.title",
@@ -3470,6 +3519,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Imposta una password e il tuo diario è pronto."
+  },
+  "2d671939f5cf4328": {
+    "en": "The app now shows you what changed after an update.",
+    "path": "releases:v0_36_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "L'app ora ti mostra cosa è cambiato dopo un aggiornamento."
   },
   "2d67e440fde35300": {
     "en": "See how your week went, meal by meal and goal by goal.",
@@ -3779,6 +3835,13 @@
     "at": "2026-09-14",
     "it": "Lo fai una volta sola, poi mai più. Tre passaggi, e quello intermedio è già pronto per te."
   },
+  "332d44d5c74b8c4f": {
+    "en": "Buttons, switches and the date picker are thumb sized on a phone.",
+    "path": "releases:v0_36_0.fixed.11",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Pulsanti, interruttori e selettore di data hanno le dimensioni di un pollice su uno smartphone."
+  },
   "337217500f7c3c81": {
     "en": "Connect an AI provider yourself: OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint. The key stays on this device and the photo goes straight from your browser to them. They bill you for it rather than us.",
     "path": "common:landing.features.byok.body",
@@ -4030,6 +4093,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{count}} foto · {{size}}"
+  },
+  "36a49caa8caf03a0": {
+    "en": "The app's own frame is thumb sized, and the bottom bar steps aside for the keyboard.",
+    "path": "releases:v0_36_0.fixed.16",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La cornice stessa dell'app è a misura di pollice, e la barra inferiore si sposta per fare spazio alla tastiera."
   },
   "36bdeeeba088db12": {
     "en": "Person",
@@ -4387,6 +4457,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{foods}} colmerebbero questa differenza."
+  },
+  "3bcadb188c2f0009": {
+    "en": "The controls on the add form and on Your foods are thumb sized.",
+    "path": "releases:v0_36_0.fixed.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "I controlli sul modulo di aggiunta e su I tuoi alimenti sono a misura di pollice."
   },
   "3c1618b01154f361": {
     "en": "Remove {{name}}",
@@ -5781,6 +5858,13 @@
     "at": "2026-09-14",
     "it": "Collega il tuo provider di IA nelle impostazioni prima di poter identificare i cibi."
   },
+  "4ff93c69e36d62c4": {
+    "en": "An end you recorded is never undone by another device.",
+    "path": "releases:v0_36_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Un termine registrato non viene mai annullato da un altro dispositivo."
+  },
   "4ffe2b079c758529": {
     "en": "Meal",
     "path": "common:recipes.slotLabel",
@@ -6334,6 +6418,13 @@
     "at": "2026-09-14",
     "it": "Rimuovere {{name}}?"
   },
+  "56794380a0ad8294": {
+    "en": "The About screen now says when the server is behind, and who can update it.",
+    "path": "releases:v0_36_0.changed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La schermata Informazioni ora indica quando il server non è aggiornato, e chi può aggiornarlo."
+  },
   "5682507e5a6a8590": {
     "en": "Go to scanning",
     "path": "common:oauth.callback.goToScanning",
@@ -6655,6 +6746,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Quel gateway richiede un nuovo invito"
+  },
+  "5a81c0e18bc7cbff": {
+    "en": "A saved meal shows the whole name you gave it.",
+    "path": "releases:v0_36_0.fixed.08",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Un pasto salvato mostra l'intero nome che gli hai dato."
   },
   "5a9f0cd33667d187": {
     "en": "The study is instructed to delete your contribution, and openplate’s study tools drop it on every pull.",
@@ -7691,6 +7789,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Pasti che hai salvato in un blocco. Registrane uno con un solo tocco, oppure rimuovilo qui."
+  },
+  "691bb7a349b8b86a": {
+    "en": "The sign-out dialog now notices a saved meal you renamed.",
+    "path": "releases:v0_36_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La finestra di disconnessione ora rileva se hai rinominato un pasto salvato."
   },
   "692073692a305419": {
     "en": "Address of consumer(s)",
@@ -10114,6 +10219,13 @@
     "at": "2026-09-14",
     "it": "Torna alla ricerca"
   },
+  "8827a4e1658be282": {
+    "en": "The sign-out dialog says what to do about your keys, not just what it cannot check.",
+    "path": "releases:v0_36_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La finestra di disconnessione indica cosa fare con le tue chiavi, non solo ciò che non può verificare."
+  },
   "88328d7f3d63af62": {
     "en": "Entered {{name}} at {{time}}",
     "path": "common:fasting.stages.entered",
@@ -11136,6 +11248,13 @@
     "at": "2026-09-14",
     "it": "Un hash unidirezionale di un valore derivato sul Suo dispositivo dalla Sua passphrase (mai la passphrase stessa, e mai una chiave in grado di decifrare qualcosa). Il servizio puo verificare la Sua identita; non puo leggere la Sua passphrase e non puo recuperarla per Lei."
   },
+  "9577ed444748a2a3": {
+    "en": "The fasting history, the Insights charts and their filters fit a phone.",
+    "path": "releases:v0_36_0.fixed.13",
+    "model": "hand-written",
+    "at": "2026-09-20",
+    "it": "La cronologia dei digiuni, i grafici di Analisi e i relativi filtri si adattano a uno smartphone."
+  },
   "95978cc3316501c0": {
     "en": "met",
     "path": "common:trends.grid.verdict.met",
@@ -11219,6 +11338,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Scansione e IA"
+  },
+  "968067b022adf823": {
+    "en": "The diary no longer scrolls sideways, and the next day arrow stays on screen.",
+    "path": "releases:v0_36_0.fixed.12",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Il diario non scorre più lateralmente, e la freccia per il giorno successivo rimane sullo schermo."
   },
   "968319487d317260": {
     "en": "No pressure, leave these blank and add them whenever.",
@@ -11335,9 +11461,9 @@
   "987cd62e24f8f47b": {
     "en": "Progress is renamed to Insights, and now opens on four tabs.",
     "path": "releases:v0_35_0.added.02",
-    "model": "google/gemini-3.8-flash",
+    "model": "hand-written",
     "at": "2026-09-20",
-    "it": "La sezione Progressi è stata rinominata in Statistiche e ora si apre su quattro schede."
+    "it": "La sezione Progressi è stata rinominata in Analisi e ora si apre su quattro schede."
   },
   "988943f85b70bbe3": {
     "en": "Goals saved.",
@@ -13579,6 +13705,13 @@
     "at": "2026-09-14",
     "it": "Il tuo obiettivo"
   },
+  "b69389b85dd74276": {
+    "en": "Your fasts now follow you to your other devices.",
+    "path": "releases:v0_36_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "I tuoi digiuni ora ti seguono anche sugli altri tuoi dispositivi."
+  },
   "b6acae8fbb994f73": {
     "en": "Plate photos stay on the device that took them. They are never uploaded.",
     "path": "common:sync.photosStayHere",
@@ -14146,6 +14279,13 @@
     "at": "2026-09-14",
     "it": "No, non inviare"
   },
+  "bfd8f8abefd6f45c": {
+    "en": "Settings pages have thumb sized controls and even spacing.",
+    "path": "releases:v0_36_0.fixed.14",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "Le pagine delle impostazioni hanno controlli a misura di pollice e spaziature uniformi."
+  },
   "bff190296d628469": {
     "en": "Nobody here is in \"{{group}}\".",
     "path": "common:admin.filter.noneGroup",
@@ -14187,6 +14327,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Peso forma ({{unit}})"
+  },
+  "c05ef5cc59c8bca8": {
+    "en": "Overview's week card and its two tiles fit a phone.",
+    "path": "releases:v0_36_0.fixed.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "La scheda della settimana di Panoramica e i suoi due riquadri si adattano a uno smartphone."
   },
   "c09a7b7ec917866b": {
     "en": "Couldn't identify any foods in that description. Try naming each food and how much of it.",
@@ -14635,6 +14782,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "L'IA è inclusa in questa istanza, quindi non ti serve una chiave e non paghi alcun fornitore. L'amministratore imposta quante foto possono essere analizzate per te ogni giorno. La ricerca di un alimento non viene mai scalata da questo conteggio, perché solo le foto richiedono l'analisi."
+  },
+  "c660747cc1c4a5f7": {
+    "en": "The privacy policy and terms now name your sharing and research keys too.",
+    "path": "releases:v0_36_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "L'informativa sulla privacy e i termini ora indicano anche le tue chiavi di condivisione e ricerca."
   },
   "c6a05daff4e3e8ad": {
     "en": "Set a target, then watch the record build",
@@ -15986,6 +16140,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "it": "In media {{amount}} sopra il tuo obiettivo."
+  },
+  "da2dd4ba9c607262": {
+    "en": "The privacy policy and terms now list everything that syncs.",
+    "path": "releases:v0_36_0.fixed.10",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "it": "L'informativa sulla privacy e i termini ora elencano tutto ciò che si sincronizza."
   },
   "da5097cc15aeef17": {
     "en": "Light",
@@ -18020,9 +18181,9 @@
   "f56a638c1b6a7ddd": {
     "en": "Insights can now show the last 90 days.",
     "path": "releases:v0_35_0.added.01",
-    "model": "google/gemini-3.8-flash",
+    "model": "hand-written",
     "at": "2026-09-20",
-    "it": "Statistiche ora può mostrare gli ultimi 90 giorni."
+    "it": "Analisi ora può mostrare gli ultimi 90 giorni."
   },
   "f571520eeca59514": {
     "en": "Invitation ready for {{email}}",

@@ -1,9 +1,41 @@
 {
+  "v0_36_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "La aplicación ahora te muestra qué cambió tras una actualización."
+    },
+    "changed": {
+      "01": "Tus ayunos ahora te siguen al resto de tus dispositivos.",
+      "02": "Tu despensa ahora también te sigue.",
+      "03": "El diálogo de cierre de sesión ahora detecta si renombraste una comida guardada.",
+      "04": "El diálogo de cierre de sesión cuenta tus ayunos y tu despensa, y solo advierte sobre lo que no puede comprobar.",
+      "05": "La pantalla Acerca de ahora indica cuándo el servidor está desactualizado y quién puede actualizarlo."
+    },
+    "fixed": {
+      "10": "La política de privacidad y los términos ahora enumeran todo lo que se sincroniza.",
+      "11": "Los botones, los interruptores y el selector de fecha tienen el tamaño del pulgar en un teléfono.",
+      "12": "El diario ya no se desplaza lateralmente y la flecha del día siguiente permanece en pantalla.",
+      "13": "El historial de ayuno, los gráficos de Análisis y sus filtros caben en un teléfono.",
+      "14": "Las páginas de ajustes tienen controles con el tamaño del pulgar y un espaciado uniforme.",
+      "15": "Los encabezados legales en alemán caben en un teléfono.",
+      "16": "El propio marco de la aplicación tiene el tamaño del pulgar y la barra inferior se aparta para dar paso al teclado.",
+      "17": "La barra de días del diario queda pegada al encabezado y las listas coinciden con el resto de la aplicación.",
+      "01": "Un fin que hayas registrado nunca se anula desde otro dispositivo.",
+      "02": "La alerta de ayuno ahora sigue al ayuno, en cada dispositivo.",
+      "03": "La política de privacidad y los términos ahora también mencionan tus claves de uso compartido y de investigación.",
+      "04": "El diálogo de cierre de sesión indica qué hacer con tus claves, no solo lo que no puede comprobar.",
+      "05": "Al añadir un alimento a mano, ahora se indica en tu idioma qué falta.",
+      "06": "Los controles del formulario para añadir y de Tus alimentos tienen el tamaño del pulgar.",
+      "07": "La tarjeta semanal de Resumen y sus dos bloques caben en un teléfono.",
+      "08": "Una comida guardada muestra el nombre completo que le diste.",
+      "09": "La pantalla de descripción muestra su propio nombre una sola vez, y los encabezados de la primera ejecución no dejan palabras sueltas."
+    }
+  },
   "v0_35_0": {
     "date": "2026-09-20",
     "added": {
-      "01": "Estadísticas ahora puede mostrar los últimos 90 días.",
-      "02": "Progreso pasa a llamarse Estadísticas y ahora se abre en cuatro pestañas.",
+      "01": "Análisis ahora puede mostrar los últimos 90 días.",
+      "02": "Progreso pasa a llamarse Análisis y ahora se abre en cuatro pestañas.",
       "03": "La pestaña Nutrición también grafica proteínas, grasas y fibra.",
       "04": "La pestaña Comidas ahora muestra tus promedios y tus alimentos habituales.",
       "05": "La pestaña Objetivos ahora muestra con qué frecuencia cumpliste cada objetivo.",
@@ -23,17 +55,6 @@
     "date": "2026-09-19",
     "changed": {
       "01": "El servidor ahora se ejecuta como un único proceso dentro del contenedor."
-    }
-  },
-  "v0_34_0": {
-    "date": "2026-09-19",
-    "added": {
-      "01": "La racha en la pantalla de inicio y en Progreso es ahora el número de días que usaste la app.",
-      "02": "Una nueva pantalla lista lo que has hecho con la app.",
-      "03": "Tu historial cuenta: la app reconstruye el registro a partir del diario que ya tienes.",
-      "04": "Qué cuenta como usar la app y qué conserva el registro.",
-      "05": "Tu archivo de copia de seguridad pasa a la versión 23.",
-      "06": "La instancia puede almacenar una clave de base de datos de alimentos, e indica si la base de datos la rechaza."
     }
   }
 }

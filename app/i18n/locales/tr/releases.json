@@ -1,4 +1,36 @@
 {
+  "v0_36_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "Uygulama artık bir güncellemeden sonra nelerin değiştiğini sana gösterir."
+    },
+    "changed": {
+      "01": "Oruçların artık diğer cihazlarına da taşınır.",
+      "02": "Kilerin de artık seninle birlikte gelir.",
+      "03": "Oturumu kapatma penceresi, adını değiştirdiğin kayıtlı bir öğünü artık fark eder.",
+      "04": "Oturumu kapatma penceresi oruçlarını ve kilerini sayar, yalnızca denetleyemediği şeyler hakkında uyarır.",
+      "05": "Hakkında ekranı artık sunucunun ne zaman geride kaldığını ve onu kimin güncelleyebileceğini belirtir."
+    },
+    "fixed": {
+      "10": "Gizlilik politikası ve şartlar artık eşitlenen her şeyi listeler.",
+      "11": "Düğmeler, anahtarlar ve tarih seçici telefonda başparmak boyutundadır.",
+      "12": "Günlük artık yana kaymaz, sonraki gün oku da ekranda kalır.",
+      "13": "Oruç geçmişi, İçgörüler grafikleri ve bunların filtreleri telefona sığar.",
+      "14": "Ayarlar sayfalarında başparmak boyutunda denetimler ve eşit boşluklar bulunur.",
+      "15": "Almanca yasal başlıklar telefona sığar.",
+      "16": "Uygulamanın kendi çerçevesi başparmak boyutundadır, alt çubuk da klavye için kenara çekilir.",
+      "17": "Günlüğün gün çubuğu üst bilgiye yaslanır, listeler de uygulamanın geri kalanıyla eşleşir.",
+      "01": "Kaydettiğin bir bitiş, başka bir cihaz tarafından asla geri alınmaz.",
+      "02": "Oruç uyarısı artık her cihazda orucu takip eder.",
+      "03": "Gizlilik politikası ve şartlar artık paylaşım ve araştırma anahtarlarını da belirtir.",
+      "04": "Oturumu kapatma penceresi yalnızca denetleyemediği şeyleri değil, anahtarların için ne yapman gerektiğini de söyler.",
+      "05": "Elle bir yiyecek eklerken neyin eksik olduğu artık kendi dilinde belirtilir.",
+      "06": "Ekleme formundaki ve Yiyeceklerin bölümündeki denetimler başparmak boyutundadır.",
+      "07": "Genel bakışın hafta kartı ve iki kutucuğu telefona sığar.",
+      "08": "Kayıtlı bir öğün, ona verdiğin adın tamamını gösterir.",
+      "09": "Tarif etme ekranı adını bir kez belirtir, ilk çalıştırma başlıkları da son sözcüklerini yalnız bırakmaz."
+    }
+  },
   "v0_35_0": {
     "date": "2026-09-20",
     "added": {
@@ -23,17 +55,6 @@
     "date": "2026-09-19",
     "changed": {
       "01": "Sunucu artık konteyner içinde tek bir süreç olarak çalışıyor."
-    }
-  },
-  "v0_34_0": {
-    "date": "2026-09-19",
-    "added": {
-      "01": "Ana ekrandaki ve İlerleme bölümündeki seri, artık uygulamayı kullandığın gün sayısıdır.",
-      "02": "Yeni bir ekran, uygulamayla neler yaptığını listeliyor.",
-      "03": "Geçmişin de hesaba katılır: uygulama, kayıtları elinde zaten bulunan günlükten yeniden oluşturur.",
-      "04": "Uygulamayı kullanmak sayılan durumlar ve kaydın neleri atlattığı.",
-      "05": "Yedek dosyan sürüm 23'e geçer.",
-      "06": "Örnek bir gıda veritabanı anahtarı tutabilir ve veritabanı reddettiğinde bunu bildirir."
     }
   }
 }

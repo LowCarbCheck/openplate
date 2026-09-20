@@ -1,9 +1,41 @@
 {
+  "v0_36_0": {
+    "date": "2026-09-20",
+    "added": {
+      "01": "Die App zeigt dir jetzt nach einer Aktualisierung, was sich geändert hat."
+    },
+    "changed": {
+      "01": "Deine Fastenzeiten folgen dir jetzt auf deine anderen Geräte.",
+      "02": "Deine Vorratskammer folgt dir jetzt ebenfalls.",
+      "03": "Der Abmeldedialog bemerkt jetzt eine gespeicherte Mahlzeit, die du umbenannt hast.",
+      "04": "Der Abmeldedialog zählt deine Fastenzeiten sowie deine Vorratskammer und warnt nur vor dem, was er nicht prüfen kann.",
+      "05": "Die Ansicht „Über openplate“ zeigt jetzt an, wenn der Server im Rückstand ist, und wer ihn aktualisieren kann."
+    },
+    "fixed": {
+      "10": "Die Datenschutzerklärung und die Nutzungsbedingungen listen jetzt alles auf, was synchronisiert wird.",
+      "11": "Schaltflächen, Schalter und die Datumsauswahl sind auf dem Smartphone daumengroß.",
+      "12": "Das Tagebuch scrollt nicht mehr seitwärts, und der Pfeil für den nächsten Tag bleibt auf dem Bildschirm.",
+      "13": "Der Fastenverlauf, die Diagramme unter Einblicke und deren Filter passen auf ein Smartphone.",
+      "14": "Einstellungsseiten haben daumengroße Bedienelemente und gleichmäßige Abstände.",
+      "15": "Deutsche rechtliche Überschriften passen auf ein Smartphone.",
+      "16": "Der Rahmen der App selbst ist daumengroß, und die untere Leiste weicht der Tastatur.",
+      "17": "Die Tagesleiste des Tagebuchs liegt an der Kopfzeile an, und die Listen passen zum Rest der App.",
+      "01": "Ein von dir erfasstes Ende wird von einem anderen Gerät niemals rückgängig gemacht.",
+      "02": "Der Fastenalarm folgt jetzt dem Fasten, auf jedem Gerät.",
+      "03": "Die Datenschutzerklärung und die Nutzungsbedingungen nennen jetzt auch deine Freigabe- und Forschungsschlüssel.",
+      "04": "Der Abmeldedialog erklärt, was du mit deinen Schlüsseln tun solltest, nicht nur, was er nicht prüfen kann.",
+      "05": "Das manuelle Hinzufügen eines Lebensmittels nennt jetzt in deiner Sprache, was fehlt.",
+      "06": "Die Bedienelemente im Formular zum Hinzufügen und unter „Deine Lebensmittel“ sind daumengroß.",
+      "07": "Die Wochenkarte der Übersicht und ihre zwei Kacheln passen auf ein Smartphone.",
+      "08": "Eine gespeicherte Mahlzeit zeigt den vollständigen Namen, den du ihr gegeben hast.",
+      "09": "Die Beschreibungsansicht benennt sich einmal, und die Überschriften beim ersten Start behalten ihr letztes Wort bei sich."
+    }
+  },
   "v0_35_0": {
     "date": "2026-09-20",
     "added": {
-      "01": "Insights kann jetzt die letzten 90 Tage anzeigen.",
-      "02": "Fortschritt heißt jetzt Insights und öffnet sich auf vier Tabs.",
+      "01": "Einblicke kann jetzt die letzten 90 Tage anzeigen.",
+      "02": "Fortschritt heißt jetzt Einblicke und öffnet sich auf vier Tabs.",
       "03": "Der Tab Ernährung stellt auch Protein, Fett und Ballaststoffe im Diagramm dar.",
       "04": "Der Tab Mahlzeiten zeigt jetzt deine Durchschnittswerte und deine üblichen Lebensmittel.",
       "05": "Der Tab Ziele zeigt jetzt, wie oft du jedes Ziel erreicht hast.",
@@ -23,17 +55,6 @@
     "date": "2026-09-19",
     "changed": {
       "01": "Der Server läuft nun als einzelner Prozess im Container."
-    }
-  },
-  "v0_34_0": {
-    "date": "2026-09-19",
-    "added": {
-      "01": "Die Serie auf dem Startbildschirm und unter Fortschritt entspricht jetzt der Anzahl an Tagen, an denen du die App verwendet hast.",
-      "02": "Ein neuer Bildschirm listet auf, was du mit der App gemacht hast.",
-      "03": "Deine Vergangenheit zählt: Die App baut den Verlauf aus dem Tagebuch wieder auf, das du bereits hast.",
-      "04": "Was als Nutzung der App zählt und was der Verlauf übersteht.",
-      "05": "Deine Sicherungsdatei wechselt auf Version 23.",
-      "06": "Die Instanz kann einen Datenbankschlüssel für Lebensmittel enthalten und meldet dies, wenn die Datenbank ablehnt."
     }
   }
 }
