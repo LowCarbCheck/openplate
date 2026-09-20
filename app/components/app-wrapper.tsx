@@ -136,11 +136,19 @@ function NavDrawer() {
             wordmark and the page title, which is what binds them into one
             brand-then-page unit. `p-0` drops the ghost button's inset, so the
             mark sits tight against the wordmark, that inset is what left the
-            first eyebrow attempt floating free of the mark. */}
+            first eyebrow attempt floating free of the mark.
+
+            The `after:` square is the TAP AREA, and it is a pseudo-element
+            because the drawing has to stay 36px for the reason above while a
+            thumb needs 44. `-inset-1` grows it 4px on every side, which lands
+            inside the header's own `px-4` gutter and inside the `gap-2.5` to
+            its right, so nothing else on the bar loses a pixel of its own
+            target. This trigger is `md:hidden`, so the box never exists on a
+            pointer device. */}
         <Button
           variant="ghost"
           size="icon"
-          className="size-9 shrink-0 p-0 hover:bg-transparent md:hidden"
+          className="relative size-9 shrink-0 p-0 after:absolute after:-inset-1 after:content-[''] hover:bg-transparent md:hidden"
           aria-label={t('chrome.logoMenuLabel')}
         >
           <img src="/icons/icon-192.png?v=2" alt="" className="size-9 rounded-lg" />
@@ -185,6 +193,54 @@ function NavDrawer() {
   );
 }
 
+/** The tags a person types into, and the only focus this layout reacts to. */
+const TEXT_ENTRY_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+
+/**
+ * How short the viewport has to get before the bottom bar costs more than it
+ * offers. On a 390x430 phone, which is what a 390x844 phone becomes with a
+ * keyboard up, the header and the bar together took 121 of 430px, 28 percent
+ * of the screen, and the bar covered the bottom of the field being typed into
+ * (SET-04, measured on `/settings/profile`).
+ */
+const SHORT_VIEWPORT_HEIGHT = 500;
+
+/**
+ * Whether someone is typing on a viewport too short to carry the bottom bar as
+ * well.
+ *
+ * `visualViewport` before `innerHeight`: an on-screen keyboard shrinks the
+ * visual viewport on every phone, while the layout viewport only follows on
+ * the browsers that resize it. Focus and resize are both read, so a keyboard
+ * opening under a field that was already focused counts the same as a field
+ * being tapped once the keyboard is up.
+ *
+ * @returns true while a text field has focus on a short viewport.
+ */
+function useTypingOnAShortViewport(): boolean {
+  const [isTyping, setIsTyping] = React.useState(false);
+
+  React.useEffect(() => {
+    const read = (): void => {
+      const focused = document.activeElement;
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      setIsTyping(height < SHORT_VIEWPORT_HEIGHT && focused !== null && TEXT_ENTRY_TAGS.has(focused.tagName));
+    };
+
+    read();
+    document.addEventListener('focusin', read);
+    document.addEventListener('focusout', read);
+    window.visualViewport?.addEventListener('resize', read);
+    return () => {
+      document.removeEventListener('focusin', read);
+      document.removeEventListener('focusout', read);
+      window.visualViewport?.removeEventListener('resize', read);
+    };
+  }, []);
+
+  return isTyping;
+}
+
 export default function AppWrapper({
   title,
   backTo,
@@ -214,6 +270,7 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
   // carries the door in or out for them. The menu asks the policy itself; this
   // layout stays out of it.
   const { t } = useTranslation();
+  const isTypingOnAShortViewport = useTypingOnAShortViewport();
 
   return (
     <>
@@ -338,9 +395,15 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
       </header>
       {backTo && (
         <div className="bg-muted/50 border-b px-4 py-2 sm:px-6 lg:px-8">
+          {/* `min-h-11 py-2` makes the way back a 44px target; `-my-2` spends
+              that height on the bar's own padding rather than on new chrome,
+              so the bar grows 4px instead of 20 and the link's box covers it
+              edge to edge. It was 20px tall on every settings sub-page. The
+              `md:` line puts the pointer-sized bar back. */}
           <Link
             to={backTo}
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            data-slot="back-link"
+            className="-my-2 inline-flex min-h-11 items-center py-2 text-sm text-muted-foreground transition-colors hover:text-foreground md:my-0 md:min-h-0 md:py-0"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t('chrome.back')}
@@ -352,7 +415,16 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
           the safe area plus the raised Scan button's overhang and ring
           (M129/04), content must clear the circle, not just the bar. */}
       <div className="flex-1 p-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] md:p-6 md:pb-6">{children}</div>
-      <BottomNav />
+      {/* HIDDEN, NOT UNMOUNTED, and hidden from a WRAPPER rather than from the
+          bar itself. The bar is `fixed`, so `display: none` on this div takes
+          it off the screen without moving a single pixel of the page: the
+          bottom padding above is unchanged, so nothing reflows and nothing
+          scrolls when it comes back. Unmounting would also close the launcher's
+          sheet mid-use, and the sheet is portalled to the body, so it stays on
+          screen while its trigger is away. */}
+      <div data-slot="bottom-nav-shell" className={cn(isTypingOnAShortViewport && 'hidden')}>
+        <BottomNav />
+      </div>
     </>
   );
 }
