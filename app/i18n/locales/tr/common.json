@@ -2734,7 +2734,7 @@
       "month": "Ay",
       "twoWeeks": "2 hafta",
       "week": "Hafta",
-      "threeMonths": "3 months"
+      "threeMonths": "3 ay"
     },
     "recap": {
       "averageDay": "Ortalama bir gün",
@@ -2754,7 +2754,7 @@
       "underGoal": "Kayıtlı {{total}} günün {{days}} gününde {{goal}} g net karbonhidrat hedefinin altında kaldın",
       "vsLastWeek": "(geçen haftaya kıyasla {{delta}})",
       "weight": "Kilo {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": ", günden güne kilo dalgalanabilir"
+      "weightNoisy": "Günden güne kilo dalgalanır"
     },
     "slot": {
       "all": "Tüm öğünler"

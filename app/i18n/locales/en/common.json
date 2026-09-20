@@ -2754,7 +2754,7 @@
       "underGoal": "{{days}} of {{total}} logged days were under your {{goal}} g net-carbs goal",
       "vsLastWeek": "({{delta}} vs last week)",
       "weight": "Weight {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": ", day-to-day weight is noisy"
+      "weightNoisy": "Day-to-day weight is noisy"
     },
     "slot": {
       "all": "All meals"

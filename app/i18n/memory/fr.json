@@ -10254,6 +10254,13 @@
     "at": "2026-09-14",
     "fr": "Prends ton assiette en photo"
   },
+  "8bdeb017cd2a7e94": {
+    "en": "Day-to-day weight is noisy",
+    "path": "common:trends.recap.weightNoisy",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "fr": "Le poids fluctue au jour le jour"
+  },
   "8bf0031f108c53ec": {
     "en": "{{count}} tablespoon",
     "path": "common:portions.unit.tablespoon_one",
@@ -14933,9 +14940,9 @@
   "cf5e6429c1b010ef": {
     "en": "3 months",
     "path": "common:trends.range.threeMonths",
-    "model": "hand-written",
-    "at": "2026-09-19",
-    "fr": "3 months"
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-20",
+    "fr": "3 mois"
   },
   "cf6ac929f2bdd2a2": {
     "en": "Tap the <share>Share</share> button in Safari, then choose <addToHome>Add to Home Screen</addToHome>.",

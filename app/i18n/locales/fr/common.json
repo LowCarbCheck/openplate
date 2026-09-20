@@ -2734,7 +2734,7 @@
       "month": "Mois",
       "twoWeeks": "2 semaines",
       "week": "Semaine",
-      "threeMonths": "3 months"
+      "threeMonths": "3 mois"
     },
     "recap": {
       "averageDay": "Une journée moyenne",
@@ -2754,7 +2754,7 @@
       "underGoal": "{{days}} jours enregistrés sur {{total}} étaient sous ton objectif de {{goal}} g de glucides nets",
       "vsLastWeek": "({{delta}} par rapport à la semaine dernière)",
       "weight": "Poids {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": ", le poids au jour le jour fluctue beaucoup"
+      "weightNoisy": "Le poids fluctue au jour le jour"
     },
     "slot": {
       "all": "Tous les repas"

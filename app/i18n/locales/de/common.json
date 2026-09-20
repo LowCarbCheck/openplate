@@ -2734,7 +2734,7 @@
       "month": "Monat",
       "twoWeeks": "2 Wochen",
       "week": "Woche",
-      "threeMonths": "3 months"
+      "threeMonths": "3 Monate"
     },
     "recap": {
       "averageDay": "Ein typischer Tag",
@@ -2754,7 +2754,7 @@
       "underGoal": "An {{days}} von {{total}} eingetragenen Tagen lagst du unter deinem Ziel von {{goal}} g Netto-KH",
       "vsLastWeek": "({{delta}} gegenüber der Vorwoche)",
       "weight": "Gewicht {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": ", das tägliche Gewicht schwankt oft"
+      "weightNoisy": "Das tägliche Gewicht schwankt stark"
     },
     "slot": {
       "all": "Alle Mahlzeiten"

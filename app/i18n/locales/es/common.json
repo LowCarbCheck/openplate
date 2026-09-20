@@ -2734,7 +2734,7 @@
       "month": "Mes",
       "twoWeeks": "2 semanas",
       "week": "Semana",
-      "threeMonths": "3 months"
+      "threeMonths": "3 meses"
     },
     "recap": {
       "averageDay": "Un día promedio",
@@ -2754,7 +2754,7 @@
       "underGoal": "{{days}} de {{total}} días registrados estuvieron por debajo de tu objetivo de {{goal}} g de carbohidratos netos",
       "vsLastWeek": "({{delta}} respecto a la semana pasada)",
       "weight": "Peso {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": ", el peso diario fluctúa"
+      "weightNoisy": "El peso fluctúa en el día a día"
     },
     "slot": {
       "all": "Todas las comidas"

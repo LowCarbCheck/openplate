@@ -2734,7 +2734,7 @@
       "month": "Mese",
       "twoWeeks": "2 settimane",
       "week": "Settimana",
-      "threeMonths": "3 months"
+      "threeMonths": "3 mesi"
     },
     "recap": {
       "averageDay": "Un giorno medio",
@@ -2754,7 +2754,7 @@
       "underGoal": "{{days}} giorni registrati su {{total}} sono rimasti sotto il tuo obiettivo di {{goal}} g di carboidrati netti",
       "vsLastWeek": "({{delta}} rispetto alla scorsa settimana)",
       "weight": "Peso {{first}} → {{last}} kg ({{delta}})",
-      "weightNoisy": ", il peso quotidiano oscilla molto"
+      "weightNoisy": "Il peso giornaliero presenta oscillazioni"
     },
     "slot": {
       "all": "Tutti i pasti"
