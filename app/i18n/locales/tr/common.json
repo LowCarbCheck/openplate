@@ -3274,6 +3274,15 @@
     },
     "itemCount_one": "{{count}} yiyecek",
     "itemCount_other": "{{count}} yiyecek",
+    "confirm": {
+      "description": "Porsiyonu onayla, ardından günlüğüne ekle.",
+      "portionLabel": "Porsiyon",
+      "percent": "{{percent}}%",
+      "decrease": "Porsiyonu azalt",
+      "increase": "Porsiyonu artır",
+      "cancel": "İptal",
+      "add": "Ekle"
+    },
     "toast": {
       "logged_one": "{{name}} günlüğe kaydedildi.",
       "logged_other": "{{name}} günlüğe kaydedildi, {{count}} yiyecek."

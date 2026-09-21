@@ -3274,6 +3274,15 @@
     },
     "itemCount_one": "{{count}} Lebensmittel",
     "itemCount_other": "{{count}} Lebensmittel",
+    "confirm": {
+      "description": "Bestätige die Portion und füge sie dann zu deinem Tagebuch hinzu.",
+      "portionLabel": "Portion",
+      "percent": "{{percent}}%",
+      "decrease": "Portion verringern",
+      "increase": "Portion vergrößern",
+      "cancel": "Abbrechen",
+      "add": "Hinzufügen"
+    },
     "toast": {
       "logged_one": "{{name}} eingetragen.",
       "logged_other": "{{name}} eingetragen, {{count}} Lebensmittel."

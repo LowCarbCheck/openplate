@@ -3274,6 +3274,15 @@
     },
     "itemCount_one": "{{count}} aliment",
     "itemCount_other": "{{count}} aliments",
+    "confirm": {
+      "description": "Confirme la portion, puis ajoute-la à ton journal.",
+      "portionLabel": "Portion",
+      "percent": "{{percent}}%",
+      "decrease": "Diminuer la portion",
+      "increase": "Augmenter la portion",
+      "cancel": "Annuler",
+      "add": "Ajouter"
+    },
     "toast": {
       "logged_one": "{{name}} enregistré.",
       "logged_other": "{{name}} enregistré, {{count}} aliments."

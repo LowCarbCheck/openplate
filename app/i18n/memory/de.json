@@ -4752,6 +4752,13 @@
     "at": "2026-09-14",
     "de": "Netto-Kohlenhydrate (oben) = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole."
   },
+  "3fa173768e1f22f2": {
+    "en": "Confirm the portion, then add it to your diary.",
+    "path": "common:usual.confirm.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Bestätige die Portion und füge sie dann zu deinem Tagebuch hinzu."
+  },
   "3fb0022b9e1ca172": {
     "en": "European Food Safety Authority (EFSA)",
     "path": "common:admin.settings.basis.efsa",
@@ -7194,6 +7201,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Alles bereit. Es gibt drei Wege, Essen in dein Tagebuch einzutragen. Wähle einen aus, um zu starten."
+  },
+  "5ed48dd349c49ef5": {
+    "en": "Decrease portion",
+    "path": "common:usual.confirm.decrease",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Portion verringern"
   },
   "5edcdbbf3a0ff5ce": {
     "en": "Password",
@@ -11520,6 +11534,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Vorschlag ausblenden"
+  },
+  "96421058f8988768": {
+    "en": "Portion",
+    "path": "common:usual.confirm.portionLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Portion"
   },
   "9645f9aaa5e360dc": {
     "en": "Remove",
@@ -17422,6 +17443,13 @@
     "at": "2026-09-14",
     "de": "Gewicht eintragen"
   },
+  "e71733f0e05f40ce": {
+    "en": "Cancel",
+    "path": "common:usual.confirm.cancel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Abbrechen"
+  },
   "e720b0cba3db2847": {
     "en": "Withdraw",
     "path": "common:research.withdrawal.confirmCta",
@@ -17463,6 +17491,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "de": "Wenn Sie die Synchronisierung ausschalten oder Ihr Sync-Konto löschen, bleiben Ihre lokal gespeicherten Tracker-Daten auf Ihren eigenen Geräten unberührt. Das Löschen des Kontos entfernt Ihre auf dem Server gespeicherten verschlüsselten Blobs sofort und ohne Nachfrist, und sie können nicht wiederhergestellt werden. (Routinemäßige verschlüsselte Sicherungen können den Geheimtext etwas länger aufbewahren, bevor sie turnusmäßig gelöscht werden, wie in der Datenschutzerklärung beschrieben. Er bleibt dort verschlüsselt.)"
+  },
+  "e7c48c0634c8986b": {
+    "en": "Add",
+    "path": "common:usual.confirm.add",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Hinzufügen"
   },
   "e7d7acdc022aa65b": {
     "en": "Create an account",
@@ -17680,6 +17715,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Melde dich bei deinem Konto an oder öffne den Einladungslink, den du erhalten hast."
+  },
+  "eac1755a86f44b97": {
+    "en": "Increase portion",
+    "path": "common:usual.confirm.increase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Portion vergrößern"
   },
   "eae3dcb1a0fddfbd": {
     "en": "Started {{when}}, never ended.",

@@ -4752,6 +4752,13 @@
     "at": "2026-09-14",
     "fr": "Glucides nets (ci-dessus) = Glucides moins Fibres, moins les éventuels polyols."
   },
+  "3fa173768e1f22f2": {
+    "en": "Confirm the portion, then add it to your diary.",
+    "path": "common:usual.confirm.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Confirme la portion, puis ajoute-la à ton journal."
+  },
   "3fb0022b9e1ca172": {
     "en": "European Food Safety Authority (EFSA)",
     "path": "common:admin.settings.basis.efsa",
@@ -7194,6 +7201,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Tout est prêt. Tu as trois façons d'ajouter des aliments dans ton journal. Choisis-en une pour commencer."
+  },
+  "5ed48dd349c49ef5": {
+    "en": "Decrease portion",
+    "path": "common:usual.confirm.decrease",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Diminuer la portion"
   },
   "5edcdbbf3a0ff5ce": {
     "en": "Password",
@@ -11520,6 +11534,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ignorer la suggestion"
+  },
+  "96421058f8988768": {
+    "en": "Portion",
+    "path": "common:usual.confirm.portionLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Portion"
   },
   "9645f9aaa5e360dc": {
     "en": "Remove",
@@ -17422,6 +17443,13 @@
     "at": "2026-09-14",
     "fr": "Enregistrer le poids"
   },
+  "e71733f0e05f40ce": {
+    "en": "Cancel",
+    "path": "common:usual.confirm.cancel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Annuler"
+  },
   "e720b0cba3db2847": {
     "en": "Withdraw",
     "path": "common:research.withdrawal.confirmCta",
@@ -17463,6 +17491,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "fr": "Si vous désactivez la synchronisation ou supprimez votre compte de synchronisation, les données de suivi stockées localement sur vos propres appareils restent intactes. La suppression du compte supprime immédiatement vos blocs chiffrés stockés sur le serveur, sans délai de grâce, et ils ne peuvent pas être restaurés. (Les sauvegardes chiffrées de routine peuvent conserver le texte chiffré un peu plus longtemps avant leur rotation, comme décrit dans la Politique de confidentialité. Il y reste chiffré.)"
+  },
+  "e7c48c0634c8986b": {
+    "en": "Add",
+    "path": "common:usual.confirm.add",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Ajouter"
   },
   "e7d7acdc022aa65b": {
     "en": "Create an account",
@@ -17680,6 +17715,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Connecte-toi à ton compte, ou ouvre le lien d'invitation qu'on t'a envoyé."
+  },
+  "eac1755a86f44b97": {
+    "en": "Increase portion",
+    "path": "common:usual.confirm.increase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Augmenter la portion"
   },
   "eae3dcb1a0fddfbd": {
     "en": "Started {{when}}, never ended.",

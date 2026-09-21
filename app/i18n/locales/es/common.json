@@ -3274,6 +3274,15 @@
     },
     "itemCount_one": "{{count}} alimento",
     "itemCount_other": "{{count}} alimentos",
+    "confirm": {
+      "description": "Confirma la porción y añádela a tu diario.",
+      "portionLabel": "Porción",
+      "percent": "{{percent}}%",
+      "decrease": "Reducir porción",
+      "increase": "Aumentar porción",
+      "cancel": "Cancelar",
+      "add": "Añadir"
+    },
     "toast": {
       "logged_one": "Se registró {{name}}.",
       "logged_other": "Se registró {{name}}, {{count}} alimentos."

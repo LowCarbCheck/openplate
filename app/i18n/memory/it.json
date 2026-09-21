@@ -4752,6 +4752,13 @@
     "at": "2026-09-14",
     "it": "Carboidrati netti (sopra) = Carboidrati meno Fibre, meno eventuali polioli."
   },
+  "3fa173768e1f22f2": {
+    "en": "Confirm the portion, then add it to your diary.",
+    "path": "common:usual.confirm.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Conferma la porzione, poi aggiungila al tuo diario."
+  },
   "3fb0022b9e1ca172": {
     "en": "European Food Safety Authority (EFSA)",
     "path": "common:admin.settings.basis.efsa",
@@ -7194,6 +7201,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "È tutto pronto. Ci sono tre modi per inserire il cibo nel diario. Scegline uno per iniziare."
+  },
+  "5ed48dd349c49ef5": {
+    "en": "Decrease portion",
+    "path": "common:usual.confirm.decrease",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Riduci la porzione"
   },
   "5edcdbbf3a0ff5ce": {
     "en": "Password",
@@ -11520,6 +11534,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Ignora suggerimento"
+  },
+  "96421058f8988768": {
+    "en": "Portion",
+    "path": "common:usual.confirm.portionLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Porzione"
   },
   "9645f9aaa5e360dc": {
     "en": "Remove",
@@ -17422,6 +17443,13 @@
     "at": "2026-09-14",
     "it": "Registra il peso"
   },
+  "e71733f0e05f40ce": {
+    "en": "Cancel",
+    "path": "common:usual.confirm.cancel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Annulla"
+  },
   "e720b0cba3db2847": {
     "en": "Withdraw",
     "path": "common:research.withdrawal.confirmCta",
@@ -17463,6 +17491,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "it": "Se disattiva la sincronizzazione o elimina il Suo account di sincronizzazione, i dati di tracciamento memorizzati localmente sui Suoi dispositivi non subiscono conseguenze. L'eliminazione dell'account rimuove immediatamente i Suoi blob cifrati memorizzati sul server, senza alcun periodo di tolleranza, e non possono essere ripristinati. (I backup cifrati ordinari possono conservare il testo cifrato un po' più a lungo prima della rotazione, come descritto nell'Informativa sulla privacy. Lì rimane cifrato)."
+  },
+  "e7c48c0634c8986b": {
+    "en": "Add",
+    "path": "common:usual.confirm.add",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Aggiungi"
   },
   "e7d7acdc022aa65b": {
     "en": "Create an account",
@@ -17680,6 +17715,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Accedi al tuo account oppure apri il link di invito che hai ricevuto."
+  },
+  "eac1755a86f44b97": {
+    "en": "Increase portion",
+    "path": "common:usual.confirm.increase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Aumenta la porzione"
   },
   "eae3dcb1a0fddfbd": {
     "en": "Started {{when}}, never ended.",
