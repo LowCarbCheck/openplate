@@ -230,7 +230,27 @@ export function DescribeComposer({
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col gap-4">
+    /**
+     * `min-h-full`, not a guessed fraction of the viewport.
+     *
+     * THE BOTTOM OF WHAT. `mt-auto` below pins the composer to the bottom of
+     * THIS box, so where the composer lands is decided entirely by how tall
+     * this box is. It used to be `min-h-[60vh]`, which is a fraction of the
+     * WINDOW and has nothing to do with the room this route was actually
+     * given: on a 390 x 844 phone the content pane is 735 px and 60vh is 506,
+     * so the composer stopped 213 px short of the bottom and the rest of the
+     * screen was bare background. The box was not at the top of the page and
+     * not at the bottom of it either, which is what made the gap above it read
+     * as a mistake rather than as a message box sitting where a thumb is.
+     *
+     * `min-h-full` resolves against the app shell's content pane
+     * (`app-wrapper.tsx`), which already subtracts the header and already
+     * reserves the bottom bar in its own padding. So the composer now ends
+     * where the page ends, clear of the bar, on any screen — including the
+     * short one a raised keyboard leaves, where 60vh was a guess in the other
+     * direction.
+     */
+    <div data-slot="describe-page" className="mx-auto flex min-h-full max-w-2xl flex-col gap-4">
       {/* ABOVE the title, and never between the title and the box. The
           composer is pinned to the bottom by `mt-auto`, so a door that arrives
           after the first paint pushes the heading down and leaves Send exactly

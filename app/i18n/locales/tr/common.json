@@ -1262,7 +1262,8 @@
   },
   "meals": {
     "description": "Paket olarak kaydettiğin öğünler. Tek bir dokunuşla kaydet veya buradan kaldır.",
-    "empty": "Henüz bir öğün kaydetmedin. Günlükten bir tane kaydet: girdiğin yiyecekleri paketle ve onlara bir ad ver.",
+    "emptyLead": "Henüz bir öğün kaydetmedin.",
+    "howTo": "Günlükten bir tane kaydet: girdiğin yiyecekleri paketle ve onlara bir ad ver.",
     "itemCount_one": "{{count}} yiyecek",
     "itemCount_other": "{{count}} yiyecek",
     "logNow": "Şimdi kaydet",

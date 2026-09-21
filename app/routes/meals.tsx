@@ -235,14 +235,41 @@ export default function Meals({ loaderData }: Route.ComponentProps) {
   const { meals } = loaderData;
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
+    /**
+     * `min-h-full` and a column, so a SHORT list still reaches the bottom of
+     * the screen.
+     *
+     * WHAT IT LOOKED LIKE BEFORE. Three saved meals is a realistic number and
+     * most people will never have many more. Those three cards drew 306 px
+     * into a content area 735 px tall on a 390 x 844 phone, and the remaining
+     * 429 px were bare background: the page did not read as short, it read as
+     * cut off.
+     *
+     * WHY NOT CENTRE THE LIST. Because it stops working at the top of the
+     * range. Fifteen saved meals are taller than the screen, and a centred
+     * column is either clipped or shunted down behind the header. `min-h-full`
+     * is self-limiting instead: the column fills the area while the content is
+     * shorter than it, and the moment the rows outgrow it the whole thing
+     * behaves exactly as it did before, top-aligned and scrolling.
+     *
+     * `min-h-full` and not `min-h-screen`: the parent here is the app shell's
+     * content pane (`app-wrapper.tsx`), which already sits under a 64 px header
+     * and already reserves the bottom bar's height in its own padding. A
+     * viewport-sized child would run that reservation over twice.
+     */
+    <div data-slot="meals-page" className="mx-auto flex min-h-full max-w-xl flex-col gap-4">
       {/* No own heading: the app chrome already renders this route's title
           from `handle.title` — see `settings.data.tsx` for the same pattern. */}
       <p className="text-sm text-muted-foreground">{t('meals.description')}</p>
       {meals.length === 0 && (
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-8 text-center">
           <BookMarked className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
-          <p className="text-sm text-muted-foreground">{t('meals.empty')}</p>
+          {/* The two halves of what used to be one sentence. Split so the
+              second one can be said on its own below, where the first one
+              ("you haven't saved a meal yet") would simply be untrue. */}
+          <p className="text-sm text-muted-foreground">
+            {t('meals.emptyLead')} {t('meals.howTo')}
+          </p>
         </div>
       )}
       <div className="space-y-2">
@@ -250,6 +277,22 @@ export default function Meals({ loaderData }: Route.ComponentProps) {
           <SavedMealRow key={meal.id} meal={meal} />
         ))}
       </div>
+      {/* THE ONE THING THIS PAGE NEVER TOLD A PERSON WHO ALREADY HAS A SAVED
+          MEAL: where the next one comes from. There is no "new saved meal"
+          button here and there never will be — a saved meal is a bundle of
+          foods that were logged, so it is made in the diary. That sentence was
+          only ever shown to somebody with none, which is the one reader who
+          cannot act on it yet.
+
+          `mt-auto` pushes it to the bottom of the filled column, so it is the
+          line that closes the page instead of a second paragraph crowding the
+          first. With a list too tall to fit, `mt-auto` has no free space to
+          take and the hint simply follows the last row. */}
+      {meals.length > 0 && (
+        <p data-slot="meals-how-to" className="mt-auto pt-6 text-sm text-muted-foreground">
+          {t('meals.howTo')}
+        </p>
+      )}
     </div>
   );
 }
