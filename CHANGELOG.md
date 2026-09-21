@@ -19,6 +19,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **Add, Scan and Describe now nest under one address, /add.** /add is now the database search, at /add/search. /scan, the camera and the photo review, is now /add/photo. /describe, the message composer, is now /add/describe. The old addresses still work, each one redirects to its new home, so a bookmark, a home screen shortcut, or an installed app's stale link all keep working.
 
+### Fixed
+
+- **The name openplate no longer sits on top of the page title on a phone.** The small brand name and the name of the page you are on were less than two pixels apart in the bar at the top of every screen, so the two lines read as one block and you could not tell them apart at a glance. They now stand six pixels apart. The bar is the same height, the page title is the same size, and nothing else on the bar moved.
+
 ## [0.38.0] - 2026-09-21
 
 ### Added
