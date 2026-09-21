@@ -146,11 +146,11 @@ function renderPortionStep(candidate: AddSearchCandidate): string {
     candidate,
     defaultMealType: 'lunch',
     returnTo: '/diary',
-    logContext: { date: null, label: null, switchToTodayHref: '/add' },
+    logContext: { date: null, label: null, switchToTodayHref: '/add/search' },
     lastResult: undefined,
     onBack: noop,
   });
-  const router = createMemoryRouter([{ path: '/add', element }], { initialEntries: ['/add'] });
+  const router = createMemoryRouter([{ path: '/add/search', element }], { initialEntries: ['/add/search'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 

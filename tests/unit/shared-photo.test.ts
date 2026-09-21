@@ -8,6 +8,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildUrlWithoutSharedParam, hasSharedPhotoFlag } from '../../app/lib/shared-photo';
+import { ADD_PHOTO_PATH } from '../../app/lib/intake-hrefs';
 
 describe('hasSharedPhotoFlag', () => {
   it('is true for ?shared=1', () => {
@@ -31,18 +32,21 @@ describe('hasSharedPhotoFlag', () => {
 
 describe('buildUrlWithoutSharedParam', () => {
   it('drops the only param and returns a bare pathname', () => {
-    assert.equal(buildUrlWithoutSharedParam('/scan', '?shared=1'), '/scan');
+    assert.equal(buildUrlWithoutSharedParam(ADD_PHOTO_PATH, '?shared=1'), ADD_PHOTO_PATH);
   });
 
   it('preserves other params while removing shared', () => {
-    assert.equal(buildUrlWithoutSharedParam('/scan', '?date=2026-07-14&shared=1'), '/scan?date=2026-07-14');
+    assert.equal(
+      buildUrlWithoutSharedParam(ADD_PHOTO_PATH, '?date=2026-07-14&shared=1'),
+      `${ADD_PHOTO_PATH}?date=2026-07-14`,
+    );
   });
 
   it('returns the bare pathname when there was no query string', () => {
-    assert.equal(buildUrlWithoutSharedParam('/scan', ''), '/scan');
+    assert.equal(buildUrlWithoutSharedParam(ADD_PHOTO_PATH, ''), ADD_PHOTO_PATH);
   });
 
   it('leaves a query string with no shared flag untouched in content', () => {
-    assert.equal(buildUrlWithoutSharedParam('/scan', '?date=2026-07-14'), '/scan?date=2026-07-14');
+    assert.equal(buildUrlWithoutSharedParam(ADD_PHOTO_PATH, '?date=2026-07-14'), `${ADD_PHOTO_PATH}?date=2026-07-14`);
   });
 });

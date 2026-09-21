@@ -21,7 +21,7 @@
  *
  * The hand-off slot itself is executed, in `plate-photo-handoff.test.ts`.
  * The CHAIN from the review screen to `savePlatePhoto` is read out of
- * `app/routes/scan.tsx`: `handleConfirm` is internal to the route and driving
+ * `app/routes/add.photo.tsx`: `handleConfirm` is internal to the route and driving
  * it needs the device store, the toast layer and i18n, which is the
  * integration tier's job rather than this one's (the same split
  * `food-logged-event.test.ts` makes, and for the same reason).
@@ -37,7 +37,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/scan.tsx', import.meta.url)), 'utf8');
+const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/add.photo.tsx', import.meta.url)), 'utf8');
 
 /**
  * The body of a top-level function in the route source, from its header to the
@@ -46,7 +46,7 @@ const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/scan.tsx
  */
 function topLevelFunctionBody(name: string): string {
   const header = new RegExp(`^(?:export )?(?:async )?function ${name}\\(`, 'm').exec(SCAN_ROUTE);
-  if (header === null) throw new Error(`function ${name} was not found in app/routes/scan.tsx`);
+  if (header === null) throw new Error(`function ${name} was not found in app/routes/add.photo.tsx`);
   const start = header.index;
   const end = SCAN_ROUTE.indexOf('\n}\n', start);
   if (end === -1) throw new Error(`function ${name} has no closing brace at column zero`);

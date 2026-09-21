@@ -1,11 +1,11 @@
 /**
- * Unit tests for `#app/routes/scan`'s `ConnectCard` — the screen a device with
- * no AI settings row lands on.
+ * Unit tests for `#app/routes/add.photo`'s `ConnectCard` — the screen a
+ * device with no AI settings row lands on.
  *
  * The card used to offer "Connect with OpenRouter" on every instance, managed
  * ones included. On a managed instance (M187 spec 03) that is a false promise:
  * AI arrives with the gateway invite link and never from a button on this
- * card, so an owner who opened /scan read the card as "your OpenRouter
+ * card, so an owner who opened /add/photo read the card as "your OpenRouter
  * connection is missing" when the real answer was "ask for a new invite".
  *
  * So both shapes are rendered here, through the REAL shipped English catalog,

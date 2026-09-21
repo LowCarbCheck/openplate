@@ -18,7 +18,7 @@
  * The event is executed: the real `trackFoodLogged` runs against a real `_paq`
  * at the level a default instance runs at, so the rows below are the rows
  * Matomo would drain, one distinct row per input path. The CHAIN from the
- * confirm handler to that call is read out of `app/routes/scan.tsx`, because
+ * confirm handler to that call is read out of `app/routes/add.photo.tsx`, because
  * `handleConfirm` and `handleConfirmLabel` are internal to the route and
  * driving them needs the device store and the toast layer, which is the
  * integration tier's job rather than this one's.
@@ -42,7 +42,7 @@ import {
   type LogInputPath,
 } from '../../app/lib/matomo-events';
 
-const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/scan.tsx', import.meta.url)), 'utf8');
+const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/add.photo.tsx', import.meta.url)), 'utf8');
 
 /** Installs a bare `window` carrying an empty `_paq`, as `analytics-event-levels.test.ts` does. */
 function stubWindow(): unknown[][] {
@@ -69,7 +69,7 @@ function defaultInstanceLevel(): 'pageviews' | 'product' | 'research' {
  */
 function topLevelFunctionBody(source: string, name: string): string {
   const header = new RegExp(`^(?:export )?(?:async )?function ${name}\\(`, 'm').exec(source);
-  if (header === null) throw new Error(`function ${name} was not found in app/routes/scan.tsx`);
+  if (header === null) throw new Error(`function ${name} was not found in app/routes/add.photo.tsx`);
   const start = header.index;
   const end = source.indexOf('\n}\n', start);
   if (end === -1) throw new Error(`function ${name} has no closing brace at column zero`);

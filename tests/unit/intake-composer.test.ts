@@ -25,6 +25,7 @@ import { initReactI18next } from 'react-i18next';
 
 import { IntakeComposer, type IntakeComposerProps } from '#app/components/intake/intake-composer';
 import type { CameraCapture } from '#app/components/intake/use-camera-capture';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 
 const source = readFileSync(new URL('../../app/components/intake/intake-composer.tsx', import.meta.url), 'utf8');
 const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
@@ -104,7 +105,7 @@ describe('the composer strip', () => {
     // never its shape, matters to the compile-time check below.
     const capture = {} as CameraCapture;
     // @ts-expect-error capture and scanTo cannot both be set; see the module's props union
-    typeCheckOnly({ describeTo: '/describe', capture, scanTo: '/scan' });
+    typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, capture, scanTo: ADD_PHOTO_PATH });
     assert.match(source, /capture\?: never;/, 'the scanTo-branch of the union still forbids capture');
     assert.match(source, /scanTo\?: string;/, 'the capture-branch of the union still forbids a non-never scanTo');
   });
@@ -173,14 +174,14 @@ describe("the camera key's weight", () => {
   const OUTLINE = 'border-primary/40';
 
   it('fills the key on a page that owns no camera, which is /dashboard and /diary', () => {
-    const classes = cameraKeyClass(render(createElement(IntakeComposer, { describeTo: '/describe' })));
+    const classes = cameraKeyClass(render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH })));
     assert.ok(classes.includes(FILLED), `the standalone camera key lost its fill: ${classes}`);
     assert.ok(!classes.includes(OUTLINE), 'the standalone key is drawn as an outline');
   });
 
   it('outlines the key inside the launcher sheet, where a filled camera is already on screen', () => {
     const embedded = createElement(IntakeComposer, {
-      describeTo: '/describe',
+      describeTo: ADD_DESCRIBE_PATH,
       capture: BORROWED_CAPTURE,
       label: 'Type',
       variant: 'embedded',
@@ -195,7 +196,7 @@ describe("the camera key's weight", () => {
     // caller's capture but no variant is a `/dashboard`-weight key, so the
     // demotion cannot ride in on `capture` by accident.
     const borrowedButStandalone = createElement(IntakeComposer, {
-      describeTo: '/describe',
+      describeTo: ADD_DESCRIBE_PATH,
       capture: BORROWED_CAPTURE,
     });
     const classes = cameraKeyClass(render(borrowedButStandalone));

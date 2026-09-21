@@ -269,7 +269,7 @@ describe('the source fact the copy rests on', () => {
     const files = sourceFiles(fileURLToPath(new URL('../../app', import.meta.url)));
     assert.ok(files.length > 100, `only walked ${files.length} files under app/`);
     assert.ok(
-      files.some((file) => file.endsWith('/routes/describe.tsx')),
+      files.some((file) => file.endsWith('/routes/add.describe.tsx')),
       'the composer itself was not among the files swept',
     );
   });

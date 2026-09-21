@@ -3,14 +3,14 @@
  *
  * ── The contradiction ────────────────────────────────────────────────────
  *
- * `/describe` carried a notice for a signed-out visitor on a managed
- * instance, with a link back to the sign in screen. The M201 managed walk
- * (worklog, "M201, the managed walk of the meal composer on 0.20.1") proved
- * the notice was correct and that nobody could ever read it: signing out of a
- * managed instance writes the device lock, and `_personal.tsx`'s gate turns
- * every personal route, `/describe` included, into a redirect to `/welcome`.
- * The screenshot of the real signed-out visit shows the welcome screen and no
- * composer at all.
+ * `/describe` (now `/add/describe`, ADR-0019) carried a notice for a
+ * signed-out visitor on a managed instance, with a link back to the sign in
+ * screen. The M201 managed walk (worklog, "M201, the managed walk of the meal
+ * composer on 0.20.1") proved the notice was correct and that nobody could
+ * ever read it: signing out of a managed instance writes the device lock, and
+ * `_personal.tsx`'s gate turns every personal route, the composer included,
+ * into a redirect to `/welcome`. The screenshot of the real signed-out visit
+ * shows the welcome screen and no composer at all.
  *
  * ── What was decided, and why ────────────────────────────────────────────
  *
@@ -18,10 +18,10 @@
  * table was an exception to the lock for the two add-food screens. It was
  * refused, and this file is where that refusal is nailed down, because the
  * exception is one line in `GATE_EXEMPT_PATHS` and nothing else in the repo
- * would have failed: `/add` lists this device's own foods and both screens
- * WRITE to the diary, so a shared, signed-out device would have shown the
- * last account holder's rows and let the next person add to them. That is the
- * one thing the lock exists to stop.
+ * would have failed: `/add/search` lists this device's own foods and both
+ * screens WRITE to the diary, so a shared, signed-out device would have shown
+ * the last account holder's rows and let the next person add to them. That is
+ * the one thing the lock exists to stop.
  *
  * EVERY ASSERTION HAS A CONTROL. "This path is not exempt" passes against a
  * typo'd path, an empty set, or a renamed function, so each one is paired
@@ -36,6 +36,7 @@ import { z } from 'zod';
 
 import { isOnboardingGateExempt, resolveOnboardingGate, type OnboardingGateInput } from '../../app/lib/onboarding-gate';
 import { resolveAiIntakeDoor } from '../../app/components/add/use-ai-connection';
+import { ADD_DESCRIBE_PATH, ADD_SEARCH_PATH } from '../../app/lib/intake-hrefs';
 
 /** The one namespace this file reads, parsed at the file boundary rather than asserted. */
 const catalogSchema = z.object({ aiIntake: z.record(z.string(), z.string()) });
@@ -51,7 +52,7 @@ const CATALOGS = ['en', 'de'].map((locale) => ({
 }));
 
 /** The screens the refused exception would have opened. */
-const ADD_FOOD_PATHS = ['/describe', '/add'] as const;
+const ADD_FOOD_PATHS = [ADD_DESCRIBE_PATH, ADD_SEARCH_PATH] as const;
 
 /** An onboarded device with no session open on it. */
 const ONBOARDED_SIGNED_OUT: OnboardingGateInput = {
@@ -67,7 +68,7 @@ const ONBOARDED_SIGNED_OUT: OnboardingGateInput = {
 };
 
 describe('the device lock has no exception for the add-food screens', () => {
-  it('does not let /describe or /add past the gate untested', () => {
+  it('does not let /add/describe or /add/search past the gate untested', () => {
     for (const path of ADD_FOOD_PATHS) {
       assert.equal(isOnboardingGateExempt(path), false, `${path} was exempted from the device lock`);
     }

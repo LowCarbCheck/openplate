@@ -243,7 +243,7 @@ describe('the chips render as reachable buttons', () => {
   });
 
   it('wears the same pill as the starter suggestions on the same screen', () => {
-    const addSource = readFileSync(fileURLToPath(new URL('../../app/routes/add.tsx', import.meta.url)), 'utf8');
+    const addSource = readFileSync(fileURLToPath(new URL('../../app/routes/add.search.tsx', import.meta.url)), 'utf8');
     // The starter chips now take the class from this very constant, so the two
     // rows cannot drift apart. A hand-written class list here would fail.
     assert.match(addSource, /className=\{SEARCH_CHIP_CLASS\}/);
@@ -263,7 +263,7 @@ describe('the chips render as reachable buttons', () => {
 });
 
 describe('the search step wires the chips to a real search', () => {
-  const addSource = readFileSync(fileURLToPath(new URL('../../app/routes/add.tsx', import.meta.url)), 'utf8');
+  const addSource = readFileSync(fileURLToPath(new URL('../../app/routes/add.search.tsx', import.meta.url)), 'utf8');
 
   it('derives the chips from the searched query, the UI language and the result list', () => {
     assert.match(

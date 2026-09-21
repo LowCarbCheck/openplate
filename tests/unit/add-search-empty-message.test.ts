@@ -53,7 +53,7 @@ const englishCatalog = EnglishCatalog.parse(
 /** The two catalog strings whose interpolation contract this spec turns on. */
 const COPY = englishCatalog.add.search;
 
-const addSource = readFileSync(fileURLToPath(new URL('../../app/routes/add.tsx', import.meta.url)), 'utf8');
+const addSource = readFileSync(fileURLToPath(new URL('../../app/routes/add.search.tsx', import.meta.url)), 'utf8');
 
 /**
  * Key-echoing translator: catalog-independent, so structural assertions never

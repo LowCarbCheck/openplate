@@ -71,7 +71,7 @@ function renderReview({ typedText }: { typedText: string | null }): string {
     intakeSource: typedText === null ? ('photo' as const) : ('text' as const),
     typedText,
   });
-  const router = createMemoryRouter([{ path: '/scan', element: withI18n(element) }], { initialEntries: ['/scan'] });
+  const router = createMemoryRouter([{ path: '/add/photo', element: withI18n(element) }], { initialEntries: ['/add/photo'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 

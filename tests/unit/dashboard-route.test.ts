@@ -122,7 +122,7 @@ describe('the Wie gestern door on the today card (M217/02)', () => {
     // RepeatYesterdayGhost over IntakeComposer, both the milestone's chosen
     // names.
     const doorAt = dashboardSource.indexOf('<RepeatYesterdayGhost offer={repeatYesterday} />', hero);
-    const addActionsAt = dashboardSource.indexOf('<IntakeComposer describeTo="/describe" />', hero);
+    const addActionsAt = dashboardSource.indexOf('<IntakeComposer describeTo={ADD_DESCRIBE_PATH} />', hero);
 
     assert.notEqual(doorAt, -1, 'the today card lost its Wie gestern door');
     assert.notEqual(addActionsAt, -1, 'the today card lost its add actions');

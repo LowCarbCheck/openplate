@@ -183,7 +183,7 @@ function renderConfirmStep(formData: FormData): string {
     // A photograph, so the review screen draws no quoted sentence.
     typedText: null,
   });
-  const router = createMemoryRouter([{ path: '/scan', element }], { initialEntries: ['/scan'] });
+  const router = createMemoryRouter([{ path: '/add/photo', element }], { initialEntries: ['/add/photo'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
@@ -271,11 +271,11 @@ function renderPortionStep(candidate: AddSearchCandidate): string {
     candidate,
     defaultMealType: 'lunch' as const,
     returnTo: '/diary',
-    logContext: { date: null, label: null, switchToTodayHref: '/add' },
+    logContext: { date: null, label: null, switchToTodayHref: '/add/search' },
     lastResult: undefined,
     onBack: () => {},
   });
-  const router = createMemoryRouter([{ path: '/add', element }], { initialEntries: ['/add'] });
+  const router = createMemoryRouter([{ path: '/add/search', element }], { initialEntries: ['/add/search'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 

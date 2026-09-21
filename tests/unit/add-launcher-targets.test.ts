@@ -32,7 +32,7 @@ import { initReactI18next } from 'react-i18next';
 import { IntakeComposer } from '../../app/components/intake/intake-composer';
 import { BottomNav } from '../../app/components/bottom-nav';
 import type { CameraCapture } from '../../app/components/intake/use-camera-capture';
-import { buildIntakeHref } from '../../app/lib/intake-hrefs';
+import { ADD_DESCRIBE_PATH, ADD_SEARCH_PATH, buildIntakeHref } from '../../app/lib/intake-hrefs';
 
 /**
  * A hermetic catalog, like `bottom-nav.test.ts` beside it: this file asserts
@@ -104,7 +104,7 @@ function inputCount(html: string): number {
 /** The strip exactly as the launcher's sheet renders it, for a given viewed day. */
 function sheetStrip(date: string | null): ReactElement {
   return createElement(IntakeComposer, {
-    describeTo: buildIntakeHref('/describe', { date }),
+    describeTo: buildIntakeHref(ADD_DESCRIBE_PATH, { date }),
     capture: BORROWED_CAPTURE,
     label: 'Type',
   });
@@ -131,16 +131,16 @@ describe('the launcher sheet renders the composer strip', () => {
 
 describe('where the sheet doors go', () => {
   it('sends typing and speaking to the composer, never to the database search', () => {
-    assert.deepEqual(hrefsOf(render(sheetStrip(null))), ['/describe', '/describe?speak=1']);
-    // The blunt control: `/add` is the database SEARCH, which wants one noun
-    // from somebody who came to write a sentence.
-    assert.ok(!hrefsOf(render(sheetStrip(null))).includes('/add'));
+    assert.deepEqual(hrefsOf(render(sheetStrip(null))), [ADD_DESCRIBE_PATH, `${ADD_DESCRIBE_PATH}?speak=1`]);
+    // The blunt control: `/add/search` is the database SEARCH, which wants
+    // one noun from somebody who came to write a sentence.
+    assert.ok(!hrefsOf(render(sheetStrip(null))).includes(ADD_SEARCH_PATH));
   });
 
   it('takes both doors to the day on screen, not to today', () => {
     assert.deepEqual(hrefsOf(render(sheetStrip('2026-09-07'))), [
-      '/describe?date=2026-09-07',
-      '/describe?date=2026-09-07&speak=1',
+      `${ADD_DESCRIBE_PATH}?date=2026-09-07`,
+      `${ADD_DESCRIBE_PATH}?date=2026-09-07&speak=1`,
     ]);
   });
 
@@ -148,7 +148,7 @@ describe('where the sheet doors go', () => {
     // The other end of the chain, which no render can see: the launcher reads
     // the day out of the URL and builds the destination with `buildIntakeHref`.
     assert.match(LAUNCHER, /const viewedDate = parseDateParam\(new URLSearchParams\(location\.search\)\.get\('date'\)\);/);
-    assert.match(LAUNCHER, /const describeTo = buildIntakeHref\('\/describe', \{ date: viewedDate \}\);/);
+    assert.match(LAUNCHER, /const describeTo = buildIntakeHref\(ADD_DESCRIBE_PATH, \{ date: viewedDate \}\);/);
     assert.match(LAUNCHER, /<IntakeComposer describeTo=\{describeTo\}/);
   });
 });
@@ -167,7 +167,7 @@ describe('how many capture inputs the bar has', () => {
     // exists to refuse: the same strip with no `capture` prop renders the
     // input itself, which inside a sheet is an element that unmounts while the
     // camera it opened is still opening.
-    assert.equal(inputCount(render(createElement(IntakeComposer, { describeTo: '/describe' }))), 1);
+    assert.equal(inputCount(render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH }))), 1);
   });
 
   it('keeps that one input outside the sheet', () => {

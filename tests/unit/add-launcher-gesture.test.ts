@@ -20,7 +20,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildIntakeHref } from '../../app/lib/intake-hrefs';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, buildIntakeHref } from '../../app/lib/intake-hrefs';
 import { parseDateParam } from '../../app/lib/user-days';
 
 const source = readFileSync(new URL('../../app/components/intake/use-camera-capture.ts', import.meta.url), 'utf8');
@@ -101,8 +101,8 @@ describe('the capture hook', () => {
 describe('a back-dated day survives the photo path', () => {
   const hookNavigations = source.match(/navigate\([^,)]+/g) ?? [];
 
-  it('the hook takes the scan target from its caller, defaulting to /scan', () => {
-    assert.match(source, /useCameraCapture\(\{ scanTo = '\/scan' \}: \{ scanTo\?: string \} = \{\}\)/);
+  it('the hook takes the scan target from its caller, defaulting to ADD_PHOTO_PATH', () => {
+    assert.match(source, /useCameraCapture\(\{ scanTo = ADD_PHOTO_PATH \}: \{ scanTo\?: string \} = \{\}\)/);
   });
 
   it('every navigation in the hook uses that target, none is hardcoded', () => {
@@ -113,9 +113,12 @@ describe('a back-dated day survives the photo path', () => {
   const diary = readFileSync(new URL('../../app/routes/diary.tsx', import.meta.url), 'utf8');
 
   it('/diary dates the scan target on any day but today', () => {
-    assert.match(diary, /const scanTo = buildIntakeHref\('\/scan', \{ date, today \}\);/);
-    assert.equal(buildIntakeHref('/scan', { date: '2026-09-07', today: '2026-09-14' }), '/scan?date=2026-09-07');
-    assert.equal(buildIntakeHref('/scan', { date: '2026-09-14', today: '2026-09-14' }), '/scan');
+    assert.match(diary, /const scanTo = buildIntakeHref\(ADD_PHOTO_PATH, \{ date, today \}\);/);
+    assert.equal(
+      buildIntakeHref(ADD_PHOTO_PATH, { date: '2026-09-07', today: '2026-09-14' }),
+      `${ADD_PHOTO_PATH}?date=2026-09-07`,
+    );
+    assert.equal(buildIntakeHref(ADD_PHOTO_PATH, { date: '2026-09-14', today: '2026-09-14' }), ADD_PHOTO_PATH);
   });
 
   it('every add-entry surface on /diary is given it', () => {
@@ -241,8 +244,8 @@ describe('the launcher carries the day the person is looking at', () => {
     // TWO, not three: the sheet renders the composer strip now (M232/03), and
     // the strip derives the spoken door from the typed one. Where those two
     // land is `add-launcher-targets.test.ts`, which renders them.
-    assert.match(launcher, /const describeTo = buildIntakeHref\('\/describe', \{ date: viewedDate \}\);/);
-    assert.match(launcher, /const scanTo = buildIntakeHref\('\/scan', \{ date: viewedDate \}\);/);
+    assert.match(launcher, /const describeTo = buildIntakeHref\(ADD_DESCRIBE_PATH, \{ date: viewedDate \}\);/);
+    assert.match(launcher, /const scanTo = buildIntakeHref\(ADD_PHOTO_PATH, \{ date: viewedDate \}\);/);
     assert.match(launcher, /useCameraCapture\(\{ scanTo \}\)/);
   });
 
@@ -258,13 +261,16 @@ describe('the launcher carries the day the person is looking at', () => {
     // The other half of the chain, run for real: the same two calls the file
     // above makes, over the search string `/diary?date=` actually produces.
     const dayOnScreen = parseDateParam(new URLSearchParams('?date=2026-09-07').get('date'));
-    assert.equal(buildIntakeHref('/describe', { date: dayOnScreen }), '/describe?date=2026-09-07');
-    assert.equal(buildIntakeHref('/describe', { date: dayOnScreen, speak: true }), '/describe?date=2026-09-07&speak=1');
-    assert.equal(buildIntakeHref('/scan', { date: dayOnScreen }), '/scan?date=2026-09-07');
+    assert.equal(buildIntakeHref(ADD_DESCRIBE_PATH, { date: dayOnScreen }), `${ADD_DESCRIBE_PATH}?date=2026-09-07`);
+    assert.equal(
+      buildIntakeHref(ADD_DESCRIBE_PATH, { date: dayOnScreen, speak: true }),
+      `${ADD_DESCRIBE_PATH}?date=2026-09-07&speak=1`,
+    );
+    assert.equal(buildIntakeHref(ADD_PHOTO_PATH, { date: dayOnScreen }), `${ADD_PHOTO_PATH}?date=2026-09-07`);
 
     const today = parseDateParam(new URLSearchParams('').get('date'));
-    assert.equal(buildIntakeHref('/describe', { date: today }), '/describe');
-    assert.equal(buildIntakeHref('/describe', { date: today, speak: true }), '/describe?speak=1');
-    assert.equal(buildIntakeHref('/scan', { date: today }), '/scan');
+    assert.equal(buildIntakeHref(ADD_DESCRIBE_PATH, { date: today }), ADD_DESCRIBE_PATH);
+    assert.equal(buildIntakeHref(ADD_DESCRIBE_PATH, { date: today, speak: true }), `${ADD_DESCRIBE_PATH}?speak=1`);
+    assert.equal(buildIntakeHref(ADD_PHOTO_PATH, { date: today }), ADD_PHOTO_PATH);
   });
 });

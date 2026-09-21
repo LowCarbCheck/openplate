@@ -187,7 +187,7 @@ function emittedMealType(html: string): string {
 }
 
 function renderUnderRouter(element: ReturnType<typeof createElement>): string {
-  const router = createMemoryRouter([{ path: '/scan', element: withI18n(element) }], { initialEntries: ['/scan'] });
+  const router = createMemoryRouter([{ path: '/add/photo', element: withI18n(element) }], { initialEntries: ['/add/photo'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 

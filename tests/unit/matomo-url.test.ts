@@ -64,7 +64,7 @@ describe('sanitizeAnalyticsUrl — identifiers never reach analytics', () => {
   });
 
   it('leaves ordinary paths untouched, so the pageview report stays readable', () => {
-    for (const path of ['/', '/diary', '/scan', '/settings/sync', '/trends', '/imprint']) {
+    for (const path of ['/', '/diary', '/add/photo', '/settings/sync', '/trends', '/imprint']) {
       assert.equal(
         sanitizeAnalyticsUrl(`https://openplate.de${path}`),
         `https://openplate.de${path}`,

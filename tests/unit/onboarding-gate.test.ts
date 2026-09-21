@@ -158,7 +158,7 @@ describe('isOnboardingGateExempt', () => {
   });
 
   it('still gates every other personal route', () => {
-    for (const path of ['/diary', '/dashboard', '/scan', '/settings/goals', '/settings/ai', '/settings/data']) {
+    for (const path of ['/diary', '/dashboard', '/add/photo', '/settings/goals', '/settings/ai', '/settings/data']) {
       assert.equal(isOnboardingGateExempt(path), false, path);
     }
   });

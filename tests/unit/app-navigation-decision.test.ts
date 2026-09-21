@@ -121,7 +121,7 @@ describe('decideNavigation, rule (d), already behind us', () => {
 
 describe('decideNavigation, rule (e), sideways', () => {
   it('replaces between two roots that are not behind us', () => {
-    const decision = decideNavigation({ from: '/diary', to: '/add', ledger: ledgerOf('/diary'), idx: 0 });
+    const decision = decideNavigation({ from: '/diary', to: '/add/search', ledger: ledgerOf('/diary'), idx: 0 });
     assert.deepEqual(decision, { kind: 'replace' });
   });
 
@@ -171,8 +171,14 @@ describe('the four documented walks leave the documented stacks', () => {
   it('walk 4: diary, add, then the save redirect (which carries replace)', () => {
     // The redirect is React Router's, not `go`'s, and it carries `replace`
     // because the submitting `<Form>` does, so it lands on rule (a).
-    assert.deepEqual(walk('/diary', ['/add']), ['/add']);
-    const afterSave = decideNavigation({ from: '/add', to: '/diary', replace: true, ledger: ledgerOf('/add'), idx: 0 });
+    assert.deepEqual(walk('/diary', ['/add/search']), ['/add/search']);
+    const afterSave = decideNavigation({
+      from: '/add/search',
+      to: '/diary',
+      replace: true,
+      ledger: ledgerOf('/add/search'),
+      idx: 0,
+    });
     assert.deepEqual(afterSave, { kind: 'replace' });
   });
 

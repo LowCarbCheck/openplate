@@ -42,8 +42,8 @@ describe('personalNavigationItems', () => {
         // mark and the public "Open the tracker" button both point.
         { labelKey: 'nav.dashboard', to: '/dashboard' },
         { labelKey: 'nav.diary', to: '/diary' },
-        { labelKey: 'nav.add', to: '/add' },
-        { labelKey: 'nav.scan', to: '/scan' },
+        { labelKey: 'nav.add', to: '/add/search' },
+        { labelKey: 'nav.scan', to: '/add/photo' },
         // The pantry (M233/02) sits directly after Scan: it is the second
         // thing the camera is for, the same composer pointed at a shelf.
         { labelKey: 'nav.pantry', to: '/pantry' },
@@ -76,7 +76,17 @@ describe('navigation surfaces', () => {
   it('gives the drawer and the sidebar the same nine primary rows plus a Settings footer', () => {
     assert.deepEqual(
       primaryNavigationItems.map((item) => item.to),
-      ['/dashboard', '/diary', '/add', '/scan', '/pantry', '/fasting', '/trends', '/nutrients', '/settings/nutrition'],
+      [
+        '/dashboard',
+        '/diary',
+        '/add/search',
+        '/add/photo',
+        '/pantry',
+        '/fasting',
+        '/trends',
+        '/nutrients',
+        '/settings/nutrition',
+      ],
     );
     assert.deepEqual(
       footerNavigationItems.map((item) => item.to),
@@ -89,7 +99,7 @@ describe('navigation surfaces', () => {
     // and the sidebar — not in the bar a user taps several times a day.
     assert.deepEqual(
       tabNavigationItems.map((item) => item.to),
-      ['/diary', '/scan', '/add'],
+      ['/diary', '/add/photo', '/add/search'],
     );
   });
 
@@ -103,7 +113,7 @@ describe('navigation surfaces', () => {
   it('raises exactly one tab — the signature Scan action', () => {
     assert.deepEqual(
       tabNavigationItems.filter((item) => item.tab?.raised === true).map((item) => item.to),
-      ['/scan'],
+      ['/add/photo'],
     );
   });
 

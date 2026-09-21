@@ -60,7 +60,7 @@ function renderLabelReview(): string {
     defaultMealType: 'lunch',
     typedText: null,
   });
-  const router = createMemoryRouter([{ path: '/scan', element: withI18n(element) }], { initialEntries: ['/scan'] });
+  const router = createMemoryRouter([{ path: '/add/photo', element: withI18n(element) }], { initialEntries: ['/add/photo'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 

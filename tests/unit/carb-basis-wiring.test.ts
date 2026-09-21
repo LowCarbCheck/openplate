@@ -144,11 +144,11 @@ function renderPortionStep(candidate: AddSearchCandidate): string {
     candidate,
     defaultMealType: 'lunch',
     returnTo: '/diary',
-    logContext: { date: null, label: null, switchToTodayHref: '/add' },
+    logContext: { date: null, label: null, switchToTodayHref: '/add/search' },
     lastResult: undefined,
     onBack: noop,
   });
-  const router = createMemoryRouter([{ path: '/add', element }], { initialEntries: ['/add'] });
+  const router = createMemoryRouter([{ path: '/add/search', element }], { initialEntries: ['/add/search'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
@@ -504,7 +504,7 @@ function renderReviewCard({ carbBasis, applyMatch }: { carbBasis: CarbBasis | un
     defaultMealType: null,
     typedText: null,
   });
-  const router = createMemoryRouter([{ path: '/scan', element }], { initialEntries: ['/scan'] });
+  const router = createMemoryRouter([{ path: '/add/photo', element }], { initialEntries: ['/add/photo'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 

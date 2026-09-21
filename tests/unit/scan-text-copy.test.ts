@@ -46,7 +46,7 @@ function copy(key: string): string {
   return leaf.data;
 }
 
-const SCAN_ROUTE = readFileSync(new URL('../../app/routes/scan.tsx', import.meta.url), 'utf8');
+const SCAN_ROUTE = readFileSync(new URL('../../app/routes/add.photo.tsx', import.meta.url), 'utf8');
 
 /** Words that can only be true of a photograph. */
 const NAMES_A_PHOTOGRAPH = /\b(photo|photos|photograph|picture|plate|shot)\b/i;

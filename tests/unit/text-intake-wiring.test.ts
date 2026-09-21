@@ -2,29 +2,29 @@
  * Typed intake reaches the SAME screen the photo does.
  *
  * The whole change is a claim about one pipeline, and a pipeline is exactly
- * what a unit test of a pure function cannot see: `/add` hands words to a
- * module slot, `/scan` reads that slot in an effect, and the review screen is
- * the plate path's. There is no DOM test library in this repo, so the chain is
- * proved by reading the two routes at anchored points, the same way
- * `scan-mode-event.test.ts` proves what does and does not fire.
+ * what a unit test of a pure function cannot see: `/add/search` hands words to
+ * a module slot, `/add/photo` reads that slot in an effect, and the review
+ * screen is the plate path's. There is no DOM test library in this repo, so
+ * the chain is proved by reading the two routes at anchored points, the same
+ * way `scan-mode-event.test.ts` proves what does and does not fire.
  *
- * WHAT WOULD BREAK SILENTLY WITHOUT THIS. A second review screen for text. A
- * `/add?q=` navigation instead of the hand-off slot, which would put what
- * somebody ate into their browser history. A confirm that files a typed meal
- * under the photo path, which is the only place the ways in are still
+ * WHAT WOULD BREAK SILENTLY WITHOUT THIS. A second review screen for text. An
+ * `/add/search?q=` navigation instead of the hand-off slot, which would put
+ * what somebody ate into their browser history. A confirm that files a typed
+ * meal under the photo path, which is the only place the ways in are still
  * distinguishable.
  *
- * The `speech` source is still read on the way OUT of the slot (`/scan` maps it
- * to its own analytics path) because entries written before M203 removed the
- * in-app microphone carry it. Nothing produces it any more, which is why no
- * assertion here expects a transcript.
+ * The `speech` source is still read on the way OUT of the slot (`/add/photo`
+ * maps it to its own analytics path) because entries written before M203
+ * removed the in-app microphone carry it. Nothing produces it any more, which
+ * is why no assertion here expects a transcript.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const ADD_ROUTE = readFileSync(new URL('../../app/routes/add.tsx', import.meta.url), 'utf8');
-const SCAN_ROUTE = readFileSync(new URL('../../app/routes/scan.tsx', import.meta.url), 'utf8');
+const ADD_ROUTE = readFileSync(new URL('../../app/routes/add.search.tsx', import.meta.url), 'utf8');
+const SCAN_ROUTE = readFileSync(new URL('../../app/routes/add.photo.tsx', import.meta.url), 'utf8');
 
 /**
  * The source between two anchors, so a body is read whole rather than up to
@@ -38,10 +38,10 @@ function between(source: string, start: string, end: string): string {
   return source.slice(from, to);
 }
 
-/** The body of `/add`'s AI submit helper. */
+/** The body of `/add/search`'s AI submit helper. */
 const SUBMIT_TO_AI = between(ADD_ROUTE, 'const submitToAi = useCallback(', 'const grouped = groupCandidatesBySource');
 
-describe('/add hands words to /scan', () => {
+describe('/add/search hands words to /add/photo', () => {
   it('parks them in the one-shot slot rather than in the URL', () => {
     assert.match(ADD_ROUTE, /import \{ offerTypedText \} from '#app\/lib\/intake-handoff'/);
     assert.match(SUBMIT_TO_AI, /offerTypedText\(trimmed, source\)/);
@@ -84,7 +84,7 @@ describe('/add hands words to /scan', () => {
     // `sr-only` live region, so on a phone it was a control that visibly did
     // nothing; dictation is the keyboard's now and arrives as ordinary typing.
     for (const forbidden of ['SpeechInputButton', 'useSpeechInputAvailable', 'resolveSpeechIntakeAction', 'speak']) {
-      assert.ok(!ADD_ROUTE.includes(forbidden), `/add still reaches for speech (${forbidden})`);
+      assert.ok(!ADD_ROUTE.includes(forbidden), `/add/search still reaches for speech (${forbidden})`);
     }
     // The control on the check above: the words themselves still travel, so a
     // file that had simply lost the whole submit path would fail here.
@@ -92,7 +92,7 @@ describe('/add hands words to /scan', () => {
   });
 });
 
-describe('/scan runs the text task on what it was handed', () => {
+describe('/add/photo runs the text task on what it was handed', () => {
   it('reads either kind out of the one slot, exactly once', () => {
     const handoff = SCAN_ROUTE.slice(
       SCAN_ROUTE.indexOf('const handed = takeIntakeHandoff();'),

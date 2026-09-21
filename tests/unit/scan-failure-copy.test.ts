@@ -308,7 +308,7 @@ test('the route treats a round trip that returns nothing as a failure', () => {
   // router and a fetcher. What is asserted is that the branch EXISTS: before
   // this, a submission that never reached the action left the screen exactly
   // as it was, which is what "the button does nothing" looked like.
-  const route = readFileSync(new URL('../../app/routes/scan.tsx', import.meta.url), 'utf8');
+  const route = readFileSync(new URL('../../app/routes/add.photo.tsx', import.meta.url), 'utf8');
   assert.match(route, /setDidSettleWithNothing\(fetcher\.data === undefined\)/);
   assert.match(route, /const silentFailure =\s*\n?\s*didSettleWithNothing \? t\(identifyFailedErrorKey\(/);
   assert.ok(EN.has('scan.errors.identifyFailed'), 'and the sentence exists');

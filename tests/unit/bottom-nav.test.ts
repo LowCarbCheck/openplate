@@ -64,7 +64,7 @@ function renderBottomNav(path = '/diary'): string {
 
 describe('BottomNav', () => {
   it('has a first-class Add tab — logging a food is no longer an extra step away', () => {
-    assert.ok(hrefsOf(renderBottomNav()).includes('/add'));
+    assert.ok(hrefsOf(renderBottomNav()).includes('/add/search'));
   });
 
   it('never links Settings/Goals at the AI-key page — that used to be 25% of permanent navigation', () => {
@@ -77,19 +77,19 @@ describe('BottomNav', () => {
     // no longer a LINK: it opens the camera inside its own tap (see
     // `add-launcher.tsx`), so it renders as a button and carries no href.
     // The bar's two flat tabs are the only hrefs left.
-    assert.deepEqual(hrefsOf(renderBottomNav()), ['/diary', '/add']);
+    assert.deepEqual(hrefsOf(renderBottomNav()), ['/diary', '/add/search']);
     assert.equal(tabNavigationItems.length, 3);
-    assert.equal(tabNavigationItems[1]?.to, '/scan');
+    assert.equal(tabNavigationItems[1]?.to, '/add/photo');
     assert.equal(tabNavigationItems[1]?.tab?.raised, true);
   });
 
-  it('opens the camera from the bar itself rather than travelling to /scan first', () => {
+  it('opens the camera from the bar itself rather than travelling to /add/photo first', () => {
     const html = renderBottomNav();
 
     // The whole point of the pass: the capture input is IN the tab bar, so
     // the tap that starts a scan is the tap that opens the camera.
     assert.ok(html.includes('capture="environment"'), 'the bar carries its own camera input');
-    assert.ok(!hrefsOf(html).includes('/scan'), 'the launcher must not be a link any more');
+    assert.ok(!hrefsOf(html).includes('/add/photo'), 'the launcher must not be a link any more');
   });
 
   it('offers a visible, labelled way into the rest of the sheet', () => {
@@ -152,7 +152,7 @@ describe('BottomNav', () => {
   });
 
   it("gates the active raised button's scale animation on motion-safe", () => {
-    const html = renderBottomNav('/scan');
+    const html = renderBottomNav('/add/photo');
     const scaleIndex = html.indexOf('scale-105');
 
     assert.notEqual(scaleIndex, -1, 'the active Scan tab lifts its circle');
@@ -160,7 +160,7 @@ describe('BottomNav', () => {
   });
 
   it('marks the active tab with aria-current, raised or flat', () => {
-    assert.ok(renderBottomNav('/scan').includes('aria-current="page"'), 'the raised tab keeps aria-current');
+    assert.ok(renderBottomNav('/add/photo').includes('aria-current="page"'), 'the raised tab keeps aria-current');
     assert.ok(renderBottomNav('/diary').includes('aria-current="page"'));
   });
 });

@@ -41,8 +41,8 @@ describe('the rendered anchor', () => {
   });
 
   it('renders NavLink with an href too', () => {
-    const markup = renderAt(createElement(NavLink, { to: '/add' }, 'Add'));
-    assert.match(markup, /<a[^>]*href="\/add"/);
+    const markup = renderAt(createElement(NavLink, { to: '/add/search' }, 'Add'));
+    assert.match(markup, /<a[^>]*href="\/add\/search"/);
   });
 
   it('the href assertion is not vacuous (control)', () => {
