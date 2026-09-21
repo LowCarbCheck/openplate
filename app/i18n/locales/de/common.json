@@ -1263,7 +1263,8 @@
   },
   "meals": {
     "description": "Mahlzeiten, die du als Bündel gespeichert hast. Mit einem Tap eintragen oder hier entfernen.",
-    "empty": "Du hast noch keine Mahlzeit gespeichert. Speichere eine aus dem Tagebuch: Fasse deine eingetragenen Lebensmittel zusammen und gib ihnen einen Namen.",
+    "emptyLead": "Du hast noch keine Mahlzeit gespeichert.",
+    "howTo": "Speichere eine aus dem Tagebuch: Fasse deine eingetragenen Lebensmittel zusammen und gib ihnen einen Namen.",
     "itemCount_one": "{{count}} Lebensmittel",
     "itemCount_other": "{{count}} Lebensmittel",
     "logNow": "Jetzt eintragen",

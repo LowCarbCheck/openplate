@@ -1263,7 +1263,8 @@
   },
   "meals": {
     "description": "Pasti che hai salvato in un blocco. Registrane uno con un solo tocco, oppure rimuovilo qui.",
-    "empty": "Non hai ancora salvato un pasto. Salvene uno dal diario: raggruppa gli alimenti che hai registrato e assegna loro un nome.",
+    "emptyLead": "Non hai ancora salvato un pasto.",
+    "howTo": "Salvene uno dal diario: raggruppa gli alimenti che hai registrato e assegna loro un nome.",
     "itemCount_one": "{{count}} alimento",
     "itemCount_other": "{{count}} alimenti",
     "logNow": "Registra ora",

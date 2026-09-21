@@ -1263,7 +1263,8 @@
   },
   "meals": {
     "description": "Repas enregistrés sous forme de lot. Enregistre-en un d'un simple geste, ou supprime-le ici.",
-    "empty": "Tu n'as pas encore enregistré de repas. Fais-le depuis le journal : regroupe les aliments saisis et donne-leur un nom.",
+    "emptyLead": "Tu n'as pas encore enregistré de repas.",
+    "howTo": "Fais-le depuis le journal : regroupe les aliments saisis et donne-leur un nom.",
     "itemCount_one": "{{count}} aliment",
     "itemCount_other": "{{count}} aliments",
     "logNow": "Enregistrer maintenant",

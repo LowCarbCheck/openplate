@@ -2057,6 +2057,13 @@
     "at": "2026-09-14",
     "de": "Fett"
   },
+  "19bdb11426f2dcdb": {
+    "en": "You haven't saved a meal yet.",
+    "path": "common:meals.emptyLead",
+    "model": "hand-written",
+    "at": "2026-09-21",
+    "de": "Du hast noch keine Mahlzeit gespeichert."
+  },
   "19d3ab8b32b0e603": {
     "en": "We do not use advertising or third-party analytics. This instance counts page visits using our own Matomo installation on our own server. No data goes to an analytics vendor. It sets no cookies. It does not record which features you use. It never receives what you eat, weigh, or log, because no diary content is ever sent to it. See Section 9a for the full list of recorded items and instructions on how to object. If you host an instance yourself, analytics stay switched off until you turn them on.",
     "path": "legal:privacy.s1Item4Pageviews",
@@ -16007,6 +16014,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dein Tagebuch wird auf diesem Gerät gespeichert: Lade dir jederzeit eine vollständige Kopie herunter, ohne Bindung, ohne Wartezeit."
+  },
+  "d3e4f681270af207": {
+    "en": "Save one from the diary: bundle the foods you logged and give them a name.",
+    "path": "common:meals.howTo",
+    "model": "hand-written",
+    "at": "2026-09-21",
+    "de": "Speichere eine aus dem Tagebuch: Fasse deine eingetragenen Lebensmittel zusammen und gib ihnen einen Namen."
   },
   "d3f1c8c081b1845d": {
     "en": "Save model",

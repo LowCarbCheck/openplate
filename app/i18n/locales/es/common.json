@@ -1263,7 +1263,8 @@
   },
   "meals": {
     "description": "Comidas que has guardado agrupadas. Registra una con un solo toque, o elimínala aquí.",
-    "empty": "Aún no has guardado ninguna comida. Guarda una desde el diario: agrupa los alimentos que registraste y ponles un nombre.",
+    "emptyLead": "Aún no has guardado ninguna comida.",
+    "howTo": "Guarda una desde el diario: agrupa los alimentos que registraste y ponles un nombre.",
     "itemCount_one": "{{count}} alimento",
     "itemCount_other": "{{count}} alimentos",
     "logNow": "Registrar ahora",
