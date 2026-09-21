@@ -1293,8 +1293,23 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           leaves vertical overflow alone. `PublicWrapper` carries the same guard
           at the layout level; both are deliberate, because either one alone is
           a single point of failure for a bug with no visible symptom until you
-          try to scroll. */}
-      <div className="relative isolate overflow-x-clip pb-12 pt-2 sm:pb-16 sm:pt-6">
+          try to scroll.
+
+          THAT LAST SENTENCE WAS THE TRAP (M243 spec 06). A clip that protects
+          a decorative overhang also swallows real content without a symptom,
+          and this one was hiding the tail of the page's own call to action in
+          every language, 108 px of it in French at 320 px. The clip stays; the
+          three buttons learned to wrap instead, and `lcc-lineage-landing.spec.ts`
+          now reads every clipping box in the fold for content running past it,
+          so the next thing that hides here fails a test. */}
+      {/* THE GRAPH PAPER SITS BEHIND THE HERO AND NOWHERE ELSE (M243 spec 06).
+          It is the same `.surface-grid` the hero panel inside the app draws,
+          at the same 28 px cell, so a stranger's first screen and their first
+          logged day are made of one texture. The page behind it stays plain:
+          four of four advisors said a grid under the whole page is noise, and
+          LowCarbCheck puts it under its fold only. The layers below paint on
+          top of it, which is why it is on THIS element and not on a child. */}
+      <div className="surface-grid relative isolate overflow-x-clip pb-12 pt-2 sm:pb-16 sm:pt-6">
         {/*
           Hero backdrop, two layers, both decorative and both out of the
           reading order (`pointer-events-none`, `aria-hidden`, `-z-10`).
@@ -1378,7 +1393,12 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               secondary is an in-page anchor, not a second destination: a fresh
               visitor either wants to try it or wants to read more, and there is
               no third thing to sell. */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          {/* `w-full` (M243 spec 06). The hero column is `items-center`, which
+              sizes every child to its MAX-content instead of stretching it, so
+              this row was 376 px wide inside a 288 px column and its button
+              never had a reason to shrink. Widening the row to the column is
+              what lets the wrapping label below actually wrap. */}
+          <div className="mt-8 flex w-full flex-wrap items-center justify-center gap-4">
             {/* AND THE OFFER IS CONDITIONAL (M201/08). "Try it now, it's
                 completely free" sat about a hundred pixels above the hero's own
                 "Invitation only" small print, over a header saying an
@@ -1388,7 +1408,21 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 together, because a button named for a destination it never
                 reaches is a redirect wearing that name. The question is
                 `requiresAccount`, never the mode name. */}
-            <Button asChild size="lg" className="h-12 px-7 text-base shadow-lg shadow-primary/20">
+            {/* THE LABEL WRAPS (M243 spec 06). `Button` is `whitespace-nowrap`
+                and this is the longest label on the page: "Try it now, it's
+                completely free" is 376 px in the wider face, against 288 px of
+                room on a 320 px phone, so the clip above was eating the last
+                two words of the one thing the page is asking for. It was worst
+                in French, at 108 px hidden. A fixed height cannot hold two
+                lines either, so the height became a floor. `max-w-full` is the
+                other half: `Button` is `shrink-0`, so a flex item made of one
+                never gives width back, and a cap is the only thing that makes
+                it take the second line. */}
+            <Button
+              asChild
+              size="lg"
+              className="h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-lg shadow-primary/20"
+            >
               <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('hero')}>
                 {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryIt')}
               </Link>
@@ -1702,7 +1736,16 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             restatement; a third filled button in the middle would make the
             page look like it is asking three times. */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
-          <Button asChild variant="outline" size="lg">
+          {/* Wraps, like the other two calls to action on this page (M243 spec
+              06). The German and French labels here are the page's longest
+              after the hero's, and at 320 px they were the last 13 px that
+              still ran under the clip. */}
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="h-auto min-h-12 max-w-full whitespace-normal py-2 text-center"
+          >
             {/* "No account" is the offer on an open instance and a false one
                 on a managed instance, where an account is the only way in.
                 The destination changes with the label: `/dashboard` bounces to
@@ -1857,7 +1900,14 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             label and the same destination, so the two cannot compete on colour
             or on wording — the only thing left to rank them by is weight, and
             the one above the fold has to win it. */}
-        <Button asChild size="lg" className="mt-7 h-12 px-7 text-base shadow-md shadow-primary/20">
+        {/* The same wrapping label as the hero's, for the same reason: this
+            is the hero's button restated, and a fixed height with no wrapping
+            cut the last two words of it on every phone (M243 spec 06). */}
+        <Button
+          asChild
+          size="lg"
+          className="mt-7 h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-md shadow-primary/20"
+        >
           <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('footer')}>
             {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryIt')}
           </Link>

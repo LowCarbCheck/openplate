@@ -78,6 +78,7 @@ import { WAYS_TO_LOG, WAYS_TO_LOG_SPEECH_PRIVACY_KEY } from '#app/lib/ways-to-lo
 import type { WayToLog } from '#app/lib/ways-to-log';
 import { FieldError } from '#app/components/field-error';
 import { cn } from '#app/lib/utils';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { ProgressBar } from '#app/components/progress-bar';
 import { SubmitButton } from '#app/components/submit-button';
 import { Button } from '#app/components/ui/button';
@@ -784,12 +785,21 @@ function StyleOptionCard({
         onChange={onSelect}
         className="mt-1 accent-primary"
       />
-      <span className="flex-1 space-y-0.5">
+      {/* `min-w-0` and a hint that WRAPS (M243 spec 06). This is what made the
+          whole document 409 px wide on a 360 px Italian phone, and 374 px in
+          Spanish and French: `Badge` is `whitespace-nowrap`, the Italian hint
+          is a 60 character sentence, and a nowrap child sets its flex parent's
+          minimum width. Nothing was visibly cut, so the page simply scrolled
+          sideways, which is why it read as following the page height. The
+          badge keeps its shape and takes a second line. */}
+      <span className="min-w-0 flex-1 space-y-0.5">
         <span className="block font-medium">{t(style.labelKey)}</span>
         <span className="block text-sm text-muted-foreground">{t(style.detailKey)}</span>
         {style.id === 'low-carb' && (
           <span className="block pt-1">
-            <Badge variant="secondary">{t('onboarding.style.hint')}</Badge>
+            <Badge variant="secondary" className="whitespace-normal text-left">
+              {t('onboarding.style.hint')}
+            </Badge>
           </span>
         )}
       </span>
@@ -797,10 +807,16 @@ function StyleOptionCard({
   );
 }
 
-/** Border/fill for a style card by selection state. */
+/**
+ * Border/fill for a style card by selection state.
+ *
+ * The hover edge is the brand TOKEN, not a raw palette green (M243 spec 06,
+ * DESIGN.md section 11): `teal-300` is a colour `openplate-brand` does not own
+ * and the app therefore may not type.
+ */
 function styleCardClass(isSelected: boolean): string {
   if (isSelected) return 'border-primary bg-accent/40';
-  return 'border-border hover:border-teal-300 dark:hover:border-teal-600';
+  return 'border-border hover:border-primary/40';
 }
 
 /**
@@ -919,10 +935,16 @@ function CarbPresetPicker({
   );
 }
 
-/** Border/fill for a net-carb preset chip by selection state. */
+/**
+ * Border/fill for a net-carb preset chip by selection state.
+ *
+ * The unchosen chips take the shared neutral recipe (M243 spec 06, decision
+ * 3): three ceilings on offer are three quiet keys, and only the one in force
+ * is teal. Their old hover edge was a raw palette green as well.
+ */
 function chipClass(isSelected: boolean): string {
   if (isSelected) return 'border-primary bg-primary text-primary-foreground';
-  return 'border-border hover:border-teal-300 dark:hover:border-teal-600';
+  return cn(CHIP_NEUTRAL, 'border-transparent hover:bg-muted/70');
 }
 
 /**
