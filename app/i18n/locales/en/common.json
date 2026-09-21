@@ -185,6 +185,27 @@
       "connect": "Set up AI"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate checks only the foods it recognised from a photo or a description. It can miss hidden ingredients. This is not a safety check.",
+    "hint": "Pick the ones that apply. When a photo or a description names a food that contains one of these, the diary shows a small note beside it.",
+    "legend": "Food allergies",
+    "name": {
+      "celery": "Celery",
+      "crustaceans": "Crustaceans",
+      "eggs": "Eggs",
+      "fish": "Fish",
+      "gluten": "Gluten",
+      "lupin": "Lupin",
+      "milk": "Milk",
+      "molluscs": "Molluscs",
+      "mustard": "Mustard",
+      "nuts": "Nuts",
+      "peanuts": "Peanuts",
+      "sesame": "Sesame",
+      "soybeans": "Soybeans",
+      "sulphites": "Sulphites"
+    }
+  },
   "banners": {
     "backupDismiss": "Dismiss backup reminder",
     "backupExportNow": "Export now",
@@ -303,6 +324,55 @@
       "flaxseed": "flaxseed",
       "almonds": "almonds"
     }
+  },
+  "cautions": {
+    "contains": {
+      "celery": "Contains celery",
+      "crustaceans": "Contains crustaceans",
+      "eggs": "Contains eggs",
+      "fish": "Contains fish",
+      "gluten": "Contains gluten",
+      "lupin": "Contains lupin",
+      "milk": "Contains milk",
+      "molluscs": "Contains molluscs",
+      "mustard": "Contains mustard",
+      "nuts": "Contains nuts",
+      "peanuts": "Contains peanuts",
+      "sesame": "Contains sesame",
+      "soybeans": "Contains soybeans",
+      "sulphites": "Contains sulphites"
+    },
+    "guidance": "The food notes in the diary follow NHS, BfR and ACOG guidance, blended into one list. They do not replace advice from your midwife or doctor.",
+    "mayContain": {
+      "celery": "May contain celery",
+      "crustaceans": "May contain crustaceans",
+      "eggs": "May contain eggs",
+      "fish": "May contain fish",
+      "gluten": "May contain gluten",
+      "lupin": "May contain lupin",
+      "milk": "May contain milk",
+      "molluscs": "May contain molluscs",
+      "mustard": "May contain mustard",
+      "nuts": "May contain nuts",
+      "peanuts": "May contain peanuts",
+      "sesame": "May contain sesame",
+      "soybeans": "May contain soybeans",
+      "sulphites": "May contain sulphites"
+    },
+    "pregnancy": {
+      "alcohol": "Contains alcohol, best avoided",
+      "caffeine": "Caffeine, counts toward 200 mg a day",
+      "high-mercury-fish": "High-mercury fish, best avoided",
+      "liver-retinol": "Liver or retinol, avoid in pregnancy",
+      "raw-dairy": "May be unpasteurised, avoid in pregnancy",
+      "raw-egg": "May contain raw egg, avoid in pregnancy",
+      "raw-fish": "May be raw fish or shellfish, avoid in pregnancy",
+      "raw-meat": "May be raw or undercooked meat, avoid in pregnancy",
+      "raw-sprouts": "Raw sprouts, avoid in pregnancy",
+      "smoked-fish": "Cold-smoked fish, avoid in pregnancy",
+      "soft-cheese": "Soft cheese, may be mould-ripened, avoid in pregnancy"
+    },
+    "source": "Source: NHS, BfR, ACOG"
   },
   "chrome": {
     "back": "Back",

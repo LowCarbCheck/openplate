@@ -27,6 +27,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { withI18n } from './trends-i18n-harness';
 
 import { ConfirmDraftForm } from '../../app/routes/add.photo';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import type { PlateIdentification } from '../../app/services/vision/types';
 
 /** One transcribed nutrition panel: the exact case the chips could not cover. */
@@ -38,6 +39,7 @@ const LABEL_IDENTIFICATION: PlateIdentification = {
       estimatedGrams: 100,
       confidence: 'high',
       macroSource: 'label',
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       brand: 'Test',
       macrosPer100g: { carbs: 60, fiber: 15, protein: 10, fat: 2, kcal: 350 },
     },
@@ -46,6 +48,8 @@ const LABEL_IDENTIFICATION: PlateIdentification = {
 
 function renderLabelReview(): string {
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     intakeSource: 'photo',
     identification: LABEL_IDENTIFICATION,
     // Nothing known about the food database: this case is not about it, and

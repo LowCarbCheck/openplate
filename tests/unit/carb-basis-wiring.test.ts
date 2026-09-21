@@ -25,7 +25,7 @@
  * catch, and exactly what the M123/10 checkpoint that opened spec 13
  * described as "the dangerous direction" for a low-carb tracker.
  *
- * The plate-scan review card (`ConfirmDraftForm` in `app/routes/scan.tsx`)
+ * The plate-scan review card (`ConfirmDraftForm` in `app/routes/add.photo.tsx`)
  * used to be listed here as deliberately NOT tested, on the reasoning that a
  * plate item is an AI estimate off a photo of food and so never carries a
  * `carbBasis`. That stopped being true with the M138 label merge (ADR-0005's
@@ -54,6 +54,7 @@ import { formatEntryNetCarbs } from '../../app/routes/diary';
 import { localFoodToCandidate } from '../../app/lib/local-store/local-quick-add';
 import { computeMacroPreview } from '../../app/lib/portion-preview';
 import { ConfirmDraftForm, ConfirmDraftSchema, computeReviewItemPreview } from '../../app/routes/add.photo';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import { toCuratedSource } from '../../app/services/food-resolution/apply-match';
 import { formatMacroNumberIn } from '../../app/lib/format-macro-number';
 import { carbStatusBadgeClass } from '../../app/utils/carb-status';
@@ -159,6 +160,8 @@ function entryLoaderData(log: LocalFoodLog) {
     userId: 0,
     log,
     siblings,
+    // No person to decide for: the header's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     grams: log.quantityGrams,
     snapshotMacros: log.macros,
     // No linked food (`foodId: null`), the basis reconstructs from the log's
@@ -450,6 +453,7 @@ function sanityIdentification(carbBasis: CarbBasis | undefined) {
         estimatedGrams: 100,
         confidence: 'high' as const,
         macroSource: carbBasis === undefined ? ('estimated' as const) : ('label' as const),
+        flags: { pregnancy: [], allergens: [], mayContain: [] },
         carbBasis,
         macrosPer100g: {
           kcal: 300,
@@ -489,6 +493,8 @@ function renderReviewCard({ carbBasis, applyMatch }: { carbBasis: CarbBasis | un
   const formData = sanityFormData(applyMatch ? toCuratedSource(match.slug) : '');
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     intakeSource: 'photo' as const,
     identification: sanityIdentification(carbBasis),
     modelId: 'test-model',

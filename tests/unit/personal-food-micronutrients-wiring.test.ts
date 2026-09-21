@@ -50,6 +50,7 @@ import {
   type AddSearchCandidate,
 } from '../../app/routes/add.search';
 import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry, buildConfirmedFood } from '../../app/routes/add.photo';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import { RestoreLogSchema, buildCopiedEntry, buildRestoredEntry } from '../../app/routes/diary';
 import { buildRestorePayload } from '../../app/routes/diary.entry.$id';
 import { localCuratedMatchToCandidate, localFoodToCandidate } from '../../app/lib/local-store/local-quick-add';
@@ -138,6 +139,7 @@ const AI_IDENTIFICATION = {
       estimatedGrams: SERVING_GRAMS,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       macrosPer100g: { kcal: 20, protein: 2, fat: 0.5, carbs: 3 },
     },
   ],
@@ -165,6 +167,8 @@ function confirmFormData({ applyMatch }: { applyMatch: boolean }): FormData {
 function renderConfirmStep(formData: FormData): string {
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     // The intake this draft arrived by. A photograph here: these tests are
     // about what the plate path writes, not about which way in produced it.
     intakeSource: 'photo',

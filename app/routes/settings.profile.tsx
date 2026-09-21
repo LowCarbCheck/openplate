@@ -7,8 +7,9 @@
  * called "Goals". A height is not a goal. The two questions are asked at
  * different times and changed at different rates, so they are two pages now.
  *
- * What lives HERE: height, biological sex, birth year, the weigh-in log with
- * its unit toggle, and one row pointing at the life phase page. What lives on
+ * What lives HERE: height, biological sex, birth year, the allergen chips
+ * (M219/02), the weigh-in log with its unit toggle, and one row pointing at
+ * the life phase page. What lives on
  * `/settings/nutrition`: the eating style and the four targets. What lives on
  * `/settings/life-phase`: the pregnancy and breastfeeding fieldset itself.
  *
@@ -46,9 +47,11 @@ import {
 import {
   clearLocalBodyMetrics,
   deleteLocalWeightEntry,
+  getLocalAllergens,
   getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalWeightEntries,
+  putLocalAllergens,
   putLocalBodyMetrics,
   resolveLocalTimezone,
   upsertLocalWeightEntryForDay,
@@ -56,12 +59,15 @@ import {
 import { noteActivity } from '#app/lib/gamification/record';
 import { BIOLOGICAL_SEX_VALUES, bodyMetricsFormKey, hasAnyBodyMetric } from '#app/models/body-metrics';
 import type { BodyMetrics } from '#app/models/body-metrics';
+import { ALLERGENS_FIELD, readAllergensField } from '#app/models/allergens';
+import type { Allergen } from '#app/models/allergens';
 import { makeBodyMetricsSchema } from '#app/lib/body-metrics-schema';
 import type { Translate } from '#app/lib/body-metrics-schema';
 import { reproductiveStatusLine } from '#app/lib/reproductive-status-line';
 import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
 import { readStoredWeightUnit, writeStoredWeightUnit } from '#app/lib/weight-unit-preference';
 import { settingsChipClass } from '#app/components/settings/chip-class';
+import { AllergenFields } from '#app/components/allergen-fields';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
@@ -148,8 +154,12 @@ export async function clientLoader() {
   // No chart data here: the weight TREND lives on `/trends` (one home per
   // idea). This page owns entering, listing and deleting weigh-ins.
   const bodyMetrics = await getLocalBodyMetrics();
+  // The allergen list rides the same card and the same save as the metrics,
+  // read through its own accessor because it is not a body metric: nothing
+  // derives from it, and "remove these details" leaves it alone.
+  const allergens = await getLocalAllergens();
 
-  return { weighIns, todayWeightKg, bodyMetrics, today };
+  return { weighIns, todayWeightKg, bodyMetrics, allergens, today };
 }
 clientLoader.hydrate = true as const;
 
@@ -223,6 +233,11 @@ async function _saveBodyMetrics(formData: FormData) {
     birthYear: submission.value.birthYear,
     biologicalSex: submission.value.biologicalSex,
   });
+  // The allergen chips are checkboxes under one name, read here beside the
+  // Conform submission rather than through it: `getAll` is the whole list,
+  // an empty list is "none", and `putLocalAllergens` drops anything that is
+  // not one of the EU 14. Whole-list, so unticking the last chip clears it.
+  await putLocalAllergens(readAllergensField(formData));
   trackGoalsSaved('body-metrics');
   return redirectWithLocalToast('/settings/profile', {
     type: 'success',
@@ -439,14 +454,15 @@ function WeightCard({
  *    JSON backup and the encrypted sync payload, and is never part of a food
  *    lookup, that request only ever carries a food name.
  */
-function BodyMetricsCard({ metrics }: { metrics: BodyMetrics }) {
+function BodyMetricsCard({ metrics, allergens }: { metrics: BodyMetrics; allergens: Allergen[] }) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
   const isSaving = fetcher.state !== 'idle';
-  // A local mirror ONLY for the sex radio group, and only because the chips
-  // paint from its live value. The two text fields have no such need, so
-  // Conform owns them outright (see the inputs).
+  // A local mirror ONLY for the sex radio group and the allergen chips, and
+  // only because the chips paint from their live value. The two text fields
+  // have no such need, so Conform owns them outright (see the inputs).
   const [biologicalSex, setBiologicalSex] = useState<string>(metrics.biologicalSex ?? '');
+  const [chosenAllergens, setChosenAllergens] = useState<Allergen[]>(allergens);
 
   const [form, fields] = useForm({
     id: 'body-metrics',
@@ -550,6 +566,19 @@ function BodyMetricsCard({ metrics }: { metrics: BodyMetrics }) {
           a stored pregnancy exactly as it did before.
         */}
 
+        {/* The same fieldset the onboarding body step shows, component and
+            all (M219/02 D4c), so the wizard and this page cannot drift about
+            which fourteen are offered or what the sentence under them says.
+            It submits with the metrics above and is read beside them in
+            `_saveBodyMetrics`; "remove these details" below leaves it alone,
+            because it is not a body metric. */}
+        <AllergenFields
+          value={chosenAllergens}
+          onChange={setChosenAllergens}
+          name={ALLERGENS_FIELD}
+          chipClassName={(isSelected) => cn('cursor-pointer', settingsChipClass(isSelected))}
+        />
+
         <FieldError id={form.errorId} errors={form.errors} />
 
         <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
@@ -575,7 +604,7 @@ function BodyMetricsCard({ metrics }: { metrics: BodyMetrics }) {
 }
 
 export default function SettingsProfile({ loaderData }: Route.ComponentProps) {
-  const { weighIns, todayWeightKg, bodyMetrics, today } = loaderData;
+  const { weighIns, todayWeightKg, bodyMetrics, allergens, today } = loaderData;
   // Device-local display preference only (not synced), SHARED with the Progress
   // page's weight card and with the target weight field on
   // `/settings/nutrition` (see `#app/lib/weight-unit-preference`). One storage
@@ -594,7 +623,11 @@ export default function SettingsProfile({ loaderData }: Route.ComponentProps) {
           remount can clear what is on screen, otherwise the inputs keep
           showing the values that no longer exist. React's own reset-on-prop-
           change answer, and no `useEffect` (.claude/react-rules.md). */}
-      <BodyMetricsCard key={bodyMetricsFormKey(bodyMetrics)} metrics={bodyMetrics} />
+      <BodyMetricsCard
+        key={`${bodyMetricsFormKey(bodyMetrics)}|${allergens.join(',')}`}
+        metrics={bodyMetrics}
+        allergens={allergens}
+      />
       {/* The life phase is one row, not a fieldset: the question has its own
           page, and this page is where somebody editing their body facts looks
           for it. */}

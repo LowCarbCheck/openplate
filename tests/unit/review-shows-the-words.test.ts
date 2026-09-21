@@ -32,6 +32,7 @@ import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
 import { ConfirmDraftForm } from '../../app/routes/add.photo';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 
 /** The shipped label the waiting screen already used, so both screens say one thing. */
 const LABEL = z
@@ -50,6 +51,7 @@ const IDENTIFICATION = {
       estimatedGrams: 60,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       macrosPer100g: { kcal: 196, protein: 13.6, fat: 15, carbs: 0.8 },
     },
   ],
@@ -58,6 +60,8 @@ const IDENTIFICATION = {
 /** The confirm step as one of the three ways in produced it. */
 function renderReview({ typedText }: { typedText: string | null }): string {
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     identification: IDENTIFICATION,
     // Nothing known about the food database: this case is not about it, and
     // `undefined` is the honest value for a render that ran no lookup.

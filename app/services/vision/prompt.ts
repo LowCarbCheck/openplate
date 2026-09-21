@@ -19,6 +19,16 @@
  * The explicit JSON shape in each prompt is the fallback path for providers
  * where enforced structured output is not available. It is kept in sync with
  * the Zod schema in `./schema`, which is the maintainable source of truth.
+ *
+ * ── Food flags (M219 spec 01) ────────────────────────────────────────────
+ *
+ * Both prompts ask for `flags` on every item, in the same words: the v1
+ * pregnancy list, the EU 14 allergens split into "contains" and "may
+ * contain", and the instruction to flag the uncertain case. The two blocks are
+ * deliberately near-identical, and the phrase "when you cannot tell, flag it"
+ * is fixed so a grep can prove both prompts carry it (D1c). Nothing about the
+ * PERSON is in either prompt: the model classifies every food the same way,
+ * and the device decides what to show.
  */
 
 export const PLATE_IDENTIFICATION_SYSTEM_PROMPT = `You are a nutrition assistant that turns a single photograph into a concise, useful food log.
@@ -54,6 +64,11 @@ IF A PRINTED LINE IS TOO SMALL, BLURRED, ANGLED OR HIDDEN BY GLARE TO READ WITH 
 For every item, whichever kind it is:
 - Rate your confidence in the identification as "high", "medium", or "low".
 - Give macros per 100g (carbs, fiber, sugars, polyols, protein, fat, kcal) ONLY where you are reasonably confident. Set any field you are not confident about to null.
+- Fill "flags" for EVERY item, whoever is asking and whatever else you know. It has three lists, each empty when nothing applies:
+  - "pregnancy": every category from this list the food falls into: "raw-dairy" (unpasteurised milk and anything made from it), "soft-cheese" (mould-ripened or blue soft cheese), "raw-meat" (raw or undercooked meat, cured raw meat, pate), "raw-egg" (raw or lightly cooked egg and dishes made with it), "raw-fish" (raw fish or shellfish), "smoked-fish" (cold-smoked fish), "high-mercury-fish" (shark, swordfish, marlin, king mackerel, bigeye tuna, and tuna generally), "liver-retinol" (liver, liver products), "alcohol", "caffeine" (coffee, strong tea, energy drinks), "raw-sprouts". Use no other word.
+  - "allergens": every one of these 14 the food CONTAINS, as an ingredient you can see or name: "gluten", "crustaceans", "eggs", "fish", "peanuts", "soybeans", "milk", "nuts", "celery", "mustard", "sesame", "sulphites", "lupin", "molluscs". Use no other word.
+  - "mayContain": any of the same 14 you cannot rule out but cannot see: a hidden ingredient in a sauce or dressing, likely cross-contact, a dish whose recipe varies. Never list an allergen in both "allergens" and "mayContain"; if it is an ingredient, it goes in "allergens" only.
+  - A missed flag is worse than an extra one, because the person can ignore a flag they see and cannot act on one that never appeared. A cheese that could be raw-milk, meat that could be undercooked, a curry that could hold nuts: when you cannot tell, flag it.
 
 If you cannot make anything of the photograph at all, because it is out of focus, far too dark, or shows no food and no panel, set the top-level "unreadable" to true, say briefly why in "unreadableReason", and return an empty "foods" list. Use this only for the WHOLE picture: a photo with three foods you can see and one packet you cannot is not unreadable, so list the three and leave the fourth out.
 
@@ -80,13 +95,18 @@ Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary 
         "protein": 0,
         "fat": 0,
         "kcal": 0
+      },
+      "flags": {
+        "pregnancy": ["raw-dairy"],
+        "allergens": ["milk"],
+        "mayContain": ["nuts"]
       }
     }
   ],
   "notes": "string or null"
 }
 
-Every field must be present. "portionHint", "brand", "servingSize" and "carbBasis" may be null. Each macro field must be present but may be null. "macrosPer100g" itself may be null if you cannot give any macros for that item. "notes" may be null if you have nothing to add.`;
+Every field must be present. "portionHint", "brand", "servingSize" and "carbBasis" may be null. "flags" and its three lists are never null; an empty list means nothing applies. Each macro field must be present but may be null. "macrosPer100g" itself may be null if you cannot give any macros for that item. "notes" may be null if you have nothing to add.`;
 
 export function buildPlateIdentificationUserPrompt(): string {
   return 'Identify the foods worth logging in the attached photo, reading any printed nutrition panel you can see rather than estimating it, and respond with the JSON shape described in the system prompt.';
@@ -130,6 +150,11 @@ For each item:
 - NEVER invent a brand or a specific product. If they named no brand, log the generic food and set "brand" to null. If they DID name one, put it in "brand" and still log the generic food's macros at low confidence, rather than reporting numbers from memory. A brand's real figures come from photographing its printed panel, never from recall.
 - Set "macroSource" to "estimated", "servingSize" to null and "carbBasis" to null. Those three describe a printed panel, and there is no panel in a sentence.
 - Estimate macronutrients per 100g (carbs, fiber, sugars, polyols, protein, fat, kcal) ONLY when you are reasonably confident. If you are not confident about a specific macro field, set it to null, never guess a number, and never use 0 to mean "unknown". This matters most for fiber and sugar alcohols (polyols), which are easy to miss.
+- Fill "flags" for EVERY item, whoever is asking and whatever else you know. It has three lists, each empty when nothing applies:
+  - "pregnancy": every category from this list the food falls into: "raw-dairy" (unpasteurised milk and anything made from it), "soft-cheese" (mould-ripened or blue soft cheese), "raw-meat" (raw or undercooked meat, cured raw meat, pate), "raw-egg" (raw or lightly cooked egg and dishes made with it), "raw-fish" (raw fish or shellfish), "smoked-fish" (cold-smoked fish), "high-mercury-fish" (shark, swordfish, marlin, king mackerel, bigeye tuna, and tuna generally), "liver-retinol" (liver, liver products), "alcohol", "caffeine" (coffee, strong tea, energy drinks), "raw-sprouts". Use no other word.
+  - "allergens": every one of these 14 the food CONTAINS, as an ingredient the name tells you or that the dish always has: "gluten", "crustaceans", "eggs", "fish", "peanuts", "soybeans", "milk", "nuts", "celery", "mustard", "sesame", "sulphites", "lupin", "molluscs". Use no other word.
+  - "mayContain": any of the same 14 you cannot rule out from the words alone: a hidden ingredient in a sauce or dressing, likely cross-contact, a dish whose recipe varies. Never list an allergen in both "allergens" and "mayContain"; if it is an ingredient, it goes in "allergens" only.
+  - A missed flag is worse than an extra one, because the person can ignore a flag they see and cannot act on one that never appeared. "Cheese" that could be raw-milk, "steak" that could be rare, a curry that could hold nuts: when you cannot tell, flag it.
 
 Always set the top-level "unreadable" to false and "unreadableReason" to null. Text is never unreadable: if it names no food, the honest answer is an empty "foods" list, not an unreadable one.
 
@@ -156,13 +181,18 @@ Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary 
         "protein": 0,
         "fat": 0,
         "kcal": 0
+      },
+      "flags": {
+        "pregnancy": ["raw-egg"],
+        "allergens": ["eggs"],
+        "mayContain": ["milk"]
       }
     }
   ],
   "notes": "string or null"
 }
 
-Every field must be present. "portionHint" may be null when the person gave no amount and no ordinary serving fits. Each macro field must be present but may be null. "macrosPer100g" itself may be null if you cannot estimate any macros for that item. "notes" may be null if you have nothing to add.`;
+Every field must be present. "portionHint" may be null when the person gave no amount and no ordinary serving fits. "flags" and its three lists are never null; an empty list means nothing applies. Each macro field must be present but may be null. "macrosPer100g" itself may be null if you cannot estimate any macros for that item. "notes" may be null if you have nothing to add.`;
 
 export function buildTextIntakeUserPrompt(): string {
   return 'Here is what the person said they ate. Turn it into the JSON shape described in the system prompt, keeping the amounts they gave.';

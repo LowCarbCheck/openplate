@@ -185,6 +185,27 @@
       "connect": "Configurar IA"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate comprueba solo los alimentos que reconoció a partir de una foto o una descripción. Puede pasar por alto ingredientes ocultos. Esto no es un control de seguridad.",
+    "hint": "Elige los que correspondan. Cuando una foto o una descripción menciona un alimento que contiene alguno de estos, el diario muestra una pequeña nota junto a él.",
+    "legend": "Alergias alimentarias",
+    "name": {
+      "celery": "Apio",
+      "crustaceans": "Crustáceos",
+      "eggs": "Huevos",
+      "fish": "Pescado",
+      "gluten": "Gluten",
+      "lupin": "Altramuces",
+      "milk": "Leche",
+      "molluscs": "Moluscos",
+      "mustard": "Mostaza",
+      "nuts": "Frutos secos",
+      "peanuts": "Cacahuetes",
+      "sesame": "Sésamo",
+      "soybeans": "Soja",
+      "sulphites": "Sulfitos"
+    }
+  },
   "banners": {
     "backupDismiss": "Descartar recordatorio de copia de seguridad",
     "backupExportNow": "Exportar ahora",
@@ -303,6 +324,55 @@
       "flaxseed": "semillas de lino",
       "almonds": "almendras"
     }
+  },
+  "cautions": {
+    "contains": {
+      "celery": "Contiene apio",
+      "crustaceans": "Contiene crustáceos",
+      "eggs": "Contiene huevo",
+      "fish": "Contiene pescado",
+      "gluten": "Contiene gluten",
+      "lupin": "Contiene altramuces",
+      "milk": "Contiene leche",
+      "molluscs": "Contiene moluscos",
+      "mustard": "Contiene mostaza",
+      "nuts": "Contiene frutos de cáscara",
+      "peanuts": "Contiene cacahuetes",
+      "sesame": "Contiene sésamo",
+      "soybeans": "Contiene soja",
+      "sulphites": "Contiene sulfitos"
+    },
+    "guidance": "Las notas sobre alimentos en el diario siguen las directrices del NHS, el BfR y el ACOG, combinadas en una sola lista. No sustituyen el consejo de tu matrona o médico.",
+    "mayContain": {
+      "celery": "Puede contener apio",
+      "crustaceans": "Puede contener crustáceos",
+      "eggs": "Puede contener huevo",
+      "fish": "Puede contener pescado",
+      "gluten": "Puede contener gluten",
+      "lupin": "Puede contener altramuces",
+      "milk": "Puede contener leche",
+      "molluscs": "Puede contener moluscos",
+      "mustard": "Puede contener mostaza",
+      "nuts": "Puede contener frutos de cáscara",
+      "peanuts": "Puede contener cacahuetes",
+      "sesame": "Puede contener sésamo",
+      "soybeans": "Puede contener soja",
+      "sulphites": "Puede contener sulfitos"
+    },
+    "pregnancy": {
+      "alcohol": "Contiene alcohol, es mejor evitarlo",
+      "caffeine": "Cafeína, cuenta para el límite de 200 mg al día",
+      "high-mercury-fish": "Pescado con alto contenido de mercurio, es mejor evitarlo",
+      "liver-retinol": "Hígado o retinol, evitar durante el embarazo",
+      "raw-dairy": "Puede no estar pasteurizado, evitar durante el embarazo",
+      "raw-egg": "Puede contener huevo crudo, evitar durante el embarazo",
+      "raw-fish": "Puede ser pescado o marisco crudo, evitar durante el embarazo",
+      "raw-meat": "Puede ser carne cruda o poco cocinada, evitar durante el embarazo",
+      "raw-sprouts": "Brotes crudos, evitar durante el embarazo",
+      "smoked-fish": "Pescado ahumado en frío, evitar durante el embarazo",
+      "soft-cheese": "Queso blando, puede estar madurado con moho, evitar durante el embarazo"
+    },
+    "source": "Fuente: NHS, BfR, ACOG"
   },
   "chrome": {
     "back": "Atrás",

@@ -51,6 +51,8 @@ import { reportMealFromLog } from '#app/lib/pulse';
 import { randomUuid } from '#app/lib/uuid';
 import { FAST_NOTE_MAX_LENGTH, selectCurrentFast } from '#app/models/fasting';
 import { EMPTY_BODY_METRICS, normalizeBodyMetrics, readBodyMetrics } from '#app/models/body-metrics';
+import { parseAllergens } from '#app/models/allergens';
+import type { Allergen } from '#app/models/allergens';
 import type { BodyMetrics } from '#app/models/body-metrics';
 import {
   DELETED_AT_CELL,
@@ -674,6 +676,38 @@ export async function putLocalBodyMetrics(metrics: BodyMetrics, { store }: Store
 /** Clears every body metric back to unset, the "remove these details" affordance. */
 export async function clearLocalBodyMetrics({ store }: StoreOption = {}): Promise<BodyMetrics> {
   return putLocalBodyMetrics({ ...EMPTY_BODY_METRICS }, { store });
+}
+
+// ---------------------------------------------------------------------------
+// Allergens (M219/02), one optional list off the singleton profile
+// ---------------------------------------------------------------------------
+
+/**
+ * The allergens this person listed, with an absent key (a profile written
+ * before the question existed, or a device that skipped it) read as the empty
+ * list. Narrowed through `parseAllergens` on the way out as well as on the
+ * way in, so a row a newer build wrote with an entry this build does not know
+ * reads back as the entries it does know rather than as a crash later.
+ */
+export async function getLocalAllergens({ store }: StoreOption = {}): Promise<Allergen[]> {
+  const profile = await getLocalProfileGoals({ store });
+  return parseAllergens(profile?.allergens ?? []);
+}
+
+/**
+ * Writes the whole allergen list at once. Whole-list, not a toggle, because
+ * both forms that ask submit every chip in one save, and an empty list is how
+ * a person takes every answer back. Nothing on this path is ever sent
+ * anywhere; it lands in IndexedDB and travels only through the JSON backup and
+ * the E2EE sync payload, exactly like the rest of the profile.
+ */
+export async function putLocalAllergens(
+  allergens: readonly string[],
+  { store }: StoreOption = {},
+): Promise<Allergen[]> {
+  const parsed = parseAllergens(allergens);
+  await patchLocalProfileGoals({ allergens: parsed }, { store });
+  return parsed;
 }
 
 // ---------------------------------------------------------------------------

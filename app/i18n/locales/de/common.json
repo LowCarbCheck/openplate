@@ -185,6 +185,27 @@
       "connect": "KI einrichten"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate prüft nur die Lebensmittel, die es anhand eines Fotos oder einer Beschreibung erkannt hat. Versteckte Zutaten kann es übersehen. Das ist keine Sicherheitsprüfung.",
+    "hint": "Wähle die zutreffenden aus. Wenn ein Foto oder eine Beschreibung ein Lebensmittel nennt, das eines davon enthält, zeigt das Tagebuch einen kleinen Hinweis daneben an.",
+    "legend": "Lebensmittelallergien",
+    "name": {
+      "celery": "Sellerie",
+      "crustaceans": "Krebstiere",
+      "eggs": "Eier",
+      "fish": "Fisch",
+      "gluten": "Gluten",
+      "lupin": "Lupinen",
+      "milk": "Milch",
+      "molluscs": "Weichtiere",
+      "mustard": "Senf",
+      "nuts": "Schalenfrüchte",
+      "peanuts": "Erdnüsse",
+      "sesame": "Sesam",
+      "soybeans": "Sojabohnen",
+      "sulphites": "Sulfite"
+    }
+  },
   "banners": {
     "backupDismiss": "Backup-Hinweis ausblenden",
     "backupExportNow": "Jetzt exportieren",
@@ -303,6 +324,55 @@
       "flaxseed": "Leinsamen",
       "almonds": "Mandeln"
     }
+  },
+  "cautions": {
+    "contains": {
+      "celery": "Enthält Sellerie",
+      "crustaceans": "Enthält Krebstiere",
+      "eggs": "Enthält Eier",
+      "fish": "Enthält Fisch",
+      "gluten": "Enthält Gluten",
+      "lupin": "Enthält Lupinen",
+      "milk": "Enthält Milch",
+      "molluscs": "Enthält Weichtiere",
+      "mustard": "Enthält Senf",
+      "nuts": "Enthält Schalenfrüchte",
+      "peanuts": "Enthält Erdnüsse",
+      "sesame": "Enthält Sesam",
+      "soybeans": "Enthält Sojabohnen",
+      "sulphites": "Enthält Sulfite"
+    },
+    "guidance": "Die Lebensmittelhinweise im Tagebuch folgen Empfehlungen von NHS, BfR und ACOG, zusammengeführt in einer Liste. Sie ersetzen keinen ärztlichen Rat und keine Beratung durch deine Hebamme.",
+    "mayContain": {
+      "celery": "Kann Sellerie enthalten",
+      "crustaceans": "Kann Krebstiere enthalten",
+      "eggs": "Kann Eier enthalten",
+      "fish": "Kann Fisch enthalten",
+      "gluten": "Kann Gluten enthalten",
+      "lupin": "Kann Lupinen enthalten",
+      "milk": "Kann Milch enthalten",
+      "molluscs": "Kann Weichtiere enthalten",
+      "mustard": "Kann Senf enthalten",
+      "nuts": "Kann Schalenfrüchte enthalten",
+      "peanuts": "Kann Erdnüsse enthalten",
+      "sesame": "Kann Sesam enthalten",
+      "soybeans": "Kann Sojabohnen enthalten",
+      "sulphites": "Kann Sulfite enthalten"
+    },
+    "pregnancy": {
+      "alcohol": "Enthält Alkohol, am besten meiden",
+      "caffeine": "Koffein, zählt zu den 200 mg pro Tag",
+      "high-mercury-fish": "Fisch mit hohem Quecksilbergehalt, am besten meiden",
+      "liver-retinol": "Leber oder Retinol, in der Schwangerschaft meiden",
+      "raw-dairy": "Möglicherweise nicht pasteurisiert, in der Schwangerschaft meiden",
+      "raw-egg": "Kann rohes Ei enthalten, in der Schwangerschaft meiden",
+      "raw-fish": "Möglicherweise roher Fisch oder rohe Schalentiere, in der Schwangerschaft meiden",
+      "raw-meat": "Möglicherweise rohes oder nicht durchgegartes Fleisch, in der Schwangerschaft meiden",
+      "raw-sprouts": "Rohe Sprossen, in der Schwangerschaft meiden",
+      "smoked-fish": "Kaltgeräucherter Fisch, in der Schwangerschaft meiden",
+      "soft-cheese": "Weichkäse, möglicherweise mit Edelschimmel gereift, in der Schwangerschaft meiden"
+    },
+    "source": "Quelle: NHS, BfR, ACOG"
   },
   "chrome": {
     "back": "Zurück",

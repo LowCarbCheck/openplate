@@ -214,11 +214,14 @@ describe('PLATE_IDENTIFICATION_JSON_SCHEMA', () => {
     // what keeps the merged schema strict-mode compatible: `macroSource`,
     // `brand`, `servingSize` and `carbBasis` describe a printed panel, and an
     // estimated item answers them with `null` rather than by omitting them.
+    // `flags` (M219) is required too, and never null: three lists, each empty
+    // when nothing applies. Its own shape is pinned in food-flags-schema.test.ts.
     assert.deepStrictEqual((foodSchema.required ?? []).toSorted(), [
       'brand',
       'carbBasis',
       'confidence',
       'estimatedGrams',
+      'flags',
       'macroSource',
       'macrosPer100g',
       'name',
@@ -366,6 +369,7 @@ describe('per-item provenance and attribution', () => {
       'carbBasis',
       'confidence',
       'estimatedGrams',
+      'flags',
       'macroSource',
       'macrosPer100g',
       'name',

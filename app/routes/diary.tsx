@@ -57,6 +57,9 @@ import { createOptionalNonNegativeNumberSchema } from '#app/lib/zod-numeric';
 import { authoritativeNetCarbsField, encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
 import { parseCarbBasis } from '#app/lib/net-carbs';
 import { encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrients';
+import { cautionProfileOf, decideCautions, foodFlagsField } from '#app/lib/food-cautions';
+import type { CautionProfile } from '#app/lib/food-cautions';
+import { FoodCautionChips } from '#app/components/food-caution-chip';
 import { toStoredAttribution } from '#app/lib/attribution';
 import { formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-number';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
@@ -290,6 +293,14 @@ export const RestoreLogSchema = z.object({
    * Blank (the "not sure"/legacy wire value) decodes to absent, never a guess.
    */
   carbBasis: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
+  /**
+   * The deleted entry's raw food flags (M219/03), the fifth field of the same
+   * class: without it an Undo would bring the entry back with its raw-milk
+   * note gone, and the person would read the absence as "checked and fine".
+   * Blank decodes to absent, which is what a database or a manual entry
+   * carried in the first place.
+   */
+  flags: foodFlagsField,
   carbs: createOptionalNonNegativeNumberSchema(),
   fiber: createOptionalNonNegativeNumberSchema(),
   sugars: createOptionalNonNegativeNumberSchema(),
@@ -479,6 +490,8 @@ export function buildRestoredEntry({
     // (never `'total'`) unless the deleted entry genuinely carried a basis —
     // see `RestoreLogSchema.carbBasis`'s doc.
     carbBasis: parseCarbBasis(value.carbBasis) ?? undefined,
+    // The fifth field of the same class (M219/03), see `RestoreLogSchema.flags`.
+    flags: value.flags,
   };
 }
 
@@ -688,6 +701,9 @@ export function buildCopiedEntry({
     // (M123/13 review finding), or a copied EU-basis entry silently reverted
     // to the `total` fallback and understated its net carbs on the new day.
     carbBasis: log.carbBasis,
+    // Same food, same flags (M219/03): the model's answer describes the food,
+    // not the day, so a copied raw-milk cheese keeps its note on the new day.
+    flags: log.flags,
   };
 }
 
@@ -1029,6 +1045,12 @@ export interface DiaryData {
   isToday: boolean;
   /** The resolved IANA time zone, needed to render each entry's local time (item 1). */
   timezone: string;
+  /**
+   * The profile's reproductive status and allergy list (M219/03), the two
+   * facts every entry card decides its caution chips from AT RENDER TIME. Read
+   * once here off the same profile row as the timezone, never stored on a log.
+   */
+  cautionProfile: CautionProfile;
   logs: LocalFoodLog[];
   mealGroups: MealGroup[];
   summary: DaySummary;
@@ -1250,6 +1272,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     today,
     isToday,
     timezone,
+    cautionProfile: cautionProfileOf(profile),
     logs: logsForDay,
     mealGroups,
     summary,
@@ -1974,8 +1997,27 @@ function ProvenanceBadge({ log }: { log: LocalFoodLog }) {
  * the drill-in. The meal itself is no longer repeated per-card — the section
  * header above already states it (item 1) — but the logged TIME now is.
  */
-function LogEntryCard({ log, justAdded, time }: { log: LocalFoodLog; justAdded: boolean; time: string }) {
+function LogEntryCard({
+  log,
+  justAdded,
+  time,
+  cautionProfile,
+}: {
+  log: LocalFoodLog;
+  justAdded: boolean;
+  time: string;
+  /** The profile facts the chips are decided from (M219/03). */
+  cautionProfile: CautionProfile;
+}) {
   const { t, i18n } = useTranslation();
+  // DECIDED HERE, EVERY RENDER (M219/03 D6): the row stores the model's raw
+  // flags and nothing else, so a status or an allergy changed on the profile
+  // re-evaluates this card the next time it is drawn, with no migration.
+  const cautions = decideCautions({
+    flags: log.flags,
+    reproductiveStatus: cautionProfile.reproductiveStatus,
+    allergens: cautionProfile.allergens,
+  });
   return (
     <Card
       className={cn(
@@ -2000,6 +2042,10 @@ function LogEntryCard({ log, justAdded, time }: { log: LocalFoodLog; justAdded: 
               )}
               <ProvenanceBadge log={log} />
             </div>
+            {/* The cautions, beside the provenance badge in reading order but on
+                their own wrapping row, because a hedged sentence is longer than
+                a badge and a badge row that wrapped one read as two badges. */}
+            <FoodCautionChips cautions={cautions} className="mt-1" />
             {/*
               ONE SPAN PER FACT, each `whitespace-nowrap`. The row used to be a
               single run of text, so a narrow screen broke it wherever a space
@@ -2045,11 +2091,14 @@ function MealGroupSection({
   group,
   justAddedLogId,
   timezone,
+  cautionProfile,
   hintSlot,
 }: {
   group: MealGroup;
   justAddedLogId: string | null;
   timezone: string;
+  /** The profile facts each card's caution chips are decided from (M219/03). */
+  cautionProfile: CautionProfile;
   /** The slot to offer the "save this as a meal" hint for, or null for no hint. */
   hintSlot: MealType | null;
 }) {
@@ -2116,6 +2165,7 @@ function MealGroupSection({
             log={log}
             justAdded={log.id === justAddedLogId}
             time={formatEntryTime(log.loggedAt, timezone, i18n.language)}
+            cautionProfile={cautionProfile}
           />
         ))}
       </div>
@@ -2760,6 +2810,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     today,
     isToday,
     timezone,
+    cautionProfile,
     logs,
     mealGroups,
     summary,
@@ -2881,6 +2932,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
               group={group}
               justAddedLogId={justAddedLogId}
               timezone={timezone}
+              cautionProfile={cautionProfile}
               /* Null for the "no meal" bucket, which is never a routine: see
                  `selectRepeatedMealSlots`. */
               hintSlot={

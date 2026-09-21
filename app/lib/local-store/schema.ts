@@ -437,9 +437,38 @@
  * union and never an enum, for the `FastProtocolId` widening reason: a row
  * written by a NEWER build must be HELD by an older one, not rejected. An
  * unknown award key is kept, not rendered.
+ *
+ * NOTE (M219/02, the allergens): `SCHEMA_VERSION` v23 -> v24 adds ONE OPTIONAL
+ * field, `allergens`, to the EXISTING `LocalProfileGoals` entity, so it is
+ * under the same optional-field rules as the M206 and M210 bumps above and NOT
+ * under the v6 -> v7 or the v17 -> v18 rules. A pre-v24 row, and a v23 backup
+ * envelope, simply lacks the key and reads back as a valid v24 profile with it
+ * absent, which every reader treats as "none listed". There is therefore no
+ * `migrateSnapshotToV24` step in `backup.ts` and there must not be one; the
+ * one new line on `profileGoalsSchema` IS needed, because zod strips
+ * unrecognized keys and would drop the list on every export/import round trip.
+ *
+ * That line PARSES rather than refuses: it narrows through `parseAllergens`,
+ * so a backup naming an allergen this build does not know restores with that
+ * entry dropped instead of failing whole, the same way an unknown reproductive
+ * status has always read as `null`.
+ *
+ * NOTE (M219/03, the food flags): `flags` on `LocalFoodLog` is added WITHIN
+ * v24, with no bump of its own, under the rule `gamificationHidden` set
+ * inside v23: it is ONE OPTIONAL field on an EXISTING entity, and v24 is
+ * M219's own version, which ships as one release, so no build ever sees a v24
+ * row without the field being legal. A v23 envelope, and every row logged
+ * before the field existed, simply lacks the key and reads as "no flags",
+ * which renders no chip. The one line on `backup.ts`'s `foodLogSchema` IS
+ * needed, because zod strips unrecognized keys and would drop the flags on
+ * every export/import round trip; it parses leniently, through the same
+ * narrowing the wire answer gets, so an unknown category in a file written
+ * by a longer list restores with that entry dropped.
  */
 import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
+import type { FoodFlags } from '#app/services/vision/schema';
 import type { EatingStyleId } from '#app/lib/eating-style';
+import type { Allergen } from '#app/models/allergens';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { Macros } from '#app/lib/macros';
@@ -451,7 +480,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 23;
+export const SCHEMA_VERSION = 24;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -1012,6 +1041,27 @@ export interface LocalFoodLog {
    * `SCHEMA_VERSION` v8 → v9 note).
    */
   micronutrientsPer100g?: MicronutrientsPer100g;
+  /**
+   * The model's RAW flags on this food (M219/03, added within v24): the
+   * pregnancy categories it falls into, the EU 14 allergens it contains and
+   * the ones the model could not rule out, exactly as the identification
+   * answered them at confirm time. NEVER a decision: which flag becomes a
+   * visible chip is computed at render time by `decideCautions`
+   * (`#app/lib/food-cautions`) from these plus the profile's status and
+   * allergy list, so a person who changes either sees every old entry
+   * re-evaluated at once with no migration and no stale chip (D6).
+   *
+   * ABSENT for a food that never had flags: a manual entry, a food logged
+   * from the database search (which carries no flags in v1, a named gap and a
+   * milestone non-goal), a saved-meal item, and every row logged before this
+   * field existed. All of those render no chip. Present with three EMPTY
+   * arrays when the model looked and found nothing, which also renders no
+   * chip but is a different fact and is kept as one.
+   *
+   * Copies forward on copy-day and on Undo like the snapshot fields above it:
+   * the flags describe the food, not the day it was eaten on.
+   */
+  flags?: FoodFlags;
 }
 
 /** A weight measurement, one per entry (a day may hold more than one). */
@@ -1153,6 +1203,22 @@ export interface LocalProfileGoals {
    * v23 without it.
    */
   gamificationHidden?: boolean | null;
+  /**
+   * The allergens this person listed from the EU 14 (added v24, M219/02), or
+   * absent for a profile written before the question existed. An EMPTY list
+   * and an absent key mean the same thing to every reader, "none listed", so
+   * Skip on the onboarding body step writes nothing and a chip never shows.
+   *
+   * It lives here, beside `reproductiveStatus`, under the same promise: it
+   * rides the JSON backup and the E2EE sync payload like every other profile
+   * field and is never part of any outbound request. The model is asked to
+   * flag the EU 14 on every food it sees, whoever is asking; the device alone
+   * compares those flags with this list (`#app/models/allergens`).
+   *
+   * One row, last write wins between devices, like the rest of this record
+   * (D4b): the list gets no merge rule of its own.
+   */
+  allergens?: Allergen[];
 }
 
 /**
@@ -1343,6 +1409,8 @@ export interface LocalSavedMealItem {
   carbBasis?: CarbBasis;
   /** Per-100g vitamins/minerals, same convention as `LocalFoodLog.micronutrientsPer100g`. */
   micronutrientsPer100g?: MicronutrientsPer100g;
+  /** The model's raw food flags (M219/03), same convention as `LocalFoodLog.flags`: absent for an item that never had any. */
+  flags?: FoodFlags;
 }
 
 /**
