@@ -26,6 +26,8 @@ import { reconstructPer100g } from '#app/lib/per-hundred';
 import { computeEditPatch, macrosDiffer, resolveEditedBasis, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
 import { encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
 import { encodeMicronutrients } from '#app/lib/micronutrients';
+import { cautionProfileOf, decideCautions, encodeFoodFlags } from '#app/lib/food-cautions';
+import { FoodCautionChips } from '#app/components/food-caution-chip';
 import { parseNumericFieldValue } from '#app/lib/conform-field-value';
 import {
   PORTION_SCALE_OPTIONS,
@@ -470,6 +472,9 @@ export async function clientLoader({ params }: Route.ClientLoaderArgs) {
     userId: ANONYMOUS_USER_ID,
     log,
     siblings,
+    // The profile facts the header's caution chips are decided from, at
+    // render time, off the same profile row as the timezone (M219/03 D6).
+    cautionProfile: cautionProfileOf(profile),
     grams: log.quantityGrams,
     snapshotMacros: log.macros,
     basisPer100g,
@@ -865,6 +870,10 @@ export function buildRestorePayload(log: LocalFoodLog) {
     // that described them is still exactly as valid as it was — without this
     // the person's own "2 eggs" came back as "180 g".
     portion: encodeDisplayPortion(log.portion),
+    // And the fifth (M219/03): without this the Undo would restore the entry
+    // with its raw flags gone, so a raw-milk note the person had already seen
+    // would vanish and read as "checked and fine".
+    flags: encodeFoodFlags(log.flags),
     carbs: macroPayloadValue(log.macros.carbs),
     fiber: macroPayloadValue(log.macros.fiber),
     sugars: macroPayloadValue(log.macros.sugars),
@@ -889,7 +898,15 @@ function macroPayloadValue(value: number | null): string {
  * passing it (see `tests/unit/authoritative-net-carbs-wiring.test.ts`).
  */
 export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps['loaderData'] }) {
-  const { userId, log, siblings, grams, snapshotMacros, basisPer100g, loggedAtDate, loggedAtTime, backTo } = loaderData;
+  const { userId, log, siblings, cautionProfile, grams, snapshotMacros, basisPer100g, loggedAtDate, loggedAtTime, backTo } =
+    loaderData;
+  // Decided every render from the stored raw flags and the profile, never
+  // read off the row (M219/03 D6).
+  const cautions = decideCautions({
+    flags: log.flags,
+    reproductiveStatus: cautionProfile.reproductiveStatus,
+    allergens: cautionProfile.allergens,
+  });
   const { t, i18n } = useTranslation();
   const submit = useSubmit();
   const logAgainFetcher = useFetcherWithToast<Toast>();
@@ -996,6 +1013,10 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
             </Badge>
           )}
         </div>
+        {/* The cautions this entry earns for this person (M219/03 D5), in the
+            header under the date and the meal. A wrapping row of their own,
+            the sentences are longer than the badges beside them. */}
+        <FoodCautionChips cautions={cautions} />
       </div>
 
       <Card>

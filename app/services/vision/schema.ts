@@ -235,9 +235,12 @@ const LenientFlagListSchema = z.array(z.string()).nullish();
 /**
  * The flags object as it may ARRIVE. `mayContain` was added after
  * `allergens` (D1e), so a prompt that predates it sends two keys, and a BYOK
- * model that ignores the field sends none; both parse.
+ * model that ignores the field sends none; both parse. Exported because the
+ * same leniency is owed wherever a stored copy of the flags is read back
+ * (the confirm form's hidden field, the backup file), see
+ * `#app/lib/food-cautions` and `backup.ts`.
  */
-const LenientFoodFlagsSchema = z.object({
+export const LenientFoodFlagsSchema = z.object({
   pregnancy: LenientFlagListSchema,
   allergens: LenientFlagListSchema,
   mayContain: LenientFlagListSchema,
@@ -273,7 +276,7 @@ export type UnvalidatedProviderJson = z.infer<ReturnType<typeof z.json>>;
 type RawPlateIdentification = z.infer<typeof PlateIdentificationParseSchema>;
 type RawIdentifiedFood = z.infer<typeof RawIdentifiedFoodParseSchema>;
 type RawMacros = z.infer<typeof RawMacrosSchema>;
-type RawFoodFlags = z.infer<typeof LenientFoodFlagsSchema>;
+export type RawFoodFlags = z.infer<typeof LenientFoodFlagsSchema>;
 
 /**
  * Vite substitutes `import.meta.env.DEV` at build time. Under plain Node,

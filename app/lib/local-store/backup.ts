@@ -19,6 +19,7 @@ import type { Store } from 'tinybase';
 import { displayPortionSchema } from '#app/lib/portions';
 import { CARB_BASES } from '#app/lib/net-carbs';
 import { PANTRY_CATEGORIES, PANTRY_UNITS } from '#app/services/vision/pantry-schema';
+import { LenientFoodFlagsSchema, normalizeFoodFlags } from '#app/services/vision/schema';
 import { EATING_STYLE_IDS } from '#app/lib/eating-style';
 import { parseAllergens } from '#app/models/allergens';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
@@ -204,6 +205,19 @@ const foodLogSchema = z.object({
   // `micronutrientsPer100gSchema`, which is shared with the food-resolution
   // parser so a stored snapshot and a freshly-parsed one can never drift.
   micronutrientsPer100g: micronutrientsPer100gSchema.optional(),
+  // Added within v24 (the food flags, M219/03), one more OPTIONAL field on
+  // the same entity, under the same rules as every one above it: an older
+  // envelope lacks the key, which already reads as "no flags", so no
+  // forward-migration step was added. The line is needed because zod strips
+  // unrecognized keys, and without it a re-imported diary would stop showing
+  // the raw-milk note on last month's cheese with no word said.
+  //
+  // Lenient, through the SAME schema and narrowing the wire answer gets: an
+  // unknown category in a file written by a build with a longer list is
+  // dropped, not refused, the `allergens` line on the profile above follows
+  // the same rule. No `.nullable()`, the store never writes `null` here;
+  // absence is how "never had flags" is spelled.
+  flags: LenientFoodFlagsSchema.transform((raw) => normalizeFoodFlags(raw)).optional(),
 });
 
 const weightEntrySchema = z.object({

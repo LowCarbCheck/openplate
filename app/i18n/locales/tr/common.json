@@ -325,6 +325,55 @@
       "almonds": "badem"
     }
   },
+  "cautions": {
+    "contains": {
+      "celery": "Kereviz içerir",
+      "crustaceans": "Kabuklular içerir",
+      "eggs": "Yumurta içerir",
+      "fish": "Balık içerir",
+      "gluten": "Gluten içerir",
+      "lupin": "Acı bakla içerir",
+      "milk": "Süt içerir",
+      "molluscs": "Yumuşakçalar içerir",
+      "mustard": "Hardal içerir",
+      "nuts": "Sert kabuklu yemişler içerir",
+      "peanuts": "Yer fıstığı içerir",
+      "sesame": "Susam içerir",
+      "soybeans": "Soya fasulyesi içerir",
+      "sulphites": "Sülfit içerir"
+    },
+    "guidance": "Günlükteki gıda notları, tek bir listede birleştirilmiş NHS, BfR ve ACOG kılavuzlarını izler. Ebe veya doktor tavsiyesinin yerini almaz.",
+    "mayContain": {
+      "celery": "Kereviz içerebilir",
+      "crustaceans": "Kabuklular içerebilir",
+      "eggs": "Yumurta içerebilir",
+      "fish": "Balık içerebilir",
+      "gluten": "Gluten içerebilir",
+      "lupin": "Acı bakla içerebilir",
+      "milk": "Süt içerebilir",
+      "molluscs": "Yumuşakçalar içerebilir",
+      "mustard": "Hardal içerebilir",
+      "nuts": "Sert kabuklu yemişler içerebilir",
+      "peanuts": "Yer fıstığı içerebilir",
+      "sesame": "Susam içerebilir",
+      "soybeans": "Soya fasulyesi içerebilir",
+      "sulphites": "Sülfit içerebilir"
+    },
+    "pregnancy": {
+      "alcohol": "Alkol içerir, kaçınmak en iyisidir",
+      "caffeine": "Kafein, günlük 200 mg sınırına dahildir",
+      "high-mercury-fish": "Yüksek cıvalı balık, uzak durulması önerilir",
+      "liver-retinol": "Karaciğer veya retinol, gebelikte kaçın",
+      "raw-dairy": "Pastörize edilmemiş olabilir, gebelikte kaçın",
+      "raw-egg": "Çiğ yumurta içerebilir, gebelikte kaçın",
+      "raw-fish": "Çiğ balık veya kabuklu deniz ürünü olabilir, gebelikte kaçın",
+      "raw-meat": "Çiğ veya az pişmiş et olabilir, gebelikte kaçın",
+      "raw-sprouts": "Çiğ filizler, gebelikte kaçın",
+      "smoked-fish": "Soğuk tütsülenmiş balık, gebelikte kaçın",
+      "soft-cheese": "Yumuşak peynir, küfle olgunlaştırılmış olabilir, gebelikte kaçın"
+    },
+    "source": "Kaynak: NHS, BfR, ACOG"
+  },
   "chrome": {
     "back": "Geri",
     "buildStamp": "Sürüm {{label}}",

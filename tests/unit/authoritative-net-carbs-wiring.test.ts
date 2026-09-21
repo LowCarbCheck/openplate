@@ -43,6 +43,7 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import { SearchResultRow } from '../../app/components/add/search-result-row';
 import { PortionStep, buildLoggedEntry, createLogSchema, type AddSearchCandidate } from '../../app/routes/add';
 import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry, buildConfirmedFood } from '../../app/routes/scan';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import { EntryReceipt } from '../../app/routes/diary.entry.$id';
 import {
   LogRecentSchema,
@@ -529,6 +530,8 @@ function confirmFormData(overrides: { curatedSource?: string; macros?: MacroForm
 function renderConfirmStep(formData: FormData): string {
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     // The intake this draft arrived by. A photograph here: these tests are
     // about what the plate path writes, not about which way in produced it.
     intakeSource: 'photo',
@@ -1019,6 +1022,8 @@ function receiptLoaderData({ log, food }: { log: LocalFoodLog; food: LocalPerson
     userId: 0,
     log,
     siblings,
+    // No person to decide for: the header's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     grams: log.quantityGrams,
     snapshotMacros: log.macros,
     // The real rule: the linked food is the basis while provenance is intact.

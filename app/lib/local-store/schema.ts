@@ -452,8 +452,21 @@
  * so a backup naming an allergen this build does not know restores with that
  * entry dropped instead of failing whole, the same way an unknown reproductive
  * status has always read as `null`.
+ *
+ * NOTE (M219/03, the food flags): `flags` on `LocalFoodLog` is added WITHIN
+ * v24, with no bump of its own, under the rule `gamificationHidden` set
+ * inside v23: it is ONE OPTIONAL field on an EXISTING entity, and v24 is
+ * M219's own version, which ships as one release, so no build ever sees a v24
+ * row without the field being legal. A v23 envelope, and every row logged
+ * before the field existed, simply lacks the key and reads as "no flags",
+ * which renders no chip. The one line on `backup.ts`'s `foodLogSchema` IS
+ * needed, because zod strips unrecognized keys and would drop the flags on
+ * every export/import round trip; it parses leniently, through the same
+ * narrowing the wire answer gets, so an unknown category in a file written
+ * by a longer list restores with that entry dropped.
  */
 import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
+import type { FoodFlags } from '#app/services/vision/schema';
 import type { EatingStyleId } from '#app/lib/eating-style';
 import type { Allergen } from '#app/models/allergens';
 import type { CarbBasis } from '#app/lib/net-carbs';
@@ -1028,6 +1041,27 @@ export interface LocalFoodLog {
    * `SCHEMA_VERSION` v8 → v9 note).
    */
   micronutrientsPer100g?: MicronutrientsPer100g;
+  /**
+   * The model's RAW flags on this food (M219/03, added within v24): the
+   * pregnancy categories it falls into, the EU 14 allergens it contains and
+   * the ones the model could not rule out, exactly as the identification
+   * answered them at confirm time. NEVER a decision: which flag becomes a
+   * visible chip is computed at render time by `decideCautions`
+   * (`#app/lib/food-cautions`) from these plus the profile's status and
+   * allergy list, so a person who changes either sees every old entry
+   * re-evaluated at once with no migration and no stale chip (D6).
+   *
+   * ABSENT for a food that never had flags: a manual entry, a food logged
+   * from the database search (which carries no flags in v1, a named gap and a
+   * milestone non-goal), a saved-meal item, and every row logged before this
+   * field existed. All of those render no chip. Present with three EMPTY
+   * arrays when the model looked and found nothing, which also renders no
+   * chip but is a different fact and is kept as one.
+   *
+   * Copies forward on copy-day and on Undo like the snapshot fields above it:
+   * the flags describe the food, not the day it was eaten on.
+   */
+  flags?: FoodFlags;
 }
 
 /** A weight measurement, one per entry (a day may hold more than one). */

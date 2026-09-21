@@ -325,6 +325,55 @@
       "almonds": "mandorle"
     }
   },
+  "cautions": {
+    "contains": {
+      "celery": "Contiene sedano",
+      "crustaceans": "Contiene crostacei",
+      "eggs": "Contiene uova",
+      "fish": "Contiene pesce",
+      "gluten": "Contiene glutine",
+      "lupin": "Contiene lupini",
+      "milk": "Contiene latte",
+      "molluscs": "Contiene molluschi",
+      "mustard": "Contiene senape",
+      "nuts": "Contiene frutta a guscio",
+      "peanuts": "Contiene arachidi",
+      "sesame": "Contiene sesamo",
+      "soybeans": "Contiene soia",
+      "sulphites": "Contiene solfiti"
+    },
+    "guidance": "Le note sugli alimenti nel diario seguono le linee guida di NHS, BfR e ACOG, unite in un unico elenco. Non sostituiscono il parere della tua ostetrica o del tuo medico.",
+    "mayContain": {
+      "celery": "Può contenere sedano",
+      "crustaceans": "Può contenere crostacei",
+      "eggs": "Può contenere uova",
+      "fish": "Può contenere pesce",
+      "gluten": "Può contenere glutine",
+      "lupin": "Può contenere lupini",
+      "milk": "Può contenere latte",
+      "molluscs": "Può contenere molluschi",
+      "mustard": "Può contenere senape",
+      "nuts": "Può contenere frutta a guscio",
+      "peanuts": "Può contenere arachidi",
+      "sesame": "Può contenere sesamo",
+      "soybeans": "Può contenere soia",
+      "sulphites": "Può contenere solfiti"
+    },
+    "pregnancy": {
+      "alcohol": "Contiene alcol, da evitare",
+      "caffeine": "Caffeina, conta per il limite di 200 mg al giorno",
+      "high-mercury-fish": "Pesce ad alto contenuto di mercurio, da evitare",
+      "liver-retinol": "Fegato o retinolo, evita in gravidanza",
+      "raw-dairy": "Potrebbe non essere pastorizzato, evita in gravidanza",
+      "raw-egg": "Potrebbe contenere uova crude, evita in gravidanza",
+      "raw-fish": "Potrebbe essere pesce o frutti di mare crudi, evita in gravidanza",
+      "raw-meat": "Potrebbe essere carne cruda o poco cotta, evita in gravidanza",
+      "raw-sprouts": "Germogli crudi, evita in gravidanza",
+      "smoked-fish": "Pesce affumicato a freddo, evita in gravidanza",
+      "soft-cheese": "Formaggio a pasta molle, potrebbe essere a crosta fiorita, evita in gravidanza"
+    },
+    "source": "Fonte: NHS, BfR, ACOG"
+  },
   "chrome": {
     "back": "Indietro",
     "buildStamp": "Build {{label}}",

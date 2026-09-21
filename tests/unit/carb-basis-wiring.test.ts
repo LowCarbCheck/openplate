@@ -54,6 +54,7 @@ import { formatEntryNetCarbs } from '../../app/routes/diary';
 import { localFoodToCandidate } from '../../app/lib/local-store/local-quick-add';
 import { computeMacroPreview } from '../../app/lib/portion-preview';
 import { ConfirmDraftForm, ConfirmDraftSchema, computeReviewItemPreview } from '../../app/routes/scan';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import { toCuratedSource } from '../../app/services/food-resolution/apply-match';
 import { formatMacroNumberIn } from '../../app/lib/format-macro-number';
 import { carbStatusBadgeClass } from '../../app/utils/carb-status';
@@ -159,6 +160,8 @@ function entryLoaderData(log: LocalFoodLog) {
     userId: 0,
     log,
     siblings,
+    // No person to decide for: the header's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     grams: log.quantityGrams,
     snapshotMacros: log.macros,
     // No linked food (`foodId: null`), the basis reconstructs from the log's
@@ -490,6 +493,8 @@ function renderReviewCard({ carbBasis, applyMatch }: { carbBasis: CarbBasis | un
   const formData = sanityFormData(applyMatch ? toCuratedSource(match.slug) : '');
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     intakeSource: 'photo' as const,
     identification: sanityIdentification(carbBasis),
     modelId: 'test-model',

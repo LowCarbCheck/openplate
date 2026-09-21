@@ -13,6 +13,19 @@
  * mapping table in between. "Nuts" is the regulation's tree-nut group,
  * distinct from peanuts, which are a legume and their own entry.
  *
+ * ── One array, not a twin (M219/03 D8) ─────────────────────────────────────
+ *
+ * The list is DEFINED ONCE, as `ALLERGENS` in `#app/services/vision/schema`,
+ * beside the wire schema that asks the model for it, and re-exported here
+ * under the name the profile side has always used. Specs 01 and 02 landed two
+ * hand-kept copies with no import between them; `decideCautions` compares a
+ * flag against a profile entry by value, so a fifteenth entry added on one
+ * side would have been missed on the other with no failure anywhere. The
+ * import runs THIS way (profile -> vision schema) because the vision schema
+ * imports nothing from the profile or the store, so no runtime cycle exists;
+ * `tests/unit/allergens.test.ts` asserts the two exports are the same
+ * reference.
+ *
  * ── The list lives on the profile and goes nowhere else ────────────────────
  *
  * It sits on `LocalProfileGoals` beside the reproductive status, rides the
@@ -27,26 +40,14 @@
  * or a newer build's wider list restores instead of failing.
  */
 
-/** Selectable allergens, the EU 14 in the order Annex II lists them, which is the order the chips render in. */
-export const ALLERGEN_VALUES = [
-  'gluten',
-  'crustaceans',
-  'eggs',
-  'fish',
-  'peanuts',
-  'soybeans',
-  'milk',
-  'nuts',
-  'celery',
-  'mustard',
-  'sesame',
-  'sulphites',
-  'lupin',
-  'molluscs',
-] as const;
+import { ALLERGENS } from '#app/services/vision/schema';
+import type { Allergen } from '#app/services/vision/schema';
 
-/** One of the EU 14. */
-export type Allergen = (typeof ALLERGEN_VALUES)[number];
+/** Selectable allergens, the EU 14 in the order Annex II lists them, which is the order the chips render in. The one array, see the header. */
+export const ALLERGEN_VALUES = ALLERGENS;
+
+/** One of the EU 14, the same type the vision schema narrows a flag to. */
+export type { Allergen };
 
 /** The same fourteen as a set, the house idiom for narrowing a string without `typeof`. */
 const ALLERGEN_SET: ReadonlySet<string> = new Set<Allergen>(ALLERGEN_VALUES);

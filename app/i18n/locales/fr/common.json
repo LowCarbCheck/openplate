@@ -325,6 +325,55 @@
       "almonds": "amandes"
     }
   },
+  "cautions": {
+    "contains": {
+      "celery": "Contient du céleri",
+      "crustaceans": "Contient des crustacés",
+      "eggs": "Contient des œufs",
+      "fish": "Contient du poisson",
+      "gluten": "Contient du gluten",
+      "lupin": "Contient du lupin",
+      "milk": "Contient du lait",
+      "molluscs": "Contient des mollusques",
+      "mustard": "Contient de la moutarde",
+      "nuts": "Contient des fruits à coque",
+      "peanuts": "Contient des arachides",
+      "sesame": "Contient du sésame",
+      "soybeans": "Contient du soja",
+      "sulphites": "Contient des sulfites"
+    },
+    "guidance": "Les remarques sur les aliments dans le journal s'appuient sur les recommandations du NHS, du BfR et de l'ACOG, regroupées en une seule liste. Elles ne remplacent pas les conseils de ta sage-femme ou de ton médecin.",
+    "mayContain": {
+      "celery": "Peut contenir du céleri",
+      "crustaceans": "Peut contenir des crustacés",
+      "eggs": "Peut contenir des œufs",
+      "fish": "Peut contenir du poisson",
+      "gluten": "Peut contenir du gluten",
+      "lupin": "Peut contenir du lupin",
+      "milk": "Peut contenir du lait",
+      "molluscs": "Peut contenir des mollusques",
+      "mustard": "Peut contenir de la moutarde",
+      "nuts": "Peut contenir des fruits à coque",
+      "peanuts": "Peut contenir des arachides",
+      "sesame": "Peut contenir du sésame",
+      "soybeans": "Peut contenir du soja",
+      "sulphites": "Peut contenir des sulfites"
+    },
+    "pregnancy": {
+      "alcohol": "Contient de l'alcool, à éviter de préférence",
+      "caffeine": "Caféine, compte dans le quota de 200 mg par jour",
+      "high-mercury-fish": "Poisson à forte teneur en mercure, à éviter de préférence",
+      "liver-retinol": "Foie ou rétinol, à éviter pendant la grossesse",
+      "raw-dairy": "Peut être non pasteurisé, à éviter pendant la grossesse",
+      "raw-egg": "Peut contenir des œufs crus, à éviter pendant la grossesse",
+      "raw-fish": "Peut contenir du poisson ou des fruits de mer crus, à éviter pendant la grossesse",
+      "raw-meat": "Peut contenir de la viande crue ou insuffisamment cuite, à éviter pendant la grossesse",
+      "raw-sprouts": "Graines germées crues, à éviter pendant la grossesse",
+      "smoked-fish": "Poisson fumé à froid, à éviter pendant la grossesse",
+      "soft-cheese": "Fromage à pâte molle, peut être à croûte fleurie, à éviter pendant la grossesse"
+    },
+    "source": "Source : NHS, BfR, ACOG"
+  },
   "chrome": {
     "back": "Retour",
     "buildStamp": "Version {{label}}",

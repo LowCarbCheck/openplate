@@ -1210,6 +1210,13 @@
     "at": "2026-09-14",
     "de": "Low-Carb"
   },
+  "0f57fa15e8cf5721": {
+    "en": "Liver or retinol, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.liver-retinol",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Leber oder Retinol, in der Schwangerschaft meiden"
+  },
   "0f5ca47ef57d4283": {
     "en": "Adding {{count}} food · ~{{netCarbs}} g net carbs",
     "path": "common:scan.review.addingSummary_one",
@@ -1623,6 +1630,13 @@
     "at": "2026-09-14",
     "de": "Verbindungsversuch verloren"
   },
+  "141c4964bc5cad2a": {
+    "en": "Soft cheese, may be mould-ripened, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.soft-cheese",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Weichkäse, möglicherweise mit Edelschimmel gereift, in der Schwangerschaft meiden"
+  },
   "142ed562bffc57d6": {
     "en": "5. Acceptable use",
     "path": "legal:terms.s5Heading",
@@ -1735,6 +1749,13 @@
     "at": "2026-09-14",
     "de": "Zurückziehen"
   },
+  "15bff03e552f662a": {
+    "en": "Contains eggs",
+    "path": "common:cautions.contains.eggs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Eier"
+  },
   "15c631b63e309bba": {
     "en": "We use Stripe to process payments. Stripe receives your email address, payment amount, and card details. These details are sent directly to Stripe. They never reach our servers, and we never see or store your card number.",
     "path": "legal:privacy.s7aPaymentBody1",
@@ -1846,6 +1867,13 @@
     "model": "hand-written",
     "at": "2026-09-21",
     "de": "Ein Feld konnte nicht verarbeitet werden. Bitte prüfen Sie Ihre Eingaben und versuchen Sie es erneut."
+  },
+  "17629b70eed5550e": {
+    "en": "May contain celery",
+    "path": "common:cautions.mayContain.celery",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Sellerie enthalten"
   },
   "176d046f17806417": {
     "en": "Copy selected ({{count}})",
@@ -2203,6 +2231,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Gesendet {{from}} bis {{to}}, ganze Kalendertage, eine Zeile pro Tag, und niemals eine Uhrzeit, ein Lebensmittelname oder ein Foto."
+  },
+  "1b94fa1a0f0cb311": {
+    "en": "May contain fish",
+    "path": "common:cautions.mayContain.fish",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Fisch enthalten"
   },
   "1b98dd503ba5d572": {
     "en": "Loading…",
@@ -2903,6 +2938,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dieses Tagebuch ist nicht verfügbar. Vielleicht wurde das Teilen beendet, oder es wurde noch nichts synchronisiert."
+  },
+  "2391865c6887b46e": {
+    "en": "Contains sulphites",
+    "path": "common:cautions.contains.sulphites",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Sulfite"
   },
   "23a49321e098305f": {
     "en": "Invitations and accounts",
@@ -4493,6 +4535,13 @@
     "at": "2026-09-14",
     "de": "Portionsgröße (g)"
   },
+  "3b0b6c1359752045": {
+    "en": "Contains soybeans",
+    "path": "common:cautions.contains.soybeans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Sojabohnen"
+  },
   "3b14f50fd190a9f1": {
     "en": "Saved, couldn't verify the key right now.",
     "path": "common:settingsAi.toast.unverified",
@@ -4737,6 +4786,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "de": "{{date}}: {{percent}}% aus Snacks"
+  },
+  "3f5909931c82e144": {
+    "en": "Raw sprouts, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.raw-sprouts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Rohe Sprossen, in der Schwangerschaft meiden"
   },
   "3f670054e9cae4d1": {
     "en": "Food",
@@ -5081,6 +5137,13 @@
     "at": "2026-09-14",
     "de": "Deine Eingabe geht direkt an deinen eigenen KI-Anbieter, der daraus Einträge macht, die du vor dem Speichern prüfst."
   },
+  "43f034015d7953ce": {
+    "en": "Cold-smoked fish, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.smoked-fish",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kaltgeräucherter Fisch, in der Schwangerschaft meiden"
+  },
   "43f15aba0eab8805": {
     "en": "Disconnect AI provider?",
     "path": "common:settingsAi.disconnect.title",
@@ -5101,6 +5164,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Jetzt nicht"
+  },
+  "440c1d47e2972d25": {
+    "en": "Contains sesame",
+    "path": "common:cautions.contains.sesame",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Sesam"
   },
   "4455edfa0a03a8f2": {
     "en": "Account",
@@ -5325,6 +5395,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Passwort vergessen?"
+  },
+  "471ccd0293deb9e2": {
+    "en": "May be unpasteurised, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.raw-dairy",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Möglicherweise nicht pasteurisiert, in der Schwangerschaft meiden"
   },
   "474a8f9a15d131dd": {
     "en": "Logging to <day>{{label}}</day>",
@@ -8518,6 +8595,13 @@
     "at": "2026-09-14",
     "de": "Auf lowcarbcheck.org ansehen"
   },
+  "6ff8a03538e81025": {
+    "en": "May contain gluten",
+    "path": "common:cautions.mayContain.gluten",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Gluten enthalten"
+  },
   "700f7218907ccbb7": {
     "en": "Nothing to sign up for, nothing to configure. Log one food and openplate has everything it needs.",
     "path": "common:landing.close.body",
@@ -8616,6 +8700,13 @@
     "at": "2026-09-14",
     "de": "Studie {{studyAccountId}}"
   },
+  "71b870b6ad8e545e": {
+    "en": "Contains celery",
+    "path": "common:cautions.contains.celery",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Sellerie"
+  },
   "71d251d09e844f15": {
     "en": "Choose a backup file",
     "path": "common:recover.restoreButton",
@@ -8685,6 +8776,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "de": "{{count}} Tag ohne ausreichende Details bleibt unberücksichtigt."
+  },
+  "72802bf1e8562c72": {
+    "en": "May be raw fish or shellfish, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.raw-fish",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Möglicherweise roher Fisch oder rohe Schalentiere, in der Schwangerschaft meiden"
   },
   "72898abcffa62e15": {
     "en": "No meal",
@@ -8874,6 +8972,20 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Ballaststoffe"
+  },
+  "75226d68893f6fba": {
+    "en": "May contain eggs",
+    "path": "common:cautions.mayContain.eggs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Eier enthalten"
+  },
+  "7535503e13ad5b7b": {
+    "en": "May contain sesame",
+    "path": "common:cautions.mayContain.sesame",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Sesam enthalten"
   },
   "7539c296de44ac85": {
     "en": "7. Encrypted sync",
@@ -9344,6 +9456,13 @@
     "at": "2026-09-14",
     "de": "Später starten"
   },
+  "7a4ff78914868d5f": {
+    "en": "Contains nuts",
+    "path": "common:cautions.contains.nuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Schalenfrüchte"
+  },
   "7a563bac2d6eeb56": {
     "en": "The same calorie count you would see on a nutrition label. Set a daily target.",
     "path": "common:onboarding.focus.calories.description",
@@ -9463,6 +9582,13 @@
     "at": "2026-09-14",
     "de": "Dein Tagebuch wird gelesen …"
   },
+  "7c13e6f00019f4fa": {
+    "en": "May contain peanuts",
+    "path": "common:cautions.mayContain.peanuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Erdnüsse enthalten"
+  },
   "7c1b9307090a80e7": {
     "en": "Discard",
     "path": "common:pantry.review.discard",
@@ -9511,6 +9637,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Der Anbieter konnte die Anfrage nicht verarbeiten"
+  },
+  "7c8f8f225bf50392": {
+    "en": "May contain raw egg, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.raw-egg",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann rohes Ei enthalten, in der Schwangerschaft meiden"
   },
   "7ca24dd507401ef1": {
     "en": "{{count}} changes on this device have not reached the server yet. If you erase, you will lose them.",
@@ -10057,6 +10190,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Ungültige Batch-ID"
+  },
+  "83aed8126a28de21": {
+    "en": "May contain lupin",
+    "path": "common:cautions.mayContain.lupin",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Lupinen enthalten"
   },
   "83b825c32447ab9d": {
     "en": "Change password",
@@ -11591,6 +11731,13 @@
     "at": "2026-09-14",
     "de": "Entfernen"
   },
+  "96626b2bc4242789": {
+    "en": "May contain mustard",
+    "path": "common:cautions.mayContain.mustard",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Senf enthalten"
+  },
   "967029c452b869ea": {
     "en": "Your connect link as a scannable code",
     "path": "common:clinicianLink.qrTitle",
@@ -11653,6 +11800,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "de": "Und {{count}} weitere Änderung."
+  },
+  "976ebf8986b4e834": {
+    "en": "Contains milk",
+    "path": "common:cautions.contains.milk",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Milch"
   },
   "977670c4d9e55764": {
     "en": "Chicken breast",
@@ -12004,6 +12158,13 @@
     "at": "2026-09-14",
     "de": "Modell"
   },
+  "9bbc90caddd80b83": {
+    "en": "Contains peanuts",
+    "path": "common:cautions.contains.peanuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Erdnüsse"
+  },
   "9bcf9e71a444c6c3": {
     "en": "Add your first food",
     "path": "common:trends.empty.cta",
@@ -12298,6 +12459,13 @@
     "at": "2026-09-14",
     "de": "Monat"
   },
+  "9f84f84f2c208b30": {
+    "en": "Contains lupin",
+    "path": "common:cautions.contains.lupin",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Lupinen"
+  },
   "9fa41d71eb02d8af": {
     "en": "Overview",
     "path": "common:nav.dashboard",
@@ -12430,6 +12598,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Die Datenschutzeinstellungen dieses Gateways haben sich geändert, weshalb dieses Gerät nicht mehr akzeptiert wird. Bitte die Person, die dich eingeladen hat, um einen neuen Einladungslink."
+  },
+  "a18d4580b4c9c202": {
+    "en": "High-mercury fish, best avoided",
+    "path": "common:cautions.pregnancy.high-mercury-fish",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Fisch mit hohem Quecksilbergehalt, am besten meiden"
   },
   "a1973b96c83ed019": {
     "en": "about {{cents}}¢ a photo",
@@ -14055,6 +14230,20 @@
     "at": "2026-09-14",
     "de": "Lass deine Ernährungsberatung oder deinen Arzt dein Tagebuch einsehen. Es bleibt durchgehend verschlüsselt: Sie erhalten eine mit ihrem Key versiegelte Kopie deines Keys, und der Server kann weiterhin nichts mitlesen."
   },
+  "b7384d9a43dda441": {
+    "en": "Contains crustaceans",
+    "path": "common:cautions.contains.crustaceans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Krebstiere"
+  },
+  "b764c8ec1492e4c9": {
+    "en": "May contain soybeans",
+    "path": "common:cautions.mayContain.soybeans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Sojabohnen enthalten"
+  },
   "b77c67744a5df277": {
     "en": "{{count}} reports about wrong estimates have not been sent yet. If you erase, you will lose them.",
     "path": "common:signOut.unsent.reports_other",
@@ -14321,6 +14510,13 @@
     "at": "2026-09-14",
     "de": "Ausprobieren, kostenlos, ohne Account"
   },
+  "bbab217d5605608e": {
+    "en": "Contains gluten",
+    "path": "common:cautions.contains.gluten",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Gluten"
+  },
   "bbb06ce660c3708e": {
     "en": "Weight",
     "path": "common:trends.weight.title",
@@ -14523,6 +14719,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "An {{days}} von {{total}} eingetragenen Tagen lagst du unter deinem Ziel von {{goal}} g Netto-KH"
+  },
+  "be87d57cab23c0ab": {
+    "en": "May contain sulphites",
+    "path": "common:cautions.mayContain.sulphites",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Sulfite enthalten"
   },
   "be91ad3eeb0aa8f9": {
     "en": "Stopping, or deleting your account.",
@@ -14986,6 +15189,13 @@
     "at": "2026-09-14",
     "de": "Eine E-Mail-Adresse ist erforderlich."
   },
+  "c43a9ba71feb6404": {
+    "en": "May be raw or undercooked meat, avoid in pregnancy",
+    "path": "common:cautions.pregnancy.raw-meat",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Möglicherweise rohes oder nicht durchgegartes Fleisch, in der Schwangerschaft meiden"
+  },
   "c44e3943825773b5": {
     "en": "Key was rejected by the provider. Check it and try again.",
     "path": "common:settingsAi.errors.keyRejected",
@@ -15273,6 +15483,13 @@
     "at": "2026-09-14",
     "de": "Neues Passwort"
   },
+  "c95d920f0bcd2498": {
+    "en": "May contain milk",
+    "path": "common:cautions.mayContain.milk",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Milch enthalten"
+  },
   "c97b29769f9109f6": {
     "en": "Not now",
     "path": "common:banners.reproductiveStatusPromptDismiss",
@@ -15335,6 +15552,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Wenn du einen Teller scannst, wird das Foto nur auf diesem Gerät gespeichert, damit du es im Eintrag wieder ansehen kannst. Es wird weder hochgeladen noch synchronisiert. Ältere Fotos werden nach {{days}} Tagen automatisch gelöscht. Deaktiviere dies, um keine neuen Fotos mehr zu speichern."
+  },
+  "c9fd4580296e4ff9": {
+    "en": "Source: NHS, BfR, ACOG",
+    "path": "common:cautions.source",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Quelle: NHS, BfR, ACOG"
   },
   "ca04a44a2d6cac15": {
     "en": "We also sent this confirmation to you by email.",
@@ -15539,6 +15763,13 @@
     "at": "2026-09-21",
     "de": "Gesendet an: {{email}}"
   },
+  "cdcdd365085837fe": {
+    "en": "The food notes in the diary follow NHS, BfR and ACOG guidance, blended into one list. They do not replace advice from your midwife or doctor.",
+    "path": "common:cautions.guidance",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Die Lebensmittelhinweise im Tagebuch folgen Empfehlungen von NHS, BfR und ACOG, zusammengeführt in einer Liste. Sie ersetzen keinen ärztlichen Rat und keine Beratung durch deine Hebamme."
+  },
   "cddadc768b3898a9": {
     "en": "Default after connecting OpenRouter, picked for privacy, not price: no training on your photos",
     "path": "common:settingsAi.model.blurb.google-gemini-3-5-flash-lite",
@@ -15643,6 +15874,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Standard"
+  },
+  "cf0fa81dbb6d9fa3": {
+    "en": "Contains fish",
+    "path": "common:cautions.contains.fish",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Fisch"
   },
   "cf437b46b5990014": {
     "en": "Light, dark, or whatever your device is already set to.",
@@ -16553,6 +16791,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Das Passwort konnte nicht geändert werden."
+  },
+  "d9cd29b886ad04d6": {
+    "en": "May contain molluscs",
+    "path": "common:cautions.mayContain.molluscs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Weichtiere enthalten"
   },
   "d9fbc40902319260": {
     "en": "Requested date (optional)",
@@ -17575,6 +17820,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Ganze Kalendertage innerhalb des gesendeten Zeitraums, eine Zeile pro Tag, und niemals eine Uhrzeit, ein Lebensmittelname oder ein Foto."
+  },
+  "e799217d7544a4a9": {
+    "en": "Contains mustard",
+    "path": "common:cautions.contains.mustard",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Senf"
   },
   "e7aac5b5d6e69713": {
     "en": "If you switch sync off or delete your sync account, your locally stored tracker data on your own devices is unaffected. Deleting the account removes your server-stored encrypted blobs immediately, with no grace period, and they cannot be restored. (Routine encrypted backups may retain the ciphertext a little longer before they rotate out, as described in the Privacy Policy. It stays encrypted there.)",
@@ -18787,6 +19039,13 @@
     "at": "2026-09-18",
     "de": "Drei Tage"
   },
+  "f7d04fbde2416f97": {
+    "en": "Caffeine, counts toward 200 mg a day",
+    "path": "common:cautions.pregnancy.caffeine",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Koffein, zählt zu den 200 mg pro Tag"
+  },
   "f7eb18d65fec3c27": {
     "en": "Amount",
     "path": "common:pantry.review.amountLabel",
@@ -18835,6 +19094,13 @@
     "model": "hand-written",
     "at": "2026-09-21",
     "de": "E-Mail-Adresse"
+  },
+  "f8964141c7d68816": {
+    "en": "May contain nuts",
+    "path": "common:cautions.mayContain.nuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Schalenfrüchte enthalten"
   },
   "f8974ac8c1130055": {
     "en": "Adjust the portion first. Macros follow.",
@@ -18955,6 +19221,13 @@
     "at": "2026-09-18",
     "de": "Vierzehn Tage in Folge."
   },
+  "fa31392c71abe0d6": {
+    "en": "May contain crustaceans",
+    "path": "common:cautions.mayContain.crustaceans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Kann Krebstiere enthalten"
+  },
   "fa4c4f156c857e69": {
     "en": "Three days in a row with the app.",
     "path": "common:awards.streak.active.3.note",
@@ -19003,6 +19276,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "{{name}} aus Favoriten entfernen"
+  },
+  "fabe9bb5de0ba1b4": {
+    "en": "Contains alcohol, best avoided",
+    "path": "common:cautions.pregnancy.alcohol",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Alkohol, am besten meiden"
   },
   "fac8f4adfdc63c0f": {
     "en": "openplate is built local-first. Your foods, logs, weight entries, goals, fasts, fasting routine, saved meals, pantry, streaks and awards, and your sharing and research keys are stored on your device in IndexedDB. Your account also keeps an encrypted copy on our server so other devices can sync. We store that copy as ciphertext. We do not read it during ordinary operations. Section 6 explains what our recovery key allows. If you clear your browser data, the local copy is deleted. Signing in again restores your data from the encrypted server copy.",
@@ -19227,6 +19507,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "de": "Dreißig Tage in Folge bei oder unter deinem Kohlenhydratziel."
+  },
+  "fd1d0596ef39e1a4": {
+    "en": "Contains molluscs",
+    "path": "common:cautions.contains.molluscs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Enthält Weichtiere"
   },
   "fd20b15b107bdc8f": {
     "en": "Anthropic",

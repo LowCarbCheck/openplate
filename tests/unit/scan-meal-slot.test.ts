@@ -30,6 +30,7 @@ import { withI18n } from './trends-i18n-harness';
 
 import { mealTypeForCapture, resolveCaptureInstant } from '../../app/lib/scan-capture-time';
 import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedBatch } from '../../app/routes/scan';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '../../app/lib/meal-choice';
 import type { PlateIdentification } from '../../app/services/vision/types';
 import type { MealType } from '../../types/enums';
@@ -197,6 +198,8 @@ function renderUnderRouter(element: ReturnType<typeof createElement>): string {
 function renderPlateConfirm(defaultMealType: MealType | null): string {
   return renderUnderRouter(
     createElement(ConfirmDraftForm, {
+      // No person to decide for: the review's caution chips are another file's subject (M219/03).
+      cautionProfile: NO_CAUTION_PROFILE,
       // The intake this draft arrived by. A photograph here: these tests are
       // about what the plate path writes, not about which way in produced it.
       intakeSource: 'photo',

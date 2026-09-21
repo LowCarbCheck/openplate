@@ -207,6 +207,19 @@ function LifePhaseSection({ metrics, today }: { metrics: BodyMetrics; today: str
           chipClassName={chipClass}
         />
 
+        {/* WHAT THE FOOD NOTES ARE, AND ARE NOT (M219/03 D7). One sentence,
+            the `EatingStyleCautionNote` precedent: the diary's pregnancy and
+            breastfeeding notes follow NHS, BfR and ACOG guidance blended into
+            one list, and they do not replace medical advice. It sits under the
+            status chips because the status is what switches those notes on. */}
+        <p data-slot="cautions-guidance" className="text-xs text-muted-foreground">
+          {t('cautions.guidance')}
+        </p>
+        {/* The one-line source attribution the sentence above summarises. */}
+        <p data-slot="cautions-source" className="text-xs text-muted-foreground">
+          {t('cautions.source')}
+        </p>
+
         <FieldError id={form.errorId} errors={form.errors} />
 
         <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">

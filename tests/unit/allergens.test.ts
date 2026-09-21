@@ -4,9 +4,10 @@
  * fieldset rendered for real.
  *
  * EVERY ASSERTION HAS A CONTROL. The parse tests carry an unknown string
- * beside the known ones; the round trip reads through the same schema the
- * backup and the sync snapshot go through, with an unknown entry that must
- * be dropped rather than refused; and the fieldset is asserted by STRUCTURE,
+ * beside the known ones; the round trip reads through the BACKUP schema,
+ * with an unknown entry that must be dropped rather than refused (the sync
+ * merge casts the profile entity without a parse, so it is not what this
+ * file proves); and the fieldset is asserted by STRUCTURE,
  * never by wording, so a rewording in `en/common.json` does not redden this
  * file but a disclaimer that moved out of the fieldset does. The copy is read
  * out of the catalog rather than typed in here, and `allergens.` never
@@ -23,6 +24,7 @@ import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
 import { ALLERGEN_DISCLAIMER_SLOT, AllergenFields } from '../../app/components/allergen-fields';
+import { ALLERGENS } from '../../app/services/vision/schema';
 import {
   ALLERGEN_VALUES,
   ALLERGENS_FIELD,
@@ -121,6 +123,17 @@ describe('the EU 14', () => {
     assert.deepEqual([...ALLERGEN_VALUES], EU_14);
   });
 
+  it('are ONE array at runtime: the profile export and the vision export are the same reference (D8)', () => {
+    // Reference equality, not deep equality: two hand-kept copies with the
+    // same fourteen would pass a deepEqual and still drift on the fifteenth.
+    assert.strictEqual(ALLERGEN_VALUES, ALLERGENS);
+    // The control: a copy with the same members is NOT the same reference,
+    // so the line above is asserting identity and not content.
+    const twin = [...ALLERGENS];
+    assert.deepEqual(twin, [...ALLERGEN_VALUES]);
+    assert.notStrictEqual(twin, ALLERGEN_VALUES);
+  });
+
   it('narrows by name, and a near miss is not one of them', () => {
     assert.equal(isAllergen('molluscs'), true);
     assert.equal(isAllergen('lupin'), true);
@@ -191,19 +204,20 @@ describe('the store round trip', () => {
     assert.deepEqual(await getLocalAllergens({ store }), []);
   });
 
-  it('round trips through the profile normaliser the backup and the sync snapshot share, list intact', async () => {
+  it('round trips through the BACKUP schema, list intact', async () => {
     const store = createPrimaryStore();
     await putLocalProfileGoals({ ...PROFILE }, { store });
     await putLocalAllergens(['gluten', 'molluscs'], { store });
 
     const exported = await exportBackup({ store, now: () => new Date('2026-09-21T09:00:00.000Z') });
-    // The SAME schema the wire snapshot is validated against
-    // (`app/lib/sync/snapshot-partition.ts`), over the row the store wrote.
+    // The export/import schema, over the row the store wrote. This proves the
+    // BACKUP path only: `app/lib/sync/snapshot-sync.ts` casts the merged
+    // profile entity without parsing it, so nothing here speaks for sync.
     const normalised = shareableSnapshotSchema.parse(exported.data);
     assert.deepEqual(normalised.profile?.allergens, ['gluten', 'molluscs']);
   });
 
-  it('drops an unknown entry on the way through the normaliser and keeps the known ones, the control', () => {
+  it('drops an unknown entry on the way through the backup schema and keeps the known ones, the control', () => {
     const normalised = shareableSnapshotSchema.parse({
       foods: [],
       foodLogs: [],

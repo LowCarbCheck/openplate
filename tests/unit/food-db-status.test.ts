@@ -37,6 +37,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
 import { ConfirmDraftForm } from '../../app/routes/scan';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import { clearFoodResolutionCache, resolveIdentifiedFoods } from '../../app/services/food-resolution';
 import {
   clearNutrientReferenceCache,
@@ -277,6 +278,8 @@ const UNAVAILABLE_LINE = JSON.parse(
  */
 function renderReview(foodDb: { ok: boolean; reason: null } | undefined): string {
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     identification: IDENTIFICATION,
     foodDb: foodDb === undefined ? undefined : { ok: foodDb.ok, reason: null },
     modelId: 'test-model',

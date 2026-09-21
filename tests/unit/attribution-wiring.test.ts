@@ -37,6 +37,7 @@ import { parseWithZod } from '@conform-to/zod/v4';
 
 import { PortionStep, buildLoggedEntry, createLogSchema, type AddSearchCandidate } from '../../app/routes/add';
 import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry } from '../../app/routes/scan';
+import { NO_CAUTION_PROFILE } from '../../app/lib/food-cautions';
 import {
   LogRecentSchema,
   QuickAddChipButton,
@@ -230,6 +231,8 @@ function confirmFormData(overrides: { curatedSource?: string; macros?: MacroForm
 function renderConfirmStep(formData: FormData): string {
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
+    // No person to decide for: the review's caution chips are another file's subject (M219/03).
+    cautionProfile: NO_CAUTION_PROFILE,
     // The intake this draft arrived by. A photograph here: these tests are
     // about what the plate path writes, not about which way in produced it.
     intakeSource: 'photo',
@@ -496,9 +499,10 @@ describe('the credit survives every other way an entry is created', () => {
     assert.deepEqual(
       { ...copy, id: 'log-1', dayKey: DAY_KEY, loggedAt: LOGGED_AT_MS, createdAt: LOGGED_AT_MS, logBatchId: null },
       // M123/13 review finding 3 added `carbBasis` to `buildCopiedEntry`'s
-      // field list; `creditedEntry()` carries none, so the copy carries none
-      // either, asserted explicitly here so this deep-equal stays exhaustive.
-      { ...creditedEntry(), portion: undefined, micronutrientsPer100g: undefined, carbBasis: undefined },
+      // field list, and M219/03 added `flags`; `creditedEntry()` carries
+      // neither, so the copy carries neither, asserted explicitly here so
+      // this deep-equal stays exhaustive.
+      { ...creditedEntry(), portion: undefined, micronutrientsPer100g: undefined, carbBasis: undefined, flags: undefined },
     );
   });
 

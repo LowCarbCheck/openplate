@@ -47,6 +47,9 @@ import { scaleMacrosPer100gToServing, type Macros } from '#app/lib/macros';
 import { authoritativeNetCarbsField, encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
 import { cloneMicronutrients, encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrients';
 import { toStoredAttribution } from '#app/lib/attribution';
+import { cautionProfileOf, decideCautions, encodeFoodFlags, foodFlagsField } from '#app/lib/food-cautions';
+import type { CautionProfile } from '#app/lib/food-cautions';
+import { FoodCautionChips } from '#app/components/food-caution-chip';
 import {
   PORTION_SCALE_OPTIONS,
   SCAN_GRAMS_STEP,
@@ -310,6 +313,17 @@ function makeConfirmItemSchema(t: Translate) {
     macroSource: z.string().optional(),
     /** The manufacturer, when the item came off a package. Blank for everything else. */
     brand: z.string().optional(),
+    /**
+     * The model's RAW flags on this item (M219/03): pregnancy categories,
+     * allergens it contains, allergens it may contain. Carried as one hidden
+     * JSON value from the identification so it survives into
+     * `LocalFoodLog.flags`, the `micronutrientsPer100g` precedent. Decoded
+     * leniently by `foodFlagsField`: a blank or a malformed value reads as
+     * "no flags", never as a refused log. The DECISION which flag becomes a
+     * chip is never on this form; it runs at render time from the stored
+     * flags and the profile (D6).
+     */
+    flags: foodFlagsField,
     macros: makeConfirmMacrosSchema(t),
   });
 }
@@ -503,6 +517,11 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     timezone,
     usualSlot,
     usualOffers,
+    // The two profile facts the review's caution chips are decided from
+    // (M219/03). Read here, beside the timezone, off the same profile row;
+    // the chips are computed at render time and nothing about them is
+    // posted.
+    cautionProfile: cautionProfileOf(profile),
   };
 }
 clientLoader.hydrate = true as const;
@@ -983,6 +1002,11 @@ export function buildConfirmedEntry({
     // is NOT withdrawn by a macro edit the way `netCarbsPer100g` above is.
     // Absent for a plain AI plate estimate, which has no printed panel.
     carbBasis: parseCarbBasis(item.carbBasis) ?? undefined,
+    // The model's RAW flags (M219/03), exactly as the identification answered
+    // them, so the diary can show a caution later without re-asking the
+    // model. Absent when the draft carried none. The decision is NOT stored,
+    // see `LocalFoodLog.flags`.
+    flags: item.flags,
   };
 }
 
@@ -1347,6 +1371,7 @@ function ScanFlow({
   timezone,
   usualSlot,
   usualOffers,
+  cautionProfile,
 }: {
   /** The instance's own AI, when this screen resolved one. `null` for an ordinary BYOK scan. */
   managedAi: ManagedAiSettings | null;
@@ -1362,6 +1387,8 @@ function ScanFlow({
   usualSlot: MealType;
   /** What this person usually eats at that slot. Empty renders nothing. */
   usualOffers: UsualAtSlotOffer[];
+  /** The profile facts the review's caution chips are decided from (M219/03). */
+  cautionProfile: CautionProfile;
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
@@ -1678,6 +1705,7 @@ function ScanFlow({
         userId={userId}
         defaultMealType={captureMealType}
         intakeSource={identifyResult?.intakeSource ?? intakeSource}
+        cautionProfile={cautionProfile}
       />
     );
   }
@@ -2543,6 +2571,7 @@ export function ConfirmDraftForm({
   defaultMealType,
   intakeSource,
   typedText,
+  cautionProfile,
 }: {
   identification?: PlateIdentification;
   /** Provider of the attempt, pairs with `modelId` for the scan's cost estimate; without it there is no honest price to show. */
@@ -2591,6 +2620,13 @@ export function ConfirmDraftForm({
    * quote comes with it, above the list, exactly as `UploadForm` drew it.
    */
   typedText: string | null;
+  /**
+   * The profile's reproductive status and allergy list, read by the loader
+   * (M219/03). A REQUIRED KEY for the `foodDb` reason above: a forgotten
+   * profile would render no caution on every review with every check green.
+   * Pass `NO_CAUTION_PROFILE` where there is no person to decide for.
+   */
+  cautionProfile: CautionProfile;
 }) {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
@@ -2682,6 +2718,10 @@ export function ConfirmDraftForm({
             // would be filed as an ordinary AI guess with no brand.
             macroSource: food.macroSource,
             brand: food.brand,
+            // The raw flags, one JSON string, for the same reason as the two
+            // above: they are the model's answer, nothing on this screen edits
+            // them, and a log that lost them would show no caution forever.
+            flags: encodeFoodFlags(food.flags),
             macros: {
               carbs: food.macrosPer100g?.carbs !== undefined ? String(food.macrosPer100g.carbs) : undefined,
               fiber: food.macrosPer100g?.fiber !== undefined ? String(food.macrosPer100g.fiber) : undefined,
@@ -2767,6 +2807,15 @@ export function ConfirmDraftForm({
       // identification rather than from a form field, because none of the
       // three is editable and none of them should be.
       identifiedFood: identification?.foods[index],
+      // The chips this item earns for THIS person (M219/03 D3), from the
+      // model's raw flags and the profile the loader read. Empty for a draft
+      // without an identification and for a person with nothing on the
+      // profile.
+      cautions: decideCautions({
+        flags: identification?.foods[index]?.flags,
+        reproductiveStatus: cautionProfile.reproductiveStatus,
+        allergens: cautionProfile.allergens,
+      }),
       isFromLabel: identification?.foods[index]?.macroSource === 'label',
       // Only offered when the panel stated a WEIGHT. A serving printed as
       // "2 pieces" with no grams is a sentence, not a portion, and a chip that
@@ -2904,6 +2953,13 @@ export function ConfirmDraftForm({
                       </span>
                     )}
                   </div>
+                  {/* THE CAUTIONS, before confirming, so a person can drop the
+                      item (M219/03 D5). Decided here at render time from the
+                      model's raw flags and the profile; nothing about the
+                      decision is posted. Their own row under the badges,
+                      because a hedged sentence wraps and a badge row that
+                      wrapped a sentence read as two badges. */}
+                  <FoodCautionChips cautions={view.cautions} />
                 </div>
                 <span className="flex shrink-0 items-center gap-2 text-sm">
                   <input
@@ -2926,6 +2982,7 @@ export function ConfirmDraftForm({
                   collapsible so they always submit. */}
               <input {...getInputProps(itemFieldset.macroSource, { type: 'hidden' })} />
               <input {...getInputProps(itemFieldset.brand, { type: 'hidden' })} />
+              <input {...getInputProps(itemFieldset.flags, { type: 'hidden' })} />
               {/* The applied match's two snapshotted facts. DERIVED every render
                   from `curatedSource` + the live macro fields (never `form.update`d
                   like `curatedSource` is), so a later macro edit can withdraw the
@@ -3262,6 +3319,7 @@ export default function ScanPlate({ loaderData, actionData }: Route.ComponentPro
         timezone={loaderData.timezone}
         usualSlot={loaderData.usualSlot}
         usualOffers={loaderData.usualOffers}
+        cautionProfile={loaderData.cautionProfile}
       />
     </>
   );
