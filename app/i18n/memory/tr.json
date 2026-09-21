@@ -1903,6 +1903,13 @@
     "at": "2026-09-14",
     "tr": "Hamile veya emziriyor musun?"
   },
+  "1824a92523a90d59": {
+    "en": "Sulphites",
+    "path": "common:allergens.name.sulphites",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Sülfitler"
+  },
   "185c28f5b2cd7df9": {
     "en": "{{value}} g fiber",
     "path": "common:scan.review.match.fiber",
@@ -4472,6 +4479,13 @@
     "at": "2026-09-14",
     "tr": "Her gün kaç tabak fotoğrafı okutabilecekleri. 0 değeri özelliği kapatır."
   },
+  "3aafd4d7320aa00e": {
+    "en": "Food allergies",
+    "path": "common:allergens.legend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Gıda alerjileri"
+  },
   "3abdc545272c91a2": {
     "en": "Serving size (g)",
     "path": "common:add.manual.servingSize",
@@ -5396,6 +5410,13 @@
     "at": "2026-09-14",
     "tr": "Bu davet artık geçerli değil"
   },
+  "48aeea48a315de5e": {
+    "en": "Fish",
+    "path": "common:allergens.name.fish",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Balık"
+  },
   "48d720a948412346": {
     "en": "All releases on GitHub",
     "path": "common:whatsNew.allReleases",
@@ -5717,6 +5738,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yeni bir sürüm çıktığında haberin olsun"
+  },
+  "4d06d4bf12d86dfd": {
+    "en": "Milk",
+    "path": "common:allergens.name.milk",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Süt"
   },
   "4d2b2898c5c5b70f": {
     "en": "Not enough detail",
@@ -6368,6 +6396,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Hesabın kurulurken bir sorun çıktı. Hiçbir şey kaydedilmedi, güvenle tekrar deneyebilirsin."
+  },
+  "54ca297289fa30ab": {
+    "en": "Crustaceans",
+    "path": "common:allergens.name.crustaceans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Kabuklular"
   },
   "54cc203aa7b7893b": {
     "en": "The hosted service is provided \"as is\" and \"as available\", without warranties of any kind, to the fullest extent permitted by law. We do not warrant that it will be uninterrupted, error-free, or that AI estimates and nutrition data will be accurate. To the fullest extent permitted by law, we are not liable for indirect or consequential loss, for loss of data (including data made inaccessible by a lost passphrase), or for decisions made in reliance on estimates produced by your AI provider. Nothing in these terms limits any liability that cannot be limited under applicable law.",
@@ -7181,6 +7216,13 @@
     "at": "2026-09-14",
     "tr": "{{count}} fincan"
   },
+  "5eaa1e09a47c1420": {
+    "en": "Lupin",
+    "path": "common:allergens.name.lupin",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Acı bakla"
+  },
   "5eb65ed9e97f58cb": {
     "en": "Sign in",
     "path": "common:sync.signIn.submit",
@@ -7215,6 +7257,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Günün yükleniyor…"
+  },
+  "5f00e41a2aec6e2c": {
+    "en": "Soybeans",
+    "path": "common:allergens.name.soybeans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Soya fasulyesi"
   },
   "5f52a66a3946e185": {
     "en": "Optional. Shown to you, and to an administrator.",
@@ -9834,6 +9883,13 @@
     "at": "2026-09-14",
     "tr": "Sen değil misin?"
   },
+  "815dc6df73247789": {
+    "en": "Molluscs",
+    "path": "common:allergens.name.molluscs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Yumuşakçalar"
+  },
   "81699d3c49ff6ce2": {
     "en": "That's your first food logged. Nothing else to set up, just keep going.",
     "path": "common:diary.celebration.firstLog",
@@ -11318,6 +11374,13 @@
     "at": "2026-09-19",
     "tr": "Unutulan bir parola."
   },
+  "9283edc90bf88434": {
+    "en": "Nuts",
+    "path": "common:allergens.name.nuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Sert kabuklu yemişler"
+  },
   "92a8cc0b06749d7a": {
     "en": "Nutrition (optional)",
     "path": "common:add.manual.nutritionToggle",
@@ -12410,6 +12473,13 @@
     "at": "2026-09-14",
     "tr": "Yalnızca vaktine değecek bir sürüm çıktığında kısa bir e-posta. Başka hiçbir şey gönderilmez ve dilediğin e-postadan abonelikten çıkabilirsin."
   },
+  "a23ddf3f9fb0df32": {
+    "en": "openplate checks only the foods it recognised from a photo or a description. It can miss hidden ingredients. This is not a safety check.",
+    "path": "common:allergens.disclaimer",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "openplate yalnızca bir fotoğraftan veya açıklamadan tanıdığı yiyecekleri denetler. Gizli malzemeleri gözden kaçırabilir. Bu bir güvenlik denetimi değildir."
+  },
   "a2489729712ce6ae": {
     "en": "Fiber",
     "path": "common:diary.macros.fiber",
@@ -12738,6 +12808,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu cihaza kaydederken bir sorun oluştu. Hiçbir veri kaybolmadı. Tekrar dene."
+  },
+  "a69fe91c2ccc7012": {
+    "en": "Eggs",
+    "path": "common:allergens.name.eggs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Yumurta"
   },
   "a6a81f89df2d73fc": {
     "en": "Both options leave the diary on this device untouched.",
@@ -14993,6 +15070,13 @@
     "at": "2026-09-14",
     "tr": "Lif açığını kapatacak {{count}} yiyecek"
   },
+  "c57bb5a6f8c2cda0": {
+    "en": "Celery",
+    "path": "common:allergens.name.celery",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Kereviz"
+  },
   "c57f7a473dd98095": {
     "en": "Last updated: {{date}}",
     "path": "legal:lastUpdated",
@@ -15384,6 +15468,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu, {{basis}} üzerinden hesaplanan bir tahmindir. Aklında bir miktar varsa kendin yaz."
+  },
+  "cca3256f62408587": {
+    "en": "Mustard",
+    "path": "common:allergens.name.mustard",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Hardal"
   },
   "ccb9da0029898bd4": {
     "en": "Eating style",
@@ -15784,6 +15875,13 @@
     "at": "2026-09-14",
     "tr": "Görünüm ve dil"
   },
+  "d196206e50694e28": {
+    "en": "Peanuts",
+    "path": "common:allergens.name.peanuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Yer fıstığı"
+  },
   "d1b008783e2e31e8": {
     "en": "A new account includes a free trial of {{trialDays}} days. When the trial ends, plate scanning stops until you purchase a plan. The rest of openplate continues to work. Your diary remains on your device, and your account continues to sync.",
     "path": "legal:terms.s4aPaymentTrial",
@@ -16008,6 +16106,13 @@
     "at": "2026-09-14",
     "tr": "Her zamanki başlangıç saati"
   },
+  "d4162d0a23219101": {
+    "en": "Gluten",
+    "path": "common:allergens.name.gluten",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Glüten"
+  },
   "d41b4e3bd50c02de": {
     "en": "Macro ratio: {{ratio}}",
     "path": "common:diary.macroRatio.label",
@@ -16035,6 +16140,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Sağlayıcı değiştirmek için önce bağlantıyı kes."
+  },
+  "d44fbaa40c794d5a": {
+    "en": "Pick the ones that apply. When a photo or a description names a food that contains one of these, the diary shows a small note beside it.",
+    "path": "common:allergens.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Geçerli olanları seç. Bir fotoğraf veya açıklama bunlardan birini içeren bir yiyecek belirttiğinde, günlük bunun yanına küçük bir not ekler."
   },
   "d452f458b2bb0a2a": {
     "en": "What is in the fridge?",
@@ -16182,6 +16294,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İyi, gerçekten tahmin edilmesi zor olacak kadar uzun."
+  },
+  "d6097bdeb74edd76": {
+    "en": "Sesame",
+    "path": "common:allergens.name.sesame",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "tr": "Susam"
   },
   "d62212955e694dd9": {
     "en": "What do you have?",

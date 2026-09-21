@@ -138,6 +138,7 @@ const AI_IDENTIFICATION = {
       estimatedGrams: SERVING_GRAMS,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       macrosPer100g: { kcal: 20, protein: 2, fat: 0.5, carbs: 3 },
     },
   ],

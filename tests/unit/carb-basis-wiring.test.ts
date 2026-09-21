@@ -450,6 +450,7 @@ function sanityIdentification(carbBasis: CarbBasis | undefined) {
         estimatedGrams: 100,
         confidence: 'high' as const,
         macroSource: carbBasis === undefined ? ('estimated' as const) : ('label' as const),
+        flags: { pregnancy: [], allergens: [], mayContain: [] },
         carbBasis,
         macrosPer100g: {
           kcal: 300,

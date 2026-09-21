@@ -6,10 +6,12 @@ import { Form, redirect, useNavigation } from 'react-router';
 import { Trans, useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import {
+  getLocalAllergens,
   getLocalBodyMetrics,
   getLocalProfileGoals,
   listLocalWeightEntries,
   patchLocalProfileGoals,
+  putLocalAllergens,
   putLocalBodyMetrics,
   resolveLocalTimezone,
   upsertLocalWeightEntryForDay,
@@ -27,6 +29,9 @@ import type { BodyMetrics, BodyMetricsSubmission } from '#app/models/body-metric
 import type { ReproductiveStatus } from '#app/lib/local-store/schema';
 import { ReproductiveStatusFields } from '#app/components/reproductive-status-fields';
 import type { ReproductiveStatusValue } from '#app/components/reproductive-status-fields';
+import { AllergenFields } from '#app/components/allergen-fields';
+import { ALLERGENS_FIELD, readAllergensField } from '#app/models/allergens';
+import type { Allergen } from '#app/models/allergens';
 import { todayInTimezone } from '#app/lib/user-days';
 import { clearHomeHint, writeHomeHint } from '#app/lib/home-entry';
 import { CONFIG } from '#app/config';
@@ -246,6 +251,9 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     // person already told us rather than an empty form that looks like it lost
     // their answers. Every field may be null, that is the normal case.
     bodyMetrics: await getLocalBodyMetrics(),
+    // The allergen chips on the same step (M219/02 D4c), prefilled for the
+    // same reason. Empty is the normal case, and Skip leaves it that way.
+    allergens: await getLocalAllergens(),
     // The body step turns a due date into a trimester line, and it does that
     // against the person's own calendar day rather than the browser's.
     today: todayInTimezone(resolveLocalTimezone(profile)),
@@ -346,6 +354,11 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
     // can't be read, rather than advancing having quietly dropped it.
     if (hasBodyMetricsErrors(submission)) return { errors: { ...NO_STEP_ERRORS, body: submission.errors } };
     await putLocalBodyMetrics(submission.values);
+    // The allergen chips travel the same form and the same save (D4c). Read
+    // beside the metrics rather than through their validator, because there
+    // is nothing to reject: an unknown value is dropped, and no chip is an
+    // empty list. Skip never reaches this branch, so it writes nothing.
+    await putLocalAllergens(readAllergensField(formData));
     trackOnboardingStepCompleted('body');
     return redirect(nextStepUrl(step));
   }
@@ -1236,6 +1249,14 @@ function BodyNumberField({
  * stays on the device is in the step description rather than repeated per
  * field (DESIGN.md §10.7 — one phrasing per idea).
  */
+/** The wizard's chip, as the two shared fieldsets on the body step take it: a label wrapping a hidden input. */
+function bodyStepChipClass(isSelected: boolean): string {
+  return cn(
+    'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
+    chipClass(isSelected),
+  );
+}
+
 function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; errors: BodyStepErrors }) {
   const { t } = useTranslation();
   const stored: BodyMetrics = loaderData.bodyMetrics;
@@ -1247,6 +1268,7 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
     pregnancyDueDate: stored.pregnancyDueDate ?? '',
     lactationStartDate: stored.lactationStartDate ?? '',
   });
+  const [allergens, setAllergens] = useState<Allergen[]>(loaderData.allergens);
 
   const sexOptions = [
     ...BIOLOGICAL_SEX_VALUES.map((value) => ({ value, label: t(`bodyMetrics.sex.${value}`) })),
@@ -1317,12 +1339,19 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
                 [t(errors.lactationStartDate, { weeks: MAX_WEEKS_UNTIL_DUE_DATE })]
               : undefined,
           }}
-          chipClassName={(isSelected) =>
-            cn(
-              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
-              chipClass(isSelected),
-            )
-          }
+          chipClassName={bodyStepChipClass}
+        />
+        {/* The same fieldset `/settings/profile` shows, component and all
+            (M219/02 D4c): a person with a food allergy wants it set on day
+            one, and this is already the one screen that asks for health
+            data. The sentence about what a chip is not is part of the
+            component, so it is said here too. Still optional: Skip walks
+            past it and leaves the list empty, which means no chip. */}
+        <AllergenFields
+          value={allergens}
+          onChange={setAllergens}
+          name={ALLERGENS_FIELD}
+          chipClassName={bodyStepChipClass}
         />
         <StepActions primaryIntent={INTENT.SAVE_BODY} primaryPendingLabel={t('onboarding.actions.saving')} />
       </Form>

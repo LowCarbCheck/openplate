@@ -437,9 +437,25 @@
  * union and never an enum, for the `FastProtocolId` widening reason: a row
  * written by a NEWER build must be HELD by an older one, not rejected. An
  * unknown award key is kept, not rendered.
+ *
+ * NOTE (M219/02, the allergens): `SCHEMA_VERSION` v23 -> v24 adds ONE OPTIONAL
+ * field, `allergens`, to the EXISTING `LocalProfileGoals` entity, so it is
+ * under the same optional-field rules as the M206 and M210 bumps above and NOT
+ * under the v6 -> v7 or the v17 -> v18 rules. A pre-v24 row, and a v23 backup
+ * envelope, simply lacks the key and reads back as a valid v24 profile with it
+ * absent, which every reader treats as "none listed". There is therefore no
+ * `migrateSnapshotToV24` step in `backup.ts` and there must not be one; the
+ * one new line on `profileGoalsSchema` IS needed, because zod strips
+ * unrecognized keys and would drop the list on every export/import round trip.
+ *
+ * That line PARSES rather than refuses: it narrows through `parseAllergens`,
+ * so a backup naming an allergen this build does not know restores with that
+ * entry dropped instead of failing whole, the same way an unknown reproductive
+ * status has always read as `null`.
  */
 import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
 import type { EatingStyleId } from '#app/lib/eating-style';
+import type { Allergen } from '#app/models/allergens';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { Macros } from '#app/lib/macros';
@@ -451,7 +467,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 23;
+export const SCHEMA_VERSION = 24;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -1153,6 +1169,22 @@ export interface LocalProfileGoals {
    * v23 without it.
    */
   gamificationHidden?: boolean | null;
+  /**
+   * The allergens this person listed from the EU 14 (added v24, M219/02), or
+   * absent for a profile written before the question existed. An EMPTY list
+   * and an absent key mean the same thing to every reader, "none listed", so
+   * Skip on the onboarding body step writes nothing and a chip never shows.
+   *
+   * It lives here, beside `reproductiveStatus`, under the same promise: it
+   * rides the JSON backup and the E2EE sync payload like every other profile
+   * field and is never part of any outbound request. The model is asked to
+   * flag the EU 14 on every food it sees, whoever is asking; the device alone
+   * compares those flags with this list (`#app/models/allergens`).
+   *
+   * One row, last write wins between devices, like the rest of this record
+   * (D4b): the list gets no merge rule of its own.
+   */
+  allergens?: Allergen[];
 }
 
 /**

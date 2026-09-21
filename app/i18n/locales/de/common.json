@@ -185,6 +185,27 @@
       "connect": "KI einrichten"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate prüft nur die Lebensmittel, die es anhand eines Fotos oder einer Beschreibung erkannt hat. Versteckte Zutaten kann es übersehen. Das ist keine Sicherheitsprüfung.",
+    "hint": "Wähle die zutreffenden aus. Wenn ein Foto oder eine Beschreibung ein Lebensmittel nennt, das eines davon enthält, zeigt das Tagebuch einen kleinen Hinweis daneben an.",
+    "legend": "Lebensmittelallergien",
+    "name": {
+      "celery": "Sellerie",
+      "crustaceans": "Krebstiere",
+      "eggs": "Eier",
+      "fish": "Fisch",
+      "gluten": "Gluten",
+      "lupin": "Lupinen",
+      "milk": "Milch",
+      "molluscs": "Weichtiere",
+      "mustard": "Senf",
+      "nuts": "Schalenfrüchte",
+      "peanuts": "Erdnüsse",
+      "sesame": "Sesam",
+      "soybeans": "Sojabohnen",
+      "sulphites": "Sulfite"
+    }
+  },
   "banners": {
     "backupDismiss": "Backup-Hinweis ausblenden",
     "backupExportNow": "Jetzt exportieren",

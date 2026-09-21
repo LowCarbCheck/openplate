@@ -155,6 +155,7 @@ const AI_IDENTIFICATION: PlateIdentification = {
       estimatedGrams: 150,
       confidence: 'high',
       macroSource: 'estimated',
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       macrosPer100g: { carbs: 0, protein: 20 },
     },
     {
@@ -162,6 +163,7 @@ const AI_IDENTIFICATION: PlateIdentification = {
       estimatedGrams: 80,
       confidence: 'medium',
       macroSource: 'estimated',
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       macrosPer100g: { carbs: 3, protein: 1 },
     },
     {
@@ -169,6 +171,7 @@ const AI_IDENTIFICATION: PlateIdentification = {
       estimatedGrams: 20,
       confidence: 'high',
       macroSource: 'label',
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       brand: 'Test',
       servingSize: { asPrinted: '1 slice (20 g)', grams: 20 },
       carbBasis: 'available',

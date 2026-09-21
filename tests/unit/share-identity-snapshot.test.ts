@@ -65,8 +65,8 @@ function snapshot(overrides: Partial<LocalStoreSnapshot> = {}): LocalStoreSnapsh
 }
 
 describe('the local schema version', () => {
-  it('is 23, the activity marks and the awards (two whole new entities in one bump)', () => {
-    assert.equal(SCHEMA_VERSION, 23);
+  it('is 24, the allergen list on the profile, one bump past the marks and the awards', () => {
+    assert.equal(SCHEMA_VERSION, 24);
   });
 });
 

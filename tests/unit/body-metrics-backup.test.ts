@@ -17,16 +17,30 @@
  * `lactationStartDate`, so the same three claims now carry a date each. A
  * dropped date is worse than a dropped status: a restored pregnancy would still
  * say "pregnant" and no longer know how far along it is.
+ *
+ * M219/02 added the allergen list under the same rules again, and it is the
+ * one field here whose loss is a risk rather than a lost figure: a re-imported
+ * diary would stop flagging the milk a person told it about. The last block
+ * carries it through the same export and restore, with an unknown entry as
+ * the control that the line parses rather than refuses.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createPrimaryStore } from '../../app/lib/local-store/store';
-import { exportBackup, migrateEnvelopeForward, restoreBackup, serializeBackup } from '../../app/lib/local-store/backup';
+import {
+  exportBackup,
+  migrateEnvelopeForward,
+  parseBackupEnvelope,
+  restoreBackup,
+  serializeBackup,
+} from '../../app/lib/local-store/backup';
 import {
   clearLocalBodyMetrics,
+  getLocalAllergens,
   getLocalBodyMetrics,
   getLocalProfileGoals,
+  putLocalAllergens,
   putLocalBodyMetrics,
   putLocalProfileGoals,
 } from '../../app/lib/local-store/primary-store';
@@ -62,11 +76,13 @@ describe('schema version', () => {
   // exactly as `fasts` and `savedMeals` before it.
   // And the ACTIVITY MARKS plus the AWARDS at v23 (M235/02), two whole new
   // entities in one bump, under that same `.default([])` rule.
+  // And the ALLERGEN LIST on the profile at v24 (M219/02), one optional
+  // field on the existing entity, under the v8 rules again.
   // What it guards is that a bump is never silent ,
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 23, bumped past the v8 body-metrics bump by everything through the awards', () => {
-    assert.equal(SCHEMA_VERSION, 23);
+  it('is 24, bumped past the v8 body-metrics bump by everything through the allergens', () => {
+    assert.equal(SCHEMA_VERSION, 24);
   });
 });
 
@@ -233,5 +249,92 @@ describe('the store accessors', () => {
 
     assert.deepEqual(await getLocalBodyMetrics({ store }), EMPTY_BODY_METRICS);
     assert.equal((await getLocalProfileGoals({ store }))?.goalNetCarbsCeilingG, 50);
+  });
+});
+
+describe('the allergen list (M219/02)', () => {
+  it('survives the backup round trip beside the body metrics', async () => {
+    const store = createPrimaryStore();
+    await putLocalProfileGoals({ ...V7_PROFILE, trackingFocus: 'net-carbs' }, { store });
+    await putLocalBodyMetrics(
+      {
+        heightCm: 165,
+        birthYear: 1990,
+        biologicalSex: 'female',
+        reproductiveStatus: 'none',
+        pregnancyDueDate: null,
+        lactationStartDate: null,
+      },
+      { store },
+    );
+    await putLocalAllergens(['milk', 'peanuts'], { store });
+
+    const restored = createPrimaryStore();
+    await restoreBackup(
+      serializeBackup(await exportBackup({ store, now: () => new Date('2026-09-21T09:00:00.000Z') })),
+      { store: restored },
+    );
+
+    assert.deepEqual(await getLocalAllergens({ store: restored }), ['milk', 'peanuts']);
+    // The metrics beside it are untouched by the new line.
+    assert.equal((await getLocalBodyMetrics({ store: restored })).heightCm, 165);
+  });
+
+  it('reads as the empty list off a device that never answered, and off a v23 envelope', async () => {
+    const store = createPrimaryStore();
+    await putLocalProfileGoals({ ...V7_PROFILE, trackingFocus: 'habit' }, { store });
+    assert.deepEqual(await getLocalAllergens({ store }), []);
+
+    const restored = createPrimaryStore();
+    await restoreBackup(
+      JSON.stringify({
+        schemaVersion: 23,
+        exportedAt: '2026-09-20T10:00:00.000Z',
+        data: { foods: [], foodLogs: [], weightEntries: [], fasts: [], profile: V7_PROFILE },
+      }),
+      { store: restored },
+    );
+    assert.deepEqual(await getLocalAllergens({ store: restored }), []);
+    // Absent, not `[]`-filled: no migration step was written for this bump.
+    assert.equal((await getLocalProfileGoals({ store: restored }))?.allergens, undefined);
+  });
+
+  it('drops an entry it does not know on import and keeps the rest, the control for "parses, never refuses"', () => {
+    const envelope = migrateEnvelopeForward(
+      parseBackupEnvelope(
+        JSON.stringify({
+          schemaVersion: 24,
+          exportedAt: '2026-09-21T10:00:00.000Z',
+          data: {
+            foods: [],
+            foodLogs: [],
+            weightEntries: [],
+            fasts: [],
+            profile: { ...V7_PROFILE, allergens: ['milk', 'kryptonite', 'milk', 'sesame'] },
+          },
+        }),
+      ),
+    );
+    assert.deepEqual(envelope.data.profile?.allergens, ['milk', 'sesame']);
+  });
+
+  it('refuses a list that is not a list of strings, so the parse above is not accepting anything at all', () => {
+    assert.throws(() =>
+      migrateEnvelopeForward(
+        parseBackupEnvelope(
+          JSON.stringify({
+            schemaVersion: 24,
+            exportedAt: '2026-09-21T10:00:00.000Z',
+            data: {
+              foods: [],
+              foodLogs: [],
+              weightEntries: [],
+              fasts: [],
+              profile: { ...V7_PROFILE, allergens: 'milk' },
+            },
+          }),
+        ),
+      ),
+    );
   });
 });

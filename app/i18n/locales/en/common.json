@@ -185,6 +185,27 @@
       "connect": "Set up AI"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate checks only the foods it recognised from a photo or a description. It can miss hidden ingredients. This is not a safety check.",
+    "hint": "Pick the ones that apply. When a photo or a description names a food that contains one of these, the diary shows a small note beside it.",
+    "legend": "Food allergies",
+    "name": {
+      "celery": "Celery",
+      "crustaceans": "Crustaceans",
+      "eggs": "Eggs",
+      "fish": "Fish",
+      "gluten": "Gluten",
+      "lupin": "Lupin",
+      "milk": "Milk",
+      "molluscs": "Molluscs",
+      "mustard": "Mustard",
+      "nuts": "Nuts",
+      "peanuts": "Peanuts",
+      "sesame": "Sesame",
+      "soybeans": "Soybeans",
+      "sulphites": "Sulphites"
+    }
+  },
   "banners": {
     "backupDismiss": "Dismiss backup reminder",
     "backupExportNow": "Export now",

@@ -185,6 +185,27 @@
       "connect": "Configura l'IA"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate controlla solo gli alimenti che ha riconosciuto da una foto o da una descrizione. Può non rilevare ingredienti nascosti. Questo non è un controllo di sicurezza.",
+    "hint": "Seleziona quelli pertinenti. Quando una foto o una descrizione indica un alimento che contiene uno di questi elementi, il diario mostra una piccola nota accanto ad esso.",
+    "legend": "Allergie alimentari",
+    "name": {
+      "celery": "Sedano",
+      "crustaceans": "Crostacei",
+      "eggs": "Uova",
+      "fish": "Pesce",
+      "gluten": "Glutine",
+      "lupin": "Lupini",
+      "milk": "Latte",
+      "molluscs": "Molluschi",
+      "mustard": "Senape",
+      "nuts": "Frutta a guscio",
+      "peanuts": "Arachidi",
+      "sesame": "Sesamo",
+      "soybeans": "Soia",
+      "sulphites": "Solfiti"
+    }
+  },
   "banners": {
     "backupDismiss": "Ignora il promemoria di backup",
     "backupExportNow": "Esporta ora",

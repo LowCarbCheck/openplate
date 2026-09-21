@@ -20,6 +20,7 @@ import { displayPortionSchema } from '#app/lib/portions';
 import { CARB_BASES } from '#app/lib/net-carbs';
 import { PANTRY_CATEGORIES, PANTRY_UNITS } from '#app/services/vision/pantry-schema';
 import { EATING_STYLE_IDS } from '#app/lib/eating-style';
+import { parseAllergens } from '#app/models/allergens';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
 import { backfillSnapshotHistory, GAMIFICATION_BACKFILL_SCHEMA_VERSION } from '#app/lib/gamification/backfill';
 import { LAST_EXPORT_VALUE } from './store';
@@ -273,6 +274,21 @@ const profileGoalsSchema = z.object({
   // the switch would also fail to reach their other device, since the merged
   // snapshot goes through this same schema.
   gamificationHidden: z.boolean().nullable().optional(),
+  // Added v24 (the allergens, M219/02), one more OPTIONAL field on the same
+  // entity, under the same rules as every one above it: a v23 envelope lacks
+  // the key, which already reads as "none listed", so no forward-migration
+  // step was added. The line is needed because zod strips unrecognized keys,
+  // and this is the one field in the file whose loss can put a person at
+  // risk rather than merely lose them a preference: a re-imported diary would
+  // stop flagging the milk they told it about, with no word said.
+  //
+  // `.transform(parseAllergens)` rather than `z.array(z.enum(ALLERGEN_VALUES))`:
+  // an unknown entry is dropped, not refused, so a hand-edited file or one
+  // written by a build with a longer list restores with the entries this
+  // build knows, the same way an unknown reproductive status reads as `null`.
+  // There is no `.nullable()` because the store never writes `null` here, an
+  // empty list is how "none" is spelled (`putLocalAllergens`).
+  allergens: z.array(z.string()).transform(parseAllergens).optional(),
 });
 
 const fastSchema = z.object({

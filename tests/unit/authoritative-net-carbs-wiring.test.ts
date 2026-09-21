@@ -489,6 +489,7 @@ const AI_IDENTIFICATION = {
       estimatedGrams: SERVING_GRAMS,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       macrosPer100g: AI_DRAFT_MACROS,
     },
   ],

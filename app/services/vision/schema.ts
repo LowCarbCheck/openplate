@@ -43,6 +43,99 @@ const RawServingSizeSchema = z.object({
   grams: z.number().nullable(),
 });
 
+////////////////////////////////////////////////////////////////////////////////
+// Food flags (M219 spec 01)
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * THE MODEL CLASSIFIES, THE APP DECIDES (M219 D1). Every food comes back with
+ * the pregnancy categories it falls into and the EU 14 allergens it carries,
+ * filled for EVERY food regardless of who is asking. Nothing about the person
+ * goes into the request: the reproductive status and the allergy list stay on
+ * the device, and which flag becomes a visible chip is a pure decision made
+ * there (spec 03). The lists live HERE, beside the schema that asks for them,
+ * the same way `PANTRY_CATEGORIES` lives beside the pantry schema, so the
+ * profile (spec 02) and the chip (spec 03) import one vocabulary.
+ *
+ * The v1 pregnancy list is the categories the UK NHS, the German BfR and the
+ * US ACOG agree on. Each row names the bodies that list it, so the table can
+ * be re-checked without redoing the research (D1b). The two categories only
+ * the BfR lists (a tonic drink, a seed) are deliberately NOT in v1 (D1a); the
+ * milestone README names them, this file must not, so an absence grep holds.
+ */
+export const PREGNANCY_CATEGORIES = [
+  /** Unpasteurised milk and anything made from it. NHS, BfR, ACOG. */
+  'raw-dairy',
+  /** Mould-ripened and blue soft cheese, brie and camembert included. NHS, BfR, ACOG. */
+  'soft-cheese',
+  /** Raw or undercooked meat, cured raw meat and pate included. NHS, BfR, ACOG. */
+  'raw-meat',
+  /** Raw or lightly cooked egg, and dishes made with it. NHS, BfR, ACOG. */
+  'raw-egg',
+  /** Raw fish and raw shellfish, sushi and oysters included. NHS, BfR, ACOG. */
+  'raw-fish',
+  /** Cold-smoked fish, smoked salmon and gravlax included. BfR, ACOG. */
+  'smoked-fish',
+  /** Shark, swordfish, marlin, king mackerel, bigeye tuna; tuna limited. NHS, BfR, ACOG. */
+  'high-mercury-fish',
+  /** Liver, liver products and retinol supplements. NHS, BfR, ACOG. */
+  'liver-retinol',
+  /** Any alcoholic drink or dish that keeps its alcohol. NHS, BfR, ACOG. */
+  'alcohol',
+  /** Coffee, strong tea, energy drinks; limited to 200 mg a day. NHS, BfR, ACOG. */
+  'caffeine',
+  /** Raw sprouts and raw sprouted seeds. BfR, ACOG. */
+  'raw-sprouts',
+] as const;
+export type PregnancyCategory = (typeof PREGNANCY_CATEGORIES)[number];
+
+/** The 14 allergens EU Regulation 1169/2011 Annex II requires a label to declare. */
+export const ALLERGENS = [
+  'gluten',
+  'crustaceans',
+  'eggs',
+  'fish',
+  'peanuts',
+  'soybeans',
+  'milk',
+  'nuts',
+  'celery',
+  'mustard',
+  'sesame',
+  'sulphites',
+  'lupin',
+  'molluscs',
+] as const;
+export type Allergen = (typeof ALLERGENS)[number];
+
+/**
+ * The parsed flags on one food, three arrays that are always present so no
+ * consumer handles `undefined`. `allergens` is what the food CONTAINS, an
+ * ingredient the model can see or name. `mayContain` is what the model cannot
+ * rule out: a hidden ingredient, likely cross-contact, or a dish whose recipe
+ * varies (D1e). An allergen is never in both; `normalizeFoodFlags` keeps it in
+ * `allergens` only, so a chip never says "contains" and "may contain" at once.
+ */
+export interface FoodFlags {
+  pregnancy: PregnancyCategory[];
+  allergens: Allergen[];
+  mayContain: Allergen[];
+}
+
+/**
+ * The flags shape every provider is ASKED for: three enum arrays, all
+ * required, so a strict structured-output provider is never handed an optional
+ * field it would reject (D1d). Two arrays over one enum rather than one array
+ * of objects, because those providers handle an enum array well and an object
+ * array poorly, and because an older prompt that knows only `allergens` still
+ * parses.
+ */
+const RawFoodFlagsSchema = z.object({
+  pregnancy: z.array(z.enum(PREGNANCY_CATEGORIES)),
+  allergens: z.array(z.enum(ALLERGENS)),
+  mayContain: z.array(z.enum(ALLERGENS)),
+});
+
 /**
  * The item shape EVERY provider is ASKED to produce — the source of the
  * provider-facing `PLATE_IDENTIFICATION_JSON_SCHEMA` below. All-required, with
@@ -90,6 +183,12 @@ const RawIdentifiedFoodSchema = z.object({
    * providers are still ASKED for exactly `"total" | "available" | null`.
    */
   carbBasis: z.enum(CARB_BASES).nullable().catch(null),
+  /**
+   * See {@link RawFoodFlagsSchema}. Strict HERE, because this is what the
+   * provider is asked for; the parse side widens it (`RawIdentifiedFoodParseSchema`),
+   * so a plate never fails over one invented category.
+   */
+  flags: RawFoodFlagsSchema,
 });
 
 /**
@@ -125,9 +224,31 @@ export const PlateIdentificationSchema = z.object({
  * every food it sees. Tolerate-and-preserve on the way in; never demand on the
  * way out.
  */
+/**
+ * One flag list as it may ARRIVE: any strings, or nothing at all. The wire
+ * schema asks for the enum; this accepts whatever came back and leaves the
+ * narrowing to `normalizeFoodFlags`, so an invented word costs one word and
+ * never the plate (M219 D2).
+ */
+const LenientFlagListSchema = z.array(z.string()).nullish();
+
+/**
+ * The flags object as it may ARRIVE. `mayContain` was added after
+ * `allergens` (D1e), so a prompt that predates it sends two keys, and a BYOK
+ * model that ignores the field sends none; both parse.
+ */
+const LenientFoodFlagsSchema = z.object({
+  pregnancy: LenientFlagListSchema,
+  allergens: LenientFlagListSchema,
+  mayContain: LenientFlagListSchema,
+});
+
 const RawIdentifiedFoodParseSchema = RawIdentifiedFoodSchema.extend({
   provenance: z.enum(MACRO_PROVENANCE_VALUES).optional(),
   attribution: z.string().nullable().optional(),
+  // THE JSON SCHEMA IS STRICT, THE ZOD SCHEMA IS LENIENT (D1d): the field is
+  // demanded on the way out and tolerated on the way in.
+  flags: LenientFoodFlagsSchema.nullish(),
 });
 
 /**
@@ -152,6 +273,62 @@ export type UnvalidatedProviderJson = z.infer<ReturnType<typeof z.json>>;
 type RawPlateIdentification = z.infer<typeof PlateIdentificationParseSchema>;
 type RawIdentifiedFood = z.infer<typeof RawIdentifiedFoodParseSchema>;
 type RawMacros = z.infer<typeof RawMacrosSchema>;
+type RawFoodFlags = z.infer<typeof LenientFoodFlagsSchema>;
+
+/**
+ * Vite substitutes `import.meta.env.DEV` at build time. Under plain Node,
+ * where the unit tier runs, `import.meta.env` is undefined, which reads as
+ * "not development": the tier is silent by default, and a test that wants the
+ * warning switches it on through `normalizeFoodFlags`'s `isDev` option.
+ */
+function isDevBuild(): boolean {
+  return Boolean(import.meta.env) && import.meta.env.DEV === true;
+}
+
+/**
+ * The known members of one arriving list, in arrival order, without repeats.
+ * Every unknown string is dropped and, in development only, reported: a silent
+ * filter hides a prompt that has drifted, and a production log line would
+ * name a food the person photographed (M219 D2).
+ */
+function keepKnownFlags<TFlag extends string>(options: {
+  field: keyof FoodFlags;
+  arrived: readonly string[] | null | undefined;
+  known: readonly TFlag[];
+  isDev: boolean;
+}): TFlag[] {
+  const kept: TFlag[] = [];
+  for (const value of options.arrived ?? []) {
+    const match = options.known.find((flag) => flag === value);
+    if (match === undefined) {
+      if (options.isDev) console.warn(`[vision] dropped unknown flags.${options.field} value "${value}"`);
+      continue;
+    }
+    if (!kept.includes(match)) kept.push(match);
+  }
+  return kept;
+}
+
+/**
+ * The arriving flags, or their absence, to the three arrays every consumer
+ * relies on. Exported with `isDev` as an option, rather than read inside, so
+ * the unit tier can prove the warning fires in development and stays silent
+ * otherwise without owning a Vite build. `normalizeFood` passes the real
+ * answer.
+ */
+export function normalizeFoodFlags(
+  arrived: RawFoodFlags | null | undefined,
+  options: { isDev: boolean } = { isDev: isDevBuild() },
+): FoodFlags {
+  const isDev = options.isDev;
+  const pregnancy = keepKnownFlags({ field: 'pregnancy', arrived: arrived?.pregnancy, known: PREGNANCY_CATEGORIES, isDev });
+  const allergens = keepKnownFlags({ field: 'allergens', arrived: arrived?.allergens, known: ALLERGENS, isDev });
+  const mayContain = keepKnownFlags({ field: 'mayContain', arrived: arrived?.mayContain, known: ALLERGENS, isDev })
+    // CONTAINS WINS. An allergen the model named in both lists is a certainty
+    // and a doubt about the same thing; the certainty is the one to keep (D1e).
+    .filter((allergen) => !allergens.includes(allergen));
+  return { pregnancy, allergens, mayContain };
+}
 
 function stripNullMacros(macros: RawMacros): IdentifiedFoodMacros {
   const result: IdentifiedFoodMacros = {};
@@ -192,6 +369,7 @@ function normalizeFood(food: RawIdentifiedFood): IdentifiedFood {
     portionHint: food.portionHint ?? undefined,
     macrosPer100g: food.macrosPer100g ? stripNullMacros(food.macrosPer100g) : undefined,
     macroSource: food.macroSource,
+    flags: normalizeFoodFlags(food.flags),
   };
   // NULL BECOMES ABSENT, the same convention every other field here uses. A
   // brand of `''` or a `carbBasis` of `'total'` invented for an estimated item

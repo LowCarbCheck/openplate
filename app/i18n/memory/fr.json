@@ -1903,6 +1903,13 @@
     "at": "2026-09-14",
     "fr": "Enceinte ou allaitante ?"
   },
+  "1824a92523a90d59": {
+    "en": "Sulphites",
+    "path": "common:allergens.name.sulphites",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Sulfites"
+  },
   "185c28f5b2cd7df9": {
     "en": "{{value}} g fiber",
     "path": "common:scan.review.match.fiber",
@@ -4472,6 +4479,13 @@
     "at": "2026-09-14",
     "fr": "Nombre de photos d'assiette analysables par jour. Mettre 0 pour désactiver."
   },
+  "3aafd4d7320aa00e": {
+    "en": "Food allergies",
+    "path": "common:allergens.legend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Allergies alimentaires"
+  },
   "3abdc545272c91a2": {
     "en": "Serving size (g)",
     "path": "common:add.manual.servingSize",
@@ -5396,6 +5410,13 @@
     "at": "2026-09-14",
     "fr": "Cette invitation n'est plus valide"
   },
+  "48aeea48a315de5e": {
+    "en": "Fish",
+    "path": "common:allergens.name.fish",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Poisson"
+  },
   "48d720a948412346": {
     "en": "All releases on GitHub",
     "path": "common:whatsNew.allReleases",
@@ -5717,6 +5738,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Recevoir les nouveautés"
+  },
+  "4d06d4bf12d86dfd": {
+    "en": "Milk",
+    "path": "common:allergens.name.milk",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Lait"
   },
   "4d2b2898c5c5b70f": {
     "en": "Not enough detail",
@@ -6368,6 +6396,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Une erreur est survenue lors de la configuration de ton compte. Rien n'a été enregistré, tu peux réessayer sans risque."
+  },
+  "54ca297289fa30ab": {
+    "en": "Crustaceans",
+    "path": "common:allergens.name.crustaceans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Crustacés"
   },
   "54cc203aa7b7893b": {
     "en": "The hosted service is provided \"as is\" and \"as available\", without warranties of any kind, to the fullest extent permitted by law. We do not warrant that it will be uninterrupted, error-free, or that AI estimates and nutrition data will be accurate. To the fullest extent permitted by law, we are not liable for indirect or consequential loss, for loss of data (including data made inaccessible by a lost passphrase), or for decisions made in reliance on estimates produced by your AI provider. Nothing in these terms limits any liability that cannot be limited under applicable law.",
@@ -7181,6 +7216,13 @@
     "at": "2026-09-14",
     "fr": "{{count}} tasse"
   },
+  "5eaa1e09a47c1420": {
+    "en": "Lupin",
+    "path": "common:allergens.name.lupin",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Lupin"
+  },
   "5eb65ed9e97f58cb": {
     "en": "Sign in",
     "path": "common:sync.signIn.submit",
@@ -7215,6 +7257,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Chargement de ta journée…"
+  },
+  "5f00e41a2aec6e2c": {
+    "en": "Soybeans",
+    "path": "common:allergens.name.soybeans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Soja"
   },
   "5f52a66a3946e185": {
     "en": "Optional. Shown to you, and to an administrator.",
@@ -9834,6 +9883,13 @@
     "at": "2026-09-14",
     "fr": "Ce n'est pas toi ?"
   },
+  "815dc6df73247789": {
+    "en": "Molluscs",
+    "path": "common:allergens.name.molluscs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Mollusques"
+  },
   "81699d3c49ff6ce2": {
     "en": "That's your first food logged. Nothing else to set up, just keep going.",
     "path": "common:diary.celebration.firstLog",
@@ -11318,6 +11374,13 @@
     "at": "2026-09-19",
     "fr": "Phrase secrète oubliée."
   },
+  "9283edc90bf88434": {
+    "en": "Nuts",
+    "path": "common:allergens.name.nuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Fruits à coque"
+  },
   "92a8cc0b06749d7a": {
     "en": "Nutrition (optional)",
     "path": "common:add.manual.nutritionToggle",
@@ -12410,6 +12473,13 @@
     "at": "2026-09-14",
     "fr": "Un court e-mail quand une version en vaut la peine. Rien d'autre, et tu peux te désinscrire de chacun d'entre eux."
   },
+  "a23ddf3f9fb0df32": {
+    "en": "openplate checks only the foods it recognised from a photo or a description. It can miss hidden ingredients. This is not a safety check.",
+    "path": "common:allergens.disclaimer",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "openplate vérifie seulement les aliments reconnus à partir d'une photo ou d'une description. Des ingrédients cachés peuvent lui échapper. Ceci n'est pas un contrôle de sécurité."
+  },
   "a2489729712ce6ae": {
     "en": "Fiber",
     "path": "common:diary.macros.fiber",
@@ -12738,6 +12808,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Une erreur est survenue lors de l'enregistrement sur cet appareil. Rien n'est perdu. Réessaie."
+  },
+  "a69fe91c2ccc7012": {
+    "en": "Eggs",
+    "path": "common:allergens.name.eggs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Œufs"
   },
   "a6a81f89df2d73fc": {
     "en": "Both options leave the diary on this device untouched.",
@@ -14993,6 +15070,13 @@
     "at": "2026-09-14",
     "fr": "{{count}} aliment pour combler le manque de fibres"
   },
+  "c57bb5a6f8c2cda0": {
+    "en": "Celery",
+    "path": "common:allergens.name.celery",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Céleri"
+  },
   "c57f7a473dd98095": {
     "en": "Last updated: {{date}}",
     "path": "legal:lastUpdated",
@@ -15384,6 +15468,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Il s'agit d'une estimation calculée à partir de {{basis}}. Saisis ta propre valeur si tu en as une."
+  },
+  "cca3256f62408587": {
+    "en": "Mustard",
+    "path": "common:allergens.name.mustard",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Moutarde"
   },
   "ccb9da0029898bd4": {
     "en": "Eating style",
@@ -15784,6 +15875,13 @@
     "at": "2026-09-14",
     "fr": "Apparence et langue"
   },
+  "d196206e50694e28": {
+    "en": "Peanuts",
+    "path": "common:allergens.name.peanuts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Arachides"
+  },
   "d1b008783e2e31e8": {
     "en": "A new account includes a free trial of {{trialDays}} days. When the trial ends, plate scanning stops until you purchase a plan. The rest of openplate continues to work. Your diary remains on your device, and your account continues to sync.",
     "path": "legal:terms.s4aPaymentTrial",
@@ -16008,6 +16106,13 @@
     "at": "2026-09-14",
     "fr": "Heure de début habituelle"
   },
+  "d4162d0a23219101": {
+    "en": "Gluten",
+    "path": "common:allergens.name.gluten",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Gluten"
+  },
   "d41b4e3bd50c02de": {
     "en": "Macro ratio: {{ratio}}",
     "path": "common:diary.macroRatio.label",
@@ -16035,6 +16140,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Pour changer de fournisseur, déconnecte-toi d'abord."
+  },
+  "d44fbaa40c794d5a": {
+    "en": "Pick the ones that apply. When a photo or a description names a food that contains one of these, the diary shows a small note beside it.",
+    "path": "common:allergens.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Sélectionne ceux qui s'appliquent. Quand une photo ou une description mentionne un aliment contenant l'un d'eux, le journal affiche une petite note à côté."
   },
   "d452f458b2bb0a2a": {
     "en": "What is in the fridge?",
@@ -16182,6 +16294,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Bien, assez long pour être véritablement difficile à deviner."
+  },
+  "d6097bdeb74edd76": {
+    "en": "Sesame",
+    "path": "common:allergens.name.sesame",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "fr": "Sésame"
   },
   "d62212955e694dd9": {
     "en": "What do you have?",

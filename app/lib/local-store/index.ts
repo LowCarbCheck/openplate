@@ -77,6 +77,10 @@ export {
   getLocalBodyMetrics,
   putLocalBodyMetrics,
   clearLocalBodyMetrics,
+  // Allergens (M219/02), one optional list on the same profile row, never
+  // part of any outbound request.
+  getLocalAllergens,
+  putLocalAllergens,
   // Fasts (M132). `createLocalFast` is the GUARDED create (one open fast at a
   // time); `putLocalFast` is the unguarded upsert the backup restore needs.
   createLocalFast,

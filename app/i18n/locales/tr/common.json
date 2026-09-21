@@ -185,6 +185,27 @@
       "connect": "Yapay zekayı ayarla"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate yalnızca bir fotoğraftan veya açıklamadan tanıdığı yiyecekleri denetler. Gizli malzemeleri gözden kaçırabilir. Bu bir güvenlik denetimi değildir.",
+    "hint": "Geçerli olanları seç. Bir fotoğraf veya açıklama bunlardan birini içeren bir yiyecek belirttiğinde, günlük bunun yanına küçük bir not ekler.",
+    "legend": "Gıda alerjileri",
+    "name": {
+      "celery": "Kereviz",
+      "crustaceans": "Kabuklular",
+      "eggs": "Yumurta",
+      "fish": "Balık",
+      "gluten": "Glüten",
+      "lupin": "Acı bakla",
+      "milk": "Süt",
+      "molluscs": "Yumuşakçalar",
+      "mustard": "Hardal",
+      "nuts": "Sert kabuklu yemişler",
+      "peanuts": "Yer fıstığı",
+      "sesame": "Susam",
+      "soybeans": "Soya fasulyesi",
+      "sulphites": "Sülfitler"
+    }
+  },
   "banners": {
     "backupDismiss": "Yedekleme hatırlatıcısını kapat",
     "backupExportNow": "Şimdi dışa aktar",

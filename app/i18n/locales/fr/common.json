@@ -185,6 +185,27 @@
       "connect": "Configurer l'IA"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate vérifie seulement les aliments reconnus à partir d'une photo ou d'une description. Des ingrédients cachés peuvent lui échapper. Ceci n'est pas un contrôle de sécurité.",
+    "hint": "Sélectionne ceux qui s'appliquent. Quand une photo ou une description mentionne un aliment contenant l'un d'eux, le journal affiche une petite note à côté.",
+    "legend": "Allergies alimentaires",
+    "name": {
+      "celery": "Céleri",
+      "crustaceans": "Crustacés",
+      "eggs": "Œufs",
+      "fish": "Poisson",
+      "gluten": "Gluten",
+      "lupin": "Lupin",
+      "milk": "Lait",
+      "molluscs": "Mollusques",
+      "mustard": "Moutarde",
+      "nuts": "Fruits à coque",
+      "peanuts": "Arachides",
+      "sesame": "Sésame",
+      "soybeans": "Soja",
+      "sulphites": "Sulfites"
+    }
+  },
   "banners": {
     "backupDismiss": "Ignorer le rappel de sauvegarde",
     "backupExportNow": "Exporter maintenant",

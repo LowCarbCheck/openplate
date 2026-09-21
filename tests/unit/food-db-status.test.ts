@@ -259,6 +259,7 @@ const IDENTIFICATION = {
       estimatedGrams: 40,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       macrosPer100g: { kcal: 250, protein: 8, fat: 3, carbs: 45 },
     },
   ],

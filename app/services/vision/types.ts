@@ -8,6 +8,10 @@
 // here would close a runtime cycle. The descriptor shape belongs beside the
 // task definitions, not in the domain types.
 import type { IntakeTaskDescriptor } from './task';
+// Type-only for the same reason: `./schema` imports this module's values.
+// The flag vocabulary (`PREGNANCY_CATEGORIES`, `ALLERGENS`, `FoodFlags`)
+// lives beside the schema that asks for it, and is imported from there.
+import type { FoodFlags } from './schema';
 import type { CarbBasis } from '#app/lib/net-carbs';
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
@@ -95,6 +99,14 @@ export interface IdentifiedFood {
    * downstream.
    */
   carbBasis?: CarbBasis;
+  /**
+   * The pregnancy categories this food falls into and the EU 14 allergens it
+   * contains or may contain, as the MODEL reports them for every food (M219
+   * D1). Never optional: a provider that sent none parses to three empty
+   * arrays, so no consumer handles `undefined`. What becomes a visible chip is
+   * decided on the device from the local profile, never here.
+   */
+  flags: FoodFlags;
   /** See {@link MacroProvenance} — present only when the provider reported it. */
   provenance?: MacroProvenance;
   /**

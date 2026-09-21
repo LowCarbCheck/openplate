@@ -38,6 +38,7 @@ const LABEL_IDENTIFICATION: PlateIdentification = {
       estimatedGrams: 100,
       confidence: 'high',
       macroSource: 'label',
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
       brand: 'Test',
       macrosPer100g: { carbs: 60, fiber: 15, protein: 10, fat: 2, kcal: 350 },
     },

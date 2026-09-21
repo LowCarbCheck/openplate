@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **You can list your food allergies, on day one or later in settings.** The About you page and the body step of the first-run questionnaire carry the same fourteen chips, one for each allergen an EU food label must declare: gluten, crustaceans, eggs, fish, peanuts, soybeans, milk, nuts, celery, mustard, sesame, sulphites, lupin and molluscs. The list is stored on this device beside the rest of your profile, travels in your backup file and in encrypted sync like every other profile field, and is never sent to an AI provider or anywhere else. A sentence under the chips says what the list is not: openplate checks only foods it recognised from a photo or a description, it can miss hidden ingredients, and it is not a safety check. The chips themselves become visible notes on foods in a later release. The backup format moves to version 24; an older openplate refuses a backup taken by this one, as before.
+
 ## [0.38.0] - 2026-09-21
 
 ### Added

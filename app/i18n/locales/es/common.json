@@ -185,6 +185,27 @@
       "connect": "Configurar IA"
     }
   },
+  "allergens": {
+    "disclaimer": "openplate comprueba solo los alimentos que reconoció a partir de una foto o una descripción. Puede pasar por alto ingredientes ocultos. Esto no es un control de seguridad.",
+    "hint": "Elige los que correspondan. Cuando una foto o una descripción menciona un alimento que contiene alguno de estos, el diario muestra una pequeña nota junto a él.",
+    "legend": "Alergias alimentarias",
+    "name": {
+      "celery": "Apio",
+      "crustaceans": "Crustáceos",
+      "eggs": "Huevos",
+      "fish": "Pescado",
+      "gluten": "Gluten",
+      "lupin": "Altramuces",
+      "milk": "Leche",
+      "molluscs": "Moluscos",
+      "mustard": "Mostaza",
+      "nuts": "Frutos secos",
+      "peanuts": "Cacahuetes",
+      "sesame": "Sésamo",
+      "soybeans": "Soja",
+      "sulphites": "Sulfitos"
+    }
+  },
   "banners": {
     "backupDismiss": "Descartar recordatorio de copia de seguridad",
     "backupExportNow": "Exportar ahora",
