@@ -261,37 +261,73 @@ test('the stat row is one row per figure on a phone and side by side from 560px,
   ).toEqual([0, 0]);
 });
 
-/** The visible name above a filter group, or null when the group has only its screen-reader legend. */
-async function visibleGroupName(page: Page, name: string): Promise<{ upper: boolean; before: boolean } | null> {
-  return page.evaluate((groupName) => {
-    const label = [...document.querySelectorAll('main p[aria-hidden="true"]')].find(
-      (element) => (element.textContent ?? '').trim() === groupName,
-    );
-    if (label === undefined) return null;
-    return {
-      upper: getComputedStyle(label).textTransform === 'uppercase',
-      before: label.nextElementSibling?.tagName === 'FIELDSET',
-    };
-  }, name);
+/**
+ * The name a control group carries for a reader, read off the DOM the same way
+ * an assistive technology would, or null when the group carries no name at all.
+ *
+ * TWO STYLES, ONE QUESTION. Since the controls became one short row the metric
+ * and meal pickers are select boxes and only the range stayed a segmented row
+ * of links, so there is no longer a single markup shape to look for. A select
+ * box is named by its trigger (`aria-label`, or the text of whatever
+ * `aria-labelledby` points at); a fieldset is named by its `legend`. The claim
+ * this spec defends is the association, not the markup: every group tells a
+ * reader what it chooses.
+ */
+async function controlGroupName(page: Page, slot: string): Promise<string | null> {
+  return page.locator(`[data-slot="${slot}"]`).evaluate((group) => {
+    const trigger = group.matches('[role="combobox"]') ? group : group.querySelector('[role="combobox"]');
+    if (trigger !== null) {
+      const labelledBy = trigger.getAttribute('aria-labelledby');
+      const pointedAt = labelledBy === null ? null : document.getElementById(labelledBy);
+      const name = (trigger.getAttribute('aria-label') ?? pointedAt?.textContent ?? '').trim();
+      return name === '' ? null : name;
+    }
+    const fieldset = group.matches('fieldset') ? group : group.querySelector('fieldset');
+    const legend = (fieldset?.querySelector('legend')?.textContent ?? '').trim();
+    return legend === '' ? null : legend;
+  });
 }
 
-test('the three filter groups on the Nutrition tab are named above their chips', async ({ page }) => {
+test('the three filter groups on the Nutrition tab each tell a reader what they choose', async ({ page }) => {
   await seedDevice(page);
   await page.goto('/trends?tab=nutrition');
   await expect(page.locator('[data-slot="trend-metric-controls"]')).toBeVisible();
 
-  for (const name of [EN.trends.controls.metricGroup, EN.trends.controls.rangeGroup, EN.trends.controls.slotGroup]) {
-    expect(await visibleGroupName(page, name), `"${name}" is named above its chips, in capitals`).toEqual({
-      upper: true,
-      before: true,
-    });
+  const groups: readonly { slot: string; name: string }[] = [
+    { slot: 'trend-metric-controls', name: EN.trends.controls.metricGroup },
+    { slot: 'trend-range-controls', name: EN.trends.controls.rangeGroup },
+    { slot: 'trend-slot-controls', name: EN.trends.controls.slotGroup },
+  ];
+
+  for (const group of groups) {
+    expect(await controlGroupName(page, group.slot), `"${group.slot}" names itself "${group.name}"`).toBe(group.name);
   }
 
-  // CONTROL: a group with only its legend has no visible name, and the reader says so.
+  //////////////////////////////////////////////////////////////////////////////
+  // THE BROWSER AGREES. The reads above are the attributes; this is the
+  // accessible name the engine actually computed from them, so a name that is
+  // written down but never reaches the a11y tree still fails.
+  //////////////////////////////////////////////////////////////////////////////
+  for (const group of groups.filter((candidate) => candidate.slot !== 'trend-range-controls')) {
+    await expect(
+      page.locator(`[data-slot="${group.slot}"]`).getByRole('combobox', { name: group.name, exact: true }),
+      `the "${group.name}" picker is reachable by its name`,
+    ).toBeVisible();
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // CONTROL: an unnamed picker and an unnamed fieldset both read as null, so
+  // the helper is not just answering "yes" to whatever it is handed.
+  //////////////////////////////////////////////////////////////////////////////
   await page.evaluate(() => {
-    const group = document.createElement('fieldset');
-    group.innerHTML = '<legend class="sr-only">Unlabelled control group</legend>';
-    document.querySelector('main')?.append(group);
+    const unnamedPicker = document.createElement('div');
+    unnamedPicker.setAttribute('data-slot', 'test-unnamed-picker');
+    unnamedPicker.innerHTML = '<button type="button" role="combobox">Protein</button>';
+    const unnamedGroup = document.createElement('fieldset');
+    unnamedGroup.setAttribute('data-slot', 'test-unnamed-group');
+    unnamedGroup.innerHTML = '<a href="#">7 days</a>';
+    document.querySelector('main')?.append(unnamedPicker, unnamedGroup);
   });
-  expect(await visibleGroupName(page, 'Unlabelled control group'), 'a legend alone is not a visible name').toBeNull();
+  expect(await controlGroupName(page, 'test-unnamed-picker'), 'a picker with no label has no name').toBeNull();
+  expect(await controlGroupName(page, 'test-unnamed-group'), 'a fieldset with no legend has no name').toBeNull();
 });
