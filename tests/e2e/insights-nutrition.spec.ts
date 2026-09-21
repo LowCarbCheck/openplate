@@ -183,11 +183,23 @@ test('the protein chart marks the partial day, measures the bars and draws the f
     { dayKey: today, macros: { carbs: 30, fiber: 10, protein: 80, fat: 50, kcal: 900 } },
   ]);
 
-  await page.goto(`/trends?tab=nutrition&range=${DAILY_RANGE}&metric=protein`);
-  await expect(page.getByRole('link', { name: EN.trends.metric.protein, exact: true })).toHaveAttribute(
-    'aria-current',
-    'true',
-  );
+  ////////////////////////////////////////////////////////////////////////////
+  // The metric is CHOSEN, not typed into the URL. Since the controls became
+  // one short row the metric picker is a select box, so the browser check
+  // drives it the way a person does: open the picker, pick Protein, and read
+  // the bars that answer. The "not Protein" read first is the control, without
+  // it a picker that ignored the choice would still pass every line below.
+  ////////////////////////////////////////////////////////////////////////////
+  await page.goto(`/trends?tab=nutrition&range=${DAILY_RANGE}`);
+  const metricPicker = page
+    .locator('[data-slot="trend-metric-controls"]')
+    .getByRole('combobox', { name: EN.trends.controls.metricGroup, exact: true });
+  await expect(metricPicker).not.toContainText(EN.trends.metric.protein);
+
+  await metricPicker.click();
+  await page.getByRole('option', { name: EN.trends.metric.protein, exact: true }).click();
+  await expect(metricPicker).toContainText(EN.trends.metric.protein);
+  await expect.poll(() => new URL(page.url()).searchParams.get('metric')).toBe('protein');
 
   ////////////////////////////////////////////////////////////////////////////
   // One bar per day, three of them logged
@@ -256,7 +268,8 @@ test('the protein chart marks the partial day, measures the bars and draws the f
   // The controls: fat has no goal line, weekly bars have no average line
   ////////////////////////////////////////////////////////////////////////////
 
-  await page.getByRole('link', { name: EN.trends.metric.fat, exact: true }).click();
+  await metricPicker.click();
+  await page.getByRole('option', { name: EN.trends.metric.fat, exact: true }).click();
   await expect(page).toHaveURL(/metric=fat/);
   await expect(page.locator('[data-slot="trend-bar"]:not([data-fill="empty"])')).toHaveCount(3);
   await expect(page.locator('[data-slot="trend-goal-line"]')).toHaveCount(0);

@@ -97,11 +97,14 @@ test('the snack filter charts the snack alone, day by day', async ({ page }) => 
     twoDaysAgo: await readBar(page, twoDaysAgo),
   };
 
-  await controls.getByRole('link', { name: EN.add.meal.snack, exact: true }).click();
-  await expect(controls.getByRole('link', { name: EN.add.meal.snack, exact: true })).toHaveAttribute(
-    'aria-current',
-    'true',
-  );
+  // The meal filter is a select box since the controls became one short row,
+  // so the filter is applied the way a person applies it: open the picker,
+  // pick Snack. What this spec is about is what the chart does next.
+  const mealPicker = controls.getByRole('combobox', { name: EN.trends.controls.slotGroup, exact: true });
+  await expect(mealPicker).toContainText(EN.trends.slot.all);
+  await mealPicker.click();
+  await page.getByRole('option', { name: EN.add.meal.snack, exact: true }).click();
+  await expect(mealPicker).toContainText(EN.add.meal.snack);
 
   const snackOnly = {
     today: await readBar(page, today),
@@ -134,7 +137,8 @@ test('the snack filter charts the snack alone, day by day', async ({ page }) => 
   // claim instead, with the whole-day control that makes it fail.
 
   // Back to all meals, and today's bar is whole again.
-  await controls.getByRole('link', { name: EN.trends.slot.all, exact: true }).click();
+  await mealPicker.click();
+  await page.getByRole('option', { name: EN.trends.slot.all, exact: true }).click();
   await expect.poll(async () => (await readBar(page, today)).height).toBeGreaterThan(snackOnly.today.height);
 
   await expectPhoneLayout(page);

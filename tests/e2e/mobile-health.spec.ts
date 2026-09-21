@@ -344,14 +344,18 @@ test('the Insights controls fit a 360px phone and name the 90 day window in the 
     // THE CHIPS: 44px targets, and the 90 day one reads in this language. It
     // shipped as the literal "3 months" in all five translated catalogs.
     //////////////////////////////////////////////////////////////////////////
-    const metricChips = page.locator('[data-slot="trend-metric-controls"] a');
-    await expect(metricChips.first(), `${locale}: the metric chips must be drawn`).toBeVisible();
-    expect(await smallTargets(page, '[data-slot="trend-metric-controls"] a'), `${locale}: a metric chip is small`).toEqual(
-      [],
-    );
-    expect(await smallTargets(page, '[data-slot="trend-slot-controls"] a'), `${locale}: a meal chip is small`).toEqual(
-      [],
-    );
+    // The metric and meal pickers are select boxes since the controls became
+    // one short row, so the target to hit is the trigger and not an anchor.
+    const metricPicker = page.locator('[data-slot="trend-metric-controls"] [data-slot="select-trigger"]');
+    await expect(metricPicker, `${locale}: the metric picker must be drawn`).toBeVisible();
+    expect(
+      await smallTargets(page, '[data-slot="trend-metric-controls"] [data-slot="select-trigger"]'),
+      `${locale}: the metric picker is small`,
+    ).toEqual([]);
+    expect(
+      await smallTargets(page, '[data-slot="trend-slot-controls"] [data-slot="select-trigger"]'),
+      `${locale}: the meal picker is small`,
+    ).toEqual([]);
 
     const threeMonths = catalogFor(locale).trends.range.threeMonths;
     if (locale !== 'en') {
