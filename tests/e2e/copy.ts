@@ -139,6 +139,8 @@ const catalogSchema = z.object({
   }),
   usual: z.object({
     title: z.object({ breakfast: z.string(), dinner: z.string() }),
+    confirm: z.object({ portionLabel: z.string(), decrease: z.string(), increase: z.string(), add: z.string() }),
+    toast: z.object({ logged_one: z.string() }),
   }),
   settingsAi: z.object({
     advanced: z.object({ toggle: z.string(), openaiCompatibleOption: z.string() }),

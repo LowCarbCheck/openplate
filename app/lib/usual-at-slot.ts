@@ -10,12 +10,16 @@
  * which is the defect `#app/lib/local-store/saved-meals` already documents one
  * level down.
  *
- * WHY THE TAP POSTS AN ID AND A SLOT, AND NOTHING ELSE. The screen already
- * resolved the slot it was offering for (`mealTypeForTime` on `/add`,
+ * WHY THE TAP POSTS AN ID, A SLOT AND A SCALE, AND NOTHING ELSE. The screen
+ * already resolved the slot it was offering for (`mealTypeForTime` on `/add`,
  * `mealTypeForCapture` on `/scan`), so it says which one, and the entries are
- * stamped with exactly that. Everything else is re-read from the store here:
- * the macros, the licence credit, the portion and the micronutrients of the
- * rows being written never travel through a form field.
+ * stamped with exactly that. The confirm dialog's portion stepper
+ * (`usual-at-slot.tsx`) is the one thing genuinely chosen at the tap, so it
+ * travels too, as a plain percent. Everything else is re-read from the store
+ * here: the macros, the licence credit, the portion and the micronutrients of
+ * the rows being written never travel through a form field, they are scaled
+ * from the store's own recorded numbers by `scaleSavedMealItem`, never from a
+ * figure the client computed and sent over.
  *
  * WHY IT REDIRECTS TO THE DIARY. This is the same action `/meals`'s "log now"
  * performs (`handleLogMeal`), it lands in the same place, and it says so the
@@ -43,7 +47,7 @@ import {
   toUsualAtSlotOffer,
   SLOT_SUGGESTION_LIMIT,
 } from '#app/lib/local-store';
-import type { LocalFoodLog, UsualAtSlotOffer } from '#app/lib/local-store';
+import type { LocalFoodLog, LocalSavedMealItem, UsualAtSlotOffer } from '#app/lib/local-store';
 
 /** The form intent both routes route to `handleLogUsual`. */
 export const LOG_USUAL_INTENT = 'log-usual';
@@ -57,6 +61,15 @@ export const LOG_USUAL_INTENT = 'log-usual';
 const LogUsualSchema = z.object({
   suggestionId: z.string().min(1),
   slot: z.enum(MEAL_TYPES),
+  /**
+   * The portion scale the confirm dialog applied, as a percent of the
+   * suggestion's recorded amount (150 = one and a half times). OPTIONAL: a
+   * caller that posts no `scalePercent` at all (any code predating the
+   * confirm dialog) gets today's exact, unscaled behavior, defaulted to 100
+   * in `handleLogUsual` below, so nothing that already calls this action
+   * breaks.
+   */
+  scalePercent: z.coerce.number().int().positive().optional(),
 });
 
 /**
@@ -86,6 +99,42 @@ export async function readUsualAtSlot({
 }
 
 /**
+ * Scales one saved-meal item's per-serving amount by a percent of what was
+ * recorded (150 = one and a half times), the pure half of the confirm
+ * dialog's portion stepper (`usual-at-slot.tsx`). Only `quantityGrams` and
+ * `macros` move: `netCarbsPer100g` and `micronutrientsPer100g` are
+ * DENSITIES, stated per 100 g, so they stay exactly as true at 50 g as at
+ * 500 g, the same reason `reconstructPer100g`'s doc gives for never
+ * rescaling them. `portion` (the "2 eggs" display label) is dropped once the
+ * scale moves off 100%, the same rule `resolveEditedPortion`
+ * (`diary.entry.$id.tsx`) applies to a manual grams edit: a household-count
+ * label is wrong the moment the weight behind it no longer matches that
+ * count.
+ *
+ * @param item - the saved-meal item at its recorded (100%) amount.
+ * @param scalePercent - the portion scale to apply, e.g. 150 for one and a half times; 100 is a no-op.
+ * @returns a fresh item at the scaled amount.
+ */
+export function scaleSavedMealItem(item: LocalSavedMealItem, scalePercent: number): LocalSavedMealItem {
+  const factor = scalePercent / 100;
+  const scaleAmount = (value: number | null): number | null => (value === null ? null : value * factor);
+  return {
+    ...item,
+    quantityGrams: item.quantityGrams * factor,
+    macros: {
+      carbs: scaleAmount(item.macros.carbs),
+      fiber: scaleAmount(item.macros.fiber),
+      sugars: scaleAmount(item.macros.sugars),
+      polyols: scaleAmount(item.macros.polyols),
+      protein: scaleAmount(item.macros.protein),
+      fat: scaleAmount(item.macros.fat),
+      kcal: scaleAmount(item.macros.kcal),
+    },
+    portion: scalePercent === 100 ? (item.portion ?? null) : null,
+  };
+}
+
+/**
  * Logs one tapped offer into TODAY's slot, every item under ONE `logBatchId`
  * so undo removes the whole tap as a unit.
  *
@@ -95,13 +144,13 @@ export async function readUsualAtSlot({
  * person is better served by a visible error than by a button that silently
  * did nothing.
  *
- * @param formData - the submitted tap, carrying the suggestion id and the slot.
+ * @param formData - the submitted tap, carrying the suggestion id, the slot and the confirm dialog's portion scale.
  * @returns the redirect to the diary, with the confirmation already published.
  */
 export async function handleLogUsual(formData: FormData): Promise<Response> {
   const submission = parseWithZod(formData, { schema: LogUsualSchema });
   if (submission.status !== 'success') throw new Response('Invalid usual payload', { status: 400 });
-  const { suggestionId, slot } = submission.value;
+  const { suggestionId, slot, scalePercent } = submission.value;
 
   const profile = await getLocalProfileGoals();
   const timezone = resolveLocalTimezone(profile);
@@ -113,8 +162,13 @@ export async function handleLogUsual(formData: FormData): Promise<Response> {
   if (!suggestion) throw new Response('Suggestion no longer available', { status: 404 });
 
   const logBatchId = randomUuid();
+  // Scaled BEFORE the write, every item by the same percent chosen in the
+  // confirm dialog's stepper: `buildLogsFromSavedMealItems` stays the one
+  // untouched "items in, entries out" contract every other caller of it
+  // still relies on, see `saved-meals.ts`.
+  const scaledItems = suggestion.items.map((item) => scaleSavedMealItem(item, scalePercent ?? 100));
   const entries = buildLogsFromSavedMealItems({
-    items: suggestion.items,
+    items: scaledItems,
     makeId: randomUuid,
     dayKey,
     loggedAtMs: nowMs,

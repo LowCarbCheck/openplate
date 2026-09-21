@@ -22,8 +22,8 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 
-import { EN } from './copy';
-import { completeOnboarding, expectPhoneLayout, logFoodManually } from './helpers';
+import { EN, fill } from './copy';
+import { completeOnboarding, expectPhoneLayout, headerStatusText, logFoodManually } from './helpers';
 
 /** Names no food database would return, so a match can only be these entries. */
 const BREAKFAST_NAME = 'Smoke tier porridge';
@@ -49,10 +49,10 @@ function shiftDay(day: string, days: number): string {
  * runner's zone instead.
  */
 async function freezeAt(page: Page, day: string, hhmm: string): Promise<void> {
-  const atMs = await page.evaluate(
-    ([localDay, time]) => new Date(`${localDay}T${time}:00`).getTime(),
-    [day, hhmm] as const,
-  );
+  const atMs = await page.evaluate(([localDay, time]) => new Date(`${localDay}T${time}:00`).getTime(), [
+    day,
+    hhmm,
+  ] as const);
   await page.clock.setFixedTime(atMs);
 }
 
@@ -105,10 +105,17 @@ test('the usual is offered at the slot it is eaten at, and not at the others', a
   expect(atBreakfast.join(' | '), 'the dinner habit must not be offered at breakfast').not.toContain(DINNER_NAME);
 
   ////////////////////////////////////////////////////////////////////////////
-  // One tap files it into TODAY's breakfast
+  // A tap opens a confirm dialog; accepting the default portion (100%,
+  // today's exact recorded amount) files it into TODAY's breakfast.
   ////////////////////////////////////////////////////////////////////////////
 
   await section.locator('[data-slot="usual-offer"] button').filter({ hasText: BREAKFAST_NAME }).click();
+
+  const confirmDialog = page.getByRole('alertdialog');
+  await expect(confirmDialog).toBeVisible();
+  await expect(confirmDialog.getByRole('heading', { name: BREAKFAST_NAME, exact: true })).toBeVisible();
+  await confirmDialog.getByRole('button', { name: EN.usual.confirm.add, exact: true }).click();
+
   await page.waitForURL('**/diary**');
 
   // The MEAL GROUP, not merely the page: an entry that landed under "no meal"
@@ -145,4 +152,58 @@ test('the usual is offered at the slot it is eaten at, and not at the others', a
   expect(atDinner.join(' | ')).toContain(DINNER_NAME);
 
   await expectPhoneLayout(page);
+});
+
+test('the confirm dialog scales the portion before logging it', async ({ page }) => {
+  await completeOnboarding(page);
+
+  const today = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
+  const yesterday = shiftDay(today, -1);
+  const twoDaysAgo = shiftDay(today, -2);
+
+  // The habit, on two past days, so it is offered today. Both past logs stay
+  // at PORTION_GRAMS, so 100 g is the "unscaled" figure the control below
+  // checks is GONE from today's entry.
+  for (const day of [twoDaysAgo, yesterday]) {
+    await logFoodManually(page, {
+      name: BREAKFAST_NAME,
+      grams: PORTION_GRAMS,
+      carbs: PORTION_CARBS,
+      mealType: 'breakfast',
+      date: day,
+    });
+  }
+
+  await freezeAt(page, today, '08:00');
+  await page.goto('/add');
+
+  const section = page.locator('[data-slot="usual-at-slot"]');
+  await expect(section).toBeVisible();
+  await section.locator('[data-slot="usual-offer"] button').filter({ hasText: BREAKFAST_NAME }).click();
+
+  const confirmDialog = page.getByRole('alertdialog');
+  await expect(confirmDialog).toBeVisible();
+
+  // Two "+" taps along the fixed steps (50/75/100/125/150/200) move the
+  // default 100% to 150%, one and a half times the recorded portion.
+  const increase = confirmDialog.getByRole('button', { name: EN.usual.confirm.increase });
+  await increase.click();
+  await increase.click();
+  await expect(confirmDialog.locator('output')).toHaveText('150%');
+
+  await confirmDialog.getByRole('button', { name: EN.usual.confirm.add, exact: true }).click();
+  await page.waitForURL('**/diary**');
+
+  // THE CLAIM. Today's entry weighs 150 g, 1.5 times the 100 g every past log
+  // of this habit was recorded at.
+  const scaledGrams = Number(PORTION_GRAMS) * 1.5;
+  const entryLink = page.locator('a').filter({ hasText: BREAKFAST_NAME });
+  await expect(entryLink).toHaveCount(1);
+  await expect(entryLink.locator('[data-slot="entry-facts"]')).toContainText(`${scaledGrams} g`);
+  // THE CONTROL. The recorded, unscaled figure is NOT what got logged: a
+  // stepper that silently no-opped would leave this exact text on the page.
+  await expect(entryLink.locator('[data-slot="entry-facts"]')).not.toContainText(`${PORTION_GRAMS} g`);
+
+  // The same confirmation toast the direct tap always published, unchanged.
+  await expect.poll(() => headerStatusText(page)).toBe(fill(EN.usual.toast.logged_one, { name: BREAKFAST_NAME }));
 });

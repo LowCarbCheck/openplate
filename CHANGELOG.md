@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **A usual meal now asks you to confirm the portion before logging it.** Tapping a chip under "Your usual breakfast" (or lunch, dinner, snack) on Add or Scan opens a dialog naming the food, and for a saved meal, how many items, with a stepper to scale the portion from 50% to 200% before it is added, rather than logging the exact recorded amount straight away. Cancel closes the dialog with no write, and the confirmation that appears once you add it is unchanged.
+
 ### Changed
 
 - **Add, Scan and Describe now nest under one address, /add.** /add is now the database search, at /add/search. /scan, the camera and the photo review, is now /add/photo. /describe, the message composer, is now /add/describe. The old addresses still work, each one redirects to its new home, so a bookmark, a home screen shortcut, or an installed app's stale link all keep working.
