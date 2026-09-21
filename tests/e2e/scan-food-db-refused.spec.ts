@@ -159,7 +159,7 @@ async function scanOnePhoto(page: Page): Promise<void> {
   // of the card's pair, because a library pick waits out a cancellable grace
   // window while a capture dispatches at once.
   const captureCard = page
-    .locator('div.rounded-2xl.bg-card')
+    .locator('[data-slot="card"]')
     .filter({ has: page.locator('input[type="file"][capture]') });
   await captureCard
     .locator('input[type="file"][capture]')

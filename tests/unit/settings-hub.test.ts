@@ -47,6 +47,7 @@ import type { LocalProfileGoals } from '../../app/lib/local-store';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import { PLAN_PAGE_HREF } from '../../app/lib/plans/plans-door';
 import type { PublicConfig } from '../../app/config/public-config';
+import { RADIUS_TIER_CLASS } from '../design-contract';
 
 /** The REAL catalog: the labels below are resolved, not transcribed. */
 const t = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) =>
@@ -225,14 +226,19 @@ describe('the hub reads as one inset grouped list, not a stack of cards', () => 
   const renderedGroupCount = EXPECTED_LABELS.filter((label) => label !== enCommon.settings.groups.account).length;
 
   it('draws exactly one list container, with one hairline divider set, per rendered group', () => {
-    // CONTROL: the old per-row card markup (`rounded-xl border bg-card` on
-    // every row, `space-y-2` between rows) carried zero `rounded-2xl` and zero
-    // `divide-y` anywhere, so either count would be 0 against 5 rendered
-    // groups if the grouped-list container regressed back to one box per row.
+    // THE SLOT IS THE IDENTITY, NOT THE RADIUS. This counted `rounded-2xl`
+    // until M243 spec 03 moved the inset onto the ladder's card step, which is
+    // exactly the failure mode a radius-as-identity check has: it says nothing
+    // about the container and everything about a taste call. `data-slot` is put
+    // on the container by `SettingsGroup` and by nothing else.
+    //
+    // CONTROL: the old per-row card markup (a box on every row, `space-y-2`
+    // between rows) carried zero of either attribute, so both counts would be 0
+    // against 5 rendered groups if the grouped list regressed to one box a row.
     assert.equal(
-      countOf(markup, 'rounded-2xl'),
+      countOf(markup, 'data-slot="settings-inset"'),
       renderedGroupCount,
-      `expected one rounded-2xl list container per rendered group (${renderedGroupCount})`,
+      `expected one inset list container per rendered group (${renderedGroupCount})`,
     );
     assert.equal(
       countOf(markup, 'divide-y'),
@@ -241,7 +247,7 @@ describe('the hub reads as one inset grouped list, not a stack of cards', () => 
     );
   });
 
-  it('gives no row its own box: no row Link carries rounded-xl or a border of its own', () => {
+  it('gives no row its own box: no row Link carries a radius or a border of its own', () => {
     const rowClassLists = anchorClassLists(markup);
     // CONTROL for the control: the page really does render row links, so an
     // empty list here would make the assertions below pass for the wrong
@@ -249,9 +255,33 @@ describe('the hub reads as one inset grouped list, not a stack of cards', () => 
     assert.ok(rowClassLists.length > 0, 'expected at least one row <a> in the rendered hub');
     for (const classList of rowClassLists) {
       const tokens = classList.split(/\s+/);
-      assert.ok(!tokens.includes('rounded-xl'), `a row link still carries its own rounded-xl box: "${classList}"`);
+      // EVERY step of the ladder, not just the one the old markup used: a row
+      // that came back as its own box would come back wearing whatever radius
+      // was fashionable that week.
+      for (const radius of Object.values(RADIUS_TIER_CLASS)) {
+        assert.ok(!tokens.includes(radius), `a row link still carries its own ${radius} box: "${classList}"`);
+      }
       assert.ok(!tokens.includes('border'), `a row link still carries its own border: "${classList}"`);
     }
+  });
+
+  it('keeps a grey icon on every row, and never a teal tile', () => {
+    // The icon survived the de-tealising (M243 spec 03) because fifteen rows in
+    // six languages are scanned by shape before they are read. What went is the
+    // `bg-muted text-primary` tile it sat on.
+    const iconBoxes = [...markup.matchAll(/<span class="(flex size-9[^"]*)"/g)].map((found) => found[1] ?? '');
+    assert.ok(iconBoxes.length > 0, 'expected an icon box on the rows');
+    for (const classList of iconBoxes) {
+      const tokens = classList.split(/\s+/);
+      assert.ok(tokens.includes('text-muted-foreground'), `a row icon is not grey: "${classList}"`);
+      assert.ok(!tokens.includes('text-primary'), `a row icon is still teal: "${classList}"`);
+      assert.ok(!tokens.includes('bg-muted'), `a row icon still sits on a tile: "${classList}"`);
+    }
+    // CONTROL: the same reader DOES see a fill and a teal ink when they are
+    // there, so the three absences above are not a reader that sees nothing.
+    const sample = 'flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-primary';
+    const sampleTokens = sample.split(/\s+/);
+    assert.ok(sampleTokens.includes('bg-muted') && sampleTokens.includes('text-primary'));
   });
 });
 

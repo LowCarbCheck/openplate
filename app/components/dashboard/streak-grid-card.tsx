@@ -63,7 +63,10 @@ export function StreakGridCard({
   return (
     <Link
       to="/trends?tab=goals"
-      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // The ring is drawn on this wrapper, so the wrapper takes the radius of
+      // the card inside it. A focus ring one step off the corner it traces is
+      // the tell that a radius moved and its wrapper did not.
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="transition-colors hover:border-primary/40">
         <CardHeader>

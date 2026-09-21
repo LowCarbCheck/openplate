@@ -45,7 +45,7 @@ function Sample({ label, children }: { label: string; children: ReactNode }): Re
   return (
     <section className="space-y-3">
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</h3>
-      <div className="rounded-2xl border border-border bg-card/40 p-4">
+      <div className="rounded-lg border border-border bg-card/40 p-4">
         <div className="mx-auto max-w-sm">{children}</div>
       </div>
     </section>

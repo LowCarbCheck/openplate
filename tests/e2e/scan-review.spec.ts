@@ -194,7 +194,7 @@ test('the review card reports the same net carbs the logged entry does', async (
   // camera out of the card's pair, because a library pick waits out a
   // cancellable grace window while a capture dispatches at once.
   const captureCard = page
-    .locator('div.rounded-2xl.bg-card')
+    .locator('[data-slot="card"]')
     .filter({ has: page.locator('input[type="file"][capture]') });
   await captureCard
     .locator('input[type="file"][capture]')
@@ -202,7 +202,7 @@ test('the review card reports the same net carbs the logged entry does', async (
 
   await expect(page.getByText(EN.scan.review.heading)).toBeVisible();
 
-  const itemCard = page.locator('form div.rounded-2xl.shadow-sm').filter({ hasText: FOOD_NAME });
+  const itemCard = page.locator('form [data-slot="card"]').filter({ hasText: FOOD_NAME });
   // The item really is on the label path, otherwise the basis would be absent
   // for an honest reason and this spec would be asserting nothing.
   await expect(itemCard.getByText(EN.scan.review.fromLabel)).toBeVisible();

@@ -176,7 +176,7 @@ function RepeatYesterdayGhostBody({
         disabled={isCopying}
         aria-describedby={hintId}
         className={cn(
-          'block w-full rounded-2xl border border-dashed border-primary/35 bg-card/50 p-3 text-left transition-all hover:border-primary/70 hover:bg-primary/5 hover:shadow-md hover:shadow-black/20 disabled:opacity-60 motion-safe:active:scale-[0.99]',
+          'block w-full rounded-lg border border-dashed border-primary/35 bg-card/50 p-3 text-left transition-all hover:border-primary/70 hover:bg-primary/5 hover:shadow-md hover:shadow-black/20 disabled:opacity-60 motion-safe:active:scale-[0.99]',
           isCopying && 'pulse-soft',
         )}
       >

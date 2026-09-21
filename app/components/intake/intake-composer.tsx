@@ -199,10 +199,17 @@ function ComposerStrip({
 
   return (
     <div className={cn('w-full', className)}>
-      <div className="flex w-full items-center gap-1 rounded-2xl border border-primary/25 bg-card/80 p-1.5 shadow-sm transition-shadow focus-within:border-primary/60 focus-within:shadow-md">
+      {/* THE STRIP IS A CONTROL, NOT A CARD. The box is the ladder's card step
+          (8px) and its three keys the control step (6px), so the keys nest
+          inside the box the way a button nests inside a panel. It was 16px
+          around 12px keys, which read as a card with three smaller cards in
+          it. Nothing about the geometry moved: the keys are the same 44 px
+          square. Do not name that class in a comment, `intake-composer.test.ts`
+          counts the literal and a mention makes it three. */}
+      <div className="flex w-full items-center gap-1 rounded-lg border border-primary/25 bg-card/80 p-1.5 shadow-sm transition-shadow focus-within:border-primary/60 focus-within:shadow-md">
         <Link
           to={describeTo}
-          className="flex min-h-11 flex-1 items-center gap-2.5 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
+          className="flex min-h-11 flex-1 items-center gap-2.5 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
         >
           <Keyboard className="size-4 shrink-0 text-primary" aria-hidden="true" />
           <span className="truncate">{label ?? t('launcher.sheetTitle')}</span>
@@ -211,7 +218,7 @@ function ComposerStrip({
         <Link
           to={buildIntakeHref(describeTo, { speak: true })}
           aria-label={t('launcher.speak')}
-          className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary transition-colors hover:bg-primary/10 active:bg-primary/15 motion-safe:active:scale-95"
+          className="flex size-11 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10 active:bg-primary/15 motion-safe:active:scale-95"
         >
           <Mic className="size-5" aria-hidden="true" />
         </Link>
@@ -221,7 +228,7 @@ function ComposerStrip({
           onClick={capture}
           aria-label={t('launcher.photo')}
           className={cn(
-            'flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors motion-safe:active:scale-95',
+            'flex size-11 shrink-0 items-center justify-center rounded-md transition-colors motion-safe:active:scale-95',
             CAMERA_KEY_CLASS[variant],
           )}
         >

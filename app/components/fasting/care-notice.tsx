@@ -67,7 +67,7 @@ export function PregnancyNotice(): ReactElement {
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-3">
+    <div className="rounded-lg border border-border/60 bg-muted/40 px-4 py-3">
       <p className="text-sm text-muted-foreground">{t('fasting.care.pregnancyNotice')}</p>
     </div>
   );

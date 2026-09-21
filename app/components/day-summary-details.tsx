@@ -277,7 +277,7 @@ function SuggestionRow({
   return (
     <Link
       to={`${addBase}${separator}q=${encodeURIComponent(suggestion.food.name)}`}
-      className="group flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/50 hover:bg-primary/5"
+      className="group flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/50 hover:bg-primary/5"
     >
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
         <Plus className="h-4 w-4" aria-hidden="true" />
@@ -409,7 +409,7 @@ export function SuggestionsDisclosure({
         onClick={() => setIsOpen((open) => !open)}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-primary/25 bg-card/60 px-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-card"
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-primary/25 bg-card/60 px-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-card"
       >
         <span>{t(SUGGESTION_DISCLOSURE_KEY[dominant.nutrient], { count: suggestions.length })}</span>
         {/* The chevron's rotation is `motion-safe:`-gated, so a reduced-motion

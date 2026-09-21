@@ -62,6 +62,7 @@ import { formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-numb
 import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { carbStatusDotClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 import {
   buildSavedMealFromLogs,
   computeDailyTotals,
@@ -2055,7 +2056,7 @@ function MealGroupSection({
         <span className="h-px flex-1 bg-primary/20" aria-hidden="true" />
         <span
           data-slot="meal-subtotal"
-          className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-primary tabular-nums"
+          className={cn(CHIP_NEUTRAL, 'text-xs font-medium whitespace-nowrap tabular-nums')}
         >
           {formatGroupNetCarbs(group, t, i18n.language)}
         </span>
@@ -2123,7 +2124,7 @@ function SaveMealHint({
     <div
       data-slot="save-meal-hint"
       data-meal={slot}
-      className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-dashed border-primary/40 bg-card/60 px-3 py-1.5 text-xs text-muted-foreground"
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed border-primary/40 bg-card/60 px-3 py-1.5 text-xs text-muted-foreground"
     >
       <span className="min-w-0 flex-1">{t('diary.saveMeal.hint.title')}</span>
       <button

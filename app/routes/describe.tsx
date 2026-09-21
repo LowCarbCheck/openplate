@@ -270,8 +270,10 @@ export function DescribeComposer({
 
         {/* ONE CONTAINER. It owns the border, the background and the focus
             ring, so focusing the textarea lights the whole box rather than a
-            rectangle inside a rectangle. */}
-        <div className="flex items-end gap-2 rounded-2xl border border-input bg-card px-3 py-2 focus-within:ring-2 focus-within:ring-ring">
+            rectangle inside a rectangle. The ladder's card step (8px), the same
+            box the intake composer strip draws: a field and a key side by side
+            is a control group, not a 16px hero. */}
+        <div className="flex items-end gap-2 rounded-lg border border-input bg-card px-3 py-2 focus-within:ring-2 focus-within:ring-ring">
           <textarea
             id="describe-meal"
             ref={fieldRef}

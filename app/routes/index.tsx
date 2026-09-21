@@ -737,7 +737,9 @@ function HeroPicture({
         height={1688}
         decoding="async"
         className={cn(
-          'mx-auto w-full max-w-[20rem] rounded-xl',
+          // One step inside `SHOT_FRAME`'s 12px tile corner, which has 4px of
+          // padding: an image that matched its frame would bulge at the corners.
+          'mx-auto w-full max-w-[20rem] rounded-lg',
           // The phone capture is 2.16 screens tall and is cropped mid-diary,
           // so its bottom edge cuts a row of food in half. The fade turns that
           // slice into "the list continues" instead of a rendering fault. The
@@ -1051,7 +1053,7 @@ function HowStep({
         </div>
       : null}
       <div className="order-1 min-w-0 space-y-2 sm:order-2 sm:row-start-2 sm:mt-0 sm:space-y-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         <h3 className="text-lg font-semibold tracking-tight text-balance">{title}</h3>
@@ -1081,8 +1083,8 @@ function HowStep({
  */
 function FeatureCard({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }): ReactElement {
   return (
-    <div className="rounded-2xl border bg-card p-5 shadow-sm">
-      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <div className="rounded-lg border bg-card p-5 shadow-sm">
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
       {/* `text-lg`, one step up from the body it sits on. At `text-base` these
@@ -1202,7 +1204,9 @@ function LadderCard({
   children: ReactNode;
 }): ReactElement {
   return (
-    <Card className="rounded-2xl">
+    // No radius override: a `Card` is the ladder's card step, and this is a
+    // card. The `rounded-2xl` here used to restate the Card default.
+    <Card>
       <CardContent
         className={cn(
           'grid gap-8 p-6 sm:items-center sm:gap-10 sm:p-8',
@@ -1210,7 +1214,7 @@ function LadderCard({
         )}
       >
         <div className="min-w-0 max-w-[65ch] space-y-4">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
           <h2 className="text-2xl font-bold tracking-tight text-balance sm:text-[28px]">{title}</h2>

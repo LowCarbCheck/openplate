@@ -39,6 +39,7 @@ import { setFastWakeAt } from '#app/lib/push';
 import { fastWakeAtFor } from '#app/lib/fast-wake';
 import { todayInTimezone } from '#app/lib/user-days';
 import { cn } from '#app/lib/utils';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 import {
   createLocalFast,
   deleteLocalFast,
@@ -1235,7 +1236,7 @@ function ActiveFastCard({
             <SectionEyebrow>{t('fasting.active.eyebrow')}</SectionEyebrow>
             {timeline.hasReachedTarget && (
               <p>
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                <span className={cn(CHIP_NEUTRAL, 'text-xs font-medium')}>
                   {t('fasting.active.goalReached')}
                 </span>
               </p>

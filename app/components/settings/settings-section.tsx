@@ -28,8 +28,12 @@ import { Link } from '#app/components/link';
 import { SectionEyebrow } from '#app/components/typography';
 import { cn } from '#app/lib/utils';
 
-/** The one inset-container recipe: both variants below compose it, nothing else re-types it. */
-export const SETTINGS_INSET_CLASS = 'rounded-2xl border bg-card';
+/**
+ * The one inset-container recipe: both variants below compose it, nothing else
+ * re-types it. It is the ladder's card step (8px, `tests/design-contract.ts`),
+ * because an inset group IS a card, one with rows in it instead of a title.
+ */
+export const SETTINGS_INSET_CLASS = 'rounded-lg border bg-card';
 
 /**
  * One settings destination. The whole row is the link (not a trailing "Open"
@@ -53,7 +57,13 @@ export function SettingsRow({
       to={to}
       className="flex min-h-13 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50 active:bg-muted/70 focus-visible:bg-muted/50"
     >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
+      {/* THE ICON LOST ITS TILE, not the row its icon (M243 spec 03). It used
+          to be a teal glyph on a grey `size-9` tile, so a hub of fifteen rows
+          spent fifteen brand moments on decoration and had none left for the
+          one thing a person came to do. The glyph stays, grey, because a hub of
+          fifteen rows in six languages is scanned by shape before it is read.
+          The box keeps its size so the rows still line up with each other. */}
+      <span className="flex size-9 shrink-0 items-center justify-center text-muted-foreground">
         <Icon className="size-[18px]" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
@@ -71,9 +81,9 @@ export function SettingsRow({
 
 /**
  * A labelled group of rows, drawn as one inset list (the native iOS/Android
- * grouped-list pattern): one `rounded-2xl border bg-card` container, rows
- * separated by hairline dividers, no border or radius on the row itself. The
- * label is a real heading, so the page keeps an outline.
+ * grouped-list pattern): one `SETTINGS_INSET_CLASS` container, rows separated
+ * by hairline dividers, no border or radius on the row itself. The label is a
+ * real heading, so the page keeps an outline.
  */
 export function SettingsGroup({ label, children }: { label: string; children: ReactNode }) {
   return (

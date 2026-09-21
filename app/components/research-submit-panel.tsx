@@ -61,7 +61,7 @@ export function ResearchSubmitPanel({
   };
 
   return (
-    <form className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4" onSubmit={handleSubmit}>
+    <form className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4" onSubmit={handleSubmit}>
       <p className="text-sm font-medium">{t('research.submit.title')}</p>
       <p className="text-xs text-muted-foreground">{t('research.submit.description')}</p>
 

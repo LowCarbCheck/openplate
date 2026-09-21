@@ -10,8 +10,14 @@
  * - **No sparkline.** The chart directly below IS the series; a sparkline in a
  *   tile would be the same data twice.
  *
- * Every figure is `font-sans tabular-nums` — never `font-display`, which is
- * reserved for the wordmark and hero numbers (DESIGN.md §4).
+ * Every figure is `tabular-nums` in the page's own body face, and never the
+ * brand serif. The comment here used to name `font-sans` and to allow the serif
+ * on a hero number; both went in M243. The body role is one face now
+ * (`--font-body`), and the `Wordmark` component is the only thing in the app
+ * that may ask for the serif.
+ *
+ * The tiles keep the ladder's tile step (12px), which is the one place in the
+ * app where the name of the tier and the name of the thing are the same word.
  */
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';

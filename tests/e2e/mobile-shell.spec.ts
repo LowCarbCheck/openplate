@@ -26,10 +26,19 @@
  *   label overflowed its own box and touched its value.
  * - FRONT-22: /add's and /foods' rows drew an 8px radius and 12px padding
  *   where /diary and /meals draw 16 and 16.
+ *
+ * THE NUMBERS COME FROM THE LADDER NOW (M243 spec 03). This file used to carry
+ * its own `16`s, which was the same number for a card, a list row and a dialog
+ * because one radius meant everything. They are three tiers now, read from
+ * `tests/design-contract.ts`, so a taste call moves in one place and this file
+ * follows it instead of failing for the wrong reason. Both halves of SET-14 are
+ * still asserted: the panel has a radius that is not an accident, and the rows
+ * agree with each other.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { catalogFor } from './copy';
+import { RADIUS_TIER_PX, LIST_ROW_PADDING_PX } from '../design-contract';
 import { completeOnboarding, logFoodManually, useLanguage } from './helpers';
 
 /** The narrow end of the phone budget this app is written against. */
@@ -61,12 +70,11 @@ const OVERSIZED_PROBE_PX = 60;
  */
 const EDGE_ROUNDING_PX = 1;
 
-/** The row surface `app/components/list-row.ts` names, in CSS pixels. */
-const LIST_ROW_RADIUS_PX = 16;
-const LIST_ROW_PADDING_PX = 16;
+/** The row surface `app/components/list-row.ts` names, in CSS pixels: a card's corner, `p-3`. */
+const LIST_ROW_RADIUS_PX = RADIUS_TIER_PX.card;
 
-/** The radius `ui/card` draws, which the confirm panel now shares. */
-const CARD_RADIUS_PX = 16;
+/** The radius the confirm panel draws: a dialog is a sheet, one step above a card. */
+const DIALOG_RADIUS_PX = RADIUS_TIER_PX.hero;
 
 /** The languages this walk renders in: the source, the longest, and the one the audit broke in. */
 const LOCALES = ['en', 'de', 'tr'] as const;
@@ -440,7 +448,10 @@ test('the confirm panel wears the card radius and its buttons take a thumb', asy
     const style = getComputedStyle(element);
     return { radius: Number.parseFloat(style.borderTopLeftRadius) };
   });
-  expect(surface.radius, 'the confirm panel must share the card radius').toBe(CARD_RADIUS_PX);
+  expect(surface.radius, 'the confirm panel must draw the dialog radius').toBe(DIALOG_RADIUS_PX);
+  // AND IT IS NOT A CARD'S. The defect SET-14 recorded was a panel at the wrong
+  // step, so the claim only means something while the two steps differ.
+  expect(DIALOG_RADIUS_PX, 'a dialog and a card are different steps on the ladder').not.toBe(RADIUS_TIER_PX.card);
 
   const buttonHeights = await panel
     .locator('[data-slot="alert-dialog-footer"] button')

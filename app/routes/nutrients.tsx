@@ -71,6 +71,8 @@ import { CONFIG } from '#app/config';
 import type { NutrientKey } from '#app/lib/micronutrients';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
+import { cn } from '#app/lib/utils';
 import { Badge } from '#app/components/ui/badge';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
@@ -423,7 +425,7 @@ function NutrientListRow({
             {target !== null && <span className="text-muted-foreground"> {target}</span>}
             {/* Percentage on targets only — see `LimitReading`. */}
             {!isCeiling && row.share !== null && (
-              <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <span className={cn(CHIP_NEUTRAL, 'ml-2 text-xs font-medium tabular-nums')}>
                 {formatSharePercent(row.share, { language })}
               </span>
             )}

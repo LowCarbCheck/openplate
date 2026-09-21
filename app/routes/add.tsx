@@ -1879,7 +1879,7 @@ function SearchStep({
         // Same placeholder treatment as the diary's empty day: a dashed
         // brand-tinted panel with the plate mark at a legible size, so "no
         // results yet" reads as a designed state instead of a gap in the page.
-        <div className="surface-brand-soft flex flex-col items-center gap-4 rounded-2xl border border-dashed border-primary/30 px-5 py-8 text-center">
+        <div className="surface-brand-soft flex flex-col items-center gap-4 rounded-lg border border-dashed border-primary/30 px-5 py-8 text-center">
           <PlateGlyph className="h-14 w-14 text-primary/60" />
           <p className="text-sm text-muted-foreground">{searchEmptyMessage({ query, hasAnyRecent, t })}</p>
           {query === '' && (

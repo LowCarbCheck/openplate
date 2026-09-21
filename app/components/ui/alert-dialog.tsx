@@ -35,9 +35,12 @@ function AlertDialogContent({ className, ...props }: React.ComponentProps<typeof
       <AlertDialogOverlay />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
-        // `rounded-2xl`, the radius `ui/card` draws and DESIGN.md §5 names. At
-        // `rounded-lg` this panel was the only 8px corner on a screen of 16px
-        // ones, and it is the panel that asks whether to delete something.
+        // 16px, the ladder's sheet and hero step (`tests/design-contract.ts`),
+        // which a dialog shares with the bottom sheets. It used to match the
+        // card because the card was 16px too; it stays at 16 now that a card is
+        // 8, because this panel is not a card on a page, it is a surface ON TOP
+        // of the page that stops everything else, and the sheets it is a
+        // sibling of are `rounded-t-2xl`.
         className={cn(
           'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border p-6 shadow-lg duration-200 sm:max-w-lg',
           className,

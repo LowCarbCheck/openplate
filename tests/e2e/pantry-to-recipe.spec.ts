@@ -301,9 +301,10 @@ test('a photographed shelf becomes a pantry, a recipe and one logged entry', asy
   await page.getByRole('link', { name: EN.pantry.recipes.link }).click();
   await page.waitForURL('**/pantry/recipes**');
 
-  // The card component carries no slot attribute, so the cards are found by
-  // the shape every Card draws and narrowed by the title inside them.
-  const cards = page.locator('main div.rounded-2xl.bg-card');
+  // BY THE SLOT, NOT THE SHAPE. `Card` grew `data-slot="card"` in M243 spec
+  // 03, precisely so a spec stops naming a radius it has no opinion about: this
+  // one cares that there is one recipe card, not what its corners measure.
+  const cards = page.locator('main [data-slot="card"]');
   const firstCard = cards.filter({ hasText: FIRST_RECIPE });
   await expect(firstCard).toHaveCount(1);
 

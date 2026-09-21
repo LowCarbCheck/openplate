@@ -125,7 +125,11 @@ export function EndFastSheet({
               maxLength={FAST_NOTE_MAX_LENGTH}
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              className="w-full resize-none rounded-2xl border border-input bg-card px-3 py-2 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              // A field, so the ladder's control step (6px), the same corner
+              // `ui/input` and `ui/button` draw. It was 16px, the old card
+              // radius, which made one textarea rounder than the sheet's own
+              // buttons.
+              className="w-full resize-none rounded-md border border-input bg-card px-3 py-2 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             />
             <FieldError id={`${NOTE_FIELD_ID}-error`} errors={noteErrors} />
           </div>

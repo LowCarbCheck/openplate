@@ -57,6 +57,7 @@ import { takeIntakeHandoff } from '../../app/lib/intake-handoff';
 import { parseIntakeConsumer, type IntakeConsumer } from '../../app/lib/intake-consumers';
 import type { AiConnection, AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import type { RepeatYesterdayOffer } from '../../app/lib/copy-day';
+import { RADIUS_TIER_CLASS } from '../design-contract';
 
 /** The shipped copy this file asserts on, so a renamed key fails here rather than shipping a raw `describe.send`. */
 const describeCopySchema = z.object({
@@ -172,7 +173,13 @@ describe('the composer is a message box, not a form', () => {
 
   it('puts the field and Send in ONE rounded container', () => {
     const markup = renderComposer();
-    const container = /<div class="([^"]*rounded-2xl[^"]*)">\s*<textarea/.exec(markup);
+    // THE SHAPE IS READ FROM THE CONTRACT, not typed here. The container was
+    // 16px until M243 spec 03 put it on the ladder's card step, and a test that
+    // spelled the class out would have failed for the wrong reason: what this
+    // test is about is that there is ONE box, not what its corners measure.
+    const container = new RegExp(`<div class="([^"]*\\b${RADIUS_TIER_CLASS.card}\\b[^"]*)">\\s*<textarea`, 'u').exec(
+      markup,
+    );
     assert.ok(container !== null, 'the textarea no longer sits inside a rounded container');
     const className = container[1] ?? '';
     assert.match(className, /\bborder-input\b/, 'the container lost its border');

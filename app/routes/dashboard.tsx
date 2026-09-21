@@ -130,7 +130,7 @@ const HANDOFF_LINK_CLASS =
  * competing with the control it sits under.
  */
 const PANTRY_DOOR_CLASS =
-  'flex w-full flex-col gap-0.5 rounded-xl border border-border/70 bg-card/60 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5';
+  'flex w-full flex-col gap-0.5 rounded-lg border border-border/70 bg-card/60 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5';
 
 /**
  * Card padding for the two glance tiles.
@@ -585,7 +585,9 @@ function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
     <Link
       to="/trends?tab=overview"
       data-slot="week-glance-card"
-      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // The ring is drawn on this wrapper, so it takes the radius of the card
+      // inside it (the ladder's 8px card step).
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="h-full transition-colors hover:border-primary/40">
         <CardHeader className={cn(GLANCE_HEADER_CLASS, 'flex-row items-start justify-between gap-2 space-y-0')}>
@@ -629,7 +631,9 @@ function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
   return (
     <Link
       to="/trends"
-      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // The ring is drawn on this wrapper, so it takes the radius of the card
+      // inside it (the ladder's 8px card step).
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="h-full transition-colors hover:border-primary/40">
         <CardHeader className={GLANCE_HEADER_CLASS}>

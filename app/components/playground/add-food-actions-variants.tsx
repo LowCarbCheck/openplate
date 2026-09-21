@@ -49,7 +49,7 @@ export function AddFoodActionsSegmented({ describeTo, scanTo = '/scan', classNam
 
   return (
     <div className={cn('w-full', className)}>
-      <div className="flex w-full divide-x divide-border overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-md shadow-black/20">
+      <div className="flex w-full divide-x divide-border overflow-hidden rounded-lg border border-primary/25 bg-card shadow-md shadow-black/20">
         <button ref={triggerRef} type="button" onClick={capture} className={SEGMENT_CLASS}>
           <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Camera className="size-4" aria-hidden="true" />

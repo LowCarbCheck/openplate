@@ -208,7 +208,7 @@ function EnrolmentCard({
   const name = enrolment.label ?? t('research.enrolments.unnamed', { studyAccountId: enrolment.studyAccountId });
 
   return (
-    <section className="space-y-3 rounded-xl border bg-card p-4">
+    <section className="space-y-3 rounded-lg border bg-card p-4">
       <div className="space-y-1">
         <h3 className="text-sm font-medium">{name}</h3>
         <p className="text-xs text-muted-foreground">

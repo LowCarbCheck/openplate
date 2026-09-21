@@ -228,7 +228,7 @@ describe('the behind block is calm and readable', () => {
   it('the control: the alarm pattern does flag a red class and a left border', () => {
     assert.equal(ALARM.test('<div class="bg-red-100 text-red-700">'), true);
     assert.equal(ALARM.test('<div class="border-l-4 border-amber-500">'), true);
-    assert.equal(ALARM.test('<div class="rounded-xl bg-muted/50 px-3 py-3">'), false);
+    assert.equal(ALARM.test('<div class="rounded-lg bg-muted/50 px-3 py-3">'), false);
   });
 
   it('keeps every line at 14 px or larger', () => {

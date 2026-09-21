@@ -272,7 +272,7 @@ export function CatchUpPreview({ previewLines }: { previewLines: readonly string
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-xl border bg-muted/40 p-3">
+    <div className="rounded-lg border bg-muted/40 p-3">
       <p className="text-xs font-medium">{t('settings.notifications.catchUp.preview')}</p>
       {previewLines.length === 0 && (
         <p className="mt-1 text-sm text-muted-foreground">{t('settings.notifications.catchUp.previewEmpty')}</p>

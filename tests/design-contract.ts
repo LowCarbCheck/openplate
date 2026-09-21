@@ -77,6 +77,57 @@ export const GRID_CELL_PX = 28;
 export const GRID_LINE_ALPHA = 0.7;
 
 /**
+ * THE SHAPE LADDER (M243 spec 03), decided before a single class was edited.
+ *
+ * One radius used to mean everything. `rounded-2xl` was on the card, the list row, the settings
+ * inset, the dialog, a textarea, a segmented control and a focus ring alike, so the shape of a
+ * thing said nothing about what the thing WAS. Five steps now, and each step is one kind of object.
+ * Anything at the same step is the same kind of object, which is the whole point: a person learns
+ * the ladder once and then reads the screen faster.
+ *
+ * | Tier      | Class          | px | What wears it                                            |
+ * | --------- | -------------- | -- | -------------------------------------------------------- |
+ * | `dataRow` | `rounded`      |  4 | a data row inside a panel: label, value, status           |
+ * | `control` | `rounded-md`   |  6 | buttons, inputs, composer keys, thumbnails                |
+ * | `card`    | `rounded-lg`   |  8 | every card, every inset group, every list row, every panel |
+ * | `tile`    | `rounded-xl`   | 12 | a tile in a grid                                          |
+ * | `hero`    | `rounded-2xl`  | 16 | the one hero per screen, dialogs, sheets, the landing frame |
+ *
+ * `rounded-full` is the sixth and is not a step: pills, badges, dots and avatars are round because
+ * they are round, not because of where they sit.
+ *
+ * This resolves DESIGN.md's own contradiction, section 1.5 said `rounded-2xl` and section 5 said
+ * `rounded-lg`, in section 5's favour. `tests/unit/radius-tiers.test.ts` holds the allowlist of the
+ * sites still allowed to draw 12 px and 16 px, and `tests/e2e/lcc-lineage-shape.spec.ts` reads the
+ * COMPUTED radius of each tier in a real browser.
+ */
+export const RADIUS_TIER_PX = {
+  dataRow: 4,
+  control: 6,
+  card: 8,
+  tile: 12,
+  hero: 16,
+} as const;
+
+/** A step on the ladder. */
+export type RadiusTier = keyof typeof RADIUS_TIER_PX;
+
+/** The Tailwind utility each step is written as, which is what a source guard matches on. */
+export const RADIUS_TIER_CLASS = {
+  dataRow: 'rounded',
+  control: 'rounded-md',
+  card: 'rounded-lg',
+  tile: 'rounded-xl',
+  hero: 'rounded-2xl',
+} as const satisfies Record<RadiusTier, string>;
+
+/**
+ * The padding a list row draws, `p-3`. It was `p-4` while the row was 16 px round; a row that is
+ * now the same 8 px as a card would look loose at a card's padding.
+ */
+export const LIST_ROW_PADDING_PX = 12;
+
+/**
  * A computed `font-family` stack that STARTS with `name`, written the way the browser writes
  * it: a family with a space is quoted (`"Victor Mono Variable", ...`) and a one-word family is
  * not (`Fraunces, serif`), so the quotes are optional here and the name must end at a comma or

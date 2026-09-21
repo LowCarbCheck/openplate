@@ -39,6 +39,7 @@ import type { UsualAtSlotOffer } from '#app/lib/local-store';
 import { LOG_USUAL_INTENT } from '#app/lib/usual-at-slot';
 import { SectionEyebrow } from '#app/components/typography';
 import { cn } from '#app/lib/utils';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 
 /**
  * One title per slot, rather than one title with the slot interpolated.
@@ -84,7 +85,7 @@ function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: Meal
         {/* Only a bundle says how many rows it writes. For a single food the
             count is always one, and printing it would be noise. */}
         {isBundle && (
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary tabular-nums">
+          <span className={cn(CHIP_NEUTRAL, 'text-xs tabular-nums')}>
             {t('usual.itemCount', { count: offer.itemCount })}
           </span>
         )}

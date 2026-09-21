@@ -67,7 +67,7 @@ export function ShareGrantsPanel({
         const presentation = STATUS_PRESENTATION[grant.status];
         const name = grant.label ?? t('sharing.grants.unnamed', { accountId: grant.granteeAccountId });
         return (
-          <li key={grant.granteeAccountId} className="rounded-xl border bg-card p-4">
+          <li key={grant.granteeAccountId} className="rounded-lg border bg-card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <p className="text-sm font-medium">{name}</p>

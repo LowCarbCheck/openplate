@@ -63,7 +63,9 @@ export function ActivityStreakCard({
   return (
     <Link
       to="/awards"
-      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // The ring is drawn on this wrapper, so it takes the radius of the card
+      // inside it (the ladder's 8px card step).
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="transition-colors hover:border-primary/40">
         <CardHeader>

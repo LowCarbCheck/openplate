@@ -267,7 +267,7 @@ function refusalMessage(
 function ClaimedIdentityNotice({ invite }: { invite: ClinicianInvite }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-1 rounded-xl border bg-muted/30 p-4">
+    <div className="space-y-1 rounded-lg border bg-muted/30 p-4">
       <p className="text-sm font-medium">
         {invite.claimedLabel === null ?
           t('connectClinician.claimed.unnamed')
