@@ -69,7 +69,7 @@ const LOCALES = ['de', 'en'] as const satisfies readonly LanguageCode[];
 const SCHEMES = ['dark', 'light'] as const;
 
 /** Every primary screen the brief lists, each one a place the chrome could wrap. */
-const ROUTES = ['/diary', '/dashboard', '/settings', '/trends', '/add', '/scan'] as const;
+const ROUTES = ['/diary', '/dashboard', '/settings', '/trends', '/add/search', '/add/photo'] as const;
 
 /** The public legal pages, each of which is prose and keeps the sans face. */
 const LEGAL_ROUTES = ['/terms', '/privacy', '/imprint', '/withdrawal'] as const;

@@ -266,8 +266,8 @@ test('a photographed shelf becomes a pantry, a recipe and one logged entry', asy
 
   // THE COMPOSER'S OWN CAMERA INPUT. There are two capture inputs on this
   // screen: this one, which reads a shelf into the pantry, and the tab bar's
-  // raised launcher, which photographs a plate for `/scan`. Scoping to the
-  // page's own column picks the pantry's, since the tab bar is not in it.
+  // raised launcher, which photographs a plate for `/add/photo`. Scoping to
+  // the page's own column picks the pantry's, since the tab bar is not in it.
   await page
     .locator('main div.max-w-xl input[type="file"][capture]')
     .setInputFiles({ name: 'shelf.png', mimeType: 'image/png', buffer: PIXEL_PNG });

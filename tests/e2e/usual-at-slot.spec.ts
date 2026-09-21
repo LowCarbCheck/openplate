@@ -93,7 +93,7 @@ test('the usual is offered at the slot it is eaten at, and not at the others', a
   ////////////////////////////////////////////////////////////////////////////
 
   await freezeAt(page, today, '08:00');
-  await page.goto('/add');
+  await page.goto('/add/search');
 
   const section = page.locator('[data-slot="usual-at-slot"]');
   await expect(section).toBeVisible();
@@ -130,7 +130,7 @@ test('the usual is offered at the slot it is eaten at, and not at the others', a
   ////////////////////////////////////////////////////////////////////////////
 
   await freezeAt(page, today, '19:00');
-  await page.goto('/add');
+  await page.goto('/add/search');
 
   await expect(section).toBeVisible();
   await expect(section).toHaveAttribute('data-meal', 'dinner');

@@ -141,9 +141,9 @@ const PUBLIC_ROUTES = [
 const APP_ROUTES = [
   '/dashboard',
   '/diary',
-  '/add',
-  '/scan',
-  '/describe',
+  '/add/search',
+  '/add/photo',
+  '/add/describe',
   '/trends',
   '/awards',
   '/foods',

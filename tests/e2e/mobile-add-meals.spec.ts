@@ -206,10 +206,10 @@ async function seedAWeekOfLogs(page: Page): Promise<void> {
   await writeLogsToDisk(page, logs);
 }
 
-/** Opens `/add`'s manual form and returns the form itself. */
+/** Opens `/add/search`'s manual form and returns the form itself. */
 async function openManualForm(page: Page, locale: (typeof LANGUAGES)[number]) {
   const catalog = catalogFor(locale);
-  await page.goto('/add');
+  await page.goto('/add/search');
   const manual = page.locator('form').filter({ has: page.locator('input[name="_intent"][value="manual"]') });
   // A first visit registers the service worker and reloads once, which can eat
   // the click, so the click repeats only while the form is not on screen.
@@ -521,7 +521,7 @@ test('Your foods keeps Edit and Remove a thumb wide and a thumb apart', async ({
 });
 
 ////////////////////////////////////////////////////////////////////////////////
-// /describe and /catch-up
+// /add/describe and /catch-up
 ////////////////////////////////////////////////////////////////////////////////
 
 test('the describe screen names itself once, and the catch-up eyebrow has room', async ({ page }) => {
@@ -529,7 +529,7 @@ test('the describe screen names itself once, and the catch-up eyebrow has room',
   await seedAWeekOfLogs(page);
   await page.setViewportSize({ width: NARROW_PHONE_WIDTH, height: TALL_PHONE_HEIGHT });
 
-  await page.goto('/describe');
+  await page.goto('/add/describe');
   await expect(page.locator('textarea#describe-meal')).toBeVisible();
   const headings = await page.locator('h1').allInnerTexts();
   expect(headings, `the page carried these level-one headings: ${JSON.stringify(headings)}`).toHaveLength(1);

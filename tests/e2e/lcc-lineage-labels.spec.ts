@@ -52,7 +52,7 @@ const LABEL_ROUTES = ['/settings', '/diary'] as const;
  * so those cards are not a violation and this claim is about the DEFAULT. The fresh device is
  * what keeps the two apart without this file having to guess which titles were overridden.
  */
-const CARD_TITLE_ROUTES = ['/dashboard', '/trends', '/scan'] as const;
+const CARD_TITLE_ROUTES = ['/dashboard', '/trends', '/add/photo'] as const;
 
 /**
  * Screens swept for the wordmark before onboarding: the landing page, where it is largest

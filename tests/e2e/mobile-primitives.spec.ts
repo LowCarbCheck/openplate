@@ -490,7 +490,7 @@ test('a two-line card title does not run its lines together', async ({ page }) =
 test(`the manual add form draws ${TAP_TARGET_PX} px inputs and select`, async ({ page }) => {
   await page.setViewportSize(NARROW_PHONE);
   await completeOnboarding(page);
-  await page.goto('/add');
+  await page.goto('/add/search');
   await page.getByRole('button', { name: EN.add.search.addManually }).click();
 
   const form = page.locator('form').filter({ has: page.locator('input[name="_intent"][value="manual"]') });

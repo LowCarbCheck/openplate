@@ -147,15 +147,15 @@ test('every repeat, save-as-meal and usual door is visible on the phone', async 
   await expectPhoneLayout(page);
 
   ////////////////////////////////////////////////////////////////////////////
-  // "Your usual breakfast" under the search field on /add
+  // "Your usual breakfast" under the search field on /add/search
   ////////////////////////////////////////////////////////////////////////////
 
-  await page.goto('/add');
+  await page.goto('/add/search');
   const usual = page.locator('[data-slot="usual-at-slot"]');
   await expect(usual).toHaveAttribute('data-meal', 'breakfast');
   await expectVisibleLabel(
     usual.getByRole('heading', { name: EN.usual.title.breakfast, exact: true }),
-    "the /add usual section's heading",
+    "the /add/search usual section's heading",
   );
   await expectVisibleLabel(
     usual.locator('[data-slot="usual-offer"] button').filter({ hasText: BREAKFAST_NAME }),

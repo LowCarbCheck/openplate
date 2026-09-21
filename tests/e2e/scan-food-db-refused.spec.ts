@@ -153,7 +153,7 @@ async function setFoodDbRefusal(page: Page, status: number | null): Promise<void
 
 /** Takes one photo and waits for the review card. */
 async function scanOnePhoto(page: Page): Promise<void> {
-  await page.goto('/scan');
+  await page.goto('/add/photo');
   // THE CAPTURE CARD'S OWN INPUT, named rather than taken by position: there
   // are three file inputs on this screen, and `[capture]` picks the camera out
   // of the card's pair, because a library pick waits out a cancellable grace

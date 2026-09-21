@@ -68,8 +68,8 @@ const PHONE_HEIGHT = 844;
 /** The source language, the widest one and the one whose glyphs differ most. */
 const LOCALES = ['en', 'de', 'tr'] as const satisfies readonly LanguageCode[];
 
-/** The four screens. `/diary` and `/add` carry a logged food so their rows exist. */
-const ROUTES = ['/diary', '/settings', '/add', '/scan'] as const;
+/** The four screens. `/diary` and `/add/search` carry a logged food so their rows exist. */
+const ROUTES = ['/diary', '/settings', '/add/search', '/add/photo'] as const;
 
 /** What a finger aims at in the page, which is `main` less the shell that shares it. */
 const TARGETS =

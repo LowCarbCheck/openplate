@@ -186,7 +186,7 @@ test('the review card reports the same net carbs the logged entry does', async (
   await completeOnboarding(page);
   await connectFakeProvider(page);
 
-  await page.goto('/scan');
+  await page.goto('/add/photo');
   // THE CAPTURE CARD'S OWN INPUT, and the card is named rather than taken by
   // position: there are three file inputs on this screen. The card holds the
   // camera one and the library one, and `BottomNav`'s raised Scan button holds

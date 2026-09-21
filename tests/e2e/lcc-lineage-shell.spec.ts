@@ -7,8 +7,9 @@
  * nothing heavier than that anywhere. So the halo is gone and the circle is not.
  *
  * WHY THE CIRCLE STAYS EXACTLY WHERE IT WAS. Three documented clearances are measured off this
- * box: the bottom bar's own `h-14`, `app-wrapper`'s `6rem` of bottom page padding, and `/scan`'s
- * sticky action bar. A shadow does not take part in layout, so removing one must move nothing, and
+ * box: the bottom bar's own `h-14`, `app-wrapper`'s `6rem` of bottom page padding, and
+ * `/add/photo`'s sticky action bar. A shadow does not take part in layout, so removing one must
+ * move nothing, and
  * "must move nothing" is a claim worth holding: all four values of the circle's rect are frozen
  * below, and the header and the bottom bar are re-measured beside them.
  *

@@ -96,7 +96,7 @@ async function saveBodyMetrics(page: Page): Promise<void> {
 
 /** Logs the fake food database's one row through the real search, so the entry carries its micronutrients. */
 async function logTheReferenceFood(page: Page): Promise<void> {
-  await page.goto('/add');
+  await page.goto('/add/search');
   await page.locator('#food-search').fill(E2E_FOOD_NAME);
   await page.getByRole('button', { name: E2E_FOOD_NAME }).first().click();
 

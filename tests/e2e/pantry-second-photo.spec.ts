@@ -123,7 +123,7 @@ async function fakeTwoShelves(page: Page): Promise<void> {
  *
  * THE COMPOSER'S OWN CAMERA INPUT. There are two capture inputs on this
  * screen: this one, which reads a shelf into the pantry, and the tab bar's
- * raised launcher, which photographs a plate for `/scan`. Scoping to the
+ * raised launcher, which photographs a plate for `/add/photo`. Scoping to the
  * page's own column picks the pantry's, since the tab bar is not in it.
  *
  * @param page - a page showing `/pantry`.

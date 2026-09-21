@@ -34,9 +34,9 @@
  *
  * THE PAGE IS BLURRED BEFORE IT IS READ, for one reason worth knowing: `--ring` and `--primary`
  * are the SAME hsl triple in both themes, so a focused field's `border-ring` is indistinguishable
- * from a teal border by any reader that works in resolved colours. `/add` puts the cursor in its
- * search box on arrival, which added a phantom entry to that screen's inventory. A focus ring is
- * a state, and states are out of scope here, so the read starts by blurring whatever holds focus.
+ * from a teal border by any reader that works in resolved colours. `/add/search` puts the cursor in
+ * its search box on arrival, which added a phantom entry to that screen's inventory. A focus ring
+ * is a state, and states are out of scope here, so the read starts by blurring whatever holds focus.
  *
  * VISIBILITY IS THE BROWSER'S ANSWER, not three property reads. The global progress bar keeps a
  * solid teal block in the DOM at all times and hides it by putting `opacity: 0` on its PARENT, so

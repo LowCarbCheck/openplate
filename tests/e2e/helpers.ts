@@ -103,9 +103,9 @@ export async function signInFixtureAccount(page: Page): Promise<void> {
  * Gives the device an AI provider, so the camera gesture opens a camera.
  *
  * WHY A SPEC WOULD WANT ONE. `useCameraCapture` refuses to ask for a camera on
- * a device that has no provider: it navigates to `/scan` and shows the connect
- * card instead. A spec about the capture gesture therefore has to connect
- * something first, or it is asserting the fallback.
+ * a device that has no provider: it navigates to `/add/photo` and shows the
+ * connect card instead. A spec about the capture gesture therefore has to
+ * connect something first, or it is asserting the fallback.
  *
  * THE ENDPOINT IS THIS APP'S OWN ORIGIN, on a path nothing serves, for the two
  * reasons `scan-review.spec.ts` records at length: the production CSP only
@@ -161,7 +161,7 @@ export interface ManualFood {
 }
 
 /**
- * Logs one food through `/add`'s manual form and waits for the diary.
+ * Logs one food through `/add/search`'s manual form and waits for the diary.
  *
  * THE MANUAL FORM, not the search: the search asks this app's server, which
  * asks the food database over the network, and a smoke tier must not go red
@@ -177,7 +177,7 @@ export interface ManualFood {
  * @param food - what to type, and optionally which meal and which day.
  */
 export async function logFoodManually(page: Page, food: ManualFood): Promise<void> {
-  await page.goto(food.date === undefined ? '/add' : `/add?date=${food.date}`);
+  await page.goto(food.date === undefined ? '/add/search' : `/add/search?date=${food.date}`);
   await page.getByRole('button', { name: EN.add.search.addManually }).click();
 
   const manual = page.locator('form').filter({ has: page.locator('input[name="_intent"][value="manual"]') });

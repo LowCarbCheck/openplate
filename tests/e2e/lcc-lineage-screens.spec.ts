@@ -55,7 +55,7 @@ const TAP_FLOOR_PX = 44;
 const HIDDEN_CONTROL_PX = 1;
 
 /** The six screens the restyle touched: two from spec 05a, four from spec 05b. */
-const ROUTES = ['/diary', '/dashboard', '/trends', '/add', '/scan', '/settings'] as const;
+const ROUTES = ['/diary', '/dashboard', '/trends', '/add/search', '/add/photo', '/settings'] as const;
 
 /** One food, so both screens draw a day rather than an empty state. */
 const SEEDED_FOOD = { name: 'Screen walk cheddar', grams: '40', carbs: '1.2' } as const;
@@ -81,18 +81,18 @@ const EMPTY_STATE_TITLE_CEILING_PX = CARD_TITLE_PX;
  * Both are read at both widths because a chart that only collapses on the narrow phone is the
  * interesting failure.
  *
- * FOUR ROUTES CARRY AN EMPTY RECORD, and that is a statement, not an omission: `/add`, `/scan`
- * and `/settings` draw no plot at any width, and on a device with one logged food the Insights
- * page draws the composition bar and nothing else, because the trend chart is below its own
- * three-day threshold (`SparseTrendNotice`). If one of them grows a plot, the line to change is
- * here.
+ * FOUR ROUTES CARRY AN EMPTY RECORD, and that is a statement, not an omission: `/add/search`,
+ * `/add/photo` and `/settings` draw no plot at any width, and on a device with one logged food the
+ * Insights page draws the composition bar and nothing else, because the trend chart is below its
+ * own three-day threshold (`SparseTrendNotice`). If one of them grows a plot, the line to change
+ * is here.
  */
 const FROZEN_CHART_PX = {
   '/diary': { 'macro-ratio-bar': 10 },
   '/dashboard': { 'day-ridge-plot': 62 },
   '/trends': { 'macro-ratio-bar': 10 },
-  '/add': {},
-  '/scan': {},
+  '/add/search': {},
+  '/add/photo': {},
   '/settings': {},
 } as const satisfies Record<(typeof ROUTES)[number], Record<string, number>>;
 
@@ -134,8 +134,8 @@ const KNOWN_HIT_AREA = {
   ],
   '/dashboard': [],
   '/trends': [],
-  '/add': [],
-  '/scan': [],
+  '/add/search': [],
+  '/add/photo': [],
   '/settings': [],
 } as const satisfies Record<(typeof ROUTES)[number], readonly HitAreaTarget[]>;
 
@@ -289,8 +289,8 @@ test('CONTROL: the width reader sees an injected overflow and the tap reader see
 
 /** The two empty states that were posters, and the door each one must offer inline. */
 const EMPTY_STATES = [
-  { route: '/diary', slot: 'diary-empty-first-ever', door: 'a[href^="/describe"]', what: 'the composer' },
-  { route: '/trends', slot: 'trends-empty', door: 'a[href="/add"]', what: 'the add door' },
+  { route: '/diary', slot: 'diary-empty-first-ever', door: 'a[href^="/add/describe"]', what: 'the composer' },
+  { route: '/trends', slot: 'trends-empty', door: 'a[href="/add/search"]', what: 'the add door' },
 ] as const;
 
 for (const state of EMPTY_STATES) {

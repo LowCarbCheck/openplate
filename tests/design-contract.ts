@@ -194,7 +194,7 @@ export const LIST_ROW_PADDING_PX = 12;
  * | ------------ | ------- | --------------------------------------------------------------------- |
  * | `/settings`  |       2 | the wordmark, the launcher                                              |
  * | `/trends`    |       4 | the two, the active tab, "Log weight"                                   |
- * | `/add`       |       5 | the two, the "Set up AI" link, the active tab's icon and its label      |
+ * | `/add/search`|       5 | the two, the "Set up AI" link, the active tab's icon and its label      |
  * | `/diary`     |       9 | the two, the active tab (two), the camera key, two links, two status dots |
  * | `/dashboard` |      12 | the two, the camera key, two hand-off links (four), the award mark, and four data marks: the status dot, an adherence cell, the streak legend dot and a ridge bar |
  *
@@ -210,7 +210,7 @@ export const TEAL_BUDGET_CEILING = {
   '/dashboard': 12,
   '/trends': 4,
   '/settings': 2,
-  '/add': 5,
+  '/add/search': 5,
 } as const;
 
 /** A screen the teal budget is frozen for. */
